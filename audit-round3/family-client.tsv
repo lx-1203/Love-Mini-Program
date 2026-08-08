@@ -1,0 +1,486 @@
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\usePageAccess.ts|79|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\env.ts|152|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\env.ts|168|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\env.ts|222|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\showcase.ts|77|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|133|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\profile-tags.ts|155|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\popular-topics.ts|75|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\privacy.ts|169|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\privacy.ts|179|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\global-error.ts|21|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\global-error.ts|23|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|142|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\LongPressMenu.vue|86|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|590|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|639|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|671|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|801|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|848|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|861|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|874|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|898|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\transport.ts|128|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\transport.ts|242|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\transport.ts|245|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\transport.ts|270|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|69|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|78|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|97|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|131|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|133|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|152|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|190|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|192|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|211|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|237|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\store-dispatch.ts|239|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\state-machine.ts|60|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\reconnect.ts|119|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\reconnect.ts|130|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|82|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|192|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|197|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|367|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|419|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|440|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|444|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|479|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|530|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|560|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|672|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|685|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|712|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|716|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|763|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|767|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\index.ts|900|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\theme.ts|23|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\theme.ts|45|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\theme.ts|59|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\heartbeat.ts|95|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\websocket\heartbeat.ts|98|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|383|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|416|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|449|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|474|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|507|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|518|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|566|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|583|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|587|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|593|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|608|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|663|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|677|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|91|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|107|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|110|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|184|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|186|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|228|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|278|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|280|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|335|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\sentry.ts|363|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\campus\certification.vue|88|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|35|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1027|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1040|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|1238|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\likes\index.vue|295|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|327|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\post.vue|464|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|1166|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|1170|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|225|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|243|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|253|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|262|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\index.vue|271|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\ShareCard.vue|147|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\ShareCard.vue|213|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\home.ts|75|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|329|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|343|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|395|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|470|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|302|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\SafeImage.vue|129|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\SafeImage.vue|140|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\feedback.ts|30|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\feedback.ts|49|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\feedback.ts|69|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\feedback.ts|89|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|97|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|109|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|129|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|106|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|195|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|328|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\feedback\history.vue|111|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\discover\utils.ts|197|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\video-call.vue|248|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|303|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\discover\constants.ts|140|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|185|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|215|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|233|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\chat\VoiceRecorder.vue|156|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|247|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|291|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|425|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1001|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1218|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\profile\index.vue|1221|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\discover\actions\swipe.ts|347|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api.ts|480|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api.ts|594|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\discover\actions\storage.ts|93|T|P2|生产代码直接输出 console.error（错误日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\env.ts|157|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\env.ts|183|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\discover\actions\filter.ts|175|T|P3|生产代码直接输出 console.warn（诊断日志），无环境开关/分级|小程序生产包保留调试日志，泄露内部流程信息且无日志分级/开关|收敛为统一 logger（环境开关/级别过滤），错误路径转用户可见反馈|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|220|H|P2|硬编码 mock 用户/会话 ID user-2001（mockLikes 数组 mock 用户对象（林夕））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|228|H|P2|硬编码 mock 用户/会话 ID user-2002（mockLikes 数组 mock 用户对象（陈默））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|239|H|P2|硬编码 mock 用户/会话 ID user-2003（mockLikedBy 数组 mock 用户对象（苏晴））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|248|H|P2|硬编码 mock 用户/会话 ID user-2004（mockLikedBy 数组 mock 用户对象（周然））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|257|H|P2|硬编码 mock 用户/会话 ID user-2006（mockLikedBy 数组 mock 用户对象（叶知秋））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|265|H|P2|硬编码 mock 用户/会话 ID user-2007（mockLikedBy 数组 mock 用户对象（沈星河））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|274|H|P2|硬编码 mock 用户/会话 ID user-2200（mockLikedBy 数组 mock 用户对象（like-7））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|283|H|P2|硬编码 mock 用户/会话 ID user-2201（mockLikedBy 数组 mock 用户对象（like-8））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|291|H|P2|硬编码 mock 用户/会话 ID user-2202（mockLikedBy 数组 mock 用户对象（like-9））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|299|H|P2|硬编码 mock 用户/会话 ID user-2203（mockLikedBy 数组 mock 用户对象（like-10））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|308|H|P2|硬编码 mock 用户/会话 ID user-2204（mockLikedBy 数组 mock 用户对象（like-11））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|316|H|P2|硬编码 mock 用户/会话 ID user-2205（mockLikedBy 数组 mock 用户对象（like-12））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|324|H|P2|硬编码 mock 用户/会话 ID user-2206（mockLikedBy 数组 mock 用户对象（like-13））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|333|H|P2|硬编码 mock 用户/会话 ID user-2207（mockLikedBy 数组 mock 用户对象（like-14））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|341|H|P2|硬编码 mock 用户/会话 ID user-2208（mockLikedBy 数组 mock 用户对象（like-15））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|349|H|P2|硬编码 mock 用户/会话 ID user-2209（mockLikedBy 数组 mock 用户对象（like-16））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|358|H|P2|硬编码 mock 用户/会话 ID user-2210（mockLikedBy 数组 mock 用户对象（like-17））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|366|H|P2|硬编码 mock 用户/会话 ID user-2211（mockLikedBy 数组 mock 用户对象（like-18））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|374|H|P2|硬编码 mock 用户/会话 ID user-2212（mockLikedBy 数组 mock 用户对象（like-19））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|383|H|P2|硬编码 mock 用户/会话 ID user-2213（mockLikedBy 数组 mock 用户对象（like-20））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|391|H|P2|硬编码 mock 用户/会话 ID user-2214（mockLikedBy 数组 mock 用户对象（like-21））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|399|H|P2|硬编码 mock 用户/会话 ID user-2215（mockLikedBy 数组 mock 用户对象（like-22））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|408|H|P2|硬编码 mock 用户/会话 ID user-2216（mockLikedBy 数组 mock 用户对象（like-23））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|416|H|P2|硬编码 mock 用户/会话 ID user-2217（mockLikedBy 数组 mock 用户对象（like-24））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|427|H|P2|硬编码 mock 用户/会话 ID user-2003（mockVisitors 访客对象 visit-1（苏晴））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|437|H|P2|硬编码 mock 用户/会话 ID user-2005（mockVisitors 访客对象 visit-2（顾言））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|446|H|P2|硬编码 mock 用户/会话 ID user-2008（mockVisitors 访客对象 visit-3（江晚吟））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|456|H|P2|硬编码 mock 用户/会话 ID user-2300（mock 用户对象（like-25））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|465|H|P2|硬编码 mock 用户/会话 ID user-2301（mock 用户对象（like-26））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|475|H|P2|硬编码 mock 用户/会话 ID user-2302（mock 用户对象（like-27））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|484|H|P2|硬编码 mock 用户/会话 ID user-2303（mock 用户对象（like-28））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|493|H|P2|硬编码 mock 用户/会话 ID user-2304（mock 用户对象（like-29））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|502|H|P2|硬编码 mock 用户/会话 ID user-2305（mock 用户对象（like-30））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|512|H|P2|硬编码 mock 用户/会话 ID user-2306（mock 用户对象（like-31））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|521|H|P2|硬编码 mock 用户/会话 ID user-2307（mock 用户对象（like-32））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|530|H|P2|硬编码 mock 用户/会话 ID user-2308（mock 用户对象（like-33））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|539|H|P2|硬编码 mock 用户/会话 ID user-2309（mock 用户对象（like-34））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|549|H|P2|硬编码 mock 用户/会话 ID user-2310（mock 用户对象（like-35））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|558|H|P2|硬编码 mock 用户/会话 ID user-2311（mock 用户对象（like-36））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|567|H|P2|硬编码 mock 用户/会话 ID user-2312（mock 用户对象（like-37））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|576|H|P2|硬编码 mock 用户/会话 ID user-2313（mock 用户对象（like-38））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|586|H|P2|硬编码 mock 用户/会话 ID user-2314（mock 用户对象（like-39））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|595|H|P2|硬编码 mock 用户/会话 ID user-2315（mock 用户对象（like-40））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|604|H|P2|硬编码 mock 用户/会话 ID user-2316（mock 用户对象（like-41））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|613|H|P2|硬编码 mock 用户/会话 ID user-2317（mock 用户对象（like-42））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|623|H|P2|硬编码 mock 用户/会话 ID user-2318（mock 用户对象（like-43））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|635|H|P2|硬编码 mock 用户/会话 ID user-2003（mockHeartSignals signal-1 fromUserId 硬编码 mock 用户 ID）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|645|H|P2|硬编码 mock 用户/会话 ID user-2006（mockHeartSignals signal-2 fromUserId 硬编码 mock 用户 ID）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|666|H|P2|硬编码 mock 用户/会话 ID user-3001（mockAuthors 数组 mock 用户对象（小鹿））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|674|H|P2|硬编码 mock 用户/会话 ID user-3002（mockAuthors 数组 mock 用户对象（阿泽））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|682|H|P2|硬编码 mock 用户/会话 ID user-3003（mockAuthors 数组 mock 用户对象（橙子））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|690|H|P2|硬编码 mock 用户/会话 ID user-3004（mockAuthors 数组 mock 用户对象（南风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|698|H|P2|硬编码 mock 用户/会话 ID user-3005（mockAuthors 数组 mock 用户对象（北岛））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|706|H|P2|硬编码 mock 用户/会话 ID user-3006（mockAuthors 数组 mock 用户对象（苏晴））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|714|H|P2|硬编码 mock 用户/会话 ID user-3007（mockAuthors 数组 mock 用户对象（周沐））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|722|H|P2|硬编码 mock 用户/会话 ID user-3008（mockAuthors 数组 mock 用户对象（许诺））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|730|H|P2|硬编码 mock 用户/会话 ID user-3009（mockAuthors 数组 mock 用户对象（林安））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|738|H|P2|硬编码 mock 用户/会话 ID user-3010（mockAuthors 数组 mock 用户对象（叶青））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|746|H|P2|硬编码 mock 用户/会话 ID user-3011（mockAuthors 数组 mock 用户对象（夏言））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|754|H|P2|硬编码 mock 用户/会话 ID user-3012（mockAuthors 数组 mock 用户对象（顾北））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|762|H|P2|硬编码 mock 用户/会话 ID user-3013（mockAuthors 数组 mock 用户对象（沈念））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|770|H|P2|硬编码 mock 用户/会话 ID user-3014（mockAuthors 数组 mock 用户对象（白鹭））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\utils.ts|778|H|P2|硬编码 mock 用户/会话 ID user-3015（mockAuthors 数组 mock 用户对象（季风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|320|H|P2|硬编码 mock 用户/会话 ID user-3011（mock 帖子作者对象（晨光））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|330|H|P2|硬编码 mock 用户/会话 ID user-3012（mock 帖子作者对象（晚风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|340|H|P2|硬编码 mock 用户/会话 ID user-3013（mock 帖子作者对象（小北））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|352|H|P2|硬编码 mock 用户/会话 ID user-3001（mock 帖子作者对象（小鹿））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|362|H|P2|硬编码 mock 用户/会话 ID user-3002（mock 帖子作者对象（阿泽））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|372|H|P2|硬编码 mock 用户/会话 ID user-3003（mock 帖子作者对象（橙子））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|384|H|P2|硬编码 mock 用户/会话 ID user-3004（mock 帖子作者对象（南风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|398|H|P2|硬编码 mock 用户/会话 ID user-3001（mock 帖子详情作者对象（小鹿））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|409|H|P2|硬编码 mock 用户/会话 ID user-3002（mock 帖子详情作者对象（阿泽））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|416|H|P2|硬编码 mock 用户/会话 ID user-3003（mock 帖子详情作者对象（橙子））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|423|H|P2|硬编码 mock 用户/会话 ID user-3004（mock 帖子详情作者对象（南风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\index.ts|1036|H|P2|硬编码 mock 用户/会话 ID user-3004（similarAuthors mock 用户对象（南风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\index.ts|1046|H|P2|硬编码 mock 用户/会话 ID user-3005（similarAuthors mock 用户对象（北岛））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|207|H|P2|硬编码 mock 用户/会话 ID 1001（标签帖 mock 作者 userId（星野））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|215|H|P2|硬编码 mock 用户/会话 ID 1002（标签帖 mock 作者 userId（阿泽））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|223|H|P2|硬编码 mock 用户/会话 ID 1003（标签帖 mock 作者 userId（橙子））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|231|H|P2|硬编码 mock 用户/会话 ID 1004（标签帖 mock 作者 userId（北岛））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|239|H|P2|硬编码 mock 用户/会话 ID 1005（标签帖 mock 作者 userId（南风））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|247|H|P2|硬编码 mock 用户/会话 ID 1006（标签帖 mock 作者 userId（小鹿））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|345|H|P2|硬编码 mock 用户/会话 ID user-2001（mockSessions 会话 session-private-1 partnerId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|351|H|P2|硬编码 mock 用户/会话 ID user-2002（mockSessions 会话 session-private-2 partnerId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|365|H|P2|硬编码 mock 用户/会话 ID user-2006（mockSessions 会话 session-private-4 partnerId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|371|H|P2|硬编码 mock 用户/会话 ID user-2004（mockSessions 临时匿名会话 session-temp-1 partnerId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|377|H|P2|硬编码 mock 用户/会话 ID user-2005（mockSessions 会话 session-private-3 partnerId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|419|H|P2|硬编码 mock 用户/会话 ID user-2003（mockHeartSignals signal-1 fromUserId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|454|H|P2|硬编码 mock 用户/会话 ID user-2003（mock 通知 notif-4 triggerUserId（苏晴关注了你））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|455|H|P2|硬编码 mock 用户/会话 ID user-2003（mock 通知 actionUrl 内嵌 userId=user-2003）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|461|H|P2|硬编码 mock 用户/会话 ID user-2001（mock 通知 notif-6 triggerUserId（林夕评论））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|468|H|P2|硬编码 mock 用户/会话 ID user-2002（mock 通知 notif-7 triggerUserId（顾北访问））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|469|H|P2|硬编码 mock 用户/会话 ID user-2002（mock 通知 actionUrl 内嵌 userId=user-2002）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|475|H|P2|硬编码 mock 用户/会话 ID user-4001（mock 通知 notif-8 triggerUserId（双向喜欢））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\messages.ts|482|H|P2|硬编码 mock 用户/会话 ID user-4004（mock 通知 notif-9 triggerUserId（新的赞））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|121|H|P2|硬编码 mock 用户/会话 ID user-1001（mock session 未登录会话 userId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|550|H|P2|硬编码 mock 用户/会话 ID user-1001（mockLoggedInSession 登录会话 userId）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|162|H|P2|硬编码 mock 用户/会话 ID 4001（推荐人 mock 数据 id（数字体系））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|218|H|P2|硬编码 mock 用户/会话 ID 4002（推荐人 mock 数据 id）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|273|H|P2|硬编码 mock 用户/会话 ID 4003（推荐人 mock 数据 id）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\mocks\fixtures.ts|328|H|P2|硬编码 mock 用户/会话 ID 4004（推荐人 mock 数据 id）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|25|H|P2|硬编码 mock 用户/会话 ID mock-session-1（mockSession1 会话 id（recommendedPersonId=4001 见 26 行））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|26|H|P2|硬编码 mock 用户/会话 ID 4001（mockSession1 recommendedPersonId 数字体系 mock 用户 ID）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|95|H|P2|硬编码 mock 用户/会话 ID mock-session-2（mockSession2 会话 id（recommendedPersonId=4002 见 96 行））|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|96|H|P2|硬编码 mock 用户/会话 ID 4002（mockSession2 recommendedPersonId 数字体系 mock 用户 ID）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|184|H|P2|硬编码 mock 用户/会话 ID 4003（mock 推荐人 id 4003）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\chat\mock-data.ts|192|H|P2|硬编码 mock 用户/会话 ID 4004（mock 推荐人 id 4004）|mock 身份可能泄漏到真实数据流，与真实用户体系割裂|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|25|H|P1|硬编码 mock 用户 ID 1（mockUserSession.userId 硬编码 '1'（mock 身份直通真实模式））|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\session.ts|333|H|P1|硬编码 mock 用户 ID 100000（isSuperTestAccount 硬编码超级账号 userId=100000（种子 V2026.08.07.0004））|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\campus.ts|767|H|P1|硬编码 mock 用户 ID user-1001（发帖/评论 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\campus.ts|830|H|P1|硬编码 mock 用户 ID user-1001（帖子作者 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|676|H|P1|硬编码 mock 用户 ID user-1001（话题作者 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\circle.ts|828|H|P1|硬编码 mock 用户 ID user-1001（话题作者 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\index.ts|352|H|P1|硬编码 mock 用户 ID user-1001（发帖作者 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\village\index.ts|691|H|P1|硬编码 mock 用户 ID user-1001（帖子作者 userId 回退硬编码 'user-1001'）|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|638|H|P1|硬编码 mock 用户 ID user-1001（signal-1 toUserId=user-1001（模拟当前用户身份））|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|648|H|P1|硬编码 mock 用户 ID user-1001（signal-2 toUserId=user-1001（模拟当前用户身份））|真实模式下仍可能读取 mock 身份，用户数据隔离失效|移入 mock 数据源并加 apiMode 守卫|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\HeartParticles.vue|159|H|P2|用户可见中文文案未走 i18n（aria-label 内联中文 '暂停/恢复粒子动画'，未走 i18n）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\SafeImage.vue|6|H|P2|用户可见中文文案未走 i18n（aria-label 回退中文 '图片'，未走 i18n）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|170|H|P2|用户可见中文文案未走 i18n（template 中文文案 'DEV 开发者导航'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|180|H|P2|用户可见中文文案未走 i18n（template 中文文案 '开发者模式 - 仅用于测试，上线前删除'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|186|H|P2|用户可见中文文案未走 i18n（template 中文文案 '超级测试账号'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|194|H|P2|用户可见中文文案未走 i18n（template 内联中文 '已登录超级账号/一键登录超级测试账号'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|205|H|P2|用户可见中文文案未走 i18n（template 内联中文 '当前：会员身份（解锁全开）/普通用户身份'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|206|H|P2|用户可见中文文案未走 i18n（template 中文文案 '点击切换 会员/普通 身份（模拟前端展示效果）'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|588|H|P2|用户可见中文文案未走 i18n（template 中文文案 '以演示者身份进入展示版'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\login\index.vue|589|H|P2|用户可见中文文案未走 i18n（template 中文文案 '超级管理员模式 · 一键体验全部功能'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|202|H|P2|用户可见中文文案未走 i18n（template 中文文案 '全功能展示'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|203|H|P2|用户可见中文文案未走 i18n（template 中文文案 '超级管理员模式 · 所有功能已解锁'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|214|H|P2|用户可见中文文案未走 i18n（template 中文文案 '欢迎使用展示版'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|216|H|P2|用户可见中文文案未走 i18n（template 中文长文案（展示版说明段落））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|231|H|P2|用户可见中文文案未走 i18n（template 中文文案 '{{ group.items.length }} 项'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\detail.vue|812|H|P2|用户可见中文文案未走 i18n（template 中文文案 '回复 @{{ reply.replyTo }}：'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|179|H|P2|用户可见中文文案未走 i18n（template 中文文案 '赞 {{ item.post.likes }}'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|180|H|P2|用户可见中文文案未走 i18n（template 中文文案 '藏 {{ item.post.favorites }}'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|181|H|P2|用户可见中文文案未走 i18n（template 中文文案 '看 {{ item.post.views }}'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\history.vue|182|H|P2|用户可见中文文案未走 i18n（template 中文文案 '评 {{ item.post.comments }}'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|304|H|P2|用户可见中文文案未走 i18n（template title 中文 '线下活动'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|305|H|P2|用户可见中文文案未走 i18n（template subtitle 中文（活动引导文案））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|310|H|P2|用户可见中文文案未走 i18n（template 中文文案 '正在加载活动内容...'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|319|H|P2|用户可见中文文案未走 i18n（template 按钮中文 '重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|338|H|P2|用户可见中文文案未走 i18n（template 中文文案 '列表'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|345|H|P2|用户可见中文文案未走 i18n（template 中文文案 '日历'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|374|H|P2|用户可见中文文案未走 i18n（template 中文文案 '人已报名'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|399|H|P2|用户可见中文文案未走 i18n（template 内联中文 '已感兴趣/感兴趣'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|406|H|P2|用户可见中文文案未走 i18n（template 中文文案 '加载中...'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|409|H|P2|用户可见中文文案未走 i18n（template 中文文案 '没有更多活动了'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|413|H|P2|用户可见中文文案未走 i18n（template title 中文 '下一步'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|414|H|P2|用户可见中文文案未走 i18n（template subtitle 中文（活动引导文案））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|417|H|P2|用户可见中文文案未走 i18n（template primary-label 中文 '去寻觅'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|418|H|P2|用户可见中文文案未走 i18n（template secondary-label 中文 '提交活动提案'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|492|H|P2|用户可见中文文案未走 i18n（template 中文文案 '{{ count }}人'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|505|H|P2|用户可见中文文案未走 i18n（template 中文文案 '{{ len }}个活动'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|520|H|P2|用户可见中文文案未走 i18n（template 中文文案 '人已报名'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|545|H|P2|用户可见中文文案未走 i18n（template 内联中文 '已感兴趣/感兴趣'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|557|H|P2|用户可见中文文案未走 i18n（template title 中文 '下一步'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|558|H|P2|用户可见中文文案未走 i18n（template subtitle 中文（活动引导文案））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|561|H|P2|用户可见中文文案未走 i18n（template primary-label 中文 '去寻觅'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\activities\index.vue|562|H|P2|用户可见中文文案未走 i18n（template secondary-label 中文 '提交活动提案'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|46|H|P2|用户可见中文文案未走 i18n（template title 中文 '讨论圈'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|47|H|P2|用户可见中文文案未走 i18n（template subtitle 中文（讨论引导文案））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|50|H|P2|用户可见中文文案未走 i18n（template SectionCard title/subtitle 中文 '正在讨论'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|51|H|P2|用户可见中文文案未走 i18n（template 中文文案 '正在加载讨论内容...'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|54|H|P2|用户可见中文文案未走 i18n（template 中文文案 '点击重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|58|H|P2|用户可见中文文案未走 i18n（template 内联中文 '暂时还没有新的讨论推荐'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|70|H|P2|用户可见中文文案未走 i18n（template SectionCard title/subtitle 中文 '下一步'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|72|H|P2|用户可见中文文案未走 i18n（template primary-label 中文 '去寻觅'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\discover\discussions\index.vue|73|H|P2|用户可见中文文案未走 i18n（template secondary-label 中文 '反馈讨论建议'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\legal\agreement\index.vue|148|H|P2|用户可见中文文案未走 i18n（template AppShell title 中文 '用户协议'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\legal\privacy\index.vue|148|H|P2|用户可见中文文案未走 i18n（template AppShell title 中文 '隐私政策'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|57|H|P2|用户可见中文文案未走 i18n（template AppShell title/subtitle 中文 '时间安排'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|58|H|P2|用户可见中文文案未走 i18n（template SectionCard title 中文 '偏好设置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|59|H|P2|用户可见中文文案未走 i18n（template placeholder/aria-label 中文 '常去区域'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|71|H|P2|用户可见中文文案未走 i18n（template placeholder 内联中文（空闲时段引导））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|72|H|P2|用户可见中文文案未走 i18n（template aria-label 内联中文（空闲时段引导））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|75|H|P2|用户可见中文文案未走 i18n（template primary-label 中文 '保存并进入应用'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\useNetworkStatus.ts|43|H|P2|用户可见中文文案未走 i18n（showToast 中文 '网络已恢复'（i18n 缺失））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\useNetworkStatus.ts|50|H|P2|用户可见中文文案未走 i18n（showToast 中文 '网络已断开，请检查网络设置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\usePageAccess.ts|126|H|P2|用户可见中文文案未走 i18n（showToast 中文 '登录已过期，请重新登录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|72|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '请求参数有误，请检查后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|80|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '登录已过期，请重新登录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|88|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '无权限执行此操作'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|96|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '请求的资源不存在'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|104|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '服务暂时不可用，请稍后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\api-error.ts|111|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '请求失败，请稍后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\http.ts|442|H|P2|用户可见中文文案未走 i18n（showToast 中文 '登录已过期，请重新登录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\http.ts|584|H|P2|用户可见中文文案未走 i18n（错误 message 中文 '网络请求失败'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\http.ts|656|H|P2|用户可见中文文案未走 i18n（buildError 401 message 中文 '登录已过期，请重新登录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\http.ts|676|H|P2|用户可见中文文案未走 i18n（buildError 401 message 中文 '登录已过期，请重新登录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\agnes-video.ts|132|H|P2|用户可见中文文案未走 i18n（AI 错误 message 中文 'AI 服务未授权，请联系管理员检查 API Key 配置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\agnes-video.ts|140|H|P2|用户可见中文文案未走 i18n（AI 错误 message 中文 'AI 服务暂时不可用，请稍后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\agnes-video.ts|149|H|P2|用户可见中文文案未走 i18n（AI 错误 message 中文 'AI 服务未授权...'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\agnes-video.ts|158|H|P2|用户可见中文文案未走 i18n（AI 错误 message 中文 'AI 服务暂时不可用，请稍后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\services\agnes-video.ts|170|H|P2|用户可见中文文案未走 i18n（AI 错误 message 中文 'AI 服务暂时不可用，请稍后重试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|22|H|P2|用户可见中文文案未走 i18n（默认课表 mock 数据 weekday/label 中文（'周一/设计课'））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|34|H|P2|用户可见中文文案未走 i18n（showToast 中文 '请输入偏好地点'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\subpackages\setup\schedule\index.vue|40|H|P2|用户可见中文文案未走 i18n（showToast 中文 '请至少添加一个时间窗口'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|60|H|P2|用户可见中文文案未走 i18n（TIER_META L1 label/desc 中文 '发现心动/浏览推荐卡片'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|61|H|P2|用户可见中文文案未走 i18n（TIER_META L2 label/desc 中文 '表达喜欢'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|62|H|P2|用户可见中文文案未走 i18n（TIER_META L3 label/desc 中文 '双向匹配'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|63|H|P2|用户可见中文文案未走 i18n（TIER_META L4 label/desc 中文 '开启对话'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|64|H|P2|用户可见中文文案未走 i18n（TIER_META L5 label/desc 中文 '参与社区'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\social-progress.ts|65|H|P2|用户可见中文文案未走 i18n（TIER_META L6 label/desc 中文 '线下见面'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\vip.ts|109|H|P2|用户可见中文文案未走 i18n（VIP 套餐 name 中文 '月度会员'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\vip.ts|117|H|P2|用户可见中文文案未走 i18n（VIP 套餐 name 中文 '季度会员'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\vip.ts|126|H|P2|用户可见中文文案未走 i18n（VIP 套餐 name 中文 '年度会员'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|32|H|P2|用户可见中文文案未走 i18n（学校名中文 '中国人民大学'（无 nameKey，纯硬编码））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|34|H|P2|用户可见中文文案未走 i18n（学校名中文 '上海交通大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|35|H|P2|用户可见中文文案未走 i18n（学校名中文 '同济大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|37|H|P2|用户可见中文文案未走 i18n（学校名中文 '南京大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|38|H|P2|用户可见中文文案未走 i18n（学校名中文 '武汉大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|39|H|P2|用户可见中文文案未走 i18n（学校名中文 '中山大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\config\schools.ts|40|H|P2|用户可见中文文案未走 i18n（学校名中文 '深圳大学'（无 nameKey））|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|34|H|P2|用户可见中文文案未走 i18n（showToast 中文 '超级账号登录成功'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|116|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '登录页'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|117|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '寻觅'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|118|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '今日已看'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|119|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '喜欢'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|120|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '村口'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|121|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '发布帖子'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|122|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '帖子详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|123|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '消息'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|124|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '我的'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|125|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '兴趣圈'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|126|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '话题列表'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|127|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '话题详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|128|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '发布话题'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|129|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '每日一问'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|130|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '会话'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|132|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '基础资料'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|133|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '学校信息'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|134|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '时间安排'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|135|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '推荐计划'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|136|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '反馈中心'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|137|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '讨论圈'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\dev\index.vue|138|H|P2|用户可见中文文案未走 i18n（dev 导航数据 title 中文 '活动'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|39|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '核心旅程'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|40|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '登录 · 资料 · 认证'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|43|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '登录页'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|44|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '基础资料'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|45|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '学校信息'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|46|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '推荐计划'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|47|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '校园认证'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|48|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '恋爱认证'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|49|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '时间安排'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|54|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '匹配'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|55|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '寻觅 · 喜欢 · 心动信号 · 附近'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|58|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '寻觅 · 匹配'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|59|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '今日已看'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|60|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '喜欢'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|61|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '心动信号 · 缘分速配'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|62|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '附近的人'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|67|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '首页与成长'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|68|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '签到 · 恋爱中心 · 每日一问'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|71|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '首页'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|72|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '每日一问'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|73|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '恋爱中心'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|74|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '恋爱咨询'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|75|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 'MBTI 测试'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|76|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '活动'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|77|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '活动详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|82|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '聊天'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|83|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '会话 · 视频通话'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|86|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '消息'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|87|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '聊天会话'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|88|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '视频通话'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|93|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '社区'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|94|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '村口 · 兴趣圈 · 校园'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|97|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '村口 · 圈子'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|98|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '发布帖子'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|99|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '帖子详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|100|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '标签帖子'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|101|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '兴趣圈'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|102|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '话题列表'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|103|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '话题详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|104|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '发布话题'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|105|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '校园'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|106|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '校园发帖'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|107|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '校园话题详情'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|108|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '讨论圈'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|109|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '反馈历史'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|114|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '商业化'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|115|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 'VIP · 优惠码 · 逛逛'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|118|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '开通 VIP'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|119|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '我的钱包'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|120|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '优惠码'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|121|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '账单记录'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|122|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '逛逛'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|127|H|P2|用户可见中文文案未走 i18n（showcase 分组 title 中文 '个人中心与设置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|128|H|P2|用户可见中文文案未走 i18n（showcase 分组 subtitle 中文 '我的 · 安全 · 帮助'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|131|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '我的'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|132|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '谁看过我'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|133|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '我的相册'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|134|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '任务中心'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|135|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '权限设置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|136|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '设置'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|137|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '免打扰'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|138|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '反馈中心'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|139|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '隐私政策'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\showcase\index.vue|140|H|P2|用户可见中文文案未走 i18n（showcase 导航 title/desc 中文 '用户协议'）|多语言/换肤场景文案无法翻译，en-US 下仍显示中文|抽为 i18n key（t() 渲染）|open|batch-2
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|178|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|184|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|200|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|205|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\activities\detail.vue|258|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\index.vue|149|H|P3|魔法数字：setTimeout 裸数字 400ms（跳转延迟）（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\discover\index.vue|122|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|297|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|306|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\home\index.vue|400|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\consulting.vue|43|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\love-center\mbti.vue|90|H|P3|魔法数字：showToast duration 裸数字 2500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|120|H|P3|魔法数字：showToast duration 裸数字 1200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|132|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|154|H|P3|魔法数字：showToast duration 裸数字 1200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|166|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\settings\index.vue|239|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\shop\index.vue|110|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|97|H|P3|魔法数字：showToast duration 裸数字 1200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|112|H|P3|魔法数字：showToast duration 裸数字 1200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|119|H|P3|魔法数字：showToast duration 裸数字 1000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|160|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\verification\index.vue|186|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|53|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue|119|H|P3|魔法数字：setTimeout 裸数字 600ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\likes.ts|1159|H|P3|魔法数字：showToast duration 裸数字 3000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\stores\video-call.ts|334|H|P3|魔法数字：showToast duration 裸数字 540ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\common\Ripple.vue|25|H|P3|魔法数字：动画 duration 裸数字 200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\layout\AppShell.vue|154|H|P3|魔法数字：showToast duration 裸数字 200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|455|H|P3|魔法数字：setTimeout 裸数字 500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardDetailOverlay.vue|526|H|P3|魔法数字：setTimeout 裸数字 360ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\discover\CardSwiper.vue|553|H|P3|魔法数字：setTimeout 裸数字 500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\village\HotTopicsSection.vue|77|H|P3|魔法数字：setTimeout 裸数字 300ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\components\chat\VoiceRecorder.vue|137|H|P3|魔法数字：setInterval 裸数字 1000ms（录音计时 tick）（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\useNetworkStatus.ts|45|H|P3|魔法数字：showToast duration 裸数字 1500ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\composables\useNetworkStatus.ts|52|H|P3|魔法数字：showToast duration 裸数字 2000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\vip\index.vue|176|H|P3|魔法数字：mock 支付 setTimeout 裸数字 1200ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\heart-signals\index.vue|73|H|P3|魔法数字：setInterval 裸数字 30000ms（倒计时刷新）（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|308|H|P3|魔法数字：setTimeout 裸数字 800ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue|345|H|P3|魔法数字：setTimeout 裸数字 800ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\pages\chat\video-call.vue|260|H|P3|魔法数字：setTimeout 裸数字 1000ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\debounce.ts|28|H|P3|魔法数字：防抖默认 delay 裸数字 300ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\debounce.ts|73|H|P3|魔法数字：节流默认 delay 裸数字 300ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
+R4-XXXXX|d:\6\恋爱小程序\apps\client\src\utils\debounce.ts|139|H|P3|魔法数字：按钮防抖默认 delay 裸数字 800ms（未抽常量/token）|同一时间语义散落各处，改动需全局排查且无自解释性|抽取为命名常量（如 TOAST_DURATION_MS）统一维护|open|batch-4
