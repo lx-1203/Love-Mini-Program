@@ -2,3 +2,6 @@
 # 每批开始前，修复代理把「将编辑的文件」登记在此表；冲突由主代理裁决。
 # 格式：批次|代理代号|文件路径|R4 条目范围|状态(claimed/done)
 batch-1|B1-1|apps/api/src/main/resources/application.yml|R4-P0-安全|claimed
+batch-1|B1-2|apps/api/src/main/java/com/campuslove/api/config/AesEncryptor.java;apps/api/src/main/java/com/campuslove/api/wallet/WalletController.java;apps/api/src/main/resources/application.yml;apps/api/src/main/resources/application-real.yml;apps/api/src/main/resources/application-mock.yml;apps/api/src/main/java/com/campuslove/api/CampusLoveApplication.java;apps/api/src/main/resources/logback-spring.xml|R4-00246 R4-01775 R4-00312 R4-00366 R4-01776 R4-00368 R4-00407|claimed
+batch-1|B1-3|apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java;apps/api/src/main/java/com/campuslove/api/admin/AdminVillagePostController.java;database/flyway/sql/V2026.08.09.0009__harden_super_admin_account.sql;database/flyway/sql/V2026.08.09.0010__restore_promo_code_usages_unique_constraint.sql;docs/*(如有密码泄漏文档)|R4-00369 R4-00370 R4-00364 R4-00365 R4-00418|claimed
+batch-1|B1-1|apps/client/src/pages/dev/index.vue;apps/client/src/stores/session.ts;apps/client/src/stores/coins.ts;apps/client/src/stores/vip.ts;apps/client/src/config/env.ts;scripts/verify-env-release.mjs;apps/client/package.json|R4-00040 R4-00122 R4-00166 R4-00171 R4-00173 R4-00149 R4-00199 R4-00200|claimed

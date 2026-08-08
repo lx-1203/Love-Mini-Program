@@ -32,3 +32,8 @@ design-system/previews/
 
 # Markdown / 文档
 *.md
+
+# 游离数据注入脚本（非项目源码，一次性工具）
+apps/api/*.cjs
+scripts/*.cjs
+scripts/*.mjs

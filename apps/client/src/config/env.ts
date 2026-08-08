@@ -148,12 +148,14 @@ function resolveApiBaseUrl(): string {
     return getDevApiBaseUrl();
   }
   // 生产环境必须显式配置 https URL（mp-weixin 合法域名要求 https）
-  // 不再回退到 http://localhost，避免误用未加密通道
-  console.error(
-    "[ENV] 生产环境未配置 VITE_API_BASE_URL，请检查构建配置。" +
-      "mp-weixin 合法域名必须为 https://，禁止回退到 http://localhost。"
+  // 修复（R4-00149）：原实现注释承诺「不再回退到 http://localhost」，代码却仍
+  // console.error 后静默回退到 https://localhost:8080/api 假地址，注释与实现矛盾，
+  // 生产包会带着错误地址启动、所有请求 404/超时且难以排查。
+  // 现与 services/env.ts 行为对齐：直接抛错阻止应用启动，让构建/发布时立刻暴露
+  // 配置缺失；dev 回退（getDevApiBaseUrl）保留。
+  throw new Error(
+    "[ENV] 生产环境未配置 VITE_API_BASE_URL，应用拒绝启动。请通过 .env.production 配置 https 接口地址（mp-weixin 合法域名必须为 https://），禁止回退到 localhost。"
   );
-  return "https://localhost:8080/api";
 }
 
 function resolveApiMode(): ApiMode {

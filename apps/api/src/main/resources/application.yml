@@ -2,12 +2,16 @@ spring:
   application:
     name: campus-love-api
   profiles:
-    # ⚠️ 警告（FIN-00062）：spring.profiles.default 仅在「未通过环境变量/启动参数指定
-    # profile」时生效。生产部署必须显式指定 real（如 SPRING_PROFILES_ACTIVE=real 或
-    # --spring.profiles.active=real），否则会以 mock 数据模式启动，造成：
-    #   1) 所有数据为内存 mock，重启即丢；
-    #   2) MockSecurityConfig 免真实认证（本地联调用），生产环境属严重安全风险。
-    # 默认值保留 mock 仅为本地开发便利，请勿依赖此默认值部署。
+    # R4-00368：spring.profiles.default=mock 仅对「测试引导」生效——
+    # 本地单元/集成测试（@SpringBootTest 未显式指定 profile）依赖该默认值加载 mock 配置。
+    # 生产/联调启动一律走 CampusLoveApplication.main()：main() 在 Spring 启动前
+    # 强制校验激活 profile（SPRING_PROFILES_ACTIVE / --spring.profiles.active /
+    # -Dspring.profiles.active），为空或非法时明确报错退出（fail-fast），
+    # 从源头杜绝「漏配 profile 以 mock 数据模式启动」：
+    #   - mock 数据为内存态，重启即丢；
+    #   - MockSecurityConfig 免真实认证（仅本地联调用），生产环境属严重安全风险。
+    # 部署规范：生产/联调显式指定 real（SPRING_PROFILES_ACTIVE=real），
+    # 本地开发显式指定 mock（如 --spring.profiles.active=mock）。
     default: mock
   # Multipart 文件上传配置：允许上传最大 50MB 的单文件、50MB 的整体请求
   # 与媒体上传校验逻辑（视频 ≤50MB）保持一致
@@ -59,16 +63,20 @@ server:
     accesslog:
       enabled: ${APP_ACCESS_LOG_ENABLED:true}
       # 自定义 pattern（combined 扩展）：
+      # R4-00407：不再记录请求首行 %r（含完整 URL query）——query 中可能携带
+      # JWT/token 等敏感参数（如 /api/v1/media/{id}?token=xxx），明文落访问日志
+      # 等于会话泄露。改用 %m（请求方法）+ %U（仅路径，不含 query）+ %s（状态码）。
       # - %h: 远程 IP（X-Forwarded-For 由 RemoteIpValve 处理后注入）
       # - %l: 远程逻辑用户名（通常 -）
       # - %u: 认证用户（JWT userId，未认证 -）
       # - %t: 时间戳 [dd/MMM/yyyy:HH:mm:ss Z]
-      # - %r: 请求首行（METHOD URI?query PROTOCOL）
+      # - %m: 请求方法（GET/POST/...）
+      # - %U: 请求路径（不含 query 串，query 不记录以防 JWT/token 泄漏）
       # - %s: HTTP 状态码
       # - %b: 响应字节数（无 Body 时 -）
       # - %D: 请求耗时（毫秒）
       # - %{Referer}i / %{User-Agent}i / %{X-Trace-Id}i: 关键请求头
-      pattern: '%h %l %u %t "%r" %s %b %D "%{Referer}i" "%{User-Agent}i" "%{X-Trace-Id}i"'
+      pattern: '%h %l %u %t "%m %U %s" %b %D "%{Referer}i" "%{User-Agent}i" "%{X-Trace-Id}i"'
       # 日志输出到 logger（而非直接文件），由 logback 接管滚动策略
       condition-unless: ${APP_ACCESS_LOG_DISABLED:false}
     # 线程与连接配置（容器化部署优化）
@@ -198,11 +206,13 @@ app:
   guest-login:
     enabled: ${APP_GUEST_LOGIN_ENABLED:false}
   # P0-15：演示充值风控。
-  # enabled：演示充值开关，默认开启（保留本地演示/联调能力）；
-  #   ⚠️ 生产环境必须通过 APP_DEMO_RECHARGE_ENABLED=false 关闭，接入支付网关回调入账。
+  # enabled：演示充值开关，【默认关闭】（R4-00312）——演示充值直接入账、无支付网关
+  #   验签，默认开启时任意用户可无限次免费充值（资金/账务风险）。
+  #   ⚠️ 生产环境严禁开启直接入账，必须接入支付网关（微信支付/支付宝）+ 回调验签后入账。
+  #   mock（本地演示）profile 在 application-mock.yml 中默认开启，保留本地演示能力。
   # daily-limit：每用户每日演示充值次数上限。
   demo-recharge:
-    enabled: ${APP_DEMO_RECHARGE_ENABLED:true}
+    enabled: ${APP_DEMO_RECHARGE_ENABLED:false}
     daily-limit: ${APP_DEMO_RECHARGE_DAILY_LIMIT:5}
   # P0-17：商业化解锁单价（单位：分）。liked-me=喜欢我列表解锁，visitor=访客列表解锁。
   unlock-price:

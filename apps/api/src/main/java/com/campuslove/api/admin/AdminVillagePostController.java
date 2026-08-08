@@ -55,8 +55,9 @@ import org.springframework.web.bind.annotation.RestController;
  *       作者校区取自 user_campus_profile.campus_name（普通用户校区，
  *       与 AdminUserController.searchForAdmin 语义一致）</li>
  *   <li>校区管理员（ADMIN + campusName 非空）强制按管辖校区过滤列表，
- *       忽略调用方传入的 campusName 参数；写操作通过
- *       {@link AdminDataScope#assertCampusAccess(String)} 越权拦截（HTTP 403）</li>
+ *       忽略调用方传入的 campusName 参数；写操作与读操作（详情/评论/
+ *       浏览记录）通过 {@link AdminDataScope#assertCampusAccess(String)}
+ *       越权拦截（HTTP 403）</li>
  *   <li>全局管理员（SUPER_ADMIN 或 ADMIN 无校区）不做过滤</li>
  * </ul>
  *
@@ -181,6 +182,8 @@ public class AdminVillagePostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
+        // 数据隔离：校区管理员仅能查看本校区作者帖子的详情（读操作越权拦截）
+        assertPostCampusAccess(post);
         Map<Long, User> authorMap = loadAuthorMap(List.of(post.getAuthorId()));
         return ResponseEntity.ok(toDetailView(post, authorMap.get(post.getAuthorId())));
     }
@@ -347,6 +350,13 @@ public class AdminVillagePostController {
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
 
+        // 数据隔离：校区管理员仅能查看本校区作者帖子的评论（读操作越权拦截）；
+        // 帖子不存在时保持原语义返回空页，不额外做 404 拦截
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isPresent()) {
+            assertPostCampusAccess(postOpt.get());
+        }
+
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
@@ -387,9 +397,10 @@ public class AdminVillagePostController {
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
 
-        if (postRepository.findById(id).isEmpty()) {
-            throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + id);
-        }
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + id));
+        // 数据隔离：校区管理员仅能查看本校区作者帖子的浏览记录（读操作越权拦截）
+        assertPostCampusAccess(post);
 
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));

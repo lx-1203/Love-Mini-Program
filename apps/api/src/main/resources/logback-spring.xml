@@ -149,19 +149,21 @@
          通过 server.tomcat.accesslog.enabled 开启，输出到独立文件。
          AccessLogValve 由 Tomcat 内置实现，不依赖 logback appender，
          此处仅声明对应的 rolling 策略供运维参考（实际写入由 Tomcat 控制）。
-         字段说明（combined 格式）：
+         字段说明（见 application.yml server.tomcat.accesslog.pattern）：
            %h - 远程主机（IP）
            %l - 远程逻辑用户名（通常 -）
            %u - 远程认证用户名（JWT 解析后的 userId，未认证 -）
            %t - 时间戳 [dd/MMM/yyyy:HH:mm:ss Z]
-           %r - 请求首行（METHOD URI PROTOCOL）
+           %m - 请求方法（GET/POST/...）
+           %U - 请求路径（不含 query 串）
            %s - HTTP 状态码
            %b - 响应字节数（无 Body 时 -）
-           %{Referer}i - Referer 头
-           %{User-Agent}i - User-Agent 头
-         敏感字段脱敏：
-           - URL query 中的 token/key/secret 已在 AccessLogValve 中通过
-             pattern 替换为 ***（见 application.yml server.tomcat.accesslog.pattern）
+           %{Referer}i / %{User-Agent}i / %{X-Trace-Id}i - 关键请求头
+         敏感字段防护（R4-00407）：
+           - 不再记录请求首行 %r（含完整 URL query）——query 中可能携带
+             JWT/token 等敏感参数（如 /api/v1/media/{id}?token=xxx），
+             明文落访问日志等于会话泄露；pattern 改用 %m + %U（不含 query），
+             JWT 等 query 参数不会进入访问日志。
          滚动策略：
            - 按日切割 + 100MB 触发
            - 保留 14 天（访问日志量大，保留时间短于业务日志）

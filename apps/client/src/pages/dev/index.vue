@@ -7,6 +7,7 @@
  */
 import { ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
+import { isDev } from "../../config/env";
 import { IMAGE_PATHS } from "../../config/images";
 // 2026-08-07 超级测试账号体系：dev 页一键登录 / 会员身份切换
 import { loginWithPhone } from "../../services/auth";
@@ -15,9 +16,37 @@ import { replaceAppPath } from "../../utils/navigation";
 
 const sessionStore = useSessionStore();
 
-/** 超级测试账号凭据（与后端种子 V2026.08.07.0004 一致：userId=100000） */
+/** 超级测试账号手机号（与后端种子 V2026.08.07.0004 一致：userId=100000） */
 const SUPER_ACCOUNT_PHONE = "19900000000";
-const SUPER_ACCOUNT_PASSWORD = "Admin@12345";
+/**
+ * 超级测试账号密码。
+ * 修复（R4-00040）：不再在源码中硬编码明文密码，改为从构建环境变量
+ * VITE_SUPER_TEST_PASSWORD 读取（未配置时一键登录不可用）。
+ */
+const SUPER_ACCOUNT_PASSWORD = readSuperTestPassword();
+
+/**
+ * 读取超级测试账号密码（构建环境变量 VITE_SUPER_TEST_PASSWORD）。
+ * 优先 import.meta.env（H5），回退 process.env（mp-weixin define 注入），
+ * 与 config/env.ts 的读取方式保持一致；未配置时返回空串。
+ */
+function readSuperTestPassword(): string {
+  try {
+    const viteEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+    const val = viteEnv?.VITE_SUPER_TEST_PASSWORD;
+    if (typeof val === "string" && val.length > 0) return val;
+  } catch (_e) {
+    // ignore
+  }
+  try {
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process;
+    const val = proc?.env?.VITE_SUPER_TEST_PASSWORD;
+    if (typeof val === "string" && val.length > 0) return val;
+  } catch (_e) {
+    // ignore
+  }
+  return "";
+}
 
 /** 超级账号登录中 */
 const superLoginBusy = ref(false);
@@ -25,9 +54,21 @@ const superLoginBusy = ref(false);
 /**
  * 一键登录超级测试账号（手机号 + 密码）。
  * 登录成功跳转寻觅页；登录态恢复由 session guard 完成。
+ *
+ * 修复（R4-00040）：登录后门逻辑以运行时 isDev 守卫包裹，生产环境即使
+ * 页面被编译进产物也直接拒绝执行；明文密码不再硬编码（见 SUPER_ACCOUNT_PASSWORD）。
  */
 async function loginSuperAccount() {
+  if (!isDev) {
+    uni.showToast({ title: "超级账号登录仅限开发环境", icon: "none" });
+    return;
+  }
   if (superLoginBusy.value) return;
+  // R4-00040：未注入构建环境变量时禁用一键登录（不再回退到明文硬编码密码）
+  if (!SUPER_ACCOUNT_PASSWORD) {
+    uni.showToast({ title: "未配置 VITE_SUPER_TEST_PASSWORD", icon: "none" });
+    return;
+  }
   superLoginBusy.value = true;
   try {
     await loginWithPhone(SUPER_ACCOUNT_PHONE, SUPER_ACCOUNT_PASSWORD);
@@ -47,8 +88,12 @@ async function loginSuperAccount() {
 const devVipSim = ref(false);
 const VIP_SIM_KEY = "campus-love:dev-vip-sim";
 
-/** 读取当前会员模拟状态 */
+/**
+ * 读取当前会员模拟状态。
+ * 修复（R4-00173）：dev-vip-sim 存储键读写均加 isDev 守卫，非开发环境不读写存储。
+ */
 function loadVipSim() {
+  if (!isDev) return;
   try {
     devVipSim.value = uni.getStorageSync(VIP_SIM_KEY) === "1";
   } catch (_e) {
@@ -56,8 +101,15 @@ function loadVipSim() {
   }
 }
 
-/** 切换会员身份模拟（即时生效） */
+/**
+ * 切换会员身份模拟（即时生效）。
+ * 修复（R4-00173）：非开发环境拒绝切换，防止模拟标记污染生产存储。
+ */
 function toggleVipSim() {
+  if (!isDev) {
+    uni.showToast({ title: "会员模拟仅限开发环境", icon: "none" });
+    return;
+  }
   devVipSim.value = !devVipSim.value;
   try {
     uni.setStorageSync(VIP_SIM_KEY, devVipSim.value ? "1" : "0");
@@ -192,7 +244,7 @@ function goBack() {
         >
           <view class="dev-item__left">
             <text class="dev-item__title">{{ isSuperLoggedIn ? '已登录超级账号' : '一键登录超级测试账号' }}</text>
-            <text class="dev-item__path">{{ SUPER_ACCOUNT_PHONE }} / Admin@12345</text>
+            <text class="dev-item__path">{{ SUPER_ACCOUNT_PHONE }}（密码取自 VITE_SUPER_TEST_PASSWORD）</text>
           </view>
           <text class="dev-item__arrow">{{ superLoginBusy ? '…' : '→' }}</text>
         </view>

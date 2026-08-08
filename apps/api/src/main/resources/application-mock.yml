@@ -43,3 +43,15 @@ app:
     agnes:
       api-base: ${AGNES_API_BASE:https://api.agnes-ai.com/api}
       api-key: ${AGNES_API_KEY:}
+  # R4-00246/R4-01775：AES 密钥——mock（本地演示）profile 提供开发用默认密钥，
+  # 保证本地启动不依赖 APP_AES_SECRET。此密钥仅限本地演示（mock 数据为内存态，
+  # 不存储真实用户数据），严禁用于生产；real（生产）profile 无任何默认值，
+  # 未配置 APP_AES_SECRET 时启动直接拒绝（fail-fast，见 AesEncryptor.init()）。
+  security:
+    aes-secret: ${APP_AES_SECRET:mock-dev-aes-key-not-for-production-0123456789abcdef}
+  # P0-15：演示充值开关——mock（本地演示）profile 下默认开启，保留本地演示充值能力；
+  # 商业化/生产环境默认关闭（application.yml 默认 false，R4-00312），
+  # 生产必须接入支付网关（微信支付/支付宝）+ 回调验签后入账。
+  demo-recharge:
+    enabled: ${APP_DEMO_RECHARGE_ENABLED:true}
+    daily-limit: ${APP_DEMO_RECHARGE_DAILY_LIMIT:5}

@@ -28,7 +28,9 @@ import org.springframework.stereotype.Component;
  * </p>
  *
  * <p>密钥来源：通过 {@code APP_AES_SECRET} 环境变量配置，长度需 >= 32 字符。
- * 未配置时回退到 JWT_SECRET 派生密钥（开发场景），生产环境必须显式配置。</p>
+ * mock（本地演示）profile 在 application-mock.yml 中提供开发用默认密钥；
+ * real（生产）profile 无任何默认值——未配置 {@code APP_AES_SECRET} 时启动直接
+ * 拒绝（fail-fast）。不再回退到 JWT_SECRET（避免签名密钥与加密密钥复用）。</p>
  *
  * <p>线程安全：本类无状态，{@link #encrypt} / {@link #decrypt} 可被多线程并发调用。</p>
  */
@@ -48,8 +50,12 @@ public class AesEncryptor {
     /** AES 密钥长度（字节，AES-256） */
     private static final int KEY_LENGTH_BYTES = 32;
 
-    /** 通过环境变量 APP_AES_SECRET 注入的 AES 密钥（Base64 或原始字符串） */
-    @Value("${app.security.aes-secret:${JWT_SECRET:}}")
+    /**
+     * 通过环境变量 APP_AES_SECRET 注入的 AES 密钥（Base64 或原始字符串）。
+     * mock profile 由 application-mock.yml 提供开发默认值；real profile 无默认值，
+     * 未配置时启动失败（R4-00246/R4-01775：已移除 JWT_SECRET 回退与公开兜底密钥）。
+     */
+    @Value("${app.security.aes-secret:}")
     private String secret;
 
     /** 安全随机数生成器，用于生成 IV */
@@ -58,34 +64,40 @@ public class AesEncryptor {
     /** 解析后的 AES SecretKey */
     private SecretKey aesKey;
 
-    /** 是否启用严格模式（未配置密钥时拒绝启动，默认 true；开发环境可关闭） */
+    /**
+     * 安全姿态开关（默认 true，保留配置兼容）。
+     * 说明：自 R4-00246/R4-01775 移除公开兜底密钥后，无论 strict-aes 取值，
+     * 密钥缺失时一律拒绝启动（fail-fast），该开关仅用于日志区分运行模式。
+     */
     @Value("${app.security.strict-aes:true}")
     private boolean strictAes;
 
     /**
      * 启动时校验并初始化 AES 密钥。
-     * 密钥来源（按优先级）：
+     * 密钥来源：
      * <ol>
      *   <li>APP_AES_SECRET 环境变量（推荐，独立密钥）</li>
-     *   <li>JWT_SECRET 环境变量（兜底，开发场景共用）</li>
+     *   <li>mock profile：application-mock.yml 中的开发用默认值（仅本地演示）</li>
      * </ol>
      * 密钥长度不足 32 字节时，使用 SHA-256 派生密钥。
      *
-     * <p>infra R2-00012 修复：未配置时不再静默使用硬编码默认密钥——
-     * 默认密钥公开在源码中，生产漏配时 openid/phone 加密等于明文。
-     * 现在严格模式下直接拒绝启动（fail-fast）。</p>
+     * <p>infra R2-00012 / R4-00246 / R4-01775 修复：公开兜底密钥已移除，
+     * 密钥缺失时无论 strict-aes 取值一律拒绝启动（fail-fast）——
+     * 生产漏配时 openid/phone 使用公开密钥加密等于明文，属严重隐私风险。
+     * 同时不再回退 JWT_SECRET，避免签名密钥与加密密钥复用（R2-00017）。</p>
      */
     @PostConstruct
     public void init() {
         if (secret == null || secret.isBlank()) {
-            String msg = "APP_AES_SECRET 未配置，敏感数据（openid/phone）加密将使用公开默认密钥，"
-                    + "存在严重隐私泄露风险。请通过环境变量 APP_AES_SECRET 配置独立随机密钥"
-                    + "（至少 32 字符）。开发环境可通过 APP_SECURITY_STRICT_AES=false 临时关闭。";
-            if (strictAes) {
-                throw new IllegalStateException(msg);
-            }
-            log.warn(msg);
-            secret = "campus-love-default-aes-key-change-in-production-32bytes";
+            String mode = strictAes
+                    ? "严格模式（app.security.strict-aes=true）"
+                    : "非严格模式（app.security.strict-aes=false）";
+            String msg = "APP_AES_SECRET 未配置，敏感数据（openid/phone）无法安全加密。"
+                    + "请通过环境变量 APP_AES_SECRET 配置独立随机密钥（至少 32 字符）。"
+                    + "mock（本地演示）profile 已内置开发用密钥，无需配置；"
+                    + "real（生产）profile 未配置时" + mode + "下均拒绝启动。";
+            log.error(msg);
+            throw new IllegalStateException(msg);
         }
         // 派生固定 32 字节密钥（与 AES-256 兼容）
         byte[] keyBytes = deriveKey(secret);

@@ -6,6 +6,8 @@ import { useMock } from "./helpers/use-mock";
 import { t } from "@/i18n";
 // 展示模式（全功能展示版）：VIP 全亮
 import { isShowcaseMode } from "../config/showcase";
+// 运行时环境判定：dev 模式会员模拟开关守卫（R4-00173）
+import { isDev } from "../config/env";
 
 /**
  * VIP 会员 Store
@@ -89,8 +91,12 @@ export const useVipStore = defineStore("vip", () => {
   /**
    * dev 模式会员身份模拟开关（2026-08-07 超级测试账号体系）。
    * dev 调试页可切换普通用户/会员身份，模拟不同权限的前端展示效果。
+   *
+   * 修复（R4-00173）：dev-vip-sim 存储键仅限开发环境生效（isDev 或 mock 模式），
+   * 生产环境恒为 false——防止本地残留的模拟标记在生产环境旁路真实会员判定。
    */
   const isDevVipSimulated = computed<boolean>(() => {
+    if (!isDev && !useMock()) return false;
     try {
       return uni.getStorageSync("campus-love:dev-vip-sim") === "1";
     } catch (_e) {

@@ -39,12 +39,29 @@ export interface CoinTransactionList {
 /** 解锁场景（用于生成幂等 orderId 与关联业务类型） */
 export type UnlockScene = "MESSAGE" | "VISITORS" | "LIKES" | "WHISPER";
 
-/** 各解锁场景的扣费金额（元），统一集中便于调整 */
+/**
+ * 各解锁场景的扣费金额（元），统一集中便于调整。
+ *
+ * 修复（R4-00171）：扣费金额不得由调用方自定，统一按场景码从定价表读取：
+ * - LIKES / VISITORS：后端提供 POST /wallet/unlock（服务端配置 app.unlock-price.*
+ *   定价，见 application.yml），扣费金额以服务端为准，本表仅用于 UI 提示；
+ * - MESSAGE / WHISPER：后端暂未提供解锁定价接口，金额取自本表（服务端定价口径的
+ *   客户端镜像，与服务端默认价 300 分=3 元对齐）。
+ */
 export const UNLOCK_COST_YUAN: Record<UnlockScene, number> = {
   MESSAGE: 5,
   VISITORS: 3,
   LIKES: 3,
   WHISPER: 2,
+};
+
+/**
+ * 场景 → 后端 /wallet/unlock 的 targetType 映射（服务端定价路径）。
+ * 仅含后端已提供解锁接口（P0-17）的场景；其余场景走 /wallet/deduct + 定价镜像表。
+ */
+const UNLOCK_TARGET_TYPE: Partial<Record<UnlockScene, "LIKED_ME" | "VISITOR">> = {
+  LIKES: "LIKED_ME",
+  VISITORS: "VISITOR",
 };
 
 /** 场景对应的关联业务类型（后端流水 relatedType） */
@@ -105,14 +122,22 @@ export const useCoinsStore = defineStore("coins", () => {
    * 交友币扣费（解锁）。
    * 幂等：orderId 由场景 + 目标用户推导，后端按 orderId 去重。
    *
+   * 修复（R4-00171）：扣费金额不再由客户端/调用方自定，统一从服务端定价读取：
+   * - LIKES / VISITORS：有后端 /wallet/unlock 接口（服务端 app.unlock-price.* 定价），
+   *   走服务端定价扣费，客户端不传金额，目标 ID 有效时优先此路径；
+   * - MESSAGE / WHISPER 或目标 ID 无效（如列表级解锁）：无对应解锁接口，
+   *   金额取自 UNLOCK_COST_YUAN 定价镜像表（按场景码读，禁止调用方传任意金额）。
+   * orderId 按后端契约规范生成（WalletController Javadoc：UNLOCK-{scene}-{targetUserId}）。
+   *
    * @param scene 解锁场景
    * @param targetId 目标业务 ID（如目标用户 ID）
    * @returns 扣费后余额（分）
    */
   async function spend(scene: UnlockScene, targetId: string | number): Promise<number> {
-    const amountYuan = UNLOCK_COST_YUAN[scene];
-    const amountCents = Math.round(amountYuan * 100);
-    const orderId = `UNLOCK-${scene}-${targetId}`;
+    // R4-00171：金额仅从服务端定价或定价镜像表读取，不接受调用方金额参数
+    const amountCents = Math.round(UNLOCK_COST_YUAN[scene] * 100);
+    // R4-00171：orderId 按后端契约规范生成（UNLOCK-{scene}-{targetUserId}）
+    const orderId = `UNLOCK-${scene}-${String(targetId)}`;
 
     if (useMock()) {
       const current = balanceCents.value || 80000;
@@ -124,6 +149,24 @@ export const useCoinsStore = defineStore("coins", () => {
       return balanceCents.value;
     }
 
+    // 服务端定价路径：POST /wallet/unlock 按后端配置单价扣费，客户端不传金额。
+    // 幂等键沿用规范 orderId（后端按 orderId 唯一索引去重）。
+    const targetType = UNLOCK_TARGET_TYPE[scene];
+    const targetNum = Number(targetId);
+    if (targetType && Number.isInteger(targetNum) && targetNum > 0) {
+      const result = await request<{ unlocked: boolean; balance: number }, unknown>({
+        url: "/wallet/unlock",
+        method: "POST",
+        data: { targetType, targetId: targetNum },
+        headers: { "Idempotency-Key": orderId },
+      });
+      balanceCents.value = result?.balance ?? balanceCents.value;
+      loaded.value = true;
+      return balanceCents.value;
+    }
+
+    // 定价镜像路径：金额取自 UNLOCK_COST_YUAN（与服务端定价口径对齐）。
+    // 服务端 deduct 仍为最终扣费权威（余额不足 / 金额超限由后端校验）。
     const result = await request<{ balanceAfterCents: number }, {
       amountCents: number;
       orderId: string;

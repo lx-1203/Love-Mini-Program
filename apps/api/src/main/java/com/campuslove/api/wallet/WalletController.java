@@ -40,7 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>GET  /api/v1/wallet/balance      - 查询当前用户钱包余额（分）</li>
  *   <li>GET  /api/v1/wallet/transactions - 分页查询当前用户钱包流水（账单），按创建时间倒序</li>
- *   <li>POST /api/v1/wallet/recharge     - 充值（演示/模拟充值：无支付网关，直接入账）</li>
+ *   <li>POST /api/v1/wallet/recharge     - 充值（演示/模拟充值：无支付网关直接入账，
+ *       默认关闭，仅 mock 本地演示开启，见 P0-15/R4-00312 说明）</li>
  * </ul>
  *
  * <p>设计说明：</p>
@@ -84,10 +85,12 @@ public class WalletController {
 
     /**
      * P0-15：演示充值开关（配置 app.demo-recharge.enabled）。
-     * 默认开启（保留演示能力）；生产环境必须通过 APP_DEMO_RECHARGE_ENABLED=false 关闭，
-     * 并接入支付网关回调入账（见 {@link #recharge} 说明）。
+     * R4-00312：【默认关闭】——演示充值直接入账、无支付网关验签，默认开启等于
+     * 任意用户可免费无限充值（资金/账务风险）。仅 mock（本地演示）profile 默认开启
+     * （见 application-mock.yml）；生产必须接入支付网关（微信支付/支付宝）回调验签后
+     * 入账（见 {@link #recharge} 说明），严禁通过 APP_DEMO_RECHARGE_ENABLED=true 开启直接入账。
      */
-    @Value("${app.demo-recharge.enabled:true}")
+    @Value("${app.demo-recharge.enabled:false}")
     private boolean demoRechargeEnabled;
 
     /** P0-15：每用户每日演示充值次数上限（配置 app.demo-recharge.daily-limit，默认 5 次）。 */
@@ -151,8 +154,8 @@ public class WalletController {
      *
      * <p>P0-15 演示充值风控：</p>
      * <ul>
-     *   <li>开关控制：{@code app.demo-recharge.enabled} 默认开启（保留本地演示/联调），
-     *       生产环境必须通过 {@code APP_DEMO_RECHARGE_ENABLED=false} 关闭，关闭后本端点返回业务错误</li>
+     *   <li>开关控制：{@code app.demo-recharge.enabled} 【默认关闭】（R4-00312），
+     *       仅 mock（本地演示）profile 默认开启；关闭时本端点返回业务错误</li>
      *   <li>每日上限：每用户每日最多演示充值 {@code app.demo-recharge.daily-limit} 次（默认 5），
      *       通过 Redis 计数（key {@code demo-recharge:count:{userId}:{yyyyMMdd}}，INCR 原子递增），
      *       Redis 不可用时降级到本地内存计数；超限返回 429 DAILY_LIMIT_EXCEEDED</li>

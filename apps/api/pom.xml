@@ -274,15 +274,16 @@
            通过 maven-jar-plugin 在打包阶段排除该包，确保生产 jar 不含 Mock 类字节码。
            注意：target/classes 仍保留 mock 类供 test 编译/运行使用，
            仅最终 jar 产物排除。spring-boot-maven-plugin repackage 基于
-           此 jar 产物，因此 fat jar 也不会包含 mock 类。 -->
+           此 jar 产物，因此 fat jar 也不会包含 mock 类。
+           R4 审计修复：恢复排除（本地 mock 模式经 spring-boot:run 直接运行
+           target/classes，不依赖 jar 内 mock 类，故排除不影响本地开发）。 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.4.1</version>
         <configuration>
           <excludes>
-            <!-- 临时取消排除，使 mock 类在本地 mock 模式 jar 中可用 -->
-            <!-- <exclude>com/campuslove/api/mock/**</exclude> -->
+            <exclude>com/campuslove/api/mock/**</exclude>
           </excludes>
         </configuration>
       </plugin>

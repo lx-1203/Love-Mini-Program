@@ -47,6 +47,10 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>方法层：额外加 @PreAuthorize("hasRole('ADMIN')") 作为深度防御，
  *       需在 Phase 3 任务 17 启用 @EnableMethodSecurity 后生效</li>
  *   <li>mock 模式：MockSecurityConfig 全部放行，便于本地调试</li>
+ *   <li>数据隔离：校区管理员（ADMIN + campusName 非空）仅能查看/编辑/
+ *       禁用本校区用户，越权访问抛
+ *       {@link com.campuslove.api.common.OperationForbiddenException}（HTTP 403），
+ *       与 AdminVillagePostController 语义一致</li>
  * </ul>
  * <p>索引建议（FIN-00058）：listUsers 的 nickname 筛选走
  * {@code u.nickname LIKE CONCAT('%', :nickname, '%')}，前缀通配符导致该条件
@@ -70,16 +74,20 @@ public class AdminUserController {
     private final PasswordEncoder passwordEncoder;
     /** 校园管理员数据隔离（商业模式：每个高校一个管理员） */
     private final AdminCampusScopeService campusScopeService;
+    /** 校园数据范围校验（越权写/读拦截，与 AdminVillagePostController 一致） */
+    private final AdminDataScope adminDataScope;
 
     public AdminUserController(
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             PasswordEncoder passwordEncoder,
-            AdminCampusScopeService campusScopeService) {
+            AdminCampusScopeService campusScopeService,
+            AdminDataScope adminDataScope) {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.campusScopeService = campusScopeService;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
@@ -335,6 +343,9 @@ public class AdminUserController {
         }
         User user = userOpt.get();
 
+        // 数据隔离：校区管理员仅能查看本校区用户的详情（与 listUsers 隔离语义一致）
+        adminDataScope.assertCampusAccess(resolveUserCampus(id));
+
         // 联表查询校园资料，补充校区与认证状态
         Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(id);
         String campusName = campusOpt.map(UserCampusProfile::getCampusName).orElse(null);
@@ -381,6 +392,9 @@ public class AdminUserController {
             return ResponseEntity.notFound().build();
         }
         User user = userOpt.get();
+
+        // 数据隔离：校区管理员仅能编辑本校区用户
+        adminDataScope.assertCampusAccess(resolveUserCampus(id));
 
         // 仅在字段非 null 时更新，允许部分更新语义
         if (req.nickname() != null) {
@@ -453,6 +467,9 @@ public class AdminUserController {
         User user = userOpt.orElseThrow(() ->
                 new IllegalStateException("userOpt 已确认非空但 orElseThrow 触发，数据不一致"));
 
+        // 数据隔离：校区管理员仅能禁用/启用本校区用户（SUPER_ADMIN 操作者不受限）
+        adminDataScope.assertCampusAccess(resolveUserCampus(id));
+
         // 权限模型（商业模式：超级管理员管理校区管理员）：
         // - 任何人不允许禁用/启用 SUPER_ADMIN（防止超级管理员账号被锁）
         // - 校区管理员（ADMIN）不能禁用/启用任何管理员（仅 SUPER_ADMIN 可操作 ADMIN）
@@ -494,6 +511,32 @@ public class AdminUserController {
         return userRepository.findById(adminId)
                 .map(u -> "SUPER_ADMIN".equalsIgnoreCase(u.getRole()))
                 .orElse(false);
+    }
+
+    /**
+     * 解析目标用户的所属校区名（用于数据隔离越权校验）。
+     *
+     * <p>与 {@link AdminVillagePostController#resolveAuthorCampus} 语义一致：
+     * 普通用户（role=USER）的校区存于 user_campus_profile.campus_name
+     * （users.campus_name 恒为 null），管理员账号兼容取 users.campus_name
+     * （管辖校区）；未知归属返回 null（按 AdminDataScope 语义视为全局资源）。</p>
+     *
+     * @param userId 目标用户 ID
+     * @return 目标用户所属校区名（可能为 null）
+     */
+    private String resolveUserCampus(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        // 普通用户校区：user_campus_profile.campus_name（与 listUsers 过滤语义一致）
+        Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(userId);
+        String profileCampus = normalize(campusOpt.map(UserCampusProfile::getCampusName).orElse(null));
+        if (profileCampus != null) {
+            return profileCampus;
+        }
+        // 兼容：管理员账号管辖校区（users.campus_name）
+        Optional<User> userOpt = userRepository.findById(userId);
+        return normalize(userOpt.map(User::getCampusName).orElse(null));
     }
 
     /**

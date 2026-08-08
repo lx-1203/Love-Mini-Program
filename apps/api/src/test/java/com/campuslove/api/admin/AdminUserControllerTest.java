@@ -44,6 +44,7 @@ class AdminUserControllerTest extends ControllerTestBase {
     @Mock private UserRepository userRepository;
     @Mock private UserCampusProfileRepository userCampusProfileRepository;
     @Mock private AdminCampusScopeService campusScopeService;
+    @Mock private AdminDataScope adminDataScope;
     private PasswordEncoder passwordEncoder;
     private AdminUserController controller;
 
@@ -52,7 +53,8 @@ class AdminUserControllerTest extends ControllerTestBase {
         MockitoAnnotations.openMocks(this);
         passwordEncoder = new PasswordEncoderConfig().passwordEncoder();
         controller = new AdminUserController(
-                userRepository, userCampusProfileRepository, passwordEncoder, campusScopeService);
+                userRepository, userCampusProfileRepository, passwordEncoder, campusScopeService,
+                adminDataScope);
     }
 
     @Test

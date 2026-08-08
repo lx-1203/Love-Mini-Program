@@ -328,8 +328,13 @@ export const useSessionStore = defineStore("session", {
      *
      * 种子脚本 V2026.08.07.0004 固定 userId = 100000（openid=local-dev-admin-openid-123456），
      * 前端据此放行：匹配次数无限 / 付费解锁免费 / dev 页身份切换。
+     *
+     * 修复（R4-00122）：userId 硬编码前端旁路仅限开发环境生效，生产环境恒为 false，
+     * 防止超级账号特权（免费解锁等）在生产被滥用；最终是否超级账号应由后端判定
+     * （如 UserSession 增加 isSuperTestAccount 字段）后下发，前端仅作展示辅助。
      */
     isSuperTestAccount: (state): boolean => {
+      if (!isDev) return false;
       return state.userSession?.userId === "100000";
     },
   },
@@ -500,12 +505,21 @@ export const useSessionStore = defineStore("session", {
           // HTTP 200 + loggedIn=false（而非 401）。若本地残留过期 token，旧逻辑把
           // userSession 置为未登录态但不清除 storage token → 页面请求仍携带过期 token
           // → 401 → refresh 链路不可达（UserSessionView 无 refreshToken）→ 401 雪崩
-          // （表现为「登录已过期，请重新登录」级联）。现检测该场景：清除失效 token
-          // 并以体验账号自动重登（与 App.vue 无 token 时 loginAsGuest 的一键体验一致）。
+          // （表现为「登录已过期，请重新登录」级联）。现检测该场景：清除失效 token。
+          //
+          // 修复（R4-00166）：自动 guest 重登仅限 mock/开发模式（isDev 或 apiMode=mock），
+          // 真实模式改为静默登出——真实环境若自动切换体验账号会造成数据串号
+          // （A 用户 token 失效后被当 B 体验账号写入数据）。
           if (!session?.loggedIn && getToken()) {
             clearTokens();
-            console.warn("[SessionStore] 检测到失效 token，已清除并以体验账号自动重登");
-            this.userSession = await loginAsGuest();
+            if (isDev || useMock()) {
+              console.warn("[SessionStore] 检测到失效 token，已清除并以体验账号自动重登（仅 mock/开发模式）");
+              this.userSession = await loginAsGuest();
+            } else {
+              // 真实模式：静默登出（保留未登录态，不自动切换账号）
+              console.warn("[SessionStore] 检测到失效 token，已静默登出（真实模式不自动切换体验账号）");
+              this.userSession = null;
+            }
           } else {
             this.userSession = session;
           }
