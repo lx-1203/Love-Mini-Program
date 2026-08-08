@@ -29,7 +29,7 @@ public class TempChatController {
   @PostMapping
   @PreAuthorize("hasRole('USER')")
   public TempChatSessionView createSession(@Valid @RequestBody CreateTempChatSessionRequest request) {
-    return tempChatService.createSession(request.recommendedPersonId(), request.matchId());
+    return tempChatService.createSession(request.recommendedPersonId(), request.matchId(), request.signalId());
   }
 
   @GetMapping("/{id}")
@@ -92,11 +92,12 @@ public class TempChatController {
 
 record CreateTempChatSessionRequest(
     @Size(max = 64) String recommendedPersonId,
-    @Size(max = 64) String matchId
+    @Size(max = 64) String matchId,
+    @Size(max = 64) String signalId
 ) {
-  @AssertTrue(message = "recommendedPersonId or matchId is required")
+  @AssertTrue(message = "recommendedPersonId or matchId or signalId is required")
   boolean hasEntryPoint() {
-    return hasText(recommendedPersonId) || hasText(matchId);
+    return hasText(recommendedPersonId) || hasText(matchId) || hasText(signalId);
   }
 
   private boolean hasText(String value) {

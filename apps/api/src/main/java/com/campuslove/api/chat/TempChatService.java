@@ -20,8 +20,13 @@ public interface TempChatService {
 
     /**
      * 创建临时聊天会话。
+     *
+     * @param recommendedPersonId 推荐人 ID（可选，命中当前用户推荐列表）
+     * @param matchId             匹配记录 ID（可选，兼容旧调用）
+     * @param signalId            心动信号 ID（可选，2026-08-08 走查 P0-3：已接受信号开聊入口，
+     *                            服务端校验信号归属与状态后解析对端用户）
      */
-    TempChatSessionView createSession(String recommendedPersonId, String matchId);
+    TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId);
 
     /**
      * 获取指定会话详情。

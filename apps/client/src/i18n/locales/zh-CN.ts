@@ -2587,6 +2587,9 @@ export default {
     cardDesc: "TA 也对你心动了！双向心动后即可开始聊天",
     rejectBtn: "拒绝",
     acceptBtn: "接受",
+    /* 2026-08-08 走查 P0-3：已接受信号「开聊」入口 */
+    chatBtn: "开聊",
+    chatFailed: "发起聊天失败，请重试",
   },
 
   /* ========== 寻觅历史页文案（Task 28） ========== */

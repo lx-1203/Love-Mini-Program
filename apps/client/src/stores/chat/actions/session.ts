@@ -105,6 +105,41 @@ export async function startFromRecommendation(
 }
 
 /**
+ * 从心动信号创建临时会话（2026-08-08 走查 P0-3：已接受信号「开聊」入口）
+ *
+ * @param signalId - 心动信号 ID
+ * @returns 当前活跃会话视图模型
+ */
+export async function startFromSignal(
+  this: ChatStoreThis,
+  signalId: string
+) {
+  // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
+  await withMockMode(
+    this,
+    // Mock 模式：基于信号 ID 创建占位临时会话（真实数据走后端，mock 仅保证链路可走通）
+    () => {
+      const mockNewSession: TempChatSession = {
+        id: `mock-session-${Date.now()}-${++mockSessionSeq}`, // infra R2-00087: 避免同毫秒碰撞
+        recommendedPersonId: `rp-signal-${signalId}`,
+        partnerName: t("chat.mockSession.matchName"),
+        partnerHeadline: t("chat.mockSession.matchHeadline"),
+        availabilityHint: t("chat.mockSession.availabilityTonight"),
+        phase: "matching",
+        closesAt: new Date(Date.now() + TEMP_SESSION_DURATION_MS).toISOString(),
+        closedReason: null,
+        messages: [],
+        contactExchange: { proposer: null, status: "idle" },
+      };
+      return mockNewSession;
+    },
+    // Real 模式：调用后端 API 创建会话（signalId 由服务端校验归属与状态后解析对端用户）
+    () => chatTransport.createSession({ signalId })
+  );
+  return this.activeSession;
+}
+
+/**
  * 从匹配创建临时会话
  *
  * @param matchId - 匹配 ID

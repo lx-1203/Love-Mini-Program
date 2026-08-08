@@ -44,6 +44,7 @@ class TempChatSessionServiceTest {
     @Mock private UserCampusProfileRepository userCampusProfileRepository;
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
     @Mock private com.campuslove.api.discover.RecommendationService recommendationService;
+    @Mock private com.campuslove.api.repository.HeartSignalRepository heartSignalRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private TempChatViewMapper viewMapper;
 
@@ -55,7 +56,8 @@ class TempChatSessionServiceTest {
         sessionService = new TempChatSessionService(
                 chatConfig, sessionRepository, messageRepository, contactExchangeRepository,
                 userRepository, userBasicProfileRepository, userCampusProfileRepository,
-                userScheduleProfileRepository, recommendationService, messagingTemplate, viewMapper);
+                userScheduleProfileRepository, recommendationService, heartSignalRepository,
+                messagingTemplate, viewMapper);
         when(chatConfig.getSessionExpireHours()).thenReturn(24);
     }
 

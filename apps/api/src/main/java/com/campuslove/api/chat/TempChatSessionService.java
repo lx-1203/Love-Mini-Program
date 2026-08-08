@@ -4,10 +4,12 @@ import com.campuslove.api.config.ChatConfig;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
+import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.TempChatContactExchange;
 import com.campuslove.api.entity.TempChatMessage;
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
+import com.campuslove.api.repository.HeartSignalRepository;
 import com.campuslove.api.repository.TempChatContactExchangeRepository;
 import com.campuslove.api.repository.TempChatMessageRepository;
 import com.campuslove.api.repository.TempChatSessionRepository;
@@ -54,6 +56,7 @@ public class TempChatSessionService {
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final UserScheduleProfileRepository userScheduleProfileRepository;
     private final RecommendationService recommendationService;
+    private final HeartSignalRepository heartSignalRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final TempChatViewMapper viewMapper;
 
@@ -67,6 +70,7 @@ public class TempChatSessionService {
             UserCampusProfileRepository userCampusProfileRepository,
             UserScheduleProfileRepository userScheduleProfileRepository,
             RecommendationService recommendationService,
+            HeartSignalRepository heartSignalRepository,
             SimpMessagingTemplate messagingTemplate,
             TempChatViewMapper viewMapper) {
         this.chatConfig = chatConfig;
@@ -78,6 +82,7 @@ public class TempChatSessionService {
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userScheduleProfileRepository = userScheduleProfileRepository;
         this.recommendationService = recommendationService;
+        this.heartSignalRepository = heartSignalRepository;
         this.messagingTemplate = messagingTemplate;
         this.viewMapper = viewMapper;
     }
@@ -123,13 +128,19 @@ public class TempChatSessionService {
      * 创建临时聊天会话。
      * 如果已存在与该推荐人的活跃会话，则直接返回已有会话。
      * 新会话默认为 matching 阶段，24h 后自动过期。
+     *
+     * @param recommendedPersonId 推荐人 ID（可选，命中当前用户推荐列表）
+     * @param matchId             匹配记录 ID（可选，兼容旧调用）
+     * @param signalId            心动信号 ID（可选，2026-08-08 走查 P0-3：已接受信号开聊入口，
+     *                            服务端校验信号归属与状态后解析对端用户）
      */
     @Transactional
-    public TempChatSessionView createSession(String recommendedPersonId, String matchId) {
+    public TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId) {
         Long currentUserId = resolveCurrentUserId();
-        Long partnerUserId = resolvePartnerUserId(recommendedPersonId, matchId);
+        Long partnerUserId = resolvePartnerUserId(recommendedPersonId, matchId, signalId);
         if (partnerUserId == null) {
-            throw new IllegalArgumentException("无法解析推荐人信息: recommendedPersonId=" + recommendedPersonId + ", matchId=" + matchId);
+            throw new IllegalArgumentException("无法解析推荐人信息: recommendedPersonId=" + recommendedPersonId
+                    + ", matchId=" + matchId + ", signalId=" + signalId);
         }
 
         Optional<TempChatSession> existing = sessionRepository.findActiveByUserPair(currentUserId, partnerUserId, INACTIVE_PHASES);
@@ -413,8 +424,16 @@ public class TempChatSessionService {
     // ---- 私有辅助方法 ----
 
     /** 解析推荐人对应的用户 ID。 */
-    private Long resolvePartnerUserId(String recommendedPersonId, String matchId) {
+    private Long resolvePartnerUserId(String recommendedPersonId, String matchId, String signalId) {
         Long currentUserId = resolveCurrentUserId();
+
+        // 心动信号入口（2026-08-08 走查 P0-3）：校验信号归属与状态后解析对端用户。
+        // 优先于推荐人/匹配入口——已互动的信号对象大概率不在推荐列表中。
+        Long signalPartner = resolvePartnerFromSignal(currentUserId, signalId);
+        if (signalPartner != null) {
+            return signalPartner;
+        }
+
         try {
             List<RecommendedPersonView> recommendations = recommendationService.getRecommendations(currentUserId);
             if (hasText(recommendedPersonId)) {
@@ -473,6 +492,38 @@ public class TempChatSessionService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /**
+     * 从心动信号解析对端用户 ID（2026-08-08 走查 P0-3）。
+     *
+     * <p>校验规则：信号必须存在、状态为 accepted、且当前用户是信号参与者之一。
+     * 满足条件返回对端用户 ID；signalId 为空/无效时返回 null（走其他入口）；</p>
+     * <p>存在但校验失败（非参与者/非 accepted）时抛 400「心动信号无效或已过期」，
+     * 防止用户借任意 ID 与陌生人建立匿名会话（越权风险，与 R2 review MED 同一思路）。</p>
+     */
+    private Long resolvePartnerFromSignal(Long currentUserId, String signalId) {
+        if (!hasText(signalId)) {
+            return null;
+        }
+        Long signalDbId;
+        try {
+            signalDbId = Long.parseLong(signalId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        Optional<HeartSignal> signalOpt = heartSignalRepository.findById(signalDbId);
+        if (signalOpt.isEmpty()) {
+            throw new IllegalArgumentException("心动信号无效或已过期: signalId=" + signalId);
+        }
+        HeartSignal signal = signalOpt.get();
+        boolean participant = signal.getUserAId().equals(currentUserId) || signal.getUserBId().equals(currentUserId);
+        if (!participant || signal.getStatus() != HeartSignal.SignalStatus.accepted) {
+            throw new IllegalArgumentException("心动信号无效或已过期: signalId=" + signalId);
+        }
+        Long partner = signal.getUserAId().equals(currentUserId) ? signal.getUserBId() : signal.getUserAId();
+        log.debug("心动信号 {} 解析对端用户 {}（当前用户 {}）", signalId, partner, currentUserId);
+        return partner;
     }
 
     private boolean hasText(String value) {

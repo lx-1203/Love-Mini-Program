@@ -1290,6 +1290,13 @@ components:
         campusName:
           type: string
           nullable: true
+        schoolBound:
+          type: boolean
+          description: 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定；前端 home 选择器消费）
+        schoolId:
+          type: string
+          nullable: true
+          description: 绑定学校 ID（= campusName，供首页选择器回显）
         featureFlags:
           type: object
           additionalProperties:
@@ -1838,7 +1845,12 @@ components:
           type: string
           maxLength: 64
           nullable: true
-      description: At least one of `recommendedPersonId` or `matchId` must be non-empty.
+        signalId:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: 心动信号 ID（2026-08-08 走查 P0-3：已接受信号开聊入口，服务端校验归属与状态）
+      description: At least one of `recommendedPersonId`, `matchId` or `signalId` must be non-empty.
     ContactExchangeState:
       type: object
       properties:

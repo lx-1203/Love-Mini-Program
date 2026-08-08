@@ -74,8 +74,8 @@ public class RealTempChatService implements TempChatService {
 
     @Override
     @Transactional
-    public TempChatSessionView createSession(String recommendedPersonId, String matchId) {
-        return sessionService.createSession(recommendedPersonId, matchId);
+    public TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId) {
+        return sessionService.createSession(recommendedPersonId, matchId, signalId);
     }
 
     @Override

@@ -49,8 +49,9 @@ public class MockTempChatService implements TempChatService {
   }
 
   @Override
-  public TempChatSessionView createSession(String recommendedPersonId, String matchId) {
-    MockRuntimeState.RecommendedPersonData person = resolvePerson(recommendedPersonId, matchId);
+  public TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId) {
+    // mock 模式无心动信号状态机：signalId 仅用于定位 mock 人物（优先于推荐人/匹配入口）
+    MockRuntimeState.RecommendedPersonData person = resolvePerson(recommendedPersonId, matchId, signalId);
     String existingId = activeSessionIdsByPersonId.get(person.id());
 
     if (existingId != null) {
@@ -295,7 +296,13 @@ public class MockTempChatService implements TempChatService {
     );
   }
 
-  private MockRuntimeState.RecommendedPersonData resolvePerson(String recommendedPersonId, String matchId) {
+  private MockRuntimeState.RecommendedPersonData resolvePerson(String recommendedPersonId, String matchId, String signalId) {
+    if (hasText(signalId)) {
+      // mock 模式：signalId 数字 → 取模定位 mock 人物，保证同一信号进入同一会话
+      int index = Math.floorMod(signalId.hashCode(), runtimeState.recommendedPeople().size());
+      return runtimeState.recommendedPeople().get(index);
+    }
+
     if (hasText(recommendedPersonId)) {
       return runtimeState.recommendedPeople().stream()
           .filter(item -> item.id().equals(recommendedPersonId))

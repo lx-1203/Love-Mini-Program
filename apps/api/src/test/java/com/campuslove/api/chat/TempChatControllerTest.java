@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,16 +54,16 @@ class TempChatControllerTest {
     @Test
     void createSession_shouldDelegateToService() {
         // Arrange
-        CreateTempChatSessionRequest req = new CreateTempChatSessionRequest("person-1", "match-1");
+        CreateTempChatSessionRequest req = new CreateTempChatSessionRequest("person-1", "match-1", null);
         TempChatSessionView view = buildSessionView("session-1", "person-1");
-        when(tempChatService.createSession(eq("person-1"), eq("match-1"))).thenReturn(view);
+        when(tempChatService.createSession(eq("person-1"), eq("match-1"), isNull())).thenReturn(view);
 
         // Act
         TempChatSessionView result = controller.createSession(req);
 
         // Assert
         assertSame(view, result);
-        verify(tempChatService).createSession(eq("person-1"), eq("match-1"));
+        verify(tempChatService).createSession(eq("person-1"), eq("match-1"), isNull());
     }
 
     @Test
@@ -193,9 +194,9 @@ class TempChatControllerTest {
     @Test
     void createSession_shouldHandleNullRecommendedPersonId() {
         // Arrange：仅 matchId 场景（hasEntryPoint 校验由 @Valid 触发）
-        CreateTempChatSessionRequest req = new CreateTempChatSessionRequest(null, "match-only");
+        CreateTempChatSessionRequest req = new CreateTempChatSessionRequest(null, "match-only", null);
         TempChatSessionView view = buildSessionView("session-10", "person-10");
-        when(tempChatService.createSession(eq(null), eq("match-only"))).thenReturn(view);
+        when(tempChatService.createSession(eq(null), eq("match-only"), isNull())).thenReturn(view);
 
         // Act
         TempChatSessionView result = controller.createSession(req);

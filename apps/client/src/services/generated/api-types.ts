@@ -850,10 +850,10 @@ export interface components {
             campusVerified: boolean;
             scheduleCompleted: boolean;
             campusName?: string | null;
-            /** 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定） */
+            /** @description 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定；前端 home 选择器消费） */
             schoolBound?: boolean;
-            /** 绑定学校 ID（= campusName，供首页选择器回显） */
-            schoolId?: string;
+            /** @description 绑定学校 ID（= campusName，供首页选择器回显） */
+            schoolId?: string | null;
             featureFlags: {
                 [key: string]: boolean;
             };
@@ -1049,10 +1049,12 @@ export interface components {
             /** @description Optional quoted message ID. */
             quoteRef?: string | null;
         };
-        /** @description At least one of `recommendedPersonId` or `matchId` must be non-empty. */
+        /** @description At least one of `recommendedPersonId`, `matchId` or `signalId` must be non-empty. */
         CreateTempChatSessionRequest: {
             recommendedPersonId?: string | null;
             matchId?: string | null;
+            /** @description 心动信号 ID（2026-08-08 走查 P0-3：已接受信号开聊入口，服务端校验归属与状态） */
+            signalId?: string | null;
         };
         ContactExchangeState: {
             /** @enum {string|null} */

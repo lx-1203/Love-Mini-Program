@@ -9,6 +9,7 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
+import { useChatStore } from "../../stores/chat";
 import { openAppPath } from "../../utils/navigation";
 import LockScreen from "../../components/common/LockScreen.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -20,6 +21,7 @@ import { showErrorToast } from "../../utils/error-toast";
 const { t } = useI18n();
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
+const chatStore = useChatStore();
 
 usePageAccess(likesPageRequirements);
 const { heartSignals, loading } = storeToRefs(likesStore);
@@ -105,6 +107,26 @@ async function handleDecline(signalId: string) {
     // 拒绝失败：按错误分类给出友好提示（网络/权限/业务）
     showErrorToast(error, t("heartSignals.rejectFailed"));
     console.error("拒绝心动信号失败:", error);
+  }
+}
+
+/**
+ * 已接受信号 → 匿名聊天「开聊」（2026-08-08 走查 P0-3）。
+ * 经 chat store 创建临时会话（real 模式后端校验信号归属与状态），
+ * 携带 fromSignal=1 进入聊天页激活渐进解锁面板（每 5 条解锁一项信息、20 条解锁主页）。
+ */
+async function handleChat(signalId: string) {
+  try {
+    const session = await chatStore.startFromSignal(signalId);
+    if (!session?.id) {
+      throw new Error("session id missing");
+    }
+    openAppPath(
+      `/pages/chat-session/index?fromSignal=1&sessionId=${encodeURIComponent(session.id)}`
+    );
+  } catch (error) {
+    showErrorToast(error, t("heartSignals.chatFailed"));
+    console.error("心动信号开聊失败:", error);
   }
 }
 
@@ -270,6 +292,12 @@ function getStatusLabel(status: string): string {
             </view>
             <view class="signal-card__status-tag" :class="'signal-card__status-tag--' + signal.status">
               <text class="signal-card__status-text">{{ getStatusLabel(signal.status) }}</text>
+            </view>
+          </view>
+          <!-- 2026-08-08 走查 P0-3：已接受信号「开聊」按钮（过期信号不展示） -->
+          <view v-if="activeTab === 'accepted'" class="signal-card__done-actions">
+            <view class="signal-card__btn signal-card__btn--accept press-feedback" @tap="handleChat(signal.id)">
+              <text class="signal-card__btn-text">{{ $t("heartSignals.chatBtn") }}</text>
             </view>
           </view>
         </view>
@@ -502,6 +530,17 @@ function getStatusLabel(status: string): string {
 .signal-card__actions {
   display: flex;
   gap: var(--sp-4);
+}
+
+/* 2026-08-08 走查 P0-3：已接受信号「开聊」按钮行 */
+.signal-card__done-actions {
+  display: flex;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.signal-card__done-actions .signal-card__btn {
+  flex: 0 1 240rpx;
 }
 
 .signal-card__btn {

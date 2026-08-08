@@ -2586,6 +2586,9 @@ export default {
     cardDesc: "They also have a crush on you! Start chatting after mutual crush.",
     rejectBtn: "Decline",
     acceptBtn: "Accept",
+    /* 2026-08-08 walkthrough P0-3: accepted signal "start chat" entry */
+    chatBtn: "Chat",
+    chatFailed: "Failed to start chat, please retry",
   },
 
   /* ========== Discover history (Task 28) ========== */
