@@ -371,6 +371,48 @@ const displayIdLabel = computed(() => {
   return t('discover.personalId', { id: card.displayId });
 });
 
+/* ========== 2026-08-08 走查 P0-2：卡片信息区块还原（基础资料/性格MBTI/期待画像/动态预览） ========== */
+
+/** 自我描述展开阈值（超 30 字时展示「展开/收起」按钮） */
+const BIO_CLAMP_CHARS = 30;
+
+/** 身高文案（基础资料胶囊：172cm，空值隐藏） */
+const heightText = computed(() => {
+  const card = currentCard.value;
+  return card?.height ? `${card.height}${t('cardDetail.heightUnit')}` : "";
+});
+
+/** 职业文案（基础资料胶囊） */
+const occupationText = computed(() => currentCard.value?.occupation ?? "");
+
+/** 月收入档位文案（基础资料胶囊） */
+const incomeText = computed(() => currentCard.value?.incomeRange ?? "");
+
+/**
+ * 感情状态文案（基础资料胶囊）。
+ * 枚举映射与 CardDetailOverlay 口径一致：never→未婚 / married_before→曾婚 / divorced→离异 / widowed→丧偶。
+ */
+const relationshipText = computed(() => {
+  const card = currentCard.value;
+  if (!card?.relationshipStatus) return "";
+  const map: Record<string, string> = {
+    never: t('discover.relationshipNever'),
+    married_before: t('discover.relationshipMarriedBefore'),
+    divorced: t('discover.relationshipDivorced'),
+    widowed: t('discover.relationshipWidowed'),
+  };
+  return map[card.relationshipStatus] ?? card.relationshipStatus;
+});
+
+/** 性格标签（卡片仅展示前 3 个，避免信息过载） */
+const personalityFirst3 = computed<string[]>(() => (currentCard.value?.personality ?? []).slice(0, 3));
+
+/** 最新一条动态预览（卡片最底部「TA的动态」） */
+const latestPost = computed(() => currentCard.value?.recentPosts?.[0] ?? null);
+
+/** 自我描述展开态（3 行截断 → 展开全文） */
+const bioExpanded = ref(false);
+
 /** 拖动时红/绿遮罩的不透明度（跟随拖动距离增强，最大 1） */
 const dragTintOpacity = computed(() => {
   if (!isDragging.value || translateX.value === 0) return { opacity: 0, transition: "none" };
@@ -1026,9 +1068,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
           <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
         </view>
 
-        <!-- 卡片内容（2026-08-08 精简蒙层 4 行：决策信息一屏呈现，详情字段移入详情页） -->
+        <!-- 卡片内容（2026-08-08 走查 P0-2 还原：自上而下覆盖需求 13 项信息，决策信息一屏呈现） -->
         <view class="card__content">
-          <!-- 行 1：昵称 + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????） -->
+          <!-- ① 昵称ID + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????） -->
           <view class="card__name-row">
             <text class="card__name">{{ displayName }}</text>
             <text class="card__age">{{ extractAge(currentCard) }}{{ t('discover.ageUnit') }}</text>
@@ -1042,7 +1084,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
             />
           </view>
 
-          <!-- 行 2：距离 · 活跃状态 · 匹配度（决策辅助） -->
+          <!-- ② 距离 · 活跃状态 · 匹配度（决策辅助） -->
           <view class="card__meta-row">
             <text v-if="identityDistance" class="card__meta">{{ identityDistance }}</text>
             <text v-if="activeStatusLabel" class="card__meta card__meta--active">
@@ -1051,15 +1093,90 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
             <text class="card__meta card__meta--match">{{ matchScore }}{{ t('discover.matchSuffix') }}</text>
           </view>
 
-          <!-- 行 3：一行自我简介（单行省略，详情页完整展示） -->
-          <text class="card__bio-line">{{ currentCard.bio || t('discover.defaultBio') }}</text>
+          <!-- ③ 基础资料 4 项：身高 / 职业 / 月收入 / 感情状态（仅渲染非空） -->
+          <view
+            v-if="heightText || occupationText || incomeText || relationshipText"
+            class="card__basics"
+          >
+            <text v-if="heightText" class="card__basics-item">
+              <text class="card__basics-icon">📏</text>{{ heightText }}
+            </text>
+            <text v-if="occupationText" class="card__basics-item">
+              <text class="card__basics-icon">💼</text>{{ occupationText }}
+            </text>
+            <text v-if="incomeText" class="card__basics-item">
+              <text class="card__basics-icon">💰</text>{{ incomeText }}
+            </text>
+            <text v-if="relationshipText" class="card__basics-item">
+              <text class="card__basics-icon">💍</text>{{ relationshipText }}
+            </text>
+          </view>
 
-          <!-- 行 4：3-4 个核心兴趣标签（统一浅底色胶囊） -->
+          <!-- ④ 自我描述：3 行截断 + 展开/收起（mp-weixin 不支持 -webkit-line-clamp，用 max-height 实现） -->
+          <view class="card__bio-block">
+            <text class="card__bio" :class="{ 'card__bio--clamped': !bioExpanded }">
+              {{ currentCard.bio || t('discover.defaultBio') }}
+            </text>
+            <view
+              v-if="(currentCard.bio?.length ?? 0) > BIO_CLAMP_CHARS"
+              class="card__bio-footer"
+            >
+              <text class="card__bio-toggle press-feedback" @tap.stop="bioExpanded = !bioExpanded">
+                {{ bioExpanded ? t('discover.collapseBio') : t('discover.expandBio') }}
+              </text>
+            </view>
+          </view>
+
+          <!-- ⑤ 喜好兴趣标签（3-4 个核心标签，统一浅底色胶囊） -->
           <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
             <text
               v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
               class="tag-pill"
             >{{ tag }}</text>
+          </view>
+
+          <!-- ⑥ 性格标签 + MBTI 人格类型 -->
+          <view
+            v-if="currentCard.mbti || personalityFirst3.length > 0"
+            class="card__personality"
+          >
+            <text v-if="currentCard.mbti" class="card__mbti-badge">{{ currentCard.mbti }}</text>
+            <text
+              v-for="(pt, idx) in personalityFirst3" :key="idx"
+              class="tag-pill tag-pill--soft"
+            >{{ pt }}</text>
+          </view>
+
+          <!-- ⑦ 期待的人物画像（小标题 + 2 行截断） -->
+          <view v-if="currentCard.expectedPartner" class="card__expect">
+            <text class="card__expect-title">{{ t('discover.myExpectedPartner') }}</text>
+            <text class="card__expect-text">{{ currentCard.expectedPartner }}</text>
+          </view>
+
+          <!-- ⑧ 动态预览：最新 1 条（缩略图 + 文案 + 点赞/评论数），点击进入详情页动态分区 -->
+          <view
+            v-if="latestPost"
+            class="card__post-preview press-feedback"
+            hover-class="card__post-preview--pressed"
+            hover-stay-time="120"
+            @tap.stop="showDetail = true"
+            role="button"
+            :aria-label="t('discover.latestPostSection')"
+          >
+            <view class="card__post-preview-main">
+              <text class="card__post-preview-title">{{ t('discover.latestPostSection') }}</text>
+              <text class="card__post-preview-content">{{ latestPost.content }}</text>
+              <view class="card__post-preview-stats">
+                <text class="card__post-preview-stat">♥ {{ latestPost.likes }}</text>
+                <text class="card__post-preview-stat">💬 {{ latestPost.comments }}</text>
+              </view>
+            </view>
+            <SafeImage
+              v-if="latestPost.images && latestPost.images.length > 0"
+              :src="latestPost.images[0]"
+              custom-class="card__post-thumb"
+              mode="aspectFill"
+            />
           </view>
         </view>
       </view>
@@ -1258,7 +1375,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 /* ========== 背景图片（Phase D5 · brightness + saturate 凸显背景） ========== */
-.card__bg {
+/* :deep() 必需：custom-class 落在 SafeImage 内部 <image> 上，scoped 属性选择器不落子组件内部元素，
+ * 否则 position:absolute/width/height:100% 失效，大图按流内布局渲染 → 卡片大图区空白 */
+:deep(.card__bg) {
   position: absolute;
   top: 0;
   left: 0;
@@ -1276,7 +1395,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 /* 蒙面匿名模式（设计改进方案）：头像模糊处理，隐藏身份细节 */
-.card__bg--masked {
+:deep(.card__bg--masked) {
   filter: blur(28rpx) brightness(0.72);
   transform: scale(1.08);
 }
@@ -1565,10 +1684,11 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 32rpx 36rpx 48rpx;
+  /* 2026-08-08 走查 P0-2：信息区块增多，收紧内边距与行距保证一屏容纳 */
+  padding: 24rpx 36rpx 40rpx;
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
+  gap: 10rpx;
   z-index: 3;
   /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
   background: linear-gradient(
@@ -1725,17 +1845,172 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 /* 行 3：一行自我简介（单行省略，完整展示在详情页） */
-.card__bio-line {
-  font-size: var(--fs-md);
-  color: var(--c-overlay-text-secondary);
-  line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-shadow: var(--c-card-bio-shadow);
+/* ④ 自我描述：3 行截断 + 展开/收起（2026-08-08 走查 P0-2） */
+.card__bio-block {
+  display: flex;
+  flex-direction: column;
 }
 
-/* 行 4：兴趣标签（统一浅底色胶囊 + 深色文字，视觉规整） */
+.card__bio {
+  font-size: var(--fs-md);
+  color: var(--c-overlay-text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-shadow: var(--c-card-bio-shadow);
+  word-break: break-all;
+}
+
+/* mp-weixin 的 text 不支持 -webkit-line-clamp，用 max-height（3 行 × 1.4）实现截断 */
+.card__bio--clamped {
+  max-height: 4.2em;
+}
+
+.card__bio-footer {
+  display: flex;
+  align-items: center;
+  margin-top: -2rpx;
+}
+
+.card__bio-toggle {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-brand-300);
+  padding: 2rpx 6rpx;
+}
+
+/* ③ 基础资料 4 项胶囊（身高/职业/月收入/感情状态） */
+.card__basics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.card__basics-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 4rpx 14rpx;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.88);
+  color: #334155;
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 600;
+}
+
+.card__basics-icon {
+  font-size: var(--fs-xs, 20rpx);
+  line-height: 1;
+}
+
+/* ⑥ 性格标签 + MBTI 徽标 */
+.card__personality {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.card__mbti-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76rpx;
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e), var(--c-brand-300, #7be0b4));
+  color: #ffffff;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  letter-spacing: 1rpx;
+}
+
+/* 性格胶囊弱化底色（区别于喜好兴趣标签） */
+.tag-pill--soft {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ⑦ 期待的人物画像（小标题 + 2 行截断） */
+.card__expect {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.card__expect-title {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-overlay-text-primary);
+  letter-spacing: 1rpx;
+}
+
+.card__expect-text {
+  font-size: var(--fs-sm);
+  color: var(--c-overlay-text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  max-height: 2.8em; /* 2 行 × 1.4 */
+  word-break: break-all;
+}
+
+/* ⑧ 动态预览卡（半透明底 + 圆角，样式参考贴吧帖子摘要） */
+.card__post-preview {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 10rpx 14rpx;
+  border-radius: var(--r-md, 12rpx);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+}
+
+.card__post-preview--pressed {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.card__post-preview-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.card__post-preview-title {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-overlay-text-primary);
+}
+
+.card__post-preview-content {
+  font-size: var(--fs-sm);
+  color: var(--c-overlay-text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card__post-preview-stats {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.card__post-preview-stat {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-overlay-text-secondary);
+}
+
+/* 动态缩略图（SafeImage 内部元素，需 :deep() 穿透） */
+:deep(.card__post-thumb) {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-md, 12rpx);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+/* ⑤ 兴趣标签（统一浅底色胶囊 + 深色文字，视觉规整） */
 .card__tags {
   display: flex;
   flex-wrap: wrap;

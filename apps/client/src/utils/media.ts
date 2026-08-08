@@ -117,7 +117,10 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     if (suffix.length === 0) {
       return "";
     }
-    const proxyUrl = `${appEnv.apiBaseUrl}${MEDIA_PROXY_PREFIX}${suffix}`;
+    // ⚠️ apiBaseUrl 可能自带 /api 后缀（如 http://127.0.0.1:8080/api），
+    // 拼接前先去尾，避免拼出 /api/api/v1/media/... 双重前缀 404（2026-08-08 走查 P0-1 根因之一）
+    const apiRoot = appEnv.apiBaseUrl.replace(/\/api\/?$/, "");
+    const proxyUrl = `${apiRoot}${MEDIA_PROXY_PREFIX}${suffix}`;
     return appendTokenIfMissing(proxyUrl);
   }
 

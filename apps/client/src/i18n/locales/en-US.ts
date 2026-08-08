@@ -578,6 +578,11 @@ export default {
     whisperSend: "Send a whisper",
     whisperSent: "Whisper sent",
     expectedPartner: "Expected partner",
+    /* 2026-08-08 walkthrough P0-2: card info section copy */
+    myExpectedPartner: "You I hope to meet",
+    latestPostSection: "TA's moments",
+    expandBio: "Expand",
+    collapseBio: "Collapse",
     expectedPartnerEmpty: "Not filled in yet",
     ipLocation: "IP location",
     moreActions: "More actions",

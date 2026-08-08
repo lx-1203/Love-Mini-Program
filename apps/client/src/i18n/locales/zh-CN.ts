@@ -578,6 +578,11 @@ export default {
     whisperSend: "发悄悄话",
     whisperSent: "已发送悄悄话",
     expectedPartner: "期待的人物画像",
+    /* 2026-08-08 走查 P0-2：匹配卡片信息区块还原文案 */
+    myExpectedPartner: "我期待遇见的你",
+    latestPostSection: "TA的动态",
+    expandBio: "展开",
+    collapseBio: "收起",
     expectedPartnerEmpty: "TA 还没有填写期待画像",
     ipLocation: "IP 属地",
     moreActions: "更多操作",
