@@ -223,8 +223,16 @@ public class VillageQueryService {
      * 2026-08-07 扩展：同城 / 发现分类（圈子页三 Tab）。
      *
      * <p>samecity：按作者校区城市过滤（Post 表无城市字段，需经作者 campus profile 关联）；
-     * discover：二级子标签 all/alumni/hometown/buddy，子标签精确过滤依赖作者资料，
-     * 当前除 all 外暂退化为全量列表（保证页面可用），精确过滤随圈子频道改造完善。</p>
+     * discover：R4-00339 起二级子标签 all/alumni/hometown/buddy 在服务端实现过滤
+     * （此前被忽略恒返回全量 active 帖子）：
+     * <ul>
+     *   <li>all：全量 active 帖子（isAlumni 按当前用户校区正确计算）</li>
+     *   <li>alumni：作者与当前用户同校（按 campus profile 过滤，与校园 Tab 同源）</li>
+     *   <li>hometown：内容/标签含「老乡/同乡」（与前端老乡语义一致）</li>
+     *   <li>buddy：内容/标签含「搭子」（前端另含作者兴趣聚合的本地过滤，服务端
+     *       按搭子关键词收窄，交集语义不变）</li>
+     * </ul>
+     * </p>
      */
     @Transactional(readOnly = true)
     public PostListResponse getPosts(String category, String tag, String sortBy, int page, int pageSize,
@@ -251,11 +259,54 @@ public class VillageQueryService {
                     (int) cityPage.getTotalElements(), page, pageSize);
         }
 
-        // 发现：all 及子标签暂返回全量 active 帖子（页面可用性优先）
+        // 发现：R4-00339 按 discoverSub 子标签服务端过滤（此前恒返回全量 active 帖子）
         if ("discover".equals(category)) {
-            Page<Post> discoverPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
-            return new PostListResponse(toPostSummaryViews(discoverPage.getContent(), "", loadFollowedUserIds(userId)),
-                    (int) discoverPage.getTotalElements(), page, pageSize);
+            String sub = discoverSub != null ? discoverSub : "all";
+            // 当前用户校区：alumni 子标签过滤与 isAlumni 字段计算共用
+            String myCampusName = userId != null
+                    ? userCampusProfileRepository.findByUserId(userId)
+                            .map(UserCampusProfile::getCampusName).orElse("")
+                    : "";
+            switch (sub) {
+                case "alumni" -> {
+                    if (myCampusName.isEmpty()) {
+                        return new PostListResponse(List.of(), 0, page, pageSize);
+                    }
+                    List<Long> campusUserIds = findCampusUserIds(myCampusName);
+                    if (campusUserIds.isEmpty()) {
+                        return new PostListResponse(List.of(), 0, page, pageSize);
+                    }
+                    Page<Post> alumniPage = postRepository.findByAuthorIdInAndStatusOrderByCreatedAtDesc(
+                            new ArrayList<>(campusUserIds), PostStatus.active, pageable);
+                    return new PostListResponse(
+                            toPostSummaryViews(alumniPage.getContent(), myCampusName, loadFollowedUserIds(userId)),
+                            (int) alumniPage.getTotalElements(), page, pageSize);
+                }
+                case "hometown" -> {
+                    // 老乡：内容/标签含「老乡」或「同乡」（与前端老乡 Tab 语义一致）
+                    Page<Post> hometownPage = postRepository.findByStatusAndKeyword(
+                            PostStatus.active, "老乡", "同乡", pageable);
+                    return new PostListResponse(
+                            toPostSummaryViews(hometownPage.getContent(), myCampusName, loadFollowedUserIds(userId)),
+                            (int) hometownPage.getTotalElements(), page, pageSize);
+                }
+                case "buddy" -> {
+                    // 搭子：内容/标签含「搭子」（前端另含作者兴趣聚合的本地过滤，
+                    // 服务端按搭子关键词收窄，前后端交集语义不变）
+                    Page<Post> buddyPage = postRepository.findByStatusAndKeyword(
+                            PostStatus.active, "搭子", null, pageable);
+                    return new PostListResponse(
+                            toPostSummaryViews(buddyPage.getContent(), myCampusName, loadFollowedUserIds(userId)),
+                            (int) buddyPage.getTotalElements(), page, pageSize);
+                }
+                default -> {
+                    // all / 未知子标签：全量 active 帖子
+                    Page<Post> discoverPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+                    return new PostListResponse(
+                            toPostSummaryViews(discoverPage.getContent(), myCampusName, loadFollowedUserIds(userId)),
+                            (int) discoverPage.getTotalElements(), page, pageSize);
+                }
+            }
         }
 
         // 其余分类委托原逻辑

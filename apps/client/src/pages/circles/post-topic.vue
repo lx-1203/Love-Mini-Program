@@ -741,7 +741,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 标题输入 ========== */
 .title-section {
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -760,13 +761,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .title-input:focus {
   border-color: $green-primary;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
 }
 
 /* ========== 内容输入区 ========== */
 .content-section {
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -788,7 +791,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .content-input:focus {
   border-color: $green-primary;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
 }
 
 .content-count {
@@ -806,7 +810,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== Task B5：发布到圈子选择器 ========== */
 .target-section {
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -892,7 +897,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== Task B5：话题标签多选 ========== */
 .tags-section {
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -950,7 +956,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   justify-content: space-between;
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -978,7 +985,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 图片上传区 ========== */
 .images-section {
   padding: 28rpx;
-  background: $white;
+  /* R4-02527：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   margin-bottom: 24rpx;
   box-shadow: $card-soft-shadow;

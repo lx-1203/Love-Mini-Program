@@ -63,6 +63,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /** 查询参数 token 的参数名 */
     private static final String TOKEN_QUERY_PARAM = "token";
 
+    /**
+     * 用户角色/状态快照缓存（R4-00272）。
+     *
+     * <p>原实现每个请求都 userRepository.findById 查库判定角色/禁用状态，
+     * 高并发下每请求一次 DB 往返放大数据库压力。现改为短 TTL（60 秒）本地缓存：
+     * 禁用/删除用户的最长生效延迟约 1 分钟，换取每请求省去一次 DB 查询。
+     * 与将角色写入 JWT claims 的方案相比，缓存不改变 JWT 结构、无需重新签发，
+     * 且管理端禁用操作在 TTL 内即可生效。</p>
+     */
+    private final com.github.benmanes.caffeine.cache.Cache<Long, UserAuthSnapshot> userAuthCache =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .maximumSize(100_000)
+                    .expireAfterWrite(java.time.Duration.ofSeconds(60))
+                    .build();
+
+    /**
+     * 用户认证快照（缓存值）。
+     *
+     * @param exists     用户记录是否存在
+     * @param disabled   用户是否被禁用
+     * @param admin      是否管理员
+     * @param superAdmin 是否超级管理员
+     */
+    record UserAuthSnapshot(boolean exists, boolean disabled, boolean admin, boolean superAdmin) {
+    }
+
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     /**
@@ -72,12 +98,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenBlacklistService tokenBlacklistService;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
+    /**
+     * R4-00273：媒体查询参数 token 严格模式（默认 false 兼容旧客户端）。
+     * 开启后 /api/v1/media/** 的 ?token= 仅接受 scope=media 的短期媒体令牌，
+     * 拒绝完整用户 JWT 进入 URL（防访问日志/浏览器历史泄露）。
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.security.media-query-token-strict:false}")
+    private boolean strictMediaQueryToken;
+
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
                                    UserRepository userRepository,
                                    TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
         this.tokenBlacklistService = tokenBlacklistService;
+    }
+
+    /**
+     * 从数据库加载用户认证快照（缓存 miss 时调用）。
+     *
+     * @param userId 用户 ID
+     * @return 认证快照（exists=false 表示记录不存在）
+     */
+    private UserAuthSnapshot loadAuthSnapshot(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return new UserAuthSnapshot(false, false, false, false);
+        }
+        return new UserAuthSnapshot(
+                true,
+                user.isDisabled(),
+                user.isAdmin(),
+                user.isSuperAdmin());
     }
 
     @Override
@@ -98,15 +150,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 从 Authorization Header 提取 Bearer token
         String authHeader = request.getHeader("Authorization");
         String token = null;
+        // 标记 token 来源：query 参数（仅 /api/v1/media/** 开放，R4-00273 scope 校验用）
+        boolean tokenFromQuery = false;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         } else if (pathMatcher.match(MEDIA_PROXY_PATH_PATTERN, requestPath)) {
             // Task 0.3.2：媒体鉴权代理端点支持 ?token=xxx 查询参数
             // 仅对 /api/v1/media/** 路径开放，避免其他端点出现 token 在 URL 中泄露到日志/Referer 的风险。
-            // token 直接复用当前用户 JWT，与 Authorization 头使用同一签名密钥与撤销黑名单。
+            // R4-00273：优先接受短期媒体访问令牌（JwtTokenProvider.generateMediaToken，
+            // TTL 5 分钟、scope=media）——即使进入访问日志/浏览器历史，泄露窗口与冒用
+            // 范围也远小于完整用户 JWT。完整 JWT 查询参数方式仍兼容（后端提供
+            // GET /api/v1/media/token 签发短期令牌，前端迁移后可将
+            // app.security.media-query-token-strict 置为 true 强制仅接受媒体令牌）。
             String queryToken = request.getParameter(TOKEN_QUERY_PARAM);
             if (queryToken != null && !queryToken.isBlank()) {
                 token = queryToken.trim();
+                tokenFromQuery = true;
             }
         }
 
@@ -151,29 +210,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new BadCredentialsException("JWT token 中的用户ID格式无效: " + userIdStr);
             }
 
+            // R4-00273：?token= 查询参数路径仅接受媒体访问令牌（scope=media）。
+            // 当 app.security.media-query-token-strict=true 时，完整用户 JWT 走查询参数
+            // 会被拒绝，杜绝 24h 会话 JWT 进入 URL（访问日志/浏览器历史泄露面）。
+            // 默认 false 保持对旧客户端的兼容（前端迁移至 /api/v1/media/token 后可开启）。
+            if (tokenFromQuery && strictMediaQueryToken) {
+                if (!JwtTokenProvider.MEDIA_SCOPE.equals(jwtTokenProvider.getTokenScope(token))) {
+                    log.warn("媒体查询参数 token 缺少 media scope，拒绝认证: path={}, userId={}",
+                            requestPath, userIdStr);
+                    throw new BadCredentialsException("媒体访问令牌无效");
+                }
+            }
+
             // 修复：查询用户角色，根据角色注入对应权限
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
 
-            // 查询用户判断是否为管理员
-            // 注意：这里每次请求都查询数据库，生产环境可考虑缓存优化
-            User user = userRepository.findById(userId).orElse(null);
-            if (user == null) {
+            // R4-00272：角色/禁用状态走 60s 短 TTL 本地缓存，避免每请求一次 DB 往返。
+            // 与原直查 DB 相比，被删除/禁用用户最长延迟约 60s 生效（可接受的安全窗口）。
+            UserAuthSnapshot snapshot = userAuthCache.get(userId, this::loadAuthSnapshot);
+            if (!snapshot.exists()) {
                 // 修复（R2）：用户已被删除时，旧 token 不得继续访问业务接口
                 throw new BadCredentialsException("用户不存在或已被删除: " + userId);
             }
-            if (user.isDisabled()) {
+            if (snapshot.disabled()) {
                 // 修复（R2 review MED）：disabled 用户（管理后台禁用）同样拒绝，
                 // 旧实现只处理 user==null，被禁用用户的 token 仍可访问接口
                 throw new BadCredentialsException("用户已被禁用: " + userId);
             }
-            if (user.isAdmin()) {
+            if (snapshot.admin()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 log.debug("管理员用户登录，用户ID: {}", userId);
             }
             // infra R2-00025：超级管理员额外注入 ROLE_SUPER_ADMIN，
             // 供敏感配置端点 @PreAuthorize("hasRole('SUPER_ADMIN')") 校验
-            if (user.isSuperAdmin()) {
+            if (snapshot.superAdmin()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
             }
 

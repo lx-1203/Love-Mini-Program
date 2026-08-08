@@ -8,10 +8,13 @@ import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.repository.CampusCertificationRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
@@ -64,15 +67,23 @@ public class AdminCertificationController {
      * 获取认证列表（支持按状态/校区筛选）。
      * 默认返回所有待审核的认证申请。
      *
+     * <p>R4-00386：新增分页参数 page/size（默认 size 1000，上限 5000）——
+     * 认证申请量大时避免一次性全量返回拖慢后台；响应仍为列表结构
+     * （兼容现有管理端契约），后续管理端可扩展完整分页交互。</p>
+     *
      * @param status     认证状态筛选：PENDING / APPROVED / REJECTED / ALL，默认 PENDING
      * @param campusName 校区筛选（按申请人所属校区过滤），可选；
      *                   校区管理员强制按其管辖校区过滤，忽略本参数
-     * @return 认证记录列表
+     * @param page       页码（从 0 开始，默认 0）
+     * @param size       每页大小（默认 1000，最大 5000）
+     * @return 认证记录列表（分页截断）
      */
     @GetMapping
     public ResponseEntity<List<CampusCertificationView>> listCertifications(
             @RequestParam(name = "status", defaultValue = "PENDING") String status,
-            @RequestParam(name = "campusName", required = false) String campusName) {
+            @RequestParam(name = "campusName", required = false) String campusName,
+            @RequestParam(name = "page", required = false, defaultValue = "0") @PositiveOrZero int page,
+            @RequestParam(name = "size", required = false, defaultValue = "1000") @Min(1) @Max(5000) int size) {
         // 验证当前用户已登录
         SecurityUtils.getCurrentUserId();
 
@@ -90,10 +101,11 @@ public class AdminCertificationController {
             // 统一转大写：兼容原实现 "ALL".equalsIgnoreCase(status) 的大小写不敏感语义
             normalizedStatus = normalizedStatus.toUpperCase();
         }
-        List<CampusCertification> certifications =
-                certRepository.searchForAdmin(normalizedStatus, effectiveCampus);
+        // R4-00386：分页查询（page 从 0 开始），响应保持列表结构兼容管理端
+        var certPage = certRepository.searchForAdminPage(normalizedStatus, effectiveCampus,
+                org.springframework.data.domain.PageRequest.of(page, size));
 
-        List<CampusCertificationView> views = certifications.stream()
+        List<CampusCertificationView> views = certPage.getContent().stream()
                 .map(this::toView)
                 .toList();
 

@@ -28,6 +28,7 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useRequestRace } from "../../composables/useRequestRace";
 
 const { t } = useI18n();
 
@@ -44,9 +45,13 @@ const pageSize = ref(DEFAULT_PAGE_SIZE);
 const total = ref(0);
 const totalPages = ref(1);
 
+/** 请求竞态防护（快速翻页/搜索时旧响应不覆盖新数据） */
+const { nextSeq, isStale } = useRequestRace();
+
 async function fetchSchools() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = nextSeq();
   try {
     const result = await listSchools({
       keyword: keyword.value.trim() || undefined,
@@ -54,15 +59,19 @@ async function fetchSchools() {
       page: page.value,
       pageSize: pageSize.value,
     });
+    if (isStale(seq)) return;
     schools.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages || 1;
   } catch (err) {
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("schools.loadFailed");
     schools.value = [];
     total.value = 0;
   } finally {
-    loading.value = false;
+    if (!isStale(seq)) {
+      loading.value = false;
+    }
   }
 }
 

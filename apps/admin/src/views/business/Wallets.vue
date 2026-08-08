@@ -29,6 +29,7 @@ import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from "../../utils/constants";
+import { useRequestRace } from "../../composables/useRequestRace";
 
 const { t } = useI18n();
 
@@ -78,8 +79,9 @@ const modalError = ref("");
 const toastMessage = ref("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 请求竞态防护
-let reqSeq = 0;
+// 请求竞态防护（钱包列表 / 钱包流水各自独立竞态流，互不干扰）
+const { nextSeq: walletNextSeq, isStale: walletIsStale } = useRequestRace();
+const { nextSeq: txNextSeq, isStale: txIsStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 交易类型选项 */
@@ -134,7 +136,7 @@ function handleTabChange(tab: TabKey) {
 async function fetchWallets() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = walletNextSeq();
   try {
     const result = await listWallets({
       userId: userIdQuery.value.trim() ? Number(userIdQuery.value.trim()) : undefined,
@@ -144,18 +146,18 @@ async function fetchWallets() {
       page: page.value,
       pageSize: pageSize.value,
     });
-    if (seq !== reqSeq) return;
+    if (walletIsStale(seq)) return;
     wallets.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (walletIsStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("wallets.loadFailed");
     wallets.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!walletIsStale(seq)) {
       loading.value = false;
     }
   }
@@ -183,7 +185,7 @@ function handlePageChange() {
 async function fetchTransactions() {
   txLoading.value = true;
   txError.value = "";
-  const seq = ++reqSeq;
+  const seq = txNextSeq();
   try {
     const result = await listWalletTransactions({
       userId: txUserIdQuery.value.trim() ? Number(txUserIdQuery.value.trim()) : undefined,
@@ -191,18 +193,18 @@ async function fetchTransactions() {
       page: txPage.value,
       pageSize: txPageSize.value,
     });
-    if (seq !== reqSeq) return;
+    if (txIsStale(seq)) return;
     transactions.value = result.items;
     txTotal.value = result.total;
     txTotalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (txIsStale(seq)) return;
     txError.value = err instanceof ApiError ? err.message : t("wallets.txLoadFailed");
     transactions.value = [];
     txTotal.value = 0;
     txTotalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!txIsStale(seq)) {
       txLoading.value = false;
     }
   }

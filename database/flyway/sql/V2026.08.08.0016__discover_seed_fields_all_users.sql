@@ -111,7 +111,8 @@ INSERT INTO campus_certifications
 SELECT u.id,
        '北京大学',
        ELT(1 + (u.id MOD 4), '计算机科学与技术', '经济学', '新闻传播学', '心理学'),
-       CONCAT('https://campus-love.example/student-id/CL-', u.id),
+       -- R4-00425：同上，改用本地素材
+       CONCAT('/static/assets/images/posts/post-', 1 + MOD(u.id, 8), '.jpg'),
        'APPROVED',
        1,
        '种子数据：校园认证审核通过',

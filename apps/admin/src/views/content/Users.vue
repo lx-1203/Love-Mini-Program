@@ -23,6 +23,7 @@ import { ApiError } from "@/api/http";
 import Pagination from "@/components/Pagination.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "@/utils/format";
 import { DEFAULT_PAGE_SIZE, NICKNAME_MAX_LENGTH } from "@/utils/constants";
@@ -74,7 +75,7 @@ const changingPwd = ref(false);
 const modalError = ref("");
 
 // 搜索防抖 + 请求竞态防护（统一用请求序号丢弃过期响应，用 debounce 合并高频触发）
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
@@ -126,7 +127,7 @@ function canToggleUser(user: { id: number; role?: string }): boolean {
 async function fetchUsers() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const query: AdminUserListQuery = {
       page: page.value,
@@ -138,18 +139,18 @@ async function fetchUsers() {
 
     const result = await listUsers(query);
     // 丢弃过期响应（序号小于当前请求的响应不再写入状态）
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     users.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("users.loadFailed");
     users.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

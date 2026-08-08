@@ -60,4 +60,18 @@ public interface UserOnlineStatusRepository extends JpaRepository<UserOnlineStat
      * @return 心跳时间晚于阈值的用户数
      */
     long countByLastHeartbeatAfter(LocalDateTime threshold);
+
+    /**
+     * R4-00393：统计指定校区内最后心跳时间晚于阈值的用户数（校区隔离 DAU/MAU）。
+     *
+     * @param threshold  心跳阈值时间
+     * @param campusName 校区名称
+     * @return 该校区心跳时间晚于阈值的用户数
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(u) FROM UserOnlineStatus u "
+            + "WHERE u.lastHeartbeat >= :threshold AND EXISTS (SELECT 1 FROM UserCampusProfile p "
+            + "WHERE p.userId = u.userId AND p.campusName = :campusName)")
+    long countByLastHeartbeatAfterAndCampusName(
+            @org.springframework.data.repository.query.Param("threshold") LocalDateTime threshold,
+            @org.springframework.data.repository.query.Param("campusName") String campusName);
 }

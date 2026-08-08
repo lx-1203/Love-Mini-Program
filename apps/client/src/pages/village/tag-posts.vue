@@ -29,6 +29,10 @@ const stateIcons = {
 async function toggleLike(post: PostItem): Promise<void> {
   try {
     await villageStore.likePost(post.id);
+    // R4-00092：store 的乐观更新仅作用于 store 内部列表，本页为独立本地列表，
+    // 需在服务端 toggle 成功后同步本地点赞态/计数，避免"点赞状态不回显"。
+    post.isLiked = !post.isLiked;
+    post.likes = Math.max(0, post.likes + (post.isLiked ? 1 : -1));
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : t("village.likeFailed"),
@@ -130,6 +134,8 @@ async function loadPosts(reset = true) {
     }
 
     // Real 模式：调用后端 API GET /api/post-tags/posts
+    // R4-00092：响应类型补充可选互动字段（后端返回时直接映射回显，
+    // 缺失时兜底 false，保证「点赞/收藏/置顶回显」真实化）
     const data = await request<Array<{
       id: number; title: string; summary: string;
       author: { userId: number; nickname: string; avatarUrl: string; campusName: string };
@@ -137,6 +143,7 @@ async function loadPosts(reset = true) {
       likeCount: number; commentCount: number; shareCount: number;
       favoriteCount?: number; viewCount?: number;
       createdAt: string; isHot: boolean; isAlumni: boolean;
+      isLiked?: boolean; isFollowed?: boolean; isShared?: boolean; isFavorite?: boolean;
     }>>({
       url: `/post-tags/posts?tagName=${encodeURIComponent(tagName.value)}&page=${currentPageNum}&size=${PAGE_SIZE}`,
       method: "GET",
@@ -159,13 +166,13 @@ async function loadPosts(reset = true) {
       likes: raw.likeCount,
       comments: raw.commentCount,
       shares: raw.shareCount,
-      isLiked: false,
-      isFollowed: false,
-      isShared: false,
-      isAlumni: false,
+      isLiked: raw.isLiked ?? false,
+      isFollowed: raw.isFollowed ?? false,
+      isShared: raw.isShared ?? false,
+      isAlumni: raw.isAlumni ?? false,
       // 2026-08-08 论坛互动真实化：收藏/浏览量透传（标签页后端可能缺失，兜底）
       favorites: raw.favoriteCount ?? 0,
-      isFavorite: false,
+      isFavorite: raw.isFavorite ?? false,
       views: raw.viewCount ?? 0,
       createdAt: raw.createdAt,
     }));
@@ -435,7 +442,8 @@ $red-badge: var(--c-error, #FF4757);
 .tag-header__title {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: $white;
+  /* R4-02540：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
@@ -530,7 +538,8 @@ $red-badge: var(--c-error, #FF4757);
   gap: 18rpx;
   margin: 16rpx 24rpx;
   padding: 28rpx;
-  background: $white;
+  /* R4-02540：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   box-shadow: var(--s-card-soft, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)), 0 4rpx 12rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
   transition: transform var(--d-fast, 120ms) ease;
@@ -577,7 +586,8 @@ $red-badge: var(--c-error, #FF4757);
 .user-avatar__char {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: $white;
+  /* R4-02540：品牌色底上的头像占位字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
 }
 
 .user-info {

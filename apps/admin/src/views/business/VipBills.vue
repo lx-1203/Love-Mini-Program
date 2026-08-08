@@ -11,10 +11,12 @@
  *   - GET /api/v1/admin/business/vip/bills
  *   - GET /api/v1/admin/business/vip/bills/{id}
  * 金额单位：分（amount），展示时转元并保留两位小数。
- * 时间字段说明：后端账单视图仅有 createdAt（账单/支付创建时间），无独立支付时间字段，
- * 故「支付时间」与「创建时间」两列均展示 createdAt。
+ * 时间字段说明（R4-00449）：后端账单视图暂未提供独立支付时间字段 paidAt，
+ * 「支付时间」列优先展示 bill.paidAt（缺失时回退占位符 "—"），
+ * 「创建时间」列展示 createdAt；待后端 AdminVipBillView 补充 paidAt 后自动对齐。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listVipBills,
@@ -58,7 +60,7 @@ const detailBill = ref<VipBillView | null>(null);
 const detailLoading = ref(false);
 
 // 请求竞态防护（快速翻页/切换筛选时旧响应不覆盖新数据）
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 套餐类型选项（后端 planId 取值） */
@@ -121,7 +123,7 @@ function formatYuan(cents: number | null | undefined): string {
 async function fetchBills() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listVipBills({
       userId: userIdQuery.value.trim() ? Number(userIdQuery.value.trim()) : undefined,
@@ -130,18 +132,18 @@ async function fetchBills() {
       page: page.value,
       pageSize: pageSize.value,
     });
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     bills.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("vipBills.loadFailed");
     bills.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }
@@ -277,7 +279,8 @@ onBeforeUnmount(() => {
                 {{ statusLabel(bill.status) }}
               </span>
             </td>
-            <td class="time-cell">{{ formatDateTime(bill.createdAt) }}</td>
+            <!-- 支付时间：优先展示 paidAt（后端补充后自动对齐），缺失回退占位符 -->
+            <td class="time-cell">{{ formatDateTime(bill.paidAt) }}</td>
             <td class="time-cell">{{ formatDateTime(bill.createdAt) }}</td>
             <td class="action-cell">
               <button class="action-button view" @click="handleViewDetail(bill)">{{ t("vipBills.actionView") }}</button>
@@ -344,6 +347,10 @@ onBeforeUnmount(() => {
           <view class="detail-row">
             <text class="detail-label">{{ t("vipBills.detailPeriodEnd") }}</text>
             <text>{{ formatDateTime(detailBill.periodEnd) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("vipBills.detailPaidAt") }}</text>
+            <text>{{ formatDateTime(detailBill.paidAt) }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("vipBills.detailCreatedAt") }}</text>

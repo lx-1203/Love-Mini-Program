@@ -436,8 +436,12 @@ function handleCancelLogout(): void {
         <view class="header-user">
           <view class="user-info">
             <text class="user-name">{{ displayName }}</text>
-            <!-- campusName 为空（全局超级管理员）时不渲染校区徽标；text 不能嵌套 text，内部改用 span -->
-            <text class="user-role">{{ displayRole }}<span v-if="campusName"> · {{ campusName }}</span></text>
+            <!-- campusName 为空（全局超级管理员）时不渲染校区徽标；
+                 uni-app 规范 text 不可嵌套非 text 元素，改用 view 包裹多个 text -->
+            <view class="user-role">
+              <text>{{ displayRole }}</text>
+              <text v-if="campusName"> · {{ campusName }}</text>
+            </view>
           </view>
           <button class="logout-button" @click="handleLogoutClick">
             {{ t("common.logout") }}
@@ -733,7 +737,8 @@ function handleCancelLogout(): void {
 }
 
 .tab-close:hover {
-  background: rgba(255, 255, 255, 0.35);
+  /* 主题自适应 hover 背景（暗色模式下自动适配，替代硬编码 rgba(255,255,255,.35)） */
+  background: var(--admin-color-bg-hover);
 }
 
 /* ========== 主内容区 ========== */

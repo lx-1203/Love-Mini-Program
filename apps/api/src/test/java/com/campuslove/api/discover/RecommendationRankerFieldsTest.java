@@ -175,7 +175,8 @@ class RecommendationRankerFieldsTest {
 
         // 卡片完整字段（V2026.08.08.0015）
         assertEquals("产品经理", view.occupation(), "职业应来自 user_basic_profile");
-        assertEquals("15k-30k", view.incomeRange(), "收入档位应来自 user_basic_profile");
+        // R4-00337：incomeRange（月收入档位）已从公开推荐视图移除（敏感经济信息），
+        // 不再随推荐列表下发；UserBasicProfile.incomeRange 仍保留供本人资料页使用
         assertEquals(23, view.age(), "年龄应由出生年份推导（2026 - 2003 = 23）");
         assertNotNull(view.registeredAt(), "注册时间应为 ISO 字符串");
         assertTrue(view.registeredAt().startsWith("2026-03-12"), "注册时间应来自 user.createdAt");
@@ -213,7 +214,7 @@ class RecommendationRankerFieldsTest {
         assertEquals(1, views.size());
         RecommendedPersonView view = views.get(0);
         assertNull(view.occupation(), "无资料时职业应为 null");
-        assertNull(view.incomeRange(), "无资料时收入应为 null");
+        // R4-00337：incomeRange 已从公开推荐视图移除，此处不再断言
         assertNull(view.age(), "无资料时年龄应为 null");
         assertNotNull(view.personality(), "无资料时性格标签应为空列表而非 null");
         assertTrue(view.personality().isEmpty());

@@ -14,7 +14,7 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import { clientApi } from "../../services/api";
-import { mapToDiscoverCard } from "../../stores/discover/utils";
+import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
 import type { DiscoverCard } from "../../stores/discover/types";
 import { IMAGE_PATHS } from "../../config/images";
 
@@ -34,12 +34,18 @@ onLoad(() => {
   void loadNearbyCards();
 });
 
-/** 拉取推荐卡片（同校区优先，与寻觅同一数据源） */
+/**
+ * 拉取附近卡片（R4-00034：与寻觅页"附近"语义对齐——透传 distanceMax
+ * 距离上限筛选（后端以用户注册/定位城市为基准计算距离），
+ * 不再裸调全量推荐接口导致"附近"名不副实）。
+ */
 async function loadNearbyCards() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const people = await clientApi.getRecommendations({});
+    const people = await clientApi.getRecommendations({
+      distanceMax: NEARBY_MAX_DISTANCE_KM,
+    });
     cards.value = people.map((person) => mapToDiscoverCard(person));
   } catch (error) {
     errorMessage.value =

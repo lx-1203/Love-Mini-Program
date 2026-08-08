@@ -15,6 +15,7 @@ const { t } = useI18n();
 const checkInStore = useCheckInStore();
 onShow(() => {
   void checkInStore.fetchStatus();
+  void fetchShopItems();
 });
 
 // 分类标签
@@ -27,69 +28,112 @@ const categories = computed(() => [
 ]);
 const activeCategory = ref("all");
 
-// 商品列表（模拟）
-const shopItems = computed(() => [
-  {
-    id: "1",
-    title: t("shop.productTicket1"),
-    price: 99,
-    originalPrice: 129,
-    sales: 56,
-    image: IMAGE_PATHS.PRODUCTS.TICKET_1,
-    category: "ticket",
-    tag: t("shop.tagHot"),
-  },
-  {
-    id: "2",
-    title: t("shop.productCreative1"),
-    price: 29.9,
-    originalPrice: 39.9,
-    sales: 128,
-    image: IMAGE_PATHS.PRODUCTS.MERCH_1,
-    category: "creative",
-    tag: t("shop.tagNew"),
-  },
-  {
-    id: "3",
-    title: t("shop.productFood1"),
-    price: 9.9,
-    originalPrice: 15,
-    sales: 234,
-    image: IMAGE_PATHS.PRODUCTS.FOOD_1,
-    category: "food",
-    tag: t("shop.tagLimited"),
-  },
-  {
-    id: "4",
-    title: t("shop.productGoods1"),
-    price: 19.9,
-    originalPrice: 25,
-    sales: 89,
-    image: IMAGE_PATHS.PRODUCTS.MERCH_2,
-    category: "goods",
-    tag: "",
-  },
-  {
-    id: "5",
-    title: t("shop.productTicket2"),
-    price: 15,
-    originalPrice: 20,
-    sales: 45,
-    image: IMAGE_PATHS.PRODUCTS.TICKET_2,
-    category: "ticket",
-    tag: "",
-  },
-  {
-    id: "6",
-    title: t("shop.productCreative2"),
-    price: 12.9,
-    originalPrice: 18,
-    sales: 167,
-    image: IMAGE_PATHS.PRODUCTS.FOOD_2,
-    category: "creative",
-    tag: t("shop.tagRecommended"),
-  },
-]);
+/** 商品项 */
+interface ShopItem {
+  id: string;
+  title: string;
+  price: number;
+  originalPrice: number;
+  sales: number;
+  image: string;
+  category: string;
+  tag: string;
+}
+
+/**
+ * 商品列表（R4-00038：暂无后端商品接口，先以本地 mock 源驱动）。
+ * 后端商品接口就绪后，将 fetchShopItems 内的数据获取替换为真实请求
+ * （如 GET /shop/products），页面结构无需改动。
+ */
+const shopItems = ref<ShopItem[]>([]);
+/** 商品加载中 */
+const shopLoading = ref(false);
+/** 商品加载失败 */
+const shopError = ref(false);
+
+/** 本地 mock 商品源（价格/销量为演示数据，可运营化依赖后端接入） */
+function buildMockShopItems(): ShopItem[] {
+  return [
+    {
+      id: "1",
+      title: t("shop.productTicket1"),
+      price: 99,
+      originalPrice: 129,
+      sales: 56,
+      image: IMAGE_PATHS.PRODUCTS.TICKET_1,
+      category: "ticket",
+      tag: t("shop.tagHot"),
+    },
+    {
+      id: "2",
+      title: t("shop.productCreative1"),
+      price: 29.9,
+      originalPrice: 39.9,
+      sales: 128,
+      image: IMAGE_PATHS.PRODUCTS.MERCH_1,
+      category: "creative",
+      tag: t("shop.tagNew"),
+    },
+    {
+      id: "3",
+      title: t("shop.productFood1"),
+      price: 9.9,
+      originalPrice: 15,
+      sales: 234,
+      image: IMAGE_PATHS.PRODUCTS.FOOD_1,
+      category: "food",
+      tag: t("shop.tagLimited"),
+    },
+    {
+      id: "4",
+      title: t("shop.productGoods1"),
+      price: 19.9,
+      originalPrice: 25,
+      sales: 89,
+      image: IMAGE_PATHS.PRODUCTS.MERCH_2,
+      category: "goods",
+      tag: "",
+    },
+    {
+      id: "5",
+      title: t("shop.productTicket2"),
+      price: 15,
+      originalPrice: 20,
+      sales: 45,
+      image: IMAGE_PATHS.PRODUCTS.TICKET_2,
+      category: "ticket",
+      tag: "",
+    },
+    {
+      id: "6",
+      title: t("shop.productCreative2"),
+      price: 12.9,
+      originalPrice: 18,
+      sales: 167,
+      image: IMAGE_PATHS.PRODUCTS.FOOD_2,
+      category: "creative",
+      tag: t("shop.tagRecommended"),
+    },
+  ];
+}
+
+/**
+ * 拉取商品列表（加载态 + 失败重试 + 空态，结构上为后端接口预留）。
+ */
+async function fetchShopItems(): Promise<void> {
+  if (shopLoading.value) return;
+  shopLoading.value = true;
+  shopError.value = false;
+  try {
+    // TODO(后端): 接入商品接口后替换此 mock 源（保持 ShopItem 结构即可）
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    shopItems.value = buildMockShopItems();
+  } catch (_e) {
+    shopError.value = true;
+  } finally {
+    shopLoading.value = false;
+  }
+}
 
 const filteredItems = computed(() => {
   if (activeCategory.value === "all") return shopItems.value;
@@ -152,7 +196,33 @@ function goToDetail(itemId: string) {
 
     <!-- 商品网格 -->
     <scroll-view scroll-y class="shop-scroll">
-      <view class="shop-grid">
+      <!-- R4-00038：加载态 -->
+      <view v-if="shopLoading" class="shop-state" role="status" aria-live="polite">
+        <view class="shop-state__spinner" />
+        <text class="shop-state__text">{{ t("shop.loading") }}</text>
+      </view>
+
+      <!-- 错误态（含重试） -->
+      <view v-else-if="shopError" class="shop-state" role="alert">
+        <text class="shop-state__text">{{ t("shop.loadFailed") }}</text>
+        <view
+          class="shop-state__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.retry')"
+          @tap="fetchShopItems"
+        >
+          <text class="shop-state__btn-text">{{ t("common.retry") }}</text>
+        </view>
+      </view>
+
+      <!-- 空态 -->
+      <view v-else-if="filteredItems.length === 0" class="shop-state">
+        <text class="shop-state__text">{{ t("shop.empty") }}</text>
+      </view>
+
+      <view v-else class="shop-grid">
         <view
           v-for="item in filteredItems"
           :key="item.id"
@@ -280,7 +350,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-points-bar__hint {
   font-size: var(--fs-xs, 20rpx);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  /* R4-02535：深底叠层文字改用 token */
+  color: var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85));
   white-space: nowrap;
 }
 
@@ -336,6 +407,50 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-scroll {
   flex: 1;
   overflow: hidden;
+}
+
+/* ========== R4-00038：加载/错误/空态 ========== */
+.shop-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-5);
+  padding: 120rpx 40rpx;
+}
+
+.shop-state__spinner {
+  width: 56rpx;
+  height: 56rpx;
+  border: 4rpx solid var(--c-neutral-100);
+  border-top-color: var(--c-brand);
+  border-radius: 50%;
+  animation: shop-spin var(--d-loop, 1000ms) linear infinite;
+}
+
+@keyframes shop-spin {
+  to { transform: rotate(360deg); }
+}
+
+.shop-state__text {
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary);
+}
+
+.shop-state__btn {
+  min-height: 80rpx;
+  padding: 0 var(--sp-8);
+  border-radius: var(--r-full);
+  background: var(--c-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-state__btn-text {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-inverse);
 }
 
 /* ========== 商品网格 ========== */

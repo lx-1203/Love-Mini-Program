@@ -165,11 +165,14 @@ record CreateConversationRequest(
  * （text/voice/emoji），服务层规范化存储为小写；语音消息携带 durationSeconds。</p>
  * <p>活动卡片：kind=activity，content 为 JSON
  * {"title","desc","tag","targetUrl"}（见 docs/API-CONTRACT.md 聊天域）。</p>
+ *
+ * <p>R4-00335：kind 白名单移除 SYSTEM——系统消息仅允许服务端写入，客户端
+ * 伪造 SYSTEM 类型会破坏消息可信度（用户可冒充系统推送）。</p>
  */
 record SendMessageRequest(
     @NotBlank(message = "content 不能为空") @Size(max = 5000) String content,
-    @Pattern(regexp = "(?i)TEXT|IMAGE|VOICE|VIDEO|SYSTEM|EMOJI|ACTIVITY",
-        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/SYSTEM/EMOJI/ACTIVITY")
+    @Pattern(regexp = "(?i)TEXT|IMAGE|VOICE|VIDEO|EMOJI|ACTIVITY",
+        message = "kind 必须为 TEXT/IMAGE/VOICE/VIDEO/EMOJI/ACTIVITY")
     @Size(max = 32) String kind,
     @Min(0) @Max(60) Integer durationSeconds
 ) {}

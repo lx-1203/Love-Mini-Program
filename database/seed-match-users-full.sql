@@ -60,20 +60,27 @@ UPDATE users SET nickname = '苏黎' WHERE id = 20106;
 
 -- ---------- 2. 头像本地化（所有用户：pexels/空 → 本地包内素材） ----------
 -- 62 张本地素材（avatar-1..avatar-62），按 user_id 稳定映射
+-- 修复（R4-00508）：UPDATE 限定目标用户范围——原实现无条件覆盖全库所有用户
+-- （含真实用户/其他种子），现仅对 42 个空壳测试用户生效。
+-- 注：/static 路径仅客户端包内可解析；管理端域（admin nginx 无 /static 映射）下
+-- 头像仍会裂图，跨端 URL 约定需后续统一走 media 代理（见 audit-round3 R4-00508）。
 UPDATE users
    SET avatar_url = CONCAT('/static/assets/images/avatars/avatar-', 1 + MOD(id, 62), '.jpg')
- WHERE avatar_url IS NULL OR avatar_url = '' OR avatar_url NOT LIKE '/static%';
+ WHERE id IN (2,3,4,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,20102,20103,20106)
+   AND (avatar_url IS NULL OR avatar_url = '' OR avatar_url NOT LIKE '/static%');
 
 -- 基本资料照片墙/半身照同样本地化（pexels → 本地；空 → 本地）
+-- 修复（R4-00508）：同上，限定目标用户范围
 UPDATE user_basic_profile
    SET half_body_photo_url = CONCAT('/static/assets/images/avatars/avatar-', 1 + MOD(user_id, 62), '.jpg'),
        photo_gallery = JSON_ARRAY(
          CONCAT('/static/assets/images/avatars/avatar-', 1 + MOD(user_id, 62), '.jpg')
        )
- WHERE half_body_photo_url IS NULL
+ WHERE user_id IN (2,3,4,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,20102,20103,20106)
+   AND (half_body_photo_url IS NULL
     OR half_body_photo_url = ''
     OR half_body_photo_url LIKE '%pexels%'
-    OR photo_gallery LIKE '%pexels%';
+    OR photo_gallery LIKE '%pexels%');
 
 -- ---------- 3. 空壳用户补齐校区资料（40 个北京大学 + 清华/人大 各1，幂等先删后插） ----------
 DELETE FROM user_campus_profile WHERE user_id IN (2,3,4,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,20102,20103,20106);
@@ -151,13 +158,15 @@ SELECT
     '养了一只橘猫，猫奴本奴',
     '正在学烘焙，烤糊过三次'),
   ELT(1 + MOD(u.id, 6), '大一', '大二', '大三', '大四', '研一', '研二'),
-  ELT(1 + MOD(u.id, 4), '她', '她', '她', '她'),
+  -- 修复（R4-00507）：代词按 user_id 奇偶混合（她/他各半），修复原 ELT 恒为「她」导致匹配演示无异性候选的问题；
+  -- 身高区间同步按性别区分：偶数 id 女性 156-167cm，奇数 id 男性 168-179cm
+  IF(MOD(u.id, 2) = 0, '她', '他'),
   JSON_ARRAY(
     ELT(1 + MOD(u.id, 9),  '阅读', '旅行', '摄影', '运动', '美食', '电影', '音乐', '手工', '写作'),
     ELT(1 + MOD(u.id, 6),  '咖啡', '天文', '艺术', '桌游', '辩论', '健身'),
     ELT(1 + MOD(u.id, 5),  '动漫', '宠物', '烘焙', '徒步', '骑行')
   ),
-  156 + MOD(u.id, 20),
+  IF(MOD(u.id, 2) = 0, 156 + MOD(u.id, 12), 168 + MOD(u.id, 12)),
   ELT(1 + MOD(u.id, 2), 'bachelor', 'master'),
   'never',
   ELT(1 + MOD(u.id, 6), '广东省', '北京市', '上海市', '浙江省', '江苏省', '四川省'),

@@ -1,5 +1,5 @@
 import type { components } from "../../services/generated/api-types";
-import { appEnv } from "../../services/env";
+import { clientEnv } from "../../config/env";
 import { request } from "../../services/http";
 import { mockFixtures } from "../../services/mocks/fixtures";
 
@@ -9,7 +9,7 @@ type CreateTempChatSessionRequest = Schemas["CreateTempChatSessionRequest"];
 type ChatMessageRequest = Schemas["ChatMessageRequest"];
 type ContactExchangeDecisionRequest = Schemas["ContactExchangeDecisionRequest"];
 
-export type ChatTransportMode = typeof appEnv.apiMode;
+export type ChatTransportMode = typeof clientEnv.apiMode;
 
 export interface ChatTransport {
   createSession(payload: CreateTempChatSessionRequest): Promise<TempChatSession>;
@@ -112,6 +112,6 @@ class RealChatTransport implements ChatTransport {
   }
 }
 
-export function createChatTransport(mode: ChatTransportMode = appEnv.apiMode): ChatTransport {
+export function createChatTransport(mode: ChatTransportMode = clientEnv.apiMode): ChatTransport {
   return mode === "real" ? new RealChatTransport() : new MockChatTransport();
 }

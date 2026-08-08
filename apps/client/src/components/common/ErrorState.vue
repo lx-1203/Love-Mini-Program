@@ -5,8 +5,14 @@ import { IMAGE_PATHS } from '../../config/images';
 
 const props = withDefaults(defineProps<{
   type?: 'network' | 'server';
+  /** 显式错误主文案（传入时优先于预设网络/服务端文案） */
+  message?: string;
+  /** 显式错误副文案 */
+  description?: string;
 }>(), {
   type: 'network',
+  message: '',
+  description: '',
 });
 
 const emit = defineEmits<{
@@ -25,8 +31,8 @@ const iconSrc = computed(() => {
 
 const msgKey = computed(() => (props.type === 'server' ? 'error.server' : 'error.network'));
 const subKey = computed(() => (props.type === 'server' ? 'error.serverSub' : 'error.networkSub'));
-const msgText = computed(() => t(msgKey.value));
-const subText = computed(() => t(subKey.value));
+const msgText = computed(() => props.message || t(msgKey.value));
+const subText = computed(() => props.description || t(subKey.value));
 </script>
 
 <template>

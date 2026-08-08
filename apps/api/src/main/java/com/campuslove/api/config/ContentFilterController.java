@@ -37,6 +37,9 @@ public class ContentFilterController {
      * @return 敏感词检测结果
      */
     @PostMapping("/api/v1/content-filter/check")
+    // R4-00307：敏感词预检端点 permitAll 且每次全词库正则扫描（上限 5000 字符），
+    // 匿名可高频调用消耗 CPU——补按 IP 限流（桶 60，5 令牌/秒，前端输入防抖后足够）
+    @com.campuslove.api.ratelimit.RateLimit(capacity = 60, refillTokens = 5, key = "#request.remoteAddr")
     public Map<String, Object> checkContent(@Valid @RequestBody Map<String, String> body) {
         String content = body.get("content");
 

@@ -205,6 +205,12 @@ public class WalletServiceImpl implements WalletService {
         Optional<WalletTransactionLog> existing = transactionLogRepository.findByOrderId(orderId);
         if (existing.isPresent()) {
             WalletTransactionLog logEntry = existing.get();
+            // R4-00331：幂等命中分支补齐归属校验（与 deduct 的 R2-00266 对齐）——
+            // 同 orderId 跨用户调用时返回他人 balanceAfter 属信息泄露，必须拒绝
+            if (logEntry.getUserId() == null || !logEntry.getUserId().equals(userId)) {
+                throw new IllegalArgumentException(
+                        "orderId 已存在但归属用户不一致: orderId=" + orderId);
+            }
             log.info("钱包充值幂等命中：userId={}, orderId={}, amount={}, balanceAfter={}",
                     userId, orderId, logEntry.getAmount(), logEntry.getBalanceAfter());
             return logEntry.getBalanceAfter();
@@ -240,8 +246,14 @@ public class WalletServiceImpl implements WalletService {
             log.info("钱包充值幂等冲突，重新查询：userId={}, orderId={}", userId, orderId);
             Optional<WalletTransactionLog> conflictExisting = transactionLogRepository.findByOrderId(orderId);
             if (conflictExisting.isPresent()) {
+                // R4-00331：冲突重查命中同样校验归属用户，防止跨用户返回他人余额
+                WalletTransactionLog conflictEntry = conflictExisting.get();
+                if (conflictEntry.getUserId() == null || !conflictEntry.getUserId().equals(userId)) {
+                    throw new IllegalArgumentException(
+                            "orderId 已存在但归属用户不一致: orderId=" + orderId);
+                }
                 // 唯一键冲突且重查命中：另一事务已处理该 orderId，直接返回其结果（幂等语义）
-                return conflictExisting.get().getBalanceAfter();
+                return conflictEntry.getBalanceAfter();
             }
             // P0-16 修复：幂等冲突但重查为空——强制回滚，防止同 orderId 二次入账
             // （详见 deduct 同分支注释）。

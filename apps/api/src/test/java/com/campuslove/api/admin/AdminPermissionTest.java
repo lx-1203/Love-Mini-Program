@@ -580,7 +580,8 @@ class AdminPermissionTest {
                     onlineUserService,
                     schoolRepository,
                     "",
-                    true
+                    true,
+                    "13900000000"
             );
             when(userCampusProfileRepository.findByUserId(any())).thenReturn(Optional.empty());
             when(userScheduleProfileRepository.findByUserId(any())).thenReturn(Optional.empty());

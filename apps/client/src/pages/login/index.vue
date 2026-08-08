@@ -687,7 +687,7 @@ function openAccountBinding() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--c-bg-container) 100%);
   pointer-events: none;
 }
 
@@ -980,8 +980,8 @@ function openAccountBinding() {
   margin: var(--sp-4) var(--sp-8) 0;
   padding: var(--sp-4) var(--sp-5);
   border-radius: var(--r-xl, 24rpx);
-  background: linear-gradient(135deg, rgba(59, 157, 229, 0.12), rgba(124, 108, 240, 0.12));
-  border: 2rpx solid rgba(59, 157, 229, 0.35);
+  background: linear-gradient(135deg, var(--c-tint-blue-50) 0%, var(--c-tint-blue-soft) 100%);
+  border: 2rpx solid var(--c-secondary-blue-border-tint-strong, rgba(91, 127, 255, 0.18));
   transition: all var(--d-fast, 120ms) ease;
 }
 
@@ -999,7 +999,7 @@ function openAccountBinding() {
 .showcase-entry__badge-text {
   font-size: var(--fs-xs, 20rpx);
   font-weight: 700;
-  color: #fff;
+  color: var(--c-text-inverse);
   letter-spacing: 1rpx;
 }
 
@@ -1023,7 +1023,7 @@ function openAccountBinding() {
 
 .showcase-entry__arrow {
   font-size: var(--fs-2xl, 32rpx);
-  color: #3B9DE5;
+  color: var(--c-info-500, #3B82F6);
   font-weight: 600;
 }
 

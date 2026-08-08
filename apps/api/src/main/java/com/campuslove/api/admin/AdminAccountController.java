@@ -39,7 +39,9 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>权限说明：</p>
  * <ul>
  *   <li>URL 层：SecurityConfig 已配置 /api/v1/admin/** 仅 ADMIN 角色可访问（real 模式）</li>
- *   <li>方法层：{@code @PreAuthorize("hasRole('SUPER_ADMIN')")} —— 改密属账号安全操作，仅超级管理员可执行</li>
+ *   <li>方法层：R4-00389 起取消 {@code hasRole('SUPER_ADMIN')} 限制——改密仅操作
+ *       {@code SecurityUtils.getCurrentUserId()} 当前登录者自身账号（旧密码必须匹配），
+ *       校区管理员（ADMIN）可自助修改本人密码，无需超管代劳</li>
  *   <li>mock 模式：MockSecurityConfig 全部放行，本控制器仅 real profile 加载</li>
  * </ul>
  *
@@ -84,7 +86,8 @@ public class AdminAccountController {
      */
     @PostMapping("/change-password")
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    // R4-00389：放开为 ADMIN 可修改自己密码（SecurityUtils 已取当前用户，
+    // 旧密码校验防越权改密），校区管理员无需再依赖超管代劳
     @Auditable(value = AuditOperation.CHANGE_PASSWORD, targetType = "ACCOUNT",
             description = "管理员修改自身密码")
     public ApiResponse<Map<String, Object>> changePassword(

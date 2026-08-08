@@ -12,6 +12,7 @@
  * campusName 筛选仅对全局管理员生效。
  */
 import { onMounted, ref } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listCampusTopics,
@@ -45,13 +46,13 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 分页加载校园圈话题列表 */
 async function fetchTopics(): Promise<void> {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listCampusTopics({
       page: page.value,
@@ -60,18 +61,18 @@ async function fetchTopics(): Promise<void> {
       keyword: keyword.value.trim() || undefined,
       campusName: campusName.value.trim() || undefined,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     topics.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("campusTopics.loadFailed");
     topics.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

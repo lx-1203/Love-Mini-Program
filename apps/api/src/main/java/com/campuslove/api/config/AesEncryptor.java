@@ -179,13 +179,17 @@ public class AesEncryptor {
             byte[] plainBytes = cipher.doFinal(cipherText);
             return new String(plainBytes, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException ex) {
-            // Base64 解码失败：说明不是加密数据（可能是历史明文），原样返回
+            // Base64 解码失败：说明不是加密数据（历史明文迁移兼容路径），原样返回
             log.debug("输入非 Base64 编码，视为明文返回");
             return ciphertext;
         } catch (java.security.GeneralSecurityException ex) {
-            // 解密失败（如认证标签不匹配）：返回原值，避免影响业务流程
-            log.warn("AES 解密失败，原样返回输入: {}", ex.getMessage());
-            return ciphertext;
+            // R4-00247：解密失败（认证标签不匹配 / 密钥轮换后旧密文 / 数据被篡改）时
+            // 不再静默返回密文原值——原实现会把篡改或换密钥后的密文当明文读回、存回，
+            // 数据损坏且无感知。现抛出明确异常由调用方处理（重试/告警/人工介入），
+            // 不再掩盖密钥轮换等真实故障。
+            log.error("AES 解密失败（认证标签不匹配，可能密钥已轮换或密文被篡改）", ex);
+            throw new IllegalStateException(
+                    "AES 解密失败：密文认证失败（可能密钥已轮换或数据被篡改）", ex);
         }
     }
 

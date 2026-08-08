@@ -181,8 +181,8 @@ function onImageError(item: HomeBannerItem, event: Event) {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0) 40%,
-    rgba(0, 0, 0, 0.55) 100%
+    var(--c-gradient-mask-transparent, rgba(0, 0, 0, 0)) 40%,
+    var(--c-overlay-mid, rgba(15, 23, 42, 0.55)) 100%
   );
   pointer-events: none;
 }
@@ -205,7 +205,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
   color: var(--c-text-inverse, #ffffff);
   line-height: 1.3;
   /* FIXME: token 化需补充 —— 0.35 alpha 超出现有 --c-black-shadow-xl(0.24) 范围，需新增 --c-overlay-text-shadow-strong token */
-  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.35);
+  text-shadow: 0 2rpx 8rpx var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3));
 }
 
 .home-banner__subtitle {
@@ -213,7 +213,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
   color: var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85));
   line-height: 1.4;
   /* FIXME: token 化需补充 —— 0.35 alpha 超出现有 --c-black-shadow-xl(0.24) 范围，需新增 --c-overlay-text-shadow-strong token */
-  text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1rpx 4rpx var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3));
 }
 
 .home-banner__dots {

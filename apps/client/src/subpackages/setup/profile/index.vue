@@ -282,13 +282,12 @@ onMounted(async () => {
     form.grade = basic.grade ?? "";
     form.pronouns = basic.pronouns ?? "";
   }
-  // 校区资料回显城市信息（作为籍贯/未来城市的兜底默认值）
-  const campus = profileStore.campusProfile;
-  if (campus) {
-    if (!form.hometownProvince) form.hometownProvince = "";
-    if (!form.hometownCity) form.hometownCity = campus.city ?? "";
-    if (!form.futureCity) form.futureCity = campus.city ?? "";
-  }
+  // R4-00043：移除籍贯/未来城市的校区自动填充（籍贯为出生地，与校区无关；
+  // 自动填充会导致用户不修改即提交错误籍贯，污染同乡匹配与推荐）。
+  // 仅保留显式选择，默认值为空。
+  form.hometownProvince = "";
+  form.hometownCity = "";
+  form.futureCity = "";
   // 同步初始 picker 回显文案
   if (form.educationLevel) {
     const found = educationLevelOptions.value.find((o) => o.value === form.educationLevel);

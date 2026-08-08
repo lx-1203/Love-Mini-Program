@@ -41,8 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>修复：
  * <ul>
  *   <li>敏感数据加密：微信 openid 通过 {@link AesEncryptor} 加密后存储到数据库，
- *       避免数据库泄露时直接暴露用户身份标识。加密前后兼容：解密失败时视为明文，
- *       支持历史明文数据平滑迁移。</li>
+ *       避免数据库泄露时直接暴露用户身份标识。加密前后兼容：非 Base64 的历史明文
+ *       数据原样返回（平滑迁移）；R4-00247 起认证标签不匹配等真实解密失败抛出异常，
+ *       不再静默把密文当明文读回。</li>
  *   <li>日志脱敏（P0 CRITICAL FIN-00001/00002）：openId / phone / token 等敏感字段
  *       统一通过 {@link SensitiveDataMasker} 脱敏后再输出到日志，避免日志文件、APM 链路
  *       追踪、异常堆栈中泄露原始敏感值。openId 显示前 4 + 后 4 位，phone 显示前 3 + 后 4 位。</li>
@@ -111,9 +112,10 @@ public class RealAuthService implements AuthService {
 
     /**
      * P0-14：体验账号黑名单手机号（仅体验入口可登录，禁止通过注册/手机号登录占用）。
-     * 与 {@link #loginAsGuest()} 中固定体验手机号保持一致。
+     * R4-00250：由配置项 {@code app.guest-login.blacklist-phone} 注入（默认 13900000000），
+     * 更换体验号无需改代码重新发版。与 {@link #loginAsGuest()} 的体验账号创建逻辑保持一致。
      */
-    private static final String GUEST_BLACKLIST_PHONE = "13900000000";
+    private final String guestBlacklistPhone;
 
     public RealAuthService(
             WeChatClient weChatClient,
@@ -128,7 +130,8 @@ public class RealAuthService implements AuthService {
             OnlineUserService onlineUserService,
             SchoolRepository schoolRepository,
             @Value("${app.admin.password:}") String adminPassword,
-            @Value("${app.guest-login.enabled:false}") boolean guestLoginEnabled
+            @Value("${app.guest-login.enabled:false}") boolean guestLoginEnabled,
+            @Value("${app.guest-login.blacklist-phone:13900000000}") String guestBlacklistPhone
     ) {
         this.weChatClient = weChatClient;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -143,6 +146,7 @@ public class RealAuthService implements AuthService {
         this.schoolRepository = schoolRepository;
         this.adminPassword = adminPassword;
         this.guestLoginEnabled = guestLoginEnabled;
+        this.guestBlacklistPhone = guestBlacklistPhone;
     }
 
     @Override
@@ -219,7 +223,17 @@ public class RealAuthService implements AuthService {
         }
 
         // 从数据库计算各项会话状态
-        return buildSessionView(user, token);
+        // R4-00253：登录方式从在线会话读取（Redis 优先），未查到按 unknown 兜底，
+        // 不再硬编码 wechat，保证 /auth/me 返回的 loginMethod 与后台在线列表一致
+        String loginMethod = "unknown";
+        try {
+            loginMethod = onlineUserService.getSession(user.getId())
+                    .map(OnlineUserService.OnlineSessionRecord::loginMethod)
+                    .orElse("unknown");
+        } catch (RuntimeException ex) {
+            log.warn("查询在线会话登录方式失败, userId={}: {}", user.getId(), ex.getMessage());
+        }
+        return buildSessionView(user, token, loginMethod);
     }
 
     @Override
@@ -242,8 +256,10 @@ public class RealAuthService implements AuthService {
             session = weChatClient.code2Session(code);
         } catch (WeChatClient.WeChatAuthException ex) {
             Integer errcode = ex.getErrcode();
+            // R4-00254：上游异常细节（URL/网络信息）仅进日志，不拼接进用户可见消息，
+            // 避免微信接口/内部信息泄露给终端用户；堆栈随日志保留便于排查。
             log.warn("WeChat auth failed for code(length={}): errcode={}, message={}",
-                    code != null ? code.length() : 0, errcode, ex.getMessage());
+                    code != null ? code.length() : 0, errcode, ex.getMessage(), ex);
             // errcode 40029：code 无效/已过期 → INVALID_CODE（401）
             // 其他 errcode 或网络异常 → WECHAT_API_ERROR（502）
             if (errcode != null && errcode == 40029) {
@@ -254,7 +270,7 @@ public class RealAuthService implements AuthService {
             }
             throw new WechatLoginException(
                     WechatLoginException.ErrorCode.WECHAT_API_ERROR,
-                    "微信服务暂时不可用：" + (ex.getMessage() != null ? ex.getMessage() : "unknown"),
+                    "微信服务暂时不可用，请稍后重试",
                     ex);
         }
 
@@ -294,7 +310,7 @@ public class RealAuthService implements AuthService {
         recordOnlineSession(user.getId(), jwtToken, "wechat");
 
         // 4. 返回会话视图
-        return buildSessionView(user, jwtToken);
+        return buildSessionView(user, jwtToken, "wechat");
     }
 
     /**
@@ -386,33 +402,40 @@ public class RealAuthService implements AuthService {
             throw new IllegalArgumentException("无法从 Token 中提取用户信息");
         }
 
-        // 3. 生成新令牌
-        String newToken = jwtTokenProvider.generateToken(userId);
-
-        // 4. 获取用户信息并返回新会话
+        // 3. R4-00255：先校验用户存在且未被禁用，再签发新令牌——
+        //    原实现先 generateToken 再查用户，被禁用用户刷新仍返回 loggedIn=true 会话
+        //    （受保护端点 401，行为不一致）。现与 loginWithWechat 的 USER_DISABLED 语义对齐。
+        Long uid;
         try {
-            Long uid = Long.parseLong(userId);
-            Optional<User> userOpt = userRepository.findById(uid);
-            if (userOpt.isEmpty()) {
-                throw new IllegalArgumentException("用户不存在");
-            }
-            // 4.5 刷新令牌后同步更新在线会话：保留原登录方式，TTL 随新令牌刷新
-            //     （原会话不存在时按 unknown 兜底，保证在线列表仍能看到该用户）
-            try {
-                String oldMethod = onlineUserService.getSession(uid)
-                        .map(OnlineUserService.OnlineSessionRecord::loginMethod)
-                        .orElse("unknown");
-                String newJti = jwtTokenProvider.getJtiFromToken(newToken);
-                onlineUserService.recordLogin(uid, newJti, oldMethod,
-                        jwtTokenProvider.getRemainingTtlSeconds(newToken));
-            } catch (RuntimeException ex) {
-                // 在线会话更新失败不影响刷新主流程，仅记录日志
-                log.warn("刷新在线会话失败, userId={}: {}", uid, ex.getMessage());
-            }
-            return buildSessionView(userOpt.get(), newToken);
+            uid = Long.parseLong(userId);
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("用户 ID 格式无效");
         }
+        User user = userRepository.findById(uid).orElseThrow(() ->
+                new IllegalArgumentException("用户不存在"));
+        if (user.isDisabled()) {
+            log.warn("禁用用户尝试刷新令牌，userId={}，拒绝刷新", uid);
+            throw new IllegalArgumentException("账号已被禁用，请联系管理员");
+        }
+
+        // 4. 生成新令牌
+        String newToken = jwtTokenProvider.generateToken(userId);
+
+        // 5. 刷新令牌后同步更新在线会话：保留原登录方式，TTL 随新令牌刷新
+        //     （原会话不存在时按 unknown 兜底，保证在线列表仍能看到该用户）
+        String oldMethod = "unknown";
+        try {
+            oldMethod = onlineUserService.getSession(uid)
+                    .map(OnlineUserService.OnlineSessionRecord::loginMethod)
+                    .orElse("unknown");
+            String newJti = jwtTokenProvider.getJtiFromToken(newToken);
+            onlineUserService.recordLogin(uid, newJti, oldMethod,
+                    jwtTokenProvider.getRemainingTtlSeconds(newToken));
+        } catch (RuntimeException ex) {
+            // 在线会话更新失败不影响刷新主流程，仅记录日志
+            log.warn("刷新在线会话失败, userId={}: {}", uid, ex.getMessage());
+        }
+        return buildSessionView(user, newToken, oldMethod);
     }
 
     @Override
@@ -438,8 +461,8 @@ public class RealAuthService implements AuthService {
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
             throw new IllegalArgumentException("手机号格式不正确");
         }
-        // P0-14：体验账号黑名单——13900000000 为体验入口专用手机号，禁止注册新账号
-        if (GUEST_BLACKLIST_PHONE.equals(phone)) {
+        // P0-14：体验账号黑名单——黑名单手机号为体验入口专用，禁止注册新账号
+        if (guestBlacklistPhone.equals(phone)) {
             log.warn("黑名单手机号注册被拒绝：phone={}", SensitiveDataMasker.mask(phone));
             throw new IllegalArgumentException("该手机号不可注册");
         }
@@ -486,7 +509,7 @@ public class RealAuthService implements AuthService {
         // 记录在线会话（eladmin「在线用户」对齐）：注册成功即自动登录，视为在线用户，
         // 与 loginWithPhone/loginAsAdmin/loginWithWechat 一致
         recordOnlineSession(saved.getId(), token, "phone");
-        return buildSessionView(saved, token);
+        return buildSessionView(saved, token, "phone");
     }
 
     /**
@@ -501,8 +524,8 @@ public class RealAuthService implements AuthService {
         if (phone == null || phone.isBlank() || password == null || password.isBlank()) {
             throw new InvalidCredentialsException("手机号或密码错误");
         }
-        // P0-14：体验账号黑名单——13900000000 仅体验入口可登录，禁止手机号+密码路径占用
-        if (GUEST_BLACKLIST_PHONE.equals(phone)) {
+        // P0-14：体验账号黑名单——黑名单手机号仅体验入口可登录，禁止手机号+密码路径占用
+        if (guestBlacklistPhone.equals(phone)) {
             log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
             throw new IllegalArgumentException("该手机号不可登录");
         }
@@ -530,7 +553,7 @@ public class RealAuthService implements AuthService {
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 phone
         recordOnlineSession(user.getId(), token, "phone");
-        return buildSessionView(user, token);
+        return buildSessionView(user, token, "phone");
     }
 
     /**
@@ -562,19 +585,36 @@ public class RealAuthService implements AuthService {
             throw new IllegalStateException("体验账号入口已关闭，请使用其他方式登录");
         }
         // R4-00251：每次登录创建独立临时账号（openid 全局唯一，phone 为空）
-        User user = new User();
-        user.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
-        user.setPhone(null);
-        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-        user.setNickname("体验用户");
-        user.setRole("USER");
-        user.setStatus("active");
-        user.setProfileCompletion(0);
-        user.setFollowingCount(0);
-        user.setFollowersCount(0);
-        user.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-        user = userRepository.save(user);
+        // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
+        // 更换新 UUID 重试一次（对齐 registerUser 的 A-34 兜底），避免返回 500。
+        User user = null;
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            User newUser = new User();
+            newUser.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
+            newUser.setPhone(null);
+            newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+            newUser.setNickname("体验用户");
+            newUser.setRole("USER");
+            newUser.setStatus("active");
+            newUser.setProfileCompletion(0);
+            newUser.setFollowingCount(0);
+            newUser.setFollowersCount(0);
+            newUser.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            newUser.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            try {
+                user = userRepository.save(newUser);
+                break;
+            } catch (DataIntegrityViolationException ex) {
+                if (attempt >= 2) {
+                    log.warn("体验账号创建唯一约束冲突且重试仍失败: {}", ex.getMessage());
+                    throw new IllegalStateException("体验账号创建失败，请稍后重试", ex);
+                }
+                log.info("体验账号创建唯一约束冲突（并发首登），更换 UUID 重试");
+            }
+        }
+        if (user == null) {
+            throw new IllegalStateException("体验账号创建失败，请稍后重试");
+        }
         log.info("体验会话账号创建成功: userId={}", user.getId());
         // 一键体验：自动预填完整资料（基本资料/校园认证/课表），
         // 使 profile_completion=100，登录后所有页面立即可用
@@ -583,7 +623,7 @@ public class RealAuthService implements AuthService {
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 guest
         recordOnlineSession(user.getId(), token, "guest");
-        return buildSessionView(user, token);
+        return buildSessionView(user, token, "guest");
     }
 
     /**
@@ -713,7 +753,7 @@ public class RealAuthService implements AuthService {
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 admin
         recordOnlineSession(user.getId(), jwtToken, "admin");
         log.info("管理员登录成功, userId={}, username={}", user.getId(), username);
-        return buildSessionView(user, jwtToken);
+        return buildSessionView(user, jwtToken, "admin");
     }
 
     @Override
@@ -956,11 +996,12 @@ public class RealAuthService implements AuthService {
      * <p>注：openId / phone 等敏感字段在日志输出时统一通过 {@link SensitiveDataMasker}
      * 脱敏（P0 CRITICAL FIN-00001/00002），不再使用本类内的本地脱敏方法。</p>
      *
-     * @param user  用户实体
-     * @param token JWT 令牌（可为 null）
+     * @param user        用户实体
+     * @param token       JWT 令牌（可为 null）
+     * @param loginMethod 实际登录方式（wechat / phone / guest / admin / unknown）
      * @return 完整的 UserSessionView
      */
-    private UserSessionView buildSessionView(User user, String token) {
+    private UserSessionView buildSessionView(User user, String token, String loginMethod) {
         Long userId = user.getId();
 
         // profileCompleted: profileCompletion >= 50 视为已完成（P0-34/P0-35 修复，2026-08-08）。
@@ -1003,7 +1044,7 @@ public class RealAuthService implements AuthService {
         return new UserSessionView(
                 String.valueOf(userId),
                 true,
-                "wechat",
+                loginMethod,
                 displayName,
                 phoneBound,
                 profileCompleted,

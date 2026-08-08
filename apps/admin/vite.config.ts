@@ -3,6 +3,23 @@ import vue from "@vitejs/plugin-vue";
 import path from "path";
 
 /**
+ * 解析 /api 代理目标（R4-00480）。
+ * 优先读取 ADMIN_API_PROXY_TARGET；未配置时回退本机 8080 并输出醒目警告，
+ * 避免生产/他人环境误连本地回环而难以排查。
+ */
+function resolveProxyTarget(): string {
+  const target = process.env.ADMIN_API_PROXY_TARGET;
+  if (target) {
+    return target;
+  }
+  console.warn(
+    "[admin/vite] 未配置 ADMIN_API_PROXY_TARGET，/api 代理回退到 http://localhost:8080。\n"
+    + "若后端不在本机 8080 端口，请设置环境变量后重启 dev server（如 ADMIN_API_PROXY_TARGET=https://api.example.com）。",
+  );
+  return "http://localhost:8080";
+}
+
+/**
  * Admin（eladmin 风格重构后台）Vite 配置。
  *
  * 主后台，端口 5177。旧后台已迁移至 apps/admin-legacy（端口 5178）作为回退。
@@ -24,10 +41,13 @@ export default defineConfig(({ mode }) => ({
     port: 5177,
     host: true,
     proxy: {
-      // 将前端 /api 请求代理到后端 Spring Boot 服务（默认端口 8080）。
+      // 将前端 /api 请求代理到后端 Spring Boot 服务。
       // 路径重写：保持 /api 前缀不变，后端 Controller 也使用 /api/... 路径，无需重写。
       "/api": {
-        target: process.env.ADMIN_API_PROXY_TARGET || "http://localhost:8080",
+        // R4-00480：默认回退本机 8080（本地开发后端约定端口）并显式告警，
+        // 避免他人环境误以 dev server 直连本地回环且难以排查；后端不在本机时
+        // 应设置 ADMIN_API_PROXY_TARGET（如 https://api.example.com）。
+        target: resolveProxyTarget(),
         changeOrigin: true,
         ws: false,
         // 同源代理转发时移除浏览器注入的 Origin 头：后端以 real profile 运行时

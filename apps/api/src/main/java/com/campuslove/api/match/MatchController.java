@@ -194,7 +194,9 @@ public class MatchController {
    * POST /api/matches/super-like
    *
    * <p>A-25/A-31：超级喜欢与普通喜欢行为区分——不受每日普通喜欢上限（30 次/日）限制，
-   * 双向喜欢生成的心动信号 matchType=super_like（权重更高语义，由上层按类型区分展示）。
+   * 但 R4-00334 起受独立每日配额约束（app.match.super-like-daily-limit，默认 10 次/日），
+   * 防止超级喜欢无限绕过普通喜欢限额；双向喜欢生成的心动信号 matchType=super_like
+   * （权重更高语义，由上层按类型区分展示）。
    * 实体无 superLike 列（不落库标记），通过信号匹配类型与行为差异表达。</p>
    */
   @PostMapping("/super-like")

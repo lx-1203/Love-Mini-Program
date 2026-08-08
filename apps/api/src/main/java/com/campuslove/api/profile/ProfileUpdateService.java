@@ -175,8 +175,17 @@ public class ProfileUpdateService {
         user.setPronouns(request.pronouns());
 
         // 2026-08-07：头像 URL 可选更新（非空时写入 users.avatar_url）
+        // R4-00297：仅允许本服务媒体存储返回的 URL（/api/v1/media/ 或 /uploads/ 前缀
+        // 的相对路径）——拒绝任意外部 URL（http/https/data/blob/wxfile 等），
+        // 防止注入外部图片冒充头像（钓鱼/第三方追踪像素）。
         if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
-            user.setAvatarUrl(request.avatarUrl());
+            String avatarUrl = request.avatarUrl().trim();
+            if (!isTrustedMediaUrl(avatarUrl)) {
+                log.warn("头像 URL 未通过白名单校验，拒绝写入: userId={}, avatarUrl={}",
+                        currentUserId, sanitizeForLog(avatarUrl));
+                throw new IllegalArgumentException("头像地址不合法，仅支持本服务上传的图片");
+            }
+            user.setAvatarUrl(avatarUrl);
         }
 
         // 重新计算资料完善度并保存
@@ -185,6 +194,37 @@ public class ProfileUpdateService {
         userRepository.save(user);
 
         return queryService.toBasicProfileView(profile, user);
+    }
+
+    /**
+     * R4-00297：头像 URL 白名单校验。
+     *
+     * <p>仅接受本服务媒体存储返回的相对路径（当前 {@code /api/v1/media/...} 或
+     * 历史 {@code /uploads/...}），拒绝绝对 URL（http/https/data: 等），
+     * 杜绝任意外部 URL 冒充头像。</p>
+     *
+     * @param url 待校验的头像 URL
+     * @return true 表示可信（本服务存储路径）
+     */
+    private boolean isTrustedMediaUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        String lower = url.toLowerCase(java.util.Locale.ROOT);
+        if (lower.startsWith("http://") || lower.startsWith("https://")
+                || lower.startsWith("data:") || lower.startsWith("blob:")
+                || lower.startsWith("wxfile://") || lower.startsWith("//")) {
+            return false;
+        }
+        return lower.startsWith("/api/v1/media/") || lower.startsWith("/uploads/");
+    }
+
+    /** R4-00297：日志输出头像 URL 前截断，避免完整 URL 落入日志（可含用户 ID 等路径信息） */
+    private String sanitizeForLog(String url) {
+        if (url == null) {
+            return "null";
+        }
+        return url.length() > 120 ? url.substring(0, 120) + "..." : url;
     }
 
     // ---- 媒体上传 ----

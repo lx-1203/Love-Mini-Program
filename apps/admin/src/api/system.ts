@@ -444,7 +444,7 @@ export interface AuditLogPageView {
 
 /** 审计日志查询参数 */
 export interface AuditLogQuery {
-  /** 页码（0-based） */
+  /** 页码（1-based，与其余列表视图统一；本模块在请求时换算为后端 0-based） */
   page?: number;
   /** 每页条数 */
   size?: number;
@@ -484,12 +484,14 @@ export const AUDIT_OPERATIONS: { value: string; labelKey: string }[] = [
 ];
 
 /**
- * 分页查询审计日志（page 从 0 开始，后端约定 page/size 参数）。
+ * 分页查询审计日志（后端约定 page 从 0 开始、page/size 参数；
+ * 本模块对外统一 pageBase=1，入参 page 为 1-based，发送前换算为 0-based）。
  * GET /api/v1/admin/audit-logs
  */
 export function listAuditLogs(query: AuditLogQuery = {}): Promise<AuditLogPageView> {
   return get<AuditLogPageView>("/v1/admin/audit-logs", {
-    page: query.page ?? 0,
+    // 1-based → 0-based 换算（视图层与其余分页列表统一从 1 开始）
+    page: Math.max((query.page ?? 1) - 1, 0),
     size: query.size ?? DEFAULT_PAGE_SIZE,
     operator: query.operator || undefined,
     operation: query.operation || undefined,

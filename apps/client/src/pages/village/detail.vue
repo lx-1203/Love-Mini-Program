@@ -9,6 +9,11 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime, type CommentItem, type PostAuthor } from "../../stores/village";
+// R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
+import { mapToCommentItem } from "../../stores/village/utils";
+import type { CommentListResponse } from "../../stores/village/types";
+import { request } from "../../services/http";
+import { useMock } from "../../stores/helpers/use-mock";
 import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
@@ -29,6 +34,14 @@ const { t, tm } = useI18n();
 // 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用，已移除。
 // 修复（严格模式 noUnusedLocals）：loadingSimilarAuthors 从 storeToRefs 解构后未引用，已移除。
 const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageStore);
+
+/**
+ * R4-00086：昵称首字符兜底（author.name 为空/null 时返回占位符，
+ * 避免 name[0] 抛 TypeError 中断渲染）。
+ */
+function initialOf(name?: string | null): string {
+  return name && name.length > 0 ? name.charAt(0) : "?";
+}
 
 /** 评论输入内容 */
 const commentContent = ref("");
@@ -54,6 +67,45 @@ const shareComment = ref("");
 const isSharing = ref(false);
 /** 帖子举报弹窗是否显示 */
 const showReportDialog = ref(false);
+
+/* ========== R4-00087：评论分页加载更多 ========== */
+/** 当前已加载的评论页码（从第 1 页开始） */
+const commentPage = ref(1);
+/** 评论分页大小（对齐后端默认/契约 pageSize） */
+const COMMENT_PAGE_SIZE = 20;
+/** 是否正在加载更多评论 */
+const loadingMoreComments = ref(false);
+/** 是否还有更多评论（服务端总数 > 已加载根评论数；mock 模式一次性返回全部，无分页） */
+const commentHasMore = computed(() => {
+  if (useMock()) return false;
+  return comments.value.length < (currentPost.value?.comments ?? 0);
+});
+
+/**
+ * 加载下一页评论（后端 GET /posts/{postId}/comments 支持 page/pageSize 分页）。
+ * 追加到 store 的 comments 列表，与首屏 fetchComments 共用渲染。
+ */
+async function loadMoreComments(): Promise<void> {
+  const post = currentPost.value;
+  if (!post || loadingMoreComments.value || !commentHasMore.value) return;
+  loadingMoreComments.value = true;
+  try {
+    const data = await request<CommentListResponse>({
+      url: `/posts/${post.id}/comments`,
+      method: "GET",
+      data: { page: commentPage.value + 1, pageSize: COMMENT_PAGE_SIZE },
+    });
+    commentPage.value = data.page;
+    villageStore.comments = [
+      ...villageStore.comments,
+      ...data.items.map(mapToCommentItem),
+    ];
+  } catch (_e) {
+    uni.showToast({ title: t("village.detail.loadMoreCommentsFailed"), icon: "none" });
+  } finally {
+    loadingMoreComments.value = false;
+  }
+}
 
 /**
  * 2026-08-08 论坛互动真实化：帖子收藏已接入后端（post_favorites 表 + toggle 接口），
@@ -555,6 +607,8 @@ onLoad((query) => {
 
   // 已有 currentPost（通过 setCurrentPost 导航而来），加载评论
   if (currentPost.value) {
+    // R4-00087：进入新帖子时重置评论分页游标
+    commentPage.value = 1;
     void villageStore.fetchComments(currentPost.value.id);
     void villageStore.fetchSimilarAuthors(currentPost.value.id);
   }
@@ -607,7 +661,7 @@ defineExpose({ handleCommentLike, noop });
               lazy-load alt=""
               @error="onImageError('author')"
             />
-            <text v-else class="author-avatar__char">{{ currentPost.author.name[0] }}</text>
+            <text v-else class="author-avatar__char">{{ initialOf(currentPost.author.name) }}</text>
             <!-- 头像左上角身份徽章（校友） -->
             <view v-if="currentPost.isAlumni" class="author-avatar__badge">
               <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="author-avatar__badge-icon" mode="aspectFit" />
@@ -750,7 +804,7 @@ defineExpose({ handleCommentLike, noop });
                 mode="aspectFill" lazy-load alt=""
                 @error="onImageError('comment-' + comment.id)"
               />
-              <text v-else class="comment-avatar__text">{{ comment.author.name[0] }}</text>
+              <text v-else class="comment-avatar__text">{{ initialOf(comment.author.name) }}</text>
             </view>
             <view class="comment-content">
               <view class="comment-header">
@@ -800,7 +854,7 @@ defineExpose({ handleCommentLike, noop });
                       mode="aspectFill" lazy-load alt=""
                       @error="onImageError('reply-' + reply.id)"
                     />
-                    <text v-else class="comment-reply__avatar-text">{{ reply.author.name[0] }}</text>
+                    <text v-else class="comment-reply__avatar-text">{{ initialOf(reply.author.name) }}</text>
                   </view>
                   <view class="comment-reply__content">
                     <view class="comment-reply__header">
@@ -848,6 +902,21 @@ defineExpose({ handleCommentLike, noop });
         <view v-else class="comments-empty">
           <text class="comments-empty__text">{{ t("village.detail.emptyComments") }}</text>
         </view>
+
+        <!-- R4-00087：评论分页「加载更多」 -->
+        <view
+          v-if="commentHasMore"
+          class="comments-more press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('village.detail.loadMoreComments')"
+          @tap="loadMoreComments"
+        >
+          <text class="comments-more__text">
+            {{ loadingMoreComments ? t("village.detail.loadingMoreComments") : t("village.detail.loadMoreComments") }}
+          </text>
+        </view>
       </view>
 
       <!-- ===== 相似作者推荐 ===== -->
@@ -875,7 +944,7 @@ defineExpose({ handleCommentLike, noop });
                   mode="aspectFill" lazy-load alt=""
                   @error="onImageError('similar-' + author.userId)"
                 />
-                <text v-else class="similar-author-avatar__char">{{ author.name[0] }}</text>
+                <text v-else class="similar-author-avatar__char">{{ initialOf(author.name) }}</text>
                 <!-- 头像左上角身份徽章（校友） -->
                 <view v-if="author.isAlumni" class="similar-author-avatar__badge">
                   <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="similar-author-avatar__badge-icon" mode="aspectFit" />
@@ -1137,14 +1206,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: $white;
+  /* R4-02537：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   font-weight: 500;
 }
 
 .detail-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: $white;
+  /* R4-02537：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
 }
 
 .detail-header__spacer {
@@ -1160,7 +1231,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
    作者交互卡片
    ================================================================ */
 .author-card {
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 20rpx 24rpx;
   padding: 28rpx;
   border-radius: var(--r-xl, 24rpx);
@@ -1215,7 +1287,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   height: 32rpx;
   border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-500));
-  border: 2rpx solid $white;
+  /* R4-02537：头像描边保持白色（深色下视觉惯例，对齐 --avatar-border 设计） */
+  border: 2rpx solid var(--c-neutral-0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1428,7 +1501,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
    帖子正文卡片
    ================================================================ */
 .detail-post {
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   padding: 28rpx 32rpx;
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
@@ -1522,7 +1596,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* ========== 评论区 ========== */
 .comments-section {
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   padding: 28rpx 32rpx;
   margin: 0 24rpx;
   border-radius: var(--r-xl, 24rpx);
@@ -1533,7 +1608,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
    相似作者推荐
    ================================================================ */
 .similar-authors-section {
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   padding: 28rpx 32rpx;
   margin: 16rpx 24rpx 0;
   border-radius: var(--r-xl, 24rpx);
@@ -1624,7 +1700,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   height: 28rpx;
   border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-500));
-  border: 2rpx solid $white;
+  /* R4-02537：头像描边保持白色（深色下视觉惯例，对齐 --avatar-border 设计） */
+  border: 2rpx solid var(--c-neutral-0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1710,7 +1787,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .similar-author-actions .action-btn--follow-active {
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border: 2rpx solid $border-light;
   box-shadow: none;
 }
@@ -1895,7 +1973,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
 }
 
 .comment-reply-btn__text {
@@ -2005,7 +2084,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .reply-mode-bar__cancel {
   padding: 6rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   flex-shrink: 0;
 }
 
@@ -2020,7 +2100,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   gap: 6rpx;
   padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   transition: all var(--d-fast, 120ms) ease;
 }
 
@@ -2056,6 +2137,25 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .comments-empty__text {
   font-size: var(--fs-lg, 28rpx);
   color: $text-tertiary;
+}
+
+/* R4-00087：评论分页「加载更多」按钮 */
+.comments-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 热区高度 ≥ 44px 可点击标准 */
+  min-height: 88rpx;
+  margin-top: var(--sp-4);
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+}
+
+.comments-more__text {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--c-brand-700);
 }
 
 .body-footer {
@@ -2104,7 +2204,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   gap: 20rpx;
   padding: 20rpx 32rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-top: 1rpx solid $border-light;
   box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs);
 }
@@ -2181,7 +2282,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .share-modal {
   width: 620rpx;
-  background: $white;
+  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xxl, 28rpx);
   overflow: hidden;
   box-shadow: 0 20rpx 60rpx var(--c-overlay-text-shadow-mid);

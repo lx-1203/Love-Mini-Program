@@ -12,6 +12,11 @@
 --   - campusName/verification ← user_campus_profile
 --   - 动态预览 ← posts（作者最新帖子）
 --
+--   修复（R4-00421）：photo_gallery / posts.images 不再用 CONCAT 拼接 Pexels URL——
+--   区间内多数照片 ID 不存在必 404，虚拟用户照片墙破图。改为客户端包内已验证
+--   存在的本地素材（avatars/avatar-1..62.jpg、posts/post-1..8.jpg、campus-library.jpg，
+--   与 seed-match-users-full.sql 的本地化方案一致；mp 端可加载）。
+--
 --   幂等性：固定 user_id + WHERE NOT EXISTS，可安全重跑。
 -- ============================================================
 
@@ -41,10 +46,11 @@ SELECT u.id, u.nickname,
                           WHEN '东南大学' THEN '南京' ELSE '北京' END,
        '北京',
        JSON_ARRAY('旅行','读书','健身','美食'),
+       -- R4-00421：本地已验证素材（avatar-1..62 与 post-1..8 均存在于 apps/client/src/static/assets）
        JSON_ARRAY(u.avatar_url,
-                  CONCAT('https://images.pexels.com/photos/', 220453 + (u.id MOD 40), '/pexels-photo-', 220453 + (u.id MOD 40), '.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop')),
+                  CONCAT('/static/assets/images/posts/post-', 1 + MOD(u.id, 8), '.jpg')),
        u.avatar_url,
-       'https://images.pexels.com/photos/257360/pexels-photo-257360.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop'
+       '/static/assets/images/posts/campus-library.jpg'
 FROM users u
 WHERE u.id BETWEEN 10001 AND 10056
   AND NOT EXISTS (SELECT 1 FROM user_basic_profile b WHERE b.user_id = u.id);
@@ -76,7 +82,8 @@ SELECT u.id,
            WHEN 3 THEN '最近在学做甜点，第一次做提拉米苏居然成功了，成就感满满。'
            WHEN 4 THEN '想找个人一起去听音乐会，最近有场不错的爵士演出。'
            ELSE '今天在操场跑步遇到了很美的晚霞，随手拍了下来，分享给你们。' END,
-       JSON_ARRAY(CONCAT('https://images.pexels.com/photos/', 220453 + (u.id MOD 60), '/pexels-photo-', 220453 + (u.id MOD 60), '.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop')),
+       -- R4-00421：本地已验证素材
+       JSON_ARRAY(CONCAT('/static/assets/images/posts/post-', 1 + MOD(u.id, 8), '.jpg')),
        JSON_ARRAY('生活记录'),
        5 + (u.id MOD 40), 1 + (u.id MOD 8), 0,
        'approved', 'interest', 'active', 0,
@@ -114,7 +121,8 @@ SELECT u.id, u.nickname, '全功能超级测试账号：可体验匹配/消息/�
        '大三', 'TA', JSON_ARRAY('阅读','旅行','摄影','音乐','美食','桌游'),
        175, 'bachelor', 'never', '北京', '北京', '北京',
        JSON_ARRAY('旅行','读书','事业','健康'),
-       JSON_ARRAY('https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop'),
+       -- R4-00421：本地已验证素材
+       JSON_ARRAY('/static/assets/images/posts/post-1.jpg'),
        ''
 FROM users u
 WHERE u.id = 1

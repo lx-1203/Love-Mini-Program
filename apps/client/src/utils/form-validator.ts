@@ -6,6 +6,9 @@
  * - 提供 validateForm 组合校验入口，一次校验多个字段并返回首个错误
  * - 避免每个页面重复编写正则与 if-else 校验模板
  *
+ * 修复（R4-00216）：全部默认校验文案 i18n 化（formValidator.* 键），
+ * 调用方仍可传入自定义 message 覆盖；默认参数在调用时求值，随 locale 切换。
+ *
  * mp-weixin 兼容性：
  * - 不使用 optional catch binding
  * - 不使用 import.meta.env
@@ -23,6 +26,9 @@
  * }
  * ```
  */
+
+// 修复（R4-00216）：默认文案 i18n 化
+import { t } from "@/i18n";
 
 /**
  * 校验结果类型
@@ -52,10 +58,11 @@ export interface FieldRule {
 /**
  * 必填校验：去除首尾空格后非空。
  *
- * @param message - 校验失败时的文案，默认"此项为必填项"
+ * @param message - 校验失败时的文案，默认取 i18n formValidator.required
+ *   （修复 R4-00216：默认文案 i18n 化，随 locale 切换）
  * @returns 校验规则函数
  */
-export function required(message = "此项为必填项"): ValidationRule {
+export function required(message = t("formValidator.required")): ValidationRule {
   return (value: string): ValidationResult => {
     if (typeof value !== "string" || value.trim().length === 0) {
       return { valid: false, message };
@@ -70,7 +77,7 @@ export function required(message = "此项为必填项"): ValidationRule {
  * @param message - 校验失败时的文案，默认"请输入正确的手机号"
  * @returns 校验规则函数
  */
-export function phone(message = "请输入正确的手机号"): ValidationRule {
+export function phone(message = t("formValidator.phone")): ValidationRule {
   const PHONE_REGEX = /^1[3-9]\d{9}$/;
   return (value: string): ValidationResult => {
     if (!PHONE_REGEX.test(value)) {
@@ -86,7 +93,7 @@ export function phone(message = "请输入正确的手机号"): ValidationRule {
  * @param message - 校验失败时的文案，默认"验证码为4-6位数字"
  * @returns 校验规则函数
  */
-export function code(message = "验证码为4-6位数字"): ValidationRule {
+export function code(message = t("formValidator.code")): ValidationRule {
   const CODE_REGEX = /^\d{4,6}$/;
   return (value: string): ValidationResult => {
     if (!CODE_REGEX.test(value)) {
@@ -110,7 +117,7 @@ export function length(min: number, max: number, message?: string): ValidationRu
     if (len < min || len > max) {
       return {
         valid: false,
-        message: message || `长度需在${min}-${max}之间`,
+        message: message || t("formValidator.lengthRange", { min, max }),
       };
     }
     return { valid: true, message: null };
@@ -130,7 +137,7 @@ export function maxLength(max: number, message?: string): ValidationRule {
     if (len > max) {
       return {
         valid: false,
-        message: message || `不能超过${max}个字符`,
+        message: message || t("formValidator.maxLength", { max }),
       };
     }
     return { valid: true, message: null };
@@ -143,7 +150,7 @@ export function maxLength(max: number, message?: string): ValidationRule {
  * @param message - 校验失败时的文案，默认"请输入正确的邮箱"
  * @returns 校验规则函数
  */
-export function email(message = "请输入正确的邮箱"): ValidationRule {
+export function email(message = t("formValidator.email")): ValidationRule {
   const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
   return (value: string): ValidationResult => {
     if (!EMAIL_REGEX.test(value)) {
@@ -159,7 +166,7 @@ export function email(message = "请输入正确的邮箱"): ValidationRule {
  * @param message - 校验失败时的文案，默认"请输入正确的微信号"
  * @returns 校验规则函数
  */
-export function wechatId(message = "请输入正确的微信号"): ValidationRule {
+export function wechatId(message = t("formValidator.wechatId")): ValidationRule {
   const WECHAT_REGEX = /^[A-Za-z][A-Za-z0-9_-]{5,19}$/;
   return (value: string): ValidationResult => {
     if (!WECHAT_REGEX.test(value)) {

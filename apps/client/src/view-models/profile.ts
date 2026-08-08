@@ -1,5 +1,8 @@
 import type { components } from "../services/generated/api-types";
 import type { VipStatus, MyPostSummary } from "../stores/profile";
+// 修复（R4-00220）：占位文案 i18n 化 + 相对时间复用 utils/time.ts
+import { t, i18n } from "@/i18n";
+import { formatRelativeTime as formatRelativeTimeUtil } from "../utils/time";
 
 type Schemas = components["schemas"];
 
@@ -68,29 +71,21 @@ export interface MyPostView {
   images?: string[];
 }
 
-/** 简介默认文案 */
-const DEFAULT_BIO = "这个人很懒，什么都没写";
-/** 摘要最大长度 */
+/**
+ * 摘要最大长度
+ */
 const SUMMARY_MAX_LENGTH = 40;
 
 /**
- * 格式化相对时间（与 village store 保持一致风格）
+ * 格式化相对时间（修复 R4-00220：复用 utils/time.ts 的 formatRelativeTime，
+ * 与全局 i18n locale 联动，不再硬编码中文「刚刚/N 分钟前/…」）。
  */
 function formatRelativeTime(dateStr: string): string {
-  const now = Date.now();
   const then = Date.parse(dateStr);
   if (Number.isNaN(then)) return "";
-  const diff = now - then;
-  if (diff < 0) return "刚刚";
-
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diff < minute) return "刚刚";
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
-  return `${Math.floor(diff / day)} 天前`;
+  // locale 直接取 vue-i18n 全局实例（utils/time.ts 的 getCurrentLocale 依赖
+  // globalThis.__I18N__ 挂载，当前无人挂载，恒回退 zh-CN，不可用）
+  return formatRelativeTimeUtil(then, i18n.global.locale.value);
 }
 
 /**
@@ -125,19 +120,20 @@ export function toProfileView(params: {
   const displayName =
     basicProfile?.nickname?.trim() ||
     session?.displayName?.trim() ||
-    "未设置昵称";
+    t("profilePlaceholder.noNickname");
 
   const avatarInitial = displayName.charAt(0).toUpperCase() || "?";
 
   // 学校优先取 campusProfile.campusName，回退到 session.campusName
+  // 修复（R4-00220）：占位文案 i18n 化
   const school =
     campusProfile?.campusName?.trim() ||
     session?.campusName?.trim() ||
-    "未设置学校";
+    t("profilePlaceholder.noSchool");
 
   // 简介优先取 basicProfile.bio
   const rawBio = basicProfile?.bio?.trim() ?? "";
-  const bio = rawBio.length > 0 ? rawBio : DEFAULT_BIO;
+  const bio = rawBio.length > 0 ? rawBio : t("profilePlaceholder.defaultBio");
 
   const isVip = Boolean(vipStatus?.isVip);
   const vipPlanName = vipStatus?.planName?.trim() ?? "";

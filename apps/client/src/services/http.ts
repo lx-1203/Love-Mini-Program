@@ -894,6 +894,11 @@ export function withTimeout<T>(
 
     // 超时定时器
     const timer = setTimeout(() => {
+      // 修复（R4-00169）：超时分支同样调用 cleanup() 移除外部 signal 的
+      // onExternalAbort 监听器——原实现 reject 后不清理，同一 AbortSignal
+      // 复用（页面级 signal）时监听器累积泄漏，且 settle 后再次 abort 仍会
+      // 触发无谓的 reject 调用。
+      cleanup();
       controller.abort();
       reject(
         new EnhancedApiError({

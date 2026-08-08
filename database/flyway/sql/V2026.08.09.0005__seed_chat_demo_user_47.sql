@@ -16,6 +16,10 @@
 --   - 会话按「用户对」判重（不限 uid，避免走查时手动建过会话导致重复）
 --   - 消息按 content 判重（每会话文案唯一，含语音 URL 唯一）
 --   文案全部新写，避免与 V2026.08.07.0023 撞车。
+--
+--   修复（R4-00426）：语音消息 URL 由 interactive-examples.mdn.mozilla.net 外链改为
+--   客户端包内本地资源 /static/audio/voice-demo-{1,2}.wav（随 apps/client 静态资源打包，
+--   无外部域名依赖，不受 downloadFile 白名单/外网可达性影响；音频文件已随仓库提供）。
 -- ============================================================
 
 -- ========== 1. 会话（3 个） ==========
@@ -79,7 +83,7 @@ FROM (
     SELECT 'b', 230, '好啊，正好消食', 'text', 1, NULL UNION ALL
     SELECT 'a', 220, '七点半老地方？', 'text', 1, NULL UNION ALL
     SELECT 'b', 210, '可以可以', 'text', 1, NULL UNION ALL
-    SELECT 'b', 200, 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3', 'voice', 1, 6 UNION ALL
+    SELECT 'b', 200, '/static/audio/voice-demo-1.wav', 'voice', 1, 6 UNION ALL
     SELECT 'a', 190, '来啦来啦', 'text', 1, NULL UNION ALL
     SELECT 'a', 180, '今天月色真好看', 'text', 1, NULL UNION ALL
     SELECT 'b', 170, '是啊，和你一起散步心情都变好了', 'text', 1, NULL UNION ALL
@@ -127,7 +131,7 @@ FROM (
     SELECT 'a', 200, '要不要一起去？', 'text', 1, NULL UNION ALL
     SELECT 'b', 190, '可以呀，正好周末没事', 'text', 1, NULL UNION ALL
     SELECT 'a', 180, '那我到时候叫你', 'text', 1, NULL UNION ALL
-    SELECT 'b', 170, 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3', 'voice', 1, 5 UNION ALL
+    SELECT 'b', 170, '/static/audio/voice-demo-1.wav', 'voice', 1, 5 UNION ALL
     SELECT 'a', 160, '你平时还喜欢做什么', 'text', 1, NULL UNION ALL
     SELECT 'b', 150, '看电影、打游戏，宅的时候比较多', 'text', 1, NULL UNION ALL
     SELECT 'a', 140, '那我下次拉你一起玩桌游', 'text', 1, NULL UNION ALL

@@ -109,6 +109,12 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/register")
+    @Operation(
+            summary = "注册新用户",
+            description = "R4-00264：公开端点补 @RateLimit（桶容量 10，每 10 秒补充 1 个令牌，按客户端 IP 限流）——与 phone-login/wechat-login/admin/login 限流口径一致，防止注册接口被批量刷量/手机号探测。",
+            operationId = "register"
+    )
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView register(@Valid @RequestBody RegisterRequest request) {
         return authService.registerUser(
                 request.phone(), request.password(), request.nickname());
@@ -298,13 +304,10 @@ public class AuthController {
                 // security_review 修复(R2-LOW-01):仅允许 mock profile 走降级签发分支,
                 // 防止非 mock 环境因 JPA 配置异常而静默以固定 ADMIN 角色签发会话。
                 // real 环境 UserRepository 必然存在,若缺失说明配置异常,拒绝降级。
-                boolean isMockProfile = org.springframework.core.env.Environment.class
-                        .isAssignableFrom(environment.getClass())
-                        && org.springframework.core.env.AbstractEnvironment.class
-                                .isAssignableFrom(environment.getClass())
-                        && java.util.Arrays.asList(
-                                ((org.springframework.core.env.AbstractEnvironment) environment)
-                                        .getActiveProfiles()).contains("mock");
+                // R4-00265:直接使用注入的 Environment 查询 active profiles,
+                // 移除 AbstractEnvironment 类型反射(依赖 Spring 内部类,逻辑晦涩)。
+                boolean isMockProfile = java.util.Arrays.asList(
+                        environment.getActiveProfiles()).contains("mock");
                 if (!isMockProfile) {
                     log.error("UserRepository bean 缺失且非 mock profile,拒绝签发管理员会话");
                     throw new com.campuslove.api.common.OperationForbiddenException("系统配置异常，请联系管理员");

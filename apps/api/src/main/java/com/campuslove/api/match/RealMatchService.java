@@ -229,6 +229,14 @@ public class RealMatchService implements MatchService {
     @Override
     @Transactional
     public HeartSignalView likeUser(Long userId, Long targetUserId) {
+        // R4-00333：幂等命中（已 active 的重复喜欢）不消耗每日配额——
+        // 原实现先 tryIncrementLike 扣配额再进 doLike，重复喜欢/取消后重喜欢
+        // 都会消耗每日 30 次额度，限流失真。先做幂等检查，命中直接返回。
+        Optional<Like> existingLike = matchRecorder.findExistingLike(userId, targetUserId);
+        if (existingLike.isPresent() && existingLike.get().getStatus() == LikeStatus.active) {
+            log.info("重复喜欢（幂等返回，不消耗配额）：userId={}, targetUserId={}", userId, targetUserId);
+            return buildAlreadyLikedView(existingLike.get(), userId, targetUserId);
+        }
         // A-25/A-31：普通 like 每日上限（超级喜欢走 superLikeUser 不受限）
         if (!matchPolicy.tryIncrementLike(userId)) {
             log.info("用户[{}]今日普通喜欢次数已达上限({}/{})，拒绝 like", userId,
@@ -241,11 +249,29 @@ public class RealMatchService implements MatchService {
         return doLike(userId, targetUserId, "mutual_like");
     }
 
-    /** 超级喜欢：不受每日上限限制，双向喜欢信号 matchType=super_like 与普通喜欢区分。 */
+    /**
+     * 超级喜欢：R4-00334 起受独立每日配额限制（app.match.super-like-daily-limit，默认 10 次/日），
+     * 双向喜欢信号 matchType=super_like 与普通喜欢区分。原实现完全免费且无限量，
+     * 可无限绕过普通喜欢 30 次/日限额；现按配置配额封堵绕过，后续商业化可接入扣费。
+     */
     @Override
     @Transactional
     public HeartSignalView superLikeUser(Long userId, Long targetUserId) {
-        log.info("超级喜欢：userId={}, targetUserId={}", userId, targetUserId);
+        // R4-00333 同款幂等先行：重复超级喜欢不消耗配额
+        Optional<Like> existingLike = matchRecorder.findExistingLike(userId, targetUserId);
+        if (existingLike.isPresent() && existingLike.get().getStatus() == LikeStatus.active) {
+            log.info("重复超级喜欢（幂等返回，不消耗配额）：userId={}, targetUserId={}", userId, targetUserId);
+            return buildAlreadyLikedView(existingLike.get(), userId, targetUserId);
+        }
+        // R4-00334：超级喜欢每日配额
+        if (!matchPolicy.tryIncrementSuperLike(userId)) {
+            int limit = matchPolicy.getSuperLikeDailyLimit();
+            log.info("用户[{}]今日超级喜欢次数已达上限({})，拒绝 super-like", userId, limit);
+            throw new DailyLimitExceededException(
+                    "超级喜欢",
+                    limit,
+                    "今日超级喜欢次数已用完（上限 " + limit + " 次），请明日再来");
+        }
         return doLike(userId, targetUserId, "super_like");
     }
 
@@ -270,11 +296,7 @@ public class RealMatchService implements MatchService {
                 // A-25 幂等修复：重复喜欢不再返回 null（前端将 null 视为操作失败），
                 // 返回 status=ALREADY_LIKED 的幂等视图，标识"已喜欢过"
                 log.info("重复喜欢（幂等返回）：userId={}, targetUserId={}", userId, targetUserId);
-                return new HeartSignalView(
-                        like.getId(), userId, targetUserId, HEART_SIGNAL_STATUS_ALREADY_LIKED,
-                        null,
-                        like.getCreatedAt() != null ? like.getCreatedAt().toString() : null,
-                        null, null);
+                return buildAlreadyLikedView(like, userId, targetUserId);
             }
             matchRecorder.reactivateLike(like, now);
         } else {
@@ -299,6 +321,23 @@ public class RealMatchService implements MatchService {
             return signalView;
         }
         return null;
+    }
+
+    /**
+     * 构造"已喜欢过"幂等视图（A-25 幂等返回；R4-00333 抽为公共方法，likeUser
+     * 幂等检查与 doLike 内部共用，避免重复代码）。
+     *
+     * @param like          已存在的 like 记录
+     * @param userId        当前用户 ID
+     * @param targetUserId  目标用户 ID
+     * @return status=ALREADY_LIKED 的幂等视图
+     */
+    private HeartSignalView buildAlreadyLikedView(Like like, Long userId, Long targetUserId) {
+        return new HeartSignalView(
+                like.getId(), userId, targetUserId, HEART_SIGNAL_STATUS_ALREADY_LIKED,
+                null,
+                like.getCreatedAt() != null ? like.getCreatedAt().toString() : null,
+                null, null);
     }
 
     /**

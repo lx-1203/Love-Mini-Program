@@ -72,6 +72,13 @@ public class MockVillageService implements VillageService {
           null, "upcoming", 20, null)
   );
 
+  /**
+   * R4-00403：点赞用户维度隔离（userId -> 已点赞帖子 ID 集合）。
+   * 原 likePost(Long id) 无 userId 参数，点赞不区分用户、无法联调点赞态切换；
+   * 现按用户记录点赞状态，同一用户重复点赞为取消（计数回退），不同用户互不影响。
+   */
+  private final Map<Long, java.util.Set<Long>> likedByUser = new java.util.concurrent.ConcurrentHashMap<>();
+
   /** 运行时状态（FIN-00053 修复：作者名取自真实 mock 用户而非硬编码"星野"） */
   private final MockRuntimeState runtimeState;
 
@@ -200,10 +207,8 @@ public class MockVillageService implements VillageService {
 
   @Override
   public PostLikeResponse likePost(Long id) {
-    PostData post = findPost(id);
-    // FIN-00054 修复：原实现恒返回 likesCount=1，现真实切换点赞状态并维护计数
-    post.likesCount++;
-    return new PostLikeResponse(true, true, post.likesCount);
+    // Phase 1 兼容入口：默认 mock 用户（MockSecurityConfig 的 principal 默认 1）
+    return likePost(1L, id);
   }
 
   @Override
@@ -284,7 +289,24 @@ public class MockVillageService implements VillageService {
 
   @Override
   public PostLikeResponse likePost(Long userId, Long postId) {
-    return likePost(postId);
+    PostData post = findPost(postId);
+    // R4-00403：按用户维度切换点赞状态（同一用户重复点赞视为取消，计数回退），
+    // 不同用户点赞互不影响——mock 模式可联调点赞态切换（原实现无用户维度隔离）
+    java.util.Set<Long> likedPosts = likedByUser.computeIfAbsent(
+            userId, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
+    boolean nowLiked;
+    synchronized (likedPosts) {
+      if (likedPosts.contains(postId)) {
+        likedPosts.remove(postId);
+        post.likesCount = Math.max(0, post.likesCount - 1);
+        nowLiked = false;
+      } else {
+        likedPosts.add(postId);
+        post.likesCount++;
+        nowLiked = true;
+      }
+    }
+    return new PostLikeResponse(true, nowLiked, post.likesCount);
   }
 
   // ---- 2026-08-08 论坛互动真实化：收藏 / 浏览记录（mock 内存实现，防前端 mock 模式 404） ----

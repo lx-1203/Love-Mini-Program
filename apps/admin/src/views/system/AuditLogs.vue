@@ -8,7 +8,7 @@
  * - 表格列：id / operatorUsername / operation / targetType / targetId /
  *   requestMethod / requestUrl / responseStatus / errorMessage（异常红色）/
  *   ip / durationMs / createdAt + 详情（请求体脱敏展示）
- * - 分页：page 从 0 开始（后端约定 page/size 参数），Pagination 组件 pageBase=0 适配
+ * - 分页：page 从 1 开始（与其余列表视图统一 pageBase=1，api 层负责换算为后端 0-based）
  */
 import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import {
@@ -20,6 +20,7 @@ import {
 import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   formatTimeCompact,
@@ -35,7 +36,7 @@ const { t } = useI18n();
 const logs = ref<AuditLogView[]>([]);
 const totalElements = ref(0);
 const totalPages = ref(0);
-const page = ref(0);
+const page = ref(1);
 const size = ref(DEFAULT_PAGE_SIZE);
 
 // ===== 筛选条件 =====
@@ -50,7 +51,7 @@ const loading = ref(false);
 const error = ref("");
 
 // 请求竞态防护 + 查询防抖
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 操作类型 → 中文标签映射 */
@@ -103,17 +104,18 @@ function buildQuery() {
 async function fetchLogs() {
   loading.value = true;
   error.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result: AuditLogPageView = await listAuditLogs(buildQuery());
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     logs.value = result.content || [];
     totalElements.value = result.totalElements || 0;
     totalPages.value = result.totalPages || 0;
-    page.value = result.page;
+    // 后端 page 为 0-based，视图统一 1-based，此处换算
+    page.value = (result.page ?? 0) + 1;
     size.value = result.size;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     error.value =
       err instanceof ApiError
         ? err.message
@@ -124,7 +126,7 @@ async function fetchLogs() {
     totalElements.value = 0;
     totalPages.value = 0;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }
@@ -135,7 +137,7 @@ function scheduleSearch() {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     searchTimer = null;
-    page.value = 0;
+    page.value = 1;
     fetchLogs();
   }, 400);
 }
@@ -148,7 +150,7 @@ function handleSearch() {
     error.value = t("auditLogs.operatorInvalid");
     return;
   }
-  page.value = 0;
+  page.value = 1;
   fetchLogs();
 }
 
@@ -370,12 +372,11 @@ onMounted(() => {
       </table>
     </view>
 
-    <!-- page 从 0 开始（Spring Data Page 风格），Pagination pageBase=0 适配 -->
+    <!-- 视图统一 pageBase=1（与其余列表视图一致），0/1 换算在 api 层完成 -->
     <Pagination
       v-model:page="page"
       :total-pages="totalPages"
       :total="totalElements"
-      :page-base="0"
       :disabled="loading"
       @change="handlePageChange"
     />

@@ -29,12 +29,29 @@ class AiVideoControllerTest {
 
     @Mock private AiVideoService aiVideoService;
 
+    /** R4-00343：用户级每日配额计数（mock Redis 返回 1L，配额放行） */
+    @Mock private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+    @Mock private org.springframework.data.redis.core.ValueOperations<String, Object> valueOperations;
+
     private AiVideoController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         controller = new AiVideoController(aiVideoService);
+        // R4-00343：注入 mock Redis（配额计数 INCR 返回 1，未超限），
+        // 并设置认证上下文（配额校验读取当前用户 ID）
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.increment(any(String.class))).thenReturn(1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                controller, "redisTemplate", redisTemplate);
+        // R4-00343：@Value 字段在单元测试中不注入，显式设置每日配额
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                controller, "aiDailyGenerationQuota", 20);
+        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                1L, "test",
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")));
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test

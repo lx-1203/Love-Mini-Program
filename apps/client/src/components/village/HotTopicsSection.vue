@@ -195,7 +195,7 @@ defineExpose({ loadTopics });
 .hot-topics__main-overlay {
   width: 100%;
   padding: var(--sp-3) var(--sp-4);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to top, var(--c-overlay-mid, rgba(15, 23, 42, 0.55)) 0%, var(--c-gradient-mask-transparent, rgba(0, 0, 0, 0)) 100%);
   display: flex;
   flex-direction: column;
   gap: 4rpx;
@@ -204,12 +204,12 @@ defineExpose({ loadTopics });
 .hot-topics__main-title {
   font-size: var(--fs-lg);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 
 .hot-topics__main-views {
   font-size: var(--fs-xs);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85));
 }
 
 /* 右侧 2×2 四宫格 */

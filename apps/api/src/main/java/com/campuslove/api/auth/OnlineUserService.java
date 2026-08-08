@@ -3,7 +3,6 @@ package com.campuslove.api.auth;
 import com.campuslove.api.common.TimeZones;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -181,21 +180,22 @@ public class OnlineUserService {
         // 1. 优先查 Redis
         try {
             if (redisTemplate != null) {
-                Set<String> keys = redisTemplate.keys(REDIS_KEY_PREFIX + "*");
-                if (keys != null) {
-                    for (String key : keys) {
-                        Object value = redisTemplate.opsForValue().get(key);
-                        OnlineSessionRecord record = value != null ? deserialize(String.valueOf(value)) : null;
-                        if (record == null || record.expiresAtEpochMs() < System.currentTimeMillis()) {
-                            continue;
-                        }
-                        Long userId = parseUserIdFromKey(key);
-                        if (userId != null) {
-                            result.add(new OnlineSessionEntry(userId, record));
-                        }
+                // R4-00288：改用 SCAN 迭代替代 redisTemplate.keys()——生产环境 KEYS
+                // 命令全量扫描会阻塞 Redis 主线程，在线会话量大时卡顿；SCAN 分批游标
+                // 迭代不阻塞（管理端低频查询，量级可控）。
+                Set<String> keys = scanKeys(REDIS_KEY_PREFIX + "*");
+                for (String key : keys) {
+                    Object value = redisTemplate.opsForValue().get(key);
+                    OnlineSessionRecord record = value != null ? deserialize(String.valueOf(value)) : null;
+                    if (record == null || record.expiresAtEpochMs() < System.currentTimeMillis()) {
+                        continue;
                     }
-                    return result;
+                    Long userId = parseUserIdFromKey(key);
+                    if (userId != null) {
+                        result.add(new OnlineSessionEntry(userId, record));
+                    }
                 }
+                return result;
             }
         } catch (RuntimeException e) {
             log.warn("Redis unavailable, falling back to local memory (listOnlineSessions)", e);
@@ -231,6 +231,34 @@ public class OnlineUserService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /**
+     * R4-00288：SCAN 游标迭代匹配的 Redis key（替代 {@code keys()} 全量扫描）。
+     *
+     * <p>SCAN 分批迭代（每批 500 个）不阻塞 Redis 主线程；返回的 key 集合由
+     * RedisTemplate 的 value 序列化器编码为字符串（当前 value 序列化器为
+     * Jackson2JsonRedisSerializer，对纯字符串 key 无影响）。</p>
+     *
+     * @param pattern 匹配模式（如 {@code online:user:*}）
+     * @return 匹配的 key 集合（SCAN 失败时返回空集合，由调用方降级）
+     */
+    private Set<String> scanKeys(String pattern) {
+        return redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Set<String>>) connection -> {
+            Set<String> matched = new java.util.HashSet<>();
+            try (org.springframework.data.redis.core.Cursor<byte[]> cursor = connection.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern)
+                            .count(500)
+                            .build())) {
+                while (cursor.hasNext()) {
+                    matched.add(new String(cursor.next(), java.nio.charset.StandardCharsets.UTF_8));
+                }
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("SCAN 迭代失败", e);
+            }
+            return matched;
+        });
     }
 
     /** 序列化：jti|loginMethod|loginAtEpochMs|expiresAtEpochMs */

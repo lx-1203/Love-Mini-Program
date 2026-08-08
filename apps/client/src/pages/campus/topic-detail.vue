@@ -88,10 +88,12 @@ function goBack() {
 }
 
 /**
- * 获取作者显示名称
+ * 获取作者显示名称（R4-00110：name 为空/null 时兜底占位，
+ * 避免模板 getDisplayName(...)[0] 对空串/undefined 取首字符异常）。
  */
-function getDisplayName(isAnonymous: boolean, name: string): string {
-  return isAnonymous ? t("campus.topicDetail.anonymousAuthor") : name;
+function getDisplayName(isAnonymous: boolean, name?: string | null): string {
+  if (isAnonymous) return t("campus.topicDetail.anonymousAuthor");
+  return name && name.length > 0 ? name : "?";
 }
 
 /** 回复分页页码（从 1 开始，页面本地维护） */
@@ -378,7 +380,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   gap: 16rpx;
   padding: 28rpx;
-  background: $white;
+  /* R4-02525：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx) var(--r-xl, 24rpx) 0 0;
   box-shadow: $card-soft-shadow;
   transition: transform var(--d-fast, 120ms) ease;
@@ -441,7 +444,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* 话题正文 */
 .topic-content {
   padding: 28rpx;
-  background: $white;
+  /* R4-02525：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: 0 0 var(--r-xl, 24rpx) var(--r-xl, 24rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
@@ -466,7 +470,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* ========== 评论区 ========== */
 .replies-section {
-  background: $white;
+  /* R4-02525：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   padding: 28rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
@@ -651,7 +656,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   gap: 12rpx;
   padding: 20rpx 24rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background: $white;
+  /* R4-02525：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs);
 }
 
@@ -671,7 +677,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .reply-input:focus {
   border-color: $green-primary;
-  background: $white;
+  /* R4-02525：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
 }
 
 .anonymous-toggle {

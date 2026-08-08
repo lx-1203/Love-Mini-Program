@@ -7,9 +7,21 @@
  */
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useMenuStore, findFirstMenuPath } from "../stores/menu";
 
 const router = useRouter();
 const { t } = useI18n();
+const menuStore = useMenuStore();
+
+/**
+ * 返回首页：优先跳转当前角色菜单树中第一个可跳转菜单，
+ * 避免无 Dashboard 权限的校区管理员点击硬编码路由 name 无响应；
+ * 菜单未加载（如未登录直达 404）时回退到 /，由路由守卫统一决定跳转（登录页等）。
+ */
+function goHome(): void {
+  const fallback = findFirstMenuPath(menuStore.menuTree);
+  void router.push(fallback ?? "/");
+}
 </script>
 
 <template>
@@ -19,7 +31,7 @@ const { t } = useI18n();
       <text class="not-found-title">{{ t("notFound.title") }}</text>
       <text class="not-found-desc">{{ t("notFound.description") }}</text>
       <view class="not-found-actions">
-        <button class="action-primary" @click="router.push({ name: 'Dashboard' })">
+        <button class="action-primary" @click="goHome">
           {{ t("notFound.backHome") }}
         </button>
         <button class="action-secondary" @click="router.back()">

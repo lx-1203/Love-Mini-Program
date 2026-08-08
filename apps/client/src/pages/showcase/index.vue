@@ -356,7 +356,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 16rpx;
   height: 16rpx;
   border-radius: var(--r-circle, 50%);
-  background: #F59E0B;
+  background: var(--c-warning, #F59E0B);
   margin-top: 12rpx;
   flex-shrink: 0;
 }
@@ -371,13 +371,13 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .sc-notice__title {
   font-size: var(--fs-base, 26rpx);
   font-weight: 700;
-  color: #B45309;
+  color: var(--c-text-warning-dark, #92400e);
 }
 
 .sc-notice__text {
   font-size: var(--fs-sm, 22rpx);
   line-height: 1.6;
-  color: #92400E;
+  color: var(--c-text-warning-dark, #92400e);
 }
 
 /* ---------- 分组 ---------- */
@@ -445,7 +445,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .sc-item--tab {
-  border-left: 6rpx solid #3B9DE5;
+  border-left: 6rpx solid var(--c-info-500, #3B82F6);
 }
 
 .sc-item__chip {
@@ -486,7 +486,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .sc-item__tab-tag {
   font-size: var(--fs-xs, 20rpx);
-  color: #3B9DE5;
+  color: var(--c-info-500, #3B82F6);
   font-weight: 700;
   padding: 2rpx 10rpx;
   border-radius: var(--r-sm, 8rpx);

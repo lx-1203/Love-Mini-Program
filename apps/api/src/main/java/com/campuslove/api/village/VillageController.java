@@ -73,12 +73,14 @@ public class VillageController {
     // 未认证时 getCurrentUserId 抛出的 401 异常会被 GlobalExceptionHandler 捕获，
     // 与「返回空列表」的意图耦合在异常流上。
     // 2026-08-07 修复：following（关注 Tab）同样需要 userId 过滤关注作者的帖子。
+    // R4-00339：discover（发现 Tab）的 alumni 子标签需要 userId 计算同校过滤。
     Long userId = null;
-    if ("campus".equals(category) || "following".equals(category) || "samecity".equals(category)) {
+    if ("campus".equals(category) || "following".equals(category) || "samecity".equals(category)
+            || "discover".equals(category)) {
       if (SecurityUtils.isAuthenticated()) {
         userId = SecurityUtils.getCurrentUserId();
-      } else {
-        // 未认证时返回空列表
+      } else if ("campus".equals(category) || "following".equals(category) || "samecity".equals(category)) {
+        // 未认证时校园/关注/同城返回空列表（发现 Tab 未认证仍可浏览 all 流）
         return new PostListResponse(List.of(), 0, page, pageSize);
       }
     }

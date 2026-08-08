@@ -1,5 +1,9 @@
 package com.campuslove.api.clientconfig;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 /**
  * 法律文本常量提供者（P0-22）。
  *
@@ -9,12 +13,28 @@ package com.campuslove.api.clientconfig;
  * 状态下都能展示完整条款。文本使用 Java 17 text block 内嵌，与客户端
  * 原文逐字一致（含章节编号与生效日期）。</p>
  *
+ * <p>R4-00341：联系方式不再硬编码 example.com 假邮箱与 400-xxx-xxxx 占位热线
+ * （合规文本联系方式失实）。改为配置注入（{@code app.legal.contact-email} /
+ * {@code app.legal.hotline}，见 application.yml）；未配置时文本引导用户使用
+ * 小程序内「反馈中心」联系运营，不输出虚假联系方式。</p>
+ *
  * <p>当前版本为后端内嵌静态文本；后续如需 CMS 在线更新，可替换为
  * 数据库驱动（参考 RealConfigService 的降级策略，内嵌文本作为兜底）。</p>
  */
-public final class LegalTextProvider {
+@Component
+public class LegalTextProvider {
 
-    private LegalTextProvider() {
+    /** 客服邮箱（配置 app.legal.contact-email，可为空——空时引导使用反馈中心） */
+    private final String contactEmail;
+
+    /** 客服热线（配置 app.legal.hotline，可为空——空时引导使用反馈中心） */
+    private final String hotline;
+
+    public LegalTextProvider(
+            @Value("${app.legal.contact-email:}") String contactEmail,
+            @Value("${app.legal.hotline:}") String hotline) {
+        this.contactEmail = contactEmail;
+        this.hotline = hotline;
     }
 
     /** 隐私政策最后更新时间（ISO 8601，与客户端文案"最后更新：2026-07-26"一致） */
@@ -23,59 +43,85 @@ public final class LegalTextProvider {
     /** 用户协议最后更新时间（ISO 8601，与客户端文案"最后更新：2026-07-26"一致） */
     private static final String AGREEMENT_UPDATED_AT = "2026-07-26T00:00:00";
 
+    /**
+     * R4-00341：联系方式段落。
+     *
+     * <p>配置了真实邮箱/热线时输出完整联系方式；未配置时引导用户使用
+     * 小程序内「反馈中心」，避免输出 example.com / 400-xxx-xxxx 等失实占位信息。</p>
+     */
+    private String contactLine() {
+        if (StringUtils.hasText(contactEmail) && StringUtils.hasText(hotline)) {
+            return "您可通过「反馈中心」或邮件 " + contactEmail
+                    + " 联系我们（客服热线 " + hotline + "，09:00-22:00）";
+        }
+        if (StringUtils.hasText(contactEmail)) {
+            return "您可通过「反馈中心」或邮件 " + contactEmail + " 联系我们（09:00-22:00）";
+        }
+        if (StringUtils.hasText(hotline)) {
+            return "您可通过「反馈中心」或客服热线 " + hotline + " 联系我们（09:00-22:00）";
+        }
+        return "您可通过小程序内「反馈中心」联系我们（工作日 09:00-22:00 响应）";
+    }
+
     /** 隐私政策完整文本（与客户端本地兜底文案逐字一致） */
-    private static final String PRIVACY_POLICY_CONTENT = """
-            我们（"校园恋爱"运营方）深知个人信息对您的重要性，将以高度审慎的态度对待您的个人信息。本隐私政策符合《个人信息保护法》《网络安全法》《数据安全法》要求。
+    private String privacyPolicyContent() {
+        return """
+                我们（"校园恋爱"运营方）深知个人信息对您的重要性，将以高度审慎的态度对待您的个人信息。本隐私政策符合《个人信息保护法》《网络安全法》《数据安全法》要求。
 
-            1. 信息收集：（a）您主动提供：手机号、微信 OpenID、昵称、头像、性别、年龄、身高、学历、感情状态、籍贯、未来城市、个人简介、兴趣标签、校园认证信息（学生证或校园邮箱）、互动内容、反馈信息。（b）自动收集：设备型号、操作系统、屏幕分辨率、设备标识、网络类型、访问 IP、页面停留、点击行为、崩溃日志。（c）第三方提供：微信开放平台返回的 OpenID/UnionID，高德地图返回的地点坐标。
+                1. 信息收集：（a）您主动提供：手机号、微信 OpenID、昵称、头像、性别、年龄、身高、学历、感情状态、籍贯、未来城市、个人简介、兴趣标签、校园认证信息（学生证或校园邮箱）、互动内容、反馈信息。（b）自动收集：设备型号、操作系统、屏幕分辨率、设备标识、网络类型、访问 IP、页面停留、点击行为、崩溃日志。（c）第三方提供：微信开放平台返回的 OpenID/UnionID，高德地图返回的地点坐标。
 
-            2. 信息使用：用于提供服务（注册、登录、匹配、聊天、社区、交易）、改进体验（行为分析、A/B 测试、bug 修复）、安全保障（反作弊、内容审核、异常检测）、合规义务（响应司法请求、未成年人保护）。
+                2. 信息使用：用于提供服务（注册、登录、匹配、聊天、社区、交易）、改进体验（行为分析、A/B 测试、bug 修复）、安全保障（反作弊、内容审核、异常检测）、合规义务（响应司法请求、未成年人保护）。
 
-            3. 信息共享与披露：我们不出售您的个人信息。仅在您授权、法律要求、业务转让、第三方 SDK 调用场景下共享或披露。
+                3. 信息共享与披露：我们不出售您的个人信息。仅在您授权、法律要求、业务转让、第三方 SDK 调用场景下共享或披露。
 
-            4. 信息存储与保护：数据存储于中华人民共和国境内服务器；传输使用 HTTPS/TLS 1.2+；敏感字段数据库加密；基于 RBAC 最小权限访问控制；账号存续期间保留，注销后 30 天内清理。
+                4. 信息存储与保护：数据存储于中华人民共和国境内服务器；传输使用 HTTPS/TLS 1.2+；敏感字段数据库加密；基于 RBAC 最小权限访问控制；账号存续期间保留，注销后 30 天内清理。
 
-            5. 用户权利：您享有访问、复制、更正、删除、撤回授权、注销账号的权利。可通过"反馈中心"或邮件 privacy@campuslove.example.com 行使权利，我们将在 15 个工作日内回复。
+                5. 用户权利：您享有访问、复制、更正、删除、撤回授权、注销账号的权利。%s，我们将在 15 个工作日内回复。
 
-            6. Cookie 与同类技术：本服务作为微信小程序，不使用浏览器 Cookie。我们使用本地存储（uni.setStorage）保存登录态与偏好设置。
+                6. Cookie 与同类技术：本服务作为微信小程序，不使用浏览器 Cookie。我们使用本地存储（uni.setStorage）保存登录态与偏好设置。
 
-            7. 第三方 SDK 列表：（a）微信开放平台 SDK，腾讯，登录与支付，收集 OpenID/UnionID；（b）高德地图 SDK，高德，位置选择，收集设备标识与位置信息；（c）Sentry SDK（如启用），Functional Software，错误监控，收集设备信息与崩溃日志。
+                7. 第三方 SDK 列表：（a）微信开放平台 SDK，腾讯，登录与支付，收集 OpenID/UnionID；（b）高德地图 SDK，高德，位置选择，收集设备标识与位置信息；（c）Sentry SDK（如启用），Functional Software，错误监控，收集设备信息与崩溃日志。
 
-            8. 未成年人保护：本服务面向 18 周岁以上用户，注册时通过微信实名与校园认证双重校验，未满 18 周岁用户无法注册。
+                8. 未成年人保护：本服务面向 18 周岁以上用户，注册时通过微信实名与校园认证双重校验，未满 18 周岁用户无法注册。
 
-            9. 隐私政策更新：本政策可能因业务调整、法律法规变化等原因更新，重大变更将通过弹窗形式再次征得您的同意。
+                9. 隐私政策更新：本政策可能因业务调整、法律法规变化等原因更新，重大变更将通过弹窗形式再次征得您的同意。
 
-            10. 联系我们：隐私事务邮箱 privacy@campuslove.example.com，客服热线 400-xxx-xxxx（09:00-22:00）。
+                10. 联系我们：%s。
 
-            本政策 v1.0.0 版本于 2026-07-26 生效。详细完整版本请查看小程序内"隐私政策"页面。""";
+                本政策 v1.0.0 版本于 2026-07-26 生效。详细完整版本请查看小程序内"隐私政策"页面。"""
+                .formatted(contactLine(), contactLine());
+    }
 
     /** 用户协议完整文本（与客户端本地兜底文案逐字一致） */
-    private static final String USER_AGREEMENT_CONTENT = """
-            欢迎使用校园恋爱小程序（以下简称"本服务"）。本协议是您与校园恋爱运营方（以下简称"我们"）就使用本服务所订立的契约。
+    private String userAgreementContent() {
+        return """
+                欢迎使用校园恋爱小程序（以下简称"本服务"）。本协议是您与校园恋爱运营方（以下简称"我们"）就使用本服务所订立的契约。
 
-            1. 协议范围与接受：您通过点击"同意并继续"或开始使用本服务，即视为您已充分理解并同意本协议全部条款。如不同意，请勿使用本服务。
+                1. 协议范围与接受：您通过点击"同意并继续"或开始使用本服务，即视为您已充分理解并同意本协议全部条款。如不同意，请勿使用本服务。
 
-            2. 账号注册：您须年满 18 周岁且为在校大学生或毕业 3 年内学生，使用真实身份注册，同一手机号或微信账号仅能注册一个本服务账号。您应妥善保管账号，不得出借、转让、售卖。
+                2. 账号注册：您须年满 18 周岁且为在校大学生或毕业 3 年内学生，使用真实身份注册，同一手机号或微信账号仅能注册一个本服务账号。您应妥善保管账号，不得出借、转让、售卖。
 
-            3. 用户行为规范：您不得发布违反法律法规、危害国家安全、散布谣言、淫秽色情、侮辱诽谤他人、含广告营销或恶意代码的内容；不得冒用他人身份、从事欺诈诈骗、骚扰威胁他人、刷量刷单、攻击本服务技术基础设施。
+                3. 用户行为规范：您不得发布违反法律法规、危害国家安全、散布谣言、淫秽色情、侮辱诽谤他人、含广告营销或恶意代码的内容；不得冒用他人身份、从事欺诈诈骗、骚扰威胁他人、刷量刷单、攻击本服务技术基础设施。
 
-            4. 内容规范：您发布的内容应为您原创或已获合法授权，不侵犯第三方知识产权、肖像权、隐私权等合法权益。您授予我们非排他性、可转授权、免费、全球范围内、永久有效的许可，用于本服务内展示、传播、推广。
+                4. 内容规范：您发布的内容应为您原创或已获合法授权，不侵犯第三方知识产权、肖像权、隐私权等合法权益。您授予我们非排他性、可转授权、免费、全球范围内、永久有效的许可，用于本服务内展示、传播、推广。
 
-            5. 服务说明与变更：我们提供资料管理、智能匹配、聊天互动、社区发帖、活动报名、VIP 会员、虚拟币打赏等功能。我们可能因业务调整、法律法规变化或不可抗力变更或中止服务，重大变更将提前 7 天公告。
+                5. 服务说明与变更：我们提供资料管理、智能匹配、聊天互动、社区发帖、活动报名、VIP 会员、虚拟币打赏等功能。我们可能因业务调整、法律法规变化或不可抗力变更或中止服务，重大变更将提前 7 天公告。
 
-            6. 免责声明：我们不对因不可抗力、第三方服务故障、用户内容真实性、用户间私下交易导致的服务中断或损失承担责任。
+                6. 免责声明：我们不对因不可抗力、第三方服务故障、用户内容真实性、用户间私下交易导致的服务中断或损失承担责任。
 
-            7. 知识产权：本服务的所有代码、界面、图标、文案、商标等知识产权归我们或相关权利人所有，未经书面同意不得用于商业用途。
+                7. 知识产权：本服务的所有代码、界面、图标、文案、商标等知识产权归我们或相关权利人所有，未经书面同意不得用于商业用途。
 
-            8. 违约责任：您违反本协议即构成违约，我们将根据情节轻重采取警告、限制功能、暂停服务、永久封禁、移交公安机关等措施。您可于 7 天内通过反馈中心申诉。
+                8. 违约责任：您违反本协议即构成违约，我们将根据情节轻重采取警告、限制功能、暂停服务、永久封禁、移交公安机关等措施。您可于 7 天内通过反馈中心申诉。
 
-            9. 协议变更：本协议可能因业务调整、法律法规变化等原因变更，重大变更将通过弹窗形式再次征得您的同意。
+                9. 协议变更：本协议可能因业务调整、法律法规变化等原因变更，重大变更将通过弹窗形式再次征得您的同意。
 
-            10. 法律适用与争议解决：本协议适用中华人民共和国大陆地区法律。争议优先协商解决，协商不成的提交我们注册地有管辖权的人民法院诉讼。
+                10. 法律适用与争议解决：本协议适用中华人民共和国大陆地区法律。争议优先协商解决，协商不成的提交我们注册地有管辖权的人民法院诉讼。
 
-            11. 联系方式：客服邮箱 support@campuslove.example.com，客服热线 400-xxx-xxxx（09:00-22:00）。
+                11. 联系方式：%s。
 
-            本协议 v1.0.0 版本于 2026-07-26 生效。详细完整版本请查看小程序内"用户协议"页面。""";
+                本协议 v1.0.0 版本于 2026-07-26 生效。详细完整版本请查看小程序内"用户协议"页面。"""
+                .formatted(contactLine());
+    }
 
     /**
      * 获取指定类型的法律文本视图。
@@ -84,12 +130,12 @@ public final class LegalTextProvider {
      * @return 法律文本视图
      * @throws IllegalArgumentException type 不合法时抛出（由全局异常处理器转 400）
      */
-    public static LegalTextView getLegalText(String type) {
+    public LegalTextView getLegalText(String type) {
         if ("privacy_policy".equals(type)) {
-            return new LegalTextView("隐私政策", PRIVACY_POLICY_CONTENT, PRIVACY_UPDATED_AT);
+            return new LegalTextView("隐私政策", privacyPolicyContent(), PRIVACY_UPDATED_AT);
         }
         if ("user_agreement".equals(type)) {
-            return new LegalTextView("用户协议", USER_AGREEMENT_CONTENT, AGREEMENT_UPDATED_AT);
+            return new LegalTextView("用户协议", userAgreementContent(), AGREEMENT_UPDATED_AT);
         }
         throw new IllegalArgumentException(
                 "type 取值非法: " + type + ", 仅支持 privacy_policy / user_agreement");

@@ -805,6 +805,22 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/**
+ * 生成本地日期字符串（yyyy-MM-dd）。
+ *
+ * 与 services/api.ts 的 localDateKey 同一实现（避免循环依赖不直接 import）：
+ * 不使用 toISOString()（UTC 时区在凌晨会得到错误的日期）。
+ *
+ * @param d 目标日期
+ * @returns yyyy-MM-dd（本地时区）
+ */
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function consumeNextMatchQueueStatus(): MatchResult["queueStatus"] {
   const status = nextMatchQueueStatus ?? "connected";
   nextMatchQueueStatus = null;
@@ -1353,9 +1369,9 @@ export const mockFixtures = {
       consecutiveDays: checkInStatus.consecutiveDays + 1,
     };
     return {
-      // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
-      // 此处兜底取整串，确保 checkInDate 始终为 string（split 结果至少包含一个元素，正常不会越界）。
-      checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
+      // 修复（R4-00176）：本地时区日期（yyyy-MM-dd），与 services/api.ts 的 localDateKey
+      // 同一实现——toISOString() 为 UTC 日期，北京时间 00:00-08:00 会得到前一天。
+      checkInDate: formatLocalDate(new Date()),
       consecutiveDays: checkInStatus.consecutiveDays,
       extraRecommendations: 5,
       extraRecommendQuota: 5,

@@ -2165,8 +2165,8 @@ onUnload(() => {
   width: 24rpx;
   height: 24rpx;
   border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
+  border: 4rpx solid var(--c-overlay-border-stronger, rgba(255, 255, 255, 0.4));
+  border-top-color: var(--c-neutral-0, #ffffff);
   animation: avatar-camera-spin 800ms linear infinite;
 }
 
@@ -2380,7 +2380,8 @@ onUnload(() => {
 
 .greet-btn__text {
   font-size: var(--fs-md);
-  color: #ffffff;
+  /* 品牌渐变底上文字保持白色（品牌色深色下不变） */
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 

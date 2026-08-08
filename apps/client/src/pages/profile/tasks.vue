@@ -27,6 +27,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 // R4-00058: 签到任务接入真实 GET/POST /check-in 链路
 import { clientApi } from "../../services/api";
+// R4-00059: 资料完善任务完成态从真实 session 派生，不再硬编码 done=true
+import { useSessionStore } from "../../stores/session";
 
 /** 任务项 */
 interface TaskItem {
@@ -42,22 +44,35 @@ interface TaskItem {
 }
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
-/** 示例任务列表 */
-const tasks = ref<TaskItem[]>([
+/**
+ * R4-00059：任务完成态真实化（不再硬编码 done）。
+ * - profile：从 session.profileCompleted 派生（资料是否完善）；
+ * - checkin：从真实签到状态派生（onShow 拉取 GET /check-in，见下方同步逻辑）；
+ * - first-post / verify：暂无完成度数据源，保持未完成（后端任务系统接入后替换）。
+ */
+/** 签到任务完成态（onShow 从真实状态同步） */
+const checkinDone = ref(false);
+
+/** 资料完善任务完成态（session 驱动，实时派生） */
+const profileTaskDone = computed(() => sessionStore.isProfileComplete);
+
+/** 任务列表（计算属性：完成态随真实数据变化，进度条同步更新） */
+const tasks = computed<TaskItem[]>(() => [
   {
     id: "profile",
     titleKey: "profile.taskProfile",
     descKey: "profile.taskProfileDesc",
     points: 50,
-    done: true,
+    done: profileTaskDone.value,
   },
   {
     id: "checkin",
     titleKey: "profile.taskCheckin",
     descKey: "profile.taskCheckinDesc",
     points: 5,
-    done: true,
+    done: checkinDone.value,
   },
   {
     id: "first-post",
@@ -143,14 +158,15 @@ async function handleTaskTap(task: TaskItem) {
  * 已签到的用户进入页面即为已完成，避免假数据误导。
  */
 onShow(async () => {
+  // R4-00059：拉取真实签到状态同步「每日签到」任务完成态（同时刷新 session 资料完成度）
   try {
+    void sessionStore.refreshSession();
     const status = await clientApi.getCheckInStatus();
-    const checkinTask = tasks.value.find((task) => task.id === "checkin");
-    if (checkinTask && status?.checkedIn === true) {
-      checkinTask.done = true;
+    if (status?.checkedIn === true) {
+      checkinDone.value = true;
     }
   } catch (_e) {
-    // 状态拉取失败时保持静态配置（不阻塞页面展示）
+    // 状态拉取失败时保持当前完成态（不阻塞页面展示）
   }
 });
 </script>

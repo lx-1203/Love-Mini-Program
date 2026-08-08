@@ -32,6 +32,29 @@
 
 ### Changed
 - **P9**：完善 `docs/release-checklist.md`，覆盖商业化发布全部门禁
+- **R4-batch3（B3-2）**：
+  - 客户端环境配置收敛：`services/env.ts` 降级为纯 re-export 兼容层，业务代码统一走 `config/env.ts`（双实现漂移消除，R4-00148/R4-00205）
+  - 开发环境 API 回退地址支持 `VITE_DEV_API_BASE_URL` 覆盖（R4-00204）；媒体 URL token 拼接支持 `VITE_MEDIA_TOKEN_QUERY=false` 关闭（R4-00244，后端改签名 URL 后可平滑切换）
+  - 解锁幂等键统一为 `UNLOCK-{scene}-{targetId}`（likes.unlockUser 与 coins.spend 共用 buildUnlockOrderId，R4-00195）
+  - 右滑防抖改为「防抖窗口内幂等队列 + 卡片快照」：快速连续右滑不再丢失早先喜欢、不再误报「卡片不存在」（R4-00177）
+  - 签到/补签日期改为本地时区（复用 localDateKey），修复北京 00:00-08:00 签到日期前一天问题（R4-00176）
+  - mock 用户 ID 统一为 `user-<数字>` 单一体系（session/fixtures/likes/village/campus，R4-00125/00130/00133/00134/00135）
+  - TabBar 三处配置新增一致性校验脚本 `pnpm --filter client check:tabbar`（R4-00209）
+  - 错误提示/表单校验/录音权限/反馈状态/首页引导/个人主页占位等硬编码中文迁移至 i18n（R4-00213~00220）
+  - 资料完善度权重抽取为常量并注释业务依据；字段判定收敛到单一函数（R4-00123/00194）
+
+### Fixed
+- **R4-batch3（B3-2）**：
+  - `withTimeout` 超时分支补调 cleanup()，修复外部 AbortSignal 监听器累积泄漏（R4-00169）
+  - `docs/openapi/recommendations.yaml` 对齐真实端点：删除不存在的 `/recommendations/cards*`，补 `/recommendations`、`/quota`、`/discussions`、`/activities`、`/history`、`/preferences/me` 与 ageMin/ageMax 参数（R4-00163/R4-00344）
+  - `docs/API-CONTRACT.md`：VIP 域按真实路由重建（移除不存在的 /vip/plans、/vip/orders、VIP 红包端点并登记本 CHANGELOG，R4-00487/00488）；Token 有效期契约 2h→24h 对齐 JWT_EXPIRATION_MS 并标注管理端无刷新缺口（R4-00490）；敏感词批量导入/活动提案转化标注「仅 API」（R4-00494）
+  - `docs/user-agreement.md`：移除已下线功能的「虚拟币打赏与红包」「未领取红包」表述（R4-00497）
+  - flyway：`flyway.toml` 移除 admin_openid/admin_nickname 弱默认值强制注入（R4-00409）；手机号唯一迁移补充受影响行审计/备份指引（R4-00419）；种子图片由 Pexels 不可达 URL 改为客户端包内本地素材（R4-00421/00425）；语音消息外链改为本地 `static/audio/voice-demo-*.wav`（R4-00426）；删除与 0014 重复的 `V2026.08.08.0011__seed_campus_topics.sql`（R4-00424）
+  - 演示种子数据：50 个演示用户手机号补足 11 位合法号段（R4-00503）；城市与校区城市对齐（R4-00504）；帖子点赞/评论计数与实插互动记录对账（R4-00505）；补充用户间双向喜欢/匹配对（R4-00506）；42 个补全用户代词与身高按性别混合（R4-00507）；头像本地化 UPDATE 限定目标用户范围（R4-00508）；补充完善度/认证中间态样本（R4-00509）；时间戳按近 90 天分布（R4-00510）；钱包流水 type 改为 CREDIT/DEBIT（R4-00511）；补全滑动/私信/钱包漏斗环节（R4-00512）；补充风控批量注册演示场景（R4-00513）
+
+### Removed
+- **R4-batch3（B3-2）**：VIP 红包端点（/api/v1/vip/red-packets、/red-packets/{id}/claim、/admin/business/vip/red-packets）从 `docs/API-CONTRACT.md` 移除；`config/app.ts` 的死配置 STORAGE_KEYS 删除（R4-00206）
+
 
 ---
 

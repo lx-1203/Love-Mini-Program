@@ -29,6 +29,40 @@ const isSubmitting = ref(false);
 /** 话题 ID */
 const topicId = ref("");
 
+/* ========== R4-00102：回复分页加载更多 ========== */
+/** 当前已加载的回复页码（从第 1 页开始，store.fetchReplies 支持 page 追加） */
+const replyPage = ref(1);
+/** 是否正在加载更多回复 */
+const isLoadingMoreReplies = ref(false);
+/** 是否还有更多回复（已加载回复数 < 服务端总数 replyCount） */
+const repliesHasMore = computed(() =>
+  replies.value.length < (currentTopic.value?.replyCount ?? 0)
+);
+
+/**
+ * 加载下一页回复（store.fetchReplies(topicId, page) 对 page>1 追加到 replies）。
+ */
+async function loadMoreReplies(): Promise<void> {
+  if (!topicId.value || isLoadingMoreReplies.value || !repliesHasMore.value) return;
+  isLoadingMoreReplies.value = true;
+  try {
+    await circleStore.fetchReplies(topicId.value, replyPage.value + 1);
+    replyPage.value += 1;
+  } catch (_e) {
+    uni.showToast({ title: t("circle.topicDetailLoadMoreFailed"), icon: "none" });
+  } finally {
+    isLoadingMoreReplies.value = false;
+  }
+}
+
+/**
+ * R4-00104：昵称首字符兜底（author.name 为空/null 时返回占位符，
+ * 避免 name[0] 抛 TypeError 崩溃渲染）。
+ */
+function initialOf(name?: string | null): string {
+  return name && name.length > 0 ? name.charAt(0) : "?";
+}
+
 /** 当前登录用户 ID */
 const currentUserId = computed(() => sessionStore.userSession?.userId ?? "");
 
@@ -185,6 +219,8 @@ onLoad((query) => {
   topicId.value = query?.topicId ?? "";
 
   if (topicId.value) {
+    // R4-00102：进入新话题时重置回复分页游标
+    replyPage.value = 1;
     void circleStore.fetchTopicDetail(topicId.value);
     void circleStore.fetchReplies(topicId.value, 1);
   } else {
@@ -223,7 +259,7 @@ defineExpose({ sayHello, goToAuthorProfile });
             :src="resolveMediaUrl(currentTopic.author.avatar)"
             mode="aspectFill" lazy-load alt=""
           />
-          <text v-else class="author-avatar__char">{{ currentTopic.author.name[0] }}</text>
+          <text v-else class="author-avatar__char">{{ initialOf(currentTopic.author.name) }}</text>
         </view>
         <view class="author-info">
           <text class="author-info__name">{{ currentTopic.author.name }}</text>
@@ -283,7 +319,7 @@ defineExpose({ sayHello, goToAuthorProfile });
                 :src="resolveMediaUrl(reply.author.avatar)"
                 mode="aspectFill" lazy-load alt=""
               />
-              <text v-else class="reply-avatar__char">{{ reply.author.name[0] }}</text>
+              <text v-else class="reply-avatar__char">{{ initialOf(reply.author.name) }}</text>
             </view>
             <view class="reply-body">
               <view class="reply-content">
@@ -308,6 +344,21 @@ defineExpose({ sayHello, goToAuthorProfile });
         <!-- 空状态 -->
         <view v-else class="replies-empty">
           <text class="replies-empty__text">{{ t("circle.topicDetailEmptyReplies") }}</text>
+        </view>
+
+        <!-- R4-00102：回复分页「加载更多」 -->
+        <view
+          v-if="repliesHasMore"
+          class="replies-more press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('circle.topicDetailLoadMoreReplies')"
+          @tap="loadMoreReplies"
+        >
+          <text class="replies-more__text">
+            {{ isLoadingMoreReplies ? t("circle.topicDetailLoadingMoreReplies") : t("circle.topicDetailLoadMoreReplies") }}
+          </text>
         </view>
       </view>
 
@@ -694,6 +745,25 @@ defineExpose({ sayHello, goToAuthorProfile });
 .replies-empty__text {
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
+}
+
+/* R4-00102：回复分页「加载更多」按钮 */
+.replies-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 热区高度 ≥ 44px 可点击标准 */
+  min-height: 88rpx;
+  margin-top: var(--sp-4);
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+}
+
+.replies-more__text {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--c-brand-700);
 }
 
 .body-footer {

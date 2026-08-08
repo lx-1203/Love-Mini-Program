@@ -29,10 +29,12 @@ interface StatCard {
   color: string;
 }
 
-interface ActivityItem {
+/** 匹配趋势行（后端无独立「最近活动」接口，本区块展示每日匹配趋势，见 dashboard.matchTrend） */
+interface TrendItem {
   id: number | string;
-  type: string;
+  /** 匹配对数文案（i18n 格式化） */
   message: string;
+  /** 日期（yyyy-MM-dd） */
   time: string;
 }
 
@@ -46,7 +48,7 @@ const stats = ref<StatCard[]>([
 // 子接口失败标记（失败卡片降级显示，区分真实 0 与加载失败，避免误导）
 const failedStats = ref<boolean[]>([false, false, false, false]);
 
-const recentActivities = ref<ActivityItem[]>([]);
+const trendItems = ref<TrendItem[]>([]);
 
 const loading = ref(false);
 /** 错误信息（聚合所有子接口错误，空串表示无错误）。空串时不渲染 ErrorState。 */
@@ -96,14 +98,14 @@ async function loadStats() {
       const matchStats: MatchStats = overview.matchStats;
       stats.value[2] = { labelKey: "dashboard.statTotalMatches", value: matchStats.totalMatches, icon: "heart", color: "var(--admin-color-stat-blue)" };
 
-      // 语义修正：后端暂无独立的"最近活动"接口，此处展示的是每日匹配趋势
-      // （matchStats.dailyTrend，近 30 日），因此区块标题使用 dashboard.matchTrend。
-      recentActivities.value = (matchStats.dailyTrend || [])
+      // 后端暂无独立的"最近活动"接口：本区块展示每日匹配趋势（matchStats.dailyTrend，
+      // 近 30 日），以表格化趋势展示，区块标题使用 dashboard.matchTrend，
+      // 避免把"每天匹配 N 对"包装成活动记录造成语义误导（R4-00447）。
+      trendItems.value = (matchStats.dailyTrend || [])
         .slice(-TREND_DAYS)
         .reverse()
         .map((item, idx) => ({
           id: `${item.date}-${idx}`,
-          type: "match",
           message: t("dashboard.matchCountFormat", { n: item.count }),
           time: item.date,
         }));
@@ -245,28 +247,28 @@ onBeforeUnmount(() => {
     <view class="content-section">
       <view class="section-header">
         <text class="section-title">{{ t("dashboard.matchTrend") }}</text>
+        <text class="section-subtitle">{{ t("dashboard.matchTrendSubtitle") }}</text>
       </view>
 
-      <view
-        class="activity-list"
-        role="img"
-        :aria-label="t('dashboard.matchTrend')"
-        tabindex="0"
-      >
-        <view
-          v-for="activity in recentActivities"
-          :key="activity.id"
-          class="activity-item"
-        >
-          <view class="activity-dot" />
-          <view class="activity-content">
-            <text class="activity-message">{{ activity.message }}</text>
-            <text class="activity-time">{{ activity.time }}</text>
-          </view>
-        </view>
-        <view v-if="recentActivities.length === 0" class="empty-tip">
-          <text>{{ t("common.noData") }}</text>
-        </view>
+      <!-- 表格化趋势展示（近 30 日每日匹配对数），避免活动流语义误导 -->
+      <view class="trend-table-wrap">
+        <table class="trend-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ t("dashboard.matchTrendDate") }}</th>
+              <th scope="col">{{ t("dashboard.matchTrendCount") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="trendItems.length === 0">
+              <td colspan="2" class="empty-cell">{{ t("common.noData") }}</td>
+            </tr>
+            <tr v-for="item in trendItems" :key="item.id">
+              <td class="trend-date">{{ item.time }}</td>
+              <td class="trend-count">{{ item.message }}</td>
+            </tr>
+          </tbody>
+        </table>
       </view>
     </view>
   </view>
@@ -335,8 +337,8 @@ onBeforeUnmount(() => {
 .stat-icon-img {
   width: 28px;
   height: 28px;
-  /* 内联 SVG 使用 currentColor 填充，此处置白（深色底上显示） */
-  color: #fff;
+  /* 内联 SVG 使用 currentColor 填充，置于品牌色底上（与 primary 按钮文字同惯例） */
+  color: var(--admin-color-bg-container);
 }
 
 .stat-content {
@@ -375,58 +377,48 @@ onBeforeUnmount(() => {
   color: var(--admin-color-text-primary);
 }
 
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-lg);
-}
-
-/* 键盘导航聚焦轮廓 */
-.activity-list:focus-visible {
-  outline: 2px solid var(--admin-color-primary);
-  outline-offset: 2px;
-}
-
-.activity-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--admin-space-md);
-  padding: var(--admin-space-md);
-  border-radius: var(--admin-radius-lg);
-  transition: background 0.2s;
-}
-
-.activity-item:hover {
-  background: var(--admin-color-bg-subtle);
-}
-
-.activity-dot {
-  width: var(--admin-space-sm);
-  height: var(--admin-space-sm);
-  border-radius: 50%;
-  background: var(--admin-color-primary);
-  margin-top: var(--admin-space-xxs);
-  flex-shrink: 0;
-}
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-message {
+.section-subtitle {
   display: block;
-  font-size: var(--admin-font-lg);
-  color: var(--admin-color-text-primary);
-  margin-bottom: var(--admin-space-xs);
-}
-
-.activity-time {
-  display: block;
+  margin-top: var(--admin-space-xs);
   font-size: var(--admin-font-sm);
   color: var(--admin-color-text-quaternary);
 }
 
-.empty-tip {
+.trend-table-wrap {
+  overflow-x: auto;
+}
+
+.trend-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trend-table th,
+.trend-table td {
+  padding: var(--admin-space-md-sm) var(--admin-space-lg);
+  text-align: left;
+  border-bottom: 1px solid var(--admin-color-border-light);
+}
+
+.trend-table th {
+  font-size: var(--admin-font-sm);
+  font-weight: 600;
+  color: var(--admin-color-text-tertiary);
+  background: var(--admin-color-bg-subtle);
+}
+
+.trend-date {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-secondary);
+  white-space: nowrap;
+}
+
+.trend-count {
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-primary);
+}
+
+.empty-cell {
   padding: var(--admin-space-xxl);
   text-align: center;
   color: var(--admin-color-text-quaternary);

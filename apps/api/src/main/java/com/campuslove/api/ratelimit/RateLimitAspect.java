@@ -58,12 +58,93 @@ public class RateLimitAspect {
     private final RateLimitBucketRegistry registry;
 
     /**
-     * 构造函数注入注册表。
+     * R4-00378：可信代理 IP/CIDR 列表（配置 app.security.trusted-proxies，逗号分隔）。
      *
-     * @param registry 令牌桶注册表 Bean
+     * <p>空列表（默认）表示不信任任何代理——限流键直接使用直连 remoteAddr，
+     * 客户端伪造 X-Forwarded-For 头无法更换限流桶。部署在 Nginx/网关后时，
+     * 应将网关 IP 加入此列表（前提：网关负责清理/覆盖客户端传入的 XFF），
+     * 此时才信任 XFF 首地址作为客户端真实 IP。</p>
      */
-    public RateLimitAspect(RateLimitBucketRegistry registry) {
+    private final java.util.Set<String> trustedProxyIps;
+
+    /** R4-00378：可信代理 CIDR 条目（前缀 + 位数，如 10.0.0.0/8） */
+    private final java.util.List<CidrEntry> trustedProxyCidrs;
+
+    /** R4-00378：CIDR 条目（避免引入第三方元组依赖） */
+    private record CidrEntry(String prefix, int bits) {
+    }
+
+    /**
+     * 构造函数注入注册表与可信代理配置。
+     *
+     * @param registry       令牌桶注册表 Bean
+     * @param trustedProxies 可信代理 IP/CIDR 列表（逗号分隔，空表示不信任任何代理）
+     */
+    public RateLimitAspect(RateLimitBucketRegistry registry, String trustedProxies) {
         this.registry = registry;
+        java.util.Set<String> ips = new java.util.HashSet<>();
+        java.util.List<CidrEntry> cidrs = new java.util.ArrayList<>();
+        if (trustedProxies != null && !trustedProxies.isBlank()) {
+            for (String part : trustedProxies.split(",")) {
+                String entry = part.trim();
+                if (entry.isEmpty()) {
+                    continue;
+                }
+                int slash = entry.indexOf('/');
+                if (slash > 0) {
+                    try {
+                        cidrs.add(new CidrEntry(entry.substring(0, slash),
+                                Integer.parseInt(entry.substring(slash + 1))));
+                    } catch (NumberFormatException e) {
+                        log.warn("可信代理 CIDR 配置非法，忽略: {}", entry);
+                    }
+                } else {
+                    ips.add(entry);
+                }
+            }
+        }
+        this.trustedProxyIps = java.util.Collections.unmodifiableSet(ips);
+        this.trustedProxyCidrs = java.util.Collections.unmodifiableList(cidrs);
+    }
+
+    /**
+     * R4-00378：判断直连来源 IP 是否为可信代理。
+     *
+     * <p>仅当直连 remoteAddr 命中配置的可信代理（精确 IP 或 CIDR 前缀）时，
+     * 才允许信任 X-Forwarded-For 首地址；否则视为客户端直连，XFF 不可信。</p>
+     *
+     * @param remoteAddr 直连来源 IP
+     * @return true 表示可信代理
+     */
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (remoteAddr == null || remoteAddr.isBlank()) {
+            return false;
+        }
+        if (trustedProxyIps.contains(remoteAddr)) {
+            return true;
+        }
+        for (CidrEntry cidr : trustedProxyCidrs) {
+            if (remoteAddr.startsWith(cidr.prefix() + ".")) {
+                // 简化 CIDR 匹配：按 /8 /16 /24 前缀处理
+                int dotCount = (cidr.bits() + 7) / 8;
+                String[] remoteParts = remoteAddr.split("\\.");
+                String[] prefixParts = cidr.prefix().split("\\.");
+                if (remoteParts.length < dotCount || prefixParts.length < dotCount) {
+                    continue;
+                }
+                boolean match = true;
+                for (int i = 0; i < dotCount; i++) {
+                    if (!remoteParts[i].equals(prefixParts[i])) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -173,11 +254,12 @@ public class RateLimitAspect {
      *
      * <p>在非 Web 上下文（如异步线程、定时任务）中可能返回 null。</p>
      *
-     * <p>infra R2-00229: 反向代理（Nginx/网关）部署时所有请求的 {@code remoteAddr} 均为代理 IP，
-     * 导致全站共享同一限流桶（误伤）或被代理池轮换绕过。此处包装请求使
-     * {@code getRemoteAddr()} 优先返回 {@code X-Forwarded-For} 首地址（客户端真实 IP），
-     * 从而 {@code #request.remoteAddr} 限流键自动获得真实 IP。
-     * 注意：生产网关应清理/覆盖 X-Forwarded-For，防止客户端伪造绕过限流。</p>
+     * <p>infra R2-00229 + R4-00378：反向代理（Nginx/网关）部署时所有请求的
+     * {@code remoteAddr} 均为代理 IP，导致全站共享同一限流桶（误伤）。
+     * 包装器使 {@code getRemoteAddr()} 在<b>直连来源为配置的可信代理</b>
+     * （{@code app.security.trusted-proxies}）时优先返回 {@code X-Forwarded-For}
+     * 首地址（客户端真实 IP）；直连来源不可信时忽略 XFF，直接返回直连地址——
+     * 客户端伪造 XFF 头无法更换限流桶（R4-00378）。</p>
      *
      * @return 当前 HttpServletRequest，无可用请求上下文时返回 null
      */
@@ -187,22 +269,32 @@ public class RateLimitAspect {
         if (attrs == null) {
             return null;
         }
-        return new ForwardedHeaderAwareRequestWrapper(attrs.getRequest());
+        return new ForwardedHeaderAwareRequestWrapper(attrs.getRequest(), this);
     }
 
     /**
-     * 使 {@code getRemoteAddr()} 优先返回 X-Forwarded-For 首地址的请求包装器。
-     * 未携带 X-Forwarded-For 时行为与原请求一致。
+     * 使 {@code getRemoteAddr()} 在直连来源为可信代理时优先返回 X-Forwarded-For
+     * 首地址的请求包装器（R4-00378）；直连来源不可信或未携带 X-Forwarded-For 时
+     * 行为与原请求一致。
      */
     private static final class ForwardedHeaderAwareRequestWrapper extends HttpServletRequestWrapper {
 
-        ForwardedHeaderAwareRequestWrapper(HttpServletRequest request) {
+        private final RateLimitAspect aspect;
+
+        ForwardedHeaderAwareRequestWrapper(HttpServletRequest request, RateLimitAspect aspect) {
             super(request);
+            this.aspect = aspect;
         }
 
         @Override
         public String getRemoteAddr() {
             HttpServletRequest original = (HttpServletRequest) getRequest();
+            String directAddr = super.getRemoteAddr();
+            // R4-00378：仅当直连来源为可信代理时才信任 XFF（网关已清理/覆盖
+            // 客户端 XFF 的前提下），否则客户端伪造 XFF 头即可更换限流桶
+            if (!aspect.isTrustedProxy(directAddr)) {
+                return directAddr;
+            }
             String xff = original.getHeader("X-Forwarded-For");
             if (xff != null && !xff.isBlank()) {
                 int comma = xff.indexOf(',');
@@ -211,7 +303,7 @@ public class RateLimitAspect {
                     return first;
                 }
             }
-            return super.getRemoteAddr();
+            return directAddr;
         }
     }
 }

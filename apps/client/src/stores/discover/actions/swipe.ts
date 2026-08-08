@@ -25,6 +25,7 @@ import {
 } from "../api";
 import { timers } from "../timers";
 import type {
+  DiscoverCard,
   ViewedCardRecord,
 } from "../types";
 import type { DiscoverStoreThis } from "../store-type";
@@ -43,6 +44,19 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
     if (!cardId || cardId.trim().length === 0) {
       this.errorMessage = t("storeErrors.discover.cardIdInvalid");
       throw new Error(t("storeErrors.discover.cardIdInvalid"));
+    }
+
+    // 修复（R4-00177）：同一卡片在右滑防抖窗口内又左滑（手势冲突），
+    // 以最后手势为准——从幂等队列中移除该卡片的待执行右滑并以「已取消」
+    // 语义 settle 其调用方，避免延迟的 like 与本次左滑互相矛盾。
+    if (timers.swipeRightQueue) {
+      const pendingIdx = timers.swipeRightQueue.findIndex((item) => item.cardId === cardId);
+      if (pendingIdx >= 0) {
+        const [pending] = timers.swipeRightQueue.splice(pendingIdx, 1);
+        if (pending) {
+          pending.resolvers.forEach((r) => r());
+        }
+      }
     }
 
     // 卡片存在检查
@@ -116,10 +130,16 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
 /**
  * 右滑（喜欢）
  *
- * 修复（P1 BUG）：新增 300ms 防抖，防止快速连续右滑。
- * 防抖窗口内多次触发只执行最后一次，避免重复请求与状态错乱。
- * 返回 Promise 以便调用方可以 await 实际执行结果；
- * 被防抖合并掉的早期调用会 resolve undefined。
+ * 修复（P1 BUG + R4-00177）：300ms 防抖窗口内的「幂等队列」而非「最后一击」防抖。
+ * 原实现的缺陷：
+ * 1. 快速「右滑 A→右滑 B」时只执行最后一次，前次右滑被静默丢弃（喜欢操作丢失）；
+ * 2. 快速「右滑 A→左滑 B」时，A 的 like 延迟 300ms 后执行，而卡片已被左滑/刷新
+ *    移除，报「卡片不存在」误错。
+ * 现行为：
+ * - 同一卡片窗口内重复触发 → 合并到同一队列项（幂等，不重复请求后端），
+ *   全部调用方 await 同一个执行结果；
+ * - 不同卡片窗口内触发 → 各自入队，flush 时逐张执行（不再丢弃早先的喜欢）；
+ * - 入队时快照卡片，执行时卡片已移除则按快照兜底（不再误报「卡片不存在」）。
  *
  * @param cardId - 卡片 ID
  * @param isSuperLike - 是否超级喜欢
@@ -129,35 +149,83 @@ export async function swipeRight(
   cardId: string,
   isSuperLike = false
 ): Promise<void> {
-  // 修复（P1 BUG）：300ms 防抖，防止快速连续右滑
+  // 参数校验提前（与 _doSwipeRight 保持一致，避免无效参数进入队列）
+  if (!cardId || cardId.trim().length === 0) {
+    this.errorMessage = t("storeErrors.discover.cardIdInvalid");
+    throw new Error(t("storeErrors.discover.cardIdInvalid"));
+  }
+
   return new Promise<void>((resolve, reject) => {
-    // 清理上一次防抖定时器，合并为最后一次调用
+    const queue = timers.swipeRightQueue ?? [];
+
+    // 同一卡片已在窗口内排队（重复触发）：合并到已有项，等待同一执行结果
+    const existing = queue.find((item) => item.cardId === cardId);
+    if (existing) {
+      existing.resolvers.push(resolve);
+      existing.rejecters.push(reject);
+      return;
+    }
+
+    // 防抖窗口内快照卡片（修复 R4-00177：执行时卡片可能已被左滑/刷新移除）
+    const card = this.cards.find((c) => c.id === cardId) ?? null;
+    queue.push({
+      cardId,
+      isSuperLike,
+      card,
+      resolvers: [resolve],
+      rejecters: [reject],
+    });
+    timers.swipeRightQueue = queue;
+
+    // 重置防抖定时器：窗口内新卡片入队则重新计时，窗口结束统一逐张 flush
     if (timers.swipeRightDebounceTimer) {
       clearTimeout(timers.swipeRightDebounceTimer);
-      timers.swipeRightDebounceTimer = null;
     }
-    // 修复（P1 BUG）：被新调用覆盖的旧 Promise 不再挂起——
-    // 以“已取消”语义 resolve，让旧调用方（await 处）正常返回
-    if (timers.swipeRightPendingResolve) {
-      timers.swipeRightPendingResolve();
-      timers.swipeRightPendingResolve = null;
-    }
-    timers.swipeRightPendingResolve = resolve;
     timers.swipeRightDebounceTimer = setTimeout(() => {
       timers.swipeRightDebounceTimer = null;
-      timers.swipeRightPendingResolve = null;
-      this._doSwipeRight(cardId, isSuperLike).then(resolve).catch(reject);
+      const batch = timers.swipeRightQueue;
+      timers.swipeRightQueue = null;
+      if (!batch || batch.length === 0) return;
+      void this._flushSwipeRightQueue(batch);
     }, SWIPE_RIGHT_DEBOUNCE_MS);
   });
 }
 
 /**
- * swipeRight 的实际执行逻辑（由防抖 wrapper 调用）。
+ * 逐张执行防抖窗口内排队的右滑（串行，避免并发状态竞争）。
+ */
+export async function _flushSwipeRightQueue(
+  this: DiscoverStoreThis,
+  batch: Array<{
+    cardId: string;
+    isSuperLike: boolean;
+    card: DiscoverCard | null;
+    resolvers: Array<() => void>;
+    rejecters: Array<(reason?: unknown) => void>;
+  }>
+): Promise<void> {
+  for (const item of batch) {
+    try {
+      await this._doSwipeRight(item.cardId, item.isSuperLike, item.card);
+      item.resolvers.forEach((r) => r());
+    } catch (error) {
+      item.rejecters.forEach((r) => r(error));
+    }
+  }
+}
+
+/**
+ * swipeRight 的实际执行逻辑（由防抖窗口的幂等队列 flush 调用）。
+ *
+ * @param cardId - 卡片 ID
+ * @param isSuperLike - 是否超级喜欢
+ * @param cardSnapshot - 入队时的卡片快照（可选；卡片已被移除时按快照执行）
  */
 export async function _doSwipeRight(
   this: DiscoverStoreThis,
   cardId: string,
-  isSuperLike = false
+  isSuperLike = false,
+  cardSnapshot?: DiscoverCard | null
 ): Promise<void> {
   this.errorMessage = null;
   // 重置上次结果
@@ -170,8 +238,9 @@ export async function _doSwipeRight(
       throw new Error(t("storeErrors.discover.cardIdInvalid"));
     }
 
-    // 卡片存在检查
-    const card = this.cards.find((c) => c.id === cardId);
+    // 卡片存在检查：优先取快照（修复 R4-00177：防抖窗口内卡片可能已被
+    // 左滑/刷新移除，此时按快照继续执行，不再误报「卡片不存在」）
+    const card = cardSnapshot ?? this.cards.find((c) => c.id === cardId) ?? null;
     if (!card) {
       this.errorMessage = t("storeErrors.discover.cardNotFound");
       throw new Error(t("storeErrors.discover.cardNotFound"));

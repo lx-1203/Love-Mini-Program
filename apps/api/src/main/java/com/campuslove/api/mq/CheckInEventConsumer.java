@@ -172,8 +172,8 @@ public class CheckInEventConsumer {
     /**
      * 持久化通知到 notifications 表（best effort）。
      *
-     * <p>签到通知使用 {@link NotificationType#match} 作为类型（schemas 中无 system 类型，
-     * 复用 match 作为系统类通知的兜底分类）。</p>
+     * <p>R4-00374：签到通知使用独立 {@link NotificationType#system} 类型
+     * （schemas 已扩展 system 枚举值），不再复用 match 作为系统类通知兜底。</p>
      *
      * @param userId    接收通知的用户 ID
      * @param title     通知标题（仅用于日志）
@@ -190,8 +190,9 @@ public class CheckInEventConsumer {
         try {
             Notification entity = new Notification();
             entity.setUserId(userId);
-            // 签到通知归入 match 类型（系统类通知兜底）
-            entity.setType(NotificationType.match);
+            // R4-00374：签到通知使用独立 system 类型（schemas 已扩展），
+            // 不再归入 match——签到成功通知此前在站内被展示为"匹配"语义
+            entity.setType(NotificationType.system);
             entity.setSourceUserId(SYSTEM_SOURCE_USER_ID);
             entity.setReferenceType(ReferenceType.user);
             entity.setIsRead(false);

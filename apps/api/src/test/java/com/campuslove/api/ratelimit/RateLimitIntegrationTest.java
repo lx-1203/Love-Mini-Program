@@ -148,7 +148,7 @@ class RateLimitIntegrationTest {
     @Test
     @DisplayName("场景 4: 切面在桶耗尽时抛 RateLimitExceededException（→ HTTP 429）")
     void aspectShouldThrowRateLimitExceededExceptionWhenBucketExhausted() throws Throwable {
-        RateLimitAspect aspect = new RateLimitAspect(registry);
+        RateLimitAspect aspect = new RateLimitAspect(registry, "");
 
         // 构造 mock 切点：方法签名 + @RateLimit 注解 + 目标方法
         ProceedingJoinPoint pjp = mock(ProceedingJoinPoint.class);
@@ -186,7 +186,7 @@ class RateLimitIntegrationTest {
     @Test
     @DisplayName("场景 5: 切面在桶有令牌时放行原方法")
     void aspectShouldProceedWhenBucketHasTokens() throws Throwable {
-        RateLimitAspect aspect = new RateLimitAspect(registry);
+        RateLimitAspect aspect = new RateLimitAspect(registry, "");
         ProceedingJoinPoint pjp = mock(ProceedingJoinPoint.class);
         MethodSignature signature = mock(MethodSignature.class);
         Method method = SampleController.class.getDeclaredMethod("rateLimitedEndpoint");

@@ -3,6 +3,10 @@
  *
  * 隔离原则：本文件仅被 stores/likes.ts 的 useMock() 分支引用，
  * real 模式（apiMode=real）不会读取其中的任何 mock 用户/会话 ID。
+ *
+ * 修复（R4-00125）：mock 用户 ID 统一为 user-<数字> 单一体系
+ * （当前用户 user-1001、likes/visitors user-2001~user-2318），
+ * 本文件即该家族的 fixtures，仅 mock 分支引用。
  * 类型经 import type 引用（编译期擦除，无运行时循环依赖）。
  */
 import type { HeartSignal, LikeRecord, VisitorRecord } from "../likes";

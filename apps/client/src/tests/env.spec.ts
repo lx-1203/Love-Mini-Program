@@ -1,24 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { appEnv, isDev } from "../services/env";
+// 修复（R4-00148/R4-00205）：环境配置统一入口已收敛至 config/env.ts
+import { clientEnv, isDev } from "../config/env";
 
 /**
  * 环境配置单元测试
  *
  * 验证点：
- * - appEnv 必须包含合法的 apiMode 与 apiBaseUrl
+ * - clientEnv 必须包含合法的 apiMode 与 apiBaseUrl
  * - isDev 为布尔值
  * - 这些值在 Vite/vitest 环境下由 .env / .env.[mode] 注入
  */
-describe("services/env", () => {
+describe("config/env", () => {
   it("应提供合法的 API 模式", () => {
-    expect(["real", "mock"]).toContain(appEnv.apiMode);
+    expect(["real", "mock"]).toContain(clientEnv.apiMode);
   });
 
   it("应提供非空的 API 基础地址", () => {
-    expect(typeof appEnv.apiBaseUrl).toBe("string");
-    expect(appEnv.apiBaseUrl.trim().length).toBeGreaterThan(0);
+    expect(typeof clientEnv.apiBaseUrl).toBe("string");
+    expect(clientEnv.apiBaseUrl.trim().length).toBeGreaterThan(0);
   });
 
   it("isDev 应为布尔值", () => {

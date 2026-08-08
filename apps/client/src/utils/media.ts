@@ -36,7 +36,8 @@
  * </p>
  */
 
-import { appEnv } from "../services/env";
+// 修复（R4-00205）：环境配置统一入口
+import { clientEnv } from "../config/env";
 import { getToken } from "../services/http";
 // infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
 import { ensurePrivacyAuthorized } from "./privacy";
@@ -53,7 +54,7 @@ const UPLOADS_PREFIX = "/uploads/";
  * 鉴权代理端点路径前缀。
  *
  * <p>对应后端 {@code MediaAccessController} 的 {@code @RequestMapping("/api/v1/media")}。
- * 客户端拼接完整 URL 时使用 {@code appEnv.apiBaseUrl + MEDIA_PROXY_PREFIX + userId/...}。</p>
+ * 客户端拼接完整 URL 时使用 {@code clientEnv.apiBaseUrl + MEDIA_PROXY_PREFIX + userId/...}。</p>
  */
 const MEDIA_PROXY_PREFIX = "/api/v1/media/";
 
@@ -119,7 +120,7 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     }
     // ⚠️ apiBaseUrl 可能自带 /api 后缀（如 http://127.0.0.1:8080/api），
     // 拼接前先去尾，避免拼出 /api/api/v1/media/... 双重前缀 404（2026-08-08 走查 P0-1 根因之一）
-    const apiRoot = appEnv.apiBaseUrl.replace(/\/api\/?$/, "");
+    const apiRoot = clientEnv.apiBaseUrl.replace(/\/api\/?$/, "");
     const proxyUrl = `${apiRoot}${MEDIA_PROXY_PREFIX}${suffix}`;
     return appendTokenIfMissing(proxyUrl);
   }
@@ -141,6 +142,12 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
  * @returns 附加 token 后的 URL；token 缺失时返回原 URL
  */
 function appendTokenIfMissing(url: string): string {
+  // 修复（R4-00244）：后端改签短期签名 URL 后，通过环境变量
+  // VITE_MEDIA_TOKEN_QUERY=false 即可整体关闭 token 拼接（无需发版改代码）；
+  // 关闭后返回原 URL，由后端签名/权限策略决定可否访问。
+  if (!clientEnv.mediaTokenQuery) {
+    return url;
+  }
   // 已含 token 参数，不重复附加（避免双查询参数）
   if (url.includes(`?${TOKEN_QUERY_PARAM}=`) || url.includes(`&${TOKEN_QUERY_PARAM}=`)) {
     return url;
@@ -150,7 +157,7 @@ function appendTokenIfMissing(url: string): string {
     // 未登录或 token 已过期：返回原 URL，由后端 401/403 触发 SafeImage fallback
     return url;
   }
-  // ⚠️ 安全警告（已知风险）：把 JWT 拼入图片 URL 的 query 参数，token 会暴露在：
+  // ⚠️ 安全警告（已知风险，R4-00244）：把 JWT 拼入图片 URL 的 query 参数，token 会暴露在：
   // 1. 浏览器 Referer 头（图片请求会携带 Referer 给图片服务器/CDN）；
   // 2. 代理/CDN 访问日志与浏览器历史记录；
   // 3. 小程序网络面板（开发者工具可查）。
@@ -158,7 +165,8 @@ function appendTokenIfMissing(url: string): string {
   // - 使用 Authorization 头无法覆盖 <image> 标签请求，故可改为
   //   后端签发短期有效（如 5 分钟）的一次性签名 URL（如 OSS 签名）；
   // - 或由后端在登录后返回已带签名的图片 URL，前端不做拼接。
-  // 此处保留拼接能力仅为满足现有鉴权代理端点（/media/proxy/*）的契约。
+  // 后端完成签名 URL 改造后，设置 VITE_MEDIA_TOKEN_QUERY=false 关闭拼接。
+  // 此处保留拼接能力仅为满足现有鉴权代理端点（/api/v1/media/*）的契约。
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}${TOKEN_QUERY_PARAM}=${encodeURIComponent(token)}`;
 }

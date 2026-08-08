@@ -37,11 +37,47 @@ interface DeviceItem {
   isCurrent: boolean;
 }
 
-const devices = ref<DeviceItem[]>([
-  { id: "d1", device: "iPhone 15 Pro", location: "南京 · 玄武", lastActive: "当前设备", isCurrent: true },
-  { id: "d2", device: "小米 14", location: "南京 · 江宁", lastActive: "2 天前", isCurrent: false },
-  { id: "d3", device: "iPad Air", location: "南京 · 鼓楼", lastActive: "12 天前", isCurrent: false },
-]);
+/** R4-00062：已下线设备 ID 的本地持久化 key（后端设备管理接口就绪前的过渡方案） */
+const KICKED_DEVICES_KEY = "security:kicked-devices";
+
+/**
+ * 读取已下线设备 ID 列表（storage 异常时按空数组降级）。
+ */
+function readKickedDevices(): string[] {
+  try {
+    const raw = uni.getStorageSync(KICKED_DEVICES_KEY);
+    return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * 记录已下线设备 ID（防重复写入；storage 异常静默降级为内存态）。
+ */
+function persistKickedDevice(id: string): void {
+  try {
+    const kicked = readKickedDevices();
+    if (!kicked.includes(id)) {
+      uni.setStorageSync(KICKED_DEVICES_KEY, [...kicked, id]);
+    }
+  } catch (_e) {
+    // 存储失败仅影响刷新后回显，不阻塞下线操作本身
+  }
+}
+
+/** 初始设备列表（演示数据；已下线设备按持久化记录过滤，避免"刷新后设备重现"） */
+function buildInitialDevices(): DeviceItem[] {
+  const all: DeviceItem[] = [
+    { id: "d1", device: "iPhone 15 Pro", location: "南京 · 玄武", lastActive: "当前设备", isCurrent: true },
+    { id: "d2", device: "小米 14", location: "南京 · 江宁", lastActive: "2 天前", isCurrent: false },
+    { id: "d3", device: "iPad Air", location: "南京 · 鼓楼", lastActive: "12 天前", isCurrent: false },
+  ];
+  const kicked = readKickedDevices();
+  return kicked.length > 0 ? all.filter((d) => !kicked.includes(d.id)) : all;
+}
+
+const devices = ref<DeviceItem[]>(buildInitialDevices());
 
 /** 是否展示下线确认中的设备 ID */
 const kickingDeviceId = ref<string | null>(null);
@@ -92,7 +128,12 @@ function submitPassword(): void {
   uni.showToast({ title: t("security.passwordUpdated"), icon: "success" });
 }
 
-/** 下线设备（演示：确认后从列表移除） */
+/**
+ * 下线设备。
+ * R4-00062：后端暂无设备管理接口（后端接入设备列表/下线接口后，
+ * 应在确认后先调用下线接口成功再从列表移除）。
+ * 过渡方案：下线决策持久化到本地 storage，刷新页面不再"设备重现"。
+ */
 function kickDevice(id: string): void {
   const device = devices.value.find((d) => d.id === id);
   if (!device || device.isCurrent) return;
@@ -108,6 +149,7 @@ function kickDevice(id: string): void {
       kickingDeviceId.value = null;
       if (!res.confirm) return;
       devices.value = devices.value.filter((d) => d.id !== id);
+      persistKickedDevice(id);
       uni.showToast({ title: t("security.kickDone"), icon: "success" });
     },
     fail: () => {
@@ -451,7 +493,7 @@ function confirmDeleteAccount(): void {
 .sec-modal-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;

@@ -17,6 +17,7 @@ import {
 import { ApiError } from "@/api/http";
 import Pagination from "@/components/Pagination.vue";
 import ErrorState from "@/components/ErrorState.vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "@/utils/format";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "@/utils/constants";
@@ -57,7 +58,7 @@ const handleRemark = ref("");
 const submitting = ref(false);
 
 // 筛选防抖 + 请求竞态防护
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
@@ -67,7 +68,7 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 async function fetchReports() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const query: AdminReportListQuery = {
       page: page.value,
@@ -77,18 +78,18 @@ async function fetchReports() {
     if (targetTypeFilter.value) query.targetType = targetTypeFilter.value;
 
     const result = await listReports(query);
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     reports.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("reports.loadFailed");
     reports.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

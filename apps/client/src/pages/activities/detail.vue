@@ -577,7 +577,7 @@ async function handleSendToFriend() {
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-4));
   background: var(--c-bg-container, #ffffff);
-  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4rpx 20rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
 }
 
 /* 发给朋友（次级按钮） */

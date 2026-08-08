@@ -316,10 +316,25 @@ public class RedisConfig {
                     com.fasterxml.jackson.databind.ObjectMapper jsonMapper =
                             new com.fasterxml.jackson.databind.ObjectMapper()
                                     .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+                    // R4-00285：启用 default typing 时不再使用空校验器（可反序列化任意
+                    // @class 类型，Redis 可写场景存在多态 gadget 风险），改为白名单校验器：
+                    // 仅允许本项目 DTO/实体包（com.campuslove.api.）与 JDK 集合/基础/时间类型，
+                    // 其余类型在反序列化时直接拒绝。
+                    com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator ptv =
+                            com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator.builder()
+                                    .allowIfSubType("com.campuslove.api.")
+                                    .allowIfSubType("java.util.")
+                                    .allowIfSubType("java.lang.")
+                                    .allowIfSubType("java.time.")
+                                    .allowIfBaseType("com.campuslove.api.")
+                                    .allowIfBaseType("java.util.")
+                                    .allowIfBaseType("java.lang.")
+                                    .allowIfBaseType("java.time.")
+                                    .build();
                     // 对具体 DTO 类型也启用类型信息(NON_FINAL + PROPERTY),写入 @class 属性,
                     // 反序列化时还原具体类型(如 MatchStatsView),避免 LinkedHashMap 转换异常
                     jsonMapper.activateDefaultTyping(
-                            jsonMapper.getPolymorphicTypeValidator(),
+                            ptv,
                             com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.NON_FINAL,
                             com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY);
                     sharedJsonSerializer = new Jackson2JsonRedisSerializer<Object>(jsonMapper, Object.class);

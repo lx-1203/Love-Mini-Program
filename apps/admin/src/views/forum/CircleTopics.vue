@@ -12,6 +12,7 @@
  * 也可在页内手输活动 ID 或从下拉选择圈子加载。
  */
 import { computed, onMounted, ref, watch } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
@@ -78,7 +79,7 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 加载圈内话题列表（依赖当前圈子 ID） */
 async function fetchTopics(): Promise<void> {
@@ -92,21 +93,21 @@ async function fetchTopics(): Promise<void> {
   }
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listCircleTopics(id, { page: page.value, pageSize: pageSize.value });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     topics.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("circleTopics.loadFailed");
     topics.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

@@ -14,8 +14,11 @@ import org.springframework.util.StringUtils;
  * <p>实现说明：</p>
  * <ul>
  *   <li>内网 / 环回 IP（本地开发、局域网）返回配置的默认城市（{@code app.location.default-city}，默认"南京"）</li>
- *   <li>演示用城市网段表（{@link #DEMO_CITY_NETS}）覆盖少量公网网段，用于本地演示 IP 归属效果</li>
- *   <li>其余公网 IP 返回默认城市（生产环境可在此接入第三方 IP 归属库，如纯真库 / 高德 IP 定位）</li>
+ *   <li>R4-00340：演示用城市网段表（{@link #DEMO_CITY_NETS}）仅在本服务开关
+ *       {@code app.location.demo-city-nets-enabled=true}（仅 mock/本地演示）时生效，
+ *       生产环境（real）默认关闭——演示网段数据不得进入真实模式（同城标注失真）</li>
+ *   <li>其余公网 IP 返回默认城市（TODO 生产：接入真实 IP 归属库，如纯真库 / 高德 IP
+ *       定位 / ip2region 离线库，替换演示网段方案）</li>
  * </ul>
  */
 @Service
@@ -32,8 +35,13 @@ public class LocationService {
 
     private final String defaultCity;
 
-    public LocationService(@Value("${app.location.default-city:南京}") String defaultCity) {
+    /** R4-00340：演示网段表开关（默认 false；mock/本地演示 profile 开启） */
+    private final boolean demoCityNetsEnabled;
+
+    public LocationService(@Value("${app.location.default-city:南京}") String defaultCity,
+                           @Value("${app.location.demo-city-nets-enabled:false}") boolean demoCityNetsEnabled) {
         this.defaultCity = StringUtils.hasText(defaultCity) ? defaultCity : "南京";
+        this.demoCityNetsEnabled = demoCityNetsEnabled;
     }
 
     /**
@@ -47,9 +55,13 @@ public class LocationService {
         if (ip.isEmpty() || isPrivateIp(ip)) {
             return defaultCity;
         }
-        for (CityNet net : DEMO_CITY_NETS) {
-            if (ip.startsWith(net.prefix())) {
-                return net.city();
+        // R4-00340：演示网段表仅 mock/本地演示（demo-city-nets-enabled=true）时生效，
+        // 生产环境不得使用演示数据冒充真实 IP 归属
+        if (demoCityNetsEnabled) {
+            for (CityNet net : DEMO_CITY_NETS) {
+                if (ip.startsWith(net.prefix())) {
+                    return net.city();
+                }
             }
         }
         return defaultCity;

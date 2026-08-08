@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { get, unwrapApiData } from "../api/http";
 import { logger } from "../utils/logger";
+import { env } from "../config/env";
 
 /**
  * 后端菜单节点类型（对齐 eladmin 菜单模型）。
@@ -94,6 +95,30 @@ export function findFirstMenuPath(menus: AdminMenuNode[], parentPath = ""): stri
     }
   }
   return null;
+}
+
+/**
+ * 判断目标路径是否为菜单树中的已知节点（含 DIR 目录）完整 path。
+ *
+ * 用途：路由守卫区分「菜单已授权但路由未注册」（如 component 未命中
+ * componentMap / 动态路由被移除）与「未知路径」——前者回跳首个可跳转菜单，
+ * 后者保留 404 页。
+ *
+ * @param menus       菜单树
+ * @param targetPath  目标路径（如 /system/admins）
+ * @param parentPath  父级目录 path 前缀（内部递归使用）
+ * @returns 目标路径与任一节点完整 path（忽略末尾斜杠）一致时返回 true
+ */
+export function isKnownMenuPath(menus: AdminMenuNode[], targetPath: string, parentPath = ""): boolean {
+  const normalizedTarget = targetPath.replace(/\/+$/, "") || "/";
+  for (const node of menus) {
+    const fullPath = resolveMenuPath(node, parentPath).replace(/\/+$/, "") || "/";
+    if (fullPath === normalizedTarget) return true;
+    if (node.children && node.children.length > 0) {
+      if (isKnownMenuPath(node.children, targetPath, fullPath)) return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -215,10 +240,12 @@ export const useMenuStore = defineStore("menu", () => {
   /**
    * 拉取当前管理员可见菜单树并存储。
    *
-   * 开发/mock 模式下若后端菜单端点未实现（404），自动回退到 staticFallbackMenus，
-   * 保证本地验证可继续；其他非 404 错误仍抛出，避免掩盖真实故障。
+   * 仅开发/mock 模式下若后端菜单端点未实现（404），自动回退到 staticFallbackMenus
+   * 支撑本地页面走查；生产环境 404 一律抛出（与其他错误一致），
+   * 避免后端菜单数据异常/误删时全量菜单入口（含 SUPER_ADMIN 专属）被展示，
+   * 导致权限展示绕过与 staticFallbackMenus 双份维护漂移。
    *
-   * @throws ApiError 后端不可达/401/403 时抛出，由调用方（守卫/登录页）决定兜底行为
+   * @throws ApiError 后端不可达/401/403/404（生产）时抛出，由调用方（守卫/登录页）决定兜底行为
    */
   async function loadMenus(): Promise<void> {
     try {
@@ -231,9 +258,12 @@ export const useMenuStore = defineStore("menu", () => {
       loaded.value = true;
       logger.info("[AdminV2 Menu] 菜单加载完成", { count: list.length });
     } catch (error) {
-      // mock profile 未实现菜单端点时，使用本地静态菜单兜底，支撑页面走查
-      if (error && typeof error === "object" && (error as { status?: number }).status === 404) {
-        logger.warn("[AdminV2 Menu] 后端菜单端点 404，使用本地静态菜单兜底");
+      // mock profile 未实现菜单端点时，仅开发环境使用本地静态菜单兜底，支撑页面走查
+      if (
+        env.isDev
+        && error && typeof error === "object" && (error as { status?: number }).status === 404
+      ) {
+        logger.warn("[AdminV2 Menu] 后端菜单端点 404（dev），使用本地静态菜单兜底");
         menus.value = staticFallbackMenus;
         loaded.value = true;
         return;

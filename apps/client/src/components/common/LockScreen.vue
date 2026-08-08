@@ -128,13 +128,16 @@ function goToProfileSetup() {
 }
 
 /* ========== 径向渐变心动氛围叠加层（M-14） ========== */
+/* R4-02512：以下为品牌色低不透明度氛围光晕（青藤绿/浪漫粉的 alpha 混色），
+   品牌色在深色模式下保持不变（tokens.scss 设计约定），
+   低 alpha 光晕在深色底上同样成立，无需暗色覆盖。 */
 .lock-screen__atmosphere {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(ellipse at 20% 20%, rgba(63, 207, 142, 0.18) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 30%, rgba(249, 168, 196, 0.2) 0%, transparent 45%),
     radial-gradient(ellipse at 50% 80%, rgba(124, 217, 166, 0.15) 0%, transparent 50%),

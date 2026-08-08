@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
-import { isDev } from "../services/env";
+import { isDev } from "../config/env";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
 import { loginWithWechat as authLoginWithWechat, loginAsGuest } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
@@ -22,9 +22,16 @@ type LoginHeroConfig = Schemas["LoginHeroConfig"];
 
 /* ========== Mock 数据 ========== */
 
-/** Mock 用户会话数据 */
+/**
+ * Mock 用户会话数据。
+ *
+ * 修复（R4-00134）：mock 当前用户 ID 与全项目 mock 家族统一为 "user-1001"
+ * （services/mocks/fixtures.ts、stores/likes/mock-data.ts、stores/village/mock-data.ts、
+ * stores/campus/mock-data.ts 的 MOCK_CURRENT_USER_ID 均为该值），
+ * 不再与 "1" 并存导致 mock 身份语义分裂。
+ */
 const mockUserSession: UserSession = {
-  userId: "1",
+  userId: "user-1001",
   loggedIn: true,
   loginMethod: "wechat",
   displayName: "测试用户",
@@ -69,6 +76,79 @@ export interface ProfileFieldStatus {
  * 注意：项目未引入 pinia-plugin-persistedstate，故采用 uni.setStorageSync 手动持久化。
  */
 const SESSION_PERSIST_KEY = "session:persistent-fields";
+
+/**
+ * 资料完善度字段权重表（合计 100）。
+ *
+ * 修复（R4-00123）：权重魔法数字抽取为具名常量并注明业务依据，
+ * 调整权重只需改此处一处，与后端/产品口径对齐时无需逐处改代码。
+ *
+ * 权重分配（合计 100）的业务依据（与产品资料完善度口径一致）：
+ * - 头像 20%：第一印象的核心载体，权重最高档
+ * - 昵称 10%：基础身份信息
+ * - 性别 10%：匹配推荐的基础维度
+ * - 生日 10%：年龄/星座推荐维度
+ * - 学校 20%：同校/同城匹配的核心维度（与 campus 绑定同等重要）
+ * - 专业 10%：兴趣相近度辅助维度
+ * - 兴趣标签 10%：共同兴趣匹配维度
+ * - 个人简介 10%：个性展示维度
+ *
+ * 注意：若产品调整口径，须与后端 profile_completion 计算保持同步
+ * （后端 UserCompletionService 为最终权威，本表仅用于前端展示预估）。
+ */
+const PROFILE_COMPLETION_WEIGHTS = {
+  avatar: 20,
+  nickname: 10,
+  gender: 10,
+  birthday: 10,
+  school: 20,
+  major: 10,
+  interestTags: 10,
+  bio: 10,
+} as const;
+
+/**
+ * 解析 UserSession 中各资料字段的完成状态（唯一真相源）。
+ *
+ * 修复（R4-00194）：profileFieldStatus 与 profileCompletion 两处原先各写一份
+ * 字段判定逻辑，且全部字段以 profileCompleted 为代理，头像未上传但资料保存后
+ * 所有字段显示已完成、完善度虚高。现收敛为单一函数：
+ * - nickname/school 有真实字段判定（displayName / campusName）；
+ * - avatar/gender/birthday/major/interestTags/bio 在 UserSession 未下发字段级
+ *   状态前，仍以 profileCompleted 为代理（注释明确标注），待后端下发后仅需
+ *   修改本函数一处。
+ *
+ * @param session 用户会话（可能为 null）
+ * @returns 各字段完成状态
+ */
+function resolveProfileFields(session: UserSession | null): ProfileFieldStatus {
+  if (!session) {
+    return {
+      avatar: false,
+      nickname: false,
+      gender: false,
+      birthday: false,
+      school: false,
+      major: false,
+      interestTags: false,
+      bio: false,
+    };
+  }
+  return {
+    // 头像：以 profileCompleted 为代理（实际应有 avatarUrl 字段，待后端下发）
+    avatar: session.profileCompleted === true,
+    // 昵称：有 displayName 即算完成
+    nickname: Boolean(session.displayName && session.displayName.trim().length > 0),
+    // 性别、生日、专业、兴趣标签、简介：以 profileCompleted 为代理（待后端下发字段级状态）
+    gender: session.profileCompleted === true,
+    birthday: session.profileCompleted === true,
+    // 学校：有 campusName 即算完成
+    school: Boolean(session.campusName && session.campusName.trim().length > 0),
+    major: session.profileCompleted === true,
+    interestTags: session.profileCompleted === true,
+    bio: session.profileCompleted === true,
+  };
+}
 
 /**
  * Session Store 持久化字段（仅持久化必要字段，避免泄漏完整会话）。
@@ -181,40 +261,14 @@ export const useSessionStore = defineStore("session", {
 
     /**
      * 资料字段完善状态
-     * 基于 userSession 中的 displayName / campusName 等推断
-     * 实际项目中应由后端返回各字段状态
+     *
+     * 修复（R4-00194）：字段判定收敛到 {@link resolveProfileFields} 单一真相源。
+     * 已知限制——avatar/gender/birthday/major/interestTags/bio 暂以 profileCompleted
+     * 为代理（后端 UserSession 未暴露字段级状态），待后端下发后仅需修改
+     * resolveProfileFields 一处。
      */
     profileFieldStatus: (state): ProfileFieldStatus => {
-      // infra R2-00048: 已知限制——avatar/gender/birthday/major/interestTags/bio 暂以
-      // profileCompleted 为代理（后端 UserSession 未暴露字段级状态），待后端下发后替换为真实字段判定
-      const session = state.userSession;
-      if (!session) {
-        return {
-          avatar: false,
-          nickname: false,
-          gender: false,
-          birthday: false,
-          school: false,
-          major: false,
-          interestTags: false,
-          bio: false,
-        };
-      }
-
-      return {
-        // 头像：以 profileCompleted 为代理（实际应有 avatarUrl 字段）
-        avatar: session.profileCompleted,
-        // 昵称：有 displayName 即算完成
-        nickname: Boolean(session.displayName && session.displayName.trim().length > 0),
-        // 性别、生日、专业、兴趣标签、简介：以 profileCompleted 为代理
-        gender: session.profileCompleted,
-        birthday: session.profileCompleted,
-        // 学校：有 campusName 即算完成
-        school: Boolean(session.campusName && session.campusName.trim().length > 0),
-        major: session.profileCompleted,
-        interestTags: session.profileCompleted,
-        bio: session.profileCompleted,
-      };
+      return resolveProfileFields(state.userSession);
     },
 
     /**
@@ -227,47 +281,15 @@ export const useSessionStore = defineStore("session", {
      * 现改为纯加权平均算法：按字段权重累加得分，权重总和为 100，
      * 每个字段完成则加上对应权重，未完成则加 0，最终得分即完善度百分比。
      *
-     * 权重分配（合计 100）：
-     * - 头像 20%
-     * - 昵称 10%
-     * - 性别 10%
-     * - 生日 10%
-     * - 学校 20%
-     * - 专业 10%
-     * - 兴趣标签 10%
-     * - 个人简介 10%
+     * 修复（R4-00123）：权重表收敛为模块级常量 {@link PROFILE_COMPLETION_WEIGHTS}
+     * （含业务依据注释），字段完成状态复用 {@link resolveProfileFields} 单一真相源。
      */
     profileCompletion: (state): number => {
       const session = state.userSession;
       if (!session) return 0;
 
-      // 字段权重表（合计 100）
-      const weights = {
-        avatar: 20,
-        nickname: 10,
-        gender: 10,
-        birthday: 10,
-        school: 20,
-        major: 10,
-        interestTags: 10,
-        bio: 10,
-      } as const;
-
-      // 各字段完成状态
-      const fields: Record<keyof typeof weights, boolean> = {
-        // 头像：以 profileCompleted 为代理（实际应有 avatarUrl 字段）
-        avatar: session.profileCompleted === true,
-        // 昵称：有 displayName 即算完成
-        nickname: Boolean(session.displayName && session.displayName.trim().length > 0),
-        // 性别、生日、专业、兴趣标签、简介：以 profileCompleted 为代理
-        gender: session.profileCompleted === true,
-        birthday: session.profileCompleted === true,
-        // 学校：有 campusName 即算完成
-        school: Boolean(session.campusName && session.campusName.trim().length > 0),
-        major: session.profileCompleted === true,
-        interestTags: session.profileCompleted === true,
-        bio: session.profileCompleted === true,
-      };
+      const weights = PROFILE_COMPLETION_WEIGHTS;
+      const fields = resolveProfileFields(session);
 
       // 加权平均：每个字段完成则加上对应权重
       let score = 0;

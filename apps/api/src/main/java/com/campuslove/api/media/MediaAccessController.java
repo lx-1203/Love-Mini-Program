@@ -92,13 +92,56 @@ public class MediaAccessController {
 
     private final MediaAccessService mediaAccessService;
 
+    /** R4-00273：短期媒体访问令牌签发器（5 分钟 TTL、scope=media） */
+    private final com.campuslove.api.config.JwtTokenProvider jwtTokenProvider;
+
     /**
      * 构造函数注入媒体鉴权服务。
      *
      * @param mediaAccessService 媒体鉴权服务实现
+     * @param jwtTokenProvider   R4-00273：用于签发短期媒体访问令牌
      */
-    public MediaAccessController(MediaAccessService mediaAccessService) {
+    public MediaAccessController(MediaAccessService mediaAccessService,
+                                 com.campuslove.api.config.JwtTokenProvider jwtTokenProvider) {
         this.mediaAccessService = mediaAccessService;
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
+
+    /**
+     * R4-00273：签发短期媒体访问令牌。
+     *
+     * <p>用途：{@code <image src>} 等无法携带 Authorization 头的媒体请求，需要将
+     * token 拼入 {@code ?token=} 查询参数。本端点签发 TTL 5 分钟的
+     * {@code scope=media} 短期令牌（非完整用户 JWT），即使进入访问日志/浏览器
+     * 历史，泄露窗口与可冒用范围也大幅缩小。</p>
+     *
+     * @return 媒体令牌（token + 有效期秒数）
+     */
+    @GetMapping("/token")
+    @Operation(
+            summary = "签发短期媒体访问令牌",
+            description = "R4-00273：签发 TTL 5 分钟的 scope=media 短期令牌，用于 <image src> 等无法携带 Authorization 头的媒体请求（拼入 ?token= 查询参数）。相比完整用户 JWT，泄露窗口与冒用范围大幅缩小。",
+            operationId = "issueMediaToken"
+    )
+    public MediaTokenView issueMediaToken() {
+        Long currentUserId = extractCurrentUserId(
+                SecurityContextHolder.getContext().getAuthentication());
+        if (currentUserId == null) {
+            throw new AccessDeniedException("未认证，无法签发媒体访问令牌");
+        }
+        String token = jwtTokenProvider.generateMediaToken(String.valueOf(currentUserId));
+        return new MediaTokenView(
+                token,
+                com.campuslove.api.config.JwtTokenProvider.MEDIA_TOKEN_TTL_SECONDS);
+    }
+
+    /**
+     * 媒体访问令牌响应视图（R4-00273）。
+     *
+     * @param token            短期媒体访问令牌
+     * @param expiresInSeconds 有效期（秒）
+     */
+    public record MediaTokenView(String token, long expiresInSeconds) {
     }
 
     /**

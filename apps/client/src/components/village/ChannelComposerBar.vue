@@ -85,7 +85,7 @@ function handleTap() {
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-3));
   background: var(--c-bg-container);
   border-top: 1rpx solid var(--c-neutral-100, #eef1f6);
-  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -8rpx 24rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
 }
 
 /* 输入框占位（只读，点击进发帖页） */

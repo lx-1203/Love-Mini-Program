@@ -570,7 +570,9 @@ public class RecommendationRanker {
 
         // ---- V2026.08.08.0015：卡片完整字段 ----
         String occupation = basicProfile != null ? basicProfile.getOccupation() : null;
-        String incomeRange = basicProfile != null ? basicProfile.getIncomeRange() : null;
+        // R4-00337：月收入档位不再随公开推荐视图下发（敏感经济信息），
+        // 前端已含 incomeRange 缺省回退（"--"），UserBasicProfile.incomeRange 仍保留
+        // 供用户本人资料页/后续付费可见场景使用。
         // 年龄：出生年份推导（2026 口径），无出生年份时为空
         Integer age = basicProfile != null && basicProfile.getBirthYear() != null
                 ? Year.now(TimeZones.BUSINESS).getValue() - basicProfile.getBirthYear()
@@ -615,7 +617,6 @@ public class RecommendationRanker {
                 allowMessage,
                 ipLocation,
                 occupation,
-                incomeRange,
                 age,
                 registeredAt
         );
@@ -736,10 +737,11 @@ public class RecommendationRanker {
         Set<Long> idSet = new HashSet<>(userIds);
         Map<Long, String> result = new HashMap<>();
         try {
-            // 1. 校园认证 APPROVED（school 优先级最高）：一次查询全部已通过记录后内存过滤
+            // 1. 校园认证 APPROVED（school 优先级最高）：R4-00336 改为 WHERE userId IN 下推
+            //    SQL，替代全表加载 APPROVED 记录后内存过滤（避免每次推荐全表扫描认证表）
             for (CampusCertification cert : campusCertificationRepository
-                    .findByStatusOrderBySubmittedAtDesc("APPROVED")) {
-                if (cert.getUserId() != null && idSet.contains(cert.getUserId())) {
+                    .findByStatusAndUserIdIn("APPROVED", idSet)) {
+                if (cert.getUserId() != null) {
                     result.put(cert.getUserId(), "school");
                 }
             }

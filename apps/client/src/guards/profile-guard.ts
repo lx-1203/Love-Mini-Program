@@ -1,5 +1,5 @@
 import { useSessionStore } from "../stores/session";
-import { isDev } from "../services/env";
+import { isDev } from "../config/env";
 
 /**
  * 需要资料完善才能访问的页面路径列表

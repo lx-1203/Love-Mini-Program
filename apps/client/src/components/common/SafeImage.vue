@@ -190,7 +190,7 @@ function onLoad() {
 .safe-image__placeholder {
   width: 100%;
   height: 100%;
-  background: var(--c-neutral-100, #F4F6FA);
+  background: var(--c-bg-surface, #F4F6FA);
   display: block;
 }
 
@@ -200,11 +200,12 @@ function onLoad() {
   left: 0;
   width: 100%;
   height: 100%;
+  /* R4-02513：骨架屏闪烁改用白色叠层 token（深色模式下可见） */
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.06) 25%,
-    rgba(0, 0, 0, 0.1) 37%,
-    rgba(0, 0, 0, 0.06) 63%
+    var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)) 25%,
+    var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)) 37%,
+    var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)) 63%
   );
   background-size: 400% 100%;
   animation: safe-image-shimmer var(--d-loop, 1400ms) ease infinite;

@@ -2,8 +2,10 @@ package com.campuslove.api.feedback;
 
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Feedback;
 import com.campuslove.api.media.MediaStorageService;
+import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.FeedbackRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -51,12 +53,17 @@ public class RealFeedbackService implements FeedbackService {
     /** 功能9：媒体存储服务，复用其上传/校验逻辑 */
     private final MediaStorageService mediaStorageService;
 
+    /** R4-00342：活动仓库——提案转活动时真实创建 Activity 记录 */
+    private final ActivityRepository activityRepository;
+
     public RealFeedbackService(FeedbackRepository feedbackRepository,
                                ObjectMapper objectMapper,
-                               MediaStorageService mediaStorageService) {
+                               MediaStorageService mediaStorageService,
+                               ActivityRepository activityRepository) {
         this.feedbackRepository = feedbackRepository;
         this.objectMapper = objectMapper;
         this.mediaStorageService = mediaStorageService;
+        this.activityRepository = activityRepository;
     }
 
     /**
@@ -161,8 +168,29 @@ public class RealFeedbackService implements FeedbackService {
             throw new IllegalStateException("提案已被转换，无需重复操作，ID: " + proposalId);
         }
 
-        // 更新状态为 CONVERTED，暂时不创建 Activity 记录（仅更新状态）
+        // R4-00342：转换时真实创建 Activity 记录（原实现仅改状态、convertedActivityId 恒为
+        // null，运营闭环断裂）。按提案内容初始化活动：标题/描述取自提案，校区/城市取
+        // 提案期望值，时间地点缺省为"待定"，由运营后续完善。
+        Activity activity = new Activity();
+        activity.setTitle(feedback.getTitle() != null && !feedback.getTitle().isBlank()
+                ? feedback.getTitle()
+                : "校园活动提案");
+        activity.setDescription(feedback.getContent() != null ? feedback.getContent() : "");
+        activity.setLocation(feedback.getExpectedCampus() != null ? feedback.getExpectedCampus() : "待定");
+        activity.setScheduleText("待定");
+        activity.setCityName(feedback.getExpectedCity());
+        activity.setCampusName(feedback.getExpectedCampus());
+        activity.setEnrollmentCount(0);
+        activity.setStatus(Activity.ActivityStatus.upcoming);
+        activity.setPublished(true);
+        activity.setActivityDate(null);
+        activity.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        activity.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        Activity savedActivity = activityRepository.save(activity);
+
+        // 更新状态为 CONVERTED 并回填 convertedActivityId
         feedback.setStatus(SubmissionStatus.CONVERTED);
+        feedback.setConvertedActivityId(savedActivity.getId());
         feedback.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Feedback saved = feedbackRepository.save(feedback);

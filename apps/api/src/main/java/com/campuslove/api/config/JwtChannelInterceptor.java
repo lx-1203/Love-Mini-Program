@@ -43,8 +43,35 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    public JwtChannelInterceptor(JwtTokenProvider jwtTokenProvider) {
+    /**
+     * 运行环境（R4-00280）：mock profile 下跳过真实 JWT 校验，
+     * 与 MockSecurityConfig 的 mock 认证语义保持一致（mock-token 无法通过 validateToken）。
+     */
+    private final org.springframework.core.env.Environment environment;
+
+    /** R4-00280：mock 模式兜底用户 ID（配置 app.mock.principal-user-id，与 MockSecurityConfig 对齐） */
+    @org.springframework.beans.factory.annotation.Value("${app.mock.principal-user-id:1}")
+    private long mockPrincipalUserId;
+
+    public JwtChannelInterceptor(JwtTokenProvider jwtTokenProvider,
+                                 org.springframework.core.env.Environment environment) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.environment = environment;
+    }
+
+    /** 是否处于 mock profile（R4-00280） */
+    private boolean isMockProfile() {
+        return java.util.Arrays.asList(environment.getActiveProfiles()).contains("mock");
+    }
+
+    /** 将认证用户写入 STOMP header（供 SUBSCRIBE/SEND 权限校验使用） */
+    private void setAuthenticatedUser(StompHeaderAccessor accessor, String userId) {
+        accessor.setUser(new Principal() {
+            @Override
+            public String getName() {
+                return userId;
+            }
+        });
     }
 
     /**
@@ -85,6 +112,27 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private void handleConnect(StompHeaderAccessor accessor) {
         String token = extractToken(accessor);
 
+        // R4-00280：mock profile 跳过真实 JWT 校验（mock-token 无法通过 validateToken），
+        // 与 MockSecurityConfig 的 HTTP mock 认证语义保持一致，保证 mock 模式
+        // WebSocket 联调可用。有 token 时尽力解析 userId，解析失败回退配置的 mock 用户。
+        if (isMockProfile()) {
+            String userId = null;
+            if (token != null && !token.isBlank()) {
+                try {
+                    userId = jwtTokenProvider.getUserIdFromToken(token);
+                } catch (RuntimeException ex) {
+                    log.debug("mock 模式解析 JWT userId 失败，回退 mock 用户: {}", ex.getMessage());
+                }
+            }
+            if (userId == null || userId.isBlank()) {
+                userId = String.valueOf(mockPrincipalUserId);
+            }
+            setAuthenticatedUser(accessor, userId);
+            log.info("WebSocket CONNECT mock 认证通过: userId={}, sessionId={}",
+                    userId, accessor.getSessionId());
+            return;
+        }
+
         if (token == null || token.isBlank()) {
             log.warn("WebSocket CONNECT 拒绝: 未提供 JWT 令牌, sessionId={}", accessor.getSessionId());
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: missing JWT token");
@@ -107,14 +155,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: invalid JWT token");
         }
 
-        // 设置认证用户到 STOMP header，后续可通过 getUser().getName() 获取 userId
-        final String authenticatedUserId = userId;
-        accessor.setUser(new Principal() {
-            @Override
-            public String getName() {
-                return authenticatedUserId;
-            }
-        });
+        setAuthenticatedUser(accessor, userId);
 
         log.info("WebSocket CONNECT 认证成功: userId={}, sessionId={}", userId, accessor.getSessionId());
     }

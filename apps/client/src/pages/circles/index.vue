@@ -41,6 +41,8 @@ const CATEGORY_KEY_MAP: Record<string, string> = {
 /**
  * 分类 ID → 圈子名称关键词（页面级过滤，review #21：category 参数不再只改标题）。
  * TODO(后端): 兴趣圈列表支持按分类服务端过滤后，改由后端查询并移除本映射。
+ * R4-00098：en-US 下圈子名（后端返回）不命中中文关键词即回退全量，
+ * 现补充 i18n 标签兜底匹配（当前 locale 的分类名），并移除"过滤不中即回退全量"。
  */
 const CATEGORY_KEYWORDS: Record<string, string> = {
   study: "读书",
@@ -68,14 +70,24 @@ const pageTitle = computed(() => {
 
 /**
  * 按 category 过滤后的兴趣圈列表（review #21：category 参数用于过滤而非仅改标题）。
- * 匹配不到时回退全量列表，避免进入空页面。
+ * R4-00098：匹配维度 = 中文关键词 ∪ 当前 locale 分类标签（en-US 下圈子名
+ * 含 "Reading"/"Sports" 等英文名可命中）；无关键词映射的未知分类回退全量。
+ * 有映射但无匹配时展示空列表（诚实过滤，不再静默回退全量误导用户）。
  */
 const filteredCircles = computed(() => {
   if (!category.value) return circles.value;
   const keyword = CATEGORY_KEYWORDS[category.value];
-  if (!keyword) return circles.value;
-  const matched = circles.value.filter((c) => c.name.includes(keyword));
-  return matched.length > 0 ? matched : circles.value;
+  const labelKey = CATEGORY_KEY_MAP[category.value];
+  if (!keyword && !labelKey) return circles.value;
+  const label = labelKey ? t(labelKey) : "";
+  const matched = circles.value.filter((c) => {
+    if (keyword && c.name.includes(keyword)) return true;
+    if (label && c.name.includes(label)) return true;
+    // 圈子名同时含分类 ID 时也命中（如后端返回 "Reading Club"）
+    if (c.name.toLowerCase().includes(category.value)) return true;
+    return false;
+  });
+  return matched;
 });
 
 /**
@@ -164,8 +176,8 @@ onMounted(() => {
   void circleStore.fetchCircles();
 });
 
-// 修复（严格模式 noUnusedLocals）：toggleJoin 通过 catchtap 绑定到模板，
-// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+// R4-00099：toggleJoin 已改为 @tap.stop 绑定（vue-tsc 可识别），
+// 保留 defineExpose 无副作用，避免将来模板绑定方式变化导致 noUnusedLocals。
 defineExpose({ toggleJoin });
 </script>
 
@@ -241,10 +253,14 @@ defineExpose({ toggleJoin });
                 </view>
               </view>
 
+              <!-- R4-00099：catchtap 在 H5 端不生效（点击"加入"会冒泡到卡片触发
+                   goToTopics 进话题列表），改用 @tap.stop 阻止冒泡，全端一致 -->
               <view
                 class="circle-card__action"
                 :class="{ 'circle-card__action--joined': circle.isJoined }"
-  catchtap="toggleJoin(circle.id, circle.isJoined)"
+                role="button"
+                :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
+                @tap.stop="toggleJoin(circle.id, circle.isJoined)"
               >
                 <text class="circle-card__action-text">
                   {{ circle.isJoined ? t("circle.joinedBtn") : t("circle.joinBtn") }}

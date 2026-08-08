@@ -115,13 +115,14 @@ class RecommendationCacheManagerTest {
     @Test
     void buildHistory_delegatesToRanker() {
         Long userId = 400L;
+        // R4-00337：incomeRange 已从公开推荐视图移除，构造参数随之减少一个
         RecommendedPersonView fakeView = new RecommendedPersonView(
                 500L, "历史用户", "历", "headline", "commonGround", "available",
                 "campus", "/avatar.jpg", List.of("tag"), "bio", List.of(),
                 false, false, 0, null, null, List.of(), null, null, "none",
                 "CL-500", "1.2km", "offline", true, false,
                 List.of("开朗"), "INTJ", null, false, List.of(),
-                null, false, "南京", null, null, null, null);
+                null, false, "南京", null, null, null);
         when(recommendationRanker.buildHistory(userId))
                 .thenReturn(List.of(fakeView));
 

@@ -12,6 +12,7 @@
  */
 
 import type { RecommendationFilter } from "../../services/generated/api-types-supplement";
+import type { PendingSwipeRightItem } from "./timers";
 import type { DiscoverCard, DiscoverState } from "./types";
 
 /**
@@ -43,8 +44,14 @@ export interface DiscoverStoreThis extends DiscoverState {
   swipeLeft: (cardId: string) => Promise<void>;
   /** 右滑（喜欢） */
   swipeRight: (cardId: string, isSuperLike?: boolean) => Promise<void>;
-  /** swipeRight 的实际执行逻辑（由防抖 wrapper 调用） */
-  _doSwipeRight: (cardId: string, isSuperLike?: boolean) => Promise<void>;
+  /** swipeRight 的实际执行逻辑（由防抖窗口的幂等队列 flush 调用，R4-00177） */
+  _doSwipeRight: (
+    cardId: string,
+    isSuperLike?: boolean,
+    cardSnapshot?: DiscoverCard | null
+  ) => Promise<void>;
+  /** 逐张执行防抖窗口内排队的右滑（串行，R4-00177） */
+  _flushSwipeRightQueue: (batch: PendingSwipeRightItem[]) => Promise<void>;
   /** 清除上次滑动结果 */
   resetLastResult: () => void;
   /** 反悔上一张卡片（rewind） */

@@ -32,8 +32,8 @@ async function loadDiscussions() {
   try {
     discussions.value = await clientApi.getDiscussionRecommendations();
   } catch (e) {
-    // 失败时设置 error 状态，UI 可据此展示重试入口
-    error.value = e instanceof Error ? e.message : "加载讨论内容失败，请稍后重试";
+    // 失败时设置 error 状态，UI 可据此展示重试入口（R4-00052：文案走 i18n）
+    error.value = e instanceof Error ? e.message : t("discussions.loadFailed");
     uni.showToast({ title: error.value, icon: "none" });
   } finally {
     loading.value = false;

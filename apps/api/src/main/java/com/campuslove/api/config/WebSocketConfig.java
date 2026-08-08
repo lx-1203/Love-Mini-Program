@@ -70,6 +70,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private JwtTokenProvider jwtTokenProvider;
 
+    /** R4-00280：运行环境（mock profile 握手跳过真实 JWT 校验） */
+    private org.springframework.core.env.Environment environment;
+
+    /** R4-00280：mock 模式兜底用户 ID（配置 app.mock.principal-user-id） */
+    @org.springframework.beans.factory.annotation.Value("${app.mock.principal-user-id:1}")
+    private long mockPrincipalUserId;
+
     @Autowired
     public void setJwtChannelInterceptor(JwtChannelInterceptor jwtChannelInterceptor) {
         this.jwtChannelInterceptor = jwtChannelInterceptor;
@@ -78,6 +85,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     public void setJwtTokenProvider(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
+    }
+
+    @Autowired
+    public void setEnvironment(org.springframework.core.env.Environment environment) {
+        this.environment = environment;
     }
 
     /**
@@ -111,7 +123,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         if (patterns.length > 0) {
             endpoint.setAllowedOriginPatterns(patterns);
         }
-        endpoint.addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider))
+        endpoint.addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider, environment, mockPrincipalUserId))
             .withSockJS();
     }
 
@@ -166,14 +178,46 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         private final JwtTokenProvider jwtTokenProvider;
 
-        JwtHandshakeInterceptor(JwtTokenProvider jwtTokenProvider) {
+        /** R4-00280：运行环境（mock profile 握手跳过真实 JWT 校验） */
+        private final org.springframework.core.env.Environment environment;
+
+        /** R4-00280：mock 模式兜底用户 ID */
+        private final long mockPrincipalUserId;
+
+        JwtHandshakeInterceptor(JwtTokenProvider jwtTokenProvider,
+                                org.springframework.core.env.Environment environment,
+                                long mockPrincipalUserId) {
             this.jwtTokenProvider = jwtTokenProvider;
+            this.environment = environment;
+            this.mockPrincipalUserId = mockPrincipalUserId;
         }
 
         @Override
         public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                        WebSocketHandler wsHandler, Map<String, Object> attributes) {
             String token = extractTokenFromRequest(request);
+
+            // R4-00280：mock profile 跳过真实 JWT 校验（mock-token 无法通过 validateToken），
+            // 与 JwtChannelInterceptor 的 mock 分支保持一致；有 token 时尽力解析 userId，
+            // 解析失败回退配置的 mock 用户。
+            if (isMockProfile()) {
+                String userId = null;
+                if (token != null && !token.isBlank()) {
+                    try {
+                        userId = jwtTokenProvider.getUserIdFromToken(token);
+                    } catch (RuntimeException ex) {
+                        handshakeLog.debug("mock 模式解析 JWT userId 失败，回退 mock 用户: {}",
+                                ex.getMessage());
+                    }
+                }
+                if (userId == null || userId.isBlank()) {
+                    userId = String.valueOf(mockPrincipalUserId);
+                }
+                attributes.put(USER_ID_ATTR, userId);
+                handshakeLog.info("WebSocket 握手 mock 认证通过: userId={}, remoteAddress={}",
+                        userId, request.getRemoteAddress());
+                return true;
+            }
 
             if (token == null || token.isBlank()) {
                 handshakeLog.warn("WebSocket 握手拒绝: 未提供 JWT 令牌, remoteAddress={}",
@@ -200,6 +244,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             handshakeLog.info("WebSocket 握手认证成功: userId={}, remoteAddress={}",
                     userId, request.getRemoteAddress());
             return true;
+        }
+
+        /** 是否处于 mock profile（R4-00280） */
+        private boolean isMockProfile() {
+            return java.util.Arrays.asList(environment.getActiveProfiles()).contains("mock");
         }
 
         @Override

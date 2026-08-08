@@ -10,8 +10,7 @@
  * published 表示是否上架。校区管理员登录时后端按管辖校区强制过滤。
  */
 
-import { API_BASE_URL, AdminPageView, ApiError, LONG_REQUEST_TIMEOUT_MS, del, get, post, put } from "./http";
-import { t } from "../i18n";
+import { AdminPageView, del, get, post, put, downloadFile } from "./http";
 
 // ============================================================
 // 类型定义
@@ -240,77 +239,15 @@ export function listEnrollments(
  * 导出活动报名记录 CSV（全部报名，不分页）。
  *
  * 后端响应为 text/csv 附件（带 UTF-8 BOM，Excel 打开中文不乱码）。
- * 实现：手动 fetch 拿 Blob（http.ts 的 request 假定 JSON 响应，不适用于文件流），
- * 校验通过后通过临时 <a> 标签触发浏览器下载；导出类慢操作使用长超时。
+ * 复用 http.ts 的 downloadFile（统一鉴权/超时/401 跳转/错误映射，导出类慢操作使用长超时），
+ * 失败时抛出 ApiError，由调用方提示。
  *
  * @param id 活动 ID
- * @throws ApiError 网络错误 / 非 2xx 时抛出（401 会同步清理凭据并跳转登录页）
+ * @throws ApiError 网络错误 / 非 2xx / 401 时抛出
  */
 export async function exportEnrollments(id: number): Promise<void> {
-  const token = localStorage.getItem("admin_v2_token") || "";
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), LONG_REQUEST_TIMEOUT_MS);
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/v1/admin/activities/${id}/enrollments/export`, {
-      method: "GET",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      signal: controller.signal,
-    });
-  } catch (err) {
-    // 区分超时中止与其他网络错误（文案与 http.ts 保持一致）
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new ApiError(408, t("errors.network"));
-    }
-    throw new ApiError(0, t("errors.network"));
-  } finally {
-    clearTimeout(timeoutId);
-  }
-
-  // 401 未授权：清除本地凭据并跳转登录页（与 http.ts request 行为一致）
-  if (response.status === 401) {
-    localStorage.removeItem("admin_v2_token");
-    localStorage.removeItem("admin_v2_user");
-    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/login?redirect=${redirect}`;
-    }
-    throw new ApiError(401, t("errors.auth"));
-  }
-
-  if (!response.ok) {
-    let message = "";
-    try {
-      const body = (await response.json()) as { message?: unknown };
-      if (body.message != null && String(body.message).trim() !== "") {
-        message = String(body.message);
-      }
-    } catch {
-      // 非 JSON 错误响应，message 保持空串，走下方状态码映射
-    }
-    if (!message) {
-      if (response.status >= 500) {
-        message = t("errors.server");
-      } else if (response.status === 403) {
-        message = t("errors.permission");
-      } else if (response.status === 404) {
-        message = t("errors.notFound");
-      } else {
-        message = t("errors.unknown");
-      }
-    }
-    throw new ApiError(response.status, message);
-  }
-
-  // 拿到 Blob 后通过临时 <a> 标签触发浏览器下载（a.download 指定文件名）
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `activity_enrollments_${id}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  await downloadFile(
+    `/v1/admin/activities/${id}/enrollments/export`,
+    `activity_enrollments_${id}.csv`,
+  );
 }

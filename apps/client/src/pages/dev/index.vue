@@ -340,7 +340,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .dev-header__back-icon {
   font-size: var(--fs-3xl, 36rpx);
-  color: $white;
+  /* R4-02528：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 
@@ -348,7 +349,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex: 1;
   font-size: 34rpx;
   font-weight: 700;
-  color: $white;
+  /* R4-02528：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
 }
 
 .dev-header__badge {
@@ -367,7 +369,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .dev-header__badge-text {
   font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
-  color: $white;
+  /* R4-02528：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   letter-spacing: 2rpx;
 }
 
@@ -415,7 +418,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .dev-group__list {
   border-radius: var(--r-xl, 24rpx);
   overflow: hidden;
-  background: $white;
+  /* R4-02528：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   box-shadow: $card-soft-shadow;
 }
 
@@ -441,7 +445,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .dev-item--tab {
   border-left: 6rpx solid $green-primary;
-  background: linear-gradient(90deg, $green-light 0%, $white 30%);
+  /* R4-02528：渐变浅色端改用 --c-bg-container（深色模式自动适配） */
+  background: linear-gradient(90deg, $green-light 0%, var(--c-bg-container) 30%);
 }
 
 .dev-item__left {

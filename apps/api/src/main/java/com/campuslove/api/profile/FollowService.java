@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,7 +78,15 @@ public class FollowService {
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         UserFollow userFollow = new UserFollow(userId, targetUserId);
         userFollow.setCreatedAt(now);
-        userFollowRepository.save(userFollow);
+        try {
+            userFollowRepository.save(userFollow);
+        } catch (DataIntegrityViolationException ex) {
+            // R4-00295：并发重复关注（不同幂等键绕过 existsBy 检查）触发唯一约束冲突时，
+            // 转换为业务异常而非 500
+            log.warn("并发重复关注唯一约束冲突: followerId={}, followingId={}: {}",
+                    userId, targetUserId, ex.getMessage());
+            throw new IllegalArgumentException("已经关注了该用户");
+        }
 
         // infra R2-00263: 关注/粉丝计数改为数据库侧原子递增（消除并发丢失更新）；
         // 不再修改 managed 实体计数，避免事务提交时 flush 用陈旧值覆盖原子结果

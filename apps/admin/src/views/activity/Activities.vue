@@ -19,6 +19,7 @@
  * 注意：活动状态 status（upcoming/ongoing/ended）与上架状态 published 是两套独立维度。
  */
 import { onMounted, ref } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
@@ -60,13 +61,13 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护：快速翻页/搜索时旧响应不覆盖新数据 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 分页加载活动列表 */
 async function fetchActivities(): Promise<void> {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listActivities({
       page: page.value,
@@ -75,18 +76,18 @@ async function fetchActivities(): Promise<void> {
       status: statusFilter.value || undefined,
       published: publishedFilter.value === "" ? undefined : publishedFilter.value === "true",
     });
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     activities.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("activities.loadFailed");
     activities.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

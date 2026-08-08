@@ -52,7 +52,8 @@ async function save() {
     // 走完 = 基本资料30+校园30(学生)+日程20 = 80 → profileCompleted=true → 解锁
     replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.RECOMMEND_PREF);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "保存失败，请稍后重试";
+    // R4-00047：错误兜底文案走 i18n
+    const message = error instanceof Error ? error.message : t("setup.schedule.saveFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }

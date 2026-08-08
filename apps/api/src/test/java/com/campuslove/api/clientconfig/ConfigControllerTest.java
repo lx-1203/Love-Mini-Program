@@ -14,18 +14,21 @@ class ConfigControllerTest {
 
     @Mock private ConfigService configService;
 
+    /** R4-00341：法律文本提供者（构造器新增依赖，测试不涉及 legal 端点，mock 即可） */
+    @Mock private LegalTextProvider legalTextProvider;
+
     private ConfigController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new ConfigController(configService);
+        controller = new ConfigController(configService, legalTextProvider);
     }
 
     @Test
     void constructor_shouldAcceptService() {
         // Arrange & Act & Assert
-        assertNotNull(new ConfigController(configService));
+        assertNotNull(new ConfigController(configService, legalTextProvider));
     }
 
     @Test

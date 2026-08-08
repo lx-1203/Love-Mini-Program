@@ -3,6 +3,11 @@
  *
  * 隔离原则：本文件仅被 stores/campus.ts 的 useMock() 分支引用，
  * real 模式（apiMode=real）不会读取其中的任何 mock 用户/会话 ID。
+ *
+ * 修复（R4-00135）：mock 作者 ID 由 u-1xxx~u-6xxx 统一为 user-7xxx 前缀，
+ * 与全项目 mock 用户 ID 单一体系（user-<数字>：当前用户 user-1001、
+ * likes user-2xxx、village user-3xxx、campus user-7xxx）保持一致，
+ * 避免验收演示身份混乱。
  * 类型经 import type 引用（编译期擦除，无运行时循环依赖）。
  */
 import type {
@@ -22,7 +27,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "course_exchange",
     title: "高数B期末复习资料分享",
     contentPreview: "整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~",
-    author: { userId: "u-1001", name: "学长小王", avatar: "", school: "广州大学" },
+    author: { userId: "user-7001", name: "学长小王", avatar: "", school: "广州大学" },
     replyCount: 23,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
@@ -32,7 +37,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "course_exchange",
     title: "数据结构实验报告模板",
     contentPreview: "分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。",
-    author: { userId: "u-1002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7002", name: "匿名校友", avatar: "", school: "" },
     replyCount: 15,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
@@ -43,7 +48,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "club_recruitment",
     title: "摄影社团招新啦！",
     contentPreview: "喜欢摄影的朋友看过来！摄影社团新学期招新开始啦，零基础也可以加入，我们会定期组织外拍活动~",
-    author: { userId: "u-2001", name: "摄影社社长", avatar: "", school: "广州大学" },
+    author: { userId: "user-7003", name: "摄影社社长", avatar: "", school: "广州大学" },
     replyCount: 45,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
@@ -53,7 +58,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "club_recruitment",
     title: "街舞社寻找志同道合的舞伴",
     contentPreview: "街舞社新学期招新！无论你是什么水平，只要热爱街舞就欢迎加入。每周二四晚集训~",
-    author: { userId: "u-2002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7004", name: "匿名校友", avatar: "", school: "" },
     replyCount: 32,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
@@ -64,7 +69,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "campus_activity",
     title: "本周六校园音乐节节目单公布",
     contentPreview: "校园音乐节节目单出来啦！本周六下午2点开始，地点在操场，有乐队表演、舞蹈、相声等节目~",
-    author: { userId: "u-3001", name: "学生会长", avatar: "", school: "广州大学" },
+    author: { userId: "user-7005", name: "学生会长", avatar: "", school: "广州大学" },
     replyCount: 89,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
@@ -74,7 +79,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "campus_activity",
     title: "校园跑步打卡活动第三期",
     contentPreview: "坚持锻炼，健康生活！第三期跑步打卡活动开始报名，完成21天打卡可获证书和奖品。",
-    author: { userId: "u-3002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7006", name: "匿名校友", avatar: "", school: "" },
     replyCount: 56,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
@@ -85,7 +90,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "study_help",
     title: "考研英语复习经验分享",
     contentPreview: "分享一下我考研英语80+的复习经验，包括单词记忆方法、阅读理解技巧和作文模板~",
-    author: { userId: "u-4001", name: "考研学姐", avatar: "", school: "广州大学" },
+    author: { userId: "user-7007", name: "考研学姐", avatar: "", school: "广州大学" },
     replyCount: 67,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
@@ -95,7 +100,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "study_help",
     title: "求伴一起刷LeetCode",
     contentPreview: "大二计科，目前刷了200多题，想找几个编程搭子互相监督，每天至少刷3道题。",
-    author: { userId: "u-4002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7008", name: "匿名校友", avatar: "", school: "" },
     replyCount: 34,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
@@ -106,7 +111,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "life_service",
     title: "食堂新窗口测评",
     contentPreview: "二楼新开了川菜窗口，试了水煮鱼和麻婆豆腐，味道相当不错！比外面还便宜，推荐大家去试。",
-    author: { userId: "u-5001", name: "吃货小分队", avatar: "", school: "广州大学" },
+    author: { userId: "user-7009", name: "吃货小分队", avatar: "", school: "广州大学" },
     replyCount: 42,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
@@ -116,7 +121,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "life_service",
     title: "校园代拿快递服务推荐",
     contentPreview: "推荐一个靠谱的校园代拿快递，价格实惠，南区北区都覆盖，不用再排队拿快递了~",
-    author: { userId: "u-5002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7010", name: "匿名校友", avatar: "", school: "" },
     replyCount: 28,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
@@ -127,7 +132,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "alumni_news",
     title: "校友企业招聘信息汇总（六月）",
     contentPreview: "汇总了6月份来校招聘的校友企业信息，包括字节、腾讯、阿里等，有需要的同学记得关注~",
-    author: { userId: "u-6001", name: "校友联络员", avatar: "", school: "广州大学" },
+    author: { userId: "user-7011", name: "校友联络员", avatar: "", school: "广州大学" },
     replyCount: 53,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
@@ -137,7 +142,7 @@ export const mockTopics: CampusTopicItem[] = [
     category: "alumni_news",
     title: "创业成功的学长回来做分享",
     contentPreview: "听说咱们学校2015级的师兄创业成功，下周三回来做经验分享，想去的可以先报名。",
-    author: { userId: "u-6002", name: "匿名校友", avatar: "", school: "" },
+    author: { userId: "user-7012", name: "匿名校友", avatar: "", school: "" },
     replyCount: 19,
     isAnonymous: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
@@ -150,7 +155,7 @@ export const mockTopicDetail: Record<string, CampusTopicDetail> = {
     category: "course_exchange",
     title: "高数B期末复习资料分享",
     content: "整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~\n\n内容包括：\n1. 极限与连续性重点公式\n2. 导数与微分的应用\n3. 不定积分与定积分\n4. 微分方程\n5. 典型例题20道（带详细解析）\n\n需要的同学私信我获取百度云链接~期末加油！",
-    author: { userId: "u-1001", name: "学长小王", avatar: "", school: "广州大学" },
+    author: { userId: "user-7001", name: "学长小王", avatar: "", school: "广州大学" },
     replyCount: 23,
     isAnonymous: false,
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
@@ -162,7 +167,7 @@ export const mockReplies: Record<string, CampusReplyItem[]> = {
     {
       id: "campus-reply-1",
       topicId: "campus-topic-1",
-      author: { userId: "u-2001", name: "学弟小李", avatar: "", school: "广州大学" },
+      author: { userId: "user-7013", name: "学弟小李", avatar: "", school: "广州大学" },
       content: "感谢学长！正好在复习高数，太及时了！",
       isAnonymous: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
@@ -170,7 +175,7 @@ export const mockReplies: Record<string, CampusReplyItem[]> = {
     {
       id: "campus-reply-2",
       topicId: "campus-topic-1",
-      author: { userId: "u-3001", name: "匿名校友", avatar: "", school: "" },
+      author: { userId: "user-7014", name: "匿名校友", avatar: "", school: "" },
       content: "可以也发我一份吗？谢谢！",
       isAnonymous: true,
       createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
@@ -178,7 +183,7 @@ export const mockReplies: Record<string, CampusReplyItem[]> = {
     {
       id: "campus-reply-3",
       topicId: "campus-topic-1",
-      author: { userId: "u-4001", name: "小张同学", avatar: "", school: "广州大学" },
+      author: { userId: "user-7015", name: "小张同学", avatar: "", school: "广州大学" },
       content: "学长整理的太详细了，特别是定积分那块，一直没搞懂，看完终于明白了！",
       isAnonymous: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),

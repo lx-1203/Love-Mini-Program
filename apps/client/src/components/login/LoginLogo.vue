@@ -69,7 +69,7 @@ const subtitleLabel = computed(() => props.subtitle || t('login.heroSubtitleDefa
   color: var(--c-text-inverse, #FFFFFF);
   letter-spacing: 0.04em;
   /* FIXME: token 化需补充 —— 现有 --c-overlay-text-shadow-mid 为 0.2 alpha，0.25 介于 mid/strong 之间无精确 token */
-  text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.25);
+  text-shadow: 0 2rpx 12rpx var(--c-text-shadow-soft, rgba(0, 0, 0, 0.2));
   line-height: 1.2;
 }
 

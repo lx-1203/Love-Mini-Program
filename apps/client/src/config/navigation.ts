@@ -8,6 +8,11 @@
  *   - src/components/layout/TabBar.vue (H5 端 TabBar 组件，从此文件导入)
  *
  * 修改 Tab 配置时，请先修改此文件，再同步更新上述文件。
+ *
+ * 修复（R4-00209）：新增一致性校验脚本 `pnpm --filter client check:tabbar`
+ * （scripts/check-tabbar-consistency.mjs），CI / 本地提交前运行即可自动比对
+ * 本文件与 pages.json、custom-tab-bar/index.js 的顺序/路径/图标是否漂移，
+ * 无需再完全依赖人工同步。
  */
 
 import { IMAGE_PATHS } from './images';

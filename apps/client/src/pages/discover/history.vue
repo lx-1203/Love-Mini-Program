@@ -272,7 +272,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: $white;
+  /* R4-02529：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background-color: var(--c-bg-container);
   border-radius: var(--r-circle, 50%);
   box-shadow: 0 4rpx 16rpx var(--c-black-shadow-sm);
   transition: all var(--d-fast, 120ms) ease;
@@ -315,7 +316,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   justify-content: space-around;
   padding: 28rpx 32rpx;
   margin: 0 24rpx 28rpx;
-  background-color: $white;
+  /* R4-02529：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background-color: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
 }
@@ -356,7 +358,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .history-card {
-  background-color: $white;
+  /* R4-02529：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background-color: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   padding: 28rpx;
   box-shadow: $card-soft-shadow;
@@ -486,13 +489,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .rewind-icon {
   font-size: var(--fs-2xl, 32rpx);
-  color: $white;
+  /* R4-02529：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   margin-right: 10rpx;
 }
 
 .rewind-label {
   font-size: var(--fs-lg, 28rpx);
-  color: $white;
+  /* R4-02529：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  color: var(--c-text-inverse);
   font-weight: 600;
 }
 

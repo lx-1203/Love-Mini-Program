@@ -56,7 +56,9 @@ public class MockOfficialAccountService implements OfficialAccountService {
                             "校园操场「星空告白夜」",
                             "本周五晚 19:00 · 现场抽幸运观众上台告白",
                             "本周活动",
-                            "/pages/activities/detail?id=star-confession",
+                            // R4-00405：原指向 /pages/activities/detail?id=star-confession，
+                            // 对应活动不存在于任何数据源（死链）——改为活动列表页（始终可达）
+                            "/pages/activities/index",
                             LocalDateTime.now(TimeZones.BUSINESS).minusDays(4)),
                     new OfficialMessageView(203L, "text",
                             "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。",
@@ -66,7 +68,8 @@ public class MockOfficialAccountService implements OfficialAccountService {
                             "七夕特别企划：星空告白夜",
                             "在星空下认识心动的人，游戏与表白墙等你来解锁。",
                             "七夕限定",
-                            "/pages/activities/detail?id=qixi-2026",
+                            // R4-00405：同 202L，改指向活动列表页（活动详情死链修复）
+                            "/pages/activities/index",
                             LocalDateTime.now(TimeZones.BUSINESS).minusDays(1))
             )
     );

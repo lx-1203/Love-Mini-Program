@@ -30,11 +30,14 @@ public class MockAiVideoService implements AiVideoService {
     @Override
     public Map<String, Object> generateVideo(Map<String, Object> params) {
         log.info("[Mock] 调用 AI 视频生成: {}", params);
+        // R4-00401：资源路径改为本地 mock 相对路径（原 example.com 必 404 且指向
+        // 真实外部域名）。前端联调如需可播放素材，可将演示文件放入
+        // apps/client/public/static/mock/（H5 dev server 直接可访问）。
         return Map.of(
                 "id", UUID.randomUUID().toString(),
                 "status", "mock_completed",
-                "videoUrl", "https://example.com/mock-video.mp4",
-                "posterUrl", "https://example.com/mock-poster.jpg",
+                "videoUrl", "/static/mock/ai-video.mp4",
+                "posterUrl", "/static/mock/ai-poster.jpg",
                 "mock", true
         );
     }
@@ -43,8 +46,8 @@ public class MockAiVideoService implements AiVideoService {
     public Map<String, Object> generateImage(Map<String, Object> params) {
         log.info("[Mock] 调用 AI 图片生成: {}", params);
         return Map.of(
-                "data", java.util.List.of(Map.of("url", "https://example.com/mock-image.jpg")),
-                "url", "https://example.com/mock-image.jpg",
+                "data", java.util.List.of(Map.of("url", "/static/mock/ai-image.jpg")),
+                "url", "/static/mock/ai-image.jpg",
                 "mock", true
         );
     }

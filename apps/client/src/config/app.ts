@@ -15,12 +15,13 @@ export const APP_CONFIG = {
   DEBUG_TAG: '[CampusLove]',
 } as const;
 
-/** 本地存储键名统一管理 */
-export const STORAGE_KEYS = {
-  /** 是否已看过解锁引导 */
-  UNLOCK_GUIDE_SHOWN: 'unlock_guide_shown',
-  /** 用户 Token */
-  AUTH_TOKEN: 'campus_love_auth_token',
-  /** 用户信息缓存 */
-  USER_CACHE: 'campus_love_user_cache',
-} as const;
+/**
+ * 本地存储键名统一管理。
+ *
+ * 修复（R4-00206）：原本文件内的 STORAGE_KEYS 与
+ * constants/storage-keys.ts 并存且值不一致（AUTH_TOKEN 曾为
+ * 'campus_love_auth_token'，而实际读写使用 'token'），且全量无引用，
+ * 属死配置陷阱——未来误引用将读写错误的 token key 导致登录态失效。
+ * 已删除，统一使用 constants/storage-keys.ts 的 STORAGE_KEYS：
+ *   import { STORAGE_KEYS } from "@/constants/storage-keys";
+ */

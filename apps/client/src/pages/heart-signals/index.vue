@@ -11,6 +11,8 @@ import { useLikesStore } from "../../stores/likes";
 import { useSessionStore } from "../../stores/session";
 import { useChatStore } from "../../stores/chat";
 import { openAppPath } from "../../utils/navigation";
+// R4-00023：用户上传头像 URL 需经 resolveMediaUrl 重写鉴权代理路径（否则真实模式 403/404）
+import { resolveMediaUrl } from "../../utils/media";
 import LockScreen from "../../components/common/LockScreen.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
@@ -29,18 +31,25 @@ const { heartSignals, loading } = storeToRefs(likesStore);
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
-/** 按状态分组 */
+/**
+ * R4-00024：按状态分组（对齐契约 likes.yaml status enum=[pending,accepted,declined]）。
+ * - 原分组 [pending,accepted,expired]：expired 契约中不存在（后端按契约返回时恒空），
+ *   declined 信号无任何展示分支被静默丢弃；
+ * - 现补 declined 分组（expired 仅作历史数据兜底，与 declined 合并展示）。
+ */
 const pendingSignals = computed(() =>
   heartSignals.value.filter((s) => s.status === "pending")
 );
 const acceptedSignals = computed(() =>
   heartSignals.value.filter((s) => s.status === "accepted")
 );
-const expiredSignals = computed(() =>
-  heartSignals.value.filter((s) => s.status === "expired")
+const declinedSignals = computed(() =>
+  // String() 归一化：store 类型 HeartSignalStatus 未包含 declined，
+  // 但契约（likes.yaml status enum）含 declined，运行时按字符串比较
+  heartSignals.value.filter((s) => String(s.status) === "declined" || s.status === "expired")
 );
 
-const activeTab = ref<"pending" | "accepted" | "expired">("pending");
+const activeTab = ref<"pending" | "accepted" | "declined">("pending");
 
 /** 倒计时显示 */
 const countdownMap = ref<Record<string, string>>({});
@@ -143,9 +152,28 @@ function getStatusLabel(status: string): string {
   switch (status) {
     case "pending": return t("heartSignals.statusPending");
     case "accepted": return t("heartSignals.statusAccepted");
+    case "declined": return t("heartSignals.statusDeclined");
     case "expired": return t("heartSignals.statusExpired");
     default: return status;
   }
+}
+
+/**
+ * R4-00025：倒计时进度条宽度按信号实际 expiresAt 动态计算（不再硬编码 24h 动画）。
+ * 剩余比例 = (expiresAt - now) / (expiresAt - createdAt)，无 createdAt 时按 24h 兜底。
+ * @returns 0-100 的百分比宽度
+ */
+function countdownWidth(signal: { expiresAt: string; createdAt?: string }): number {
+  const expiresAt = new Date(signal.expiresAt).getTime();
+  // 无效时间按无剩余处理（宽度 0，配合倒计时文案显示"已过期"）
+  if (Number.isNaN(expiresAt)) return 0;
+  const createdAt = signal.createdAt ? new Date(signal.createdAt).getTime() : NaN;
+  const total = Number.isNaN(createdAt)
+    ? 24 * 60 * 60 * 1000 // 契约 24h 有效期兜底
+    : Math.max(expiresAt - createdAt, 1);
+  const remaining = expiresAt - Date.now();
+  const ratio = Math.min(1, Math.max(0, remaining / total));
+  return Math.round(ratio * 100);
 }
 </script>
 
@@ -189,10 +217,10 @@ function getStatusLabel(status: string): string {
         </view>
         <view
           class="signal-tabs__item press-feedback"
-          :class="{ 'signal-tabs__item--active': activeTab === 'expired' }"
-          @tap="activeTab = 'expired'"
+          :class="{ 'signal-tabs__item--active': activeTab === 'declined' }"
+          @tap="activeTab = 'declined'"
         >
-          <text class="signal-tabs__text">{{ $t("heartSignals.tabExpired") }}</text>
+          <text class="signal-tabs__text">{{ $t("heartSignals.tabDeclined") }}</text>
         </view>
       </view>
 
@@ -216,10 +244,10 @@ function getStatusLabel(status: string): string {
         :description="$t('heartSignals.emptyAcceptedDesc')"
       />
       <EmptyState
-        v-else-if="activeTab === 'expired' && expiredSignals.length === 0"
+        v-else-if="activeTab === 'declined' && declinedSignals.length === 0"
         type="no-data"
-        :title="$t('heartSignals.emptyExpiredTitle')"
-        :description="$t('heartSignals.emptyExpiredDesc')"
+        :title="$t('heartSignals.emptyDeclinedTitle')"
+        :description="$t('heartSignals.emptyDeclinedDesc')"
       />
 
       <!-- 待处理信号列表 -->
@@ -237,7 +265,7 @@ function getStatusLabel(status: string): string {
             <image
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar"
-              :src="signal.fromUserAvatar"
+              :src="resolveMediaUrl(signal.fromUserAvatar)"
               mode="aspectFill" lazy-load alt=""
             />
             <view v-else class="signal-card__avatar-placeholder">
@@ -259,9 +287,12 @@ function getStatusLabel(status: string): string {
               <text class="signal-card__btn-text">{{ $t("heartSignals.acceptBtn") }}</text>
             </view>
           </view>
-          <!-- 过期倒计时进度条 -->
+          <!-- 过期倒计时进度条（R4-00025：宽度按实际 expiresAt 动态计算） -->
           <view class="signal-card__countdown-bar">
-            <view class="signal-card__countdown-fill" />
+            <view
+              class="signal-card__countdown-fill"
+              :style="{ width: countdownWidth(signal) + '%' }"
+            />
           </view>
         </view>
       </scroll-view>
@@ -273,7 +304,7 @@ function getStatusLabel(status: string): string {
         class="signal-list"
       >
         <view
-          v-for="signal in (activeTab === 'accepted' ? acceptedSignals : expiredSignals)"
+          v-for="signal in (activeTab === 'accepted' ? acceptedSignals : declinedSignals)"
           :key="signal.id"
           class="signal-card signal-card--done animate-fade-in"
         >
@@ -281,7 +312,7 @@ function getStatusLabel(status: string): string {
             <image
               v-if="signal.fromUserAvatar"
               class="signal-card__avatar signal-card__avatar--small"
-              :src="signal.fromUserAvatar"
+              :src="resolveMediaUrl(signal.fromUserAvatar)"
               mode="aspectFill" lazy-load alt=""
             />
             <view v-else class="signal-card__avatar-placeholder signal-card__avatar-placeholder--small">
@@ -588,16 +619,12 @@ function getStatusLabel(status: string): string {
   overflow: hidden;
 }
 
+/* R4-00025：宽度由 countdownWidth() 内联样式动态设置，移除硬编码 24h 动画 */
 .signal-card__countdown-fill {
   height: 100%;
-  width: 50%;
+  width: 0;
   background: var(--c-gradient-brand);
-  animation: countdown-shrink 24h linear forwards;
-}
-
-@keyframes countdown-shrink {
-  from { width: 100%; }
-  to { width: 0%; }
+  transition: width var(--d-normal, 200ms) linear;
 }
 
 /* ========== 已完成信号 ========== */
@@ -625,13 +652,19 @@ function getStatusLabel(status: string): string {
   background: var(--c-neutral-100);
 }
 
+/* R4-00024：契约新增 declined 状态标签样式（对齐 expired 的灰底中性展示） */
+.signal-card__status-tag--declined {
+  background: var(--c-neutral-100);
+}
+
 .signal-card__status-tag--accepted .signal-card__status-text {
   color: var(--c-brand);
   font-size: var(--fs-sm);
   font-weight: 600;
 }
 
-.signal-card__status-tag--expired .signal-card__status-text {
+.signal-card__status-tag--expired .signal-card__status-text,
+.signal-card__status-tag--declined .signal-card__status-text {
   color: var(--c-text-tertiary);
   font-size: var(--fs-sm);
   font-weight: 500;

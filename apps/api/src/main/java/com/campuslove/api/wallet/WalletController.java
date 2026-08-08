@@ -100,12 +100,14 @@ public class WalletController {
 
     /**
      * Redis 模板（可选注入）：演示充值每日计数持久化。
-     * Redis 不可用时降级到本地内存 {@link #localDemoRechargeCount}（单实例方案）。
+     * R4-00330：Redis 存在但运行时故障时【拒绝服务】（fail-closed），不再降级本地内存——
+     * 多实例部署下本地降级会被各实例独立计数突破每日限额；仅 mock（无 Redis 单实例
+     * 本地演示）场景保留本地内存计数。
      */
     @Autowired(required = false)
     private RedisTemplate<String, Object> redisTemplate;
 
-    /** Redis 不可用时的本地内存每日计数降级方案。 */
+    /** 本地内存每日计数（仅 mock/单实例本地演示场景，redisTemplate 未注入时使用）。 */
     private final ConcurrentHashMap<String, Integer> localDemoRechargeCount = new ConcurrentHashMap<>();
 
     public WalletController(WalletService walletService, WalletUnlockService walletUnlockService) {
@@ -197,33 +199,67 @@ public class WalletController {
      * P0-15：原子尝试占用今日一次演示充值额度（INCR 返回值判断，参考 MatchPolicy 反悔计数模式）。
      *
      * <p>Redis 侧：{@code INCR} 返回值超过 {@link #demoRechargeDailyLimit} 时回滚递减并返回 false；
-     * 本地降级方案：synchronized 临界区内判断。首次递增时设置 36 小时 TTL 自动清理。</p>
+     * 首次递增时设置 36 小时 TTL 自动清理。</p>
+     *
+     * <p>R4-00330：Redis 不可用时【拒绝服务】而非降级本地内存计数——每日限额是资金风控，
+     * 本地内存计数在多实例部署下会被各实例独立计数突破（限额失真）；Redis 故障时宁可
+     * 拒绝演示充值，也不放开额度。</p>
      *
      * @param userId 用户 ID
-     * @return true 表示成功占用额度；false 表示已达今日上限
+     * @return true 表示成功占用额度；false 表示已达今日上限或风控存储不可用
      */
     private boolean tryIncrementDemoRechargeCount(Long userId) {
         String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
-        String localKey = userId + ":" + dateKey;
-        try {
-            if (redisTemplate != null) {
-                String redisKey = REDIS_KEY_PREFIX_DEMO_RECHARGE + userId + ":" + dateKey;
-                Long newValue = redisTemplate.opsForValue().increment(redisKey);
-                if (newValue != null && newValue == 1L) {
-                    redisTemplate.expire(redisKey, DEMO_RECHARGE_COUNT_TTL_HOURS, TimeUnit.HOURS);
-                }
-                if (newValue != null && newValue > demoRechargeDailyLimit) {
-                    // 超限回滚递增，保证计数不漂移
-                    redisTemplate.opsForValue().decrement(redisKey);
-                    return false;
-                }
-                return true;
-            }
-        } catch (RuntimeException e) {
-            log.warn("写入 Redis 演示充值计数失败，降级使用本地内存方案：{}", e.getMessage());
+        if (redisTemplate == null) {
+            // mock/单实例本地演示（无 Redis）：临界区内判断+递增，保证单实例内原子性。
+            // 该路径仅在 mock（本地演示）profile 生效——生产 demo-recharge 默认关闭
+            // （R4-00312），不会进入此分支。
+            return tryIncrementLocalDemoRechargeCount(userId, dateKey);
         }
-        // 本地降级方案（无 Redis 时）：临界区内判断+递增，保证单实例内原子性
+        try {
+            String redisKey = REDIS_KEY_PREFIX_DEMO_RECHARGE + userId + ":" + dateKey;
+            Long newValue = redisTemplate.opsForValue().increment(redisKey);
+            if (newValue != null && newValue == 1L) {
+                redisTemplate.expire(redisKey, DEMO_RECHARGE_COUNT_TTL_HOURS, TimeUnit.HOURS);
+            }
+            if (newValue != null && newValue > demoRechargeDailyLimit) {
+                // 超限回滚递增，保证计数不漂移
+                redisTemplate.opsForValue().decrement(redisKey);
+                return false;
+            }
+            return true;
+        } catch (RuntimeException e) {
+            // R4-00330：Redis 存在但运行时故障 → 拒绝服务（fail-closed）。
+            // 原实现降级本地内存计数，多实例部署下各实例独立计数会突破每日 5 次限额；
+            // 演示充值属资金风控，Redis 抖动时宁可拒绝本次充值也不放开额度。
+            log.warn("写入 Redis 演示充值计数失败，拒绝本次演示充值（fail-closed）: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * R4-00330：本地内存计数（仅 mock/单实例本地演示场景，redisTemplate 未注入时使用）。
+     *
+     * <p>mock profile 无 Redis 且为单实例，本地内存计数原子性足够；生产（real）
+     * 使用 Redis 计数，此路径不会在生产生效。顺带按日期键清理过期计数，避免无限增长。</p>
+     */
+    private boolean tryIncrementLocalDemoRechargeCount(Long userId, String dateKey) {
+        String localKey = userId + ":" + dateKey;
         synchronized (localDemoRechargeCount) {
+            // 轻量清理：仅保留最近 2 天的计数键，防止本地演示长期运行内存增长
+            if (localDemoRechargeCount.size() > 10_000) {
+                localDemoRechargeCount.keySet().removeIf(k -> {
+                    int sep = k.indexOf(':');
+                    if (sep <= 0) {
+                        return true;
+                    }
+                    try {
+                        return !k.substring(sep + 1).equals(dateKey);
+                    } catch (RuntimeException ex) {
+                        return true;
+                    }
+                });
+            }
             int next = localDemoRechargeCount.getOrDefault(localKey, 0) + 1;
             if (next > demoRechargeDailyLimit) {
                 return false;

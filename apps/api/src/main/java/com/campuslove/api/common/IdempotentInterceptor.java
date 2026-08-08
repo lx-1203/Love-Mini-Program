@@ -64,6 +64,13 @@ public class IdempotentInterceptor implements HandlerInterceptor {
     /** 幂等键最大长度（infra R2-00248，防止超长头生成超长 Redis key） */
     private static final int MAX_KEY_LENGTH = 128;
 
+    /**
+     * R4-00287：请求属性 key——记录本次请求成功 SETNX 的幂等键，
+     * 供 {@link #afterCompletion} 在业务失败（HTTP >= 400）时释放。
+     */
+    private static final String ATTR_ACQUIRED_IDEMPOTENT_KEY =
+            IdempotentInterceptor.class.getName() + ".acquiredKey";
+
     /** Redis 操作接口（可能为 null，当 Redis 不可用时降级） */
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -151,6 +158,9 @@ public class IdempotentInterceptor implements HandlerInterceptor {
                         "重复请求已被拦截，请勿使用相同的 Idempotency-Key");
             }
             // acquired=true → 首次请求，放行
+            // R4-00287：记录已获取的幂等键，业务失败时（afterCompletion 判定 HTTP >= 400）
+            // 释放该键，避免「密码输错一次 → 同 key 重试 4 小时被 409 拦截」等锁死场景
+            request.setAttribute(ATTR_ACQUIRED_IDEMPOTENT_KEY, redisKey);
             log.debug("幂等性校验通过：method={}, key={}, ttl={}s",
                     handlerMethod.getMethod().getName(), redisKey, annotation.ttlSeconds());
             return true;
@@ -167,6 +177,42 @@ public class IdempotentInterceptor implements HandlerInterceptor {
             log.warn("幂等性校验异常，降级放行：method={}, key={}, error={}",
                     handlerMethod.getMethod().getName(), redisKey, e.getMessage());
             return true;
+        }
+    }
+
+    /**
+     * R4-00287：业务执行完成后按结果释放幂等键。
+     *
+     * <p>幂等键在业务执行前 SETNX，若业务失败（HTTP 状态 >= 400，如密码错误 401、
+     * 业务异常 400/409/500）仍保留该键，客户端同 key 重试在 TTL（默认 4 小时）内
+     * 会被 409 拦截。此处对失败请求删除幂等键，使客户端可在失败后立即重试；
+     * 成功请求（HTTP &lt; 400）保留键，保证 TTL 内重复请求仍被幂等拦截。</p>
+     *
+     * <p>注意：GlobalExceptionHandler 处理业务异常后响应状态已写入，此处读取
+     * response.getStatus() 即可准确反映业务结果（成功 200/201，失败 4xx/5xx）。</p>
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                                Object handler, Exception ex) {
+        if (redisTemplate == null) {
+            return;
+        }
+        Object acquiredKey = request.getAttribute(ATTR_ACQUIRED_IDEMPOTENT_KEY);
+        if (!(acquiredKey instanceof String redisKey)) {
+            return;
+        }
+        request.removeAttribute(ATTR_ACQUIRED_IDEMPOTENT_KEY);
+        if (response.getStatus() < 400) {
+            return;
+        }
+        try {
+            Boolean deleted = redisTemplate.delete(redisKey);
+            log.warn("业务失败（HTTP {}），释放幂等键: key={}, deleted={}",
+                    response.getStatus(), redisKey, deleted);
+        } catch (RuntimeException e) {
+            // 释放失败不影响主流程：幂等键将按 TTL 自然过期
+            log.warn("释放幂等键失败，等待 TTL 自然过期: key={}, error={}",
+                    redisKey, e.getMessage());
         }
     }
 

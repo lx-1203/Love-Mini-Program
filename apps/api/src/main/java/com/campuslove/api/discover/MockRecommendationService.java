@@ -284,8 +284,8 @@ public class MockRecommendationService implements RecommendationService {
         allowMessage,
         ipLocation,
         // V2026.08.08.0015：卡片完整字段（mock 稳定推导，与 real 口径一致）
+        // R4-00337：incomeRange 已从公开推荐视图移除（敏感经济信息），INCOME_POOL 保留兼容
         OCCUPATION_POOL.get(Math.abs(person.name().hashCode()) % OCCUPATION_POOL.size()),
-        INCOME_POOL.get(Math.abs(person.name().hashCode()) % INCOME_POOL.size()),
         person.age(),
         "2026-03-12T08:00:00"
     );

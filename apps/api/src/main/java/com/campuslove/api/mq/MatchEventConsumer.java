@@ -201,11 +201,13 @@ public class MatchEventConsumer {
         Long targetUserId = message.getTargetUserId();
         LocalDateTime createdAt = toLocalDateTime(message.getCreatedAt());
 
-        persistNotification(userId, targetUserId, NotificationType.match,
+        // R4-00375：取消匹配使用独立 unmatch 类型（schemas 已扩展），
+        // 不再复用 match——此前被取消匹配的用户收到与「你们互相喜欢了」同型的通知
+        persistNotification(userId, targetUserId, NotificationType.unmatch,
                 "匹配已取消",
                 "你们的匹配已取消",
                 createdAt);
-        persistNotification(targetUserId, userId, NotificationType.match,
+        persistNotification(targetUserId, userId, NotificationType.unmatch,
                 "匹配已取消",
                 "你们的匹配已取消",
                 createdAt);

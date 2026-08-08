@@ -9,8 +9,16 @@ baselineOnMigrate = false
 # 不再自定义双下划线 __xxx__（历史上曾因迁移文件名中的 __ 被当作占位符解析导致启动失败）。
 
 [flyway.placeholders]
-admin_openid = "admin-default-openid-change-me"
-admin_nickname = "系统管理员"
+# 修复（R4-00409）：admin_openid / admin_nickname 不再提供默认值——
+# 历史默认值 "admin-default-openid-change-me" / "系统管理员" 属弱占位：
+# 独立 CLI 迁移若环境变量未覆盖，会创建该已知 openid 的 ADMIN 账号（弱凭据上线）。
+# 与下方 admin_password_hash 相同策略：占位符缺失时 Flyway 直接报错，
+# 强制通过以下方式之一注入真实值：
+#   1. CLI 参数：flyway -placeholders.admin_openid='oXxxx' -placeholders.admin_nickname='系统管理员' migrate
+#   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_OPENID='oXxxx' FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME='系统管理员'
+# ⚠️ 未设置时 flyway migrate 将失败（预期行为，杜绝弱默认账号）。
+# 注：Spring Boot 启动路径由 application-real.yml 的 ${ADMIN_OPENID:...} 注入，
+# 与本文件（独立 flyway CLI 用途）独立。
 # R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子等
 # 迁移仅在 demo_seed=true 时写入数据（默认 false，生产不会灌入虚拟用户/演示数据）。
 # CLI 运行时可覆盖：flyway -placeholders.demo_seed=true migrate

@@ -47,6 +47,7 @@ import {
   swipeLeft,
   swipeRight,
   _doSwipeRight,
+  _flushSwipeRightQueue,
 } from "./actions/swipe";
 import {
   resetLastResult,
@@ -184,6 +185,7 @@ const _useDiscoverStore = defineStore("discover", {
     swipeLeft,
     swipeRight,
     _doSwipeRight,
+    _flushSwipeRightQueue,
     // === 反悔与重置 Actions（来自 ./actions/rewind） ===
     resetLastResult,
     rewindCard,

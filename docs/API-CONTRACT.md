@@ -118,8 +118,13 @@
 
 - 请求头：`Authorization: Bearer <token>`
 - 例外：媒体二进制接口支持 `?token=<token>` 查询参数（用于 `<image src>` 标签无法携带 Header）
-- Token 有效期：Access Token 2 小时；Refresh Token 30 天
+- Token 有效期：Access Token **24 小时**（修复 R4-00490：与 docker-compose / .env.example 的
+  `JWT_EXPIRATION_MS=86400000` 默认值一致，原契约「2 小时」与实现失配）；
+  当前无 Refresh Token 机制（历史契约「Refresh Token 30 天」不成立——登录仅签发单 JWT）
 - Token 撤销：退出登录时主动写入 Redis 黑名单（Key=`jwt:blacklist:{jti}`，TTL=剩余有效期）
+- ⚠️ 已知缺口（R4-00490）：管理端（apps/admin）无 token 静默续期机制，
+  `http.ts` 收到 401 直接清库跳登录——管理员 token 到期（24h）后会被强制登出，
+  需在管理端补「401 静默续期/重登引导」后方可消除
 
 ### 2.2 鉴权流程
 
@@ -136,7 +141,12 @@
 
 ### 2.3 安全要求
 
-- 所有写接口必须携带 `Idempotency-Key` 请求头（UUIDv4），后端 Redis 去重 24h
+- 所有写接口**后端要求**携带 `Idempotency-Key` 请求头（缺失返回 400「缺少 Idempotency-Key 请求头」），
+  后端 Redis 去重 24h。注入现状（修复 R4-00490 标注）：
+  - ✅ 客户端（apps/client）：`services/http.ts` 拦截器统一注入——
+    调用方未显式设置时自动生成稳定幂等键（签到/充值/活动报名/解锁等显式键不覆盖）；
+  - ⚠️ 管理端（apps/admin）：全部写请求**未注入** Idempotency-Key（B3-4 待修），
+    弱网重试/双击时资金类操作（钱包调整、批量兑换码）存在重复执行风险
 - 限流：登录 5次/分钟、上传 30桶/秒补 1、喜欢 60桶/秒补 2、发帖 10次/分钟
 - CORS：`allowedOriginPatterns` 由 `app.cors.allowed-origins` 注入，生产环境仅允许 H5 域名
 - CSRF：JWT 模式天然免疫 CSRF，不使用 Cookie
@@ -404,16 +414,27 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 
 ### 3.19 VIP 域
 
+> 修复（R4-00487 / R4-00488）：本表按 `apps/api/src/main/java/com/campuslove/api/vip/`
+> 与 `admin/AdminVipController.java` 的真实路由重建：
+> - `/api/v1/vip/plans` 套餐列表端点在后端不存在（客户端 VipPlans.vue 自述
+>   「后端未提供套餐列表管理端点」），已删除；
+> - `/api/v1/vip/orders`、`/api/v1/vip/orders/{id}/pay` 不存在，购卡走
+>   `POST /api/v1/vip/bills/purchase`；
+> - VIP 红包相关端点（`/api/v1/vip/red-packets`、`/red-packets/{id}/claim`、
+>   `/api/v1/admin/business/vip/red-packets`）随红包功能下线已删除，
+>   对应实体 VipRedPacket/VipRedPacketClaim 已移除（变更登记见根目录 CHANGELOG.md）。
+
 | Method | Path | 鉴权 | 描述 |
 |--------|------|------|------|
-| GET | `/api/v1/vip/plans` | ❌ | 套餐列表 |
-| POST | `/api/v1/vip/orders` | ✅ | 创建订单 |
-| POST | `/api/v1/vip/orders/{id}/pay` | ✅ | 支付 |
+| GET | `/api/v1/vip/auto-renew/status` | ✅ | 自动续费状态 |
 | POST | `/api/v1/vip/auto-renew` | ✅ | 开通自动续费 |
 | DELETE | `/api/v1/vip/auto-renew` | ✅ | 关闭自动续费 |
+| POST | `/api/v1/vip/auto-renew/trigger` | ✅ | 手动触发续费（运营/调试） |
+| GET | `/api/v1/vip/bills` | ✅ | VIP 账单列表（当前用户） |
+| POST | `/api/v1/vip/bills/purchase` | ✅ | 购买 VIP（下单+支付入口） |
+| POST | `/api/v1/vip/bills/payment-callback` | ❌ | 支付回调（服务端签名校验） |
+| POST | `/api/v1/vip/promo-codes/validate` | ✅ | 校验兑换码 |
 | POST | `/api/v1/vip/promo-codes/redeem` | ✅ | 兑换优惠码 |
-| POST | `/api/v1/vip/red-packets` | ✅ | 发送 VIP 红包 |
-| POST | `/api/v1/vip/red-packets/{id}/claim` | ✅ | 领取 VIP 红包 |
 
 ### 3.20 管理端（Admin）
 
@@ -449,10 +470,10 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 | POST | `/api/v1/admin/reports/{id}/handle` | ADMIN | 处理举报 |
 | GET | `/api/v1/admin/feedback` | ADMIN | 反馈列表 |
 | PUT | `/api/v1/admin/feedback/{id}/reply` | ADMIN | 回复反馈 |
-| POST | `/api/v1/admin/activity-proposals/{id}/convert` | ADMIN | 活动提案转活动 |
+| POST | `/api/v1/admin/activity-proposals/{id}/convert` | ADMIN | 活动提案转活动（⚠️ 仅 API，管理端暂无对应 UI 入口，R4-00494） |
 | GET | `/api/v1/admin/sensitive-words` | ADMIN | 敏感词列表 |
 | POST | `/api/v1/admin/sensitive-words` | 仅 SUPER_ADMIN | 新增敏感词 |
-| POST | `/api/v1/admin/sensitive-words/batch-import` | 仅 SUPER_ADMIN | 批量异步导入敏感词（返回受理结果） |
+| POST | `/api/v1/admin/sensitive-words/batch-import` | 仅 SUPER_ADMIN | 批量异步导入敏感词（返回受理结果；⚠️ 仅 API，管理端暂无对应 UI 入口，R4-00494） |
 | DELETE | `/api/v1/admin/sensitive-words/{id}` | 仅 SUPER_ADMIN | 删除敏感词 |
 
 #### 论坛
@@ -503,7 +524,6 @@ content 为 JSON（与官方号 card 消息语义一致，点击跳转活动详�
 |--------|------|------|------|
 | GET | `/api/v1/admin/business/vip/bills` | ADMIN | VIP 账单列表 |
 | GET | `/api/v1/admin/business/vip/bills/{id}` | ADMIN | VIP 账单详情 |
-| GET | `/api/v1/admin/business/vip/red-packets` | ADMIN | 红包列表 |
 | GET | `/api/v1/admin/business/promo-codes` | ADMIN | 兑换码列表 |
 | POST | `/api/v1/admin/business/promo-codes/batch` | ADMIN | 批量生成兑换码 |
 | POST | `/api/v1/admin/business/promo-codes/{id}/disable` | ADMIN | 作废兑换码 |

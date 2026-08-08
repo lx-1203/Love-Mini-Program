@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// R4-00195：解锁幂等 orderId 统一生成（与 coins.spend 同一键体系）
+import { buildUnlockOrderId } from "./coins";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 // Mock 数据（R4-batch2：mock 用户数据移入 stores/likes/mock-data.ts，
@@ -476,8 +478,10 @@ export const useLikesStore = defineStore("likes", {
      * - 余额不足：后端返回 INSUFFICIENT_BALANCE 业务错误，此处向上抛出，
      *   由页面 toast 展示后端错误信息
      *
-     * 幂等：携带 Idempotency-Key 头（unlock-{type}-{userId}），后端按 orderId
-     * 唯一索引兜底，重复解锁不重复扣费。
+     * 幂等（修复 R4-00195）：Idempotency-Key 统一经 coins 的 buildUnlockOrderId
+     * 生成（UNLOCK-{scene}-{targetUserId}），与 coins.spend 的 orderId 同一键体系，
+     * 后端按 orderId 唯一索引兜底，重复解锁不重复扣费——不再使用历史
+     * `unlock-{type}-{userId}` 私有关键格式。
      *
      * Mock 模式：直接视为解锁成功（不产生网络请求），保证 mock 走查可用。
      *
@@ -492,11 +496,13 @@ export const useLikesStore = defineStore("likes", {
       if (useMock()) {
         return { unlocked: true, balance: 0 };
       }
+      // R4-00195：targetType → 场景码（与 coins.ts UNLOCK_TARGET_TYPE 映射同义）
+      const scene = targetType === "LIKED_ME" ? "LIKES" : "VISITORS";
       return request<{ unlocked: boolean; balance: number }, { targetType: string; targetId: number }>({
         url: "/wallet/unlock",
         method: "POST",
         data: { targetType, targetId: Number(targetUserId) },
-        headers: { "Idempotency-Key": `unlock-${targetType}-${targetUserId}` },
+        headers: { "Idempotency-Key": buildUnlockOrderId(scene, targetUserId) },
       });
     },
 

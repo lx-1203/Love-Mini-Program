@@ -16,6 +16,7 @@ import AppShell from "../../components/layout/AppShell.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
+import ErrorState from "../../components/common/ErrorState.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
 import { usePageAccess } from "../../composables/usePageAccess";
@@ -40,6 +41,9 @@ const accountId = ref<string>("official-assistant");
 
 /** 加载中 */
 const loading = ref(false);
+
+/** R4-00082：real 模式加载失败的错误文案（非空时展示错误态） */
+const errorMessage = ref("");
 
 /** 官方号消息条目（text / card 统一渲染） */
 interface OfficialChatMessage {
@@ -125,6 +129,8 @@ const showActivities = computed(() => activityCards.value.length > 0);
 async function loadOfficialChat(): Promise<void> {
   if (loading.value) return;
   loading.value = true;
+  // 重试时清除上一次错误
+  errorMessage.value = "";
   try {
     if (appEnv.apiMode === "mock") {
       // Mock 模式：本地数据（与后端种子文案对齐）
@@ -204,20 +210,10 @@ async function loadOfficialChat(): Promise<void> {
         target: msg.cardTargetUrl ?? "",
       }));
   } catch (_error) {
-    // 加载失败回退 mock 文案（保证页面不空白）
-    currentAccount.value =
-      mockAccounts.find((a) => a.id === accountId.value) ?? mockAccounts[0]!;
-    const keys = officialMessageKeyMap[accountId.value] ?? [];
-    messages.value = keys.map((key, idx) => ({
-      id: `${accountId.value}-${idx}`,
-      messageType: "text" as const,
-      body: t(key),
-      cardTitle: null,
-      cardDesc: null,
-      cardTag: null,
-      cardTargetUrl: null,
-      sentAt: new Date(Date.now() - (keys.length - idx) * 6 * 3600 * 1000).toISOString(),
-    }));
+    // R4-00082：real 模式加载失败不再静默回退 mock 官方文案（伪造官方内容展示给
+    // 真实用户会损害信任），改为展示错误态 + 重试按钮；mock 模式不会走到此分支。
+    errorMessage.value = t("messages.officialChatLoadFailed");
+    messages.value = [];
     activityCards.value = [];
   } finally {
     loading.value = false;
@@ -262,7 +258,9 @@ function officialIcon(id: string): string {
   >
     <!-- 官方号会话：消息流 -->
     <SectionCard :title="t('messages.officialChatTitle')" compact>
-      <view v-if="!loading && messages.length === 0" class="official-empty">
+      <!-- R4-00082：real 模式加载失败展示错误态（重试按钮），而非 mock 文案 -->
+      <ErrorState v-if="errorMessage" :message="errorMessage" @retry="loadOfficialChat" />
+      <view v-else-if="!loading && messages.length === 0" class="official-empty">
         <EmptyState :title="t('messages.officialChatEmpty')" />
       </view>
       <view v-else class="official-list" role="list">

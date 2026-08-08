@@ -1,4 +1,4 @@
-import { isDev } from "../services/env";
+import { isDev } from "../config/env";
 
 export interface SessionAccessSnapshot {
   isLoggedIn: boolean;

@@ -17,6 +17,7 @@ import {
 } from "@/api/feedback";
 import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "@/utils/format";
 import { TOAST_DURATION_MS, REMARK_MAX_LENGTH } from "@/utils/constants";
@@ -34,7 +35,7 @@ const toastMessage = ref("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 请求竞态防护（快速刷新/切换时旧响应不覆盖新数据）
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 function showToast(msg: string) {
   if (toastTimer) clearTimeout(toastTimer);
@@ -61,17 +62,17 @@ function closeToast() {
 async function fetchFeedbacks() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listAdminFeedback();
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     feedbacks.value = result;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("feedback.loadFailed");
     feedbacks.value = [];
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

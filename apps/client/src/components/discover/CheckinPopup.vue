@@ -190,7 +190,7 @@ function goShop(): void {
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 16rpx 48rpx rgba(15, 23, 42, 0.16);
+  box-shadow: var(--s-modal, 0 24rpx 60rpx rgba(15, 23, 42, 0.18));
 }
 
 .checkin-popup__header {

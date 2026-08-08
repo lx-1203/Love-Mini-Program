@@ -362,6 +362,16 @@ export default {
     interested: "Interested",
     interestedDone: "Interested",
     noMore: "No more activities",
+    /* R4-00054: calendar weekday/month/date copy */
+    weekMon: "Mon",
+    weekTue: "Tue",
+    weekWed: "Wed",
+    weekThu: "Thu",
+    weekFri: "Fri",
+    weekSat: "Sat",
+    weekSun: "Sun",
+    monthTitle: "{month}/{year}",
+    dateLabel: "{month}/{day}",
     nextTitle: "Next Step",
     nextSubtitle: "Once you find a suitable activity, keep exploring or submit a new activity proposal.",
     goExplore: "Go Explore",
@@ -423,6 +433,8 @@ export default {
     loadingContent: "Loading discussions...",
     retry: "Tap to retry",
     empty: "No new discussion recommendations yet",
+    /* R4-00052: load failure fallback copy */
+    loadFailed: "Failed to load discussions. Please retry later.",
     nextTitle: "Next Step",
     nextSubtitle: "Once you find a topic you like, go match or share your feedback.",
     goExplore: "Go Explore",
@@ -886,6 +898,8 @@ export default {
     copyFailed: "Copy failed, please retry",
     recalledSuccess: "Message recalled",
     recallFailed: "Recall failed",
+    /* R4-00072: recall endpoint only exists for temp sessions; not supported in private chats */
+    recallNotSupported: "Recall is not supported in this conversation",
     voiceMessagePlaceholder: "[Voice message {n}s]",
     sessionEndedLabel: "Session ended",
     tempBannerText: "24-hour anonymous chat. Both identities are hidden.",
@@ -1324,6 +1338,10 @@ export default {
       loadingComments: "Loading comments...",
       commentLike: "Like",
       emptyComments: "No comments yet. Be the first!",
+      /* R4-00087: comment pagination load more */
+      loadMoreComments: "Load more comments",
+      loadingMoreComments: "Loading...",
+      loadMoreCommentsFailed: "Failed to load more comments. Please retry.",
       commentInputPlaceholder: "Write a comment...",
       /* P1-02 nested replies: reply interaction */
       reply: "Reply",
@@ -1400,6 +1418,12 @@ export default {
       categoryHometown: "Hometown",
       categoryMask: "Masked",
       categoryInterest: "Interest",
+      /* R4-00095: categories aligned to contract enum [dating, study, life, activity, help] */
+      categoryDating: "Dating",
+      categoryStudy: "Study",
+      categoryLife: "Life",
+      categoryActivity: "Activity",
+      categoryHelp: "Help",
       /* P1-01: Title input (required 5-30 chars) + image upload */
       titleLabel: "Title",
       titlePlaceholder: "Enter a title (5-30 characters)",
@@ -1879,6 +1903,8 @@ export default {
     signalUnlockViewProfile: "View profile",
     officialChatTitle: "Official Chat",
     officialChatEmpty: "No official messages yet",
+    /* R4-00082: official message load failed (no mock fallback in real mode) */
+    officialChatLoadFailed: "Failed to load official messages. Please retry.",
     officialActivityTitle: "Upcoming Events",
     officialActivityCta: "View details",
     officialAssistantMsg1: "Hi, I'm the Love Assistant 🤖 Ask me anything about love!",
@@ -1997,6 +2023,10 @@ export default {
     categoryCreative: "Creative",
     salesLabel: "{n} sold",
     tagHot: "Hot",
+    /* R4-00038: product loading/error/empty states */
+    loading: "Loading...",
+    loadFailed: "Failed to load products. Please retry.",
+    empty: "No products in this category yet",
     tagNew: "New",
     tagLimited: "Limited",
     tagRecommended: "Recommended",
@@ -2203,6 +2233,9 @@ export default {
     cameraBtn: "Camera",
     speakerBtn: "Speaker",
     switchCameraBtn: "Flip",
+    /* R4-00070: camera flip now really calls live-pusher switchCamera */
+    switchCameraDone: "Camera flipped",
+    switchCameraFail: "Failed to flip camera. Please retry.",
     entryLabel: "Video",
     entryAria: "Start video call",
     ringTimeout: "No answer, please try again later",
@@ -2439,6 +2472,8 @@ export default {
       saveButton: "Save and enter",
       locationRequired: "Please enter a preferred location",
       timeWindowRequired: "Please add at least one time window",
+      /* R4-00047: save failure fallback copy */
+      saveFailed: "Save failed. Please retry later.",
     },
   },
 
@@ -2599,18 +2634,23 @@ export default {
     countdownCalculating: "Calculating...",
     statusPending: "Pending",
     statusAccepted: "Accepted",
+    /* R4-00024: contract status enum includes declined, add declined status copy */
+    statusDeclined: "Declined",
     statusExpired: "Expired",
     pageName: "Heart Signals",
     navTitle: "Heart Signals",
     navSubtitle: "Mutual crush starts here",
     tabPending: "Pending",
     tabAccepted: "Accepted",
+    tabDeclined: "Declined",
     tabExpired: "Expired",
     loadingText: "Loading...",
     emptyPendingTitle: "No heart signals",
     emptyPendingDesc: "Check recommendations more often. You'll receive a heart signal when there's a mutual crush.",
     emptyAcceptedTitle: "No accepted heart signals",
     emptyAcceptedDesc: "After accepting a heart signal, you can start chatting",
+    emptyDeclinedTitle: "No declined heart signals",
+    emptyDeclinedDesc: "Declined heart signals are kept here",
     emptyExpiredTitle: "No expired heart signals",
     emptyExpiredDesc: "Heart signals expire after 24 hours",
     cardExpireSuffix: " until expiry",
@@ -2749,6 +2789,10 @@ export default {
     topicDetailLoadingReplies: "Loading replies...",
     topicDetailSayHello: "Say hi",
     topicDetailEmptyReplies: "No replies yet, be the first to comment",
+    /* R4-00102: reply pagination load more */
+    topicDetailLoadMoreReplies: "Load more replies",
+    topicDetailLoadingMoreReplies: "Loading...",
+    topicDetailLoadMoreFailed: "Failed to load more replies. Please retry.",
     topicDetailNotExist: "Topic does not exist or has been deleted",
     topicDetailReplyPlaceholder: "Write your reply...",
     topicDetailReplySuccess: "Reply succeeded",
@@ -2873,6 +2917,10 @@ export default {
     checkingUpdate: "Checking...",
     versionUpdateTitle: "Version Update",
     versionLatestContent: "Already the latest version\nCurrent version: v1.0.0",
+    /* R4-00065: WeChat update manager callbacks */
+    versionUpdateReady: "A new version is available. Restart now to apply the update?",
+    versionRestart: "Restart Now",
+    versionUpdateFailed: "Failed to download the new version. Please retry later.",
     /* About Campus Love */
     aboutTitle: "About Campus Love",
     aboutContent: "Campus Love · Meet your special someone\n\nVersion: v1.0.0\n\nMeet like-minded people and start a mutual campus story here.",
@@ -3763,5 +3811,58 @@ export default {
       contactUs: "Contact Us",
     },
     loadFailed: "Failed to load legal texts, please retry later",
+  },
+
+  /* ========== R4-batch3 fixes: i18n for error toast / form validator / recorder / view models ========== */
+  /* Default error toast copy by category (utils/error-toast.ts; auth reuses apiErrors.unauthorized) */
+  errorToast: {
+    network: "Network error, please check your connection and retry",
+    business: "Operation failed, please try again later",
+    unknown: "Operation failed, please try again later",
+  },
+
+  /* Default form validator messages (utils/form-validator.ts) */
+  formValidator: {
+    required: "This field is required",
+    phone: "Please enter a valid phone number",
+    code: "Verification code must be 4-6 digits",
+    lengthRange: "Length must be between {min} and {max}",
+    maxLength: "Cannot exceed {max} characters",
+    email: "Please enter a valid email address",
+    wechatId: "Please enter a valid WeChat ID",
+  },
+
+  /* Recorder permission messages (utils/audio-recorder.ts) */
+  audioRecorder: {
+    privacyDenied: "Please agree to the User Privacy Protection Guidelines before recording",
+    permissionDenied: "Microphone permission was denied, please enable it in Settings",
+  },
+
+  /* Feedback status labels (view-models/feedback.ts) */
+  feedbackStatus: {
+    submitted: "Submitted",
+    processing: "Processing",
+    reviewed: "Reviewed",
+    planned: "Scheduled",
+    converted: "Converted to activity",
+  },
+
+  /* Home setup guide tasks (view-models/home.ts) */
+  homeSetup: {
+    profileTitle: "Complete basic profile",
+    profileSubtitle: "Before chatting, at least nickname, bio and grade are required.",
+    campusTitle: "Fill in school info",
+    campusSubtitle: "School and department info is a required gate before entering chat.",
+    scheduleTitle: "Set your real free time",
+    scheduleSubtitle: "The more accurate your free time, the more reliable the recommendations.",
+    completeSetup: "Complete setup first",
+    goChat: "Go chat",
+  },
+
+  /* Profile page placeholders (view-models/profile.ts) */
+  profilePlaceholder: {
+    defaultBio: "This user hasn't written anything yet",
+    noNickname: "No nickname set",
+    noSchool: "No school set",
   },
 } as const;

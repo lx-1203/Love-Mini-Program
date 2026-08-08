@@ -307,7 +307,7 @@ function openActivity(activityId: number | string) {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-bg-brand-soft, #f0fdf9);
+  background: var(--c-bg-brand, #f0fdf9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,7 +369,7 @@ function openActivity(activityId: number | string) {
   border-radius: var(--r-full);
   font-size: 20rpx;
   color: var(--c-brand-500, #3fcf8e);
-  background: var(--c-bg-brand-soft, #f0fdf9);
+  background: var(--c-bg-brand, #f0fdf9);
   border: 1rpx solid var(--c-brand-100, #ccfbef);
 }
 
@@ -477,7 +477,7 @@ function openActivity(activityId: number | string) {
   bottom: 0;
   padding: 4rpx 12rpx;
   border-radius: var(--r-full) 0 0 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
 }
 
 .post-card__image-more-text {
@@ -506,7 +506,7 @@ function openActivity(activityId: number | string) {
 
 .post-card__tag--green {
   color: var(--c-brand-500, #3fcf8e);
-  background: var(--c-bg-brand-soft, #f0fdf9);
+  background: var(--c-bg-brand, #f0fdf9);
 }
 
 .post-card__tag--pink {
@@ -538,7 +538,7 @@ function openActivity(activityId: number | string) {
   height: 36rpx;
   border-radius: var(--r-full);
   flex-shrink: 0;
-  background: var(--c-bg-brand-soft, #f0fdf9);
+  background: var(--c-bg-brand, #f0fdf9);
   display: flex;
   align-items: center;
   justify-content: center;

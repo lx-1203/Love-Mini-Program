@@ -23,6 +23,14 @@ const villageStore = useVillageStore();
 const { t } = useI18n();
 const { historyPosts, loadingHistory } = storeToRefs(villageStore);
 
+/**
+ * R4-00090：昵称首字符兜底（author.name 为空/null 时返回占位符，
+ * 避免 name[0] 抛 TypeError 崩溃渲染）。
+ */
+function initialOf(name?: string | null): string {
+  return name && name.length > 0 ? name.charAt(0) : "?";
+}
+
 /** 上拉加载中 */
 const isLoadingMore = ref(false);
 /** 是否还有更多（浏览记录无分页计数，按当前列表与总览近似判断） */
@@ -164,7 +172,7 @@ onUnmounted(() => {
             mode="aspectFill" lazy-load alt=""
             @error="onImageError(item.post.id)"
           />
-          <text v-else class="history-item__avatar-text">{{ item.post.author.name[0] }}</text>
+          <text v-else class="history-item__avatar-text">{{ initialOf(item.post.author.name) }}</text>
         </view>
 
         <!-- 帖子摘要 -->
@@ -247,23 +255,23 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
-  background: var(--card-bg, #fff);
+  background: var(--c-bg-container);
 }
 
 .history-count {
   font-size: 24rpx;
-  color: var(--text-secondary, #999);
+  color: var(--c-text-secondary);
 }
 
 .history-clear {
   padding: 8rpx 24rpx;
   border-radius: 24rpx;
-  background: rgba(255, 77, 109, 0.1);
+  background: var(--c-romance-bg-tint);
 }
 
 .history-clear__text {
   font-size: 24rpx;
-  color: #ff4d6d;
+  color: var(--c-romance-500);
 }
 
 /* 加载状态 */
@@ -277,14 +285,14 @@ onUnmounted(() => {
 .history-loading__text {
   margin-top: 16rpx;
   font-size: 26rpx;
-  color: var(--text-secondary, #999);
+  color: var(--c-text-secondary);
 }
 
 .loading-spinner {
   width: 48rpx;
   height: 48rpx;
-  border: 4rpx solid rgba(0, 0, 0, 0.08);
-  border-top-color: #ff4d6d;
+  border: 4rpx solid var(--c-neutral-100);
+  border-top-color: var(--c-romance-500);
   border-radius: 50%;
   animation: history-spin 0.8s linear infinite;
 }
@@ -305,7 +313,7 @@ onUnmounted(() => {
   gap: 20rpx;
   padding: 28rpx 32rpx;
   margin-bottom: 16rpx;
-  background: var(--card-bg, #fff);
+  background: var(--c-bg-container);
 }
 
 .history-item__avatar {
@@ -314,7 +322,7 @@ onUnmounted(() => {
   height: 88rpx;
   border-radius: 50%;
   overflow: hidden;
-  background: #f0f0f2;
+  background: var(--c-bg-surface);
 }
 
 .history-item__avatar-img {
@@ -329,7 +337,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   font-size: 36rpx;
-  color: #fff;
+  color: var(--c-text-inverse);
   background: linear-gradient(135deg, #ff9a9e, #ff4d6d);
 }
 
@@ -347,12 +355,12 @@ onUnmounted(() => {
 .history-item__author {
   font-size: 28rpx;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--c-text-primary);
 }
 
 .history-item__time {
   font-size: 22rpx;
-  color: var(--text-secondary, #999);
+  color: var(--c-text-secondary);
 }
 
 .history-item__title {
@@ -360,14 +368,14 @@ onUnmounted(() => {
   margin-top: 8rpx;
   font-size: 30rpx;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--c-text-primary);
 }
 
 .history-item__summary {
   display: -webkit-box;
   margin-top: 8rpx;
   font-size: 26rpx;
-  color: var(--text-secondary, #666);
+  color: var(--c-text-secondary);
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -410,14 +418,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--c-bg-overlay);
 }
 
 .clear-dialog {
   width: 560rpx;
   padding: 40rpx 36rpx;
   border-radius: 24rpx;
-  background: var(--card-bg, #fff);
+  background: var(--c-bg-container);
 }
 
 .clear-dialog__title {
@@ -425,7 +433,7 @@ onUnmounted(() => {
   font-size: 32rpx;
   font-weight: 600;
   text-align: center;
-  color: var(--text-primary, #333);
+  color: var(--c-text-primary);
 }
 
 .clear-dialog__desc {
@@ -433,7 +441,7 @@ onUnmounted(() => {
   margin-top: 16rpx;
   font-size: 26rpx;
   text-align: center;
-  color: var(--text-secondary, #999);
+  color: var(--c-text-secondary);
 }
 
 .clear-dialog__actions {
@@ -451,12 +459,12 @@ onUnmounted(() => {
 }
 
 .clear-dialog__btn--cancel {
-  background: #f0f0f2;
-  color: var(--text-secondary, #666);
+  background: var(--c-bg-surface);
+  color: var(--c-text-secondary);
 }
 
 .clear-dialog__btn--confirm {
-  background: #ff4d6d;
-  color: #fff;
+  background: var(--c-romance-500);
+  color: var(--c-text-inverse);
 }
 </style>

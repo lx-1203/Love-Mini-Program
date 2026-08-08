@@ -19,7 +19,8 @@ WHERE user_id = 47;
 INSERT INTO campus_certifications
     (user_id, school_name, major, student_id_card_url, status, reviewer_id,
      review_comment, submitted_at, reviewed_at)
-SELECT 47, '北京大学', '新媒体传播学', 'https://campus-love.example/student-id/CL-47',
+SELECT 47, '北京大学', '新媒体传播学', -- R4-00425：编造域名必 404，改用客户端包内本地素材（管理端审核有图可看需配合域名映射）
+       '/static/assets/images/posts/post-1.jpg',
        'APPROVED', 1, '种子数据：校园认证审核通过',
        NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 6 DAY
 ON DUPLICATE KEY UPDATE

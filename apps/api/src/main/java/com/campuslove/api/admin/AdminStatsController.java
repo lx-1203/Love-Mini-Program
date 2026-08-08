@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（@EnableMethodSecurity 已在 SecurityConfig 启用）。</p>
+ *
+ * <p>R4-00393：校区隔离——校区管理员（ADMIN + campusName 非空）的统计仅覆盖其
+ * 管辖校区（用户/活跃度/匹配按校区过滤），平台级经营数据不再对校区管理员开放；
+ * 全局管理员（SUPER_ADMIN 或无校区 ADMIN）查看全平台统计。</p>
  */
 @Profile("real")
 @RestController

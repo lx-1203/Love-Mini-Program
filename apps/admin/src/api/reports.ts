@@ -7,6 +7,7 @@
  *   - POST /api/v1/admin/reports/{id}/handle 处理举报
  */
 import { AdminPageView, get, post } from "./http";
+import { DEFAULT_PAGE_SIZE } from "../utils/constants";
 
 /** 举报列表项视图（与后端 AdminReportView record 对齐） */
 export interface AdminReportView {
@@ -96,7 +97,7 @@ export function listReports(
     status: query.status,
     targetType: query.targetType,
     page: query.page ?? 1,
-    pageSize: query.pageSize ?? 20,
+    pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
   });
 }
 

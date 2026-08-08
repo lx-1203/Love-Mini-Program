@@ -374,7 +374,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   white-space: nowrap;
   padding: 24rpx 24rpx 20rpx;
-  background: $white;
+  /* R4-02523：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   box-shadow: $card-soft-shadow;
 }
 
@@ -478,7 +479,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .topic-card {
   margin: 16rpx 24rpx;
   padding: 28rpx;
-  background: $white;
+  /* R4-02523：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
   box-shadow: $card-soft-shadow;
   transition: all var(--d-fast, 120ms) ease;

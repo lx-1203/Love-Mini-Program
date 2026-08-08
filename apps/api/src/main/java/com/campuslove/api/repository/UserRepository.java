@@ -89,6 +89,39 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.pronouns AS field, COUNT(u) AS cnt FROM User u GROUP BY u.pronouns")
     java.util.List<FieldCountProjection> countGroupByPronouns();
 
+    // ---- R4-00393：校区隔离统计（校区管理员仅可查看本校区数据） ----
+
+    /**
+     * 统计指定校区用户总数（R4-00393 校区隔离）。
+     *
+     * @param campusName 校区名称
+     * @return 该校区用户数
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE EXISTS (SELECT 1 FROM UserCampusProfile p WHERE p.userId = u.id AND p.campusName = :campusName)")
+    long countByCampusName(@Param("campusName") String campusName);
+
+    /**
+     * 统计指定校区在指定时间后注册的用户数（R4-00393 校区隔离）。
+     *
+     * @param since      起始时间
+     * @param campusName 校区名称
+     * @return 该校区新增用户数
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :since AND EXISTS (SELECT 1 FROM UserCampusProfile p WHERE p.userId = u.id AND p.campusName = :campusName)")
+    long countByCreatedAtAfterAndCampusName(@Param("since") LocalDateTime since,
+                                            @Param("campusName") String campusName);
+
+    /**
+     * 按 pronouns 分组统计指定校区用户数（R4-00393 校区隔离性别比）。
+     *
+     * @param campusName 校区名称
+     * @return 该校区每种 pronouns 对应的用户数
+     */
+    @Query("SELECT u.pronouns AS field, COUNT(u) AS cnt FROM User u "
+            + "WHERE EXISTS (SELECT 1 FROM UserCampusProfile p WHERE p.userId = u.id AND p.campusName = :campusName) "
+            + "GROUP BY u.pronouns")
+    java.util.List<FieldCountProjection> countGroupByPronounsByCampus(@Param("campusName") String campusName);
+
     /**
      * 按年级标签分组统计用户数。
      *
@@ -100,13 +133,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * 管理后台用户搜索（多条件分页）。
      * <p>所有筛选条件均可为 null（不参与筛选），按注册时间倒序排列。
-     * 支持按 role（USER/ADMIN）、status（active/disabled）、注册时间范围、昵称模糊匹配筛选。</p>
+     * 支持按 role（USER/ADMIN）、status（active/disabled）、注册时间范围、昵称匹配筛选。</p>
+     *
+     * <p>R4-00384：昵称条件由 {@code LIKE '%x%'} 中缀通配改为 {@code LIKE 'x%'}
+     * 前缀匹配——中缀通配符无法命中普通 B-Tree 索引（数据量大时全表扫描），
+     * 前缀匹配可走索引；代价是仅匹配昵称开头（管理端按昵称前缀搜索语义足够）。</p>
      *
      * @param role          角色筛选（可空）
      * @param status        状态筛选（可空，active/disabled）
      * @param createdAtFrom 注册起始时间（可空）
      * @param createdAtTo   注册结束时间（可空）
-     * @param nickname      昵称模糊匹配（可空）
+     * @param nickname      昵称前缀匹配（可空）
      * @param pageable      分页
      * @return 分页用户列表
      */
@@ -116,7 +153,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
               AND (:status IS NULL OR u.status = :status)
               AND (:createdAtFrom IS NULL OR u.createdAt >= :createdAtFrom)
               AND (:createdAtTo IS NULL OR u.createdAt <= :createdAtTo)
-              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT('%', :nickname, '%'))
+              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT(:nickname, '%'))
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile p
                     WHERE p.userId = u.id AND p.campusName = :campusName))
@@ -138,7 +175,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 内存合并，单页最多返回 2×pageSize 条、跨页全局排序不成立、可能重复/遗漏。
      * 本方法一次查询同时覆盖两类角色，保证分页语义正确。</p>
      *
-     * @param nickname   昵称模糊匹配（可空）
+     * <p>R4-00384：昵称条件同样改为前缀匹配（命中索引，避免全表扫描）。</p>
+     *
+     * @param nickname   昵称前缀匹配（可空）
      * @param campusName 管辖校区筛选（可空，匹配 UserCampusProfile.campusName）
      * @param pageable   分页
      * @return 分页管理员列表（按注册时间倒序）
@@ -146,7 +185,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
             SELECT u FROM User u
             WHERE u.role IN ('ADMIN', 'SUPER_ADMIN')
-              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT('%', :nickname, '%'))
+              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT(:nickname, '%'))
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile p
                     WHERE p.userId = u.id AND p.campusName = :campusName))

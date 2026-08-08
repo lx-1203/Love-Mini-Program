@@ -53,15 +53,10 @@ import org.springframework.web.bind.annotation.RestController;
  *       {@link com.campuslove.api.common.OperationForbiddenException}（HTTP 403），
  *       与 AdminVillagePostController 语义一致</li>
  * </ul>
- * <p>索引建议（FIN-00058）：listUsers 的 nickname 筛选走
- * {@code u.nickname LIKE CONCAT('%', :nickname, '%')}，前缀通配符导致该条件
- * 无法命中普通 B-Tree 索引，数据量大时为全表扫描。建议：</p>
- * <ul>
- *   <li>短期：确认表数据量（<10 万行可接受）；或改用前缀匹配语义（nickname LIKE 'x%'）</li>
- *   <li>长期：引入全文索引（MySQL FULLTEXT）或搜索引擎，或将昵称查询改为
- *       「首字母/拼音前缀」查询以命中索引</li>
- *   <li>参考迁移：Flyway 可增加 {@code ALTER TABLE users ADD FULLTEXT INDEX idx_nickname_ft(nickname)}</li>
- * </ul>
+ * <p>索引说明（FIN-00058 + R4-00384）：listUsers 的 nickname 筛选原为
+ * {@code LIKE '%x%'} 中缀通配，无法命中普通 B-Tree 索引（数据量大时全表扫描）；
+ * R4-00384 已改为前缀匹配（{@code LIKE 'x%'}），可走索引。长期可再引入
+ * MySQL FULLTEXT（ngram parser）或搜索引擎支持中缀搜索。</p>
  */
 @Profile("real")
 @RestController

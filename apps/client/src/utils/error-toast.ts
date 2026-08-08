@@ -21,6 +21,8 @@
  */
 import { EnhancedApiError } from "../services/http";
 import { AppApiError } from "../services/api-error";
+// 修复（R4-00215）：分类默认文案 i18n 化（不随 locale 切换的硬编码中文已移除）
+import { t } from "@/i18n";
 
 /**
  * 错误分类，与 services/http.ts 的 ErrorCategory 对齐。
@@ -29,15 +31,25 @@ import { AppApiError } from "../services/api-error";
 export type ToastErrorCategory = "network" | "auth" | "business" | "unknown";
 
 /**
- * 默认错误文案表，按分类组织。
- * 每个分类提供一句「友好 + 可操作」的提示，避免暴露技术细节。
+ * 分类默认文案（修复 R4-00215：i18n 化）。
+ *
+ * 每个分类提供一句「友好 + 可操作」的提示，避免暴露技术细节；
+ * 文案经 t() 在调用时解析，随当前 locale 切换（zh-CN / en-US）。
+ * 注意：不能在模块加载期一次性求值（locale 可能运行期切换），
+ * 故改为按需调用的 defaultMessageFor()。
  */
 const DEFAULT_MESSAGES: Record<ToastErrorCategory, string> = {
-  network: "网络连接异常，请检查网络后重试",
-  auth: "登录已过期，请重新登录",
-  business: "操作失败，请稍后重试",
-  unknown: "操作失败，请稍后重试",
+  // auth 复用 apiErrors.unauthorized（「登录已过期，请重新登录」）
+  network: "errorToast.network",
+  auth: "apiErrors.unauthorized",
+  business: "errorToast.business",
+  unknown: "errorToast.unknown",
 };
+
+/** 按分类解析默认文案（调用时求值，跟随当前 locale） */
+function defaultMessageFor(category: ToastErrorCategory): string {
+  return t(DEFAULT_MESSAGES[category]);
+}
 
 /**
  * 从 unknown 错误对象中提取分类。
@@ -131,12 +143,12 @@ export function resolveErrorMessage(error: unknown, fallback?: string): string {
 
   // 网络错误：优先使用分类默认文案，避免后端返回的"timeout"等技术词汇暴露给用户
   if (category === "network") {
-    return DEFAULT_MESSAGES.network;
+    return defaultMessageFor(category);
   }
 
   // 权限错误：优先使用分类默认文案，避免暴露 token / 401 等细节
   if (category === "auth") {
-    return DEFAULT_MESSAGES.auth;
+    return defaultMessageFor(category);
   }
 
   // 业务错误：优先使用后端返回的 message（已格式化为用户可读文案）
@@ -145,7 +157,7 @@ export function resolveErrorMessage(error: unknown, fallback?: string): string {
   }
 
   // 兜底：调用方提供的文案 > 分类默认文案
-  return fallback || DEFAULT_MESSAGES[category];
+  return fallback || defaultMessageFor(category);
 }
 
 /**

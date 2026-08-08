@@ -20,6 +20,7 @@
  * 金额单位：priceCents/originalPrice 以「分」存储，前端展示/录入统一转元。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listShopItems,
@@ -90,7 +91,7 @@ const deleting = ref(false);
 const togglingId = ref<number | null>(null);
 
 // 请求竞态防护
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 商品分类选项 */
@@ -134,7 +135,7 @@ function showToast(msg: string) {
 async function fetchItems() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listShopItems({
       keyword: keywordQuery.value.trim() || undefined,
@@ -143,18 +144,18 @@ async function fetchItems() {
       page: page.value,
       pageSize: pageSize.value,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     items.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("shop.loadFailed");
     items.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

@@ -14,6 +14,7 @@
  * 置顶/取消置顶行内操作、删除走 ConfirmDialog、「查看评论」弹窗分页展示。
  */
 import { onMounted, ref } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listVillagePosts,
@@ -53,13 +54,13 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 分页加载村落动态列表 */
 async function fetchPosts(): Promise<void> {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listVillagePosts({
       page: page.value,
@@ -68,18 +69,18 @@ async function fetchPosts(): Promise<void> {
       status: statusFilter.value || undefined,
       keyword: keyword.value.trim() || undefined,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     posts.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("villagePosts.loadFailed");
     posts.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }
@@ -222,7 +223,7 @@ const cTotal = ref(0);
 const cTotalPages = ref(1);
 
 /** 评论请求竞态防护 */
-let commentsReqSeq = 0;
+const { nextSeq: commentsNextSeq, isStale: commentsIsStale } = useRequestRace();
 
 /** 打开评论弹窗并加载第一页 */
 async function openComments(post: VillagePostSummary): Promise<void> {
@@ -242,18 +243,18 @@ async function fetchComments(): Promise<void> {
   if (!post) return;
   commentsLoading.value = true;
   commentsError.value = "";
-  const seq = ++commentsReqSeq;
+  const seq = commentsNextSeq();
   try {
     const result = await listPostComments(post.id, { page: cPage.value, pageSize: pageSize.value });
-    if (seq !== commentsReqSeq) return;
+    if (commentsIsStale(seq)) return;
     comments.value = result.items;
     cTotal.value = result.total;
     cTotalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== commentsReqSeq) return;
+    if (commentsIsStale(seq)) return;
     commentsError.value = err instanceof ApiError ? err.message : t("villagePosts.commentsLoadFailed");
   } finally {
-    if (seq === commentsReqSeq) {
+    if (!commentsIsStale(seq)) {
       commentsLoading.value = false;
     }
   }
@@ -281,7 +282,7 @@ const vTotal = ref(0);
 const vTotalPages = ref(1);
 
 /** 浏览记录请求竞态防护 */
-let viewersReqSeq = 0;
+const { nextSeq: viewersNextSeq, isStale: viewersIsStale } = useRequestRace();
 
 /** 打开浏览记录弹窗并加载第一页 */
 async function openViewers(post: VillagePostSummary): Promise<void> {
@@ -301,18 +302,18 @@ async function fetchViewers(): Promise<void> {
   if (!post) return;
   viewersLoading.value = true;
   viewersError.value = "";
-  const seq = ++viewersReqSeq;
+  const seq = viewersNextSeq();
   try {
     const result = await listPostViewers(post.id, { page: vPage.value, pageSize: pageSize.value });
-    if (seq !== viewersReqSeq) return;
+    if (viewersIsStale(seq)) return;
     viewers.value = result.items;
     vTotal.value = result.total;
     vTotalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== viewersReqSeq) return;
+    if (viewersIsStale(seq)) return;
     viewersError.value = err instanceof ApiError ? err.message : t("villagePosts.viewersLoadFailed");
   } finally {
-    if (seq === viewersReqSeq) {
+    if (!viewersIsStale(seq)) {
       viewersLoading.value = false;
     }
   }

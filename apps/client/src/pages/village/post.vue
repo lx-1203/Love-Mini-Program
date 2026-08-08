@@ -51,8 +51,8 @@ const images = ref<string[]>([]);
 const tagInput = ref("");
 /** 已添加的标签列表 */
 const tags = ref<string[]>([]);
-/** 选中的分类 */
-const selectedCategory = ref(DEFAULT_CATEGORY_ID);
+/** 选中的分类（R4-00095：默认值迁移到契约枚举，兼容旧 cat-* 常量） */
+const selectedCategory = ref(migrateCategory(DEFAULT_CATEGORY_ID));
 
 /** 预置话题标签列表 */
 const presetTags = ref<string[]>([]);
@@ -110,13 +110,34 @@ const isOverLimit = computed(() => currentLength.value > POST_MAX_LENGTH);
 /** 标题是否超出长度限制（P1-01） */
 const isTitleOverLimit = computed(() => title.value.length > POST_TITLE_MAX_LENGTH);
 
-/** 分类选项 */
+/**
+ * R4-00095：分类选项对齐契约（village.yaml CreatePostRequest.category
+ * 枚举 [dating, study, life, activity, help]）。
+ * 原 cat-sincere/hometown/mask/interest 经 toBackendCategory 映射为
+ * sincere/hometown/mask/interest 与契约漂移，real 后端按枚举校验时发帖 400。
+ * 现直接使用契约枚举值（不经 toBackendCategory 转换，原样透传）。
+ */
 const categoryOptions = computed(() => [
-  { id: "cat-sincere", name: t("village.post.categorySincere") },
-  { id: "cat-hometown", name: t("village.post.categoryHometown") },
-  { id: "cat-mask", name: t("village.post.categoryMask") },
-  { id: "cat-interest", name: t("village.post.categoryInterest") },
+  { id: "dating", name: t("village.post.categoryDating") },
+  { id: "study", name: t("village.post.categoryStudy") },
+  { id: "life", name: t("village.post.categoryLife") },
+  { id: "activity", name: t("village.post.categoryActivity") },
+  { id: "help", name: t("village.post.categoryHelp") },
 ]);
+
+/**
+ * R4-00095：旧 cat-* 分类 → 契约枚举迁移（草稿恢复 / 默认值兼容，
+ * 避免旧草稿恢复出不在选项内的分类）。
+ */
+function migrateCategory(id: string): string {
+  const map: Record<string, string> = {
+    "cat-sincere": "dating",
+    "cat-hometown": "life",
+    "cat-mask": "dating",
+    "cat-interest": "study",
+  };
+  return map[id] ?? id;
+}
 
 /**
  * 加载预置话题标签（从后端获取）
@@ -254,7 +275,8 @@ function restoreDraft() {
       tagInput.value = draft.tagInput;
     }
     if (typeof draft.selectedCategory === "string" && draft.selectedCategory) {
-      selectedCategory.value = draft.selectedCategory;
+      // R4-00095：旧 cat-* 草稿分类迁移到契约枚举
+      selectedCategory.value = migrateCategory(draft.selectedCategory);
     }
     if (Array.isArray(draft.selectedPresetTags)) {
       selectedPresetTags.value = draft.selectedPresetTags;
@@ -675,7 +697,8 @@ $red-badge: var(--c-error);
   align-items: center;
   justify-content: space-between;
   padding: 0 32rpx 24rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
 }
 
 .post-header__back {
@@ -729,7 +752,8 @@ $red-badge: var(--c-error);
 /* ========== P1-01：标题输入区（样式参考 circles/post-topic 标题输入） ========== */
 .title-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 16rpx 24rpx 0;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -767,7 +791,8 @@ $red-badge: var(--c-error);
 /* ========== 分类选择 ========== */
 .category-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 16rpx 24rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -820,7 +845,8 @@ $red-badge: var(--c-error);
 /* ========== 文字输入区 ========== */
 .content-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -850,7 +876,8 @@ $red-badge: var(--c-error);
 /* ========== 预置话题标签选择器 ========== */
 .preset-tags-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -859,7 +886,8 @@ $red-badge: var(--c-error);
 /* 功能4：TopicSelector 容器样式 */
 .topic-selector-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -927,7 +955,8 @@ $red-badge: var(--c-error);
 /* ========== 图片上传区 ========== */
 .images-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 0 24rpx 16rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
@@ -1023,7 +1052,8 @@ $red-badge: var(--c-error);
 /* ========== 话题标签区 ========== */
 .tags-section {
   padding: 28rpx 32rpx;
-  background: $white;
+  /* R4-02539：卡片底色改用 --c-bg-container（深色模式自动适配） */
+  background: var(--c-bg-container);
   margin: 0 24rpx 24rpx;
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);

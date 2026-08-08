@@ -94,10 +94,12 @@ public record RecommendedPersonView(
     /** IP 属地（如 江苏 · 南京） */
     String ipLocation,
     // ---- V2026.08.08.0015：寻觅页卡片完整字段 ----
-    /** 职业（展示文本，如 产品经理），可空 */
+    /**
+     * 职业（展示文本，如 产品经理），可空。
+     * 注：R4-00337 月收入档位（incomeRange）已从公开推荐视图移除——收入档位属
+     * 敏感经济信息，不再随推荐列表对全体用户公开（前端已含 incomeRange 缺省回退）。
+     */
     String occupation,
-    /** 月收入档位（3k-8k / 8k-15k / 15k-30k / 30k+），可空 */
-    String incomeRange,
     /** 年龄（由出生年份推导），可空 */
     Integer age,
     /** 注册时间（ISO 字符串，供「最新注册」排序），可空 */

@@ -362,6 +362,16 @@ export default {
     interested: "感兴趣",
     interestedDone: "已感兴趣",
     noMore: "没有更多活动了",
+    /* R4-00054: 日历视图星期/月份/日期文案 */
+    weekMon: "一",
+    weekTue: "二",
+    weekWed: "三",
+    weekThu: "四",
+    weekFri: "五",
+    weekSat: "六",
+    weekSun: "日",
+    monthTitle: "{year}年{month}月",
+    dateLabel: "{month}月{day}日",
     nextTitle: "下一步",
     nextSubtitle: "看到合适活动后，可以继续去寻觅，也可以提交新的活动提案。",
     goExplore: "去寻觅",
@@ -423,6 +433,8 @@ export default {
     loadingContent: "正在加载讨论内容...",
     retry: "点击重试",
     empty: "暂时还没有新的讨论推荐",
+    /* R4-00052：加载失败兜底文案 */
+    loadFailed: "加载讨论内容失败，请稍后重试",
     nextTitle: "下一步",
     nextSubtitle: "看到合适的话题后，可以直接去匹配或反馈新的讨论建议。",
     goExplore: "去寻觅",
@@ -886,6 +898,8 @@ export default {
     copyFailed: "复制失败，请重试",
     recalledSuccess: "消息已撤回",
     recallFailed: "撤回失败",
+    /* R4-00072：撤回端点仅临时会话存在，私信会话不支持撤回 */
+    recallNotSupported: "该会话暂不支持撤回消息",
     voiceMessagePlaceholder: "[语音消息 {n}秒]",
     sessionEndedLabel: "会话已结束",
     tempBannerText: "24小时临时聊天，双方身份匿名",
@@ -1324,6 +1338,10 @@ export default {
       loadingComments: "加载评论中...",
       commentLike: "赞",
       emptyComments: "暂无评论，快来抢沙发吧",
+      /* R4-00087：评论分页加载更多 */
+      loadMoreComments: "加载更多评论",
+      loadingMoreComments: "加载中...",
+      loadMoreCommentsFailed: "加载更多评论失败，请重试",
       commentInputPlaceholder: "写下你的评论...",
       /* P1-02 楼中楼：回复交互 */
       reply: "回复",
@@ -1400,6 +1418,12 @@ export default {
       categoryHometown: "同乡",
       categoryMask: "蒙面",
       categoryInterest: "兴趣圈",
+      /* R4-00095：分类对齐契约枚举 [dating, study, life, activity, help] */
+      categoryDating: "交友",
+      categoryStudy: "学习",
+      categoryLife: "生活",
+      categoryActivity: "活动",
+      categoryHelp: "求助",
       /* P1-01：标题输入（必填 5-30 字）+ 图片上传 */
       titleLabel: "标题",
       titlePlaceholder: "请输入标题（5-30 字）",
@@ -1883,6 +1907,8 @@ export default {
     signalUnlockViewProfile: "查看 TA 的主页",
     officialChatTitle: "官方号会话",
     officialChatEmpty: "暂无官方消息",
+    /* R4-00082：官方号消息加载失败（real 模式不再回退 mock 文案） */
+    officialChatLoadFailed: "官方消息加载失败，请重试",
     officialActivityTitle: "近期活动",
     officialActivityCta: "查看详情",
     officialAssistantMsg1: "你好，我是恋爱助手 🤖 有任何恋爱困惑都可以问我～",
@@ -2050,6 +2076,9 @@ export default {
     cameraBtn: "摄像头",
     speakerBtn: "扬声器",
     switchCameraBtn: "翻转",
+    /* R4-00070：翻转相机真实调用 live-pusher switchCamera 的成功/失败提示 */
+    switchCameraDone: "已翻转摄像头",
+    switchCameraFail: "翻转失败，请稍后重试",
     entryLabel: "视频",
     entryAria: "发起视频通话",
     ringTimeout: "无人接听，请稍后再试",
@@ -2287,6 +2316,8 @@ export default {
       saveButton: "保存并进入应用",
       locationRequired: "请输入偏好地点",
       timeWindowRequired: "请至少添加一个时间窗口",
+      /* R4-00047：保存失败兜底文案 */
+      saveFailed: "保存失败，请稍后重试",
     },
   },
 
@@ -2430,6 +2461,10 @@ export default {
     categoryCreative: "文创周边",
     salesLabel: "已售 {n}",
     tagHot: "热销",
+    /* R4-00038：商品加载/错误/空态文案 */
+    loading: "加载中...",
+    loadFailed: "商品加载失败，请重试",
+    empty: "该分类下暂无商品",
     tagNew: "新品",
     tagLimited: "限时",
     tagRecommended: "推荐",
@@ -2604,18 +2639,23 @@ export default {
     countdownCalculating: "计算中...",
     statusPending: "待处理",
     statusAccepted: "已接受",
+    /* R4-00024：契约 status enum 含 declined，补已拒绝状态文案 */
+    statusDeclined: "已拒绝",
     statusExpired: "已过期",
     pageName: "心动信号",
     navTitle: "心动信号",
     navSubtitle: "双向心动，从这里开始",
     tabPending: "待处理",
     tabAccepted: "已接受",
+    tabDeclined: "已拒绝",
     tabExpired: "已过期",
     loadingText: "加载中...",
     emptyPendingTitle: "暂无心动信号",
     emptyPendingDesc: "多去看看推荐的人，双向喜欢后会收到心动信号",
     emptyAcceptedTitle: "暂无已接受的心动信号",
     emptyAcceptedDesc: "接受心动信号后，双方可以开始聊天",
+    emptyDeclinedTitle: "暂无已拒绝的心动信号",
+    emptyDeclinedDesc: "拒绝的心动信号会保留在这里",
     emptyExpiredTitle: "暂无过期的心动信号",
     emptyExpiredDesc: "心动信号有效期为24小时",
     cardExpireSuffix: "后过期",
@@ -2754,6 +2794,10 @@ export default {
     topicDetailLoadingReplies: "加载回复中...",
     topicDetailSayHello: "打个招呼",
     topicDetailEmptyReplies: "暂无回复，快来抢沙发吧",
+    /* R4-00102：回复分页加载更多 */
+    topicDetailLoadMoreReplies: "加载更多回复",
+    topicDetailLoadingMoreReplies: "加载中...",
+    topicDetailLoadMoreFailed: "加载更多回复失败，请重试",
     topicDetailNotExist: "话题不存在或已被删除",
     topicDetailReplyPlaceholder: "写下你的回复...",
     topicDetailReplySuccess: "回复成功",
@@ -2879,6 +2923,10 @@ export default {
     checkingUpdate: "检查中...",
     versionUpdateTitle: "版本更新",
     versionLatestContent: "当前已是最新版本\n当前版本：v1.0.0",
+    /* R4-00065：微信更新管理器回调文案 */
+    versionUpdateReady: "发现新版本，是否立即重启并应用更新？",
+    versionRestart: "立即重启",
+    versionUpdateFailed: "新版本下载失败，请稍后重试",
     /* 关于校园恋爱 */
     aboutTitle: "关于校园恋爱",
     aboutContent: "校园恋爱 · 遇见你的那个TA\n\n版本：v1.0.0\n\n在这里，遇见同频的人，开启一段双向奔赴的校园故事。",
@@ -3769,5 +3817,58 @@ export default {
       contactUs: "联系我们",
     },
     loadFailed: "法律文本加载失败，请稍后重试",
+  },
+
+  /* ========== R4-batch3 修复：错误提示 / 表单校验 / 录音 / 视图模型文案 i18n 化 ========== */
+  /* 错误 toast 分类默认文案（utils/error-toast.ts，auth 复用 apiErrors.unauthorized） */
+  errorToast: {
+    network: "网络连接异常，请检查网络后重试",
+    business: "操作失败，请稍后重试",
+    unknown: "操作失败，请稍后重试",
+  },
+
+  /* 表单校验默认文案（utils/form-validator.ts） */
+  formValidator: {
+    required: "此项为必填项",
+    phone: "请输入正确的手机号",
+    code: "验证码为4-6位数字",
+    lengthRange: "长度需在{min}-{max}之间",
+    maxLength: "不能超过{max}个字符",
+    email: "请输入正确的邮箱",
+    wechatId: "请输入正确的微信号",
+  },
+
+  /* 录音权限文案（utils/audio-recorder.ts） */
+  audioRecorder: {
+    privacyDenied: "需同意《用户隐私保护指引》后才能使用录音",
+    permissionDenied: "麦克风权限被拒绝，请在设置中开启",
+  },
+
+  /* 反馈状态标签（view-models/feedback.ts） */
+  feedbackStatus: {
+    submitted: "已提交",
+    processing: "处理中",
+    reviewed: "已查看",
+    planned: "已排期",
+    converted: "已转活动",
+  },
+
+  /* 首页资料完善引导任务（view-models/home.ts） */
+  homeSetup: {
+    profileTitle: "补全基础资料",
+    profileSubtitle: "开始聊天前，至少需要昵称、简介和年级。",
+    campusTitle: "填写学校信息",
+    campusSubtitle: "学校和院系信息会在你准备进入聊天前作为必要门槛。",
+    scheduleTitle: "设置真实空闲时段",
+    scheduleSubtitle: "空闲时间越准确，推荐链路就越可靠。",
+    completeSetup: "先完成设置",
+    goChat: "去聊天",
+  },
+
+  /* 个人主页占位文案（view-models/profile.ts） */
+  profilePlaceholder: {
+    defaultBio: "这个人很懒，什么都没写",
+    noNickname: "未设置昵称",
+    noSchool: "未设置学校",
   },
 } as const;

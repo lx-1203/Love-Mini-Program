@@ -70,130 +70,211 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /recommendations/cards:
+  # ---- 修复（R4-00163 / R4-00344）：契约对齐真实 RecommendationController ----
+  # 历史文档化的 /recommendations/cards、/cards/{id}/pass、/cards/{id}/like、
+  # /cards/history 端点在实现中不存在（按契约接入的前端全部 404），已移除。
+  # 实际端点见下（apps/api/.../discover/RecommendationController.java）。
+  /recommendations:
     get:
-      summary: Get recommendation card list
-      operationId: getRecommendationCards
+      summary: Get recommended people list (with filters)
+      description: |
+        Alias of /recommendations/people. Returns the current user's
+        recommendation candidates filtered by the optional query params.
+        Whisper text is intentionally NOT included in list responses
+        (server-side paid content is served by /recommendations/{userId}/whisper).
+      operationId: getRecommendations
+      security:
+        - bearerAuth: []
       parameters:
         - in: query
-          name: limit
+          name: heightMin
           required: false
           schema:
             type: integer
-            minimum: 1
-            maximum: 50
-            default: 10
-          description: Number of cards to return
         - in: query
-          name: excludeIds
+          name: heightMax
           required: false
           schema:
-            type: array
-            items:
-              type: string
-          description: User IDs to exclude from recommendations
-          style: form
-          explode: false
-      responses:
-        '200':
-          description: List of recommendation cards
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecommendationCardListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /recommendations/cards/{id}/pass:
-    post:
-      summary: Pass (reject) a recommendation card
-      operationId: passRecommendationCard
-      parameters:
-        - in: path
-          name: id
-          required: true
+            type: integer
+        - in: query
+          name: educationLevel
+          required: false
           schema:
             type: string
-          description: Recommendation card ID (user ID)
-      responses:
-        '200':
-          description: Card passed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardActionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /recommendations/cards/{id}/like:
-    post:
-      summary: Like a recommendation card
-      operationId: likeRecommendationCard
-      parameters:
-        - in: path
-          name: id
-          required: true
+        - in: query
+          name: relationshipStatus
+          required: false
           schema:
             type: string
-          description: Recommendation card ID (user ID)
+        - in: query
+          name: hometownProvince
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: hometownCity
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: futureCity
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: keyword
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: ageMin
+          required: false
+          schema:
+            type: integer
+          description: Minimum age filter (R4-00163)
+        - in: query
+          name: ageMax
+          required: false
+          schema:
+            type: integer
+          description: Maximum age filter (R4-00163)
       responses:
         '200':
-          description: Card liked successfully
+          description: List of recommended people
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CardActionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecommendedPersonView'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /recommendations/cards/history:
+  /recommendations/quota:
     get:
-      summary: Get recommendation history (cards already viewed)
-      operationId: getRecommendationHistory
-      parameters:
-        - in: query
-          name: action
-          required: false
-          schema:
-            type: string
-            enum: [all, liked, passed]
-            default: all
-          description: Filter by action taken
-        - in: query
-          name: page
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number
-        - in: query
-          name: pageSize
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          description: Items per page
+      summary: Get today's recommendation quota usage
+      description: |
+        Returns {dailyLimit, used, remaining} so the client can distinguish
+        "quota exhausted today" from "no recommendations available".
+        Mock / service-missing mode returns -1 (unlimited semantics).
+      operationId: getRecommendationQuota
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Quota usage
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                dailyLimit: 10
+                used: 3
+                remaining: 7
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/discussions:
+    get:
+      summary: Get discussion recommendations
+      description: Hot/interest-matched discussions for the home "discussions" module.
+      operationId: getDiscussions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Discussion recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscussionRecommendationView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/activities:
+    get:
+      summary: Get activity recommendations
+      description: Recommended activities for the home "activity" module.
+      operationId: getActivities
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Activity recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityRecommendationView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/history:
+    get:
+      summary: Get recommendation history
+      description: |
+        People the current user has already swiped (liked / passed), returned as
+        RecommendedPersonView list (JWT-scoped, no query params).
+      operationId: getHistory
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Recommendation history
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecommendationHistoryListResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecommendedPersonView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/preferences/me:
+    get:
+      summary: Get current user recommendation preferences
+      operationId: getPreferencesByUserId
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User recommendation preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      summary: Save current user recommendation preferences
+      operationId: savePreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationPreferences'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -384,149 +465,166 @@ components:
           nullable: true
       required:
         - unlocked
-  schemas:
-    RecommendationCard:
+    # ---- 修复（R4-00163 / R4-00344）：schema 对齐真实 RecommendedPersonView ----
+    RecommendedPersonView:
       type: object
+      description: |
+        Recommendation candidate view (apps/api/.../discover/RecommendedPersonView.java).
+        `whisper` is only populated via the dedicated unlock endpoint, never in list payloads.
       properties:
         id:
+          type: integer
+          format: int64
+        name:
           type: string
-        nickname:
+        initials:
+          type: string
+        headline:
+          type: string
+        commonGround:
+          type: string
+        availability:
+          type: string
+        campusName:
           type: string
         avatarUrl:
           type: string
           nullable: true
-        gender:
-          type: string
-          enum: [male, female, other]
-        age:
-          type: integer
-          minimum: 16
-          maximum: 100
-        campusName:
-          type: string
-        department:
-          type: string
-        grade:
-          type: string
-        bio:
-          type: string
         tags:
           type: array
           items:
             type: string
-        photos:
+        bio:
+          type: string
+        images:
           type: array
           items:
             type: string
-        commonGround:
-          type: string
-          description: Description of common interests or connections
-        matchScore:
+        isSameSchool:
+          type: boolean
+        isSameMajor:
+          type: boolean
+        commonCircleCount:
           type: integer
-          minimum: 0
-          maximum: 100
-          description: Compatibility match score
-        lastActive:
+        height:
+          type: integer
+          nullable: true
+        educationLevel:
+          type: string
+        photoGallery:
+          type: array
+          items:
+            type: string
+        halfBodyPhotoUrl:
+          type: string
+          nullable: true
+        personalVideoUrl:
+          type: string
+          nullable: true
+        verificationBadgeLevel:
+          type: string
+        displayId:
+          type: string
+        distanceText:
+          type: string
+        activeStatusText:
+          type: string
+        machineVerified:
+          type: boolean
+        humanVerified:
+          type: boolean
+        personality:
+          type: array
+          items:
+            type: string
+        mbti:
+          type: string
+        whisper:
+          type: string
+          nullable: true
+          description: Always null in list responses (paid content, see whisper unlock endpoints)
+        whisperSent:
+          type: boolean
+        recentPosts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              content:
+                type: string
+              likes:
+                type: integer
+              comments:
+                type: integer
+              isLiked:
+                type: boolean
+              createdAt:
+                type: string
+                format: date-time
+        expectedPartner:
+          type: string
+        allowMessage:
+          type: boolean
+        ipLocation:
+          type: string
+        occupation:
+          type: string
+        age:
+          type: integer
+          nullable: true
+        registeredAt:
           type: string
           format: date-time
       required:
         - id
-        - nickname
-        - gender
+        - name
+        - headline
         - campusName
-        - bio
-        - tags
-        - photos
-        - commonGround
-        - matchScore
-        - lastActive
-    RecommendationCardListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecommendationCard'
-        hasMore:
-          type: boolean
-        dailyQuota:
-          type: integer
-          minimum: 0
-          description: Remaining daily swipe quota
-      required:
-        - items
-        - hasMore
-        - dailyQuota
-    CardActionResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        cardId:
-          type: string
-        action:
-          type: string
-          enum: [pass, like]
-        mutualLike:
-          type: boolean
-          description: Whether the like is mutual
-        matchCreated:
-          type: boolean
-          description: Whether a match was created due to mutual like
-      required:
-        - success
-        - cardId
-        - action
-        - mutualLike
-        - matchCreated
-    RecommendationHistoryItem:
+    DiscussionRecommendationView:
       type: object
       properties:
         id:
           type: string
-        nickname:
+        title:
           type: string
-        avatarUrl:
+        summary:
           type: string
-          nullable: true
-        headline:
+        heatLabel:
           type: string
-        action:
-          type: string
-          enum: [liked, passed]
-        actionAt:
-          type: string
-          format: date-time
-        isMutual:
-          type: boolean
       required:
         - id
-        - nickname
-        - headline
-        - action
-        - actionAt
-        - isMutual
-    RecommendationHistoryListResponse:
+        - title
+        - summary
+        - heatLabel
+    ActivityRecommendationView:
       type: object
       properties:
-        items:
+        id:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        scheduleText:
+          type: string
+        description:
+          type: string
+        enrollmentCount:
+          type: integer
+        participantAvatars:
           type: array
           items:
-            $ref: '#/components/schemas/RecommendationHistoryItem'
-        total:
-          type: integer
-          minimum: 0
-        page:
-          type: integer
-          minimum: 1
-        pageSize:
-          type: integer
-          minimum: 1
+            type: string
       required:
-        - items
-        - total
-        - page
-        - pageSize
+        - id
+        - title
+        - location
+        - scheduleText
+        - description
+        - enrollmentCount
+        - participantAvatars
     RecommendationPreferences:
       type: object
       properties:
@@ -542,6 +640,9 @@ components:
             - city
             - unlimited
           default: campus_first
+        campusPriority:
+          type: boolean
+          description: Campus-first sorting flag (same-school users ranked first)
       required:
         - dailyNotifyTime
         - scope

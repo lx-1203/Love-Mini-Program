@@ -72,7 +72,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException {
-        // 生成 traceId，便于客户端报错时关联服务端日志
+        // R4-00277：优先复用 TraceIdFilter 注入 MDC 的 traceId（与
+        // GlobalExceptionHandler.generateTraceId 同一口径），保证 401 响应的
+        // X-Trace-Id 与请求链路日志串联一致；MDC 缺失时兜底生成 UUID。
         String traceId = generateTraceId();
         String requestUri = request.getRequestURI();
         String method = request.getMethod();
@@ -98,13 +100,17 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     /**
      * 生成 traceId。
      *
-     * <p>当前实现使用 {@link UUID#randomUUID()} 生成唯一 ID。
-     * 生产环境可替换为基于 MDC 的 traceId（与日志框架集成），
-     * 或使用分布式链路追踪系统（如 SkyWalking / Jaeger）的 traceId。</p>
+     * <p>R4-00277：优先读取 MDC 中 TraceIdFilter 注入的 traceId（key="traceId"），
+     * 与 {@link GlobalExceptionHandler#generateTraceId} 口径一致，保证 401 响应与
+     * 请求日志链路串联；MDC 缺失（如过滤链外直接调用）时兜底生成 UUID。</p>
      *
-     * @return 36 字符 UUID 字符串
+     * @return 36 字符 UUID 字符串（或 MDC 中的链路 traceId）
      */
     private String generateTraceId() {
+        String mdcTraceId = org.slf4j.MDC.get("traceId");
+        if (mdcTraceId != null && !mdcTraceId.isBlank()) {
+            return mdcTraceId;
+        }
         return UUID.randomUUID().toString();
     }
 }

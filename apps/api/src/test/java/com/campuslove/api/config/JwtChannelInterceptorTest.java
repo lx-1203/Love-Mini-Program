@@ -56,7 +56,11 @@ class JwtChannelInterceptorTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        interceptor = new JwtChannelInterceptor(jwtTokenProvider);
+        // R4-00280：构造器新增 Environment（mock profile 分支判断），测试环境传 mock 环境
+        org.springframework.core.env.Environment env = org.mockito.Mockito.mock(
+                org.springframework.core.env.Environment.class);
+        when(env.getActiveProfiles()).thenReturn(new String[]{"test"});
+        interceptor = new JwtChannelInterceptor(jwtTokenProvider, env);
 
         // 默认 mock 行为: token 有效，返回 userId
         when(jwtTokenProvider.validateToken(VALID_TOKEN)).thenReturn(true);

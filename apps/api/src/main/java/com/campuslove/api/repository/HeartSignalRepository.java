@@ -137,4 +137,63 @@ public interface HeartSignalRepository extends JpaRepository<HeartSignal, Long> 
             @Param("from") java.time.LocalDateTime from,
             @Param("to") java.time.LocalDateTime to
     );
+
+    // ---- R4-00393：校区隔离匹配统计（校区管理员仅可查看本校区用户参与的匹配） ----
+
+    /**
+     * 统计指定校区用户参与的心动信号总数（任一方属于该校区即计入）。
+     *
+     * @param campusName 校区名称
+     * @return 该校区相关的心动信号数
+     */
+    @Query("SELECT COUNT(hs) FROM HeartSignal hs WHERE EXISTS (SELECT 1 FROM UserCampusProfile p "
+            + "WHERE (p.userId = hs.userAId OR p.userId = hs.userBId) AND p.campusName = :campusName)")
+    long countByCampusName(@Param("campusName") String campusName);
+
+    /**
+     * 统计指定校区、指定状态的心动信号数（R4-00393 校区隔离）。
+     *
+     * @param status     信号状态
+     * @param campusName 校区名称
+     * @return 该校区相关且指定状态的心动信号数
+     */
+    @Query("SELECT COUNT(hs) FROM HeartSignal hs WHERE hs.status = :status "
+            + "AND EXISTS (SELECT 1 FROM UserCampusProfile p "
+            + "WHERE (p.userId = hs.userAId OR p.userId = hs.userBId) AND p.campusName = :campusName)")
+    long countByStatusAndCampusName(@Param("status") SignalStatus status,
+                                    @Param("campusName") String campusName);
+
+    /**
+     * 统计指定校区、指定匹配类型的心动信号数（R4-00393 校区隔离）。
+     *
+     * @param matchType  匹配类型
+     * @param campusName 校区名称
+     * @return 该校区相关且指定匹配类型的心动信号数
+     */
+    @Query("SELECT COUNT(hs) FROM HeartSignal hs WHERE hs.matchType = :matchType "
+            + "AND EXISTS (SELECT 1 FROM UserCampusProfile p "
+            + "WHERE (p.userId = hs.userAId OR p.userId = hs.userBId) AND p.campusName = :campusName)")
+    long countByMatchTypeAndCampusName(@Param("matchType") String matchType,
+                                       @Param("campusName") String campusName);
+
+    /**
+     * 按创建日期分组统计指定校区的心动信号数（R4-00393 校区隔离每日趋势）。
+     *
+     * @param from       起始时间
+     * @param to         结束时间
+     * @param campusName 校区名称
+     * @return 该校区每日匹配数列表
+     */
+    @Query("SELECT FUNCTION('DATE', hs.createdAt) AS field, COUNT(hs) AS cnt " +
+           "FROM HeartSignal hs " +
+           "WHERE hs.createdAt BETWEEN :from AND :to " +
+           "AND EXISTS (SELECT 1 FROM UserCampusProfile p " +
+           "WHERE (p.userId = hs.userAId OR p.userId = hs.userBId) AND p.campusName = :campusName) " +
+           "GROUP BY FUNCTION('DATE', hs.createdAt) " +
+           "ORDER BY FUNCTION('DATE', hs.createdAt) ASC")
+    List<com.campuslove.api.repository.FieldCountProjection> countDailyBetweenAndCampusName(
+            @Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to,
+            @Param("campusName") String campusName
+    );
 }

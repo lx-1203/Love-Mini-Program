@@ -39,11 +39,21 @@ public class MatchPolicy {
     /** 普通 like 每日允许次数上限（A-25/A-31）。业务规则：普通喜欢每日 30 次，超级喜欢不受限。 */
     public static final int LIKE_DAILY_LIMIT = 30;
 
+    /**
+     * R4-00334：超级喜欢每日允许次数上限默认值（配置 app.match.super-like-daily-limit 覆盖）。
+     * 超级喜欢原为完全免费且无限量，可无限绕过普通喜欢 30 次/日限额；现按配置配额
+     * （默认 10 次/日）封堵绕过，后续商业化可接入扣费（见 application.yml 说明）。
+     */
+    public static final int SUPER_LIKE_DAILY_LIMIT_DEFAULT = 10;
+
     /** Redis 中存储 rewind 每日计数器的 key 前缀，TTL 36 小时。 */
     public static final String REDIS_KEY_PREFIX_REWIND = "rewind:count:";
 
     /** Redis 中存储 like 每日计数器的 key 前缀，TTL 36 小时。 */
     public static final String REDIS_KEY_PREFIX_LIKE = "like:count:";
+
+    /** Redis 中存储超级喜欢每日计数器的 key 前缀，TTL 36 小时（R4-00334）。 */
+    public static final String REDIS_KEY_PREFIX_SUPER_LIKE = "super-like:count:";
 
     /** 日期格式（yyyy-MM-dd），用于组装 Redis key 与本地降级 map 的 key */
     private static final DateTimeFormatter DATE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -53,6 +63,18 @@ public class MatchPolicy {
 
     /** Redis 不可用时的 like 每日计数本地内存降级方案（单实例方案）。 */
     private final ConcurrentHashMap<String, Integer> localLikeCount = new ConcurrentHashMap<>();
+
+    /** Redis 不可用时的超级喜欢每日计数本地内存降级方案（单实例方案，R4-00334）。 */
+    private final ConcurrentHashMap<String, Integer> localSuperLikeCount = new ConcurrentHashMap<>();
+
+    /** R4-00334：超级喜欢每日上限（配置 app.match.super-like-daily-limit，默认 10）。 */
+    @org.springframework.beans.factory.annotation.Value("${app.match.super-like-daily-limit:10}")
+    private int superLikeDailyLimit;
+
+    /** 当前生效的超级喜欢每日上限（供日志/异常消息使用）。 */
+    public int getSuperLikeDailyLimit() {
+        return superLikeDailyLimit;
+    }
 
     /**
      * Redis 模板，用于持久化 rewind 每日计数器。
@@ -240,6 +262,44 @@ public class MatchPolicy {
                 return false;
             }
             localLikeCount.put(localKey, next);
+            return true;
+        }
+    }
+
+    /**
+     * R4-00334：原子尝试占用今日一次超级喜欢额度（与 tryIncrementLike 同款
+     * Redis INCR 原子判断 + 本地内存降级）。
+     *
+     * @param userId 用户 ID
+     * @return true 表示成功占用额度；false 表示已达今日上限
+     */
+    public boolean tryIncrementSuperLike(Long userId) {
+        String dateKey = LocalDate.now(TimeZones.BUSINESS).format(DATE_KEY_FORMATTER);
+        String localKey = userId + ":" + dateKey;
+        try {
+            if (redisTemplate != null) {
+                String redisKey = REDIS_KEY_PREFIX_SUPER_LIKE + userId + ":" + dateKey;
+                Long newValue = redisTemplate.opsForValue().increment(redisKey);
+                if (newValue != null && newValue == 1L) {
+                    redisTemplate.expire(redisKey, 36, TimeUnit.HOURS);
+                }
+                if (newValue != null && newValue > superLikeDailyLimit) {
+                    // 超限回滚递增，保证计数不漂移
+                    redisTemplate.opsForValue().decrement(redisKey);
+                    return false;
+                }
+                return true;
+            }
+        } catch (RuntimeException e) {
+            log.warn("写入 Redis 超级喜欢计数失败，降级使用本地内存方案：{}", e.getMessage());
+        }
+        // 本地降级方案（无 Redis 时）：临界区内判断+递增，保证单实例内原子性
+        synchronized (localSuperLikeCount) {
+            int next = localSuperLikeCount.getOrDefault(localKey, 0) + 1;
+            if (next > superLikeDailyLimit) {
+                return false;
+            }
+            localSuperLikeCount.put(localKey, next);
             return true;
         }
     }

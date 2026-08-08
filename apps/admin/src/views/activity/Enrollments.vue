@@ -10,6 +10,7 @@
  * 也可在页内手输活动 ID 加载。报名记录无取消机制，状态恒为 joined（已报名）。
  */
 import { onMounted, ref, watch } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
@@ -50,7 +51,7 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 加载报名列表（依赖当前活动 ID） */
 async function fetchEnrollments(): Promise<void> {
@@ -65,21 +66,21 @@ async function fetchEnrollments(): Promise<void> {
   }
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listEnrollments(id, { page: page.value, pageSize: pageSize.value });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     enrollments.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("enrollments.loadFailed");
     enrollments.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

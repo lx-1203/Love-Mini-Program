@@ -30,6 +30,14 @@ const { onImageError, isImageFailed } = useImageFallback();
 const circleId = ref("");
 /** 当前兴趣圈名称 */
 const circleName = ref("");
+
+/**
+ * R4-00101：昵称首字符兜底（author.name 为空/null 时返回占位符，
+ * 避免 name[0] 抛 TypeError 崩溃渲染）。
+ */
+function initialOf(name?: string | null): string {
+  return name && name.length > 0 ? name.charAt(0) : "?";
+}
 /** 下拉刷新中 */
 const isRefreshing = ref(false);
 /** 加载更多中 */
@@ -119,7 +127,13 @@ function goBack() {
 onLoad((query) => {
   const q = query || {};
   circleId.value = q.circleId || "";
-  circleName.value = decodeURIComponent(q.circleName || "");
+  // R4-00100：decodeURIComponent 遇 URL 中非法 % 序列会抛 URIError 中断页面渲染，
+  // 包 try-catch 兜底（解码失败按原始字符串展示，后续若命中本地圈子再覆盖为真实名称）
+  try {
+    circleName.value = decodeURIComponent(q.circleName || "");
+  } catch (_e) {
+    circleName.value = q.circleName || "";
+  }
 
   if (circleId.value) {
     const circle = circleStore.circles.find((c) => c.id === circleId.value);
@@ -214,7 +228,7 @@ defineExpose({ goToAuthorProfile });
                 lazy-load alt=""
                 @error="onImageError(`avatar-${topic.id}`)"
               />
-              <text v-else class="topic-card__avatar-char">{{ topic.author.name[0] }}</text>
+              <text v-else class="topic-card__avatar-char">{{ initialOf(topic.author.name) }}</text>
             </view>
             <text class="topic-card__name">{{ topic.author.name }}</text>
           </view>
@@ -227,7 +241,8 @@ defineExpose({ goToAuthorProfile });
       </view>
 
       <!-- 加载更多 -->
-      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite"><!-- 加载更多 -->
+      <view v-if="isLoadingMore" class="load-more" role="status" aria-live="polite">
+<!-- 加载更多 -->
         <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('circle.topicsLoadingAria')" />
         <text class="load-more__text">{{ t("circle.topicsLoadMoreLoading") }}</text>
       </view>

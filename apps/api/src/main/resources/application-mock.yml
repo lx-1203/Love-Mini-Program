@@ -18,6 +18,11 @@ app:
   # 商业化/生产环境默认关闭（application.yml 默认 false），可通过 APP_GUEST_LOGIN_ENABLED 覆盖。
   guest-login:
     enabled: ${APP_GUEST_LOGIN_ENABLED:true}
+  # R4-00340：IP 归属演示网段表——mock（本地演示）profile 开启，
+  # 生产（real）默认 false（演示数据不得冒充真实 IP 归属）。
+  location:
+    default-city: ${APP_LOCATION_DEFAULT_CITY:南京}
+    demo-city-nets-enabled: ${APP_LOCATION_DEMO_CITY_NETS_ENABLED:true}
   jwt:
     # JWT 密钥由环境变量 JWT_SECRET 提供，启动时校验非空且长度 >= 32。
     # 本地开发可通过 start-server.bat 或 .env 文件配置 JWT_SECRET。

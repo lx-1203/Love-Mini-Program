@@ -25,6 +25,7 @@
     "build:mp-weixin:showcase": "uni build --platform mp-weixin --mode mp-weixin-showcase",
     "build:mp-weixin:real": "node scripts/inject-wx-appid.mjs && node ../../scripts/verify-env-release.mjs && uni build --platform mp-weixin --mode real",
     "typecheck": "vue-tsc --noEmit",
+    "check:tabbar": "node scripts/check-tabbar-consistency.mjs",
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",

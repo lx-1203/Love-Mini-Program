@@ -41,8 +41,12 @@ public class ConfigController {
 
     private final ConfigService configService;
 
-    public ConfigController(ConfigService configService) {
+    /** R4-00341：法律文本提供者（联系方式配置注入，避免假邮箱/占位热线） */
+    private final LegalTextProvider legalTextProvider;
+
+    public ConfigController(ConfigService configService, LegalTextProvider legalTextProvider) {
         this.configService = configService;
+        this.legalTextProvider = legalTextProvider;
     }
 
     /**
@@ -115,6 +119,6 @@ public class ConfigController {
     @GetMapping("/legal")
     public ResponseEntity<LegalTextView> getLegalText(
             @RequestParam("type") String type) {
-        return ResponseEntity.ok(LegalTextProvider.getLegalText(type));
+        return ResponseEntity.ok(legalTextProvider.getLegalText(type));
     }
 }

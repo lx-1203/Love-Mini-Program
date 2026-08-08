@@ -50,7 +50,11 @@ public class Notification {
 
     /** 通知类型枚举 */
     public enum NotificationType {
-        follow, like, comment, visitor, match
+        follow, like, comment, visitor, match,
+        /** R4-00372/00374：系统通知（签到奖励等运营/系统语义），不再归入 match */
+        system,
+        /** R4-00375：取消匹配通知，与 match（互相喜欢）区分语义 */
+        unmatch
     }
 
     /** 关联实体类型枚举 */

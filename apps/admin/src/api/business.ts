@@ -18,13 +18,12 @@
 
 import {
   AdminPageView,
-  API_BASE_URL,
   get,
   post,
   put,
   del,
   unwrapApiData,
-  ApiError,
+  downloadFile,
 } from "./http";
 import { DEFAULT_PAGE_SIZE } from "../utils/constants";
 
@@ -57,6 +56,11 @@ export interface VipBillView {
   periodStart: string | null;
   /** VIP 有效期结束时间 */
   periodEnd: string | null;
+  /**
+   * 支付时间（可选）：后端账单视图暂未提供独立支付时间字段（R4-00449），
+   * 待后端 AdminVipBillView 补充 paidAt 后自动展示，缺失时前端回退占位符。
+   */
+  paidAt?: string | null;
   createdAt: string;
 }
 
@@ -210,29 +214,13 @@ export async function disablePromoCode(id: number): Promise<PromoCodeDisableResu
  * GET /api/v1/admin/business/promo-codes/export
  *
  * 说明：该端点返回 text/csv 文件流而非 JSON，无法复用 http.ts 的 get()（其内部
- * JSON.parse 会失败），故此处直接 fetch 二进制流并触发浏览器下载。
- * 失败时抛出 ApiError，由调用方提示。
+ * JSON.parse 会失败），故复用 http.ts 的 downloadFile（统一鉴权/超时/401 跳转/
+ * 错误映射，文案 i18n 化，R4-00453），失败时抛出 ApiError，由调用方提示。
  */
 export async function exportPromoCodes(): Promise<void> {
-  const token = localStorage.getItem("admin_v2_token") || "";
-  const response = await fetch(`${API_BASE_URL}/v1/admin/business/promo-codes/export`, {
-    method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, `导出失败（HTTP ${response.status}）`);
-  }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
   // 文件名带时间戳，避免覆盖历史导出文件
   const datePart = new Date().toISOString().slice(0, 10);
-  link.download = `promo-codes-${datePart}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadFile("/v1/admin/business/promo-codes/export", `promo-codes-${datePart}.csv`);
 }
 
 /* ============================================================

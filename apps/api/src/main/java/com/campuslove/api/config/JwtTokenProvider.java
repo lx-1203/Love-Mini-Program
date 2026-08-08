@@ -124,6 +124,68 @@ public class JwtTokenProvider {
     }
 
     /**
+     * 签发短期媒体访问令牌（R4-00273）。
+     *
+     * <p>用于 {@code <image src>} 等无法携带 Authorization 头的媒体请求：
+     * 与完整用户 JWT 不同，媒体令牌 TTL 短（默认 5 分钟）、携带
+     * {@code scope=media} 声明，即使进入访问日志/浏览器历史，泄露窗口与
+     * 可冒用范围也大幅缩小（无法用于业务 API）。</p>
+     *
+     * <p>客户端通过 {@code GET /api/v1/media/token}（需登录）获取，随后拼入
+     * 媒体代理 URL 的 {@code ?token=} 参数。服务端 {@link JwtAuthenticationFilter}
+     * 在 query token 路径校验 scope 声明。</p>
+     *
+     * @param userId 用户唯一标识
+     * @return 短期媒体访问 JWT 字符串
+     */
+    public String generateMediaToken(String userId) {
+        Instant now = Instant.now();
+        Instant expiryInstant = now.plusMillis(MEDIA_TOKEN_TTL_MS);
+        return Jwts.builder()
+                .subject(userId)
+                .id(UUID.randomUUID().toString())
+                .claim("scope", MEDIA_SCOPE)
+                .header().keyId(String.valueOf(keyVersion)).and()
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiryInstant))
+                .signWith(signingKey)
+                .compact();
+    }
+
+    /** 媒体访问令牌有效期（毫秒）：5 分钟 */
+    private static final long MEDIA_TOKEN_TTL_MS = 5L * 60 * 1000;
+
+    /** 媒体访问令牌的 scope 声明值 */
+    public static final String MEDIA_SCOPE = "media";
+
+    /** 媒体访问令牌默认剩余有效期（秒），供响应体返回 */
+    public static final long MEDIA_TOKEN_TTL_SECONDS = MEDIA_TOKEN_TTL_MS / 1000;
+
+    /**
+     * 提取令牌的 scope 声明。
+     *
+     * <p>媒体访问令牌（{@link #generateMediaToken}）携带 {@code scope=media}；
+     * 普通用户会话令牌无 scope 声明，返回 null。</p>
+     *
+     * @param token JWT 令牌字符串
+     * @return scope 值（无声明返回 null；令牌无效返回 null）
+     */
+    public String getTokenScope(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            Object scope = claims.get("scope");
+            return scope != null ? String.valueOf(scope) : null;
+        } catch (JwtException ex) {
+            log.debug("提取 token scope 失败: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 从 JWT 令牌中提取 jti（JWT ID）。
      *
      * <p>Task 0.5.3 新增：用于在认证过滤器与登出流程中查询 Redis 黑名单。

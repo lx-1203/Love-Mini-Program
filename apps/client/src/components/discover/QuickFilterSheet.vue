@@ -193,7 +193,7 @@ function ageLabel(age: number): string {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5));
   display: flex;
   align-items: flex-end;
   z-index: 90;
@@ -201,7 +201,7 @@ function ageLabel(age: number): string {
 
 .quick-filter-sheet {
   width: 100%;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   border-radius: 32rpx 32rpx 0 0;
   padding: 16rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
   display: flex;
@@ -269,7 +269,7 @@ function ageLabel(age: number): string {
 }
 
 .quick-filter-segment__item--active .quick-filter-segment__text {
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
 }
 
 /* 年龄区间 */

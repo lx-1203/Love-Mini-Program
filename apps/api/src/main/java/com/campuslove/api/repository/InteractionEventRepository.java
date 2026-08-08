@@ -72,6 +72,20 @@ public interface InteractionEventRepository extends JpaRepository<InteractionEve
     long countByCreatedAtAfter(LocalDateTime since);
 
     /**
+     * R4-00393：统计指定校区内指定时间之后发生的互动事件数（校区隔离互动数）。
+     *
+     * @param since      起始时间
+     * @param campusName 校区名称
+     * @return 该校区互动事件数
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) FROM InteractionEvent e "
+            + "WHERE e.createdAt >= :since AND EXISTS (SELECT 1 FROM UserCampusProfile p "
+            + "WHERE p.userId = e.userId AND p.campusName = :campusName)")
+    long countByCreatedAtAfterAndCampusName(
+            @org.springframework.data.repository.query.Param("since") LocalDateTime since,
+            @org.springframework.data.repository.query.Param("campusName") String campusName);
+
+    /**
      * 统计指定时间范围内的互动事件数。
      *
      * @param from 起始时间

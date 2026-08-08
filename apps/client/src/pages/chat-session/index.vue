@@ -32,6 +32,7 @@ import type {
   LongPressMenuState,
   QuoteContext,
   QuoteReply,
+  ChatMessageView,
 } from "./types";
 import {
   toChatMessageViewList,
@@ -253,6 +254,8 @@ const messageRows = computed(() => buildChatMessageRows(currentMessagesView.valu
 const scrollTop = ref(0);
 /** scroll-into-view 目标元素 id（进入/新消息滚底） */
 const scrollIntoViewId = ref("");
+/** 消息行滚动定位 ID 前缀（R4-00074：点击引用气泡滚动到被引用消息） */
+const MESSAGE_ROW_ID_PREFIX = "msg-row-";
 /** 当前 scrollTop（onScroll 持续记录） */
 let curScrollTop = 0;
 /** 是否正在加载更早消息（防重入） */
@@ -357,17 +360,28 @@ usePageAccess(chatPageRequirements);
 function syncChatStoreMessagesToMessagesStore(): void {
   const chatMessages = chatStore.activeSession?.messages ?? [];
   // 将 ChatMessage[] 转换为 MessageItem[] 形态后写入 messagesStore
-  // ChatMessage 与 MessageItem 字段语义一致（id/sender/kind/body/sentAt/durationSeconds）
+  // R4-00073：原映射仅保留 id/sender/kind/body/sentAt/durationSeconds，
+  // 丢弃 recalled/deliveryStatus/quoteRef/quoteBody/quoteSender，
+  // 导致临时会话撤回态、引用回复、送达状态渲染丢失——现补充扩展字段
+  // （ChatMessageView 继承 MessageItem，多出的可选字段在渲染层被消费）。
   messagesStore.setCurrentMessages(
-    chatMessages.map((m) => ({
-      id: String(m.id),
-      sessionId: sessionId.value ?? "",
-      sender: m.sender,
-      kind: m.kind,
-      body: m.body,
-      sentAt: m.sentAt,
-      durationSeconds: m.durationSeconds ?? null,
-    }))
+    chatMessages.map((m) => {
+      const view: ChatMessageView = {
+        id: String(m.id),
+        sessionId: sessionId.value ?? "",
+        sender: m.sender,
+        kind: m.kind,
+        body: m.body,
+        sentAt: m.sentAt,
+        durationSeconds: m.durationSeconds ?? null,
+        recalled: m.recalled,
+        deliveryStatus: m.deliveryStatus,
+        quoteRef: m.quoteRef ?? undefined,
+        quoteBody: m.quoteBody ?? undefined,
+        quoteSender: (m.quoteSender as ChatMessageView["quoteSender"]) ?? undefined,
+      };
+      return view;
+    })
   );
 }
 
@@ -857,6 +871,13 @@ function handleQuoteMessage() {
 /** 撤回消息 */
 async function handleRecallMessage() {
   if (!sessionId.value || !longPressMenu.value.messageId) return;
+  // R4-00072：撤回端点 POST /temp-chat/sessions/{id}/messages/{mid}/recall 仅临时会话存在，
+  // 私信会话撤回必然 404。菜单项已按会话类型隐藏，此处防御性兜底。
+  if (!isTempSession.value) {
+    uni.showToast({ title: t("chat.recallNotSupported"), icon: "none" });
+    closeLongPressMenu();
+    return;
+  }
   try {
     await recallTempChatMessageApi(sessionId.value, longPressMenu.value.messageId);
     uni.showToast({ title: t("chat.recalledSuccess"), icon: "success" });
@@ -878,9 +899,24 @@ function cancelQuoteReply() {
   quoteReply.value = null;
 }
 
-/** 点击引用消息跳转（暂不实现滚动定位，仅取消引用） */
-function handleTapQuote(_quoteRef: string) {
-  // 后续可实现滚动定位到被引用消息
+/**
+ * R4-00074：点击引用消息 → 滚动定位到被引用消息。
+ * 被引用消息可能因分页加载/撤回不存在，找不到时仅取消引用（原交互死点）。
+ */
+function handleTapQuote(quoteRef: string) {
+  if (!quoteRef) return;
+  const exists = messagesStore.currentMessages.some((m) => m.id === quoteRef);
+  if (!exists) {
+    cancelQuoteReply();
+    return;
+  }
+  // scroll-into-view 与 scroll-top 互斥：先清空 scroll-top 再设置目标
+  scrollTop.value = 0;
+  scrollIntoViewId.value = "";
+  // 下一帧设置目标，确保清空生效（同帧重复赋值可能被合并）
+  setTimeout(() => {
+    scrollIntoViewId.value = MESSAGE_ROW_ID_PREFIX + quoteRef;
+  }, 0);
 }
 
 /** 加载破冰话题 */
@@ -1049,6 +1085,7 @@ defineExpose({ noop });
                activity 消息解析失败时也走此兜底） -->
             <ChatBubble
               v-else
+              :id="MESSAGE_ROW_ID_PREFIX + row.message.id"
               :sender="row.message.sender"
               :kind="row.message.kind"
               :body="row.message.body"
@@ -1222,8 +1259,9 @@ defineExpose({ noop });
         >
           <text class="longpress-menu__text">{{ t('chat.longPressMenu.quote') }}</text>
         </view>
+        <!-- R4-00072：撤回端点仅临时会话存在，私信会话不展示撤回菜单项 -->
         <view
-          v-if="longPressMenu.isSelf"
+          v-if="longPressMenu.isSelf && isTempSession"
           class="longpress-menu__item longpress-menu__item--danger press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"

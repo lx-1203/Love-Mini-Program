@@ -31,6 +31,8 @@ import {
 // 录音修复：隐私协议守卫（__usePrivacyCheck__ 开启后，隐私接口调用前
 // 必须先通过 wx.requirePrivacyAuthorize 同意《用户隐私保护指引》）
 import { ensurePrivacyAuthorized } from "./privacy";
+// 修复（R4-00217）：权限失败文案 i18n 化
+import { t } from "@/i18n";
 
 /** 录音配置选项 */
 export interface RecorderOptions {
@@ -322,10 +324,11 @@ export function createRecorder() {
     // 申请权限（录音修复：先过隐私协议，再申请 scope.record，差异化提示失败原因）
     const permissionResult = await ensurePermission();
     if (permissionResult !== "ok") {
+      // 修复（R4-00217）：权限失败文案 i18n 化（随 locale 切换）
       const error = new Error(
         permissionResult === "privacy-denied"
-          ? "需同意《用户隐私保护指引》后才能使用录音"
-          : "麦克风权限被拒绝，请在设置中开启"
+          ? t("audioRecorder.privacyDenied")
+          : t("audioRecorder.permissionDenied")
       );
       callbacks.error.forEach((cb) => {
         try {

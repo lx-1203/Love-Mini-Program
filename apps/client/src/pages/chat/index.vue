@@ -475,11 +475,11 @@ defineExpose({ handleAnonymousMatch, handlePaidEntry });
   width: 34rpx;
   height: 34rpx;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.12);
+  box-shadow: 0 2rpx 8rpx var(--c-neutral-shadow-xl, rgba(15, 23, 42, 0.12));
 }
 
 .quick-entry__lock-text {

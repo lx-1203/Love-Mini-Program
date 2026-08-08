@@ -213,13 +213,28 @@ export const safeLocalStorage = {
  * 设计目的：替代散落在 `config/env.ts` 与 `services/env.ts` 中的
  * `#ifdef H5 / #ifndef H5` 条件编译块，集中维护 dev 模式下的协议降级策略。
  *
- * 规则：
- * - H5 端：返回 http://127.0.0.1:8080/api（本地后端，允许 http）
- * - mp-weixin / 其他端：返回 https://127.0.0.1:8080/api（合法域名强制 https）
+ * 修复（R4-00204）：dev 回退地址不再写死 127.0.0.1:8080——本地后端换端口/
+ * 域名时无需改代码，可通过环境变量 `VITE_DEV_API_BASE_URL` 覆盖
+ * （值须为完整地址，含 /api 后缀，如 `http://localhost:9090/api`；
+ * 与 VITE_API_BASE_URL 同构，见 .env.example 注释）。
+ *
+ * 规则（未配置 VITE_DEV_API_BASE_URL 时的默认值）：
+ * - H5 端：http://127.0.0.1:8080/api（本地后端，允许 http）
+ * - mp-weixin / 其他端：https://127.0.0.1:8080/api（合法域名强制 https）
  *
  * 注意：本函数仅用于 dev 模式回退，生产环境必须显式配置 VITE_API_BASE_URL。
  */
 export function getDevApiBaseUrl(): string {
+  try {
+    // VITE_DEV_API_BASE_URL 走 Vite 静态替换读取（与 config/env.ts 同款方式）
+    const viteEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+    const configured = viteEnv?.VITE_DEV_API_BASE_URL;
+    if (typeof configured === "string" && configured.trim().length > 0) {
+      return configured.trim();
+    }
+  } catch (_e) {
+    // import.meta 不可用时回退到默认地址
+  }
   // #ifdef H5
   return "http://127.0.0.1:8080/api";
   // #endif

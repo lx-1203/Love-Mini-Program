@@ -15,6 +15,9 @@ import { useCheckInStore } from "../../stores/checkin";
 // script 依赖树先执行注册，组件加载时报 "module 'stores/vip.js' is not defined"。
 import { useVipStore } from "../../stores/vip";
 import { useSessionStore } from "../../stores/session";
+// R4-00009：匹配动画需要当前用户真实头像（UserSession 无 avatarUrl，改从 profileStore 读取）
+import { useProfileStore } from "../../stores/profile";
+import { resolveMediaUrl } from "../../utils/media";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
 // 2026-08-08 重构：小程序右上角胶囊安全距离（顶部标题/筛选栏不被遮挡）
@@ -45,6 +48,7 @@ const icons = {
 
 const sessionStore = useSessionStore();
 const discoverStore = useDiscoverStore();
+const profileStore = useProfileStore();
 const { t } = useI18n();
 
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
@@ -109,10 +113,12 @@ function triggerMatchNavigation(partner?: { name?: string; avatar?: string }) {
   if (isMatchNavigating) return;
   isMatchNavigating = true;
 
-  // 设置动画数据（当前用户头像暂用默认，UserSession 无 avatarUrl 字段）
+  // 设置动画数据（R4-00009：头像改用真实数据——对方取卡片头像，本人从 profileStore 读取）
   partnerName.value = partner?.name ?? t("discover.partnerDefaultName");
-  partnerAvatar.value = partner?.avatar || IMAGE_PATHS.AVATARS.AVATAR_1;
-  myAvatar.value = IMAGE_PATHS.AVATARS.AVATAR_2;
+  partnerAvatar.value = partner?.avatar ? resolveMediaUrl(partner.avatar) : IMAGE_PATHS.AVATARS.AVATAR_1;
+  myAvatar.value = profileStore.avatarUrl
+    ? resolveMediaUrl(profileStore.avatarUrl)
+    : IMAGE_PATHS.AVATARS.AVATAR_2;
   showMatchAnimation.value = true;
 
   // 显示 toast 提示
@@ -448,6 +454,8 @@ onShow(() => {
 function loadDiscoverData() {
   void discoverStore.fetchCards();
   void checkInStore.fetchStatus();
+  // R4-00009：预加载个人资料，保证匹配成功动画能展示用户真实头像
+  void profileStore.load();
 }
 
 /**

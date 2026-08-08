@@ -14,6 +14,7 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "../../utils/format";
+import { useRequestRace } from "../../composables/useRequestRace";
 
 const { t } = useI18n();
 
@@ -27,23 +28,23 @@ const kickTarget = ref<OnlineUserView | null>(null);
 const kicking = ref(false);
 
 // 请求竞态防护（快速刷新时旧响应不覆盖新数据）
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function fetchOnlineUsers() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listOnlineUsers();
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     onlineUsers.value = result || [];
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("onlineUsers.loadFailed");
     onlineUsers.value = [];
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

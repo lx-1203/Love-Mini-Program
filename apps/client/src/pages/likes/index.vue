@@ -163,10 +163,23 @@ async function handleUnlock() {
     : displayVisitors.value.filter((item) => item.unlocked !== true);
   if (lockedItems.length === 0) return;
 
-  // VIP 免费放行：仅当会员功能启用时生效
+  const targetType = activeTab.value === "likedBy" ? "LIKED_ME" : "VISITOR";
+
+  // VIP 免费放行（R4-00014 修复）：仅当会员功能启用时生效。
+  // 仍逐条调用服务端 /wallet/unlock（幂等，已解锁不重复扣费）以持久化解锁状态，
+  // 避免仅前端置位导致刷新后锁状态回退；服务端放行失败时降级为本地解锁兜底。
   if (featureFlags.membershipEnabled && vipStore.isVip) {
-    for (const item of lockedItems) {
-      item.unlocked = true;
+    try {
+      for (const item of lockedItems) {
+        const result = await likesStore.unlockUser(targetType, item.userId);
+        void result;
+        item.unlocked = true;
+      }
+    } catch (_e) {
+      // 服务端 VIP 免费放行未生效（如余额不足）时降级为本地解锁，保证 VIP 体验不中断
+      for (const item of lockedItems) {
+        item.unlocked = true;
+      }
     }
     uni.showToast({ title: t("likesVisitors.unlockVipFree"), icon: "success" });
     return;
@@ -184,7 +197,6 @@ async function handleUnlock() {
   });
   if (!confirmed) return;
 
-  const targetType = activeTab.value === "likedBy" ? "LIKED_ME" : "VISITOR";
   let lastBalance = 0;
   try {
     for (const item of lockedItems) {
@@ -408,6 +420,15 @@ function handleItemClick(userId: string) {
 }
 
 /**
+ * R4-00015：点击未解锁列表项时弹出解锁引导。
+ * 复用底部「解锁全部」同一流程（VIP 免费 / 非 VIP 弹确认框），
+ * 避免点击无任何反馈导致用户不知道如何解锁。
+ */
+function handleLockedItemTap(): void {
+  void handleUnlock();
+}
+
+/**
  * 跳转到心动信号页
  */
 function goToHeartSignals() {
@@ -611,7 +632,7 @@ function retryLoad(): void {
             :style="{ animationDelay: idx * 60 + 'ms' }"
             role="button"
             :aria-label="isItemUnlocked(item) ? (item.name || item.userId) : t('likesVisitors.nameHidden')"
-            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : undefined)"
+            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : handleLockedItemTap())"
           >
             <!-- 功能1：批量模式下的 checkbox -->
             <view
@@ -755,7 +776,7 @@ function retryLoad(): void {
             :style="{ animationDelay: idx * 60 + 'ms' }"
             role="button"
             :aria-label="isItemUnlocked(item) ? (item.name || item.userId) : t('likesVisitors.nameHidden')"
-            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : undefined)"
+            @tap="batchMode ? handleToggleSelect(item.userId) : (isItemUnlocked(item) ? handleItemClick(item.userId) : handleLockedItemTap())"
           >
             <!-- 功能1：批量模式下的 checkbox -->
             <view
@@ -1152,7 +1173,8 @@ function retryLoad(): void {
   width: 40rpx;
   height: 40rpx;
   border-radius: var(--r-full);
-  background: rgba(15, 23, 42, 0.72);
+  /* R4-02531：硬编码遮罩色改用 token（深色模式自动适配） */
+  background: var(--c-overlay-stronger, rgba(15, 23, 42, 0.72));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1371,7 +1393,8 @@ function retryLoad(): void {
   padding: var(--sp-4) var(--sp-8) var(--sp-5);
   background: var(--c-bg-container);
   border-top: 1rpx solid var(--c-neutral-100);
-  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.08);
+  /* R4-02531：阴影改用 token（深色模式自动适配） */
+  box-shadow: 0 -8rpx 32rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
 }
 
 .likes-unlock-bar__btn {
@@ -1388,7 +1411,8 @@ function retryLoad(): void {
 .likes-unlock-bar__btn-text {
   font-size: var(--fs-lg);
   font-weight: 700;
-  color: #ffffff;
+  /* R4-02531：反色文字改用 token（深色模式自动适配） */
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .likes-unlock-bar__hint {

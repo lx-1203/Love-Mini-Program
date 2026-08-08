@@ -172,9 +172,17 @@ public class NotificationConsumer {
         }
 
         try {
+            // R4-00372：未知通知类型显式拒绝（返回 null 跳过持久化 + warn 日志），
+            // 不再静默映射为 match 造成语义混淆
+            NotificationType type = mapType(message.getType());
+            if (type == null) {
+                log.warn("通知类型无法识别，跳过持久化：userId={}, type={}",
+                        message.getUserId(), message.getType());
+                return;
+            }
             Notification entity = new Notification();
             entity.setUserId(message.getUserId());
-            entity.setType(mapType(message.getType()));
+            entity.setType(type);
             // R4-00371（FIN-00047 收尾）：sourceUserId 由生产者（点赞/评论/关注等业务侧）
             // 经 NotificationMessage.sourceUserId 填充，站内通知「谁互动了我」语义恢复、
             // 前端可跳转来源用户主页；null/缺省时回退系统虚拟用户。
@@ -211,12 +219,17 @@ public class NotificationConsumer {
     /**
      * 将字符串类型映射为 NotificationType 枚举。
      *
-     * @param type 字符串类型（like/match/comment/system）
-     * @return NotificationType 枚举值，无法识别时默认返回 match
+     * <p>R4-00372：system 类型映射为独立的 {@link NotificationType#system} 枚举
+     * （签到奖励等系统通知不再归入 match）；无法识别的类型返回 null 由调用方
+     * 显式拒绝（跳过持久化 + warn 日志），避免静默映射为 match 造成
+     * 「系统通知被展示为匹配通知」的语义错误。</p>
+     *
+     * @param type 字符串类型（like/match/comment/system 等）
+     * @return NotificationType 枚举值；无法识别返回 null（调用方拒绝持久化）
      */
     private NotificationType mapType(String type) {
         if (type == null) {
-            return NotificationType.match;
+            return null;
         }
         return switch (type) {
             case "like" -> NotificationType.like;
@@ -224,7 +237,8 @@ public class NotificationConsumer {
             case "comment" -> NotificationType.comment;
             case "follow" -> NotificationType.follow;
             case "visitor" -> NotificationType.visitor;
-            default -> NotificationType.match;
+            case "system" -> NotificationType.system;
+            default -> null;
         };
     }
 

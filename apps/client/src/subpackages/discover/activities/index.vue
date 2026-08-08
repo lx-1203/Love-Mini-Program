@@ -124,8 +124,16 @@ function goToActivityDetail(activityId: string) {
    日历视图相关逻辑
    ================================================================ */
 
-/** 星期标题（周一开始） */
-const WEEK_DAY_LABELS = ["一", "二", "三", "四", "五", "六", "日"];
+/** 星期标题（周一开始，R4-00054：走 i18n，en-US 显示 Mon-Sun） */
+const WEEK_DAY_LABELS = [
+  t("activities.weekMon"),
+  t("activities.weekTue"),
+  t("activities.weekWed"),
+  t("activities.weekThu"),
+  t("activities.weekFri"),
+  t("activities.weekSat"),
+  t("activities.weekSun"),
+];
 
 /** 当前用户学校名称 */
 // 修复（严格模式 noUnusedLocals）：myCampusName 计算属性未被模板/脚本引用，已移除。
@@ -234,9 +242,9 @@ const selectedDateActivities = computed<ActivityItem[]>(() => {
   return activitiesByDate.value[selectedDate.value] ?? [];
 });
 
-/** 当前月份标题 */
+/** 当前月份标题（R4-00054：走 i18n） */
 const monthTitle = computed(() => {
-  return `${calendarYear.value}年${calendarMonth.value}月`;
+  return t("activities.monthTitle", { year: calendarYear.value, month: calendarMonth.value });
 });
 
 /** 是否可切换到上个月 */
@@ -291,7 +299,8 @@ function formatDateLabel(dateStr: string): string {
   if (!monthStr || !dayStr) return dateStr;
   const month = parseInt(monthStr, 10);
   const day = parseInt(dayStr, 10);
-  return `${month}月${day}日`;
+  // R4-00054：日期友好文案走 i18n
+  return t("activities.dateLabel", { month, day });
 }
 
 // 修复（严格模式 noUnusedLocals）：toggleEnroll 通过 catchtap 绑定到模板，

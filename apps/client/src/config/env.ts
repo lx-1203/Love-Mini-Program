@@ -26,7 +26,9 @@ export type ClientEnvKey =
   | "VITE_API_MODE"
   | "VITE_API_BASE_URL"
   | "VITE_APP_VERSION"
-  | "VITE_SENTRY_DSN";
+  | "VITE_SENTRY_DSN"
+  // R4-00244：媒体 URL 是否拼接 token 查询参数（后端改签名 URL 后可关闭）
+  | "VITE_MEDIA_TOKEN_QUERY";
 
 /** API 模式枚举 */
 export type ApiMode = "real" | "mock";
@@ -68,6 +70,9 @@ function readViteEnv(key: ClientEnvKey): string | undefined {
           break;
         case "VITE_SENTRY_DSN":
           val = viteEnv.VITE_SENTRY_DSN;
+          break;
+        case "VITE_MEDIA_TOKEN_QUERY":
+          val = viteEnv.VITE_MEDIA_TOKEN_QUERY;
           break;
       }
       if (typeof val === "string" && val.length > 0) return val;
@@ -133,6 +138,24 @@ export const APP_VERSION: string = readViteEnv("VITE_APP_VERSION") ?? "v0.1.0";
 /** Sentry DSN（错误监控，未配置时为空字符串，调用方应判断是否非空） */
 export const SENTRY_DSN: string = readViteEnv("VITE_SENTRY_DSN") ?? "";
 
+/**
+ * 媒体 URL 是否拼接 token 查询参数（R4-00244，默认 true）。
+ *
+ * 鉴权代理端点（/api/v1/media/...）在 `<image src>` 无法携带 HTTP Header 时
+ * 依赖 `?token=xxx` 查询参数鉴权——JWT 会暴露在 Referer / 代理日志 / 网络面板，
+ * 属已知权宜方案。后端改签短期签名 URL 后，将环境变量 VITE_MEDIA_TOKEN_QUERY
+ * 设为 false 即可关闭拼接（utils/media.ts 消费本配置）。
+ */
+export const MEDIA_TOKEN_QUERY: boolean = resolveMediaTokenQuery();
+
+function resolveMediaTokenQuery(): boolean {
+  const raw = readViteEnv("VITE_MEDIA_TOKEN_QUERY");
+  if (raw === undefined) {
+    return true;
+  }
+  return raw === "true" || raw === "1";
+}
+
 /** Vite 环境变量（H5 与 mp-weixin 均可读取） */
 const VITE_API_MODE = readViteEnv("VITE_API_MODE");
 const VITE_API_BASE_URL = readViteEnv("VITE_API_BASE_URL");
@@ -189,6 +212,8 @@ export const clientEnv = {
   sentryDsn: SENTRY_DSN,
   /** 是否为开发环境 */
   isDev,
+  /** 媒体 URL 是否拼接 token 查询参数（R4-00244） */
+  mediaTokenQuery: MEDIA_TOKEN_QUERY,
 } as const;
 
 /**

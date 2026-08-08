@@ -73,7 +73,26 @@ public final class PrivacyFieldFilter {
             "photoGallery",    // 照片墙 URL 列表（用户主动上传）
             "halfBodyPhotoUrl", // 半身照 URL（用户主动上传）
             "personalVideoUrl", // 个人视频 URL（用户主动上传）
-            "verificationBadgeLevel" // 认证徽章级别（仅级别，不含证件号）
+            "verificationBadgeLevel", // 认证徽章级别（仅级别，不含证件号）
+            // ---- R4-00337：同步 Phase Feedback1 + V2026.08.08.0015 新增字段 ----
+            "displayId",       // 展示用个人 ID（用户编号，如 CL-1024）
+            "distanceText",    // 距离文案
+            "activeStatusText", // 活跃状态文案
+            "machineVerified", // 机器认证标志
+            "humanVerified",   // 人工认证标志
+            "personality",     // 性格标签
+            "mbti",            // MBTI 人格类型
+            "whisper",         // 悄悄话内容（R4-00314 起恒为 null，付费解锁后专用接口返回）
+            "whisperSent",     // 是否已发送悄悄话
+            "recentPosts",     // 动态预览
+            "expectedPartner", // 期待的人物画像
+            "allowMessage",    // 是否允许私信
+            "ipLocation",      // IP 属地
+            "occupation",      // 职业（展示文本）
+            "age",             // 年龄（出生年份推导）
+            "registeredAt"     // 注册时间
+            // 注意：月收入档位（incomeRange）不在白名单且已从 RecommendedPersonView 移除
+            // （R4-00337）——收入档位属敏感经济信息，不随推荐列表对全体用户公开
     );
 
     /**
@@ -125,6 +144,9 @@ public final class PrivacyFieldFilter {
         // 校验列表元素的运行时类（取第一个元素的类，record 类固定）
         Class<?> viewType = views.get(0).getClass();
         assertNoSensitiveFields(viewType);
+        // R4-00337：同步执行白名单漂移校验——视图类新增字段但未同步 ALLOWED_FIELDS
+        // 时立即抛出异常，防止白名单防护形同虚设（此前 assertFieldsInWhitelist 无人调用）
+        assertFieldsInWhitelist(viewType);
         return views;
     }
 

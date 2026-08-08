@@ -408,9 +408,10 @@ export const useCheckInStore = defineStore("checkin", {
               mockPointsBalance += CHECKIN_POINTS_EARNED;
 
               return {
-                // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
-                // 此处兜底取整串，确保 checkInDate 始终为 string。
-                checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
+                // 修复（R4-00176）：改用 localDateKey 生成本地时区日期——toISOString()
+                // 为 UTC 日期，北京时间 00:00-08:00 签到会显示为前一天（与 api.ts
+                // localDateKey 注释「toISOString 凌晨得到错误日期」同源）。
+                checkInDate: localDateKey(new Date()),
                 extraRecommendations: CHECKIN_EXTRA_RECOMMENDATIONS,
                 consecutiveDays: mockCheckInStatus.consecutiveDays,
                 extraRecommendQuota: CHECKIN_EXTRA_QUOTA,
@@ -444,9 +445,8 @@ export const useCheckInStore = defineStore("checkin", {
 
             // 映射后端字段到前端字段（含签到权益）
             return {
-              // 修复（严格模式 noUncheckedIndexedAccess）：split("T")[0] 索引访问返回 string | undefined，
-              // 此处兜底取整串，确保 checkInDate 始终为 string。
-              checkInDate: new Date().toISOString().split("T")[0] ?? new Date().toISOString(),
+              // 修复（R4-00176）：本地时区日期（与幂等键 localDateKey 同源，避免 UTC 凌晨错日期）
+              checkInDate: localDateKey(new Date()),
               consecutiveDays: data.consecutiveDays,
               extraRecommendations: data.extraQuota,
               extraRecommendQuota: data.extraRecommendQuota,

@@ -55,6 +55,12 @@ public class VillageMetrics {
     /** 评论创建计数器 */
     private final Counter commentCreatedCounter;
 
+    /** R4-00380：帖子总数缓存值（Gauge 读取此值，由定时任务每 60s 刷新，避免每次抓取全表 COUNT） */
+    private volatile long cachedPostTotal = -1L;
+
+    /** R4-00380：帖子总数缓存是否已初始化 */
+    private volatile boolean postTotalLoaded = false;
+
     public VillageMetrics(MeterRegistry meterRegistry, ObjectProvider<PostRepository> postRepositoryProvider) {
         this.meterRegistry = meterRegistry;
         this.postRepositoryProvider = postRepositoryProvider;
@@ -69,25 +75,45 @@ public class VillageMetrics {
                 .register(meterRegistry);
 
         // 注册帖子总数 Gauge：仅在 PostRepository 可用时注册，避免 mock profile 启动失败
+        // R4-00380：Gauge 读取定时刷新的缓存值（{@link #refreshPostTotalCache}），
+        // 不再每次被 Prometheus 抓取都执行 repo.count() 全表 COUNT
         PostRepository postRepository = postRepositoryProvider.getIfAvailable();
         if (postRepository != null) {
             try {
-                Gauge.builder(METRIC_POST_TOTAL, postRepository, repo -> {
-                    try {
-                        return repo.count();
-                    } catch (RuntimeException e) {
-                        // Gauge 抓取失败时返回 -1 表示无效值，避免抛出异常影响 Prometheus 抓取
-                        log.debug("获取 village.post.total 失败: {}", e.getMessage());
+                Gauge.builder(METRIC_POST_TOTAL, this, metrics -> {
+                    // 缓存未初始化（定时任务首轮尚未执行）时返回 -1 表示无效值
+                    if (!postTotalLoaded) {
                         return -1.0;
                     }
+                    return cachedPostTotal;
                 })
-                        .description("当前村口帖子总数")
+                        .description("当前村口帖子总数（60s 定时缓存）")
                         .register(meterRegistry);
             } catch (RuntimeException e) {
                 log.warn("注册 village.post.total Gauge 失败: {}", e.getMessage());
             }
         } else {
             log.debug("PostRepository 不可用（mock profile），跳过 village.post.total Gauge 注册");
+        }
+    }
+
+    /**
+     * R4-00380：定时刷新帖子总数缓存（每 60 秒一次全表 COUNT，
+     * 替代 Prometheus 每次抓取都执行 count()）。
+     *
+     * <p>计数刷新失败保留旧值（首次失败保持 -1），避免抓取链路抛异常。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000L, initialDelay = 30000L)
+    public void refreshPostTotalCache() {
+        PostRepository postRepository = postRepositoryProvider.getIfAvailable();
+        if (postRepository == null) {
+            return;
+        }
+        try {
+            cachedPostTotal = postRepository.count();
+            postTotalLoaded = true;
+        } catch (RuntimeException e) {
+            log.debug("刷新 village.post.total 缓存失败（保留旧值）: {}", e.getMessage());
         }
     }
 

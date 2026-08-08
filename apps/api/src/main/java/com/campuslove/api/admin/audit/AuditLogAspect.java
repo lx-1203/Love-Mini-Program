@@ -88,12 +88,37 @@ public class AuditLogAspect {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
+    /** R4-00395：可信代理 IP/CIDR 列表（配置 app.security.trusted-proxies，与限流切面同源） */
+    private final java.util.Set<String> trustedProxyIps;
+
+    /** R4-00395：可信代理 CIDR 前缀集合 */
+    private final java.util.List<String> trustedProxyCidrs;
+
     public AuditLogAspect(AdminAuditLogService auditLogService,
                           UserRepository userRepository,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          @org.springframework.beans.factory.annotation.Value(
+                                  "${app.security.trusted-proxies:}") String trustedProxies) {
         this.auditLogService = auditLogService;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        java.util.Set<String> ips = new java.util.HashSet<>();
+        java.util.List<String> cidrs = new java.util.ArrayList<>();
+        if (trustedProxies != null && !trustedProxies.isBlank()) {
+            for (String part : trustedProxies.split(",")) {
+                String entry = part.trim();
+                if (entry.isEmpty()) {
+                    continue;
+                }
+                if (entry.contains("/")) {
+                    cidrs.add(entry);
+                } else {
+                    ips.add(entry);
+                }
+            }
+        }
+        this.trustedProxyIps = java.util.Collections.unmodifiableSet(ips);
+        this.trustedProxyCidrs = java.util.Collections.unmodifiableList(cidrs);
     }
 
     /**
@@ -327,16 +352,48 @@ public class AuditLogAspect {
      * 解析客户端真实 IP（穿透常见反向代理头）。
      */
     private String resolveClientIp(HttpServletRequest request) {
-        for (String header : IP_HEADERS) {
-            String value = request.getHeader(header);
-            if (value != null && !value.isBlank() && !"unknown".equalsIgnoreCase(value)) {
-                // X-Forwarded-For 可能含多 IP，取第一个
-                int comma = value.indexOf(',');
-                String ip = comma > 0 ? value.substring(0, comma).trim() : value.trim();
-                return truncate(ip, 64);
+        // R4-00395：仅当直连来源为配置的可信代理（app.security.trusted-proxies）时
+        // 才信任代理头首值；否则客户端伪造 X-Forwarded-For 即可写入虚假 IP 审计日志
+        // （审计追溯失真）。直连来源不可信时记录可信的 remoteAddr。
+        String directAddr = request.getRemoteAddr();
+        if (isTrustedProxy(directAddr)) {
+            for (String header : IP_HEADERS) {
+                String value = request.getHeader(header);
+                if (value != null && !value.isBlank() && !"unknown".equalsIgnoreCase(value)) {
+                    // X-Forwarded-For 可能含多 IP，取第一个
+                    int comma = value.indexOf(',');
+                    String ip = comma > 0 ? value.substring(0, comma).trim() : value.trim();
+                    return truncate(ip, 64);
+                }
             }
         }
-        return truncate(request.getRemoteAddr(), 64);
+        return truncate(directAddr, 64);
+    }
+
+    /**
+     * R4-00395：判断直连来源 IP 是否为可信代理（与 RateLimitAspect 同源语义）。
+     *
+     * @param remoteAddr 直连来源 IP
+     * @return true 表示命中配置的可信代理（精确 IP 或 CIDR 前缀）
+     */
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (remoteAddr == null || remoteAddr.isBlank()) {
+            return false;
+        }
+        if (trustedProxyIps.contains(remoteAddr)) {
+            return true;
+        }
+        for (String cidr : trustedProxyCidrs) {
+            int slash = cidr.indexOf('/');
+            if (slash <= 0) {
+                continue;
+            }
+            String prefix = cidr.substring(0, slash);
+            if (remoteAddr.startsWith(prefix + ".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private HttpServletRequest currentRequest() {

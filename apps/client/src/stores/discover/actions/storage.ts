@@ -147,14 +147,16 @@ export function dispose(this: DiscoverStoreThis): void {
     clearTimeout(timers.searchDebounceTimer);
     timers.searchDebounceTimer = null;
   }
-  // 清理右滑防抖定时器（含被覆盖 Promise 的 resolve 引用，避免挂起）
+  // 清理右滑防抖定时器与幂等队列（R4-00177：settle 全部排队项的调用方，避免挂起）
   if (timers.swipeRightDebounceTimer) {
     clearTimeout(timers.swipeRightDebounceTimer);
     timers.swipeRightDebounceTimer = null;
   }
-  if (timers.swipeRightPendingResolve) {
-    timers.swipeRightPendingResolve();
-    timers.swipeRightPendingResolve = null;
+  if (timers.swipeRightQueue) {
+    for (const item of timers.swipeRightQueue) {
+      item.resolvers.forEach((r) => r());
+    }
+    timers.swipeRightQueue = null;
   }
   // 清理 fetchCards 请求控制器，取消在途请求
   if (timers.fetchCardsController) {

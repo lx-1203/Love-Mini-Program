@@ -14,7 +14,7 @@
  * - 不使用 import.meta.env，状态由 store 管理
  * - 条件编译：mp-weixin 使用 live-pusher/live-player；H5 使用 video 标签
  */
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, getCurrentInstance, onMounted, onUnmounted } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVideoCallStore, type VideoCallEndReason } from "../../stores/video-call";
@@ -63,6 +63,9 @@ const speakerEnabled = ref(true);
 
 /** 推流地址（mock 模式为空，真实环境从信令服务器获取） */
 const pusherUrl = ref<string>("");
+
+/** R4-00070：live-pusher 上下文（懒创建，用于翻转相机等真实操作） */
+let pusherContext: UniApp.LivePusherContext | null = null;
 
 /** 拉流地址 */
 const playerUrl = ref<string>("");
@@ -300,11 +303,23 @@ function toggleSpeaker() {
 function switchCamera() {
   lightHaptic();
   // #ifdef MP-WEIXIN
-  // live-pusher 上下文翻转相机（需 pusher ref）
-  // 真实环境需通过 this.$refs.pusher.switchCamera() 调用
-  uni.showToast({ title: t("videoCall.switchCameraBtn"), icon: "none" });
+  // R4-00070：真实调用 live-pusher 上下文 switchCamera，不再仅 toast 欺骗。
+  // 首次点击时懒创建 context（id 对应模板 live-pusher 的 id），后续复用。
+  if (!pusherContext) {
+    pusherContext = uni.createLivePusherContext("video-call-pusher", getCurrentInstance());
+  }
+  pusherContext?.switchCamera({
+    success: () => {
+      uni.showToast({ title: t("videoCall.switchCameraDone"), icon: "none" });
+    },
+    fail: () => {
+      // 未处于通话中（pusher 未渲染/未推流）时上下文调用失败，提示而非静默
+      uni.showToast({ title: t("videoCall.switchCameraFail"), icon: "none" });
+    },
+  });
   // #endif
   // #ifndef MP-WEIXIN
+  // H5 端无 live-pusher（WebRTC 未接入），保留占位提示
   uni.showToast({ title: t("videoCall.switchCameraBtn"), icon: "none" });
   // #endif
 }
@@ -393,6 +408,7 @@ onMounted(() => {
     <!-- 本地视频流（推流） -->
     <live-pusher
       v-if="pusherUrl"
+      id="video-call-pusher"
       class="video-call-page__pusher"
       :url="pusherUrl"
       mode="RTC"

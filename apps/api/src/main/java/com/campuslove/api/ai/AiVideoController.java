@@ -45,7 +45,22 @@ public class AiVideoController {
     /** 请求体最大字段数（infra R2-00258，防止任意参数透传上游） */
     private static final int MAX_PARAMS_FIELDS = 20;
 
+    /** R4-00343：AI 生成每日计数 Redis key 前缀（用户级配额，TTL 36 小时） */
+    private static final String REDIS_KEY_PREFIX_AI_QUOTA = "ai:gen:count:";
+
+    /** 日期格式（yyyyMMdd），用于组装每日计数 key */
+    private static final java.time.format.DateTimeFormatter DATE_KEY_FORMATTER =
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
+
     private final AiVideoService aiVideoService;
+
+    /** R4-00343：每用户每日 AI 生成次数上限（配置 app.ai.daily-generation-quota，默认 20） */
+    @org.springframework.beans.factory.annotation.Value("${app.ai.daily-generation-quota:20}")
+    private int aiDailyGenerationQuota;
+
+    /** R4-00343：Redis 计数（用户级每日配额），Redis 不可用时拒绝生成（fail-closed） */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
 
     public AiVideoController(AiVideoService aiVideoService) {
         this.aiVideoService = aiVideoService;
@@ -69,6 +84,8 @@ public class AiVideoController {
     public Map<String, Object> generateVideo(@Valid @RequestBody Map<String, Object> params) {
         // infra R2-00258: 限制请求体字段数量
         validateParams(params);
+        // R4-00343：用户级每日配额（IP 限流可被单用户多设备/换 IP 绕过，配额按账号封顶）
+        tryConsumeDailyQuota();
         return aiVideoService.generateVideo(params);
     }
 
@@ -86,6 +103,8 @@ public class AiVideoController {
     @RateLimit(capacity = 20, refillTokens = 0.2, key = "#request.remoteAddr")
     public Map<String, Object> generateImage(@Valid @RequestBody Map<String, Object> params) {
         validateParams(params);
+        // R4-00343：用户级每日配额（与视频生成共享同一配额）
+        tryConsumeDailyQuota();
         return aiVideoService.generateImage(params);
     }
 
@@ -99,6 +118,48 @@ public class AiVideoController {
         if (params != null && params.size() > MAX_PARAMS_FIELDS) {
             throw new IllegalArgumentException("请求体字段数量不能超过 " + MAX_PARAMS_FIELDS);
         }
+    }
+
+    /**
+     * R4-00343：用户级每日 AI 生成配额（INCR 原子占用，超限回滚递增并抛业务异常）。
+     *
+     * <p>付费上游成本控制：IP 限流可被单用户多设备/换 IP 绕过（约 12 次/分钟/IP），
+     * 按账号每日配额封顶（默认 20 次/日，配置 app.ai.daily-generation-quota）。
+     * Redis 不可用时拒绝生成（fail-closed），避免配额失控烧钱。</p>
+     */
+    private void tryConsumeDailyQuota() {
+        Long userId = com.campuslove.api.config.SecurityUtils.getCurrentUserId();
+        if (redisTemplate == null) {
+            throw new IllegalStateException("AI 生成配额服务不可用，请稍后重试");
+        }
+        String dateKey = java.time.LocalDate.now(com.campuslove.api.common.TimeZones.BUSINESS)
+                .format(DATE_KEY_FORMATTER);
+        try {
+            String redisKey = REDIS_KEY_PREFIX_AI_QUOTA + userId + ":" + dateKey;
+            Long newValue = redisTemplate.opsForValue().increment(redisKey);
+            if (newValue != null && newValue == 1L) {
+                redisTemplate.expire(redisKey, 36, java.util.concurrent.TimeUnit.HOURS);
+            }
+            if (newValue != null && newValue > aiDailyGenerationQuota) {
+                redisTemplate.opsForValue().decrement(redisKey);
+                throw new com.campuslove.api.common.DailyLimitExceededException(
+                        "AI 生成",
+                        aiDailyGenerationQuota,
+                        "今日 AI 生成次数已用完（上限 " + aiDailyGenerationQuota + " 次），请明日再来");
+            }
+        } catch (com.campuslove.api.common.DailyLimitExceededException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            logQuotaFailure(userId, e);
+            throw new IllegalStateException("AI 生成配额校验失败，请稍后重试", e);
+        }
+    }
+
+    /** R4-00343：配额计数异常日志（避免重复内联） */
+    private void logQuotaFailure(Long userId, RuntimeException e) {
+        org.slf4j.LoggerFactory.getLogger(AiVideoController.class)
+                .warn("写入 AI 生成配额计数失败，拒绝本次生成（fail-closed）: userId={}, error={}",
+                        userId, e.getMessage());
     }
 
     /**

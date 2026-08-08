@@ -97,7 +97,7 @@ const frameStyle = computed(() => ({
   border-radius: var(--r-full);
   background: var(--af-gradient);
   border: 3rpx solid var(--c-neutral-0);
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.18);
+  box-shadow: var(--s-sm, 0 2rpx 8rpx rgba(15, 23, 42, 0.04));
   display: flex;
   align-items: center;
   justify-content: center;

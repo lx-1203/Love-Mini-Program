@@ -13,16 +13,19 @@
  * 从 main.ts 抽出，便于单元测试直接导入 setupRouterGuards 应用到测试用 router。
  */
 import type { Router } from "vue-router";
-import { useMenuStore, findFirstMenuPath } from "../stores/menu";
+import { useMenuStore, findFirstMenuPath, isKnownMenuPath } from "../stores/menu";
 import { addDynamicRoutes, notFoundRoute } from "./index";
 import { logger } from "../utils/logger";
+import { env } from "../config/env";
 
 /**
  * JWT token 解析与过期校验工具。
  *
  * 约定：
  * - localStorage.admin_v2_token 在生产环境为后端签发的 JWT（三段式，点号分隔）
- * - 开发环境 dev 登录签发 "dev-admin-token-..." 前缀的非 JWT token，视为永不过期
+ * - 仅开发环境（vite dev 模式）放行 "dev-admin-token-" 前缀的非 JWT token
+ *   （由 session.ts dev 回退登录分支签发），生产构建该前缀分支被 dead-code eliminate；
+ *   "mock-admin-token-" 前缀无任何签发方（死分支），已删除
  * - JWT payload 中的 exp 字段为 Unix 秒时间戳：
  *   - 缺少 exp 字段视为无效（安全修复：无过期时间的 token 不可信，拒绝放行）
  *   - exp 已过当前时间则视为未认证
@@ -32,8 +35,8 @@ import { logger } from "../utils/logger";
  */
 export function isTokenValid(token: string): boolean {
   if (!token) return false;
-  // dev / mock 前缀 token 也做基础校验（长度 ≥16），避免空串/极短伪造串被无条件放行
-  if (token.startsWith("dev-admin-token-") || token.startsWith("mock-admin-token-")) {
+  // dev 前缀 token 仅开发环境放行（长度 ≥16 基础校验），避免空串/极短伪造串被无条件放行
+  if (env.isDev && token.startsWith("dev-admin-token-")) {
     return token.length >= 16;
   }
   const parts = token.split(".");
@@ -151,11 +154,18 @@ export function setupRouterGuards(router: Router): void {
           return { name: "Forbidden" };
         }
       }
-      // 菜单已加载仍命中 catch-all：说明该路径未注册（静态+动态均无）
-      // → 回跳当前角色菜单树中第一个可跳转菜单（避免校区管理员无 Dashboard 时落入 403）
+      // 菜单已加载仍命中 catch-all：区分「菜单已授权但路由未注册」与「未知路径」
       if (to.name === "NotFound") {
-        const fallback = findFirstMenuPath(menuStore.menuTree);
-        return fallback ? { path: fallback } : { name: "Forbidden" };
+        // 路径属于菜单树已知节点（含 DIR 目录）：菜单已授权但路由未注册
+        // （如 component 未命中映射表/动态路由被移除）→ 回跳首个可跳转菜单，
+        // 避免校区管理员无 Dashboard 时落入 403
+        if (isKnownMenuPath(menuStore.menuTree, to.path)) {
+          const fallback = findFirstMenuPath(menuStore.menuTree);
+          return fallback ? { path: fallback } : { name: "Forbidden" };
+        }
+        // 未知路径：保留 404 页（与 NotFound.vue 展示逻辑一致），
+        // 用户可区分「路径不存在」与「权限不足」，运营排查错误链接更直观
+        return true;
       }
     }
 

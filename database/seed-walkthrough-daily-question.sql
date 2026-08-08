@@ -11,6 +11,9 @@
 --
 -- 执行：mysql -h127.0.0.1 -P3307 -uroot -p campus_love < 本文件
 -- 幂等：全部可重复执行
+-- 修复（R4-00511）：钱包流水 type 由 INCOME 改为 CREDIT——管理端
+-- WalletTransactionView 仅识别 DEBIT/CREDIT 枚举，INCOME 会原样展示为原始值；
+-- 余额增加一律使用 CREDIT（扣减用 DEBIT），与后端枚举对齐。
 -- ============================================================
 
 -- ---------- 1. 体验账号钱包余额：750 → 5000 分（50 交友币） ----------
@@ -21,7 +24,7 @@ WHERE user_id = 47;
 
 -- 补一条流水便于钱包页「余额明细」有内容
 INSERT INTO wallet_transaction_log (user_id, type, amount, balance_after, related_type, related_id, order_id, remark, created_at)
-SELECT 47, 'INCOME', 5000, 5000, 'TASK', NULL, CONCAT('txn-walkthrough-', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')), '体验走查预充值', NOW()
+SELECT 47, 'CREDIT', 5000, 5000, 'TASK', NULL, CONCAT('txn-walkthrough-', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')), '体验走查预充值', NOW()
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM wallet_transaction_log t WHERE t.user_id = 47 AND t.order_id LIKE 'txn-walkthrough-%');
 

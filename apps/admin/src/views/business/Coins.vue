@@ -15,6 +15,7 @@
  * 前端按固定规则展示，实际以客户端签到配置为准）。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listCoinTransactions,
@@ -54,7 +55,7 @@ const total = ref(0);
 const totalPages = ref(1);
 
 // 请求竞态防护
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 来源类型选项 */
@@ -72,9 +73,14 @@ function sourceClass(source: string): string {
   return source === "MAKE_UP" ? "source-makeup" : "source-normal";
 }
 
-/** 奖励积分展示：签到固定奖励 1 积分（后端未存奖励值，见文件头说明） */
-function rewardLabel(_flow: CoinTransactionView): string {
-  return "1";
+/**
+ * 奖励积分展示：后端 check_ins 未存储奖励积分数，当前签到固定奖励 1 积分。
+ * 为避免裸数字误导运营（签到规则调整时展示失真），显式标注固定规则文案；
+ * 后端补充奖励字段后可改为读取 flow.reward 展示真实值。
+ */
+function rewardLabel(flow: CoinTransactionView): string {
+  const reward = (flow as CoinTransactionView & { reward?: number }).reward;
+  return typeof reward === "number" ? String(reward) : t("coins.rewardFixed");
 }
 
 /**
@@ -83,7 +89,7 @@ function rewardLabel(_flow: CoinTransactionView): string {
 async function fetchFlows() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listCoinTransactions({
       userId: userIdQuery.value.trim() ? Number(userIdQuery.value.trim()) : undefined,
@@ -93,18 +99,18 @@ async function fetchFlows() {
       page: page.value,
       pageSize: pageSize.value,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     flows.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("coins.loadFailed");
     flows.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

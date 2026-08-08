@@ -9,6 +9,7 @@
  * 交互参考旧后台 Comments.vue：分页列表（Pagination）+ 删除前 ConfirmDialog 二次确认。
  */
 import { onMounted, ref } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listComments,
@@ -39,7 +40,7 @@ const deleteTarget = ref<PostCommentView | null>(null);
 const deleting = ref(false);
 
 /** 请求竞态防护：快速翻页时旧响应不覆盖新数据 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /**
  * 分页加载评论列表。
@@ -47,15 +48,15 @@ let reqSeq = 0;
 async function fetchComments(): Promise<void> {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listComments({ page: page.value, pageSize: pageSize.value });
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     comments.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value =
       err instanceof ApiError
         ? err.message
@@ -66,7 +67,7 @@ async function fetchComments(): Promise<void> {
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

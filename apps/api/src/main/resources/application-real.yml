@@ -10,9 +10,11 @@ spring:
     # 数据库连接配置：通过 DB_URL / DB_USERNAME / DB_PASSWORD 环境变量外部化。
     # 启动时由 DatabaseConfigValidator 校验非空，未配置将拒绝启动。
     # 本地开发可通过 .env 文件或 start-server 脚本配置。
-    # 安全说明：password 不带任何明文默认值（空字符串仅占位），生产环境必须通过 DB_PASSWORD 注入强密码。
+    # 安全说明（R4-00408）：username 不再带 root 默认值——漏配 DB_USERNAME 时
+    # 以空密码 root 连库的本地默认值会沿用至错误环境；password 同样不带任何
+    # 明文默认值（空字符串仅占位），生产环境必须通过 DB_PASSWORD 注入强密码。
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
-    username: ${DB_USERNAME:root}
+    username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     # 修复：HikariCP 连接池配置，避免默认配置在高并发下连接不足或泄漏。
     # 最大连接数 20 适合中小规模应用，生产环境可通过 DB_POOL_MAX 调整。
@@ -151,3 +153,5 @@ app:
     daily-limit: ${APP_DEMO_RECHARGE_DAILY_LIMIT:5}
   guest-login:
     enabled: ${APP_GUEST_LOGIN_ENABLED:false}
+    # R4-00250：体验账号黑名单手机号（仅体验入口可登录），可通过 APP_GUEST_LOGIN_BLACKLIST_PHONE 覆盖。
+    blacklist-phone: ${APP_GUEST_LOGIN_BLACKLIST_PHONE:13900000000}

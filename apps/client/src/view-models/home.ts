@@ -1,4 +1,6 @@
 import type { components } from "../services/generated/api-types";
+// 修复（R4-00219）：首页资料完善任务标题/副标题 i18n 化
+import { t } from "@/i18n";
 
 type Schemas = components["schemas"];
 
@@ -70,11 +72,12 @@ function toCardItem(
 export function getHomeSetupTasks(completion: HomeCompletionState): HomeSetupTaskView[] {
   const tasks: HomeSetupTaskView[] = [];
 
+  // 修复（R4-00219）：标题/副标题经 t() 渲染，随 locale 切换
   if (!completion.profileCompleted) {
     tasks.push({
       id: "profile",
-      title: "补全基础资料",
-      subtitle: "开始聊天前，至少需要昵称、简介和年级。",
+      title: t("homeSetup.profileTitle"),
+      subtitle: t("homeSetup.profileSubtitle"),
       path: "/subpackages/setup/profile/index",
     });
   }
@@ -82,8 +85,8 @@ export function getHomeSetupTasks(completion: HomeCompletionState): HomeSetupTas
   if (!completion.campusCompleted) {
     tasks.push({
       id: "campus",
-      title: "填写学校信息",
-      subtitle: "学校和院系信息会在你准备进入聊天前作为必要门槛。",
+      title: t("homeSetup.campusTitle"),
+      subtitle: t("homeSetup.campusSubtitle"),
       path: "/subpackages/setup/campus/index",
     });
   }
@@ -91,8 +94,8 @@ export function getHomeSetupTasks(completion: HomeCompletionState): HomeSetupTas
   if (!completion.scheduleCompleted) {
     tasks.push({
       id: "schedule",
-      title: "设置真实空闲时段",
-      subtitle: "空闲时间越准确，推荐链路就越可靠。",
+      title: t("homeSetup.scheduleTitle"),
+      subtitle: t("homeSetup.scheduleSubtitle"),
       path: "/subpackages/setup/schedule/index",
     });
   }
@@ -105,14 +108,14 @@ function getRecommendationAction(completion: HomeCompletionState): HomeRecommend
 
   if (tasks.length > 0) {
     return {
-      label: "先完成设置",
+      label: t("homeSetup.completeSetup"),
       mode: "complete-setup",
       target: tasks[0]!.path,
     };
   }
 
   return {
-    label: "去聊天",
+    label: t("homeSetup.goChat"),
     mode: "go-chat",
     // 2026-08-07 消息页重构：tabBar 消息 tab 已切到新版消息列表页
     target: "/pages/messages/index",

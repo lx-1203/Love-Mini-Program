@@ -191,6 +191,29 @@ app:
   # - 支持环境变量 WEBSOCKET_ALLOWED_ORIGIN_PATTERNS 直接覆盖。
   websocket:
     allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:}
+  # R4-00341：法律文本联系方式（真实客服邮箱/热线，未配置时文本引导使用反馈中心）。
+  legal:
+    contact-email: ${APP_LEGAL_CONTACT_EMAIL:}
+    hotline: ${APP_LEGAL_HOTLINE:}
+  # IP 归属地配置（同城 Tab 城市标注）。
+  # R4-00340：demo-city-nets-enabled 默认 false——演示网段表（218.94. 南京等 5 条）
+  # 仅 mock/本地演示开启，生产环境不得用演示数据冒充真实 IP 归属；
+  # TODO 生产：接入真实 IP 归属库（纯真库 / 高德 IP 定位 / ip2region 离线库）。
+  location:
+    default-city: ${APP_LOCATION_DEFAULT_CITY:南京}
+    demo-city-nets-enabled: ${APP_LOCATION_DEMO_CITY_NETS_ENABLED:false}
+  # R4-00273：媒体查询参数 token 严格模式。
+  # false（默认，兼容旧客户端）：/api/v1/media/** 的 ?token= 仍接受完整用户 JWT。
+  # true：仅接受 scope=media 的短期媒体令牌（GET /api/v1/media/token 签发，TTL 5 分钟），
+  #       完整用户 JWT 不再允许进入 URL，杜绝访问日志/浏览器历史泄露面。
+  # ⚠️ 前端（apps/client/src/utils/media.ts）迁移到媒体令牌前请保持 false。
+  # R4-00378：可信代理 IP/CIDR 列表（逗号分隔，默认空 = 不信任任何代理）。
+  # 限流键仅在直连来源命中此列表时才信任 X-Forwarded-For 首地址；否则 XFF 不可信，
+  # 客户端伪造 XFF 头无法更换限流桶。部署在 Nginx/网关后时须将网关 IP 加入，
+  # 且网关必须负责清理/覆盖客户端传入的 XFF（否则直接来源伪造）。
+  security:
+    media-query-token-strict: ${APP_MEDIA_QUERY_TOKEN_STRICT:false}
+    trusted-proxies: ${APP_TRUSTED_PROXIES:}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。
@@ -205,8 +228,11 @@ app:
   # P0-14：体验账号一键登录入口开关。
   # 商业化默认关闭（false）；本地演示/联调可通过 APP_GUEST_LOGIN_ENABLED=true
   # 或启动参数 --app.guest-login.enabled=true 覆盖开启（mock profile 默认开启）。
+  # R4-00250：blacklist-phone 为体验账号黑名单手机号（仅体验入口可登录，禁止注册/
+  # 手机号+密码路径占用），由配置注入避免更换体验号需改代码发版。
   guest-login:
     enabled: ${APP_GUEST_LOGIN_ENABLED:false}
+    blacklist-phone: ${APP_GUEST_LOGIN_BLACKLIST_PHONE:13900000000}
   # P0-15：演示充值风控。
   # enabled：演示充值开关，【默认关闭】（R4-00312）——演示充值直接入账、无支付网关
   #   验签，默认开启时任意用户可无限次免费充值（资金/账务风险）。
@@ -253,6 +279,9 @@ app:
       api-base: ${AGNES_API_BASE:}
       api-key: ${AGNES_API_KEY:}
       timeout-ms: ${AGNES_TIMEOUT_MS:30000}
+    # R4-00343：每用户每日 AI 生成（视频/图片）次数上限——付费上游成本控制，
+    # IP 限流可被多设备/换 IP 绕过，按账号配额封顶（超限返回 429 DAILY_LIMIT_EXCEEDED）。
+    daily-generation-quota: ${APP_AI_DAILY_GENERATION_QUOTA:20}
   recommendation:
     daily-limit: ${APP_RECOMMENDATION_DAILY_LIMIT:30}
     discussion-limit: 10
@@ -269,6 +298,10 @@ app:
     city-weight: 20
     interest-weight: 10
     schedule-weight: 15
+    # R4-00334：超级喜欢每日配额（默认 10 次/日）。
+    # 超级喜欢原为免费且无限量，可无限绕过普通喜欢 30 次/日限额；现按此配额封堵。
+    # 后续商业化如需扣费，可在入口接入钱包扣费（参考 /wallet/unlock 模式）。
+    super-like-daily-limit: ${APP_SUPER_LIKE_DAILY_LIMIT:10}
   chat:
     session-expire-hours: 24
   checkin:

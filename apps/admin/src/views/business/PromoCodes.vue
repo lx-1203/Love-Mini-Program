@@ -16,6 +16,7 @@
  *   - GET  /api/v1/admin/business/promo-codes/export
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
   listPromoCodes,
@@ -78,7 +79,7 @@ const disabling = ref(false);
 const exporting = ref(false);
 
 // 请求竞态防护
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 状态选项 */
@@ -130,7 +131,7 @@ function showToast(msg: string) {
 async function fetchPromoCodes() {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listPromoCodes({
       status: statusFilter.value || undefined,
@@ -138,18 +139,18 @@ async function fetchPromoCodes() {
       page: page.value,
       pageSize: pageSize.value,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     promoCodes.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("promoCodes.loadFailed");
     promoCodes.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

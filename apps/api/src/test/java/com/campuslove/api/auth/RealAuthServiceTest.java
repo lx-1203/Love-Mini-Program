@@ -95,7 +95,8 @@ class RealAuthServiceTest {
                 onlineUserService,
                 schoolRepository,
                 "",
-                true
+                true,
+                "13900000000"
         );
 
         // 默认 mock 返回空 Optional，避免 buildSessionView 中 NPE
@@ -173,7 +174,8 @@ class RealAuthServiceTest {
                 onlineUserService,
                 schoolRepository,
                 correctHash,
-                true
+                true,
+                "13900000000"
         );
 
         // Act & Assert：应通过环境变量哈希校验成功
@@ -267,7 +269,8 @@ class RealAuthServiceTest {
                 onlineUserService,
                 schoolRepository,
                 plaintextEnvPassword,
-                true
+                true,
+                "13900000000"
         );
 
         // Act：使用明文密码登录，应成功（环境变量兜底 + 明文比较）
@@ -495,7 +498,8 @@ class RealAuthServiceTest {
                 onlineUserService,
                 schoolRepository,
                 "",
-                false
+                false,
+                "13900000000"
         );
 
         // Act & Assert

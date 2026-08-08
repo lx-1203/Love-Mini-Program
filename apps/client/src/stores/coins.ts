@@ -72,6 +72,25 @@ export const UNLOCK_RELATED_TYPE: Record<UnlockScene, string> = {
   WHISPER: "WHISPER_UNLOCK",
 };
 
+/**
+ * 生成解锁幂等 orderId（单一真相源，R4-00195）。
+ *
+ * 按后端契约规范生成（WalletController Javadoc：`UNLOCK-{scene}-{targetUserId}`），
+ * 后端以 orderId 唯一索引去重，重复解锁不重复扣费。
+ *
+ * 修复（R4-00195）：likes.ts 的 unlockUser 原先直写 `unlock-{type}-{userId}` 头，
+ * 与 coins.spend 的 `UNLOCK-{scene}-{targetId}` 两套幂等键并存，同一解锁行为
+ * 从不同入口调用会生成不同幂等键（重复解锁/双扣风险难排查）。现统一收敛为
+ * 本函数，全部解锁入口（/wallet/unlock 与 /wallet/deduct）共用同一键体系。
+ *
+ * @param scene 解锁场景
+ * @param targetId 目标业务 ID（如目标用户 ID）
+ * @returns 幂等 orderId（如 `UNLOCK-LIKES-2003`）
+ */
+export function buildUnlockOrderId(scene: UnlockScene, targetId: string | number): string {
+  return `UNLOCK-${scene}-${String(targetId)}`;
+}
+
 export const useCoinsStore = defineStore("coins", () => {
   /** 余额（分） */
   const balanceCents = ref<number>(0);
@@ -137,7 +156,8 @@ export const useCoinsStore = defineStore("coins", () => {
     // R4-00171：金额仅从服务端定价或定价镜像表读取，不接受调用方金额参数
     const amountCents = Math.round(UNLOCK_COST_YUAN[scene] * 100);
     // R4-00171：orderId 按后端契约规范生成（UNLOCK-{scene}-{targetUserId}）
-    const orderId = `UNLOCK-${scene}-${String(targetId)}`;
+    // R4-00195：幂等 orderId 统一经 buildUnlockOrderId 生成（单一真相源）
+    const orderId = buildUnlockOrderId(scene, targetId);
 
     if (useMock()) {
       const current = balanceCents.value || 80000;

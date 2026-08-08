@@ -30,6 +30,7 @@ import { useI18n } from "vue-i18n";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
 import { useSessionStore } from "../../stores/session";
+import { useRequestRace } from "../../composables/useRequestRace";
 
 const { t } = useI18n();
 // 当前登录管理员（用于操作权限判定：后端禁止禁用 SUPER_ADMIN 与自身）
@@ -81,10 +82,14 @@ const confirmAction = ref<"disable" | "enable">("disable");
 const confirmTarget = ref<AdminUserSummary | null>(null);
 const confirming = ref(false);
 
+/** 请求竞态防护（快速切换筛选/翻页时旧响应不覆盖新数据） */
+const { nextSeq, isStale } = useRequestRace();
+
 /** 拉取管理员列表 */
 async function fetchAdmins() {
   loading.value = true;
   errorMsg.value = "";
+  const seq = nextSeq();
   try {
     const result = await listAdmins({
       nickname: nicknameQuery.value.trim() || undefined,
@@ -92,13 +97,17 @@ async function fetchAdmins() {
       page: page.value,
       pageSize: pageSize.value,
     });
+    if (isStale(seq)) return;
     admins.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("admins.loadFailed");
   } finally {
-    loading.value = false;
+    if (!isStale(seq)) {
+      loading.value = false;
+    }
   }
 }
 

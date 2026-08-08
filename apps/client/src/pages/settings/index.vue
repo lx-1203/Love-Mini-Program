@@ -67,8 +67,33 @@ const notifyEnabled = ref(true);
  * <p>SubTask 5.5.1：与 notifyEnabled 同理，初始值从本地存储恢复。</p>
  */
 const privacyModeEnabled = ref(false);
-/** 缓存大小（mock） */
-const cacheSize = ref("23.5 MB");
+/** 缓存大小（R4-00064：真实读取 uni.getStorageInfo 统计） */
+const cacheSize = ref("0 KB");
+
+/** R4-00064：可安全清除的缓存 key（可重新拉取/重建；不含登录态/设置/草稿） */
+const CACHE_KEYS_TO_CLEAR: string[] = [STORAGE_KEYS.USER_CACHE];
+
+/** 格式化 storage 大小（KB → 可读文本） */
+function formatSizeKB(kb: number): string {
+  if (kb <= 0) return "0 KB";
+  if (kb < 1024) return `${kb} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+/** 刷新缓存大小展示（真实读取 uni.getStorageInfo.currentSize） */
+function refreshCacheSize(): void {
+  try {
+    uni.getStorageInfo({
+      success: (info) => {
+        cacheSize.value = formatSizeKB(info.currentSize ?? 0);
+      },
+      // 读取失败保持原值，不打断页面
+      fail: () => {},
+    });
+  } catch (_e) {
+    // 保持原值
+  }
+}
 
 /**
  * SubTask 5.5.1：从本地存储读取开关初始值。
@@ -178,6 +203,8 @@ function togglePrivacyMode(e: Event) {
  */
 onMounted(() => {
   loadTogglePreferences();
+  // R4-00064：进入设置页时真实统计缓存大小
+  refreshCacheSize();
 });
 
 /** 跳转到资料编辑 */
@@ -217,9 +244,12 @@ function viewPrivacyPolicy() {
   });
 }
 
-/** 清除缓存 */
-// TODO(mock): 当前为演示实现（延迟后置 0 KB）。真实链路应调用
-// uni.getStorageInfo / uni.clearStorage 并统计实际大小（review #42）。
+/**
+ * 清除缓存（R4-00064：接入 uni.getStorageInfo / uni.removeStorageSync 真实链路，
+ * 不再用 800ms 延迟假装清零）。
+ * 注意：不使用 uni.clearStorage 全量清空——登录态 token / 主题 / 语言 /
+ * 开关偏好 / 草稿等用户数据必须保留，仅清除可重建的缓存 key。
+ */
 function clearCache() {
   lightHaptic();
   uni.showModal({
@@ -228,30 +258,77 @@ function clearCache() {
     confirmText: t("settings.clearCacheConfirm"),
     cancelText: t("common.cancel"),
     success: (res) => {
-      if (res.confirm) {
-        uni.showLoading({ title: t("settings.clearing") });
-        const timer = setTimeout(() => {
-          cacheSize.value = "0 KB";
-          uni.hideLoading();
-          uni.showToast({
-            title: t("settings.cacheCleared"),
-            icon: "success",
-            duration: 1500,
-          });
-          operationTimers.delete(timer);
-        }, 800);
-        operationTimers.add(timer);
+      if (!res.confirm) return;
+      uni.showLoading({ title: t("settings.clearing") });
+      for (const key of CACHE_KEYS_TO_CLEAR) {
+        try {
+          uni.removeStorageSync(key);
+        } catch (_e) {
+          // 单个 key 删除失败不阻塞整体清除
+        }
       }
+      uni.hideLoading();
+      // 清除后重新统计真实大小
+      refreshCacheSize();
+      uni.showToast({
+        title: t("settings.cacheCleared"),
+        icon: "success",
+        duration: 1500,
+      });
     },
   });
 }
 
-/** 检查更新 */
-// TODO(mock): 当前为演示实现（延迟后提示已是最新）。真实链路应接入
-// 版本检查接口或 uni.getUpdateManager（review #43）。
+/**
+ * 检查更新（R4-00065：接入 uni.getUpdateManager 真实链路）。
+ * - mp-weixin：原生更新管理器（onCheckForUpdate → onUpdateReady/onUpdateFailed → applyUpdate）；
+ * - H5：无原生更新机制（部署即最新），提示当前为最新版本。
+ */
 function checkUpdate() {
   lightHaptic();
   uni.showLoading({ title: t("settings.checkingUpdate") });
+  // #ifdef MP-WEIXIN
+  const updateManager = uni.getUpdateManager();
+  updateManager.onCheckForUpdate((res) => {
+    if (res && res.hasUpdate) {
+      // 有新版本：等待下载完成后由 onUpdateReady/onUpdateFailed 接管
+      return;
+    }
+    uni.hideLoading();
+    uni.showModal({
+      title: t("settings.versionUpdateTitle"),
+      content: t("settings.versionLatestContent"),
+      showCancel: false,
+      confirmText: t("settings.gotIt"),
+    });
+  });
+  updateManager.onUpdateReady(() => {
+    uni.hideLoading();
+    uni.showModal({
+      title: t("settings.versionUpdateTitle"),
+      content: t("settings.versionUpdateReady"),
+      showCancel: true,
+      confirmText: t("settings.versionRestart"),
+      cancelText: t("common.cancel"),
+      success: (res) => {
+        if (res.confirm) {
+          updateManager.applyUpdate();
+        }
+      },
+    });
+  });
+  updateManager.onUpdateFailed(() => {
+    uni.hideLoading();
+    uni.showModal({
+      title: t("settings.versionUpdateTitle"),
+      content: t("settings.versionUpdateFailed"),
+      showCancel: false,
+      confirmText: t("settings.gotIt"),
+    });
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
+  // H5 无原生更新管理器，延迟后提示当前为最新版本（部署即最新）
   const timer = setTimeout(() => {
     uni.hideLoading();
     uni.showModal({
@@ -263,6 +340,7 @@ function checkUpdate() {
     operationTimers.delete(timer);
   }, 800);
   operationTimers.add(timer);
+  // #endif
 }
 
 /**

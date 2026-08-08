@@ -48,6 +48,35 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByStatusOrderByCreatedAtDesc(PostStatus status, Pageable pageable);
 
     /**
+     * R4-00339：发现分类 discoverSub 子标签的关键词过滤查询。
+     *
+     * <p>匹配帖子的<b>内容或标签</b>包含任一关键词（LIKE %kw%），用于
+     * hometown（老乡/同乡）/ buddy（搭子）子标签的服务端过滤，替代此前
+     * discoverSub 被忽略、恒返回全量 active 帖子的占位实现。分页排序由
+     * 传入的 {@code pageable} 决定（与发现流一致：置顶优先 + 创建时间倒序）。</p>
+     *
+     * @param status   帖子状态（通常 active）
+     * @param kw1      关键词 1（null/空表示不参与匹配）
+     * @param kw2      关键词 2（null/空表示不参与匹配）
+     * @param pageable 分页参数（含排序）
+     * @return 分页帖子列表
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND ((:kw1 IS NULL OR :kw1 = ''
+                    OR p.content LIKE CONCAT('%', :kw1, '%')
+                    OR p.tags LIKE CONCAT('%', :kw1, '%'))
+                OR (:kw2 IS NULL OR :kw2 = ''
+                    OR p.content LIKE CONCAT('%', :kw2, '%')
+                    OR p.tags LIKE CONCAT('%', :kw2, '%')))
+            """)
+    Page<Post> findByStatusAndKeyword(@Param("status") PostStatus status,
+                                      @Param("kw1") String kw1,
+                                      @Param("kw2") String kw2,
+                                      Pageable pageable);
+
+    /**
      * 根据作者 ID 列表和分类查询帖子，按创建时间倒序分页。
      *
      * @param authorIds 作者 ID 列表

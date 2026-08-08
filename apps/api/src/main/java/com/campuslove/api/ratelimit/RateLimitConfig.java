@@ -32,11 +32,18 @@ public class RateLimitConfig {
      * <p>Spring 会自动注入 {@link RateLimitBucketRegistry}（基于 @Component 自动注册的单例）。
      * 切面在 {@code @Around} 通知中拦截所有标注 {@link RateLimit} 的方法。</p>
      *
-     * @param registry 令牌桶注册表 Bean
+     * <p>R4-00378：注入可信代理配置（{@code app.security.trusted-proxies}）——
+     * 限流键取 {@code X-Forwarded-For} 首地址前需校验直连来源为可信代理，防止客户端
+     * 伪造 XFF 头更换限流桶绕过 IP 限流。</p>
+     *
+     * @param registry       令牌桶注册表 Bean
+     * @param trustedProxies 可信代理 IP/CIDR 列表（逗号分隔，空表示不信任任何代理）
      * @return 速率限制切面实例
      */
     @Bean
-    public RateLimitAspect rateLimitAspect(RateLimitBucketRegistry registry) {
-        return new RateLimitAspect(registry);
+    public RateLimitAspect rateLimitAspect(RateLimitBucketRegistry registry,
+                                           @org.springframework.beans.factory.annotation.Value(
+                                                   "${app.security.trusted-proxies:}") String trustedProxies) {
+        return new RateLimitAspect(registry, trustedProxies);
     }
 }

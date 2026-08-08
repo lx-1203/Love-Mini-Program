@@ -14,6 +14,7 @@
  * 「查看话题」跳转 CircleTopics 页并携带 circleId 参数。
  */
 import { onMounted, ref } from "vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
@@ -47,31 +48,31 @@ const total = ref(0);
 const totalPages = ref(1);
 
 /** 请求竞态防护 */
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 /** 分页加载兴趣圈列表 */
 async function fetchCircles(): Promise<void> {
   loading.value = true;
   errorMsg.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listCircles({
       page: page.value,
       pageSize: pageSize.value,
       keyword: keyword.value.trim() || undefined,
     });
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     circles.value = result.items;
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("interestCircles.loadFailed");
     circles.value = [];
     total.value = 0;
     totalPages.value = 1;
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

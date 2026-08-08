@@ -195,7 +195,7 @@ onMounted(fetchAccounts);
 
 .page-subtitle {
   margin: 0 0 24px;
-  color: #64748b;
+  color: var(--admin-color-text-tertiary);
   font-size: 14px;
 }
 
@@ -204,10 +204,10 @@ onMounted(fetchAccounts);
 .empty-box {
   padding: 32px;
   text-align: center;
-  color: #64748b;
-  background: #f8fafc;
+  color: var(--admin-color-text-tertiary);
+  background: var(--admin-color-bg-subtle);
   border-radius: 8px;
-  border: 1px dashed #e2e8f0;
+  border: 1px dashed var(--admin-color-border);
 }
 
 .error-box button {
@@ -226,16 +226,16 @@ onMounted(fetchAccounts);
   align-items: flex-start;
   gap: 4px;
   padding: 12px 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-color-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--admin-color-bg-container);
   cursor: pointer;
   text-align: left;
 }
 
 .account-tab--active {
-  border-color: #3fcf8e;
-  background: #f0fdf9;
+  border-color: var(--admin-color-skip-link);
+  background: var(--admin-color-success-soft);
 }
 
 .account-tab__name {
@@ -245,12 +245,12 @@ onMounted(fetchAccounts);
 
 .account-tab__desc {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--admin-color-text-quaternary);
 }
 
 .messages-panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -260,7 +260,7 @@ onMounted(fetchAccounts);
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .messages-panel__title {
@@ -269,7 +269,7 @@ onMounted(fetchAccounts);
 
 .messages-panel__count {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--admin-color-text-quaternary);
 }
 
 .message-table {
@@ -282,13 +282,13 @@ onMounted(fetchAccounts);
 .message-table td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--admin-color-border-light);
   vertical-align: top;
 }
 
 .message-table th {
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--admin-color-bg-subtle);
+  color: var(--admin-color-text-tertiary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -302,13 +302,13 @@ onMounted(fetchAccounts);
 }
 
 .type-badge--text {
-  background: #e8f8f0;
-  color: #25a86c;
+  background: var(--admin-color-success-soft);
+  color: var(--admin-color-success);
 }
 
 .type-badge--card {
-  background: #fdf2f8;
-  color: #db2777;
+  background: var(--admin-color-danger-soft);
+  color: var(--admin-color-danger);
 }
 
 .cell-content {
@@ -320,18 +320,18 @@ onMounted(fetchAccounts);
   margin-left: 8px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #ea580c;
+  background: var(--admin-color-warning-soft);
+  color: var(--admin-color-warning);
   font-size: 12px;
 }
 
 .cell-target a {
-  color: #3fcf8e;
+  color: var(--admin-color-skip-link);
   word-break: break-all;
 }
 
 .cell-time {
   white-space: nowrap;
-  color: #94a3b8;
+  color: var(--admin-color-text-quaternary);
 }
 </style>

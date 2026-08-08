@@ -89,7 +89,9 @@ onMounted(() => {
 });
 
 onShow(() => {
-  if (profileStore.loading) {
+  // R4-00020 修复：原条件反置（loading 时重复请求、加载完成后永不刷新）。
+  // 改为仅在未加载中时补拉，避免重复请求。
+  if (!profileStore.loading) {
     void profileStore.load();
   }
   void likesStore.fetchLikes();
@@ -117,9 +119,22 @@ async function handleUnlock() {
   const lockedItems = currentList.value.filter((item) => item.unlocked !== true);
   if (lockedItems.length === 0) return;
 
-  // VIP 免费放行：仅当会员功能启用时生效（featureFlags.membershipEnabled 控制）
+  const targetType = activeTab.value === "likedMe" ? "LIKED_ME" : "VISITOR";
+
+  // VIP 免费放行（R4-00021 修复）：仅当会员功能启用时生效（featureFlags.membershipEnabled 控制）。
+  // 仍逐条调用服务端 /wallet/unlock（幂等，已解锁不重复扣费）持久化解锁状态，
+  // 避免仅本地置位导致刷新后锁状态回退；服务端放行失败时降级为本地解锁兜底。
   if (featureFlags.membershipEnabled && vipStore.isVip) {
-    markAllUnlocked(true);
+    try {
+      for (const item of lockedItems) {
+        const result = await likesStore.unlockUser(targetType, item.userId);
+        void result;
+        item.unlocked = true;
+      }
+    } catch (_e) {
+      // 服务端 VIP 免费放行未生效（如余额不足）时降级为本地解锁，保证 VIP 体验不中断
+      markAllUnlocked(true);
+    }
     uni.showToast({ title: t("likesVisitors.unlockVipFree"), icon: "success" });
     return;
   }
@@ -137,7 +152,6 @@ async function handleUnlock() {
   if (!confirmed) return;
 
   // P0-17：服务端解锁——targetType 按当前 Tab（喜欢我的→LIKED_ME / 访客→VISITOR），targetId=对方用户 id
-  const targetType = activeTab.value === "likedMe" ? "LIKED_ME" : "VISITOR";
   let lastBalance = 0;
   try {
     for (const item of lockedItems) {
@@ -172,6 +186,15 @@ function goToUserProfile(userId: string) {
   openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
 }
 
+/**
+ * R4-00022：点击未解锁列表项时弹出解锁引导。
+ * 复用底部「解锁全部」同一流程（VIP 免费 / 非 VIP 弹确认框），
+ * 避免点击无任何反馈导致用户不知道如何解锁。
+ */
+function handleLockedItemTap(): void {
+  void handleUnlock();
+}
+
 /** 提升曝光入口 → VIP 页（P1-08：会员功能未启用时提示并返回） */
 function goToExposure() {
   if (!featureFlags.membershipEnabled) {
@@ -181,10 +204,20 @@ function goToExposure() {
   openAppPath("/pages/vip/index");
 }
 
-/** 列表项时间展示 */
+/**
+ * 列表项时间展示（R4-00019 修复，对齐 likes/index.vue P2-01 同类修复）。
+ * 契约（likes.yaml）visitedAt 为 "yyyy-MM-dd HH:mm:ss"，
+ * iOS/Safari 直接 new Date() 解析为 Invalid Date → 显示 NaN/NaN；
+ * 先做 "yyyy-MM-dd HH:mm:ss" → ISO 格式转换，再加 isNaN 校验兜底。
+ */
 function formatTime(isoString?: string): string {
   if (!isoString) return "";
-  const date = new Date(isoString);
+  // 兼容 "yyyy-MM-dd HH:mm:ss"：空格替换为 "T" 生成 ISO 时间串
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(isoString)
+    ? isoString.replace(" ", "T")
+    : isoString;
+  const date = new Date(normalized);
+  if (isNaN(date.getTime())) return "";
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
@@ -264,7 +297,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
         class="list__item"
         role="button"
         :aria-label="isItemUnlocked(item) ? item.name : t('likesVisitors.nameHidden')"
-        @tap="isItemUnlocked(item) ? goToUserProfile(item.userId) : undefined"
+        @tap="isItemUnlocked(item) ? goToUserProfile(item.userId) : handleLockedItemTap()"
       >
         <!-- 头像（未解锁时模糊 + 锁标识） -->
         <view class="list__avatar-wrap">
@@ -491,7 +524,8 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.35);
+  /* R4-02530：白色叠层改用 token（深色模式自动适配） */
+  background: var(--c-overlay-white-bg-strong-mid, rgba(255, 255, 255, 0.35));
   border-radius: var(--r-full);
 }
 

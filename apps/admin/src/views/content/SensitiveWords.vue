@@ -15,6 +15,7 @@ import {
 import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
+import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "@/stores/session";
 import { WORD_MAX_LENGTH } from "@/utils/constants";
@@ -46,7 +47,7 @@ const deleteTarget = ref<SensitiveWordView | null>(null);
 const deleting = ref(false);
 
 // 请求竞态防护（快速切换分类时旧响应不覆盖新数据）
-let reqSeq = 0;
+const { nextSeq, isStale } = useRequestRace();
 
 // 分类 value → i18n label 映射
 const categoryLabelMap = computed(() => {
@@ -66,13 +67,13 @@ const categoryLabelMap = computed(() => {
 async function fetchWords(category?: string) {
   loading.value = true;
   error.value = "";
-  const seq = ++reqSeq;
+  const seq = nextSeq();
   try {
     const result = await listSensitiveWords(category);
-    if (seq !== reqSeq) return; // 丢弃过期响应
+    if (isStale(seq)) return; // 丢弃过期响应
     words.value = result || [];
   } catch (err: unknown) {
-    if (seq !== reqSeq) return;
+    if (isStale(seq)) return;
     error.value =
       err instanceof ApiError
         ? err.message
@@ -81,7 +82,7 @@ async function fetchWords(category?: string) {
           : t("sensitiveWords.loadFailed");
     words.value = [];
   } finally {
-    if (seq === reqSeq) {
+    if (!isStale(seq)) {
       loading.value = false;
     }
   }

@@ -139,6 +139,17 @@ onMounted(async () => {
  * 保存校园资料并进入下一步（推荐偏好，学生分支步骤 3/4）。
  * 2026-08-07 链路调整：课表导入已移出主流程，保存后不再进入课表步骤。
  */
+/**
+ * R4-00044：按来源区分保存后跳转目标。
+ * - 补认证场景（campusProfile 已存在，如「我的 → 校园认证」进入）：
+ *   保存后返回「我的」页，而非被带到注册流程时间安排页；
+ * - 注册流程（无历史校园资料，从 setup/profile 学生分支进入）：
+ *   继续时间安排步骤（完成度链路 30+30+20=80 → profileCompleted=true）。
+ */
+function isReauthScenario(): boolean {
+  return Boolean(profileStore.campusProfile?.campusName);
+}
+
 async function save() {
   if (saving.value) return;
   if (!isComplete.value) {
@@ -150,9 +161,13 @@ async function save() {
     await profileStore.saveCampusProfile({ ...form });
     successHaptic();
     uni.showToast({ title: t("setup.campus.saveSuccess"), icon: "success" });
-    // P0-35 修复（2026-08-08）：注册流程补回「时间安排」步骤（原直接跳推荐偏好，
-    // 完成度 30+30+0=60 < 80 → profileCompleted 恒 false → 注册后锁屏全部功能）
-    replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE);
+    if (isReauthScenario()) {
+      replaceAppPath("/pages/profile/index");
+    } else {
+      // P0-35 修复（2026-08-08）：注册流程补回「时间安排」步骤（原直接跳推荐偏好，
+      // 完成度 30+30+0=60 < 80 → profileCompleted 恒 false → 注册后锁屏全部功能）
+      replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : t("setup.campus.saveFailed");
     uni.showToast({ title: message, icon: "none" });
@@ -167,6 +182,11 @@ async function save() {
  * 后续可在「我的 → 校园认证」中补认证（同校匹配能力随之解锁）。
  */
 function skip() {
+  // R4-00044：补认证场景跳过时同样返回「我的」页；注册流程保持完成度链路完整
+  if (isReauthScenario()) {
+    replaceAppPath("/pages/profile/index");
+    return;
+  }
   // P0-35 修复：跳过校园认证同样进入时间安排步骤（保持完成度链路完整）
   replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE);
 }

@@ -1499,8 +1499,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   gap: 10rpx;
   padding: 12rpx 28rpx;
   border-radius: var(--r-full);
-  background: rgba(15, 23, 42, 0.55);
-  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55));
+  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.25));
   /* #ifdef H5 */
   backdrop-filter: blur(12rpx);
   /* #endif */
@@ -1514,7 +1514,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__masked-hint-text {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 
 /* 身份头部区小头像同样模糊（蒙面时） */
@@ -1531,8 +1531,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   height: 260rpx;
   border-radius: 50%;
   background: linear-gradient(160deg, var(--c-brand-100) 0%, var(--c-brand-300) 100%);
-  border: 10rpx solid rgba(255, 255, 255, 0.92);
-  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.18);
+  border: 10rpx solid var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95));
+  box-shadow: var(--s-lg, 0 8rpx 32rpx rgba(15, 23, 42, 0.08));
 }
 
 .card__placeholder-text {
@@ -1851,14 +1851,14 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   gap: 20rpx;
   z-index: 4;
   /* 两端渐变仅压暗顶部两角，保证 ID/认证角标可读，不遮挡中部头像 */
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 100%);
+  background: linear-gradient(to bottom, var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5)) 0%, var(--c-black-overlay-light, rgba(0, 0, 0, 0.16)) 55%, transparent 100%);
 }
 
 .card__identity-id {
   font-size: var(--fs-md);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1rpx 6rpx rgba(0, 0, 0, 0.4);
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
+  text-shadow: 0 1rpx 6rpx var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3));
 }
 
 .card__identity-cert {
@@ -1868,7 +1868,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2rpx 10rpx var(--c-black-shadow-xl, rgba(0, 0, 0, 0.24));
 }
 
 .card__identity-cert--pressed {
@@ -1878,12 +1878,12 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__identity-cert-text {
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 
 .card__identity-cert-arrow {
   font-size: var(--fs-sm);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 
 /* ========== 精简卡片蒙层 4 行（2026-08-08：昵称年龄学校学历 / 距离活跃匹配度 / 一行简介 / 兴趣标签） ========== */
@@ -1892,8 +1892,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
   color: var(--c-overlay-text-primary);
-  background: rgba(255, 255, 255, 0.18);
-  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  background: var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
+  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.25));
   padding: 6rpx 16rpx;
   border-radius: var(--r-full);
   overflow: hidden;
@@ -1925,7 +1925,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   width: 10rpx;
   height: 10rpx;
   border-radius: 50%;
-  background: #4ade80;
+  background: var(--c-overlay-online-bg, rgba(16, 185, 129, 0.95));
   display: inline-block;
 }
 
@@ -1981,8 +1981,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   gap: 4rpx;
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.88);
-  color: #334155;
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
+  color: var(--c-neutral-700, #334155);
   font-size: var(--fs-xs, 20rpx);
   font-weight: 600;
 }
@@ -2009,7 +2009,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   padding: 4rpx 16rpx;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e), var(--c-brand-300, #7be0b4));
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
   font-size: var(--fs-base);
   font-weight: 700;
   letter-spacing: 1rpx;
@@ -2017,8 +2017,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 
 /* 性格胶囊弱化底色（区别于喜好兴趣标签） */
 .tag-pill--soft {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--c-overlay-white-text-mid, rgba(255, 255, 255, 0.7));
+  border-color: var(--c-overlay-border-stronger, rgba(255, 255, 255, 0.4));
 }
 
 /* ⑦ 期待的人物画像（小标题 + 2 行截断） */
@@ -2051,12 +2051,12 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   gap: 14rpx;
   padding: 10rpx 14rpx;
   border-radius: var(--r-md, 12rpx);
-  background: rgba(255, 255, 255, 0.14);
-  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
+  border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
 }
 
 .card__post-preview--pressed {
-  background: rgba(255, 255, 255, 0.24);
+  background: var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25));
 }
 
 .card__post-preview-main {
@@ -2121,11 +2121,11 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: inline-flex;
   padding: 8rpx 22rpx;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.92);
-  color: #334155;
+  background: var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95));
+  color: var(--c-neutral-700, #334155);
   font-size: var(--fs-base);
   font-weight: 600;
-  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  border: 1rpx solid var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
 }
 
 /* ========== 底部固定操作栏（参考 QQ 主页改版：X | 小纸条胶囊 | ❤️ 居中） ========== */
@@ -2171,12 +2171,12 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   height: 88rpx;
   border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4rpx 16rpx var(--c-black-shadow-md, rgba(0, 0, 0, 0.1));
   border: 2rpx solid var(--c-neutral-200);
 }
 
 .action-btn--reject.action-btn--pressed {
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
 }
 
 .action-btn__reject-icon {
@@ -2190,8 +2190,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   padding: 0 56rpx;
   border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
-  box-shadow: 0 8rpx 28rpx rgba(63, 207, 142, 0.4);
-  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--s-brand-lg, 0 8rpx 24rpx rgba(63, 207, 142, 0.3));
+  border: 3rpx solid var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8));
   gap: 10rpx;
 }
 
@@ -2210,7 +2210,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .action-btn__whisper-label {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
   line-height: 1;
 }
 
@@ -2220,7 +2220,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   height: 88rpx;
   border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: 0 4rpx 20rpx rgba(244, 63, 94, 0.35);
+  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.3));
 }
 
 .action-btn__like-icon {
@@ -2235,7 +2235,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2246,7 +2246,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .cert-modal__panel {
   width: 100%;
   max-width: 640rpx;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   border-radius: var(--r-2xl, 32rpx);
   padding: 36rpx 32rpx 28rpx;
   display: flex;
@@ -2317,6 +2317,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .cert-modal__close-text {
   font-size: var(--fs-lg);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 </style>
