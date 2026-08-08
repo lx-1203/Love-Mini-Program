@@ -1401,6 +1401,9 @@ function retryLoad(): void {
 .likes-unlock-bar-spacer {
   height: 200rpx;
 }
+
+/* 功能1：批量操作底部固定栏（原规则体，编辑时被拆开，此处闭合） */
+.likes-batch-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
