@@ -418,6 +418,10 @@ public class MockProfileService implements ProfileService {
         p.profileBackgroundUrl(),
         completion,
         resolveBadgeLevel(),
+        null,
+        // 2026-08-09：mock 模式无审核链路，照片墙/头像均视为已通过
+        java.util.List.of(),
+        "approved",
         null
     );
   }

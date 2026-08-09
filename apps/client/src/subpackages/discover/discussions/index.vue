@@ -71,6 +71,7 @@ function openDiscussion(item: Awaited<ReturnType<typeof clientApi.getDiscussionR
     :title="t('discussions.title')"
     :subtitle="t('discussions.subtitle')"
     current-tab="likes"
+    show-back
   >
     <SectionCard :title="t('discussions.hotSectionTitle')" :subtitle="t('discussions.hotSectionSubtitle')">
       <view v-if="loading" class="empty-state">{{ t('discussions.loadingContent') }}</view>

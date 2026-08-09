@@ -160,3 +160,10 @@ app:
     enabled: ${APP_GUEST_LOGIN_ENABLED:false}
     # R4-00250：体验账号黑名单手机号（仅体验入口可登录），可通过 APP_GUEST_LOGIN_BLACKLIST_PHONE 覆盖。
     blacklist-phone: ${APP_GUEST_LOGIN_BLACKLIST_PHONE:13900000000}
+  security:
+    # R4-00246/R4-01775 接线修复（2026-08-09）：real profile 此前未定义本属性，
+    # 而 AesEncryptor 读取 app.security.aes-secret，导致文档所述的 APP_AES_SECRET
+    # 环境变量在 real 环境不生效（启动 fail-fast「APP_AES_SECRET 未配置」）。
+    # 此处补占位符接线（默认空 → 未配置仍 fail-fast，不引入公开兜底密钥）：
+    # 通过 env APP_AES_SECRET（≥32 字符）或 --app.security.aes-secret=xxx 注入。
+    aes-secret: ${APP_AES_SECRET:}

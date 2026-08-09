@@ -149,9 +149,15 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
         // 后页面显示误导性的"暂无推荐+刷新"（刷新永远无效）。
         if (availableCards.length === 0) {
           try {
-            const { clientApi } = await import("../../../services/api");
-            const quota = await clientApi.getRecommendationQuota();
-            this.quotaExhausted = quota.remaining !== -1 && quota.remaining <= 0;
+            // 2026-08-09 免登录可逛：配额是用户级概念，游客不查询（quota 接口需认证，
+            // 游客调用会 401 被全局处理强拉登录页），直接按「暂无推荐」展示
+            if (!useSessionStore().isLoggedIn) {
+              this.quotaExhausted = false;
+            } else {
+              const { clientApi } = await import("../../../services/api");
+              const quota = await clientApi.getRecommendationQuota();
+              this.quotaExhausted = quota.remaining !== -1 && quota.remaining <= 0;
+            }
           } catch (_e) {
             // 配额查询失败不影响主流程，保留默认 false（按"暂无推荐"展示）
             this.quotaExhausted = false;

@@ -60,7 +60,7 @@ async function save() {
 </script>
 
 <template>
-  <AppShell :title="t('setup.schedule.pageTitle')" :subtitle="t('setup.schedule.pageSubtitle')" :show-tab-bar="false">
+  <AppShell :title="t('setup.schedule.pageTitle')" :subtitle="t('setup.schedule.pageSubtitle')" :show-tab-bar="false" show-back>
     <SectionCard :title="t('setup.schedule.prefTitle')" compact>
       <input v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
       <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；

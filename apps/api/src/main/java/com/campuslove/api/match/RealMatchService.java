@@ -304,6 +304,13 @@ public class RealMatchService implements MatchService {
         }
         matchRecorder.recordNewLikeEvent(targetUserId, userId);
 
+        // 2026-08-09 喜欢通知链路修复：单向喜欢时发布 like 事件，
+        // 由 MatchEventConsumer.handleSingleLike 持久化「有人喜欢了你」通知到被喜欢方；
+        // 互相喜欢时由下方 match 事件承载匹配通知（避免重复打扰，双链路语义清晰）
+        if (matchRecorder.findReverseActiveLike(targetUserId, userId).isEmpty()) {
+            matchRecorder.publishMatchEvent(userId, targetUserId, "like");
+        }
+
         // R4-00327：社交升温漏斗埋点——表达喜欢（L2_ATTENTION 计数）
         recordSocialProgressLike(userId);
 

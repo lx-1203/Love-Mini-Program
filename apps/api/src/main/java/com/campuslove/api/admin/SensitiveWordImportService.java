@@ -101,7 +101,11 @@ public class SensitiveWordImportService {
 
     /**
      * R4-00383：带任务表持久化能力的构造器（Spring 注入 JdbcTemplate 时使用）。
+     * 2026-08-09 修复：类存在两个构造器且均未标注 @Autowired，Spring 无法决定
+     * 注入目标并回退查找无参构造器（不存在）→ "No default constructor found" 启动失败。
+     * 按注释意图标注本构造器为 Spring 注入目标。
      */
+    @Autowired
     public SensitiveWordImportService(SensitiveWordRepository sensitiveWordRepository,
                                        SensitiveWordFilter sensitiveWordFilter,
                                        CacheManager cacheManager,

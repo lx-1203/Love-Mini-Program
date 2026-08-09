@@ -157,7 +157,7 @@ function handleRetry(): void {
 </script>
 
 <template>
-  <AppShell :title="t(`${i18nPrefix}.title`)" :show-tab-bar="false">
+  <AppShell :title="t(`${i18nPrefix}.title`)" :show-tab-bar="false" show-back>
     <view class="legal-page">
       <!-- 顶部标题区 -->
       <view class="legal-header">

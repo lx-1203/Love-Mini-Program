@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -112,5 +113,54 @@ class RecommendationControllerTest {
     void constructor_shouldAcceptService() {
         // Arrange & Act & Assert
         assertNotNull(new RecommendationController(recommendationService));
+    }
+
+    // ------------------------------------------------------------------
+    // 2026-08-09 免登录可逛：匿名请求走游客推荐分支（不抛 401）
+    // ------------------------------------------------------------------
+
+    @Test
+    void getRecommendations_anonymous_shouldDelegateToGuestService() {
+        // Arrange：匿名（isAuthenticated=false）→ 不解析当前用户，直接走游客推荐
+        RecommendationFilter emptyFilter =
+                new RecommendationFilter(null, null, Set.of(), Set.of(), null, null, null, null, null, null);
+        List<RecommendedPersonView> expected = List.of();
+        try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::isAuthenticated).thenReturn(false);
+            when(recommendationService.getRecommendationsForGuest(emptyFilter)).thenReturn(expected);
+
+            // Act：全部筛选参数为 null
+            List<RecommendedPersonView> result = controller.getRecommendations(
+                    null, null, null, null, null, null, null, null, null, null);
+
+            // Assert
+            assertSame(expected, result);
+            verify(recommendationService).getRecommendationsForGuest(emptyFilter);
+            // 匿名场景不得走用户个性化分支
+            verify(recommendationService, Mockito.never())
+                    .getRecommendations(Mockito.anyLong(), Mockito.any());
+        }
+    }
+
+    @Test
+    void getRecommendations_authenticated_shouldDelegateToUserService() {
+        // Arrange：已认证（isAuthenticated=true）→ 与旧行为一致，按当前用户个性化推荐
+        RecommendationFilter emptyFilter =
+                new RecommendationFilter(null, null, Set.of(), Set.of(), null, null, null, null, null, null);
+        List<RecommendedPersonView> expected = List.of();
+        try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::isAuthenticated).thenReturn(true);
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(42L);
+            when(recommendationService.getRecommendations(42L, emptyFilter)).thenReturn(expected);
+
+            // Act
+            List<RecommendedPersonView> result = controller.getRecommendations(
+                    null, null, null, null, null, null, null, null, null, null);
+
+            // Assert
+            assertSame(expected, result);
+            verify(recommendationService).getRecommendations(42L, emptyFilter);
+            verify(recommendationService, Mockito.never()).getRecommendationsForGuest(Mockito.any());
+        }
     }
 }

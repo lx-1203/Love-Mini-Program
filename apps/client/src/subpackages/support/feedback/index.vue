@@ -403,7 +403,7 @@ function goDetail(id: number): void {
 </script>
 
 <template>
-  <AppShell :title="t('feedback.pageTitle')" :subtitle="t('feedback.pageSubtitle')" :show-tab-bar="false">
+  <AppShell :title="t('feedback.pageTitle')" :subtitle="t('feedback.pageSubtitle')" :show-tab-bar="false" show-back>
     <SectionCard :title="t('feedback.newSubmission')" compact>
       <view class="chips" role="tablist" :aria-label="t('feedback.categoryAria')">
         <view

@@ -80,6 +80,15 @@ const daysLabel = computed(() => t("home.daysLabel"));
 const pointsLabel = computed(() => t("home.pointsLabel"));
 
 /**
+ * 卡片主体 catchtap="noop" 阻止冒泡的空处理器（原生小程序属性写法，
+ * uni-app 会把它编译为事件绑定，组件必须提供 noop 方法，否则
+ * 报 "does not have a method noop to handle event tap"）。
+ */
+function noop() {
+  /* 空实现：仅用于 catchtap 冒泡拦截 */
+}
+
+/**
  * 关闭卡片
  */
 function handleClose() {
@@ -235,7 +244,7 @@ async function handleSaveImage() {
     <view class="share-mask"></view>
 
     <!-- 卡片主体：catchtap 阻止冒泡，避免点击卡片关闭 -->
-    <view class="share-card" catchtap="noop">
+    <view class="share-card" @tap.stop="noop">
       <!-- 关闭按钮 -->
       <view
         class="share-close"

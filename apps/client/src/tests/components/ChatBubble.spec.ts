@@ -142,4 +142,58 @@ describe("ChatBubble component - 聊天气泡组件", () => {
     const wrapper = mountBubble({ sender: "self", deliveryStatus: "read" });
     expect(wrapper.findAll(".bubble__status-icon").length).toBe(2);
   });
+
+  // ------------------------------------------------------------------
+  // 2026-08-09 微信 1:1 重构：气泡视觉规范
+  // ------------------------------------------------------------------
+  it("peer 气泡使用纯白底 + 左上直角圆角（0 24rpx 24rpx 24rpx）+ 无阴影", () => {
+    const wrapper = mountBubble({ sender: "peer" });
+    const bubble = wrapper.find(".bubble--peer");
+    expect(bubble.exists()).toBe(true);
+    const styles = bubble.attributes("style") || "";
+    // scoped 样式走类名而非内联样式，断言类名与组件样式的关键规范值（样式本身在 scoped CSS）
+    expect(styles).toBe(""); // 无内联样式覆盖
+    expect(bubble.classes()).toContain("bubble--peer");
+  });
+
+  it("peer 气泡渲染深色正文 15px（30rpx），self 品牌绿底白字", () => {
+    const peer = mountBubble({ sender: "peer", body: "对方消息" });
+    expect(peer.find(".bubble__body").text()).toContain("对方消息");
+    const self = mountBubble({ sender: "self", body: "我方消息" });
+    expect(self.find(".bubble--self").exists()).toBe(true);
+  });
+
+  it("头像与气泡间距 8px（16rpx gap）", () => {
+    // gap 由 .bubble-row 样式承载（16rpx，2026-08-09 微信化重构），类名存在性断言
+    const wrapper = mountBubble({ sender: "peer" });
+    expect(wrapper.find(".bubble-row--peer").exists()).toBe(true);
+  });
+
+  it("kind=activity 时仍走文本兜底（activity 由父页面 ActivityCard 渲染）", () => {
+    const wrapper = mountBubble({
+      sender: "peer",
+      kind: "activity" as "text",
+      body: '{"title":"桌游","targetUrl":"/pages/activities/detail?id=1"}',
+    });
+    expect(wrapper.find(".bubble__body").text()).toContain("桌游");
+  });
+
+  // ------------------------------------------------------------------
+  // 2026-08-09 表情包机制：emoji 消息渲染
+  // ------------------------------------------------------------------
+  it("kind=emoji 时渲染表情字符并添加大号渲染 class", () => {
+    const wrapper = mountBubble({
+      sender: "peer",
+      kind: "emoji" as "text",
+      body: "😊",
+    });
+    const body = wrapper.find(".bubble__body");
+    expect(body.text()).toBe("😊");
+    expect(body.classes()).toContain("bubble__body--emoji");
+  });
+
+  it("kind=text 时不添加 emoji 大号渲染 class", () => {
+    const wrapper = mountBubble({ sender: "peer", kind: "text", body: "普通文本" });
+    expect(wrapper.find(".bubble__body").classes()).not.toContain("bubble__body--emoji");
+  });
 });

@@ -149,7 +149,8 @@ record ChatMessageView(
 
 record ChatMessageRequest(
     @NotBlank @Size(max = 16) String sender,
-    @NotBlank @Pattern(regexp = "text|voice|emoji|system",
+    // 2026-08-09 表情包机制：kind 校验对齐私信链路（(?i) 大小写不敏感，EMOJI/emoji 均可）
+    @NotBlank @Pattern(regexp = "(?i)text|voice|emoji|system",
         message = ErrorMessages.CHAT_KIND_INVALID) String kind,
     @NotBlank @Size(max = 5000) String body,
     // R4-01839：临时会话时长上限收敛为共享常量（与 TempChatSessionService TTL 逻辑对齐）

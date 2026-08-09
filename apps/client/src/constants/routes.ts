@@ -97,6 +97,8 @@ export const ROUTES = {
     PRIVACY: "/pages/profile/privacy",
     /** R4-00226：任务中心页 */
     TASKS: "/pages/profile/tasks",
+    /** 2026-08-09：他人主页详情页（喜欢/访客/通知闭环专用） */
+    OTHER: "/pages/profile/other",
   },
 
   /** 圈子模块 */

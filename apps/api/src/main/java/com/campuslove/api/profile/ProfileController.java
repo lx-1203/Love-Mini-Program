@@ -282,7 +282,26 @@ record BasicProfileView(
     String profileBackgroundUrl,
     int profileCompletion,
     String verificationBadgeLevel,
-    String avatarUrl
+    String avatarUrl,
+    /** 2026-08-09：照片墙结构化列表（含每张审核状态，本人视角全可见） */
+    List<PhotoItemView> photoGalleryItems,
+    /** 2026-08-09：头像审核状态（pending/approved/rejected） */
+    String avatarAuditStatus,
+    /** 2026-08-09：头像审核备注（拒绝原因等） */
+    String avatarAuditRemark
+) {
+}
+
+/**
+ * 照片墙单项视图（2026-08-09）。
+ *
+ * <p>承载审核状态供客户端展示角标：本人可见全部（pending 标注「审核中」、
+ * rejected 标注「未通过」+ 原因），他人视角由推荐卡片组装处过滤。</p>
+ */
+record PhotoItemView(
+    String url,
+    String auditStatus,
+    String auditRemark
 ) {
 }
 

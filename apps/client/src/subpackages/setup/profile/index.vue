@@ -373,7 +373,7 @@ async function save() {
 </script>
 
 <template>
-  <AppShell :title="t('setup.profile.pageTitle')" :subtitle="t('setup.profile.pageSubtitle')" :show-tab-bar="false">
+  <AppShell :title="t('setup.profile.pageTitle')" :subtitle="t('setup.profile.pageSubtitle')" :show-tab-bar="false" show-back>
     <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息）
          2026-08-07 流程重构：按身份分支展示步骤（学生 4 步 / 非学生 3 步） -->
     <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />

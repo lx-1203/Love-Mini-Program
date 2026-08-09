@@ -38,6 +38,8 @@ import ErrorState from "../../components/common/ErrorState.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { IMAGE_PATHS } from "../../config/images";
+// Task 0.3.4：用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
+import { resolveMediaUrl } from "../../utils/media";
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -243,8 +245,14 @@ function handleSessionLongPress(session: MessageSession) {
       }
       if (res.tapIndex === 1) {
         if (session.unreadCount > 0) {
-          messagesStore.markSessionRead(session.id);
-          uni.showToast({ title: t("messages.markedRead"), icon: "none" });
+          // 2026-08-09 未读红点修复（BUG 4）：标已读同步后端回执，
+          // 失败时 toast「操作失败」（红点保留，刷新后以后端为准）
+          void messagesStore.markSessionRead(session.id).then((ok) => {
+            uni.showToast({
+              title: ok ? t("messages.markedRead") : t("common.operationFailed"),
+              icon: "none",
+            });
+          });
         } else {
           messagesStore.markSessionUnread(session.id);
           uni.showToast({ title: t("messages.markedUnread"), icon: "none" });
@@ -278,8 +286,20 @@ function goMatchPool() {
   openAppPath(ROUTES.HEART_SIGNALS);
 }
 
-/** 快捷入口：喜欢与访客（独立二级页） */
+/**
+ * 2026-08-09 喜欢/访客闭环：喜欢/访客/匹配类未读通知数。
+ * 驱动「喜欢与访客」快捷入口红点角标（谁喜欢了我 / 谁看了我 的告知）。
+ */
+const likesVisitorsUnreadCount = computed(
+  () =>
+    messagesStore.notifications.filter(
+      (n) => !n.isRead && ["like", "visitor", "interaction_match"].includes(n.type),
+    ).length,
+);
+
+/** 快捷入口：喜欢与访客（独立二级页）——进入时将喜欢/访客/匹配通知标记已读 */
 function goLikesVisitors() {
+  void messagesStore.markTypeRead(["like", "visitor", "interaction_match"]);
   openAppPath(ROUTES.LIKES.VISITORS_LIKES);
 }
 
@@ -331,7 +351,6 @@ onShow(() => {
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
-      :page-name="t('messages.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -403,7 +422,15 @@ onShow(() => {
             <image class="quick-card__icon-img" :src="iconSrc.visitor" mode="aspectFit" alt="" />
           </view>
           <view class="quick-card__body">
-            <text class="quick-card__title">{{ t('messages.likesVisitorsEntry') }}</text>
+            <view class="quick-card__title-row">
+              <text class="quick-card__title">{{ t('messages.likesVisitorsEntry') }}</text>
+              <!-- 2026-08-09：喜欢/访客/匹配未读通知红点（谁喜欢了我/谁看了我 的告知） -->
+              <view v-if="likesVisitorsUnreadCount > 0" class="quick-card__badge">
+                <text class="quick-card__badge-text">
+                  {{ likesVisitorsUnreadCount > 99 ? "99+" : likesVisitorsUnreadCount }}
+                </text>
+              </view>
+            </view>
             <text class="quick-card__desc">{{ t('messages.likesVisitorsDesc') }}</text>
           </view>
         </view>
@@ -488,10 +515,13 @@ onShow(() => {
                     <text class="session-row__avatar-text">?</text>
                   </view>
                   <view v-else class="session-row__avatar">
+                    <!-- 2026-08-09 头像显示修复：partnerName 可能为空串（后端 otherUserName 空值），
+                         charAt 前统一兜底，避免首字符取空导致崩溃；头像 URL 经 resolveMediaUrl
+                         鉴权代理重写，修复真实头像因 401 无法加载显示为空白的问题 -->
                     <text v-if="!session.partnerAvatar" class="session-row__avatar-text">
-                      {{ session.partnerName.charAt(0) }}
+                      {{ (session.partnerName || "?").charAt(0) }}
                     </text>
-                    <SafeImage v-else :src="session.partnerAvatar" custom-class="session-row__avatar-img" mode="aspectFill" :lazy-load="true" />
+                    <SafeImage v-else :src="resolveMediaUrl(session.partnerAvatar)" custom-class="session-row__avatar-img" mode="aspectFill" :lazy-load="true" />
                   </view>
                   <!-- 未读红点（数字居中，99+） -->
                   <view v-if="session.unreadCount > 0" class="session-row__unread">
@@ -693,6 +723,14 @@ onShow(() => {
   min-width: 0;
 }
 
+/* 2026-08-09：标题行（标题 + 未读红点徽标） */
+.quick-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
 .quick-card__title {
   font-size: var(--fs-base);
   font-weight: 700;
@@ -700,6 +738,26 @@ onShow(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 2026-08-09：喜欢/访客未读红点（数字徽标，99+） */
+.quick-card__badge {
+  flex-shrink: 0;
+  min-width: var(--sp-8);
+  height: var(--sp-8);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-full);
+  background: var(--c-error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.quick-card__badge-text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: var(--c-text-inverse);
 }
 
 .quick-card__desc {

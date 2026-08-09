@@ -48,6 +48,7 @@ class ProfileUpdateServiceTest {
     @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
     @Mock private InteractionEventService interactionEventService;
     @Mock private MediaStorageService mediaStorageService;
+    @Mock private com.campuslove.api.media.MediaAssetService mediaAssetService;
     @Mock private ProfileQueryService queryService;
     @Mock private FollowService followService;
     @Mock private com.campuslove.api.config.SensitiveWordFilter sensitiveWordFilter;
@@ -66,6 +67,7 @@ class ProfileUpdateServiceTest {
                 userScheduleProfileRepository,
                 interactionEventService,
                 mediaStorageService,
+                mediaAssetService,
                 queryService,
                 followService,
                 sensitiveWordFilter);

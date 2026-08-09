@@ -140,6 +140,13 @@ public class MockRecommendationService implements RecommendationService {
         .toList();
   }
 
+  @Override
+  public List<RecommendedPersonView> getRecommendationsForGuest(RecommendationFilter filter) {
+    // Mock 实现：与登录用户一致，返回 mock 候选池（游客无个性化上下文，
+    // mock 数据本身不含个性化逻辑，直接复用同一数据源保证两端口径一致）
+    return getRecommendations(null, filter);
+  }
+
   /** MBTI 候选池（按推荐顺序稳定取模，保证每次展示一致） */
   private static final List<String> MBTI_POOL =
       List.of("INFJ", "INTP", "ENFP", "ISFP", "ENTJ", "INFP", "ESTJ", "ISTP");

@@ -155,7 +155,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppShell :title="t('recommendPref.title')" :show-tab-bar="false">
+  <AppShell :title="t('recommendPref.title')" :show-tab-bar="false" show-back>
     <!-- 功能5：引导流程进度条（推荐偏好；学生分支步骤 3/4，非学生分支步骤 2/3） -->
     <SetupProgress :current-step="setupCurrentStep" :variant="setupVariant" />
 

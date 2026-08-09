@@ -365,6 +365,9 @@ export async function loginAsGuest(): Promise<UserSession> {
     method: "POST",
     skipAuth: true,
     noRetry: true,
+    // 入口关闭（后端 403「体验账号入口已关闭」）是预期业务状态而非服务异常，
+    // 由调用方 toast 展示后端文案，无需上报 Sentry 噪音告警
+    reportError: false,
   });
   // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
   const responseRecord = response as unknown as Record<string, unknown>;

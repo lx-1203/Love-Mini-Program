@@ -129,6 +129,19 @@ function handleClearSearch(): void {
 /** 当前激活的标签页（提前声明，便于 visibleUserIds / watch 引用） */
 const activeTab = ref<TabType>("likedBy");
 
+/**
+ * 返回上一页（自定义导航栏返回键）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: ROUTES.TAB.HOME });
+  }
+}
+
 /* ========== 2026-08-08 走查 P1：前 2 条免费 + 解锁全部（与喜欢与访客独立页规则统一） ========== */
 
 /** 单条记录是否已解锁（服务端 unlocked 字段；缺失按未解锁处理） */
@@ -407,7 +420,7 @@ function isMutualMatch(userId: string): boolean {
 }
 
 /**
- * 点击喜欢列表项：匹配成功则进入聊天，否则进入用户详情页
+ * 点击喜欢列表项：匹配成功则进入聊天，否则进入他人主页详情页
  * @param userId - 用户 ID
  */
 function handleItemClick(userId: string) {
@@ -415,7 +428,7 @@ function handleItemClick(userId: string) {
   if (isMutualMatch(userId)) {
     goToChat(userId);
   } else {
-    openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(userId)}`);
+    openAppPath(`${ROUTES.PROFILE.OTHER}?userId=${encodeURIComponent(userId)}`);
   }
 }
 
@@ -519,7 +532,6 @@ function retryLoad(): void {
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
-      :page-name="t('likes.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -530,7 +542,20 @@ function retryLoad(): void {
       
       <!-- 页面头部 -->
       <view class="likes-header">
-        <text class="likes-header__title">{{ t('likes.title') }}</text>
+        <view class="likes-header__left">
+          <!-- 2026-08-09：返回键（navigationStyle: custom 全局无系统返回栏） -->
+          <view
+            class="likes-header__back press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('common.back')"
+            @tap="goBack"
+          >
+            <image class="likes-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          </view>
+          <text class="likes-header__title">{{ t('likes.title') }}</text>
+        </view>
         <view class="likes-header__actions">
           <!-- 心动信号入口 -->
           <view
@@ -945,6 +970,31 @@ function retryLoad(): void {
   margin-bottom: var(--section-gap);
   position: relative;
   z-index: 1;
+}
+
+/* 2026-08-09：返回键 + 标题（左组合） */
+.likes-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.likes-header__back {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.likes-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .likes-header__title {

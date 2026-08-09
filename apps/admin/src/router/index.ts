@@ -45,6 +45,7 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/content/Reports.vue": () => import("../views/content/Reports.vue"),
   "views/content/Feedback.vue": () => import("../views/content/Feedback.vue"),
   "views/content/SensitiveWords.vue": () => import("../views/content/SensitiveWords.vue"),
+  "views/content/MediaAssets.vue": () => import("../views/content/MediaAssets.vue"),
   /* —— 社区论坛（forum） —— */
   "views/forum/VillagePosts.vue": () => import("../views/forum/VillagePosts.vue"),
   "views/forum/InterestCircles.vue": () => import("../views/forum/InterestCircles.vue"),

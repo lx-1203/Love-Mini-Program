@@ -143,7 +143,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
           <VoicePill :duration-seconds="durationSeconds || 0" />
         </template>
         <template v-else>
-          <text class="bubble__body">{{ body }}</text>
+          <!-- 2026-08-09 表情包机制：emoji 消息大号渲染（微信表情消息风格） -->
+          <text class="bubble__body" :class="{ 'bubble__body--emoji': kind === 'emoji' }">{{ body }}</text>
         </template>
 
         <!-- 底部元信息：送达状态（时间已移出气泡，由父页面微信式时间条承载） -->
@@ -182,7 +183,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 .bubble-row {
   display: flex;
   align-items: flex-end;
-  gap: var(--sp-2);
+  /* 2026-08-09 微信 1:1 重构：头像与气泡间距 8px = 16rpx（原 --sp-2 = 8rpx ≈ 4px） */
+  gap: 16rpx;
 }
 /* 2026-08-08 微信化重构：自己消息无头像，气泡直接靠右（不再 row-reverse 占位） */
 .bubble-row--self {
@@ -213,17 +215,20 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   min-width: 0;
 }
 
+/* 2026-08-09 微信 1:1 重构：圆角 12px = 24rpx（微信 4px/16px 风格；无对应 token 档位，局部字面量）；
+   我方右上直角、对方左上直角（圆角序列：左上 右上 右下 左下） */
 .bubble--self {
   background: var(--c-brand);
   color: var(--c-text-inverse);
-  border-radius: var(--r-lg) var(--r-xs) var(--r-lg) var(--r-lg);
+  border-radius: 24rpx 0 24rpx 24rpx;
 }
 
+/* 对方气泡：纯白（--c-bubble-other 已改 #FFFFFF）、无阴影（微信白气泡无投影） */
 .bubble--peer {
   background: var(--c-bubble-other);
   color: var(--c-text-primary);
-  border-radius: var(--r-xs) var(--r-lg) var(--r-lg) var(--r-lg);
-  box-shadow: var(--s-sm);
+  border-radius: 0 24rpx 24rpx 24rpx;
+  box-shadow: none;
 }
 
 .bubble--system {
@@ -240,7 +245,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 
 .bubble__body {
   line-height: 1.6;
-  font-size: var(--fs-lg);
+  /* 2026-08-09 微信 1:1 重构：正文 15px = 30rpx（原 --fs-lg = 28rpx ≈ 14px；
+     无对应 token 档位，局部字面量） */
+  font-size: 30rpx;
 }
 
 .bubble__body--recalled {
@@ -248,6 +255,13 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   color: var(--c-text-tertiary);
   font-style: italic;
   text-align: center;
+}
+
+/* 2026-08-09 表情包机制：emoji 消息 28px = 56rpx 大号渲染（无对应 token 档位，局部字面量） */
+.bubble__body--emoji {
+  font-size: 56rpx;
+  line-height: 1.2;
+  padding: 4rpx 0;
 }
 
 /* 引用消息区域 */

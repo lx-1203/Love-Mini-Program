@@ -270,6 +270,12 @@ public class MatchRecorder {
 
         interactionEventService.recordEvent(
                 visitedUserId, visitorId, "NEW_VISITOR", null, "USER", "有人查看了你的资料");
+
+        // 2026-08-09 访客通知链路修复：发布 visitor 事件，
+        // 由 MatchEventConsumer.handleVisitor 持久化「有人查看了你的资料」通知到被访方，
+        // 与「喜欢/匹配」通知走同一 MQ 消费链路（WebSocket 实时推送 + notifications 表落库）
+        messageProducer.sendMatchEvent(new MatchEventMessage(
+                visitorId, visitedUserId, "visitor", Instant.now()));
     }
 
     /**

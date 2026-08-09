@@ -103,7 +103,9 @@ $state-preview-text: #3B47B7;
 // ---------- 功能色 ----------
 $price: #E5454D;
 $badge-campus: #FF7A45;
-$bubble-other: #F0F2F5;
+// 2026-08-09 微信 1:1 重构：对方气泡改纯白（原 #F0F2F5 浅灰底）。
+// 仅 ChatBubble 消费（VoiceMessageBubble L274 引用但无消费路径，安全）。
+$bubble-other: #FFFFFF;
 $divider-light: rgba(15, 23, 42, 0.06);
 $location-bg: rgba(63, 207, 142, 0.12);
 $location-text: #3FCF8E;

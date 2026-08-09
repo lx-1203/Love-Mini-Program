@@ -1259,10 +1259,10 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       @not-interested="handleNotInterested"
     />
 
-    <!-- 底部固定操作栏（参考 QQ 主页改版）：X(关闭) | 小纸条(胶囊) | ❤️(喜欢) 居中排列 -->
-    <!-- catchtap 阻止冒泡避免被卡片手势拦截 -->
+    <!-- 独立操作栏（2026-08-09 改版：移出卡片悬浮层，置于卡片正下方，完全不遮挡卡片内容） -->
+    <!-- 布局：X 不喜欢 | 悄悄话（主入口，最大）| ❤️ 喜欢，横向居中排布，与卡片保持 16px 留白 -->
     <view v-if="currentCard" class="action-bar">
-      <!-- 左侧：X 关闭/不喜欢（小灰圆按钮） -->
+      <!-- 左侧：X 不喜欢（48px 白色圆形按钮 + 灰色叉号，等价左滑） -->
       <view
         class="action-btn action-btn--reject press-feedback"
         hover-class="action-btn--pressed"
@@ -1273,7 +1273,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       >
         <image class="action-btn__reject-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
       </view>
-      <!-- 中间：小纸条胶囊按钮（最大，品牌色渐变；2026-08-08 暂未开放，置灰） -->
+      <!-- 中间：悄悄话（64px 品牌绿填充圆形按钮，付费私信主入口，视觉权重最高；2026-08-08 暂未开放，置灰） -->
       <view
         class="action-btn action-btn--whisper action-btn--whisper--disabled press-feedback"
         hover-class="action-btn--pressed"
@@ -1285,7 +1285,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         <image class="action-btn__whisper-icon" :src="emojiIcons.message" mode="aspectFit" alt="" />
         <text class="action-btn__whisper-label">{{ t('discover.whisperLabel') }}</text>
       </view>
-      <!-- 右侧：❤️ 喜欢（粉色心形按钮） -->
+      <!-- 右侧：❤️ 喜欢（56px 粉色填充圆形按钮 + 白色爱心，等价右滑） -->
       <view
         class="action-btn action-btn--like press-feedback"
         hover-class="action-btn--pressed"
@@ -1358,7 +1358,10 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16rpx 24rpx;
+  /* 2026-08-09 改版：上下 padding 缩至 8rpx，卡片绝对定位占满 card-stack 可用高度，
+   * 最大化展示 8 项信息模块；页面 padding-bottom 已改为贴底导航上方，
+   * 操作栏随之自然下移，卡片与按钮整体饱满协调 */
+  padding: 8rpx 24rpx 8rpx;
   overflow: hidden;
 }
 
@@ -1397,7 +1400,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   /* Phase D2 · 卡片采用 4:5 比例约束：mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（125% = 5/4 × 100%） */
   /* 内部绝对定位子元素（.card__bg/.card__overlay 等）会铺满 padding box，保持视觉一致 */
   padding-top: 125%;
-  max-height: calc(100% - 32rpx);
+  /* 2026-08-09 改版：card-stack 上下 padding 缩至 8rpx，卡片 max-height 同步改为 calc(100% - 16rpx)，
+   * 高度最大化使 8 项信息完整展示 */
+  max-height: calc(100% - 16rpx);
   /* min-height 兜底防溢出 */
   min-height: 600rpx;
   border-radius: var(--r-xl);
@@ -1417,10 +1422,12 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
  * H5 端保持原有 4:5 比例布局不变。 */
 /* #ifndef H5 */
 .card {
-  top: 16rpx;
+  /* 2026-08-09 改版：上下 inset 缩至 8rpx，卡片几乎占满 card-stack，
+   * 高度最大化使 8 项信息完整露出；操作栏位于卡片下方独立留白区 */
+  top: 8rpx;
   left: 24rpx;
   right: 24rpx;
-  bottom: 16rpx;
+  bottom: 8rpx;
   width: auto;
   padding-top: 0;
   max-height: none;
@@ -1793,11 +1800,13 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   bottom: 0;
   left: 0;
   width: 100%;
-  /* 2026-08-08 走查 P0-2：信息区块增多，收紧内边距与行距保证一屏容纳 */
-  padding: 24rpx 36rpx 40rpx;
+  /* 2026-08-09 改版：压缩内边距与行距（24/36/40 + gap 10 → 14/26/20 + gap 8），
+   * 在固定卡片高度内让 8 项信息模块（昵称/简介/标签/MBTI/期待画像/动态预览）
+   * 完整展示，避免底部内容被 overflow:hidden 裁切 */
+  padding: 14rpx 26rpx 20rpx;
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
   z-index: 3;
   /* 毛玻璃信息区：半透明背景 + 模糊效果（叠加在图片遮罩之上） */
   background: linear-gradient(
@@ -1815,7 +1824,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__name-row {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  /* 2026-08-09：gap 16→12rpx，压缩纵向占比 */
+  gap: 12rpx;
 }
 
 .card__name {
@@ -1927,8 +1937,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10rpx 20rpx;
-  margin-top: 2rpx;
+  /* 2026-08-09：gap 10/20→6/16rpx，压缩纵向占比 */
+  gap: 6rpx 16rpx;
+  margin-top: 0;
 }
 
 .card__meta {
@@ -1992,7 +2003,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__basics {
   display: flex;
   flex-wrap: wrap;
-  gap: 8rpx;
+  /* 2026-08-09：gap 8→6rpx，压缩纵向占比 */
+  gap: 6rpx;
 }
 
 .card__basics-item {
@@ -2018,7 +2030,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8rpx;
+  /* 2026-08-09：gap 8→6rpx，压缩纵向占比 */
+  gap: 6rpx;
 }
 
 .card__mbti-badge {
@@ -2069,7 +2082,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: flex;
   align-items: center;
   gap: 14rpx;
-  padding: 10rpx 14rpx;
+  /* 2026-08-09：padding 10/14→8/12rpx，压缩纵向占比 */
+  padding: 8rpx 12rpx;
   border-radius: var(--r-md, 12rpx);
   background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
   border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
@@ -2133,8 +2147,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 4rpx;
+  /* 2026-08-09：gap 12→8rpx，压缩纵向占比 */
+  gap: 8rpx;
+  margin-top: 0;
 }
 
 .tag-pill {
@@ -2148,28 +2163,19 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border: 1rpx solid var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
 }
 
-/* ========== 底部固定操作栏（参考 QQ 主页改版：X | 小纸条胶囊 | ❤️ 居中） ========== */
+/* ========== 独立操作栏（2026-08-09 改版：移出卡片悬浮层，置于卡片正下方，完全不遮挡卡片内容） ========== */
 .action-bar {
-  position: absolute;
-  left: 24rpx;
-  right: 24rpx; /* 固定布局尺寸，无对应 token */
-  bottom: 20rpx;
+  /* 静态流式排布：位于 .card-stack（flex:1 占满剩余高度）之后、组件最底部，
+   * 即匹配卡片正下方、全局底导航上方；卡片不随本栏滑动、本栏始终在视野内 */
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 32rpx;
-  padding: 16rpx 28rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 16rpx);
-  border-radius: var(--r-xxl, 28rpx);
-  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.35));
-  border: 1rpx solid var(--c-overlay-border-mid, rgba(255, 255, 255, 0.15));
-  box-shadow: var(--s-card-soft);
-  z-index: 6;
-  /* H5 端毛玻璃增强；mp-weixin 不支持 backdrop-filter，高不透明度背景降级 */
-  // #ifdef H5
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
-  // #endif
+  gap: 40rpx;
+  /* 2026-08-09 改版：margin-top 从 16rpx 增至 40rpx，三个按钮整体往下移动，
+   * 与卡片拉开视觉距离（合计留白 ~24px），按钮不遮挡卡片任何内容，
+   * 页面纵向层次更清晰（卡片区 → 留白 → 操作栏） */
+  margin-top: 40rpx;
+  flex-shrink: 0;
 }
 
 .action-btn {
@@ -2179,16 +2185,16 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
 }
 
-/* 通用按压态（替代 :active，兼容 mp-weixin） */
+/* 通用按压态（替代 :active，兼容 mp-weixin）：按压缩放反馈 */
 .action-btn--pressed {
   transform: scale(0.88);
   filter: brightness(0.92);
 }
 
-/* 左侧 X 关闭/不喜欢：小灰圆按钮（48rpx） */
+/* 左侧 X 不喜欢：48px 白色圆形按钮 + 灰色叉号（96rpx = 48px × 2） */
 .action-btn--reject {
-  width: 88rpx;
-  height: 88rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container);
   box-shadow: 0 4rpx 16rpx var(--c-black-shadow-md, rgba(0, 0, 0, 0.1));
@@ -2204,21 +2210,24 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   height: 36rpx;
 }
 
-/* 中间小纸条：胶囊形大按钮（最大，品牌色渐变） */
+/* 中间悄悄话：64px 品牌绿填充圆形按钮（128rpx = 64px × 2），付费私信主入口，视觉权重最高；
+ * 白色对话气泡图标 + 白色文字纵向堆叠 */
 .action-btn--whisper {
-  height: 88rpx;
-  padding: 0 56rpx;
-  border-radius: var(--r-full);
+  width: 128rpx;
+  height: 128rpx;
+  flex-direction: column;
+  gap: 4rpx;
+  border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
   box-shadow: var(--s-brand-lg, 0 8rpx 24rpx rgba(63, 207, 142, 0.3));
   border: 3rpx solid var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8));
-  gap: 10rpx;
 }
 
-/* 2026-08-08 走查：悄悄话暂未开放 → 按钮置灰（WHISPER_ENABLED=false） */
+/* 2026-08-08 走查：悄悄话暂未开放 → 按钮置灰（WHISPER_ENABLED=false），
+ * 轻量弱化以保留主入口视觉层级（点击仍提示敬请期待，不执行扣费/跳转） */
 .action-btn--whisper--disabled {
-  opacity: 0.55;
-  filter: saturate(0.6);
+  opacity: 0.72;
+  filter: saturate(0.75);
 }
 
 .action-btn__whisper-icon {
@@ -2228,24 +2237,24 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 }
 
 .action-btn__whisper-label {
-  font-size: var(--fs-lg, 28rpx);
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
   color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
   line-height: 1;
 }
 
-/* 右侧 ❤️ 喜欢：粉色心形圆按钮（88rpx） */
+/* 右侧 ❤️ 喜欢：56px 粉色填充圆形按钮 + 白色爱心（112rpx = 56px × 2） */
 .action-btn--like {
-  width: 88rpx;
-  height: 88rpx;
+  width: 112rpx;
+  height: 112rpx;
   border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
   box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.3));
 }
 
 .action-btn__like-icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 
 /* ========== 认证详情弹窗（设计需求） ========== */

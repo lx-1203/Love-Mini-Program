@@ -148,6 +148,45 @@ export function consumePendingTabQuery(path: string): Record<string, string> {
 // 避免 storage 桥接键字符串在多个文件间散落（原审计项：桥接键无常量）。
 export const TAB_QUERY_KEY = PENDING_TAB_QUERY_KEY;
 
+/* ================================================================
+   登录后待跳转存储（2026-08-09）
+   LockScreen 未登录引导页：点「立即登录并完善」→ 记录待跳转资料完善页 →
+   登录页成功登录后消费该记录自动进入资料完善，补全「登录 → 完善资料」链路。
+   ================================================================ */
+
+/** 登录后待跳转路径存储 key */
+export const PENDING_LOGIN_REDIRECT_KEY = "campus-love:pending-login-redirect";
+
+/**
+ * 记录登录成功后待跳转的路径（LockScreen 未登录引导入口调用）。
+ * @param path - 登录成功后要跳转的页面路径（须以 / 开头）
+ */
+export function setPendingLoginRedirect(path: string): void {
+  try {
+    uni.setStorageSync(PENDING_LOGIN_REDIRECT_KEY, path);
+  } catch (_e) {
+    // 存储失败时静默（仅丢失登录后自动跳转，不影响登录本身）
+  }
+}
+
+/**
+ * 消费登录后待跳转路径（即读即清，防止残留被下次登录误消费）。
+ * 登录页在登录成功统一跳转时调用。
+ * @returns 待跳转路径；不存在时返回 null
+ */
+export function consumePendingLoginRedirect(): string | null {
+  try {
+    const raw = uni.getStorageSync(PENDING_LOGIN_REDIRECT_KEY);
+    if (typeof raw === "string" && raw.length > 0) {
+      uni.removeStorageSync(PENDING_LOGIN_REDIRECT_KEY);
+      return raw;
+    }
+  } catch (_e) {
+    // 读取失败视为无待跳转
+  }
+  return null;
+}
+
 /**
  * 切换 TabBar 页面并携带 query（收尾轮修复：switchTab 不支持 query string，
  * 原 `openAppPath('/pages/village/index?tab=hot')` 的 query 会被静默丢弃）。

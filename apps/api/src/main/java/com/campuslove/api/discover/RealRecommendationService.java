@@ -422,6 +422,24 @@ public class RealRecommendationService implements RecommendationService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<RecommendedPersonView> getRecommendationsForGuest(RecommendationFilter filter) {
+        // 游客推荐：委托 Strategy 的中性排序算法（无个性化上下文），
+        // 再应用与登录用户一致的 in-memory 筛选（matchesFilter）
+        RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommendForGuest();
+        List<RecommendedPersonView> views = ranker.rankAndConvert(result, null);
+        if (filter == null || filter.isEmpty()) {
+            return views;
+        }
+        // infra R2-00238: 批量预加载候选用户基本资料，避免筛选逐条查库（N+1）
+        Map<Long, UserBasicProfile> basicProfileMap = loadBasicProfileMap(
+                views.stream().map(RecommendedPersonView::id).toList());
+        return views.stream()
+                .filter(view -> matchesFilter(view, filter, basicProfileMap))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<RecommendedPersonView> getHistory(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

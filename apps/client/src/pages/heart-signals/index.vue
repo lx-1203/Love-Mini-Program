@@ -18,7 +18,8 @@ import EmptyState from "../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { showErrorToast } from "../../utils/error-toast";
-// 修复（严格模式 noUnusedLocals）：IMAGE_PATHS 导入后未使用，已移除。
+// 2026-08-09：返回键图标需要 IMAGE_PATHS
+import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
 const likesStore = useLikesStore();
@@ -50,6 +51,19 @@ const declinedSignals = computed(() =>
 );
 
 const activeTab = ref<"pending" | "accepted" | "declined">("pending");
+
+/**
+ * 返回上一页（自定义导航栏返回键）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
 
 /** 倒计时刷新周期（毫秒）：每 30 秒重算一次倒计时文案 */
 const COUNTDOWN_REFRESH_MS = 30000;
@@ -185,7 +199,6 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
     <!-- 未完善资料：锁定页 -->
     <LockScreen
       v-if="!isUnlocked"
-      :page-name="$t('heartSignals.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -193,9 +206,21 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
       <!-- 顶部渐变 -->
       <view class="page-header-overlay" />
 
-      <!-- 页面头部 -->
+      <!-- 页面头部（2026-08-09：左侧补返回键，navigationStyle: custom 无系统返回栏） -->
       <view class="page-header">
-        <text class="page-header__title">{{ $t("heartSignals.navTitle") }}</text>
+        <view class="page-header__top">
+          <view
+            class="page-header__back press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="$t('common.back')"
+            @tap="goBack"
+          >
+            <image class="page-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          </view>
+          <text class="page-header__title">{{ $t("heartSignals.navTitle") }}</text>
+        </view>
         <text class="page-header__subtitle">{{ $t("heartSignals.navSubtitle") }}</text>
       </view>
 
@@ -372,6 +397,30 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
   margin-bottom: var(--section-gap);
   position: relative;
   z-index: 1;
+}
+
+/* 2026-08-09：返回键 + 标题（同一行） */
+.page-header__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.page-header__back {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .page-header__title {

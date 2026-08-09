@@ -12,6 +12,8 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { openAppPath } from "../../utils/navigation";
 import { resolveMediaUrl } from "../../utils/media";
+// 2026-08-09：返回键图标需要 IMAGE_PATHS
+import { IMAGE_PATHS } from "../../config/images";
 import {
   useVillageStore,
   formatRelativeTime,
@@ -29,6 +31,19 @@ const { historyPosts, loadingHistory } = storeToRefs(villageStore);
  */
 function initialOf(name?: string | null): string {
   return name && name.length > 0 ? name.charAt(0) : "?";
+}
+
+/**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到村口 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/village/index" });
+  }
 }
 
 /** 上拉加载中 */
@@ -122,6 +137,18 @@ onUnmounted(() => {
 
 <template>
   <view class="history-page">
+    <!-- 2026-08-09：返回键（常驻，navigationStyle: custom 无系统返回栏） -->
+    <view
+      class="history-back press-feedback"
+      hover-class="press-feedback--active"
+      hover-stay-time="120"
+      role="button"
+      :aria-label="t('common.back')"
+      @tap="goBack"
+    >
+      <image class="history-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+    </view>
+
     <!-- 顶部操作栏 -->
     <view v-if="historyPosts.length > 0" class="history-toolbar">
       <text class="history-count">{{ t("village.history.count", { n: historyPosts.length }) }}</text>
@@ -247,6 +274,24 @@ onUnmounted(() => {
 .history-page {
   min-height: 100vh;
   background: var(--page-bg, #f5f6fa);
+}
+
+/* 2026-08-09：返回键（圆角图标按钮） */
+.history-back {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--section-gap);
+}
+
+.history-back__icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 /* 顶部操作栏 */

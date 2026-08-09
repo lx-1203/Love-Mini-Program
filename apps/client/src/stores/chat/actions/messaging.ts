@@ -35,7 +35,10 @@ import { uploadVoiceFile } from "@/services/voice-upload";
 let messageIdSeq = 0;
 
 /**
- * 发送文本消息（带状态持久化与失败重试）。
+ * 发送文本/表情消息（带状态持久化与失败重试）。
+ *
+ * 2026-08-09 表情包机制：新增 kind 参数，支持 kind="emoji" 发送基础表情消息
+ * （与私信链路 sendMessage 的 kind 参数对齐；SendMessageRequest.kind 本就含 "emoji"）。
  *
  * 修复（P1 BUG）：
  * 1. 新增消息投递状态持久化：通过 messageDeliveryStatus 映射表跟踪
@@ -46,11 +49,13 @@ let messageIdSeq = 0;
  * Task 1.1.5：使用 `SendMessageRequest` 接口替代内联对象 + 隐式断言，
  * 与后端 `Schemas["ChatMessageRequest"]` 契约对齐，消除 `as any` 类型漏洞。
  *
- * @param body - 消息正文
+ * @param body - 消息正文（emoji 消息为 emoji 字符本身）
+ * @param kind - 消息类型（默认 text；emoji 消息传 "emoji"）
  */
 export async function sendText(
   this: ChatStoreThis,
-  body: string
+  body: string,
+  kind: SendMessageRequest["kind"] = "text"
 ): Promise<void> {
   if (!this.activeSession) {
     return;
@@ -65,7 +70,7 @@ export async function sendText(
     // Task 1.1.5：构造强类型 SendMessageRequest，替代内联对象 + 隐式 any 推断
     const payload: SendMessageRequest = {
       sender: "self",
-      kind: "text",
+      kind,
       body,
       durationSeconds: null,
     };
@@ -86,7 +91,7 @@ export async function sendText(
             {
               id: `m-${Date.now()}-${++messageIdSeq}`, // infra R2-00085: 避免同毫秒碰撞
               sender: "self",
-              kind: "text",
+              kind,
               body,
               sentAt: new Date().toISOString(),
               durationSeconds: null,

@@ -936,7 +936,58 @@ export default {
       quote: "引用",
       recallAria: "撤回该消息",
       recall: "撤回",
+      /* 2026-08-09 微信 1:1 重构：长按菜单新增转发/删除 */
+      forwardAria: "转发该消息",
+      forward: "转发",
+      deleteAria: "删除该消息",
+      delete: "删除",
     },
+    /* 2026-08-09 微信 1:1 重构：聊天首条固定破冰提示 */
+    matchGreeting: {
+      text: "你们已互相匹配成功，打个招呼开启聊天吧～",
+      buttonFallback1: "你平时喜欢做什么？",
+      buttonFallback2: "今天在学校吗？",
+      aria: "破冰提示，点击按钮可直接发送",
+      sendAria: "发送破冰消息：{text}",
+    },
+    /* 2026-08-09 微信 1:1 重构：顶部导航「···」更多菜单 */
+    nav: {
+      moreAria: "更多操作",
+      viewProfile: "查看对方主页",
+      mute: "消息免打扰",
+      unmute: "关闭免打扰",
+      block: "拉黑",
+      blockConfirmTitle: "拉黑对方",
+      blockConfirmContent: "拉黑后将无法接收对方消息，确定要拉黑吗？",
+      blockDone: "已拉黑（本次会话生效）",
+      report: "举报",
+      reportReasonHint: "请选择举报原因",
+      reportReasonHarass: "骚扰",
+      reportReasonAbuse: "辱骂",
+      reportReasonFraud: "诈骗",
+      reportReasonOther: "其他",
+      reportDone: "举报已提交",
+    },
+    /* 2026-08-09 微信 1:1 重构：对方状态文字（后端暂无 presence 接口，mock 演示/固定文案） */
+    statusOnline: "在线",
+    statusActive: "刚刚活跃",
+    statusOffline: "离线",
+    /* 2026-08-09 微信 1:1 重构：浏览历史时的新消息提示条 */
+    newMessageHint: "有新消息",
+    /* 2026-08-09 微信 1:1 重构：正在输入提示 */
+    typing: "对方正在输入...",
+    typingAria: "对方正在输入",
+    /* 2026-08-09 微信 1:1 重构：转发/删除 */
+    forwardSuccess: "已转发",
+    forwardNotSupported: "该消息类型暂不支持转发",
+    forwardNoTarget: "暂无可转发的会话",
+    deleteLocalOnly: "已删除（仅当前设备生效）",
+    /* 2026-08-09 微信 1:1 重构：表情面板 */
+    emojiPanelAria: "表情面板",
+    emojiPanelOpenAria: "打开表情面板",
+    /* 2026-08-09 微信 1:1 重构：「+」更多菜单图片占位 */
+    moreMenuImage: "发送图片",
+    moreMenuImageWip: "图片发送功能开发中",
   },
 
   /* ========== 喜欢列表页文案 ========== */
@@ -1044,6 +1095,14 @@ export default {
     choosePhotoFailed: "选择图片失败",
     chooseVideoFailed: "选择视频失败",
     uploadingProgress: "上传中...",
+    /* 2026-08-09：照片墙批量上传 + 空态引导 + 审核角标 */
+    uploadingPhotos: "上传中 {done}/{total}",
+    photoWallEmptyHint: "上传生活照，让更多人认识你",
+    photoAuditPending: "审核中",
+    photoAuditRejected: "未通过",
+    avatarAuditPending: "头像审核中",
+    avatarAuditRejected: "头像未通过",
+    auditRejectedTip: "未通过：{remark}",
     pageName: "我的",
     titleTip: "提示",
     /* 功能3：访客记录页 */
@@ -1092,6 +1151,12 @@ export default {
     avatarEditAria: "点击更换头像",
     avatarPreviewAria: "点击放大查看头像",
     avatarUpdated: "头像已更新",
+    /* 2026-08-09：头像上传接线（底部操作菜单 + 首次引导气泡） */
+    avatarUploadHint: "上传真实头像，匹配率提升80%",
+    avatarMenuAria: "上传或查看头像",
+    avatarMenuView: "查看大图",
+    avatarMenuAlbum: "从相册选择",
+    avatarMenuCamera: "拍照",
     /* P1-05：消息中心入口（官方号会话承载系统通知） */
     notifications: "消息中心",
     devEntryAria: "开发者入口",
@@ -1125,6 +1190,9 @@ export default {
     voiceDeleted: "语音状态已删除",
     voiceChooseFailed: "选择语音失败",
     voiceNotSupported: "当前环境不支持语音录制",
+    /* 2026-08-09：已录制语音卡片新增「重录」入口 */
+    voiceReRecord: "重录",
+    voiceReRecordAria: "重新录制语音",
     taskCenter: "任务中心",
     taskCenterDesc: "完成任务赚取交友币",
     /* ========== 任务中心页 ========== */
@@ -2066,15 +2134,11 @@ export default {
   /* ========== 锁定页文案 ========== */
   lock: {
     thisFeature: "此功能",
-    unlockHint: "完善资料后才能解锁{name}",
     unlockHintModal: "完成资料完善即可解锁 {name}",
     completionProgress: "当前完善度 {n}%",
     completionProgressEncourage: "当前完善度 {n}%，继续加油～",
-    defaultSubtitle: "完善资料，开启更多校园恋爱功能",
     defaultSubtitleModal: "完善资料，开启更多校园恋爱功能",
-    completeNow: "立即完善",
     completeNowAria: "立即完善资料",
-    footerTip: "资料越完善，匹配越精准",
     title: "解锁功能",
     confirm: "去完善资料",
     cancel: "暂不完善",
@@ -2083,6 +2147,21 @@ export default {
     overlayDesc: "点击「去完善资料」即可解锁此功能",
     overlayBtn: "我知道了",
     overlayBtnAria: "我知道了，关闭引导",
+    /* LockScreen 全屏引导页 —— 未登录：主文案侧重登录授权 */
+    titleLoggedOut: "登录后解锁完整交友功能",
+    subtitleLoggedOut: "完成登录授权与基础资料填写，即可开启匹配、聊天、校园活动等全部功能",
+    primaryLoggedOut: "立即登录并完善",
+    /* LockScreen 全屏引导页 —— 已登录但资料未完善：主文案侧重完善资料 */
+    titleLoggedIn: "完善资料，解锁完整交友功能",
+    subtitleLoggedIn: "完成基础资料填写，即可开启匹配、聊天、校园活动等全部功能",
+    primaryLoggedIn: "立即完善",
+    /* LockScreen 全屏引导页 —— 通用 */
+    secondary: "先逛逛公开内容",
+    benefitMatch: "解锁精准匹配推荐",
+    benefitCampus: "查看同校校友主页",
+    benefitChat: "发起私信与匿名聊天",
+    footerTip: "资料越完善，匹配越精准，曝光机会越多",
+    closeAria: "关闭引导，返回公开内容",
   },
 
   /* ========== 空状态文案 ========== */
@@ -3098,6 +3177,7 @@ export default {
   apiErrors: {
     badRequest: "请求参数有误，请检查后重试",
     unauthorized: "登录已过期，请重新登录",
+    loginRequired: "请先登录后再使用该功能",
     forbidden: "无权限执行此操作",
     notFound: "请求的资源不存在",
     serverError: "服务暂时不可用，请稍后重试",

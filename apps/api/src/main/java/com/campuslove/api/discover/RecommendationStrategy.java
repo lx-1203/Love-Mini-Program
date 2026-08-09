@@ -224,6 +224,56 @@ public class RecommendationStrategy {
                 membershipMap);
     }
 
+    /**
+     * 游客（未登录）推荐计算（2026-08-09 免登录可逛）。
+     *
+     * <p>与 {@link #doRecommend} 的区别：无个人上下文，不加载用户偏好/校区/兴趣圈，
+     * 不计算排除集合（游客无自己/已喜欢/已 pass），scope 视为不限；
+     * 评分仅含活跃度加分（最近 N 天发帖数），保证列表非空且新鲜内容靠前。</p>
+     *
+     * <p>候选池与预加载逻辑与登录用户一致（仅 active + USER，排除管理员/禁用账号；
+     * 批量预加载 campusProfile / basicProfile / circleMemberships），
+     * 保证游客视图与登录用户视图字段口径一致（实时更新同步）。</p>
+     *
+     * @return 游客推荐上下文（空个人上下文 + 中性排序候选）
+     */
+    @Transactional(readOnly = true)
+    public RecommendResult doRecommendForGuest() {
+        // 候选池：与 doRecommend 一致，仅 status=active 且 role=USER 的普通用户
+        List<User> allUsers = userRepository.findByStatusAndRole(
+                "active", "USER",
+                PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
+
+        // 批量预加载候选用户的关联数据（与 doRecommend 相同，保证视图字段完整）
+        List<Long> candidateIds = allUsers.stream().map(User::getId).toList();
+        Map<Long, UserCampusProfile> campusProfileMap = userCampusProfileRepository.findByUserIdIn(candidateIds)
+                .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
+                .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
+        Map<Long, List<CircleMembership>> membershipMap = loadMemberships(candidateIds);
+
+        // 活跃度加分（与 doRecommend 公式一致：最近 N 天发帖数，封顶 activityMaxPosts 条）
+        Map<Long, Long> recentPostCountMap = loadRecentPostCounts(candidateIds);
+
+        List<ScoredUser> scoredUsers = new ArrayList<>();
+        for (User candidate : allUsers) {
+            long recentPostCount = recentPostCountMap.getOrDefault(candidate.getId(), 0L);
+            int score = (int) Math.min(recentPostCount, recommendationConfig.getActivityMaxPosts())
+                    * recommendationConfig.getActivityWeight();
+            scoredUsers.add(new ScoredUser(candidate, score));
+        }
+
+        // 游客无个人上下文：校区/专业/兴趣圈均为空
+        return new RecommendResult(
+                scoredUsers,
+                "",
+                "",
+                Collections.emptySet(),
+                campusProfileMap,
+                basicProfileMap,
+                membershipMap);
+    }
+
     // ---- 排除集合计算 ----
 
     /**

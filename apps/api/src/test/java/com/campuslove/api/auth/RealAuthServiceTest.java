@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.PasswordEncoderConfig;
@@ -503,6 +504,7 @@ class RealAuthServiceTest {
         );
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, disabledService::loginAsGuest);
+        // 修复（R4-02553）：禁用态抛 OperationForbiddenException（403），不再抛 IllegalStateException（500）
+        assertThrows(OperationForbiddenException.class, disabledService::loginAsGuest);
     }
 }

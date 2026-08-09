@@ -62,7 +62,8 @@ public enum AuditOperation {
     DELETE_SHOP_ITEM("删除商城商品"),
     PUBLISH_SHOP_ITEM("上架商城商品"),
     UNPUBLISH_SHOP_ITEM("下架商城商品"),
-    ADJUST_WALLET("调整钱包余额");
+    ADJUST_WALLET("调整钱包余额"),
+    AUDIT_MEDIA_ASSET("审核媒体图片");
 
     private final String description;
 

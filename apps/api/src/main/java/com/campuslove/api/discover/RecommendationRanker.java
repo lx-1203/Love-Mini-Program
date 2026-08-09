@@ -2,12 +2,14 @@ package com.campuslove.api.discover;
 
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.CampusCertificationService;
+import com.campuslove.api.media.MediaAssetService;
 import com.campuslove.api.config.RecommendationConfig;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.HeartSignal.SignalStatus;
 import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Like.LikeStatus;
+import com.campuslove.api.entity.MediaAsset;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
@@ -104,6 +106,12 @@ public class RecommendationRanker {
      */
     private final WalletTransactionLogRepository walletTransactionLogRepository;
 
+    /**
+     * 媒体资产审核服务（2026-08-09：他人视角照片墙过滤 approved-only）。
+     * 可为 null（兼容旧测试构造器）：为 null 时不过滤（保持旧测试行为）。
+     */
+    private final MediaAssetService mediaAssetService;
+
     @org.springframework.beans.factory.annotation.Autowired
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
@@ -118,7 +126,8 @@ public class RecommendationRanker {
             UserPreferenceCalculator preferenceCalculator,
             CampusCertificationRepository campusCertificationRepository,
             PostRepository postRepository,
-            WalletTransactionLogRepository walletTransactionLogRepository) {
+            WalletTransactionLogRepository walletTransactionLogRepository,
+            MediaAssetService mediaAssetService) {
         this.recommendationConfig = recommendationConfig;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
@@ -132,6 +141,7 @@ public class RecommendationRanker {
         this.campusCertificationRepository = campusCertificationRepository;
         this.postRepository = postRepository;
         this.walletTransactionLogRepository = walletTransactionLogRepository;
+        this.mediaAssetService = mediaAssetService;
     }
 
     /**
@@ -175,7 +185,7 @@ public class RecommendationRanker {
         this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
                 userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
                 likeRepository, userRepository, campusCertificationService,
-                preferenceCalculator, null, null, null);
+                preferenceCalculator, null, null, null, null);
     }
 
     /**
@@ -201,7 +211,7 @@ public class RecommendationRanker {
         this(recommendationConfig, userCampusProfileRepository, userBasicProfileRepository,
                 userScheduleProfileRepository, circleMembershipRepository, heartSignalRepository,
                 likeRepository, userRepository, campusCertificationService,
-                preferenceCalculator, campusCertificationRepository, postRepository, null);
+                preferenceCalculator, campusCertificationRepository, postRepository, null, null);
     }
 
     // ---- 排序与截断 ----
@@ -534,6 +544,18 @@ public class RecommendationRanker {
         List<String> photoGallery = basicProfile != null
                 ? preferenceCalculator.parseStringList(basicProfile.getPhotoGallery())
                 : List.of();
+        // 2026-08-09：他人视角过滤——照片墙仅展示审核通过的图片（pending/rejected 对他人不可见）。
+        // mediaAssetService 为 null（旧测试构造器）时不过滤，保持旧测试行为。
+        if (!photoGallery.isEmpty() && mediaAssetService != null) {
+            Map<String, MediaAsset> assetMap = mediaAssetService.findByUrls(photoGallery);
+            photoGallery = photoGallery.stream()
+                    .filter(url -> {
+                        MediaAsset asset = assetMap.get(url);
+                        return asset == null
+                                || MediaAssetService.AUDIT_APPROVED.equals(asset.getAuditStatus());
+                    })
+                    .toList();
+        }
         String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
         String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
         String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);

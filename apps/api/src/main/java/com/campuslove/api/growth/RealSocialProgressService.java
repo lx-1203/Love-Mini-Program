@@ -81,7 +81,15 @@ public class RealSocialProgressService implements SocialProgressService {
      * @param userId 用户 ID
      */
     @Override
-    @Transactional
+    // 修复（R4-00327 埋点事务隔离，2026-08-09）：推荐链路在只读事务内调用本方法
+    // （RealRecommendationService.getRecommendations @Transactional(readOnly=true) →
+    // RecommendationCacheManager.getCachedRecommendations → recordExposure），
+    // 原 REQUIRED 传播会加入外层只读事务：getOrCreateProgress 对无记录用户的
+    // 懒创建 INSERT 被 MySQL 只读连接拒绝（"Connection is read-only"）→ 事务被
+    // 标记 rollback-only → 异常延迟到外层提交阶段抛 UnexpectedRollbackException → 500
+    // （CacheManager 的 catch 拦不住提交期异常）。REQUIRES_NEW 强制独立可写事务：
+    // 埋点失败仅回滚埋点自身，且异常在方法内抛出、可被调用方 catch 兜底。
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void recordExposure(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

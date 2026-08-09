@@ -30,6 +30,19 @@ const categories = computed(() => [
 ]);
 const activeCategory = ref("all");
 
+/**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
+
 /** 商品项 */
 interface ShopItem {
   id: string;
@@ -162,9 +175,21 @@ function goToDetail(itemId: string) {
 
 <template>
   <view class="shop-page page-fade-in">
-    <!-- 页面标题 -->
+    <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="shop-header">
-      <text class="shop-header__title">{{ t('shop.pageTitle') }}</text>
+      <view class="shop-header__top">
+        <view
+          class="shop-header__back press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.back')"
+          @tap="goBack"
+        >
+          <image class="shop-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        </view>
+        <text class="shop-header__title">{{ t('shop.pageTitle') }}</text>
+      </view>
     </view>
 
     <!-- Task D：当前积分余额展示条 -->
@@ -287,6 +312,30 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding-top: calc(env(safe-area-inset-top) + 24rpx);
   background: transparent;
   z-index: 10;
+}
+
+/* 2026-08-09：返回键 + 标题（同一行） */
+.shop-header__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.shop-header__back {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .shop-header__title {

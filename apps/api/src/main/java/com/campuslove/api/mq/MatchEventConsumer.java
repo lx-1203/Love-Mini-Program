@@ -93,6 +93,7 @@ public class MatchEventConsumer {
             switch (eventType) {
                 case "match" -> handleMutualMatch(message);
                 case "like", "super_like" -> handleSingleLike(message);
+                case "visitor" -> handleVisitor(message);
                 case "unmatch" -> handleUnmatch(message);
                 default -> log.warn("未知的匹配事件类型：{}, message={}", eventType, message);
             }
@@ -210,6 +211,44 @@ public class MatchEventConsumer {
         persistNotification(targetUserId, userId, NotificationType.unmatch,
                 "匹配已取消",
                 "你们的匹配已取消",
+                createdAt);
+    }
+
+    /**
+     * 处理访客（visitor）事件。
+     *
+     * <p>通知被访用户：有人查看了你的资料。</p>
+     *
+     * <p>2026-08-09 访客通知链路修复：{@code MatchRecorder.recordVisit} 写入访客记录后
+     * 发布 visitor 事件，此处负责 WebSocket 实时推送 + notifications 表持久化，
+     * 与「喜欢/匹配」通知走同一消费链路，保证通知中心数据完整。</p>
+     *
+     * @param message 匹配事件消息
+     */
+    private void handleVisitor(MatchEventMessage message) {
+        Long userId = message.getUserId();
+        Long targetUserId = message.getTargetUserId();
+        LocalDateTime createdAt = toLocalDateTime(message.getCreatedAt());
+
+        // 通过 WebSocket 推送访客通知
+        if (messagingTemplate != null) {
+            try {
+                messagingTemplate.convertAndSendToUser(
+                        String.valueOf(targetUserId),
+                        WS_MATCHES_QUEUE,
+                        Map.of("type", "visitor",
+                                "fromUserId", userId,
+                                "createdAt", createdAt.toString()));
+            } catch (RuntimeException e) {
+                log.warn("WebSocket 推送访客通知失败：targetUserId={}, error={}",
+                        targetUserId, e.getMessage());
+            }
+        }
+
+        // 持久化通知
+        persistNotification(targetUserId, userId, NotificationType.visitor,
+                "有人查看了你的资料",
+                "有位同学看了你的主页，快去看看吧",
                 createdAt);
     }
 

@@ -71,7 +71,13 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
       throw new Error(t("storeErrors.discover.recommendQuotaExhausted"));
     }
 
-    if (useMock()) {
+    const sessionStore = useSessionStore();
+    // 游客左滑（未登录）：本地放行——仅记录并推进卡片，不调后端 pass 接口，
+    // 避免 401 把游客强拉登录页（寻觅页交互守卫配套：右滑/发消息才要求登录）。
+    // 游客本地放行时跳过自动补卡（fetchCards 需认证，会再次触发 401）。
+    const isGuest = !sessionStore.isLoggedIn;
+
+    if (useMock() || isGuest) {
       const record: ViewedCardRecord = {
         cardId,
         userId: card.userId,
@@ -88,8 +94,8 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
       this.syncHistoryCards();
       // 存储同步由 watch 自动触发（监听 viewedCards 变更）
 
-      // 卡片不足时自动补充
-      if (this.cards.length < 2 && this.hasMore && !this.isLimitReached) {
+      // 卡片不足时自动补充（游客跳过：未登录拉卡会 401）
+      if (!isGuest && this.cards.length < 2 && this.hasMore && !this.isLimitReached) {
         await this.fetchCards();
       }
       return;
@@ -97,7 +103,6 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
 
     // 左滑（不感兴趣）：调用后端 pass 端点
     // POST /api/matches/pass
-    const sessionStore = useSessionStore();
     const currentUserId = sessionStore.userSession?.userId ?? "";
     await passUserApi(currentUserId, card.userId);
 

@@ -48,6 +48,29 @@ class TempChatMessageServiceTest {
     }
 
     /**
+     * 2026-08-09 表情包机制：emoji 消息发送应原样落库
+     * （kind="emoji" + 真实 4 字节 emoji 字符，验证 utf8mb4 链路）。
+     */
+    @Test
+    void sendMessage_emojiKind_savesEmojiBodyAndKind() {
+        TempChatSession session = createSession(SessionPhase.active);
+        when(sessionService.resolveSession("sid")).thenReturn(session);
+        when(sessionService.isSessionExpired(session)).thenReturn(false);
+        when(sessionService.toMessageView(any())).thenReturn(mock(ChatMessageView.class));
+        ArgumentCaptor<TempChatMessage> captor = ArgumentCaptor.forClass(TempChatMessage.class);
+        when(messageRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 😊 = U+1F60A，超出 BMP 的 4 字节 emoji，验证存储链路不截断
+        ChatMessageRequest req = new ChatMessageRequest("self", "emoji", "😊", null, null);
+        messageService.sendMessage("sid", req, 1L);
+
+        TempChatMessage saved = captor.getValue();
+        assertEquals("emoji", saved.getKind(), "kind 应原样落库为 emoji");
+        assertEquals("😊", saved.getBody(), "4 字节 emoji 字符应原样落库");
+        assertEquals("sent", saved.getDeliveryStatus());
+    }
+
+    /**
      * 场景：buildMessagePreview 对 voice 类型应返回固定文本。
      */
     @Test

@@ -52,6 +52,19 @@ function switchCategory(category: CampusTopicCategory) {
 }
 
 /**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
+
+/**
  * 点击话题进入详情
  * @param topicId - 话题 ID
  */
@@ -132,6 +145,17 @@ onMounted(async () => {
     <!-- 顶部学校信息栏 + 认证状态 -->
     <view class="campus-header">
       <view class="header-top">
+        <!-- 2026-08-09：返回键（渐变背景上使用半透明底） -->
+        <view
+          class="campus-back press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.back')"
+          @tap="goBack"
+        >
+          <image class="campus-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        </view>
         <view class="header-school">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
           <text class="school-name">{{ certificationInfo?.schoolName || t('campus.index.defaultSchool') }}</text>
@@ -267,6 +291,24 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .header-top {
   display: flex;
   align-items: center;
+  gap: 16rpx;
+}
+
+/* 2026-08-09：返回键（渐变背景上半透明白底） */
+.campus-back {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campus-back__icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .header-school {

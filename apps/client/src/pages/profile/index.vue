@@ -9,6 +9,8 @@ import { onShow, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
+// 登录态守卫：未登录时不发受保护请求（冷启动免登录进本页时避免 401 雪崩）
+import { getToken } from "../../services/http";
 import { useProfileStore } from "../../stores/profile";
 import { useLikesStore } from "../../stores/likes";
 import { useCoinsStore } from "../../stores/coins";
@@ -51,6 +53,8 @@ import { toLocalImage } from "../../utils/image-local";
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
+// 2026-08-09：图片压缩共享工具（批量上传照片墙前压缩，质量 80）
+import { compressImages } from "../../utils/compress-image";
 
 /**
  * 当前页面对象（最小契约）。
@@ -141,13 +145,25 @@ const uploadKind = ref<UploadKind>(null);
 const PHOTO_GALLERY_MAX = 6;
 
 /**
- * 照片墙格子列表（始终渲染 6 格，已上传的格子显示图片，空格子显示"+"占位）
+ * 照片墙审核项列表（2026-08-09）：URL → 审核状态 映射，供格子角标使用。
  */
-const photoCells = computed<Array<{ index: number; url: string; filled: boolean }>>(() => {
-  const cells: Array<{ index: number; url: string; filled: boolean }> = [];
+const { photoGalleryItems, avatarAuditStatus } = storeToRefs(profileStore);
+
+/**
+ * 照片墙格子列表（始终渲染 6 格，已上传的格子显示图片，空格子显示"+"占位）
+ * 2026-08-09：每格携带审核状态（pending 审核中 / rejected 未通过），供角标展示。
+ */
+const photoCells = computed<Array<{ index: number; url: string; filled: boolean; auditStatus: string }>>(() => {
+  const cells: Array<{ index: number; url: string; filled: boolean; auditStatus: string }> = [];
+  const itemMap = new Map(photoGalleryItems.value.map((it) => [it.url, it.auditStatus]));
   for (let i = 0; i < PHOTO_GALLERY_MAX; i++) {
     const url = photoGallery.value[i] ?? "";
-    cells.push({ index: i, url, filled: url.length > 0 });
+    cells.push({
+      index: i,
+      url,
+      filled: url.length > 0,
+      auditStatus: url.length > 0 ? (itemMap.get(url) ?? "approved") : "approved",
+    });
   }
   return cells;
 });
@@ -448,15 +464,135 @@ function handleStatTap(index: number) {
   }
 }
 
-/** 点击头像放大查看（QQ 主页交互：头像仅预览，修改走编辑资料） */
-function handleAvatarPreview() {
-  const url = profileView.value.avatarUrl;
-  if (!url) return;
-  try {
-    uni.previewImage({ urls: [url], current: url });
-  } catch (_e) {
-    // 预览失败静默
+/**
+ * 点击头像（2026-08-09 头像上传接线）：
+ * - 查看他人主页：保持预览大图
+ * - 自己主页：弹出底部操作菜单「查看大图 / 从相册选择 / 拍照 / 取消」
+ */
+function handleAvatarTap() {
+  lightHaptic();
+  if (!isOwnProfile.value) {
+    const url = profileView.value.avatarUrl;
+    if (!url) return;
+    try {
+      uni.previewImage({ urls: [url], current: url });
+    } catch (_e) {
+      // 预览失败静默
+    }
+    return;
   }
+  uni.showActionSheet({
+    itemList: [
+      t("profile.avatarMenuView"),
+      t("profile.avatarMenuAlbum"),
+      t("profile.avatarMenuCamera"),
+    ],
+    success: (res) => {
+      const idx = res.tapIndex;
+      if (idx === 0) {
+        const url = profileView.value.avatarUrl;
+        if (!url) return;
+        try {
+          uni.previewImage({ urls: [url], current: url });
+        } catch (_e) {
+          // 预览失败静默
+        }
+      } else if (idx === 1) {
+        void chooseAvatarImage("album");
+      } else if (idx === 2) {
+        void chooseAvatarImage("camera");
+      }
+    },
+    fail: () => {
+      // 用户取消，静默
+    },
+  });
+}
+
+/**
+ * 选择头像图片（与上传解耦，便于测试）。
+ * 链路复用背景图上传模式（Task 0.2.4：先检查隐私授权）。
+ *
+ * @param sourceType - 图片来源（相册 / 相机）
+ */
+async function chooseAvatarImage(sourceType: "album" | "camera") {
+  if (isUploading.value) return;
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({
+      title: t("profile.privacyRequiredImage"),
+      icon: "none",
+    });
+    return;
+  }
+  uni.chooseImage({
+    count: 1,
+    sizeType: ["compressed"],
+    sourceType: [sourceType],
+    success: (res) => {
+      const tempPath = res.tempFilePaths?.[0] ?? "";
+      if (!tempPath) {
+        uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
+        return;
+      }
+      const file = buildFileLike(tempPath);
+      void uploadAvatarFile(file);
+    },
+    fail: (err) => {
+      // 用户取消选择时不报错（errMsg 含 cancel）
+      if (!String(err?.errMsg || "").includes("cancel")) {
+        uni.showToast({ title: t("profile.choosePhotoFailed"), icon: "none" });
+      }
+    },
+  });
+}
+
+/**
+ * 实际执行头像上传（与 chooseImage 解耦，便于测试）。
+ * profileStore.uploadAvatar 成功后即时刷新头像区。
+ *
+ * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
+ */
+async function uploadAvatarFile(file: UniUploadFileLike) {
+  isUploading.value = true;
+  uploadKind.value = "avatar";
+  uploadProgress.value = t("profile.uploading");
+  try {
+    await profileStore.uploadAvatar(file);
+    successHaptic();
+    uni.showToast({ title: t("profile.avatarUpdated"), icon: "success" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isUploading.value = false;
+    uploadKind.value = null;
+    uploadProgress.value = "";
+  }
+}
+
+/**
+ * 首次进入头像气泡提示（2026-08-09）：
+ * 本人主页且未设置头像时，显示「上传真实头像」引导气泡，3 秒后自动消失。
+ * storage 标记防止每次进入都弹（每安装/清除缓存一次）。
+ */
+const AVATAR_HINT_KEY = "profile_avatar_upload_hint_shown";
+const showAvatarHint = ref(false);
+let avatarHintTimer: ReturnType<typeof setTimeout> | null = null;
+
+function maybeShowAvatarHint(): void {
+  if (!isOwnProfile.value || profileView.value.avatarUrl) return;
+  if (uni.getStorageSync(AVATAR_HINT_KEY)) return;
+  showAvatarHint.value = true;
+  uni.setStorageSync(AVATAR_HINT_KEY, "1");
+  if (avatarHintTimer) {
+    clearTimeout(avatarHintTimer);
+  }
+  avatarHintTimer = setTimeout(() => {
+    showAvatarHint.value = false;
+    avatarHintTimer = null;
+  }, 3000);
 }
 
 /**
@@ -1089,8 +1225,11 @@ async function uploadBackground(file: UniUploadFileLike) {
 }
 
 /**
- * Task E3 / H-08：点击照片墙空格子触发图片选择 + 上传到指定索引。
- * @param index - 目标索引（0-5），应为当前 photoGallery.length
+ * Task E3 / H-08：点击照片墙空格子触发图片选择（2026-08-09 批量版）。
+ * - 一次最多选择剩余可上传数量（6 - 已有张数）
+ * - 选中后压缩（质量 80）并逐张顺序上传到空格子
+ *
+ * @param index - 目标索引（0-5），空格子索引应为当前 photoGallery.length
  *
  * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
  */
@@ -1098,6 +1237,11 @@ async function handleUploadPhoto(index: number) {
   if (isUploading.value) return;
   if (index < 0 || index >= PHOTO_GALLERY_MAX) return;
   lightHaptic();
+  const remaining = PHOTO_GALLERY_MAX - photoGallery.value.length;
+  if (remaining <= 0) {
+    uni.showToast({ title: t("profile.albumFull", { n: PHOTO_GALLERY_MAX }), icon: "none" });
+    return;
+  }
   try {
     await ensurePrivacyAuthorized();
   } catch (_e) {
@@ -1107,18 +1251,21 @@ async function handleUploadPhoto(index: number) {
     });
     return;
   }
+  // 从第一个空格开始连续填充（防御：以实际已有张数为准）
+  const startIdx = Math.min(index, photoGallery.value.length);
   uni.chooseImage({
-    count: 1,
+    count: remaining,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
-    success: (res) => {
-      const tempPath = res.tempFilePaths?.[0] ?? "";
-      if (!tempPath) {
+    success: async (res) => {
+      const tempPaths = (res.tempFilePaths as string[]) ?? [];
+      if (tempPaths.length === 0) {
         uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
         return;
       }
-      const file = buildFileLike(tempPath);
-      void uploadPhoto(file, index);
+      // 批量压缩（单张失败回退原图，不阻塞后续）
+      const compressedPaths = await compressImages(tempPaths);
+      await uploadPhotos(compressedPaths, startIdx);
     },
     fail: (err) => {
       if (!String(err?.errMsg || "").includes("cancel")) {
@@ -1129,17 +1276,24 @@ async function handleUploadPhoto(index: number) {
 }
 
 /**
- * 实际执行照片墙上传
+ * 实际执行照片墙批量上传（与 chooseImage 解耦，便于测试）。
+ * 逐张顺序上传，进度文案显示 {done}/{total}。
  *
- * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
- * @param index - 照片墙目标索引（0-5）
+ * @param paths - 本地临时图片路径数组（已压缩）
+ * @param startIdx - 起始目标索引（0-5）
  */
-async function uploadPhoto(file: UniUploadFileLike, index: number) {
+async function uploadPhotos(paths: string[], startIdx: number) {
   isUploading.value = true;
   uploadKind.value = "photo";
-  uploadProgress.value = t("profile.uploading");
+  const total = paths.length;
   try {
-    await profileStore.uploadPhotoAtIndex(file, index);
+    for (let i = 0; i < total; i++) {
+      const targetIdx = startIdx + i;
+      if (targetIdx >= PHOTO_GALLERY_MAX) break;
+      uploadProgress.value = t("profile.uploadingPhotos", { done: i + 1, total });
+      const file = buildFileLike(paths[i] ?? "");
+      await profileStore.uploadPhotoAtIndex(file, targetIdx);
+    }
     successHaptic();
     uni.showToast({ title: t("profile.photoAdded"), icon: "success" });
   } catch (error) {
@@ -1218,8 +1372,16 @@ let profileRequestedOnce = false;
 onShow(() => {
   loadPageUserIdParam();
   if (profileRequestedOnce) return;
+  // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
+  // 冷启动无 token 时 onShow 会并发拉 basic/campus/schedule/stats/social-progress
+  // → 全部 401 雪崩 + 每条上报 Sentry「登录已过期」）。
+  // 不置 profileRequestedOnce：登录后首次 onShow 会再次进入并正常拉取。
+  if (!getToken()) return;
   profileRequestedOnce = true;
-  profileStore.fetchProfile().catch((error) => {
+  profileStore.fetchProfile().then(() => {
+    // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
+    maybeShowAvatarHint();
+  }).catch((error) => {
     // R4-batch4：诊断日志仅开发环境输出
     if (isDev) {
       console.warn("[ProfilePage] fetchProfile 失败:", error);
@@ -1255,6 +1417,11 @@ onUnload(() => {
     // 销毁失败静默处理
   }
   voiceAudio = null;
+  // 2026-08-09：清理头像引导气泡定时器
+  if (avatarHintTimer) {
+    clearTimeout(avatarHintTimer);
+    avatarHintTimer = null;
+  }
   // R4-00158/00159：页面卸载时清理 discover / village store 的定时器与请求资源
   discoverStore.dispose();
   villageStore.dispose();
@@ -1266,7 +1433,6 @@ onUnload(() => {
     <!-- ==================== 未完善资料：锁定页面 ==================== -->
     <LockScreen
       v-if="!isUnlocked"
-      :page-name="t('profile.pageName')"
       :completion-percent="completionPercent"
     />
 
@@ -1371,13 +1537,13 @@ onUnload(() => {
         <view class="profile-head-card">
           <!-- 头像 + 信息区 -->
           <view class="profile-info__main">
-            <!-- 头像区域（QQ 主页方案：点击头像放大查看；修改头像走编辑资料页）
-                 2026-08-08：QQ 头像框机制，按身份佩戴不同主题框 -->
+            <!-- 头像区域（2026-08-09 上传接线：点击弹底部菜单，查看大图/从相册/拍照；
+                 他人主页保持预览大图。头像框按身份佩戴不同主题框） -->
             <view
               class="avatar-wrap"
               role="button"
               :aria-label="t('profile.avatarPreviewAria')"
-              @tap="handleAvatarPreview"
+              @tap="handleAvatarTap"
             >
               <AvatarFrame :frame-id="myFrameId">
                 <view class="avatar">
@@ -1390,8 +1556,14 @@ onUnload(() => {
                     :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
                   />
                   <text v-else class="avatar__text">{{ avatarInitial }}</text>
-                  <!-- 自己主页：右上角相机小标 -->
-                  <view v-if="isOwnProfile" class="avatar-camera press-feedback">
+                  <!-- 自己主页：右上角相机小标（可点击，与头像共用上传菜单） -->
+                  <view
+                    v-if="isOwnProfile"
+                    class="avatar-camera press-feedback"
+                    role="button"
+                    :aria-label="t('profile.avatarMenuAria')"
+                    @tap.stop="handleAvatarTap"
+                  >
                     <image
                       v-if="!(isUploading && uploadKind === 'avatar')"
                       class="avatar-camera__icon"
@@ -1400,8 +1572,26 @@ onUnload(() => {
                     />
                     <view v-else class="avatar-camera__spinner" />
                   </view>
+                  <!-- 2026-08-09：头像审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
+                  <view
+                    v-if="isOwnProfile && avatarAuditStatus === 'pending'"
+                    class="avatar-audit-badge avatar-audit-badge--pending"
+                  >
+                    <text class="avatar-audit-badge__text">{{ t('profile.avatarAuditPending') }}</text>
+                  </view>
+                  <view
+                    v-else-if="isOwnProfile && avatarAuditStatus === 'rejected'"
+                    class="avatar-audit-badge avatar-audit-badge--rejected"
+                  >
+                    <text class="avatar-audit-badge__text">{{ t('profile.avatarAuditRejected') }}</text>
+                  </view>
                 </view>
               </AvatarFrame>
+              <!-- 首次进入且未设置头像：上传引导气泡（3 秒自动消失） -->
+              <view v-if="showAvatarHint" class="avatar-hint">
+                <text class="avatar-hint__text">{{ t('profile.avatarUploadHint') }}</text>
+                <view class="avatar-hint__arrow" />
+              </view>
             </view>
 
             <view class="profile-info__right">
@@ -1532,8 +1722,9 @@ onUnload(() => {
           <text class="video-cta__text">
             {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
           </text>
-          <text class="video-cta__hint">
-            {{ isRecordingVoice ? recordingLabel : t('profile.voiceStatusHint') }}
+          <!-- 2026-08-09：去除重复说明（voiceStatusHint 已展示在标题区），仅录音中显示倒计时 -->
+          <text v-if="isRecordingVoice" class="video-cta__hint">
+            {{ recordingLabel }}
           </text>
         </view>
 
@@ -1562,6 +1753,17 @@ onUnload(() => {
               </view>
               <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
             </view>
+            <!-- 2026-08-09：重录（直接开始新录音，上传后覆盖旧语音） -->
+            <view
+              class="voice-preview__delete press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('profile.voiceReRecordAria')"
+              @tap="handleRecordVoice"
+            >
+              <text class="voice-preview__delete-text">{{ t('profile.voiceReRecord') }}</text>
+            </view>
             <view
               class="voice-preview__delete press-feedback"
               hover-class="press-feedback--active"
@@ -1585,6 +1787,11 @@ onUnload(() => {
           </view>
         </view>
 
+        <!-- 2026-08-09：空态引导（弱化空洞感，引导上传第一张照片） -->
+        <view v-if="photoGallery.length === 0" class="photo-wall-empty">
+          <text class="photo-wall-empty__text">{{ t('profile.photoWallEmptyHint') }}</text>
+        </view>
+
         <view class="photo-grid">
           <view
             v-for="cell in photoCells"
@@ -1603,6 +1810,19 @@ onUnload(() => {
                 mode="aspectFill"
                 lazy-load alt=""
               />
+              <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
+              <view
+                v-if="cell.auditStatus === 'pending'"
+                class="photo-grid__badge photo-grid__badge--pending"
+              >
+                <text class="photo-grid__badge-text">{{ t('profile.photoAuditPending') }}</text>
+              </view>
+              <view
+                v-else-if="cell.auditStatus === 'rejected'"
+                class="photo-grid__badge photo-grid__badge--rejected"
+              >
+                <text class="photo-grid__badge-text">{{ t('profile.photoAuditRejected') }}</text>
+              </view>
             </view>
             <!-- 空格子：显示"+"占位，点击上传 -->
             <view
@@ -1942,6 +2162,47 @@ onUnload(() => {
   z-index: 2;
   margin: 0;
   flex-shrink: 0;
+}
+
+/* 2026-08-09：头像上传引导气泡（首次进入且无头像时展示，3 秒自动消失） */
+.avatar-hint {
+  position: absolute;
+  top: calc(var(--profile-avatar-size) + var(--sp-2));
+  left: 0;
+  z-index: 5;
+  max-width: 340rpx;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--c-neutral-900, #0f172a);
+  border-radius: var(--r-lg);
+  animation: avatar-hint-fade var(--d-normal, 200ms) ease-out;
+}
+
+.avatar-hint__text {
+  font-size: var(--fs-xs);
+  color: var(--c-neutral-0);
+  line-height: 1.5;
+}
+
+.avatar-hint__arrow {
+  position: absolute;
+  top: -10rpx;
+  left: 56rpx;
+  width: 0;
+  height: 0;
+  border-left: 10rpx solid transparent;
+  border-right: 10rpx solid transparent;
+  border-bottom: 10rpx solid var(--c-neutral-900, #0f172a);
+}
+
+@keyframes avatar-hint-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-6rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 语音介绍「仅语音 · 无视频」标注（设计需求） */
@@ -2753,6 +3014,82 @@ onUnload(() => {
   font-size: var(--fs-sm, 26rpx);
   color: var(--c-error, #e5454d);
   font-weight: 600;
+}
+
+/* 2026-08-09：照片墙审核状态角标（pending 审核中 / rejected 未通过，本人可见） */
+.photo-grid__badge {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rpx 0;
+  background: var(--c-overlay-mid-strong);
+}
+
+.photo-grid__badge--pending {
+  background: rgba(100, 116, 139, 0.82);
+}
+
+.photo-grid__badge--rejected {
+  background: rgba(229, 69, 77, 0.86);
+}
+
+.photo-grid__badge-text {
+  font-size: var(--fs-2xs, 20rpx);
+  color: var(--c-neutral-0);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 2026-08-09：头像审核状态角标（位于头像右下角相机标上方） */
+.avatar-audit-badge {
+  position: absolute;
+  left: 50%;
+  bottom: -14rpx;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rpx 14rpx;
+  border-radius: var(--r-full);
+  border: 2rpx solid var(--c-neutral-0);
+  white-space: nowrap;
+}
+
+.avatar-audit-badge--pending {
+  background: rgba(100, 116, 139, 0.9);
+}
+
+.avatar-audit-badge--rejected {
+  background: rgba(229, 69, 77, 0.92);
+}
+
+.avatar-audit-badge__text {
+  font-size: var(--fs-2xs, 20rpx);
+  color: var(--c-neutral-0);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 2026-08-09：照片墙空态引导条（弱化空洞感） */
+.photo-wall-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  border: 1rpx dashed var(--c-brand-200, #99f6e0);
+  border-radius: var(--r-lg);
+  background: var(--c-brand-50, #f0fdf9);
+}
+
+.photo-wall-empty__text {
+  font-size: var(--fs-sm);
+  color: var(--c-brand-600, #0d9488);
 }
 
 /* 照片墙 3x2 网格 - mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc */

@@ -327,7 +327,7 @@ class RealProfileServiceTest {
 
     // ---- 工具方法 ----
 
-    /** 构造测试用 BasicProfileView（17 个字段全填）。 */
+    /** 构造测试用 BasicProfileView（20 个字段全填）。 */
     private BasicProfileView buildBasicProfileView() {
         return new BasicProfileView(
                 "若星", "安静而明确", "大三", "她/她",
@@ -335,6 +335,7 @@ class RealProfileServiceTest {
                 "广东省", "广州市", "广州市",
                 List.of("买房", "养猫"), List.of(),
                 "/half.jpg", "/video.mp4", "/bg.jpg",
-                85, "school", null);
+                85, "school", null,
+                List.of(), "approved", null);
     }
 }

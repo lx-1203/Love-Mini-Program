@@ -100,6 +100,19 @@ const earnedPoints = computed(() =>
 );
 /** 已完成任务数 */
 const doneCount = computed(() => tasks.value.filter((task) => task.done).length);
+
+/**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
 /** 完成进度百分比（0-100） */
 const progressPercent = computed(() =>
   totalPoints.value > 0 ? Math.round((earnedPoints.value / totalPoints.value) * 100) : 0
@@ -174,8 +187,18 @@ onShow(async () => {
 
 <template>
   <view class="tasks-page page-fade-in">
-    <!-- 页面标题 -->
+    <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="tasks-header">
+      <view
+        class="tasks-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <image class="tasks-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
       <text class="tasks-header__title">{{ t('profile.taskCenter') }}</text>
       <text class="tasks-header__count">{{ t('profile.tasksCompletedCount', { done: doneCount, total: tasks.length }) }}</text>
     </view>
@@ -250,6 +273,25 @@ onShow(async () => {
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: var(--section-gap);
+}
+
+/* 2026-08-09：返回键（圆角图标按钮） */
+.tasks-header__back {
+  flex-shrink: 0;
+  align-self: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasks-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .tasks-header__title {

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 个人主页访客记录页（功能3）
  *
@@ -24,6 +24,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../stores/likes";
 import { openAppPath } from "../../utils/navigation";
+// 2026-08-09：他人主页路由常量化（访客点击 → 他人主页页）
+import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic } from "../../utils/haptic";
@@ -55,6 +57,19 @@ const { visitors: likesVisitors } = storeToRefs(likesStore);
  * likes store 的 VisitorRecord（userId/name/avatar/headline/visitedAt）
  * 映射为本页展示结构，headline 即访客学校信息。
  */
+/**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
+
 const visitors = computed<VisitorItem[]>(() =>
   likesVisitors.value.map((v) => ({
     visitorId: Number(v.userId),
@@ -175,13 +190,13 @@ async function loadVisitors(): Promise<void> {
 }
 
 /**
- * 点击访客项：跳转到对方主页
+ * 点击访客项：跳转到对方主页（2026-08-09：他人主页详情页）
  * @param visitorId - 访客用户 ID
  */
 function handleItemClick(visitorId: number): void {
   if (!visitorId) return;
   lightHaptic();
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(String(visitorId))}`);
+  openAppPath(`${ROUTES.PROFILE.OTHER}?userId=${encodeURIComponent(String(visitorId))}`);
 }
 
 /**
@@ -210,8 +225,18 @@ onPullDownRefresh(async () => {
 
 <template>
   <view class="visitors-page page-fade-in">
-    <!-- 页面标题 -->
+    <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="visitors-header">
+      <view
+        class="visitors-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <image class="visitors-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
       <text class="visitors-header__title">{{ t("profile.visitorsTitle") }}</text>
       <text class="visitors-header__count" v-if="visitors.length > 0">
         {{ t("profile.visitors") }} · {{ visitors.length }}
@@ -303,6 +328,25 @@ onPullDownRefresh(async () => {
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: var(--section-gap);
+}
+
+/* 2026-08-09：返回键（圆角图标按钮） */
+.visitors-header__back {
+  flex-shrink: 0;
+  align-self: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visitors-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .visitors-header__title {

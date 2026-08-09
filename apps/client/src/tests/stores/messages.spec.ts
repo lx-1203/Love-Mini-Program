@@ -290,6 +290,105 @@ describe("messages store", () => {
   });
 
   // ------------------------------------------------------------------
+  // sendMessage kind="emoji"（2026-08-09 表情包机制：私信链路发送表情消息）
+  // ------------------------------------------------------------------
+  it("sendMessage with kind=emoji appends emoji message and updates preview", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+
+    const session = store.sessions[0]!;
+    const beforeCount = store.currentMessages.length;
+
+    await store.sendMessage(session.id, "🎉", undefined, "emoji");
+
+    expect(store.currentMessages.length).toBe(beforeCount + 1);
+    const lastMsg = store.currentMessages[store.currentMessages.length - 1]!;
+    expect(lastMsg.kind).toBe("emoji");
+    expect(lastMsg.body).toBe("🎉");
+    expect(lastMsg.sender).toBe("self");
+
+    // 列表预览应直接显示 emoji 字符（而非 "[emoji]" 占位）
+    const updatedSession = store.sessions.find((s) => s.id === session.id);
+    expect(updatedSession?.lastMessagePreview).toBe("🎉");
+  });
+
+  // ------------------------------------------------------------------
+  // onNewMessage 未读规则（2026-08-09 未读红点修复）
+  // 仅统计「对方发送的、非当前查看会话的」消息；self 消息、活跃会话消息不计入
+  // ------------------------------------------------------------------
+  it("非活跃会话收到 peer 消息 → unreadCount +1", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+    const session = store.sessions.find((s) => s.unreadCount > 0)!;
+    const before = session.unreadCount;
+    store.onNewMessage({
+      id: "ws-1",
+      sessionId: session.id,
+      sender: "peer",
+      kind: "text",
+      body: "你好",
+      sentAt: "2026-08-09T10:00:00",
+    });
+    expect(session.unreadCount).toBe(before + 1);
+    // 非活跃会话的消息不进入当前消息流
+    expect(store.currentMessages.find((m) => m.id === "ws-1")).toBeUndefined();
+  });
+
+  it("self 消息（我方发送）不累加未读", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+    const session = store.sessions[0]!;
+    const before = session.unreadCount;
+    store.onNewMessage({
+      id: "ws-2",
+      sessionId: session.id,
+      sender: "self",
+      kind: "text",
+      body: "我自己发的",
+      sentAt: "2026-08-09T10:00:00",
+    });
+    expect(session.unreadCount).toBe(before);
+  });
+
+  it("活跃会话（正在查看）收到 peer 消息 → 不累加未读，进入当前消息流", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+    const session = store.sessions[0]!;
+    const before = session.unreadCount;
+    store.setActiveSession(session.id);
+    store.onNewMessage({
+      id: "ws-3",
+      sessionId: session.id,
+      sender: "peer",
+      kind: "text",
+      body: "正在聊天收到",
+      sentAt: "2026-08-09T10:00:00",
+    });
+    expect(session.unreadCount).toBe(before);
+    expect(store.currentMessages.find((m) => m.id === "ws-3")?.body).toBe("正在聊天收到");
+    store.setActiveSession(null);
+  });
+
+  it("同一消息 ID 重复推送去重（重连场景）", async () => {
+    const store = useMessagesStore();
+    await store.fetchSessions();
+    const session = store.sessions[0]!;
+    store.setActiveSession(session.id);
+    const message = {
+      id: "ws-dup",
+      sessionId: session.id,
+      sender: "peer",
+      kind: "text",
+      body: "重复消息",
+      sentAt: "2026-08-09T10:00:00",
+    };
+    store.onNewMessage(message);
+    store.onNewMessage(message);
+    expect(store.currentMessages.filter((m) => m.id === "ws-dup")).toHaveLength(1);
+    store.setActiveSession(null);
+  });
+
+  // ------------------------------------------------------------------
   // unreadNotificationCount getter
   // ------------------------------------------------------------------
   it("unreadNotificationCount counts unread notifications only", async () => {

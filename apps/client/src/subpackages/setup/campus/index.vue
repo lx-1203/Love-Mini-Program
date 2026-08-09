@@ -193,7 +193,7 @@ function skip() {
 </script>
 
 <template>
-  <AppShell :title="t('setup.campus.pageTitle')" :subtitle="t('setup.campus.pageSubtitle')" :show-tab-bar="false">
+  <AppShell :title="t('setup.campus.pageTitle')" :subtitle="t('setup.campus.pageSubtitle')" :show-tab-bar="false" show-back>
     <!-- 功能5：引导流程进度条（学生分支当前步骤 = 2：校园认证） -->
     <SetupProgress :current-step="2" variant="student" />
 

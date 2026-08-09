@@ -3,7 +3,9 @@ package com.campuslove.api.profile;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.media.MediaAssetService;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.MediaAsset;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
@@ -66,6 +68,8 @@ public class ProfileQueryService {
     private final PostLikeRepository postLikeRepository;
     private final ObjectMapper objectMapper;
     private final CampusCertificationService campusCertificationService;
+    /** 媒体资产审核服务（2026-08-09：读取侧填充审核状态） */
+    private final MediaAssetService mediaAssetService;
     /** JPA 实体管理器（FIN-00029 修复：批量点赞统计） */
     private final EntityManager entityManager;
 
@@ -80,6 +84,7 @@ public class ProfileQueryService {
             PostLikeRepository postLikeRepository,
             ObjectMapper objectMapper,
             CampusCertificationService campusCertificationService,
+            MediaAssetService mediaAssetService,
             EntityManager entityManager) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
@@ -90,11 +95,13 @@ public class ProfileQueryService {
         this.postLikeRepository = postLikeRepository;
         this.objectMapper = objectMapper;
         this.campusCertificationService = campusCertificationService;
+        this.mediaAssetService = mediaAssetService;
         this.entityManager = entityManager;
     }
 
     /**
-     * 兼容旧测试的构造器（entityManager 为 null，批量统计回退原逻辑）。
+     * 兼容旧测试的构造器（entityManager / mediaAssetService 为 null，
+     * 批量统计回退原逻辑，审核字段回退默认值）。
      *
      * @deprecated 仅单元测试使用；Spring 注入请使用带 EntityManager 的构造器。
      */
@@ -112,7 +119,7 @@ public class ProfileQueryService {
         this(userRepository, userFollowRepository, userBasicProfileRepository,
                 userCampusProfileRepository, userScheduleProfileRepository,
                 postRepository, postLikeRepository, objectMapper,
-                campusCertificationService, null);
+                campusCertificationService, null, null);
     }
 
     // ---- 基本资料查询 ----
@@ -356,6 +363,32 @@ public class ProfileQueryService {
     public BasicProfileView toBasicProfileView(UserBasicProfile profile, User user) {
         String badgeLevel = campusCertificationService.getVerificationBadgeLevel(user.getId());
         int completion = user.getProfileCompletion() != null ? user.getProfileCompletion() : 0;
+        // 2026-08-09：填充审核状态（本人视角全可见 + 状态标注）。
+        // mediaAssetService 为 null 时（旧测试构造器）回退默认值：无 items / approved。
+        List<String> galleryUrls = parseStringList(profile.getPhotoGallery());
+        List<PhotoItemView> galleryItems = List.of();
+        String avatarAuditStatus = MediaAssetService.AUDIT_APPROVED;
+        String avatarAuditRemark = null;
+        if (mediaAssetService != null && !galleryUrls.isEmpty()) {
+            Map<String, MediaAsset> assetMap = mediaAssetService.findByUrls(galleryUrls);
+            galleryItems = galleryUrls.stream()
+                    .filter(url -> url != null && !url.isBlank())
+                    .map(url -> {
+                        MediaAsset asset = assetMap.get(url);
+                        return new PhotoItemView(
+                                url,
+                                asset != null ? asset.getAuditStatus() : MediaAssetService.AUDIT_APPROVED,
+                                asset != null ? asset.getAuditRemark() : null);
+                    })
+                    .toList();
+        }
+        if (mediaAssetService != null && user.getAvatarUrl() != null && !user.getAvatarUrl().isBlank()) {
+            MediaAsset avatarAsset = mediaAssetService.findByUrl(user.getAvatarUrl()).orElse(null);
+            if (avatarAsset != null) {
+                avatarAuditStatus = avatarAsset.getAuditStatus();
+                avatarAuditRemark = avatarAsset.getAuditRemark();
+            }
+        }
         return new BasicProfileView(
                 profile.getNickname() != null ? profile.getNickname() : "",
                 profile.getBio() != null ? profile.getBio() : "",
@@ -368,13 +401,16 @@ public class ProfileQueryService {
                 profile.getHometownCity(),
                 profile.getFutureCity(),
                 parseStringList(profile.getFuturePlanTags()),
-                parseStringList(profile.getPhotoGallery()),
+                galleryUrls,
                 profile.getHalfBodyPhotoUrl(),
                 profile.getPersonalVideoUrl(),
                 profile.getProfileBackgroundUrl(),
                 completion,
                 badgeLevel,
-                user.getAvatarUrl()
+                user.getAvatarUrl(),
+                galleryItems,
+                avatarAuditStatus,
+                avatarAuditRemark
         );
     }
 

@@ -21,6 +21,9 @@ import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
+// 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
+import { useSessionStore } from "../../stores/session";
+import LockScreen from "../../components/common/LockScreen.vue";
 import { appEnv } from "../../services/env";
 import { request } from "../../services/http";
 import type {
@@ -41,6 +44,11 @@ const chevronRightSrc = IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG;
 
 /** 官方号会话要求（复用聊天页访问要求） */
 usePageAccess(chatPageRequirements);
+
+/** 2026-08-09 免踢登录：未登录 → 展示 LockScreen 引导，不加载官方号消息 */
+const sessionStore = useSessionStore();
+const isUnlocked = computed(() => sessionStore.isLoggedIn);
+const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /** 当前官方号 ID（official-assistant / official-promoter） */
 const accountId = ref<string>("official-assistant");
@@ -238,6 +246,8 @@ function formatTime(isoString: string): string {
 }
 
 onLoad((query) => {
+  // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不发起官方号消息请求
+  if (!isUnlocked.value) return;
   const raw = query?.accountId;
   if (typeof raw === "string" && (raw === "official-assistant" || raw === "official-promoter")) {
     accountId.value = raw;
@@ -262,6 +272,9 @@ function officialIcon(id: string): string {
     :subtitle="t('messages.officialBadge')"
     show-back
   >
+    <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
+    <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
+    <template v-else>
     <!-- 官方号会话：消息流 -->
     <SectionCard :title="t('messages.officialChatTitle')" compact>
       <!-- R4-00082：real 模式加载失败展示错误态（重试按钮），而非 mock 文案 -->
@@ -338,6 +351,7 @@ function officialIcon(id: string): string {
         </view>
       </view>
     </SectionCard>
+    </template>
   </AppShell>
 </template>
 

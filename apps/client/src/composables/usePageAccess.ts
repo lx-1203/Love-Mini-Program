@@ -68,6 +68,14 @@ export function usePageAccess(requirements: PageRequirements) {
 
     const current = userSession.value;
 
+    // 修复（2026-08-09）：未登录（本地无 token）访问任何页面一律放行——
+    // 不跳登录页、不弹「完善资料」弹窗，由页面自身的 LockScreen（未登录版）
+    // 承担引导；用户点击「立即登录并完善」等按钮时才跳转登录页。
+    // 仅切换页面（Tab / 导航）绝不被踢到登录页。
+    if (!current?.loggedIn && !getToken()) {
+      return;
+    }
+
     // 修复（P0 BUG）：token 存在但 userSession 为空时，主动尝试 refresh 恢复会话，
     // 而非直接放行。refresh 失败（认证类错误）则跳登录；网络/业务错误由 isOffline / 页面处理。
     // 原实现直接 return 放行，用户可能带着失效 token 进入受保护页面，
@@ -123,7 +131,8 @@ export function usePageAccess(requirements: PageRequirements) {
     );
 
     if (!decision.allowed && decision.redirectTo) {
-      // 需要登录但本地无 token，说明登录态已失效，给出友好提示而非静默跳转
+      // 未登录且无 token 的场景已在上方提前跳登录（见 apiErrors.loginRequired 分支），
+      // 此处到达说明本地仍持有 token 但会话判定未登录（如 token 失效）→「登录已过期」语义正确
       if (requirements.requiresAuth && !getToken()) {
         uni.showToast({ title: t("apiErrors.unauthorized"), icon: "none" });
       }

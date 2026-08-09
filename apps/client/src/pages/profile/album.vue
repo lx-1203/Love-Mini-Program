@@ -50,6 +50,19 @@ const uploadingIndex = ref<number>(-1);
 const errorMessage = ref<string | null>(null);
 
 /**
+ * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
+}
+
+/**
  * 照片格子列表（始终渲染 6 格）
  * - 已上传的格子：filled=true + url
  * - 空格子：filled=false + url=""
@@ -227,30 +240,70 @@ function handleLongPress(index: number): void {
 }
 
 /**
- * 将指定照片设为头像。
+ * 将指定照片设为头像（2026-08-09 真实化）。
  *
- * 调用 sessionStore 更新本地头像 URL，并 toast 提示。
- * 注：后端暂未提供独立的"设为头像"接口，前端通过更新 sessionStore.avatarUrl 实现交互闭环。
+ * 链路：resolveMediaUrl 鉴权代理 → uni.downloadFile 下载原图 →
+ * profileStore.uploadAvatar 重新上传为头像（走真实 POST /profile/avatar + 审核链路）。
+ * 下载失败（如 H5 跨域 / mock 静态路径）时回退原有本地重排逻辑，保证交互闭环。
  *
  * @param index - 照片索引
  */
 async function setAsAvatar(index: number): Promise<void> {
   const url = photoGallery.value[index];
   if (!url) return;
+  // mock 演示态（mock:// 或包内静态路径）无需下载，直接本地重排（mock fixture 不校验文件内容）
+  if (url.startsWith("mock://") || url.startsWith("/static/")) {
+    localReorderAsAvatar(index);
+    return;
+  }
+  isUploading.value = true;
   try {
-    // 将选中照片移至 photoGallery[0]（头像位），通过 profileStore 更新本地状态
-    // 注：后端暂未提供独立的"设为头像"接口，前端通过调整照片墙顺序实现交互闭环
-    const next = [...photoGallery.value];
-    next.splice(index, 1);
-    next.unshift(url);
-    photoGallery.value = next;
+    const filePath = await downloadToTemp(resolveMediaUrl(url));
+    const file = buildFileLike(filePath);
+    await profileStore.uploadAvatar(file);
     successHaptic();
     uni.showToast({ title: t("profile.albumSetAvatarSuccess"), icon: "success" });
   } catch (error) {
+    // 下载/上传失败：回退本地重排，保证交互闭环
+    localReorderAsAvatar(index);
     const msg = error instanceof Error ? error.message : t("profile.albumSetAvatarFailed");
     errorHaptic();
     uni.showToast({ title: msg, icon: "none" });
+  } finally {
+    isUploading.value = false;
   }
+}
+
+/**
+ * 下载图片到本地临时路径（鉴权代理 URL 需带 token 才能读取）。
+ *
+ * @param url - 已解析的媒体 URL
+ * @returns 本地临时文件路径
+ */
+function downloadToTemp(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    uni.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+          resolve(res.tempFilePath);
+        } else {
+          reject(new Error(`download failed: ${res.statusCode}`));
+        }
+      },
+      fail: (err) => reject(err),
+    });
+  });
+}
+
+/**
+ * 本地重排兜底（原实现）：将选中照片移至 photoGallery[0]，仅本地生效。
+ */
+function localReorderAsAvatar(index: number): void {
+  const next = [...photoGallery.value];
+  const [removed] = next.splice(index, 1);
+  next.unshift(removed ?? "");
+  photoGallery.value = next;
 }
 
 /**
@@ -325,8 +378,18 @@ onShow(() => {
 
 <template>
   <view class="album-page page-fade-in">
-    <!-- 页面标题 -->
+    <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="album-header">
+      <view
+        class="album-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <image class="album-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
       <text class="album-header__title">{{ t("profile.albumTitle") }}</text>
       <text class="album-header__count" v-if="photoCount > 0">
         {{ photoCount }} / {{ PHOTO_GALLERY_MAX }}
@@ -431,6 +494,25 @@ onShow(() => {
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: var(--section-gap);
+}
+
+/* 2026-08-09：返回键（圆角图标按钮） */
+.album-header__back {
+  flex-shrink: 0;
+  align-self: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .album-header__title {

@@ -36,6 +36,8 @@ import {
   isMessageHeartSignal,
   isSystemNotification,
 } from "../../types/guards";
+// 修复（未读红点 BUG 1）：real 模式 WS 载荷（MessageView 形状）→ MessageItem 转换层
+import { fromWsPayload } from "./ws-message-adapter";
 // infra R2-00127: 未知队列类型/非法数据上报 Sentry（含 mp-weixin 降级通道），
 // 替代“仅 console.warn 静默”，便于尽早发现前后端契约漂移。
 import { captureException } from "../sentry";
@@ -62,7 +64,9 @@ import { isDev } from "../../config/env";
 export function dispatchToStore(destination: string, data: unknown): void {
   // 匹配路径：Spring 可能发送 /user/queue/xxx 或 /user/{userId}/queue/xxx
   // 统一匹配 queue/ 后面的部分
-  const queueMatch = destination.match(/\/queue\/(\w+)$/);
+  // 修复（未读红点 BUG 2）：原正则 /\/queue\/(\w+)$/ 无法匹配 /queue/temp-chat/messages
+  // （队列名含 "-" 与 "/"），导致临时会话新消息实时推送被静默丢弃
+  const queueMatch = destination.match(/\/queue\/([\w-]+(?:\/[\w-]+)*)$/);
   if (!queueMatch) return;
 
   const queueType = queueMatch[1];
@@ -70,7 +74,12 @@ export function dispatchToStore(destination: string, data: unknown): void {
   try {
     switch (queueType) {
       case "messages":
-        handleNewMessage(data);
+        handleNewMessage(data, destination);
+        break;
+
+      // 修复（未读红点 BUG 2）：/queue/temp-chat/messages 队列分发到消息处理
+      case "temp-chat/messages":
+        handleNewMessage(data, destination);
         break;
 
       case "signals":
@@ -91,6 +100,12 @@ export function dispatchToStore(destination: string, data: unknown): void {
 
       case "checkin":
         handleCheckInEvent(data);
+        break;
+
+      // 2026-08-09 微信 1:1：对方正在输入事件（/user/queue/typing，后端暂无推送，
+      // 订阅预留；后端推送 {sessionId, typing} 后自动生效，零风险）
+      case "typing":
+        handleTypingEvent(data);
         break;
 
       default:
@@ -120,10 +135,30 @@ export function dispatchToStore(destination: string, data: unknown): void {
  *
  * @param data - 解析后的消息数据
  */
-export function handleNewMessage(data: unknown): void {
+export function handleNewMessage(data: unknown, destination = ""): void {
   try {
-    // 类型守卫：拒绝不符合 MessageItem 接口的数据
-    if (!isMessageItem(data)) {
+    // 修复（未读红点 BUG 1）：外部 WS 载荷先经转换层变为内部 MessageItem 形状
+    // （real 私信 MessageView / temp ChatMessageView / mock 三形态），再经守卫校验。
+    // 原实现直接对 raw 载荷跑 isMessageItem 守卫，real 载荷（conversationId/senderId/
+    // messageKind/createdAt）与内部形状（sessionId/sender/kind/body/sentAt）不匹配，
+    // 导致 WS 新消息被丢弃、未读红点不实时 +1。
+    const item = fromWsPayload(data, destination);
+    if (!item) {
+      if (isDev) {
+        console.warn("[WebSocket] 收到无法识别的私信消息数据，已忽略:", data);
+      }
+      // infra R2-00127: 数据形状不符契约时上报，便于发现前后端字段漂移
+      captureException(new Error("[WebSocket] 非法私信消息数据"), {
+        source: "ws-store-dispatch",
+        payload: data,
+      });
+      return;
+    }
+    // 临时会话消息无法归因到会话（无 sessionId 且不在会话页）——预期降级，静默忽略；
+    // temp 未读以服务端计数为准，进入会话时 loadSession 全量刷新兜底
+    if (!item.sessionId) return;
+    // 类型守卫：拒绝不符合 MessageItem 接口的数据（防御转换层自身缺陷）
+    if (!isMessageItem(item)) {
       if (isDev) {
         console.warn("[WebSocket] 收到非法的私信消息数据，已忽略:", data);
       }
@@ -134,7 +169,7 @@ export function handleNewMessage(data: unknown): void {
       });
       return;
     }
-    const message: MessageItem = data;
+    const message: MessageItem = item;
     const messagesStore = useMessagesStore();
 
     // 尝试调用 Store 的 onNewMessage 方法
@@ -370,5 +405,41 @@ export function handleCheckInEvent(data: unknown): void {
     }
   } catch (error) {
     console.error("[WebSocket] 处理签到事件异常:", error);
+  }
+}
+
+/**
+ * 处理对方正在输入事件（/queue/typing，2026-08-09 微信 1:1 新增，后端推送预留）。
+ *
+ * 载荷契约：{sessionId: string, typing: boolean}。
+ * 会话页通过 watch 订阅当前会话的 typing 状态渲染「对方正在输入...」。
+ * TODO(backend): RealPrivateMessageService/TempChatMessageService 在对方输入时推送该事件；
+ * 后端未推送前本分支永不触发，对现有行为零影响。
+ *
+ * @param data - 正在输入事件数据
+ */
+export function handleTypingEvent(data: unknown): void {
+  try {
+    if (!data || typeof data !== "object") {
+      if (isDev) {
+        console.warn("[WebSocket] 收到非法的 typing 事件数据，已忽略:", data);
+      }
+      captureException(new Error("[WebSocket] 非法 typing 事件数据"), {
+        source: "ws-store-dispatch",
+        payload: data,
+      });
+      return;
+    }
+    const record = data as Record<string, unknown>;
+    if (typeof record.sessionId !== "string" || !record.sessionId) return;
+    if (typeof record.typing !== "boolean") return;
+    if (isDev) {
+      console.warn("[WebSocket] typing 事件（后端暂未推送，预留分支）:", record);
+    }
+    // TODO(chat-session): 后端推送启用后，将 typing 状态写入 messagesStore
+    // （如 typingMap[sessionId]）并由会话页 watch 渲染「对方正在输入...」；
+    // 当前仅校验载荷形状，不落 store——后端未推送即不触发，对现有行为零影响。
+  } catch (error) {
+    console.error("[WebSocket] 处理 typing 事件异常:", error);
   }
 }

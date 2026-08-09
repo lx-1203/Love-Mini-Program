@@ -108,6 +108,28 @@ describe("chat store - messaging actions (Task 1.1)", () => {
   });
 
   // ----------------------------------------------------------------
+  // 用例 1.1：sendText（Mock 模式）发送 kind="emoji" 表情消息（2026-08-09 表情包机制）
+  // ----------------------------------------------------------------
+  it("sendText with kind=emoji appends emoji message", async () => {
+    const chatStore = useChatStore();
+    await loadMockActiveSession();
+
+    const beforeCount = chatStore.activeSession?.messages.length ?? 0;
+    // 真 4 字节 emoji（U+1F60A）
+    await chatStore.sendText("😊", "emoji");
+
+    const sessionId = mockSession1.id;
+    const updatedSession = mockSessionMap[sessionId];
+    expect(updatedSession!.messages.length).toBe(beforeCount + 1);
+
+    const lastMessage = updatedSession!.messages[updatedSession!.messages.length - 1];
+    expect(lastMessage!.sender).toBe("self");
+    expect(lastMessage!.kind).toBe("emoji");
+    expect(lastMessage!.body).toBe("😊");
+    expect(lastMessage!.deliveryStatus).toBe("sent");
+  });
+
+  // ----------------------------------------------------------------
   // 用例 2：sendText 投递状态持久化到本地存储（sending → sent）
   // ----------------------------------------------------------------
   it("sendText persists delivery status to local storage", async () => {
@@ -177,52 +199,27 @@ describe("chat store - messaging actions (Task 1.1)", () => {
   });
 
   // ----------------------------------------------------------------
-  // 用例 5：sendVoice（tempFilePath 非空）调用 uni.uploadFile 上传并使用返回 URL
+  // 用例 5：sendVoice（tempFilePath 非空）
+  // 录音修复（2026-08-09）：Mock 模式即使有 tempFilePath 也不发起真实上传
+  // （避免真机 mock 上传），body 使用占位文案；Real 模式才走 uni.uploadFile。
   // ----------------------------------------------------------------
-  it("sendVoice with tempFilePath uploads file and uses returned URL as body", async () => {
+  it("sendVoice with tempFilePath skips upload in mock mode and uses placeholder body", async () => {
     const chatStore = useChatStore();
     await loadMockActiveSession();
-
-    // 模拟 uni.uploadFile 成功响应
-    const expectedUrl = "https://cdn.example.com/voice/abc123.m4a";
-    uploadFileMock.mockImplementation((opts: {
-      success: (res: { statusCode: number; data: string }) => void;
-    }) => {
-      opts.success({
-        statusCode: 200,
-        data: JSON.stringify({
-          url: expectedUrl,
-          duration: 5,
-          size: 10240,
-        }),
-      });
-    });
 
     const beforeCount = mockSessionMap[mockSession1.id]!.messages.length;
 
     await chatStore.sendVoice(5, "wxfile://tmp/voice123.m4a");
 
-    // 验证 uni.uploadFile 被调用，且 url / filePath / name / formData 正确
-    expect(uploadFileMock).toHaveBeenCalledTimes(1);
-    const callArgs = uploadFileMock.mock.calls[0]![0] as {
-      url: string;
-      filePath: string;
-      name: string;
-      formData: { duration: string };
-    };
-    // infra R2-00022:语音上传 URL 拼接 apiBaseUrl(测试环境 apiBaseUrl 为 http://127.0.0.1:8080/api)
-    // P3 联调：normalizeApiPath 补齐 /v1 前缀（后端统一 /api/v1 路由）
-    expect(callArgs.url).toBe("http://127.0.0.1:8080/api/v1/chat/voice");
-    expect(callArgs.filePath).toBe("wxfile://tmp/voice123.m4a");
-    expect(callArgs.name).toBe("file");
-    expect(callArgs.formData.duration).toBe("5");
+    // Mock 模式不应调用 uni.uploadFile
+    expect(uploadFileMock).not.toHaveBeenCalled();
 
-    // 验证消息 body 为上传返回的 URL
+    // 消息 body 为占位文案，时长透传
     const updatedSession = mockSessionMap[mockSession1.id]!;
     expect(updatedSession.messages.length).toBe(beforeCount + 1);
     const lastMessage = updatedSession.messages[updatedSession.messages.length - 1]!;
     expect(lastMessage.kind).toBe("voice");
-    expect(lastMessage.body).toBe(expectedUrl);
+    expect(lastMessage.body).toBe("语音消息");
     expect(lastMessage.durationSeconds).toBe(5);
   });
 
@@ -455,6 +452,9 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
     );
     const beforeCount = messagesStore.currentMessages.length;
 
+    // 2026-08-09 红点修复：标记当前正在查看的会话（会话内推送才进入消息流）
+    messagesStore.setActiveSession(mockSession1.id);
+
     // 模拟对方发送一条文本消息（WebSocket 推送）
     const incomingMessage = {
       id: `msg-peer-${Date.now()}`,
@@ -498,6 +498,9 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
     );
     const beforeCount = messagesStore.currentMessages.length;
 
+    // 2026-08-09 红点修复：标记当前正在查看的会话（会话内推送才进入消息流）
+    messagesStore.setActiveSession(mockSession1.id);
+
     // 模拟对方发送一条语音消息
     const voiceUrl = "https://cdn.example.com/voice/peer-voice-001.m4a";
     const incomingVoice = {
@@ -540,6 +543,9 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
       }))
     );
     const beforeCount = messagesStore.currentMessages.length;
+
+    // 2026-08-09 红点修复：标记当前正在查看的会话（会话内推送才进入消息流）
+    messagesStore.setActiveSession(mockSession1.id);
 
     const duplicateId = `msg-dedup-${Date.now()}`;
     const message = {
@@ -616,6 +622,9 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
       }))
     );
     const beforeCount = messagesStore.currentMessages.length;
+
+    // 2026-08-09 红点修复：标记当前正在查看的会话（会话内推送才进入消息流）
+    messagesStore.setActiveSession(mockSession1.id);
 
     const systemMessage = {
       id: `msg-system-${Date.now()}`,
@@ -699,6 +708,9 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
     const myMessage = messagesStore.currentMessages[messagesStore.currentMessages.length - 1];
     expect(myMessage!.sender).toBe("self");
     expect(myMessage!.body).toBe("今天天气不错，出去走走吗？");
+
+    // 2026-08-09 红点修复：标记当前正在查看的会话（会话内推送才进入消息流）
+    messagesStore.setActiveSession(mockSession1.id);
 
     // 对方回复一条消息（WebSocket 推送）
     const peerReply = {

@@ -97,6 +97,21 @@ public interface RecommendationService {
     List<RecommendedPersonView> getRecommendations(Long userId, RecommendationFilter filter);
 
     /**
+     * 获取游客（未登录）推荐人物列表。
+     *
+     * <p>2026-08-09 免登录可逛：游客无个人上下文（无校区/偏好/已滑记录），
+     * 返回中性排序的通用推荐（active + USER 候选池，活跃度加分排序），
+     * 不排除任何用户、不消耗推荐配额、不写曝光埋点。</p>
+     *
+     * <p>筛选参数与 {@link #getRecommendations(Long, RecommendationFilter)} 一致
+     * （身高/学历/年龄/关键词等 in-memory 过滤）；filter 为 null 或空时返回全部。</p>
+     *
+     * @param filter 筛选参数，可空
+     * @return 游客推荐人物视图列表
+     */
+    List<RecommendedPersonView> getRecommendationsForGuest(RecommendationFilter filter);
+
+    /**
      * 获取指定用户的推荐偏好设置。
      *
      * @param userId 用户 ID

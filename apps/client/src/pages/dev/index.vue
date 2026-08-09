@@ -204,7 +204,9 @@ const pages: PageItem[] = [
   { path: "/pages/login/index", title: "登录页", group: "主包" },
   { path: "/pages/discover/index", title: "寻觅", group: "主包", isTab: true },
   { path: "/pages/discover/history", title: "今日已看", group: "主包" },
-  { path: "/pages/likes/index", title: "喜欢", group: "主包", isTab: true },
+  // 2026-08-09 修复：likes 非 tabBar 页（pages.json tabBar.list 仅 5 个主 tab），
+  // 原 isTab: true 导致点击后 uni.switchTab 报 "page not found"（switchTab 仅接受 tabBar 页）
+  { path: "/pages/likes/index", title: "喜欢", group: "主包" },
   { path: "/pages/village/index", title: "村口", group: "主包", isTab: true },
   { path: "/pages/village/post", title: "发布帖子", group: "主包" },
   { path: "/pages/village/detail", title: "帖子详情", group: "主包" },

@@ -1,25 +1,52 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { i18n } from "../../i18n";
+import { useSessionStore } from "../../stores/session";
 
 // mock navigation utility – factory must be inline for hoisting
-vi.mock("../../utils/navigation", () => ({
-  openAppPath: vi.fn(),
-}));
+// 保留其他真实导出（session store 依赖链可能引用），仅替换 LockScreen 使用的方法
+vi.mock("../../utils/navigation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../utils/navigation")>();
+  return {
+    ...actual,
+    openAppPath: vi.fn(),
+    replaceAppPath: vi.fn(),
+    isTabPath: vi.fn(() => false),
+    setPendingLoginRedirect: vi.fn(),
+  };
+});
 
-import { openAppPath } from "../../utils/navigation";
+// compat 模块被 config/env.ts（getDevApiBaseUrl）等依赖链引用，
+// 仅替换 getCurrentPagePath（jsdom 下固定返回空串，保证 isTabHost=false 分支稳定）
+vi.mock("../../compat", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../compat")>();
+  return { ...actual, getCurrentPagePath: vi.fn(() => "") };
+});
+
+import { openAppPath, replaceAppPath, setPendingLoginRedirect } from "../../utils/navigation";
 
 describe("LockScreen component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setActivePinia(createPinia());
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** 设置会话登录态（userSession.loggedIn） */
+  function setLoggedIn(loggedIn: boolean) {
+    const sessionStore = useSessionStore();
+    sessionStore.userSession = loggedIn
+      ? ({ loggedIn: true } as unknown as typeof sessionStore.userSession)
+      : null;
+  }
+
   // mount helper with uni-app element stubs
-  function mountLockScreen(props?: {
-    pageName?: string;
-    completionPercent?: number;
-  }) {
+  function mountLockScreen(props?: { completionPercent?: number }) {
     return mount(LockScreen, {
       props: props ?? {},
       global: {
@@ -45,82 +72,143 @@ describe("LockScreen component", () => {
   }
 
   // ------------------------------------------------------------------
-  // 渲染锁定页面显示正确的页面名称
+  // 分级文案：未登录 vs 已登录未完善
   // ------------------------------------------------------------------
-  it("renders the lock message with the correct page name", () => {
-    const wrapper = mountLockScreen({ pageName: "喜欢" });
-
-    const title = wrapper.find(".lock-screen__title");
-    expect(title.text()).toContain("喜欢");
-    expect(title.text()).toContain("完善资料后才能解锁");
-  });
-
-  it("renders default page name when not provided", () => {
+  it("renders login-focused copy when logged out", () => {
     const wrapper = mountLockScreen();
 
-    const title = wrapper.find(".lock-screen__title");
-    expect(title.text()).toContain("此功能");
+    expect(wrapper.find(".lock-screen__title").text()).toBe("登录后解锁完整交友功能");
+    expect(wrapper.find(".lock-screen__subtitle").text()).toContain(
+      "完成登录授权与基础资料填写"
+    );
+    expect(wrapper.find(".lock-screen__btn-text").text()).toBe("立即登录并完善");
   });
 
-  // ------------------------------------------------------------------
-  // 不同页面显示不同文案
-  // ------------------------------------------------------------------
-  it("shows different copy for different pages", () => {
-    const likesWrapper = mountLockScreen({ pageName: "喜欢" });
-    expect(likesWrapper.find(".lock-screen__title").text()).toContain("喜欢");
-
-    const villageWrapper = mountLockScreen({ pageName: "村口" });
-    expect(villageWrapper.find(".lock-screen__title").text()).toContain("村口");
-
-    const messagesWrapper = mountLockScreen({ pageName: "消息" });
-    expect(messagesWrapper.find(".lock-screen__title").text()).toContain("消息");
-  });
-
-  // ------------------------------------------------------------------
-  // 点击"立即完善"按钮触发跳转
-  // ------------------------------------------------------------------
-  it("calls openAppPath when the action button is clicked", async () => {
+  it("renders profile-completion copy when logged in", () => {
+    setLoggedIn(true);
     const wrapper = mountLockScreen();
 
-    const btn = wrapper.find(".lock-screen__btn");
-    await btn.trigger("tap");
+    expect(wrapper.find(".lock-screen__title").text()).toBe(
+      "完善资料，解锁完整交友功能"
+    );
+    expect(wrapper.find(".lock-screen__subtitle").text()).toContain(
+      "完成基础资料填写"
+    );
+    expect(wrapper.find(".lock-screen__btn-text").text()).toBe("立即完善");
+  });
 
-    expect(openAppPath).toHaveBeenCalledWith(
+  // ------------------------------------------------------------------
+  // 未登录：主按钮先登录，登录成功后自动进资料完善
+  // ------------------------------------------------------------------
+  it("logged out: primary button sets pending redirect and goes to login", async () => {
+    const wrapper = mountLockScreen();
+
+    await wrapper.find(".lock-screen__btn").trigger("tap");
+
+    expect(setPendingLoginRedirect).toHaveBeenCalledWith(
       "/subpackages/setup/profile/index"
     );
+    expect(replaceAppPath).toHaveBeenCalledWith("/pages/login/index");
+    expect(openAppPath).not.toHaveBeenCalled();
   });
 
   // ------------------------------------------------------------------
-  // 副标题文案
+  // 已登录：主按钮直接进资料完善页
   // ------------------------------------------------------------------
-  it("shows completion percent in subtitle when provided", () => {
-    const wrapper = mountLockScreen({ completionPercent: 66 });
-
-    const subtitle = wrapper.find(".lock-screen__subtitle");
-    expect(subtitle.text()).toContain("66%");
-  });
-
-  it("shows default subtitle when completionPercent is zero or undefined", () => {
-    const wrapper = mountLockScreen({ completionPercent: 0 });
-
-    const subtitle = wrapper.find(".lock-screen__subtitle");
-    expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
-  });
-
-  it("shows default subtitle when completionPercent is not provided", () => {
+  it("logged in: primary button goes to profile setup directly", async () => {
+    setLoggedIn(true);
     const wrapper = mountLockScreen();
 
-    const subtitle = wrapper.find(".lock-screen__subtitle");
-    expect(subtitle.text()).toContain("完善资料，开启更多校园恋爱功能");
+    await wrapper.find(".lock-screen__btn").trigger("tap");
+
+    expect(openAppPath).toHaveBeenCalledWith("/subpackages/setup/profile/index");
+    expect(setPendingLoginRedirect).not.toHaveBeenCalled();
   });
 
   // ------------------------------------------------------------------
-  // 底部提示渲染
+  // 完善进度（已登录 + 进度 > 0 时展示，支持继续完善）
+  // ------------------------------------------------------------------
+  it("shows completion percent when logged in and percent provided", () => {
+    setLoggedIn(true);
+    const wrapper = mountLockScreen({ completionPercent: 66 });
+
+    expect(wrapper.find(".lock-screen__progress").text()).toContain("66%");
+  });
+
+  it("hides progress when logged in but percent is zero", () => {
+    setLoggedIn(true);
+    const wrapper = mountLockScreen({ completionPercent: 0 });
+
+    expect(wrapper.find(".lock-screen__progress").exists()).toBe(false);
+  });
+
+  it("hides progress when logged out", () => {
+    const wrapper = mountLockScreen({ completionPercent: 66 });
+
+    expect(wrapper.find(".lock-screen__progress").exists()).toBe(false);
+  });
+
+  // ------------------------------------------------------------------
+  // 权益清单
+  // ------------------------------------------------------------------
+  it("renders the three benefit items", () => {
+    const wrapper = mountLockScreen();
+
+    const texts = wrapper.findAll(".benefit__text").map((n) => n.text());
+    expect(texts).toEqual([
+      "解锁精准匹配推荐",
+      "查看同校校友主页",
+      "发起私信与匿名聊天",
+    ]);
+  });
+
+  // ------------------------------------------------------------------
+  // 备选路径：先逛逛公开内容 → 切到公开 Tab（匹配推荐页）
+  // ------------------------------------------------------------------
+  it("secondary button switches to a public tab", async () => {
+    const switchTabSpy = vi.spyOn(uni, "switchTab");
+    const wrapper = mountLockScreen();
+
+    await wrapper.find(".lock-screen__btn-link").trigger("tap");
+
+    expect(switchTabSpy).toHaveBeenCalledWith({ url: "/pages/discover/index" });
+  });
+
+  // ------------------------------------------------------------------
+  // 「×」关闭：栈深 >1 返回上一页，否则切到公开 Tab
+  // ------------------------------------------------------------------
+  it("close button goes back when there is a previous page", async () => {
+    vi.stubGlobal("getCurrentPages", vi.fn(() => [{ route: "pages/likes/index" }, { route: "pages/profile/index" }]));
+    const navigateBackSpy = vi.spyOn(uni, "navigateBack");
+    const switchTabSpy = vi.spyOn(uni, "switchTab");
+    const wrapper = mountLockScreen();
+
+    await wrapper.find(".lock-screen__close").trigger("tap");
+
+    expect(navigateBackSpy).toHaveBeenCalled();
+    expect(switchTabSpy).not.toHaveBeenCalled();
+  });
+
+  it("close button switches to a public tab when stack depth is 1", async () => {
+    vi.stubGlobal("getCurrentPages", vi.fn(() => [{ route: "pages/profile/index" }]));
+    const navigateBackSpy = vi.spyOn(uni, "navigateBack");
+    const switchTabSpy = vi.spyOn(uni, "switchTab");
+    const wrapper = mountLockScreen();
+
+    await wrapper.find(".lock-screen__close").trigger("tap");
+
+    expect(switchTabSpy).toHaveBeenCalledWith({ url: "/pages/discover/index" });
+    expect(navigateBackSpy).not.toHaveBeenCalled();
+  });
+
+  // ------------------------------------------------------------------
+  // 底部提示
   // ------------------------------------------------------------------
   it("renders the footer tip text", () => {
     const wrapper = mountLockScreen();
 
-    const footer = wrapper.find(".lock-screen__footer-text");
-    expect(footer.text()).toBe("资料越完善，匹配越精准");
+    expect(wrapper.find(".lock-screen__footer-text").text()).toBe(
+      "资料越完善，匹配越精准，曝光机会越多"
+    );
   });
 });

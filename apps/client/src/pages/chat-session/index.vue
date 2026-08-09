@@ -16,15 +16,25 @@ import { useI18n } from "vue-i18n";
 import { featureFlags } from "../../config/feature-flags";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
 import ActivityCard, { type ActivityCardData } from "../../components/chat/ActivityCard.vue";
-import IcebreakerSuggestions from "../../components/chat/IcebreakerSuggestions.vue";
-import { useMessagesStore } from "../../stores/messages";
+import MatchGreetingTip from "../../components/chat/MatchGreetingTip.vue";
+import EmojiPanel from "../../components/chat/EmojiPanel.vue";
+import { useMessagesStore, type MessageItem } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
+// 2026-08-09 微信 1:1 重构：正在输入提示的 mock 演示模式判定
+import { useMock } from "../../stores/helpers/use-mock";
+// 2026-08-09 微信 1:1 重构：「···」菜单举报入口复用举报 Store
+import { useReportStore } from "../../stores/report";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
+// 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
+import { useSessionStore } from "../../stores/session";
+import LockScreen from "../../components/common/LockScreen.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { ROUTES } from "../../constants/routes";
 import { lightHaptic } from "../../utils/haptic";
 import { openAppPath } from "../../utils/navigation";
+// 2026-08-09 微信 1:1 重构：正在输入头像 / 转发会话头像的媒体 URL 解析
+import { resolveMediaUrl } from "../../utils/media";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 // 修复 no-duplicate-imports：合并 ./types 的重复 import
@@ -41,24 +51,20 @@ import {
   buildChatMessageRows,
   buildInitialLongPressMenu,
   buildVisibleLongPressMenu,
-  computeIdleIcebreakerVisible,
   countUserMessages,
   formatTempCountdown,
   isMessageSelf,
   parsePrefillMessage,
   parseQuoteContext,
   resolvePeerUserId as resolvePeerUserIdVm,
-  shouldShowIcebreakers as shouldShowIcebreakersVm,
   toChatBubbleDeliveryStatus,
 } from "./view-models";
 import { recallTempChatMessageApi } from "./api";
-// 统一常量：空闲破冰延迟、倒计时计时器间隔
-// 修复（严格模式 noUnusedLocals）：RECORDING_TICK_MS / RECORDER_MAX_DURATION_MS / RECORDER_MIN_DURATION_SECONDS
-// 仅在已移除的 startVoiceRecord / initRecorder 中使用，已从导入中移除。
-import {
-  IDLE_ICEBREAKER_DELAY_MS,
-  COUNTDOWN_TICK_MS,
-} from "../../constants/chat";
+// 统一常量：倒计时计时器间隔
+// 修复（严格模式 noUnusedLocals）：RECORDING_TICK_MS / RECORDER_MAX_DURATION_MS /
+// RECORDER_MIN_DURATION_SECONDS 仅在已移除的录音功能中使用；
+// IDLE_ICEBREAKER_DELAY_MS 随输入栏上方破冰卡片流一并移除（2026-08-09 微信化重构）。
+import { COUNTDOWN_TICK_MS } from "../../constants/chat";
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
@@ -82,13 +88,16 @@ const chatMenuIcons = {
   videoCall: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
 } as const;
 
-/** SVG 图标资源路径（语音麦克风/表情图标已随对应功能移除；全部 SVG，无 emoji 字符） */
+/** SVG 图标资源路径（语音麦克风已随对应功能移除；全部 SVG，无 emoji 字符） */
 const iconSrc = {
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
   check: IMAGE_PATHS.ICONS_COMMON.CHECK_SVG,
   checkWhite: IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG,
   close: IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG,
   chevronRight: IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG,
+  /* 2026-08-09 微信 1:1 重构：表情按钮（smile.svg）/ 图片占位（camera.png） */
+  smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
+  camera: IMAGE_PATHS.ICONS_COMMON.CAMERA,
 } as const;
 
 const draft = ref("");
@@ -112,15 +121,13 @@ const longPressMenu = ref<LongPressMenuState>(buildInitialLongPressMenu());
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-/* ========== 破冰话题 ========== */
-/** 输入框是否聚焦（同时作为微信风格输入栏的 isFocused 状态） */
+/* ========== 输入栏状态（2026-08-09 微信化重构） ========== */
+/** 输入框是否聚焦 */
 const inputFocused = ref(false);
 /** 键盘高度（用于动态调整输入栏 padding-bottom，避免遮挡） */
 const keyboardHeight = ref(0);
-/** 空闲计时器 ID */
-let idleTimer: ReturnType<typeof setTimeout> | null = null;
-/** 是否显示空闲提示（5 秒未输入则展示） */
-const showIdleIcebreakerHint = ref(false);
+/** 表情面板是否展开（点表情按钮 toggle，展开时收起键盘） */
+const emojiPanelVisible = ref(false);
 
 /**
  * 用户消息数量（排除 system 类型消息）
@@ -133,9 +140,22 @@ const userMessageCount = computed(() =>
   countUserMessages(messagesStore.currentMessages)
 );
 
-/** 是否应该展示破冰话题（消息数为 0 或极少时） */
-const shouldShowIcebreakers = computed(() => {
-  return shouldShowIcebreakersVm(userMessageCount.value, pageErrorMessage.value);
+/**
+ * 2026-08-09 微信 1:1 重构：聊天首条固定破冰提示。
+ * 展示条件：会话尚无任何用户消息（system 消息不计）。
+ */
+const showMatchGreeting = computed(
+  () => userMessageCount.value === 0 && !pageErrorMessage.value && !messagesStore.loading
+);
+
+/** 破冰按钮文案：优先个性化 icebreakerItems 前 2 条，不足时用固定文案补齐 */
+const matchGreetingButtons = computed(() => {
+  const items = chatStore.icebreakerItems
+    .slice(0, 2)
+    .map((i) => i.content)
+    .filter((c) => c.length > 0);
+  const fallback = [t("chat.matchGreeting.buttonFallback1"), t("chat.matchGreeting.buttonFallback2")];
+  return items.length >= 2 ? items : [...items, ...fallback].slice(0, 2);
 });
 
 /* ========== Phase Feedback3 P2.4：缘分速配渐进解锁 ==========
@@ -185,12 +205,21 @@ const signalNextUnlock = computed<{ field: string; remaining: number } | null>((
 
 /** 全部解锁后查看 TA 主页 */
 function goSignalProfile() {
-  const peerId = currentSession.value?.partnerId || targetUserId.value;
-  if (!peerId) return;
+  const session = currentSession.value;
+  // 2026-08-09：私信会话（MessageSession）用 partnerId；临时会话
+  // （ChatSessionView）无 partnerId 字段，改用 recommendedPersonId
+  const peerId =
+    session && "partnerId" in session
+      ? session.partnerId
+      : session && "recommendedPersonId" in session
+        ? session.recommendedPersonId
+        : null;
+  const resolvedPeerId = peerId || targetUserId.value;
+  if (!resolvedPeerId) return;
   // P0-1 修复（2026-08-08）：profile 是 tabBar 页，navigateTo 会 fail（can not navigateTo
   // a tabbar page）→ 改用 openAppPath（switchTab + pending-tab-query 桥接传 userId）
   // R4-00076：路径走 ROUTES 常量，避免硬编码
-  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(peerId)}`);
+  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(resolvedPeerId)}`);
 }
 
 /**
@@ -243,11 +272,28 @@ function openActivityCard(targetUrl: string) {
 
 /* ========== 消息流时间分隔条 + 滚动（2026-08-08 微信化重构） ========== */
 
+/** 底部锚点 id（常量，模板与脚本共用） */
+const BOTTOM_ANCHOR_ID = "chat-bottom-anchor";
+
+/** 删除消息本地存储 key（2026-08-09 微信化重构：删除为本地持久隐藏，微信语义） */
+const DELETED_MESSAGES_STORAGE_KEY = "chat-session:deleted-message-ids";
+
+/** 已删除消息 ID 集合（本地持久隐藏，重进会话不恢复；TODO(backend): DELETE 消息接口） */
+const deletedMessageIds = ref<Set<string>>(
+  new Set<string>((uni.getStorageSync(DELETED_MESSAGES_STORAGE_KEY) as string[]) ?? [])
+);
+
 /**
  * 消息行模型：按微信 5 分钟规则在消息流中插入时间分隔条。
  * 纯逻辑见 view-models.ts（buildChatMessageRows / shouldShowTimeBar / formatChatTimeBar）。
+ * 2026-08-09：过滤本地删除的消息（页面级持久隐藏）。
  */
-const messageRows = computed(() => buildChatMessageRows(currentMessagesView.value));
+const messageRows = computed(() =>
+  buildChatMessageRows(currentMessagesView.value).filter((row) => {
+    if (row.type !== "message" || !row.message) return true;
+    return !deletedMessageIds.value.has(row.message.id);
+  })
+);
 
 /** scroll-view 纵向滚动位置（上拉加载旧消息时用于保持视口） */
 const scrollTop = ref(0);
@@ -259,15 +305,27 @@ const MESSAGE_ROW_ID_PREFIX = "msg-row-";
 let curScrollTop = 0;
 /** 是否正在加载更早消息（防重入） */
 const loadingOlder = ref(false);
-/** 是否已滚到底部附近（决定新消息是否自动滚底） */
+/** 是否已滚到底部附近（决定新消息是否自动滚底 / 提示条展示） */
 let nearBottom = true;
+/** 2026-08-09 微信化重构：浏览历史时收到新消息的「有新消息」提示条 */
+const unreadHintVisible = ref(false);
+/** 滚动区视口/内容高度缓存（onScroll 每帧查询会卡顿，仅在新消息到达时查询一次） */
+let scrollViewportHeight = 0;
+let scrollContentHeight = 0;
 
-/** 底部锚点 id（常量，模板与脚本共用） */
-const BOTTOM_ANCHOR_ID = "chat-bottom-anchor";
-
-/** 记录滚动位置 */
+/**
+ * 记录滚动位置并维护 nearBottom（微信行为：贴底自动滚底，浏览历史亮提示条）。
+ * 修复（2026-08-09）：原实现 onScroll 从不更新 nearBottom（恒为 onShow 的 true），
+ * 导致「浏览历史时收到新消息强制滚底」，提示条机制无从生效。
+ */
 function onScroll(e: { detail?: { scrollTop?: number } }) {
   curScrollTop = e?.detail?.scrollTop ?? 0;
+  const bottom = scrollContentHeight - scrollViewportHeight;
+  if (bottom > 0) {
+    // 距底 < 120px 视为贴底（阈值固定字面量，无对应 token 档位）
+    nearBottom = bottom - curScrollTop < 120;
+    if (nearBottom && unreadHintVisible.value) unreadHintVisible.value = false;
+  }
 }
 
 /**
@@ -276,7 +334,17 @@ function onScroll(e: { detail?: { scrollTop?: number } }) {
  * 加载后设置 scrollTop = 新scrollHeight - 原距底距离 保持视口。
  */
 function onScrollToUpper() {
-  if (loadingOlder.value || !sessionId.value || !messagesStore.messageHasMore) return;
+  // 2026-08-09 修复：临时匿名会话跳过上拉分页——fetchOlderMessages 走私信接口
+  // （会话 ID 为 Long 数字主键），temp 会话（"session-{a}-{b}-{hex}"）调用必然 500；
+  // 且 temp-chat 的 loadSession 一次性返回全部消息，无历史分页概念。
+  if (
+    loadingOlder.value ||
+    !sessionId.value ||
+    !messagesStore.messageHasMore ||
+    isTempSession.value
+  ) {
+    return;
+  }
   void (async () => {
     loadingOlder.value = true;
     try {
@@ -284,6 +352,8 @@ function onScrollToUpper() {
       await messagesStore.fetchOlderMessages(sessionId.value!, messagesStore.messagePage + 1);
       await nextTick();
       const after = await queryScrollHeight();
+      // 2026-08-09：同步更新滚动区高度缓存（nearBottom 计算依赖）
+      scrollContentHeight = after;
       // scroll-top 与 scroll-into-view 互斥：先清 into-view 再设置 scroll-top
       scrollIntoViewId.value = "";
       scrollTop.value = after - (before - curScrollTop);
@@ -309,6 +379,21 @@ function queryScrollHeight(): Promise<number> {
   });
 }
 
+/** 查询消息滚动区视口高度（与 queryScrollHeight 同款，2026-08-09 新增：nearBottom 计算用） */
+function queryScrollViewportHeight(): Promise<number> {
+  return new Promise((resolve) => {
+    uni
+      .createSelectorQuery()
+      .in(getCurrentInstance())
+      .select(".chat-scroll")
+      .fields({ size: true }, (res) => {
+        const info = Array.isArray(res) ? res[0] : res;
+        resolve(info?.height ?? 0);
+      })
+      .exec();
+  });
+}
+
 /** 滚动到底部（进入页面 / 新消息到达） */
 function scrollToBottom() {
   scrollTop.value = 0;
@@ -319,15 +404,37 @@ function scrollToBottom() {
 }
 
 /**
- * 新消息到达时自动滚底（用户停留在底部附近时）。
+ * 新消息到达时的滚动策略（2026-08-09 微信化重构）：
+ * - 贴底（nearBottom）：自动滚底，最新消息始终可见；
+ * - 浏览历史（未贴底）：不打断阅读，亮「有新消息」提示条，点击后跳转最新。
  * 上拉加载旧消息（loadingOlder）时长度也变化，但由 onScrollToUpper 保持视口，此处跳过。
  */
 watch(
   () => messagesStore.currentMessages.length,
   () => {
-    if (nearBottom && !loadingOlder.value) scrollToBottom();
+    if (loadingOlder.value) return;
+    if (nearBottom) {
+      scrollToBottom();
+    } else {
+      // 仅在「未贴底 + 有新消息」时查询一次滚动区高度，缓存供 onScroll 的 nearBottom 计算
+      // （避免 onScroll 每帧查询导致滚动卡顿）
+      void Promise.all([queryScrollHeight(), queryScrollViewportHeight()]).then(
+        ([contentH, viewportH]) => {
+          scrollContentHeight = contentH;
+          scrollViewportHeight = viewportH;
+          unreadHintVisible.value = true;
+        }
+      );
+    }
   }
 );
+
+/** 点击「有新消息」提示条：跳转最新并隐藏（微信行为：提示条在底部，点击跳底） */
+function jumpToLatest() {
+  unreadHintVisible.value = false;
+  nearBottom = true;
+  scrollToBottom();
+}
 
 /** 返回上一页（自定义导航栏） */
 function goBack() {
@@ -347,6 +454,11 @@ function goBack() {
 }
 
 usePageAccess(chatPageRequirements);
+
+// 2026-08-09 免踢登录：未登录 → 展示 LockScreen 引导，不渲染会话、不发鉴权请求
+const sessionStore = useSessionStore();
+const isUnlocked = computed(() => sessionStore.isLoggedIn);
+const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /**
  * 同步 chatStore.activeSession.messages 到 messagesStore.currentMessages
@@ -391,6 +503,12 @@ function syncChatStoreMessagesToMessagesStore(): void {
  * - 私信会话：仅调用 messagesStore.fetchSessionMessages
  * - 临时匿名会话：先调用 chatStore.loadSession，再同步消息到 messagesStore
  *
+ * 2026-08-09 修复（喜欢后流程 500）：先判定会话类型再加载消息。
+ * 原实现无条件调用 messagesStore.fetchSessionMessages（私信接口，会话 ID 为
+ * Long 数字主键）；临时匿名会话的 ID 为 "session-{a}-{b}-{hex}" 字符串
+ * （TempChatSessionService 生成），传入该接口触发类型转换失败返回 500，
+ * 且 errorMessage 被置位导致页面消息区被错误态遮罩、发送/交流链路中断。
+ *
  * 防止 onShow 与 onLoad 异步创建会话竞态：仅在 sessionId 就绪时执行。
  */
 async function loadSessionData(): Promise<void> {
@@ -398,18 +516,27 @@ async function loadSessionData(): Promise<void> {
     return;
   }
 
-  // Task 1.1.6：等待 messagesStore 数据加载完成，避免页面渲染空消息列表
-  await messagesStore.fetchSessionMessages(sessionId.value);
-
-  // 临时匿名会话需要额外加载 chatStore 数据并同步消息
+  // 会话类型判定：临时匿名会话不存在于私信会话列表（messagesStore.sessions），
+  // 或虽存在但标记为 temp_anonymous——两者均走 temp-chat 链路。
   const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
-  if (!session || session.sessionType === "temp_anonymous") {
+  const isTemp = !session || session.sessionType === "temp_anonymous";
+
+  if (isTemp) {
+    // 临时匿名会话：temp-chat 接口加载会话（返回会话含全部消息），
+    // 同步到 messagesStore 单一数据源后渲染
     await chatStore.loadSession(sessionId.value);
     syncChatStoreMessagesToMessagesStore();
+    return;
   }
+
+  // Task 1.1.6：等待 messagesStore 数据加载完成，避免页面渲染空消息列表
+  await messagesStore.fetchSessionMessages(sessionId.value);
 }
 
 onLoad(async (query) => {
+  // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不创建会话、不发鉴权请求
+  if (!isUnlocked.value) return;
+
   // ---- 缘分速配信号会话（渐进解锁） ----
   if (query && query.fromSignal === "1") {
     fromSignal.value = true;
@@ -480,6 +607,9 @@ onLoad(async (query) => {
 });
 
 onShow(() => {
+  // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不加载会话/消息/破冰话题（避免 401）
+  if (!isUnlocked.value) return;
+
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", {
     url: "/pages/chat-session/index",
@@ -501,7 +631,17 @@ onShow(() => {
   // 会话打开期间收到的新消息不累加未读数，退出后恢复累加。
   messagesStore.setActiveSession(sessionId.value);
   nearBottom = true;
-  void nextTick(scrollToBottom);
+  void nextTick(() => {
+    // 2026-08-09 微信化重构：初始化滚动区高度缓存
+    // （onScroll 的 nearBottom 计算依赖该缓存，不初始化则浏览历史时 nearBottom 恒为 true）
+    void Promise.all([queryScrollHeight(), queryScrollViewportHeight()]).then(
+      ([contentH, viewportH]) => {
+        scrollContentHeight = contentH;
+        scrollViewportHeight = viewportH;
+      }
+    );
+    scrollToBottom();
+  });
 
   // Task 1.1.6：等待消息加载完成后再启动倒计时与破冰话题加载，
   // 避免页面渲染空消息列表导致破冰话题过早出现。
@@ -517,37 +657,64 @@ onHide(() => {
   // 红点修复：退出会话页（压栈/切后台）后恢复未读累加
   messagesStore.setActiveSession(null);
   nearBottom = false;
+  // 2026-08-09：切后台时复位「正在输入」态与计时器
+  clearTypingTimer();
+  peerTyping.value = false;
 });
 
 onUnload(() => {
   if (countdownTimer) {
     clearInterval(countdownTimer);
   }
-  clearIdleTimer();
+  clearTypingTimer();
 });
 
 /** 当前会话信息（优先从 messagesStore 获取） */
 const currentSession = computed(() => {
-  return messagesStore.sessions.find((s) => s.id === sessionId.value) || null;
+  // 2026-08-09 修复：临时匿名会话由 chatStore 管理生命周期（loadSession 后写入
+  // activeSession），不在 messagesStore.sessions（仅私信会话）中——原实现查找不到
+  // 时返回 null，导致 isTempSession 恒为 false，temp 会话的发送/撤回走错私信链路。
+  // 现回退到 chatStore.activeSession，保证 temp 会话也能被识别。
+  return (
+    messagesStore.sessions.find((s) => s.id === sessionId.value) ||
+    chatStore.activeSession ||
+    null
+  );
 });
 
-/** 是否为临时匿名会话 */
-const isTempSession = computed(() => currentSession.value?.sessionType === "temp_anonymous");
+/**
+ * 是否为临时匿名会话。
+ *
+ * 2026-08-09 修复：私信会话（MessageSession）带 sessionType 字段；
+ * 临时会话（ChatSessionView = TempChatSession & contactExchangeLabel）由
+ * chatStore.activeSession 管理，**无 sessionType 字段**，以 contactExchange
+ * 标识——原实现仅按 sessionType 判断，temp 会话恒判为 false。
+ */
+const isTempSession = computed(() => {
+  const session = currentSession.value;
+  if (!session) return false;
+  return "sessionType" in session
+    ? session.sessionType === "temp_anonymous"
+    : "contactExchange" in session;
+});
 
 /**
  * 临时会话是否已到期（review #51：原实现用 tempCountdown === "已结束" 比较中文文案，
  * 依赖展示文案判断状态；现改为基于 closesAt 计算，与文案解耦）。
  */
 const tempSessionEnded = computed(() => {
+  if (!isTempSession.value) return false;
   const session = currentSession.value;
-  if (!session || session.sessionType !== "temp_anonymous" || !session.closesAt) {
-    return false;
-  }
+  if (!session || !session.closesAt) return false;
   return Date.parse(session.closesAt) - Date.now() <= 0;
 });
 
-/** 是否为私信会话 */
-const isPrivateSession = computed(() => currentSession.value?.sessionType === "private");
+/** 是否为私信会话（MessageSession 才带 sessionType="private"） */
+const isPrivateSession = computed(() => {
+  const session = currentSession.value;
+  if (!session) return false;
+  return "sessionType" in session ? session.sessionType === "private" : false;
+});
 
 /** 会话是否已关闭 */
 const isSessionClosed = computed(() => {
@@ -574,6 +741,110 @@ const pageTitle = computed(() => {
   return chatStore.activeSession?.partnerName || t("chat.chatTitle");
 });
 
+/* ========== 顶部导航：对方状态文字 + 「···」更多菜单（2026-08-09 微信化重构） ========== */
+
+/**
+ * 对方在线状态文字（微信：昵称下方 12px 灰字）。
+ * 后端暂无 presence 接口：
+ * - mock 模式：按 sessionId 哈希取「在线/刚刚活跃/离线」三态（演示用）；
+ * - real 模式：固定「刚刚活跃」。
+ * TODO(backend): GET /users/{id}/presence 接入真实在线状态
+ */
+const peerStatusText = computed(() => {
+  if (!isPrivateSession.value) return ""; // 临时会话沿用 temp-banner，不展示状态文字
+  if (useMock()) {
+    const seed = (sessionId.value ?? "").split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const mod = seed % 3;
+    return mod === 0 ? t("chat.statusOnline") : mod === 1 ? t("chat.statusActive") : t("chat.statusOffline");
+  }
+  return t("chat.statusActive");
+});
+
+/** 顶部「···」菜单是否展开 */
+const navMenuVisible = ref(false);
+/** 本次会话内已拉黑的对方（本会话内隐藏操作入口；TODO(backend): POST /users/{id}/block） */
+const blockedPeerIds = ref<Set<string>>(new Set());
+
+/** 当前会话是否免打扰（顶部菜单切换文案用） */
+const isSessionMuted = computed(() => {
+  const session = currentSession.value;
+  if (!session || !("id" in session)) return false;
+  return messagesStore.sessions.find((s) => s.id === session.id)?.muted ?? false;
+});
+
+/** 打开顶部「···」菜单 */
+function openNavMenu() {
+  lightHaptic();
+  navMenuVisible.value = true;
+}
+
+/** 关闭顶部「···」菜单 */
+function closeNavMenu() {
+  navMenuVisible.value = false;
+}
+
+/** 查看对方主页：复用缘分速配的 partnerId 解析与跳转（ROUTES.PROFILE.INDEX） */
+function handleViewProfile() {
+  closeNavMenu();
+  goSignalProfile();
+}
+
+/** 切换消息免打扰（本地状态；TODO(backend): 后端会话元数据同步接口） */
+function handleToggleMute() {
+  closeNavMenu();
+  const session = currentSession.value;
+  if (!session || !("id" in session)) return;
+  const sid = session.id as string;
+  const muted = messagesStore.sessions.find((s) => s.id === sid)?.muted ?? false;
+  messagesStore.setSessionMuted(sid, !muted);
+}
+
+/** 拉黑：确认后写入页面级拉黑集合（仅本次会话生效；TODO(backend): POST /users/{id}/block） */
+function handleBlock() {
+  closeNavMenu();
+  uni.showModal({
+    title: t("chat.nav.blockConfirmTitle"),
+    content: t("chat.nav.blockConfirmContent"),
+    confirmText: t("chat.nav.block"),
+    cancelText: t("common.cancel"),
+    success: (res) => {
+      if (!res.confirm) return;
+      const peerId = resolvePeerUserId();
+      if (peerId !== null) blockedPeerIds.value.add(String(peerId));
+      uni.showToast({ title: t("chat.nav.blockDone"), icon: "none" });
+    },
+  });
+}
+
+/** 举报：复用举报 Store，原因走 ActionSheet 预设（USER 类型） */
+function handleReport() {
+  closeNavMenu();
+  const peerId = resolvePeerUserId();
+  if (peerId === null) {
+    uni.showToast({ title: t("chat.nav.reportReasonHint"), icon: "none" });
+    return;
+  }
+  const reasons = [
+    t("chat.nav.reportReasonHarass"),
+    t("chat.nav.reportReasonAbuse"),
+    t("chat.nav.reportReasonFraud"),
+    t("chat.nav.reportReasonOther"),
+  ];
+  uni.showActionSheet({
+    itemList: reasons,
+    success: async (res) => {
+      const reason = reasons[res.tapIndex];
+      if (!reason) return;
+      try {
+        await useReportStore().reportTarget("USER", peerId, reason);
+        uni.showToast({ title: t("chat.nav.reportDone"), icon: "none" });
+      } catch (_e) {
+        uni.showToast({ title: t("chat.operationFailed"), icon: "none" });
+      }
+    },
+  });
+}
+
 /** 启动临时会话倒计时 */
 function startTempCountdown() {
   if (countdownTimer) {
@@ -584,14 +855,18 @@ function startTempCountdown() {
   updateTempCountdown();
 
   const session = currentSession.value;
-  if (session?.sessionType === "temp_anonymous" && session.closesAt) {
+  if (isTempSession.value && session?.closesAt) {
     countdownTimer = setInterval(updateTempCountdown, COUNTDOWN_TICK_MS);
   }
 }
 
 function updateTempCountdown() {
+  if (!isTempSession.value) {
+    tempCountdown.value = "";
+    return;
+  }
   const session = currentSession.value;
-  if (!session || session.sessionType !== "temp_anonymous" || !session.closesAt) {
+  if (!session || !session.closesAt) {
     tempCountdown.value = "";
     return;
   }
@@ -650,6 +925,8 @@ async function sendText() {
     // 发送成功后清空输入与引用状态；失败时保留草稿以便重试
     draft.value = "";
     quoteReply.value = null;
+    // 2026-08-09 微信化重构：mock 模式模拟对方「正在输入」（1.5~3s 后出现）
+    scheduleTypingSimulation();
   } catch (error) {
     // 消息发送失败：上报到 Sentry，source 标记为 chat.sendText 便于后台筛选
     captureException(error, {
@@ -701,20 +978,17 @@ async function handleEndSession() {
 // - isRecording / handleVoiceRecorded / handleVoiceRecordCancel / handleVoiceStateChange：已移除
 // - 历史遗留 initRecorder / startVoiceRecord / stopVoiceRecord / sendVoiceMessage：此前已移除
 
-/* ========== 破冰话题事件处理 ========== */
+/* ========== 输入栏事件处理（2026-08-09 微信化重构） ========== */
 
-/** 输入框聚焦：启动空闲计时器，清除提示 */
+/** 输入框聚焦：收起表情面板（微信行为：键盘与表情面板互斥） */
 function onInputFocus() {
   inputFocused.value = true;
-  showIdleIcebreakerHint.value = false;
-  resetIdleTimer();
+  emojiPanelVisible.value = false;
 }
 
-/** 输入框失焦：清除计时器和提示 */
+/** 输入框失焦（表情面板展开时 input 为 blur 态，面板由 toggleEmojiPanel 控制） */
 function onInputBlur() {
   inputFocused.value = false;
-  clearIdleTimer();
-  showIdleIcebreakerHint.value = false;
 }
 
 /** 微信风格输入栏：发送按钮点击（委托给 sendText） */
@@ -727,61 +1001,108 @@ function onKeyboardHeightChange(e: { height: number }) {
   keyboardHeight.value = e?.height ?? 0;
 }
 
-/** 输入内容变化：重置空闲计时器 */
+/** 输入内容变化：无额外处理（空闲破冰提示已随输入栏上方卡片流移除） */
 function onDraftChange() {
-  if (inputFocused.value) {
-    showIdleIcebreakerHint.value = false;
-    resetIdleTimer();
+  // 2026-08-09：原实现重置空闲破冰计时器，随输入栏上方卡片流一并移除
+}
+
+/** 切换表情面板：展开时收起键盘（微信行为：表情面板与键盘互斥） */
+function toggleEmojiPanel() {
+  emojiPanelVisible.value = !emojiPanelVisible.value;
+  if (emojiPanelVisible.value) {
+    uni.hideKeyboard();
   }
 }
 
-/** 重置空闲计时器：IDLE_ICEBREAKER_DELAY_MS 后显示破冰话题提示 */
-function resetIdleTimer() {
-  clearIdleTimer();
-  idleTimer = setTimeout(() => {
-    // 使用纯函数判断是否展示空闲提示
-    if (computeIdleIcebreakerVisible(inputFocused.value, draft.value)) {
-      showIdleIcebreakerHint.value = true;
-    }
-  }, IDLE_ICEBREAKER_DELAY_MS);
-}
-
-/** 清除空闲计时器 */
-function clearIdleTimer() {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-    idleTimer = null;
-  }
-}
-
-/** 选中破冰话题：将话题文本填入输入框 */
-function handleIcebreakerSelect(content: string) {
-  draft.value = content;
-  showIdleIcebreakerHint.value = false;
-}
-
-/** 换话题：重新请求破冰话题 */
-async function handleRefreshIcebreakers() {
-  const peerIdNum = resolvePeerUserId();
-  if (peerIdNum === null) {
-    uni.showToast({ title: t("chat.icebreakersNoPeer"), icon: "none" });
+/**
+ * 选中表情：直接发送 kind="emoji" 表情消息（2026-08-09 表情包机制）。
+ * 与私信/临时会话两条链路共用：temp 走 chatStore.sendText(kind="emoji")，
+ * 私信走 messagesStore.sendMessage(kind="emoji")，后端已支持 EMOJI 白名单与
+ * utf8mb4 存储。发送失败 toast 提示（面板已收起，草稿不受影响）。
+ */
+async function handleEmojiSelect(emoji: string) {
+  if (!sessionId.value) return;
+  emojiPanelVisible.value = false;
+  if (isSessionClosed.value) {
+    uni.showToast({ title: t("chat.sessionClosedCannotSend"), icon: "none" });
     return;
   }
   try {
-    await chatStore.fetchIcebreakers(peerIdNum);
-  } catch (_e) {
-    // P1-11：破冰话题加载失败不中断页面
-    uni.showToast({ title: t("chat.icebreakersLoadFailed"), icon: "none" });
+    if (isTempSession.value) {
+      await chatStore.sendText(emoji, "emoji");
+      // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
+      syncChatStoreMessagesToMessagesStore();
+    } else {
+      await messagesStore.sendMessage(sessionId.value, emoji, undefined, "emoji");
+    }
+    // 表情消息发送后同样触发对方「正在输入」演示（mock 模式）
+    scheduleTypingSimulation();
+  } catch (error) {
+    captureException(error, {
+      source: "chat.sendEmoji",
+      sessionId: sessionId.value,
+    });
+    uni.showToast({ title: t("chat.sendFailed"), icon: "none" });
   }
 }
 
+/* ========== 破冰首条提示（2026-08-09 微信化重构） ========== */
+
+/** 点击破冰快捷按钮：直接发送该文案（sendText 发送成功后自动清空草稿） */
+async function handleGreetingSend(text: string) {
+  if (!text.trim() || !sessionId.value) return;
+  draft.value = text;
+  await sendText();
+}
+
+/* ========== 正在输入提示（2026-08-09 微信化重构） ========== */
+
+/** 对方是否正在输入（真实输入态由 WS /queue/typing 驱动，后端暂无推送；mock 模式演示模拟） */
+const peerTyping = ref(false);
+/** typing 演示计时器 ID */
+let typingTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * mock 模式演示：发送成功后随机 1.5~3s 模拟对方开始输入，2~4s 后停止（增强实时感）。
+ * real 模式预留：由 store-dispatch 的 typing 分支（/user/queue/typing）驱动，后端未推送即不触发。
+ * TODO(backend): 后端推送 typing 事件（{sessionId, typing}）
+ */
+function scheduleTypingSimulation() {
+  if (!useMock() || isTempSession.value) return; // 仅私信会话演示
+  clearTypingTimer();
+  typingTimer = setTimeout(() => {
+    peerTyping.value = true;
+    typingTimer = setTimeout(() => {
+      peerTyping.value = false;
+      typingTimer = null;
+    }, 2000 + Math.floor(Math.random() * 2000));
+  }, 1500 + Math.floor(Math.random() * 1500));
+}
+
+/** 清理 typing 计时器（onHide/onUnload 调用，避免切后台后误触） */
+function clearTypingTimer() {
+  if (typingTimer) {
+    clearTimeout(typingTimer);
+    typingTimer = null;
+  }
+}
+
+/** 对方头像（正在输入行展示；默认配置 AVATAR_1，与 ChatBubble 默认一致） */
+const peerAvatarSrc = computed(() => {
+  const session = currentSession.value;
+  if (session && "partnerAvatar" in session && session.partnerAvatar) {
+    return session.partnerAvatar;
+  }
+  return IMAGE_PATHS.AVATARS.AVATAR_1;
+});
+
 /** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
 function resolvePeerUserId(): number | null {
-  return resolvePeerUserIdVm(
-    currentSession.value?.partnerId,
-    sessionId.value,
-    targetUserId.value
-  );
+  // 2026-08-09：临时会话（ChatSessionView）无 partnerId 字段，传 undefined
+  // 由 view-models 兜底从 sessionId 数字部分 / targetUserId 解析
+  const session = currentSession.value;
+  const partnerId = session && "partnerId" in session ? session.partnerId : undefined;
+  return resolvePeerUserIdVm(partnerId, sessionId.value, targetUserId.value);
 }
 
 /* ========== 长按菜单 / 引用回复 / 撤回 ========== */
@@ -880,17 +1201,91 @@ async function handleRecallMessage() {
   try {
     await recallTempChatMessageApi(sessionId.value, longPressMenu.value.messageId);
     uni.showToast({ title: t("chat.recalledSuccess"), icon: "success" });
-    // 重新加载会话以获取最新消息
-    await messagesStore.fetchSessionMessages(sessionId.value);
+    // 2026-08-09 修复：撤回后重新加载会话——原实现先调 messagesStore.fetchSessionMessages
+    // （私信接口，temp 会话 ID 非 Long 必然 500 且污染 errorMessage），再走 chatStore 链路；
+    // 此处已由上方 isTempSession 守卫保证为 temp 会话，直接走 temp-chat 加载即可。
+    await chatStore.loadSession(sessionId.value);
     // Task 1.1.1：临时会话需同步 chatStore 消息到 messagesStore 单一数据源
-    if (isTempSession.value) {
-      await chatStore.loadSession(sessionId.value);
-      syncChatStoreMessagesToMessagesStore();
-    }
+    syncChatStoreMessagesToMessagesStore();
   } catch (_e) {
     uni.showToast({ title: t("chat.recallFailed"), icon: "none" });
   }
   closeLongPressMenu();
+}
+
+/* ========== 转发 / 删除（2026-08-09 微信化重构） ========== */
+
+/** 转发会话选择弹层状态（message 为消息流中的 MessageItem，转发时 body/kind 原样复用） */
+const forwardSheet = ref<{ visible: boolean; message: MessageItem | null }>({
+  visible: false,
+  message: null,
+});
+
+/** 可转发目标会话（私信会话，排除当前会话） */
+const forwardableSessions = computed(() =>
+  messagesStore.sessions.filter(
+    (s) => s.id !== sessionId.value && s.sessionType === "private"
+  )
+);
+
+/** 打开转发选择弹层（仅 text/emoji/activity 可转发，voice/system 提示不支持） */
+function openForwardSheet() {
+  const message = messagesStore.currentMessages.find(
+    (m) => m.id === longPressMenu.value.messageId
+  );
+  closeLongPressMenu();
+  if (!message) return;
+  if (message.kind === "voice" || message.kind === "system") {
+    uni.showToast({ title: t("chat.forwardNotSupported"), icon: "none" });
+    return;
+  }
+  if (forwardableSessions.value.length === 0) {
+    uni.showToast({ title: t("chat.forwardNoTarget"), icon: "none" });
+    return;
+  }
+  forwardSheet.value = { visible: true, message };
+}
+
+/** 关闭转发选择弹层 */
+function closeForwardSheet() {
+  forwardSheet.value.visible = false;
+  forwardSheet.value.message = null;
+}
+
+/**
+ * 转发到目标会话：复用现有 sendMessage API（body/kind 原样转发），无新后端接口。
+ * text/emoji 直转；activity 传 kind="activity"（body 为 JSON，后端白名单已含 ACTIVITY）。
+ */
+async function handleForwardTo(targetSessionId: string) {
+  const message = forwardSheet.value.message;
+  if (!message) return;
+  closeForwardSheet();
+  try {
+    await messagesStore.sendMessage(targetSessionId, message.body, undefined, message.kind);
+    uni.showToast({ title: t("chat.forwardSuccess"), icon: "none" });
+  } catch (_e) {
+    uni.showToast({ title: t("chat.operationFailed"), icon: "none" });
+  }
+}
+
+/**
+ * 删除消息：本地持久隐藏（微信语义——删除仅自己不可见，重进会话不恢复）。
+ * 删除记录写入本地存储，不做服务端删除。
+ * TODO(backend): DELETE /messages/conversations/{id}/messages/{mid} 接口预留
+ */
+function handleDeleteMessage() {
+  const messageId = longPressMenu.value.messageId;
+  closeLongPressMenu();
+  if (!messageId) return;
+  const next = new Set(deletedMessageIds.value);
+  next.add(messageId);
+  deletedMessageIds.value = next;
+  try {
+    uni.setStorageSync(DELETED_MESSAGES_STORAGE_KEY, Array.from(next));
+  } catch (_e) {
+    // 存储失败不影响本次会话内隐藏（仅刷新后恢复）
+  }
+  uni.showToast({ title: t("chat.deleteLocalOnly"), icon: "none" });
 }
 
 /** 取消引用回复 */
@@ -918,9 +1313,11 @@ function handleTapQuote(quoteRef: string) {
   }, 0);
 }
 
-/** 加载破冰话题 */
+/**
+ * 加载破冰话题（2026-08-09 微信化重构：首条破冰提示的快捷按钮文案需要个性化话题；
+ * 原实现仅在输入栏上方卡片流展示时加载，已随卡片流移除）
+ */
 async function loadIcebreakers() {
-  if (!shouldShowIcebreakers.value) return;
   const peerIdNum = resolvePeerUserId();
   // P1-11：无法解析对方用户 ID 时提示而非静默跳过
   if (peerIdNum === null) {
@@ -978,6 +1375,12 @@ function goVideoCall() {
   });
 }
 
+/** 图片发送占位（2026-08-09：图片消息本期不做，占位提示；后续迭代接入选图/上传/预览链路） */
+function handleImagePlaceholder() {
+  closeMoreMenu();
+  uni.showToast({ title: t("chat.moreMenuImageWip"), icon: "none" });
+}
+
 // 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ noop });
@@ -985,7 +1388,10 @@ defineExpose({ noop });
 
 <template>
   <view class="chat-page" :class="{ 'page-fade-in': pageVisible }">
-    <!-- 顶部导航（微信风格：返回箭头 + 居中标题，无副标题） -->
+    <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
+    <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
+    <template v-else>
+    <!-- 顶部导航（2026-08-09 微信 1:1：返回箭头 + 两行标题（昵称/状态）+ 「···」更多） -->
     <view class="chat-nav" role="banner" :aria-label="pageTitle">
       <view
         class="chat-nav__back press-feedback"
@@ -999,8 +1405,20 @@ defineExpose({ noop });
       </view>
       <view class="chat-nav__title-wrap">
         <text class="chat-nav__title">{{ pageTitle }}</text>
+        <!-- 微信：昵称下方 12px 灰色状态文字（仅私信会话，temp 会话沿用 temp-banner） -->
+        <text v-if="peerStatusText" class="chat-nav__status">{{ peerStatusText }}</text>
       </view>
-      <view class="chat-nav__spacer" />
+      <!-- 微信：右侧「···」更多按钮（查看主页/免打扰/拉黑/举报） -->
+      <view
+        class="chat-nav__more press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        @tap="openNavMenu"
+        role="button"
+        :aria-label="t('chat.nav.moreAria')"
+      >
+        <text class="chat-nav__more-text">···</text>
+      </view>
     </view>
 
     <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处） -->
@@ -1069,6 +1487,13 @@ defineExpose({ noop });
       <view v-else-if="messagesStore.loading" class="meta-copy meta-copy--padded">{{ t('chat.loadingSessionDetail') }}</view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy meta-copy--padded">{{ friendlyPageError }}</view>
       <view v-else class="chat-list" role="list">
+        <!-- 2026-08-09 微信化重构：聊天首条固定破冰提示（会话无任何用户消息时展示，点击直发） -->
+        <MatchGreetingTip
+          v-if="showMatchGreeting"
+          :buttons="matchGreetingButtons"
+          @send="handleGreetingSend"
+        />
+
         <!-- 行模型：时间分隔条（微信 5 分钟规则）+ 消息/活动卡片 -->
         <template v-for="row in messageRows" :key="row.key">
           <view v-if="row.type === 'timebar'" class="chat-time-bar">{{ row.text }}</view>
@@ -1108,9 +1533,37 @@ defineExpose({ noop });
           {{ t('chat.sessionClosedHint') }}
         </text>
       </view>
+      <!-- 2026-08-09 微信化重构：对方正在输入提示（mock 模拟 / real WS 预留） -->
+      <view
+        v-if="peerTyping && isPrivateSession"
+        class="typing-row"
+        role="status"
+        :aria-label="t('chat.typingAria')"
+      >
+        <image class="typing-row__avatar" :src="resolveMediaUrl(peerAvatarSrc)" mode="aspectFill" />
+        <view class="typing-row__bubble">
+          <text class="typing-row__text">{{ t('chat.typing') }}</text>
+          <view class="typing-row__dots" aria-hidden="true">
+            <view class="typing-row__dot" /><view class="typing-row__dot" /><view class="typing-row__dot" />
+          </view>
+        </view>
+      </view>
       <!-- 底部锚点：进入页面 / 新消息时滚动至此 -->
       <view :id="BOTTOM_ANCHOR_ID" class="chat-bottom-anchor" />
     </scroll-view>
+
+    <!-- 2026-08-09 微信化重构：浏览历史时收到新消息的「有新消息」提示条（点击跳转最新，不打断阅读） -->
+    <view
+      v-if="unreadHintVisible"
+      class="unread-hint press-feedback"
+      hover-class="press-feedback--active"
+      hover-stay-time="120"
+      @tap="jumpToLatest"
+      role="button"
+      :aria-label="t('chat.newMessageHint')"
+    >
+      <text class="unread-hint__text">{{ t('chat.newMessageHint') }} ↓</text>
+    </view>
 
     <!-- 输入区（微信风格：输入框 + 破冰建议 + 更多操作） -->
     <view class="chat-input-area" :class="{ 'chat-input-area--keyboard-up': keyboardHeight > 0 }">
@@ -1125,15 +1578,6 @@ defineExpose({ noop });
           <text class="quote-card__author">-- {{ quoteContext.replyAuthorName }}</text>
         </view>
 
-        <!-- 破冰话题建议（消息数极少时展示，2026-08-08 微信化重构保留） -->
-        <IcebreakerSuggestions
-          v-if="shouldShowIcebreakers"
-          :items="chatStore.icebreakerItems"
-          :loading="chatStore.loadingIcebreakers"
-          @select="handleIcebreakerSelect"
-          @refresh="handleRefreshIcebreakers"
-        />
-
         <!-- 引用回复预览条 -->
         <view v-if="quoteReply" class="quote-reply-bar press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="cancelQuoteReply">
           <view class="quote-reply-bar__content">
@@ -1145,12 +1589,34 @@ defineExpose({ noop });
           <image class="quote-reply-bar__close" :src="iconSrc.close" mode="aspectFit" alt="" />
         </view>
 
-        <!-- 微信风格输入栏：输入框 + 表情/更多/发送（语音模式已移除，仅保留文字输入） -->
+        <!-- 微信风格输入栏（2026-08-09 微信 1:1：表情按钮 + "+" + 输入框 + 常显发送按钮） -->
         <view
           class="wechat-input-bar"
           :class="{ 'wechat-input-bar--keyboard-up': keyboardHeight > 0 }"
         >
-          <!-- 输入框 -->
+          <!-- 表情按钮：点击展开表情面板（键盘收起；微信行为：表情面板与键盘互斥） -->
+          <view
+            class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--emoji press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="toggleEmojiPanel"
+            role="button"
+            :aria-label="t('chat.emojiPanelOpenAria')"
+          >
+            <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
+          </view>
+
+          <!-- "+" 附件按钮：展开更多菜单（视频通话 / 图片占位） -->
+          <view
+            class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="openMoreMenu"
+          >
+            <text class="wechat-input-bar__icon-text">+</text>
+          </view>
+
+          <!-- 输入框（单行 input，微信视觉一致；多行能力二期 textarea 再议） -->
           <input
             v-model="draft"
             class="wechat-input-bar__input"
@@ -1163,21 +1629,10 @@ defineExpose({ noop });
             @keyboardheightchange="onKeyboardHeightChange" :aria-label="isSessionClosed ? t('chat.inputPlaceholderClosed') : (quoteReply ? t('chat.inputPlaceholderReply') : t('chat.inputPlaceholderMessage'))"
           />
 
-          <template v-if="!inputFocused">
-            <!-- R4-00075：原表情按钮无任何消费路径（输入为纯文字模式），已移除 -->
-            <view
-              class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              @tap="openMoreMenu"
-            >
-              <text class="wechat-input-bar__icon-text">+</text>
-            </view>
-          </template>
+          <!-- 发送按钮：常显；输入为空置灰，有内容品牌绿高亮（微信行为） -->
           <view
-            v-else
             class="wechat-input-bar__send press-feedback"
-            :class="{ 'wechat-input-bar__send--active': canSend }"
+            :class="{ 'wechat-input-bar__send--disabled': !canSend }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="onSend"
@@ -1186,10 +1641,8 @@ defineExpose({ noop });
           </view>
         </view>
 
-        <!-- 输入框空闲提示（停留 5 秒未输入时展示） -->
-        <view v-if="showIdleIcebreakerHint && shouldShowIcebreakers" class="idle-hint">
-          <text class="idle-hint__text">{{ t('chat.idleIcebreakerHint') }}</text>
-        </view>
+        <!-- 表情面板：点击表情追加到输入框草稿（2026-08-09 微信 1:1 新增） -->
+        <EmojiPanel v-if="emojiPanelVisible" @select="handleEmojiSelect" />
 
         <!-- 临时会话操作按钮（保留同意交换/结束会话入口） -->
         <view v-if="isTempSession" class="temp-action-row">
@@ -1242,6 +1695,17 @@ defineExpose({ noop });
         >
           <text class="longpress-menu__text">{{ t('chat.longPressMenu.copy') }}</text>
         </view>
+        <!-- 2026-08-09 微信 1:1：转发（text/emoji/activity 可转，选择目标会话复用发送 API） -->
+        <view
+          class="longpress-menu__item press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="openForwardSheet"
+          role="button"
+          :aria-label="t('chat.longPressMenu.forwardAria')"
+        >
+          <text class="longpress-menu__text">{{ t('chat.longPressMenu.forward') }}</text>
+        </view>
         <view
           class="longpress-menu__item press-feedback"
           hover-class="press-feedback--active"
@@ -1263,6 +1727,17 @@ defineExpose({ noop });
           :aria-label="t('chat.longPressMenu.recallAria')"
         >
           <text class="longpress-menu__text longpress-menu__text--danger">{{ t('chat.longPressMenu.recall') }}</text>
+        </view>
+        <!-- 2026-08-09 微信 1:1：删除（本地持久隐藏，仅当前设备生效） -->
+        <view
+          class="longpress-menu__item longpress-menu__item--danger press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="handleDeleteMessage"
+          role="button"
+          :aria-label="t('chat.longPressMenu.deleteAria')"
+        >
+          <text class="longpress-menu__text longpress-menu__text--danger">{{ t('chat.longPressMenu.delete') }}</text>
         </view>
         <view
           class="longpress-menu__item press-feedback"
@@ -1308,6 +1783,20 @@ defineExpose({ noop });
             </view>
             <text class="more-menu-item__label">{{ t('videoCall.entryLabel') }}</text>
           </view>
+          <!-- 2026-08-09 微信 1:1：发送图片（本期占位，图片消息独立迭代） -->
+          <view
+            class="more-menu-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleImagePlaceholder"
+            role="button"
+            :aria-label="t('chat.moreMenuImage')"
+          >
+            <view class="more-menu-item__icon more-menu-item__icon--green">
+              <image class="more-menu-item__icon-emoji" :src="iconSrc.camera" mode="aspectFit" alt="" />
+            </view>
+            <text class="more-menu-item__label">{{ t('chat.moreMenuImage') }}</text>
+          </view>
         </view>
         <view
           class="more-menu-sheet__cancel press-feedback"
@@ -1321,6 +1810,116 @@ defineExpose({ noop });
         </view>
       </view>
     </view>
+
+    <!-- 顶部「···」更多菜单（2026-08-09 微信 1:1：查看主页/免打扰/拉黑/举报） -->
+    <view
+      v-if="navMenuVisible"
+      class="more-menu-overlay"
+      @tap="closeNavMenu"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('chat.nav.moreAria')"
+    >
+      <view class="more-menu-sheet" @tap.stop="noop">
+        <view class="more-menu-sheet__title">
+          <text class="more-menu-sheet__title-text">{{ t('chat.nav.moreAria') }}</text>
+        </view>
+        <view class="nav-menu__list">
+          <view
+            class="nav-menu__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleViewProfile"
+            role="button"
+            :aria-label="t('chat.nav.viewProfile')"
+          >
+            <text class="nav-menu__item-text">{{ t('chat.nav.viewProfile') }}</text>
+          </view>
+          <view
+            class="nav-menu__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleToggleMute"
+            role="button"
+            :aria-label="isSessionMuted ? t('chat.nav.unmute') : t('chat.nav.mute')"
+          >
+            <text class="nav-menu__item-text">{{ isSessionMuted ? t('chat.nav.unmute') : t('chat.nav.mute') }}</text>
+          </view>
+          <view
+            class="nav-menu__item nav-menu__item--danger press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleBlock"
+            role="button"
+            :aria-label="t('chat.nav.block')"
+          >
+            <text class="nav-menu__item-text nav-menu__item-text--danger">{{ t('chat.nav.block') }}</text>
+          </view>
+          <view
+            class="nav-menu__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleReport"
+            role="button"
+            :aria-label="t('chat.nav.report')"
+          >
+            <text class="nav-menu__item-text">{{ t('chat.nav.report') }}</text>
+          </view>
+        </view>
+        <view
+          class="more-menu-sheet__cancel press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="closeNavMenu"
+          role="button"
+          :aria-label="t('common.cancel')"
+        >
+          <text class="more-menu-sheet__cancel-text">{{ t('common.cancel') }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 转发会话选择弹层（2026-08-09 微信 1:1：长按消息 → 转发） -->
+    <view
+      v-if="forwardSheet.visible"
+      class="more-menu-overlay"
+      @tap="closeForwardSheet"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('chat.longPressMenu.forward')"
+    >
+      <view class="more-menu-sheet" @tap.stop="noop">
+        <view class="more-menu-sheet__title">
+          <text class="more-menu-sheet__title-text">{{ t('chat.longPressMenu.forward') }}</text>
+        </view>
+        <scroll-view class="forward-list" scroll-y>
+          <view
+            v-for="s in forwardableSessions"
+            :key="s.id"
+            class="forward-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="handleForwardTo(s.id)"
+            role="button"
+            :aria-label="s.partnerName"
+          >
+            <image class="forward-item__avatar" :src="resolveMediaUrl(s.partnerAvatar)" mode="aspectFill" />
+            <text class="forward-item__name">{{ s.partnerName }}</text>
+          </view>
+        </scroll-view>
+        <view
+          class="more-menu-sheet__cancel press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="closeForwardSheet"
+          role="button"
+          :aria-label="t('common.cancel')"
+        >
+          <text class="more-menu-sheet__cancel-text">{{ t('common.cancel') }}</text>
+        </view>
+      </view>
+    </view>
+    </template>
   </view>
 </template>
 
@@ -1361,26 +1960,59 @@ defineExpose({ noop });
   height: 36rpx;
 }
 
+/* 2026-08-09 微信 1:1 重构：标题区两行（昵称 16px 粗体 + 状态 12px 灰字） */
 .chat-nav__title-wrap {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 2rpx;
   padding: 0 var(--sp-2);
 }
 
+/* 微信：昵称 16px 加粗 = 32rpx/700（无对应 token 档位，局部字面量） */
 .chat-nav__title {
-  font-size: var(--fs-xl);
-  font-weight: 600;
+  font-size: 32rpx;
+  font-weight: 700;
   color: var(--c-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 
-.chat-nav__spacer {
+/* 微信：状态文字 12px 灰色 = 24rpx（无对应 token 档位，局部字面量） */
+.chat-nav__status {
+  font-size: 24rpx;
+  color: var(--c-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* 微信：右侧「···」更多按钮（与返回按钮对称 64rpx） */
+.chat-nav__more {
   width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
   flex-shrink: 0;
+}
+
+.chat-nav__more-text {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary);
+  line-height: 1;
+  /* 三点字符垂直居中微调，无对应 token 档位 */
+  letter-spacing: 2rpx;
 }
 
 /* 消息滚动区：flex 子项必须 min-height:0（mp-weixin） */
@@ -1729,6 +2361,13 @@ defineExpose({ noop });
   box-shadow: var(--s-brand-md);
 }
 
+/* 2026-08-09 微信 1:1：发送按钮置灰态（输入为空时，微信行为：不可点击） */
+.wechat-input-bar__send--disabled {
+  background: var(--c-neutral-300, rgba(0, 0, 0, 0.2));
+  box-shadow: none;
+  opacity: 0.7;
+}
+
 /* 语音功能已移除：voice-hold 按住说话按钮样式与键盘切换按钮文字样式一并下线 */
 
 /* ========== 临时会话操作按钮 ========== */
@@ -1767,36 +2406,6 @@ defineExpose({ noop });
 
 .temp-action-btn__text--danger {
   color: var(--c-error);
-}
-
-/* ========== 输入框空闲提示 ========== */
-.idle-hint {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-5);
-  margin-top: var(--sp-2);
-  border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--c-brand-bg-tint), var(--c-romance-bg-tint));
-  border: 1rpx solid var(--c-location-bg);
-  animation: idle-fade-in var(--d-bounce, 400ms) ease;
-}
-
-.idle-hint__text {
-  font-size: var(--fs-sm);
-  color: var(--c-brand-400);
-  line-height: 1.4;
-}
-
-@keyframes idle-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* ========== 引用上下文卡片 ========== */
@@ -2074,6 +2683,171 @@ defineExpose({ noop });
   font-size: var(--fs-lg);
   color: var(--c-brand-400);
   font-weight: 500;
+}
+
+/* ========== 2026-08-09 微信 1:1 重构新增样式 ========== */
+
+/* 「有新消息」提示条：输入区上方居中胶囊条，点击跳转最新 */
+.unread-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 320rpx;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light);
+  box-shadow: var(--s-md, 0 4rpx 16rpx rgba(0, 0, 0, 0.08));
+  animation: unread-hint-pop var(--d-normal, 200ms) ease;
+}
+
+@keyframes unread-hint-pop {
+  from { opacity: 0; transform: translateX(-50%) translateY(8rpx); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.unread-hint__text {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-brand-500, #3FCF8E);
+  font-weight: 600;
+}
+
+/* 对方正在输入行（头像 + 气泡灰字 + 三点动画） */
+.typing-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16rpx;
+  padding: var(--sp-2) 0;
+  flex-shrink: 0;
+}
+
+.typing-row__avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  border: 2rpx solid var(--c-bg-container);
+  flex-shrink: 0;
+  background: var(--c-neutral-100);
+}
+
+.typing-row__bubble {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: 0 24rpx 24rpx 24rpx;
+  background: var(--c-bubble-other, #FFFFFF);
+  box-shadow: none;
+}
+
+.typing-row__text {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-text-tertiary);
+}
+
+/* 三点动画（微信正在输入样式） */
+.typing-row__dots {
+  display: flex;
+  gap: 4rpx;
+  align-items: center;
+}
+
+.typing-row__dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: var(--r-full);
+  background: var(--c-text-tertiary);
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+
+.typing-row__dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-row__dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4rpx); }
+}
+
+/* 顶部「···」菜单列表 */
+.nav-menu__list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-3) 0;
+}
+
+.nav-menu__item {
+  padding: var(--sp-6) var(--sp-5);
+  border-radius: var(--r-md, 16rpx);
+  transition: background var(--d-fast, 120ms) ease;
+}
+
+/* #ifdef H5 */
+.nav-menu__item:active {
+  background: var(--c-bg-page);
+}
+/* #endif */
+
+.nav-menu__item--danger {
+  /* 无独立激活态：H5 下由 :active 变体兜底 */
+}
+
+.nav-menu__item-text {
+  font-size: var(--fs-md, 28rpx);
+  color: var(--c-text-primary);
+}
+
+.nav-menu__item-text--danger {
+  color: var(--c-error);
+}
+
+/* 转发会话选择列表 */
+.forward-list {
+  max-height: 50vh;
+  min-height: 160rpx;
+  padding: var(--sp-3) 0;
+}
+
+.forward-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-3);
+  border-radius: var(--r-md, 16rpx);
+}
+
+.forward-item:active {
+  background: var(--c-bg-page);
+}
+
+.forward-item__avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+  background: var(--c-neutral-100);
+}
+
+.forward-item__name {
+  font-size: var(--fs-md, 28rpx);
+  color: var(--c-text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 「+」菜单：图片占位入口（品牌绿图标） */
+.more-menu-item__icon--green {
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+  box-shadow: var(--s-brand-sm, 0 4rpx 12rpx rgba(63, 207, 142, 0.35));
 }
 
 </style>

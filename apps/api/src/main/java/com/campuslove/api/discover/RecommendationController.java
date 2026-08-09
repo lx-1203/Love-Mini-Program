@@ -77,6 +77,18 @@ public class RecommendationController {
   @Autowired(required = false)
   private WalletTransactionLogRepository walletTransactionLogRepository;
 
+  /** 用户 Repository（2026-08-09 他人主页详情接口：目标用户存在性校验与当前用户上下文）。 */
+  @Autowired(required = false)
+  private com.campuslove.api.repository.UserRepository userRepository;
+
+  /** 校区资料 Repository（2026-08-09 他人主页详情接口：当前用户校区/院系上下文）。 */
+  @Autowired(required = false)
+  private com.campuslove.api.repository.UserCampusProfileRepository userCampusProfileRepository;
+
+  /** 圈子成员 Repository（2026-08-09 他人主页详情接口：当前用户圈子上下文）。 */
+  @Autowired(required = false)
+  private com.campuslove.api.repository.CircleMembershipRepository circleMembershipRepository;
+
   /**
    * 悄悄话解锁单价（分）（R4-00314，配置 app.unlock-price.whisper，默认 200 分 = 2 元，
    * 与客户端定价镜像 UNLOCK_COST_YUAN.WHISPER 对齐）。服务端定价，客户端仅展示提示。
@@ -230,7 +242,6 @@ public class RecommendationController {
     validateEnumFilter("educationLevel", educationLevel, VALID_EDUCATION_LEVELS);
     validateEnumFilter("relationshipStatus", relationshipStatus, VALID_RELATIONSHIP_STATUS);
 
-    Long userId = SecurityUtils.getCurrentUserId();
     RecommendationFilter filter = new RecommendationFilter(
             heightMin,
             heightMax,
@@ -243,6 +254,12 @@ public class RecommendationController {
             ageMin,
             ageMax
     );
+    // 2026-08-09 免登录可逛：匿名用户返回中性排序的通用推荐（无个性化上下文），
+    // 不调用 SecurityUtils.getCurrentUserId（匿名会抛 401）
+    if (!SecurityUtils.isAuthenticated()) {
+      return PrivacyFieldFilter.sanitize(recommendationService.getRecommendationsForGuest(filter));
+    }
+    Long userId = SecurityUtils.getCurrentUserId();
     // Task 15.2：隐私字段过滤白名单校验，确保推荐列表不返回手机号/身份证/真实姓名
     // RecommendedPersonView 为 record，字段在编译期固定，本调用为防御性校验：
     // 若未来有人向 record 误添加敏感字段，sanitize 会抛 IllegalStateException，
@@ -334,6 +351,64 @@ public class RecommendationController {
   }
 
   // ---- R4-00314：悄悄话解锁链路（付费可见内容服务端保护） ----
+
+  /**
+   * 获取他人主页详情。
+   * GET /api/v1/recommendations/{userId}/profile
+   *
+   * <p>2026-08-09 喜欢/访客闭环完善：前端从通知/喜欢/访客列表点击进入他人主页时，
+   * 需要展示对方完整公开资料（昵称/头像/学校/年龄/身高/职业/兴趣标签/MBTI/
+   * 性格标签/期待画像/动态预览等）。本接口复用 {@link RecommendedPersonView}
+   * 与 {@link RecommendationRanker#toRecommendedPersonView} 的单用户组装逻辑，
+   * 并以当前登录用户为上下文计算「同校/同专业/共同圈子」，返回前经
+   * {@link PrivacyFieldFilter#sanitize} 敏感字段白名单过滤。</p>
+   *
+   * <p>访客记录由前端查看主页时显式调用 {@code POST /api/matches/visit} 写入，
+   * 本接口只读不写，避免 GET 产生副作用。</p>
+   *
+   * @param targetUserId 目标用户 ID
+   * @return 他人主页公开资料视图
+   */
+  @GetMapping("/recommendations/{userId}/profile")
+  @PreAuthorize("hasRole('USER')")
+  public RecommendedPersonView getOtherUserProfile(@PathVariable("userId") Long targetUserId) {
+    if (targetUserId == null || targetUserId <= 0) {
+      throw new IllegalArgumentException(ErrorMessages.TARGET_USER_ID_POSITIVE);
+    }
+    if (userRepository == null || recommendationRanker == null) {
+      // mock profile：推荐排序器不可用，他人主页接口无数据可组装
+      throw new UnsupportedOperationException("他人主页详情接口仅在 real 模式可用");
+    }
+    // 目标用户存在性校验
+    com.campuslove.api.entity.User target = userRepository.findById(targetUserId)
+        .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + targetUserId));
+
+    // 当前用户上下文（用于同校/同专业/共同圈子计算）
+    Long currentUserId = SecurityUtils.getCurrentUserId();
+    String myCampus = "";
+    String myDepartment = "";
+    Set<Long> myCircleIds = Set.of();
+    if (currentUserId != null) {
+      com.campuslove.api.entity.UserCampusProfile meCampus =
+          userCampusProfileRepository != null
+              ? userCampusProfileRepository.findByUserId(currentUserId).orElse(null)
+              : null;
+      if (meCampus != null) {
+        myCampus = meCampus.getCampusName() != null ? meCampus.getCampusName() : "";
+        myDepartment = meCampus.getDepartmentName() != null ? meCampus.getDepartmentName() : "";
+      }
+      if (circleMembershipRepository != null) {
+        myCircleIds = circleMembershipRepository.findByUserId(currentUserId).stream()
+            .map(m -> m.getCircle().getId())
+            .collect(Collectors.toSet());
+      }
+    }
+
+    RecommendedPersonView view = recommendationRanker.toRecommendedPersonView(
+        target, myCampus, myDepartment, myCircleIds);
+    // sanitize 仅接受列表：单对象包装为单元素列表复用敏感字段白名单校验（与列表路径语义一致）
+    return PrivacyFieldFilter.sanitize(List.of(view)).get(0);
+  }
 
   /**
    * 查询悄悄话内容（付费解锁后可见）。

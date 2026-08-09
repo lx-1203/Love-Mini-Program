@@ -4,7 +4,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
-import { replaceAppPath } from "../../utils/navigation";
+// 2026-08-09：登录成功统一跳转（消费 LockScreen 未登录引导写入的待跳转路径）
+import { replaceAppPath, consumePendingLoginRedirect } from "../../utils/navigation";
 // R4-00226：展示页路径走 ROUTES 常量
 import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
@@ -14,6 +15,8 @@ import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 import { loginWithPhone, registerUser, loginAsGuest } from "../../services/auth";
+// 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
+import { AppApiError } from "../../services/api-error";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
 import { isDev } from "../../config/env";
@@ -103,6 +106,17 @@ function togglePhoneLogin() {
   showPhoneLogin.value = !showPhoneLogin.value;
 }
 
+/**
+ * 登录成功后的统一跳转（2026-08-09 补全链路）：
+ * - LockScreen 未登录引导页点「立即登录并完善」时写入 pending 跳转，
+ *   登录成功后自动进入资料完善页（无需用户再次寻找入口）；
+ * - 无 pending 时保持默认行为：进入匹配推荐页（/pages/discover/index）。
+ */
+function navigateAfterLogin() {
+  const pending = consumePendingLoginRedirect();
+  replaceAppPath(pending ?? "/pages/discover/index");
+}
+
 function toggleRegisterMode() {
   phoneRegisterMode.value = !phoneRegisterMode.value;
 }
@@ -132,7 +146,8 @@ async function onWechatLogin() {
     // services/auth.ts 封装 wx.login + POST /v1/auth/wechat，无 Mock fallback
     // 失败时抛出 WechatLoginError（含明确业务错误码）
     await sessionStore.loginWithWechat();
-    replaceAppPath("/pages/discover/index");
+    // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
+    navigateAfterLogin();
   } catch (error) {
     // 登录失败：上报到 Sentry，source 标记为 login.wechat 便于后台按登录方式筛选
     captureException(error, { source: "login.wechat" });
@@ -181,7 +196,8 @@ async function onPhoneLogin() {
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
-      replaceAppPath("/pages/discover/index");
+      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
+      navigateAfterLogin();
       loginNavTimer = null;
     }, 1500);
   } catch (error) {
@@ -228,11 +244,18 @@ async function onGuestLogin() {
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
-      replaceAppPath("/pages/discover/index");
+      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
+      navigateAfterLogin();
       loginNavTimer = null;
     }, 1500);
   } catch (error) {
-    captureException(error, { source: "login.guest" });
+    // 修复（2026-08-09）：入口被配置关闭（后端 403「体验账号入口已关闭」）是预期业务状态，
+    // 仅 toast 展示后端文案，不上报 Sentry（http.ts 已通过 reportError=false 静默，此处同步）
+    const isEntryClosed =
+      error instanceof AppApiError && error.status === 403;
+    if (!isEntryClosed) {
+      captureException(error, { source: "login.guest" });
+    }
     const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
@@ -366,7 +389,8 @@ async function onAppleLogin() {
     });
     if (loginNavTimer) clearTimeout(loginNavTimer);
     loginNavTimer = setTimeout(() => {
-      replaceAppPath("/pages/discover/index");
+      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
+      navigateAfterLogin();
       loginNavTimer = null;
     }, 1500);
   } catch (error) {

@@ -15,6 +15,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, type PostItem, type PostFilters } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
+// 登录态守卫：未登录时 LockScreen 锁定中，不发受保护请求（冷启动避免 401 雪崩）
+import { getToken } from "../../services/http";
 import { useCircleStore } from "../../stores/circle";
 import { useActivityStore } from "../../stores/activity";
 import { useDailyQuestionStore } from "../../stores/daily-question";
@@ -164,6 +166,10 @@ function onChannelChange(id: string) {
 async function loadChannelData(id: string = currentChannelId.value) {
   const channel = getChannelConfig(id);
   if (!channel) return;
+  // 修复（2026-08-09）：未登录时不发受保护请求（页面处于 LockScreen 锁定态，
+  // 冷启动无 token 时 onShow/onMounted 会拉 posts → 401 雪崩）。
+  // 登录后 watch(isUnlocked) 会自动补拉，无需在此处理。
+  if (!getToken()) return;
   if (channel.dataSource === "interest-hub") {
     void circleStore.fetchFeaturedTopics(1);
     return;
@@ -475,7 +481,6 @@ uni.$on("village:post-created", onPostCreated);
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
-      :page-name="t('village.title')"
       :completion-percent="completionPercent"
     />
 

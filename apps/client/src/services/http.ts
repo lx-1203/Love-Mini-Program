@@ -561,6 +561,14 @@ export interface RequestOptions<TBody = unknown> {
    * 必须设置此标志，避免后端 AI_API_UNAUTHORIZED 错误误触发登录跳转。</p>
    */
   skipAuthRefresh?: boolean;
+  /**
+   * 是否在最终失败时上报 Sentry（默认 true）。
+   *
+   * <p>设为 false 的场景：调用方已知该失败是<b>预期业务状态</b>而非异常
+   * （如体验账号入口被配置关闭时 guest-login 返回 403），由调用方 toast 展示
+   * 后端文案即可，无需产生 Sentry 噪音告警。</p>
+   */
+  reportError?: boolean;
 }
 
 /**
@@ -830,12 +838,17 @@ export async function request<TResponse, TBody = unknown>(
       // 仅对网络层错误重试（category=network），不对 auth/business 错误重试
       // 已达最大重试次数时也直接抛出
       if (error.category !== "network" || attempt === maxRetries) {
-        // 最终失败：上报到 Sentry，含 http_url 与 http_status 便于后台按接口聚合
-        captureException(error, {
-          source: "http",
-          http_url: url,
-          http_status: error.status,
-        });
+        // 最终失败：上报到 Sentry，含 http_url 与 http_status 便于后台按接口聚合。
+        // 跳过两类预期状态，避免冷启动/登出时告警刷屏：
+        // 1. reportError=false：调用方已知是预期业务状态（如体验入口关闭的 403）
+        // 2. 401：认证状态机的一部分，handle401 已统一刷新→引导重登，无需每条上报
+        if (options.reportError !== false && error.status !== 401) {
+          captureException(error, {
+            source: "http",
+            http_url: url,
+            http_status: error.status,
+          });
+        }
         throw error;
       }
       // 指数退避：500ms, 1000ms, 2000ms...

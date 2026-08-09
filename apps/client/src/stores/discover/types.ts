@@ -241,6 +241,11 @@ export interface DiscoverState {
 /**
  * 后端 RecommendedPersonView 类型
  * 对应后端 record RecommendedPersonView(Long id, String name, String initials, String headline, String commonGround, String availability, String campusName, String avatarUrl, List<String> tags, String bio, List<String> images, boolean isSameSchool, boolean isSameMajor, int commonCircleCount)
+ *
+ * 2026-08-09 扩展：后端 record 已包含 DiscoverCard 同款公开字段
+ * （height/educationLevel/photoGallery/personality/mbti/expectedPartner/age/
+ * occupation/recentPosts/displayId/distanceText 等），此处补齐可选字段，
+ * 供「他人主页」页（GET /recommendations/{userId}/profile）直接消费。
  */
 export interface RecommendedPersonView {
   id: number;
@@ -262,4 +267,61 @@ export interface RecommendedPersonView {
   isSameMajor: boolean;
   /** 共同兴趣圈数量 */
   commonCircleCount: number;
+  /* ===== 2026-08-09 他人主页扩展字段（后端 RecommendedPersonView 完整记录） ===== */
+  /** 半身照 URL（卡片大图） */
+  halfBodyPhotoUrl?: string;
+  /** 照片墙 URL 数组 */
+  photoGallery?: string[];
+  /** 个人视频 URL */
+  personalVideoUrl?: string;
+  /** 身高 cm */
+  height?: number;
+  /** 学历：high_school/bachelor/master/phd */
+  educationLevel?: string;
+  /** 认证徽章级别 */
+  verificationBadgeLevel?: string;
+  /** 展示用个人 ID（如 CL-1024） */
+  displayId?: string;
+  /** 距离文案（如 1.2km / 同校） */
+  distanceText?: string;
+  /** 活跃状态文案 */
+  activeStatusText?: string;
+  /** 机器认证 */
+  machineVerified?: boolean;
+  /** 人工认证 */
+  humanVerified?: boolean;
+  /** 性格标签 */
+  personality?: string[];
+  /** MBTI 人格类型 */
+  mbti?: string;
+  /** 星座 */
+  zodiac?: string;
+  /** 婚况 */
+  relationshipStatus?: string;
+  /** 职业 */
+  occupation?: string;
+  /** 月收入档位 */
+  incomeRange?: string;
+  /** 年龄 */
+  age?: number;
+  /** 悄悄话内容 */
+  whisper?: string;
+  /** 是否已发送悄悄话 */
+  whisperSent?: boolean;
+  /** 动态预览 */
+  recentPosts?: Array<{
+    id: string;
+    content: string;
+    images?: string[];
+    likes: number;
+    comments: number;
+    isLiked: boolean;
+    createdAt: string;
+  }>;
+  /** 期待的人物画像描述 */
+  expectedPartner?: string;
+  /** 是否允许私信 */
+  allowMessage?: boolean;
+  /** IP 属地 */
+  ipLocation?: string;
 }

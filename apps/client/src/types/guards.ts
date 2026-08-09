@@ -77,7 +77,9 @@ export function isMessageItem(data: unknown): data is MessageItem {
     isString(id) &&
     isString(sessionId) &&
     (sender === "self" || sender === "peer" || sender === "system") &&
-    (kind === "text" || kind === "voice" || kind === "emoji" || kind === "system") &&
+    // 2026-08-09 未读修复：kind 补 activity（与 MessageItem 类型定义对齐，
+    // 原守卫遗漏该字面量，WS 转换层产出 activity 消息会被误拒）
+    (kind === "text" || kind === "voice" || kind === "emoji" || kind === "system" || kind === "activity") &&
     isString(body) &&
     isString(sentAt)
   );

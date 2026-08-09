@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -124,6 +125,11 @@ public class SecurityConfig {
                 // 公开端点：应用启动期静态配置（登录页 Hero 等），
                 // 未登录用户也需要在冷启动时拉取，不可要求认证（FIN-00061 收紧后曾遗漏）。
                 .requestMatchers("/api/v1/app-config/**").permitAll()
+                // 2026-08-09 免登录可逛：寻觅推荐列表 GET 放行（匿名返回中性排序的通用推荐，
+                // 见 RecommendationController 的 isAuthenticated 分支；交互端点仍要求认证）。
+                // 注意：仅放行列表 GET——quota/preferences/history/whisper 等仍受 /api/v1/** 认证约束。
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/recommendations", "/api/v1/recommendations/people").permitAll()
                 // 公开端点：IP 归属地查询（仅 IP→城市映射，不含用户数据），
                 // 支持免登录浏览同城内容时定位城市。
                 .requestMatchers("/api/v1/location/ip-city").permitAll()

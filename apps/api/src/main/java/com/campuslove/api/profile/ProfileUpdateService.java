@@ -10,6 +10,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
+import com.campuslove.api.media.MediaAssetService;
 import com.campuslove.api.media.MediaStorageService;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
@@ -74,6 +75,7 @@ public class ProfileUpdateService {
     private final UserScheduleProfileRepository userScheduleProfileRepository;
     private final InteractionEventService interactionEventService;
     private final MediaStorageService mediaStorageService;
+    private final MediaAssetService mediaAssetService;
     private final ProfileQueryService queryService;
     private final FollowService followService;
     private final SensitiveWordFilter sensitiveWordFilter;
@@ -87,6 +89,7 @@ public class ProfileUpdateService {
             UserScheduleProfileRepository userScheduleProfileRepository,
             InteractionEventService interactionEventService,
             MediaStorageService mediaStorageService,
+            MediaAssetService mediaAssetService,
             ProfileQueryService queryService,
             FollowService followService,
             SensitiveWordFilter sensitiveWordFilter) {
@@ -98,6 +101,7 @@ public class ProfileUpdateService {
         this.userScheduleProfileRepository = userScheduleProfileRepository;
         this.interactionEventService = interactionEventService;
         this.mediaStorageService = mediaStorageService;
+        this.mediaAssetService = mediaAssetService;
         this.queryService = queryService;
         this.followService = followService;
         this.sensitiveWordFilter = sensitiveWordFilter;
@@ -250,8 +254,11 @@ public class ProfileUpdateService {
     public BasicProfileView uploadAvatar(MultipartFile file) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "avatar");
+        // 2026-08-09：同事务写入媒体资产记录（audit_status=pending，待审核），并清理旧头像记录
+        mediaAssetService.recordUpload(currentUserId, "avatar", result, file.getOriginalFilename());
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
+        mediaAssetService.deleteByUrl(user.getAvatarUrl());
         deleteOldMediaQuietly(user.getAvatarUrl());
         user.setAvatarUrl(result.getUrl());
         user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
@@ -290,6 +297,8 @@ public class ProfileUpdateService {
         }
         Long currentUserId = SecurityUtils.getCurrentUserId();
         MediaStorageService.UploadResult result = mediaStorageService.store(currentUserId, file, "image");
+        // 2026-08-09：同事务写入媒体资产记录（audit_status=pending，待审核）
+        mediaAssetService.recordUpload(currentUserId, "image", result, file.getOriginalFilename());
         UserBasicProfile profile = ensureBasicProfile(currentUserId);
         List<String> gallery = queryService.parseStringList(profile.getPhotoGallery());
         while (gallery.size() <= index) {
@@ -297,6 +306,8 @@ public class ProfileUpdateService {
         }
         String oldUrl = gallery.get(index);
         if (oldUrl != null && !oldUrl.isBlank()) {
+            // 2026-08-09：覆盖时同步清理旧资产记录，避免脏数据
+            mediaAssetService.deleteByUrl(oldUrl);
             deleteOldMediaQuietly(oldUrl);
         }
         gallery.set(index, result.getUrl());
@@ -324,6 +335,8 @@ public class ProfileUpdateService {
         }
         String removed = gallery.remove(index);
         if (removed != null && !removed.isBlank()) {
+            // 2026-08-09：删除照片时同步清理媒体资产记录，避免脏数据
+            mediaAssetService.deleteByUrl(removed);
             deleteOldMediaQuietly(removed);
         }
         profile.setPhotoGallery(queryService.serializeListToJson(gallery));

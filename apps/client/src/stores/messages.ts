@@ -380,6 +380,16 @@ let fetchHeartSignalsToken = 0;
 let loadInteractionEventsToken = 0;
 
 /**
+ * 2026-08-09 未读红点修复（BUG 3）：私信显式已读回执的节流状态。
+ * key=sessionId，value=最近一次已读请求的毫秒时间戳。
+ * 会话页停留期间连续收到 N 条新消息时，节流版 markConversationRead 只发一次
+ * （后端按会话级批量 markAsRead，无需逐条回执）。
+ */
+const conversationReadThrottle = new Map<string, number>();
+/** 已读回执节流窗口：2s（无对应常量档位，局部定义） */
+const CONVERSATION_READ_THROTTLE_MS = 2000;
+
+/**
  * 消息中心 Store
  * Phase 3 新增：filterType 状态支持社交/内容信号分类筛选
  */
@@ -538,6 +548,9 @@ export const useMessagesStore = defineStore("messages", {
           // 重置上拉历史分页游标（新会话上下文）
           this.messagePage = 0;
           this.messageHasMore = data.length >= 20;
+          // 2026-08-09 未读红点修复（BUG 3）：进入会话立即发送显式已读回执
+          // （force 跳过节流，覆盖「进入前最后一条 → 加载完成」间隙）
+          void this.markConversationRead(sessionId, true);
         })(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMessages")); // infra R2-00028
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
@@ -590,6 +603,47 @@ export const useMessagesStore = defineStore("messages", {
      */
     setActiveSession(sessionId: string | null) {
       this.activeSessionId = sessionId;
+    },
+
+    /**
+     * 2026-08-09 未读红点修复（BUG 3）：私信会话显式已读回执。
+     *
+     * 原实现私信已读完全依赖「GET messages 时后端隐式 markAsRead」
+     * （RealPrivateMessageService.getMessages L276），会话页停留期间收到的新消息
+     * 后端永远拿不到已读回执，返回消息列表重新拉取后红点反弹——
+     * 「列表红点 ≠ 会话内真实未读数」的直接成因。
+     *
+     * 本 action 显式调用 `PUT /messages/conversations/{id}/read`
+     * （PrivateMessageController L111，接口已存在但前端原无引用）：
+     * - 进入会话首次：force=true 立即发送（覆盖「进入前最后一条 → 加载完成」间隙）
+     * - 停留期间收新消息：节流版（2s 内只发一次，避免连发 N 条触发 N 次请求）
+     *
+     * @param sessionId 私信会话 ID（数字字符串；temp 会话非数字 ID 早退防误请求 404）
+     * @param force 是否跳过 2s 节流（进入会话的首次已读应立即可达）
+     * @returns 是否应视为已读（true=已成功发送/无需发送；false=请求失败，调用方可按需回滚）
+     */
+    async markConversationRead(sessionId: string, force = false): Promise<boolean> {
+      // 仅私信会话生效：temp 会话 ID 形如 session-xxx 非纯数字，防止误请求 404/500；
+      // 返回 true 表示"无需后端回执"（temp 已读走 markTempChatSessionRead，本地清零仍合理）
+      if (!/^\d+$/.test(sessionId)) return true;
+      if (useMock()) return true; // mock 分支 fetchSessionMessages 已本地清零
+      const now = Date.now();
+      const lastCall = conversationReadThrottle.get(sessionId) ?? 0;
+      if (!force && now - lastCall < CONVERSATION_READ_THROTTLE_MS) return true; // 节流命中：上一次已发
+      conversationReadThrottle.set(sessionId, now);
+      try {
+        // 使用本文件 L347 的 withTimeout 包装器（第三参为业务错误文案，非 AbortSignal）
+        await withTimeout(
+          request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/read`, method: "PUT" }),
+          ASYNC_TIMEOUT_MS,
+          t("storeErrors.messages.timeoutMarkRead") // infra R2-00028
+        );
+        return true;
+      } catch (error) {
+        // 静默失败 + console.warn：已读回执失败不阻塞消息流（与 markNotificationRead 同策略）
+        console.warn("[messages] markConversationRead 失败:", sessionId, error);
+        return false;
+      }
     },
 
     /**
@@ -885,6 +939,30 @@ export const useMessagesStore = defineStore("messages", {
       }
     },
 
+    /**
+     * 2026-08-09 喜欢/访客闭环：按类型批量标记通知为已读。
+     *
+     * <p>进入「喜欢与访客」页时调用，将喜欢/访客/匹配类型的未读通知清为已读，
+     * 消除消息页快捷入口的红点角标（驱动「谁喜欢了我/谁看了我」的告知闭环）。</p>
+     *
+     * <p>mock 分支本地置位；real 分支逐个调用后端已读接口（失败项静默保留未读，
+     * 下次进入再尝试）。</p>
+     *
+     * @param types 需要标记已读的通知类型（like / visitor / interaction_match 等）
+     */
+    async markTypeRead(types: SystemNotification["type"][]) {
+      const targets = this.notifications.filter(
+        (n) => !n.isRead && types.includes(n.type),
+      );
+      if (targets.length === 0) return;
+      if (useMock()) {
+        targets.forEach((n) => { n.isRead = true; });
+        return;
+      }
+      // 逐个调用已读接口（Promise.allSettled：部分失败不阻塞其余）
+      await Promise.allSettled(targets.map((n) => this.markNotificationRead(n.id)));
+    },
+
     async fetchUnreadNotificationCount() {
       try {
         if (useMock()) return this.notifications.filter((n) => !n.isRead).length;
@@ -961,15 +1039,24 @@ export const useMessagesStore = defineStore("messages", {
      * 2026-08-07 消息页重构：标为已读（长按菜单）。
      * 手动消除未读红点。
      *
-     * R4-00184：当前仅本地改状态，无后端同步（真实已读闭环由进入会话时的
-     * 后端 markAsRead 接口完成，长按菜单的标已读为前端即时反馈）。
-     * TODO(backend): 后端补充会话未读元数据同步接口。
+     * 2026-08-09 未读红点修复（BUG 4）：改为后端同步——先发送显式已读回执
+     * （复用 markConversationRead），成功后再本地清零；失败回滚返回 false，
+     * 避免刷新列表后红点反弹（原实现仅本地清零，后端无感知）。
+     * markSessionUnread 后端无对应接口，保留本地 + TODO(backend)。
+     *
+     * @param sessionId 会话 ID
+     * @returns 是否已读成功（false=后端回执失败，本地未清零）
      */
-    markSessionRead(sessionId: string) {
+    async markSessionRead(sessionId: string): Promise<boolean> {
       const session = this.sessions.find((s) => s.id === sessionId);
-      if (session) {
-        session.unreadCount = 0;
+      if (!session) return false;
+      const ok = await this.markConversationRead(sessionId, true);
+      if (!ok) {
+        console.warn("[messages] markSessionRead 后端已读失败，回滚本地清零:", sessionId);
+        return false;
       }
+      session.unreadCount = 0;
+      return true;
     },
 
     async deleteSession(sessionId: string) {
@@ -1017,11 +1104,21 @@ export const useMessagesStore = defineStore("messages", {
       }
       const s = this.sessions.find((x) => x.id === message.sessionId);
       if (s) {
-        s.lastMessagePreview = message.kind === "text" ? message.body : `[${message.kind}]`;
+        // 2026-08-09 表情包机制：emoji 消息预览直接显示表情字符（其余非文本类型走 [type] 占位）
+        s.lastMessagePreview =
+          message.kind === "text" || message.kind === "emoji" ? message.body : `[${message.kind}]`;
         s.lastMessageSentAt = message.sentAt;
-        // 正在查看该会话时不累加未读数（读态由后端 markAsRead 闭环）；
-        // 其他会话（含免打扰语义外的会话）照常 +1
-        if (!isActive) s.unreadCount += 1;
+        // 2026-08-09 未读红点修复：仅「对方发送的消息」计入未读——
+        // 我方发送的消息（self，如多端回推确认）、系统消息均不计入
+        // （需求：列表红点 = 会话内对方未读消息数，100% 匹配）
+        if (!isActive && message.sender === "peer") {
+          s.unreadCount += 1;
+        } else if (isActive) {
+          // 2026-08-09 未读红点修复（BUG 3）：停留期间收到新消息即发显式已读回执
+          // （节流版，连收 N 条只发一次）。原实现后端拿不到回执，返回列表刷新后
+          // 红点反弹——「列表红点 ≠ 会话内真实未读数」的直接成因。
+          void this.markConversationRead(message.sessionId);
+        }
       }
     },
 

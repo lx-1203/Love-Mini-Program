@@ -827,6 +827,12 @@ class WebSocketClient {
         dest: "/user/queue/checkin",
         cb: (data) => dispatchToStore("/user/queue/checkin", data),
       },
+      // 2026-08-09 微信 1:1：对方正在输入事件订阅（后端暂无推送，
+      // 预留——无推送即不触发，对现有行为零影响）
+      {
+        dest: "/user/queue/typing",
+        cb: (data) => dispatchToStore("/user/queue/typing", data),
+      },
     ];
 
     for (const { dest, cb } of userQueues) {

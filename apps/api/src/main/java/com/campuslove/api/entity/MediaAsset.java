@@ -86,6 +86,27 @@ public class MediaAsset {
             columnDefinition = "VARCHAR(16) DEFAULT 'ready'")
     private String status = "ready";
 
+    /**
+     * 审核状态（2026-08-09 新增，V2026.08.09.0015）。
+     * 取值：pending（待审核）/ approved（已通过）/ rejected（未通过）。
+     * 新上传默认 pending；存量资产由迁移兜底 approved。
+     */
+    @Column(name = "audit_status", nullable = false, length = 16,
+            columnDefinition = "VARCHAR(16) DEFAULT 'approved'")
+    private String auditStatus = "pending";
+
+    /** 审核备注（拒绝原因等，最大 500 字符） */
+    @Column(name = "audit_remark", length = 500)
+    private String auditRemark;
+
+    /** 审核人用户 ID */
+    @Column(name = "auditor_id")
+    private Long auditorId;
+
+    /** 审核时间 */
+    @Column(name = "audited_at")
+    private LocalDateTime auditedAt;
+
     /** 创建时间（不可更新） */
 
     @CreatedDate
@@ -205,6 +226,38 @@ public class MediaAsset {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getAuditStatus() {
+        return auditStatus;
+    }
+
+    public void setAuditStatus(String auditStatus) {
+        this.auditStatus = auditStatus;
+    }
+
+    public String getAuditRemark() {
+        return auditRemark;
+    }
+
+    public void setAuditRemark(String auditRemark) {
+        this.auditRemark = auditRemark;
+    }
+
+    public Long getAuditorId() {
+        return auditorId;
+    }
+
+    public void setAuditorId(Long auditorId) {
+        this.auditorId = auditorId;
+    }
+
+    public LocalDateTime getAuditedAt() {
+        return auditedAt;
+    }
+
+    public void setAuditedAt(LocalDateTime auditedAt) {
+        this.auditedAt = auditedAt;
     }
 
     public LocalDateTime getCreatedAt() {

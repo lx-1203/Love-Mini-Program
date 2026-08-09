@@ -140,6 +140,15 @@ public class RealAuthService implements AuthService {
     @org.springframework.beans.factory.annotation.Autowired
     private RealAuthService self;
 
+    /**
+     * 体验账号流程演示数据播种器（R4-00251 会话隔离后，新体验账号无按用户维度的
+     * 流程数据——私信/喜欢/访客/通知为空）。可选注入：单元测试（不加载 Spring）
+     * 为 null 时跳过播种；real 环境由容器注入，在 provisionGuestProfile 资料预填后
+     * 为新体验账号灌入演示数据（见 {@link GuestDemoDataProvisioner}）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private GuestDemoDataProvisioner guestDemoDataProvisioner;
+
     public RealAuthService(
             WeChatClient weChatClient,
             JwtTokenProvider jwtTokenProvider,
@@ -606,8 +615,12 @@ public class RealAuthService implements AuthService {
     @Transactional
     public UserSessionView loginAsGuest() {
         if (!guestLoginEnabled) {
+            // 修复（R4-02553）：禁用态改抛 OperationForbiddenException（403 + OPERATION_FORBIDDEN），
+            // 不再抛 IllegalStateException——后者落入 GlobalExceptionHandler 兜底分支返回 500
+            // 「服务器内部错误，请稍后重试」，对客户端是误导性报错（实为配置性关闭，非服务异常）。
+            // 403 携带用户友好文案（TRIAL_LOGIN_DISABLED），前端 toast 直接展示。
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
-            throw new IllegalStateException(ErrorMessages.TRIAL_LOGIN_DISABLED);
+            throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.TRIAL_LOGIN_DISABLED);
         }
         // R4-00251：每次登录创建独立临时账号（openid 全局唯一，phone 为空）
         // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
@@ -705,6 +718,12 @@ public class RealAuthService implements AuthService {
             user.setProfileCompletion(100);
             userRepository.save(user);
             log.info("体验账号资料预填完成: userId={}", userId);
+            // 5. 流程演示数据播种（R4-00251 会话隔离后新账号无私信/喜欢/访客/通知，
+            //    由 GuestDemoDataProvisioner 灌入与虚拟用户交互的演示数据；
+            //    组件内部已整体 try-catch，失败不影响登录）
+            if (guestDemoDataProvisioner != null) {
+                guestDemoDataProvisioner.provision(userId);
+            }
         } catch (DataAccessException ex) {
             log.error("体验账号资料预填失败, userId={}: {}", userId, ex.getMessage(), ex);
         }

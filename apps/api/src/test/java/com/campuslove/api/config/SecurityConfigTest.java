@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -182,5 +183,60 @@ class SecurityConfigTest {
                                 "/content-filter/check 应为 permitAll，不应被 security 拦截: " + status);
                     }
                 });
+    }
+
+    /**
+     * 场景 9（2026-08-09 免登录可逛）：未登录 GET /api/v1/recommendations → 不被 security 拦截。
+     *
+     * <p>寻觅推荐列表已加入 permitAll 白名单（仅 GET，匿名返回中性排序通用推荐）；
+     * 若被 security 拦截（401/403）说明白名单未生效，游客浏览链路断裂。</p>
+     */
+    @Test
+    void unauthenticated_accessToRecommendations_shouldNotRequireAuth() throws Exception {
+        mockMvc.perform(get("/api/v1/recommendations"))
+                .andExpect(result -> {
+                    int status = result.getResponse().getStatus();
+                    if (status == 401 || status == 403) {
+                        throw new AssertionError(
+                                "GET /api/v1/recommendations 应为 permitAll，不应被 security 拦截: " + status);
+                    }
+                });
+    }
+
+    /**
+     * 场景 10（2026-08-09 免登录可逛）：未登录 GET /api/v1/recommendations/people（别名）同样放行。
+     */
+    @Test
+    void unauthenticated_accessToRecommendationsPeopleAlias_shouldNotRequireAuth() throws Exception {
+        mockMvc.perform(get("/api/v1/recommendations/people"))
+                .andExpect(result -> {
+                    int status = result.getResponse().getStatus();
+                    if (status == 401 || status == 403) {
+                        throw new AssertionError(
+                                "GET /api/v1/recommendations/people 应为 permitAll，不应被 security 拦截: " + status);
+                    }
+                });
+    }
+
+    /**
+     * 场景 11（2026-08-09 免登录可逛）：推荐用户级子资源端点（配额/偏好/历史）
+     * 不在 permitAll 白名单内——防止白名单越界让游客绕过登录访问用户数据。
+     *
+     * <p>mock profile 下 MockAuthenticationFilter 仅对非 permitAll 路径自动注入认证
+     * （返回 200）；若路径被误加入白名单，匿名请求不会注入认证，controller 内
+     * SecurityUtils.getCurrentUserId() 抛 401。因此「不应返回 401」即证明未越界。</p>
+     */
+    @Test
+    void unauthenticated_accessToRecommendationsSubResources_shouldNotBeAnonymousPermitted() throws Exception {
+        for (String path : List.of(
+                "/api/v1/recommendations/quota",
+                "/api/v1/recommendations/preferences/me",
+                "/api/v1/recommendations/history")) {
+            int status = mockMvc.perform(get(path)).andReturn().getResponse().getStatus();
+            if (status == 401) {
+                throw new AssertionError(
+                        "GET " + path + " 不应在 permitAll 白名单内（匿名被 401 说明已放行）,实际返回: " + status);
+            }
+        }
     }
 }

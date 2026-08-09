@@ -176,9 +176,11 @@ public class AutoRenewService {
 
     /**
      * 定时调度入口（R4-00316）。
-     * 每 6 小时执行一次（首次延迟 1 分钟，等待应用完全就绪）。
+     * 每 6 小时执行一次。2026-08-09 修复：Spring 不允许 cron 触发器携带 initialDelay
+     * （"initialDelay not supported for cron triggers" 启动失败），首次延迟语义由
+     * 应用就绪后首次立即执行兜底（扫描本身幂等，见方法内注释）。
      */
-    @Scheduled(cron = "0 0 */6 * * *", initialDelay = 60_000)
+    @Scheduled(cron = "0 0 */6 * * *")
     public void scheduledRenewScan() {
         runRenewScan();
     }

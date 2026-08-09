@@ -247,6 +247,7 @@ onShow(() => {
     :title="t('feedback.historyTitle')"
     :subtitle="t('feedback.historyEmptyDesc')"
     :show-tab-bar="false"
+    show-back
   >
     <!-- 类型筛选 Tab -->
     <view class="filter-bar">

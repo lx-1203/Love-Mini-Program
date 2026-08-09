@@ -26,6 +26,15 @@ const circleStore = useCircleStore();
 const villageStore = useVillageStore();
 const activityStore = useActivityStore();
 
+/**
+ * 模板 catchtap="noop" 阻止冒泡的空处理器（原生小程序属性写法，
+ * uni-app 编译为事件绑定，组件必须提供 noop 方法，否则报
+ * "does not have a method noop to handle event tap"）。
+ */
+function noop() {
+  /* 空实现：仅用于 catchtap 冒泡拦截 */
+}
+
 /** 话题标题 */
 const title = ref("");
 /** 话题内容 */
@@ -605,7 +614,7 @@ if (options.activityId) {
 
     <!-- ===== 2026-08-08 频道化重构：活动选择弹层（帖子模式） ===== -->
     <view v-if="showActivityPicker" class="activity-picker" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false">
-      <view class="activity-picker__content" catchtap="noop">
+      <view class="activity-picker__content" @tap.stop="noop">
         <view class="activity-picker__header">
           <text class="activity-picker__title">{{ t('circle.postTopicActivityPick') }}</text>
           <image class="activity-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />

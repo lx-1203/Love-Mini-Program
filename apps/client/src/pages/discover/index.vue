@@ -78,6 +78,21 @@ function goLogin() {
 }
 
 /**
+ * 交互登录守卫（2026-08-09）：未登录时提示登录但不跳转页面。
+ *
+ * 修复：未登录用户点击卡片交互（喜欢/超级喜欢/发消息）会触发鉴权 API 401，
+ * 全局 401 处理把用户强拉到登录页（reLaunch），既打断浏览又造成「点了就跳走」的
+ * 强制体验。现改为仅 toast 提示「请先登录」，留在寻觅页继续浏览。
+ *
+ * @returns 已登录返回 true；未登录返回 false（调用方应直接 return）
+ */
+function requireLogin(): boolean {
+  if (sessionStore.isLoggedIn) return true;
+  uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
+  return false;
+}
+
+/**
  * 匹配成功跳转锁，避免快速操作触发重复跳转
  * 1.5 秒延迟期间只允许触发一次 openAppPath
  */
@@ -170,6 +185,9 @@ onUnload(() => {
  * @param cardId - 卡片 ID
  */
 async function handleSwipe(direction: SwipeDirection, cardId: string) {
+  // 2026-08-09：右滑（喜欢）需登录——未登录仅提示不跳转；
+  // 左滑（不感兴趣/浏览）允许游客本地放行（store 内游客分支，不调后端）
+  if (direction !== "left" && !requireLogin()) return;
   try {
     if (direction === "left") {
       await discoverStore.swipeLeft(cardId);
@@ -204,6 +222,8 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
  * @param cardId - 卡片 ID
  */
 async function handleSuperLike(cardId: string) {
+  // 2026-08-09：超级喜欢需登录——未登录仅提示不跳转
+  if (!requireLogin()) return;
   try {
     // 超级喜欢前获取卡片信息（swipeRight 后卡片会从列表移除）
     const card = discoverStore.cards.find((c) => c.id === cardId);
@@ -235,6 +255,8 @@ async function handleSuperLike(cardId: string) {
  * @param userId - 目标用户 ID
  */
 function handleMessage(userId: string) {
+  // 2026-08-09：发消息需登录——未登录仅提示不跳转，避免被强拉登录页
+  if (!requireLogin()) return;
   if (!userId || userId.trim().length === 0) {
     uni.showToast({ title: t("discover.userIdInvalid"), icon: "none" });
     return;
@@ -281,14 +303,24 @@ function onQuickFilterApply(payload: {
   ageMin: number;
   ageMax: number;
 }): void {
+  // 2026-08-09：筛选会触发卡片拉取（鉴权接口）——游客仅提示不跳转
+  if (!requireLogin()) return;
   discoverStore.applyQuickFilter(payload);
   lightHaptic();
 }
 
 /** 附近 chip：切换附近范围（P2-04：合并为一次请求，避免重复 fetchCards） */
 function onNearbyChip(): void {
+  // 2026-08-09：附近切换会触发卡片拉取（鉴权接口）——游客仅提示不跳转
+  if (!requireLogin()) return;
   discoverStore.setNearbyScope();
   lightHaptic();
+}
+
+/** 打开签到弹窗：游客点击仅提示登录（签到为鉴权功能，避免 401 强拉登录页） */
+function openCheckin(): void {
+  if (!requireLogin()) return;
+  checkinVisible.value = true;
 }
 
 /** 当前生效的匹配范围（用于 chip 文案与高亮） */
@@ -431,11 +463,10 @@ onMounted(() => {
   void vipStore.isVip;
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/discover/index" });
-  // D1 修复：未登录时禁止发鉴权请求（否则冷启动 → 401 洪水）。
-  // 已登录直接拉取；登录态变化后（如从登录页返回）自动补发。
-  if (sessionStore.isLoggedIn) {
-    loadDiscoverData();
-  }
+  // 2026-08-09 免登录可逛：游客也拉取推荐卡片（后端 GET /recommendations 已放行匿名，
+  // 返回中性排序的通用推荐）；签到/个人资料仍要求登录（loadDiscoverData 内部按登录态分流）。
+  // 登录态变化后（如从登录页返回）由下方 watch 补发。
+  loadDiscoverData();
 });
 
 // D1 修复：登录成功后补发发现页数据（解决「登录回来数据不加载」）
@@ -466,12 +497,19 @@ onShow(() => {
   }
 });
 
-/** D1 修复：集中发现页数据请求，登录态守卫下统一调用 */
+/**
+ * 集中发现页数据请求（2026-08-09 免登录可逛调整）：
+ * - fetchCards：游客/登录用户都拉取（后端 GET /recommendations 已放行匿名）；
+ * - checkIn / profile：签到与个人资料为鉴权接口，仅登录用户拉取——
+ *   避免游客触发 401 被全局处理强拉登录页。
+ */
 function loadDiscoverData() {
   void discoverStore.fetchCards();
-  void checkInStore.fetchStatus();
-  // R4-00009：预加载个人资料，保证匹配成功动画能展示用户真实头像
-  void profileStore.load();
+  if (sessionStore.isLoggedIn) {
+    void checkInStore.fetchStatus();
+    // R4-00009：预加载个人资料，保证匹配成功动画能展示用户真实头像
+    void profileStore.load();
+  }
 }
 
 /**
@@ -606,7 +644,7 @@ defineExpose({ clearSearch });
         hover-stay-time="120"
         role="button"
         :aria-label="checkInStore.checkedIn ? t('discover.alreadyCheckedIn') : t('discover.todayCheckin')"
-        @tap="checkinVisible = true"
+        @tap="openCheckin"
       >
         <image class="checkin-entry__icon" :src="icons.checkin" mode="aspectFit" alt="" />
         <text class="checkin-entry__text" :class="{ 'checkin-entry__text--done': checkInStore.checkedIn }">
@@ -742,9 +780,13 @@ defineExpose({ clearSearch });
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   // #endif
-  /* 顶部状态栏安全距离 + 底部底导航留白（含 FAB 与底导航高度） */
+  /* 顶部状态栏安全距离 + 底部留白：精确贴底导航上方 16rpx。
+   * 2026-08-09 改版：原固定 180rpx 在操作栏下方留下大片空白（FAB 孤悬其中），
+   * 现改为 calc(112rpx + safe-area + 16rpx)（底导航高 --tabbar-height），
+   * 释放约 20~50rpx 空间给卡片区 → 卡片拉长、操作栏下移、页面饱满协调。
+   * FAB（GlobalPublishFab）为 fixed 定位不受影响，仍悬浮于操作栏上方留有空隙。 */
   padding-top: env(safe-area-inset-top);
-  padding-bottom: 180rpx;
+  padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
 }
 
 /* ========== 标题行（2026-08-07 设计稿：寻觅 + 发现心动的人 + 今日剩余次数） ========== */

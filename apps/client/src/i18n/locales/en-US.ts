@@ -936,7 +936,58 @@ export default {
       quote: "Quote",
       recallAria: "Recall this message",
       recall: "Recall",
+      /* 2026-08-09 WeChat 1:1 redesign: added forward/delete to long press menu */
+      forwardAria: "Forward this message",
+      forward: "Forward",
+      deleteAria: "Delete this message",
+      delete: "Delete",
     },
+    /* 2026-08-09 WeChat 1:1 redesign: first-message match greeting */
+    matchGreeting: {
+      text: "You matched successfully! Say hi and start chatting~",
+      buttonFallback1: "What do you like to do in your free time?",
+      buttonFallback2: "Are you on campus today?",
+      aria: "Icebreaker prompt. Tap a button to send it directly.",
+      sendAria: "Send icebreaker: {text}",
+    },
+    /* 2026-08-09 WeChat 1:1 redesign: top nav "..." menu */
+    nav: {
+      moreAria: "More actions",
+      viewProfile: "View profile",
+      mute: "Mute notifications",
+      unmute: "Unmute notifications",
+      block: "Block",
+      blockConfirmTitle: "Block user",
+      blockConfirmContent: "You will no longer receive messages from this user. Block them?",
+      blockDone: "Blocked (applies to this session)",
+      report: "Report",
+      reportReasonHint: "Select a reason",
+      reportReasonHarass: "Harassment",
+      reportReasonAbuse: "Abuse",
+      reportReasonFraud: "Fraud",
+      reportReasonOther: "Other",
+      reportDone: "Report submitted",
+    },
+    /* 2026-08-09 WeChat 1:1 redesign: peer status text (no backend presence API yet) */
+    statusOnline: "Online",
+    statusActive: "Active just now",
+    statusOffline: "Offline",
+    /* 2026-08-09 WeChat 1:1 redesign: new-message hint while browsing history */
+    newMessageHint: "New message",
+    /* 2026-08-09 WeChat 1:1 redesign: typing indicator */
+    typing: "Typing...",
+    typingAria: "Peer is typing",
+    /* 2026-08-09 WeChat 1:1 redesign: forward/delete */
+    forwardSuccess: "Forwarded",
+    forwardNotSupported: "This message type cannot be forwarded",
+    forwardNoTarget: "No conversations to forward to",
+    deleteLocalOnly: "Deleted (only on this device)",
+    /* 2026-08-09 WeChat 1:1 redesign: emoji panel */
+    emojiPanelAria: "Emoji panel",
+    emojiPanelOpenAria: "Open emoji panel",
+    /* 2026-08-09 WeChat 1:1 redesign: "+" menu image placeholder */
+    moreMenuImage: "Send image",
+    moreMenuImageWip: "Image sending is under development",
   },
 
   /* ========== Likes ========== */
@@ -1044,6 +1095,14 @@ export default {
     choosePhotoFailed: "Failed to choose photo",
     chooseVideoFailed: "Failed to choose video",
     uploadingProgress: "Uploading...",
+    /* 2026-08-09: Photo wall batch upload + empty hint + audit badges */
+    uploadingPhotos: "Uploading {done}/{total}",
+    photoWallEmptyHint: "Upload daily photos so more people get to know you",
+    photoAuditPending: "Reviewing",
+    photoAuditRejected: "Rejected",
+    avatarAuditPending: "Avatar under review",
+    avatarAuditRejected: "Avatar rejected",
+    auditRejectedTip: "Rejected: {remark}",
     pageName: "Me",
     titleTip: "Tip",
     /* Feature 3: Visitors page */
@@ -1092,6 +1151,12 @@ export default {
     avatarEditAria: "Tap to change avatar",
     avatarPreviewAria: "Tap to preview avatar",
     avatarUpdated: "Avatar updated",
+    /* 2026-08-09: Avatar upload wiring (action sheet + first-time hint) */
+    avatarUploadHint: "Add a real photo to boost match rate by 80%",
+    avatarMenuAria: "Upload or preview avatar",
+    avatarMenuView: "View full size",
+    avatarMenuAlbum: "Choose from album",
+    avatarMenuCamera: "Take photo",
     /* P1-05: Message center entry (system notifications via official account) */
     notifications: "Message Center",
     devEntryAria: "Developer entry",
@@ -1125,6 +1190,9 @@ export default {
     voiceDeleted: "Voice status deleted",
     voiceChooseFailed: "Failed to choose voice",
     voiceNotSupported: "Voice recording is not supported here",
+    /* 2026-08-09: Re-record entry on recorded voice card */
+    voiceReRecord: "Re-record",
+    voiceReRecordAria: "Re-record voice",
     taskCenter: "Task center",
     taskCenterDesc: "Complete tasks to earn coins",
     /* ========== Task center page ========== */
@@ -2223,15 +2291,11 @@ export default {
   /* ========== Lock screen ========== */
   lock: {
     thisFeature: "this feature",
-    unlockHint: "Complete your profile to unlock {name}",
     unlockHintModal: "Complete your profile to unlock {name}",
     completionProgress: "Current completion {n}%",
     completionProgressEncourage: "Current completion {n}%, keep going!",
-    defaultSubtitle: "Complete your profile to unlock more campus love features",
     defaultSubtitleModal: "Complete your profile to unlock more campus love features",
-    completeNow: "Complete now",
     completeNowAria: "Complete profile now",
-    footerTip: "More complete profile, more accurate matches",
     title: "Unlock feature",
     confirm: "Complete profile",
     cancel: "Not now",
@@ -2240,6 +2304,21 @@ export default {
     overlayDesc: "Tap \"Complete profile\" to unlock this feature",
     overlayBtn: "Got it",
     overlayBtnAria: "Got it, close guide",
+    /* LockScreen full-screen guide — logged out: focus on login authorization */
+    titleLoggedOut: "Log in to unlock full dating features",
+    subtitleLoggedOut: "Complete login authorization and basic profile info to unlock matching, chat, campus events and more",
+    primaryLoggedOut: "Log in and complete profile",
+    /* LockScreen full-screen guide — logged in but profile incomplete */
+    titleLoggedIn: "Complete your profile to unlock full dating features",
+    subtitleLoggedIn: "Finish your basic profile to unlock matching, chat, campus events and more",
+    primaryLoggedIn: "Complete now",
+    /* LockScreen full-screen guide — shared */
+    secondary: "Browse public content first",
+    benefitMatch: "Unlock precise matching recommendations",
+    benefitCampus: "View profiles of campus alumni",
+    benefitChat: "Send private and anonymous messages",
+    footerTip: "A more complete profile means more accurate matches and more exposure",
+    closeAria: "Close guide, back to public content",
   },
 
   /* ========== Empty state ========== */
@@ -3092,6 +3171,7 @@ export default {
   apiErrors: {
     badRequest: "Invalid request parameters, please check and retry",
     unauthorized: "Login expired, please log in again",
+    loginRequired: "Please log in first to use this feature",
     forbidden: "No permission to perform this operation",
     notFound: "The requested resource does not exist",
     serverError: "Service temporarily unavailable, please try again later",

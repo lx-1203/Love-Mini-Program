@@ -290,6 +290,10 @@ export const useProfileStore = defineStore("profile", {
             this.voiceStatusUrl = mockVoiceStatusUrl;
             this.voiceStatusDuration = MOCK_VOICE_STATUS_DURATION_SECONDS; // infra R2-00052
             this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_8;
+            // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
+            this.photoGallery = Array.isArray(mockBasicProfile?.photoGallery)
+              ? [...mockBasicProfile.photoGallery]
+              : [];
             const persistedPrivacy = loadPersistedPrivacy();
             this.allowSameSchoolRecommend = persistedPrivacy.allowSameSchoolRecommend;
             this.receiveSameSchoolInfo = persistedPrivacy.receiveSameSchoolInfo;
@@ -311,6 +315,9 @@ export const useProfileStore = defineStore("profile", {
           // （BasicProfileView 已新增 avatarUrl 字段，存于 users.avatar_url）
           const basicRaw = basic as { avatarUrl?: string } | null;
           this.avatarUrl = typeof basicRaw?.avatarUrl === "string" ? basicRaw.avatarUrl : "";
+
+          // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
+          this.photoGallery = Array.isArray(basic?.photoGallery) ? [...basic.photoGallery] : [];
 
           // SubTask 1.4.1：解析 vipStatus。
           // 当前后端 UserSession schema 暂未声明 vipStatus 字段，但实际响应可能已包含
@@ -740,6 +747,8 @@ export const useProfileStore = defineStore("profile", {
           next.push(url);
         }
         this.photoGallery = next;
+        // 2026-08-09：同步 basicProfile 与审核项（新上传默认 pending，待审核）
+        this.syncBasicProfileGallery(next, { url, auditStatus: "pending", auditRemark: null });
         return url;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadPhotoFailed");
@@ -763,14 +772,85 @@ export const useProfileStore = defineStore("profile", {
       try {
         await clientApi.deleteProfilePhoto(index);
         // 从数组中移除指定索引，并压缩（后续照片前移）
-        this.photoGallery = [
+        const next = [
           ...this.photoGallery.slice(0, index),
           ...this.photoGallery.slice(index + 1),
         ];
+        this.photoGallery = next;
+        // 2026-08-09：同步 basicProfile（保持审核项与 URL 数组一一对应）
+        this.syncBasicProfileGallery(next, null);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.deletePhotoFailed");
         throw error;
       }
+    },
+
+    /**
+     * 同步 basicProfile 的照片墙字段（2026-08-09）。
+     * 上传/删除后保持 URL 数组与审核项一致。
+     *
+     * @param next - 最新照片墙 URL 数组
+     * @param newItem - 本次新增的审核项（删除时传 null）
+     */
+    syncBasicProfileGallery(
+      next: string[],
+      newItem: { url: string; auditStatus: string; auditRemark: string | null } | null
+    ): void {
+      const current = this.basicProfile as {
+        photoGallery?: string[];
+        photoGalleryItems?: Array<{ url: string; auditStatus: string; auditRemark: string | null }>;
+      } | null;
+      if (!current) return;
+      const prevItems = Array.isArray(current.photoGalleryItems) ? current.photoGalleryItems : [];
+      const items = next
+        .filter((url) => url && url.length > 0)
+        .map((url) => {
+          const found = prevItems.find((it) => it.url === url);
+          if (found) return found;
+          if (newItem && newItem.url === url) return newItem;
+          return { url, auditStatus: "approved" as const, auditRemark: null };
+        });
+      this.basicProfile = {
+        ...current,
+        photoGallery: next,
+        photoGalleryItems: items,
+      } as unknown as typeof this.basicProfile;
+    },
+  },
+
+  getters: {
+    /**
+     * 照片墙审核项列表（2026-08-09）。
+     *
+     * 优先取 basicProfile.photoGalleryItems（后端返回的审核状态）；
+     * 缺失时按 photoGallery 兜底组装 approved（mock 模式 / 旧数据无审核语义）。
+     */
+    photoGalleryItems(state): Array<{
+      url: string;
+      auditStatus: string;
+      auditRemark: string | null;
+    }> {
+      const items = (state.basicProfile as { photoGalleryItems?: Array<{
+        url: string;
+        auditStatus: string;
+        auditRemark: string | null;
+      }> } | null)?.photoGalleryItems;
+      if (Array.isArray(items) && items.length > 0) {
+        return items;
+      }
+      return state.photoGallery
+        .filter((url) => url && url.length > 0)
+        .map((url) => ({ url, auditStatus: "approved", auditRemark: null }));
+    },
+
+    /** 头像审核状态（2026-08-09，mock/旧数据兜底 approved） */
+    avatarAuditStatus(state): string {
+      return (state.basicProfile as { avatarAuditStatus?: string } | null)?.avatarAuditStatus ?? "approved";
+    },
+
+    /** 头像审核备注（拒绝原因等） */
+    avatarAuditRemark(state): string | null {
+      return (state.basicProfile as { avatarAuditRemark?: string | null } | null)?.avatarAuditRemark ?? null;
     },
   },
 });

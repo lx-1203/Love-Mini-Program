@@ -22,8 +22,13 @@ import { featureFlags } from "../../config/feature-flags";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { openAppPath } from "../../utils/navigation";
+// 2026-08-09：路由常量化（他人主页 / 聊天会话）
+import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
+// 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
+import { useSessionStore } from "../../stores/session";
+import LockScreen from "../../components/common/LockScreen.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
@@ -34,8 +39,14 @@ const likesStore = useLikesStore();
 const profileStore = useProfileStore();
 const coinsStore = useCoinsStore();
 const vipStore = useVipStore();
+const sessionStore = useSessionStore();
 
 usePageAccess(likesPageRequirements);
+
+/** 是否解锁：未登录 → 展示 LockScreen（未登录版）引导，不渲染列表、不发鉴权请求 */
+const isUnlocked = computed(() => sessionStore.isLoggedIn);
+/** 完善度（已登录未完善时 LockScreen 展示进度） */
+const completionPercent = computed(() => sessionStore.profileCompletion);
 
 const { likedBy, visitors, loading } = storeToRefs(likesStore);
 
@@ -89,13 +100,22 @@ onMounted(() => {
 });
 
 onShow(() => {
+  // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不发起鉴权请求（避免 401 被全局处理强拉登录页）
+  if (!isUnlocked.value) return;
   // R4-00020 修复：原条件反置（loading 时重复请求、加载完成后永不刷新）。
   // 改为仅在未加载中时补拉，避免重复请求。
   if (!profileStore.loading) {
     void profileStore.load();
   }
-  void likesStore.fetchLikes();
-  void likesStore.fetchVisitors();
+  // 修复（2026-08-09）：fetchLikes/fetchVisitors 失败会向上 throw（P1 BUG 设计），
+  // 页面侧必须接 catch，否则成为 unhandledRejection（页面异常刷屏 + 主线程卡顿）。
+  // 失败由页面内错误态展示（errorMessage 已写入 store），无需额外处理。
+  void likesStore.fetchLikes().catch(() => {
+    /* store 已记录 errorMessage，页面错误态展示 */
+  });
+  void likesStore.fetchVisitors().catch(() => {
+    /* 同上 */
+  });
 });
 
 function switchTab(key: string) {
@@ -180,10 +200,31 @@ function markAllUnlocked(unlocked: boolean): void {
   }
 }
 
-/** 点击用户：已解锁时进入主页 */
+/**
+ * 点击用户：已解锁时进入主页；互相喜欢 → 直接去聊天（2026-08-09 闭环完善）。
+ * 进入他人主页页（pages/profile/other），展示完整公开资料并支持喜欢/悄悄话。
+ */
 function goToUserProfile(userId: string) {
   if (!userId) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
+  const isMutual = likesStore.mutualLikes.some((m) => m.userId === userId);
+  if (isMutual) {
+    openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(userId)}`);
+    return;
+  }
+  openAppPath(`${ROUTES.PROFILE.OTHER}?userId=${encodeURIComponent(userId)}`);
+}
+
+/**
+ * 返回上一页（自定义导航栏返回键）。
+ * 无上一页时（如从 reLaunch/直达进入）回退到首页 tab。
+ */
+function goBack() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
 }
 
 /**
@@ -229,9 +270,24 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 
 <template>
   <view class="likes-visitors-page page-fade-in">
-    <!-- 顶部标题栏 -->
+    <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
+    <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
+    <template v-else>
+    <!-- 顶部标题栏（2026-08-09：左侧补返回键，navigationStyle: custom 无系统返回栏） -->
     <view class="page-header">
-      <text class="page-header__title">{{ t('likesVisitors.pageTitle') }}</text>
+      <view class="page-header__top">
+        <view
+          class="page-header__back press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.back')"
+          @tap="goBack"
+        >
+          <image class="page-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        </view>
+        <text class="page-header__title">{{ t('likesVisitors.pageTitle') }}</text>
+      </view>
       <text class="page-header__subtitle">{{ t('likesVisitors.pageSubtitle') }}</text>
     </view>
 
@@ -337,6 +393,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 
     <!-- 底部安全区占位（避免内容被固定按钮遮挡） -->
     <view v-if="hasLockedItems" class="unlock-bar-spacer" />
+    </template>
   </view>
 </template>
 
@@ -355,6 +412,30 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
+}
+
+/* 2026-08-09：返回键 + 标题（同一行） */
+.page-header__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.page-header__back {
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .page-header__title {
