@@ -328,6 +328,12 @@ export default {
     statusEnded: "Ended",
     columnId: "ID",
     columnTitle: "Title",
+    /* R4（2026-08-09）：活动分类列（标准表格按分类划分） */
+    columnCategory: "Category",
+    filterCategoryAll: "All Categories",
+    categoryLabel: "Category",
+    coverImageLabel: "Cover Image URL",
+    coverImagePlaceholder: "Leave empty to use default cover",
     columnLocation: "Location",
     columnCampus: "Campus",
     columnStatus: "Status",

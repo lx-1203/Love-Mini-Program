@@ -329,7 +329,10 @@ public class RealCampusService implements CampusService {
                         activity.getEnrollmentCount(),
                         parseJsonToList(activity.getParticipantAvatars()),
                         activity.getStatus().name(),
-                        activity.getActivityDate()
+                        activity.getActivityDate(),
+                        activity.getCategory(),
+                        activity.getCoverImage(),
+                        false
                 ))
                 .toList();
     }

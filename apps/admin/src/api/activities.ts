@@ -20,6 +20,29 @@ import { buildExportCsvName } from "../utils/export-name";
 /** 活动状态枚举（对应后端 ActivityStatus） */
 export type ActivityStatus = "upcoming" | "ongoing" | "ended";
 
+/** 活动分类 code（对应后端 category 字段，R4 2026-08-09） */
+export type ActivityCategory =
+  | "social"
+  | "sports"
+  | "game"
+  | "study"
+  | "volunteer"
+  | "food"
+  | "music"
+  | "other";
+
+/** 活动分类中文标签（表格列/筛选展示） */
+export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
+  social: "联谊",
+  sports: "运动",
+  game: "桌游",
+  study: "学习",
+  volunteer: "志愿",
+  food: "美食",
+  music: "音乐",
+  other: "其他",
+};
+
 /**
  * 活动列表摘要视图（对应后端 AdminActivitySummaryView）。
  */
@@ -44,6 +67,8 @@ export interface ActivitySummary {
   enrollmentCount: number;
   /** 活动日期（ISO yyyy-MM-dd） */
   activityDate: string | null;
+  /** 活动分类 code（R4 2026-08-09） */
+  category: ActivityCategory;
   /** 创建时间 */
   createdAt: string;
   /** 最近更新时间 */
@@ -76,6 +101,10 @@ export interface ActivityDetail {
   enrollmentCount: number;
   /** 活动日期（ISO yyyy-MM-dd） */
   activityDate: string | null;
+  /** 活动分类 code（R4 2026-08-09） */
+  category: ActivityCategory;
+  /** 活动封面图 URL（R4 2026-08-09） */
+  coverImage?: string | null;
   /** 创建时间 */
   createdAt: string;
   /** 最近更新时间 */
@@ -105,6 +134,10 @@ export interface ActivityForm {
   status?: ActivityStatus;
   /** 是否上架（可选，默认 true） */
   published?: boolean;
+  /** 活动分类（可选，默认 other；R4 2026-08-09） */
+  category?: ActivityCategory;
+  /** 活动封面图 URL（可选；R4 2026-08-09） */
+  coverImage?: string;
 }
 
 /**
@@ -136,6 +169,8 @@ export interface ActivityListQuery {
   published?: boolean;
   /** 校区名称筛选（仅全局管理员生效） */
   campusName?: string;
+  /** 活动分类筛选（R4 2026-08-09） */
+  category?: ActivityCategory;
   /** 页码，1-based */
   page?: number;
   /** 每页条数 */

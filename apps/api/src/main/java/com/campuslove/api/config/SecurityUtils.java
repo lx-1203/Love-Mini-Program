@@ -62,6 +62,21 @@ public final class SecurityUtils {
     }
 
     /**
+     * 获取当前登录用户 ID（未认证时返回 null）。
+     *
+     * <p>R4（2026-08-09）：用于「可选登录态」的公开端点（如活动列表计算
+     * isEnrolled），未登录不抛 401 而是返回 null，由调用方降级处理。</p>
+     *
+     * @return 当前用户 ID，未认证/无法解析时为 null
+     */
+    public static Long getCurrentUserIdOrNull() {
+        if (!isAuthenticated()) {
+            return null;
+        }
+        return parsePrincipal(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+    }
+
+    /**
      * 抛出 401 Unauthorized 异常。
      *
      * @param message 错误信息

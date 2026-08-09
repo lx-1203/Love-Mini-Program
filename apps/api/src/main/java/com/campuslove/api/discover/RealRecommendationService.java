@@ -337,7 +337,9 @@ public class RealRecommendationService implements RecommendationService {
                 avatars,
                 activity.getStatus().name(),
                 activity.getActivityDate(),
-                isEnrolled
+                isEnrolled,
+                activity.getCategory(),
+                activity.getCoverImage()
         );
     }
 

@@ -30,7 +30,7 @@ public class MockActivityService implements ActivityService {
     }
 
     @Override
-    public Page<ActivityView> getActivities(String campusName, Pageable pageable) {
+    public Page<ActivityView> getActivities(String campusName, String category, Long userId, Pageable pageable) {
         List<ActivityView> activities = runtimeState.activityRecommendations().stream()
                 .map(item -> new ActivityView(
                         Long.valueOf(item.id()),
@@ -41,7 +41,10 @@ public class MockActivityService implements ActivityService {
                         item.enrollmentCount(),
                         item.participantAvatars(),
                         "upcoming",
-                        LocalDate.now(TimeZones.BUSINESS).plusDays(1)
+                        LocalDate.now(TimeZones.BUSINESS).plusDays(1),
+                        "other",
+                        null,
+                        false
                 ))
                 .toList();
 
@@ -72,7 +75,9 @@ public class MockActivityService implements ActivityService {
                 activity.participantAvatars(),
                 "upcoming",
                 LocalDate.now(TimeZones.BUSINESS).plusDays(1),
-                isEnrolled
+                isEnrolled,
+                "other",
+                null
         );
     }
 

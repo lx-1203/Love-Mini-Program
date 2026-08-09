@@ -52,10 +52,14 @@ public class ActivityController {
     public ApiResponse<Page<ActivityView>> getActivities(
             @RequestParam(name = "campusName", required = false)
             @Size(max = 50, message = ErrorMessages.CAMPUS_NAME_MAX_50) String campusName,
+            @RequestParam(name = "category", required = false)
+            @Size(max = 32, message = ErrorMessages.CATEGORY_MAX_LENGTH) String category,
             @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ApiResponse.ok(activityService.getActivities(campusName, pageable));
+        // R4（2026-08-09）：列表返回当前用户 isEnrolled（未登录为 false）
+        Long userId = SecurityUtils.getCurrentUserIdOrNull();
+        return ApiResponse.ok(activityService.getActivities(campusName, category, userId, pageable));
     }
 
     /**

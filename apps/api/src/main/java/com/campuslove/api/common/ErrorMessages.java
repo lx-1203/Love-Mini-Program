@@ -528,6 +528,10 @@ public final class ErrorMessages {
 
     /** campusName 长度不能超过 50 */
     public static final String CAMPUS_NAME_MAX_50 = "campusName 长度不能超过 50";
+    /** 活动分类 code 长度上限（R4 2026-08-09） */
+    public static final String CATEGORY_MAX_LENGTH = "category 长度不能超过 32";
+    /** 活动封面图 URL 长度上限（R4 2026-08-09） */
+    public static final String COVER_IMAGE_MAX_LENGTH = "coverImage 长度不能超过 512";
 
     /** isAnonymous 不能为空 */
     public static final String IS_ANONYMOUS_REQUIRED = "isAnonymous 不能为空";

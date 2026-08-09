@@ -8,12 +8,11 @@
  * 3. 报名按钮点击后 toast 提示"报名成功，请留意通知"（真实报名链路由活动列表页/后端负责）。
  */
 import { ref, computed, onMounted } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { useActivityStore, type ActivityItem } from "../../stores/activity";
-import { useMessagesStore } from "../../stores/messages";
 import { ROUTES } from "../../constants/routes";
 import { TOAST_DURATION } from "../../constants/limits";
 import { openAppPath } from "../../utils/navigation";
@@ -115,6 +114,12 @@ function resolveActivity(id: string): void {
 onLoad((options) => {
   const id = options?.id ?? "";
   activityId.value = id;
+  // 微信端开启右上角「...」转发/朋友圈菜单（分享本页活动卡片；H5 不支持时静默降级）
+  try {
+    uni.showShareMenu({ withShareTicket: true, menus: ["shareAppMessage", "shareTimeline"] });
+  } catch (_e) {
+    // H5 端 showShareMenu 不支持时静默降级
+  }
   if (activityStore.activities.length > 0) {
     resolveActivity(id);
     return;
@@ -216,59 +221,34 @@ function goBack() {
   }
 }
 
-/* ========== 发给朋友（私聊活动卡片，kind=activity） ========== */
+/* ========== 分享（微信卡片/朋友圈，跳转本页并携带活动 id） ========== */
 
-const messagesStore = useMessagesStore();
+/** 分享目标活动 id（URL 传入优先，其次为当前解析出的活动） */
+const shareId = computed(() => activityId.value || activity.value?.id || "");
 
-/** 最近 5 个私信会话（排除官方号），按最后消息时间倒序 */
-const recentSessions = computed(() =>
-  messagesStore.sessions
-    .filter((s) => s.sessionType === "private" && !s.isOfficial)
-    .sort((a, b) => (Date.parse(b.lastMessageSentAt ?? "") || 0) - (Date.parse(a.lastMessageSentAt ?? "") || 0))
-    .slice(0, 5)
+/** 分享标题：邀请语 + 活动名 */
+const shareTitle = computed(() => t("activities.shareTitle", { title: activity.value?.title ?? "" }));
+
+/** 分享路径：指向当前活动详情页，接收方点开即跳转（id 为空时分享页面本身） */
+const sharePath = computed(() =>
+  shareId.value ? `${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(shareId.value)}` : ROUTES.ACTIVITY_DETAIL
 );
 
 /**
- * 发送活动卡片给好友：ActionSheet 选择最近会话 → sendMessage(kind=activity)。
- * content 为 JSON {"title","desc","tag","targetUrl"}（见 docs/API-CONTRACT.md）。
+ * 分享给微信好友/群聊（open-type="share" 按钮或右上角「...」触发）。
+ * 微信原生联系人选择器：任意好友/群均可接收，非站内固定会话；
+ * 卡片内容始终为当前活动，随页面数据实时更新。
  */
-async function handleSendToFriend() {
-  lightHaptic();
-  const current = activity.value;
-  if (!current) return;
-  if (recentSessions.value.length === 0) {
-    uni.showToast({ title: t("activities.sendToFriendEmpty"), icon: "none" });
-    return;
-  }
-  const itemList = recentSessions.value.map((s) => s.partnerName);
-  // R4-00035：用户取消 ActionSheet 时 H5 端 Promise reject，需 catch 静默处理
-  let res: UniApp.ShowActionSheetRes;
-  try {
-    res = await uni.showActionSheet({ itemList });
-  } catch (_e) {
-    // 用户取消选择：静默返回
-    return;
-  }
-  const session = recentSessions.value[res.tapIndex ?? -1];
-  if (!session) return;
+onShareAppMessage(() => ({
+  title: shareTitle.value,
+  path: sharePath.value,
+}));
 
-  const card = {
-    title: current.title,
-    desc: (current.description || current.scheduleText || "").slice(0, 80),
-    tag: t("activities.sendToFriendTag"),
-    targetUrl: `${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(current.id)}`,
-  };
-  try {
-    await messagesStore.sendMessage(session.id, JSON.stringify(card), undefined, "activity");
-    uni.showToast({
-      title: t("activities.sendToFriendDone", { name: session.partnerName }),
-      icon: "none",
-      duration: TOAST_DURATION.NORMAL_MS,
-    });
-  } catch (_e) {
-    uni.showToast({ title: t("activities.sendToFriendFailed"), icon: "none" });
-  }
-}
+/** 分享到朋友圈（query 带活动 id，点开后同样落到对应详情页） */
+onShareTimeline(() => ({
+  title: shareTitle.value,
+  query: shareId.value ? `id=${encodeURIComponent(shareId.value)}` : "",
+}));
 </script>
 
 <template>
@@ -295,6 +275,10 @@ async function handleSendToFriend() {
       <view class="detail-section">
         <view class="detail-title-row">
           <text class="detail-title">{{ activity.title }}</text>
+          <!-- R4（2026-08-09）：活动分类标签（场景展示） -->
+          <text v-if="activity.category" class="detail-category-tag">
+            {{ t(`activities.category.${activity.category}`) }}
+          </text>
           <view class="detail-status">
             <text class="detail-status__text">{{ statusText }}</text>
           </view>
@@ -340,18 +324,17 @@ async function handleSendToFriend() {
       <text class="detail-loading__text">{{ t('common.loading') }}</text>
     </view>
 
-    <!-- 底部报名/退出栏（收尾轮：已报名可退出；左侧「发给朋友」推荐活动卡片） -->
+    <!-- 底部报名/退出栏（已报名可退出；左侧「分享」走微信原生分享，任意好友/群可接收） -->
     <view v-if="activity" class="detail-action-bar">
-      <view
+      <button
         class="detail-share-btn press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
-        role="button"
-        :aria-label="t('activities.sendToFriend')"
-        @tap="handleSendToFriend"
+        :aria-label="t('activities.share')"
+        open-type="share"
       >
-        <text class="detail-share-btn__text">{{ t('activities.sendToFriend') }}</text>
-      </view>
+        <text class="detail-share-btn__text">{{ t('activities.share') }}</text>
+      </button>
       <view
         v-if="!isSignedUp"
         class="detail-signup-btn press-feedback"
@@ -477,6 +460,17 @@ async function handleSendToFriend() {
   line-height: 1.35;
 }
 
+/* R4（2026-08-09）：活动分类标签（场景展示） */
+.detail-category-tag {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-primary, #3fcf8e);
+  background: color-mix(in srgb, var(--c-primary, #3fcf8e) 12%, transparent);
+}
+
 .detail-status {
   flex-shrink: 0;
   background: var(--c-bg-brand, #e8f8f0);
@@ -588,7 +582,7 @@ async function handleSendToFriend() {
   box-shadow: 0 -4rpx 20rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
 }
 
-/* 发给朋友（次级按钮） */
+/* 分享（次级按钮，open-type="share" 微信原生转发） */
 .detail-share-btn {
   display: flex;
   align-items: center;
@@ -599,6 +593,14 @@ async function handleSendToFriend() {
   background: var(--c-bg-surface, #F1F5F9);
   border: 1rpx solid var(--c-border-strong, #CBD5E1);
   flex-shrink: 0;
+  /* button 原生样式重置（去默认外边距/行高差异/边框伪元素） */
+  margin: 0;
+  line-height: 1.2;
+  font-size: inherit;
+  color: inherit;
+  &::after {
+    border: none;
+  }
 }
 
 .detail-share-btn__text {

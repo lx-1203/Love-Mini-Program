@@ -377,7 +377,11 @@ defineExpose({ toggleEnroll });
             @tap="goToActivityDetail(item.id)"
           >
             <view class="row-header">
-              <text class="row-title">{{ item.title }}</text>
+              <view class="row-title-wrap">
+                <text class="row-title">{{ item.title }}</text>
+                <!-- R4（2026-08-09）：活动分类标签（场景展示） -->
+                <text v-if="item.category" class="row-category-tag">{{ t(`activities.category.${item.category}`) }}</text>
+              </view>
               <!-- 参与意向人数标记（同校可见） -->
               <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
@@ -524,7 +528,11 @@ defineExpose({ toggleEnroll });
             @tap="goToActivityDetail(item.id)"
           >
             <view class="row-header">
-              <text class="row-title">{{ item.title }}</text>
+              <view class="row-title-wrap">
+                <text class="row-title">{{ item.title }}</text>
+                <!-- R4（2026-08-09）：活动分类标签（场景展示） -->
+                <text v-if="item.category" class="row-category-tag">{{ t(`activities.category.${item.category}`) }}</text>
+              </view>
               <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
                 <text class="enrollment-label">{{ t("activities.enrolledLabel") }}</text>
@@ -702,6 +710,25 @@ defineExpose({ toggleEnroll });
   font-weight: 700;
   color: var(--c-text-primary);
   flex: 1;
+}
+
+/* R4（2026-08-09）：活动分类标签（场景展示） */
+.row-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.row-category-tag {
+  flex-shrink: 0;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: var(--fs-xs, 20rpx);
+  line-height: 1.4;
+  color: var(--c-primary, #3fcf8e);
+  background: color-mix(in srgb, var(--c-primary, #3fcf8e) 12%, transparent);
 }
 
 .row-enrollment {

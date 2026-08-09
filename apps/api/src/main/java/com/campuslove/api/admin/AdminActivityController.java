@@ -114,12 +114,15 @@ public class AdminActivityController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "published", required = false) Boolean published,
             @RequestParam(name = "campusName", required = false) String campusName,
+            // R4（2026-08-09）：活动分类筛选（social/sports/game/study/volunteer/food/music/other）
+            @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
 
         String normalizedKeyword = normalize(keyword);
         ActivityStatus statusEnum = parseActivityStatus(status);
+        String normalizedCategory = normalize(category);
 
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
@@ -133,7 +136,8 @@ public class AdminActivityController {
                 : normalize(campusName);
 
         Page<Activity> result = activityRepository.searchForAdmin(
-                normalizedKeyword, statusEnum, published, effectiveCampus, pageable);
+                normalizedKeyword, statusEnum, published, effectiveCampus,
+                normalizedCategory, pageable);
 
         List<AdminActivitySummaryView> items = result.getContent().stream()
                 .map(this::toSummaryView)
@@ -201,6 +205,9 @@ public class AdminActivityController {
         activity.setPublished(req.published() != null ? req.published() : Boolean.TRUE);
         activity.setEnrollmentCount(0);
         activity.setParticipantAvatars("[]");
+        // R4（2026-08-09）：活动分类与封面（场景展示）
+        activity.setCategory(normalizeCategory(req.category()));
+        activity.setCoverImage(normalize(req.coverImage()));
 
         Activity saved = activityRepository.save(activity);
         return ResponseEntity.ok(toDetailView(saved));
@@ -253,6 +260,9 @@ public class AdminActivityController {
         if (req.published() != null) {
             activity.setPublished(req.published());
         }
+        // R4（2026-08-09）：活动分类与封面（场景展示）
+        activity.setCategory(normalizeCategory(req.category()));
+        activity.setCoverImage(normalize(req.coverImage()));
         activity.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         Activity saved = activityRepository.save(activity);
@@ -494,6 +504,8 @@ public class AdminActivityController {
                 activity.getPublished(),
                 activity.getEnrollmentCount(),
                 activity.getActivityDate(),
+                // R4（2026-08-09）：活动分类
+                activity.getCategory(),
                 activity.getCreatedAt(),
                 activity.getUpdatedAt()
         );
@@ -515,6 +527,9 @@ public class AdminActivityController {
                 activity.getPublished(),
                 activity.getEnrollmentCount(),
                 activity.getActivityDate(),
+                // R4（2026-08-09）：活动分类与封面（场景展示）
+                activity.getCategory(),
+                activity.getCoverImage(),
                 activity.getCreatedAt(),
                 activity.getUpdatedAt()
         );
@@ -585,6 +600,21 @@ public class AdminActivityController {
     }
 
     /**
+     * 活动分类归一化（R4 2026-08-09）。
+     * 白名单：social/sports/game/study/volunteer/food/music/other；
+     * 空值或非法值回退 "other"，避免脏数据污染分类维度。
+     */
+    private String normalizeCategory(String value) {
+        if (value == null || value.isBlank()) {
+            return "other";
+        }
+        String trimmed = value.trim();
+        return java.util.Set.of("social", "sports", "game", "study",
+                "volunteer", "food", "music", "other").contains(trimmed)
+                ? trimmed : "other";
+    }
+
+    /**
      * CSV 字段转义：含逗号/引号/换行时用双引号包裹，内部引号双写。
      *
      * @param value 原始值
@@ -629,7 +659,10 @@ record AdminActivityRequest(
         @Size(max = 128, message = ErrorMessages.CAMPUS_NAME_FULL_MAX_LENGTH) String campusName,
         LocalDate activityDate,
         String status,
-        Boolean published) {
+        Boolean published,
+        // R4（2026-08-09）：活动分类与封面（场景展示）
+        @Size(max = 32, message = ErrorMessages.CATEGORY_MAX_LENGTH) String category,
+        @Size(max = 512, message = ErrorMessages.COVER_IMAGE_MAX_LENGTH) String coverImage) {
 }
 
 /**
@@ -646,6 +679,8 @@ record AdminActivitySummaryView(
         Boolean published,
         Integer enrollmentCount,
         LocalDate activityDate,
+        // R4（2026-08-09）：活动分类
+        String category,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 }
@@ -665,6 +700,9 @@ record AdminActivityDetailView(
         Boolean published,
         Integer enrollmentCount,
         LocalDate activityDate,
+        // R4（2026-08-09）：活动分类与封面（场景展示）
+        String category,
+        String coverImage,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 }

@@ -43,28 +43,51 @@ public class RealActivityService implements ActivityService {
 
     /**
      * 获取活动列表。
-     * 优先返回 upcoming 状态的活动，可按校区名称过滤。
+     * 优先返回 upcoming 状态的活动，可按校区名称 / 分类过滤。
+     *
+     * <p>R4（2026-08-09）：支持 category 分类筛选；携带 userId 时批量计算
+     * isEnrolled（一次查询报名集合，避免逐条 N+1），未登录为 false。</p>
      *
      * @param campusName 校区名称（可选）
+     * @param category   活动分类 code（可选）
+     * @param userId     当前用户 ID（可选，计算 isEnrolled）
      * @param pageable   分页参数
      * @return 活动视图分页列表
      */
     @Override
     @Transactional(readOnly = true)
-    public Page<ActivityView> getActivities(String campusName, Pageable pageable) {
+    public Page<ActivityView> getActivities(String campusName, String category, Long userId, Pageable pageable) {
         Page<Activity> activities;
 
-        if (campusName != null && !campusName.isBlank()) {
+        boolean hasCampus = campusName != null && !campusName.isBlank();
+        boolean hasCategory = category != null && !category.isBlank();
+        if (hasCampus && hasCategory) {
+            activities = activityRepository.findByCampusNameAndStatusAndCategoryOrderByActivityDateAsc(
+                    campusName, ActivityStatus.upcoming, category, pageable);
+        } else if (hasCampus) {
             // 按校区过滤，查询 upcoming 状态的活动
             activities = activityRepository.findByCampusNameAndStatusOrderByActivityDateAsc(
                     campusName, ActivityStatus.upcoming, pageable);
+        } else if (hasCategory) {
+            activities = activityRepository.findByStatusAndCategoryOrderByActivityDateAsc(
+                    ActivityStatus.upcoming, category, pageable);
         } else {
             // 不限校区，查询所有 upcoming 状态的活动
             activities = activityRepository.findByStatusOrderByActivityDateAsc(
                     ActivityStatus.upcoming, pageable);
         }
 
-        return activities.map(this::toActivityView);
+        // R4：批量查询当前用户已报名的活动 ID 集合，避免逐条 exists N+1
+        java.util.Set<Long> enrolledIds = java.util.Collections.emptySet();
+        if (userId != null) {
+            List<ActivityEnrollment> enrollments =
+                    activityEnrollmentRepository.findByUserId(userId);
+            enrolledIds = enrollments.stream()
+                    .map(ActivityEnrollment::getActivityId)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+        java.util.Set<Long> finalEnrolledIds = enrolledIds;
+        return activities.map(a -> toActivityView(a, finalEnrolledIds.contains(a.getId())));
     }
 
     /**
@@ -99,7 +122,9 @@ public class RealActivityService implements ActivityService {
                 parseParticipantAvatars(activity.getParticipantAvatars()),
                 activity.getStatus().name(),
                 activity.getActivityDate(),
-                isEnrolled
+                isEnrolled,
+                activity.getCategory(),
+                activity.getCoverImage()
         );
     }
 
@@ -198,7 +223,7 @@ public class RealActivityService implements ActivityService {
     /**
      * 将 Activity 实体转换为 ActivityView。
      */
-    private ActivityView toActivityView(Activity activity) {
+    private ActivityView toActivityView(Activity activity, boolean isEnrolled) {
         return new ActivityView(
                 activity.getId(),
                 activity.getTitle(),
@@ -208,7 +233,10 @@ public class RealActivityService implements ActivityService {
                 activity.getEnrollmentCount(),
                 parseParticipantAvatars(activity.getParticipantAvatars()),
                 activity.getStatus().name(),
-                activity.getActivityDate()
+                activity.getActivityDate(),
+                activity.getCategory(),
+                activity.getCoverImage(),
+                isEnrolled
         );
     }
 

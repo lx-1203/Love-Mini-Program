@@ -280,7 +280,7 @@ public class CampusController {
         String campusName = campusProfileRepository.findByUserId(userId)
                 .map(profile -> profile.getCampusName())
                 .orElse(null);
-        Page<ActivityView> page = activityService.getActivities(campusName, PageRequest.of(0, 50));
+        Page<ActivityView> page = activityService.getActivities(campusName, null, userId, PageRequest.of(0, 50));
         return page.getContent().stream().map(this::toCampusActivityItem).toList();
     }
 

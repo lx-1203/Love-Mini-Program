@@ -381,6 +381,17 @@ export default {
     cardAria: "Activity: {title}",
     emptyForDate: "No activities on this day",
     detailNavTitle: "Activity Details",
+    /* R4（2026-08-09）：活动分类标签（与后端 category code 对应） */
+    category: {
+      social: "Social",
+      sports: "Sports",
+      game: "Board Games",
+      study: "Study",
+      volunteer: "Volunteer",
+      food: "Food",
+      music: "Music",
+      other: "Other",
+    },
     timeLabel: "Time",
     locationLabel: "Location",
     introLabel: "Introduction",
@@ -392,12 +403,9 @@ export default {
     enrollFailedToast: "Failed, please retry",
     quitSignup: "Quit signup",
     quitSignupSuccess: "Signup canceled",
-    /* Send to friend (activity card in private chat) */
-    sendToFriend: "Send to Friend",
-    sendToFriendTag: "Activity Pick",
-    sendToFriendEmpty: "No conversations yet, start chatting from Messages",
-    sendToFriendDone: "Sent to {name}",
-    sendToFriendFailed: "Failed to send, please retry",
+    /* Share (WeChat card / timeline jump link) */
+    share: "Share",
+    shareTitle: "Join \"{title}\" now!",
     statusOpen: "Open",
     statusOngoing: "Ongoing",
     statusUpcoming: "Upcoming",

@@ -45,6 +45,18 @@ public class Activity {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    /**
+     * 活动分类 code（V2026.08.09.0019 新增）。
+     * 取值：social/sports/game/study/volunteer/food/music/other，
+     * 与前端 i18n 的 activities.category.* 映射保持一致。
+     */
+    @Column(name = "category", nullable = false, length = 32)
+    private String category = "other";
+
+    /** 活动封面图 URL（空则前端回退占位图，V2026.08.09.0019 新增） */
+    @Column(name = "cover_image", length = 512)
+    private String coverImage;
+
     /** 城市名称 */
     @Column(name = "city_name", length = 64)
     private String cityName;
@@ -149,6 +161,22 @@ public class Activity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getCoverImage() {
+        return coverImage;
+    }
+
+    public void setCoverImage(String coverImage) {
+        this.coverImage = coverImage;
     }
 
     public String getCityName() {

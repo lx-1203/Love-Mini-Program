@@ -31,6 +31,8 @@ export interface ActivityItem {
   status?: "open" | "ongoing" | "upcoming" | "ended" | "closed";
   /** 活动封面图 */
   coverImage?: string;
+  /** 活动分类 code（social/sports/game/study/volunteer/food/music/other，R4 2026-08-09） */
+  category?: string;
 }
 
 /* ========== Mock 数据 ========== */
@@ -265,14 +267,18 @@ export const useActivityStore = defineStore("activity", {
         }
 
         // P2-13：报名/取消报名 userId 均由后端 JWT 获取，客户端不再获取/携带
+        // 修复（2026-08-09）：幂等 key 必须带操作序号——取消成功后重新报名是新的
+        // 业务操作，若沿用固定 key（activity-enroll-{id}）会被后端幂等缓存（TTL 内）
+        // 拦截返回 409「重复请求已被拦截」→ 用户看到「已参与过无法再参与」。
+        // 防重由上方 enrollingActivityIds 并发守卫承担，key 只需保证单次请求唯一。
+        const opSeq = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         if (activity.isEnrolled) {
           // 取消报名：调用 DELETE /api/activities/{activityId}/enroll
           // P2-13: userId 由后端 JWT 获取（ActivityController.enrollActivity 仅接收 path id），删除 query
-          // 2026-08-07 修复：后端 @Idempotent 校验，必须携带 Idempotency-Key（按操作区分，避免与报名 key 冲突）
           const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
             url: `/activities/${activityId}/enroll`,
             method: "DELETE",
-            headers: { "Idempotency-Key": `activity-cancel-${activityId}` },
+            headers: { "Idempotency-Key": `activity-cancel-${activityId}-${opSeq}` },
           });
           activity.isEnrolled = result.enrolled;
           // R4-00182：enrollCount（列表 UI 消费）与 enrollmentCount（API 消费）兼容别名同步更新
@@ -284,7 +290,7 @@ export const useActivityStore = defineStore("activity", {
           const result = await request<{ activityId: number; enrolled: boolean; enrollmentCount: number }>({
             url: `/activities/${activityId}/enroll`,
             method: "POST",
-            headers: { "Idempotency-Key": `activity-enroll-${activityId}` },
+            headers: { "Idempotency-Key": `activity-enroll-${activityId}-${opSeq}` },
           });
           activity.isEnrolled = result.enrolled;
           // R4-00182：两字段同步更新（对齐 mock 分支）
@@ -365,6 +371,9 @@ export const useActivityStore = defineStore("activity", {
         enrollCount?: number;
         participantAvatars?: string[];
         isEnrolled?: boolean;
+        // R4（2026-08-09）：活动分类与封面（场景展示）
+        category?: string;
+        coverImage?: string;
       },
     ): ActivityItem {
       return {
@@ -378,6 +387,8 @@ export const useActivityStore = defineStore("activity", {
         enrollmentCount: raw.enrollmentCount ?? raw.enrollCount ?? 0,
         participantAvatars: raw.participantAvatars ?? [],
         isEnrolled: raw.isEnrolled ?? false,
+        category: raw.category ?? "other",
+        coverImage: raw.coverImage ?? undefined,
       };
     },
   },

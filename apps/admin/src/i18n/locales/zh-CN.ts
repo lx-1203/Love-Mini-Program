@@ -332,6 +332,12 @@ export default {
     statusEnded: "已结束",
     columnId: "ID",
     columnTitle: "标题",
+    /* R4（2026-08-09）：活动分类列（标准表格按分类划分） */
+    columnCategory: "分类",
+    filterCategoryAll: "全部分类",
+    categoryLabel: "活动分类",
+    coverImageLabel: "封面图 URL",
+    coverImagePlaceholder: "可留空，使用默认封面",
     columnLocation: "地点",
     columnCampus: "校区",
     columnStatus: "状态",

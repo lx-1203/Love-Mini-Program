@@ -11,13 +11,15 @@ public interface ActivityService {
 
     /**
      * 获取活动列表。
-     * 可按校区名称过滤，返回分页结果。
+     * 可按校区名称 / 分类过滤，返回分页结果。
      *
      * @param campusName 校区名称（可选，为 null 则不过滤）
+     * @param category   活动分类 code（可选，为 null/blank 则不过滤）
+     * @param userId     当前用户 ID（可选，计算 isEnrolled）
      * @param pageable   分页参数
      * @return 活动视图分页列表
      */
-    Page<ActivityView> getActivities(String campusName, Pageable pageable);
+    Page<ActivityView> getActivities(String campusName, String category, Long userId, Pageable pageable);
 
     /**
      * 获取活动详情。

@@ -136,17 +136,17 @@ public class MockCampusService implements CampusService {
                 new ActivityView(
                         201L, "图书馆南门咖啡散步", "南门咖啡馆", "周四 19:00-20:00",
                         "在安静的咖啡馆里，和志同道合的朋友一起聊天放松",
-                        12, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(2)
+                        12, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(2), "food", null, false
                 ),
                 new ActivityView(
                         202L, "电影社轻松线下碰面", "影像楼 B 厅", "周六 15:00-17:00",
                         "一起看电影，认识新朋友",
-                        8, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(4)
+                        8, List.of(), "upcoming", LocalDate.now(TimeZones.BUSINESS).plusDays(4), "game", null, false
                 ),
                 new ActivityView(
                         203L, "周末篮球友谊赛", "体育馆", "周日 10:00-12:00",
                         "篮球爱好者集合，友谊第一比赛第二",
-                        20, List.of(), "ongoing", LocalDate.now(TimeZones.BUSINESS).plusDays(5)
+                        20, List.of(), "ongoing", LocalDate.now(TimeZones.BUSINESS).plusDays(5), "sports", null, false
                 )
         );
     }

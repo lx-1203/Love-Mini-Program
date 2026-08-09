@@ -381,6 +381,17 @@ export default {
     cardAria: "活动：{title}",
     emptyForDate: "当日暂无活动",
     detailNavTitle: "活动详情",
+    /* R4（2026-08-09）：活动分类标签（与后端 category code 对应） */
+    category: {
+      social: "联谊",
+      sports: "运动",
+      game: "桌游",
+      study: "学习",
+      volunteer: "志愿",
+      food: "美食",
+      music: "音乐",
+      other: "其他",
+    },
     timeLabel: "时间",
     locationLabel: "地点",
     introLabel: "活动介绍",
@@ -392,12 +403,9 @@ export default {
     enrollFailedToast: "操作失败，请重试",
     quitSignup: "退出报名",
     quitSignupSuccess: "已退出报名",
-    /* 发给朋友（私聊活动卡片） */
-    sendToFriend: "发给朋友",
-    sendToFriendTag: "活动推荐",
-    sendToFriendEmpty: "暂无会话，去消息页聊聊吧",
-    sendToFriendDone: "已发送给 {name}",
-    sendToFriendFailed: "发送失败，请重试",
+    /* 分享（微信卡片/朋友圈跳转链接） */
+    share: "分享",
+    shareTitle: "快来参加「{title}」",
     statusOpen: "报名中",
     statusOngoing: "进行中",
     statusUpcoming: "预告",

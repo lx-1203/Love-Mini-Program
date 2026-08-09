@@ -33,6 +33,8 @@ import {
   type ActivityForm,
   type ActivityStatus,
   type ActivitySummary,
+  type ActivityCategory,
+  ACTIVITY_CATEGORY_LABELS,
 } from "../../api/activities";
 import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
@@ -53,6 +55,8 @@ const errorMsg = ref("");
 const keyword = ref("");
 const statusFilter = ref<"" | ActivityStatus>("");
 const publishedFilter = ref<"" | "true" | "false">("");
+// R4（2026-08-09）：活动分类筛选
+const categoryFilter = ref<"" | ActivityCategory>("");
 
 // ===== 分页状态 =====
 const page = ref(1);
@@ -75,6 +79,7 @@ async function fetchActivities(): Promise<void> {
       keyword: keyword.value.trim() || undefined,
       status: statusFilter.value || undefined,
       published: publishedFilter.value === "" ? undefined : publishedFilter.value === "true",
+      category: categoryFilter.value || undefined,
     });
     if (isStale(seq)) return; // 丢弃过期响应
     activities.value = result.items;
@@ -104,6 +109,7 @@ function handleResetFilters(): void {
   keyword.value = "";
   statusFilter.value = "";
   publishedFilter.value = "";
+  categoryFilter.value = "";
   handleSearch();
 }
 
@@ -123,6 +129,9 @@ interface ActivityFormState {
   campusName: string;
   activityDate: string;
   status: ActivityStatus;
+  // R4（2026-08-09）：活动分类与封面（场景展示）
+  category: ActivityCategory;
+  coverImage: string;
 }
 
 const formVisible = ref(false);
@@ -137,6 +146,8 @@ const form = ref<ActivityFormState>({
   campusName: "",
   activityDate: "",
   status: "upcoming",
+  category: "other",
+  coverImage: "",
 });
 const saving = ref(false);
 const modalError = ref("");
@@ -152,6 +163,8 @@ function resetForm(): void {
     campusName: "",
     activityDate: "",
     status: "upcoming",
+    category: "other",
+    coverImage: "",
   };
 }
 
@@ -177,6 +190,8 @@ async function openEdit(activity: ActivitySummary): Promise<void> {
       campusName: detail.campusName ?? "",
       activityDate: detail.activityDate ?? "",
       status: detail.status ?? "upcoming",
+      category: detail.category ?? "other",
+      coverImage: detail.coverImage ?? "",
     };
     editingId.value = activity.id;
     modalError.value = "";
@@ -222,6 +237,8 @@ async function handleSave(): Promise<void> {
     campusName: f.campusName.trim() || undefined,
     activityDate: f.activityDate || undefined,
     status: f.status,
+    category: f.category,
+    coverImage: f.coverImage.trim() || undefined,
   };
   saving.value = true;
   modalError.value = "";
@@ -354,6 +371,11 @@ onMounted(() => {
         <option value="true">{{ t("activities.published") }}</option>
         <option value="false">{{ t("activities.unpublished") }}</option>
       </select>
+      <!-- R4（2026-08-09）：活动分类筛选（标准表格按分类划分） -->
+      <select v-model="categoryFilter" class="filter-select" @change="handleSearch">
+        <option value="">{{ t("activities.filterCategoryAll") }}</option>
+        <option v-for="(label, code) in ACTIVITY_CATEGORY_LABELS" :key="code" :value="code">{{ label }}</option>
+      </select>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
       <button class="primary-button" @click="openCreate">{{ t("activities.createButton") }}</button>
     </view>
@@ -366,6 +388,8 @@ onMounted(() => {
           <tr>
             <th scope="col">{{ t("activities.columnId") }}</th>
             <th scope="col">{{ t("activities.columnTitle") }}</th>
+            <!-- R4（2026-08-09）：活动分类列（标准表格按分类划分） -->
+            <th scope="col">{{ t("activities.columnCategory") }}</th>
             <th scope="col">{{ t("activities.columnLocation") }}</th>
             <th scope="col">{{ t("activities.columnCampus") }}</th>
             <th scope="col">{{ t("activities.columnStatus") }}</th>
@@ -378,14 +402,17 @@ onMounted(() => {
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="10" class="empty-row">{{ t("common.loading") }}</td>
+            <td colspan="11" class="empty-row">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="activities.length === 0">
-            <td colspan="10" class="empty-row">{{ t("activities.noData") }}</td>
+            <td colspan="11" class="empty-row">{{ t("activities.noData") }}</td>
           </tr>
           <tr v-for="activity in activities" :key="activity.id">
             <td>{{ activity.id }}</td>
             <td class="title-cell">{{ activity.title }}</td>
+            <td>
+              <span class="category-badge">{{ ACTIVITY_CATEGORY_LABELS[activity.category] ?? activity.category }}</span>
+            </td>
             <td>{{ activity.location }}</td>
             <td>{{ activity.campusName ?? "—" }}</td>
             <td>
@@ -472,6 +499,19 @@ onMounted(() => {
             </select>
           </view>
         </view>
+        <!-- R4（2026-08-09）：活动分类与封面（场景展示） -->
+        <view class="form-row form-row-inline">
+          <view class="form-col">
+            <text class="form-label">{{ t("activities.categoryLabel") }}</text>
+            <select v-model="form.category" class="form-input">
+              <option v-for="(label, code) in ACTIVITY_CATEGORY_LABELS" :key="code" :value="code">{{ label }}</option>
+            </select>
+          </view>
+          <view class="form-col">
+            <text class="form-label">{{ t("activities.coverImageLabel") }}</text>
+            <input v-model="form.coverImage" class="form-input" type="text" maxlength="512" :placeholder="t('activities.coverImagePlaceholder')" />
+          </view>
+        </view>
 
         <text v-if="modalError" class="modal-error">{{ modalError }}</text>
 
@@ -516,6 +556,18 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* R4（2026-08-09）：活动分类徽章（标准表格按分类划分） */
+.category-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--admin-color-primary, #3fcf8e);
+  background: color-mix(in srgb, var(--admin-color-primary, #3fcf8e) 12%, transparent);
+  white-space: nowrap;
 }
 
 .time-cell {

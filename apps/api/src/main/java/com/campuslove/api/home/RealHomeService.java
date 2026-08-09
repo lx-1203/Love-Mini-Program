@@ -222,7 +222,7 @@ public class RealHomeService implements HomeService {
      */
     private ActivityPreviewView aggregateActivities() {
         try {
-            Page<ActivityView> activities = activityService.getActivities(null, PageRequest.of(0, MAX_ACTIVITY_COUNT));
+            Page<ActivityView> activities = activityService.getActivities(null, null, null, PageRequest.of(0, MAX_ACTIVITY_COUNT));
             List<ActivityPreviewItemView> items = activities.getContent().stream()
                 .map(activity -> new ActivityPreviewItemView(
                     String.valueOf(activity.id()),

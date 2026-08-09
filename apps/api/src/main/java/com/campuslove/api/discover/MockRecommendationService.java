@@ -101,7 +101,9 @@ public class MockRecommendationService implements RecommendationService {
         activity.participantAvatars(),
         "upcoming",
         LocalDate.now(TimeZones.BUSINESS).plusDays(1),
-        isEnrolled
+        isEnrolled,
+        "other",
+        null
     );
   }
 

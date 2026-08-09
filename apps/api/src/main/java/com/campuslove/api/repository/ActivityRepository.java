@@ -34,6 +34,14 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
      */
     Page<Activity> findByCampusNameAndStatusOrderByActivityDateAsc(String campusName, ActivityStatus status, Pageable pageable);
 
+    /** 按校区 + 分类筛选 upcoming 活动（R4 2026-08-09） */
+    Page<Activity> findByCampusNameAndStatusAndCategoryOrderByActivityDateAsc(
+            String campusName, ActivityStatus status, String category, Pageable pageable);
+
+    /** 按分类筛选 upcoming 活动（R4 2026-08-09） */
+    Page<Activity> findByStatusAndCategoryOrderByActivityDateAsc(
+            ActivityStatus status, String category, Pageable pageable);
+
     /**
      * 数据库侧原子递增报名人数（消除并发报名计数丢失）。
      *
@@ -65,6 +73,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
      * @param status     活动状态筛选（upcoming/ongoing/ended），null 表示不筛选
      * @param published  上架状态筛选（true/false），null 表示不筛选
      * @param campusName 校区名称筛选（精确匹配），null 表示不筛选
+     * @param category   活动分类筛选（精确匹配），null 表示不筛选（R4 2026-08-09）
      * @param pageable   分页参数
      * @return 分页活动列表
      */
@@ -74,6 +83,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
               AND (:status IS NULL OR a.status = :status)
               AND (:published IS NULL OR a.published = :published)
               AND (:campusName IS NULL OR a.campusName = :campusName)
+              AND (:category IS NULL OR a.category = :category)
             ORDER BY a.createdAt DESC
             """)
     Page<Activity> searchForAdmin(
@@ -81,5 +91,6 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
             @Param("status") ActivityStatus status,
             @Param("published") Boolean published,
             @Param("campusName") String campusName,
+            @Param("category") String category,
             Pageable pageable);
 }
