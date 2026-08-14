@@ -348,7 +348,8 @@ const basicInfoItems = computed(() => {
   const items: Array<{ label: string; value: string }> = [];
   if (card.height) items.push({ label: t("cardDetail.heightLabel"), value: `${card.height}${t("cardDetail.heightUnit")}` });
   if (card.occupation) items.push({ label: t("cardDetail.occupationLabel"), value: card.occupation });
-  items.push({ label: t("cardDetail.incomeLabel"), value: incomeLabel.value });
+  // 2026-08-14 修复：收入为空时隐藏该项（与身高/职业一致），不再显示 "--"
+  if (card.incomeRange) items.push({ label: t("cardDetail.incomeLabel"), value: incomeLabel.value });
   if (card.relationshipStatus) {
     const map: Record<string, string> = {
       never: t("discover.relationshipNever"),

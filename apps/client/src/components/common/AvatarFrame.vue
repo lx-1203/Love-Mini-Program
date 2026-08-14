@@ -60,21 +60,44 @@ const frameStyle = computed(() => ({
 .avatar-frame {
   position: relative;
   display: inline-flex;
+  /* 2026-08-14：内部根节点撑满宿主 + flex 居中；
+     宿主与内部根是不同节点，父级 inline style 只作用于宿主，根节点必须自行 100% */
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
 /* 渐变环：多色渐变 + 白内边（QQ 头像框的「白框 + 彩色描边」结构） */
 .avatar-frame__ring {
-  padding: var(--sp-2);
+  /* 2026-08-14 修复：显式撑满宿主，避免 mp-weixin 下塌缩为渐变条 */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 适度强化：加粗环 + 白描边 + 发光，深色卡片背景上一眼可辨 */
+  padding: 10rpx;
   border-radius: var(--r-full);
   background: var(--af-gradient);
-  box-shadow: 0 0 24rpx var(--af-glow);
+  border: 2rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 2rpx rgba(255, 255, 255, 0.5),
+    0 0 24rpx var(--af-glow);
 }
 
 /* 内层白圈：承载头像内容（slot），让头像与彩色环之间留出白边 */
 .avatar-frame__inner {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--r-full);
-  padding: 6rpx;
+  padding: 8rpx;
   background: var(--c-neutral-0);
   overflow: hidden;
 }

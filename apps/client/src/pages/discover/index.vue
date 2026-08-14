@@ -714,7 +714,7 @@ onShareAppMessage(() => {
     <!-- B6：后台关闭匹配/推荐功能（match_open / recommend_open=false）→
          关闭提示替代卡片区（优雅降级，浏览不中断；后端同步返回空列表） -->
     <view v-if="!isMatchOpen" class="card-empty-wrap">
-      <EmptyState type="no-data" :message="t('discover.matchClosed')" />
+      <EmptyState type="no-data" :image="IMAGE_PATHS.ICONS_COMMON.HEART" :message="t('discover.matchClosed')" />
     </view>
 
     <!-- 加载状态：2026-08-12 卡顿修复——仅首次无卡时显示骨架屏；
@@ -733,6 +733,7 @@ onShareAppMessage(() => {
     <!-- 空状态：错误/未登录/配额耗尽/空列表统一收纳，主体始终有居中的说明与可点击动作（杜绝大面积空白） -->
     <view v-else-if="isMatchOpen && cards.length === 0" class="card-empty-wrap">
       <EmptyState
+        :image="errorMessage ? '' : IMAGE_PATHS.ICONS_COMMON.HEART"
         :type="errorMessage ? 'network' : 'no-data'"
         :message="
           errorMessage
@@ -1007,7 +1008,7 @@ onShareAppMessage(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 260rpx;
+  max-width: 320rpx;
 }
 
 .filter-chip__chevron {

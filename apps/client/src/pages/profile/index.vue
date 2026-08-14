@@ -512,10 +512,15 @@ const genderGradeLabel = computed(() => {
  *  2026-08-13：改读 basicProfileSource（他人态无位置字段，回退校区/学校） */
 const locationLabel = computed(() => {
   const b = basicProfileSource.value;
-  const home = [b?.hometownProvince, b?.hometownCity]
+  const homeParts = [b?.hometownProvince, b?.hometownCity]
     .map((s) => s?.trim())
-    .filter(Boolean)
-    .join("");
+    .filter(Boolean);
+  // 2026-08-14 修复：省/市用 " · " 连接；省=市时只显示一个，避免「北京北京」重复
+  const home = homeParts.length === 0
+    ? ""
+    : (homeParts.length > 1 && homeParts[0] === homeParts[1]
+        ? homeParts[0]
+        : homeParts.join(" · "));
   const future = b?.futureCity?.trim();
   const prefix = t("discover.futureCityPrefix");
   if (future) {
@@ -3165,7 +3170,8 @@ onUnload(() => {
   position: relative;
   z-index: 1;
   width: 100%;
-  margin: var(--sp-5) var(--sp-7) 0;
+  /* 2026-08-14：底部留白，避免成就区被自定义 TabBar 遮挡 */
+  margin: var(--sp-5) var(--sp-7) 24rpx;
   background: var(--c-bg-container);
   border-radius: var(--r-xl);
   box-shadow: var(--s-card-soft);

@@ -639,6 +639,26 @@ function openAccountBinding() {
             </view>
           </view>
 
+      <view class="terms-wrap">
+        <view
+          class="checkbox press-feedback"
+          :class="{ 'checkbox--checked': agreed }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          @tap="onAgreeTap"
+          role="checkbox"
+          :aria-checked="agreed ? 'true' : 'false'"
+          :aria-label="t('login.agreedPrefix')"
+        >
+          <image v-if="agreed" class="checkbox-check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
+        </view>
+        <view class="terms-text-wrap">
+          <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
+          <text class="terms-link" @tap="openUserAgreement" role="link" :aria-label="t('login.userAgreementLink')">{{ t('login.userAgreementLink') }}</text>
+          <text class="terms-text">{{ t('login.and') }}</text>
+          <text class="terms-link" @tap="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
+        </view>
+      </view>
           <view class="form-btns">
             <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
               <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
@@ -672,27 +692,6 @@ function openAccountBinding() {
           <text class="showcase-entry__desc">{{ t('login.showcaseEntryDesc') }}</text>
         </view>
         <text class="showcase-entry__arrow">›</text>
-      </view>
-
-      <view class="terms-wrap">
-        <view
-          class="checkbox press-feedback"
-          :class="{ 'checkbox--checked': agreed }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          @tap="onAgreeTap"
-          role="checkbox"
-          :aria-checked="agreed ? 'true' : 'false'"
-          :aria-label="t('login.agreedPrefix')"
-        >
-          <image v-if="agreed" class="checkbox-check" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
-        </view>
-        <view class="terms-text-wrap">
-          <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
-          <text class="terms-link" @tap="openUserAgreement" role="link" :aria-label="t('login.userAgreementLink')">{{ t('login.userAgreementLink') }}</text>
-          <text class="terms-text">{{ t('login.and') }}</text>
-          <text class="terms-link" @tap="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
-        </view>
       </view>
 
       <!-- 功能2：其他登录方式（Apple 登录 + 账号绑定入口） -->

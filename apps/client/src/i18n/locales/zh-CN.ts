@@ -640,7 +640,7 @@ export default {
     cardSkeletonHint: "正在为你挑选推荐...",
     /* 命名空间下嵌套写法：t('discover.card.emptyTitle') / t('discover.card.refresh') */
     card: {
-      emptyTitle: "暂无推荐卡片",
+      emptyTitle: "附近暂时没有新的人，稍后再来看看",
       refresh: "刷新推荐",
       // P0-31 修复（2026-08-08）：后端配额耗尽时的空态文案
       quotaExhaustedTitle: "今日推荐次数已用完，明天再来吧",
@@ -2344,7 +2344,7 @@ export default {
   /* ========== 卡片详情覆盖层文案 ========== */
   cardDetail: {
     detailTitle: "资料详情",
-    homePage: "主页",
+    homePage: "完整资料",
     ageUnit: "岁",
     ageLabel: "年龄",
     heightLabel: "身高",
@@ -2388,7 +2388,7 @@ export default {
     superLikeAria: "超级喜欢",
     likeAria: "喜欢",
     messageAria: "发消息",
-    homePageAria: "查看个人主页",
+    homePageAria: "查看完整资料",
     bioToggleAria: "展开或收起个人简介",
     personalityTags: "开朗外向,温柔体贴,幽默风趣,文艺安静",
     avatarHeroAria: "查看头像大图",

@@ -640,7 +640,7 @@ export default {
     cardSkeletonHint: "Picking recommendations for you...",
     /* Nested namespace: t('discover.card.emptyTitle') / t('discover.card.refresh') */
     card: {
-      emptyTitle: "No recommendation cards",
+      emptyTitle: "No new people nearby for now. Check back later.",
       // P0-31 fix: quota exhausted empty state
       quotaExhaustedTitle: "Daily recommendation limit reached, come back tomorrow",
       refresh: "Refresh recommendations",
@@ -2575,7 +2575,7 @@ export default {
   /* ========== Card detail overlay ========== */
   cardDetail: {
     detailTitle: "Profile details",
-    homePage: "Profile",
+    homePage: "Full profile",
     ageUnit: "y/o",
     ageLabel: "Age",
     heightLabel: "Height",
@@ -2619,7 +2619,7 @@ export default {
     superLikeAria: "Super like",
     likeAria: "Like",
     messageAria: "Send message",
-    homePageAria: "View profile page",
+    homePageAria: "View full profile",
     bioToggleAria: "Expand or collapse bio",
     personalityTags: "Outgoing,Gentle,Humorous,Artistic",
     avatarHeroAria: "Preview avatar",
