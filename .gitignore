@@ -253,3 +253,8 @@ __pycache__/
 
 # 微信开发者工具个人配置（含个人 openid，禁止提交）
 project.private.config.json
+
+# Playwright 运行产物（不应入库）
+tests/e2e/test-results/
+tests/e2e/tests/
+
