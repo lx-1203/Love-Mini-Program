@@ -7,6 +7,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
+import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { useActivityStore } from "../../stores/activity";
 import { useCheckInStore } from "../../stores/checkin";
 import { useSocialProgressStore } from "../../stores/social-progress";
@@ -14,9 +15,12 @@ import { useDiscoverStore } from "../../stores/discover";
 import { useScheduleStore, WEEK_DAYS } from "../../stores/schedule";
 import { useSessionStore } from "../../stores/session";
 import { TOAST_DURATION } from "../../constants/limits";
-import { featureFlags } from "../../config/feature-flags";
 import { openAppPath } from "../../utils/navigation";
+import { ROUTES } from "../../constants/routes";
 import { useTabBar } from "../../composables/useTabBar";
+// 2026-08-10 切换提速：首页数据 30s TTL
+import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
+import { useMock } from "../../stores/helpers/use-mock";
 // 学校选择器数据源（i18n-data-review #16：复用 config/schools.ts，避免与页面内联数组重复）
 import { SCHOOLS } from "../../config/schools";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
@@ -184,8 +188,18 @@ function refreshHomeData() {
   loadHomeData();
 }
 
-/** D1 修复：集中首页数据请求，登录态守卫下统一调用 */
+/** D1 修复：集中首页数据请求，登录态守卫下统一调用。
+ * 2026-08-12 卡顿修复：TTL 过期时不再「等待请求完成才渲染」——
+ * 各 store 内部已保留旧数据（fetch 不清空），请求在后台静默刷新，
+ * 切回首页立即显示旧内容（SWR 语义），弱网下无白屏等待。
+ */
 function loadHomeData() {
+  // 2026-08-10 切换提速：30s 新鲜度窗口（tab 切回首页不再重复触发 3 个请求）
+  if (!useMock() && isCacheFresh("home:data", 30_000)) {
+    return;
+  }
+  // 提前打时间戳：即使请求失败也在 30s 内不重复触发（避免弱网下每次切回都发 3 请求）
+  setCachedValue("home:data", true);
   void activityStore.fetchActivities();
   void checkInStore.fetchStatus();
   void socialProgressStore.fetchProgress();
@@ -195,6 +209,18 @@ function loadHomeData() {
 const scheduleStore = useScheduleStore();
 const weekDays = WEEK_DAYS;
 const currentDay = ref(0);
+
+/**
+ * 2026-08-10 功能补齐：本周安排改为个人设置里的用户级开关（默认关）。
+ * 开启后首页展示课表区块：已报名活动 + 自编辑条目（编辑入口跳转 setup/schedule）。
+ */
+const WEEKLY_SCHEDULE_KEY = STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED;
+const weeklyScheduleEnabled = ref(false);
+try {
+  weeklyScheduleEnabled.value = uni.getStorageSync(WEEKLY_SCHEDULE_KEY) === "1";
+} catch (_e) {
+  weeklyScheduleEnabled.value = false;
+}
 
 /** 当前选中天的时段视图（含 item 与 isFree 信息） */
 const currentDaySlots = computed(() =>
@@ -256,16 +282,11 @@ function onSlotTap(slot: { isFree: boolean; item?: { type: string } }): void {
     openAppPath("/subpackages/setup/schedule/index");
     return;
   }
+  // 2026-08-10 功能补齐：添加安排统一跳转课表编辑页（setup/schedule 支持添加/删除时段与自编辑）
   uni.showActionSheet({
     itemList: [t('home.addCourse'), t('home.addActivity'), t('home.addCustom')],
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        uni.showToast({ title: t('home.courseEditing'), icon: "none" });
-      } else if (res.tapIndex === 1) {
-        uni.showToast({ title: t('home.activityEditing'), icon: "none" });
-      } else if (res.tapIndex === 2) {
-        uni.showToast({ title: t('home.customEditing'), icon: "none" });
-      }
+    success: () => {
+      openAppPath('/subpackages/setup/schedule/index');
     },
     fail: (_e) => {
       // 用户取消，无需处理
@@ -452,7 +473,7 @@ defineExpose({ noop });
 </script>
 
 <template>
-  <view class="home-page page-fade-in">
+  <view class="home-page">
     <!-- 学校选择弹窗（任务 C：已绑定后不再展示切换列表） -->
     <view v-if="showSchoolPicker && !schoolBound" class="school-picker" role="button" :aria-label="t('common.closeAria')" @tap="showSchoolPicker = false">
       <view class="school-picker__content" catchtap="noop">
@@ -492,8 +513,8 @@ defineExpose({ noop });
           </view>
         </view>
 
-        <!-- 搜索框 -->
-        <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.searchPlaceholder')" @tap="openAppPath('/pages/discover/index')">
+        <!-- 搜索框（2026-08-11：跳转独立帖子搜索页） -->
+        <view class="search-box press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('home.searchPlaceholder')" @tap="openAppPath(ROUTES.SEARCH)">
           <image class="search-icon" :src="emojiIcons.search" mode="aspectFit" alt="" />
           <text class="search-placeholder">{{ t('home.searchPlaceholder') }}</text>
         </view>
@@ -628,7 +649,7 @@ defineExpose({ noop });
           <view class="activity-list" role="list">
             <view
               v-for="item in activityStore.activities.slice(0, 5)" :key="item.id"
-              class="activity-card-new list-item"
+              class="activity-card-new"
               role="button"
               :aria-label="t('home.activityCardAria', { title: item.title, time: item.scheduleText })"
               @tap="openActivityDetail(item.id)"
@@ -664,8 +685,9 @@ defineExpose({ noop });
 
       <!-- Phase Feedback2：为你推荐已移除（反馈明确不需要） -->
 
-      <!-- 本周安排（Phase Feedback2：默认隐藏，待 OCR 课表方案确认后开启 featureFlags.weeklyScheduleEnabled） -->
-      <view v-if="featureFlags.weeklyScheduleEnabled" class="section-wrap">
+      <!-- 本周安排（2026-08-10：个人设置用户级开关控制） -->
+      <!-- 2026-08-10：本周安排改为个人设置用户级开关（settings 页「本周安排」） -->
+      <view v-if="weeklyScheduleEnabled" class="section-wrap">
         <view class="section-header">
           <text class="section-title section-title-brand">{{ t('home.weeklySchedule') }}</text>
           <text
@@ -1657,5 +1679,5 @@ defineExpose({ noop });
 }
 
 /* ========== 页面进入动画 ========== */
-/* page-fade-in 已统一在 App.vue 中定义（300ms），此处不再重复 */
+/* 已统一在 App.vue 中定义（300ms），此处不再重复 */
 </style>

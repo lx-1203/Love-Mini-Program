@@ -90,7 +90,9 @@ public final class PrivacyFieldFilter {
             "ipLocation",      // IP 属地
             "occupation",      // 职业（展示文本）
             "age",             // 年龄（出生年份推导）
-            "registeredAt"     // 注册时间
+            "registeredAt",    // 注册时间
+            // ---- V3（2026-08-12）：他人主页背景 ----
+            "profileBackgroundUrl" // 个人主页背景图 URL（用户主动上传，可公开）
             // 注意：月收入档位（incomeRange）不在白名单且已从 RecommendedPersonView 移除
             // （R4-00337）——收入档位属敏感经济信息，不随推荐列表对全体用户公开
     );

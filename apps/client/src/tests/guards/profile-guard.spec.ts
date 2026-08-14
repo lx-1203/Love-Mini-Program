@@ -118,11 +118,15 @@ describe("profile-guard", () => {
     expect(result.shouldShowModal).toBeUndefined();
   });
 
-  it("LOCKED_PAGES contains the three protected pages (excluding profile)", () => {
+  it("LOCKED_PAGES contains the five protected pages (excluding profile)", () => {
     expect(LOCKED_PAGES).toContain("/pages/likes/index");
     expect(LOCKED_PAGES).toContain("/pages/village/index");
     expect(LOCKED_PAGES).toContain("/pages/messages/index");
+    // 2026-08-13：likes-visitors / heart-signals 与 likes 同属「喜欢与访客」功能域，
+    // 统一弹 UnlockGuideModal（原落 session-guard 静默重定向，体验不一致）
+    expect(LOCKED_PAGES).toContain("/pages/likes-visitors/index");
+    expect(LOCKED_PAGES).toContain("/pages/heart-signals/index");
     expect(LOCKED_PAGES).not.toContain("/pages/profile/index");
-    expect(LOCKED_PAGES).toHaveLength(3);
+    expect(LOCKED_PAGES).toHaveLength(5);
   });
 });

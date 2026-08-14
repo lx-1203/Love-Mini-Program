@@ -5,6 +5,7 @@
  * mock 模式下默认展示"已认证"状态
  */
 import { ref, computed, onUnmounted } from "vue";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../utils/haptic";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -13,6 +14,10 @@ import { TOAST_DURATION } from "../../constants/limits";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
 import { isMockMode } from "../../services/env";
+// 3-A 恋爱认证 real 链路：GET/POST /verification（mock 分支保留本地演示逻辑）
+import { useMock } from "../../stores/helpers/use-mock";
+import { request } from "../../services/http";
+import { clientApi } from "../../services/api";
 
 const { t } = useI18n();
 
@@ -23,6 +28,22 @@ const MIN_TOAST_MS = 1000;
 
 /** 认证状态：unverified | pending | verified | rejected */
 type VerifyStatus = "unverified" | "pending" | "verified" | "rejected";
+
+/**
+ * 后端恋爱认证视图（GET /verification 响应载荷，3-A）。
+ * 未提交过申请时 status 为 null（前端映射为 unverified）。
+ */
+interface LoveVerificationView {
+  id: number | null;
+  status: "pending" | "approved" | "rejected" | null;
+  studentName: string | null;
+  studentId: string | null;
+  schoolName: string | null;
+  studentIdCardUrl: string | null;
+  rejectReason: string | null;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+}
 
 /** 当前认证状态（mock 模式默认 verified） */
 const status = ref<VerifyStatus>("unverified");
@@ -38,6 +59,9 @@ const uploadedImagePath = ref("");
 
 /** 是否正在提交 */
 const submitting = ref(false);
+
+/** real 模式：驳回原因（仅 rejected 状态下有值，展示在状态卡片） */
+const rejectReason = ref("");
 
 /** 提交定时器引用，用于卸载时清理 */
 let submitTimer: ReturnType<typeof setTimeout> | null = null;
@@ -65,7 +89,10 @@ const statusInfo = computed(() => {
       return {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_FAIL,
         title: t("verification.statusRejected"),
-        desc: t("verification.statusRejectedDesc"),
+        // real 模式：驳回原因追加到描述（mock 模式无原因展示原文案）
+        desc: rejectReason.value
+          ? `${t("verification.statusRejectedDesc")}\n${t("verification.rejectReasonLabel")}：${rejectReason.value}`
+          : t("verification.statusRejectedDesc"),
         color: "var(--c-error, #E5454D)",
         bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
       };
@@ -80,12 +107,20 @@ const statusInfo = computed(() => {
   }
 });
 
-/** 认证权益列表 */
+/** 认证权益列表（B4 强化，2026-08-13：新增第 5 项「互动资格」） */
 const benefits = computed(() => [
   { icon: IMAGE_PATHS.ICONS_EMOJI.TARGET, title: t("verification.benefitBadgeTitle"), desc: t("verification.benefitBadgeDesc") },
   { icon: IMAGE_PATHS.ICONS_EMOJI.SCORE, title: t("verification.benefitTrustTitle"), desc: t("verification.benefitTrustDesc") },
   { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: t("verification.benefitMatchTitle"), desc: t("verification.benefitMatchDesc") },
   { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: t("verification.benefitPerksTitle"), desc: t("verification.benefitPerksDesc") },
+  { icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: t("verification.benefitInteractTitle"), desc: t("verification.benefitInteractDesc") },
+]);
+
+/** 认证流程步骤（B4 强化：上传学生证 → 人工审核 → 认证通过） */
+const processSteps = computed(() => [
+  { step: "1", title: t("verification.processStep1Title"), desc: t("verification.processStep1Desc") },
+  { step: "2", title: t("verification.processStep2Title"), desc: t("verification.processStep2Desc") },
+  { step: "3", title: t("verification.processStep3Title"), desc: t("verification.processStep3Desc") },
 ]);
 
 /** 选择学生证图片
@@ -152,22 +187,156 @@ function submitVerification() {
   submitting.value = true;
   uni.showLoading({ title: t("verification.submitting") });
 
-  // TODO(后端): 无恋爱认证提交接口（services/api.ts 仅有 campus/certification 相关链路，
-  // 未提供学生证提交审核端点）。当前为本地模拟：1s 后置为 pending；
-  // 接口就绪后应上传 uploadedImagePath 换取 URL 并调用 POST /verification 提交。
-  if (submitTimer) clearTimeout(submitTimer);
-  submitTimer = setTimeout(() => {
-    submitting.value = false;
-    uni.hideLoading();
-    status.value = "pending";
+  // Mock 分支：保留本地演示逻辑（1s 后置为 pending）
+  if (useMock()) {
+    if (submitTimer) clearTimeout(submitTimer);
+    submitTimer = setTimeout(() => {
+      submitting.value = false;
+      uni.hideLoading();
+      status.value = "pending";
+      uni.showToast({
+        title: t("verification.submitSuccess"),
+        icon: "success",
+        duration: TOAST_DURATION.SHORT_MS,
+      });
+      submitTimer = null;
+    }, 1000);
+    return;
+  }
+
+  // Real 分支（3-A）：先上传学生证图片换取可访问 URL（对齐 campus/certification 链路），
+  // 再 POST /verification 提交；重复提交（pending/approved）后端返回 409 业务冲突。
+  void submitVerificationReal();
+}
+
+/**
+ * real 模式提交认证申请（与 mock 分支解耦，便于异常处理收敛）。
+ * - 本地临时路径先经 clientApi.uploadPostImage 上传换取 URL；
+ * - 后端 409（已有 pending/approved 申请）提示「已有申请审核中」；
+ * - 提交成功后重新拉取状态（pending）。
+ */
+async function submitVerificationReal(): Promise<void> {
+  try {
+    let cardUrl = uploadedImagePath.value;
+    // 非 http(s) 开头视为本地临时路径：上传换取可访问 URL，否则审核人员无法查看学生证
+    if (!/^https?:\/\//.test(cardUrl)) {
+      const uploaded = await clientApi.uploadPostImage({
+        name: "love-verification-id-card",
+        path: cardUrl,
+      });
+      cardUrl = uploaded?.url ?? cardUrl;
+    }
+    await request<LoveVerificationView, { studentName: string; studentId: string; schoolName: string; studentIdCardUrl: string }>({
+      url: "/verification",
+      method: "POST",
+      data: {
+        studentName: studentName.value.trim(),
+        studentId: studentId.value.trim(),
+        schoolName: schoolName.value.trim(),
+        studentIdCardUrl: cardUrl,
+      },
+    });
+    // 提交成功后刷新状态（置为 pending 并回显）
+    await loadVerification();
     uni.showToast({
       title: t("verification.submitSuccess"),
       icon: "success",
       duration: TOAST_DURATION.SHORT_MS,
     });
-    submitTimer = null;
-  }, 1000);
+  } catch (error) {
+    // 409：已有 pending/approved 申请，提示「已有申请审核中」
+    const status =
+      error !== null && typeof error === "object" && "status" in error
+        ? (error as { status: number }).status
+        : 0;
+    const message =
+      error instanceof Error && error.message && error.message.trim().length > 0
+        ? error.message
+        : t("verification.submitFailed");
+    uni.showToast({
+      title: status === 409 ? t("verification.alreadyPending") : message,
+      icon: "none",
+      duration: TOAST_DURATION.SHORT_MS,
+    });
+  } finally {
+    submitting.value = false;
+    uni.hideLoading();
+  }
 }
+
+/**
+ * 将后端恋爱认证视图映射到页面状态。
+ * @param view GET /verification 返回的视图（status 为 null 表示未提交）
+ */
+function applyVerificationView(view: LoveVerificationView): void {
+  const s = view.status;
+  if (s === "approved") {
+    status.value = "verified";
+  } else if (s === "pending") {
+    status.value = "pending";
+  } else if (s === "rejected") {
+    status.value = "rejected";
+  } else {
+    status.value = "unverified";
+  }
+  rejectReason.value = view.rejectReason ?? "";
+  // 回显已提交的信息（驳回后重新提交时表单预填，减少重复输入）
+  if (view.studentName) studentName.value = view.studentName;
+  if (view.studentId) studentId.value = view.studentId;
+  if (view.schoolName) schoolName.value = view.schoolName;
+  if (view.studentIdCardUrl) uploadedImagePath.value = view.studentIdCardUrl;
+}
+
+/**
+ * 拉取当前用户的恋爱认证状态（real 模式）。
+ * mock 模式保留现有本地演示逻辑，不做任何请求。
+ */
+async function loadVerification(): Promise<void> {
+  if (useMock()) return;
+  try {
+    const view = await request<LoveVerificationView>({ url: "/verification", method: "GET" });
+    applyVerificationView(view);
+  } catch (_e) {
+    // 拉取失败保持当前状态（不阻塞页面展示）
+  }
+}
+
+/** 进入页面时拉取认证状态（real 模式）；mock 模式无操作 */
+onLoad(() => {
+  void loadVerification();
+});
+
+/** 审核状态轮询间隔（pending 态自动刷新审核结果，2026-08-10 B2） */
+const VERIFICATION_POLL_MS = 30_000;
+/** pending 态轮询定时器 */
+let verificationPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * pending 态轮询：进入页面与页面再次展示时，若状态为 pending 则每 30s 重拉
+ * GET /verification（审核通过/驳回后自动反映到页面，无需手动刷新）。
+ */
+function startVerificationPolling() {
+  if (useMock()) return;
+  if (verificationPollTimer) {
+    clearTimeout(verificationPollTimer);
+    verificationPollTimer = null;
+  }
+  if (status.value !== "pending") return;
+  verificationPollTimer = setTimeout(async () => {
+    await loadVerification();
+    if (status.value === "pending") {
+      startVerificationPolling();
+    }
+  }, VERIFICATION_POLL_MS);
+}
+
+/** 页面再次展示时续接 pending 轮询（后台期间审核结果可能在返回时已更新） */
+onShow(() => {
+  if (!useMock() && status.value === "pending") {
+    void loadVerification();
+  }
+  startVerificationPolling();
+});
 
 /**
  * 页面卸载时清理定时器，避免内存泄漏。
@@ -179,12 +348,17 @@ onUnmounted(() => {
     clearTimeout(submitTimer);
     submitTimer = null;
   }
+  if (verificationPollTimer) {
+    clearTimeout(verificationPollTimer);
+    verificationPollTimer = null;
+  }
 });
 
 /** 模拟审核通过（mock 模式演示用）
  * R4-00029：函数内增加 isMockMode 守卫——仅 mock/演示模式允许伪造认证通过，
  * 防止未来其他调用点绕过模板 v-if 在真实模式伪造认证状态。
- * TODO(后端): 接入真实审核状态轮询（GET /verification/status）后移除本函数。 */
+ * 2026-08-10 B2：real 模式已接入 GET /verification 状态轮询（pending 态 30s 自动刷新），
+ * 本函数保留仅用于 mock 演示。 */
 function simulateApprove() {
   if (!isMockMode) {
     console.warn("[Verification] simulateApprove 仅允许在 mock 模式调用");
@@ -250,7 +424,7 @@ function onBlur() {
 </script>
 
 <template>
-  <view class="verification-page page-fade-in">
+  <view class="verification-page">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
@@ -270,6 +444,12 @@ function onBlur() {
       </view>
       <text class="status-card__title" :style="{ color: statusInfo.color }">{{ statusInfo.title }}</text>
       <text class="status-card__desc">{{ statusInfo.desc }}</text>
+    </view>
+
+    <!-- B4 认证门控横幅（2026-08-13）：未认证用户仅可浏览，引导完成认证解锁互动 -->
+    <view v-if="status === 'unverified'" class="gate-banner">
+      <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" custom-class="gate-banner__icon" mode="aspectFit" />
+      <text class="gate-banner__text">{{ t('verification.gateBanner') }}</text>
     </view>
 
     <!-- 已认证状态：展示权益 + 重新认证按钮 -->
@@ -341,6 +521,24 @@ function onBlur() {
         </view>
       </view>
 
+      <!-- 认证流程（B4 强化，2026-08-13：上传 → 人工审核 → 通过 三步卡） -->
+      <view class="section">
+        <view class="section__title">
+          <text class="section__title-text">{{ t('verification.processTitle') }}</text>
+        </view>
+        <view class="process-card">
+          <view v-for="(step, index) in processSteps" :key="index" class="process-step">
+            <view class="process-step__badge">
+              <text class="process-step__badge-text">{{ step.step }}</text>
+            </view>
+            <view class="process-step__content">
+              <text class="process-step__title">{{ step.title }}</text>
+              <text class="process-step__desc">{{ step.desc }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <!-- 认证表单 -->
       <view class="section">
         <view class="section__title">
@@ -348,7 +546,7 @@ function onBlur() {
         </view>
         <view class="form-card">
           <!-- 学生姓名 -->
-          <view class="form-item list-item">
+          <view class="form-item">
             <label class="form-item__label" for="verification-student-name">{{ t('verification.labelStudentName') }}</label>
             <input
               id="verification-student-name"
@@ -363,7 +561,7 @@ function onBlur() {
             />
           </view>
           <!-- 学号 -->
-          <view class="form-item list-item">
+          <view class="form-item">
             <label class="form-item__label" for="verification-student-id">{{ t('verification.labelStudentId') }}</label>
             <input
               id="verification-student-id"
@@ -378,7 +576,7 @@ function onBlur() {
             />
           </view>
           <!-- 学校 -->
-          <view class="form-item list-item form-item--no-border">
+          <view class="form-item form-item--no-border">
             <label class="form-item__label" for="verification-school-name">{{ t('verification.labelSchool') }}</label>
             <input
               id="verification-school-name"
@@ -553,6 +751,90 @@ function onBlur() {
   color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
+}
+
+/* ==================== B4 认证门控横幅（2026-08-13） ==================== */
+.gate-banner {
+  position: relative;
+  z-index: 1;
+  margin: 0 24rpx;
+  padding: 20rpx 24rpx;
+  background: var(--c-tint-amber-50, #FFF8E7);
+  border: 1rpx solid var(--c-border-light);
+  border-radius: var(--r-lg, 20rpx);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.gate-banner__icon {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+}
+
+.gate-banner__text {
+  flex: 1;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-warning, #F59E0B);
+  line-height: 1.5;
+}
+
+/* ==================== 认证流程卡（B4 强化） ==================== */
+.process-card {
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl, 24rpx);
+  box-shadow: 0 2rpx 16rpx var(--c-neutral-shadow-xs), 0 1rpx 4rpx var(--c-neutral-shadow-xs);
+  padding: 24rpx 28rpx;
+}
+
+.process-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 20rpx 0;
+
+  & + & {
+    border-top: 1rpx dashed var(--c-border-light);
+  }
+}
+
+.process-step__badge {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+
+.process-step__badge-text {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 700;
+  color: var(--c-text-inverse);
+}
+
+.process-step__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.process-step__title {
+  font-size: var(--fs-lg, 28rpx);
+  font-weight: 600;
+  color: var(--c-text-primary);
+}
+
+.process-step__desc {
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-secondary);
+  line-height: 1.5;
+  white-space: pre-line;
 }
 
 /* ==================== 分组 ==================== */

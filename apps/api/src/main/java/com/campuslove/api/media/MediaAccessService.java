@@ -51,6 +51,16 @@ public class MediaAccessService {
     /** 管理员角色标识，与 JwtAuthenticationFilter 注入的 ROLE_ADMIN 一致 */
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
+    /**
+     * 应用资产目录名（2026-08-10，小程序主包瘦身）。
+     *
+     * <p>装饰性图片（static/generated/images、static/assets/images）经种子脚本
+     * （apps/api/scripts/seed-app-assets.ps1）复制到
+     * {@code {storageRoot}/app-assets/{源相对路径}}，由公开端点
+     * {@code GET /api/v1/media/app-assets/**} 免登录访问。</p>
+     */
+    private static final String APP_ASSETS_DIR = "app-assets";
+
     /** 媒体存储根目录，与 LocalMediaStorageService 共享配置 */
     private final String storageRoot;
 
@@ -131,6 +141,45 @@ public class MediaAccessService {
         MediaType mediaType = probeMediaType(target);
         LOGGER.debug("媒体访问授权通过: targetUserId={}, currentUserId={}, isAdmin={}, path={}",
                 targetUserId, currentUserId, isAdmin, target);
+        return new MediaFile(new FileSystemResource(target), mediaType);
+    }
+
+    /**
+     * 加载应用资产文件（2026-08-10，公开访问，无需登录）。
+     *
+     * <p>存储路径：{@code {storageRoot}/app-assets/{subPath}}，subPath 为源静态路径
+     * 的相对部分（如 {@code generated/images/campus/campus-gate.jpg}，
+     * {@code assets/images/banners/home-banner.jpg}）。</p>
+     *
+     * <p>安全校验与 {@link #loadMedia} 一致：字符级路径穿越校验 +
+     * normalize 后必须仍在 storageRoot 之下 + 文件存在性校验。</p>
+     *
+     * @param subPath 子路径（app-assets 之下的相对路径，可含多级目录）
+     * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
+     * @throws ResponseStatusException 路径非法或文件不存在（400/403/404）
+     */
+    public MediaFile loadAppAsset(String subPath) {
+        // Path Traversal 防护：subPath 字符级校验（复用 loadMedia 同款规则）
+        validateSubPath(subPath);
+
+        Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
+        Path target = root.resolve(Paths.get(APP_ASSETS_DIR, subPath))
+                .toAbsolutePath().normalize();
+        // 二次校验：normalize 后仍在 storageRoot 之下（防御构造的边缘 case）
+        if (!target.startsWith(root)) {
+            LOGGER.error("应用资产路径越界，拒绝访问: target={}, root={}", target, root);
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "路径越界，拒绝访问");
+        }
+
+        // 文件存在性校验
+        if (!Files.exists(target) || !Files.isRegularFile(target)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,
+                    "文件不存在");
+        }
+
+        MediaType mediaType = probeMediaType(target);
+        LOGGER.debug("应用资产访问授权通过: path={}", target);
         return new MediaFile(new FileSystemResource(target), mediaType);
     }
 

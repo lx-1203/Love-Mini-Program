@@ -99,6 +99,7 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
                 org.mockito.ArgumentMatchers.eq("pending"),
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 any(Pageable.class)))
                 .thenReturn(buildPage(List.of(pending, approved)));
         when(userRepository.findByIdIn(List.of(USER_ID)))
@@ -106,7 +107,7 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminMediaAssetSummaryView> view = controller
-                    .listMediaAssets("pending", null, null, 1, 20);
+                    .listMediaAssets("pending", null, null, null, 1, 20);
 
             assertEquals(2, view.total());
             assertEquals(2, view.items().size());
@@ -116,6 +117,7 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
             // pending 优先：仓库层已按 CASE WHEN 排序，此处校验视图透传顺序
             verify(mediaAssetRepository).searchForAdmin(
                     org.mockito.ArgumentMatchers.eq("pending"),
+                    org.mockito.ArgumentMatchers.isNull(),
                     org.mockito.ArgumentMatchers.isNull(),
                     org.mockito.ArgumentMatchers.isNull(),
                     any(Pageable.class));
@@ -129,6 +131,7 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
         when(mediaAssetRepository.searchForAdmin(
                 org.mockito.ArgumentMatchers.eq("pending"),
                 org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq("北京大学"),
                 any(Pageable.class)))
                 .thenReturn(buildPage(List.of(buildAsset("pending", 1L))));
@@ -136,11 +139,12 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
         withUserId(ADMIN_ID, () -> {
             // 传入 other-campus 应被忽略，实际按管辖校区过滤
             AdminPageView<AdminMediaAssetSummaryView> view = controller
-                    .listMediaAssets("pending", null, "其他校区", 1, 20);
+                    .listMediaAssets("pending", null, null, "其他校区", 1, 20);
 
             assertEquals(1, view.total());
             verify(mediaAssetRepository).searchForAdmin(
                     org.mockito.ArgumentMatchers.eq("pending"),
+                    org.mockito.ArgumentMatchers.isNull(),
                     org.mockito.ArgumentMatchers.isNull(),
                     org.mockito.ArgumentMatchers.eq("北京大学"),
                     any(Pageable.class));
@@ -155,12 +159,13 @@ class AdminMediaAssetControllerTest extends ControllerTestBase {
                 org.mockito.ArgumentMatchers.eq("pending"),
                 org.mockito.ArgumentMatchers.eq(USER_ID),
                 org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
                 any(Pageable.class)))
                 .thenReturn(buildPage(List.of(buildAsset("pending", 1L))));
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminMediaAssetSummaryView> view = controller
-                    .listMediaAssets("pending", USER_ID, null, 1, 20);
+                    .listMediaAssets("pending", null, USER_ID, null, 1, 20);
             assertEquals(1, view.total());
         });
     }

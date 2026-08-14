@@ -88,6 +88,14 @@ public class User {
     @Column(name = "phone", length = 32)
     private String phone;
 
+    /**
+     * 出生日期（3-N 未成年人保护）。
+     * <p>注册时必填（RegisterRequest @NotNull），服务端校验年龄 >= 18；
+     * 存量用户可为 null（资料更新时由前端引导补填，后端不强制）。</p>
+     */
+    @Column(name = "birth_date")
+    private java.time.LocalDate birthDate;
+
     /** 资料完善度百分比 (0-100) */
     @Column(name = "profile_completion", nullable = false, columnDefinition = "TINYINT DEFAULT 0")
     private Integer profileCompletion = 0;
@@ -144,8 +152,8 @@ public class User {
 
     /**
      * 账号状态。
-     * <p>取值：active（正常）/ disabled（禁用）。</p>
-     * <p>由管理后台禁用/启用接口维护，disabled 状态的用户禁止登录与写操作。</p>
+     * <p>取值：active（正常）/ disabled（禁用）/ deactivated（已注销，3-E）。</p>
+     * <p>disabled 由管理后台禁用/启用接口维护；deactivated 由用户主动注销（个人数据已匿名化）。</p>
      * <p>与 role 字段正交：role 表示身份（USER/ADMIN），status 表示账号是否可用。</p>
      */
     @Column(name = "status", length = 16, nullable = false, columnDefinition = "VARCHAR(16) DEFAULT 'active'")
@@ -282,6 +290,14 @@ public class User {
         this.phone = phone;
     }
 
+    public java.time.LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(java.time.LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
     public Integer getProfileCompletion() {
         return profileCompletion;
     }
@@ -332,9 +348,14 @@ public class User {
         return "SUPER_ADMIN".equalsIgnoreCase(role);
     }
 
-    /** 是否为禁用状态 */
+    /**
+     * 账号是否不可用（3-E 扩展）。
+     * <p>disabled（管理员禁用）与 deactivated（用户主动注销）均视为不可用：
+     * 登录路径（wechat/phone/apple/guest/refresh）与 JwtAuthenticationFilter
+     * 统一拒绝签发/使用 token（注销用户的会话在其注销时已被吊销，此处兜底防再登录）。</p>
+     */
     public boolean isDisabled() {
-        return "disabled".equalsIgnoreCase(status);
+        return "disabled".equalsIgnoreCase(status) || "deactivated".equalsIgnoreCase(status);
     }
 
     public String getStatus() {

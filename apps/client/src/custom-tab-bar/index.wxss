@@ -58,3 +58,48 @@
 .tab-bar__item--active .tab-bar__label {
   font-weight: 600;
 }
+
+/* ============================================================
+ * A2：激活态指示条（选中项底部绿色小横条，设计稿 48rpx×6rpx 圆角）
+ * ============================================================ */
+.tab-bar__indicator {
+  position: absolute;
+  bottom: 4rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  /* R4-00242：走 --c-brand design token，与激活态文字同源 */
+  background: var(--c-brand, #3FCF8E);
+}
+
+/* ============================================================
+ * A2：消息 Tab 未读角标（图标右上角红点数字）
+ * ============================================================ */
+.tab-bar__icon-wrap {
+  position: relative;
+}
+
+.tab-bar__badge {
+  position: absolute;
+  top: -10rpx;
+  right: -12rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full, 9999rpx);
+  /* A2：红点用 --c-error design token（= #E5454D） */
+  background: var(--c-error, #E5454D);
+}
+
+.tab-bar__badge-text {
+  font-size: 20rpx;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--c-text-inverse, #ffffff);
+}

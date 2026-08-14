@@ -479,8 +479,11 @@ export default {
       loading: "Loading campus friends…",
       loadFailed: "Failed to load, please retry",
       empty: "No campus friends nearby yet",
-      likeHint: "Likes are not supported here — try Discover",
+      likeHint: "It's a match! Say hi",
+      matched: "Matched",
       messageHint: "Open the profile to start a chat",
+      liked: "Liked",
+      operationFailed: "Operation failed, please retry",
     },
     mbti: {
       title: "MBTI Personality Test",
@@ -498,6 +501,19 @@ export default {
       submit: "Submit & See Result",
       resultToast: "Your type: {type}",
       pleaseComplete: "Please complete all questions",
+      /* 2026-08-13：结果弹层（与 zh-CN 对齐） */
+      resultTitle: "Your Test Result",
+      resultClose: "Got it",
+      resultTipPrefix: "Dating tips",
+      retake: "Retake test",
+      adviceE: "Extraverted: take the initiative to meet in person — sparks fly offline",
+      adviceI: "Introverted: start with deep online chats to build a sense of safety",
+      adviceS: "Practical: connect through shared interests and everyday details",
+      adviceN: "Intuitive: talk about ideas and the future — mental resonance is key",
+      adviceT: "Thinking: express needs directly; clear logic works best",
+      adviceF: "Feeling: show care and empathy — emotional response beats reasoning",
+      adviceJ: "Judging: plan dates in advance; reliability is your charm",
+      adviceP: "Perceiving: stay flexible and surprising — spontaneous dates are more fun",
       types: {
         ENFP: "Campaigner", ENTP: "Debater", ENTJ: "Commander", ENFJ: "Protagonist",
         INFP: "Mediator", INTP: "Logician", INTJ: "Architect", INFJ: "Advocate",
@@ -538,6 +554,8 @@ export default {
     /* 2026-08-07 design: remaining count in header row */
     remainingToday: "{n} left today",
     nearby: "Nearby",
+    sameSchool: "Same School",
+    sameCity: "Same City",
     /* 2026-08-07 design: "Nearby" filter chip */
     filterNearby: "Nearby",
     unlimited: "Any",
@@ -589,6 +607,8 @@ export default {
     relationshipDivorced: "Divorced",
     relationshipWidowed: "Widowed",
     noMoreRecommend: "Today's recommendations finished",
+    /* B6: match/recommend closed by admin (match_open / recommend_open=false) */
+    matchClosed: "Matching is temporarily unavailable. Stay tuned!",
     refreshAtNoon: "Refreshed at 12:00 noon tomorrow",
     videoBadge: "Video",
     ageUnit: "y/o",
@@ -600,6 +620,8 @@ export default {
     recommendReduced: "Reduced similar recommendations",
     matchSuffix: "% match",
     cardAria: "Recommendation card: {name}, {age} y/o",
+    /* 2026-08-11 added: a11y description for the floating avatar frame (first visual anchor) */
+    avatarHeroAria: "User avatar",
     personalityOutgoing: "Outgoing",
     personalityGentle: "Gentle",
     personalityHumorous: "Humorous",
@@ -641,11 +663,21 @@ export default {
     personalityLabel: "Personality",
     mbtiLabel: "MBTI",
     whisperLabel: "Whisper",
-    /* 2026-08-08 walkthrough: whisper feature temporarily disabled */
+    /* 2026-08-08 walkthrough: whisper feature temporarily disabled (only visible when flag off) */
     whisperComingSoon: "Whisper is coming soon",
     whisperEmpty: "No whisper yet",
     whisperSend: "Send a whisper",
     whisperSent: "Whisper sent",
+    /* ===== B3 love note (2026-08-13: whisper unlock bottom sheet) ===== */
+    whisperUnlockTitle: "Love letter note",
+    whisperUnlockConfirm: "Unlock & view",
+    whisperUnlockCancel: "Not now",
+    whisperChatCta: "Chat with them",
+    whisperBalanceHint: "Balance: {n} coins",
+    whisperUnlockFailBalance: "Not enough coins to unlock",
+    whisperCostHint: "Unlock costs {n} coins",
+    whisperFromUser: "A note from {name}",
+    unlocking: "Unlocking…",
     expectedPartner: "Expected partner",
     /* 2026-08-08 walkthrough P0-2: card info section copy */
     myExpectedPartner: "You I hope to meet",
@@ -676,13 +708,11 @@ export default {
     momentCommentSent: "Comment sent",
     momentPrivateMsg: "Message",
     privateMsgPaidHint: "Unlock messaging for {coins} coins (free for VIP)",
-    whisperPaidHint: "Unlock whisper for {coins} coins (free for VIP)",
     unlockMessage: "Unlock messaging",
     unlockAndChat: "Unlock & message",
     unlockSuccess: "Unlocked",
     unlockFailTitle: "Unlock failed",
     whisperUnlockByVip: "VIP members can send whispers for free",
-    whisperUnlocked: "Whisper unlocked",
     unlockWhisper: "Unlock whisper",
     dynamicPreview: "Latest moments",
     viewAllMoments: "View all moments",
@@ -810,7 +840,6 @@ export default {
     assistantTitle: "Event Officer",
     assistantSubtitle: "Event pushes · Surprise perks",
     assistantAria: "Event Officer: event pushes and perks",
-    assistantWip: "Event Officer coming soon",
     closed: "Closed",
     closingSoon: "Closing soon",
     pageName: "Chat",
@@ -968,6 +997,7 @@ export default {
       blockConfirmTitle: "Block user",
       blockConfirmContent: "You will no longer receive messages from this user. Block them?",
       blockDone: "Blocked (applies to this session)",
+          blockFailed: "Block failed, please retry",
       report: "Report",
       reportReasonHint: "Select a reason",
       reportReasonHarass: "Harassment",
@@ -995,7 +1025,10 @@ export default {
     emojiPanelOpenAria: "Open emoji panel",
     /* 2026-08-09 WeChat 1:1 redesign: "+" menu image placeholder */
     moreMenuImage: "Send image",
-    moreMenuImageWip: "Image sending is under development",
+      imageSent: "Image sent",
+      /* 2026-08-13：与 zh-CN 对齐（图片发送上线收尾） */
+      sendingImage: "Sending image...",
+      sendImageFailed: "Failed to send image",
   },
 
   /* ========== Likes ========== */
@@ -1046,6 +1079,13 @@ export default {
     editProfile: "Edit Profile",
     editBackground: "Edit Background",
     logout: "Log Out",
+    other: {
+      matchTitle: "It's a match!",
+      matchContent: "You liked each other — say hi!",
+      matchGoChat: "Start chat",
+      matchKeepBrowsing: "Keep browsing",
+      likeWaiting: "Liked, waiting for reply",
+    },
     logoutConfirm: "Are you sure to log out?",
     profileIncomplete: "Complete profile to unlock",
     completionPercent: "Profile completion {percent}%",
@@ -1070,11 +1110,50 @@ export default {
     loveLab: "Love Lab",
     feedback: "Feedback",
     shareFriend: "Share to friends",
+    /* 3-K invite rewards real chain: invite code modal copy */
+    inviteHint: "Have a friend enter your invite code when signing up. Both of you earn points once they complete registration.",
+    inviteLoading: "Generating invite code...",
+    inviteError: "Failed to generate invite code, please retry",
+    inviteCopy: "Copy invite code",
+    inviteCopied: "Invite code copied",
+    inviteShareText: "Join me on Campus Love! Enter invite code {code} to start your journey.",
+    inviteEarned: "You've earned {n} points from invites",
     aboutUs: "About us",
     aboutTitle: "About Campus Love",
     aboutContent: "Campus Love · Meet your special someone\n\nMeet like-minded people and start a mutual campus story here.",
     gotIt: "Got it",
     sayHi: "Say hi",
+    /* 2026-08-13：个人主页白卡首区匹配标签标题（与 zh-CN 对齐） */
+    matchTagsTitle: "Match tags",
+    /* 2026-08-13 B5：认证成就名牌（三级认证，与 zh-CN 对齐） */
+    certBadgesTitle: "Certifications",
+    certBadgeNames: {
+      age: "18+",
+      realname: "Real name",
+      education: "Education",
+    },
+    certBadgePending: "Pending",
+    certBadgePendingSuffix: " (pending)",
+    certSheetTitle: "Certifications",
+    certSheetSubtitle: "Multi-level verification system to meet authentic people",
+    certSheetStandardLabel: "Standard",
+    certSheetEarned: "Earned",
+    certSheetNotEarned: "Not earned",
+    certSheetGo: "Verify now",
+    certSheetClose: "Close",
+    certSheetPrivacy: "Your verification data is used solely for identity checking and kept strictly confidential",
+    certRealNameFirst: "Please complete real-name verification first",
+    certSheetAgeMethod: "Mandatory at registration",
+    certSheetAgeDesc: "Must be 18 or older to register; birth date strictly checked on the server",
+    certSheetRealNameMethod: "ID card + manual review",
+    certSheetRealNameDesc: "ID number encrypted at rest; staff review both sides of the ID card photo",
+    certSheetEducationMethod: "Student ID + CHSI check",
+    certSheetEducationDesc: "Manual student-ID review plus CHSI online verification code check",
+    certEduTriple: {
+      machine: "Machine check: automatic format and image validation",
+      human: "Manual review: staff verify student ID details one by one",
+      chsi: "CHSI check: official enrollment verification via online code",
+    },
     openVip: "Open VIP",
     openVipDesc: "See who likes you · unlimited likes · exclusive badge",
     subscribeNow: "Subscribe now",
@@ -1183,6 +1262,12 @@ export default {
     /* 2026-08-08 QQ-style profile rework: profile sharing */
     shareProfileTitle: "Meet {name} and find your heartwarming match on Campus Love",
     shareProfileAria: "Share profile",
+    /* 2026-08-10 A3: share cards for social-spread core pages */
+    sharePostDetail: "Great post in the village: {title}",
+    shareVillage: "Campus village — see what everyone's talking about",
+    shareTagPosts: "Posts tagged {tag}",
+    shareCampusTopic: "Campus topic: {title}",
+    shareCircleTopic: "Circle topic: {title}",
     voiceRecord: "Record voice status",
     voiceRecordStart: "Start recording",
     voiceRecordStop: "Stop recording",
@@ -1218,6 +1303,11 @@ export default {
     taskDone: "Done",
     taskGo: "Go",
     taskCheckinSuccess: "Checked in! +{n} points",
+    /* 3-J tasks & points real chain: claim button/result/duplicate claim */
+    taskClaim: "Claim",
+    taskClaimSuccess: "Claimed! +{n} points",
+    taskClaimFailed: "Claim failed, please retry",
+    taskAlreadyClaimed: "Reward already claimed",
     taskItemAria: "Task: {label}",
     helpSupport: "Help & support",
     helpSupportDesc: "FAQ and online support",
@@ -1301,6 +1391,32 @@ export default {
     passwordLengthError: "Password must be 6-20 characters",
     passwordMismatch: "Passwords do not match",
     passwordUpdated: "Password updated",
+    /* 3-B/C/D/E account security real chain copy */
+    submitting: "Submitting...",
+    oldPasswordPlaceholder: "Enter current password",
+    oldPasswordRequired: "Enter current password",
+    oldPasswordWrong: "Current password is incorrect",
+    passwordUpdateFailed: "Update failed, please retry",
+    passwordUpdatedRelogin: "Password updated, please log in again",
+    newPhonePlaceholder: "Enter new phone number",
+    phonePasswordPlaceholder: "Enter current password",
+    phoneFormatError: "Enter a valid phone number",
+    phonePasswordRequired: "Enter current password",
+    phoneChanged: "Phone number updated",
+    phoneChangeFailed: "Update failed, please retry",
+    deviceRevoked: "Signed out",
+    kickFailed: "Failed to sign out, please retry",
+    platformWechat: "WeChat",
+    platformPhone: "Phone",
+    platformApple: "Apple",
+    platformGuest: "Guest",
+    deleteTypeWord: "DELETE",
+    deleteTypeHint: "Type DELETE to confirm. Accounts with a password must also enter it.",
+    deleteTypePlaceholder: "Type DELETE",
+    deletePasswordPlaceholder: "Current password (optional for passwordless accounts)",
+    deleteTypeMismatch: "Confirmation text does not match",
+    deleteDone: "Account deleted",
+    deleteFailed: "Deletion failed, please retry",
   },
 
   /* ========== Village / Campus Circle ========== */
@@ -1345,6 +1461,8 @@ export default {
     categoryTreehole: "Tree Hole",
     categoryLatest: "Latest",
     emptyPosts: "No posts yet",
+    /* B6: post publishing closed by admin (post_publish_open=false) */
+    postClosed: "Posting is temporarily unavailable. Stay tuned!",
     follow: "+ Follow",
     followed: "Following",
     publishPost: "Post",
@@ -1570,6 +1688,7 @@ export default {
     channelInterest: "Interests",
     channelSchool: "Campus",
     channelActivity: "Events",
+    channelHot: "Hot",
     channelInterestFeatured: "Featured Topics",
     activityChannelTitle: "Recommended Events",
     activityChannelSub: "Tap a card to sign up or view details",
@@ -1601,6 +1720,13 @@ export default {
   },
 
   /* ========== Login ========== */
+  /* B6: admin-driven runtime config (2026-08-13) */
+  appConfig: {
+    /* Maintenance-mode global overlay (app_switch.maintenance_mode=true) */
+    maintenanceTitle: "Under Maintenance",
+    maintenanceDesc: "The platform is under maintenance and temporarily unavailable. Please try again later. Sorry for the inconvenience.",
+  },
+
   login: {
     heroTitle: "Campus Love",
     heroSubtitle: "Meet your crush",
@@ -1615,13 +1741,17 @@ export default {
     codePlaceholder: "Enter verification code",
     passwordPlaceholder: "Enter password (6-64 chars)",
     nicknamePlaceholder: "Enter nickname (1-20 chars)",
+    /* 3-N underage protection: registration birth date field */
+    birthDatePlaceholder: "Select date of birth",
+    minorNotAllowed: "You must be 18 or older to register",
     registerButton: "Register",
     goRegister: "No account? Register",
     backToLogin: "Have account? Login",
     getCode: "Get Code",
     loginButton: "Log In",
     backToWechat: "Back to WeChat login",
-    agreedPrefix: "I have read and agree to",
+    /* 2026-08-13：与 zh-CN 对齐（成年 + 协议双重声明） */
+    agreedPrefix: "I am 18 or older, and have read and agree to",
     userAgreementLink: "User Agreement",
     privacyPolicyLink: "Privacy Policy",
     and: "and",
@@ -1643,6 +1773,9 @@ export default {
     /* R4-00002: Showcase entry copy (VITE_SHOWCASE_MODE build only) */
     showcaseEntryTitle: "Enter showcase as presenter",
     showcaseEntryDesc: "Super admin mode · One tap to unlock all features",
+    /* B6: login closed by admin (app_switch.login_open=false) */
+    closedTitle: "Sign-in Temporarily Unavailable",
+    closedDesc: "Sign-in is under maintenance. Please try again later.",
   },
 
   /* ========== Showcase page (VITE_SHOWCASE_MODE build only, R4-00039) ========== */
@@ -1697,7 +1830,6 @@ export default {
         items: {
           messages: { title: "Messages", desc: "Sessions / Official accounts / Notices" },
           session: { title: "Chat Session", desc: "Temp anonymous chat / Progressive unlock" },
-          videoCall: { title: "Video Call", desc: "1v1 real-time video (demo)" },
         },
       },
       community: {
@@ -1741,6 +1873,9 @@ export default {
           privacy: { title: "Privacy Settings", desc: "Same-school recommendation / Notifications" },
           settings: { title: "Settings", desc: "General settings" },
           dnd: { title: "Do Not Disturb", desc: "Quiet hours" },
+          weeklySchedule: "Weekly Schedule",
+          weeklyScheduleOn: "Weekly schedule enabled",
+          weeklyScheduleOff: "Weekly schedule disabled",
           feedback: { title: "Feedback Center", desc: "Issues / Suggestions / Complaints" },
           legalPrivacy: { title: "Privacy Policy", desc: "Personal info protection" },
           agreement: { title: "User Agreement", desc: "Terms of service" },
@@ -2029,9 +2164,7 @@ export default {
     socialSignal: "Social signal",
     contentSignal: "Content signal",
     viewNow: "View now",
-    groupChatWip: "Group chat coming soon",
-    assistantWip: "Love assistant coming soon",
-    searchWip: "Search coming soon",
+    /* 2026-08-13 死 key 清理：groupChatWip/assistantWip/searchWip 与 zh-CN 同步删除 */
     socialWarming: "Social warming",
     icebreaker1: "Hi, nice to meet you!",
     icebreaker2: "Do you like movies too?",
@@ -2118,6 +2251,7 @@ export default {
     yesterday: "Yesterday",
     /* R4-00138: Activity-card message preview prefix/fallback copy */
     activityCardPrefix: "[Activity]",
+          imagePrefix: "[Image]",
     activityCardFallback: "Activity card",
     searchPlaceholder: "Search by name or chat history",
     noSearchResult: "No conversations found",
@@ -2133,6 +2267,19 @@ export default {
     markAsRead: "Mark as read",
     markedUnread: "Marked as unread",
     markedRead: "Marked as read",
+  },
+
+  /* ========== Search Page (2026-08-11, Tieba-style) ========== */
+  search: {
+    placeholder: "Search post title, content or topic",
+    hotSearches: "Hot Searches",
+    history: "Search History",
+    clearHistory: "Clear",
+    emptyHint: "Type a keyword to search campus posts",
+    resultCount: "{n} results",
+    noResult: "No posts found. Try another keyword",
+    noMore: "End of results",
+    matchTitle: "Title match",
   },
 
   /* ========== Do Not Disturb (Feature 6) ========== */
@@ -2239,6 +2386,23 @@ export default {
     productGoods1: "School Badge Souvenir Pin",
     productTicket2: "Basketball Game Ticket",
     productCreative2: "Campus Hand-drawn Map",
+    /* 3-H product detail page copy */
+    detailTitle: "Product Detail",
+    buyNow: "Buy Now",
+    buyUnavailable: "Payment is not available yet",
+    stockLabel: "Stock {n}",
+    detailNotFound: "Product not found or unavailable",
+    detailNotFoundDesc: "This product may be gone. Explore other goodies instead.",
+    detailBackShop: "Back to Shop",
+    detailDescTitle: "Description",
+    detailDescEmpty: "No description yet",
+    /* mock product descriptions (aligned with backend seed) */
+    detailDescTicket1: "Early bird ticket for the campus music festival, hot and limited",
+    detailDescCreative1: "Campus creative tote bag, new arrival",
+    detailDescFood1: "Cafeteria lunch coupon, limited supply",
+    detailDescGoods1: "School badge souvenir pin, a collectible",
+    detailDescTicket2: "Basketball game ticket, on sale now",
+    detailDescCreative2: "Hand-drawn campus map, recommended",
   },
 
   /* ========== Verification page (Task 28) ========== */
@@ -2260,6 +2424,9 @@ export default {
     benefitMatchDesc: "Match probability increased by 1.5x",
     benefitPerksTitle: "Exclusive Benefits",
     benefitPerksDesc: "Unlock verified-only features",
+    /* B4 verification page enhancement (2026-08-13): 5th benefit "Interaction Access" */
+    benefitInteractTitle: "Interaction Access",
+    benefitInteractDesc: "Unlock likes, greetings, and posting",
     benefitsTitle: "Verification Benefits",
     resetBtn: "Re-verify",
     resetConfirmTitle: "Re-verify",
@@ -2294,6 +2461,61 @@ export default {
     submitting: "Submitting...",
     submitSuccess: "Submitted, pending review",
     approvedTitle: "Verification approved",
+    /* 3-A love verification real chain: reject reason / duplicate submit / failure fallback */
+    rejectReasonLabel: "Reject reason",
+    alreadyPending: "An application is already under review, please wait",
+    submitFailed: "Submission failed, please retry",
+    /* B4 verification page enhancement (2026-08-13): unverified gate banner + 3-step process */
+    gateBanner: "Unverified users can only browse. After verification you can like, message, and post",
+    processTitle: "Verification Process",
+    processStep1Title: "Upload Student ID",
+    processStep1Desc: "Take a photo or choose from your album\nInfo is used only for identity verification",
+    processStep2Title: "Manual Review (within 24h)",
+    processStep2Desc: "Reviewers will finish within 24 hours\nThe result is sent to you via message",
+    processStep3Title: "Verified",
+    processStep3Desc: "Unlock likes, greetings, and posting",
+  },
+
+  /* ========== Real-Name Certification page (B1-2) ========== */
+  realName: {
+    navTitle: "Real-Name Certification",
+    statusVerified: "Real-Name Verified",
+    statusVerifiedDesc: "Your real-name certification has been approved\nYou can now apply for campus certification",
+    statusPending: "Under Review",
+    statusPendingDesc: "Your real-name certification has been submitted\nReview typically takes 1-3 business days",
+    statusRejected: "Certification Failed",
+    statusRejectedDesc: "Your submission did not pass review\nPlease verify and resubmit",
+    statusUnverified: "Not Real-Name Verified",
+    statusUnverifiedDesc: "Complete real-name certification\nUnlock campus certification and trust badges",
+    /* 3-N minor protection: under-18 notice */
+    minorNotice: "Real-name certification is not available for users under 18 (minor protection)",
+    errMinorNotAllowed: "Not available for users under 18",
+    rejectReasonLabel: "Reject reason",
+    pendingTitle: "Under Review",
+    pendingDesc: "Your real-name certification has been submitted\nReview typically takes 1-3 business days\nYou will be notified of the result",
+    formTitle: "Fill in real-name info",
+    labelUserName: "Real Name",
+    placeholderUserName: "Enter the name on your ID card",
+    labelIdCardNo: "ID Card No.",
+    placeholderIdCardNo: "Enter your 18-digit ID card number",
+    uploadTitle: "Upload ID Card Photos",
+    labelIdCardFront: "ID Card Front",
+    labelIdCardBack: "ID Card Back",
+    uploadHint: "Tap to upload",
+    uploadChange: "Change",
+    privacyRequiredImage: "Please agree to the privacy policy before choosing images",
+    imageUploaded: "Image uploaded",
+    errUserName: "Please enter your real name",
+    errIdCardNo: "Please enter a valid ID card number",
+    errFrontRequired: "Please upload the front of your ID card",
+    errBackRequired: "Please upload the back of your ID card",
+    submitting: "Submitting...",
+    submittingBtn: "Submitting...",
+    submitBtn: "Submit Certification",
+    submitSuccess: "Submitted successfully, awaiting review",
+    alreadyPending: "An application is already under review, please wait",
+    submitFailed: "Submission failed, please retry",
+    privacyNote: "ID card info is used only for identity verification, stored encrypted; reviewers only see a masked number",
   },
 
   /* ========== Lock screen ========== */
@@ -2400,6 +2622,7 @@ export default {
     homePageAria: "View profile page",
     bioToggleAria: "Expand or collapse bio",
     personalityTags: "Outgoing,Gentle,Humorous,Artistic",
+    avatarHeroAria: "Preview avatar",
   },
 
   /* ========== Filter drawer ========== */
@@ -2425,50 +2648,6 @@ export default {
   },
 
   /* ========== Video Call ========== */
-  videoCall: {
-    navTitle: "Video Call",
-    incomingTitle: "Inviting you to a video call",
-    callingTitle: "In call",
-    waitingTitle: "Waiting for the peer to answer...",
-    endedTitle: "Call ended",
-    rejectedTitle: "Rejected by peer",
-    missedTitle: "Missed call",
-    callerTitle: "Inviting you to a video call",
-    calleeTitle: "Inviting TA to a video call",
-    durationLabel: "Duration: {duration}",
-    startBtn: "Start Video Call",
-    startFailed: "Failed to start video call",
-    endBtn: "End Call",
-    endFailed: "Failed to end call",
-    acceptBtn: "Accept",
-    rejectBtn: "Reject",
-    hangupBtn: "Hang Up",
-    micBtn: "Mic",
-    cameraBtn: "Camera",
-    speakerBtn: "Speaker",
-    switchCameraBtn: "Flip",
-    /* R4-00070: camera flip now really calls live-pusher switchCamera */
-    switchCameraDone: "Camera flipped",
-    switchCameraFail: "Failed to flip camera. Please retry.",
-    entryLabel: "Video",
-    entryAria: "Start video call",
-    ringTimeout: "No answer, please try again later",
-    cameraOff: "Camera off",
-    cameraOn: "Camera on",
-    micOff: "Microphone muted",
-    micOn: "Microphone on",
-    /* Call history */
-    historyTitle: "Call History",
-    historyEmpty: "No call history",
-    historyLoadFailed: "Failed to load call history",
-    historyIncoming: "Incoming",
-    historyOutgoing: "Outgoing",
-    historyMissed: "Missed",
-    historyRejected: "Rejected",
-    historyDuration: "Duration {duration}",
-    historyViewAll: "View All",
-  },
-
   /* ========== Post Report ========== */
   postReport: {
     title: "Report Post",
@@ -2618,6 +2797,8 @@ export default {
       placeholderHometownCity: "e.g. Guangzhou",
       labelFutureCity: "Future city",
       placeholderFutureCity: "e.g. Guangzhou",
+      labelExpectedPartner: "Ideal partner",
+      placeholderExpectedPartner: "Keywords of your ideal partner, e.g. gentle, sporty, studious, tall (separate by spaces or commas — boosts matching)",
       labelFuturePlan: "Future plan",
       pleaseSelect: "Please select",
       changeBackground: "Change background",
@@ -2686,6 +2867,8 @@ export default {
       saveButton: "Save and enter",
       locationRequired: "Please enter a preferred location",
       timeWindowRequired: "Please add at least one time window",
+      addTimeWindow: "Add time window",
+      removeTimeWindow: "Remove this time window",
       /* R4-00047: save failure fallback copy */
       saveFailed: "Save failed. Please retry later.",
     },
@@ -2777,7 +2960,24 @@ export default {
       privacyTip: "Your information is used only for student verification. We commit to protecting your privacy.",
       verifiedLabelSchool: "School",
       verifiedLabelMajor: "Major",
+      /* B1-2 prerequisite: real-name certification gate */
+      realNameRequiredBanner: "Please complete real-name certification before campus certification",
+      realNameRequiredBtn: "Go to Real-Name Certification",
+      /* B1-3 education certification (CHSI) fields */
+      labelChsiCode: "CHSI Code",
+      placeholderChsiCode: "Enter CHSI online verification code (optional)",
+      labelChsiScreenshot: "CHSI Screenshot",
+      chsiHint: "Optional: providing the CHSI verification code or education screenshot speeds up review",
+      chsiUploadText: "Tap to upload CHSI screenshot",
+      chsiUploadSub: "Take a photo or choose from album",
     },
+    /* B4 certification gate modal (2026-08-13): interaction prerequisite guide (guards/campus-gate.ts) */
+    gateTitle: "Complete real-name certification to unlock",
+    gateHint: "Real-name certification is the foundation of identity trust. Once verified, you can like, greet, and post",
+    gateGoCertify: "Verify Now",
+    gateEducationTitle: "Complete education certification to unlock",
+    gateEducationHint: "Education certification (campus verification) is the basis for campus interaction. Once verified, you can use the campus zone and interact with schoolmates",
+    gateEducationGo: "Go to Education Certification",
     /* index.vue */
     index: {
       statusVerified: "Verified",
@@ -3191,7 +3391,7 @@ export default {
 
   /* ========== Store error fallback messages (SubTask 3.3.3: i18n for 14+ stores) ========== */
   /* Design notes:
-   *   - Grouped by store module (campus / checkin / circle / dailyQuestion / chat / videoCall / etc.)
+   *   - Grouped by store module (campus / checkin / circle / dailyQuestion / chat / chat / etc.)
    *   - Key naming: storeErrors.<module>.<scene>
    *   - Used by stores via throw new Error(t("storeErrors.xxx")) instead of hardcoded strings
    */
@@ -3268,13 +3468,6 @@ export default {
       updatePinnedFailed: "Failed to update session pin state",
       loadIcebreakersFailed: "Failed to load icebreakers",
       sendIcebreakerFailed: "Failed to send icebreaker",
-    },
-    /* Video call store */
-    videoCall: {
-      calleeIdInvalid: "Callee user ID is invalid",
-      callingInProgress: "Call is being initiated, please do not resubmit",
-      callIdInvalid: "Call ID is invalid",
-      endingInProgress: "Call is being ended, please do not resubmit",
     },
     /* Promo code store */
     promoCode: {

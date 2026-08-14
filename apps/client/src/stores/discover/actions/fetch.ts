@@ -60,7 +60,13 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
   const controller = new AbortController();
   timers.fetchCardsController = controller;
 
-  this.loading = true;
+  // 2026-08-12 卡顿修复：已有卡片时保持旧卡展示（不置 loading → 不触发骨架屏
+  // 卸载 CardSwiper → 不重挂载 + 入场动画 + 图片重载整链），数据到达后静默替换。
+  // 仅首次无卡（页面冷启动/无缓存）时进入 loading 态显示骨架屏。
+  const hasExistingCards = this.cards.length > 0;
+  if (!hasExistingCards) {
+    this.loading = true;
+  }
   this.errorMessage = null;
 
   try {

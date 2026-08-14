@@ -1100,7 +1100,21 @@ export const mockFixtures = {
     return clone(loginHero);
   },
   getSession(): UserSession {
-    return clone(session);
+    // 2026-08-10 走查修复：mock 模式下体验号登录走真实后端（guest-login 无 mock fallback），
+    // 成功后本地已存 token——但本 mock session 初始为未登录态（profileCompleted=false），
+    // 导致登录后受保护页（消息/喜欢/聊天）判定「未完善资料」被 LockScreen/登录页拦截。
+    // 修复：本地有 token 时返回登录态 session（mockLoggedInSession），与真实登录保持一致。
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uniApi = (globalThis as any).uni;
+      const hasToken =
+        typeof uniApi?.getStorageSync === "function" &&
+        typeof uniApi.getStorageSync("token") === "string" &&
+        uniApi.getStorageSync("token").length > 0;
+      return clone(hasToken ? mockLoggedInSession : session);
+    } catch (_e) {
+      return clone(session);
+    }
   },
   loginWithWechat(): UserSession {
     session = clone(mockLoggedInSession);

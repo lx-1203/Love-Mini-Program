@@ -80,7 +80,7 @@ class ProfileUpdateServiceTest {
     void saveBasicProfile_heightBelowMin_throwsException() {
         BasicProfileRequest req = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                100, null, null, null, null, null, List.of(), null, null);
+                100, null, null, null, null, null, List.of(), null, null, null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> updateService.saveBasicProfile(req));
@@ -94,7 +94,7 @@ class ProfileUpdateServiceTest {
     void saveBasicProfile_invalidEducationLevel_throwsException() {
         BasicProfileRequest req = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                null, "kindergarten", null, null, null, null, List.of(), null, null);
+                null, "kindergarten", null, null, null, null, List.of(), null, null, null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> updateService.saveBasicProfile(req));
@@ -108,7 +108,7 @@ class ProfileUpdateServiceTest {
     void saveBasicProfile_invalidRelationshipStatus_throwsException() {
         BasicProfileRequest req = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                null, null, "complicated", null, null, null, List.of(), null, null);
+                null, null, "complicated", null, null, null, List.of(), null, null, null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> updateService.saveBasicProfile(req));

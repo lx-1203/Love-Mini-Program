@@ -5,12 +5,17 @@
  *
  * 实现策略：
  * - 监听 useMessagesStore 的 totalUnreadCount getter（聚合所有会话未读数）
- * - 当计数变化时通过 uni.setTabBarBadge / removeTabBarBadge 更新 TabBar 红点
+ * - 当计数变化时更新 TabBar 红点：
+ *   - mp-weixin 自定义 TabBar（A2）：未读数写入本地存储 TABBAR_CHAT_UNREAD +
+ *     调用页面 getTabBar().setData({ chatBadge }) 即时刷新
+ *     （custom-tab-bar/index.js 的 syncBadge 在 attached/show 时读取 storage 兜底）
+ *   - 非 mp-weixin（H5 / APP）：通过 uni.setTabBarBadge / removeTabBarBadge 更新
  * - WebSocket 推送的消息由 store-dispatch.ts 写入 session.unreadCount，
  *   Pinia 自动触发 getter 重算，进而驱动 TabBar 红点更新
  *
  * mp-weixin 兼容性：
- * - uni.setTabBarBadge / removeTabBarBadge 在 mp-weixin / H5 / APP 端均可用
+ * - uni.setTabBarBadge / removeTabBarBadge 在自定义 TabBar 模式下不生效
+ *   （fail 回调被静默忽略），故 mp-weixin 走 storage + setData 路径
  * - 不使用 import.meta.env
  * - 不使用 optional catch binding
  *
@@ -26,6 +31,10 @@ import { storeToRefs } from "pinia";
 import { useMessagesStore } from "../stores/messages";
 // R4-00212：tab 索引由 config/navigation.ts（TabBar 唯一真相源）推导，不再硬编码
 import { appTabs } from "../config/navigation";
+// Task 35：平台判断与 TabBar 实例获取收敛到 compat/index.ts，避免散落 #ifdef
+import { getTabBarInstance, isMpWeixin } from "../compat";
+// A2：自定义 TabBar 角标存储键统一走 constants（custom-tab-bar/index.js 读取同一键）
+import { STORAGE_KEYS } from "../constants";
 
 /**
  * TabBar 中"消息"tab 的索引。
@@ -38,14 +47,48 @@ const CHAT_TAB_INDEX = Math.max(0, appTabs.findIndex((t) => t.id === "chat"));
 const BADGE_MAX = 99;
 
 /**
+ * A2：mp-weixin 自定义 TabBar 角标同步。
+ *
+ * 自定义 TabBar 模式下 uni.setTabBarBadge 不生效（fail 回调被静默忽略），
+ * 改为双通道保证红点可见：
+ * 1. 未读数写入本地存储 TABBAR_CHAT_UNREAD —— custom-tab-bar/index.js 的
+ *    syncBadge() 在 attached / pageLifetimes.show 时读取渲染（兜底通道，
+ *    覆盖 TabBar 未挂载 / setData 不可达的场景）
+ * 2. 调用当前页面 getTabBar() 实例 setData({ chatBadge }) 即时刷新
+ *    （主通道，无需等待页面切换）
+ *
+ * @param count - 未读消息数
+ */
+function syncCustomTabBarBadge(count: number): void {
+  try {
+    uni.setStorageSync(STORAGE_KEYS.TABBAR_CHAT_UNREAD, count);
+  } catch (_e) {
+    // 存储失败静默忽略，本次启动内仍可由 setData 通道刷新角标
+  }
+  const tabBar = getTabBarInstance();
+  if (tabBar && typeof tabBar.setData === "function") {
+    tabBar.setData({ chatBadge: count });
+  }
+}
+
+/**
  * 设置 TabBar 红点数字。
  *
  * - count > 0：显示 count（超过 99 显示 "99+"）
  * - count <= 0：移除红点
+ * - mp-weixin（自定义 TabBar）：走 syncCustomTabBarBadge（storage + setData）
+ * - 非 mp-weixin（H5 / APP）：走 uni.setTabBarBadge / removeTabBarBadge
  *
  * @param count - 未读消息数
  */
 function setChatTabBadge(count: number): void {
+  // A2：mp-weixin 自定义 TabBar 红点由 custom-tab-bar/index.js 渲染，
+  // 此处只做 storage 写入 + 实例 setData；setTabBarBadge 在该模式下不生效
+  if (isMpWeixin()) {
+    syncCustomTabBarBadge(count);
+    return;
+  }
+
   // 兼容性检查：uni.setTabBarBadge 在 H5 / 部分小程序端可能不存在
   if (typeof uni === "undefined" || typeof uni.setTabBarBadge !== "function") {
     return;

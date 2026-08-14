@@ -21,5 +21,7 @@ public record ConversationView(
     /** 会话阶段：matching/active/closing/closed */
     String phase,
     /** 会话类型：private/temp_anonymous */
-    String sessionType
+    String sessionType,
+    /** 当前用户是否静音本会话（会话级免打扰，2026-08-10 B1③） */
+    Boolean muted
 ) {}

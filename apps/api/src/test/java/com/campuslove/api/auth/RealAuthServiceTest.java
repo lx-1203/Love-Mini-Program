@@ -436,7 +436,7 @@ class RealAuthServiceTest {
         when(jwtTokenProvider.generateToken(any())).thenReturn("mock-guest-jwt");
 
         // Act
-        UserSessionView session = realAuthService.loginAsGuest();
+        UserSessionView session = realAuthService.loginAsGuest(null);
 
         // Assert：创建了独立体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
         // 创建后 provisionGuestProfile 会再次 save（完善度 100），故共 2 次
@@ -467,8 +467,8 @@ class RealAuthServiceTest {
         when(jwtTokenProvider.generateToken(any())).thenReturn("mock-guest-jwt");
 
         // Act：连续两次登录
-        realAuthService.loginAsGuest();
-        realAuthService.loginAsGuest();
+        realAuthService.loginAsGuest(null);
+        realAuthService.loginAsGuest(null);
 
         // Assert：每次调用都创建新账号，且 openid 互不相同（会话身份隔离）
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
@@ -505,6 +505,6 @@ class RealAuthServiceTest {
 
         // Act & Assert
         // 修复（R4-02553）：禁用态抛 OperationForbiddenException（403），不再抛 IllegalStateException（500）
-        assertThrows(OperationForbiddenException.class, disabledService::loginAsGuest);
+        assertThrows(OperationForbiddenException.class, () -> disabledService.loginAsGuest(null));
     }
 }

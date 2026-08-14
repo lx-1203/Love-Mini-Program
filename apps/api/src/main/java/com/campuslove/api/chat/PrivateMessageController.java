@@ -132,6 +132,25 @@ public class PrivateMessageController {
         return ApiResponse.ok(null);
     }
 
+    // ---- 2026-08-10 B1③：会话级免打扰 ----
+
+    /**
+     * 设置当前用户对指定会话的免打扰状态。
+     * PUT /api/v1/messages/conversations/{id}/mute
+     *
+     * <p>按用户侧独立存储（user_a_muted / user_b_muted），A 静音不影响 B 的接收；
+     * 仅会话参与者可操作（服务层校验归属，防 IDOR）。</p>
+     */
+    @PutMapping("/conversations/{id}/mute")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Void> setConversationMuted(
+            @PathVariable("id") @Positive Long conversationId,
+            @RequestParam boolean muted) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        privateMessageService.setConversationMuted(conversationId, muted, userId);
+        return ApiResponse.ok(null);
+    }
+
     // ---- M-06/P0-07：删除会话 ----
 
     /**
@@ -146,6 +165,23 @@ public class PrivateMessageController {
     public ApiResponse<Void> deleteConversation(@PathVariable("id") @Positive Long conversationId) {
         Long userId = SecurityUtils.getCurrentUserId();
         privateMessageService.deleteConversation(conversationId, userId);
+        return ApiResponse.ok(null);
+    }
+
+    // ---- 3-G：删除消息（软删，微信语义：仅删除者对自己隐藏，不删对方） ----
+
+    /**
+     * 删除单条消息（仅消息发送者本人可操作）。
+     * DELETE /api/v1/messages/{messageId}
+     *
+     * <p>微信语义：删除消息仅删除自己可见的那份，对方聊天记录不受影响；
+     * 重复删除幂等返回成功；消息不存在或非属主返回 404（RESOURCE_NOT_FOUND）。</p>
+     */
+    @DeleteMapping("/{messageId}")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Void> deleteMessage(@PathVariable("messageId") @Positive Long messageId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        privateMessageService.softDeleteMessage(messageId, userId);
         return ApiResponse.ok(null);
     }
 }

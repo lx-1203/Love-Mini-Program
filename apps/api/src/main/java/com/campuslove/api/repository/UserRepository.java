@@ -209,6 +209,36 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("campusName") String campusName,
             Pageable pageable);
 
+    // ---- B10（2026-08-10）：C 端用户搜索 ----
+
+    /**
+     * 用户搜索（按昵称/校区名中缀匹配），仅返回可被搜索的普通用户。
+     *
+     * <p>约束：status=active（账号可用）、role=USER（排除管理员，与推荐候选池口径一致）。
+     * 中缀 LIKE（%x%）无法命中 B-Tree 索引——校园规模下可接受；
+     * 数据量增长时的扩展路径：改前缀匹配（LIKE 'x%' 走索引，代价是仅匹配开头）
+     * 或引入全文索引/ES（UserIndexSyncListener 预留桩）。</p>
+     *
+     * @param keyword  搜索关键词（昵称或校区名中缀）
+     * @param status   账号状态（active）
+     * @param role     用户角色（USER）
+     * @param pageable 分页参数
+     * @return 分页用户列表（按资料完整度降序、注册时间降序）
+     */
+    @Query("""
+            SELECT u FROM User u
+            WHERE (u.nickname LIKE CONCAT('%', :keyword, '%')
+                   OR u.campusName LIKE CONCAT('%', :keyword, '%'))
+              AND u.status = :status
+              AND u.role = :role
+            ORDER BY u.profileCompletion DESC, u.createdAt DESC
+            """)
+    Page<User> searchByKeyword(
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            @Param("role") String role,
+            Pageable pageable);
+
     // ---- 关注/粉丝计数原子更新（infra R2-00263，消除并发丢失更新） ----
 
     @Modifying

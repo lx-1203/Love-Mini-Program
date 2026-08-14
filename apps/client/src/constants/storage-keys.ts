@@ -44,6 +44,10 @@ export const STORAGE_KEYS = {
   CHAT_MESSAGE_STATUS: "chat:message-delivery-status",
   /** 聊天草稿（未发送的输入框内容，按会话 ID 分键） */
   CHAT_DRAFT: "chat:draft",
+  /** 本地删除消息 ID 集合（2026-08-09 微信语义：删除为本地持久隐藏） */
+  DELETED_MESSAGE_IDS: "chat-session:deleted-message-ids",
+  /** A2：自定义 TabBar 消息角标未读数（2026-08-13；custom-tab-bar/index.js 的 syncBadge 读取） */
+  TABBAR_CHAT_UNREAD: "tabbar_chat_unread",
 
   /* ========== 寻觅/匹配模块 ========== */
   /** 滑动历史（已喜欢/跳过的人，用于避免重复推荐） */
@@ -59,13 +63,21 @@ export const STORAGE_KEYS = {
   /** R4-00232：圈子页当前频道持久化（config/channels.ts 的 LAST_CHANNEL_KEY） */
   VILLAGE_LAST_CHANNEL: "village_last_channel",
 
+  /* ========== 搜索模块（2026-08-11） ========== */
+  /** 本地搜索历史（最近 10 条） */
+  SEARCH_HISTORY: "search:history",
+
   /* ========== 注册流程 ========== */
   /** R4-00233：注册身份选择（config/identity.ts 的 USER_IDENTITY_STORAGE_KEY） */
   USER_IDENTITY: "campus-love:user-identity",
 
   /* ========== 设置与偏好 ========== */
-  /** 主题模式（light / dark / warm） */
-  THEME_MODE: "theme_mode",
+  /** 主题模式（light / dark / warm；2026-08-10 修正：运行时实际值为 campus-love:theme-mode） */
+  THEME_MODE: "campus-love:theme-mode",
+  /** 作息表功能开关（2026-08-10 收敛 home/settings 两处重复定义） */
+  WEEKLY_SCHEDULE_ENABLED: "campus-love:weekly-schedule-enabled",
+  /** 隐私设置（stores/profile.ts 持久化） */
+  PRIVACY_SETTINGS: "campus-love:privacy-settings",
   /** 语言偏好（zh-CN / en-US） */
   LOCALE: "locale",
   /** 免打扰设置（开始/结束时间/重复模式） */
@@ -86,6 +98,12 @@ export const STORAGE_KEYS = {
   NEWBIE_GUIDE_SHOWN: "newbie_guide_shown",
   /** 是否已展示 AI 视频引导 */
   AI_VIDEO_GUIDE_SHOWN: "ai_video_guide_shown",
+  /** dev-vip 模拟开关（仅开发环境生效，stores/vip.ts 与 dev 页共用） */
+  VIP_SIM_ENABLED: "campus-love:dev-vip-sim",
+
+  /* ========== 安全与设备 ========== */
+  /** 已下线（踢出）设备 ID 集合（pages/security 本地演示持久化） */
+  KICKED_DEVICES: "security:kicked-devices",
 } as const;
 
 /**

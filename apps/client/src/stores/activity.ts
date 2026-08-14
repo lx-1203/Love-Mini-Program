@@ -3,6 +3,11 @@ import { defineStore } from "pinia";
 // fetchActivities 与 fetchMoreActivities 均直接使用 request），移除 import。
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
+// 2026-08-10 切换提速：活动列表 30s TTL 缓存（home/village/discover 多入口去重）
+import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+
+/** 活动列表新鲜度窗口 */
+const ACTIVITIES_TTL_MS = 30_000;
 import type { components } from "../services/generated/api-types";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
@@ -161,6 +166,10 @@ export const useActivityStore = defineStore("activity", {
      * 显式传 page=1&pageSize，保证首次加载与加载更多使用同一分页契约，hasMore 判断一致。
      */
     async fetchActivities() {
+      // 2026-08-10 切换提速：30s 内已加载且有数据时直接跳过
+      if (!useMock() && this.activities.length > 0 && isCacheFresh('activities:list', ACTIVITIES_TTL_MS)) {
+        return;
+      }
       this.loading = true;
       this.errorMessage = null;
       try {
@@ -180,6 +189,8 @@ export const useActivityStore = defineStore("activity", {
         this.activities = data.map((item) => this.mapToActivityItem(item));
         this.page = 1;
         this.hasMore = data.length >= this.pageSize;
+        // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
+        setCachedValue("activities:list", true);
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : t("storeErrors.activity.loadActivitiesFailed");

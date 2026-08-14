@@ -4,8 +4,8 @@
  * 展示完整帖子内容、评论列表和互动功能
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
-import { ref, computed, onUnmounted } from "vue";
-import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
+import { ref, computed } from "vue";
+import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime, type CommentItem, type PostAuthor } from "../../stores/village";
@@ -218,29 +218,10 @@ function isImageFailed(key: string): boolean {
   return failedImageKeys.value.has(key);
 }
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 // R4-00159：页面卸载时清理 village store 定时器/请求资源（评论防抖、点赞 in-flight 等）
 onUnload(() => {
   villageStore.dispose();
@@ -624,10 +605,34 @@ onLoad((query) => {
 // 修复（严格模式 noUnusedLocals）：handleCommentLike/noop 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ handleCommentLike, noop });
+
+/**
+ * 帖子分享（2026-08-10 A3 补齐）：分享卡片指向帖子详情，
+ * 标题取帖子标题/摘要（无标题时取内容前 24 字）。
+ */
+onShareAppMessage(() => {
+  const post = currentPost.value;
+  if (!post) return { title: t("share.shareVillage"), path: ROUTES.TAB.VILLAGE };
+  const title = (post.title?.trim() || post.content?.trim() || "").slice(0, 24);
+  return {
+    title: title ? t("share.sharePostDetail", { title }) : t("share.shareVillage"),
+    path: `${ROUTES.VILLAGE.DETAIL}?id=${encodeURIComponent(String(post.id))}`,
+  };
+});
+
+/** 朋友圈分享（query 带帖子 id） */
+onShareTimeline(() => {
+  const post = currentPost.value;
+  const title = (post?.title?.trim() || post?.content?.trim() || "").slice(0, 24);
+  return {
+    title: title ? t("share.sharePostDetail", { title }) : t("share.shareVillage"),
+    query: post ? `id=${encodeURIComponent(String(post.id))}` : "",
+  };
+});
 </script>
 
 <template>
-  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="detail-page">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.backAria')" @tap="goBack">
@@ -737,7 +742,7 @@ defineExpose({ handleCommentLike, noop });
           <view v-if="currentPost.images.length > 0" class="post-images">
             <!-- SubTask 5.2.4 / 5.5.2：列表图片使用 SafeImage，自动 lazy-load + @error 占位图回退 -->
             <SafeImage
-              v-for="(img, idx) in currentPost.images" :key="idx"
+              v-for="(img, idx) in currentPost.images" :key="img || idx"
               custom-class="post-image"
               :src="img"
               :fallback="IMAGE_PATHS.POST_PLACEHOLDER"

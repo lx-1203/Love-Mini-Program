@@ -33,6 +33,7 @@ const errorMsg = ref("");
 
 // ===== 筛选条件 =====
 const auditStatusFilter = ref<"" | "pending" | "approved" | "rejected">("pending");
+const typeFilter = ref<"" | "avatar" | "image" | "video" | "background" | "app_asset">("");
 const userIdFilter = ref("");
 const campusFilter = ref("");
 
@@ -55,6 +56,7 @@ async function fetchAssets(): Promise<void> {
       page: page.value,
       pageSize: pageSize.value,
       auditStatus: auditStatusFilter.value || undefined,
+      type: typeFilter.value || undefined,
       userId: userIdFilter.value.trim() ? Number(userIdFilter.value.trim()) : undefined,
       campusName: campusFilter.value.trim() || undefined,
     });
@@ -84,6 +86,7 @@ function handleSearch(): void {
 /** 重置全部筛选条件 */
 function handleResetFilters(): void {
   auditStatusFilter.value = "pending";
+  typeFilter.value = "";
   userIdFilter.value = "";
   campusFilter.value = "";
   handleSearch();
@@ -195,6 +198,8 @@ function typeLabel(type: string | null): string {
       return t("mediaAssets.typeBackground");
     case "video":
       return t("mediaAssets.typeVideo");
+    case "app_asset":
+      return t("mediaAssets.typeAppAsset");
     default:
       return type ?? "—";
   }
@@ -240,6 +245,14 @@ onMounted(() => {
         <option value="pending">{{ t("mediaAssets.statusPending") }}</option>
         <option value="approved">{{ t("mediaAssets.statusApproved") }}</option>
         <option value="rejected">{{ t("mediaAssets.statusRejected") }}</option>
+      </select>
+      <select v-model="typeFilter" class="filter-select" @change="handleSearch">
+        <option value="">{{ t("mediaAssets.filterTypeAll") }}</option>
+        <option value="avatar">{{ t("mediaAssets.typeAvatar") }}</option>
+        <option value="image">{{ t("mediaAssets.typeImage") }}</option>
+        <option value="video">{{ t("mediaAssets.typeVideo") }}</option>
+        <option value="background">{{ t("mediaAssets.typeBackground") }}</option>
+        <option value="app_asset">{{ t("mediaAssets.typeAppAsset") }}</option>
       </select>
       <input
         v-model="userIdFilter"
@@ -304,7 +317,11 @@ onMounted(() => {
                 alt=""
                 @error="onImageError"
               />
-              <span>{{ item.userNickname || t("mediaAssets.userFallback", { id: item.userId }) }}</span>
+              <span>{{
+                item.type === "app_asset"
+                  ? t("mediaAssets.userSystem")
+                  : item.userNickname || t("mediaAssets.userFallback", { id: item.userId })
+              }}</span>
             </td>
             <td>
               <span class="type-badge" :class="`type-${item.type ?? 'none'}`">

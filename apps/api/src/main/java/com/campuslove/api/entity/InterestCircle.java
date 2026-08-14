@@ -37,6 +37,13 @@ public class InterestCircle {
     @Column(name = "description", length = 256)
     private String description;
 
+    /**
+     * 圈子分类（2026-08-10 B4：服务端分类过滤）。
+     * 枚举：study/sports/music/movie/travel/game/food/reading；null=未分类（仅"全部"可见）。
+     */
+    @Column(name = "category", length = 20)
+    private String category;
+
     /** 成员数 */
     @Column(name = "member_count", nullable = false)
     private Integer memberCount = 0;
@@ -98,6 +105,14 @@ public class InterestCircle {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Integer getMemberCount() {

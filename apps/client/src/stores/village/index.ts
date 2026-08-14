@@ -69,6 +69,7 @@ import {
   fetchPostsApi,
   fetchSimilarAuthorsApi,
   followUserApi,
+  getHotBoardApi,
   likeCommentApi,
   likePostApi,
   sharePostApi,
@@ -206,7 +207,12 @@ export const useVillageStore = defineStore("village", {
       const controller = new AbortController();
       fetchPostsController = controller;
 
-      this.loading = true;
+      // 2026-08-12 卡顿修复：已有帖子时保持旧列表展示（不置 loading →
+      // 不闪骨架屏、不卸载重挂帖子流），数据到达后静默替换；仅首次无数据时 loading。
+      const hasExistingPosts = this.posts.length > 0;
+      if (!hasExistingPosts) {
+        this.loading = true;
+      }
       this.errorMessage = null;
 
       try {
@@ -269,6 +275,54 @@ export const useVillageStore = defineStore("village", {
       } finally {
         // 修复：仅当当前 controller 仍是全局 controller 时才清 loading
         // 避免新请求已发起时被旧请求的 finally 误清 loading
+        if (fetchPostsController === controller) {
+          this.loading = false;
+          fetchPostsController = null;
+        }
+      }
+    },
+
+    /**
+     * 获取热度榜（2026-08-11：按热度分排序，贴吧式榜单）。
+     *
+     * <p>复用 posts 列表状态（loading/posts/hasMore），与 fetchPosts 互斥使用
+     * （频道切换时由页面控制）；热度榜频道切换即重置第一页。</p>
+     */
+    async fetchHotBoard(page = 1) {
+      if (fetchPostsController) {
+        try {
+          fetchPostsController.abort();
+        } catch (_e) {
+          // ignore
+        }
+        fetchPostsController = null;
+      }
+      const controller = new AbortController();
+      fetchPostsController = controller;
+
+      this.loading = true;
+      this.errorMessage = null;
+
+      try {
+        if (useMock()) {
+          // mock 分支：按点赞数模拟热度排序（mock 数据无 hotScore）
+          const sorted = [...mockPosts].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+          const start = (page - 1) * PAGE_SIZE;
+          const pageItems = sorted.slice(start, start + PAGE_SIZE);
+          this.posts = pageItems;
+          this.page = page;
+          this.hasMore = start + PAGE_SIZE < sorted.length;
+          return;
+        }
+        const data = await getHotBoardApi(page, PAGE_SIZE, controller.signal);
+        if (controller.signal.aborted) return;
+        this.posts = data.items.map(mapToPostItem);
+        this.page = page;
+        this.hasMore = data.items.length >= PAGE_SIZE;
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadPostsFailed");
+      } finally {
         if (fetchPostsController === controller) {
           this.loading = false;
           fetchPostsController = null;

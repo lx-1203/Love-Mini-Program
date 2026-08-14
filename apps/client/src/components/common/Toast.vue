@@ -313,7 +313,9 @@ export default {
 .toast-notification--warning .toast-notification__message { color: var(--c-text-warning-dark, #92400e); }
 .toast-notification--info .toast-notification__message { color: var(--c-brand-800); }
 
-/* ---- 滑入动画（弹性缓动） ---- */
+/* ---- 滑入动画（弹性缓动） ----
+   2026-08-13 说明：与 theme/animations.scss 的全局 toast-slide-in 不同，
+   本组件依赖 translateX(-50%) 保持 left:50% 水平居中，scoped 局部定义不可删 */
 .toast-slide-in {
   animation: toast-slide-in var(--d-fade, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

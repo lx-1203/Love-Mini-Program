@@ -141,7 +141,8 @@ public class RecommendationStrategy {
         String myTimeWindow = myScheduleOpt.map(UserScheduleProfile::getPreferredTimeWindowJson).orElse("{}");
 
         // 3. 加载当前用户的兴趣标签
-        Set<String> myTags = userBasicProfileRepository.findByUserId(userId)
+        Optional<UserBasicProfile> myBasicProfileOpt = userBasicProfileRepository.findByUserId(userId);
+        Set<String> myTags = myBasicProfileOpt
                 .map(profile -> preferenceCalculator.parseInterestTags(profile.getInterestTags()))
                 .orElse(Collections.emptySet());
 
@@ -205,7 +206,7 @@ public class RecommendationStrategy {
             int score = calculateScoreOptimized(
                     candidate.getId(), myCampusName, myCityName, myTags, myTimeWindow,
                     myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled,
-                    campusProfile, basicProfile, memberships);
+                    campusProfile, basicProfile, memberships, myBasicProfileOpt.orElse(null));
             // SubTask 5.1.3：活跃度加分（基于最近 N 天发帖数，封顶 activityMaxPosts 条）
             long recentPostCount = recentPostCountMap.getOrDefault(candidate.getId(), 0L);
             int activityBonus = (int) Math.min(recentPostCount, recommendationConfig.getActivityMaxPosts())
@@ -371,7 +372,8 @@ public class RecommendationStrategy {
 
     /**
      * 优化版本：计算候选用户的推荐权重分数（使用预加载的数据，避免 N+1）。
-     * 加权维度：同校区 / 同城市 / 同专业 / 兴趣标签 / 共同圈 / 校园优先加成。
+     * 加权维度：同校区 / 同城市 / 同专业 / 兴趣标签 / 共同圈 / 校园优先加成
+     * + 2026-08-11 匹配精细化：身高 / 年龄 / 理想型。
      *
      * @param candidateUserId        候选用户 ID
      * @param myCampusName           当前用户校区名称
@@ -393,6 +395,21 @@ public class RecommendationStrategy {
                                         Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled,
                                         UserCampusProfile campusProfile, UserBasicProfile basicProfile,
                                         List<CircleMembership> memberships) {
+        return calculateScoreOptimized(candidateUserId, myCampusName, myCityName, myTags, myTimeWindow,
+                myDepartmentName, myCircleIds, myAnswerQuestionIds, campusPriorityEnabled,
+                campusProfile, basicProfile, memberships, null);
+    }
+
+    /**
+     * 扩展版：携带当前用户自身基础资料（身高/理想型），供 2026-08-11 匹配精细化加分。
+     */
+    public int calculateScoreOptimized(Long candidateUserId, String myCampusName,
+                                        String myCityName, Set<String> myTags, String myTimeWindow,
+                                        String myDepartmentName, Set<Long> myCircleIds,
+                                        Set<Long> myAnswerQuestionIds, boolean campusPriorityEnabled,
+                                        UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+                                        List<CircleMembership> memberships,
+                                        UserBasicProfile myBasicProfile) {
         int score = 0;
 
         // 同校区 + 同城市 + 同专业
@@ -431,6 +448,44 @@ public class RecommendationStrategy {
             score += (int) commonCircleCount * recommendationConfig.getCircleWeight();
         }
 
+        // 2026-08-11 匹配精细化：身高匹配（差 ≤5cm 加分，≤10cm 减半）
+        if (myBasicProfile != null && basicProfile != null) {
+            Integer myHeight = myBasicProfile.getHeight();
+            Integer candidateHeight = basicProfile.getHeight();
+            if (myHeight != null && candidateHeight != null) {
+                int diff = Math.abs(myHeight - candidateHeight);
+                int tolerance = recommendationConfig.getHeightDiffTolerance();
+                if (diff <= tolerance) {
+                    score += recommendationConfig.getHeightWeight();
+                } else if (diff <= tolerance * 2) {
+                    score += recommendationConfig.getHeightWeight() / 2;
+                }
+            }
+
+            // 年龄匹配（差 ≤3 岁加分；出生年份近似，缺任一方跳过）
+            Integer myBirthYear = myBasicProfile.getBirthYear();
+            Integer candidateBirthYear = basicProfile.getBirthYear();
+            if (myBirthYear != null && candidateBirthYear != null) {
+                int ageDiff = Math.abs(myBirthYear - candidateBirthYear);
+                if (ageDiff <= recommendationConfig.getAgeDiffTolerance()) {
+                    score += recommendationConfig.getAgeWeight();
+                }
+            }
+
+            // 理想型匹配：我的 expectedPartner 关键词命中候选兴趣/性格标签，每个 +partnerWeight
+            String myExpected = myBasicProfile.getExpectedPartner();
+            if (myExpected != null && !myExpected.isBlank()) {
+                Set<String> candidateTags = preferenceCalculator.parseInterestTags(basicProfile.getInterestTags());
+                if (basicProfile.getPersonalityTags() != null && !basicProfile.getPersonalityTags().isBlank()) {
+                    candidateTags = new java.util.HashSet<>(candidateTags);
+                    candidateTags.addAll(preferenceCalculator.parseInterestTags(basicProfile.getPersonalityTags()));
+                }
+                List<String> myKeywords = splitKeywords(myExpected);
+                long hitCount = myKeywords.stream().filter(candidateTags::contains).count();
+                score += (int) hitCount * recommendationConfig.getPartnerWeight();
+            }
+        }
+
         // 校园优先加成：同校用户总分加成 30%
         if (campusPriorityEnabled && campusProfile != null
                 && myCampusName != null && !myCampusName.isBlank()
@@ -439,6 +494,20 @@ public class RecommendationStrategy {
         }
 
         return score;
+    }
+
+    /**
+     * 理想型关键词拆分：按空格/逗号/顿号/中文逗号分隔，trim 后去空。
+     */
+    private static List<String> splitKeywords(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(text.split("[\\s,，、;；]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
     }
 
     // ---- 日程重叠检测 ----

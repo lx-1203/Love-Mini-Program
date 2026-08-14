@@ -62,7 +62,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="content-page page-fade-in">
+  <view class="content-page">
     <!-- 后台配置 H5 URL：web-view 加载 -->
     <web-view v-if="webUrl" :src="webUrl" class="content-webview" />
 

@@ -13,9 +13,10 @@
  * 满足「后期都可以添加」的扩展需求。
  */
 
-/** 头像框主题 ID（none 为无框基础态） */
+/** 头像框主题 ID（none 为无框基础态；default 为普通用户默认彩色品牌框） */
 export type AvatarFrameId =
-  | "none" // 普通用户：基础白色圆框
+  | "none" // 无框（仅未来头像框选择页「不戴框」选项使用）
+  | "default" // 普通用户默认：品牌青绿渐变环（卡片/详情/主页第一视觉锚点，无角标无动画）
   | "vip" // VIP：金色渐变环（品牌会员）
   | "svip" // 超级会员：炫彩渐变环 + 皇冠角标
   | "school-verified" // 校园认证：品牌绿认证环 + 认证角标
@@ -48,6 +49,16 @@ export const AVATAR_FRAMES: Record<AvatarFrameId, AvatarFrameTheme> = {
     name: "基础白框",
     priority: 0,
     gradient: ["#E5E7EB", "#D1D5DB"],
+  },
+  /* 2026-08-12 V3：普通用户默认品牌框——浅灰环（none）在朦胧背景上几乎不可见，
+   * 新增 default 主题作为卡片/详情/主页「第一视觉锚点」；
+   * 仅渐变 + 发光，无角标无动画，与 vip/school 的「身份外显」语义区分 */
+  default: {
+    id: "default",
+    name: "品牌青绿框",
+    priority: 5,
+    gradient: ["#2DD4BF", "#14B8A6"],
+    glow: "rgba(45, 212, 191, 0.35)",
   },
   vip: {
     id: "vip",

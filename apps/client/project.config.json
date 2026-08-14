@@ -24,8 +24,10 @@
     }
   },
   "compileType": "miniprogram",
+  "miniprogramRoot": "dist/build/mp-weixin/",
   "libVersion": "3.7.12",
   "appid": "wxc67cd233d72388d0",
   "projectname": "校园恋爱",
+  "sitemapLocation": "sitemap.json",
   "condition": {}
 }

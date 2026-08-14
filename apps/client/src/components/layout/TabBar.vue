@@ -440,7 +440,7 @@ function handlePublish(): void {
 /* hover-class 按压态 */
 /* P3 修复：box-shadow 单位统一为 rpx，与项目其他阴影定义保持一致 */
 .tab-publish--pressed .publish-btn {
-  transform: scale(0.92);
+  transform: scale(0.98);
   box-shadow: var(--s-tab-active);
 }
 

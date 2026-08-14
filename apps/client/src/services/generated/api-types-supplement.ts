@@ -238,6 +238,10 @@ export interface UpdateBasicProfileRequest {
   futurePlanTags?: string[];
   /** 兴趣标签数组（P0-34 修复：后端 BasicProfileRequest 已补该字段，注册后可在「我的」完善） */
   interestTags?: string[];
+  /** 理想型画像描述（2026-08-11 匹配精细化：期望对象的关键词，参与推荐匹配加分） */
+  expectedPartner?: string;
+  /** 出生日期（ISO 日期字符串，如 2002-05-01；未成年人被后端拒绝） */
+  birthDate?: string;
 }
 
 /**

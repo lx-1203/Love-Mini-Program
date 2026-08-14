@@ -1,10 +1,19 @@
 package com.campuslove.api.discover;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 
 /**
  * 推荐人物视图，用于推荐列表展示。
  * 包含用户基本信息、共同点、可用时间、校区、个人简介、图片等字段。
+ *
+ * <p>2026-08-12 Redis 序列化修复：record 为 final 类，Redis 的 Jackson
+ * default typing（NON_FINAL）不会为 final 类型写 {@code @class} 类型信息；
+ * 而 Spring Cache 反序列化 {@code List<RecommendedPersonView>} 时泛型擦除为
+ * {@code Object}，数组元素（尤其 {@link RecentPostView} 嵌套对象）缺 {@code @class}
+ * 直接报 {@code Unexpected token (START_OBJECT)} → 缓存命中失败 → 每次全量重算
+ * （游客接口 300ms+ 卡顿根因）。加 {@code @JsonTypeInfo} 强制所有实例写类型信息，
+ * 与序列化器 default typing 兼容（NON_FINAL 下 @class 由注解补充 final 类）。</p>
  *
  * <p>Phase B - Task B2 扩展字段：
  * <ul>
@@ -33,6 +42,7 @@ import java.util.List;
  * </ul>
  * </p>
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
 public record RecommendedPersonView(
     Long id,
     String name,
@@ -103,13 +113,24 @@ public record RecommendedPersonView(
     /** 年龄（由出生年份推导），可空 */
     Integer age,
     /** 注册时间（ISO 字符串，供「最新注册」排序），可空 */
-    String registeredAt
+    String registeredAt,
+    // ---- V3（2026-08-12）：他人主页背景 ----
+    /** 个人主页背景图 URL（他人主页按对方显示；可空，前端纯色兜底） */
+    String profileBackgroundUrl
 ) {
     /**
      * 紧凑构造器：确保 List 字段非 null 且不含 null 元素，避免下游 NPE。
      *
      * <p>2026-08-08 修复：存量 JSON 数组可能含 null 元素（如 photo_gallery 出现
      * [null]），List.copyOf 会抛 NPE 导致整个推荐列表 500——统一过滤 null 元素。</p>
+     *
+     * <p>2026-08-12 修复：过滤结果改返回 {@code ArrayList}（可变）而非
+     * {@code List.of()/Stream.toList()}（ImmutableCollections）——Redis 的
+     * Jackson default typing 对嵌套不可变集合写出特殊类型名
+     * （{"@class":"java.util.ImmutableCollections$ListN"}），反序列化时字段声明
+     * 类型（如 {@code List<RecentPostView>}）的元素期望 {@code @class} 对象而
+     * 遇到字符串报 {@code Unexpected token (START_OBJECT)} → 缓存命中失败 →
+     * 每次全量重算（游客接口 300ms+ 卡顿根因之一）。</p>
      */
     public RecommendedPersonView {
         tags = filterNullElements(tags);
@@ -119,17 +140,20 @@ public record RecommendedPersonView(
         recentPosts = filterNullElements(recentPosts);
     }
 
-    /** 过滤列表中的 null 元素（null 列表 → 空列表）。 */
+    /** 过滤列表中的 null 元素（null 列表 → 空 ArrayList；可变，兼容 Redis 序列化）。 */
     private static <T> List<T> filterNullElements(List<T> list) {
         if (list == null) {
-            return List.of();
+            return new java.util.ArrayList<>();
         }
-        return list.stream().filter(java.util.Objects::nonNull).toList();
+        return new java.util.ArrayList<>(list.stream().filter(java.util.Objects::nonNull).toList());
     }
 
     /**
      * 动态预览视图（详情页动态 Tab 消费）。
+     * 2026-08-12：@JsonTypeInfo 强制写类型信息（final record + 嵌套对象，
+     * 否则 Redis 反序列化泛型擦除时缺 @class 报错）。
      */
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
     public record RecentPostView(
         String id,
         String content,
@@ -140,7 +164,10 @@ public record RecommendedPersonView(
         String createdAt
     ) {
         public RecentPostView {
-            images = images == null ? List.of() : List.copyOf(images);
+            // 2026-08-12：改返回可变 ArrayList（List.copyOf 为不可变，
+            // Redis Jackson default typing 对嵌套不可变集合反序列化失败）
+            images = images == null ? new java.util.ArrayList<>()
+                    : new java.util.ArrayList<>(List.copyOf(images));
         }
     }
 }

@@ -42,6 +42,7 @@ const componentMap: Record<string, ComponentLoader> = {
   /* —— 内容管理（content） —— */
   "views/content/Users.vue": () => import("../views/content/Users.vue"),
   "views/content/Certifications.vue": () => import("../views/content/Certifications.vue"),
+  "views/content/RealNameCertifications.vue": () => import("../views/content/RealNameCertifications.vue"),
   "views/content/Reports.vue": () => import("../views/content/Reports.vue"),
   "views/content/Feedback.vue": () => import("../views/content/Feedback.vue"),
   "views/content/SensitiveWords.vue": () => import("../views/content/SensitiveWords.vue"),
@@ -52,6 +53,8 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/forum/CircleTopics.vue": () => import("../views/forum/CircleTopics.vue"),
   "views/forum/CampusTopics.vue": () => import("../views/forum/CampusTopics.vue"),
   "views/forum/Comments.vue": () => import("../views/forum/Comments.vue"),
+  "views/forum/HotBoardManage.vue": () => import("../views/forum/HotBoardManage.vue"),
+  "views/forum/HotSearchManage.vue": () => import("../views/forum/HotSearchManage.vue"),
   /* —— 活动运营（activity） —— */
   "views/activity/Activities.vue": () => import("../views/activity/Activities.vue"),
   "views/activity/Enrollments.vue": () => import("../views/activity/Enrollments.vue"),

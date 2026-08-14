@@ -1,8 +1,11 @@
 package com.campuslove.api.village;
 
 import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.Idempotent;
+import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.growth.AppConfigService;
 import com.campuslove.api.monitor.VillageMetrics;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
@@ -38,11 +41,18 @@ public class VillageController {
    * 通过 Micrometer 暴露到 /actuator/prometheus 供 Prometheus 抓取。
    */
   private final VillageMetrics villageMetrics;
+  /**
+   * 应用配置服务（B6：发帖开关强制点）。
+   * mock profile 由 MockAppConfigService 提供（开关恒开），real 由 RealAppConfigService 提供。
+   */
+  private final AppConfigService appConfigService;
 
   public VillageController(VillageService villageService,
-                           VillageMetrics villageMetrics) {
+                           VillageMetrics villageMetrics,
+                           AppConfigService appConfigService) {
     this.villageService = villageService;
     this.villageMetrics = villageMetrics;
+    this.appConfigService = appConfigService;
   }
 
   // ---------- 帖子 ----------
@@ -99,6 +109,10 @@ public class VillageController {
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostDetailView> createPost(
       @Valid @RequestBody CreatePostRequest request) {
+    // B6：后台关闭发帖功能（app_switch.post_publish_open=false）→ 拒绝发布（403）
+    if (!appConfigService.isSwitchEnabled(AppConfigService.SWITCH_POST_PUBLISH_OPEN)) {
+      throw new OperationForbiddenException(ErrorMessages.POST_PUBLISH_CLOSED);
+    }
     Long userId = SecurityUtils.getCurrentUserId();
     // 2026-08-09 帖子关联活动：透传可选 activityId（无效值服务层宽松置 null）
     PostDetailView view = villageService.createPost(userId, request.title(), request.content(),
@@ -110,6 +124,30 @@ public class VillageController {
       // 监控逻辑失败忽略，不影响主流程
     }
     return ApiResponse.ok(view);
+  }
+
+  /**
+   * 热度榜（2026-08-11）：按热度分降序分页（贴吧式热度，定时重算 + 缓存 15 分钟）。
+   *
+   * <p>独立端点（不扩展 getPosts 的 sortBy，避免触碰现有分类/审核分支）；
+   * 管理端可操纵 hot_boost/hot_banned 控制上榜。</p>
+   */
+  @GetMapping("/hot-board")
+  public PostListResponse getHotBoard(
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+    return villageService.getHotBoard(page, pageSize);
+  }
+
+  /**
+   * 帖子推荐流（2026-08-11 贴吧式推流）：关注新帖 + 同校热帖 + 兴趣帖混合。
+   */
+  @GetMapping("/recommend")
+  @RateLimit(capacity = 30, refillTokens = 2, key = "#request.remoteAddr")
+  public PostListResponse getPostRecommend(
+      @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
+      @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
+    return villageService.getPostRecommend(page, pageSize);
   }
 
   /**

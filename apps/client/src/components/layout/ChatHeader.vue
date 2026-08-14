@@ -78,6 +78,6 @@ const titleLabel = computed(() => props.title || t('chat.headerTitle'));
 }
 .chat-icon:active {
   background: var(--c-brand-100);
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 </style>

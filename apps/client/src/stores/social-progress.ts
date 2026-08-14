@@ -9,6 +9,11 @@ import { ref, computed } from 'vue'
 import { clientApi } from '../services/api'
 import { useMock } from './helpers/use-mock'
 import { IMAGE_PATHS } from '../config/images'
+// 2026-08-10 切换提速：社交进度 60s TTL 缓存
+import { isCacheFresh, setCachedValue } from '../utils/cache-ttl'
+
+/** 社交升温进度新鲜度窗口 */
+const PROGRESS_TTL_MS = 60_000
 
 /** 6 层升温路径图标（统一从 config/images.ts 引入，避免硬编码路径） */
 const TIER_ICONS = {
@@ -154,6 +159,10 @@ export const useSocialProgressStore = defineStore('socialProgress', () => {
    * Mock 模式下返回本地硬编码数据，Real 模式下调用后端 API。
    */
   async function fetchProgress() {
+    // 2026-08-10 切换提速：60s 内已加载且有数据时直接跳过
+    if (!useMock() && progress.value && isCacheFresh('social-progress:load', PROGRESS_TTL_MS)) {
+      return
+    }
     loading.value = true
     errorMessage.value = null
 
@@ -164,6 +173,8 @@ export const useSocialProgressStore = defineStore('socialProgress', () => {
       }
 
       const result = await clientApi.getSocialProgress()
+      // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
+      setCachedValue('social-progress:load', true)
       // 如果后端返回了数据，进行类型安全的赋值。
       // 后端返回的内联类型与 SocialProgressData 结构等价，
       // 此前使用 `as unknown as SocialProgressData` 双重断言过度宽松，

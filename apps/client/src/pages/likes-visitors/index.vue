@@ -242,7 +242,7 @@ function goToExposure() {
     uni.showToast({ title: t("likesVisitors.membershipDisabled"), icon: "none" });
     return;
   }
-  openAppPath("/pages/vip/index");
+  openAppPath("/subpackages/vip/index");
 }
 
 /**
@@ -269,7 +269,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 </script>
 
 <template>
-  <view class="likes-visitors-page page-fade-in">
+  <view class="likes-visitors-page">
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>

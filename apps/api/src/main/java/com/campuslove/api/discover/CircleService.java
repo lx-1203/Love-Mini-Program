@@ -11,12 +11,14 @@ import org.springframework.data.domain.Pageable;
 public interface CircleService {
 
     /**
-     * 获取所有兴趣圈列表，包含当前用户加入状态。
+     * 获取兴趣圈列表，包含当前用户加入状态。
      *
-     * @param userId 当前用户 ID（用于判断加入状态），可为 null
+     * @param userId   当前用户 ID（用于判断加入状态），可为 null
+     * @param category 分类过滤（study/sports/music/movie/travel/game/food/reading）；
+     *                 为 null 或空时返回全部（含未分类圈子）
      * @return 圈子视图列表
      */
-    List<CircleView> getCircles(Long userId);
+    List<CircleView> getCircles(Long userId, String category);
 
     /**
      * 加入圈子。

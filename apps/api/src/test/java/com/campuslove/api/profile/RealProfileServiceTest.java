@@ -327,7 +327,7 @@ class RealProfileServiceTest {
 
     // ---- 工具方法 ----
 
-    /** 构造测试用 BasicProfileView（20 个字段全填）。 */
+    /** 构造测试用 BasicProfileView（22 个字段全填）。 */
     private BasicProfileView buildBasicProfileView() {
         return new BasicProfileView(
                 "若星", "安静而明确", "大三", "她/她",
@@ -336,6 +336,10 @@ class RealProfileServiceTest {
                 List.of("买房", "养猫"), List.of(),
                 "/half.jpg", "/video.mp4", "/bg.jpg",
                 85, "school", null,
-                List.of(), "approved", null);
+                List.of(), "approved", null,
+                java.time.LocalDate.of(2000, 1, 1),
+                "温柔、爱运动",
+                // B1-2 实名认证标志
+                false);
     }
 }

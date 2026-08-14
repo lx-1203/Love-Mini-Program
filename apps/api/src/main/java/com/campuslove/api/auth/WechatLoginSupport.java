@@ -23,11 +23,12 @@ final class WechatLoginSupport {
      * @param authService 认证服务（real/mock 由 profile 决定）
      * @param authMetrics 登录指标
      * @param code        wx.login() 返回的临时 code
+     * @param deviceId    客户端设备标识（3-D 设备管理：可空）
      * @return 用户会话视图
      */
-    static UserSessionView login(AuthService authService, AuthMetrics authMetrics, String code) {
+    static UserSessionView login(AuthService authService, AuthMetrics authMetrics, String code, String deviceId) {
         try {
-            UserSessionView session = authService.loginWithWechat(code);
+            UserSessionView session = authService.loginWithWechat(code, deviceId);
             // 登录成功：记录成功指标（指标失败不影响主流程）
             try {
                 if (session != null && session.userId() != null) {

@@ -19,7 +19,7 @@
 import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { request } from "../../services/http";
+import { getToken, request } from "../../services/http";
 import { useLikesStore } from "../../stores/likes";
 // mock 演示：mock 模式从喜欢/访客 mock 数据构造他人主页视图
 import { useMock } from "../../stores/helpers/use-mock";
@@ -34,6 +34,9 @@ import { resolveMediaUrl } from "../../utils/media";
 // 2026-08-08：pexels 外链本地化兜底（mp 端无法加载外链图）
 import { toLocalImage } from "../../utils/image-local";
 import { useSessionStore } from "../../stores/session";
+import { useReportStore } from "../../stores/report";
+// B4 认证门控：悄悄话（发起私信）为互动操作，需已通过实名认证
+import { ensureCertified } from "../../guards/campus-gate";
 import SafeImage from "../../components/common/SafeImage.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
@@ -203,9 +206,12 @@ function buildMockProfile(u: {
   };
 }
 
-/** 记录访客（fire-and-forget，后端每日去重；失败不阻塞页面） */
+/** 记录访客（fire-and-forget，后端每日去重；失败不阻塞页面）
+ *  2026-08-13：游客门禁——POST /matches/visit 需认证，未登录不发起
+ *  （避免 401 触发全局登录跳转；本页由 likes/visitors 入口进入，正常均登录态，此门禁为防御） */
 function recordVisit(): void {
   if (!targetUserId.value || useMock()) return;
+  if (!getToken()) return;
   request<void>({
     url: "/matches/visit",
     method: "POST",
@@ -229,10 +235,10 @@ async function handleLike(): Promise<void> {
       if (mutualInMock) {
         successHaptic();
         uni.showModal({
-          title: "匹配成功",
-          content: "你们互相喜欢了，快去打个招呼吧",
-          confirmText: "去聊天",
-          cancelText: "再看看",
+          title: t("profile.other.matchTitle"),
+          content: t("profile.other.matchContent"),
+          confirmText: t("profile.other.matchGoChat"),
+          cancelText: t("profile.other.matchKeepBrowsing"),
           success: (res) => {
             if (res.confirm) {
               openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(targetUserId.value)}`);
@@ -240,7 +246,7 @@ async function handleLike(): Promise<void> {
           },
         });
       } else {
-        uni.showToast({ title: "已喜欢，等待回应", icon: "success" });
+        uni.showToast({ title: t("profile.other.likeWaiting"), icon: "success" });
       }
       return;
     }
@@ -306,6 +312,8 @@ async function handlePass(): Promise<void> {
 /** 点击「悄悄话」：创建/复用私信会话进入聊天（打招呼主入口） */
 function handleWhisper(): void {
   if (!targetUserId.value) return;
+  // B4 认证门控：悄悄话（发起私信）为互动操作，需已通过实名认证
+  if (!ensureCertified("realname")) return;
   lightHaptic();
   openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(targetUserId.value)}`);
 }
@@ -326,10 +334,82 @@ onLoad((query) => {
     errorMessage.value = t("common.noData");
   }
 });
+
+/* ========== 2026-08-10 C2：举报 / 拉黑（审核红线：用户主页必须有治理入口） ========== */
+
+/** 举报 Store（复用会话页同款报告链路，USER 类型） */
+const reportStore = useReportStore();
+
+/** 打开治理操作菜单（举报 / 拉黑），复用 chat.nav.* 文案 */
+function openGovernanceMenu() {
+  if (!targetUserId.value) return;
+  uni.showActionSheet({
+    itemList: [t("chat.nav.report"), t("chat.nav.block")],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        handleReportUser();
+      } else if (res.tapIndex === 1) {
+        handleBlockUser();
+      }
+    },
+  });
+}
+
+/** 举报该用户（原因走 ActionSheet 预设，复用 chat.nav.reportReason*） */
+function handleReportUser() {
+  const uid = targetUserId.value;
+  if (!uid) return;
+  const reasons = [
+    t("chat.nav.reportReasonHarass"),
+    t("chat.nav.reportReasonAbuse"),
+    t("chat.nav.reportReasonSpam"),
+    t("chat.nav.reportReasonOther"),
+  ];
+  uni.showActionSheet({
+    itemList: reasons,
+    success: async (res) => {
+      try {
+        const reason = reasons[res.tapIndex] ?? reasons[reasons.length - 1] ?? t("chat.nav.reportReasonOther");
+        await reportStore.reportTarget("USER", uid, reason);
+        uni.showToast({ title: t("chat.nav.reportDone"), icon: "success" });
+      } catch (_e) {
+        uni.showToast({ title: t("chat.nav.reportFailed"), icon: "none" });
+      }
+    },
+  });
+}
+
+/** 拉黑该用户（real 调 POST /users/{id}/block；mock 本地提示） */
+function handleBlockUser() {
+  uni.showModal({
+    title: t("chat.nav.blockConfirmTitle"),
+    content: t("chat.nav.blockConfirmContent"),
+    confirmText: t("chat.nav.block"),
+    cancelText: t("common.cancel"),
+    success: async (res) => {
+      if (!res.confirm) return;
+      if (useMock()) {
+        uni.showToast({ title: t("chat.nav.blockDone"), icon: "none" });
+        return;
+      }
+      try {
+        await request({
+          url: `/users/${encodeURIComponent(targetUserId.value)}/block`,
+          method: "POST",
+        });
+        uni.showToast({ title: t("chat.nav.blockDone"), icon: "success" });
+        // 拉黑后后端排除该用户（推荐/搜索/会话），停留本页但标记已拉黑
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t("chat.nav.blockFailed");
+        uni.showToast({ title: message, icon: "none" });
+      }
+    },
+  });
+}
 </script>
 
 <template>
-  <view class="other-page page-fade-in">
+  <view class="other-page">
     <!-- 自定义导航栏 -->
     <view class="other-header">
       <view
@@ -343,7 +423,19 @@ onLoad((query) => {
         <image class="other-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
       <text class="other-header__title">TA 的主页</text>
-      <view class="other-header__placeholder" />
+      <!-- 2026-08-10 C2：治理入口（举报/拉黑，审核红线要求用户主页可治理） -->
+      <view
+        v-if="targetUserId"
+        class="other-header__more press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('chat.nav.report')"
+        @tap="openGovernanceMenu"
+      >
+        <text class="other-header__more-dots">···</text>
+      </view>
+      <view v-else class="other-header__placeholder" />
     </view>
 
     <!-- 加载状态 -->
@@ -552,6 +644,25 @@ onLoad((query) => {
 
 .other-header__placeholder {
   width: 64rpx;
+}
+
+/* 2026-08-10 C2：治理菜单（举报/拉黑）按钮，与返回按钮对称 */
+.other-header__more {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.other-header__more-dots {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: var(--c-text-secondary);
+  margin-top: -8rpx;
 }
 
 /* ========== 加载 / 错误状态 ========== */

@@ -44,6 +44,9 @@ public class CaffeineCacheConfig {
     /** 推荐人物列表缓存 TTL：5 分钟 */
     private static final Duration MATCH_RECOMMEND_TTL = Duration.ofMinutes(5);
 
+    /** 游客推荐列表缓存 TTL：60 秒（2026-08-12 卡顿修复，与 RedisConfig 保持一致） */
+    private static final Duration GUEST_RECOMMEND_TTL = Duration.ofSeconds(60);
+
     /** 村口热门帖子缓存 TTL：15 分钟 */
     private static final Duration VILLAGE_HOT_POSTS_TTL = Duration.ofMinutes(15);
 
@@ -93,6 +96,7 @@ public class CaffeineCacheConfig {
         Map<String, Duration> customCaches = Map.ofEntries(
                 Map.entry(CacheNames.USER_PROFILE, USER_PROFILE_TTL),
                 Map.entry(CacheNames.MATCH_RECOMMEND, MATCH_RECOMMEND_TTL),
+                Map.entry(CacheNames.GUEST_RECOMMEND, GUEST_RECOMMEND_TTL),
                 Map.entry(CacheNames.VILLAGE_HOT_POSTS, VILLAGE_HOT_POSTS_TTL),
                 Map.entry(CacheNames.CAMPUS_SCHOOLS, CAMPUS_SCHOOLS_TTL),
                 Map.entry(CacheNames.DAILY_QUESTION, DAILY_QUESTION_TTL),

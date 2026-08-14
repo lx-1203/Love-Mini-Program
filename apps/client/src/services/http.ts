@@ -14,6 +14,11 @@ import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "
 import { ROUTES } from "../constants/routes";
 // R4-batch2: 错误/提示文案 i18n 化（apiErrors.* 键集）
 import { t } from "@/i18n";
+// 2026-08-10 切换提速：token 变更时失效媒体 URL 缓存（media.ts 亦 import 本文件的 getToken，
+// 构成运行时循环引用——仅函数体内使用，模块加载期无依赖，Rollup 可安全处理）
+import { invalidateMediaTokenCache } from "../utils/media";
+// 2026-08-10 切换提速：token 写入时清空 TTL 缓存（登录/换账号/401 刷新后防跨账号数据泄漏）
+import { clearAllCaches } from "../utils/cache-ttl";
 
 /* ========== 模块级常量 ========== */
 
@@ -163,6 +168,10 @@ export function setToken(token: string): void {
     // 修复（Task 18.1）：用户重新登录后，取消尚未执行的登录跳转定时器，
     // 避免已恢复会话后仍触发 reLaunch 跳转到登录页造成页面闪现
     cancelLoginRedirect();
+    // 2026-08-10：token 变更，媒体 URL 缓存中的旧 token 立即失效
+    invalidateMediaTokenCache();
+    // 2026-08-10：token 写入（登录/换账号/401 刷新）时清空 TTL 缓存，防跨账号数据泄漏
+    clearAllCaches();
   } catch (_e) {
     // 存储失败时静默忽略
   }
@@ -190,6 +199,8 @@ export function clearTokens(): void {
   try {
     uni.removeStorageSync(STORAGE_KEYS.AUTH_TOKEN);
     uni.removeStorageSync(STORAGE_KEYS.REFRESH_TOKEN);
+    // 2026-08-10：token 清除，媒体 URL 缓存立即失效
+    invalidateMediaTokenCache();
   } catch (_e) {
     // 清除失败时静默忽略
   }

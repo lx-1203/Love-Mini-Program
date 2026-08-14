@@ -4,6 +4,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
+// B6：后台配置即时生效——登录/注册功能开关（login_open / register_open）
+import { useAppConfigStore } from "../../stores/app-config";
 // 2026-08-09：登录成功统一跳转（消费 LockScreen 未登录引导写入的待跳转路径）
 import { replaceAppPath, consumePendingLoginRedirect } from "../../utils/navigation";
 // R4-00226：展示页路径走 ROUTES 常量
@@ -17,6 +19,8 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 import { loginWithPhone, registerUser, loginAsGuest } from "../../services/auth";
 // 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
 import { AppApiError } from "../../services/api-error";
+// 功能2：Apple 登录 real 链路（POST /auth/third-party/apple）
+import { request, setToken, setRefreshToken } from "../../services/http";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
 import { isDev } from "../../config/env";
@@ -33,19 +37,22 @@ const loginIcons = {
 
 const sessionStore = useSessionStore();
 const { loginHero, loading } = storeToRefs(sessionStore);
+// B6：登录/注册开关（store 未加载时默认开放，不影响正常登录）
+const appConfigStore = useAppConfigStore();
+const { isLoginOpen, isRegisterOpen } = storeToRefs(appConfigStore);
 
 // 表单响应式数据（必须初始化，避免模板渲染时访问 undefined）
 const phone = ref("");
 const password = ref("");
 const nickname = ref("");
+// 3-N 未成年人保护：注册模式必填出生日期（picker mode="date"，end 为今天）
+const birthDate = ref("");
 const phoneRegisterMode = ref(false);
 const agreed = ref(false);
 const showPhoneLogin = ref(false);
 
-// 页面进入淡入动画开关
-const pageVisible = ref(false);
-/** 页面进入淡入定时器引用，用于卸载时清理 */
-let pageVisibleTimer: ReturnType<typeof setTimeout> | null = null;
+/** 出生日期 picker 的最大可选日期（今天），未满 18 岁注册被后端拒绝 */
+const birthDateMax = new Date().toISOString().slice(0, 10);
 
 /** 登录成功跳转定时器引用，用于卸载时清理 */
 let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
@@ -53,26 +60,23 @@ let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
 /**
  * onShow 钩子：统一处理页面进入/回到前台逻辑。
  * - 记录面包屑（便于异常回溯）
- * - 触发淡入动画
  */
 onShow(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/login/index" });
-
-  pageVisible.value = false;
-  if (pageVisibleTimer) clearTimeout(pageVisibleTimer);
-  pageVisibleTimer = setTimeout(() => {
-    pageVisible.value = true;
-    pageVisibleTimer = null;
-  }, 30);
+  // B6：注册功能被后台关闭（register_open=false）时强制回到登录模式，
+  // 防止切换开关前残留的注册表单仍可提交
+  if (!isRegisterOpen.value) {
+    phoneRegisterMode.value = false;
+  }
 });
 
 // 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
 const isCodeValid = computed(() => password.value.length >= 6 && password.value.length <= 64);
 const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && agreed.value);
-// 注册模式额外要求昵称非空
-const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && agreed.value);
+// 注册模式额外要求昵称 + 出生日期非空
+const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && birthDate.value.length > 0 && agreed.value);
 
 /**
  * 安全读取登录页 Hero 文案。
@@ -87,14 +91,10 @@ const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || t("login.he
 
 /**
  * 页面卸载时清理所有定时器，避免内存泄漏。
- * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，pageVisibleTimer /
- * loginNavTimer 在页面销毁后仍可能触发回调，修改已销毁页面的响应式状态。
+ * 修复（P1 BUG）：原实现缺少 onUnmounted 钩子，loginNavTimer
+ * 在页面销毁后仍可能触发回调，修改已销毁页面的响应式状态。
  */
 onUnmounted(() => {
-  if (pageVisibleTimer) {
-    clearTimeout(pageVisibleTimer);
-    pageVisibleTimer = null;
-  }
   if (loginNavTimer) {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
@@ -140,6 +140,11 @@ async function onWechatLogin() {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
+  // B6：后台关闭登录功能（login_open=false）→ 拒绝登录并提示
+  if (!isLoginOpen.value) {
+    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
+    return;
+  }
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
   addBreadcrumb("ui", "button_click", { id: "login.wechat" });
   try {
@@ -169,6 +174,15 @@ async function onPhoneLogin() {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
+  // B6：登录/注册功能被后台关闭时拒绝提交（对应入口按钮已隐藏/禁用，此处兜底）
+  if (!isLoginOpen.value) {
+    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
+    return;
+  }
+  if (phoneRegisterMode.value && !isRegisterOpen.value) {
+    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
+    return;
+  }
   const canSubmit = phoneRegisterMode.value ? canPhoneRegister.value : canPhoneLogin.value;
   if (!canSubmit) {
     uni.showToast({ title: t("login.phoneAndCodeInvalid"), icon: "none" });
@@ -178,7 +192,7 @@ async function onPhoneLogin() {
   // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
   try {
     if (phoneRegisterMode.value) {
-      await registerUser(phone.value.trim(), password.value, nickname.value.trim());
+      await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value);
       addBreadcrumb("ui", "button_click", { id: "login.register" });
     } else {
       await loginWithPhone(phone.value.trim(), password.value);
@@ -202,7 +216,13 @@ async function onPhoneLogin() {
     }, 1500);
   } catch (error) {
     captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
-    const message = error instanceof Error ? error.message : t("login.loginFailed");
+    // 3-N 未成年人保护：后端 403 MINOR_NOT_ALLOWED → 明确提示未满 18 岁
+    const isMinor = error instanceof AppApiError && error.error === "MINOR_NOT_ALLOWED";
+    const message = isMinor
+      ? t("login.minorNotAllowed")
+      : error instanceof Error
+        ? error.message
+        : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   }
 }
@@ -226,6 +246,11 @@ const onPhoneLoginGuarded = createButtonGuard(onPhoneLogin, 2000);
 async function onGuestLogin() {
   if (!agreed.value) {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  // B6：后台关闭登录功能（login_open=false）→ 拒绝体验入口
+  if (!isLoginOpen.value) {
+    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
     return;
   }
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
@@ -287,6 +312,14 @@ async function enterShowcase() {
 
 function onAgreeTap() {
   agreed.value = !agreed.value;
+}
+
+/**
+ * 出生日期 picker 选择回调（3-N）。
+ * @param event picker change 事件（detail.value 为 yyyy-MM-dd 日期串）
+ */
+function onBirthDateChange(event: { detail: { value: string } }) {
+  birthDate.value = event.detail.value;
 }
 
 /**
@@ -352,9 +385,22 @@ function openPrivacyPolicy() {
  * ============================================================ */
 
 /**
- * 触发 Apple 登录。
+ * Apple 登录会话视图（POST /auth/third-party/apple 响应载荷）。
+ * 后端 UserSession 中的 token / refreshToken 字段未在 OpenAPI 类型声明，
+ * 此处用最小契约类型收敛，避免散落的 `as Record<string, unknown>` 断言。
+ */
+interface AppleLoginSession {
+  token?: string;
+  refreshToken?: string;
+  userId?: string;
+}
+
+/**
+ * 触发 Apple 登录（功能2 real 链路）。
  * - 仅 H5 / APP-PLUS 环境调用，mp-weixin 不支持
- * - 失败时通过 toast 提示用户
+ * - 流程：uni.login(provider: "apple") 取 identityToken（回退 authorizationCode）
+ *   → POST /auth/third-party/apple 换 JWT → 保存 token → 同步会话 → 统一跳转
+ * - 失败时通过 toast 展示后端 message
  */
 async function onAppleLogin() {
   if (!agreed.value) {
@@ -365,20 +411,43 @@ async function onAppleLogin() {
   addBreadcrumb("ui", "button_click", { id: "login.apple" });
   // #ifdef H5 || APP-PLUS
   try {
-    // 实际项目中通过 Sign in with Apple SDK 拿到 identityToken，
-    // 解析出 sub（Apple User Identifier）后调用后端接口
-    // 这里调用 uni.login 的 apple provider，成功后取 authorizationCode
-    await new Promise<void>((resolve, reject) => {
+    // uni.login(provider: "apple")：不同版本返回 authorizationCode / identityToken，
+    // 优先取 identityToken（后端验签必需），缺失时回退 authorizationCode
+    const appleRes = await new Promise<{ identityToken?: string; authorizationCode?: string }>((resolve, reject) => {
       uni.login({
         provider: "apple",
-        success: () => resolve(),
+        success: (res) => {
+          const record = res as unknown as Record<string, unknown>;
+          resolve({
+            identityToken:
+              typeof record.identityToken === "string" ? record.identityToken : undefined,
+            authorizationCode:
+              typeof record.authorizationCode === "string" ? record.authorizationCode : undefined,
+          });
+        },
         fail: (err) => reject(new Error(err?.errMsg || t("thirdPartyLogin.appleLoginFailed"))),
       });
     });
-    // 此处省略与后端 /api/auth/third-party/apple 的 token 交换，
-    // 实际接入时由 services/api.ts 中 loginWithApple 方法完成
+    const identityToken = appleRes.identityToken ?? appleRes.authorizationCode;
+    if (!identityToken) {
+      throw new Error(t("thirdPartyLogin.appleLoginFailed"));
+    }
+    // 换取后端 JWT（登录前无 token，skipAuth；失败不重试，明确返回错误）
+    const session = await request<AppleLoginSession, { identityToken: string }>({
+      url: "/auth/third-party/apple",
+      method: "POST",
+      data: { identityToken },
+      skipAuth: true,
+      noRetry: true,
+    });
+    if (typeof session.token === "string" && session.token.length > 0) {
+      setToken(session.token);
+    }
+    if (typeof session.refreshToken === "string" && session.refreshToken.length > 0) {
+      setRefreshToken(session.refreshToken);
+    }
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
-    // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
+    // P0-32 修复（2026-08-08）：登录只 setToken 不更新 userSession，
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
     // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
     sessionStore.refreshSession().catch((err: unknown) => {
@@ -420,7 +489,7 @@ function openAccountBinding() {
 </script>
 
 <template>
-  <view class="login-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="login-page">
     <!-- 顶部实景图区（占 70% 高度） -->
     <view class="login-page__hero">
       <image
@@ -440,20 +509,49 @@ function openAccountBinding() {
 
     <!-- 底部按钮区（占 30% 高度） -->
     <view class="login-page__bottom">
-      <view class="login-card card-base">
+      <!-- B6：后台关闭登录功能（login_open=false）→ 关闭横幅 + 禁用登录按钮 -->
+      <view v-if="!isLoginOpen" class="login-closed-banner" role="alert">
+        <text class="login-closed-banner__title">{{ t('login.closedTitle') }}</text>
+        <text class="login-closed-banner__desc">{{ t('login.closedDesc') }}</text>
+      </view>
+      <view class="login-card card-base" :class="{ 'login-blocked': !isLoginOpen }">
         <view v-if="!showPhoneLogin" class="login-quick">
-          <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onWechatLoginGuarded">
+          <!-- 2026-08-10 a11y 修复：登录按钮补 role="button" + aria-label（屏幕阅读器可识别，e2e @a11y 断言） -->
+          <view
+            class="btn-primary press-feedback"
+            :class="{ 'btn--loading': loading }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('login.wechatLogin')"
+            @tap="onWechatLoginGuarded"
+          >
             <view class="btn-icon-wrap">
               <text class="btn-icon-wechat">{{ t('login.wechatIconText') }}</text>
             </view>
             <text class="btn-primary-text">{{ t('login.wechatLogin') }}</text>
           </view>
 
-          <view class="btn-secondary press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
+          <view
+            class="btn-secondary press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('login.phoneLogin')"
+            @tap="togglePhoneLogin"
+          >
             <text class="btn-secondary-text">{{ t('login.phoneLogin') }}</text>
           </view>
 
-          <view class="btn-guest press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onGuestLoginGuarded">
+          <view
+            class="btn-guest press-feedback"
+            :class="{ 'btn--loading': loading }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('login.guestLogin')"
+            @tap="onGuestLoginGuarded"
+          >
             <text class="btn-guest-text">{{ t('login.guestLogin') }}</text>
             <text class="btn-guest-desc">{{ t('login.guestLoginDesc') }}</text>
           </view>
@@ -519,6 +617,26 @@ function openAccountBinding() {
                 aria-required="true"
               />
             </view>
+
+            <!-- 3-N 未成年人保护：注册必填出生日期（picker mode="date"，end 为今天） -->
+            <view v-if="phoneRegisterMode" class="input-divider" />
+
+            <view v-if="phoneRegisterMode" class="input-item">
+              <view class="input-icon" aria-hidden="true">
+                <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.CAKE" mode="aspectFit" alt="" />
+              </view>
+              <label class="sr-only" for="login-birth-date">{{ t('login.birthDatePlaceholder') }}</label>
+              <picker
+                mode="date"
+                :end="birthDateMax"
+                :value="birthDate"
+                @change="onBirthDateChange"
+              >
+                <view class="picker-field" :class="{ 'picker-field--placeholder': !birthDate }">
+                  <text>{{ birthDate || t('login.birthDatePlaceholder') }}</text>
+                </view>
+              </picker>
+            </view>
           </view>
 
           <view class="form-btns">
@@ -526,7 +644,8 @@ function openAccountBinding() {
               <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
             </view>
 
-            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
+            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口 -->
+            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
               <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
             </view>
 
@@ -714,6 +833,38 @@ function openAccountBinding() {
   box-shadow: none;
 }
 
+/* B6：登录功能被后台关闭 → 卡片整体置灰并禁止交互（配合关闭横幅展示） */
+.login-blocked {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* B6：登录关闭横幅（login_open=false 时展示） */
+.login-closed-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border-radius: var(--r-lg);
+  background: var(--c-warning-bg, rgba(245, 158, 11, 0.1));
+  border: 2rpx solid var(--c-warning-border, rgba(245, 158, 11, 0.35));
+  text-align: center;
+}
+
+.login-closed-banner__title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-warning, #d97706);
+}
+
+.login-closed-banner__desc {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+}
+
 .login-quick {
   display: flex;
   flex-direction: column;
@@ -867,6 +1018,21 @@ function openAccountBinding() {
 }
 
 .input-placeholder {
+  color: var(--c-text-quaternary);
+  font-size: var(--fs-md);
+}
+
+/* 3-N 注册出生日期 picker 字段（与 input 高度对齐） */
+.picker-field {
+  flex: 1;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-lg);
+  color: var(--c-text-primary);
+}
+
+.picker-field--placeholder {
   color: var(--c-text-quaternary);
   font-size: var(--fs-md);
 }

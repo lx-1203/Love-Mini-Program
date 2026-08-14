@@ -377,7 +377,7 @@ onShow(() => {
 </script>
 
 <template>
-  <view class="album-page page-fade-in">
+  <view class="album-page">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="album-header">
       <view

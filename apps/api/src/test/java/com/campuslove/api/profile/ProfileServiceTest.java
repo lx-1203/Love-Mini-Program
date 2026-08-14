@@ -77,7 +77,7 @@ class ProfileServiceTest {
                 165, "bachelor", "never",
                 "广东省", "广州市", "广州市",
                 List.of("买房", "养猫"), null
-        , null);
+        , null, null, null);
 
         BasicProfileView view = profileService.saveBasicProfile(req);
 
@@ -101,7 +101,7 @@ class ProfileServiceTest {
     void saveBasicProfile_heightOutOfRange_throwsIllegalArgument() {
         BasicProfileRequest tooShort = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                100, null, null, null, null, null, null, null, null);
+                100, null, null, null, null, null, null, null, null, null, null);
 
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class,
                 () -> profileService.saveBasicProfile(tooShort));
@@ -109,7 +109,7 @@ class ProfileServiceTest {
 
         BasicProfileRequest tooTall = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                300, null, null, null, null, null, null, null, null);
+                300, null, null, null, null, null, null, null, null, null, null);
 
         IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class,
                 () -> profileService.saveBasicProfile(tooTall));
@@ -123,7 +123,7 @@ class ProfileServiceTest {
     void saveBasicProfile_invalidEducationLevel_throwsIllegalArgument() {
         BasicProfileRequest req = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                null, "doctorate", null, null, null, null, null, null, null);
+                null, "doctorate", null, null, null, null, null, null, null, null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> profileService.saveBasicProfile(req));
@@ -137,7 +137,7 @@ class ProfileServiceTest {
     void saveBasicProfile_invalidRelationshipStatus_throwsIllegalArgument() {
         BasicProfileRequest req = new BasicProfileRequest(
                 "若星", "bio", "大三", "她/她",
-                null, null, "complicated", null, null, null, null, null, null);
+                null, null, "complicated", null, null, null, null, null, null, null, null);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> profileService.saveBasicProfile(req));
@@ -159,7 +159,7 @@ class ProfileServiceTest {
         // 保存基本资料，不传任何媒体字段
         BasicProfileRequest req = new BasicProfileRequest(
                 "新昵称", "新简介", "大四", "他/他",
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
         profileService.saveBasicProfile(req);
 
         BasicProfileView view = profileService.getBasicProfile();

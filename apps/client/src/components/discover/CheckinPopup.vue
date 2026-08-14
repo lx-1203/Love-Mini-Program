@@ -11,7 +11,7 @@
  * 状态说明：成功态只使用本地 showSuccess，不读 store.showSuccessAnimation
  * （该字段保留给其他签到入口使用）；关闭弹窗时重置本地态，避免重开残留。
  */
-import { ref, watch } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCheckInStore } from "../../stores/checkin";
 import { useDiscoverStore } from "../../stores/discover";
@@ -37,6 +37,10 @@ const { t } = useI18n();
 const isAnimating = ref(false);
 /** 是否展示成功态面板（成功后 1.5s 自动还原） */
 const showSuccess = ref(false);
+/** 2026-08-13：关闭动画进行中标志——先播放出场动画（200ms）再通知父组件卸载 */
+const closing = ref(false);
+/** 关闭动画定时器引用（卸载时清理） */
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(
   () => props.visible,
@@ -44,9 +48,32 @@ watch(
     if (!visible) {
       showSuccess.value = false;
       isAnimating.value = false;
+      closing.value = false;
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
     }
   }
 );
+
+onUnmounted(() => {
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+});
+
+/** 请求关闭：先播出场动画（200ms）再 emit close */
+function requestClose(): void {
+  if (closing.value) return;
+  closing.value = true;
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    closing.value = false;
+    emit("close");
+  }, 200);
+}
 
 /** 立即签到：成功后同步额外推荐配额到 discover store（当日剩余次数实时更新） */
 async function handleCheckIn(): Promise<void> {
@@ -71,7 +98,7 @@ function onParticlesDone(): void {
 /** 去商城兑换（轻振动反馈） */
 function goShop(): void {
   lightHaptic();
-  openAppPath("/pages/shop/index");
+  openAppPath("/subpackages/market/shop/index");
 }
 </script>
 
@@ -79,9 +106,10 @@ function goShop(): void {
   <view
     v-if="visible"
     class="checkin-popup"
+    :class="{ 'checkin-popup--closing': closing }"
     role="button"
     :aria-label="t('common.closeAria')"
-    @tap="emit('close')"
+    @tap="requestClose"
   >
     <view class="checkin-popup__panel" @tap.stop>
       <view class="checkin-popup__header">
@@ -90,7 +118,7 @@ function goShop(): void {
           class="checkin-popup__close"
           role="button"
           :aria-label="t('common.closeAria')"
-          @tap="emit('close')"
+          @tap="requestClose"
           :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG"
           mode="aspectFit"
           alt=""
@@ -179,6 +207,12 @@ function goShop(): void {
   justify-content: center;
   z-index: 9000;
   padding: 40rpx; /* 固定布局尺寸，无对应 token */
+  /* 2026-08-13：进出场动画（复用全局 keyframes） */
+  animation: overlay-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.checkin-popup--closing {
+  animation: overlay-fade-out var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .checkin-popup__panel {
@@ -191,6 +225,12 @@ function goShop(): void {
   flex-direction: column;
   align-items: center;
   box-shadow: var(--s-modal, 0 24rpx 60rpx rgba(15, 23, 42, 0.18));
+  /* 2026-08-13：面板缩放进出场 */
+  animation: modal-scale-in var(--d-fade, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.checkin-popup--closing .checkin-popup__panel {
+  animation: modal-scale-out var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .checkin-popup__header {

@@ -894,6 +894,12 @@ export interface components {
             profileCompletion?: number;
             /** @enum {string} */
             verificationBadgeLevel?: "none" | "school" | "email" | "idcard";
+            /** 理想型画像描述（2026-08-11 匹配精细化） */
+            expectedPartner?: string | null;
+            /** 出生日期 yyyy-MM-dd（3-N 未成年人保护，2026-08-10 后端已返回） */
+            birthDate?: string | null;
+            /** 实名认证标志（B1-2，2026-08-13：true 表示已通过实名认证，校园认证前置门槛） */
+            idCardVerified?: boolean | null;
         };
         BasicProfileRequest: {
             nickname: string;
@@ -909,6 +915,8 @@ export interface components {
             hometownCity?: string | null;
             futureCity?: string | null;
             futurePlanTags?: string[];
+            /** 理想型画像描述（2026-08-11 匹配精细化） */
+            expectedPartner?: string | null;
         };
         CampusProfile: {
             city: string;

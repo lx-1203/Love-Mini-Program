@@ -80,6 +80,34 @@ public class RecommendationConfig {
      */
     private int activityMaxPosts = 10;
 
+    /**
+     * 2026-08-11 匹配精细化：身高匹配权重（候选与我的身高差 ≤5cm 加分）。
+     *
+     * <p>配置示例：{@code app.recommendation.height-weight=15}</p>
+     */
+    private int heightWeight = 15;
+
+    /**
+     * 2026-08-11 匹配精细化：年龄匹配权重（候选与我的年龄差 ≤3 岁加分）。
+     *
+     * <p>配置示例：{@code app.recommendation.age-weight=10}</p>
+     */
+    private int ageWeight = 10;
+
+    /**
+     * 2026-08-11 匹配精细化：理想型匹配权重（我的理想型关键词命中候选兴趣/性格标签，
+     * 每个关键词加分）。
+     *
+     * <p>配置示例：{@code app.recommendation.partner-weight=8}</p>
+     */
+    private int partnerWeight = 8;
+
+    /** 身高差阈值（cm）：≤ 该值加分；≤ 两倍该值减半加分 */
+    private int heightDiffTolerance = 5;
+
+    /** 年龄差阈值（岁）：≤ 该值加分 */
+    private int ageDiffTolerance = 3;
+
     public int getDailyLimit() {
         return dailyLimit;
     }
@@ -206,5 +234,45 @@ public class RecommendationConfig {
 
     public void setActivityMaxPosts(int activityMaxPosts) {
         this.activityMaxPosts = activityMaxPosts;
+    }
+
+    public int getHeightWeight() {
+        return heightWeight;
+    }
+
+    public void setHeightWeight(int heightWeight) {
+        this.heightWeight = heightWeight;
+    }
+
+    public int getAgeWeight() {
+        return ageWeight;
+    }
+
+    public void setAgeWeight(int ageWeight) {
+        this.ageWeight = ageWeight;
+    }
+
+    public int getPartnerWeight() {
+        return partnerWeight;
+    }
+
+    public void setPartnerWeight(int partnerWeight) {
+        this.partnerWeight = partnerWeight;
+    }
+
+    public int getHeightDiffTolerance() {
+        return heightDiffTolerance;
+    }
+
+    public void setHeightDiffTolerance(int heightDiffTolerance) {
+        this.heightDiffTolerance = heightDiffTolerance;
+    }
+
+    public int getAgeDiffTolerance() {
+        return ageDiffTolerance;
+    }
+
+    public void setAgeDiffTolerance(int ageDiffTolerance) {
+        this.ageDiffTolerance = ageDiffTolerance;
     }
 }

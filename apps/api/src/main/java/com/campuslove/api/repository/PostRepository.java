@@ -98,6 +98,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByAuthorId(Long authorId);
 
     /**
+     * 3-J 任务与积分：统计用户指定状态的帖子数（「发布首条动态」任务进度）。
+     *
+     * @param authorId 作者 ID
+     * @param status   帖子状态（active/deleted/hidden）
+     * @return 帖子数量
+     */
+    long countByAuthorIdAndStatus(Long authorId, PostStatus status);
+
+    /**
      * 根据状态查询帖子，按点赞数倒序分页。
      * 用于首页聚合"村口热门帖子"场景。
      *
@@ -210,4 +219,82 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("authorIds") List<Long> authorIds,
             @Param("status") PostStatus status,
             @Param("since") LocalDateTime since);
+
+    /**
+     * 热度榜查询（2026-08-11）：按 hot_score 降序，过滤禁止上榜与非 active 帖。
+     *
+     * <p>hot_banned=1 的帖子不进入榜单（运营压榜），但前台仍可见；
+     * 与 status=active 过滤正交。</p>
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND p.hotBanned = false
+            ORDER BY p.hotScore DESC, p.createdAt DESC
+            """)
+    Page<Post> findHotBoard(@Param("status") PostStatus status, Pageable pageable);
+
+    /**
+     * 搜索帖子（2026-08-11 C 端搜索）：标题/内容/标签中缀 LIKE。
+     *
+     * <p>校园规模纯 SQL 搜索（与用户搜索同口径），不引入全文索引；
+     * 相关性排序在内存完成（见 RealPostSearchService）。</p>
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND p.auditStatus = :auditStatus
+              AND (p.title LIKE CONCAT('%', :keyword, '%')
+                   OR p.content LIKE CONCAT('%', :keyword, '%')
+                   OR p.tags LIKE CONCAT('%', :keyword, '%'))
+            """)
+    Page<Post> searchByKeyword(@Param("keyword") String keyword,
+                               @Param("status") PostStatus status,
+                               @Param("auditStatus") AuditStatus auditStatus,
+                               Pageable pageable);
+
+    /**
+     * 根据 ID 列表和状态查询帖子，按热度分倒序（推荐流热度段复用）。
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.id IN :ids
+              AND p.status = :status
+              AND p.hotBanned = false
+            ORDER BY p.hotScore DESC, p.createdAt DESC
+            """)
+    Page<Post> findByIdInAndStatusOrderByHotScoreDesc(@Param("ids") List<Long> ids,
+                                                       @Param("status") PostStatus status,
+                                                       Pageable pageable);
+
+    /**
+     * 指定时间之后创建、按热度分倒序（推荐流新鲜度段复用）。
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND p.hotBanned = false
+              AND p.createdAt >= :since
+            ORDER BY p.hotScore DESC, p.createdAt DESC
+            """)
+    Page<Post> findActiveSinceOrderByHotScoreDesc(@Param("status") PostStatus status,
+                                                   @Param("since") LocalDateTime since,
+                                                   Pageable pageable);
+
+    /**
+     * 按作者 ID 列表 + 创建时间范围查询（推荐流关注段复用）。
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.authorId IN :authorIds
+              AND p.status = :status
+              AND p.hotBanned = false
+              AND p.createdAt >= :since
+            ORDER BY p.createdAt DESC
+            """)
+    Page<Post> findByAuthorIdInAndStatusAndCreatedAtAfterOrderByCreatedAtDesc(
+            @Param("authorIds") List<Long> authorIds,
+            @Param("status") PostStatus status,
+            @Param("since") LocalDateTime since,
+            Pageable pageable);
 }

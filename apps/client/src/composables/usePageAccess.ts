@@ -23,6 +23,10 @@ import { t } from "@/i18n";
  * 直到下次 API 401 才被拦截。现主动尝试 refresh，失败则跳登录。
  */
 let isRefreshingSession = false;
+/** 2026-08-10 切换提速：最近一次会话刷新时间戳（ms），30s 内不再重复 refresh，
+ *  避免 9 个受保护页连续 onShow 时反复触发网络往返 */
+const SESSION_REFRESH_THROTTLE_MS = 30_000;
+let lastSessionRefreshAt = 0;
 
 /**
  * 页面访问守卫组合式函数：在 onShow 时根据会话状态与页面要求决定是否放行或重定向。
@@ -81,8 +85,14 @@ export function usePageAccess(requirements: PageRequirements) {
     // 原实现直接 return 放行，用户可能带着失效 token 进入受保护页面，
     // 直到触发 API 401 才被拦截，存在安全隐患（页面可能已渲染敏感数据）。
     if (!current && requirements.requiresAuth && getToken()) {
+      // 2026-08-10 切换提速：30s 内已刷新过则跳过（放行由页面自身处理，避免重复往返）
+      const now = Date.now();
+      if (!isRefreshingSession && now - lastSessionRefreshAt < SESSION_REFRESH_THROTTLE_MS) {
+        return;
+      }
       if (!isRefreshingSession) {
         isRefreshingSession = true;
+        lastSessionRefreshAt = now;
         sessionStore
           .refreshSession()
           .catch((err: unknown) => {

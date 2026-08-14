@@ -5,11 +5,15 @@ import { isDev } from "../config/env";
 import { loginWithWechat as authLoginWithWechat, loginAsGuest } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
 import { getToken, clearTokens } from "../services/http";
+// 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
+import { clearAllCaches } from "../utils/cache-ttl";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import { useMock } from "./helpers/use-mock";
+// B6：后台配置即时生效——启动期非阻塞拉取功能开关/维护模式（见 bootstrap）
+import { useAppConfigStore } from "./app-config";
 import type { components } from "../services/generated/api-types";
 // R4-00167: bindSchool 城市兜底（按学校名查城市表）
 import { SCHOOLS } from "../config/schools";
@@ -480,6 +484,8 @@ export const useSessionStore = defineStore("session", {
         // logout 内部已 best-effort 处理后端通知失败，此处仅记录日志
         console.warn("[SessionStore] logout 调用异常:", error);
       } finally {
+        // 2026-08-10 切换提速：清空 TTL 缓存，防跨账号数据泄漏
+        clearAllCaches();
         // 2. 清空 store 状态，确保下次登录从干净状态开始
         this.userSession = null;
         this.loginHero = null;
@@ -554,6 +560,17 @@ export const useSessionStore = defineStore("session", {
 
         // 应用启动时同步 Sentry 用户身份：H5 冷启动后用户身份不丢失
         syncSentryUser(this.userSession);
+
+        // B6：启动期非阻塞拉取客户端配置（维护模式/功能开关），
+        // 失败仅记录日志不阻塞启动——开关判定默认开放，App.vue onShow 会按 TTL 重试
+        useAppConfigStore()
+          .fetchAppConfig()
+          .catch((error: unknown) => {
+            // R4-batch4：诊断日志仅开发环境输出
+            if (isDev) {
+              console.warn("[SessionStore] 拉取客户端配置失败（启动期非阻塞）:", error);
+            }
+          });
       } catch (error) {
         this.isOffline = true;
         console.warn("[SessionStore] 初始化失败，进入离线模式:", error);
@@ -596,6 +613,8 @@ export const useSessionStore = defineStore("session", {
         // 不含 Mock fallback，失败时抛出 WechatLoginError（含明确业务错误码）
         this.userSession = await authLoginWithWechat();
 
+        // 2026-08-10 切换提速：新账号登录成功，清空 TTL 缓存（防跨账号数据泄漏）
+        clearAllCaches();
         // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
         syncSentryUser(this.userSession);
 

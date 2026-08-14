@@ -5,7 +5,7 @@
  * 新增：预置话题标签选择器，支持横向滚动多选（最多3个）
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { onShow, onUnload } from "@dcloudio/uni-app";
+import { onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVillageStore } from "../../stores/village";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
@@ -30,7 +30,6 @@ import {
 } from "../../constants/village";
 import {
   POST_DRAFT_SAVE_DEBOUNCE_MS,
-  PAGE_ENTER_ANIMATION_DELAY_MS,
   MAX_PRESET_TAGS,
 } from "../../constants/chat";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -66,19 +65,8 @@ const selectedPresetTags = ref<string[]>([]);
  */
 const selectedTopics = ref<string[]>([]);
 
-const pageVisible = ref(false);
-/** 页面进入动画定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
 /** 发布成功跳转定时器引用，用于卸载时清理 */
 let postSubmitNavTimer: ReturnType<typeof setTimeout> | null = null;
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageVisible.value = true;
-    pageEnterTimer = null;
-  }, PAGE_ENTER_ANIMATION_DELAY_MS);
-});
 
 /**
  * 页面卸载时清理所有定时器，避免内存泄漏。
@@ -86,10 +74,6 @@ onShow(() => {
  * 状态修改或 navigateBack 跳转。
  */
 onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
   if (draftSaveTimer) {
     clearTimeout(draftSaveTimer);
     draftSaveTimer = null;
@@ -527,7 +511,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="post-page">
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

@@ -37,12 +37,12 @@ public class MockCircleService implements CircleService {
           new java.util.concurrent.atomic.AtomicLong(1_000_000L);
 
   private static final List<CircleData> PRESET_CIRCLES = List.of(
-      new CircleData(1L, "摄影圈", "\uD83D\uDCF7", "用镜头记录校园的每一刻美好", 328, 1),
-      new CircleData(2L, "运动圈", "\u26BD", "一起流汗，一起变强", 512, 2),
-      new CircleData(3L, "读书圈", "\uD83D\uDCDA", "分享书单与阅读感悟", 196, 3),
-      new CircleData(4L, "音乐圈", "\uD83C\uDFB5", "从民谣到摇滚，总有一种旋律打动你", 437, 4),
-      new CircleData(5L, "美食圈", "\uD83C\uDF5C", "探索校园周边的隐藏美味", 603, 5),
-      new CircleData(6L, "旅行圈", "\u2708\uFE0F", "分享旅途故事和攻略", 271, 6)
+      new CircleData(1L, "摄影圈", "\uD83D\uDCF7", "用镜头记录校园的每一刻美好", 328, 1, null),
+      new CircleData(2L, "运动圈", "\u26BD", "一起流汗，一起变强", 512, 2, "sports"),
+      new CircleData(3L, "读书圈", "\uD83D\uDCDA", "分享书单与阅读感悟", 196, 3, "reading"),
+      new CircleData(4L, "音乐圈", "\uD83C\uDFB5", "从民谣到摇滚，总有一种旋律打动你", 437, 4, "music"),
+      new CircleData(5L, "美食圈", "\uD83C\uDF5C", "探索校园周边的隐藏美味", 603, 5, "food"),
+      new CircleData(6L, "旅行圈", "\u2708\uFE0F", "分享旅途故事和攻略", 271, 6, "travel")
   );
 
   private final List<Long> joinedCircleIds = new ArrayList<>(List.of(1L, 4L));
@@ -55,8 +55,9 @@ public class MockCircleService implements CircleService {
   }
 
   @Override
-  public List<CircleView> getCircles(Long userId) {
+  public List<CircleView> getCircles(Long userId, String category) {
     return PRESET_CIRCLES.stream()
+        .filter(circle -> category == null || category.isBlank() || category.equals(circle.category))
         .map(circle -> {
           boolean joined = joinedCircleIds.contains(circle.id);
           return new CircleView(
@@ -66,7 +67,8 @@ public class MockCircleService implements CircleService {
               circle.description,
               circle.memberCount,
               joined,
-              0
+              0,
+              circle.category
           );
         })
         .toList();
@@ -308,7 +310,8 @@ public class MockCircleService implements CircleService {
     return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
   }
 
-  record CircleData(Long id, String name, String icon, String description, int memberCount, int sortOrder) {
+  record CircleData(Long id, String name, String icon, String description, int memberCount,
+                    int sortOrder, String category) {
   }
 
   record TopicData(Long id, String title, String content, List<String> images, int replyCount,

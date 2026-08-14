@@ -38,6 +38,14 @@ public class CampusCertification {
     @Column(name = "student_id_card_url", length = 512)
     private String studentIdCardUrl;
 
+    /** 学信网在线验证码（B1-3 学历认证，可空——未提供时仅凭学生证审核） */
+    @Column(name = "chsi_code", length = 64)
+    private String chsiCode;
+
+    /** 学信网学历截图 URL（B1-3 学历认证，可空） */
+    @Column(name = "chsi_screenshot_url", length = 512)
+    private String chsiScreenshotUrl;
+
     /** 认证状态：PENDING / APPROVED / REJECTED */
     @Column(name = "status", nullable = false, length = 20)
     private String status = "PENDING";
@@ -112,6 +120,22 @@ public class CampusCertification {
 
     public void setStudentIdCardUrl(String studentIdCardUrl) {
         this.studentIdCardUrl = studentIdCardUrl;
+    }
+
+    public String getChsiCode() {
+        return chsiCode;
+    }
+
+    public void setChsiCode(String chsiCode) {
+        this.chsiCode = chsiCode;
+    }
+
+    public String getChsiScreenshotUrl() {
+        return chsiScreenshotUrl;
+    }
+
+    public void setChsiScreenshotUrl(String chsiScreenshotUrl) {
+        this.chsiScreenshotUrl = chsiScreenshotUrl;
     }
 
     public String getStatus() {

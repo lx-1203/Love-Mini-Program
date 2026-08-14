@@ -479,8 +479,11 @@ export default {
       loading: "正在加载附近的同学…",
       loadFailed: "加载失败，请重试",
       empty: "暂时没有附近的同学",
-      likeHint: "附近的人暂不支持直接喜欢，去寻觅吧",
+      likeHint: "匹配成功，去打个招呼吧",
+      matched: "匹配成功",
       messageHint: "点击卡片查看主页后可发起聊天",
+      liked: "已喜欢",
+      operationFailed: "操作失败，请重试",
     },
     mbti: {
       title: "MBTI 人格测试",
@@ -498,6 +501,19 @@ export default {
       submit: "提交并查看结果",
       resultToast: "你的类型：{type}",
       pleaseComplete: "请完成所有题目",
+      /* 2026-08-13：结果弹层（替换 toast-only 展示，R4-00033 遗留修复） */
+      resultTitle: "你的测试结果",
+      resultClose: "知道了",
+      resultTipPrefix: "恋爱建议",
+      retake: "重新测试",
+      adviceE: "外向型：主动约 TA 见面，线下相处更容易擦出火花",
+      adviceI: "内向型：从线上深度聊天开始，慢慢建立安全感",
+      adviceS: "务实型：从共同兴趣和日常细节入手，让 TA 感到踏实",
+      adviceN: "直觉型：多聊想法和未来，精神共鸣是你们的关键",
+      adviceT: "理性型：坦诚直接地表达需求，逻辑清晰的沟通最有效",
+      adviceF: "感性型：多表达关心和感受，情感回应比讲道理更重要",
+      adviceJ: "计划型：提前规划约会安排，靠谱感是你的加分项",
+      adviceP: "随性型：保持灵活和惊喜，随遇而安的约会更有趣",
       types: {
         ENFP: "竞选者", ENTP: "辩论家", ENTJ: "指挥官", ENFJ: "主人公",
         INFP: "调停者", INTP: "逻辑学家", INTJ: "建筑师", INFJ: "提倡者",
@@ -538,6 +554,8 @@ export default {
     /* 2026-08-07 设计稿：标题行右上角剩余次数 */
     remainingToday: "今日剩余 {n} 次",
     nearby: "附近",
+    sameSchool: "同校",
+    sameCity: "同城",
     /* 2026-08-07 设计稿：筛选标签行「附近」chip */
     filterNearby: "附近",
     unlimited: "不限",
@@ -589,6 +607,8 @@ export default {
     relationshipDivorced: "离异",
     relationshipWidowed: "丧偶",
     noMoreRecommend: "今日推荐已看完",
+    /* B6：后台关闭匹配/推荐功能（match_open / recommend_open=false） */
+    matchClosed: "匹配功能暂未开放，敬请期待",
     refreshAtNoon: "明天中午 12 点刷新",
     videoBadge: "视频",
     ageUnit: "岁",
@@ -600,6 +620,8 @@ export default {
     recommendReduced: "已减少此类推荐",
     matchSuffix: "%匹配",
     cardAria: "推荐卡片：{name}，{age}岁",
+    /* 2026-08-11 新增：卡片中上部悬浮头像框（第一视觉锚点）的无障碍描述 */
+    avatarHeroAria: "用户头像",
     personalityOutgoing: "开朗外向",
     personalityGentle: "温柔体贴",
     personalityHumorous: "幽默风趣",
@@ -641,11 +663,21 @@ export default {
     personalityLabel: "性格",
     mbtiLabel: "MBTI",
     whisperLabel: "悄悄话",
-    /* 2026-08-08 走查：悄悄话功能暂未开放提示 */
+    /* 2026-08-08 走查：悄悄话功能暂未开放提示（B3 后仅功能开关关闭时可见） */
     whisperComingSoon: "悄悄话功能暂未开放",
     whisperEmpty: "还没有悄悄话",
     whisperSend: "发悄悄话",
     whisperSent: "已发送悄悄话",
+    /* ===== B3 恋爱小纸条（2026-08-13：悄悄话解锁底部弹层） ===== */
+    whisperUnlockTitle: "恋爱小纸条",
+    whisperUnlockConfirm: "解锁查看",
+    whisperUnlockCancel: "暂不",
+    whisperChatCta: "去和TA聊天",
+    whisperBalanceHint: "当前余额 {n} 交友币",
+    whisperUnlockFailBalance: "交友币余额不足，解锁失败",
+    whisperCostHint: "解锁需 {n} 交友币",
+    whisperFromUser: "「{name}」的小纸条",
+    unlocking: "解锁中…",
     expectedPartner: "期待的人物画像",
     /* 2026-08-08 走查 P0-2：匹配卡片信息区块还原文案 */
     myExpectedPartner: "我期待遇见的你",
@@ -676,13 +708,11 @@ export default {
     momentCommentSent: "评论已发送",
     momentPrivateMsg: "私信",
     privateMsgPaidHint: "解锁私信需花费 {coins} 交友币（会员免费）",
-    whisperPaidHint: "解锁悄悄话需花费 {coins} 交友币（会员免费）",
     unlockMessage: "解锁私信",
     unlockAndChat: "解锁并私信",
     unlockSuccess: "解锁成功",
     unlockFailTitle: "解锁失败",
     whisperUnlockByVip: "VIP 会员可免费发送悄悄话",
-    whisperUnlocked: "悄悄话已解锁",
     unlockWhisper: "解锁悄悄话",
     dynamicPreview: "最新动态",
     viewAllMoments: "查看全部动态",
@@ -810,7 +840,6 @@ export default {
     assistantTitle: "活动官",
     assistantSubtitle: "活动推送 · 惊喜福利",
     assistantAria: "活动官：活动推送、惊喜福利",
-    assistantWip: "活动官功能开发中",
     closed: "已关闭",
     closingSoon: "即将关闭",
     pageName: "聊天",
@@ -968,6 +997,7 @@ export default {
       blockConfirmTitle: "拉黑对方",
       blockConfirmContent: "拉黑后将无法接收对方消息，确定要拉黑吗？",
       blockDone: "已拉黑（本次会话生效）",
+          blockFailed: "拉黑失败，请重试",
       report: "举报",
       reportReasonHint: "请选择举报原因",
       reportReasonHarass: "骚扰",
@@ -995,7 +1025,10 @@ export default {
     emojiPanelOpenAria: "打开表情面板",
     /* 2026-08-09 微信 1:1 重构：「+」更多菜单图片占位 */
     moreMenuImage: "发送图片",
-    moreMenuImageWip: "图片发送功能开发中",
+      imageSent: "图片已发送",
+      /* 2026-08-13：图片发送已上线，失败文案替换过期占位 */
+      sendingImage: "发送图片中...",
+      sendImageFailed: "图片发送失败",
   },
 
   /* ========== 喜欢列表页文案 ========== */
@@ -1046,6 +1079,13 @@ export default {
     editProfile: "编辑资料",
     editBackground: "编辑背景图",
     logout: "退出登录",
+    other: {
+      matchTitle: "匹配成功",
+      matchContent: "你们互相喜欢了，快去打个招呼吧",
+      matchGoChat: "去聊天",
+      matchKeepBrowsing: "再看看",
+      likeWaiting: "已喜欢，等待回应",
+    },
     logoutConfirm: "确定要退出登录吗？",
     profileIncomplete: "完善资料后解锁",
     completionPercent: "资料完善度 {percent}%",
@@ -1070,11 +1110,50 @@ export default {
     loveLab: "情感实验室",
     feedback: "意见反馈",
     shareFriend: "推荐给好友",
+    /* 3-K 邀请奖励 real 链路：邀请码弹窗文案 */
+    inviteHint: "好友注册时输入你的邀请码，TA 完成注册后双方均可获得积分奖励",
+    inviteLoading: "邀请码生成中...",
+    inviteError: "邀请码生成失败，请重试",
+    inviteCopy: "复制邀请码",
+    inviteCopied: "邀请码已复制",
+    inviteShareText: "我在校园恋爱交友等你，输入邀请码 {code} 一起开启心动之旅～",
+    inviteEarned: "已通过邀请获得 {n} 积分",
     aboutUs: "关于我们",
     aboutTitle: "关于校园恋爱",
     aboutContent: "校园恋爱 · 遇见你的那个TA\n\n在这里，遇见同频的人，开启一段双向奔赴的校园故事。",
     gotIt: "知道了",
     sayHi: "打个招呼",
+    /* 2026-08-13：个人主页白卡首区匹配标签标题（自己/他人态共用） */
+    matchTagsTitle: "匹配标签",
+    /* 2026-08-13 B5：认证成就名牌（三级认证） */
+    certBadgesTitle: "认证成就",
+    certBadgeNames: {
+      age: "18+",
+      realname: "实名",
+      education: "学历",
+    },
+    certBadgePending: "待认证",
+    certBadgePendingSuffix: "（待认证）",
+    certSheetTitle: "认证成就",
+    certSheetSubtitle: "多级认证体系，层层把关，只为你遇见真实可信的 TA",
+    certSheetStandardLabel: "审核标准",
+    certSheetEarned: "已获得",
+    certSheetNotEarned: "未获得",
+    certSheetGo: "去认证",
+    certSheetClose: "关闭",
+    certSheetPrivacy: "认证信息仅用于身份核实，严格保密，不会向任何第三方展示",
+    certRealNameFirst: "请先完成实名认证",
+    certSheetAgeMethod: "注册时强制校验",
+    certSheetAgeDesc: "年满 18 周岁方可注册，后端严格校验出生日期",
+    certSheetRealNameMethod: "身份证 + 人工审核",
+    certSheetRealNameDesc: "身份证号加密存储，后台专人审核身份证正反面照片",
+    certSheetEducationMethod: "学生证 + 学信网核验",
+    certSheetEducationDesc: "学生证人工审核 + 学信网在线验证码核验，双渠道确认学籍真实性",
+    certEduTriple: {
+      machine: "机器核验：格式与图像自动校验，秒级完成初筛",
+      human: "人工审核：后台专人逐条核实学生证信息",
+      chsi: "学信网核验：在线验证码核对，官方渠道确认学籍",
+    },
     openVip: "开通VIP会员",
     openVipDesc: "解锁查看谁喜欢我 · 无限喜欢 · 专属标识",
     subscribeNow: "立即开通",
@@ -1183,6 +1262,12 @@ export default {
     /* 2026-08-08 QQ 主页重构：空间分享 */
     shareProfileTitle: "快来认识 {name}，在校园恋爱遇见心动的 TA",
     shareProfileAria: "分享个人主页",
+    /* 2026-08-10 A3：社交传播核心页分享卡片 */
+    sharePostDetail: "村口好帖：{title}",
+    shareVillage: "校园村口，看看大家在聊什么",
+    shareTagPosts: "看看这个标签的帖子：{tag}",
+    shareCampusTopic: "校园话题：{title}",
+    shareCircleTopic: "圈子话题：{title}",
     voiceRecord: "录制语音状态",
     voiceRecordStart: "开始录制",
     voiceRecordStop: "停止录制",
@@ -1218,6 +1303,11 @@ export default {
     taskDone: "已完成",
     taskGo: "去完成",
     taskCheckinSuccess: "签到成功！+{n} 积分",
+    /* 3-J 任务与积分 real 链路：领取按钮/结果/重复领取 */
+    taskClaim: "领取",
+    taskClaimSuccess: "领取成功！+{n} 积分",
+    taskClaimFailed: "领取失败，请重试",
+    taskAlreadyClaimed: "该任务奖励已领取",
     taskItemAria: "任务：{label}",
     helpSupport: "帮助与客服",
     helpSupportDesc: "常见问题与在线客服",
@@ -1301,6 +1391,32 @@ export default {
     passwordLengthError: "密码长度需在 6-20 位之间",
     passwordMismatch: "两次输入的密码不一致",
     passwordUpdated: "密码修改成功",
+    /* 3-B/C/D/E 账号安全 real 链路文案 */
+    submitting: "提交中...",
+    oldPasswordPlaceholder: "请输入当前密码",
+    oldPasswordRequired: "请输入当前密码",
+    oldPasswordWrong: "旧密码错误",
+    passwordUpdateFailed: "修改失败，请重试",
+    passwordUpdatedRelogin: "密码已更新，请重新登录",
+    newPhonePlaceholder: "请输入新手机号",
+    phonePasswordPlaceholder: "请输入当前登录密码",
+    phoneFormatError: "请输入正确的手机号",
+    phonePasswordRequired: "请输入当前登录密码",
+    phoneChanged: "手机号已更换",
+    phoneChangeFailed: "更换失败，请重试",
+    deviceRevoked: "已下线",
+    kickFailed: "下线失败，请重试",
+    platformWechat: "微信登录",
+    platformPhone: "手机号登录",
+    platformApple: "Apple 登录",
+    platformGuest: "体验账号",
+    deleteTypeWord: "注销",
+    deleteTypeHint: "请输入「注销」确认删除，有密码账号还需输入旧密码",
+    deleteTypePlaceholder: "请输入「注销」",
+    deletePasswordPlaceholder: "旧密码（无密码账号可留空）",
+    deleteTypeMismatch: "确认文字输入有误",
+    deleteDone: "账号已注销",
+    deleteFailed: "注销失败，请重试",
   },
 
   /* ========== 校园圈/村口页文案 ========== */
@@ -1345,6 +1461,8 @@ export default {
     categoryTreehole: "树洞",
     categoryLatest: "最新",
     emptyPosts: "暂无帖子",
+    /* B6：后台关闭发帖功能（post_publish_open=false） */
+    postClosed: "发帖功能暂未开放，敬请期待",
     follow: "+ 关注",
     followed: "已关注",
     publishPost: "发帖",
@@ -1570,6 +1688,7 @@ export default {
     channelInterest: "兴趣圈",
     channelSchool: "学校圈",
     channelActivity: "活动",
+    channelHot: "热度榜",
     channelInterestFeatured: "精选话题",
     activityChannelTitle: "推荐活动",
     activityChannelSub: "点击卡片报名或查看详情",
@@ -1605,6 +1724,13 @@ export default {
   },
 
   /* ========== 登录页文案 ========== */
+  /* B6：后台配置即时生效（2026-08-13） */
+  appConfig: {
+    /* 维护模式全局遮罩（app_switch.maintenance_mode=true） */
+    maintenanceTitle: "系统维护中",
+    maintenanceDesc: "平台正在进行系统维护，暂时无法访问。请稍后再试，给您带来不便敬请谅解。",
+  },
+
   login: {
     heroTitle: "校园恋爱",
     heroSubtitle: "遇见你的心动",
@@ -1619,13 +1745,17 @@ export default {
     codePlaceholder: "请输入验证码",
     passwordPlaceholder: "请输入密码（6-64 位）",
     nicknamePlaceholder: "请输入昵称（1-20 字）",
+    /* 3-N 未成年人保护：注册出生日期字段 */
+    birthDatePlaceholder: "请选择出生日期",
+    minorNotAllowed: "未满 18 岁暂无法注册",
     registerButton: "注 册",
     goRegister: "没有账号？去注册",
     backToLogin: "已有账号？去登录",
     getCode: "获取验证码",
     loginButton: "登 录",
     backToWechat: "返回微信登录",
-    agreedPrefix: "已阅读并同意",
+    /* 2026-08-13：勾选承载「成年 + 协议」双重声明（18 岁认证第一级，合规 P0） */
+    agreedPrefix: "我已年满18周岁，已阅读并同意",
     userAgreementLink: "《用户协议》",
     privacyPolicyLink: "《隐私政策》",
     and: "和",
@@ -1647,6 +1777,9 @@ export default {
     /* R4-00002：展示模式入口文案（VITE_SHOWCASE_MODE 构建显示） */
     showcaseEntryTitle: "以演示者身份进入展示版",
     showcaseEntryDesc: "超级管理员模式 · 一键体验全部功能",
+    /* B6：后台关闭登录功能（app_switch.login_open=false） */
+    closedTitle: "登录功能暂未开放",
+    closedDesc: "登录通道正在维护升级，请稍后再试。",
   },
 
   /* ========== 全功能展示页文案（VITE_SHOWCASE_MODE 展示构建，R4-00039） ========== */
@@ -1701,7 +1834,6 @@ export default {
         items: {
           messages: { title: "消息", desc: "会话 / 官方号 / 通知" },
           session: { title: "聊天会话", desc: "临时匿名聊天 / 渐进解锁" },
-          videoCall: { title: "视频通话", desc: "1v1 实时视频（展示）" },
         },
       },
       community: {
@@ -1745,6 +1877,9 @@ export default {
           privacy: { title: "权限设置", desc: "同校推荐 / 接收信息" },
           settings: { title: "设置", desc: "通用设置" },
           dnd: { title: "免打扰", desc: "勿扰时段" },
+          weeklySchedule: "本周安排",
+          weeklyScheduleOn: "本周安排已开启",
+          weeklyScheduleOff: "本周安排已关闭",
           feedback: { title: "反馈中心", desc: "意见 / 建议 / 投诉" },
           legalPrivacy: { title: "隐私政策", desc: "个人信息保护" },
           agreement: { title: "用户协议", desc: "服务条款" },
@@ -2033,9 +2168,8 @@ export default {
     socialSignal: "社交信号",
     contentSignal: "内容信号",
     viewNow: "立即查看",
-    groupChatWip: "群聊功能开发中",
-    assistantWip: "恋爱助手开发中",
-    searchWip: "搜索功能开发中",
+    /* 2026-08-13 死 key 清理：groupChatWip/assistantWip/searchWip 全库零引用已删除
+       （群聊/恋爱助手未规划；搜索已上线，旧「开发中」文案失效） */
     socialWarming: "社交升温",
     icebreaker1: "你好呀，很高兴认识你！",
     icebreaker2: "你也喜欢看电影吗？",
@@ -2122,6 +2256,7 @@ export default {
     yesterday: "昨天",
     /* R4-00138：活动卡片消息预览前缀/兜底文案 */
     activityCardPrefix: "[活动]",
+          imagePrefix: "[图片]",
     activityCardFallback: "活动卡片",
     searchPlaceholder: "搜索昵称或聊天记录",
     noSearchResult: "未找到相关会话",
@@ -2137,6 +2272,19 @@ export default {
     markAsRead: "标为已读",
     markedUnread: "已标为未读",
     markedRead: "已标为已读",
+  },
+
+  /* ========== 搜索页文案（2026-08-11，参考贴吧搜索） ========== */
+  search: {
+    placeholder: "搜索帖子标题、内容或话题",
+    hotSearches: "热搜",
+    history: "搜索历史",
+    clearHistory: "清除",
+    emptyHint: "输入关键词，搜索校园里的帖子",
+    resultCount: "共 {n} 条结果",
+    noResult: "没有找到相关帖子，换个词试试吧",
+    noMore: "已经到底啦",
+    matchTitle: "标题命中",
   },
 
   /* ========== 锁定页文案 ========== */
@@ -2243,6 +2391,7 @@ export default {
     homePageAria: "查看个人主页",
     bioToggleAria: "展开或收起个人简介",
     personalityTags: "开朗外向,温柔体贴,幽默风趣,文艺安静",
+    avatarHeroAria: "查看头像大图",
   },
 
   /* ========== 筛选抽屉文案 ========== */
@@ -2268,50 +2417,6 @@ export default {
   },
 
   /* ========== 聊天视频通话 ========== */
-  videoCall: {
-    navTitle: "视频通话",
-    incomingTitle: "邀请你视频通话",
-    callingTitle: "通话中",
-    waitingTitle: "正在等待对方接听...",
-    endedTitle: "通话已结束",
-    rejectedTitle: "对方已拒绝",
-    missedTitle: "未接听",
-    callerTitle: "邀请你视频通话",
-    calleeTitle: "正在邀请TA视频通话",
-    durationLabel: "通话时长：{duration}",
-    startBtn: "发起视频通话",
-    startFailed: "发起视频通话失败",
-    endBtn: "结束通话",
-    endFailed: "结束通话失败",
-    acceptBtn: "接听",
-    rejectBtn: "拒绝",
-    hangupBtn: "挂断",
-    micBtn: "麦克风",
-    cameraBtn: "摄像头",
-    speakerBtn: "扬声器",
-    switchCameraBtn: "翻转",
-    /* R4-00070：翻转相机真实调用 live-pusher switchCamera 的成功/失败提示 */
-    switchCameraDone: "已翻转摄像头",
-    switchCameraFail: "翻转失败，请稍后重试",
-    entryLabel: "视频",
-    entryAria: "发起视频通话",
-    ringTimeout: "无人接听，请稍后再试",
-    cameraOff: "摄像头已关闭",
-    cameraOn: "摄像头已开启",
-    micOff: "麦克风已关闭",
-    micOn: "麦克风已开启",
-    /* 通话记录相关 */
-    historyTitle: "通话记录",
-    historyEmpty: "暂无通话记录",
-    historyLoadFailed: "通话记录加载失败",
-    historyIncoming: "对方邀请",
-    historyOutgoing: "我发起的",
-    historyMissed: "未接听",
-    historyRejected: "已拒绝",
-    historyDuration: "时长 {duration}",
-    historyViewAll: "查看全部",
-  },
-
   /* ========== 帖子举报 ========== */
   postReport: {
     title: "举报帖子",
@@ -2462,6 +2567,8 @@ export default {
       placeholderHometownCity: "如：广州",
       labelFutureCity: "未来城市",
       placeholderFutureCity: "如：广州",
+      labelExpectedPartner: "理想型",
+      placeholderExpectedPartner: "用关键词描述你期望的TA，如：温柔、爱运动、学霸、高个子（用空格或逗号分隔，匹配会优先推荐）",
       labelFuturePlan: "未来规划",
       pleaseSelect: "请选择",
       changeBackground: "更换背景",
@@ -2530,6 +2637,8 @@ export default {
       saveButton: "保存并进入应用",
       locationRequired: "请输入偏好地点",
       timeWindowRequired: "请至少添加一个时间窗口",
+      addTimeWindow: "添加时段",
+      removeTimeWindow: "删除该时段",
       /* R4-00047：保存失败兜底文案 */
       saveFailed: "保存失败，请稍后重试",
     },
@@ -2688,6 +2797,23 @@ export default {
     productGoods1: "校徽纪念徽章",
     productTicket2: "篮球赛门票",
     productCreative2: "校园手绘地图",
+    /* 3-H 商品详情页文案 */
+    detailTitle: "商品详情",
+    buyNow: "立即购买",
+    buyUnavailable: "支付功能暂未开放",
+    stockLabel: "库存 {n}",
+    detailNotFound: "商品不存在或已下架",
+    detailNotFoundDesc: "该商品可能已下架，去看看其他好物吧",
+    detailBackShop: "返回逛逛",
+    detailDescTitle: "商品介绍",
+    detailDescEmpty: "暂无商品介绍",
+    /* mock 商品描述（与后端种子数据对齐） */
+    detailDescTicket1: "校园音乐节早鸟票，热门抢手，手慢无",
+    detailDescCreative1: "校园文创帆布袋，新品上架",
+    detailDescFood1: "食堂午餐优惠券，限量供应",
+    detailDescGoods1: "校徽纪念徽章，收藏必备",
+    detailDescTicket2: "篮球赛门票，火热开售",
+    detailDescCreative2: "校园手绘地图，推荐入手",
   },
 
   /* ========== 恋爱认证页文案（Task 28） ========== */
@@ -2709,6 +2835,9 @@ export default {
     benefitMatchDesc: "匹配概率提升 1.5 倍",
     benefitPerksTitle: "专属权益",
     benefitPerksDesc: "解锁认证用户专属功能",
+    /* B4 认证页强化（2026-08-13）：第 5 项价值「互动资格」 */
+    benefitInteractTitle: "互动资格",
+    benefitInteractDesc: "解锁喜欢、打招呼、发帖等互动能力",
     benefitsTitle: "认证权益",
     resetBtn: "重新认证",
     resetConfirmTitle: "重新认证",
@@ -2743,6 +2872,61 @@ export default {
     submitting: "提交中...",
     submitSuccess: "提交成功，等待审核",
     approvedTitle: "认证已通过",
+    /* 3-A 恋爱认证 real 链路：驳回原因 / 重复提交 / 失败兜底 */
+    rejectReasonLabel: "驳回原因",
+    alreadyPending: "已有申请审核中，请耐心等待",
+    submitFailed: "提交失败，请重试",
+    /* B4 认证页强化（2026-08-13）：未认证门控横幅 + 认证流程三步卡 */
+    gateBanner: "未认证用户仅可浏览，完成认证后可喜欢 / 发消息 / 发帖",
+    processTitle: "认证流程",
+    processStep1Title: "上传学生证",
+    processStep1Desc: "拍摄或从相册上传学生证照片\n信息仅用于身份核验",
+    processStep2Title: "人工审核（24 小时内）",
+    processStep2Desc: "审核人员将在 24 小时内完成审核\n结果通过消息通知您",
+    processStep3Title: "认证通过",
+    processStep3Desc: "通过后解锁喜欢、打招呼、发帖等互动能力",
+  },
+
+  /* ========== 实名认证页文案（B1-2） ========== */
+  realName: {
+    navTitle: "实名认证",
+    statusVerified: "已实名认证",
+    statusVerifiedDesc: "您的实名认证已通过\n可进行校园认证（学历认证）",
+    statusPending: "审核中",
+    statusPendingDesc: "您的实名认证申请已提交\n预计 1-3 个工作日内完成审核",
+    statusRejected: "认证未通过",
+    statusRejectedDesc: "您提交的认证信息未通过审核\n请核对后重新提交",
+    statusUnverified: "未实名认证",
+    statusUnverifiedDesc: "完成实名认证\n解锁校园认证与信任标识",
+    /* 3-N 未成年人保护：未满 18 周岁提示 */
+    minorNotice: "未满 18 周岁暂不支持实名认证（未成年人保护）",
+    errMinorNotAllowed: "未满 18 周岁暂不支持实名认证",
+    rejectReasonLabel: "驳回原因",
+    pendingTitle: "审核中",
+    pendingDesc: "您的实名认证申请已提交\n预计 1-3 个工作日内完成审核\n审核结果将通过消息通知您",
+    formTitle: "填写实名信息",
+    labelUserName: "真实姓名",
+    placeholderUserName: "请输入与身份证一致的姓名",
+    labelIdCardNo: "身份证号",
+    placeholderIdCardNo: "请输入 18 位身份证号",
+    uploadTitle: "上传身份证照片",
+    labelIdCardFront: "身份证正面",
+    labelIdCardBack: "身份证背面",
+    uploadHint: "点击上传",
+    uploadChange: "点击更换",
+    privacyRequiredImage: "需同意隐私协议后才能选择图片",
+    imageUploaded: "图片已上传",
+    errUserName: "请输入真实姓名",
+    errIdCardNo: "请输入正确的身份证号",
+    errFrontRequired: "请上传身份证正面照片",
+    errBackRequired: "请上传身份证背面照片",
+    submitting: "提交中...",
+    submittingBtn: "提交中...",
+    submitBtn: "提交认证申请",
+    submitSuccess: "提交成功，等待审核",
+    alreadyPending: "已有申请审核中，请耐心等待",
+    submitFailed: "提交失败，请重试",
+    privacyNote: "身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码",
   },
 
   /* ========== 校园认证页文案（Task 28） ========== */
@@ -2782,7 +2966,24 @@ export default {
       privacyTip: "你的信息仅用于学生身份认证，我们承诺保护你的隐私安全",
       verifiedLabelSchool: "学校",
       verifiedLabelMajor: "专业",
+      /* B1-2 前置门槛：未完成实名认证时的引导 */
+      realNameRequiredBanner: "请先完成实名认证，再进行校园认证",
+      realNameRequiredBtn: "去实名认证",
+      /* B1-3 学历认证（学信网）字段 */
+      labelChsiCode: "学信网验证码",
+      placeholderChsiCode: "请输入学信网在线验证码（选填）",
+      labelChsiScreenshot: "学信网截图",
+      chsiHint: "选填：提供学信网在线验证码或学历截图可加快审核",
+      chsiUploadText: "点击上传学信网截图",
+      chsiUploadSub: "支持拍照或从相册选择",
     },
+    /* B4 认证门控弹窗（2026-08-13）：互动操作前置校验引导（guards/campus-gate.ts） */
+    gateTitle: "完成实名认证后开启",
+    gateHint: "实名认证是身份信用的基础，完成认证后即可发起喜欢、打招呼、发帖等互动",
+    gateGoCertify: "去认证",
+    gateEducationTitle: "完成学历认证后开启",
+    gateEducationHint: "学历认证（校园认证）是校园互动的基础，完成后即可使用校园专区与同校同学互动",
+    gateEducationGo: "去学历认证",
     /* index.vue 校园话题列表 */
     index: {
       statusVerified: "已认证",
@@ -3197,7 +3398,7 @@ export default {
 
   /* ========== Store 错误回退文案（SubTask 3.3.3：14+ Store 错误消息 i18n 化） ========== */
   /* 设计说明：
-   *   - 按 store 模块分组（campus / checkin / circle / dailyQuestion / chat / videoCall 等）
+   *   - 按 store 模块分组（campus / checkin / circle / dailyQuestion / chat 等）
    *   - key 命名：storeErrors.<module>.<scene>
    *   - 用于 store 中 throw new Error(t("storeErrors.xxx")) 替代硬编码字符串
    */
@@ -3274,13 +3475,6 @@ export default {
       updatePinnedFailed: "会话置顶状态更新失败",
       loadIcebreakersFailed: "加载破冰话题失败",
       sendIcebreakerFailed: "发送破冰话题失败",
-    },
-    /* 视频通话 store */
-    videoCall: {
-      calleeIdInvalid: "被叫用户 ID 无效",
-      callingInProgress: "正在发起通话，请勿重复提交",
-      callIdInvalid: "通话 ID 无效",
-      endingInProgress: "正在结束通话，请勿重复提交",
     },
     /* 优惠码 store */
     promoCode: {

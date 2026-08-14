@@ -115,7 +115,7 @@ class VillageQueryServiceTest {
     @Test
     void listHotPosts_returnsNonNullList() {
         Page<Post> emptyPage = new org.springframework.data.domain.PageImpl<>(java.util.List.of());
-        when(postRepository.findByStatusOrderByLikesCountDesc(any(PostStatus.class), any(Pageable.class)))
+        when(postRepository.findHotBoard(any(PostStatus.class), any(Pageable.class)))
                 .thenReturn(emptyPage);
         var result = queryService.listHotPosts();
         assertNotNull(result);

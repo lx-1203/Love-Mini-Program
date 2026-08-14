@@ -3,8 +3,8 @@
  * 历史推荐页 - 今日已看卡片列表
  * 展示今日已浏览的所有推荐卡片，支持挽回已拒绝的卡片。
  */
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { onShow, onUnload } from "@dcloudio/uni-app";
+import { ref, computed, onMounted } from "vue";
+import { onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useDiscoverStore } from "../../stores/discover";
 import { IMAGE_PATHS } from "../../config/images";
@@ -28,17 +28,6 @@ const hasRewoundToday = computed(() => discoverStore.hasRewoundToday);
 /** R4-00013：挽回请求进行中（按钮 loading/禁用态，防止连点并发触发每日限流） */
 const rewinding = ref(false);
 
-const pageVisible = ref(false);
-/** 页面进入动画定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageVisible.value = true;
-    pageEnterTimer = null;
-  }, 30);
-});
 
 /**
  * 重试加载：清空 errorMessage 后重新拉取推荐卡片。
@@ -130,13 +119,6 @@ onMounted(() => {
 /**
  * 页面卸载时清理页面进入动画定时器，避免内存泄漏。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 // R4-00158：页面卸载时清理 discover store 定时器/请求资源
 onUnload(() => {
   discoverStore.dispose();
@@ -144,13 +126,13 @@ onUnload(() => {
 </script>
 
 <template>
-  <view class="history-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="history-page">
     <!-- 顶部导航 -->
     <view class="header">
       <view class="back-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">←</text>
       </view>
-      <text class="page-title">{{ $t("discoverHistory.navTitle") }}</text>
+      <text class="page-title">{{ t("discoverHistory.navTitle") }}</text>
       <view class="header-placeholder" />
     </view>
 
@@ -158,15 +140,15 @@ onUnload(() => {
     <view class="stats-bar">
       <view class="stat-item">
         <text class="stat-num">{{ historyCards.length }}</text>
-        <text class="stat-label">{{ $t("discoverHistory.statViewed") }}</text>
+        <text class="stat-label">{{ t("discoverHistory.statViewed") }}</text>
       </view>
       <view class="stat-item">
         <text class="stat-num">{{ historyCards.filter((c) => c.direction === "right").length }}</text>
-        <text class="stat-label">{{ $t("discoverHistory.statLiked") }}</text>
+        <text class="stat-label">{{ t("discoverHistory.statLiked") }}</text>
       </view>
       <view class="stat-item">
         <text class="stat-num">{{ passedCards.length }}</text>
-        <text class="stat-label">{{ $t("discoverHistory.statSkipped") }}</text>
+        <text class="stat-label">{{ t("discoverHistory.statSkipped") }}</text>
       </view>
     </view>
 
@@ -174,14 +156,14 @@ onUnload(() => {
     <view class="history-list" role="list">
       <!-- 加载状态：discover store 正在拉取推荐时展示骨架屏 -->
       <view v-if="discoverStore.loading && historyCards.length === 0" class="history-loading" role="status" aria-live="polite">
-        <text class="history-loading__text">{{ $t("discoverHistory.loadingText") }}</text>
+        <text class="history-loading__text">{{ t("discoverHistory.loadingText") }}</text>
       </view>
 
       <!-- 错误状态：拉取失败时展示错误提示与重试按钮 -->
       <view v-else-if="discoverStore.errorMessage && historyCards.length === 0" class="history-error" role="alert">
         <text class="history-error__text">{{ discoverStore.errorMessage }}</text>
         <view class="history-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRetry">
-          <text class="history-error__retry-text">{{ $t("discoverHistory.retryText") }}</text>
+          <text class="history-error__retry-text">{{ t("discoverHistory.retryText") }}</text>
         </view>
       </view>
 
@@ -200,13 +182,13 @@ onUnload(() => {
           />
           <view class="card-info">
             <view class="card-header-row">
-              <text class="card-name">{{ getCardDetail(record.cardId)?.name || $t("discoverHistory.unknownUser") }}</text>
+              <text class="card-name">{{ getCardDetail(record.cardId)?.name || t("discoverHistory.unknownUser") }}</text>
               <view
                 class="status-badge"
                 :class="record.direction === 'right' ? 'status-liked' : 'status-passed'"
               >
                 <text class="status-text">
-                  {{ record.direction === "right" ? $t("discoverHistory.directionLiked") : $t("discoverHistory.directionSkipped") }}
+                  {{ record.direction === "right" ? t("discoverHistory.directionLiked") : t("discoverHistory.directionSkipped") }}
                 </text>
               </view>
             </view>
@@ -222,7 +204,7 @@ onUnload(() => {
         >
           <button class="rewind-btn" :class="{ 'rewind-btn--loading': rewinding }" :disabled="rewinding" @tap="handleRewind(record.cardId)">
             <text class="rewind-icon">↩</text>
-            <text class="rewind-label">{{ rewinding ? $t("discoverHistory.rewindingLabel") : $t("discoverHistory.rewindLabel") }}</text>
+            <text class="rewind-label">{{ rewinding ? t("discoverHistory.rewindingLabel") : t("discoverHistory.rewindLabel") }}</text>
           </button>
         </view>
 
@@ -231,7 +213,7 @@ onUnload(() => {
           v-else-if="record.direction === 'left' && isLastPassedCard(record.cardId) && hasRewoundToday"
           class="rewind-hint"
         >
-          <text class="hint-text">{{ $t("discoverHistory.rewindUsedUp") }}</text>
+          <text class="hint-text">{{ t("discoverHistory.rewindUsedUp") }}</text>
         </view>
       </view>
       </template>
@@ -242,8 +224,8 @@ onUnload(() => {
       v-if="historyCards.length === 0 && !discoverStore.loading && !discoverStore.errorMessage"
       type="no-data"
       :image="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION"
-      :title="$t('discoverHistory.emptyTitle')"
-      :description="$t('discoverHistory.emptyDesc')"
+      :title="t('discoverHistory.emptyTitle')"
+      :description="t('discoverHistory.emptyDesc')"
     />
   </view>
 </template>

@@ -16,10 +16,10 @@
  * - 不使用 optional catch binding
  */
 import { ref, computed, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory } from "../../stores/campus";
+import { useMock } from "../../stores/helpers/use-mock";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../components/village/TopicSelector.vue";
 import { designTokens } from "../../theme/tokens";
@@ -27,30 +27,15 @@ import { designTokens } from "../../theme/tokens";
 const campusStore = useCampusStore();
 const { t } = useI18n();
 
-const pageVisible = ref(false);
 /**
- * SubTask 1.5.2：页面进入淡入定时器与发布成功跳转定时器，统一保存引用便于卸载清理。
+ * SubTask 1.5.2：发布成功跳转定时器引用，便于卸载清理。
  */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
 let postSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理所有未触发的定时器，避免在已销毁页面上修改响应式状态或触发导航。
  */
 onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
   if (postSuccessNavTimer) {
     clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = null;
@@ -77,8 +62,8 @@ const brandColor = designTokens.color.brand[500];
 /**
  * 功能4：TopicSelector 已选话题列表（不含 # 前缀）。
  * 由 TopicSelector 组件通过 v-model 双向绑定。
- * 提交时附加到内容末尾作为 #话题 标签（后端 createCampusTopic 暂未支持 tags 字段，
- * 采用内容追加方式保留现有 API 不变）。
+ * 2026-08-10 B5：real 模式以 tags 数组字段提交（后端已支持 ≤5 个、每个 ≤20 字符）；
+ * mock 模式保留内容末尾 #话题 拼接（后端 mock 无 tags 语义）。
  */
 const selectedTopics = ref<string[]>([]);
 
@@ -122,8 +107,8 @@ function toggleAnonymous() {
 /**
  * 发布话题
  *
- * 功能4：若用户选择了话题标签，将其以 #话题 格式追加到内容末尾，
- * 保留 createCampusTopic 现有 API 签名不变（不引入 tags 字段）。
+ * 功能4：real 模式将话题标签作为 tags 字段提交（后端原生支持）；
+ * mock 模式（B5 兼容）将标签以 #话题 格式追加到内容末尾（mock 无 tags 语义）。
  */
 async function submitTopic() {
   if (!canSubmit.value) return;
@@ -140,17 +125,31 @@ async function submitTopic() {
 
   isSubmitting.value = true;
   try {
-    // 功能4：拼接最终内容（如有话题标签则追加到末尾）
     const trimmedContent = content.value.trim();
-    const topics = selectedTopics.value.map((name) => `#${name}`).join(" ");
-    const finalContent = topics ? `${trimmedContent}\n\n${topics}` : trimmedContent;
-
-    await campusStore.createCampusTopic({
-      category: selectedCategory.value,
-      title: title.value.trim(),
-      content: finalContent,
-      isAnonymous: isAnonymous.value,
-    });
+    if (useMock()) {
+      // mock：拼接最终内容（如有话题标签则追加到末尾）
+      const topics = selectedTopics.value.map((name) => `#${name}`).join(" ");
+      const finalContent = topics ? `${trimmedContent}\n\n${topics}` : trimmedContent;
+      await campusStore.createCampusTopic({
+        category: selectedCategory.value,
+        title: title.value.trim(),
+        content: finalContent,
+        isAnonymous: isAnonymous.value,
+      });
+    } else {
+      // real：tags 字段提交（后端校验 ≤5 个、每个 ≤20 字符，超限前端先截断）
+      const tags = selectedTopics.value
+        .slice(0, 5)
+        .map((name) => name.slice(0, 20))
+        .filter((name) => name.trim().length > 0);
+      await campusStore.createCampusTopic({
+        category: selectedCategory.value,
+        title: title.value.trim(),
+        content: trimmedContent,
+        isAnonymous: isAnonymous.value,
+        ...(tags.length > 0 ? { tags } : {}),
+      });
+    }
 
     uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "success" });
     // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
@@ -178,7 +177,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="post-page">
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

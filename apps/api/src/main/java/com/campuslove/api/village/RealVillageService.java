@@ -233,4 +233,24 @@ public class RealVillageService implements VillageService {
     public SimilarAuthorsResponse getSimilarAuthors(Long postId, Long userId) {
         return queryService.getSimilarAuthors(postId, userId);
     }
+
+    // ---- 2026-08-11 热度榜 / 帖子推荐流 ----
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostListResponse getHotBoard(int page, int pageSize) {
+        return queryService.getHotBoard(page, pageSize);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostListResponse getPostRecommend(int page, int pageSize) {
+        Long userId = null;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (HttpClientErrorException.Unauthorized ignored) {
+            // 未认证回退最新流（推荐流为个性化功能，匿名不报错）
+        }
+        return queryService.getPostRecommend(userId, page, pageSize);
+    }
 }

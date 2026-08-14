@@ -4,6 +4,7 @@ import type { ProfileStats } from "../services/generated/api-types-supplement";
 // 修复 no-duplicate-imports：合并 ../services/api 的重复 import
 import { clientApi, type UniUploadFileLike } from "../services/api";
 import { IMAGE_PATHS } from "../config/images";
+import { STORAGE_KEYS } from "../constants/storage-keys";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 展示模式（全功能展示版）：VIP 全亮
@@ -12,6 +13,11 @@ import { isShowcaseMode } from "../config/showcase";
 import { request } from "../services/http";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// 2026-08-10 切换提速：个人资料 60s TTL 缓存（避免每次切「我的」tab 全量重拉 5 个请求）
+import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+
+/** 个人资料新鲜度窗口（60s） */
+const PROFILE_TTL_MS = 60_000;
 
 type Schemas = components["schemas"];
 
@@ -140,8 +146,8 @@ const mockPrivacySettings = {
   receiveSameSchoolInfo: true,
 };
 
-/** 权限开关本地持久化 key（Phase 4.5 验收：开关状态持久化并同步后端） */
-const PRIVACY_STORAGE_KEY = "campus-love:privacy-settings";
+/** 权限开关本地持久化 key（Phase 4.5 验收：开关状态持久化并同步后端；2026-08-10 统一至 STORAGE_KEYS） */
+const PRIVACY_STORAGE_KEY = STORAGE_KEYS.PRIVACY_SETTINGS;
 
 /** 读取本地持久化的权限设置（无记录时返回 mock 默认值） */
 function loadPersistedPrivacy(): { allowSameSchoolRecommend: boolean; receiveSameSchoolInfo: boolean } {
@@ -270,6 +276,10 @@ export const useProfileStore = defineStore("profile", {
      * 现保存 in-flight Promise，并发调用复用同一次请求，避免重复请求与状态错乱。
      */
     async load() {
+      // 2026-08-10 切换提速：60s 内已加载且有数据时直接跳过（内容已在 store，秒开）
+      if (!useMock() && this.basicProfile && isCacheFresh("profile:load", PROFILE_TTL_MS)) {
+        return;
+      }
       // 修复（P1 BUG）：并发守卫——若已有 in-flight 请求，复用其 Promise
       if (inflightLoadPromise) {
         return inflightLoadPromise;
@@ -306,6 +316,8 @@ export const useProfileStore = defineStore("profile", {
             clientApi.getScheduleProfile(),
             clientApi.getProfileStats(),
           ]);
+          // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳（下次 60s 内进入直接跳过）
+          setCachedValue("profile:load", true);
           this.basicProfile = basic;
           this.campusProfile = campus;
           this.scheduleProfile = schedule;

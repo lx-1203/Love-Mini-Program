@@ -29,6 +29,15 @@ public final class CacheNames {
     public static final String MATCH_RECOMMEND = "match_recommend";
 
     /**
+     * 游客（未登录）推荐列表缓存（2026-08-12 卡顿修复）。
+     *
+     * <p>游客推荐无个性化上下文（固定 key），每次全量重算 ~8 次 SQL（候选池 200 人）
+     * 是未登录切页卡顿的主因；缓存后降为 1 次 Redis GET。TTL 60 秒：
+     * 新注册/资料更新的可见性窗口 1 分钟，运营可接受。</p>
+     */
+    public static final String GUEST_RECOMMEND = "guest_recommend";
+
+    /**
      * 村口热门帖子缓存。
      * 缓存按点赞数排序的热门帖子列表，TTL 15 分钟。
      * 帖子创建/更新/删除时通过 @CacheEvict(allEntries = true) 主动失效。

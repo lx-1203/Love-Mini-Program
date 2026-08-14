@@ -410,7 +410,11 @@ public class ProfileQueryService {
                 user.getAvatarUrl(),
                 galleryItems,
                 avatarAuditStatus,
-                avatarAuditRemark
+                avatarAuditRemark,
+                user.getBirthDate(),
+                profile.getExpectedPartner(),
+                // B1-2 实名认证标志：true 表示已通过实名认证（校园认证前置门槛）
+                profile.getIdCardVerified()
         );
     }
 

@@ -19,19 +19,28 @@ import { test, expect, type Page } from '@playwright/test';
 // ── Page Object Helpers ──
 
 async function navigateToLogin(page: Page) {
-  await page.goto('/');
-  // 兼容两种入口：未登录跳转 /pages/login/index 或显示登录页
-  await page.waitForURL(/\/(login)?/, { timeout: 15_000 });
+  // 2026-08-10 修复：① 发现页免登录可逛（page-access.ts），根路径 '/' 不再跳登录页；
+  // ② uni-app H5 为 hash 路由，裸路径 '/pages/login/index' 无 hash 会落到首页——
+  // 显式带 hash 访问登录页
+  await page.goto('/#/pages/login/index');
+  await page.waitForURL(/login/, { timeout: 15_000 });
 }
 
 async function performWechatLogin(page: Page) {
-  // Mock 模式下：点击「微信登录」按钮，触发 wx.login() → /api/v1/auth/wechat
-  const loginBtn = page.getByRole('button', { name: /微信登录|微信一键登录/ }).first();
-  await expect(loginBtn).toBeVisible({ timeout: 10_000 });
-  await loginBtn.tap();
+  // 2026-08-10 修复：① 微信登录（uni.login provider=weixin）仅小程序端可用，H5 环境无此 provider——
+  // 改用「一键体验全部功能」体验号登录（POST /v1/auth/guest-login，dev 后端可用）；
+  // ② 登录按钮与协议勾选绑定（agreed 守卫），必须先勾选「已阅读并同意」
+  const agree = page.getByRole('checkbox', { name: /已阅读并同意/ }).first();
+  await expect(agree).toBeVisible({ timeout: 10_000 });
+  await agree.check();
 
-  // 等待跳转到首页或 setup 引导页
-  await page.waitForURL(/\/(home|setup\/profile)/, { timeout: 30_000 });
+  const loginBtn = page.getByRole('button', { name: /一键体验/ }).first();
+  await expect(loginBtn).toBeVisible({ timeout: 10_000 });
+  await loginBtn.click();
+
+  // 等待登录完成跳转（navigateAfterLogin 无待跳路径时进入 discover——uni-app H5 首页 tab 以 /#/ 表示；
+  // 可能先去资料引导）
+  await page.waitForURL(/\/discover|\/home|\/setup\/profile|#\/?$/, { timeout: 30_000 });
 }
 
 async function skipProfileSetupIfPresent(page: Page) {
@@ -42,17 +51,15 @@ async function skipProfileSetupIfPresent(page: Page) {
 }
 
 async function navigateToDiscover(page: Page) {
-  // 通过 TabBar 切换到「匹配/发现」
-  const tab = page.getByRole('tab', { name: /匹配|发现/ }).first();
-  await expect(tab).toBeVisible({ timeout: 10_000 });
-  await tab.tap();
-  await page.waitForURL(/\/discover/, { timeout: 15_000 });
+  // 2026-08-10 修复：custom tabBar 仅 mp-weixin 实现，H5 端无底部导航（已知平台差异，
+  // 见 docs/SOCIAL-APP-ACCEPTANCE.md §4）——H5 用 URL 导航；mp-weixin 环境可切回 tab 点击
+  await page.goto('/#/pages/discover/index');
+  await page.waitForURL(/\/discover|#\/?$/, { timeout: 15_000 });
 }
 
 async function navigateToChat(page: Page) {
-  const tab = page.getByRole('tab', { name: /聊天|消息/ }).first();
-  await expect(tab).toBeVisible({ timeout: 10_000 });
-  await tab.tap();
+  // 同上：H5 端无 TabBar，直接 URL 导航到消息页
+  await page.goto('/#/pages/messages/index');
   await page.waitForURL(/\/(chat|messages)/, { timeout: 15_000 });
 }
 
@@ -68,11 +75,10 @@ test.describe('核心旅程：注册 → 匹配 → 聊天 @core-journey', () =>
     await performWechatLogin(page);
     await skipProfileSetupIfPresent(page);
 
-    // Assert：应进入首页或匹配页
-    await expect(page).toHaveURL(/\/(home|discover)/, { timeout: 15_000 });
-    // 至少应展示一个核心元素（TabBar、Hero、或推荐卡片）
-    const tabBar = page.locator('[role="tablist"], .tab-bar, .uni-tab-bar').first();
-    await expect(tabBar).toBeVisible({ timeout: 10_000 });
+    // Assert：应进入首页或匹配页（uni-app H5 首页 tab = /#/）
+    await expect(page).toHaveURL(/\/home|\/discover|#\/?$/, { timeout: 15_000 });
+    // 登录后发现页应渲染核心内容（寻觅头部 / 推荐卡片；H5 无 custom tabBar，不断言 tabbar）
+    await expect(page.getByText(/寻觅|发现心动的人/).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('登录后可访问匹配页查看推荐人物 @match', async ({ page }) => {
@@ -85,7 +91,7 @@ test.describe('核心旅程：注册 → 匹配 → 聊天 @core-journey', () =>
     await navigateToDiscover(page);
 
     // Assert
-    await expect(page).toHaveURL(/\/discover/);
+    await expect(page).toHaveURL(/\/discover|#\/?$/);
     // 应渲染推荐卡片（PersonCard 组件）
     const personCard = page.locator('.person-card, [data-testid="person-card"]').first();
     await expect(personCard).toBeVisible({ timeout: 15_000 });
@@ -191,10 +197,11 @@ test.describe('核心旅程：注册 → 匹配 → 聊天 @core-journey', () =>
 test.describe('页面可访问性与可见性 @a11y', () => {
   test('登录页核心元素对屏幕阅读器可见 @a11y', async ({ page }) => {
     await navigateToLogin(page);
-    // 验证关键 ARIA 属性
-    const loginBtn = page.getByRole('button', { name: /微信登录|微信一键登录/ }).first();
+    // 验证关键 ARIA 属性（2026-08-10：toHaveAttribute 的属性名不支持正则，拆开断言）
+    const loginBtn = page.getByRole('button', { name: /一键体验/ }).first();
     await expect(loginBtn).toBeVisible();
-    await expect(loginBtn).toHaveAttribute(/aria-label|role/, /.+/);
+    await expect(loginBtn).toHaveAttribute('role', 'button');
+    await expect(loginBtn).toHaveAttribute('aria-label', /.+/);
   });
 
   test('TabBar 满足 ARIA tablist 规范 @a11y', async ({ page }) => {

@@ -97,13 +97,13 @@ function onAnswersScrollLower(): void {
 </script>
 
 <template>
-  <view class="daily-question-page page-fade-in">
+  <view class="daily-question-page">
     <!-- 顶部导航栏 -->
     <view class="dq-header">
       <view class="dq-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">{{ $t("dailyQuestion.back") }}</text>
+        <text class="back-icon">{{ t("dailyQuestion.back") }}</text>
       </view>
-      <text class="dq-header__title">{{ $t("dailyQuestion.navTitle") }}</text>
+      <text class="dq-header__title">{{ t("dailyQuestion.navTitle") }}</text>
       <view class="dq-header__spacer" />
     </view>
 
@@ -111,37 +111,37 @@ function onAnswersScrollLower(): void {
       <!-- 未签到提示 -->
       <view v-if="!checkInStore.checkedIn" class="lock-card">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
-        <text class="lock-card__title">{{ $t("dailyQuestion.lockTitle") }}</text>
-        <text class="lock-card__desc">{{ $t("dailyQuestion.lockDesc") }}</text>
+        <text class="lock-card__title">{{ t("dailyQuestion.lockTitle") }}</text>
+        <text class="lock-card__desc">{{ t("dailyQuestion.lockDesc") }}</text>
       </view>
 
       <!-- 已签到：显示问题内容 -->
       <template v-else>
         <!-- 加载状态 -->
         <view v-if="loading && !todayQuestion" class="dq-state">
-          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="$t('dailyQuestion.loadingAria')" />
-          <text class="dq-state__text">{{ $t("dailyQuestion.loadingTextProgress") }}</text>
+          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('dailyQuestion.loadingAria')" />
+          <text class="dq-state__text">{{ t("dailyQuestion.loadingTextProgress") }}</text>
         </view>
 
         <!-- 加载失败错误态（review #32：新增错误展示 + 重试入口） -->
         <view v-else-if="dailyQuestionStore.errorMessage && !todayQuestion" class="dq-state">
-          <text class="dq-state__text">{{ dailyQuestionStore.errorMessage || $t("dailyQuestion.loadFailed") }}</text>
+          <text class="dq-state__text">{{ dailyQuestionStore.errorMessage || t("dailyQuestion.loadFailed") }}</text>
           <view
             class="dq-state__retry press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            :aria-label="$t('dailyQuestion.retryText')"
+            :aria-label="t('dailyQuestion.retryText')"
             @tap="retryQuestion"
           >
-            <text class="dq-state__retry-text">{{ $t("dailyQuestion.retryText") }}</text>
+            <text class="dq-state__retry-text">{{ t("dailyQuestion.retryText") }}</text>
           </view>
         </view>
 
         <!-- 问题卡片 -->
         <view v-if="todayQuestion" class="question-card card-base">
           <view class="question-card__badge">
-            <text class="question-card__badge-text">{{ $t("dailyQuestion.todayTopic") }}</text>
+            <text class="question-card__badge-text">{{ t("dailyQuestion.todayTopic") }}</text>
           </view>
           <text class="question-card__text">{{ todayQuestion.question }}</text>
           <text class="question-card__date">{{ todayQuestion.date }}</text>
@@ -149,20 +149,20 @@ function onAnswersScrollLower(): void {
 
         <!-- 回答区域：未回答时显示输入框 -->
         <view v-if="!hasAnswered && todayQuestion" class="answer-section">
-          <text class="answer-section__title">{{ $t("dailyQuestion.answerSectionTitle") }}</text>
+          <text class="answer-section__title">{{ t("dailyQuestion.answerSectionTitle") }}</text>
           <textarea
             v-model="answerContent"
             class="answer-input"
-            :placeholder="$t('dailyQuestion.inputPlaceholder')"
+            :placeholder="t('dailyQuestion.inputPlaceholder')"
             maxlength="500"
-            :show-confirm-bar="false" :aria-label="$t('dailyQuestion.inputPlaceholder')"
+            :show-confirm-bar="false" :aria-label="t('dailyQuestion.inputPlaceholder')"
           />
           <view class="answer-actions">
             <view class="anonymous-toggle press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="isAnonymous = !isAnonymous">
               <view class="anonymous-toggle__check" :class="{ 'anonymous-toggle__check--active': isAnonymous }">
                 <image v-if="isAnonymous" class="check-mark" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
               </view>
-              <text class="anonymous-toggle__label">{{ $t("dailyQuestion.anonymousLabel") }}</text>
+              <text class="anonymous-toggle__label">{{ t("dailyQuestion.anonymousLabel") }}</text>
             </view>
             <view
               class="submit-btn press-feedback"
@@ -171,7 +171,7 @@ function onAnswersScrollLower(): void {
               hover-stay-time="120"
               @tap="submitAnswer"
             >
-              <text class="submit-btn__text">{{ isSubmitting ? $t("dailyQuestion.submittingBtn") : $t("dailyQuestion.submitBtn") }}</text>
+              <text class="submit-btn__text">{{ isSubmitting ? t("dailyQuestion.submittingBtn") : t("dailyQuestion.submitBtn") }}</text>
             </view>
           </view>
         </view>
@@ -179,19 +179,19 @@ function onAnswersScrollLower(): void {
         <!-- 已回答提示 -->
         <view v-if="hasAnswered" class="answered-hint">
           <image class="answered-hint__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE" mode="aspectFit" alt="" />
-          <text class="answered-hint__text">{{ $t("dailyQuestion.answeredHint") }}</text>
+          <text class="answered-hint__text">{{ t("dailyQuestion.answeredHint") }}</text>
         </view>
 
         <!-- 回答列表 -->
         <view v-if="answers.length > 0" class="answers-list" role="list">
           <view class="answers-list__header">
-            <text class="answers-list__title">{{ $t("dailyQuestion.answersListTitle") }}</text>
+            <text class="answers-list__title">{{ t("dailyQuestion.answersListTitle") }}</text>
             <text class="answers-list__count">{{ answers.length }}</text>
           </view>
 
           <view
             v-for="answer in answers" :key="answer.id"
-            class="answer-card list-item"
+            class="answer-card"
           >
             <view class="answer-card__header">
               <view class="answer-card__avatar">
@@ -208,7 +208,7 @@ function onAnswersScrollLower(): void {
               </view>
               <view class="answer-card__info">
                 <text class="answer-card__name">
-                  {{ answer.isAnonymous ? $t("dailyQuestion.anonymousUser") : answer.authorName }}
+                  {{ answer.isAnonymous ? t("dailyQuestion.anonymousUser") : answer.authorName }}
                 </text>
                 <text class="answer-card__time">{{ formatAnswerTime(answer.createdAt) }}</text>
               </view>
@@ -223,13 +223,13 @@ function onAnswersScrollLower(): void {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            :aria-label="$t('dailyQuestion.loadMore')"
+            :aria-label="t('dailyQuestion.loadMore')"
             @tap="loadMoreAnswers"
           >
-            <text class="answers-load-more__text">{{ loading ? $t("dailyQuestion.loadingMore") : $t("dailyQuestion.loadMore") }}</text>
+            <text class="answers-load-more__text">{{ loading ? t("dailyQuestion.loadingMore") : t("dailyQuestion.loadMore") }}</text>
           </view>
           <view v-else-if="answers.length > 0" class="answers-load-more">
-            <text class="answers-load-more__text">{{ $t("dailyQuestion.noMoreAnswers") }}</text>
+            <text class="answers-load-more__text">{{ t("dailyQuestion.noMoreAnswers") }}</text>
           </view>
         </view>
 
@@ -237,8 +237,8 @@ function onAnswersScrollLower(): void {
         <EmptyState
           v-else-if="!loading && hasAnswered"
           type="no-data"
-          :title="$t('dailyQuestion.emptyTitle')"
-          :description="$t('dailyQuestion.emptyDesc')"
+          :title="t('dailyQuestion.emptyTitle')"
+          :description="t('dailyQuestion.emptyDesc')"
         />
       </template>
 

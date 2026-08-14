@@ -42,7 +42,9 @@ export function useAvatarFrame() {
     if (isSvip) return "svip";
     if (vipIdentityVisible) return "vip";
     if (isSchoolVerified) return "school-verified";
-    return "none";
+    // 2026-08-12 V3：none（浅灰环）→ default（品牌青绿环），
+    // 未佩戴身份的用户主页也显示可见的彩色头像框（与匹配卡片/详情页统一）
+    return "default";
   });
 
   return { frameId };

@@ -3,8 +3,9 @@
  * 标签聚合页
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
  */
-import { ref, onUnmounted } from "vue";
-import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
+import { ref } from "vue";
+import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
+import { ROUTES } from "../../constants/routes";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../utils/navigation";
 import { request } from "../../services/http";
@@ -66,29 +67,10 @@ import { resolveMediaUrl } from "../../utils/media";
 const villageStore = useVillageStore();
 const { t } = useI18n();
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 // R4-00159：页面卸载时清理 village store 定时器/请求资源
 onUnload(() => {
   villageStore.dispose();
@@ -267,10 +249,26 @@ onLoad((query) => {
     }
   }, MISSING_PARAM_NAV_DELAY_MS);
 });
+
+/**
+ * 标签话题页分享（2026-08-10 A3 修复）：
+ * 页面 :52 调用了 showShareMenu 但此前无 onShareAppMessage 处理器，
+ * 右上角分享只会走微信默认截图分享——补上自定义卡片。
+ */
+onShareAppMessage(() => ({
+  title: t("share.shareTagPosts", { tag: tagName.value }),
+  path: `${ROUTES.VILLAGE.TAG_POSTS}?tagName=${encodeURIComponent(tagName.value)}`,
+}));
+
+/** 朋友圈分享（query 带标签名） */
+onShareTimeline(() => ({
+  title: t("share.shareTagPosts", { tag: tagName.value }),
+  query: `tagName=${encodeURIComponent(tagName.value)}`,
+}));
 </script>
 
 <template>
-  <view class="tag-posts-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="tag-posts-page">
     <!-- 顶部导航栏 -->
     <view class="tag-header">
       <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

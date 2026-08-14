@@ -407,6 +407,55 @@ public final class ErrorMessages {
     /** 认证记录不存在:  */
     public static final String CAMPUS_CERT_NOT_FOUND_PREFIX = "认证记录不存在: ";
 
+    // ============ 恋爱认证（3-A） ============
+    /** 您的恋爱认证正在审核中，请耐心等待 */
+    public static final String LOVE_CERT_PENDING = "您的恋爱认证正在审核中，请耐心等待";
+
+    /** 您已完成恋爱认证，无需重复提交 */
+    public static final String LOVE_CERT_ALREADY_DONE = "您已完成恋爱认证，无需重复提交";
+
+    // ============ 实名认证（B1-2） ============
+    /** 您的实名认证正在审核中，请耐心等待 */
+    public static final String REAL_NAME_CERT_PENDING = "您的实名认证正在审核中，请耐心等待";
+
+    /** 您已完成实名认证，无需重复提交 */
+    public static final String REAL_NAME_CERT_ALREADY_DONE = "您已完成实名认证，无需重复提交";
+
+    /** 未满 18 周岁，暂不支持实名认证 */
+    public static final String MINOR_NOT_ALLOWED_REAL_NAME = "未满 18 周岁，暂不支持实名认证";
+
+    /** 身份证号格式不正确 */
+    public static final String ID_CARD_FORMAT_INVALID = "身份证号格式不正确";
+
+    /** 请先完成实名认证，再进行校园认证 */
+    public static final String REAL_NAME_REQUIRED_FOR_CAMPUS = "请先完成实名认证，再进行校园认证";
+
+    /** 实名认证记录不存在:  */
+    public static final String REAL_NAME_CERT_NOT_FOUND_PREFIX = "实名认证记录不存在: ";
+
+    // ============ 账号安全（3-B/3-C/3-E）/ 设备管理（3-D） ============
+    /** 该账号未设置密码，暂不支持此操作 */
+    public static final String PASSWORD_NOT_SET = "该账号未设置密码，暂不支持此操作";
+
+    /** 注销确认文本不能为空 */
+    public static final String CONFIRMATION_TEXT_REQUIRED = "注销确认文本不能为空";
+
+    /** 账号已注销，无法登录 */
+    public static final String ACCOUNT_DEACTIVATED_LOGIN_REJECTED = "账号已注销，无法登录";
+
+    /** 设备不存在:  */
+    public static final String DEVICE_NOT_FOUND_PREFIX = "设备不存在: ";
+
+    /** 无权操作该设备 */
+    public static final String DEVICE_OPERATION_FORBIDDEN = "无权操作该设备";
+
+    // ============ 未成年人保护（3-N） ============
+    /** 未满 18 周岁，暂不支持注册 */
+    public static final String MINOR_NOT_ALLOWED = "未满 18 周岁，暂不支持注册";
+
+    /** 出生日期不能为空 */
+    public static final String BIRTH_DATE_REQUIRED = "出生日期不能为空";
+
     // ============ 聊天/语音/视频通话 ============
     /** 互动事件不存在或不属于该用户: eventId= */
     public static final String INTERACTION_EVENT_NOT_FOUND_PREFIX = "互动事件不存在或不属于该用户: eventId=";
@@ -1023,5 +1072,64 @@ public final class ErrorMessages {
 
     /** 请求体字段数量不能超过  */
     public static final String REQUEST_FIELD_COUNT_EXCEEDED_PREFIX = "请求体字段数量不能超过 ";
+
+    // ============ 3-F 拉黑 ============
+    /** 不能拉黑自己 */
+    public static final String CANNOT_BLOCK_SELF = "不能拉黑自己";
+
+    /** 对方已将您拉黑或您已拉黑对方，无法发送消息 */
+    public static final String BLOCKED_MESSAGE_SEND_FORBIDDEN = "对方已将您拉黑或您已拉黑对方，无法发送消息";
+
+    // ============ 3-I 咨询报名 ============
+    /** 课程不存在:  */
+    public static final String CONSULTING_COURSE_NOT_FOUND_PREFIX = "课程不存在: ";
+
+    /** 课程已下架，暂不可报名 */
+    public static final String CONSULTING_COURSE_OFFLINE = "课程已下架，暂不可报名";
+
+    /** 您已报名过该课程 */
+    public static final String CONSULTING_SIGNUP_DUPLICATE = "您已报名过该课程";
+
+    // ============ 3-J 任务与积分 ============
+    /** 未知任务编码:  */
+    public static final String TASK_CODE_UNKNOWN_PREFIX = "未知任务编码: ";
+
+    /** 任务尚未达成，暂不可领取 */
+    public static final String TASK_NOT_COMPLETED = "任务尚未达成，暂不可领取";
+
+    /** 任务奖励已领取过 */
+    public static final String TASK_ALREADY_CLAIMED = "任务奖励已领取过";
+
+    /** 任务奖励发放失败，请稍后重试 */
+    public static final String TASK_REWARD_CREDIT_FAILED = "任务奖励发放失败，请稍后重试";
+
+    // ============ 3-K 邀请奖励 ============
+    /** 邀请码不存在 */
+    public static final String INVITE_CODE_NOT_FOUND = "邀请码不存在";
+
+    /** 不能邀请自己 */
+    public static final String CANNOT_INVITE_SELF = "不能邀请自己";
+
+    /** 您已绑定过邀请关系 */
+    public static final String INVITE_ALREADY_BOUND = "您已绑定过邀请关系";
+
+    /** 邀请奖励发放失败，请稍后重试 */
+    public static final String INVITE_REWARD_CREDIT_FAILED = "邀请奖励发放失败，请稍后重试";
+
+    // ============ B6 后台功能开关 ============
+    /** 发帖功能已关闭（app_switch.post_publish_open=false） */
+    public static final String POST_PUBLISH_CLOSED = "发帖功能暂未开放，请稍后再试";
+
+    /** 注册功能已关闭（app_switch.register_open=false） */
+    public static final String REGISTER_CLOSED = "注册功能暂未开放，请稍后再试";
+
+    /** 登录功能已关闭（app_switch.login_open=false） */
+        public static final String LOGIN_CLOSED = "登录功能暂未开放，请稍后再试";
+    /** 匹配功能已关闭（app_switch.match_open=false） */
+    public static final String MATCH_CLOSED = "匹配功能暂未开放，请稍后再试";
+    /** 推荐功能已关闭（app_switch.recommend_open=false） */
+    public static final String RECOMMEND_CLOSED = "推荐功能暂未开放，请稍后再试";
+    /** 反馈功能已关闭（app_switch.feedback_open=false） */
+    public static final String FEEDBACK_CLOSED = "反馈功能暂未开放，请稍后再试";
 
 }

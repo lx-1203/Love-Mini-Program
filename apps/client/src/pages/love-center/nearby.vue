@@ -15,10 +15,16 @@ import { useI18n } from "vue-i18n";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
 import { clientApi } from "../../services/api";
 import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
-import type { DiscoverCard } from "../../stores/discover/types";
+import type { DiscoverCard, SwipeDirection } from "../../stores/discover/types";
+import { useDiscoverStore } from "../../stores/discover";
+import { useSessionStore } from "../../stores/session";
+import { openAppPath } from "../../utils/navigation";
+import { showErrorToast } from "../../utils/error-toast";
 import { IMAGE_PATHS } from "../../config/images";
 
 const { t } = useI18n();
+const discoverStore = useDiscoverStore();
+const sessionStore = useSessionStore();
 
 /** 返回按钮图标 */
 const backIcon = IMAGE_PATHS.ICONS_COMMON.BACK;
@@ -60,26 +66,84 @@ function goBack() {
   uni.navigateBack();
 }
 
-/** 卡片操作事件：附近的人场景不执行喜欢/超级喜欢/滑动持久化（浏览为主） */
-function handleSwipe() {
-  /* 浏览模式：不持久化滑动 */
+/** 2026-08-10 功能补齐：附近的人滑动/喜欢/发消息接真实链路（与寻觅页一致） */
+
+/** 交互登录守卫：未登录仅提示不跳转 */
+function requireLogin(): boolean {
+  if (sessionStore.isLoggedIn) return true;
+  uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
+  return false;
 }
 
-function handleSuperLike() {
-  uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
+/** 滑动：右滑=喜欢（复用 discover store 真实接口），左滑=跳过（本地移除卡片） */
+async function handleSwipe(direction: SwipeDirection, cardId: string) {
+  if (direction !== "left" && !requireLogin()) return;
+  try {
+    if (direction === "left") {
+      await discoverStore.swipeLeft(cardId);
+    } else {
+      const card = discoverStore.cards.find((c) => c.id === cardId);
+      await discoverStore.swipeRight(cardId);
+      const result = discoverStore.lastSwipeResult;
+      if (result?.matched) {
+        uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
+        openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(String(card?.userId ?? ""))}`);
+      } else {
+        uni.showToast({ title: t("contentPages.nearby.liked"), icon: "success" });
+      }
+    }
+  } catch (error) {
+    const storeMessage = discoverStore.errorMessage;
+    if (storeMessage) {
+      uni.showToast({ title: storeMessage, icon: "none" });
+    } else {
+      showErrorToast(error, t("contentPages.nearby.operationFailed"));
+    }
+  }
 }
 
-function handleMessage() {
-  uni.showToast({ title: t("contentPages.nearby.messageHint"), icon: "none" });
+/** 超级喜欢：复用寻觅的 swipeRight(isSuper=true) 真实接口 */
+async function handleSuperLike(cardId: string) {
+  if (!requireLogin()) return;
+  try {
+    const card = discoverStore.cards.find((c) => c.id === cardId);
+    await discoverStore.swipeRight(cardId, true);
+    const result = discoverStore.lastSwipeResult;
+    if (result?.matched) {
+      uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
+      openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(String(card?.userId ?? ""))}`);
+    }
+  } catch (error) {
+    const storeMessage = discoverStore.errorMessage;
+    if (storeMessage) {
+      uni.showToast({ title: storeMessage, icon: "none" });
+    } else {
+      showErrorToast(error, t("contentPages.nearby.operationFailed"));
+    }
+  }
 }
 
-function handleVideoTap() {
-  /* 视频功能暂未启用，忽略 */
+/** 发消息：进入聊天会话页（会话懒创建，进入后由聊天页完成） */
+function handleMessage(userId: string) {
+  if (!requireLogin()) return;
+  if (!userId || userId.trim().length === 0) {
+    uni.showToast({ title: t("discover.userIdInvalid"), icon: "none" });
+    return;
+  }
+  openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
+}
+
+/** 视频角标：跳转全屏视频播放页（个人视频展示） */
+function handleVideoTap(cardId: string, videoUrl: string): void {
+  if (!videoUrl) return;
+  openAppPath(
+    `/pages/discover/video-player?videoUrl=${encodeURIComponent(videoUrl)}&cardId=${encodeURIComponent(cardId)}`
+  );
 }
 </script>
 
 <template>
-  <view class="content-page page-fade-in">
+  <view class="content-page">
     <view class="content-header">
       <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
       <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

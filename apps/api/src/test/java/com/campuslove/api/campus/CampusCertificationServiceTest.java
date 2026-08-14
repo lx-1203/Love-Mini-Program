@@ -270,7 +270,7 @@ class CampusCertificationServiceTest {
     @Test
     void mock_getVerificationBadgeLevel_afterApproval_returnsSchool() {
         // 用户 2 提交认证，certId 由 store 内部 idSeq 自增分配
-        CampusCertificationView view = mockService.submitCertification(2L, "模拟大学", "计算机系", "card.jpg");
+        CampusCertificationView view = mockService.submitCertification(2L, "模拟大学", "计算机系", "card.jpg", null, null);
         // 审核通过需使用 submitCertification 返回的 certId
         mockService.reviewCertification(view.getId(), "APPROVED", 999L, "通过");
 
@@ -340,7 +340,7 @@ class CampusCertificationServiceTest {
      */
     @Test
     void mock_getVerificationBadgeLevel_approvedOverridesEmailAndIdCard_returnsSchool() {
-        CampusCertificationView view = mockService.submitCertification(400L, "模拟大学", "计算机系", "card.jpg");
+        CampusCertificationView view = mockService.submitCertification(400L, "模拟大学", "计算机系", "card.jpg", null, null);
         // 审核需使用 submitCertification 返回的 certId（idSeq 自增分配，与 userId 不一定相同）
         mockService.reviewCertification(view.getId(), "APPROVED", 999L, "通过");
         mockService.setVerificationFlags(400L, true, true);
@@ -363,9 +363,14 @@ class CampusCertificationServiceTest {
         cert.setUserId(700L);
         cert.setStatus("PENDING");
         when(repository.findByUserId(700L)).thenReturn(Optional.of(cert));
+        // B1-2 前置门槛：实名认证已通过（idCardVerified=true）才能提交校园认证
+        UserBasicProfile bp = new UserBasicProfile();
+        bp.setUserId(700L);
+        bp.setIdCardVerified(true);
+        when(userBasicProfileRepository.findByUserId(700L)).thenReturn(Optional.of(bp));
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class,
-                () -> realService.submitCertification(700L, "某大学", "计算机", "card.jpg"));
+                () -> realService.submitCertification(700L, "某大学", "计算机", "card.jpg", null, null));
 
         assertEquals("您的校园认证正在审核中，请耐心等待", ex.getMessage());
     }
@@ -380,10 +385,31 @@ class CampusCertificationServiceTest {
         cert.setUserId(701L);
         cert.setStatus("APPROVED");
         when(repository.findByUserId(701L)).thenReturn(Optional.of(cert));
+        // B1-2 前置门槛：实名认证已通过（idCardVerified=true）才能提交校园认证
+        UserBasicProfile bp = new UserBasicProfile();
+        bp.setUserId(701L);
+        bp.setIdCardVerified(true);
+        when(userBasicProfileRepository.findByUserId(701L)).thenReturn(Optional.of(bp));
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class,
-                () -> realService.submitCertification(701L, "某大学", "计算机", "card.jpg"));
+                () -> realService.submitCertification(701L, "某大学", "计算机", "card.jpg", null, null));
 
         assertEquals("您已完成校园认证，无需重复提交", ex.getMessage());
+    }
+
+    /**
+     * B1-2 前置门槛：未完成实名认证（idCardVerified=false/无记录）时提交校园认证，
+     * 应抛 InvalidOperationException（422）「请先完成实名认证，再进行校园认证」。
+     */
+    @Test
+    void real_submitCertification_notRealNameVerified_throwsInvalidOperation() {
+        when(repository.findByUserId(702L)).thenReturn(Optional.empty());
+        when(userBasicProfileRepository.findByUserId(702L)).thenReturn(Optional.empty());
+
+        com.campuslove.api.common.InvalidOperationException ex = assertThrows(
+                com.campuslove.api.common.InvalidOperationException.class,
+                () -> realService.submitCertification(702L, "某大学", "计算机", "card.jpg", null, null));
+
+        assertEquals("请先完成实名认证，再进行校园认证", ex.getMessage());
     }
 }

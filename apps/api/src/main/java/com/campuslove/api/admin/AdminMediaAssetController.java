@@ -76,10 +76,12 @@ public class AdminMediaAssetController {
     }
 
     /**
-     * 分页查询媒体图片（审核状态/上传者/校区筛选）。
+     * 分页查询媒体图片（审核状态/媒体类型/上传者/校区筛选）。
      * <p>默认按 pending（待审核）筛选，pending 优先排序、同状态按上传时间倒序。</p>
      *
      * @param auditStatus 审核状态：pending / approved / rejected，默认 pending
+     * @param type        媒体类型：avatar / image / video / background / app_asset，可选
+     *                    （app_asset 为 2026-08-10 后端托管的应用装饰资产，见种子脚本）
      * @param userId      上传者用户 ID，可选
      * @param campusName  校区筛选（按上传者所属校区过滤），可选；
      *                    校区管理员强制按其管辖校区过滤，忽略本参数
@@ -90,6 +92,7 @@ public class AdminMediaAssetController {
     @GetMapping
     public AdminPageView<AdminMediaAssetSummaryView> listMediaAssets(
             @RequestParam(name = "auditStatus", defaultValue = "pending") String auditStatus,
+            @RequestParam(name = "type", required = false) String type,
             @RequestParam(name = "userId", required = false) Long userId,
             @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
@@ -97,6 +100,7 @@ public class AdminMediaAssetController {
         SecurityUtils.getCurrentUserId();
 
         String normalizedStatus = normalize(auditStatus);
+        String normalizedType = normalize(type);
         String normalizedCampus = normalize(campusName);
         // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName
         String effectiveCampus = adminDataScope.getCurrentAdminCampusName();
@@ -109,7 +113,7 @@ public class AdminMediaAssetController {
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
         Page<MediaAsset> result = mediaAssetRepository.searchForAdmin(
-                normalizedStatus, userId, effectiveCampus, pageable);
+                normalizedStatus, userId, normalizedType, effectiveCampus, pageable);
 
         // 批量预加载上传者信息（昵称/头像），避免 N+1 查询
         Map<Long, User> authorMap = loadAuthorMap(

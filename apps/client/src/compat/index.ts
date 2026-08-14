@@ -420,17 +420,24 @@ export function getWindowWidth(): number {
  * Task 35：获取 mp-weixin 自定义 TabBar 实例（其他平台返回 null）。
  *
  * mp-weixin 自定义 TabBar 模式下，页面实例通过 getTabBar() 暴露 TabBar 组件实例，
- * 调用 setData({ selected: N }) 同步选中状态。H5 / APP 端无此机制，统一返回 null。
+ * 调用 setData({ selected: N }) 同步选中状态；A2 起也支持 setData({ chatBadge: N })
+ * 同步消息角标。H5 / APP 端无此机制，统一返回 null。
  *
- * 用于 composables/useTabBar.ts 替代散落的 `#ifdef MP-WEIXIN` 块。
+ * 用于 composables/useTabBar.ts 与 composables/useUnreadBadge.ts，
+ * 替代散落的 `#ifdef MP-WEIXIN` 块。
  *
  * @returns TabBar 实例（含 setData 方法）或 null
  */
-export function getTabBarInstance(): { setData?: (data: { selected: number }) => void } | null {
+export interface TabBarSetData {
+  selected?: number;
+  chatBadge?: number;
+}
+
+export function getTabBarInstance(): { setData?: (data: TabBarSetData) => void } | null {
   // #ifdef MP-WEIXIN
   try {
     interface PageWithTabBar {
-      getTabBar?: () => { setData?: (data: { selected: number }) => void } | null;
+      getTabBar?: () => { setData?: (data: TabBarSetData) => void } | null;
     }
     const pages = getCurrentPages();
     const page = pages[pages.length - 1] as PageWithTabBar | undefined;

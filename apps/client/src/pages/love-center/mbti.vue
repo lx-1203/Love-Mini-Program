@@ -5,16 +5,14 @@
  * 支持后台配置 H5 URL：onLoad 读取 contentPageUrls.mbtiUrl，
  * 非空则渲染 <web-view>；为空则展示本地示例内容：
  * 1. MBTI 16 型简介（4 维速览 + 16 型名称）；
- * 2. 简化测试（4 道示例题目，单选），提交后 toast 展示结果（如"你的类型：ENFP"）。
+ * 2. 简化测试（4 道示例题目，单选），提交后弹层展示结果
+ *    （2026-08-13：原 toast 展示升级为结果弹层——类型 + 名称 + 恋爱建议）。
  */
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { contentPageUrls } from "../../config/content-pages";
 import { IMAGE_PATHS } from "../../config/images";
-
-/** R4-00977: MBTI 结果 toast 展示时长（毫秒）——需用户充分阅读结果文案 */
-const MBTI_RESULT_TOAST_MS = 2500;
 
 const { t } = useI18n();
 
@@ -72,7 +70,12 @@ function selectAnswer(index: number, optionIndex: number) {
   answers.value[index] = optionIndex;
 }
 
-/** 计算测试结果并 toast 展示（如"你的类型：ENFP"） */
+/** 2026-08-13：结果弹层状态（替换原 toast 展示——R4-00033 MBTI 结果 toast-only 遗留修复） */
+const showResult = ref(false);
+/** 结果类型代码（如 ENFP） */
+const resultType = ref("");
+
+/** 计算测试结果并弹出结果面板（16 型名称 + 4 维度恋爱建议） */
 function submitTest() {
   const unanswered = answers.value.some((a) => a === null);
   if (unanswered) {
@@ -86,14 +89,29 @@ function submitTest() {
     const choice = answers.value[i] as number;
     letters.push(q.dimension.charAt(choice));
   });
-  const typeCode = letters.join("");
-  uni.showToast({
-    title: t("contentPages.mbti.resultToast", { type: typeCode }),
-    icon: "none",
-    // R4-00977：结果 toast 需较长展示时间（介于 TOAST_DURATION.NORMAL_MS 与 LONG_MS 之间），
-    // 保留独立常量便于统一调整
-    duration: MBTI_RESULT_TOAST_MS,
-  });
+  resultType.value = letters.join("");
+  showResult.value = true;
+}
+
+/** 结果弹层：按类型字母拼接恋爱建议（如 ENFP → adviceE + adviceN + adviceF + adviceP） */
+const resultAdvice = computed(() => {
+  if (resultType.value.length !== 4) return [];
+  const letters = resultType.value.split("");
+  const dimensionKeys = ["E", "I", "S", "N", "T", "F", "J", "P"];
+  return letters
+    .filter((l) => dimensionKeys.includes(l))
+    .map((l) => t(`contentPages.mbti.advice${l}`));
+});
+
+/** 关闭结果弹层 */
+function closeResult() {
+  showResult.value = false;
+}
+
+/** 重新测试：关闭弹层并清空答案 */
+function retakeTest() {
+  showResult.value = false;
+  answers.value = [null, null, null, null];
 }
 
 /** 返回上一页（右上角固定按钮） */
@@ -103,7 +121,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="content-page page-fade-in">
+  <view class="content-page">
     <!-- 后台配置 H5 URL：web-view 加载 -->
     <web-view v-if="webUrl" :src="webUrl" class="content-webview" />
 
@@ -187,6 +205,53 @@ function goBack() {
 
         <view class="content-footer-space" />
       </scroll-view>
+
+      <!-- 2026-08-13：测试结果弹层（替换 toast-only 展示） -->
+      <view
+        v-if="showResult"
+        class="mbti-result-mask"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('contentPages.mbti.resultTitle')"
+        @tap="closeResult"
+      >
+        <view class="mbti-result-panel" @tap.stop>
+          <text class="mbti-result-panel__title">{{ t('contentPages.mbti.resultTitle') }}</text>
+          <view class="mbti-result-panel__type">
+            <text class="mbti-result-panel__type-code">{{ resultType }}</text>
+            <text class="mbti-result-panel__type-name">{{ t(`contentPages.mbti.types.${resultType}`) }}</text>
+          </view>
+          <text class="mbti-result-panel__tip-title">{{ t('contentPages.mbti.resultTipPrefix') }}</text>
+          <view class="mbti-result-panel__advice">
+            <view v-for="(advice, idx) in resultAdvice" :key="idx" class="mbti-result-panel__advice-item">
+              <view class="mbti-result-panel__advice-dot" />
+              <text class="mbti-result-panel__advice-text">{{ advice }}</text>
+            </view>
+          </view>
+          <view class="mbti-result-panel__actions">
+            <view
+              class="mbti-result-panel__btn mbti-result-panel__btn--ghost press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('contentPages.mbti.retake')"
+              @tap="retakeTest"
+            >
+              <text class="mbti-result-panel__btn-text">{{ t('contentPages.mbti.retake') }}</text>
+            </view>
+            <view
+              class="mbti-result-panel__btn mbti-result-panel__btn--primary press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="t('contentPages.mbti.resultClose')"
+              @tap="closeResult"
+            >
+              <text class="mbti-result-panel__btn-text">{{ t('contentPages.mbti.resultClose') }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
     </template>
   </view>
 </template>
@@ -393,5 +458,140 @@ function goBack() {
 
 .content-footer-space {
   height: calc(120rpx + env(safe-area-inset-bottom));
+}
+
+/* ========== 2026-08-13：测试结果弹层 ========== */
+.mbti-result-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 40rpx;
+  animation: overlay-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.mbti-result-panel {
+  width: 100%;
+  max-width: 640rpx;
+  background: var(--c-bg-container, #ffffff);
+  border-radius: var(--r-xl, 28rpx);
+  padding: var(--sp-6) var(--sp-7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--s-modal, 0 24rpx 60rpx rgba(15, 23, 42, 0.18));
+  animation: modal-scale-in var(--d-fade, 300ms) cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.mbti-result-panel__title {
+  font-size: var(--fs-lg, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  margin-bottom: var(--sp-4);
+}
+
+.mbti-result-panel__type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  margin-bottom: var(--sp-4);
+}
+
+.mbti-result-panel__type-code {
+  font-size: 72rpx;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: var(--c-gradient-brand, linear-gradient(135deg, #3fcf8e, #6fe0b0));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1.1;
+}
+
+.mbti-result-panel__type-name {
+  font-size: var(--fs-base, 28rpx);
+  font-weight: 600;
+  color: var(--c-brand-700);
+}
+
+.mbti-result-panel__tip-title {
+  font-size: var(--fs-base, 28rpx);
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  align-self: flex-start;
+  margin-bottom: var(--sp-2);
+}
+
+.mbti-result-panel__advice {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+
+.mbti-result-panel__advice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-bg-surface, #fafbfc);
+}
+
+.mbti-result-panel__advice-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--c-brand-500, #3fcf8e);
+  margin-top: 12rpx;
+  flex-shrink: 0;
+}
+
+.mbti-result-panel__advice-text {
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-primary);
+  line-height: 1.6;
+}
+
+.mbti-result-panel__actions {
+  width: 100%;
+  display: flex;
+  gap: var(--sp-3);
+}
+
+.mbti-result-panel__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border-radius: var(--r-full);
+}
+
+.mbti-result-panel__btn--ghost {
+  background: var(--c-bg-surface, #fafbfc);
+  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+}
+
+.mbti-result-panel__btn--primary {
+  background: var(--c-gradient-brand, linear-gradient(135deg, #3fcf8e, #6fe0b0));
+}
+
+.mbti-result-panel__btn-text {
+  font-size: var(--fs-lg, 28rpx);
+  font-weight: 600;
+  color: var(--c-text-primary);
+}
+
+.mbti-result-panel__btn--primary .mbti-result-panel__btn-text {
+  color: var(--c-text-inverse, #ffffff);
 }
 </style>

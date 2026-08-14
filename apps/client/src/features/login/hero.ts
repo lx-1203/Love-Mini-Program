@@ -14,12 +14,12 @@ export interface ResolvedLoginHero extends LoginHeroInput {
 }
 
 /**
- * Mock 登录主视觉配置（视频背景）
- * heroVideoUrl 指向本地校园背景视频，resolveLoginHero 解析后 activeMode 为 "video"
+ * Mock 登录主视觉配置（2026-08-10 包体积优化：4.6MB 本地视频移除，改用动画背景；
+ * resolveLoginHero 在 heroMode="video" 且无视频源时自动降级动画）
  */
 export const MOCK_LOGIN_HERO: LoginHeroInput = {
-  heroMode: "video",
-  heroVideoUrl: "/static/assets/videos/campus-bg.mp4",
+  heroMode: "animation",
+  heroVideoUrl: null,
   heroPosterUrl: "/static/assets/images/posters/login-poster.jpg",
   heroAnimationTheme: "campus-night",
   heroTitle: "校园恋爱",

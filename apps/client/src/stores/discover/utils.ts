@@ -243,6 +243,15 @@ export interface DailyRecord {
 }
 
 /**
+ * 2026-08-12 卡顿修复：今日记录内存缓存（同日免重复 getStorageSync + JSON.parse）。
+ *
+ * <p>onShow 每帧调用 loadDailyRecord（最多 200 条 viewedCards 的 JSON.parse），
+ * 同日内多次读取直接命中内存缓存；跨天（getTodayString 变化）或写路径
+ * （saveDailyRecord）自动失效重建。缓存一致性由日期字段天然保证。</p>
+ */
+let dailyRecordCache: { date: string; record: Omit<DailyRecord, "date"> | null } | null = null;
+
+/**
  * 从本地存储加载今日记录
  *
  * 仅返回与今日日期匹配的记录，跨天记录视为过期忽略。
@@ -251,22 +260,29 @@ export interface DailyRecord {
  * @returns 今日记录（不含 date 字段），若无有效记录则返回 null
  */
 export function loadDailyRecord(): Omit<DailyRecord, "date"> | null {
+  const today = getTodayString();
+  // 同日命中内存缓存：消除每 onShow 的同步 storage 读 + JSON.parse
+  if (dailyRecordCache !== null && dailyRecordCache.date === today) {
+    return dailyRecordCache.record;
+  }
   try {
     const record = uni.getStorageSync(STORAGE_KEY);
     if (record) {
       const data = JSON.parse(record) as DailyRecord;
-      const today = getTodayString();
       if (data.date === today) {
-        return {
+        const parsed: Omit<DailyRecord, "date"> = {
           viewedCards: data.viewedCards || [],
           hasRewoundToday: data.hasRewoundToday || false,
           lastRefreshTime: data.lastRefreshTime || null,
         };
+        dailyRecordCache = { date: today, record: parsed };
+        return parsed;
       }
     }
   } catch (_e) {
     // 本地存储读取失败时忽略
   }
+  dailyRecordCache = { date: today, record: null };
   return null;
 }
 
@@ -293,6 +309,15 @@ export function saveDailyRecord(
       lastRefreshTime,
     };
     uni.setStorageSync(STORAGE_KEY, JSON.stringify(data));
+    // 2026-08-12 卡顿修复：写路径同步更新内存缓存，保证下次 loadDailyRecord 命中新值
+    dailyRecordCache = {
+      date: data.date,
+      record: {
+        viewedCards,
+        hasRewoundToday,
+        lastRefreshTime,
+      },
+    };
   } catch (_e) {
     // 本地存储写入失败时忽略
   }

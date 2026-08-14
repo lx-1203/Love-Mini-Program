@@ -28,11 +28,21 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
     /**
      * 根据会话 ID 查询消息列表，按创建时间倒序分页。
      *
+     * <p>3-G 删除消息：排除「当前用户已软删」的消息——发送者本人删除的消息
+     * 仅对自己隐藏（微信语义：不删对方），对方仍可见。</p>
+     *
      * @param conversationId 会话 ID
+     * @param currentUserId  当前用户 ID（软删过滤：deletedForSender=false OR senderId<>当前用户）
      * @param pageable       分页参数
      * @return 分页消息列表
      */
-    Page<PrivateMessage> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId "
+            + "AND (m.deletedForSender = false OR m.senderId <> :currentUserId) "
+            + "ORDER BY m.createdAt DESC")
+    Page<PrivateMessage> findByConversationIdOrderByCreatedAtDesc(
+            @Param("conversationId") Long conversationId,
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable);
 
     /**
      * Task 2.2.4：根据会话 ID 分页查询消息，并通过 @EntityGraph 一次性预加载 conversation 关联。
@@ -67,14 +77,21 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      * 2026-08-08 微信化重构：正序分页查询（「上拉加载更早历史」用）。
      * 旧消息在前的分页语义：page=0 返回最早一页；配合 @EntityGraph 预加载 conversation 避免 N+1。
      *
+     * <p>3-G 删除消息：排除「当前用户已软删」的消息（同 {@link #findByConversationIdOrderByCreatedAtDesc}）。</p>
+     *
      * @param conversationId 会话 ID
+     * @param currentUserId  当前用户 ID（软删过滤）
      * @param pageable       分页参数
      * @return 分页消息列表（conversation 已被预加载，正序）
      */
     @EntityGraph(attributePaths = "conversation")
-    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId "
+            + "AND (m.deletedForSender = false OR m.senderId <> :currentUserId) "
+            + "ORDER BY m.createdAt ASC")
     Page<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtAscPage(
-            @Param("conversationId") Long conversationId, Pageable pageable);
+            @Param("conversationId") Long conversationId,
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable);
 
     /**
      * 统计指定会话中指定发送者未读消息数量。

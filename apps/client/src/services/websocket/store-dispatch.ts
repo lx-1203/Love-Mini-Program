@@ -409,12 +409,11 @@ export function handleCheckInEvent(data: unknown): void {
 }
 
 /**
- * 处理对方正在输入事件（/queue/typing，2026-08-09 微信 1:1 新增，后端推送预留）。
+ * 处理对方正在输入事件（/queue/typing，2026-08-09 微信 1:1 预留，2026-08-10 B1④ 接通）。
  *
- * 载荷契约：{sessionId: string, typing: boolean}。
- * 会话页通过 watch 订阅当前会话的 typing 状态渲染「对方正在输入...」。
- * TODO(backend): RealPrivateMessageService/TempChatMessageService 在对方输入时推送该事件；
- * 后端未推送前本分支永不触发，对现有行为零影响。
+ * 载荷契约：{sessionId: string, typing: boolean}（后端 MessageWebSocketHandler.handleTyping
+ * 推送，会话关系校验通过后转发）。会话页通过 messagesStore.typingMap 渲染「对方正在输入...」。
+ * typing=true 由 store 侧 3s 自动复位兜底；typing=false 立即复位。
  *
  * @param data - 正在输入事件数据
  */
@@ -433,12 +432,11 @@ export function handleTypingEvent(data: unknown): void {
     const record = data as Record<string, unknown>;
     if (typeof record.sessionId !== "string" || !record.sessionId) return;
     if (typeof record.typing !== "boolean") return;
-    if (isDev) {
-      console.warn("[WebSocket] typing 事件（后端暂未推送，预留分支）:", record);
+    // 写入 messagesStore.typingMap，由会话页 watch 渲染「对方正在输入...」
+    useMessagesStore().setSessionTyping(record.sessionId, record.typing);
+    if (isDev && record.typing) {
+      console.warn("[WebSocket] typing 事件:", record);
     }
-    // TODO(chat-session): 后端推送启用后，将 typing 状态写入 messagesStore
-    // （如 typingMap[sessionId]）并由会话页 watch 渲染「对方正在输入...」；
-    // 当前仅校验载荷形状，不落 store——后端未推送即不触发，对现有行为零影响。
   } catch (error) {
     console.error("[WebSocket] 处理 typing 事件异常:", error);
   }

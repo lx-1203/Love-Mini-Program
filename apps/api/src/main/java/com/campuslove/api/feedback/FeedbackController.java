@@ -2,6 +2,9 @@ package com.campuslove.api.feedback;
 
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
+import com.campuslove.api.common.OperationForbiddenException;
+import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.growth.AppConfigService;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
@@ -37,6 +40,17 @@ public class FeedbackController {
     this.feedbackService = feedbackService;
   }
 
+  /** 应用配置服务（B6：后台开关执行点）。real profile 注入；mock 为 null。 */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private AppConfigService appConfigService;
+
+  /** B6：反馈功能开关校验（app_switch.feedback_open=false → 403） */
+  private void ensureFeedbackOpen() {
+    if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_FEEDBACK_OPEN)) {
+      throw new OperationForbiddenException(ErrorMessages.FEEDBACK_CLOSED);
+    }
+  }
+
   /**
    * 提交问题反馈。
    *
@@ -49,6 +63,7 @@ public class FeedbackController {
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    ensureFeedbackOpen();
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.FEEDBACK, request));
   }
 
@@ -64,6 +79,7 @@ public class FeedbackController {
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    ensureFeedbackOpen();
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.SUGGESTION, request));
   }
 
@@ -79,6 +95,7 @@ public class FeedbackController {
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {
+    ensureFeedbackOpen();
     return ApiResponse.ok(feedbackService.submit(FeedbackTicketType.ACTIVITY_PROPOSAL, request));
   }
 

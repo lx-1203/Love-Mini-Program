@@ -3,6 +3,7 @@ package com.campuslove.api.repository;
 import com.campuslove.api.entity.MediaAsset;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -54,13 +55,27 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
     List<MediaAsset> findByUrlIn(Collection<String> urls);
 
     /**
-     * 管理后台审核分页查询（2026-08-09）。
+     * 按 URL + 类型查询单条资产（2026-08-10，app_asset 公开访问注册校验用）。
      *
-     * 筛选条件：审核状态 / 上传者用户 ID / 校区名（校区隔离子查询）。
+     * <p>公开端点 {@code GET /api/v1/media/app-assets/**} 在落盘读取前校验
+     * 该 URL 存在 type=app_asset 且 audit_status=approved 的注册记录，
+     * 使管理后台的「审核驳回」对应用资产同样生效（驳回后公开访问 404）。</p>
+     *
+     * @param url  媒体 URL（完整路径，如 /api/v1/media/app-assets/generated/images/campus/campus-gate.jpg）
+     * @param type 媒体类型（app_asset）
+     * @return 匹配的资产记录（可能为空）
+     */
+    Optional<MediaAsset> findByUrlAndType(String url, String type);
+
+    /**
+     * 管理后台审核分页查询（2026-08-09，2026-08-10 增加 type 筛选）。
+     *
+     * 筛选条件：审核状态 / 媒体类型 / 上传者用户 ID / 校区名（校区隔离子查询）。
      * 排序：pending 优先，同状态按创建时间倒序。
      *
      * @param auditStatus 审核状态（pending/approved/rejected，null 为全部）
      * @param userId      上传者用户 ID（null 为全部）
+     * @param type        媒体类型（avatar/image/video/background/app_asset，null 为全部）
      * @param campusName  校区名（null 为全部；校区管理员传入强制隔离）
      * @param pageable    分页参数
      * @return 分页结果
@@ -69,6 +84,7 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
             SELECT m FROM MediaAsset m
             WHERE (:auditStatus IS NULL OR m.auditStatus = :auditStatus)
               AND (:userId IS NULL OR m.userId = :userId)
+              AND (:type IS NULL OR m.type = :type)
               AND (:campusName IS NULL OR EXISTS (
                     SELECT 1 FROM UserCampusProfile ucp
                     WHERE ucp.userId = m.userId AND ucp.campusName = :campusName))
@@ -76,6 +92,7 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
             """)
     Page<MediaAsset> searchForAdmin(@Param("auditStatus") String auditStatus,
                                     @Param("userId") Long userId,
+                                    @Param("type") String type,
                                     @Param("campusName") String campusName,
                                     Pageable pageable);
 }

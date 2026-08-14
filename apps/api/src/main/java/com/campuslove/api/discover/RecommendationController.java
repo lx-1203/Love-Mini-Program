@@ -6,6 +6,7 @@ import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
 import com.campuslove.api.wallet.WalletTransactionLogRepository;
+import com.campuslove.api.growth.AppConfigService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -61,6 +62,10 @@ public class RecommendationController {
   /** 推荐配额服务（P0-24/P0-31 修复：配额查询端点）。real profile 注入；mock 为 null。 */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.campuslove.api.growth.RecommendQuotaService recommendQuotaService;
+
+  /** 应用配置服务（B6：后台开关执行点）。real profile 注入；mock 为 null。 */
+  @Autowired(required = false)
+  private AppConfigService appConfigService;
 
   /**
    * 推荐排序器（R4-00314：悄悄话文案解析）。real profile 注入；mock 为 null。
@@ -216,6 +221,14 @@ public class RecommendationController {
           @RequestParam(value = "keyword", required = false) String keyword,
           @RequestParam(value = "ageMin", required = false) Integer ageMin,
           @RequestParam(value = "ageMax", required = false) Integer ageMax) {
+    // B6：后台关闭匹配/推荐功能（app_switch.match_open / recommend_open=false）→ 返回空列表，
+    // 客户端按 app-config 开关显示「匹配暂时关闭」空态，前后端行为一致
+    if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_MATCH_OPEN)) {
+      return java.util.Collections.emptyList();
+    }
+    if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_RECOMMEND_OPEN)) {
+      return java.util.Collections.emptyList();
+    }
     // infra R2-00204: 身高范围校验，拒绝负数/倒挂区间
     if (heightMin != null && (heightMin < MIN_HEIGHT_CM || heightMin > MAX_HEIGHT_CM)) {
       throw new IllegalArgumentException(

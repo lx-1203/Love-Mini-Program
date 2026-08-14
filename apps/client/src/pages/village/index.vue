@@ -10,11 +10,13 @@
  * - 底部固定发帖输入条（QQ 频道风格）
  */
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { onLoad, onHide, onShow, onUnload } from "@dcloudio/uni-app";
+import { onLoad, onHide, onShow, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, type PostItem, type PostFilters } from "../../stores/village";
 import { useSessionStore } from "../../stores/session";
+// B6：后台配置即时生效——发帖功能开关（post_publish_open）
+import { useAppConfigStore } from "../../stores/app-config";
 // 登录态守卫：未登录时 LockScreen 锁定中，不发受保护请求（冷启动避免 401 雪崩）
 import { getToken } from "../../services/http";
 import { useCircleStore } from "../../stores/circle";
@@ -22,6 +24,11 @@ import { useActivityStore } from "../../stores/activity";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { openAppPath, consumeTabQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
+// 2026-08-10 切换提速：村子页频道数据 30s TTL（onShow 免重复全量重拉）
+import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
+import { useMock } from "../../stores/helpers/use-mock";
+// B4 认证门控：发帖为互动操作，需已通过实名认证（浏览不受限）
+import { ensureCertified } from "../../guards/campus-gate";
 // R4-00084：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../constants/routes";
 import LockScreen from "../../components/common/LockScreen.vue";
@@ -53,6 +60,9 @@ const sessionStore = useSessionStore();
 const circleStore = useCircleStore();
 const activityStore = useActivityStore();
 const dailyQuestionStore = useDailyQuestionStore();
+// B6：发帖开关（store 未加载时默认开放，不误隐藏发帖入口）
+const appConfigStore = useAppConfigStore();
+const { isPostPublishOpen } = storeToRefs(appConfigStore);
 
 // Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
@@ -122,11 +132,13 @@ const currentFilters = computed<PostFilters>(() => {
   };
 });
 
-/** 帖子频道列表（今日广场/学校圈/活动帖） */
+/** 帖子频道列表（今日广场/学校圈/活动帖/热度榜） */
 const displayPosts = computed<PostItem[]>(() => {
   // 修复（TS18048）：currentChannel.value 可能为 undefined
   const channel = currentChannel.value;
   if (!channel || channel.dataSource === "interest-hub") return [];
+  // 2026-08-11 热度榜：数据已按热度分排序，直接展示不重复过滤
+  if (channel.dataSource === "hot-board") return villageStore.posts;
   return villageStore.filteredPosts(currentFilters.value);
 });
 
@@ -170,11 +182,23 @@ async function loadChannelData(id: string = currentChannelId.value) {
   // 冷启动无 token 时 onShow/onMounted 会拉 posts → 401 雪崩）。
   // 登录后 watch(isUnlocked) 会自动补拉，无需在此处理。
   if (!getToken()) return;
+  // 2026-08-10 切换提速：30s 新鲜度窗口（切 tab 回来不再全量重拉帖子流）
+  if (!useMock() && isCacheFresh(`village:feed:${id}`, 30_000)) {
+    return;
+  }
   if (channel.dataSource === "interest-hub") {
     void circleStore.fetchFeaturedTopics(1);
+    setCachedValue(`village:feed:${id}`, true);
+    return;
+  }
+  // 2026-08-11 热度榜频道：走 hot-board 接口（按热度分排序）
+  if (channel.dataSource === "hot-board") {
+    void villageStore.fetchHotBoard(1);
+    setCachedValue(`village:feed:${id}`, true);
     return;
   }
   void villageStore.fetchPosts(currentFilters.value);
+  setCachedValue(`village:feed:${id}`, true);
   if (channel.dataSource === "activity-feed" && activities.value.length === 0) {
     void activityStore.fetchActivities();
   }
@@ -216,7 +240,11 @@ function goToCampusCertification() {
   openAppPath(ROUTES.CAMPUS.CERTIFICATION);
 }
 
-/** 模拟认证一键通过（演示）：调后端 simulate 接口，成功后刷新 session */
+/**
+ * 模拟认证一键通过（演示）：调后端 simulate 接口，成功后刷新 session。
+ * 2026-08-10 B6：入口由 SchoolCircleGate showSimulate=useMock() 守卫——
+ * real 联调模式下后端 simulate 接口默认 404，此函数不应被触发。
+ */
 async function simulateVerify() {
   try {
     // 延迟 import 避免循环依赖（school-gate 与 session 无直接关联）
@@ -302,6 +330,8 @@ function openActivityFromPost(activityId: number) {
 
 /* ========== 发帖（底部输入条 → 发帖页，携带当前频道） ========== */
 function handlePublish() {
+  // B4 认证门控：发帖为互动操作，需已通过实名认证（浏览不受限）
+  if (!ensureCertified("realname")) return;
   const channelId = currentChannelId.value;
   openAppPath(`${ROUTES.CIRCLES.POST_TOPIC}?channel=${channelId}`);
 }
@@ -352,6 +382,11 @@ async function onLoadMore() {
   if (isInterestChannel.value) return;
   isLoadingMore.value = true;
   try {
+    // 2026-08-11 热度榜频道：分页走 hot-board（按热度分排序）
+    if (currentChannelId.value === "hot") {
+      await villageStore.fetchHotBoard(villageStore.page + 1);
+      return;
+    }
     await villageStore.loadMore(currentFilters.value);
   } finally {
     isLoadingMore.value = false;
@@ -474,10 +509,16 @@ onUnload(() => {
 
 // 发帖返回刷新事件（组件挂载后注册，卸载时清理）
 uni.$on("village:post-created", onPostCreated);
+
+/** 村口频道分享（2026-08-10 A3 补齐）：分享村口主频道页 */
+onShareAppMessage(() => ({
+  title: t("share.shareVillage"),
+  path: ROUTES.TAB.VILLAGE,
+}));
 </script>
 
 <template>
-  <view class="village-page page-bottom-safe page-fade-in">
+  <view class="village-page page-bottom-safe">
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -486,12 +527,24 @@ uni.$on("village:post-created", onPostCreated);
 
     <!-- 已完善资料：显示完整社区 -->
     <template v-else>
-      <!-- ===== 页面头部（标题 + 频道 Tab） ===== -->
+      <!-- ===== 页面头部（标题 + 搜索栏 + 频道 Tab） ===== -->
       <view class="village-header">
         <view class="village-header__top">
           <view class="village-header__title-wrap">
             <text class="village-header__title section-title-brand">{{ t('village.title') }}</text>
             <text class="village-header__subtitle">{{ t('village.subtitle') }}</text>
+          </view>
+          <!-- 2026-08-11 搜索栏入口：点击进独立帖子搜索页 -->
+          <view
+            class="village-search press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="search"
+            :aria-label="t('search.placeholder')"
+            @tap="openAppPath(ROUTES.SEARCH)"
+          >
+            <image class="village-search__icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+            <text class="village-search__placeholder">{{ t('search.placeholder') }}</text>
           </view>
         </view>
         <!-- 频道 Tab（QQ 频道风格横向滑动） -->
@@ -520,6 +573,7 @@ uni.$on("village:post-created", onPostCreated);
         <!-- ===== 学校圈：未认证 → 认证门 ===== -->
         <SchoolCircleGate
           v-if="isSchoolChannel && !isCampusVerified"
+          :show-simulate="useMock()"
           @go-certification="goToCampusCertification"
           @simulate-verify="simulateVerify"
         />
@@ -678,8 +732,13 @@ uni.$on("village:post-created", onPostCreated);
 
               <!-- 空状态 -->
               <view v-if="displayPosts.length === 0" class="village-empty">
-                <EmptyState type="no-data" :message="emptyStateMessage">
+                <!-- B6：后台关闭发帖功能 → 提示「发帖暂未开放」，隐藏发帖动作 -->
+                <EmptyState
+                  type="no-data"
+                  :message="isPostPublishOpen ? emptyStateMessage : t('village.postClosed')"
+                >
                   <view
+                    v-if="isPostPublishOpen"
                     class="village-empty__action press-feedback"
                     hover-class="press-feedback--active"
                     hover-stay-time="120"
@@ -693,7 +752,7 @@ uni.$on("village:post-created", onPostCreated);
               </view>
 
               <!-- 帖子卡片列表 -->
-              <view v-else class="post-feed__list card-stagger" role="list">
+              <view v-else class="post-feed__list" role="list">
                 <PostCard
                   v-for="post in feedPosts"
                   :key="post.id"
@@ -724,8 +783,10 @@ uni.$on("village:post-created", onPostCreated);
         <view class="feed-bottom-spacer" />
       </scroll-view>
 
-      <!-- ===== 底部发帖输入条（QQ 频道风格；学校圈未认证 → 锁定引导认证） ===== -->
+      <!-- ===== 底部发帖输入条（QQ 频道风格；学校圈未认证 → 锁定引导认证） =====
+           B6：后台关闭发帖功能（post_publish_open=false）→ 隐藏输入条 -->
       <ChannelComposerBar
+        v-if="isPostPublishOpen"
         :placeholder="composerPlaceholder"
         :locked="isSchoolChannel && !isCampusVerified"
         @publish="handlePublish"
@@ -797,6 +858,34 @@ uni.$on("village:post-created", onPostCreated);
 .village-header__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+}
+
+/* 2026-08-11 搜索栏入口（点击进独立帖子搜索页） */
+.village-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1;
+  max-width: 320rpx;
+  margin-left: var(--sp-4);
+  height: 64rpx;
+  background: var(--c-bg-input, #f2f3f5);
+  border-radius: 32rpx;
+  padding: 0 var(--sp-5);
+}
+
+.village-search__icon {
+  width: 30rpx;
+  height: 30rpx;
+  flex-shrink: 0;
+}
+
+.village-search__placeholder {
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ================================================================

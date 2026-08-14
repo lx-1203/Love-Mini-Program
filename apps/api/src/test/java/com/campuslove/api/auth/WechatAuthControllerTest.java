@@ -59,7 +59,7 @@ class WechatAuthControllerTest {
      *
      * <p>验证点：</p>
      * <ul>
-     *   <li>controller 调用 authService.loginWithWechat(code)</li>
+     *   <li>controller 调用 authService.loginWithWechat(code, null)</li>
      *   <li>controller 调用 authMetrics.recordLoginSuccess(userId)</li>
      *   <li>返回的 session 与 authService 返回的一致</li>
      * </ul>
@@ -73,10 +73,10 @@ class WechatAuthControllerTest {
                 false, false, false, false,
                 null, Map.of(), "jwt-token-abc"
         );
-        when(authService.loginWithWechat(code)).thenReturn(session);
+        when(authService.loginWithWechat(code, null)).thenReturn(session);
 
         // Act
-        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code));
+        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code, null));
 
         // Assert：返回的 session 与 mock 一致
         assertNotNull(result, "登录成功返回的 session 不应为 null");
@@ -85,7 +85,7 @@ class WechatAuthControllerTest {
         assertEquals("jwt-token-abc", result.token(), "token 应正确传递");
 
         // Assert：调用了 AuthService
-        verify(authService).loginWithWechat(code);
+        verify(authService).loginWithWechat(code, null);
 
         // Assert：记录了成功指标（userId 解析为 Long 100）
         verify(authMetrics).recordLoginSuccess(100L);
@@ -106,11 +106,11 @@ class WechatAuthControllerTest {
         String code = "expired-wx-code";
         WechatLoginException ex = new WechatLoginException(
                 WechatLoginException.ErrorCode.INVALID_CODE);
-        when(authService.loginWithWechat(code)).thenThrow(ex);
+        when(authService.loginWithWechat(code, null)).thenThrow(ex);
 
         // Act & Assert：异常应向上传播
         WechatLoginException thrown = assertThrows(WechatLoginException.class,
-                () -> controller.loginWithWechat(new WechatLoginRequest(code)));
+                () -> controller.loginWithWechat(new WechatLoginRequest(code, null)));
 
         // Assert：异常错误码正确
         assertEquals(WechatLoginException.ErrorCode.INVALID_CODE,
@@ -137,11 +137,11 @@ class WechatAuthControllerTest {
         WechatLoginException ex = new WechatLoginException(
                 WechatLoginException.ErrorCode.WECHAT_API_ERROR,
                 "微信服务暂时不可用：network timeout");
-        when(authService.loginWithWechat(code)).thenThrow(ex);
+        when(authService.loginWithWechat(code, null)).thenThrow(ex);
 
         // Act & Assert
         WechatLoginException thrown = assertThrows(WechatLoginException.class,
-                () -> controller.loginWithWechat(new WechatLoginRequest(code)));
+                () -> controller.loginWithWechat(new WechatLoginRequest(code, null)));
 
         // Assert
         assertEquals(WechatLoginException.ErrorCode.WECHAT_API_ERROR,
@@ -166,11 +166,11 @@ class WechatAuthControllerTest {
         String code = "valid-wx-code-but-user-disabled";
         WechatLoginException ex = new WechatLoginException(
                 WechatLoginException.ErrorCode.USER_DISABLED);
-        when(authService.loginWithWechat(code)).thenThrow(ex);
+        when(authService.loginWithWechat(code, null)).thenThrow(ex);
 
         // Act & Assert
         WechatLoginException thrown = assertThrows(WechatLoginException.class,
-                () -> controller.loginWithWechat(new WechatLoginRequest(code)));
+                () -> controller.loginWithWechat(new WechatLoginRequest(code, null)));
 
         // Assert
         assertEquals(WechatLoginException.ErrorCode.USER_DISABLED,
@@ -197,10 +197,10 @@ class WechatAuthControllerTest {
                 false, false, false, false,
                 null, Map.of(), "jwt-token"
         );
-        when(authService.loginWithWechat(code)).thenReturn(session);
+        when(authService.loginWithWechat(code, null)).thenReturn(session);
 
         // Act
-        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code));
+        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code, null));
 
         // Assert：返回的 session 不为 null
         assertNotNull(result, "session 不应为 null");
@@ -223,11 +223,11 @@ class WechatAuthControllerTest {
         // Arrange
         String code = "any-code";
         RuntimeException ex = new IllegalStateException("DB connection lost");
-        when(authService.loginWithWechat(code)).thenThrow(ex);
+        when(authService.loginWithWechat(code, null)).thenThrow(ex);
 
         // Act & Assert：原异常应向上传播（不被包装）
         RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> controller.loginWithWechat(new WechatLoginRequest(code)));
+                () -> controller.loginWithWechat(new WechatLoginRequest(code, null)));
 
         // Assert：异常类型与原始异常一致
         assertSame(ex, thrown, "应原样抛出异常，不被包装");
@@ -252,13 +252,13 @@ class WechatAuthControllerTest {
                 false, false, false, false,
                 null, Map.of(), "jwt-token"
         );
-        when(authService.loginWithWechat(code)).thenReturn(session);
+        when(authService.loginWithWechat(code, null)).thenReturn(session);
         // 模拟监控指标记录失败
         doThrow(new RuntimeException("metrics backend down"))
                 .when(authMetrics).recordLoginSuccess(200L);
 
         // Act：即使监控失败，登录主流程应正常返回 session
-        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code));
+        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code, null));
 
         // Assert：session 正常返回
         assertNotNull(result, "监控失败不应影响登录主流程");
@@ -287,10 +287,10 @@ class WechatAuthControllerTest {
                 false, false, false, false,
                 null, Map.of(), "jwt-token"
         );
-        when(authService.loginWithWechat(code)).thenReturn(session);
+        when(authService.loginWithWechat(code, null)).thenReturn(session);
 
         // Act
-        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code));
+        UserSessionView result = controller.loginWithWechat(new WechatLoginRequest(code, null));
 
         // Assert：返回的 session 正常
         assertNotNull(result);

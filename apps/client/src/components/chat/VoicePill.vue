@@ -137,7 +137,7 @@ onUnmounted(() => {
 }
 
 .voice-pill:active {
-  transform: scale(0.96);
+  transform: scale(0.98);
   opacity: 0.85;
 }
 

@@ -2,6 +2,17 @@ import { defineStore } from "pinia";
 import { request, withTimeout as withHttpTimeout, EnhancedApiError } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// 2026-08-10 切换提速：消息页 TTL 缓存（30s 新鲜度，官方号消息流 60s）
+import { isCacheFresh, fetchWithStaleWhileRevalidate } from "../utils/cache-ttl";
+
+/** 消息页 bootstrap 新鲜度窗口 */
+const BOOTSTRAP_TTL_MS = 30_000;
+/** 官方号消息流新鲜度窗口（消除 N+1 重复拉取） */
+const OFFICIAL_MESSAGES_TTL_MS = 60_000;
+/** 2026-08-10 B1④：typing 自动复位窗口（对方未发 typing=false 时兜底复位） */
+const TYPING_RESET_MS = 3_000;
+/** 2026-08-10 B1④：会话 typing 复位定时器表（模块级，避免污染 Pinia state） */
+const typingResetTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 // 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除。
 // 2026-08-07 官方号体系：官方号账号/消息流类型（契约见 docs/openapi/official-accounts.yaml）
 import type {
@@ -136,7 +147,7 @@ export interface MessageItem {
   id: string;
   sessionId: string;
   sender: "self" | "peer" | "system";
-  kind: "text" | "voice" | "emoji" | "system" | "activity";
+  kind: "text" | "voice" | "emoji" | "image" | "system" | "activity";
   body: string;
   sentAt: string;
   durationSeconds?: number | null;
@@ -162,6 +173,8 @@ export interface MessagesState {
   errorMessage: string | null;
   /** 通知筛选类型：all（全部）/ social（社交信号）/ content（内容信号） */
   filterType: NotificationFilterType;
+  /** 2026-08-10 B1④：对方「正在输入」状态映射（sessionId → typing，WS /queue/typing 驱动） */
+  typingMap: Record<string, boolean>;
 }
 
 /* ========== 后端视图类型 ========== */
@@ -272,6 +285,9 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
  * @returns 预览文案
  */
 function buildLocalPreview(kind: MessageItem["kind"], content: string): string {
+  if (kind === "image") {
+    return t("messages.imagePrefix");
+  }
   if (kind === "activity") {
     try {
       const parsed = JSON.parse(content) as { title?: string };
@@ -408,6 +424,7 @@ export const useMessagesStore = defineStore("messages", {
     loading: false,
     errorMessage: null,
     filterType: "all",
+    typingMap: {},
   }),
 
   getters: {
@@ -433,8 +450,17 @@ export const useMessagesStore = defineStore("messages", {
   actions: {
     async bootstrap() {
       try {
+        // 2026-08-10 切换提速：30s 新鲜度窗口，新鲜时直接跳过（内容已在 store 中，秒开）
+        if (!useMock() && isCacheFresh("messages:bootstrap", BOOTSTRAP_TTL_MS)) {
+          return;
+        }
         await withTimeout(
-          Promise.all([this.fetchSessions(), this.fetchHeartSignals(), this.fetchNotifications()]),
+          // stale-while-revalidate：过期时返回旧值并后台刷新，切 tab 不等待网络
+          fetchWithStaleWhileRevalidate(
+            "messages:bootstrap",
+            BOOTSTRAP_TTL_MS,
+            () => Promise.all([this.fetchSessions(), this.fetchHeartSignals(), this.fetchNotifications()])
+          ),
           ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutBootstrap") // infra R2-00028: 超时文案 i18n 化
         );
       } catch (error) {
@@ -478,9 +504,18 @@ export const useMessagesStore = defineStore("messages", {
           const [officialAccounts] = await Promise.all([
             request<OfficialAccountView[]>({ url: "/official-accounts", method: "GET" }).catch(() => []),
           ]);
+          // 2026-08-10 切换提速：官方号消息流按账号 60s 缓存（消除 N+1 重复拉取）
           const accountMessages = await Promise.all(
             officialAccounts.map((acc) =>
-              request<OfficialMessageView[]>({ url: `/official-accounts/${encodeURIComponent(acc.code)}/messages`, method: "GET" }).catch(() => [])
+              fetchWithStaleWhileRevalidate(
+                `official-messages:${acc.code}`,
+                OFFICIAL_MESSAGES_TTL_MS,
+                () =>
+                  request<OfficialMessageView[]>({
+                    url: `/official-accounts/${encodeURIComponent(acc.code)}/messages`,
+                    method: "GET",
+                  }).catch(() => [] as OfficialMessageView[])
+              )
             )
           );
           // 修复：旧请求返回时不再修改状态，避免覆盖新请求结果
@@ -1011,14 +1046,47 @@ export const useMessagesStore = defineStore("messages", {
      * 2026-08-07 消息页重构：设置会话免打扰（左滑操作）。
      * 免打扰仅影响新消息通知提醒，未读红点仍正常展示。
      *
-     * R4-00184：当前仅本地改状态，无后端同步——刷新/换端后免打扰会还原
-     * （mock 分支 fetchSessions 保留运行期 muted 态；real 分支以服务端会话为准）。
-     * TODO(backend): 后端补充会话元数据同步接口（如 PATCH /messages/sessions/{id}）
-     * 后，此处应 await 后端成功后再改本地状态。
+     * 2026-08-10 B1③：real 模式同步后端（PUT /messages/conversations/{id}/mute），
+     * 后端成功后才改本地状态；mock 分支保持纯本地（会话不落库）。
+     * 后端持久化后刷新/换端不还原（ConversationView.muted 下发）。
      */
-    setSessionMuted(sessionId: string, muted: boolean) {
+    async setSessionMuted(sessionId: string, muted: boolean) {
+      if (!useMock()) {
+        try {
+          await request({
+            url: `/messages/conversations/${encodeURIComponent(sessionId)}/mute`,
+            method: "PUT",
+            data: { muted },
+          });
+        } catch (_e) {
+          // 服务端失败：不改本地状态（保持原值），错误由调用方 toast 提示
+          return;
+        }
+      }
       const session = this.sessions.find((s) => s.id === sessionId);
       if (session) session.muted = muted;
+    },
+
+    /**
+     * 2026-08-10 B1④：设置对方「正在输入」状态（WS /queue/typing 驱动）。
+     * 收到 typing=true 时置位并启动 3s 自动复位（对方未发 typing=false 也不卡死）；
+     * typing=false 时立即复位并清理定时器。
+     */
+    setSessionTyping(sessionId: string, typing: boolean) {
+      const prev = typingResetTimers[sessionId];
+      if (prev) {
+        clearTimeout(prev);
+        delete typingResetTimers[sessionId];
+      }
+      if (typing) {
+        this.typingMap[sessionId] = true;
+        typingResetTimers[sessionId] = setTimeout(() => {
+          this.typingMap[sessionId] = false;
+          delete typingResetTimers[sessionId];
+        }, TYPING_RESET_MS);
+      } else {
+        this.typingMap[sessionId] = false;
+      }
     },
 
     /**

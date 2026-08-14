@@ -23,7 +23,7 @@ public class MockPrivateMessageService implements PrivateMessageService {
         return new ConversationView(
             1L, "conv-1", userAId, userBId,
             "Mock用户", null, null, null, 0,
-            null, false, "matching", "private"
+            null, false, "matching", "private", false
         );
     }
 
@@ -58,5 +58,19 @@ public class MockPrivateMessageService implements PrivateMessageService {
     @Override
     public void deleteConversation(Long conversationId, Long userId) {
         // Mock 实现：无操作
+    }
+
+    // ---- 3-G：删除消息（软删） ----
+
+    @Override
+    public void softDeleteMessage(Long messageId, Long userId) {
+        // Mock 实现：无操作（mock 模式消息不落库，无删除语义）
+    }
+
+    // ---- 2026-08-10 B1③：会话级免打扰 ----
+
+    @Override
+    public void setConversationMuted(Long conversationId, boolean muted, Long userId) {
+        // Mock 实现：无操作（mock 模式会话不落库，前端本地维护 mute 状态）
     }
 }

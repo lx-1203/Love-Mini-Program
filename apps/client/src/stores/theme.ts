@@ -11,10 +11,11 @@
 import { defineStore } from "pinia";
 
 import { isDev } from "../config/env";
+import { STORAGE_KEYS } from "../constants/storage-keys";
 
 export type ThemeMode = "auto" | "dark" | "light";
 
-const THEME_STORAGE_KEY = "campus-love:theme-mode";
+const THEME_STORAGE_KEY = STORAGE_KEYS.THEME_MODE;
 
 function readStoredMode(): ThemeMode {
   try {

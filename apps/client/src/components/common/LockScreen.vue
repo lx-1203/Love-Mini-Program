@@ -360,7 +360,7 @@ function browsePublic() {
 }
 
 .lock-screen__close:active {
-  transform: scale(0.92);
+  transform: scale(0.98);
 }
 
 .lock-screen__close-icon {

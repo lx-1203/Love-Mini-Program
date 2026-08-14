@@ -4,8 +4,8 @@
    *  环境变量与调试页面说明
    * ============================================================
    *
-   *  pages/dev/index 调试页面位于主包中，仅用于开发调试。
-   *  已通过条件编译确保生产构建不包含 dev 页面：
+   *  pages/dev/index 调试页面位于 setup 分包中（2026-08-10 主包减负迁移），
+   *  仅用于开发调试。已通过条件编译确保生产构建不包含 dev 页面：
    *    1. pages.json 中 dev 路由用 `// #ifdef DEV` 包裹（生产构建剔除路由）
    *    2. dev/index.vue template 用 `<!-- #ifdef DEV -->` 包裹（生产构建剔除渲染）
    *    3. profile/index.vue 中 dev 入口按钮用 `v-if="isDev"` 包裹（生产构建不可见）
@@ -58,12 +58,13 @@
     "usingComponents": true,
     "__usePrivacyCheck__": true,
     "darkmode": true,
-    "themeLocation": "theme.json",
-    "permission": {
-      "scope.userLocation": {
-        "desc": "你的位置信息将用于校园恋爱匹配附近的同学"
-      }
-    }
+    "themeLocation": "theme.json"
+    /*
+     * 2026-08-10：移除 scope.userLocation 权限声明。
+     * 依据：全代码库无 getLocation/chooseLocation 实际调用（仅 utils/privacy.ts 注释提及），
+     * 声明未使用的定位权限会导致审核问询「声明定位但无定位功能」。
+     * 若未来实现「附近的人」LBS 功能，需同时补回此处声明 + wx.authorize 流程 + 隐私指引更新。
+     */
   },
   "h5": {
     "title": "校园恋爱"

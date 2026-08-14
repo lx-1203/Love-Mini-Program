@@ -41,7 +41,9 @@ const props = withDefaults(defineProps<{
   /** 头像框主题 ID */
   frameId: AvatarFrameId;
 }>(), {
-  frameId: "none",
+  /* 2026-08-12 V3：默认值 none → default（品牌青绿框）。
+   * 未显式传 frameId 的调用路径自动获得可见彩色框（浅灰 none 环在深色背景上几乎不可见） */
+  frameId: "default",
 });
 
 const theme = computed(() => getAvatarFrameTheme(props.frameId));
@@ -75,6 +77,14 @@ const frameStyle = computed(() => ({
   padding: 6rpx;
   background: var(--c-neutral-0);
   overflow: hidden;
+}
+
+/* 2026-08-12 V3 兜底：误落 none（无框态）时补白描边 + 白色发光，
+ * 任何场景下头像框都清晰可辨（不污染注册表 none 配置本身） */
+.avatar-frame--none .avatar-frame__ring {
+  box-shadow:
+    0 0 0 3rpx var(--c-neutral-0),
+    0 0 24rpx rgba(255, 255, 255, 0.35);
 }
 
 /* 旋转动画（VIP/SVIP/活动限定等贵族感） */

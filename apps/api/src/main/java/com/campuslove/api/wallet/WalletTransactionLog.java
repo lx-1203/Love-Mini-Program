@@ -110,6 +110,16 @@ public class WalletTransactionLog {
     public static final String RELATED_TYPE_MESSAGE_UNLOCK = "MESSAGE_UNLOCK";
     /** 关联业务类型：悄悄话解锁（R4-00314，relatedId=目标用户 ID），流水存在即已解锁 */
     public static final String RELATED_TYPE_WHISPER_UNLOCK = "WHISPER_UNLOCK";
+    /**
+     * 关联业务类型：任务奖励入账（3-J 任务与积分，relatedId=任务编码）。
+     * 领取任务奖励时调用 walletService.recharge 入账（1 积分 = 1 分）。
+     */
+    public static final String RELATED_TYPE_TASK_REWARD = "TASK_REWARD";
+    /**
+     * 关联业务类型：邀请奖励入账（3-K 邀请奖励，relatedId=被邀请人用户 ID）。
+     * accept 时即发放给邀请人（可改为「被邀请人完成注册后发」，见 invite_reward 表注释）。
+     */
+    public static final String RELATED_TYPE_INVITE_REWARD = "INVITE_REWARD";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

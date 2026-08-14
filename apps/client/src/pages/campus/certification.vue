@@ -9,8 +9,7 @@
  * - 提交审核按钮
  * - 认证状态展示（审核中/已认证/未通过）
  */
-import { ref, onMounted, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { ref, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
@@ -22,6 +21,8 @@ import { clientApi } from "../../services/api";
 import { useMock } from "../../stores/helpers/use-mock";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
+// infra R2-00131：统一图片选择封装（隐私授权守卫 + 大小校验）
+import { chooseImages } from "../../utils/media";
 
 const campusStore = useCampusStore();
 // 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。
@@ -29,29 +30,10 @@ const { certificationStatus, certificationInfo } = storeToRefs(campusStore);
 // Task 28：i18n 文案
 const { t } = useI18n();
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 /** 学校名称 */
 const schoolName = ref("");
 /** 专业 */
@@ -60,6 +42,59 @@ const major = ref("");
 const studentCardUrl = ref("");
 /** 是否正在提交 */
 const isSubmitting = ref(false);
+
+/* ========== B1-2 实名认证前置门槛 ========== */
+/** 是否已通过实名认证（true 才允许提交校园认证；mock 模式默认放行） */
+const idCardVerified = ref(true);
+/** 前置门槛加载中（避免闪烁） */
+const gateLoading = ref(true);
+
+/* ========== B1-3 学历认证（学信网，选填） ========== */
+/** 学信网在线验证码 */
+const chsiCode = ref("");
+/** 学信网学历截图本地临时路径/URL */
+const chsiScreenshotUrl = ref("");
+
+/**
+ * 拉取实名认证状态（B1-2 前置门槛）。
+ * real 模式：GET /profile/basic 的 idCardVerified 字段；
+ * mock 模式：默认放行（mock 分支不调用后端）。
+ */
+async function loadRealNameGate() {
+  if (useMock()) {
+    gateLoading.value = false;
+    return;
+  }
+  try {
+    const profile = await clientApi.getBasicProfile();
+    // 未返回该字段视为未实名（旧后端兼容：null/undefined → false）
+    idCardVerified.value = profile?.idCardVerified === true;
+  } catch (_e) {
+    // 拉取失败保持默认放行，后端仍会兜底校验
+    idCardVerified.value = true;
+  } finally {
+    gateLoading.value = false;
+  }
+}
+
+/**
+ * 上传学信网学历截图（B1-3，选填）。
+ * 复用统一图片选择封装（隐私授权 + 大小校验）。
+ */
+async function uploadChsiScreenshot() {
+  try {
+    const paths = await chooseImages({ count: 1, maxSizeMB: 5 });
+    const path = paths[0];
+    if (path) {
+      chsiScreenshotUrl.value = path;
+    }
+  } catch (_e) {
+    uni.showToast({
+      title: t("campus.certification.privacyRequiredImage"),
+      icon: "none",
+    });
+  }
+}
 
 /**
  * 上传学生证照片
@@ -95,9 +130,14 @@ async function uploadStudentCard() {
 }
 
 /**
- * 提交认证
+ * 提交认证（B1-2 前置：未实名认证时禁用并提示；B1-3 学信网字段选填）
  */
 async function submitCert() {
+  // B1-2 前置门槛：未完成实名认证直接拦截（双保险，表单已禁用）
+  if (!idCardVerified.value) {
+    uni.showToast({ title: t("campus.certification.realNameRequiredBanner"), icon: "none" });
+    return;
+  }
   if (!schoolName.value.trim()) {
     uni.showToast({ title: t("campus.certification.errSchoolName"), icon: "none" });
     return;
@@ -124,10 +164,21 @@ async function submitCert() {
       });
       uploadUrl = uploaded?.url ?? uploadUrl;
     }
+    // B1-3：学信网截图同样先上传换取可访问 URL（real 模式）
+    let chsiUploadUrl = chsiScreenshotUrl.value;
+    if (!useMock() && chsiUploadUrl && !/^https?:\/\//.test(chsiUploadUrl)) {
+      const uploaded = await clientApi.uploadPostImage({
+        name: "chsi-screenshot.jpg",
+        path: chsiUploadUrl,
+      });
+      chsiUploadUrl = uploaded?.url ?? chsiUploadUrl;
+    }
     await campusStore.submitCertification({
       schoolName: schoolName.value.trim(),
       major: major.value.trim(),
       studentCardUrl: uploadUrl,
+      chsiCode: chsiCode.value.trim(),
+      chsiScreenshotUrl: chsiUploadUrl,
     });
     // P1-36：提交成功后重新拉取认证状态，刷新状态卡片（审核中/已认证）
     void campusStore.fetchCertificationStatus();
@@ -147,6 +198,13 @@ async function submitCert() {
  */
 function goBack() {
   uni.navigateBack();
+}
+
+/**
+ * 跳转实名认证页（B1-2 前置门槛引导）。
+ */
+function goRealNameCertification() {
+  uni.navigateTo({ url: "/pages/verification/real-name" });
 }
 
 /**
@@ -182,18 +240,19 @@ function statusIcon(status: CertificationStatus): string {
 }
 
 onMounted(() => {
+  void loadRealNameGate();
   void campusStore.fetchCertificationStatus();
 });
 </script>
 
 <template>
-  <view class="cert-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="cert-page">
     <!-- 顶部导航栏 -->
     <view class="cert-header">
       <view class="cert-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">{{ $t("campus.certification.back") }}</text>
+        <text class="back-icon">{{ t("campus.certification.back") }}</text>
       </view>
-      <text class="cert-header__title">{{ $t("campus.certification.navTitle") }}</text>
+      <text class="cert-header__title">{{ t("campus.certification.navTitle") }}</text>
       <view class="cert-header__spacer" />
     </view>
 
@@ -208,28 +267,36 @@ onMounted(() => {
         <view class="status-card__body">
           <text class="status-card__title">{{ CERT_STATUS_MAP[certificationStatus] }}</text>
           <text v-if="certificationStatus === 'pending'" class="status-card__desc">
-            {{ $t("campus.certification.pendingDesc") }}
+            {{ t("campus.certification.pendingDesc") }}
           </text>
           <text v-else-if="certificationStatus === 'verified'" class="status-card__desc">
-            {{ $t("campus.certification.verifiedDesc") }}
+            {{ t("campus.certification.verifiedDesc") }}
           </text>
           <text v-else-if="certificationStatus === 'rejected'" class="status-card__desc">
-            {{ $t("campus.certification.rejectedDescPrefix") }}{{ certificationInfo?.reviewComment || $t("campus.certification.rejectedDescDefault") }}{{ $t("campus.certification.rejectedDescSuffix") }}
+            {{ t("campus.certification.rejectedDescPrefix") }}{{ certificationInfo?.reviewComment || t("campus.certification.rejectedDescDefault") }}{{ t("campus.certification.rejectedDescSuffix") }}
           </text>
         </view>
       </view>
 
       <!-- 认证表单（未认证或被拒绝时显示） -->
       <template v-if="certificationStatus === 'unverified' || certificationStatus === 'rejected'">
+        <!-- B1-2 实名认证前置门槛：未实名时展示引导并禁用表单 -->
+        <view v-if="!gateLoading && !idCardVerified" class="gate-banner">
+          <text class="gate-banner__text">{{ t("campus.certification.realNameRequiredBanner") }}</text>
+          <view class="gate-banner__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goRealNameCertification">
+            <text class="gate-banner__btn-text">{{ t("campus.certification.realNameRequiredBtn") }}</text>
+          </view>
+        </view>
+
         <!-- 说明卡片 -->
         <view class="info-card">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="info-card__icon" mode="aspectFit" />
-          <text class="info-card__title">{{ $t("campus.certification.whyCertifyTitle") }}</text>
+          <text class="info-card__title">{{ t("campus.certification.whyCertifyTitle") }}</text>
           <view class="info-card__list" role="list">
-            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem1") }}</text>
-            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem2") }}</text>
-            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem3") }}</text>
-            <text class="info-card__item">{{ $t("campus.certification.whyCertifyItem4") }}</text>
+            <text class="info-card__item">{{ t("campus.certification.whyCertifyItem1") }}</text>
+            <text class="info-card__item">{{ t("campus.certification.whyCertifyItem2") }}</text>
+            <text class="info-card__item">{{ t("campus.certification.whyCertifyItem3") }}</text>
+            <text class="info-card__item">{{ t("campus.certification.whyCertifyItem4") }}</text>
           </view>
         </view>
 
@@ -237,35 +304,35 @@ onMounted(() => {
         <view class="form-section">
           <!-- 学校名称 -->
           <view class="form-group">
-            <text class="form-label">{{ $t("campus.certification.labelSchool") }}</text>
+            <text class="form-label">{{ t("campus.certification.labelSchool") }}</text>
             <input
               v-model="schoolName"
               class="form-input"
-              :placeholder="$t('campus.certification.placeholderSchool')" :aria-label="$t('campus.certification.placeholderSchool')"
+              :placeholder="t('campus.certification.placeholderSchool')" :aria-label="t('campus.certification.placeholderSchool')"
             />
           </view>
 
           <!-- 专业 -->
           <view class="form-group">
-            <text class="form-label">{{ $t("campus.certification.labelMajor") }}</text>
+            <text class="form-label">{{ t("campus.certification.labelMajor") }}</text>
             <input
               v-model="major"
               class="form-input"
-              :placeholder="$t('campus.certification.placeholderMajor')" :aria-label="$t('campus.certification.placeholderMajor')"
+              :placeholder="t('campus.certification.placeholderMajor')" :aria-label="t('campus.certification.placeholderMajor')"
             />
           </view>
 
           <!-- 学生证照片上传 -->
           <view class="form-group">
-            <text class="form-label">{{ $t("campus.certification.labelStudentCard") }}</text>
+            <text class="form-label">{{ t("campus.certification.labelStudentCard") }}</text>
             <text class="form-hint">
-              {{ $t("campus.certification.studentCardHint") }}
+              {{ t("campus.certification.studentCardHint") }}
             </text>
 
             <view v-if="!studentCardUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
               <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
-              <text class="upload-text">{{ $t("campus.certification.uploadText") }}</text>
-              <text class="upload-sub">{{ $t("campus.certification.uploadSub") }}</text>
+              <text class="upload-text">{{ t("campus.certification.uploadText") }}</text>
+              <text class="upload-sub">{{ t("campus.certification.uploadSub") }}</text>
             </view>
 
             <view v-else class="upload-preview">
@@ -276,7 +343,7 @@ onMounted(() => {
               />
               <view class="upload-preview__actions">
                 <view class="upload-preview__reupload press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
-                  <text class="reupload-text">{{ $t("campus.certification.reupload") }}</text>
+                  <text class="reupload-text">{{ t("campus.certification.reupload") }}</text>
                 </view>
                 <view class="upload-preview__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="studentCardUrl = ''">
                   <text class="remove-icon">x</text>
@@ -285,23 +352,66 @@ onMounted(() => {
             </view>
           </view>
 
-          <!-- 提交按钮 -->
+          <!-- B1-3 学历认证：学信网在线验证码（选填） -->
+          <view class="form-group">
+            <text class="form-label">{{ t("campus.certification.labelChsiCode") }}</text>
+            <text class="form-hint">
+              {{ t("campus.certification.chsiHint") }}
+            </text>
+            <input
+              v-model="chsiCode"
+              class="form-input"
+              :placeholder="t('campus.certification.placeholderChsiCode')" :aria-label="t('campus.certification.placeholderChsiCode')"
+            />
+          </view>
+
+          <!-- B1-3 学历认证：学信网学历截图（选填） -->
+          <view class="form-group">
+            <text class="form-label">{{ t("campus.certification.labelChsiScreenshot") }}</text>
+            <text class="form-hint">
+              {{ t("campus.certification.chsiHint") }}
+            </text>
+
+            <view v-if="!chsiScreenshotUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadChsiScreenshot">
+              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
+              <text class="upload-text">{{ t("campus.certification.chsiUploadText") }}</text>
+              <text class="upload-sub">{{ t("campus.certification.chsiUploadSub") }}</text>
+            </view>
+
+            <view v-else class="upload-preview">
+              <image
+                class="upload-preview__img"
+                :src="chsiScreenshotUrl"
+                mode="aspectFill" lazy-load alt=""
+              />
+              <view class="upload-preview__actions">
+                <view class="upload-preview__reupload press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadChsiScreenshot">
+                  <text class="reupload-text">{{ t("campus.certification.reupload") }}</text>
+                </view>
+                <view class="upload-preview__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="chsiScreenshotUrl = ''">
+                  <text class="remove-icon">x</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 提交按钮（B1-2 前置：未实名认证时禁用） -->
           <view
             class="submit-btn press-feedback"
-            :class="{ 'submit-btn--disabled': isSubmitting }"
+            :class="{ 'submit-btn--disabled': isSubmitting || !idCardVerified }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="submitCert"
           >
             <text class="submit-btn__text">
-              {{ isSubmitting ? $t("campus.certification.submitting") : $t("campus.certification.submitBtn") }}
+              {{ isSubmitting ? t("campus.certification.submitting") : t("campus.certification.submitBtn") }}
             </text>
           </view>
 
           <!-- 底部提示 -->
           <view class="privacy-tip">
             <text class="privacy-tip__text">
-              {{ $t("campus.certification.privacyTip") }}
+              {{ t("campus.certification.privacyTip") }}
             </text>
           </view>
         </view>
@@ -311,12 +421,12 @@ onMounted(() => {
       <view v-if="certificationStatus === 'verified'" class="verified-info">
         <view class="verified-card">
           <view class="verified-card__row">
-            <text class="verified-label">{{ $t("campus.certification.verifiedLabelSchool") }}</text>
+            <text class="verified-label">{{ t("campus.certification.verifiedLabelSchool") }}</text>
             <text class="verified-value">{{ certificationInfo?.schoolName || "-" }}</text>
           </view>
           <view class="verified-card__divider" />
           <view class="verified-card__row">
-            <text class="verified-label">{{ $t("campus.certification.verifiedLabelMajor") }}</text>
+            <text class="verified-label">{{ t("campus.certification.verifiedLabelMajor") }}</text>
             <text class="verified-value">{{ certificationInfo?.major || "-" }}</text>
           </view>
         </view>
@@ -441,6 +551,39 @@ onMounted(() => {
   font-size: var(--fs-md);
   color: var(--c-text-secondary);
   line-height: 1.5;
+}
+
+/* ========== B1-2 实名认证前置门槛横幅 ========== */
+.gate-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-7);
+  background: var(--c-bg-container);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--sp-6);
+  box-shadow: var(--s-card-soft);
+  border: 2rpx solid var(--c-warning-border-tint);
+}
+
+.gate-banner__text {
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.gate-banner__btn {
+  padding: var(--sp-3) var(--sp-8);
+  border-radius: var(--r-full);
+  background: var(--c-bg-brand);
+}
+
+.gate-banner__btn-text {
+  font-size: var(--fs-sm);
+  color: var(--c-brand);
+  font-weight: 600;
 }
 
 /* ========== 说明卡片 ========== */

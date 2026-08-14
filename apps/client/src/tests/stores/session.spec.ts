@@ -32,6 +32,21 @@ vi.mock("../../services/env", () => ({
   isDev: false,
 }));
 
+// 2026-08-10 修复（R4-00205 env 迁移后测试失配）：session store 的 useMock()
+// 来自 ../config/env（helpers/use-mock），测试此前只 mock 了旧路径 services/env，
+// 导致 bootstrap 误走 mock 分支。此处补充 config/env 的 mock。
+vi.mock("../../config/env", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    isMockMode: () => false,
+    // R4-00166：失效 token 自动游客重登仅限 mock/开发模式（真实模式静默登出），
+    // 本用例验证重登逻辑，故模拟开发环境。
+    isDev: true,
+    isShowcaseMode: false,
+  };
+});
+
 vi.mock("../../services/api", () => ({
   clientApi: {
     getBasicProfile: vi.fn(),
@@ -253,7 +268,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
 
 describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复）", () => {
   const guestSession = makeSession({
-    userId: "47",
+    userId: "user-1001",
     displayName: "体验用户",
     profileCompleted: true,
     campusVerified: true,
@@ -290,7 +305,7 @@ describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复
     // 已用体验账号重新登录
     expect(loginAsGuest).toHaveBeenCalledTimes(1);
     expect(store.userSession?.loggedIn).toBe(true);
-    expect(store.userSession?.userId).toBe("47");
+    expect(store.userSession?.userId).toBe("user-1001");
   });
 
   it("无本地 token 且 getSession 返回未登录时，不触发游客重登", async () => {
@@ -313,7 +328,7 @@ describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复
     await store.bootstrap();
 
     expect(loginAsGuest).not.toHaveBeenCalled();
-    expect(store.userSession?.userId).toBe("47");
+    expect(store.userSession?.userId).toBe("user-1001");
   });
 });
 

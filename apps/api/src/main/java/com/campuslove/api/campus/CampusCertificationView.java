@@ -13,6 +13,10 @@ public class CampusCertificationView {
     private String schoolName;
     private String major;
     private String studentIdCardUrl;
+    /** 学信网在线验证码（B1-3 学历认证，可空） */
+    private String chsiCode;
+    /** 学信网学历截图 URL（B1-3 学历认证，可空） */
+    private String chsiScreenshotUrl;
     private String status;
     private String statusLabel;
     private Long reviewerId;
@@ -23,8 +27,12 @@ public class CampusCertificationView {
     public CampusCertificationView() {
     }
 
+    /**
+     * 全参构造（含 B1-3 学历认证字段）。
+     */
     public CampusCertificationView(Long id, Long userId, String schoolName, String major,
-                                   String studentIdCardUrl, String status, String statusLabel,
+                                   String studentIdCardUrl, String chsiCode, String chsiScreenshotUrl,
+                                   String status, String statusLabel,
                                    Long reviewerId, String reviewComment,
                                    LocalDateTime submittedAt, LocalDateTime reviewedAt) {
         this.id = id;
@@ -32,12 +40,26 @@ public class CampusCertificationView {
         this.schoolName = schoolName;
         this.major = major;
         this.studentIdCardUrl = studentIdCardUrl;
+        this.chsiCode = chsiCode;
+        this.chsiScreenshotUrl = chsiScreenshotUrl;
         this.status = status;
         this.statusLabel = statusLabel;
         this.reviewerId = reviewerId;
         this.reviewComment = reviewComment;
         this.submittedAt = submittedAt;
         this.reviewedAt = reviewedAt;
+    }
+
+    /**
+     * 兼容构造（无 B1-3 学历认证字段，chsi 置空）。
+     * 供 mock 服务与既有测试使用；新代码请使用全参构造。
+     */
+    public CampusCertificationView(Long id, Long userId, String schoolName, String major,
+                                   String studentIdCardUrl, String status, String statusLabel,
+                                   Long reviewerId, String reviewComment,
+                                   LocalDateTime submittedAt, LocalDateTime reviewedAt) {
+        this(id, userId, schoolName, major, studentIdCardUrl, null, null,
+                status, statusLabel, reviewerId, reviewComment, submittedAt, reviewedAt);
     }
 
     /**
@@ -98,6 +120,22 @@ public class CampusCertificationView {
 
     public void setStudentIdCardUrl(String studentIdCardUrl) {
         this.studentIdCardUrl = studentIdCardUrl;
+    }
+
+    public String getChsiCode() {
+        return chsiCode;
+    }
+
+    public void setChsiCode(String chsiCode) {
+        this.chsiCode = chsiCode;
+    }
+
+    public String getChsiScreenshotUrl() {
+        return chsiScreenshotUrl;
+    }
+
+    public void setChsiScreenshotUrl(String chsiScreenshotUrl) {
+        this.chsiScreenshotUrl = chsiScreenshotUrl;
     }
 
     public String getStatus() {

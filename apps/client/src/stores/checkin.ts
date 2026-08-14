@@ -3,6 +3,11 @@ import type { MakeUpCheckInResultView } from "../services/generated/api-types-su
 import { request, withTimeout as withHttpTimeout, EnhancedApiError } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
+// 2026-08-10 切换提速：签到状态 30s TTL 缓存（home/discover 双入口去重）
+import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+
+/** 签到状态新鲜度窗口 */
+const CHECKIN_TTL_MS = 30_000;
 // 幂等键日期工具：与 services/api.ts 的 localDateKey 保持同一实现
 import { clientApi, localDateKey } from "../services/api";
 // 统一常量：异步超时、签到成功动画收起延迟、补签上限、签到权益各项默认值
@@ -273,6 +278,10 @@ export const useCheckInStore = defineStore("checkin", {
      * 不再覆盖新请求结果（原实现仅靠 AbortController 防超时，不防并发覆盖）。
      */
     async fetchStatus() {
+      // 2026-08-10 切换提速：30s 内已加载且有数据时直接跳过（home/discover 双入口不再重复请求）
+      if (!useMock() && (this.checkedIn !== null || this.consecutiveDays > 0) && isCacheFresh('checkin:status', CHECKIN_TTL_MS)) {
+        return;
+      }
       // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
       const token = ++fetchStatusToken;
       this.loading = true;
@@ -325,6 +334,8 @@ export const useCheckInStore = defineStore("checkin", {
             this.extraRecommendations = data.extraQuota;
             // Task D：后端提供积分余额时同步，否则保留本地值
             this.pointsBalance = data.points ?? this.pointsBalance;
+            // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
+            setCachedValue("checkin:status", true);
           })(),
           ASYNC_TIMEOUT_MS,
           t("storeErrors.checkin.timeoutFetchStatus"), // infra R2-00045: 超时文案 i18n 化

@@ -68,7 +68,7 @@ public class ThirdPartyAuthController {
      */
     @PostMapping("/wechat")
     public UserSessionView loginWithWechat(@Valid @RequestBody WechatThirdPartyLoginRequest request) {
-        return thirdPartyAuthService.loginWithWechat(request.code());
+        return thirdPartyAuthService.loginWithWechat(request.code(), request.deviceId());
     }
 
     /**
@@ -83,7 +83,7 @@ public class ThirdPartyAuthController {
      */
     @PostMapping("/apple")
     public UserSessionView loginWithApple(@Valid @RequestBody AppleLoginRequest request) {
-        return thirdPartyAuthService.loginWithApple(request.identityToken());
+        return thirdPartyAuthService.loginWithApple(request.identityToken(), request.deviceId());
     }
 
     /**
@@ -163,10 +163,12 @@ public class ThirdPartyAuthController {
 /**
  * 微信第三方账号登录请求体。
  *
- * @param code 微信 wx.login() 返回的临时 code（必填，后端换取 openId 并验签）
+ * @param code     微信 wx.login() 返回的临时 code（必填，后端换取 openId 并验签）
+ * @param deviceId 客户端设备标识（3-D 设备管理：可选，缺失时后端记为 "unknown"）
  */
 record WechatThirdPartyLoginRequest(
-        @NotBlank String code
+        @NotBlank String code,
+        String deviceId
 ) {
 }
 
@@ -174,8 +176,9 @@ record WechatThirdPartyLoginRequest(
  * Apple 第三方账号登录请求体。
  *
  * @param identityToken Sign in with Apple 返回的 identityToken JWT（必填，后端验签取 sub）
+ * @param deviceId      客户端设备标识（3-D 设备管理：可选，缺失时后端记为 "unknown"）
  */
-record AppleLoginRequest(@NotBlank String identityToken) {
+record AppleLoginRequest(@NotBlank String identityToken, String deviceId) {
 }
 
 /**

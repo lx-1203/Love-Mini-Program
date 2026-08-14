@@ -50,6 +50,14 @@ public class PrivateConversation {
     @Column(name = "pinned", nullable = false)
     private Boolean pinned = false;
 
+    /** 用户 A 是否静音本会话（会话级免打扰，按用户侧独立，2026-08-10 B1③） */
+    @Column(name = "user_a_muted", nullable = false)
+    private Boolean userAMuted = false;
+
+    /** 用户 B 是否静音本会话（会话级免打扰，按用户侧独立，2026-08-10 B1③） */
+    @Column(name = "user_b_muted", nullable = false)
+    private Boolean userBMuted = false;
+
     /** 记录创建时间（会话创建时间，用于排序展示） */
 
     @CreatedDate
@@ -134,6 +142,22 @@ public class PrivateConversation {
 
     public void setPinned(Boolean pinned) {
         this.pinned = pinned;
+    }
+
+    public Boolean getUserAMuted() {
+        return userAMuted;
+    }
+
+    public void setUserAMuted(Boolean userAMuted) {
+        this.userAMuted = userAMuted;
+    }
+
+    public Boolean getUserBMuted() {
+        return userBMuted;
+    }
+
+    public void setUserBMuted(Boolean userBMuted) {
+        this.userBMuted = userBMuted;
     }
 
     public LocalDateTime getCreatedAt() {

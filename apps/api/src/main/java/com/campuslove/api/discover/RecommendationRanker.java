@@ -611,6 +611,10 @@ public class RecommendationRanker {
         String registeredAt = user.getCreatedAt() != null
                 ? user.getCreatedAt().toString()
                 : null;
+        // V3（2026-08-12）：他人主页背景——主页背景属公开展示字段，随推荐视图下发
+        String profileBackgroundUrl = basicProfile != null
+                ? basicProfile.getProfileBackgroundUrl()
+                : null;
 
         return new RecommendedPersonView(
                 user.getId(),
@@ -648,7 +652,8 @@ public class RecommendationRanker {
                 ipLocation,
                 occupation,
                 age,
-                registeredAt
+                registeredAt,
+                profileBackgroundUrl
         );
     }
 

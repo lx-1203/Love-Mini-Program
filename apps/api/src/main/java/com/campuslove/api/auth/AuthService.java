@@ -18,10 +18,11 @@ public interface AuthService {
     /**
      * 使用微信小程序临时登录凭证进行登录。
      *
-     * @param code 微信小程序登录凭证
+     * @param code     微信小程序登录凭证
+     * @param deviceId 客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
      * @return 用户会话视图（包含 JWT 令牌）
      */
-    UserSessionView loginWithWechat(String code);
+    UserSessionView loginWithWechat(String code, String deviceId);
 
     /**
      * 刷新 JWT 令牌。
@@ -58,23 +59,27 @@ public interface AuthService {
      * <p>参考 eladmin 的账号注册模式:手机号作为登录账号,密码 BCrypt 加密存储。
      * 注册成功后直接签发 JWT 会话(与微信登录一致),无需再次登录。</p>
      *
-     * @param phone    手机号(唯一,格式校验)
-     * @param password 密码(6-64 位)
-     * @param nickname 昵称(1-20 字)
+     * @param phone     手机号(唯一,格式校验)
+     * @param password  密码(6-64 位)
+     * @param nickname  昵称(1-20 字)
+     * @param birthDate 出生日期(3-N 未成年人保护：必填，服务端校验年龄 >= 18)
+     * @param deviceId  客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
      * @return 用户会话视图(包含 JWT 令牌)
      * @throws IllegalArgumentException 手机号已注册/参数非法时抛出
      */
-    UserSessionView registerUser(String phone, String password, String nickname);
+    UserSessionView registerUser(String phone, String password, String nickname,
+                                 java.time.LocalDate birthDate, String deviceId);
 
     /**
      * 手机号 + 密码登录。
      *
      * @param phone    手机号
      * @param password 密码
+     * @param deviceId 客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
      * @return 用户会话视图(包含 JWT 令牌)
      * @throws IllegalArgumentException 凭据无效时抛出
      */
-    UserSessionView loginWithPhone(String phone, String password);
+    UserSessionView loginWithPhone(String phone, String password, String deviceId);
 
     /**
      * 体验账号一键登录（临时体验号）。
@@ -85,10 +90,11 @@ public interface AuthService {
      * <p>安全说明：体验账号使用随机密码（不可通过手机号密码登录），
      * 上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口。</p>
      *
+     * @param deviceId 客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
      * @return 用户会话视图(包含 JWT 令牌)
      * @throws IllegalStateException 体验登录入口被禁用时抛出
      */
-    UserSessionView loginAsGuest();
+    UserSessionView loginAsGuest(String deviceId);
 
     /**
      * 管理员登出。语义同 logout，单独提供用于审计与未来扩展。

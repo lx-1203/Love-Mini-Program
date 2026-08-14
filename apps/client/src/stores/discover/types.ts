@@ -110,6 +110,23 @@ export interface DiscoverCard {
 export type SwipeDirection = "left" | "right";
 
 /**
+ * 悄悄话解锁视图（B3 恋爱小纸条，GET/POST /recommendations/{userId}/whisper[/unlock] 响应体）。
+ *
+ * 对应后端 record WhisperUnlockView(boolean unlocked, String whisper, Long balanceCents)：
+ * - unlocked：当前用户是否已解锁该悄悄话
+ * - whisper：悄悄话文案（未解锁时为 null，不泄露付费内容）
+ * - balanceCents：当前用户钱包余额（分，查询失败或服务不可用时为 null）
+ */
+export interface WhisperUnlockView {
+  /** 当前用户是否已解锁该悄悄话 */
+  unlocked: boolean;
+  /** 悄悄话文案（未解锁时为 null） */
+  whisper: string | null;
+  /** 当前用户钱包余额（分） */
+  balanceCents: number | null;
+}
+
+/**
  * 排序规则（设计需求：匹配度优先/最新注册/最活跃）
  */
 export type SortBy = "match" | "latest" | "active";
@@ -117,7 +134,7 @@ export type SortBy = "match" | "latest" | "active";
 /**
  * 匹配范围（设计需求：不限/附近）
  */
-export type MatchScope = "all" | "nearby";
+export type MatchScope = "all" | "nearby" | "same_city" | "same_school";
 
 /**
  * 已查看卡片记录
@@ -324,4 +341,6 @@ export interface RecommendedPersonView {
   allowMessage?: boolean;
   /** IP 属地 */
   ipLocation?: string;
+  /** 2026-08-12 V3：个人主页背景图 URL（他人主页按对方显示；缺省时前端纯色兜底） */
+  profileBackgroundUrl?: string;
 }

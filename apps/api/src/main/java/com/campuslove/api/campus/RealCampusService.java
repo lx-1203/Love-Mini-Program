@@ -127,7 +127,8 @@ public class RealCampusService implements CampusService {
 
     @Override
     @Transactional
-    public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category, String title, String content) {
+    public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
+                                             String title, String content, List<String> tags) {
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
@@ -156,6 +157,8 @@ public class RealCampusService implements CampusService {
         topic.setReplyCount(0);
         topic.setViewCount(0);
         topic.setIsAnonymous(false);
+        // 3-L：标签去空白/去重/截断后序列化为 JSON 存储（Controller 已做 ≤5 个、每个 ≤20 字校验）
+        topic.setTags(serializeTags(normalizeTags(tags)));
         topic.setCreatedAt(now);
         topic.setUpdatedAt(now);
 
@@ -404,7 +407,9 @@ public class RealCampusService implements CampusService {
                 topic.getReplyCount(),
                 topic.getViewCount(),
                 Boolean.TRUE.equals(topic.getIsAnonymous()),
-                topic.getCreatedAt().toString()
+                topic.getCreatedAt().toString(),
+                // 3-L：标签 JSON 解析为列表（null/空/解析失败 → 空列表）
+                parseJsonToList(topic.getTags())
         );
     }
 
@@ -593,6 +598,53 @@ public class RealCampusService implements CampusService {
         }
         return userRepository.findAllById(distinctIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
+    }
+
+    /**
+     * 3-L：标签归一化——去空白、去重、限制 5 个、每个 ≤20 字符。
+     *
+     * <p>Controller 的 Bean Validation（@Size(max=5) + 元素 @Size(max=20)）已做第一道
+     * 校验；此处服务层兜底，防止绕过 Controller 直接调用时超长/重复标签入库。</p>
+     *
+     * @param tags 原始标签列表（可空）
+     * @return 归一化后的标签列表（无标签返回空列表）
+     */
+    private List<String> normalizeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String tag : tags) {
+            if (tag == null) {
+                continue;
+            }
+            String trimmed = tag.trim();
+            if (trimmed.isEmpty() || normalized.contains(trimmed)) {
+                continue;
+            }
+            if (trimmed.length() > 20) {
+                trimmed = trimmed.substring(0, 20);
+            }
+            normalized.add(trimmed);
+            if (normalized.size() >= 5) {
+                break;
+            }
+        }
+        return normalized;
+    }
+
+    /**
+     * 3-L：将标签列表序列化为 JSON 字符串（无标签返回 null）。
+     */
+    private String serializeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(tags);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     /**

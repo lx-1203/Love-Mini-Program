@@ -9,13 +9,14 @@ import { IMAGE_PATHS } from "./images";
 import { STORAGE_KEYS } from "../constants/storage-keys";
 
 /** 频道 ID */
-export type ChannelId = "today" | "interest" | "school" | "activity";
+export type ChannelId = "today" | "interest" | "school" | "activity" | "hot";
 
 /** 频道数据源类型 */
 export type ChannelDataSource =
   | "post-feed" // 帖子信息流（今日广场 / 学校圈 / 活动帖）
   | "interest-hub" // 兴趣圈宫格 + 热门话题 + 精选话题
-  | "activity-feed"; // 活动卡片列表 + 关联活动帖子流
+  | "activity-feed" // 活动卡片列表 + 关联活动帖子流
+  | "hot-board"; // 热度榜（2026-08-11：按热度分排序）
 
 /** 频道配置项 */
 export interface ChannelConfig {
@@ -69,6 +70,14 @@ export const CHANNEL_CONFIGS: ChannelConfig[] = [
     dataSource: "activity-feed",
     postCategory: "activity",
     defaultSort: "latest",
+  },
+  {
+    id: "hot",
+    labelKey: "village.channelHot",
+    icon: IMAGE_PATHS.ICONS_EMOJI.FIRE,
+    dataSource: "hot-board",
+    postCategory: "all",
+    defaultSort: "hot",
   },
 ];
 

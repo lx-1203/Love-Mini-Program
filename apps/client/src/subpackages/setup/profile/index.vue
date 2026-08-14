@@ -105,6 +105,7 @@ const form = reactive<UpdateBasicProfileRequest>({
   hometownProvince: "",
   hometownCity: "",
   futureCity: "",
+  expectedPartner: "",
 });
 
 /** 学历选项（i18n 化，随 locale 切换响应） */
@@ -246,6 +247,10 @@ function buildDiffPayload(): UpdateBasicProfileRequest {
   if (form.futureCity !== initialFormSnapshot.futureCity) {
     diff.futureCity = form.futureCity;
   }
+  // 2026-08-11 匹配精细化：理想型画像
+  if (form.expectedPartner !== initialFormSnapshot.expectedPartner) {
+    diff.expectedPartner = form.expectedPartner;
+  }
 
   return diff;
 }
@@ -274,7 +279,12 @@ function onRelationshipStatusChange(e: { detail: { value: number } }): void {
 
 
 onMounted(async () => {
-  await profileStore.load();
+  try {
+    await profileStore.load();
+  } catch (_e) {
+    // 2026-08-12：资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
+    // （后端 diff 只提交变更字段，空值不覆盖既有资料）
+  }
   const basic = profileStore.basicProfile;
   if (basic) {
     form.nickname = basic.nickname ?? "";
@@ -304,6 +314,8 @@ onMounted(async () => {
   if (form.grade) {
     gradeLabel.value = form.grade;
   }
+  // 2026-08-11 匹配精细化：理想型画像回显
+  form.expectedPartner = basic?.expectedPartner ?? "";
 
   // 保存初始表单快照，用于提交时 diff 比对
   initialFormSnapshot = {
@@ -496,6 +508,18 @@ async function save() {
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelFutureCity') }}</text>
         <input v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
+      </view>
+
+      <!-- 2026-08-11 匹配精细化：理想型画像（关键词描述，参与匹配加分） -->
+      <view class="form-row">
+        <text class="form-row__label">{{ t('setup.profile.labelExpectedPartner') }}</text>
+        <textarea
+          v-model="form.expectedPartner"
+          class="field field--textarea"
+          :maxlength="200"
+          :placeholder="t('setup.profile.placeholderExpectedPartner')"
+          :aria-label="t('setup.profile.labelExpectedPartner')"
+        />
       </view>
     </SectionCard>
 

@@ -102,6 +102,9 @@ public class RedisConfig {
     /** 推荐人物列表缓存 TTL：5 分钟（实时性要求高，TTL 较短） */
     private static final Duration MATCH_RECOMMEND_TTL = Duration.ofMinutes(5);
 
+    /** 游客推荐列表缓存 TTL：60 秒（2026-08-12 卡顿修复；新用户可见性窗口 1 分钟可接受） */
+    private static final Duration GUEST_RECOMMEND_TTL = Duration.ofSeconds(60);
+
     /** 村口热门帖子缓存 TTL：15 分钟 */
     private static final Duration VILLAGE_HOT_POSTS_TTL = Duration.ofMinutes(15);
 
@@ -282,6 +285,7 @@ public class RedisConfig {
         Map<String, RedisCacheConfiguration> cacheNameTtl = new HashMap<>();
         cacheNameTtl.put(CacheNames.USER_PROFILE, defaultConfig.entryTtl(USER_PROFILE_TTL));
         cacheNameTtl.put(CacheNames.MATCH_RECOMMEND, defaultConfig.entryTtl(MATCH_RECOMMEND_TTL));
+        cacheNameTtl.put(CacheNames.GUEST_RECOMMEND, defaultConfig.entryTtl(GUEST_RECOMMEND_TTL));
         cacheNameTtl.put(CacheNames.VILLAGE_HOT_POSTS, defaultConfig.entryTtl(VILLAGE_HOT_POSTS_TTL));
         cacheNameTtl.put(CacheNames.CAMPUS_SCHOOLS, defaultConfig.entryTtl(CAMPUS_SCHOOLS_TTL));
         cacheNameTtl.put(CacheNames.DAILY_QUESTION, defaultConfig.entryTtl(DAILY_QUESTION_TTL));

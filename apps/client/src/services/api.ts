@@ -15,6 +15,8 @@ import { appEnv, isDev, isMockMode } from "./env";
 import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
+// B3 恋爱小纸条：悄悄话解锁视图类型（后端 WhisperUnlockView 镜像）
+import type { WhisperUnlockView } from "../stores/discover/types";
 
 type Schemas = components["schemas"];
 type SubmissionType = Schemas["SubmissionType"];
@@ -199,6 +201,43 @@ function uploadFileViaUni<TResponse>(
 }
 
 export const clientApi = {
+  /**
+   * 获取客户端配置聚合（B6：后台配置即时生效，前后端联动）。
+   *
+   * <p>对应后端 GET /api/v1/app-config（permitAll），返回
+   * {@code {switches: {...}, rules: {...}, siteTitle: "..."}} 扁平结构：
+   * <ul>
+   *   <li>switches：功能开关（maintenance_mode / register_open / login_open /
+   *       match_open / recommend_open / post_publish_open / feedback_open），
+   *       缺失开关默认视为开启；</li>
+   *   <li>rules：业务规则（daily_recommend_limit / heart_signal_expire_hours）；</li>
+   *   <li>siteTitle：站点标题。</li>
+   * </ul>
+   * 数据源为 app_switch / app_rule / app_config 表，不缓存——管理后台更新后
+   * 客户端按 30s TTL 拉取即可生效。
+   * Mock 模式返回全部开关开启的默认值（维护模式关闭），保证 mock 端功能不收敛。</p>
+   */
+  async getAppConfig(): Promise<ClientAppConfig> {
+    if (useMock()) {
+      return {
+        switches: {
+          maintenance_mode: false,
+          register_open: true,
+          login_open: true,
+          match_open: true,
+          recommend_open: true,
+          post_publish_open: true,
+          feedback_open: true,
+        },
+        rules: {
+          daily_recommend_limit: 10,
+          heart_signal_expire_hours: 48,
+        },
+        siteTitle: "校园恋爱",
+      };
+    }
+    return request<ClientAppConfig>({ url: "/app-config", method: "GET" });
+  },
   async getLoginHero() {
     if (useMock()) {
       return mockFixtures.getLoginHero();
@@ -557,25 +596,39 @@ export const clientApi = {
    * 安全权衡：后端 logout 失败时旧 token 在过期时间前仍有效，但本地已无 token，
    * 用户侧已退出；refresh_token 同时被清除，无法续期。
    */
-  async logout() {
-    try {
-      await request<void>({
+  /**
+   * 退出登录（2026-08-12 卡顿修复）。
+   *
+   * 语义调整：**立即**清本地 token + 跳转登录页，后端登出通知改为后台 fire-and-forget。
+   * 原实现 await 后端 /auth/logout（5s 超时）成功后才跳转——弱网/Redis 慢时点击退出
+   * 后界面卡住数秒无反馈，用户感知「点不动/卡顿」并反复点击。
+   *
+   * 安全权衡：后端登出失败时旧 token 在过期时间前仍有效，但本地已无 token，
+   * 用户侧已退出；refresh_token 同时被清除，无法续期。
+   */
+  logout() {
+    // 0. 先捕获旧 token（clearTokens 后 request 内部 getToken() 取不到，
+    //    后端撤销请求需显式携带 Authorization 头）
+    const token = getToken();
+    // 1. 立即清理本地 token + 跳转登录页（用户无感、零等待）
+    clearTokens();
+    uni.reLaunch({ url: ROUTES.LOGIN });
+    // 2. 后台通知后端撤销 token（fire-and-forget：不 await、不阻塞跳转；
+    //    5s 短超时 + noRetry，失败仅记录日志）
+    if (token) {
+      void request<void>({
         url: "/auth/logout",
         method: "POST",
         noRetry: true,
-        // 短超时，避免登出接口长时间挂起占用资源
         timeout: 5000,
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch((error) => {
+        // 后端登出失败仅记录日志，不阻塞本地退出
+        // 诊断日志仅在开发环境输出（R4-00661）
+        if (isDev) {
+          console.warn("[api.logout] 后端登出接口调用失败:", error);
+        }
       });
-    } catch (error) {
-      // 后端登出失败仅记录日志，不阻塞本地退出
-      // 诊断日志仅在开发环境输出（R4-00661）
-      if (isDev) {
-        console.warn("[api.logout] 后端登出接口调用失败:", error);
-      }
-    } finally {
-      // 清本地 token + 跳转登录页（无论后端结果如何都执行）
-      clearTokens();
-      uni.reLaunch({ url: ROUTES.LOGIN });
     }
   },
 
@@ -806,6 +859,49 @@ export const clientApi = {
   },
 
   /**
+   * 查询悄悄话内容（B3 恋爱小纸条，付费解锁后可见）。
+   *
+   * 对应后端 GET /api/v1/recommendations/{userId}/whisper（R4-00314）：
+   * 已解锁（wallet_transaction_log 存在 MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）时
+   * 返回完整文案，未解锁返回 {unlocked:false, whisper:null}，不泄露付费内容。
+   * 非幂等扣费端点，仅查询；mock 模式下文案随推荐卡片 fixtures 下发，此处返回空。
+   *
+   * @param userId - 目标用户 ID
+   * @returns 悄悄话视图（unlocked / whisper / balanceCents）
+   */
+  async getWhisper(userId: string): Promise<WhisperUnlockView> {
+    if (useMock()) {
+      return { unlocked: true, whisper: null, balanceCents: null };
+    }
+    return request<WhisperUnlockView>({
+      url: `/recommendations/${userId}/whisper`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 付费解锁悄悄话并返回内容（B3 恋爱小纸条）。
+   *
+   * 对应后端 POST /api/v1/recommendations/{userId}/whisper/unlock：
+   * 按服务端定价（app.unlock-price.whisper，默认 200 分=2 元）扣减钱包并写入
+   * WHISPER_UNLOCK 流水，order_id 唯一索引保证同一目标只扣一次费（重复解锁幂等返回）。
+   * 余额不足时后端抛 409（InsufficientBalanceException）。
+   * mock 模式下扣费由 coinsStore.spend 承载，此处返回空结果。
+   *
+   * @param userId - 目标用户 ID
+   * @returns 悄悄话视图（解锁成功后 unlocked=true 且含完整文案）
+   */
+  async unlockWhisper(userId: string): Promise<WhisperUnlockView> {
+    if (useMock()) {
+      return { unlocked: true, whisper: null, balanceCents: null };
+    }
+    return request<WhisperUnlockView>({
+      url: `/recommendations/${userId}/whisper/unlock`,
+      method: "POST",
+    });
+  },
+
+  /**
    * 获取通知免打扰设置（功能6）。
    *
    * 对应后端 GET /api/dnd 端点。
@@ -916,4 +1012,19 @@ export interface CheckInResultResponse {
   newUsersUnlocked: boolean;
   hotTopicCount: number;
   newUserCount: number;
+}
+
+/**
+ * 客户端配置聚合（B6：后台配置即时生效，前后端联动）。
+ *
+ * 对应后端 GET /api/v1/app-config 扁平响应，数据源为
+ * app_switch / app_rule / app_config 三张表（不缓存，管理后台更新后按 TTL 拉取生效）。
+ */
+export interface ClientAppConfig {
+  /** 功能开关（key → 是否开启；缺失开关默认视为开启） */
+  switches: Record<string, boolean>;
+  /** 业务规则（key → 数值） */
+  rules: Record<string, number>;
+  /** 站点标题 */
+  siteTitle: string;
 }

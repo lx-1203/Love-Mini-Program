@@ -122,7 +122,7 @@ class RecommendationCacheManagerTest {
                 false, false, 0, null, null, List.of(), null, null, "none",
                 "CL-500", "1.2km", "offline", true, false,
                 List.of("开朗"), "INTJ", null, false, List.of(),
-                null, false, "南京", null, null, null);
+                null, false, "南京", null, null, null, null);
         when(recommendationRanker.buildHistory(userId))
                 .thenReturn(List.of(fakeView));
 

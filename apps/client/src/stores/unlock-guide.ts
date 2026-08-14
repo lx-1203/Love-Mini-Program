@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { openAppPath } from "../utils/navigation";
+import { STORAGE_KEYS } from "../constants/storage-keys";
 
 /**
  * 单个解锁引导步骤的视图结构（与后端 UnlockGuideStepView 对齐）。
@@ -33,7 +34,7 @@ export interface UnlockGuideStep {
  *   - 次按钮「暂不完善」  → 关闭弹窗，用户可继续浏览当前锁定页（LockScreen 占位）
  *
  * 同时维护「首次进入锁定页」的一次性教学蒙层（UnlockGuideOverlay）状态，
- * 通过 uni.getStorageSync('unlock_guide_shown') 记录是否已展示过。
+ * 通过 uni.getStorageSync(STORAGE_KEYS.UNLOCK_GUIDE_SHOWN) 记录是否已展示过。
  *
  * Task 3.6.5：新增 steps 状态与 loadStepsFromBackend() action，
  * 支持从后端 /api/v1/config/unlock-guide-steps 动态拉取步骤文案。
@@ -93,7 +94,7 @@ export const useUnlockGuideStore = defineStore("unlock-guide", {
       // 首次进入锁定页时展示一次性教学蒙层
       // 通过本地存储记录是否已展示，避免重复打扰用户
       try {
-        const shown = uni.getStorageSync("unlock_guide_shown");
+        const shown = uni.getStorageSync(STORAGE_KEYS.UNLOCK_GUIDE_SHOWN);
         if (!shown) {
           this.overlayVisible = true;
         }
@@ -125,7 +126,7 @@ export const useUnlockGuideStore = defineStore("unlock-guide", {
     hideOverlay() {
       this.overlayVisible = false;
       try {
-        uni.setStorageSync("unlock_guide_shown", true);
+        uni.setStorageSync(STORAGE_KEYS.UNLOCK_GUIDE_SHOWN, true);
       } catch (_e) {
         // 写入失败时忽略，下次可能再次展示（不影响主流程）
       }

@@ -33,6 +33,18 @@ onMounted(async () => {
   Object.assign(form, profileStore.scheduleProfile || form);
 });
 
+/**
+ * 2026-08-10 功能补齐：添加时段输入框（原实现只能编辑已有时段，初始为空时无法新增）。
+ */
+function addTimeWindow() {
+  form.preferredTimeWindows.push("");
+}
+
+/** 删除指定时段输入框 */
+function removeTimeWindow(idx: number) {
+  form.preferredTimeWindows.splice(idx, 1);
+}
+
 async function save() {
   // 修复：添加输入验证
   if (!form.preferredCampusArea.trim()) {
@@ -64,19 +76,42 @@ async function save() {
     <SectionCard :title="t('setup.schedule.prefTitle')" compact>
       <input v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
       <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
-           现按数组渲染全部时段输入框，提交时完整保留。 -->
+           现按数组渲染全部时段输入框，提交时完整保留。
+           2026-08-10 功能补齐：新增「+ 添加时段」按钮与删除按钮，初始为空也可新增。 -->
       <view
         v-for="(_win, idx) in form.preferredTimeWindows"
         :key="idx"
         class="time-window-field"
       >
-        <input
-          v-model="form.preferredTimeWindows[idx]"
-          class="field"
-          maxlength="60"
-          :placeholder="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
-          :aria-label="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
-        />
+        <view class="time-window-row">
+          <input
+            v-model="form.preferredTimeWindows[idx]"
+            class="field time-window-input"
+            maxlength="60"
+            :placeholder="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
+            :aria-label="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
+          />
+          <view
+            v-if="form.preferredTimeWindows.length > 1"
+            class="time-window-remove press-feedback"
+            hover-class="press-feedback--active"
+            role="button"
+            :aria-label="t('setup.schedule.removeTimeWindow')"
+            @tap="removeTimeWindow(idx)"
+          >
+            <text class="time-window-remove__text">✕</text>
+          </view>
+        </view>
+      </view>
+      <view
+        class="time-window-add press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="50"
+        role="button"
+        :aria-label="t('setup.schedule.addTimeWindow')"
+        @tap="addTimeWindow"
+      >
+        <text class="time-window-add__text">＋ {{ t('setup.schedule.addTimeWindow') }}</text>
       </view>
       <BottomActionBar :primary-label="t('setup.schedule.saveButton')" @primary="save" />
     </SectionCard>
@@ -107,5 +142,50 @@ async function save() {
 
 .time-window-field:first-of-type {
   margin-top: var(--sp-3);
+}
+
+/* 2026-08-10 功能补齐：时段行 + 删除按钮 */
+.time-window-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.time-window-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-window-remove {
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--c-bg-surface, #F4F6FA);
+}
+
+.time-window-remove__text {
+  color: var(--c-text-tertiary, #6B7280);
+  font-size: var(--fs-lg);
+}
+
+/* 添加时段按钮 */
+.time-window-add {
+  margin-top: var(--sp-4);
+  padding: var(--sp-4) var(--sp-4);
+  border-radius: var(--r-lg);
+  border: 1rpx dashed var(--c-border-strong, #CBD5E1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-window-add__text {
+  color: var(--c-brand, #3FCF8E);
+  font-size: var(--fs-lg);
+  font-weight: 500;
 }
 </style>

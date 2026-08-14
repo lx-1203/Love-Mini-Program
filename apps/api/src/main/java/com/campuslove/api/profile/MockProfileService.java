@@ -422,6 +422,12 @@ public class MockProfileService implements ProfileService {
         // 2026-08-09：mock 模式无审核链路，照片墙/头像均视为已通过
         java.util.List.of(),
         "approved",
+        null,
+        // 3-N 未成年人保护：mock 资料视图暂不返回出生日期（前端 mock 分支自行管理）
+        null,
+        // 2026-08-11 匹配精细化：mock 资料暂不返回理想型（前端 mock 分支自行管理）
+        null,
+        // B1-2 实名认证标志：mock 资料暂不返回（前端 mock 分支自行管理）
         null
     );
   }

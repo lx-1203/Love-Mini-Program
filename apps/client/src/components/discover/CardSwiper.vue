@@ -33,17 +33,25 @@
 import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DiscoverCard, SwipeDirection } from "../../stores/discover";
+// 2026-08-11 新增：悬浮头像框第一视觉锚点（卡片中上部头像框主题注册表类型）
+import type { AvatarFrameId } from "../../config/avatar-frames";
 import SafeImage from "../common/SafeImage.vue";
+import AvatarFrame from "../common/AvatarFrame.vue";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
+// B3 恋爱小纸条（2026-08-13）：悄悄话解锁底部弹层
+import WhisperUnlockSheet from "./WhisperUnlockSheet.vue";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { featureFlags } from "../../config/feature-flags";
 import { isDev } from "../../config/env";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
-import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { useCoinsStore } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
+// B3：real 模式悄悄话解锁走 clientApi（mock 扣费由 coinsStore.spend 承载）
+import { clientApi } from "../../services/api";
+import { useMock } from "../../stores/helpers/use-mock";
 // 2026-08-08 走查 P1：超级测试账号悄悄话免费旁路（会话 store 的 isSuperTestAccount getter）
 import { useSessionStore } from "../../stores/session";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
@@ -184,8 +192,8 @@ const animTimers = new Set<ReturnType<typeof setTimeout>>();
 /** 触摸是否已移动（移动超过阈值则取消长按） */
 let hasMovedForLongPress = false;
 // 注：LONG_PRESS_DELAY_MS / LONG_PRESS_MOVE_THRESHOLD 由 constants/match 统一提供
-/** 悄悄话解锁成功后延迟跳转聊天页（ms）：给成功 toast 留出展示时间，避免与页面切换重叠 */
-const MESSAGE_EMIT_DELAY_MS = 500;
+// 注：MESSAGE_EMIT_DELAY_MS 已随 B3 重构移除（旧悄悄话扣费后延迟跳转逻辑废除，
+//     跳转改为 WhisperUnlockSheet「去和TA聊天」按钮触发，无需延迟）
 
 /** 触摸起始坐标 */
 let startX = 0;
@@ -253,17 +261,43 @@ const bgCustomClass = computed<string>(() =>
   props.masked ? "card__bg card__bg--masked" : "card__bg"
 );
 
+/**
+ * 卡片头像框主题（2026-08-11 新增）：校园认证 → 认证框；其余 → default 品牌青绿框。
+ * 2026-08-12 V3：none（浅灰环）→ default（品牌青绿环），浅灰环在朦胧背景上几乎不可见，
+ * 彩色品牌环成为卡片中上部稳定可见的第一视觉锚点。
+ */
+const cardAvatarFrameId = computed<AvatarFrameId>(() => {
+  const level = currentCard.value?.verificationBadgeLevel;
+  if (level === "school") return "school-verified";
+  return "default";
+});
+
 /** 蒙面模式下展示的昵称（隐藏真实昵称） */
 const displayName = computed<string>(() =>
   props.masked ? "????" : (currentCard.value?.name ?? "")
 );
 
 /**
+ * 头像框是否渲染真实头像（2026-08-12 空值兜底）：
+ * 头像框恒显示（除蒙面模式），avatar 为空时由 hasRealAvatar=false 切换到昵称首字兜底分支。
+ */
+const hasRealAvatar = computed<boolean>(() => !!currentCard.value?.avatar);
+
+/**
+ * 头像框兜底展示文字（2026-08-12 空值兜底）：蒙面 → '?'；无头像 → 昵称首字。
+ */
+const avatarDisplayName = computed<string>(() => {
+  // 修复（严格模式 noUncheckedIndexedAccess）：[0] 索引访问返回 string | undefined，
+  // 追加 ?? '?' 兜底，确保返回值始终为 string（运行时 (name || '?') 首字恒有值）。
+  return props.masked ? "?" : ((currentCard.value?.name || "?")[0] ?? "?");
+});
+
+/**
  * 当前卡片是否有视频（Phase D2 · 视频角标显隐依据）。
- * Phase 4.7：视频功能暂时下架（featureFlags.videoCallEnabled=false 时角标隐藏）。
+ * 2026-08-10：视频通话功能整体下架，角标保留（展示个人视频 → video-player 页），仅依赖数据字段。
  */
 const hasVideo = computed<boolean>(() => {
-  return featureFlags.videoCallEnabled && !!currentCard.value?.personalVideoUrl;
+  return !!currentCard.value?.personalVideoUrl;
 });
 
 /**
@@ -522,49 +556,123 @@ const educationLabel = computed(() => {
 });
 
 /**
- * 底部操作栏「悄悄话」：付费私信入口。
+ * 底部操作栏「悄悄话」：B3 恋爱小纸条付费解锁入口。
  * 优先级：后端已允许（allowMessage）、会员（membershipEnabled 门控）或超级测试账号 → 直接进入会话；
- * 其余 → 交友币扣费（UNLOCK_COST_YUAN.WHISPER）后进入会话。
+ * 其余 → 打开 WhisperUnlockSheet 付费解锁（2 交友币）后展示恋爱小纸条。
  *
- * 2026-08-08 走查：悄悄话功能暂未开放（WHISPER_ENABLED=false 时按钮置灰，
- * 点击仅提示，不执行扣费/跳转；开放后置 true 即可恢复原逻辑）。
+ * 2026-08-13 B3：原 WHISPER_ENABLED 本地常量废除，开关统一收敛到
+ * featureFlags.whisperEnabled（置 false 时按钮置灰，点击仅提示）。
  */
-const WHISPER_ENABLED = false;
+
+/** 悄悄话解锁弹层显隐 */
+const showWhisperSheet = ref(false);
+/** 悄悄话弹层组件引用（解锁成功后通过 expose 驱动 result 状态） */
+const whisperSheetRef = ref<InstanceType<typeof WhisperUnlockSheet> | null>(null);
 
 function onWhisperTap(): void {
   const card = currentCard.value;
   if (!card || isFlyingOut.value) return;
-  if (!WHISPER_ENABLED) {
+  if (!featureFlags.whisperEnabled) {
     uni.showToast({ title: t("discover.whisperComingSoon"), icon: "none" });
     return;
   }
+  if (card.whisperSent) {
+    uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
+    return;
+  }
+  // 后端已允许 / 会员（门控）/ 超级测试账号 → 直接进入会话（2026-08-08 走查保留语义）
   if (card.allowMessage || (featureFlags.membershipEnabled && vipStore.isVip) || isSuperTest.value) {
     emit("message", card.userId);
     return;
   }
-  uni.showModal({
-    title: t("discover.whisperLabel"),
-    content: t("discover.whisperPaidHint", { coins: UNLOCK_COST_YUAN.WHISPER }),
-    confirmText: t("common.confirm"),
-    cancelText: t("common.cancel"),
-    success: async (res) => {
-      if (!res.confirm || !currentCard.value) return;
-      const target = currentCard.value;
-      try {
-        await coinsStore.spend("WHISPER", target.userId);
-        uni.showToast({ title: t("discover.unlockSuccess"), icon: "success" });
-        setTimeout(() => emit("message", target.userId), MESSAGE_EMIT_DELAY_MS);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        uni.showModal({
-          title: t("discover.unlockFailTitle"),
-          content: message,
-          confirmText: t("common.gotIt"),
-          showCancel: false,
-        });
+  // 刷新余额（弹层展示「当前余额」），未加载过或余额变化后实时取
+  void coinsStore.fetchBalance();
+  showWhisperSheet.value = true;
+  // real 模式：打开时幂等查询解锁状态，已解锁过则弹层直接展示结果（不重复扣费）
+  if (!useMock()) {
+    void preloadWhisperResult(card.userId);
+  }
+}
+
+/**
+ * real 模式：弹层打开时查询悄悄话解锁状态（GET /recommendations/{userId}/whisper）。
+ * 已解锁直接进入结果态；查询失败静默保持付费墙（解锁动作会再次校验）。
+ */
+async function preloadWhisperResult(userId: string): Promise<void> {
+  try {
+    const result = await clientApi.getWhisper(userId);
+    if (result.unlocked && result.whisper) {
+      whisperSheetRef.value?.showResult(result.whisper);
+    }
+  } catch (err) {
+    if (isDev) {
+      console.warn("[CardSwiper] 悄悄话状态查询失败:", err);
+    }
+  }
+}
+
+/**
+ * 悄悄话弹层「解锁查看」确认：
+ * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whisper）
+ * - real：POST /recommendations/{userId}/whisper/unlock 后端幂等扣费（服务端定价 200 分），
+ *   返回 balanceCents 时同步本地余额
+ * 成功后 showResult 驱动弹层进入结果态；失败回退付费墙并提示。
+ */
+async function handleWhisperUnlock(): Promise<void> {
+  const card = currentCard.value;
+  if (!card) return;
+  try {
+    if (useMock()) {
+      await coinsStore.spend("WHISPER", card.userId);
+      whisperSheetRef.value?.showResult(card.whisper ?? "");
+    } else {
+      const result = await clientApi.unlockWhisper(card.userId);
+      if (result.balanceCents != null) {
+        coinsStore.balanceCents = result.balanceCents;
       }
-    },
-  });
+      whisperSheetRef.value?.showResult(result.whisper ?? "");
+    }
+  } catch (err) {
+    // 回退付费墙（错误提示由下方 toast/modal 承载）
+    whisperSheetRef.value?.resetToPaywall();
+    // 409：余额不足（InsufficientBalanceException，后端契约）
+    const status =
+      err !== null && typeof err === "object" && "status" in err
+        ? (err as { status: number }).status
+        : 0;
+    if (status === 409) {
+      uni.showToast({ title: t("discover.whisperUnlockFailBalance"), icon: "none" });
+      return;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    uni.showModal({
+      title: t("discover.unlockFailTitle"),
+      content: message,
+      confirmText: t("common.gotIt"),
+      showCancel: false,
+    });
+  }
+}
+
+/** 解锁成功：标记当前卡片已发送（按钮置灰、详情页同步显示文案） */
+function onWhisperUnlocked(whisperText: string): void {
+  const card = currentCard.value;
+  if (!card) return;
+  card.whisperSent = true;
+  card.whisper = whisperText;
+}
+
+/** 弹层关闭 */
+function onWhisperSheetClose(): void {
+  showWhisperSheet.value = false;
+}
+
+/** 弹层「去和TA聊天」：关闭弹层并进入会话（既有 emit 路径） */
+function onWhisperSheetChat(): void {
+  const card = currentCard.value;
+  if (!card) return;
+  showWhisperSheet.value = false;
+  emit("message", card.userId);
 }
 
 /* ========== 卡片缩放效果（长按时缩小） ========== */
@@ -985,8 +1093,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         </view>
       </view>
 
-      <!-- 当前卡片（可操作层） -->
-      <view v-if="currentCard" class="card card--current" :style="currentCardStyle">
+      <!-- 当前卡片（可操作层）；2026-08-12 卡顿修复：拖动态加 card--dragging 类供 blur 降级；
+           详情弹层打开时加 card--detail-open，移除底层 GPU 模糊避免遮罩下持续 re-filter -->
+      <view v-if="currentCard" class="card card--current" :class="{ 'card--dragging': isDragging, 'card--detail-open': showDetail }" :style="currentCardStyle">
         <!-- Phase D2 · 4:5 大图区，照片墙 swiper 支持多图浏览 -->
         <!-- 单图场景直接渲染 SafeImage，避免内部 swiper 与卡片整体拖动产生手势冲突 -->
         <SafeImage
@@ -1030,6 +1139,38 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 
         <!-- 渐变遮罩（Phase D2 · 下半区加强渐变以提升文字可读性） -->
         <view class="card__overlay" />
+
+        <!-- 整卡半透明压暗层（2026-08-11 新增：背景朦胧化，提升昵称/标签可读性） -->
+        <view class="card__bg-tint" />
+
+        <!-- 卡片中上部悬浮头像框（2026-08-11 新增：第一视觉锚点，竖版 3:4 卡片范式） -->
+        <!-- 蒙面匿名模式不展示（与 .card__bg--masked 模糊策略一致，避免泄露身份） -->
+        <!-- 2026-08-12 空值兜底：头像框恒显示（除蒙面模式），无头像时渲染昵称首字兜底圈 -->
+        <view
+          v-if="!masked"
+          class="card__avatar-hero"
+          role="img"
+          :aria-label="t('discover.avatarHeroAria')"
+        >
+          <!-- 2026-08-12 V3 双保险：内联尺寸直接落宿主节点，mp-weixin 下即使 :deep(.avatar-frame) 拉伸失效，头像框也由内联样式撑满 200rpx 容器 -->
+          <AvatarFrame
+            :frame-id="cardAvatarFrameId"
+            style="width: 100%; height: 100%"
+          >
+            <SafeImage
+              v-if="hasRealAvatar"
+              :src="currentCard.avatar"
+              root-class="card__avatar-hero-safe"
+              custom-class="card__avatar-hero-img"
+              mode="aspectFill"
+              :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
+            />
+            <!-- 无头像兜底：白圈边框 + 品牌渐变底 + 昵称首字（视觉对齐 .card__avatar-frame 占位样式） -->
+            <view v-else class="card__avatar-hero-fallback">
+              <text class="card__avatar-hero-fallback-text">{{ avatarDisplayName }}</text>
+            </view>
+          </AvatarFrame>
+        </view>
 
         <!-- 拖动红/绿反馈遮罩 -->
         <view
@@ -1248,6 +1389,18 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       @message="(userId: string) => { closeDetail(); emit('message', userId); }"
     />
 
+    <!-- B3 恋爱小纸条 · 悄悄话解锁底部弹层（2026-08-13：付费解锁后展示恋爱小纸条） -->
+    <WhisperUnlockSheet
+      ref="whisperSheetRef"
+      :visible="showWhisperSheet"
+      :user-name="currentCard?.name ?? ''"
+      :balance-cents="coinsStore.balanceCents"
+      @close="onWhisperSheetClose"
+      @chat="onWhisperSheetChat"
+      @unlock="handleWhisperUnlock"
+      @unlocked="onWhisperUnlocked"
+    />
+
     <!-- 长按快捷菜单 -->
     <LongPressMenu
       :visible="showMenu"
@@ -1273,9 +1426,11 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       >
         <image class="action-btn__reject-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
       </view>
-      <!-- 中间：悄悄话（64px 品牌绿填充圆形按钮，付费私信主入口，视觉权重最高；2026-08-08 暂未开放，置灰） -->
+      <!-- 中间：悄悄话（64px 品牌绿填充圆形按钮，B3 恋爱小纸条付费解锁主入口，视觉权重最高；
+           2026-08-13：功能开关关闭或已发送悄悄话时置灰，点击仍走 onWhisperTap 分支提示） -->
       <view
-        class="action-btn action-btn--whisper action-btn--whisper--disabled press-feedback"
+        class="action-btn action-btn--whisper press-feedback"
+        :class="{ 'action-btn--whisper--disabled': !featureFlags.whisperEnabled || currentCard.whisperSent }"
         hover-class="action-btn--pressed"
         hover-stay-time="120"
         @tap.stop="onWhisperTap"
@@ -1345,8 +1500,9 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
    * 的 flex 子项，但默认 flex:0 1 auto 高度仅由内容决定（空内容时塌缩为 ~16px）。
    * 即便外部 host-class 的 flex:1 因样式隔离/编译差异未生效，组件根节点也自带
    * 最小高度 860rpx（与 .card-area 同策略），宿主节点随内容自然撑开，
-   * 内部 .card-stack flex:1 → .card absolute 四边拉伸的高度链即可恢复。 */
-  min-height: 860rpx; /* 固定布局尺寸，无对应 token */
+   * 内部 .card-stack flex:1 → .card absolute 四边拉伸的高度链即可恢复。
+   * 2026-08-13 卡片再拉长：860→900rpx（与 discover .card-area 同步） */
+  min-height: 1120rpx; /* 固定布局尺寸，无对应 token */
   // #endif
   position: relative;
 }
@@ -1397,14 +1553,20 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card {
   position: absolute;
   width: calc(100% - 48rpx);
-  /* Phase D2 · 卡片采用 4:5 比例约束：mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比（125% = 5/4 × 100%） */
-  /* 内部绝对定位子元素（.card__bg/.card__overlay 等）会铺满 padding box，保持视觉一致 */
-  padding-top: 125%;
+  /* Phase D2 · 卡片比例约束：mp-weixin 不支持 aspect-ratio，改用 padding-top 百分比。
+   * 2026-08-11 改版：4:5（125%）→ 竖版 3:4（133.33% = 4/3 × 100%），
+   * 拉长卡片至主流交友 App（Tinder/探探/Bumble）竖版范式，为头像框与信息区留出空间。
+   * 2026-08-12 进一步拉长：3:4 → 约 100:145（145% = 1.45 × 100%），
+   * 更修长的竖版人像比例，让中上部头像框与底部信息区视觉更舒展。
+   * 2026-08-12 V3 再拉长：145% → 150%（仅 H5 端；mp-weixin 已四边拉伸占满零改动），
+   * 头像框与信息区间距再多约 20-30rpx，接近 max-height 钳制点但未溢出 */
+  padding-top: 150%;
   /* 2026-08-09 改版：card-stack 上下 padding 缩至 8rpx，卡片 max-height 同步改为 calc(100% - 16rpx)，
    * 高度最大化使 8 项信息完整展示 */
   max-height: calc(100% - 16rpx);
-  /* min-height 兜底防溢出 */
-  min-height: 600rpx;
+  /* min-height 兜底防溢出（2026-08-11 上调至 700rpx，容纳头像框 + 8 项信息区；
+   * 2026-08-12 配合 145% 拉长再上调至 760rpx，避免小屏下比例被压缩） */
+  min-height: 760rpx;
   border-radius: var(--r-xl);
   overflow: hidden;
   box-shadow: var(--s-card-soft);
@@ -1423,11 +1585,15 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 /* #ifndef H5 */
 .card {
   /* 2026-08-09 改版：上下 inset 缩至 8rpx，卡片几乎占满 card-stack，
-   * 高度最大化使 8 项信息完整露出；操作栏位于卡片下方独立留白区 */
-  top: 8rpx;
+   * 高度最大化使 8 项信息完整露出；操作栏位于卡片下方独立留白区。
+   * 2026-08-11 改版：上下 inset 再缩至 4rpx，配合 3:4 拉长目标，
+   * 让卡片占满 .card-area 可用高度（头像框 + 8 项信息区更饱满）。
+   * 2026-08-12 进一步拉长：上下 inset 再收紧至 2rpx，释放更多卡片高度，
+   * 配合 H5 端 145% 的拉长目标，头像框与信息区更舒展 */
+  top: 2rpx;
   left: 24rpx;
   right: 24rpx;
-  bottom: 8rpx;
+  bottom: 2rpx;
   width: auto;
   padding-top: 0;
   max-height: none;
@@ -1497,7 +1663,30 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   width: auto !important;
   height: auto !important;
   object-fit: cover;
-  filter: brightness(1.05) saturate(1.1);
+  /* 2026-08-11 改版：背景朦胧化——模糊 + 压暗 + 轻微降饱和，背景只作氛围衬托，
+   * 头像框与底部信息成为视觉焦点（点进详情才正式查看大图）。
+   * 2026-08-12 朦胧增强：blur 10rpx → 14rpx、brightness 0.9 → 0.82，
+   * 背景细节进一步虚化，配合 .card__bg-tint(0.32) 压暗，昵称/标签可读性更强；
+   * 2026-08-12 V3：brightness 0.82 → 0.78，继续压低背景明度，彩色头像框与信息区对比更强
+   * scale(1.05) 补偿模糊边缘溢出（蒙面模式 .card__bg--masked 覆盖为 scale(1.08)）。
+   * 2026-08-12 卡顿修复：拖动态（.card--dragging）移除 filter/transform——
+   * 全屏大图 GPU 模糊在低端机拖动动画期间持续 re-filter 是掉帧主因，
+   * 拖动结束恢复静态朦胧效果（压暗层 .card__bg-tint 已承担可读性） */
+  filter: blur(14rpx) brightness(0.78) saturate(1.05);
+  transform: scale(1.05);
+}
+
+/* 2026-08-12 卡顿修复：拖动期间降级——移除 GPU 模糊与缩放，仅留压暗层保证可读性 */
+.card--dragging :deep(.card__bg) {
+  filter: none;
+  transform: none;
+}
+
+/* 2026-08-13 卡顿收尾：详情弹层打开期间同样移除底层卡片的 GPU 模糊——
+ * 全屏遮罩下底层不可见，持续 re-filter 纯属浪费（与 card--dragging 同模式） */
+.card--detail-open :deep(.card__bg) {
+  filter: none;
+  transform: none;
 }
 
 .card__bg--placeholder {
@@ -1592,7 +1781,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 72%;
+  /* 2026-08-11 改版：72% → 80%，朦胧化后渐变覆盖更高，昵称/标签信息区更可读 */
+  height: 80%;
   background: linear-gradient(
     to top,
     var(--c-overlay-stronger) 0%,
@@ -1602,6 +1792,88 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   );
   pointer-events: none;
   z-index: 2;
+}
+
+/* 整卡半透明压暗层（2026-08-11 新增：背景朦胧化，确保昵称/标签在朦胧背景上可读）。
+ * 2026-08-12 朦胧增强：0.25 → 0.32，更强的整卡压暗以对冲 blur 14rpx 的更重模糊；
+ * rgba(15,23,42,0.32) 介于 --c-black-overlay-light(0.16) 与 --c-overlay-mid(0.55) 之间，
+ * 无精确对应 token，保留原值。拖动降级（.card--dragging）时该压暗层承担全部可读性 */
+.card__bg-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ========== 卡片中上部悬浮头像框（2026-08-11 新增：第一视觉锚点） ========== */
+.card__avatar-hero {
+  position: absolute;
+  /* 固定布局尺寸（外框 220rpx / 顶部偏移 220rpx），无对应 token；
+     AvatarFrame 环 + 内白圈自带 padding，头像本体约 180rpx；
+     2026-08-12 配合卡片 145% 拉长：偏移 200→230rpx、外框 190→200rpx；
+     2026-08-13 V4：200→220rpx 更醒目（≈卡宽 25%，QQ/探探参考范式），
+     顶部偏移 230→220rpx（identity 顶栏约 110rpx 高，无重叠） */
+  top: 180rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220rpx;
+  height: 220rpx;
+  /* 高于背景（z-index 1/2）、低于操作浮层（z-index 4+），与信息区（z-index 3）同位但互不重叠 */
+  z-index: 3;
+  /* 不拦截手势：点击/滑动穿透到卡片，保持卡片整体交互一致（点击进详情） */
+  pointer-events: none;
+}
+
+/* AvatarFrame 根节点撑满外层容器（inline-flex 默认由内容决定尺寸，需显式拉伸，
+   否则内部 SafeImage 的 100% 高度循环解析为 0，头像不可见） */
+.card__avatar-hero :deep(.avatar-frame) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 2026-08-13 V4 修复（mp-weixin「绿色小点」根因）：AvatarFrame 环/内圈是内容自适应，
+ * SafeImage 根容器（.safe-image）无高度时整条高度链断裂，环塌缩为渐变条。
+ * 三节点全部 100% + border-box 拉伸（padding 不撑破容器），头像环稳定为 220rpx 圆环 */
+.card__avatar-hero :deep(.avatar-frame__ring),
+.card__avatar-hero :deep(.avatar-frame__inner) {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* SafeImage 根容器拉伸（root-class 落在 .safe-image 上，同 card__bg-wrap 策略） */
+.card__avatar-hero :deep(.card__avatar-hero-safe) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 头像本体（SafeImage 内部 <image>，需 :deep() 穿透；rounded 呈圆形头像） */
+:deep(.card__avatar-hero-img) {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* 无头像兜底圈（2026-08-12 新增）：撑满 AvatarFrame 插槽（100% 宽高）、
+   圆形白圈 + 品牌渐变底 + 昵称首字，视觉对齐 .card__avatar-frame 占位样式 */
+.card__avatar-hero-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--c-brand-100) 0%, var(--c-brand-300) 100%);
+  border: 10rpx solid var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95));
+  box-shadow: var(--s-lg, 0 8rpx 32rpx rgba(15, 23, 42, 0.08));
+}
+
+.card__avatar-hero-fallback-text {
+  /* 固定布局尺寸（64rpx 占位首字），无对应 token */
+  font-size: 64rpx;
+  font-weight: 700;
+  color: var(--c-brand-700);
 }
 
 /* 拖动方向反馈遮罩：右滑绿色 / 左滑红色，从边缘向内渐隐 */
@@ -2223,8 +2495,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border: 3rpx solid var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8));
 }
 
-/* 2026-08-08 走查：悄悄话暂未开放 → 按钮置灰（WHISPER_ENABLED=false），
- * 轻量弱化以保留主入口视觉层级（点击仍提示敬请期待，不执行扣费/跳转） */
+/* 2026-08-13 B3：恋爱小纸条上线——功能开关未开启或已发送悄悄话（whisperSent）时置灰，
+ * 轻量弱化以保留主入口视觉层级（点击仍走 onWhisperTap 分支提示，不执行扣费/跳转） */
 .action-btn--whisper--disabled {
   opacity: 0.72;
   filter: saturate(0.75);

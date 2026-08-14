@@ -163,7 +163,7 @@ public class CampusController {
         Long userId = SecurityUtils.getCurrentUserId();
         Long schoolId = resolveSchoolId(userId);
         CampusTopicView topic = campusService.createCampusTopic(
-                userId, schoolId, req.category(), req.title(), req.content());
+                userId, schoolId, req.category(), req.title(), req.content(), req.tags());
         return ApiResponse.ok(topic);
     }
 
@@ -252,7 +252,8 @@ public class CampusController {
             @Valid @RequestBody CampusCertificationRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();
         CampusCertificationView cert = certService.submitCertification(
-                userId, req.schoolName(), req.major(), req.studentIdCardUrl());
+                userId, req.schoolName(), req.major(), req.studentIdCardUrl(),
+                req.chsiCode(), req.chsiScreenshotUrl());
         return ApiResponse.ok(cert);
     }
 
@@ -424,11 +425,17 @@ record CampusReplyPageResponse(
 
 /**
  * 创建校园话题请求体。
+ *
+ * @param category 话题分类（必填）
+ * @param title    话题标题（必填，≤200 字）
+ * @param content  话题内容（必填，≤5000 字）
+ * @param tags     话题标签数组（3-L：可选，≤5 个，每个 ≤20 字符）
  */
 record CreateCampusTopicRequest(
     @NotBlank String category,
     @NotBlank @Size(max = 200) String title,
-    @NotBlank @Size(max = 5000) String content
+    @NotBlank @Size(max = 5000) String content,
+    @Size(max = 5) List<@Size(max = 20) String> tags
 ) {}
 
 /**
@@ -440,10 +447,18 @@ record CreateCampusReplyRequest(
 
 /**
  * 校园认证提交请求体。
+ *
+ * @param schoolName         学校名称
+ * @param major              专业
+ * @param studentIdCardUrl   学生证图片 URL
+ * @param chsiCode           学信网在线验证码（B1-3 学历认证，可空）
+ * @param chsiScreenshotUrl  学信网学历截图 URL（B1-3 学历认证，可空）
  */
 record CampusCertificationRequest(
     @NotBlank @Size(max = 100) String schoolName,
     @NotBlank @Size(max = 100) String major,
     // infra R2-00215: 学生证图片 URL 长度上限，防止超长 URL 入库
-    @NotBlank @Size(max = 2048) String studentIdCardUrl
+    @NotBlank @Size(max = 2048) String studentIdCardUrl,
+    @Size(max = 64) String chsiCode,
+    @Size(max = 2048) String chsiScreenshotUrl
 ) {}

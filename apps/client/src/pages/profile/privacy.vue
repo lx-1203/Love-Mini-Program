@@ -60,7 +60,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="privacy-page page-fade-in">
+  <view class="privacy-page">
     <!-- 顶部栏 -->
     <view class="privacy-page__header">
       <view class="privacy-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
@@ -118,7 +119,8 @@ public class AuthController {
     @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView register(@Valid @RequestBody RegisterRequest request) {
         return authService.registerUser(
-                request.phone(), request.password(), request.nickname());
+                request.phone(), request.password(), request.nickname(),
+                request.birthDate(), request.deviceId());
     }
 
     /**
@@ -134,7 +136,7 @@ public class AuthController {
     @PostMapping("/phone-login")
     @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
-        return authService.loginWithPhone(request.phone(), request.password());
+        return authService.loginWithPhone(request.phone(), request.password(), request.deviceId());
     }
 
     /**
@@ -149,8 +151,10 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/guest-login")
-    public UserSessionView guestLogin() {
-        return authService.loginAsGuest();
+    public UserSessionView guestLogin(
+            @Parameter(description = "客户端设备标识（可选，用于设备管理；缺失时后端记为 unknown）", required = false)
+            @org.springframework.web.bind.annotation.RequestParam(name = "deviceId", required = false) String deviceId) {
+        return authService.loginAsGuest(deviceId);
     }
 
 
@@ -174,7 +178,7 @@ public class AuthController {
             @Valid @RequestBody WechatLoginRequest request) {
         // R4-00268：与 WechatAuthController./wechat（推荐路径）收敛为共享实现，
         // 本端点保留为兼容别名
-        return WechatLoginSupport.login(authService, authMetrics, request.code());
+        return WechatLoginSupport.login(authService, authMetrics, request.code(), request.deviceId());
     }
 
     /**
@@ -416,14 +420,18 @@ record AdminLoginRequest(
 /**
  * 注册请求体（infra R2 联调新增,参考 eladmin 账号注册模式）。
  *
- * @param phone    手机号（11 位,1[3-9] 开头）
- * @param password 密码（6-64 位）
- * @param nickname 昵称（1-20 字）
+ * @param phone     手机号（11 位,1[3-9] 开头）
+ * @param password  密码（6-64 位）
+ * @param nickname  昵称（1-20 字）
+ * @param birthDate 出生日期（3-N 未成年人保护：必填，服务端校验年龄 >= 18）
+ * @param deviceId  客户端设备标识（3-D 设备管理：可选，缺失时后端记为 "unknown"）
  */
 record RegisterRequest(
     @NotBlank @Pattern(regexp = "^1[3-9]\\d{9}$", message = ErrorMessages.PHONE_FORMAT_INVALID) String phone,
     @NotBlank @Size(min = 6, max = 64, message = ErrorMessages.PASSWORD_LENGTH_INVALID) String password,
-    @NotBlank @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname) {
+    @NotBlank @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname,
+    @NotNull(message = ErrorMessages.BIRTH_DATE_REQUIRED) java.time.LocalDate birthDate,
+    String deviceId) {
 }
 
 /**
@@ -431,8 +439,10 @@ record RegisterRequest(
  *
  * @param phone    手机号
  * @param password 密码
+ * @param deviceId 客户端设备标识（3-D 设备管理：可选，缺失时后端记为 "unknown"）
  */
 record PhoneLoginRequest(
     @NotBlank @Size(max = 32, message = ErrorMessages.PHONE_LENGTH_ILLEGAL) String phone,
-    @NotBlank @Size(max = 64, message = ErrorMessages.PASSWORD_LENGTH_ILLEGAL) String password) {
+    @NotBlank @Size(max = 64, message = ErrorMessages.PASSWORD_LENGTH_ILLEGAL) String password,
+    String deviceId) {
 }

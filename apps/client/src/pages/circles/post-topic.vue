@@ -4,7 +4,6 @@
  * 支持标题输入、内容输入、可选图片上传
  */
 import { ref, computed, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../stores/circle";
 import { useVillageStore } from "../../stores/village";
@@ -145,30 +144,15 @@ const currentLength = computed(() => content.value.length);
 /** 是否超出字数限制 */
 const isOverLimit = computed(() => currentLength.value > MAX_LENGTH);
 
-const pageVisible = ref(false);
 /**
- * SubTask 1.5.2：页面进入淡入定时器与发布成功跳转定时器，统一保存引用便于卸载清理。
+ * SubTask 1.5.2：发布成功跳转定时器引用，便于卸载清理。
  */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
 let postSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理所有未触发的定时器。
  */
 onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
   if (postSuccessNavTimer) {
     clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = null;
@@ -405,7 +389,7 @@ if (options.activityId) {
 </script>
 
 <template>
-  <view class="post-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="post-page">
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

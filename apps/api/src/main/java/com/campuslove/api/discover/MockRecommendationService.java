@@ -297,7 +297,9 @@ public class MockRecommendationService implements RecommendationService {
         // R4-00337：incomeRange 已从公开推荐视图移除（敏感经济信息），INCOME_POOL 保留兼容
         OCCUPATION_POOL.get(Math.abs(person.name().hashCode()) % OCCUPATION_POOL.size()),
         person.age(),
-        "2026-03-12T08:00:00"
+        "2026-03-12T08:00:00",
+        // V3（2026-08-12）：他人主页背景——mock 复用半身照/头像，保证他人主页有背景可展示
+        avatar
     );
   }
 

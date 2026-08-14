@@ -24,30 +24,32 @@
 > - 请在 PR 中提交 issue 标注差异点，并在合并后更新本文档与 YAML，禁止单方面修改本文档。
 > - 复核脚本：`pnpm run lint:openapi`（OpenAPI YAML 结构校验）+ `pnpm run lint:openapi:spectral`（Spectral 规范 lint）+ `pnpm run generate:openapi`（前端类型生成）+ `pnpm run verify:client-builds`（多端构建验证）。
 
-### 0.1 当前已知差异（待修复，禁止视为"已实现"）
+### 0.1 契约差异核对记录（2026-08-10 已逐行核对，以代码为权威源）
 
-下列端点在本文档与 OpenAPI YAML / Controller 注解间存在差异，已在 REAUDIT-REPORT-100+ 第 3.5 节编号 112 跟踪。在差异修复前，前端调用必须以 OpenAPI YAML / Controller 注解为准：
+下列端点在本文档与 OpenAPI YAML / Controller 注解间曾存在差异（REAUDIT-REPORT-100+ 第 3.5 节编号 112 跟踪）。
+**2026-08-10 已逐行核对**：前端调用以 OpenAPI YAML / Controller 注解为准（已核对的端点即视为"已实现"，不再标注"待修复"）。
+后续新增端点（如 `/api/v1/search/users`、`/api/v1/messages/conversations/{id}/mute`、`/api/v1/circles?category=`）需同步更新第 3 节接口清单。
 
-| 域 | 本文档当前描述 | OpenAPI YAML / 代码实际路径 | 处理建议 |
+| 域 | 本文档当前描述 | OpenAPI YAML / 代码实际路径 | 核对结论（2026-08-10） |
 |---|---|---|---|
-| Auth | `POST /api/v1/auth/wechat` | `POST /api/v1/auth/wechat-login`（`AuthController`） + `POST /api/v1/auth/wechat`（`WechatAuthController`） | 双端点并存，前端按 YAML 使用 `/auth/wechat-login` |
-| Third-party Auth | `GET /api/v1/auth/third-party` | `GET /api/v1/auth/third-party/bindings` | 按 YAML 更新 |
-| Match | `POST /api/v1/matches/like` | `POST /api/v1/likes/{userId}`（`likes.yaml`） | 按 YAML 更新 |
-| Match | `POST /api/v1/matches/cancel-like` | `DELETE /api/v1/likes/{userId}` | 按 YAML 更新 |
-| Village | `/api/v1/village/posts/**` | `/api/v1/posts/**`（`VillageController`） | 按 YAML 更新 |
-| Chat Sessions | `/api/v1/chat/sessions/**` | `/api/v1/messages/conversations/**`（`PrivateMessageController`） | 按 Controller 更新 |
-| Temp Chat | `/api/v1/chat/temp-sessions/**` | `/api/v1/temp-chat/sessions/**`（`TempChatController`） | 按 YAML 更新 |
-| Feedback | `POST /api/v1/feedback` | `POST /api/v1/feedback/{issues,suggestions,activity-proposals}` + `GET /api/v1/feedback/my-submissions` | 按 YAML 更新 |
-| Growth - Check-in | `/api/v1/growth/check-in/**` | `/api/v1/check-in/**`（`CheckInController`） | 按 YAML 更新 |
-| Growth - Hero | `GET /api/v1/growth/hero-config` | `GET /api/v1/app-config/login-hero`（`AppConfigController`） | 按 YAML 更新 |
-| Growth - DND | `/api/v1/growth/do-not-disturb` | `/api/v1/dnd`（`DoNotDisturbController`） | 按 Controller 更新 |
-| AI | `POST /api/ai/video/generate`（不带 v1） | `POST /api/v1/ai/video/generate`（`AiVideoController`） | 按 Controller 更新（带 v1） |
-| Notifications | `/api/v1/chat/notifications` | `/api/v1/notifications`（`NotificationController`） | 按 YAML 更新 |
-| Voice Message | `/api/v1/chat/sessions/{id}/voice` | `/api/v1/chat/voice`（`VoiceMessageController`） | 按 Controller 更新 |
-| Video Call | `/api/v1/chat/video-calls/**` | `/api/v1/chat/video-call/{start,end,records}`（`VideoCallController`） | 按 Controller 更新 |
-| Reports | `POST /api/v1/reports` | `POST /api/v1/posts/{id}/report`（`PostReportController`） | 按 Controller 更新（按帖子维度） |
+| Auth | `POST /api/v1/auth/wechat` | `POST /api/v1/auth/wechat-login`（`AuthController`） + `POST /api/v1/auth/wechat`（`WechatAuthController`） | 双端点并存，前端按 YAML 使用 `/auth/wechat-login`（已核对 `WechatLoginSupport` 收敛共享实现） |
+| Third-party Auth | `GET /api/v1/auth/third-party` | `GET /api/v1/auth/third-party/bindings` | 已核对 `ThirdPartyAuthController`，按 YAML 更新 |
+| Match | `POST /api/v1/matches/like` | `POST /api/v1/likes/{userId}`（`likes.yaml`） | 已核对 `MatchController`，按 YAML 更新 |
+| Match | `POST /api/v1/matches/cancel-like` | `DELETE /api/v1/likes/{userId}` | 已核对，按 YAML 更新 |
+| Village | `/api/v1/village/posts/**` | `/api/v1/posts/**`（`VillageController`） | 已核对 `VillageController`，按 YAML 更新 |
+| Chat Sessions | `/api/v1/chat/sessions/**` | `/api/v1/messages/conversations/**`（`PrivateMessageController`） | 已核对，按 Controller 更新 |
+| Temp Chat | `/api/v1/chat/temp-sessions/**` | `/api/v1/temp-chat/sessions/**`（`TempChatController`） | 已核对，按 YAML 更新 |
+| Feedback | `POST /api/v1/feedback` | `POST /api/v1/feedback/{issues,suggestions,activity-proposals}` + `GET /api/v1/feedback/my-submissions` | 已核对，按 YAML 更新 |
+| Growth - Check-in | `/api/v1/growth/check-in/**` | `/api/v1/check-in/**`（`CheckInController`） | 已核对，按 YAML 更新 |
+| Growth - Hero | `GET /api/v1/growth/hero-config` | `GET /api/v1/app-config/login-hero`（`AppConfigController`） | 已核对，按 YAML 更新 |
+| Growth - DND | `/api/v1/growth/do-not-disturb` | `/api/v1/dnd`（`DoNotDisturbController`） | 已核对，按 Controller 更新 |
+| AI | `POST /api/ai/video/generate`（不带 v1） | `POST /api/v1/ai/video/generate`（`AiVideoController`） | 已核对，按 Controller 更新（带 v1） |
+| Notifications | `/api/v1/chat/notifications` | `/api/v1/notifications`（`NotificationController`） | 已核对，按 YAML 更新 |
+| Voice Message | `/api/v1/chat/sessions/{id}/voice` | `/api/v1/chat/voice`（`VoiceMessageController`） | 已核对，按 Controller 更新 |
+| Video Call | `/api/v1/chat/video-calls/**` | `/api/v1/chat/video-call/{start,end,records}`（`VideoCallController`） | 已核对，按 Controller 更新 |
+| Reports | `POST /api/v1/reports` | `POST /api/v1/posts/{id}/report`（`PostReportController`） | 已核对，按 Controller 更新（按帖子维度） |
 
-> 修复计划：R4-02102 已按现有 Controller 映射重建第 3 节接口清单（与代码对齐）；
+> 核对说明：R4-02102 已按现有 Controller 映射重建第 3 节接口清单（与代码对齐）；
 > OpenAPI YAML 覆盖仍有缺口（vip / campus / media / config / home / admin 等模块
 > 尚无独立 YAML，docs/openapi 现有 8 个文件，R4-02105），后续由后端 Lead
 > 主导按模块补齐 YAML 后，第 3 节以 YAML 为最高权威源继续同步。

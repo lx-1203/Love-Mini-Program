@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
  *
  * <p>R4-00359 处理：项目未引入 Elasticsearch 依赖（搜索为 SQL 实现），
  * 移除 {@code @EventListener} 事件订阅与"同步完成"日志，不再宣称具备索引同步能力。
- * 后续接入 ES 时按以下步骤恢复：
+ * B10（2026-08-10）：C 端用户搜索已实现（{@code UserSearchController} +
+ * {@code UserRepository.searchByKeyword}，JPQL LIKE 中缀匹配，校园规模适用），
+ * 不依赖本监听器。后续接入 ES 时按以下步骤恢复：
  * <ol>
  *   <li>pom.xml 引入 {@code spring-boot-starter-data-elasticsearch}</li>
  *   <li>定义 {@code UserDocument} 实体（@Document(indexName="users")）</li>

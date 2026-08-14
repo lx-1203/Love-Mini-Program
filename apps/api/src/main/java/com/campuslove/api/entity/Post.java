@@ -140,6 +140,29 @@ public class Post {
     private Boolean isPinned = false;
 
     /**
+     * 热度分（2026-08-11 热度榜：定时任务按互动加权 + 时间衰减重算）。
+     * <p>对应 posts.hot_score 列（V2026.08.11.0001 迁移新增），默认 0；
+     * 榜单/推荐流按此列排序，重算周期内查询零计算。</p>
+     */
+    @Column(name = "hot_score", nullable = false)
+    private Double hotScore = 0.0;
+
+    /**
+     * 运营热度倍率（2026-08-11 后台操纵：>1 上榜加成，0 压榜，支持小数微调）。
+     * <p>对应 posts.hot_boost 列（V2026.08.11.0001 迁移新增），默认 1.0。</p>
+     */
+    @Column(name = "hot_boost", nullable = false)
+    private Double hotBoost = 1.0;
+
+    /**
+     * 禁止上榜（2026-08-11 后台操纵：1=不进入热度榜/推荐流，不影响前台可见性，
+     * 与 status=hidden 语义区分——hidden 前台不可见）。
+     * <p>对应 posts.hot_banned 列（V2026.08.11.0001 迁移新增），默认 false。</p>
+     */
+    @Column(name = "hot_banned", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean hotBanned = false;
+
+    /**
      * 关联活动 ID（2026-08-09 帖子关联活动）。
      * <p>对应 posts.activity_id 列（V2026.08.09.0004 迁移新增），可为 null；
      * 非空时列表/详情下发 {@code ActivitySummaryView} 活动卡片。</p>
@@ -300,6 +323,30 @@ public class Post {
 
     public void setIsPinned(Boolean isPinned) {
         this.isPinned = isPinned;
+    }
+
+    public Double getHotScore() {
+        return hotScore;
+    }
+
+    public void setHotScore(Double hotScore) {
+        this.hotScore = hotScore;
+    }
+
+    public Double getHotBoost() {
+        return hotBoost;
+    }
+
+    public void setHotBoost(Double hotBoost) {
+        this.hotBoost = hotBoost;
+    }
+
+    public Boolean getHotBanned() {
+        return hotBanned;
+    }
+
+    public void setHotBanned(Boolean hotBanned) {
+        this.hotBanned = hotBanned;
     }
 
     public Long getActivityId() {

@@ -62,6 +62,14 @@ public class CampusTopic {
     @Column(name = "images", columnDefinition = "JSON")
     private String images;
 
+    /**
+     * 话题标签数组（JSON 格式，3-L）。
+     * <p>最多 5 个标签，每个 ≤20 字符；无标签时为 null。
+     * 存储方式与 images 一致（JSON 列），展示性弱结构化数据无需多对多关联表。</p>
+     */
+    @Column(name = "tags", columnDefinition = "JSON")
+    private String tags;
+
     /** 作者用户 ID */
     @Column(name = "author_id", nullable = false)
     private Long authorId;
@@ -176,6 +184,14 @@ public class CampusTopic {
 
     public void setImages(String images) {
         this.images = images;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 
     public Long getAuthorId() {

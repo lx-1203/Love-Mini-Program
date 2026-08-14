@@ -46,12 +46,17 @@ public class CircleController {
 
   /**
    * 获取所有兴趣圈列表。
-   * GET /api/circles
+   * GET /api/circles?category=study
+   *
+   * <p>2026-08-10 B4：新增可选 category 参数——非空时按分类服务端过滤
+   * （study/sports/music/movie/travel/game/food/reading），
+   * 未分类（category=null）的圈子仅在未携带参数时展示。</p>
    */
   @GetMapping
-  public ApiResponse<List<CircleView>> getCircles() {
+  public ApiResponse<List<CircleView>> getCircles(
+      @RequestParam(name = "category", required = false) String category) {
     Long userId = SecurityUtils.getCurrentUserId();
-    return ApiResponse.ok(circleService.getCircles(userId));
+    return ApiResponse.ok(circleService.getCircles(userId, category));
   }
 
   /**
@@ -182,7 +187,9 @@ record CircleView(
     int memberCount,
     boolean isJoined,
     /** 话题数量 */
-    int topicCount
+    int topicCount,
+    /** 圈子分类（study/sports/music/movie/travel/game/food/reading，null=未分类，2026-08-10 B4） */
+    String category
 ) {
 }
 

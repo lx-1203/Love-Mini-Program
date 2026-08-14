@@ -117,19 +117,27 @@ public class RealCircleService implements CircleService {
     // ==================== 圈子列表 ====================
 
     /**
-     * 获取所有兴趣圈列表，包含当前用户加入状态。
+     * 获取兴趣圈列表，包含当前用户加入状态。
      * 按排序权重升序排列，同时查询当前用户的加入状态。
      *
-     * @param userId 当前用户 ID（用于判断加入状态），可为 null
+     * @param userId   当前用户 ID（用于判断加入状态），可为 null
+     * @param category 分类过滤（非 null 非空时仅返回该分类圈子；未分类圈子仅"全部"可见）
      * @return 圈子视图列表
      */
     @Override
     @Transactional(readOnly = true)
-    public List<CircleView> getCircles(Long userId) {
-        log.debug("获取兴趣圈列表, userId={}", userId);
+    public List<CircleView> getCircles(Long userId, String category) {
+        log.debug("获取兴趣圈列表, userId={}, category={}", userId, category);
 
         // 查询所有兴趣圈，按排序权重升序
         List<InterestCircle> circles = interestCircleRepository.findAllByOrderBySortOrderAsc();
+        // B4（2026-08-10）：按分类服务端过滤（null/空 = 全部，含未分类圈子）
+        if (category != null && !category.isBlank()) {
+            String trimmed = category.trim();
+            circles = circles.stream()
+                    .filter(c -> trimmed.equals(c.getCategory()))
+                    .toList();
+        }
 
         // 如果用户已登录，查询其已加入的圈子 ID 列表，用于标记加入状态
         List<Long> joinedCircleIds = List.of();
@@ -157,7 +165,8 @@ public class RealCircleService implements CircleService {
                             circle.getDescription(),
                             circle.getMemberCount() != null ? circle.getMemberCount() : 0,
                             finalJoinedCircleIds.contains(circle.getId()),
-                            (int) topicCount
+                            (int) topicCount,
+                            circle.getCategory()
                     );
                 })
                 .toList();

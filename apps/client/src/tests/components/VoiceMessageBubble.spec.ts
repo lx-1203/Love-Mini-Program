@@ -85,9 +85,9 @@ describe("VoiceMessageBubble component - 语音消息气泡组件", () => {
     expect(wrapper.find(".voice-bubble").classes()).toContain("voice-bubble--expired");
   });
 
-  it("expired=true 时显示暂停图标", () => {
+  it("expired=true 时显示暂停图标（SVG）", () => {
     const wrapper = mountBubble({ expired: true });
-    expect(wrapper.find(".voice-bubble__icon-emoji").text()).toBe("⏸");
+    expect(wrapper.find(".voice-bubble__icon-emoji").attributes("src")).toContain("pause.svg");
   });
 
   // ------------------------------------------------------------------
@@ -143,8 +143,8 @@ describe("VoiceMessageBubble component - 语音消息气泡组件", () => {
     expect(wrapper.find(".voice-bubble__icon-emoji").attributes("src")).toContain("volume-low.svg");
   });
 
-  it("audioUrl 为空时显示暂停图标", () => {
+  it("audioUrl 为空且未过期时显示静音图标（不可播放态）", () => {
     const wrapper = mountBubble({ audioUrl: "" });
-    expect(wrapper.find(".voice-bubble__icon-emoji").text()).toBe("⏸");
+    expect(wrapper.find(".voice-bubble__icon-emoji").attributes("src")).toContain("volume-low.svg");
   });
 });

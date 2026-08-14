@@ -99,7 +99,10 @@ public class RecommendationCacheManager {
 
             // 通过 Ranker 完成排序与视图转换（直接复用 Strategy 预加载的 Map）；
             // R4-00315：携带当前用户 ID，allowMessage / whisperSent 按解锁集合据实返回
-            List<RecommendedPersonView> views = recommendationRanker.rankAndConvert(result, userId);
+            // 2026-08-12：外层 List 转可变 ArrayList（同 getCachedGuestRecommendations
+            // 的 Redis 序列化修复——Stream.toList() 的 ImmutableCollections 无法反序列化）
+            List<RecommendedPersonView> views =
+                    new java.util.ArrayList<>(recommendationRanker.rankAndConvert(result, userId));
 
             // R4-00327：社交升温漏斗埋点——发现曝光（L1_EXPOSURE 默认层级计数）。
             // 仅在缓存 miss（真实计算新推荐）时记录一次；埋点失败不影响主流程
@@ -111,6 +114,44 @@ public class RecommendationCacheManager {
                 }
             }
             return views;
+        } finally {
+            try {
+                long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
+                matchMetrics.recordRecommendLatency(durationMs);
+            } catch (RuntimeException ignore) {
+                // 监控逻辑失败忽略，不影响主流程
+            }
+        }
+    }
+
+    /**
+     * 获取游客（未登录）推荐人物列表（带缓存，2026-08-12 卡顿修复）。
+     *
+     * <p>游客推荐无个性化上下文（固定 key {@code guest:v1}），每次全量重算
+     * ~8 次 SQL（候选池 200 人）是未登录切页卡顿主因；缓存后降为 1 次 Redis GET。
+     * TTL 60 秒（{@link CacheNames#GUEST_RECOMMEND}）：新用户/资料更新的可见性
+     * 窗口 1 分钟，运营可接受，不额外挂 @CacheEvict。</p>
+     *
+     * <p>结果为 null 或空列表时不缓存（unless 条件），避免缓存穿透。
+     * 注意：filter 筛选在调用方（RealRecommendationService）内存执行，
+     * 本方法不含 filter 参数保证缓存 key 单一。</p>
+     *
+     * @return 游客推荐人物视图列表
+     */
+    @Cacheable(cacheNames = CacheNames.GUEST_RECOMMEND, key = "'guest:v1'",
+            unless = "#result == null || #result.isEmpty()")
+    public List<RecommendedPersonView> getCachedGuestRecommendations() {
+        long startNanos = System.nanoTime();
+        try {
+            // 游客无个人上下文：中性排序（活跃度加分），与登录链路同实现保证字段口径一致
+            RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommendForGuest();
+            // 2026-08-12 Redis 序列化修复：外层 List 必须返回可变 ArrayList——
+            // rankAndConvert 返回 Stream.toList()（ImmutableCollections$ListN，final 类），
+            // Jackson default typing（NON_FINAL）不为 final 类型写类型信息 →
+            // 缓存值无外层类型名 → 反序列化 List.class 报
+            // "Unexpected token (START_OBJECT), expected VALUE_STRING" → 缓存命中失败
+            // → 每次全量重算（游客接口 300ms+ 卡顿根因，已用单测复现）
+            return new java.util.ArrayList<>(recommendationRanker.rankAndConvert(result, null));
         } finally {
             try {
                 long durationMs = (System.nanoTime() - startNanos) / 1_000_000;

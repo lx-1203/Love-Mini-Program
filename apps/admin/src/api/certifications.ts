@@ -12,6 +12,10 @@ export interface CertificationView {
   schoolName: string | null;
   major: string | null;
   studentIdCardUrl: string | null;
+  /** 学信网在线验证码（B1-3 学历认证，可空） */
+  chsiCode?: string | null;
+  /** 学信网学历截图 URL（B1-3 学历认证，可空） */
+  chsiScreenshotUrl?: string | null;
   /** 认证状态：PENDING 待审核 / APPROVED 已通过 / REJECTED 已驳回 */
   status: "PENDING" | "APPROVED" | "REJECTED";
   statusLabel: string | null;

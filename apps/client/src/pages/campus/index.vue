@@ -141,7 +141,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="campus-page page-fade-in">
+  <view class="campus-page">
     <!-- 顶部学校信息栏 + 认证状态 -->
     <view class="campus-header">
       <view class="header-top">
@@ -217,7 +217,7 @@ onMounted(async () => {
       <scroll-view v-else class="topic-scroll" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false" @scrolltolower="onLoadMoreTopic">
         <view
           v-for="topic in topics" :key="topic.id"
-          class="topic-card list-item"
+          class="topic-card"
           @tap="goToTopicDetail(topic.id)"
         >
           <view class="topic-card__body">

@@ -33,6 +33,22 @@ public interface CheckInRepository extends JpaRepository<CheckIn, Long> {
     Optional<CheckIn> findTopByUserIdOrderByCheckInDateDesc(Long userId);
 
     /**
+     * 3-J 任务与积分：查询指定日期前用户的全部签到日期（按日期倒序）。
+     *
+     * <p>供「每日签到」任务进度（连续签到天数）计算：一次查询后在内存中
+     * 从 startDate 往前逐日判定连续段（与 RealCheckInService 同算法）。</p>
+     *
+     * @param userId   用户 ID
+     * @param startDate 起始日期（含）
+     * @return 签到日期列表（倒序）
+     */
+    @Query("SELECT c.checkInDate FROM CheckIn c "
+            + "WHERE c.userId = :userId AND c.checkInDate <= :startDate "
+            + "ORDER BY c.checkInDate DESC")
+    java.util.List<java.time.LocalDate> findCheckInDatesBefore(
+            @Param("userId") Long userId, @Param("startDate") LocalDate startDate);
+
+    /**
      * 管理后台分页查询签到积分流水（多条件筛选 + 校区数据隔离）。
      *
      * <p>签到记录作为积分流水来源（金币/积分体系未建独立流水表，以签到记录代替）：

@@ -99,6 +99,16 @@ public class PrivateMessage {
     @Column(name = "recalled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean recalled = false;
 
+    /**
+     * 发送者侧软删除标记（3-G 删除消息，Flyway V2026.08.10.0021）。
+     *
+     * <p>微信语义：删除消息仅删除自己可见的那份，对方聊天记录不受影响。
+     * 仅消息发送者本人可置 1；查询侧对当前用户隐藏
+     * （deleted_for_sender = 0 OR sender_id <> 当前用户），对方不受影响。</p>
+     */
+    @Column(name = "deleted_for_sender", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean deletedForSender = false;
+
     /** 投递状态：sent（已发送）/ delivered（已送达）/ read（已读） */
     @Column(name = "delivery_status", nullable = false, length = 16)
     private String deliveryStatus = "sent";
@@ -204,6 +214,14 @@ public class PrivateMessage {
 
     public void setRecalled(Boolean recalled) {
         this.recalled = recalled;
+    }
+
+    public Boolean getDeletedForSender() {
+        return deletedForSender;
+    }
+
+    public void setDeletedForSender(Boolean deletedForSender) {
+        this.deletedForSender = deletedForSender;
     }
 
     public String getDeliveryStatus() {

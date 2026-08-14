@@ -54,7 +54,8 @@
       "path": "pages/discover/video-player"
     },
     {
-      "path": "pages/likes/index"
+      "path": "pages/likes/index",
+      "style": { "enablePullDownRefresh": true }
     },
     {
       "path": "pages/likes-visitors/index"
@@ -69,7 +70,8 @@
       "path": "pages/village/detail"
     },
     {
-      "path": "pages/messages/index"
+      "path": "pages/messages/index",
+      "style": { "enablePullDownRefresh": true }
     },
     {
       "path": "pages/profile/index"
@@ -104,9 +106,7 @@
     {
       "path": "pages/security/index"
     },
-    {
-      "path": "pages/shop/index"
-    },
+
     {
       "path": "pages/campus/index"
     },
@@ -126,34 +126,20 @@
       "path": "pages/village/history"
     },
     {
+      "path": "pages/search/index"
+    },
+    {
       "path": "pages/settings/index"
     },
     {
       "path": "pages/verification/index"
     },
     {
+      "path": "pages/verification/real-name"
+    },
+    {
       "path": "pages/heart-signals/index"
     },
-    {
-      "path": "pages/vip/index"
-    },
-    {
-      "path": "pages/vip/promo-code"
-    },
-    {
-      "path": "pages/vip/bills",
-      "style": {
-          "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/chat/video-call"
-    },
-    // #ifdef DEV
-    {
-      "path": "pages/dev/index"
-    },
-    // #endif
     {
       "path": "pages/profile/visitors",
       "style": {
@@ -189,12 +175,6 @@
     },
     {
       "path": "pages/love-center/consulting"
-    },
-    {
-      "path": "pages/showcase/index"
-    },
-    {
-      "path": "pages/wallet/index"
     }
   ],
   "subPackages": [
@@ -212,6 +192,16 @@
         },
         {
           "path": "recommend-pref/index"
+        },
+        /* 2026-08-10 主包减负迁移：dev 调试页仅 DEV 构建注册（#ifdef DEV） */
+        // #ifdef DEV
+        {
+          "path": "dev/index"
+        },
+        // #endif
+        /* 2026-08-10 主包减负迁移：showcase 全功能展示页（仅展示构建显示入口） */
+        {
+          "path": "showcase/index"
         }
       ]
     },
@@ -242,6 +232,39 @@
         },
         {
           "path": "agreement/index"
+        }
+      ]
+    },
+    /* 3-H 商品/钱包（2026-08-10 分包迁移：shop/wallet/detail 低频页面移入 market 分包） */
+    {
+      "root": "subpackages/market",
+      "pages": [
+        {
+          "path": "detail/index"
+        },
+        {
+          "path": "shop/index"
+        },
+        {
+          "path": "wallet/index"
+        }
+      ]
+    },
+    /* 会员（2026-08-10 分包迁移：VIP 购买/账单/优惠码低频页面移入 vip 分包） */
+    {
+      "root": "subpackages/vip",
+      "pages": [
+        {
+          "path": "index"
+        },
+        {
+          "path": "promo-code"
+        },
+        {
+          "path": "bills",
+          "style": {
+            "enablePullDownRefresh": true
+          }
         }
       ]
     }
@@ -276,7 +299,7 @@
     },
     "pages/profile/index": {
       "network": "all",
-      "packages": ["subpackages/setup"]
+      "packages": ["subpackages/setup", "subpackages/vip", "subpackages/market"]
     },
     "pages/village/index": {
       "network": "all",

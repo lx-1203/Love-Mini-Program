@@ -5,6 +5,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
 import { useUnlockGuideStore } from "./stores/unlock-guide";
+// B6：后台配置即时生效——维护模式遮罩 + 切前台按 TTL 刷新配置
+import { useAppConfigStore } from "./stores/app-config";
 import { reportGlobalError } from "./utils/global-error";
 // 展示模式（全功能展示版）：自动以演示者身份登录，无需人工操作
 import { isShowcaseMode } from "./config/showcase";
@@ -17,6 +19,9 @@ import { useUnreadBadge } from "./composables/useUnreadBadge";
 
 const sessionStore = useSessionStore();
 const unlockGuideStore = useUnlockGuideStore();
+// B6：维护模式全局遮罩状态（store 未加载时默认非维护，不误遮）
+const appConfigStore = useAppConfigStore();
+const { isMaintenanceMode } = storeToRefs(appConfigStore);
 const { visible, featureName, completionPercent, overlayVisible } = storeToRefs(unlockGuideStore);
 const { t } = useI18n();
 
@@ -217,11 +222,15 @@ onLaunch(() => {
  * 应用切前台 / 被重新展示时若发生异常（如 store 恢复、定时任务恢复），
  * 现通过 try-catch 捕获并上报到 main.ts 的全局错误处理器。
  * 当前无具体业务逻辑，仅作错误监控兜底；后续扩展切前台恢复逻辑时可在此添加。
+ *
+ * B6（2026-08-13）：填充切前台恢复逻辑——按 30s TTL 刷新客户端配置
+ * （维护模式/功能开关），后台管理员修改配置后无需重启/重进即可生效。
+ * refreshIfStale 内部按 cache-ttl 新鲜度判断，新鲜时零开销。
  */
 onShow(() => {
   try {
-    // 应用切前台时的轻量恢复逻辑可在此扩展
-    // 目前仅作错误监控兜底，无具体业务逻辑
+    // B6：切前台按 TTL 刷新后台配置（失败静默保留旧值，不阻塞页面）
+    appConfigStore.refreshIfStale();
   } catch (error) {
     reportGlobalError("App.onShow", error);
   }
@@ -252,6 +261,14 @@ onMounted(markAppReady);
     :visible="overlayVisible"
     @known="unlockGuideStore.hideOverlay"
   />
+  <!-- B6：维护模式全局遮罩（app_switch.maintenance_mode=true 时展示） -->
+  <!-- v-if="appReady && isMaintenanceMode"：appReady 防止启动瞬间 $scope 未就绪 -->
+  <view v-if="appReady && isMaintenanceMode" class="maintenance-overlay" role="alert">
+    <view class="maintenance-overlay__card">
+      <text class="maintenance-overlay__title">{{ t('appConfig.maintenanceTitle') }}</text>
+      <text class="maintenance-overlay__desc">{{ t('appConfig.maintenanceDesc') }}</text>
+    </view>
+  </view>
 </template>
 
 <style lang="scss">
@@ -287,6 +304,27 @@ page {
   width: 100%;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ================================================================
+   2026-08-13 页面切换动画（B1 修复）：
+   修复此前引用了不存在的 @keyframes page-fade-in（页面切换无过渡）。
+   250ms 淡入 + 轻微上移，mp-weixin webview 下 page 选择器在 app.wxss 中生效。
+   与 wx.navigateTo 默认滑入动画共存（本动画仅作用于页面内容淡入）。
+   ================================================================ */
+page {
+  animation: page-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* P3 修复：以下基础重置样式已迁移至 theme/global.scss，避免重复定义
@@ -403,17 +441,6 @@ page {
   will-change: transform, opacity;
 }
 
-/* 列表/卡片交错入场延迟类 */
-.stagger-1 {
-  animation-delay: 100ms;
-}
-.stagger-2 {
-  animation-delay: 200ms;
-}
-.stagger-3 {
-  animation-delay: 300ms;
-}
-
 /* 淡入动画类 */
 .animate-fade {
   animation: fadeIn var(--d-normal, 200ms) ease-out both;
@@ -497,123 +524,6 @@ page {
 }
 
 /* ================================================================
-   页面过渡动画 - 350ms 淡入+上移（全局唯一定义）
-   - .page-fade-in 直接由 CSS 类应用，无需 JS 状态切换
-   - 350ms + cubic-bezier(0.34, 1.56, 0.64, 1) 弹性缓动
-   - opacity 0→1 + translateY(8rpx)→0，从下方滑入
-   - P3 修复：原 translateY(8px) 与其他动画（translateY(8rpx)/translateY(20rpx) 等）单位不统一，
-     现统一为 rpx（uni-app 自动转换为对应平台的响应式像素）
-   - mp-weixin 兼容：纯 CSS 动画，无 DOM API 依赖
-   ================================================================ */
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(8rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.page-fade-in {
-  animation: pageFadeIn var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/* ================================================================
-   列表项 stagger 入场动画（解决"切换时需要能明显感知切换过程"）
-   - 在列表容器上添加 .list-stagger
-   - 列表项添加 .list-item
-   - mp-weixin 支持 :nth-child 和 animation-delay
-   ================================================================ */
-@keyframes list-item-enter {
-  from { opacity: 0; transform: translateY(16rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.list-item {
-  animation: list-item-enter var(--d-fade, 300ms) cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-.list-item:nth-child(1) { animation-delay: 0ms; }
-.list-item:nth-child(2) { animation-delay: 60ms; }
-.list-item:nth-child(3) { animation-delay: 120ms; }
-.list-item:nth-child(4) { animation-delay: 180ms; }
-.list-item:nth-child(5) { animation-delay: 240ms; }
-.list-item:nth-child(6) { animation-delay: 300ms; }
-.list-item:nth-child(n+7) { animation-delay: 360ms; }
-
-/* ================================================================
-   卡片错位入场动画（Phase F3）
-   - 在卡片容器上添加 .card-stagger
-   - 子卡片自动按 100ms 间隔错位入场
-   - 用于首页推荐卡片、寻觅页权益卡片、村口页帖子卡片
-   - mp-weixin 兼容：:nth-child + animation-delay
-   ================================================================ */
-@keyframes cardStaggerIn {
-  from {
-    opacity: 0;
-    transform: translateY(32rpx) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* mp-weixin 兼容：WXSS 不支持 * 通配符选择器，使用 view 元素选择器替代。
-   实际使用中 .card-stagger 的直接子元素均为 <view>（见 home/discover/village 页面）。 */
-.card-stagger > view {
-  animation: cardStaggerIn var(--d-bounce, 400ms) cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-.card-stagger > view:nth-child(1) { animation-delay: 0ms; }
-.card-stagger > view:nth-child(2) { animation-delay: 100ms; }
-.card-stagger > view:nth-child(3) { animation-delay: 200ms; }
-.card-stagger > view:nth-child(4) { animation-delay: 300ms; }
-.card-stagger > view:nth-child(5) { animation-delay: 400ms; }
-.card-stagger > view:nth-child(n+6) { animation-delay: 500ms; }
-
-/* ================================================================
-   Tab 切换动画工具类（下划线滑动 + 内容淡入）
-   - 在 tab 容器上添加 .tab-bar-slide
-   - 在 tab 下划线上添加 .tab-underline（使用 transform 控制位置）
-   - 在 tab 内容上添加 .tab-content-fade
-   ================================================================ */
-.tab-underline {
-  transition: transform var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1),
-              width var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tab-content-fade {
-  animation: tab-content-enter var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes tab-content-enter {
-  from { opacity: 0; transform: translateY(8rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ================================================================
-   页面滑入动画（从下往上，更强的切换感知）
-   ================================================================ */
-@keyframes page-slide-up {
-  from { opacity: 0; transform: translateY(40rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.page-slide-up {
-  animation: page-slide-up var(--d-slower, 350ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/* ================================================================
-   页面缩放淡入动画（modal 风格切换）
-   ================================================================ */
-@keyframes page-scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.page-scale-in {
-  animation: page-scale-in var(--d-fade, 300ms) cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-/* ================================================================
    通用按压反馈工具类（mp-weixin :active 伪类不可靠，用 JS 控制）
    - 200ms cubic-bezier(0.4, 0, 0.2, 1) 标准缓动
    - 按压时 scale + box-shadow + opacity 三重视觉反馈
@@ -665,6 +575,11 @@ page {
    tabBounce/iconSpin/dotPop/publishBreath/heart-burst
    ================================================================ */
 @media (prefers-reduced-motion: reduce) {
+  /* 2026-08-13：页面切换动画同步降级 */
+  page {
+    animation: none !important;
+  }
+
   .animate-fade-in,
   .animate-fade,
   .animate-scale-in,
@@ -672,13 +587,7 @@ page {
   .bounce-in,
   .float,
   .heart-beat,
-  .gradient-shine,
-  .page-fade-in,
-  .page-slide-up,
-  .page-scale-in,
-  .tab-content-fade,
-  .list-item,
-  .card-stagger > view {
+  .gradient-shine {
     animation: none !important;
     transition: none !important;
     will-change: auto !important;
@@ -733,6 +642,50 @@ page {
 
 .edge-romance {
   border: var(--border-romance);
+}
+
+/* ================================================================
+   B6：维护模式全局遮罩（2026-08-13）
+   - 全屏半透明遮罩，z-index 高于一切页面内容（TabBar 之上）
+   - 居中卡片承载标题 + 描述文案（i18n：appConfig.maintenanceTitle/Desc）
+   ================================================================ */
+.maintenance-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-8);
+  background: var(--c-overlay-bg-strong, rgba(15, 23, 42, 0.65));
+}
+
+.maintenance-overlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  max-width: 560rpx;
+  padding: var(--sp-8) var(--sp-7);
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  box-shadow: var(--c-elevation-3, 0 12rpx 32rpx rgba(15, 23, 42, 0.18));
+  text-align: center;
+}
+
+.maintenance-overlay__title {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.maintenance-overlay__desc {
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
 }
 
 /* ================================================================

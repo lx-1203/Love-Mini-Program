@@ -21,6 +21,13 @@ public class MockAuthService implements AuthService {
 
     private final MockRuntimeState runtimeState;
 
+    /**
+     * 设备会话服务（3-D 设备管理，mock 实现为内存存储）。
+     * 可选注入：单元测试直接 new 时可能为 null（跳过设备记录）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DeviceSessionService deviceSessionService;
+
     public MockAuthService(MockRuntimeState runtimeState) {
         this.runtimeState = runtimeState;
     }
@@ -32,9 +39,11 @@ public class MockAuthService implements AuthService {
     }
 
     @Override
-    public UserSessionView loginWithWechat(String code) {
+    public UserSessionView loginWithWechat(String code, String deviceId) {
         // mock 模式下忽略 code，直接模拟登录
-        return toView(runtimeState.loginWithWechat(), "mock-token");
+        UserSessionView view = toView(runtimeState.loginWithWechat(), "mock-token");
+        recordLoginDevice(parseUserId(view.userId()), deviceId, "wechat");
+        return view;
     }
 
     @Override
@@ -54,24 +63,30 @@ public class MockAuthService implements AuthService {
     }
 
     @Override
-    public UserSessionView registerUser(String phone, String password, String nickname) {
+    public UserSessionView registerUser(String phone, String password, String nickname, java.time.LocalDate birthDate, String deviceId) {
         // mock 模式下直接返回 mock 会话(忽略注册参数)
         log.info("mock 注册用户, phone={}", SensitiveDataMasker.mask(phone));
-        return toView(runtimeState.loginWithWechat(), "mock-token-" + System.currentTimeMillis());
+        UserSessionView view = toView(runtimeState.loginWithWechat(), "mock-token-" + System.currentTimeMillis());
+        recordLoginDevice(parseUserId(view.userId()), deviceId, "phone");
+        return view;
     }
 
     @Override
-    public UserSessionView loginWithPhone(String phone, String password) {
+    public UserSessionView loginWithPhone(String phone, String password, String deviceId) {
         // mock 模式下忽略凭据,直接返回 mock 会话
         log.info("mock 手机号登录, phone={}", SensitiveDataMasker.mask(phone));
-        return toView(runtimeState.currentSession(), "mock-token-" + System.currentTimeMillis());
+        UserSessionView view = toView(runtimeState.currentSession(), "mock-token-" + System.currentTimeMillis());
+        recordLoginDevice(parseUserId(view.userId()), deviceId, "phone");
+        return view;
     }
 
     @Override
-    public UserSessionView loginAsGuest() {
+    public UserSessionView loginAsGuest(String deviceId) {
         // mock 模式下直接返回 mock 会话(忽略体验账号逻辑)
         log.info("mock 体验账号一键登录");
-        return toView(runtimeState.loginWithWechat(), "mock-guest-token-" + System.currentTimeMillis());
+        UserSessionView view = toView(runtimeState.loginWithWechat(), "mock-guest-token-" + System.currentTimeMillis());
+        recordLoginDevice(parseUserId(view.userId()), deviceId, "guest");
+        return view;
     }
 
 
@@ -86,6 +101,35 @@ public class MockAuthService implements AuthService {
     public void logoutAsAdmin(String token) {
         // mock 模式下语义同 logout
         logout(token);
+    }
+
+    /**
+     * 记录 mock 登录设备（3-D 设备管理）。
+     * deviceSessionService 为 null（单测直接 new）时跳过；失败不影响登录主流程。
+     */
+    private void recordLoginDevice(Long userId, String deviceId, String platform) {
+        if (deviceSessionService == null || userId == null) {
+            return;
+        }
+        try {
+            deviceSessionService.recordLogin(userId, deviceId, platform, "mock-jti-" + System.currentTimeMillis());
+        } catch (RuntimeException ex) {
+            log.warn("mock 记录登录设备失败, userId={}: {}", userId, ex.getMessage());
+        }
+    }
+
+    /**
+     * 将视图中的 userId 字符串安全转换为 Long（解析失败返回 null）。
+     */
+    private Long parseUserId(String userIdStr) {
+        if (userIdStr == null || userIdStr.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private UserSessionView toView(MockRuntimeState.SessionSnapshot snapshot, String token) {

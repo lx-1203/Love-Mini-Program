@@ -1,6 +1,7 @@
 package com.campuslove.api.campus;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.InvalidOperationException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.campus.event.CertificationApprovedEvent;
 import com.campuslove.api.common.ResourceConflictException;
@@ -53,19 +54,29 @@ public class RealCampusCertificationService implements CampusCertificationServic
 
     /**
      * 提交校园认证申请。
+     * - 前置门槛（B1-2/B1-3）：用户须先完成实名认证（idCardVerified=true），否则拒绝提交。
      * - 如果用户没有认证记录，创建新记录。
      * - 如果用户已有 REJECTED 状态的记录，允许重新提交覆盖原记录。
      * - 如果用户已有 PENDING 或 APPROVED 状态的记录，抛出业务异常。
      *
-     * @param userId            用户 ID
-     * @param schoolName        学校名称
-     * @param major             专业
-     * @param studentIdCardUrl  学生证照片 URL
+     * @param userId             用户 ID
+     * @param schoolName         学校名称
+     * @param major              专业
+     * @param studentIdCardUrl   学生证照片 URL
+     * @param chsiCode           学信网在线验证码（可空）
+     * @param chsiScreenshotUrl  学信网学历截图 URL（可空）
      * @return 认证视图
      */
     @Override
     @Transactional
-    public CampusCertificationView submitCertification(Long userId, String schoolName, String major, String studentIdCardUrl) {
+    public CampusCertificationView submitCertification(Long userId, String schoolName, String major,
+                                                       String studentIdCardUrl, String chsiCode,
+                                                       String chsiScreenshotUrl) {
+        // B1-2 前置门槛：未完成实名认证的用户不得提交学历认证（校园认证）
+        userBasicProfileRepository.findByUserId(userId)
+                .filter(bp -> Boolean.TRUE.equals(bp.getIdCardVerified()))
+                .orElseThrow(() -> new InvalidOperationException(ErrorMessages.REAL_NAME_REQUIRED_FOR_CAMPUS));
+
         Optional<CampusCertification> existingOpt = campusCertificationRepository.findByUserId(userId);
 
         if (existingOpt.isPresent()) {
@@ -86,6 +97,8 @@ public class RealCampusCertificationService implements CampusCertificationServic
             existing.setSchoolName(schoolName);
             existing.setMajor(major);
             existing.setStudentIdCardUrl(studentIdCardUrl);
+            existing.setChsiCode(chsiCode);
+            existing.setChsiScreenshotUrl(chsiScreenshotUrl);
             existing.setStatus(STATUS_PENDING);
             existing.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
             existing.setReviewerId(null);
@@ -101,6 +114,8 @@ public class RealCampusCertificationService implements CampusCertificationServic
         certification.setSchoolName(schoolName);
         certification.setMajor(major);
         certification.setStudentIdCardUrl(studentIdCardUrl);
+        certification.setChsiCode(chsiCode);
+        certification.setChsiScreenshotUrl(chsiScreenshotUrl);
         certification.setStatus(STATUS_PENDING);
         certification.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
@@ -241,6 +256,8 @@ public class RealCampusCertificationService implements CampusCertificationServic
                 entity.getSchoolName(),
                 entity.getMajor(),
                 entity.getStudentIdCardUrl(),
+                entity.getChsiCode(),
+                entity.getChsiScreenshotUrl(),
                 entity.getStatus(),
                 CampusCertificationView.toStatusLabel(entity.getStatus()),
                 entity.getReviewerId(),

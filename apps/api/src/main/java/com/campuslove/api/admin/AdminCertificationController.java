@@ -168,6 +168,8 @@ public class AdminCertificationController {
                 entity.getSchoolName(),
                 entity.getMajor(),
                 entity.getStudentIdCardUrl(),
+                entity.getChsiCode(),
+                entity.getChsiScreenshotUrl(),
                 entity.getStatus(),
                 CampusCertificationView.toStatusLabel(entity.getStatus()),
                 entity.getReviewerId(),

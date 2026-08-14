@@ -178,6 +178,10 @@ public class ProfileUpdateService {
         if (request.interestTags() != null) {
             profile.setInterestTags(queryService.serializeListToJson(request.interestTags()));
         }
+        // 2026-08-11 匹配精细化：理想型画像写入（可空，未传保留既有值）
+        if (request.expectedPartner() != null) {
+            profile.setExpectedPartner(request.expectedPartner().trim());
+        }
         profile.setUpdatedAt(now);
         userBasicProfileRepository.save(profile);
 
@@ -188,6 +192,17 @@ public class ProfileUpdateService {
         user.setBio(filteredBio);
         user.setGradeLabel(request.grade());
         user.setPronouns(request.pronouns());
+        // 3-N 未成年人保护：birthDate 可选（存量用户不强制补填，避免破坏既有资料更新）；
+        // 传值时校验年龄 >= 18，未满 18 拒绝保存并返回 MINOR_NOT_ALLOWED 业务错误
+        if (request.birthDate() != null) {
+            if (!com.campuslove.api.common.AgePolicy.isAdult(request.birthDate())) {
+                log.warn("未成年人资料更新被拒绝: userId={}, birthDate={}",
+                        currentUserId, request.birthDate());
+                throw new com.campuslove.api.common.MinorNotAllowedException(
+                        com.campuslove.api.common.ErrorMessages.MINOR_NOT_ALLOWED);
+            }
+            user.setBirthDate(request.birthDate());
+        }
 
         // 2026-08-07：头像 URL 可选更新（非空时写入 users.avatar_url）
         // R4-00297：仅允许本服务媒体存储返回的 URL（/api/v1/media/ 或 /uploads/ 前缀

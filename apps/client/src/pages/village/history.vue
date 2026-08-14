@@ -182,7 +182,7 @@ onUnmounted(() => {
     >
       <view
         v-for="item in historyPosts" :key="item.post.id"
-        class="history-item list-item press-feedback"
+        class="history-item press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         @tap="goToDetail(item)"

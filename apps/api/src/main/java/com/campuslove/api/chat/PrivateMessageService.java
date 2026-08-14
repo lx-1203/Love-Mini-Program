@@ -80,4 +80,35 @@ public interface PrivateMessageService {
      * @throws IllegalArgumentException 会话不存在或当前用户非会话参与者时抛出
      */
     void deleteConversation(Long conversationId, Long userId);
+
+    // ---- 3-G：删除消息（软删，微信语义：仅删除者对自己隐藏，不删对方） ----
+
+    /**
+     * 软删单条消息（仅消息发送者本人可操作）。
+     *
+     * <p>微信语义：删除消息仅删除自己可见的那份，对方聊天记录不受影响。
+     * 实现为 {@code deleted_for_sender} 标记置 1，查询侧对发送者本人隐藏。</p>
+     *
+     * <p>幂等：同一消息重复删除直接返回成功。</p>
+     *
+     * @param messageId 消息 ID
+     * @param userId    当前用户 ID（用于校验消息属主）
+     * @throws com.campuslove.api.common.ResourceNotFoundException 消息不存在或非发送者本人时抛出
+     */
+    void softDeleteMessage(Long messageId, Long userId);
+
+    // ---- 2026-08-10 B1③：会话级免打扰 ----
+
+    /**
+     * 设置当前用户对指定会话的免打扰（mute）状态。
+     *
+     * <p>按用户侧独立存储（user_a_muted / user_b_muted），A 静音不影响 B 的接收；
+     * 仅会话参与者可操作。</p>
+     *
+     * @param conversationId 会话 ID
+     * @param muted          是否静音
+     * @param userId         当前用户 ID（用于校验参与者身份并按侧写入）
+     * @throws IllegalArgumentException 会话不存在或当前用户非会话参与者时抛出
+     */
+    void setConversationMuted(Long conversationId, boolean muted, Long userId);
 }

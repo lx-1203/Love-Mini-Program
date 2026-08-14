@@ -563,21 +563,24 @@ class P2SecurityPenetrationTest {
     }
 
     /**
-     * 越权场景 2：未认证访问推荐接口 → SecurityUtils 抛 401。
+     * 越权场景 2（2026-08-10 修正）：未认证访问推荐接口 → 2026-08-09 免登录可逛改造后
+     * 匿名用户返回中性排序的通用推荐（游客分支 getRecommendationsForGuest），不再抛 401。
+     * 安全语义不变：匿名请求无法获得任何个性化上下文/用户数据。
      */
     @Test
-    @DisplayName("越权-4.2: 未认证访问 RecommendationController.getRecommendations → 401")
+    @DisplayName("越权-4.2: 未认证访问 RecommendationController.getRecommendations → 游客分支")
     void authorizationBypass_unauthenticatedAccessRecommendations_shouldThrow401() {
         // Arrange
         SecurityContextHolder.clearContext();
         RecommendationController controller = new RecommendationController(recommendationService);
 
-        // Act & Assert
-        assertThrows(org.springframework.web.client.HttpClientErrorException.Unauthorized.class,
-                () -> controller.getRecommendations(
-                        null, null, null, null, null, null, null, null, null, null),
-                "未认证访问推荐接口应抛 401");
+        // Act：匿名请求不抛 401，走游客推荐分支
+        List<?> result = controller.getRecommendations(
+                null, null, null, null, null, null, null, null, null, null);
 
+        // Assert：游客分支被调用，个性化推荐分支绝不被调用
+        assertNotNull(result);
+        verify(recommendationService).getRecommendationsForGuest(any(RecommendationFilter.class));
         verify(recommendationService, never()).getRecommendations(anyLong(), any(RecommendationFilter.class));
     }
 

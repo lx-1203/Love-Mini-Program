@@ -433,8 +433,12 @@ page {
   --c-schedule-custom-text: #8A5A00;
 
   /* profile 头部背景高度 token（Phase D4）
-     2026-08-08：240rpx → 400rpx，QQ 主页风格封面比例（widthFix 图片更高时以图片为准） */
-  --profile-bg-height: 400rpx;
+     2026-08-08：240rpx → 400rpx，QQ 主页风格封面比例（widthFix 图片更高时以图片为准）
+     2026-08-12 V3：400rpx → 480rpx（min-height 联动 560rpx ≈ 屏高 40-50%），
+     符合交友 App 主页范式（调研：Tinder/探探背景 40-50% 屏高全出血）
+     2026-08-13 V4：480rpx → 720rpx（min-height 联动 800rpx ≈ 屏高 60%），
+     「先看大背景+头像，下滑再出白卡」首屏构图（参考图3）；白卡不再骑跨背景 */
+  --profile-bg-height: 720rpx;
   /* profile 头像尺寸 token（Phase D4） */
   --profile-avatar-size: 128rpx;
   /* 卡片当前态缩放 token（Phase D5） */
@@ -493,9 +497,9 @@ page {
   --btn-padding-x-sm: 32rpx;
   --btn-padding-x-md: 48rpx;
   --btn-padding-x-lg: 64rpx;
-  --btn-press-scale: 0.95;
-  --btn-press-opacity: 0.9;
-  --btn-press-duration: 200ms;
+  --btn-press-scale: 0.98;
+  --btn-press-opacity: 0.92;
+  --btn-press-duration: 100ms;
 
   /* ---------- Phase G · 动画时长 token（SubTask 3.4.5） ---------- */
   /* 与 tokens.ts motion.duration 对齐，统一管理 transition / animation 时长 */
@@ -506,7 +510,7 @@ page {
   --d-slower: 350ms;     /* 更慢过渡（抽屉展开） */
   --d-slowest: 600ms;    /* 最慢过渡（页面切换） */
   /* 业务专用时长 */
-  --d-press: 200ms;      /* 按钮按压时长（与 --btn-press-duration 一致） */
+  --d-press: 100ms;      /* 按钮按压时长（与 --btn-press-duration 一致） */
   --d-card-press: 200ms; /* 卡片按压时长 */
   --d-fade: 300ms;       /* 淡入淡出 */
   --d-slide: 300ms;      /* 滑动 */

@@ -265,6 +265,21 @@ onMounted(() => {
             <text v-else>{{ t("common.emptyPlaceholder") }}</text>
           </view>
           <view class="detail-row">
+            <text class="detail-label">{{ t("certifications.detailChsiCode") }}:</text>
+            <text>{{ detailCert.chsiCode || t("certifications.noChsi") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("certifications.detailChsiScreenshot") }}:</text>
+            <a
+              v-if="detailCert.chsiScreenshotUrl"
+              :href="detailCert.chsiScreenshotUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="detail-link"
+            >{{ t("certifications.viewImage") }}</a>
+            <text v-else>{{ t("certifications.noChsi") }}</text>
+          </view>
+          <view class="detail-row">
             <text class="detail-label">{{ t("certifications.detailStatus") }}:</text>
             <text>{{ statusLabel(detailCert.status) }}</text>
           </view>

@@ -92,6 +92,6 @@ public class WechatAuthController {
             @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code（不可为空）", required = true)
             @Valid @RequestBody WechatLoginRequest request) {
         // R4-00268：与 AuthController./wechat-login（旧路径别名）收敛为共享实现
-        return WechatLoginSupport.login(authService, authMetrics, request.code());
+        return WechatLoginSupport.login(authService, authMetrics, request.code(), request.deviceId());
     }
 }

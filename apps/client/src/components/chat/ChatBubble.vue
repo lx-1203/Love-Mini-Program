@@ -8,7 +8,7 @@ import { resolveMediaUrl } from "../../utils/media";
 const props = withDefaults(
   defineProps<{
     sender: "self" | "peer" | "system";
-    kind: "text" | "voice" | "emoji" | "system" | "activity";
+    kind: "text" | "voice" | "emoji" | "image" | "system" | "activity";
     body: string;
     sentAt: string;
     durationSeconds?: number | null;
@@ -70,6 +70,12 @@ function handleLongpress() {
   if (props.canInteract && !props.recalled) {
     emit("longpress", props.quoteRef || "");
   }
+}
+
+/** 2026-08-10：点击图片消息全屏预览 */
+function previewImage() {
+  if (!props.body) return;
+  uni.previewImage({ urls: [resolveMediaUrl(props.body)] });
 }
 
 /** 点击引用消息 */
@@ -142,6 +148,17 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
         <template v-if="kind === 'voice'">
           <VoicePill :duration-seconds="durationSeconds || 0" />
         </template>
+        <!-- 2026-08-10 功能补齐：图片消息渲染（微信风格，宽度自适应气泡内） -->
+        <image
+          v-else-if="kind === 'image' && body"
+          class="bubble__image"
+          :src="resolveMediaUrl(body)"
+          mode="widthFix"
+          lazy-load
+          @tap="previewImage"
+          role="img"
+          :aria-label="t('chat.imageMessage')"
+        />
         <template v-else>
           <!-- 2026-08-09 表情包机制：emoji 消息大号渲染（微信表情消息风格） -->
           <text class="bubble__body" :class="{ 'bubble__body--emoji': kind === 'emoji' }">{{ body }}</text>
@@ -311,6 +328,13 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 }
 
 /* 底部元信息（仅送达状态，时间已由父页面时间条承载） */
+.bubble__image {
+  display: block;
+  max-width: 420rpx;
+  border-radius: var(--r-lg, 16rpx);
+  overflow: hidden;
+}
+
 .bubble__footer {
   display: flex;
   align-items: center;

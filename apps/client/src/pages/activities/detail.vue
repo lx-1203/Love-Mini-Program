@@ -252,7 +252,7 @@ onShareTimeline(() => ({
 </script>
 
 <template>
-  <view class="detail-page page-fade-in">
+  <view class="detail-page">
     <!-- 顶部栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

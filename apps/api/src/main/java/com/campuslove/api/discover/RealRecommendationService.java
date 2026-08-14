@@ -14,18 +14,22 @@ import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
+import com.campuslove.api.repository.UserBlockRepository;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
+import com.campuslove.api.growth.AppConfigService;
 import com.campuslove.api.growth.SocialProgressService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -77,6 +81,22 @@ public class RealRecommendationService implements RecommendationService {
      */
     @Autowired(required = false)
     private SocialProgressService socialProgressService;
+
+    /**
+     * 拉黑关系数据访问层（3-F 拉黑：推荐候选排除）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过拉黑过滤。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private UserBlockRepository blockRepository;
+
+    /**
+     * 应用配置服务（B6：匹配/推荐功能开关强制点）。
+     * real profile 注入；单元测试 / mock 场景为 null 时跳过开关检查（视为开启）。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @Autowired(required = false)
+    private AppConfigService appConfigService;
 
     @org.springframework.beans.factory.annotation.Autowired
     public RealRecommendationService(
@@ -395,6 +415,11 @@ public class RealRecommendationService implements RecommendationService {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
+        // B6：后台关闭匹配/推荐功能（match_open / recommend_open 任一为 false）时
+        // 优雅降级为空列表（不抛 403，浏览不中断；客户端按开关展示关闭提示）
+        if (isRecommendationClosed()) {
+            return List.of();
+        }
         // P0-20 修复：去除此处与外层 RecommendationCacheManager.getCachedRecommendations
         // 的双重 @Cacheable 冗余。有效缓存层保留在 RecommendationCacheManager（带
         // unless 空结果保护 + 主动失效方法），此处仅做委托，避免同键嵌套缓存。
@@ -404,7 +429,19 @@ public class RealRecommendationService implements RecommendationService {
         // 首页/聊天概览/发现页多个入口每次拉取（含缓存命中）都扣配额，缓存期内翻页
         // 重复扣减导致配额经济失真。现在仅当真实计算新推荐（缓存 miss）时扣减一次，
         // 并按入口去重（同一缓存 TTL 内所有入口共享一次计算/一次扣减）。
-        return cacheManager.getCachedRecommendations(userId);
+        List<RecommendedPersonView> recommendations = cacheManager.getCachedRecommendations(userId);
+
+        // 3-F 拉黑：推荐候选排除拉黑双方（我拉黑的 + 拉黑我的）。
+        // 内存过滤在缓存结果之上执行，不影响缓存结构与命中率。
+        if (blockRepository != null) {
+            Set<Long> blockedRelationUserIds = new HashSet<>(blockRepository.findBlockedRelationUserIds(userId));
+            if (!blockedRelationUserIds.isEmpty()) {
+                return recommendations.stream()
+                        .filter(view -> view.id() == null || !blockedRelationUserIds.contains(view.id()))
+                        .toList();
+            }
+        }
+        return recommendations;
     }
 
     @Override
@@ -425,12 +462,20 @@ public class RealRecommendationService implements RecommendationService {
     @Override
     @Transactional(readOnly = true)
     public List<RecommendedPersonView> getRecommendationsForGuest(RecommendationFilter filter) {
-        // 游客推荐：委托 Strategy 的中性排序算法（无个性化上下文），
-        // 再应用与登录用户一致的 in-memory 筛选（matchesFilter）
-        RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommendForGuest();
-        List<RecommendedPersonView> views = ranker.rankAndConvert(result, null);
+        // B6：后台关闭匹配/推荐功能时游客推荐流同样降级为空列表
+        if (isRecommendationClosed()) {
+            return List.of();
+        }
+        // 游客推荐：委托 CacheManager 的游客缓存（60s TTL，2026-08-12 卡顿修复——
+        // 原每次全量重算 ~8 次 SQL 是未登录切页卡顿主因，缓存后降为 1 次 Redis GET），
+        // 再应用与登录用户一致的 in-memory 筛选（matchesFilter）。
+        List<RecommendedPersonView> views = cacheManager.getCachedGuestRecommendations();
         if (filter == null || filter.isEmpty()) {
-            return views;
+            // 2026-08-12 卡顿修复：游客无分页/无个人上下文，返回全部 200 条
+            // 导致响应体 ~200KB + 前端解析耗时（实测缓存命中仍 300ms+）。
+            // 截断到前端卡片展示所需上限（与登录 dailyLimit 同量级），
+            // 响应体降为 ~1/7，缓存命中应 <50ms。
+            return views.size() > GUEST_LIST_LIMIT ? views.subList(0, GUEST_LIST_LIMIT) : views;
         }
         // infra R2-00238: 批量预加载候选用户基本资料，避免筛选逐条查库（N+1）
         Map<Long, UserBasicProfile> basicProfileMap = loadBasicProfileMap(
@@ -438,6 +483,23 @@ public class RealRecommendationService implements RecommendationService {
         return views.stream()
                 .filter(view -> matchesFilter(view, filter, basicProfileMap))
                 .toList();
+    }
+
+    /** 游客推荐列表返回上限（2026-08-12：与登录 dailyLimit 同量级，避免响应体过大）。 */
+    private static final int GUEST_LIST_LIMIT = 30;
+
+    /**
+     * B6：匹配/推荐功能是否被后台关闭（match_open / recommend_open 任一为 false）。
+     *
+     * <p>任一关闭时推荐流优雅降级为空列表（不抛 403，浏览不中断），
+     * 客户端按开关状态展示关闭提示。单元测试未注入 AppConfigService 时跳过检查。</p>
+     *
+     * @return true=推荐功能关闭（返回空列表）
+     */
+    private boolean isRecommendationClosed() {
+        return appConfigService != null
+                && (!appConfigService.isSwitchEnabled(AppConfigService.SWITCH_MATCH_OPEN)
+                    || !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_RECOMMEND_OPEN));
     }
 
     @Override

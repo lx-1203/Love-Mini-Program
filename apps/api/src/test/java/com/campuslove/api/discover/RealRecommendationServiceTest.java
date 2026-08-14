@@ -136,7 +136,7 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京", null, null, null));
+                        null, false, "北京", null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getRecommendations(userId);
@@ -168,7 +168,7 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京", null, null, null));
+                        null, false, "北京", null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(cached);
         RecommendationFilter emptyFilter = new RecommendationFilter(
                 null, null, null, null, null, null, null, null, null, null);
@@ -180,24 +180,20 @@ class RealRecommendationServiceTest {
     }
 
     /**
-     * 场景（2026-08-09 免登录可逛）：游客推荐在空 filter 时
-     * 委托 strategy.doRecommendForGuest + ranker.rankAndConvert(result, null)。
+     * 场景（2026-08-09 免登录可逛，2026-08-12 卡顿修复）：游客推荐在空 filter 时
+     * 委托 cacheManager.getCachedGuestRecommendations（60s 缓存，不再每次全量重算）。
      */
     @Test
-    void getRecommendationsForGuest_emptyFilter_delegatesToStrategyAndRanker() {
-        RecommendationStrategy.RecommendResult result =
-                org.mockito.Mockito.mock(RecommendationStrategy.RecommendResult.class);
+    void getRecommendationsForGuest_emptyFilter_delegatesToGuestCache() {
         List<RecommendedPersonView> views = List.of();
-        when(recommendationStrategy.doRecommendForGuest()).thenReturn(result);
-        when(ranker.rankAndConvert(result, null)).thenReturn(views);
+        when(cacheManager.getCachedGuestRecommendations()).thenReturn(views);
         RecommendationFilter emptyFilter = new RecommendationFilter(
                 null, null, null, null, null, null, null, null, null, null);
 
         List<RecommendedPersonView> got = realService.getRecommendationsForGuest(emptyFilter);
 
         assertSame(views, got);
-        verify(recommendationStrategy, times(1)).doRecommendForGuest();
-        verify(ranker, times(1)).rankAndConvert(result, null);
+        verify(cacheManager, times(1)).getCachedGuestRecommendations();
         // 游客场景不得走用户级缓存/配额路径
         verify(cacheManager, times(0)).getCachedRecommendations(anyLong());
     }
@@ -208,17 +204,14 @@ class RealRecommendationServiceTest {
      */
     @Test
     void getRecommendationsForGuest_withFilter_appliesInMemoryFilter() {
-        RecommendationStrategy.RecommendResult result =
-                org.mockito.Mockito.mock(RecommendationStrategy.RecommendResult.class);
         RecommendedPersonView alice = new RecommendedPersonView(
                 1L, "Alice", "A", "bio", "同校", "今天有空", "北大", "/avatar1.jpg",
                 List.of("读书"), "bio", List.of(), true, false, 0,
                 165, "bachelor", List.of(), null, null, "none",
                 "CL-1", "1.2km", "offline", true, false,
                 List.of("开朗"), "INTJ", null, false, List.of(),
-                null, false, "北京", null, null, null);
-        when(recommendationStrategy.doRecommendForGuest()).thenReturn(result);
-        when(ranker.rankAndConvert(result, null)).thenReturn(List.of(alice));
+                null, false, "北京", null, null, null, null);
+        when(cacheManager.getCachedGuestRecommendations()).thenReturn(List.of(alice));
         // 关键词 filter：命中 Alice 的 name/bio/tags
         RecommendationFilter keywordFilter = new RecommendationFilter(
                 null, null, null, null, null, null, null, "alice", null, null);
@@ -227,7 +220,7 @@ class RealRecommendationServiceTest {
 
         assertEquals(1, got.size());
         assertEquals(1L, got.get(0).id());
-        verify(recommendationStrategy, times(1)).doRecommendForGuest();
+        verify(cacheManager, times(1)).getCachedGuestRecommendations();
     }
 
     /**
@@ -243,7 +236,7 @@ class RealRecommendationServiceTest {
                         180, "master", List.of(), null, null, "verified",
                         "CL-2", "1.2km", "offline", true, false,
                         List.of("沉稳"), "ISFJ", null, false, List.of(),
-                        null, false, "南京", null, null, null));
+                        null, false, "南京", null, null, null, null));
         when(cacheManager.buildHistory(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getHistory(userId);

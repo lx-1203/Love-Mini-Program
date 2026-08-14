@@ -9,7 +9,7 @@
  *
  * 年龄区间仅维护数字，由父组件写入 recommendationFilter（ageMin/ageMax）。
  */
-import { ref, watch } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { MatchScope, SortBy } from "../../stores/discover";
 
@@ -50,12 +50,23 @@ const localScope = ref<MatchScope>("all");
 const localSort = ref<SortBy>("match");
 const localAgeMin = ref(18);
 const localAgeMax = ref(35);
+/** 2026-08-13：关闭动画进行中标志——先播放下滑出场（200ms）再通知父组件卸载 */
+const closing = ref(false);
+/** 关闭动画定时器引用（卸载时清理） */
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 每次打开弹窗时从父级状态同步本地选择（保证抽屉与快捷筛选不互相覆盖） */
 watch(
   () => props.visible,
   (val) => {
-    if (!val) return;
+    if (!val) {
+      closing.value = false;
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      return;
+    }
     localScope.value = props.matchScope;
     localSort.value = props.sortBy;
     localAgeMin.value = props.ageMin ?? 18;
@@ -67,8 +78,26 @@ watch(
   }
 );
 
+onUnmounted(() => {
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+});
+
+/** 请求关闭：先播出场动画（200ms）再通知父组件 */
+function requestClose() {
+  if (closing.value) return;
+  closing.value = true;
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    closing.value = false;
+    emit("update:visible", false);
+  }, 200);
+}
+
 function close() {
-  emit("update:visible", false);
+  requestClose();
 }
 
 function onConfirm() {
@@ -78,7 +107,7 @@ function onConfirm() {
     ageMin: localAgeMin.value,
     ageMax: localAgeMax.value,
   });
-  emit("update:visible", false);
+  requestClose();
 }
 
 function onMinAgeChange(e: { detail: { value: string } }) {
@@ -104,8 +133,8 @@ function ageLabel(age: number): string {
 </script>
 
 <template>
-  <view v-if="visible" class="quick-filter-mask" @tap="close">
-    <view class="quick-filter-sheet" @tap.stop>
+  <view v-if="visible" class="quick-filter-mask" :class="{ 'quick-filter-mask--closing': closing }" @tap="close">
+    <view class="quick-filter-sheet" :class="{ 'quick-filter-sheet--closing': closing }" @tap.stop>
       <view class="quick-filter-sheet__handle" />
       <text class="quick-filter-sheet__title">{{ t('discover.quickFilterTitle') }}</text>
 
@@ -197,6 +226,12 @@ function ageLabel(age: number): string {
   display: flex;
   align-items: flex-end;
   z-index: 90;
+  /* 2026-08-13：遮罩淡入（复用全局 keyframes） */
+  animation: overlay-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.quick-filter-mask--closing {
+  animation: overlay-fade-out var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .quick-filter-sheet {
@@ -210,9 +245,19 @@ function ageLabel(age: number): string {
   animation: quick-filter-slide-up var(--d-normal, 200ms) ease-out;
 }
 
+/* 2026-08-13：下滑出场动画（原实现无出场直接卸载） */
+.quick-filter-sheet--closing {
+  animation: quick-filter-slide-down var(--d-normal, 200ms) ease-in both;
+}
+
 @keyframes quick-filter-slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+@keyframes quick-filter-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
 }
 
 .quick-filter-sheet__handle {

@@ -67,10 +67,8 @@ export function applyShowcaseMode(): void {
   if (!isShowcaseMode) return;
 
   featureFlags.membershipEnabled = true;
-  featureFlags.weeklyScheduleEnabled = true;
   featureFlags.heartSignalEnabled = true;
   featureFlags.villageSameCityEnabled = true;
-  featureFlags.videoCallEnabled = true;
 
   // 仅开发环境输出诊断日志，生产环境不泄露
   if (isDev) {

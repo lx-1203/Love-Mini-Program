@@ -167,6 +167,10 @@ public class SecurityConfig {
                 // 管理端点需要 ADMIN 角色，防止普通用户越权访问
                 // Task 2.4.1：路径统一升级为 /api/v1/admin/**
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // 公开端点：应用资产（/api/v1/media/app-assets/**）——小程序主包瘦身后
+                // 后端托管的装饰性图片（campus 场景/活动海报/插画等），免登录可看图。
+                // 注意：必须声明在 /api/v1/media/** 鉴权规则之前（Spring 按声明顺序取首个匹配）。
+                .requestMatchers("/api/v1/media/app-assets/**").permitAll()
                 // Task 0.3.2：媒体鉴权代理端点（/api/v1/media/**）需要认证，
                 // 支持 Authorization 头与 ?token= 查询参数两种方式（详见 MediaAccessController）。
                 // MediaAccessController 内部按 JWT 中的 userId 校验文件归属；

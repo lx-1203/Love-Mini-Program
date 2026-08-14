@@ -62,6 +62,8 @@ export interface MediaAssetDetail extends MediaAssetSummary {
 export interface MediaAssetListQuery {
   /** 审核状态：pending / approved / rejected，默认 pending */
   auditStatus?: string;
+  /** 媒体类型：avatar / image / video / background / app_asset（应用装饰资产），默认全部 */
+  type?: string;
   /** 上传者用户 ID */
   userId?: number;
   /** 校区名（校区管理员强制忽略） */

@@ -19,6 +19,14 @@
         alt=""
         aria-hidden="true"
       />
+      <!-- A2：消息 Tab 未读角标（红点数字，>99 显示 "99+"；chatBadge 由 syncBadge 从 storage 同步） -->
+      <view
+        wx:if="{{item.id === 'chat' && chatBadge > 0}}"
+        class="tab-bar__badge"
+        aria-hidden="true"
+      >
+        <text class="tab-bar__badge-text">{{chatBadge > 99 ? '99+' : chatBadge}}</text>
+      </view>
     </view>
     <text class="tab-bar__label">{{item.label}}</text>
     <view wx:if="{{index === selected}}" class="tab-bar__indicator" aria-hidden="true"></view>

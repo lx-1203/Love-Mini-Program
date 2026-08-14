@@ -13,6 +13,8 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../constants/routes";
  */
 export const LOCKED_PAGES = [
   ROUTES.LIKES.INDEX,
+  ROUTES.LIKES.VISITORS_LIKES,
+  ROUTES.HEART_SIGNALS,
   ROUTES.TAB.VILLAGE,
   ROUTES.TAB.CHAT,
 ];
@@ -21,9 +23,13 @@ export const LOCKED_PAGES = [
  * 锁定页面路径 → 功能名称映射
  *
  * Phase 4 任务 20：用于解锁引导弹窗的文案展示，让用户知道被锁定的具体功能。
+ * 2026-08-13：likes-visitors / heart-signals 与 likes 同属「喜欢与访客」功能域，
+ * 统一弹 UnlockGuideModal（原实现落 session-guard 静默重定向，体验不一致）。
  */
 const FEATURE_NAME_MAP: Record<string, string> = {
   [ROUTES.LIKES.INDEX]: "喜欢列表",
+  [ROUTES.LIKES.VISITORS_LIKES]: "喜欢我的/访客",
+  [ROUTES.HEART_SIGNALS]: "心动信号",
   [ROUTES.TAB.VILLAGE]: "村口/讨论圈",
   [ROUTES.TAB.CHAT]: "消息",
 };

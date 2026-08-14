@@ -19,6 +19,13 @@ const emit = defineEmits<{
   (e: "simulate-verify"): void;
 }>();
 
+/**
+ * 是否展示「模拟认证一键通过」按钮（2026-08-10 B6 收紧）：
+ * 由父组件按 useMock() 传入——real 联调模式下后端 simulate 接口默认 404（@ConditionalOnProperty），
+ * 展示该按钮只会引导用户点击后报错；仅 mock 模式（无后端）才需要演示入口。
+ */
+defineProps<{ showSimulate?: boolean }>();
+
 const { t } = useI18n();
 </script>
 
@@ -59,9 +66,9 @@ const { t } = useI18n();
         <text class="school-gate__btn-text">{{ t('village.schoolGateBtn') }}</text>
       </view>
 
-      <!-- 次按钮：模拟认证一键通过（演示；R4-00055 仅开发环境显示，生产构建移除） -->
+      <!-- 次按钮：模拟认证一键通过（演示；R4-00055 仅开发环境显示；2026-08-10 B6 追加 mock 模式守卫） -->
       <view
-        v-if="isDev"
+        v-if="isDev && showSimulate"
         class="school-gate__simulate press-feedback"
         hover-class="school-gate__simulate--pressed"
         hover-stay-time="120"

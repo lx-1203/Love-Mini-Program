@@ -29,6 +29,9 @@ import SafeImage from "../../components/common/SafeImage.vue";
 import { clientApi } from "../../services/api";
 // R4-00059: 资料完善任务完成态从真实 session 派生，不再硬编码 done=true
 import { useSessionStore } from "../../stores/session";
+// 3-J 任务与积分 real 链路：GET /tasks + POST /tasks/{code}/claim（mock 保留本地演示逻辑）
+import { useMock } from "../../stores/helpers/use-mock";
+import { request } from "../../services/http";
 
 /** 任务项 */
 interface TaskItem {
@@ -39,8 +42,51 @@ interface TaskItem {
   points: number;
   /** 是否已完成 */
   done: boolean;
+  /** real 模式：任务展示标题（后端文案；mock 走 titleKey） */
+  title?: string;
+  /** real 模式：任务展示描述（后端文案；mock 走 descKey） */
+  desc?: string;
+  /** real 模式：是否可领取奖励 */
+  claimable?: boolean;
+  /** real 模式：是否已领取奖励 */
+  claimed?: boolean;
   /** "去完成"跳转路径（签到任务无路径，点击即完成） */
   path?: string;
+}
+
+/**
+ * 后端任务视图（GET /tasks 响应项，3-J）。
+ * code 对齐后端 seed：daily-checkin / complete-profile / first-post / campus-verify。
+ */
+interface TaskView {
+  code: string;
+  name: string;
+  description: string;
+  rewardPoints: number;
+  progressCurrent: number;
+  progressTarget: number;
+  claimed: boolean;
+  claimable: boolean;
+}
+
+/** 后端领取结果视图（POST /tasks/{code}/claim 响应载荷） */
+interface ClaimResultView {
+  taskCode: string;
+  rewardPoints: number;
+  balanceAfter: number;
+}
+
+/** 任务编码 → "去完成"跳转路径（real 模式未完成任务的引导入口） */
+function taskPathForCode(code: string): string | undefined {
+  switch (code) {
+    case "first-post":
+      return "/pages/village/index";
+    case "campus-verify":
+      return "/pages/campus/certification";
+    default:
+      // daily-checkin / complete-profile 无独立入口（页面内完成/资料编辑入口在 profile 页）
+      return undefined;
+  }
 }
 
 const { t } = useI18n();
@@ -58,8 +104,8 @@ const checkinDone = ref(false);
 /** 资料完善任务完成态（session 驱动，实时派生） */
 const profileTaskDone = computed(() => sessionStore.isProfileComplete);
 
-/** 任务列表（计算属性：完成态随真实数据变化，进度条同步更新） */
-const tasks = computed<TaskItem[]>(() => [
+/** 本地任务列表（mock 模式；完成态随真实签到/session 数据变化，进度条同步更新） */
+const localTasks = computed<TaskItem[]>(() => [
   {
     id: "profile",
     titleKey: "profile.taskProfile",
@@ -92,14 +138,69 @@ const tasks = computed<TaskItem[]>(() => [
   },
 ]);
 
+/**
+ * real 模式任务列表（GET /tasks 数据，null 表示未加载/不可用，回退本地列表）。
+ */
+const realTasks = ref<TaskItem[] | null>(null);
+
+/** 正在领取的任务 code（防重复点击） */
+const claimingCode = ref<string | null>(null);
+
+/**
+ * 将后端任务视图映射为页面任务项（标题/描述直接用后端文案）。
+ * done = 已领取 或 完成度达标；claimable 时展示「领取」按钮。
+ */
+function toRealTask(view: TaskView): TaskItem {
+  const completed = view.claimed || view.progressCurrent >= view.progressTarget;
+  return {
+    id: view.code,
+    titleKey: "",
+    descKey: "",
+    title: view.name,
+    desc: view.description,
+    points: view.rewardPoints,
+    done: completed,
+    claimable: view.claimable,
+    claimed: view.claimed,
+    // 未完成且不可领取 → 引导跳转对应功能页
+    path: !completed && !view.claimable ? taskPathForCode(view.code) : undefined,
+  };
+}
+
+/**
+ * real 模式拉取任务列表（3-J）。
+ */
+async function loadRealTasks(): Promise<void> {
+  try {
+    const list = await request<TaskView[]>({ url: "/tasks", method: "GET" });
+    realTasks.value = (list ?? []).map(toRealTask);
+  } catch (_e) {
+    // 拉取失败保留当前列表（不阻塞页面展示）
+  }
+}
+
+/** 任务列表（real 模式优先后端数据；mock 模式使用本地列表） */
+const tasks = computed<TaskItem[]>(() => realTasks.value ?? localTasks.value);
+
+/** 任务是否已领取（real 有 claimed 字段；mock 退化为 done） */
+function isTaskClaimed(task: TaskItem): boolean {
+  return task.claimed !== undefined ? task.claimed : task.done;
+}
+
+/** 任务状态文案（可领取 → 领取；已领取/已完成 → 已完成；否则 → 去完成） */
+function taskStatusText(task: TaskItem): string {
+  if (task.claimable) return t("profile.taskClaim");
+  return isTaskClaimed(task) ? t("profile.taskDone") : t("profile.taskGo");
+}
+
 /** 全部任务可获积分总和 */
 const totalPoints = computed(() => tasks.value.reduce((sum, task) => sum + task.points, 0));
-/** 已获得积分 */
+/** 已获得积分（real 按 claimed 计；mock 按 done 计） */
 const earnedPoints = computed(() =>
-  tasks.value.filter((task) => task.done).reduce((sum, task) => sum + task.points, 0)
+  tasks.value.filter((task) => isTaskClaimed(task)).reduce((sum, task) => sum + task.points, 0)
 );
-/** 已完成任务数 */
-const doneCount = computed(() => tasks.value.filter((task) => task.done).length);
+/** 已完成/已领取任务数 */
+const doneCount = computed(() => tasks.value.filter((task) => isTaskClaimed(task)).length);
 
 /**
  * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
@@ -136,29 +237,46 @@ function taskIcon(taskId: string): string {
 
 /**
  * 点击任务项
- * - 已完成：toast 提示
- * - 每日签到：调用真实签到接口（R4-00058，mock 模式由 clientApi 内部走 mock 数据源）
- * - 其他未完成：跳转对应功能页
+ * - mock：已完成 toast；每日签到走真实 /check-in；其他未完成跳转对应功能页（现有行为）
+ * - real（3-J）：可领取 → 领取奖励；已完成/已领取 → toast；否则 → 跳转对应功能页
  */
 async function handleTaskTap(task: TaskItem) {
   lightHaptic();
-  if (task.done) {
-    uni.showToast({ title: t("profile.taskDone"), icon: "none" });
+
+  // mock 分支：保留现有本地演示逻辑
+  if (useMock()) {
+    if (task.done) {
+      uni.showToast({ title: t("profile.taskDone"), icon: "none" });
+      return;
+    }
+    if (task.id === "checkin") {
+      try {
+        // R4-00058 修复：不再本地置 done 假完成，调用真实 GET 状态 + POST /check-in
+        const result = await clientApi.checkIn();
+        task.done = true;
+        successHaptic();
+        // 后端返回连续天数时优先展示真实数据（回退任务配置积分）
+        const days = result?.consecutiveDays ?? task.points;
+        uni.showToast({ title: t("profile.taskCheckinSuccess", { n: days }), icon: "success" });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        uni.showToast({ title: message, icon: "none" });
+      }
+      return;
+    }
+    if (task.path) {
+      openAppPath(task.path);
+    }
     return;
   }
-  if (task.id === "checkin") {
-    try {
-      // R4-00058 修复：不再本地置 done 假完成，调用真实 GET 状态 + POST /check-in
-      const result = await clientApi.checkIn();
-      task.done = true;
-      successHaptic();
-      // 后端返回连续天数时优先展示真实数据（回退任务配置积分）
-      const days = result?.consecutiveDays ?? task.points;
-      uni.showToast({ title: t("profile.taskCheckinSuccess", { n: days }), icon: "success" });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      uni.showToast({ title: message, icon: "none" });
-    }
+
+  // real 分支（3-J）
+  if (task.claimable) {
+    await claimTask(task);
+    return;
+  }
+  if (isTaskClaimed(task) || task.done) {
+    uni.showToast({ title: t("profile.taskDone"), icon: "none" });
     return;
   }
   if (task.path) {
@@ -167,26 +285,64 @@ async function handleTaskTap(task: TaskItem) {
 }
 
 /**
- * R4-00058：页面展示时拉取真实签到状态，同步「每日签到」任务的完成态。
- * 已签到的用户进入页面即为已完成，避免假数据误导。
+ * 领取任务奖励（3-J）：POST /tasks/{code}/claim。
+ * 成功后 toast + 刷新列表；重复领取（后端业务错误）提示已领取。
+ */
+async function claimTask(task: TaskItem): Promise<void> {
+  if (claimingCode.value) return;
+  claimingCode.value = task.id;
+  try {
+    const result = await request<ClaimResultView, never>({
+      url: `/tasks/${encodeURIComponent(task.id)}/claim`,
+      method: "POST",
+    });
+    successHaptic();
+    uni.showToast({
+      title: t("profile.taskClaimSuccess", { n: result?.rewardPoints ?? task.points }),
+      icon: "success",
+    });
+    // 领取成功后刷新列表（claimed/claimable 状态更新）
+    await loadRealTasks();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("profile.taskClaimFailed");
+    uni.showToast({ title: message || t("profile.taskClaimFailed"), icon: "none" });
+  } finally {
+    claimingCode.value = null;
+  }
+}
+
+/**
+ * 页面展示时同步任务数据：
+ * - mock：拉取真实签到状态同步「每日签到」任务完成态（现有行为）；
+ * - real（3-J）：拉取 GET /tasks 任务列表（含进度与领取状态）。
  */
 onShow(async () => {
-  // R4-00059：拉取真实签到状态同步「每日签到」任务完成态（同时刷新 session 资料完成度）
+  if (useMock()) {
+    // R4-00059：拉取真实签到状态同步「每日签到」任务完成态（同时刷新 session 资料完成度）
+    try {
+      void sessionStore.refreshSession();
+      const status = await clientApi.getCheckInStatus();
+      // R4-00151：字段名对齐后端契约 checkedInToday
+      if (status?.checkedInToday === true) {
+        checkinDone.value = true;
+      }
+    } catch (_e) {
+      // 状态拉取失败时保持当前完成态（不阻塞页面展示）
+    }
+    return;
+  }
+  // real：刷新 session（资料完成度驱动 complete-profile 进度）并拉取任务列表
   try {
     void sessionStore.refreshSession();
-    const status = await clientApi.getCheckInStatus();
-    // R4-00151：字段名对齐后端契约 checkedInToday
-    if (status?.checkedInToday === true) {
-      checkinDone.value = true;
-    }
+    await loadRealTasks();
   } catch (_e) {
-    // 状态拉取失败时保持当前完成态（不阻塞页面展示）
+    // 拉取失败保持当前列表（不阻塞页面展示）
   }
 });
 </script>
 
 <template>
-  <view class="tasks-page page-fade-in">
+  <view class="tasks-page">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="tasks-header">
       <view
@@ -231,24 +387,24 @@ onShow(async () => {
         </view>
         <view class="task-item__content">
           <view class="task-item__title-row">
-            <text class="task-item__title">{{ t(task.titleKey) }}</text>
+            <text class="task-item__title">{{ task.title || t(task.titleKey) }}</text>
             <text class="task-item__points">{{ t('profile.taskPoints', { n: task.points }) }}</text>
           </view>
-          <text class="task-item__desc">{{ t(task.descKey) }}</text>
+          <text class="task-item__desc">{{ task.desc || t(task.descKey) }}</text>
         </view>
-        <!-- 状态：已完成（勾选态）/ 去完成（按钮态） -->
+        <!-- 状态：可领取（领取按钮态）/ 已完成（勾选态）/ 去完成（按钮态） -->
         <view
           class="task-item__status"
-          :class="task.done ? 'task-item__status--done' : 'task-item__status--go'"
+          :class="!task.claimable && isTaskClaimed(task) ? 'task-item__status--done' : 'task-item__status--go'"
         >
           <image
-            v-if="task.done"
+            v-if="!task.claimable && isTaskClaimed(task)"
             class="task-item__check"
             :src="IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE"
             mode="aspectFit"
             alt=""
           />
-          <text class="task-item__status-text">{{ task.done ? t('profile.taskDone') : t('profile.taskGo') }}</text>
+          <text class="task-item__status-text">{{ taskStatusText(task) }}</text>
         </view>
       </view>
     </view>

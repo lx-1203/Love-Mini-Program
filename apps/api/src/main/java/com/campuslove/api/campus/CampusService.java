@@ -36,9 +36,11 @@ public interface CampusService {
      * @param category 话题分类
      * @param title    话题标题
      * @param content  话题内容
+     * @param tags     话题标签数组（3-L，≤5 个，每个 ≤20 字符；可空/空列表）
      * @return 创建的话题视图
      */
-    CampusTopicView createCampusTopic(Long userId, Long schoolId, String category, String title, String content);
+    CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
+                                      String title, String content, List<String> tags);
 
     /**
      * 回复校园话题。

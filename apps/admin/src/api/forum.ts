@@ -90,6 +90,12 @@ export interface VillagePostSummary {
   viewCount: number;
   /** 收藏数（2026-08-08 论坛互动真实化新增） */
   favoriteCount: number;
+  /** 热度分（2026-08-11 热度榜新增） */
+  hotScore: number | null;
+  /** 运营热度倍率（2026-08-11：>1 上榜加成，0 压榜） */
+  hotBoost: number | null;
+  /** 是否禁止上榜（2026-08-11） */
+  hotBanned: boolean | null;
   /** 创建时间 */
   createdAt: string;
   /** 审核时间（未审核为 null） */
@@ -255,6 +261,88 @@ export function listPostComments(
   return get<AdminPageView<PostCommentView>>(
     `/v1/admin/forum/village-posts/${id}/comments`,
     query as Record<string, unknown>
+  );
+}
+
+// ============================================================
+// 热度榜运营操纵（2026-08-11）
+// ============================================================
+
+/** 热度操纵响应体（{ id, success, hotScore, ... } 形态） */
+export interface HotOpResponse extends IdSuccessResponse {
+  hotScore?: number;
+  hotBoost?: number;
+  hotBanned?: boolean;
+}
+
+/**
+ * 设置帖子热度倍率（hot_boost：>1 上榜加成，0 压榜，支持小数如 2.5）。
+ * POST /api/v1/admin/forum/village-posts/{id}/hot-boost
+ */
+export function setPostHotBoost(id: number, boost: number): Promise<HotOpResponse> {
+  return post<HotOpResponse>(`/v1/admin/forum/village-posts/${id}/hot-boost`, { boost });
+}
+
+/**
+ * 设置帖子禁止上榜（hot_banned：1=不进入榜单/推荐流，不影响前台可见）。
+ * POST /api/v1/admin/forum/village-posts/{id}/hot-ban
+ */
+export function setPostHotBan(id: number, banned: boolean): Promise<HotOpResponse> {
+  return post<HotOpResponse>(`/v1/admin/forum/village-posts/${id}/hot-ban`, { banned });
+}
+
+/**
+ * 单帖立即重算热度分。
+ * POST /api/v1/admin/forum/village-posts/{id}/hot-recalc
+ */
+export function recalcPostHot(id: number): Promise<HotOpResponse> {
+  return post<HotOpResponse>(`/v1/admin/forum/village-posts/${id}/hot-recalc`);
+}
+
+// ============================================================
+// 热搜词管理（/api/v1/admin/search/hot）
+// ============================================================
+
+/** 热搜词视图（对应后端 AdminHotSearchView） */
+export interface HotSearchAdminView {
+  /** 搜索词 */
+  keyword: string;
+  /** 近 7 天搜索次数 */
+  searchCount: number;
+  /** 是否已下架（运营操纵） */
+  isRemoved: boolean;
+}
+
+/**
+ * 热搜词列表（含已下架词）。
+ * GET /api/v1/admin/search/hot
+ */
+export function listHotSearches(
+  query: { page?: number; pageSize?: number } = {}
+): Promise<AdminPageView<HotSearchAdminView>> {
+  return get<AdminPageView<HotSearchAdminView>>(
+    "/v1/admin/search/hot",
+    query as Record<string, unknown>
+  );
+}
+
+/**
+ * 下架热搜词（C 端热搜不再展示，可恢复）。
+ * POST /api/v1/admin/search/hot/{keyword}/remove
+ */
+export function removeHotSearch(keyword: string): Promise<{ success: boolean; removed: boolean }> {
+  return post<{ success: boolean; removed: boolean }>(
+    `/v1/admin/search/hot/${encodeURIComponent(keyword)}/remove`
+  );
+}
+
+/**
+ * 恢复热搜词。
+ * POST /api/v1/admin/search/hot/{keyword}/restore
+ */
+export function restoreHotSearch(keyword: string): Promise<{ success: boolean; removed: boolean }> {
+  return post<{ success: boolean; removed: boolean }>(
+    `/v1/admin/search/hot/${encodeURIComponent(keyword)}/restore`
   );
 }
 

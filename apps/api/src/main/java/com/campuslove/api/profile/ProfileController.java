@@ -288,7 +288,14 @@ record BasicProfileView(
     /** 2026-08-09：头像审核状态（pending/approved/rejected） */
     String avatarAuditStatus,
     /** 2026-08-09：头像审核备注（拒绝原因等） */
-    String avatarAuditRemark
+    String avatarAuditRemark,
+    /** 出生日期（3-N 未成年人保护：2026-08-10 新增，可空——存量用户未补填时为 null） */
+    java.time.LocalDate birthDate,
+    /** 理想型画像描述（2026-08-11 匹配精细化：可空——未填写时不参与匹配加分） */
+    String expectedPartner,
+    /** 实名认证标志（B1-2：2026-08-13 新增，true 表示已通过实名认证——
+     *  校园认证提交的前置门槛，前端据此展示引导入口） */
+    Boolean idCardVerified
 ) {
 }
 
@@ -337,7 +344,13 @@ record BasicProfileRequest(
      *  → profileCompleted 恒 false → 新账号无法解锁全部功能） */
     List<String> interestTags,
     /** 头像 URL（2026-08-07 新增，可空；非空时更新 users.avatar_url） */
-    @Size(max = 512) String avatarUrl
+    @Size(max = 512) String avatarUrl,
+    /** 出生日期（3-N 未成年人保护：可空；传值时校验年龄 >= 18。
+     *  存量用户无 birthDate 时由前端引导补填——后端不强制，避免破坏既有资料更新） */
+    java.time.LocalDate birthDate,
+    /** 理想型画像描述（2026-08-11 匹配精细化：期望对象的关键词描述，
+     *  匹配评分按关键词与候选兴趣/性格标签交集加分；可空） */
+    @Size(max = 200) String expectedPartner
 ) {
 }
 

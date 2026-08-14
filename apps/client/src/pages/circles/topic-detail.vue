@@ -4,14 +4,17 @@
  * 展示话题完整内容、作者信息、回复列表，底部回复输入框
  * 支持从回复直接"打招呼"跳转到私信会话
  */
-import { ref, computed, onUnmounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { ref, computed } from "vue";
+import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime, type ReplyItem } from "../../stores/circle";
+import { ROUTES } from "../../constants/routes";
 import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
 import { openAppPath } from "../../utils/navigation";
+// B4 认证门控：打招呼（发起私信）为互动操作，需已通过实名认证
+import { ensureCertified } from "../../guards/campus-gate";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -66,29 +69,10 @@ function initialOf(name?: string | null): string {
 /** 当前登录用户 ID */
 const currentUserId = computed(() => sessionStore.userSession?.userId ?? "");
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 /**
  * 提交回复
  */
@@ -116,6 +100,8 @@ async function submitReply() {
  */
 function sayHello(reply: ReplyItem) {
   if (!currentTopic.value || !reply.author.userId) return;
+  // B4 认证门控：打招呼（发起私信）为互动操作，需已通过实名认证
+  if (!ensureCertified("realname")) return;
 
   const topicTitle = currentTopic.value.title;
 
@@ -232,10 +218,23 @@ onLoad((query) => {
 // 修复（严格模式 noUnusedLocals）：sayHello/goToAuthorProfile 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ sayHello, goToAuthorProfile });
+
+/**
+ * 圈子话题分享（2026-08-10 A3 补齐）：分享卡片指向圈子话题详情
+ * （topicId + circleId 双参数，接收方点开即落到对应话题）。
+ */
+onShareAppMessage(() => {
+  const title = currentTopic.value?.title?.trim() || "";
+  const base = ROUTES.CIRCLES.TOPIC_DETAIL;
+  return {
+    title: title ? t("share.shareCircleTopic", { title }) : t("share.shareVillage"),
+    path: `${base}?topicId=${encodeURIComponent(topicId.value)}&circleId=${encodeURIComponent(String(currentTopic.value?.circleId ?? ""))}`,
+  };
+});
 </script>
 
 <template>
-  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="detail-page">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
@@ -276,7 +275,7 @@ defineExpose({ sayHello, goToAuthorProfile });
         <!-- 图片展示 -->
         <view v-if="currentTopic.images.length > 0" class="topic-images">
           <view
-            v-for="(img, idx) in currentTopic.images" :key="idx"
+            v-for="(img, idx) in currentTopic.images" :key="img || idx"
             class="topic-image-wrap"
           >
             <image

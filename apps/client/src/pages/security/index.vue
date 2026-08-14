@@ -3,12 +3,14 @@
  * 安全中心页（Phase Feedback5 P2.6）
  *
  * 功能：
- * - 账号安全：绑定手机号 / 修改密码（展示版为本地交互闭环）
- * - 登录设备管理：设备列表 + 下线操作（演示态）
+ * - 账号安全：绑定手机号 / 修改密码（real 走 AccountSecurityController）
+ * - 登录设备管理：设备列表 + 下线操作（real 走 GET /auth/devices + POST /auth/devices/{id}/revoke，
+ *   2026-08-10 B3 已接真实接口；mock 分支保留本地演示）
  * - 隐私保护：权限设置 / 隐私政策入口
  * - 注销账号：二次确认 + 提示
  */
 import { ref, computed } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../components/layout/AppShell.vue";
 import SectionCard from "../../components/common/SectionCard.vue";
@@ -18,9 +20,13 @@ import { designTokens } from "../../theme/tokens";
 import { openAppPath } from "../../utils/navigation";
 // R4-00226：隐私权限设置路径走 ROUTES 常量
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
+import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { profilePageRequirements } from "../../config/page-access";
 import { useSessionStore } from "../../stores/session";
+// 3-B/C/D/E 账号安全 real 链路：change-phone / change-password / devices / deactivate
+import { useMock } from "../../stores/helpers/use-mock";
+import { request, clearTokens } from "../../services/http";
 
 /** 安全中心访问要求（需登录，无需资料完善） */
 usePageAccess(profilePageRequirements);
@@ -47,8 +53,8 @@ interface DeviceItem {
   isCurrent: boolean;
 }
 
-/** R4-00062：已下线设备 ID 的本地持久化 key（后端设备管理接口就绪前的过渡方案） */
-const KICKED_DEVICES_KEY = "security:kicked-devices";
+/** R4-00062：已下线设备 ID 的本地持久化 key（后端设备管理接口就绪前的过渡方案；2026-08-10 统一至 STORAGE_KEYS） */
+const KICKED_DEVICES_KEY = STORAGE_KEYS.KICKED_DEVICES;
 
 /**
  * 读取已下线设备 ID 列表（storage 异常时按空数组降级）。
@@ -104,23 +110,158 @@ const kickingDeviceId = ref<string | null>(null);
 
 /** 修改密码弹层状态 */
 const showPasswordModal = ref(false);
+const oldPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
 const passwordError = ref("");
+/** 修改密码请求提交中 */
+const submittingPassword = ref(false);
 
-/** 注销确认弹层 */
+/** 更换手机号弹层状态（3-C） */
+const showChangePhoneModal = ref(false);
+const newPhone = ref("");
+const changePhonePassword = ref("");
+const changePhoneError = ref("");
+/** 更换手机号请求提交中 */
+const submittingChangePhone = ref(false);
+
+/** 注销确认弹层（第一层：危险操作提醒） */
 const showDeleteModal = ref(false);
+/** 注销凭据弹层（第二层：输入「注销」确认文字 + 旧密码） */
+const showDeactivateModal = ref(false);
+const deleteConfirmText = ref("");
+const deletePassword = ref("");
+const deleteError = ref("");
+/** 注销请求提交中 */
+const submittingDelete = ref(false);
 
-/** 绑定手机号（演示：复制 + 提示） */
+/**
+ * 后端设备会话视图（GET /auth/devices 响应项，3-D）。
+ * 注意：后端 View 不含 current 字段——列表按最近活跃时间倒序返回，
+ * 当前设备（本会话）因请求活跃度最高恒排首位，前端据此标记 isCurrent。
+ */
+interface RealDeviceView {
+  id: number;
+  deviceId: string;
+  platform: string;
+  lastActiveAt: string | null;
+  revoked: boolean;
+  createdAt: string | null;
+}
+
+/** 平台标识 → 展示文案映射（devices 列表） */
+function platformLabel(platform: string): string {
+  const map: Record<string, string> = {
+    wechat: t("security.platformWechat"),
+    phone: t("security.platformPhone"),
+    apple: t("security.platformApple"),
+    guest: t("security.platformGuest"),
+    unknown: t("security.unknownDevice"),
+  };
+  const label = map[platform] ?? platform;
+  return label && label.trim().length > 0 ? label : t("security.unknownDevice");
+}
+
+/** 时间格式化（设备最后活跃时间，取月/日 时:分） */
+function formatDeviceTime(isoString: string | null): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * real 模式拉取设备列表（3-D）。
+ * mock 模式保留本地演示设备（buildInitialDevices）。
+ */
+async function loadDevices(): Promise<void> {
+  if (useMock()) return;
+  try {
+    const list = await request<RealDeviceView[]>({ url: "/auth/devices", method: "GET" });
+    devices.value = list.map((item, index) => ({
+      // 展示 ID 与后端记录 ID 保持一致（下线接口按 id 吊销）
+      id: String(item.id),
+      device: platformLabel(item.platform),
+      location: "",
+      // 按活跃时间倒序，首条即当前会话（真实会话活跃度最高）
+      lastActive: item.revoked
+        ? t("security.deviceRevoked")
+        : formatDeviceTime(item.lastActiveAt) || t("security.unknownDevice"),
+      isCurrent: index === 0 && !item.revoked,
+    }));
+  } catch (_e) {
+    // 拉取失败保留当前列表（不阻塞页面展示）
+  }
+}
+
+/** 进入页面时拉取真实设备列表（real 模式） */
+onShow(() => {
+  void loadDevices();
+});
+
+/** 打开更换手机号弹层（3-C） */
 function handleChangePhone(): void {
   lightHaptic();
-  uni.showToast({ title: t("security.phoneChangeHint"), icon: "none" });
+  changePhoneError.value = "";
+  newPhone.value = "";
+  changePhonePassword.value = "";
+  showChangePhoneModal.value = true;
+}
+
+/** 关闭更换手机号弹层 */
+function closeChangePhoneModal(): void {
+  showChangePhoneModal.value = false;
+}
+
+/**
+ * 提交更换手机号（3-C）。
+ * - mock：保留原演示 toast；
+ * - real：POST /auth/change-phone {password, newPhone}，成功后回读用户信息。
+ */
+async function submitChangePhone(): Promise<void> {
+  const phone = newPhone.value.trim();
+  if (!/^1[3-9]\d{9}$/.test(phone)) {
+    changePhoneError.value = t("security.phoneFormatError");
+    return;
+  }
+  if (!changePhonePassword.value) {
+    changePhoneError.value = t("security.phonePasswordRequired");
+    return;
+  }
+  if (useMock()) {
+    closeChangePhoneModal();
+    uni.showToast({ title: t("security.phoneChangeHint"), icon: "none" });
+    return;
+  }
+  changePhoneError.value = "";
+  submittingChangePhone.value = true;
+  try {
+    // verificationCode 字段预留（后续短信验证），本期不传
+    await request<void, { password: string; newPhone: string }>({
+      url: "/auth/change-phone",
+      method: "POST",
+      data: { password: changePhonePassword.value, newPhone: phone },
+    });
+    closeChangePhoneModal();
+    successHaptic();
+    uni.showToast({ title: t("security.phoneChanged"), icon: "success" });
+    // 回读用户信息，同步会话中的手机号绑定状态
+    sessionStore.refreshSession().catch(() => {
+      // 回读失败不影响主流程（下次进入页面守卫会自愈）
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("security.phoneChangeFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    submittingChangePhone.value = false;
+  }
 }
 
 /** 打开修改密码弹层 */
 function openPasswordModal(): void {
   lightHaptic();
   passwordError.value = "";
+  oldPassword.value = "";
   newPassword.value = "";
   confirmPassword.value = "";
   showPasswordModal.value = true;
@@ -131,8 +272,13 @@ function closePasswordModal(): void {
   showPasswordModal.value = false;
 }
 
-/** 提交新密码（本地校验：6-20 位且两次一致） */
-function submitPassword(): void {
+/**
+ * 提交新密码（3-B）。
+ * - mock：保留本地假成功（toast）；
+ * - real：POST /auth/change-password {oldPassword, newPassword}，
+ *   成功提示重新登录并清 token 跳登录页；旧密码错误（403）提示旧密码错误。
+ */
+async function submitPassword(): Promise<void> {
   const pwd = newPassword.value.trim();
   if (pwd.length < 6 || pwd.length > 20) {
     passwordError.value = t("security.passwordLengthError");
@@ -142,17 +288,55 @@ function submitPassword(): void {
     passwordError.value = t("security.passwordMismatch");
     return;
   }
+  if (!oldPassword.value) {
+    passwordError.value = t("security.oldPasswordRequired");
+    return;
+  }
+  if (useMock()) {
+    passwordError.value = "";
+    showPasswordModal.value = false;
+    successHaptic();
+    uni.showToast({ title: t("security.passwordUpdated"), icon: "success" });
+    return;
+  }
   passwordError.value = "";
-  showPasswordModal.value = false;
-  successHaptic();
-  uni.showToast({ title: t("security.passwordUpdated"), icon: "success" });
+  submittingPassword.value = true;
+  try {
+    await request<void, { oldPassword: string; newPassword: string }>({
+      url: "/auth/change-password",
+      method: "POST",
+      data: { oldPassword: oldPassword.value, newPassword: pwd },
+    });
+    showPasswordModal.value = false;
+    successHaptic();
+    // 后端已吊销全部 token，需重新登录
+    uni.showToast({ title: t("security.passwordUpdatedRelogin"), icon: "none" });
+    clearTokens();
+    sessionStore.userSession = null;
+    setTimeout(() => {
+      uni.reLaunch({ url: ROUTES.LOGIN });
+    }, 1200);
+  } catch (error) {
+    // 旧密码错误（403 OLD_PASSWORD_WRONG）→ 明确提示旧密码错误
+    const status =
+      error !== null && typeof error === "object" && "status" in error
+        ? (error as { status: number }).status
+        : 0;
+    if (status === 403) {
+      passwordError.value = t("security.oldPasswordWrong");
+    } else {
+      passwordError.value =
+        error instanceof Error ? error.message : t("security.passwordUpdateFailed");
+    }
+  } finally {
+    submittingPassword.value = false;
+  }
 }
 
 /**
  * 下线设备。
- * R4-00062：后端暂无设备管理接口（后端接入设备列表/下线接口后，
- * 应在确认后先调用下线接口成功再从列表移除）。
- * 过渡方案：下线决策持久化到本地 storage，刷新页面不再"设备重现"。
+ * - mock：保留本地持久化过渡方案（storage 记录已下线设备）；
+ * - real（3-D）：确认后先调用 POST /auth/devices/{id}/revoke，成功再从列表移除。
  */
 function kickDevice(id: string): void {
   const device = devices.value.find((d) => d.id === id);
@@ -168,14 +352,38 @@ function kickDevice(id: string): void {
     success: (res) => {
       kickingDeviceId.value = null;
       if (!res.confirm) return;
-      devices.value = devices.value.filter((d) => d.id !== id);
-      persistKickedDevice(id);
-      uni.showToast({ title: t("security.kickDone"), icon: "success" });
+      if (useMock()) {
+        devices.value = devices.value.filter((d) => d.id !== id);
+        persistKickedDevice(id);
+        uni.showToast({ title: t("security.kickDone"), icon: "success" });
+        return;
+      }
+      void revokeDeviceReal(id, device);
     },
     fail: () => {
       kickingDeviceId.value = null;
     },
   });
+}
+
+/**
+ * real 模式吊销设备（3-D）：先调后端接口，成功后再从列表移除。
+ */
+async function revokeDeviceReal(id: string, device: DeviceItem): Promise<void> {
+  try {
+    await request<void>({
+      url: `/auth/devices/${encodeURIComponent(id)}/revoke`,
+      method: "POST",
+    });
+    devices.value = devices.value.filter((d) => d.id !== id);
+    uni.showToast({ title: t("security.kickDone"), icon: "success" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("security.kickFailed");
+    uni.showToast({ title: message, icon: "none" });
+    if (typeof device !== "undefined") {
+      console.warn("[Security] 吊销设备失败:", device.device);
+    }
+  }
 }
 
 /** 隐私权限设置 */
@@ -191,25 +399,73 @@ function goPrivacyPolicy(): void {
   openAppPath(SUBPACKAGE_ROUTES.LEGAL.PRIVACY);
 }
 
-/** 注销账号 */
+/** 注销账号（第一层确认弹层） */
 function handleDeleteAccount(): void {
   lightHaptic();
   showDeleteModal.value = true;
 }
 
-/** 确认注销（演示态：提示客服协助，真实链路接入后端注销接口） */
+/**
+ * 第一层确认 → 打开第二层凭据弹层（输入「注销」确认文字 + 旧密码）。
+ * 第二层强确认：需输入确认文字（无密码账号以此替代密码校验）。
+ */
 function confirmDeleteAccount(): void {
   showDeleteModal.value = false;
-  uni.showModal({
-    title: t("security.deleteNoticeTitle"),
-    content: t("security.deleteNoticeContent"),
-    showCancel: false,
-    confirmText: t("common.ok"),
-    success: () => {
-      /* 真实链路：调用后端注销接口（POST /api/v1/account/deactivate）后执行登出 */
-      uni.showToast({ title: t("security.deleteTodo"), icon: "none" });
-    },
-  });
+  deleteError.value = "";
+  deleteConfirmText.value = "";
+  deletePassword.value = "";
+  showDeactivateModal.value = true;
+}
+
+/**
+ * 提交注销账号（3-E）。
+ * - mock：保留原「联系客服」演示提示；
+ * - real：POST /auth/deactivate {password?, confirmationText?}——
+ *   有密码账号验旧密码，无密码账号以「注销」确认文字替代；成功后清本地状态跳登录页。
+ */
+async function submitDeleteAccount(): Promise<void> {
+  if (deleteConfirmText.value.trim() !== t("security.deleteTypeWord")) {
+    deleteError.value = t("security.deleteTypeMismatch");
+    return;
+  }
+  if (useMock()) {
+    showDeactivateModal.value = false;
+    uni.showModal({
+      title: t("security.deleteNoticeTitle"),
+      content: t("security.deleteNoticeContent"),
+      showCancel: false,
+      confirmText: t("common.ok"),
+      success: () => {
+        uni.showToast({ title: t("security.deleteTodo"), icon: "none" });
+      },
+    });
+    return;
+  }
+  deleteError.value = "";
+  showDeactivateModal.value = false;
+  submittingDelete.value = true;
+  try {
+    await request<void, { password: string; confirmationText: string }>({
+      url: "/auth/deactivate",
+      method: "POST",
+      data: {
+        password: deletePassword.value,
+        confirmationText: deleteConfirmText.value.trim(),
+      },
+    });
+    uni.showToast({ title: t("security.deleteDone"), icon: "none" });
+    // 后端已吊销全部 token，清本地状态跳登录页
+    clearTokens();
+    sessionStore.userSession = null;
+    setTimeout(() => {
+      uni.reLaunch({ url: ROUTES.LOGIN });
+    }, 1200);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("security.deleteFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    submittingDelete.value = false;
+  }
 }
 </script>
 
@@ -348,10 +604,60 @@ function confirmDeleteAccount(): void {
       </view>
     </SectionCard>
 
-    <!-- 修改密码弹层 -->
+    <!-- 更换手机号弹层（3-C） -->
+    <view v-if="showChangePhoneModal" class="sec-modal-mask" @tap="closeChangePhoneModal">
+      <view class="sec-modal" @tap.stop>
+        <text class="sec-modal__title">{{ t('security.phone') }}</text>
+        <input
+          v-model="newPhone"
+          class="sec-modal__input"
+          type="number"
+          maxlength="11"
+          :placeholder="t('security.newPhonePlaceholder')"
+          placeholder-class="sec-modal__placeholder"
+        />
+        <input
+          v-model="changePhonePassword"
+          class="sec-modal__input"
+          type="password"
+          :placeholder="t('security.phonePasswordPlaceholder')"
+          placeholder-class="sec-modal__placeholder"
+        />
+        <text v-if="changePhoneError" class="sec-modal__error">{{ changePhoneError }}</text>
+        <view class="sec-modal__actions">
+          <view
+            class="sec-modal__btn sec-modal__btn--cancel press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="closeChangePhoneModal"
+          >
+            <text>{{ t('common.cancel') }}</text>
+          </view>
+          <view
+            class="sec-modal__btn sec-modal__btn--confirm press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="submitChangePhone"
+          >
+            <text>{{ submittingChangePhone ? t('security.submitting') : t('common.confirm') }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 修改密码弹层（3-B） -->
     <view v-if="showPasswordModal" class="sec-modal-mask" @tap="closePasswordModal">
       <view class="sec-modal" @tap.stop>
         <text class="sec-modal__title">{{ t('security.changePassword') }}</text>
+        <input
+          v-model="oldPassword"
+          class="sec-modal__input"
+          type="password"
+          :placeholder="t('security.oldPasswordPlaceholder')"
+          placeholder-class="sec-modal__placeholder"
+        />
         <input
           v-model="newPassword"
           class="sec-modal__input"
@@ -384,13 +690,13 @@ function confirmDeleteAccount(): void {
             role="button"
             @tap="submitPassword"
           >
-            <text>{{ t('common.confirm') }}</text>
+            <text>{{ submittingPassword ? t('security.submitting') : t('common.confirm') }}</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 注销确认弹层 -->
+    <!-- 注销确认弹层（第一层：危险操作提醒） -->
     <view v-if="showDeleteModal" class="sec-modal-mask" @tap="showDeleteModal = false">
       <view class="sec-modal" @tap.stop>
         <text class="sec-modal__title">{{ t('security.deleteAccount') }}</text>
@@ -413,6 +719,48 @@ function confirmDeleteAccount(): void {
             @tap="confirmDeleteAccount"
           >
             <text>{{ t('security.deleteAccount') }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 注销凭据弹层（第二层：输入「注销」确认文字 + 旧密码，3-E） -->
+    <view v-if="showDeactivateModal" class="sec-modal-mask" @tap="showDeactivateModal = false">
+      <view class="sec-modal" @tap.stop>
+        <text class="sec-modal__title">{{ t('security.deleteAccount') }}</text>
+        <text class="sec-modal__body">{{ t('security.deleteTypeHint') }}</text>
+        <input
+          v-model="deleteConfirmText"
+          class="sec-modal__input"
+          :placeholder="t('security.deleteTypePlaceholder')"
+          placeholder-class="sec-modal__placeholder"
+        />
+        <input
+          v-model="deletePassword"
+          class="sec-modal__input"
+          type="password"
+          :placeholder="t('security.deletePasswordPlaceholder')"
+          placeholder-class="sec-modal__placeholder"
+        />
+        <text v-if="deleteError" class="sec-modal__error">{{ deleteError }}</text>
+        <view class="sec-modal__actions">
+          <view
+            class="sec-modal__btn sec-modal__btn--cancel press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="showDeactivateModal = false"
+          >
+            <text>{{ t('common.cancel') }}</text>
+          </view>
+          <view
+            class="sec-modal__btn sec-modal__btn--danger press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="submitDeleteAccount"
+          >
+            <text>{{ submittingDelete ? t('security.submitting') : t('security.deleteAccount') }}</text>
           </view>
         </view>
       </view>

@@ -86,6 +86,10 @@ public class AdminVillagePostController {
      * 2026-08-08 论坛互动真实化：帖子浏览历史 Repository（后台浏览记录查询）。
      */
     private final PostViewHistoryRepository postViewHistoryRepository;
+    /**
+     * 2026-08-11 热度榜：热度分重算器（运营操纵 hot_boost/hot_banned 后立即生效）。
+     */
+    private final com.campuslove.api.village.HotScoreScheduler hotScoreScheduler;
 
     public AdminVillagePostController(
             PostRepository postRepository,
@@ -94,7 +98,8 @@ public class AdminVillagePostController {
             UserCampusProfileRepository userCampusProfileRepository,
             AdminDataScope adminDataScope,
             PostFavoriteRepository postFavoriteRepository,
-            PostViewHistoryRepository postViewHistoryRepository) {
+            PostViewHistoryRepository postViewHistoryRepository,
+            com.campuslove.api.village.HotScoreScheduler hotScoreScheduler) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
@@ -102,6 +107,7 @@ public class AdminVillagePostController {
         this.adminDataScope = adminDataScope;
         this.postFavoriteRepository = postFavoriteRepository;
         this.postViewHistoryRepository = postViewHistoryRepository;
+        this.hotScoreScheduler = hotScoreScheduler;
     }
 
     /**
@@ -335,6 +341,106 @@ public class AdminVillagePostController {
         return ResponseEntity.ok(body);
     }
 
+    // ---- 2026-08-11 热度榜运营操纵（人为控制「哪个帖子上去、哪个不上」） ----
+
+    /**
+     * 设置帖子热度倍率（hot_boost：>1 上榜加成，0 压榜，支持小数微调）。
+     *
+     * <p>设置后立即重算该帖热度分并清空榜单缓存，运营改完马上生效。</p>
+     */
+    @PostMapping("/{id}/hot-boost")
+    @Transactional
+    @Auditable(value = AuditOperation.PIN_POST, targetType = "POST",
+            description = "管理员设置帖子热度倍率")
+    public ResponseEntity<Map<String, Object>> setHotBoost(
+            @PathVariable("id") @Positive Long id,
+            @Valid @RequestBody AdminHotBoostRequest req) {
+        SecurityUtils.getCurrentUserId();
+
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Post post = postOpt.get();
+        assertPostCampusAccess(post);
+
+        double boost = req.boost();
+        if (boost < 0 || boost > 100) {
+            throw new IllegalArgumentException("boost 需在 0-100 之间（0=压榜，>1=上榜加成）");
+        }
+        post.setHotBoost(boost);
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        postRepository.save(post);
+
+        double newScore = hotScoreScheduler.recalcPostScore(post.getId());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", post.getId());
+        body.put("hotBoost", post.getHotBoost());
+        body.put("hotScore", newScore);
+        body.put("success", true);
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 设置帖子禁止上榜（hot_banned：1=不上榜/不进推荐流，不影响前台可见性）。
+     */
+    @PostMapping("/{id}/hot-ban")
+    @Transactional
+    @Auditable(value = AuditOperation.PIN_POST, targetType = "POST",
+            description = "管理员设置帖子禁止上榜")
+    public ResponseEntity<Map<String, Object>> setHotBan(
+            @PathVariable("id") @Positive Long id,
+            @Valid @RequestBody AdminHotBanRequest req) {
+        SecurityUtils.getCurrentUserId();
+
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Post post = postOpt.get();
+        assertPostCampusAccess(post);
+
+        post.setHotBanned(req.banned());
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        postRepository.save(post);
+
+        double newScore = hotScoreScheduler.recalcPostScore(post.getId());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", post.getId());
+        body.put("hotBanned", post.getHotBanned());
+        body.put("hotScore", newScore);
+        body.put("success", true);
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 单帖立即重算热度分（运营调整互动数据/权重后想马上生效）。
+     */
+    @PostMapping("/{id}/hot-recalc")
+    @Transactional
+    @Auditable(value = AuditOperation.PIN_POST, targetType = "POST",
+            description = "管理员手动重算帖子热度分")
+    public ResponseEntity<Map<String, Object>> recalcHotScore(@PathVariable("id") @Positive Long id) {
+        SecurityUtils.getCurrentUserId();
+
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Post post = postOpt.get();
+        assertPostCampusAccess(post);
+
+        double newScore = hotScoreScheduler.recalcPostScore(post.getId());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", post.getId());
+        body.put("hotScore", newScore);
+        body.put("success", true);
+        return ResponseEntity.ok(body);
+    }
+
     /**
      * 分页查询指定帖子的评论列表（含评论者昵称）。
      * <p>参照 AdminCommentController 模式：帖子不存在时返回空页，
@@ -558,6 +664,9 @@ public class AdminVillagePostController {
                 post.getShareCount(),
                 post.getViewCount(),
                 favoriteCountMap.getOrDefault(post.getId(), 0),
+                post.getHotScore(),
+                post.getHotBoost(),
+                post.getHotBanned(),
                 post.getCreatedAt(),
                 post.getAuditedAt()
         );
@@ -587,6 +696,9 @@ public class AdminVillagePostController {
                 post.getShareCount(),
                 post.getViewCount(),
                 (int) postFavoriteRepository.countByPostId(post.getId()),
+                post.getHotScore(),
+                post.getHotBoost(),
+                post.getHotBanned(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
@@ -656,6 +768,9 @@ public class AdminVillagePostController {
  * @param shareCount     转发数
  * @param viewCount      浏览量（2026-08-08 论坛互动真实化新增）
  * @param favoriteCount  收藏数（2026-08-08 论坛互动真实化新增）
+ * @param hotScore       热度分（2026-08-11 热度榜）
+ * @param hotBoost       运营热度倍率（2026-08-11，>1 上榜加成，0 压榜）
+ * @param hotBanned      是否禁止上榜（2026-08-11）
  * @param createdAt      创建时间
  * @param auditedAt      审核时间（未审核则为 null）
  */
@@ -674,6 +789,9 @@ record AdminVillagePostSummaryView(
         Integer shareCount,
         Integer viewCount,
         Integer favoriteCount,
+        Double hotScore,
+        Double hotBoost,
+        Boolean hotBanned,
         LocalDateTime createdAt,
         LocalDateTime auditedAt
 ) {
@@ -713,6 +831,9 @@ record AdminVillagePostSummaryView(
  * @param shareCount     转发数
  * @param viewCount      浏览量（2026-08-08 论坛互动真实化新增）
  * @param favoriteCount  收藏数（2026-08-08 论坛互动真实化新增）
+ * @param hotScore       热度分（2026-08-11 热度榜）
+ * @param hotBoost       运营热度倍率（2026-08-11）
+ * @param hotBanned      是否禁止上榜（2026-08-11）
  * @param createdAt      创建时间
  * @param updatedAt      最近更新时间
  */
@@ -736,6 +857,9 @@ record AdminVillagePostDetailView(
         Integer shareCount,
         Integer viewCount,
         Integer favoriteCount,
+        Double hotScore,
+        Double hotBoost,
+        Boolean hotBanned,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -754,5 +878,26 @@ record AdminPostViewerView(
         String nickname,
         String avatarUrl,
         LocalDateTime viewedAt
+) {
+}
+
+/**
+ * 管理后台 - 热度倍率请求（2026-08-11）。
+ *
+ * @param boost 热度倍率（0-100：0=压榜，1=原始，>1=上榜加成，支持小数）
+ */
+record AdminHotBoostRequest(
+        @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.DecimalMin("0")
+        @jakarta.validation.constraints.DecimalMax("100") Double boost
+) {
+}
+
+/**
+ * 管理后台 - 禁止上榜请求（2026-08-11）。
+ *
+ * @param banned true 禁止上榜（不进入榜单/推荐流，不影响前台可见）
+ */
+record AdminHotBanRequest(
+        @jakarta.validation.constraints.NotNull Boolean banned
 ) {
 }

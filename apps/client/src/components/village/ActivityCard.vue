@@ -245,7 +245,7 @@ function enroll(e: { stopPropagation?: () => void }) {
 
 .activity-card__enroll--pressed {
   opacity: 0.8;
-  transform: scale(0.96);
+  transform: scale(0.98);
 }
 
 .activity-card__enroll--done {

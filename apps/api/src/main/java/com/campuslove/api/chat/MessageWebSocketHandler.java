@@ -15,6 +15,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -269,6 +270,92 @@ public class MessageWebSocketHandler {
                 "/queue/messages",
                 payload
         );
+    }
+
+    /**
+     * 处理客户端发送的「正在输入」状态帧（2026-08-10 新增，B1④ 功能补齐）。
+     * 监听路径: /app/chat/typing
+     *
+     * 消息体需包含:
+     * - conversationId: 会话 ID（用于校验会话关系）
+     * - recipientId: 接收者 ID
+     * - typing: boolean（true=正在输入，false=停止输入）
+     *
+     * 安全说明:
+     * - senderId 从 STOMP 认证用户（Principal）中获取，不信任客户端 payload；
+     * - 会话关系校验与 /chat/send 一致（临时聊天或私信会话的双方）；
+     * - typing 为瞬态提示：不落库、无持久化，仅转发给在线接收方 /user/{recipientId}/queue/typing；
+     * - mock 模式（会话组件为 null）下退化为仅校验非空后转发，保证 mock 联调可用。
+     */
+    @MessageMapping("/chat/typing")
+    public void handleTyping(@Payload Map<String, Object> payload,
+                             SimpMessageHeaderAccessor headerAccessor) {
+        Principal user = headerAccessor.getUser();
+        if (user == null) {
+            log.warn("WebSocket TYPING 拒绝: 用户未认证");
+            return;
+        }
+        String senderId = user.getName();
+        String recipientId = extractString(payload, "recipientId");
+        String conversationId = extractString(payload, "conversationId");
+        if (senderId == null || senderId.isBlank()
+                || recipientId == null || recipientId.isBlank()
+                || conversationId == null || conversationId.isBlank()) {
+            log.warn("WebSocket TYPING 拒绝: 参数不完整, senderId={}", senderId);
+            return;
+        }
+        if (senderId.equals(recipientId)) {
+            log.warn("WebSocket TYPING 拒绝: 发送者不能给自己发 typing, userId={}", senderId);
+            return;
+        }
+
+        Long senderLong;
+        Long recipientLong;
+        try {
+            senderLong = Long.parseLong(senderId);
+            recipientLong = Long.parseLong(recipientId);
+        } catch (NumberFormatException e) {
+            log.warn("WebSocket TYPING 拒绝: senderId/recipientId 非数字格式, senderId={}", senderId);
+            return;
+        }
+
+        boolean typing = "true".equalsIgnoreCase(extractString(payload, "typing"));
+
+        // 会话关系校验（与 /chat/send 同一套规则）
+        boolean valid = false;
+        if (tempChatSessionService != null) {
+            try {
+                TempChatSession session = tempChatSessionService.resolveSession(conversationId);
+                valid = session != null && isTempChatPair(session, senderLong, recipientLong);
+            } catch (RuntimeException e) {
+                // 不是临时聊天会话，继续尝试私信会话
+                log.debug("conversationId={} 不是临时聊天会话: {}", conversationId, e.getMessage());
+            }
+        }
+        if (!valid && privateConversationRepository != null) {
+            try {
+                Optional<PrivateConversation> conv = findPrivateConversation(conversationId);
+                valid = conv.isPresent() && isPrivatePair(conv.get(), senderLong, recipientLong);
+            } catch (RuntimeException e) {
+                log.debug("私信会话校验异常: {}", e.getMessage());
+            }
+        }
+        // mock 模式（会话组件为 null）：退化为仅校验非空后转发
+        if (!valid && tempChatSessionService == null && privateConversationRepository == null) {
+            valid = true;
+        }
+        if (!valid) {
+            log.warn("WebSocket TYPING 拒绝: 会话关系校验失败, conversationId={}, senderId={}",
+                    conversationId, senderId);
+            return;
+        }
+
+        // 载荷契约与前端 handleTypingEvent 对齐：{sessionId, typing}（senderId 附赠用于调试/审计）
+        Map<String, Object> frame = new HashMap<>(4);
+        frame.put("sessionId", conversationId);
+        frame.put("typing", typing);
+        frame.put("senderId", senderId);
+        messagingTemplate.convertAndSendToUser(recipientId, "/queue/typing", frame);
     }
 
     /** 校验 (sender, recipient) 是否为临时聊天会话的双方（sender=userA∧recipient=userB 或反之）。 */

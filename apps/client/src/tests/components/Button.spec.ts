@@ -55,7 +55,7 @@ describe("Button component - ripple 动画", () => {
   // ripple 动画触发
   // ------------------------------------------------------------------
   it("点击触发 ripple 动画（ripple 元素出现）", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
 
     // 初始无 ripple 元素
     expect(wrapper.find(".ripple").exists()).toBe(false);
@@ -89,7 +89,7 @@ describe("Button component - ripple 动画", () => {
   it("ripple 动画在 duration（200ms）后自动清除", async () => {
     vi.useFakeTimers();
     try {
-      const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
 
       await wrapper.find(".btn").trigger("tap");
       expect(wrapper.find(".ripple").exists()).toBe(true);
@@ -106,26 +106,26 @@ describe("Button component - ripple 动画", () => {
   it("快速连续点击重置 ripple 定时器（防抖）", async () => {
     vi.useFakeTimers();
     try {
-      const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
 
       // 第一次点击
       await wrapper.find(".btn").trigger("tap");
       expect(wrapper.find(".ripple").exists()).toBe(true);
 
-      // 快进 120ms（未到 200ms）
-      vi.advanceTimersByTime(120);
+      // 快进 60ms（2026-08-10 切换提速：duration 200→120ms，未到 120ms）
+      vi.advanceTimersByTime(60);
       await nextTick();
       expect(wrapper.find(".ripple").exists()).toBe(true);
 
       // 第二次点击：应重置定时器
       await wrapper.find(".btn").trigger("tap");
-      vi.advanceTimersByTime(120);
+      vi.advanceTimersByTime(60);
       await nextTick();
-      // 由于第二次点击重置了定时器，120ms 后 ripple 仍存在（未到 200ms）
+      // 由于第二次点击重置了定时器，60ms 后 ripple 仍存在（未到 120ms）
       expect(wrapper.find(".ripple").exists()).toBe(true);
 
-      // 再快进 80ms（总计时达 200ms），ripple 消失
-      vi.advanceTimersByTime(80);
+      // 再快进 60ms（总计时达 120ms），ripple 消失
+      vi.advanceTimersByTime(60);
       await nextTick();
       expect(wrapper.find(".ripple").exists()).toBe(false);
     } finally {
@@ -137,7 +137,7 @@ describe("Button component - ripple 动画", () => {
   // tap 事件
   // ------------------------------------------------------------------
   it("点击触发 tap 事件", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     await wrapper.find(".btn").trigger("tap");
     expect(wrapper.emitted("tap")).toBeTruthy();
     expect(wrapper.emitted("tap")!.length).toBe(1);
@@ -159,7 +159,7 @@ describe("Button component - ripple 动画", () => {
   // 坐标传递：handleTap 提取点击坐标传给 Ripple.start
   // ------------------------------------------------------------------
   it("handleTap 提取点击坐标传给 Ripple.start", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     // 找到 Ripple 子组件实例并 spy 其暴露的 start 方法
     const rippleComp = wrapper.findComponent(Ripple);
     expect(rippleComp.exists()).toBe(true);
@@ -176,7 +176,7 @@ describe("Button component - ripple 动画", () => {
   });
 
   it("changedTouches 路径：handleTap 从 e.changedTouches 提取坐标传给 start", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     const rippleComp = wrapper.findComponent(Ripple);
     const exposed = (rippleComp.vm as any).$.exposed;
     const startSpy = vi.spyOn(exposed, "start");
@@ -190,7 +190,7 @@ describe("Button component - ripple 动画", () => {
   });
 
   it("无坐标信息时 start 仍被调用（退化为容器中心）", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     const rippleComp = wrapper.findComponent(Ripple);
     const exposed = (rippleComp.vm as any).$.exposed;
     const startSpy = vi.spyOn(exposed, "start");
@@ -205,7 +205,7 @@ describe("Button component - ripple 动画", () => {
   // 振动反馈
   // ------------------------------------------------------------------
   it("点击触发轻量振动反馈 lightHaptic", async () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     await wrapper.find(".btn").trigger("tap");
     expect(mockLightHaptic).toHaveBeenCalledTimes(1);
   });
@@ -226,7 +226,7 @@ describe("Button component - ripple 动画", () => {
   // 渲染：variant / size / block
   // ------------------------------------------------------------------
   it("默认渲染 primary variant 和 md size", () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     const btn = wrapper.find(".btn");
     expect(btn.classes()).toContain("btn--primary");
     expect(btn.classes()).toContain("btn--md");
@@ -276,7 +276,7 @@ describe("Button component - ripple 动画", () => {
   });
 
   it("slot 内容正确渲染", () => {
-    const wrapper = mountButton();
+    const wrapper = mountButton({ ripple: true });
     expect(wrapper.find(".btn-text").text()).toBe("按钮文本");
   });
 });

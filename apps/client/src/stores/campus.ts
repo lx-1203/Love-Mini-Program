@@ -58,6 +58,10 @@ export interface BackendCertificationView {
   schoolName: string;
   major: string;
   studentIdCardUrl: string;
+  /** 学信网在线验证码（B1-3 学历认证，可空） */
+  chsiCode?: string | null;
+  /** 学信网学历截图 URL（B1-3 学历认证，可空） */
+  chsiScreenshotUrl?: string | null;
   status: string;
   statusLabel: string;
   reviewerId: number | null;
@@ -544,7 +548,14 @@ export const useCampusStore = defineStore("campus", {
      * 创建新话题
      * @param data - 话题数据
      */
-    async createCampusTopic(data: { category: CampusTopicCategory; title: string; content: string; isAnonymous: boolean }) {
+    async createCampusTopic(data: {
+      category: CampusTopicCategory;
+      title: string;
+      content: string;
+      isAnonymous: boolean;
+      /** 2026-08-10 B5：话题标签（后端 ≤5 个、每个 ≤20 字符；mock 分支由调用方拼入内容） */
+      tags?: string[];
+    }) {
       this.errorMessage = null;
 
       try {
@@ -581,10 +592,12 @@ export const useCampusStore = defineStore("campus", {
         }
 
         // 调用后端 API: POST /api/campus/topics
+        // 2026-08-10 B5：real 分支携带 tags 字段（后端实体已有 tags JSON 列，≤5 个、每个 ≤20 字符）
         const result = await request<BackendCampusTopicView, {
           category: string;
           title: string;
           content: string;
+          tags?: string[];
         }>({
           url: "/campus/topics",
           method: "POST",
@@ -592,6 +605,7 @@ export const useCampusStore = defineStore("campus", {
             category: data.category,
             title: data.title.trim(),
             content: data.content.trim(),
+            ...(data.tags && data.tags.length > 0 ? { tags: data.tags } : {}),
           },
         });
 
@@ -681,13 +695,17 @@ export const useCampusStore = defineStore("campus", {
     },
 
     /**
-     * 提交学生证认证
+     * 提交学生证认证（B1-2 前置：须先完成实名认证；B1-3 可选学信网字段）
      * @param data - 认证信息
      */
     async submitCertification(data: {
       schoolName: string;
       major: string;
       studentCardUrl: string;
+      /** 学信网在线验证码（选填） */
+      chsiCode?: string;
+      /** 学信网学历截图 URL（选填） */
+      chsiScreenshotUrl?: string;
     }) {
       this.errorMessage = null;
 
@@ -721,6 +739,8 @@ export const useCampusStore = defineStore("campus", {
           schoolName: string;
           major: string;
           studentIdCardUrl: string;
+          chsiCode?: string;
+          chsiScreenshotUrl?: string;
         }>({
           url: "/campus/certification",
           method: "POST",
@@ -728,6 +748,8 @@ export const useCampusStore = defineStore("campus", {
             schoolName: data.schoolName.trim(),
             major: data.major.trim(),
             studentIdCardUrl: data.studentCardUrl,
+            chsiCode: data.chsiCode?.trim() ? data.chsiCode.trim() : undefined,
+            chsiScreenshotUrl: data.chsiScreenshotUrl?.trim() ? data.chsiScreenshotUrl.trim() : undefined,
           },
         });
 

@@ -1,6 +1,9 @@
 package com.campuslove.api.auth;
 
+import com.campuslove.api.common.AgePolicy;
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.MinorNotAllowedException;
+import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.auth.AdminDisabledException;
 import com.campuslove.api.admin.auth.InvalidCredentialsException;
@@ -11,6 +14,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserScheduleProfile;
+import com.campuslove.api.growth.AppConfigService;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
@@ -18,6 +22,7 @@ import com.campuslove.api.repository.UserScheduleProfileRepository;
 import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.utils.SensitiveDataMasker;
 import io.jsonwebtoken.JwtException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -149,6 +154,23 @@ public class RealAuthService implements AuthService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private GuestDemoDataProvisioner guestDemoDataProvisioner;
 
+    /**
+     * 设备会话服务（3-D 设备管理）：四个登录入口（wechat/phone/guest/register）
+     * 登录成功后记录设备，供「账号安全-设备列表/吊销设备」使用。
+     * 可选注入：单元测试（不加载 Spring）为 null 时跳过设备记录；
+     * real/mock 环境分别由 RealDeviceSessionService / MockDeviceSessionService 注入。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DeviceSessionService deviceSessionService;
+
+    /**
+     * 应用配置服务（B6：登录/注册功能开关强制点）。
+     * real profile 注入；单元测试（不加载 Spring）为 null 时视为开关全开，不拦截。
+     * 采用字段注入（required=false）而非构造器参数，避免破坏既有单测构造器。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.growth.AppConfigService appConfigService;
+
     public RealAuthService(
             WeChatClient weChatClient,
             JwtTokenProvider jwtTokenProvider,
@@ -269,7 +291,12 @@ public class RealAuthService implements AuthService {
     }
 
     @Override
-    public UserSessionView loginWithWechat(String code) {
+    public UserSessionView loginWithWechat(String code, String deviceId) {
+        // B6：后台关闭登录功能（app_switch.login_open=false）→ 拒绝登录（403）
+        if (appConfigService != null && !appConfigService.isSwitchEnabled(
+                AppConfigService.SWITCH_LOGIN_OPEN)) {
+            throw new OperationForbiddenException(ErrorMessages.LOGIN_CLOSED);
+        }
         // Task 2.5.5：移除方法级 @Transactional，将远程调用移出事务边界。
         // 原实现将 weChatClient.code2Session()（可能耗时 1-3s）置于事务内，
         // 导致数据库连接被长时间占用，高并发下易引发连接池耗尽。
@@ -342,6 +369,9 @@ public class RealAuthService implements AuthService {
 
         // 3.5 记录在线会话（eladmin「在线用户」对齐）：Redis 写入 online:user:{userId}，TTL = JWT 有效期
         recordOnlineSession(user.getId(), jwtToken, "wechat");
+
+        // 3.6 记录登录设备（3-D 设备管理）：设备标识取自登录请求，缺失时 "unknown"
+        recordLoginDevice(user.getId(), deviceId, "wechat", jwtToken);
 
         // 4. 返回会话视图
         return buildSessionView(user, jwtToken, "wechat");
@@ -491,7 +521,13 @@ public class RealAuthService implements AuthService {
      */
     @Override
     @Transactional
-    public UserSessionView registerUser(String phone, String password, String nickname) {
+    public UserSessionView registerUser(String phone, String password, String nickname,
+                                        LocalDate birthDate, String deviceId) {
+        // B6：后台关闭注册功能（app_switch.register_open=false）→ 拒绝注册（403）
+        if (appConfigService != null && !appConfigService.isSwitchEnabled(
+                AppConfigService.SWITCH_REGISTER_OPEN)) {
+            throw new OperationForbiddenException(ErrorMessages.REGISTER_CLOSED);
+        }
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
         }
@@ -505,6 +541,12 @@ public class RealAuthService implements AuthService {
         }
         if (nickname == null || nickname.isBlank() || nickname.trim().length() > 20) {
             throw new IllegalArgumentException(ErrorMessages.NICKNAME_LENGTH_INVALID);
+        }
+        // 3-N 未成年人保护：出生日期必填（@NotNull 由 Bean Validation 兜底）且须已满 18 周岁
+        if (!AgePolicy.isAdult(birthDate)) {
+            log.warn("未成年人注册被拒绝：phone={}, birthDate={}",
+                    SensitiveDataMasker.mask(phone), birthDate);
+            throw new MinorNotAllowedException(ErrorMessages.MINOR_NOT_ALLOWED);
         }
         // R4-00249：手机号唯一性校验与存储改为加密口径——新注册用户 phone 经
         // AesEncryptor 加密落库、openid 使用不可逆 SHA-256 派生键（"phone:"+hash），
@@ -524,6 +566,7 @@ public class RealAuthService implements AuthService {
         user.setNickname(nickname.trim());
         user.setRole("USER");
         user.setStatus("active");
+        user.setBirthDate(birthDate);
         user.setProfileCompletion(0);
         user.setFollowingCount(0);
         user.setFollowersCount(0);
@@ -543,6 +586,8 @@ public class RealAuthService implements AuthService {
         // 记录在线会话（eladmin「在线用户」对齐）：注册成功即自动登录，视为在线用户，
         // 与 loginWithPhone/loginAsAdmin/loginWithWechat 一致
         recordOnlineSession(saved.getId(), token, "phone");
+        // 3-D 设备管理：注册即登录，记录登录设备
+        recordLoginDevice(saved.getId(), deviceId, "phone", token);
         return buildSessionView(saved, token, "phone");
     }
 
@@ -553,8 +598,13 @@ public class RealAuthService implements AuthService {
      * "手机号或密码错误"(防账号枚举)。</p>
      */
     @Override
-    @Transactional(readOnly = true)
-    public UserSessionView loginWithPhone(String phone, String password) {
+    @Transactional
+    public UserSessionView loginWithPhone(String phone, String password, String deviceId) {
+        // B6：后台关闭登录功能（app_switch.login_open=false）→ 拒绝登录（403）
+        if (appConfigService != null && !appConfigService.isSwitchEnabled(
+                AppConfigService.SWITCH_LOGIN_OPEN)) {
+            throw new OperationForbiddenException(ErrorMessages.LOGIN_CLOSED);
+        }
         if (phone == null || phone.isBlank() || password == null || password.isBlank()) {
             throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
@@ -587,6 +637,8 @@ public class RealAuthService implements AuthService {
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 phone
         recordOnlineSession(user.getId(), token, "phone");
+        // 3-D 设备管理：记录登录设备
+        recordLoginDevice(user.getId(), deviceId, "phone", token);
         return buildSessionView(user, token, "phone");
     }
 
@@ -613,7 +665,7 @@ public class RealAuthService implements AuthService {
      */
     @Override
     @Transactional
-    public UserSessionView loginAsGuest() {
+    public UserSessionView loginAsGuest(String deviceId) {
         if (!guestLoginEnabled) {
             // 修复（R4-02553）：禁用态改抛 OperationForbiddenException（403 + OPERATION_FORBIDDEN），
             // 不再抛 IllegalStateException——后者落入 GlobalExceptionHandler 兜底分支返回 500
@@ -661,6 +713,8 @@ public class RealAuthService implements AuthService {
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 guest
         recordOnlineSession(user.getId(), token, "guest");
+        // 3-D 设备管理：记录登录设备（guest 入口请求体无设备字段，取请求参数或 "unknown"）
+        recordLoginDevice(user.getId(), deviceId, "guest", token);
         return buildSessionView(user, token, "guest");
     }
 
@@ -991,6 +1045,30 @@ public class RealAuthService implements AuthService {
             log.debug("登出时解析 token 失败: {}", ex.getMessage());
         }
         log.info("{}, userId={}", action, userId);
+    }
+
+    /**
+     * 记录登录设备（3-D 设备管理，登录成功后调用）。
+     *
+     * <p>将设备标识 + 登录平台 + 本次签发 JWT 的 jti 写入 {@link DeviceSessionService}，
+     * 供「账号安全-设备列表 / 吊销设备」使用。失败仅记录日志，不影响登录主流程。</p>
+     *
+     * @param userId   用户 ID
+     * @param deviceId 客户端设备标识（可空，缺失时由服务层兜底 "unknown"）
+     * @param platform 登录平台（wechat / phone / guest / apple）
+     * @param jwtToken 签发的 JWT（从中提取 jti）
+     */
+    private void recordLoginDevice(Long userId, String deviceId, String platform, String jwtToken) {
+        if (deviceSessionService == null) {
+            return;
+        }
+        try {
+            String jti = jwtTokenProvider.getJtiFromToken(jwtToken);
+            deviceSessionService.recordLogin(userId, deviceId, platform, jti);
+        } catch (RuntimeException ex) {
+            // 设备记录失败不影响登录主流程，仅记录日志
+            log.warn("记录登录设备失败, userId={}, method={}: {}", userId, platform, ex.getMessage());
+        }
     }
 
     /**

@@ -73,8 +73,27 @@ public class MockSecurityConfig {
             "/api/v1/error-reports",
             // R4-00318：微信支付回调端点（微信服务器调用，无 JWT）
             "/api/v1/vip/payment-callback",
+            // 2026-08-10：应用资产公开访问（装饰性图片，免登录；不注入 mock 用户）
+            "/api/v1/media/app-assets/**",
             "/actuator/health",
             "/actuator/health/**"
+    );
+
+    /**
+     * 位于 permitAll 前缀（/api/v1/auth/**）之下、但仍需登录鉴权的账号安全端点
+     * （3-B 修改密码 / 3-C 更换手机号 / 3-D 设备管理 / 3-E 注销账号）。
+     *
+     * <p>real profile 下这些端点由 JwtAuthenticationFilter 注入认证上下文 + 方法级
+     * @PreAuthorize("hasRole('USER')") 双重保障；mock profile 无 JWT 过滤器，
+     * 若按 permitAll 处理则匿名请求也可直达 Controller（SecurityUtils.getCurrentUserId()
+     * 抛 401）。故 mock filter 对命中本列表的路径同样注入 ROLE_USER，行为与 real 对齐。</p>
+     */
+    private static final List<String> SECURED_AUTH_PATTERNS = List.of(
+            "/api/v1/auth/change-password",
+            "/api/v1/auth/change-phone",
+            "/api/v1/auth/devices",
+            "/api/v1/auth/devices/**",
+            "/api/v1/auth/deactivate"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -185,6 +204,9 @@ public class MockSecurityConfig {
                 .requestMatchers("/uploads/**").denyAll()
                 // 管理端点需要 ADMIN 角色（与 real profile 一致）
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // 公开端点：应用资产（/api/v1/media/app-assets/**）——后端托管的
+                // 装饰性图片，免登录可看图（与 real profile 对齐；须在 media/** 规则之前）
+                .requestMatchers("/api/v1/media/app-assets/**").permitAll()
                 // Task 0.3.2：媒体鉴权代理端点需认证
                 .requestMatchers("/api/v1/media/**").authenticated()
                 // 媒体上传端点 /api/v1/media/upload 由 /api/v1/** 规则覆盖（需认证），
@@ -214,8 +236,10 @@ public class MockSecurityConfig {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 String requestPath = request.getRequestURI();
 
-                // 仅对需要认证的路径注入 mock 用户，避免污染 permitAll 路径
-                if (!isPermitPath(requestPath)) {
+                // 仅对需要认证的路径注入 mock 用户，避免污染 permitAll 路径；
+                // 账号安全端点（SECURED_AUTH_PATTERNS）虽在 /api/v1/auth/** permitAll
+                // 前缀下，仍需登录（与 real 的 @PreAuthorize 语义对齐）
+                if (!isPermitPath(requestPath) || isSecuredAuthPath(requestPath)) {
                     List<SimpleGrantedAuthority> authorities;
                     // R4-00432：mock 下 /actuator/** 与 /swagger-ui/** 等 hasRole('ADMIN')
                     // 路径同样注入 ROLE_ADMIN——原实现仅 /api/v1/admin/** 注入，
@@ -253,6 +277,21 @@ public class MockSecurityConfig {
      */
     private boolean isPermitPath(String requestPath) {
         for (String pattern : PERMIT_PATHS) {
+            if (pathMatcher.match(pattern, requestPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断请求路径是否命中账号安全端点（需登录，即使位于 permitAll 前缀下）。
+     *
+     * @param requestPath 请求路径
+     * @return 是否命中
+     */
+    private boolean isSecuredAuthPath(String requestPath) {
+        for (String pattern : SECURED_AUTH_PATTERNS) {
             if (pathMatcher.match(pattern, requestPath)) {
                 return true;
             }

@@ -11,9 +11,8 @@
  * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
 import { computed, ref, nextTick, watch, getCurrentInstance } from "vue";
-import { onLoad, onShow, onHide, onUnload } from "@dcloudio/uni-app";
+import { onLoad, onShow, onHide, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { featureFlags } from "../../config/feature-flags";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
 import ActivityCard, { type ActivityCardData } from "../../components/chat/ActivityCard.vue";
 import MatchGreetingTip from "../../components/chat/MatchGreetingTip.vue";
@@ -31,10 +30,15 @@ import { useSessionStore } from "../../stores/session";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { ROUTES } from "../../constants/routes";
+import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { lightHaptic } from "../../utils/haptic";
 import { openAppPath } from "../../utils/navigation";
 // 2026-08-09 微信 1:1 重构：正在输入头像 / 转发会话头像的媒体 URL 解析
-import { resolveMediaUrl } from "../../utils/media";
+import { resolveMediaUrl, chooseImages } from "../../utils/media";
+import { wsClient } from "../../services/websocket";
+import { clientApi, type UniUploadFileLike } from "../../services/api";
+import { request } from "../../services/http";
+import type { OnlineStatusView } from "../../services/generated/api-types-supplement";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 // 修复 no-duplicate-imports：合并 ./types 的重复 import
@@ -83,11 +87,6 @@ const friendlyPageError = computed(() => {
   return raw;
 });
 
-/** 会话页更多菜单图标（emoji 替换为 SVG） */
-const chatMenuIcons = {
-  videoCall: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
-} as const;
-
 /** SVG 图标资源路径（语音麦克风已随对应功能移除；全部 SVG，无 emoji 字符） */
 const iconSrc = {
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
@@ -105,8 +104,6 @@ const sessionId = ref<string | null>(null);
 const targetUserId = ref<string | null>(null);
 const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
-/** 控制页面内容淡入动画 */
-const pageVisible = ref(false);
 /** Phase Feedback3 P2.4：是否缘分速配信号会话（?fromSignal=1，触发渐进解锁面板） */
 const fromSignal = ref(false);
 
@@ -275,10 +272,10 @@ function openActivityCard(targetUrl: string) {
 /** 底部锚点 id（常量，模板与脚本共用） */
 const BOTTOM_ANCHOR_ID = "chat-bottom-anchor";
 
-/** 删除消息本地存储 key（2026-08-09 微信化重构：删除为本地持久隐藏，微信语义） */
-const DELETED_MESSAGES_STORAGE_KEY = "chat-session:deleted-message-ids";
+/** 删除消息本地存储 key（2026-08-09 微信化重构：删除为本地持久隐藏，微信语义；2026-08-10 统一至 STORAGE_KEYS） */
+const DELETED_MESSAGES_STORAGE_KEY = STORAGE_KEYS.DELETED_MESSAGE_IDS;
 
-/** 已删除消息 ID 集合（本地持久隐藏，重进会话不恢复；TODO(backend): DELETE 消息接口） */
+/** 已删除消息 ID 集合（本地持久隐藏，重进会话不恢复；real 模式同步调用后端 DELETE /messages/{messageId}，见 handleDeleteMessage） */
 const deletedMessageIds = ref<Set<string>>(
   new Set<string>((uni.getStorageSync(DELETED_MESSAGES_STORAGE_KEY) as string[]) ?? [])
 );
@@ -616,12 +613,6 @@ onShow(() => {
     sessionId: sessionId.value,
   });
 
-  // 页面过渡动画：先重置再触发淡入
-  pageVisible.value = false;
-  void nextTick(() => {
-    pageVisible.value = true;
-  });
-
   if (!sessionId.value) {
     return;
   }
@@ -630,6 +621,8 @@ onShow(() => {
   // onShow/onHide 配对覆盖「压栈/切后台」场景：
   // 会话打开期间收到的新消息不累加未读数，退出后恢复累加。
   messagesStore.setActiveSession(sessionId.value);
+  // 2026-08-10 功能补齐：进入会话时拉取对方真实在线状态
+  void loadPeerOnlineStatus();
   nearBottom = true;
   void nextTick(() => {
     // 2026-08-09 微信化重构：初始化滚动区高度缓存
@@ -657,9 +650,10 @@ onHide(() => {
   // 红点修复：退出会话页（压栈/切后台）后恢复未读累加
   messagesStore.setActiveSession(null);
   nearBottom = false;
-  // 2026-08-09：切后台时复位「正在输入」态与计时器
+  // 2026-08-09：切后台时复位「正在输入」态与计时器；2026-08-10 B1④：通知对方停止输入
   clearTypingTimer();
-  peerTyping.value = false;
+  peerTypingLocal.value = false;
+  clearTypingStopTimer();
 });
 
 onUnload(() => {
@@ -667,6 +661,7 @@ onUnload(() => {
     clearInterval(countdownTimer);
   }
   clearTypingTimer();
+  clearTypingStopTimer();
 });
 
 /** 当前会话信息（优先从 messagesStore 获取） */
@@ -743,12 +738,33 @@ const pageTitle = computed(() => {
 
 /* ========== 顶部导航：对方状态文字 + 「···」更多菜单（2026-08-09 微信化重构） ========== */
 
+/** 2026-08-10 功能补齐：对方真实在线状态（GET /online-status?userIds= 批量接口） */
+const peerOnlineStatus = ref<"online" | "away" | "offline" | null>(null);
+
+/** 拉取对方在线状态（失败静默，保持默认展示） */
+async function loadPeerOnlineStatus(): Promise<void> {
+  const peerId = resolvePeerUserId();
+  if (!peerId) return;
+  try {
+    const data = await request<OnlineStatusView[]>({
+      url: `/online-status?userIds=${encodeURIComponent(String(peerId))}`,
+      method: "GET",
+    });
+    const item = data?.[0];
+    if (item) {
+      peerOnlineStatus.value =
+        (item.status as "online" | "away" | "offline" | undefined) ??
+        (item.online ? "online" : "offline");
+    }
+  } catch (_e) {
+    // 静默：在线状态失败不影响聊天主流程
+  }
+}
+
 /**
  * 对方在线状态文字（微信：昵称下方 12px 灰字）。
- * 后端暂无 presence 接口：
  * - mock 模式：按 sessionId 哈希取「在线/刚刚活跃/离线」三态（演示用）；
- * - real 模式：固定「刚刚活跃」。
- * TODO(backend): GET /users/{id}/presence 接入真实在线状态
+ * - real 模式：GET /online-status 真实数据，未取到/非私信会话回退「刚刚活跃」。
  */
 const peerStatusText = computed(() => {
   if (!isPrivateSession.value) return ""; // 临时会话沿用 temp-banner，不展示状态文字
@@ -756,6 +772,13 @@ const peerStatusText = computed(() => {
     const seed = (sessionId.value ?? "").split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
     const mod = seed % 3;
     return mod === 0 ? t("chat.statusOnline") : mod === 1 ? t("chat.statusActive") : t("chat.statusOffline");
+  }
+  if (peerOnlineStatus.value) {
+    return peerOnlineStatus.value === "online"
+      ? t("chat.statusOnline")
+      : peerOnlineStatus.value === "away"
+        ? t("chat.statusActive")
+        : t("chat.statusOffline");
   }
   return t("chat.statusActive");
 });
@@ -789,17 +812,49 @@ function handleViewProfile() {
   goSignalProfile();
 }
 
-/** 切换消息免打扰（本地状态；TODO(backend): 后端会话元数据同步接口） */
-function handleToggleMute() {
+/**
+ * 会话页分享（2026-08-10 A3 补齐）：
+ * 微信不支持直接分享会话，分享卡片指向对方个人主页
+ * （对方昵称 + 主页路径，接收方点开即浏览对方主页）。
+ */
+onShareAppMessage(() => {
+  const peerId = resolvePeerUserId();
+  if (peerId === null) {
+    return { title: t("share.shareVillage"), path: ROUTES.TAB.VILLAGE };
+  }
+  const session = currentSession.value;
+  const name =
+    session && "partnerName" in session && session.partnerName
+      ? session.partnerName
+      : t("chat.privateMessageTitle");
+  return {
+    title: t("profile.shareProfileTitle", { name }),
+    path: `${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(String(peerId))}`,
+  };
+});
+
+/**
+ * 切换消息免打扰（2026-08-10 B1③：real 模式同步后端 PUT /conversations/{id}/mute，
+ * 后端成功才生效；mock 分支保持本地状态）。
+ * 临时匿名会话（TempChatSession）无后端 mute 元数据，保持前端本地并降级提示。
+ */
+async function handleToggleMute() {
   closeNavMenu();
   const session = currentSession.value;
   if (!session || !("id" in session)) return;
   const sid = session.id as string;
   const muted = messagesStore.sessions.find((s) => s.id === sid)?.muted ?? false;
-  messagesStore.setSessionMuted(sid, !muted);
+  if (isTempSession.value && !useMock()) {
+    // 临时会话免打扰降级：仅本地提示（后端会话元数据不含 muted 字段）
+    messagesStore.setSessionMuted(sid, !muted);
+    uni.showToast({ title: t("chat.muteLocalOnly"), icon: "none" });
+    return;
+  }
+  await messagesStore.setSessionMuted(sid, !muted);
 }
 
-/** 拉黑：确认后写入页面级拉黑集合（仅本次会话生效；TODO(backend): POST /users/{id}/block） */
+/** 拉黑：2026-08-10 功能补齐——real 模式调用 POST /users/{id}/block（后端生效：会话过滤/发送拦截/推荐排除），
+ *  mock 模式保持页面级集合演示；成功后退回列表（被拉黑会话不再展示）。 */
 function handleBlock() {
   closeNavMenu();
   uni.showModal({
@@ -807,11 +862,31 @@ function handleBlock() {
     content: t("chat.nav.blockConfirmContent"),
     confirmText: t("chat.nav.block"),
     cancelText: t("common.cancel"),
-    success: (res) => {
+    success: async (res) => {
       if (!res.confirm) return;
       const peerId = resolvePeerUserId();
-      if (peerId !== null) blockedPeerIds.value.add(String(peerId));
-      uni.showToast({ title: t("chat.nav.blockDone"), icon: "none" });
+      if (peerId === null) return;
+      if (useMock()) {
+        blockedPeerIds.value.add(String(peerId));
+        uni.showToast({ title: t("chat.nav.blockDone"), icon: "none" });
+        return;
+      }
+      try {
+        await request({
+          url: `/users/${encodeURIComponent(String(peerId))}/block`,
+          method: "POST",
+        });
+        blockedPeerIds.value.add(String(peerId));
+        uni.showToast({ title: t("chat.nav.blockDone"), icon: "success" });
+        // 拉黑后后端会过滤该会话，返回上一页
+        setTimeout(() => {
+          uni.navigateBack();
+        }, 600);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : t("chat.nav.blockFailed");
+        uni.showToast({ title: message, icon: "none" });
+      }
     },
   });
 }
@@ -1001,9 +1076,12 @@ function onKeyboardHeightChange(e: { height: number }) {
   keyboardHeight.value = e?.height ?? 0;
 }
 
-/** 输入内容变化：无额外处理（空闲破冰提示已随输入栏上方卡片流移除） */
+/**
+ * 输入内容变化（2026-08-10 B1④）：real 模式向对方推送「正在输入」状态
+ * （停顿 2.5s 自动发 typing=false；mock 模式无操作）。
+ */
 function onDraftChange() {
-  // 2026-08-09：原实现重置空闲破冰计时器，随输入栏上方卡片流一并移除
+  notifyTyping();
 }
 
 /** 切换表情面板：展开时收起键盘（微信行为：表情面板与键盘互斥） */
@@ -1055,25 +1133,35 @@ async function handleGreetingSend(text: string) {
   await sendText();
 }
 
-/* ========== 正在输入提示（2026-08-09 微信化重构） ========== */
+/* ========== 正在输入提示（2026-08-09 微信化重构，2026-08-10 B1④ 接通 WS） ========== */
 
-/** 对方是否正在输入（真实输入态由 WS /queue/typing 驱动，后端暂无推送；mock 模式演示模拟） */
-const peerTyping = ref(false);
+/** mock 模式演示输入态（仅 mock 使用；real 由 messagesStore.typingMap 驱动） */
+const peerTypingLocal = ref(false);
 /** typing 演示计时器 ID */
 let typingTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * 对方是否正在输入：
+ * - real 模式：由 WS /user/queue/typing 事件 → messagesStore.typingMap[sessionId] 驱动
+ *   （后端 MessageWebSocketHandler.handleTyping 推送，3s 自动复位兜底）；
+ * - mock 模式：发送成功后随机 1.5~3s 模拟对方开始输入，2~4s 后停止（增强实时感）。
+ */
+const peerTyping = computed(() => {
+  if (useMock()) return peerTypingLocal.value;
+  return !!messagesStore.typingMap[sessionId.value ?? ""];
+});
+
+/**
  * mock 模式演示：发送成功后随机 1.5~3s 模拟对方开始输入，2~4s 后停止（增强实时感）。
- * real 模式预留：由 store-dispatch 的 typing 分支（/user/queue/typing）驱动，后端未推送即不触发。
- * TODO(backend): 后端推送 typing 事件（{sessionId, typing}）
+ * 仅私信会话演示（临时会话不模拟，避免误导）。
  */
 function scheduleTypingSimulation() {
-  if (!useMock() || isTempSession.value) return; // 仅私信会话演示
+  if (!useMock() || isTempSession.value) return;
   clearTypingTimer();
   typingTimer = setTimeout(() => {
-    peerTyping.value = true;
+    peerTypingLocal.value = true;
     typingTimer = setTimeout(() => {
-      peerTyping.value = false;
+      peerTypingLocal.value = false;
       typingTimer = null;
     }, 2000 + Math.floor(Math.random() * 2000));
   }, 1500 + Math.floor(Math.random() * 1500));
@@ -1084,6 +1172,54 @@ function clearTypingTimer() {
   if (typingTimer) {
     clearTimeout(typingTimer);
     typingTimer = null;
+  }
+}
+
+/* ---- 2026-08-10 B1④：我方输入态推送（real 模式，STOMP /app/chat/typing） ---- */
+
+/** 输入停止通知定时器（输入停顿 2.5s 后发 typing=false） */
+let typingStopTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 通知对方「我正在输入」（real 模式）。
+ * 载荷与后端契约对齐：{conversationId, recipientId, typing}（会话页使用 sessionId 作为会话 ID）。
+ * mock 模式不发（本地演示由 scheduleTypingSimulation 模拟）。
+ */
+function notifyTyping() {
+  if (useMock() || !sessionId.value) return;
+  const peerId = resolvePeerUserId();
+  if (peerId === null) return;
+  wsClient.send("/app/chat/typing", {
+    conversationId: sessionId.value,
+    recipientId: String(peerId),
+    typing: true,
+  });
+  if (typingStopTimer) clearTimeout(typingStopTimer);
+  typingStopTimer = setTimeout(() => {
+    wsClient.send("/app/chat/typing", {
+      conversationId: sessionId.value!,
+      recipientId: String(peerId),
+      typing: false,
+    });
+    typingStopTimer = null;
+  }, 2500);
+}
+
+/** 离开页面时发送 typing=false 并清理定时器（onHide/onUnload 调用） */
+function clearTypingStopTimer() {
+  if (typingStopTimer) {
+    clearTimeout(typingStopTimer);
+    typingStopTimer = null;
+  }
+  if (!useMock() && sessionId.value) {
+    const peerId = resolvePeerUserId();
+    if (peerId !== null) {
+      wsClient.send("/app/chat/typing", {
+        conversationId: sessionId.value,
+        recipientId: String(peerId),
+        typing: false,
+      });
+    }
   }
 }
 
@@ -1269,14 +1405,24 @@ async function handleForwardTo(targetSessionId: string) {
 }
 
 /**
- * 删除消息：本地持久隐藏（微信语义——删除仅自己不可见，重进会话不恢复）。
- * 删除记录写入本地存储，不做服务端删除。
- * TODO(backend): DELETE /messages/conversations/{id}/messages/{mid} 接口预留
+ * 删除消息：微信语义软删（仅自己不可见，对方仍可见）。
+ * 2026-08-10 功能补齐——real 模式调用 DELETE /messages/{messageId}（后端软删 deleted_for_sender）；
+ * 无论服务端结果如何都本地隐藏（本地语义优先，服务端失败仅提示）。
  */
-function handleDeleteMessage() {
+async function handleDeleteMessage() {
   const messageId = longPressMenu.value.messageId;
   closeLongPressMenu();
   if (!messageId) return;
+  if (!useMock()) {
+    try {
+      await request({
+        url: `/messages/${encodeURIComponent(messageId)}`,
+        method: "DELETE",
+      });
+    } catch (_e) {
+      // 服务端删除失败：仍本地隐藏（微信语义），不打断用户操作
+    }
+  }
   const next = new Set(deletedMessageIds.value);
   next.add(messageId);
   deletedMessageIds.value = next;
@@ -1350,35 +1496,47 @@ function closeMoreMenu() {
   moreMenuVisible.value = false;
 }
 
-/**
- * 跳转到视频通话页：
- * - 临时匿名会话不支持视频通话
- * - 携带 sessionId 与对方 userId
- */
-function goVideoCall() {
+/** 2026-08-10 功能补齐：图片发送（选图 → 上传 → kind=image 消息，参考语音链路） */
+const isSendingImage = ref(false);
+
+async function handleImagePlaceholder() {
   closeMoreMenu();
   if (!sessionId.value) {
     uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
     return;
   }
-  if (isTempSession.value) {
-    uni.showToast({ title: t("chat.moreMenuTempNotSupported"), icon: "none" });
-    return;
+  if (isSendingImage.value) return;
+  isSendingImage.value = true;
+  try {
+    const paths = await chooseImages({ count: 9, maxSizeMB: 10 });
+    if (paths.length === 0) return; // 用户取消
+    // 2026-08-13 收尾：上传期间显示加载提示（多张仅首次弹，结束时统一收起）
+    uni.showLoading({ title: t("chat.sendingImage"), mask: true });
+    for (const path of paths) {
+      // 逐张上传 + 发送（保持顺序；单张失败跳过继续）
+      try {
+        const { url } = await clientApi.uploadPostImage({
+          path,
+          name: `chat-${Date.now()}.jpg`,
+        } as UniUploadFileLike);
+        if (!url) continue;
+        await messagesStore.sendMessage(sessionId.value, url, undefined, "image");
+      } catch (err) {
+        captureException(err, { source: "chat.send-image" });
+      }
+    }
+    uni.hideLoading();
+    if (paths.length > 0) {
+      uni.showToast({ title: t("chat.imageSent"), icon: "success" });
+    }
+  } catch (error) {
+    uni.hideLoading();
+    // 2026-08-13：失败文案修正——原 moreMenuImageWip（「开发中」占位）已过期
+    const message = error instanceof Error ? error.message : t("chat.sendImageFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isSendingImage.value = false;
   }
-  const peerId = resolvePeerUserId();
-  const params: string[] = [`sessionId=${encodeURIComponent(sessionId.value)}`];
-  if (peerId !== null) {
-    params.push(`peerUserId=${encodeURIComponent(String(peerId))}`);
-  }
-  uni.navigateTo({
-    url: `${ROUTES.CHAT.VIDEO_CALL}?${params.join("&")}`,
-  });
-}
-
-/** 图片发送占位（2026-08-09：图片消息本期不做，占位提示；后续迭代接入选图/上传/预览链路） */
-function handleImagePlaceholder() {
-  closeMoreMenu();
-  uni.showToast({ title: t("chat.moreMenuImageWip"), icon: "none" });
 }
 
 // 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
@@ -1387,7 +1545,7 @@ defineExpose({ noop });
 </script>
 
 <template>
-  <view class="chat-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="chat-page">
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
@@ -1769,20 +1927,6 @@ defineExpose({ noop });
           <text class="more-menu-sheet__title-text">{{ t('chat.moreMenuTitle') }}</text>
         </view>
         <view class="more-menu-sheet__grid">
-          <view
-            v-if="featureFlags.videoCallEnabled"
-            class="more-menu-item press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            @tap="goVideoCall"
-            role="button"
-            :aria-label="t('videoCall.entryLabel')"
-          >
-            <view class="more-menu-item__icon more-menu-item__icon--blue">
-              <image class="more-menu-item__icon-emoji" :src="chatMenuIcons.videoCall" mode="aspectFit" alt="" />
-            </view>
-            <text class="more-menu-item__label">{{ t('videoCall.entryLabel') }}</text>
-          </view>
           <!-- 2026-08-09 微信 1:1：发送图片（本期占位，图片消息独立迭代） -->
           <view
             class="more-menu-item press-feedback"

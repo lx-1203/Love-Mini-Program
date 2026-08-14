@@ -9,13 +9,11 @@
  *
  * 特性：
  * - 自动适配顶部 statusBar 和底部 TabBar 安全区
- * - 内置 page-fade-in 动画
  * - 支持背景渐变（品牌主色到背景色）
  * - 支持自定义背景图
  */
 
-import { computed, ref, nextTick } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '@/config/images';
 
@@ -41,8 +39,6 @@ interface Props {
   safeArea?: boolean;
   /** 是否适配 TabBar 底部安全区（默认 true） */
   tabBarSafe?: boolean;
-  /** 是否启用页面淡入动画 */
-  animate?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,7 +51,6 @@ const props = withDefaults(defineProps<Props>(), {
   fixed: false,
   safeArea: true,
   tabBarSafe: true,
-  animate: true,
 });
 
 const emit = defineEmits<{
@@ -64,20 +59,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-/** 页面淡入动画控制 */
-const pageVisible = ref(false);
-
-onShow(() => {
-  if (!props.animate) {
-    pageVisible.value = true;
-    return;
-  }
-  pageVisible.value = false;
-  void nextTick(() => {
-    pageVisible.value = true;
-  });
-});
-
 /** 计算容器类名 */
 const shellClass = computed(() => [
   'shell',
@@ -85,7 +66,6 @@ const shellClass = computed(() => [
   `shell-bg--${props.bgVariant}`,
   {
     'is-fixed': props.fixed,
-    'page-fade-in': pageVisible.value && props.animate,
   },
 ]);
 
@@ -125,14 +105,25 @@ function handleBack(): void {
   uni.navigateBack({
     delta: 1,
     fail: () => {
-      // 返回失败（如无上一页）时静默处理，避免未捕获异常
+      // 2026-08-12 修复：无上一页（编辑资料/注册流程经 redirectTo/switchTab 进入，
+      // 页面栈被替换）时静默失败会让用户以为「返回按钮点了没反应」——
+      // 回退到首页 tab，保证退出编辑/退出流程永远可响应
+      uni.switchTab({
+        url: '/pages/home/index',
+        fail: () => {
+          // 极端兜底：switchTab 也失败时 reLaunch 首页
+          uni.reLaunch({ url: '/pages/home/index' });
+        },
+      });
     },
   });
   // #endif
   // #ifndef MP-WEIXIN
   // H5 / App 端：navigateBack 返回 Promise，使用 catch 处理失败
   uni.navigateBack({ delta: 1 }).catch(() => {
-    // 返回失败时静默处理
+    uni.switchTab({ url: '/pages/home/index' }).catch(() => {
+      uni.reLaunch({ url: '/pages/home/index' });
+    });
   });
   // #endif
 }
@@ -369,21 +360,5 @@ function focusMainContent(): void {
 
 .shell__footer {
   margin-top: auto;
-}
-
-// 页面淡入动画
-.page-fade-in {
-  animation: page-fade-in var(--d-base, 300ms) ease-out;
-}
-
-@keyframes page-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 </style>

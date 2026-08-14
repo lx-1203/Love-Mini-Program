@@ -31,8 +31,10 @@ import { defineConfig, devices } from '@playwright/test';
  * </pre>
  */
 export default defineConfig({
-  testDir: './tests/e2e/specs',
-  outputDir: './tests/e2e/test-results',
+  // 2026-08-10 修复：testDir/outputDir 相对本配置文件目录（tests/e2e/）解析，
+  // 原 './tests/e2e/specs' 会导致相对路径重复（tests/e2e/tests/e2e/specs）→ 0 测试
+  testDir: './specs',
+  outputDir: './test-results',
   fullyParallel: false, // uni-app H5 dev 单实例，避免端口冲突
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

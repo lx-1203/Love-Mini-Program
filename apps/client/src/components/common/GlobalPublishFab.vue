@@ -13,8 +13,11 @@
  */
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+// B6：后台配置即时生效——发帖开关（post_publish_open=false 时隐藏 FAB）
+import { useAppConfigStore } from "../../stores/app-config";
 
 const { t } = useI18n();
+const appConfigStore = useAppConfigStore();
 
 const emit = defineEmits<{
   (e: "publish"): void;
@@ -27,7 +30,9 @@ function handleTap() {
 </script>
 
 <template>
+  <!-- B6：后台关闭发帖功能（post_publish_open=false）→ 隐藏全局发帖 FAB -->
   <view
+    v-if="appConfigStore.isPostPublishOpen"
     class="global-fab press-feedback"
     hover-class="global-fab--pressed"
     hover-stay-time="120"
@@ -66,13 +71,13 @@ function handleTap() {
 /* 按压态（mp-weixin hover-class 与 H5 :active 共用形态：方形 → 微圆角 + 缩小） */
 .global-fab--pressed {
   border-radius: var(--r-lg);
-  transform: scale(0.9);
+  transform: scale(0.98);
 }
 
 /* #ifdef H5 */
 .global-fab:active {
   border-radius: var(--r-lg);
-  transform: scale(0.9);
+  transform: scale(0.98);
 }
 /* #endif */
 

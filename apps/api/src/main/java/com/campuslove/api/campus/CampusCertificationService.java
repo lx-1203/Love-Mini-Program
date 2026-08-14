@@ -11,13 +11,19 @@ public interface CampusCertificationService {
      * 如果用户已有 REJECTED 状态的记录，允许重新提交覆盖；
      * 如果用户已有 PENDING 或 APPROVED 状态的记录，则抛出业务异常。
      *
-     * @param userId            用户 ID
-     * @param schoolName        学校名称
-     * @param major             专业
-     * @param studentIdCardUrl  学生证照片 URL
+     * <p>前置门槛（B1-2/B1-3）：用户须先完成实名认证
+     * （{@code user_basic_profile.id_card_verified = true}），否则拒绝提交。</p>
+     *
+     * @param userId             用户 ID
+     * @param schoolName         学校名称
+     * @param major              专业
+     * @param studentIdCardUrl   学生证照片 URL
+     * @param chsiCode           学信网在线验证码（可空）
+     * @param chsiScreenshotUrl  学信网学历截图 URL（可空）
      * @return 认证视图
      */
-    CampusCertificationView submitCertification(Long userId, String schoolName, String major, String studentIdCardUrl);
+    CampusCertificationView submitCertification(Long userId, String schoolName, String major,
+                                                String studentIdCardUrl, String chsiCode, String chsiScreenshotUrl);
 
     /**
      * 查询用户的校园认证状态。

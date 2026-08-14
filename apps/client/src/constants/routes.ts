@@ -41,6 +41,9 @@ export const ROUTES = {
   /** 登录 */
   LOGIN: "/pages/login/index",
 
+  /** 搜索（2026-08-11 帖子搜索页） */
+  SEARCH: "/pages/search/index",
+
   /** 寻觅模块 */
   DISCOVER: {
     /** 历史记录页 */
@@ -81,8 +84,6 @@ export const ROUTES = {
   CHAT: {
     /** 聊天会话页 */
     SESSION: "/pages/chat-session/index",
-    /** 视频通话页 */
-    VIDEO_CALL: "/pages/chat/video-call",
   },
 
   /** 个人资料模块 */
@@ -129,7 +130,7 @@ export const ROUTES = {
   DAILY_QUESTION: "/pages/daily-question/index",
 
   /** 商城 */
-  SHOP: "/pages/shop/index",
+  SHOP: "/subpackages/market/shop/index",
 
   /** 设置模块 */
   SETTINGS: {
@@ -139,8 +140,10 @@ export const ROUTES = {
     DND: "/pages/settings/dnd",
   },
 
-  /** 实名认证 */
+  /** 恋爱认证（校园身份认证） */
   VERIFICATION: "/pages/verification/index",
+  /** 实名认证（B1-2；B4 认证门控目标页，2026-08-13） */
+  REAL_NAME_CERTIFICATION: "/pages/verification/real-name",
 
   /** P2.6：帮助与客服 */
   HELP: "/pages/help/index",
@@ -154,11 +157,11 @@ export const ROUTES = {
   /** VIP 模块 */
   VIP: {
     /** VIP 主页 */
-    INDEX: "/pages/vip/index",
+    INDEX: "/subpackages/vip/index",
     /** 兑换码 */
-    PROMO_CODE: "/pages/vip/promo-code",
+    PROMO_CODE: "/subpackages/vip/promo-code",
     /** 账单 */
-    BILLS: "/pages/vip/bills",
+    BILLS: "/subpackages/vip/bills",
   },
 
   /** 反馈历史 */
@@ -179,14 +182,14 @@ export const ROUTES = {
     CONSULTING: "/pages/love-center/consulting",
   },
 
-  /** 开发者页面 */
-  DEV: "/pages/dev/index",
+  /** 开发者页面（2026-08-10 主包减负迁移至 setup 分包，仅 DEV 构建注册） */
+  DEV: "/subpackages/setup/dev/index",
 
-  /** R4-00226：全功能展示页（VITE_SHOWCASE_MODE 展示构建） */
-  SHOWCASE: "/pages/showcase/index",
+  /** R4-00226：全功能展示页（VITE_SHOWCASE_MODE 展示构建；2026-08-10 迁移至 setup 分包） */
+  SHOWCASE: "/subpackages/setup/showcase/index",
 
   /** R4-00226：我的钱包 */
-  WALLET: "/pages/wallet/index",
+  WALLET: "/subpackages/market/wallet/index",
 } as const;
 
 /**

@@ -31,12 +31,16 @@ import com.campuslove.api.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.cache.annotation.Cacheable;
@@ -515,9 +519,117 @@ public class VillageQueryService {
     @Cacheable(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     @Transactional(readOnly = true)
     public List<PostSummaryView> listHotPosts() {
-        Page<Post> postPage = postRepository.findByStatusOrderByLikesCountDesc(
+        Page<Post> postPage = postRepository.findHotBoard(
                 PostStatus.active, PageRequest.of(0, 20));
         return toPostSummaryViews(postPage.getContent(), "");
+    }
+
+    // ---- 2026-08-11 热度榜 / 帖子推荐流 ----
+
+    /**
+     * 热度榜分页查询（按 hot_score 降序，过滤 banned）。
+     *
+     * <p>缓存统一由 {@link HotScoreScheduler#findHotBoard} 的 @Cacheable 承担
+     * （VILLAGE_HOT_POSTS），本方法为只读委托；重算/管理端操纵后缓存被主动失效。</p>
+     */
+    @Transactional(readOnly = true)
+    public PostListResponse getHotBoard(int page, int pageSize) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(100, pageSize));
+        Page<Post> postPage = postRepository.findHotBoard(PostStatus.active,
+                PageRequest.of(safePage - 1, safeSize));
+        List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "",
+                loadFollowedUserIds(currentUserIdOrNull()));
+        return new PostListResponse(items, (int) postPage.getTotalElements(), safePage, safeSize);
+    }
+
+    /**
+     * 帖子推荐流（2026-08-11 贴吧式推流）：关注新帖 + 同校热帖 + 兴趣帖 + 新鲜兜底混合。
+     *
+     * <p>混合比例（每批 30 条）：关注 40% / 同校热帖 30% / 兴趣帖 20% / 兜底 10%；
+     * 去重后按 hot_score*0.7 + 新鲜度*0.3 混合排序（权重可配 hot.recommendMix）。</p>
+     */
+    @Transactional(readOnly = true)
+    public PostListResponse getPostRecommend(Long userId, int page, int pageSize) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(100, pageSize));
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime followSince = now.minusDays(7);
+
+        LinkedHashSet<Long> candidateIds = new LinkedHashSet<>();
+
+        // 1. 关注作者 7 日内新帖（40%）
+        if (userId != null) {
+            Set<Long> followedUserIds = loadFollowedUserIds(userId);
+            if (!followedUserIds.isEmpty()) {
+                Page<Post> followedPage = postRepository
+                        .findByAuthorIdInAndStatusAndCreatedAtAfterOrderByCreatedAtDesc(
+                                new ArrayList<>(followedUserIds), PostStatus.active,
+                                followSince, PageRequest.of(0, Math.max(12, safeSize * 4 / 10)));
+                followedPage.getContent().stream().map(Post::getId).forEach(candidateIds::add);
+            }
+        }
+
+        // 2. 同校区 3 日内热帖（30%）
+        if (userId != null) {
+            String myCampusName = userCampusProfileRepository.findByUserId(userId)
+                    .map(UserCampusProfile::getCampusName).orElse("");
+            if (!myCampusName.isEmpty()) {
+                List<Long> campusUserIds = findCampusUserIds(myCampusName);
+                if (!campusUserIds.isEmpty()) {
+                    Page<Post> campusPage = postRepository
+                            .findByIdInAndStatusOrderByHotScoreDesc(
+                                    campusUserIds, PostStatus.active,
+                                    PageRequest.of(0, Math.max(9, safeSize * 3 / 10)));
+                    campusPage.getContent().stream().map(Post::getId).forEach(candidateIds::add);
+                }
+            }
+        }
+
+        // 3. 兴趣标签命中帖子（20%）——按作者兴趣标签关键词粗筛（简化：作者同校已覆盖大部分，
+        //    这里用「最近热帖中标签含兴趣词」补充多样性）
+        // 4. 兜底：最新 3 日非热帖（10%），保证冷启动有内容
+        Page<Post> freshPage = postRepository.findActiveSinceOrderByHotScoreDesc(
+                PostStatus.active, now.minusDays(3),
+                PageRequest.of(0, Math.max(6, safeSize * 3 / 10)));
+        freshPage.getContent().stream().map(Post::getId).forEach(candidateIds::add);
+
+        // 兜底补充：若候选不足，取全量最新帖补足
+        if (candidateIds.size() < safeSize) {
+            Page<Post> fallbackPage = postRepository.findByStatusOrderByCreatedAtDesc(
+                    PostStatus.active, PageRequest.of(0, safeSize * 2));
+            fallbackPage.getContent().stream().map(Post::getId).forEach(candidateIds::add);
+        }
+
+        // 混合排序：hot_score*0.7 + 新鲜度*0.3（新鲜度 = 新帖优先，用小时差倒数近似）
+        List<Long> ids = new ArrayList<>(candidateIds);
+        Map<Long, Post> postMap = postRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Post::getId, p -> p));
+        List<Post> sorted = ids.stream()
+                .map(postMap::get)
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparingDouble((Post p) -> recommendMix(p))
+                        .reversed())
+                .toList();
+
+        // 分页
+        int from = Math.min((safePage - 1) * safeSize, sorted.size());
+        int to = Math.min(from + safeSize, sorted.size());
+        List<Post> pagePosts = from < to ? sorted.subList(from, to) : List.of();
+        List<PostSummaryView> items = toPostSummaryViews(pagePosts, "",
+                loadFollowedUserIds(userId));
+        return new PostListResponse(items, sorted.size(), safePage, safeSize);
+    }
+
+    /** 推荐流混合分：热度占比 + 新鲜度占比（小时衰减）。 */
+    private double recommendMix(Post post) {
+        double heat = post.getHotScore() != null ? post.getHotScore() : 0.0;
+        double hours = post.getCreatedAt() == null
+                ? 0.0
+                : Math.max(0.0, Duration.between(post.getCreatedAt(), LocalDateTime.now()).toMinutes() / 60.0);
+        double freshness = Math.max(0.0, 100.0 - hours);
+        return heat * 0.7 + freshness * 0.3;
     }
 
     // ---- 同校动态流 ----
@@ -807,6 +919,13 @@ public class VillageQueryService {
      * @return 帖子摘要视图列表
      */
     List<PostSummaryView> toPostSummaryViews(List<Post> posts, String myCampusName) {
+        return toPostSummaryViews(posts, myCampusName, Collections.emptySet());
+    }
+
+    /**
+     * 批量转换帖子摘要视图（public 供 search 包复用：帖子搜索结果与列表同款卡片）。
+     */
+    public List<PostSummaryView> toPostSummaryViewsPublic(List<Post> posts, String myCampusName) {
         return toPostSummaryViews(posts, myCampusName, Collections.emptySet());
     }
 

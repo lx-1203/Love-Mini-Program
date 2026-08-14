@@ -312,26 +312,34 @@ export async function loginWithPhone(phone: string, password: string): Promise<U
 }
 
 /**
- * 注册新用户（手机号 + 密码 + 昵称,infra R2 联调新增）。
+ * 注册新用户（手机号 + 密码 + 昵称 + 出生日期,infra R2 联调新增；3-N 未成年人保护）。
  *
  * <p>调用 {@code POST /v1/auth/register},成功即签发 JWT(无需二次登录)。
  * 不包含 Mock fallback——重复注册/参数非法时抛出错误,由调用方提示。</p>
  *
- * @param phone    手机号（11 位）
- * @param password 密码（6-64 位）
- * @param nickname 昵称（1-20 字）
+ * <p>出生日期（3-N）：后端校验未满 18 周岁返回 403 {@code MINOR_NOT_ALLOWED}，
+ * 调用方捕获后按错误码提示「未满 18 岁暂无法注册」。</p>
+ *
+ * @param phone     手机号（11 位）
+ * @param password  密码（6-64 位）
+ * @param nickname  昵称（1-20 字）
+ * @param birthDate 出生日期（ISO 日期串 yyyy-MM-dd）
  * @returns 用户会话信息
- * @throws Error 手机号已注册/参数非法时抛出(含后端 message)
+ * @throws Error 手机号已注册/未成年/参数非法时抛出(含后端 message)
  */
 export async function registerUser(
   phone: string,
   password: string,
   nickname: string,
+  birthDate: string,
 ): Promise<UserSession> {
-  const response = await request<UserSession, { phone: string; password: string; nickname: string }>({
+  const response = await request<
+    UserSession,
+    { phone: string; password: string; nickname: string; birthDate: string }
+  >({
     url: "/v1/auth/register",
     method: "POST",
-    data: { phone, password, nickname },
+    data: { phone, password, nickname, birthDate },
     skipAuth: true,
     noRetry: true,
   });

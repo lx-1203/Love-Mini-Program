@@ -78,6 +78,17 @@ Component({
         prominent: false,
       },
     ],
+    // A2：消息 Tab 未读角标数（0 = 不显示红点）。
+    // 由 composables/useUnreadBadge.ts 写入本地存储（TABBAR_CHAT_UNREAD），
+    // syncBadge() 在 attached/show 时读取同步；仅 mp-weixin 自定义 TabBar 使用，
+    // H5 端继续走 uni.setTabBarBadge，不受影响。
+    chatBadge: 0,
+  },
+  // 组件实例生命周期：附着时同步一次角标（保证冷启动首帧即有红点）
+  lifetimes: {
+    attached() {
+      this.syncBadge();
+    },
   },
   // 按当前页面路由动态同步选中态：
   // 冷启动默认页是「匹配」（discover，第 2 个 tab），若经分享/场景值
@@ -85,9 +96,28 @@ Component({
   pageLifetimes: {
     show() {
       this.syncSelected();
+      // A2：每次页面展示刷新角标（消息页已读清零后，回到任意 tab 页都需同步移除红点）
+      this.syncBadge();
     },
   },
   methods: {
+    /**
+     * A2：从本地存储同步消息 Tab 未读角标。
+     *
+     * 存储键与 src/constants/storage-keys.ts 的 TABBAR_CHAT_UNREAD 保持一致：
+     * 原生 .js 文件无法 import TS 常量，此处需手动同步（键值变更时一并修改）。
+     */
+    syncBadge() {
+      let count = 0;
+      try {
+        count = Number(wx.getStorageSync("tabbar_chat_unread")) || 0;
+      } catch (_e) {
+        // 读取失败按 0 处理，不影响 TabBar 展示
+      }
+      if (count !== this.data.chatBadge) {
+        this.setData({ chatBadge: count });
+      }
+    },
     syncSelected() {
       const pages = getCurrentPages();
       if (!pages || !pages.length) return;

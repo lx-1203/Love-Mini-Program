@@ -30,7 +30,8 @@ const props = withDefaults(defineProps<{
   block: false,
   loading: false,
   disabled: false,
-  ripple: true,
+  // 2026-08-10 切换提速：涟漪默认关闭（点击更安静、无视觉抖动），需要时显式 :ripple="true"
+  ripple: false,
 });
 
 const emit = defineEmits<{
@@ -95,8 +96,8 @@ const rippleColor = computed(() => rippleColorMap[props.variant] || 'var(--c-rip
 const showRipple = computed(() => {
   if (props.variant === 'text') return false;
   if (props.disabled || props.loading) return false;
-  // 默认 true，可显式关闭；其余 variant（secondary/outline/ghost 等）均允许涟漪
-  return props.ripple !== false;
+  // 2026-08-10 切换提速：默认关闭涟漪，仅显式 :ripple="true" 时启用
+  return props.ripple === true;
 });
 
 /** 统一点击处理：提取点击坐标 → 触发涟漪 → 振动反馈 → 事件抛出（disabled/loading 状态拦截） */
@@ -119,12 +120,12 @@ function handleTap(e: TapEventLike) {
 </script>
 
 <template>
-  <Ripple v-if="showRipple" ref="rippleRef" :color="rippleColor" :duration="200" :disabled="disabled || loading">
+  <Ripple v-if="showRipple" ref="rippleRef" :color="rippleColor" :duration="120" :disabled="disabled || loading">
     <view
       :class="btnClass"
       :style="btnStyle"
       hover-class="btn--pressed"
-      hover-stay-time="120"
+      hover-stay-time="50"
       @tap="handleTap"
       role="button"
       :aria-disabled="disabled || loading"
@@ -140,7 +141,7 @@ function handleTap(e: TapEventLike) {
     :class="btnClass"
     :style="btnStyle"
     hover-class="btn--pressed"
-    hover-stay-time="120"
+    hover-stay-time="50"
     @tap="handleTap"
     role="button"
     :aria-disabled="disabled || loading"
@@ -170,7 +171,7 @@ function handleTap(e: TapEventLike) {
   overflow: hidden;
 }
 
-/* 按压态：scale(0.95) + opacity(0.9) */
+/* 按压态：scale(0.98) + opacity(0.92) */
 /* 用 hover-class="btn--pressed" 替代 :active，H5 与 mp-weixin 均通过 hover-class 触发 */
 .btn--pressed {
   transform: scale(var(--btn-press-scale));

@@ -72,22 +72,49 @@ const props = withDefaults(defineProps<{
   alt?: string;
 }>(), {
   src: '',
-  fallback: '/static/assets/default-avatar.png',
+  fallback: '/static/assets/default-avatar.jpg',
   mode: 'aspectFill',
   customClass: '',
   rootClass: '',
   customStyle: '',
-  lazyLoad: false,
+  // 2026-08-10 切换提速：默认开启懒加载（列表场景图片按需加载，减少首屏开销）
+  lazyLoad: true,
   alt: '',
 });
 
-/** 最多重试次数（原 src 失败时） */
-const MAX_RETRY = 2;
+/** 最多重试次数（原 src 失败时）——2026-08-10 切换提速：2→1，弱网下列表重试开销减半 */
+const MAX_RETRY = 1;
+
+/**
+ * 2026-08-12 卡顿修复：URL 解析缓存。
+ *
+ * <p>resolveMediaUrl 每次调用都会附加最新 token（URL 每次都变），同 URL 在
+ * 列表刷新/卡片重建时反复解析。模块级缓存「原 URL → resolved URL」，
+ * 命中即复用，消除重复解析开销与 token 抖动导致的图片反复加载。
+ * 缓存条目上限 {@link URL_CACHE_MAX}（LRU 式：超出时清空重建，防内存增长）。</p>
+ */
+const resolvedUrlCache = new Map<string, string>();
+/** URL 解析缓存上限（超出时整体清空，简单 LRU 近似） */
+const URL_CACHE_MAX = 200;
+
+/** 解析一次并缓存（原 URL → resolved URL）。 */
+function resolveOnce(raw: string): string {
+  const cached = resolvedUrlCache.get(raw);
+  if (cached !== undefined) {
+    return cached;
+  }
+  if (resolvedUrlCache.size >= URL_CACHE_MAX) {
+    resolvedUrlCache.clear();
+  }
+  const resolved = toLocalImage(resolveMediaUrl(raw));
+  resolvedUrlCache.set(raw, resolved);
+  return resolved;
+}
 
 const hasError = ref(false);
 const isLoading = ref(true);
 /** 2026-08-08：pexels 外链先本地化（mp 端无法加载），再走鉴权代理解析 */
-const displaySrc = ref(toLocalImage(resolveMediaUrl(props.src)));
+const displaySrc = ref(resolveOnce(props.src));
 /** 原 src 重试计数 */
 const retryCount = ref(0);
 /** fallback 是否也加载失败 */
@@ -114,7 +141,8 @@ watch(() => props.src, (newSrc) => {
   isLoading.value = true;
   // Task 0.3.4：每次 src 变化时重新走鉴权代理 URL 解析，附加最新 token
   // 2026-08-08：同时应用 pexels 外链本地化兜底
-  displaySrc.value = toLocalImage(resolveMediaUrl(newSrc));
+  // 2026-08-12：走 URL 缓存（命中复用，消除重复解析与 token 抖动）
+  displaySrc.value = resolveOnce(newSrc);
   retryCount.value = 0;
   allFailed.value = false;
   fallbackLoaded.value = false;
@@ -206,20 +234,9 @@ function onLoad() {
   left: 0;
   width: 100%;
   height: 100%;
-  /* R4-02513：骨架屏闪烁改用白色叠层 token（深色模式下可见） */
-  background: linear-gradient(
-    90deg,
-    var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)) 25%,
-    var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1)) 37%,
-    var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.08)) 63%
-  );
-  background-size: 400% 100%;
-  animation: safe-image-shimmer var(--d-loop, 1400ms) ease infinite;
+  /* 2026-08-10 切换提速：骨架层改静态（去掉 1400ms 无限 shimmer 动画），
+     长列表（头像/九宫格）不再叠加大量动画层，低端机不再掉帧 */
+  background: var(--c-overlay-white-bg-tint-mid, rgba(15, 23, 42, 0.05));
   pointer-events: none;
-}
-
-@keyframes safe-image-shimmer {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
 }
 </style>

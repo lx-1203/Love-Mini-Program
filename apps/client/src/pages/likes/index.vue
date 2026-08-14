@@ -8,7 +8,7 @@
  * 功能2：搜索 - 顶部搜索输入框（300ms 防抖），按昵称、学校、城市筛选
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onShareAppMessage, onPullDownRefresh } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/likes 的重复 import
@@ -517,6 +517,24 @@ onShow(() => {
 });
 
 /**
+ * 2026-08-13：页面级下拉刷新（pages.json 已开 enablePullDownRefresh）。
+ * 完整重拉喜欢/心动信号/访客三源（与 retryLoad 对齐）。
+ */
+onPullDownRefresh(() => {
+  if (!isUnlocked.value) {
+    uni.stopPullDownRefresh();
+    return;
+  }
+  void Promise.all([
+    likesStore.fetchLikes().catch(() => {}),
+    likesStore.fetchHeartSignals().catch(() => {}),
+    likesStore.fetchVisitors().catch(() => {}),
+  ]).finally(() => {
+    uni.stopPullDownRefresh();
+  });
+});
+
+/**
  * P1-10：错误态重试——与 onLoad 加载的完整数据源对齐，
  * 同时重试喜欢列表、心动信号与访客列表，避免仅重试部分数据。
  */
@@ -525,10 +543,22 @@ function retryLoad(): void {
   void likesStore.fetchHeartSignals();
   void likesStore.fetchVisitors();
 }
+
+/**
+ * 喜欢页分享（2026-08-10 A3 补齐）：分享自己的个人主页
+ * （未登录/无用户信息时回退分享发现页）。
+ */
+onShareAppMessage(() => {
+  const name = sessionStore.userSession?.displayName || t("chat.privateMessageTitle");
+  return {
+    title: t("profile.shareProfileTitle", { name }),
+    path: "/pages/profile/index",
+  };
+});
 </script>
 
 <template>
-  <view class="likes-page page-fade-in">
+  <view class="likes-page">
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -646,7 +676,7 @@ function retryLoad(): void {
           <view
             v-for="(item, idx) in displayLikedBy"
             :key="item.id"
-            class="likes-card list-item animate-fade-in press-feedback"
+            class="likes-card animate-fade-in press-feedback"
             :class="{
               'likes-card--mutual': isMutualMatch(item.userId),
               'likes-card--batch': batchMode,
@@ -722,7 +752,7 @@ function retryLoad(): void {
           <view
             v-for="(item, idx) in displayLikes"
             :key="item.id"
-            class="likes-card list-item animate-fade-in press-feedback"
+            class="likes-card animate-fade-in press-feedback"
             :class="{
               'likes-card--mutual': isMutualMatch(item.userId),
               'likes-card--batch': batchMode,
@@ -791,7 +821,7 @@ function retryLoad(): void {
           <view
             v-for="(item, idx) in displayVisitors"
             :key="item.id"
-            class="likes-card list-item animate-fade-in press-feedback"
+            class="likes-card animate-fade-in press-feedback"
             :class="{
               'likes-card--batch': batchMode,
               'likes-card--selected': batchMode && selectedIds.includes(item.userId),

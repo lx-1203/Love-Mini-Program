@@ -297,7 +297,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="dnd-page page-fade-in">
+  <view class="dnd-page">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view

@@ -265,4 +265,34 @@ public interface VillageService {
      * @return 相似作者推荐响应
      */
     SimilarAuthorsResponse getSimilarAuthors(Long postId, Long userId);
+
+    // ---- 2026-08-11 热度榜 / 帖子推荐流 ----
+
+    /**
+     * 热度榜分页查询（按热度分降序）。
+     *
+     * <p>默认实现：委托 getPosts(hottest) 排序，供未升级的 mock 实现编译兼容；
+     * real 实现（RealVillageService）覆写为按 hot_score 的专用榜单查询。</p>
+     *
+     * @param page     页码（从 1 开始）
+     * @param pageSize 每页条数
+     * @return 热度榜分页响应
+     */
+    default PostListResponse getHotBoard(int page, int pageSize) {
+        return getPosts(null, null, "hottest", page, pageSize);
+    }
+
+    /**
+     * 帖子推荐流（贴吧式推流：关注新帖 + 同校热帖 + 兴趣帖混合）。
+     *
+     * <p>默认实现：委托 getPosts(latest) 排序，供未升级的 mock 实现编译兼容；
+     * real 实现（RealVillageService）覆写为混合推荐流。</p>
+     *
+     * @param page     页码（从 1 开始）
+     * @param pageSize 每页条数
+     * @return 推荐流分页响应
+     */
+    default PostListResponse getPostRecommend(int page, int pageSize) {
+        return getPosts(null, null, "latest", page, pageSize);
+    }
 }

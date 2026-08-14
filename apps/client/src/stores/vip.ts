@@ -6,6 +6,7 @@ import { useMock } from "./helpers/use-mock";
 import { isShowcaseMode } from "../config/showcase";
 // 运行时环境判定：dev 模式会员模拟开关守卫（R4-00173）
 import { isDev } from "../config/env";
+import { STORAGE_KEYS } from "../constants/storage-keys";
 
 /**
  * VIP 会员 Store
@@ -83,7 +84,7 @@ export const useVipStore = defineStore("vip", () => {
   const isDevVipSimulated = computed<boolean>(() => {
     if (!isDev && !useMock()) return false;
     try {
-      return uni.getStorageSync("campus-love:dev-vip-sim") === "1";
+      return uni.getStorageSync(STORAGE_KEYS.VIP_SIM_ENABLED) === "1";
     } catch (_e) {
       return false;
     }

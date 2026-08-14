@@ -17,7 +17,7 @@
  * 社交升温入口、内嵌喜欢/访客入口栏、全局发帖 FAB——系统通知由「产品助手号」官方会话承载。
  */
 import { computed, reactive, ref } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useMessagesStore, type MessageSession } from "../../stores/messages";
@@ -85,6 +85,18 @@ function clearSearch() {
 /**
  * 会话列表（合并普通私信 / 匿名匹配 / 官方号）：
  * 置顶会话固定最前，其余按最后一条消息时间倒序（对标微信）。
+ *
+ * A5 虚拟化评估（2026-08-10）：components/common/VirtualList.vue 为定高虚拟列表
+ * （props.itemHeight 固定），而会话行高随消息预览行数/在线状态标签变化，
+ * 且会话规模（<100 条）未达虚拟化收益阈值——保持普通 v-for + 分页；
+ * 若未来会话量增长，需先为 VirtualList 增加「估算行高 + 滚动补偿」变高支持再接入。
+ */
+/**
+ * 会话列表。Vue computed 自带依赖缓存：sessions 未变化时不会重算。
+ * A5 虚拟化评估（2026-08-10）：components/common/VirtualList.vue 为定高虚拟列表
+ * （props.itemHeight 固定），而会话行高随消息预览行数/在线状态标签变化，
+ * 且会话规模（<100 条）未达虚拟化收益阈值——保持普通 v-for + 分页；
+ * 若未来会话量增长，需先为 VirtualList 增加「估算行高 + 滚动补偿」变高支持再接入。
  */
 const sessionList = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -344,10 +356,27 @@ onShow(() => {
     void messagesStore.bootstrap();
   }
 });
+
+/**
+ * 2026-08-13：页面级下拉刷新（pages.json 已开 enablePullDownRefresh）。
+ * 刷新会话列表（含未读数），完成后停止下拉动画。
+ */
+onPullDownRefresh(() => {
+  if (!isUnlocked.value) {
+    uni.stopPullDownRefresh();
+    return;
+  }
+  void messagesStore
+    .fetchSessions()
+    .catch(() => {})
+    .finally(() => {
+      uni.stopPullDownRefresh();
+    });
+});
 </script>
 
 <template>
-  <view class="messages-page page-fade-in">
+  <view class="messages-page">
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"

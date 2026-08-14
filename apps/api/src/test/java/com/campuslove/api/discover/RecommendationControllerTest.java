@@ -124,7 +124,9 @@ class RecommendationControllerTest {
         // Arrange：匿名（isAuthenticated=false）→ 不解析当前用户，直接走游客推荐
         RecommendationFilter emptyFilter =
                 new RecommendationFilter(null, null, Set.of(), Set.of(), null, null, null, null, null, null);
-        List<RecommendedPersonView> expected = List.of();
+        // 2026-08-12 V3.1：非空列表使 PrivacyFieldFilter.sanitize 的白名单校验真正执行
+        // （空列表会短路，白名单漂移在测试中不可见）
+        List<RecommendedPersonView> expected = List.of(buildView());
         try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::isAuthenticated).thenReturn(false);
             when(recommendationService.getRecommendationsForGuest(emptyFilter)).thenReturn(expected);
@@ -147,7 +149,8 @@ class RecommendationControllerTest {
         // Arrange：已认证（isAuthenticated=true）→ 与旧行为一致，按当前用户个性化推荐
         RecommendationFilter emptyFilter =
                 new RecommendationFilter(null, null, Set.of(), Set.of(), null, null, null, null, null, null);
-        List<RecommendedPersonView> expected = List.of();
+        // 2026-08-12 V3.1：非空列表使 sanitize 白名单校验真正执行（同上）
+        List<RecommendedPersonView> expected = List.of(buildView());
         try (var mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::isAuthenticated).thenReturn(true);
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(42L);
@@ -162,5 +165,20 @@ class RecommendationControllerTest {
             verify(recommendationService).getRecommendations(42L, emptyFilter);
             verify(recommendationService, Mockito.never()).getRecommendationsForGuest(Mockito.any());
         }
+    }
+
+    /**
+     * 构造一个含全部字段的 RecommendedPersonView（37 参，列表字段传空 ArrayList）。
+     * 2026-08-12 V3.1：供 sanitize 白名单校验路径使用。
+     */
+    private RecommendedPersonView buildView() {
+        return new RecommendedPersonView(
+                1L, "测试", "T", "headline", "同校", "available", "北大", "/a.jpg",
+                List.of("tag"), "bio", List.of(), true, false, 0,
+                170, "bachelor", new java.util.ArrayList<>(), "/half.jpg", null, "school",
+                "CL-1", "1.2km", "offline", true, true,
+                List.of("开朗"), "INTJ", null, false, new java.util.ArrayList<>(),
+                "期待", false, "江苏 · 南京",
+                "产品经理", 22, "2026-03-12T08:00:00", "/bg.jpg");
     }
 }

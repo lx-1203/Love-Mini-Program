@@ -6,7 +6,7 @@
  * 高亮「去完善资料」主按钮，引导用户理解弹窗用途。
  *
  * 行为：
- *   - 通过 uni.getStorageSync('unlock_guide_shown') 判断是否已展示过
+ *   - 通过 uni.getStorageSync(STORAGE_KEYS.UNLOCK_GUIDE_SHOWN) 判断是否已展示过
  *   - 仅展示一次，用户点击「我知道了」后调用 uni.setStorageSync 持久化标记
  *   - 关闭后不再出现，避免重复打扰
  *
@@ -91,16 +91,8 @@ function handleKnown() {
   justify-content: center;
   padding-bottom: calc(env(safe-area-inset-bottom) + 80rpx);
   pointer-events: auto;
+  /* 2026-08-13：复用全局 overlay-fade-in（theme/animations.scss），删除本地重复定义 */
   animation: overlay-fade-in var(--d-slow, 250ms) cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes overlay-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 /* 全屏蒙层 */

@@ -1,6 +1,8 @@
 package com.campuslove.api.media;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.entity.MediaAsset;
+import com.campuslove.api.repository.MediaAssetRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,9 +14,10 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
 
 /**
@@ -70,6 +74,23 @@ public class MediaAccessController {
     private static final long IMAGE_CACHE_MAX_AGE_SECONDS = 3600L;
 
     /**
+     * 应用资产（app-assets）公开缓存时长（秒）（2026-08-10）。
+     *
+     * <p>装饰性静态图片，内容变更频率极低（重新播种时 url 不变），
+     * 使用 {@code public, max-age=86400} 允许客户端/CDN 共享缓存一天。</p>
+     */
+    private static final long APP_ASSET_CACHE_MAX_AGE_SECONDS = 86400L;
+
+    /** 应用资产 URL 前缀（与 LocalMediaStorageService.URL_PREFIX + app-assets 目录一致） */
+    private static final String APP_ASSET_URL_PREFIX = "/api/v1/media/app-assets/";
+
+    /** 应用资产媒体类型（与 media_asset.type 取值一致） */
+    private static final String TYPE_APP_ASSET = "app_asset";
+
+    /** 审核通过状态（与 MediaAssetService.AUDIT_APPROVED 取值一致，避免跨包耦合） */
+    private static final String AUDIT_STATUS_APPROVED = "approved";
+
+    /**
      * Task 11.5：审计日志 logger，路由到 logback-spring.xml 中的 AUDIT appender。
      *
      * <p>所有媒体访问审计事件（含拒绝/通过）通过此 logger 输出，
@@ -98,6 +119,17 @@ public class MediaAccessController {
 
     /** R4-00273：短期媒体访问令牌签发器（5 分钟 TTL、scope=media） */
     private final com.campuslove.api.config.JwtTokenProvider jwtTokenProvider;
+
+    /**
+     * 应用资产注册校验用的资产仓库（2026-08-10，可选注入）。
+     *
+     * <p>mock profile 排除 DataSource 自动配置（无 JPA 仓库），公开端点降级为
+     * 纯磁盘访问（不校验注册表）；real profile 注入后校验
+     * {@code type=app_asset 且 audit_status=approved}，审核驳回的应用资产
+     * 公开访问返回 404（管理闭环生效）。</p>
+     */
+    @Autowired(required = false)
+    private MediaAssetRepository mediaAssetRepository;
 
     /**
      * 构造函数注入媒体鉴权服务。
@@ -275,6 +307,66 @@ public class MediaAccessController {
     }
 
     /**
+     * 公开访问应用资产（2026-08-10，小程序主包瘦身）。
+     *
+     * <p>URL 模式：{@code GET /api/v1/media/app-assets/{relpath}}，无需登录。
+     * {@code relpath} 为源静态路径的相对部分（多级目录），如
+     * {@code generated/images/campus/campus-gate.jpg} 或
+     * {@code assets/images/banners/home-banner.jpg}。</p>
+     *
+     * <p>SecurityConfig / MockSecurityConfig 对 {@code /api/v1/media/app-assets/**}
+     * permitAll 放行（匿名可访问）；已登录请求仍可带 token（若 token 失效，
+     * JwtAuthenticationFilter 清除上下文后由 permitAll 规则继续放行）。</p>
+     *
+     * <p>注册校验（real profile）：先查 media_asset 是否存在
+     * {@code url + type=app_asset + audit_status=approved} 的记录，缺失或未通过审核
+     * 返回 404——管理后台「图片审核」驳回应用资产即下线该图；mock profile 无仓库，
+     * 降级为纯磁盘读取。</p>
+     *
+     * @param request HTTP 请求，用于提取子路径
+     * @return ResponseEntity 包含文件资源与 Content-Type
+     * @throws ResponseStatusException 资产未注册/被驳回或文件不存在（404）
+     */
+    @GetMapping("/app-assets/**")
+    @Operation(
+            summary = "公开访问应用资产（无需登录）",
+            description = "小程序主包瘦身：装饰性图片（campus 场景/活动海报/插画等）后端托管后的公开访问端点，免登录可看图。real profile 下校验 media_asset 注册记录（type=app_asset 且 audit_status=approved），驳回即下线。",
+            operationId = "getAppAsset"
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件读取成功，返回二进制流",
+                    content = @Content(mediaType = "application/octet-stream")),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "NOT_FOUND：资产未注册、被驳回或文件不存在", content = @Content)
+    })
+    public ResponseEntity<Resource> getAppAsset(HttpServletRequest request) {
+        String subPath = extractAppAssetSubPath(request);
+        LOGGER.debug("应用资产访问请求: subPath={}", subPath);
+
+        // 注册校验（real profile 有仓库时）：存在 url + type=app_asset + audit_status=approved 才可读
+        if (mediaAssetRepository != null) {
+            String url = APP_ASSET_URL_PREFIX + subPath;
+            boolean registeredAndApproved = mediaAssetRepository
+                    .findByUrlAndType(url, TYPE_APP_ASSET)
+                    .map(MediaAsset::getAuditStatus)
+                    .map(AUDIT_STATUS_APPROVED::equals)
+                    .orElse(false);
+            if (!registeredAndApproved) {
+                LOGGER.debug("应用资产未注册或未通过审核，拒绝访问: subPath={}", subPath);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "应用资产不存在或未启用");
+            }
+        }
+
+        MediaAccessService.MediaFile mediaFile = mediaAccessService.loadAppAsset(subPath);
+        // 静态装饰图，允许公开共享缓存（1 天）
+        return ResponseEntity.ok()
+                .contentType(mediaFile.getMediaType())
+                .header(HttpHeaders.CACHE_CONTROL,
+                        "public, max-age=" + APP_ASSET_CACHE_MAX_AGE_SECONDS)
+                .body(mediaFile.getResource());
+    }
+
+    /**
      * Task 11.5：统一归属校验。
      *
      * <p>对图片/语音/视频/身份证四类文件执行分级授权（infra R2-00013 修复）：
@@ -416,6 +508,29 @@ public class MediaAccessController {
             default:
                 return "媒体";
         }
+    }
+
+    /**
+     * 从请求 URI 中提取应用资产子路径（{@code app-assets} 之下的相对路径）。
+     *
+     * <p>直接按 requestURI 字符串切割：PATH_WITHIN_HANDLER_MAPPING 在
+     * {@code @RequestMapping("/api/v1/media")} 前缀下会带上完整 controller 路径
+     * （含 {@code /api/v1/media}），若再拼 {@code APP_ASSET_URL_PREFIX}
+     * 会得到双前缀 URL（2026-08-10 实测修复）。</p>
+     *
+     * @param request HTTP 请求
+     * @return 子路径字符串（如 {@code generated/images/campus/campus-gate.jpg}）
+     */
+    private String extractAppAssetSubPath(HttpServletRequest request) {
+        // 直接按请求 URI 切割：PATH_WITHIN_HANDLER_MAPPING 在 @RequestMapping("/api/v1/media")
+        // 前缀下会带上完整路径（含 controller 前缀），再拼 APP_ASSET_URL_PREFIX 会双前缀 404。
+        String uri = request.getRequestURI();
+        int idx = uri.indexOf(APP_ASSET_URL_PREFIX);
+        if (idx < 0) {
+            // 路径不匹配预期格式，交给 Service 抛 400
+            return "";
+        }
+        return uri.substring(idx + APP_ASSET_URL_PREFIX.length());
     }
 
     /**

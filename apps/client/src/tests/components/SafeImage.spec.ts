@@ -101,7 +101,7 @@ describe("SafeImage component - 安全图片组件", () => {
   it("fallback 切换后渲染 fallback 图片", async () => {
     const wrapper = mountImage({
       src: "https://cdn.example.com/broken.png",
-      fallback: "/static/assets/default-avatar.png",
+      fallback: "/static/assets/default-avatar.jpg",
     });
     // 触发 3 次 error 达到 MAX_RETRY+1
     const img = wrapper.find(".safe-image__img");

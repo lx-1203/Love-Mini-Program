@@ -4,6 +4,11 @@ import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
+// 2026-08-10 切换提速：今日问题 30s TTL 缓存
+import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+
+/** 今日问题新鲜度窗口 */
+const QUESTION_TTL_MS = 30_000;
 
 /* ========== 后端视图类型 ========== */
 
@@ -261,12 +266,20 @@ export const useDailyQuestionStore = defineStore("daily-question", {
      * 获取今日问题
      */
     async fetchTodayQuestion() {
+      // 2026-08-10 切换提速：30s 内已加载且有数据时直接跳过
+      // 2026-08-12 卡顿修复：mock 模式同样走 TTL（原 `!useMock() &&` 条件导致
+      // 演示/mock 构建每次切回圈子页都重发——mock 数据恒定，TTL 保护体验一致）
+      if (this.todayQuestion && isCacheFresh("daily-question:today", QUESTION_TTL_MS)) {
+        return;
+      }
       this.loading = true;
       this.errorMessage = null;
 
       try {
         if (useMock()) {
           this.todayQuestion = { ...mockTodayQuestion };
+          // 2026-08-12：mock 分支同样刷新缓存时间戳（与 real 分支语义一致）
+          setCachedValue("daily-question:today", true);
           return;
         }
 
@@ -276,6 +289,8 @@ export const useDailyQuestionStore = defineStore("daily-question", {
           url: "/daily-question/today",
           method: "GET",
         });
+        // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
+        setCachedValue("daily-question:today", true);
         this.todayQuestion = mapToDailyQuestion(data);
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.loadQuestionFailed");

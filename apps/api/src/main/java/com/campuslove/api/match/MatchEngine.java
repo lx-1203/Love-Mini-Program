@@ -124,6 +124,14 @@ public class MatchEngine {
             excluded.add(passRecord.getPassedUserId());
         }
 
+        // TODO(3-F 拉黑-匹配排除)：此处应追加拉黑关系排除——
+        // 注入 UserBlockRepository（参考 RealRecommendationService 的
+        // @Autowired(required=false) blockRepository 字段注入模式），
+        // 将 findBlockedRelationUserIds(userId)（我拉黑的 + 拉黑我的，双向并集）
+        // 加入 excluded 集合，即可使「心动匹配」候选不出现拉黑双方。
+        // 当前实现未接入（匹配引擎候选打分链路较深，改动面大），
+        // 仅推荐/会话/消息链路已接入拉黑过滤。
+
         return excluded;
     }
 

@@ -107,26 +107,16 @@ function goToDnd() {
   uni.navigateTo({ url: ROUTES.SETTINGS.DND });
 }
 
-/** 查看用户协议 */
+/** 查看用户协议（2026-08-10 功能补齐：showModal 摘要改为跳转完整协议页） */
 function viewUserAgreement() {
   lightHaptic();
-  uni.showModal({
-    title: t("settings.userAgreementTitle"),
-    content: t("settings.userAgreementContent"),
-    showCancel: false,
-    confirmText: t("settings.gotIt"),
-  });
+  uni.navigateTo({ url: SUBPACKAGE_ROUTES.LEGAL.AGREEMENT });
 }
 
-/** 查看隐私政策 */
+/** 查看隐私政策（2026-08-10 功能补齐：showModal 摘要改为跳转完整隐私政策页） */
 function viewPrivacyPolicy() {
   lightHaptic();
-  uni.showModal({
-    title: t("settings.privacyPolicyTitle"),
-    content: t("settings.privacyPolicyContent"),
-    showCancel: false,
-    confirmText: t("settings.gotIt"),
-  });
+  uni.navigateTo({ url: SUBPACKAGE_ROUTES.LEGAL.PRIVACY });
 }
 
 /**
@@ -294,6 +284,31 @@ const menuIcons = {
   megaphone: IMAGE_PATHS.ICONS_EMOJI.MEGAPHONE,
 } as const;
 
+/**
+ * 2026-08-10 功能补齐：本周安排用户级开关。
+ * 开启后首页展示课表区块（已报名活动 + 自编辑条目）；存储键与 home 页一致。
+ */
+const WEEKLY_SCHEDULE_KEY = STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED;
+const weeklyScheduleEnabled = ref(false);
+try {
+  weeklyScheduleEnabled.value = uni.getStorageSync(WEEKLY_SCHEDULE_KEY) === "1";
+} catch (_e) {
+  weeklyScheduleEnabled.value = false;
+}
+
+/** 切换本周安排开关（即时生效并持久化） */
+function toggleWeeklySchedule(e: Event | { detail?: { value?: boolean } }) {
+  // uni-app switch change 事件：detail.value 为布尔（mp-weixin 与 H5 形态一致）
+  const next = Boolean((e as { detail?: { value?: boolean } })?.detail?.value);
+  weeklyScheduleEnabled.value = next;
+  try {
+    uni.setStorageSync(WEEKLY_SCHEDULE_KEY, next ? "1" : "0");
+  } catch (_e) {
+    // 存储失败不影响本次会话
+  }
+  uni.showToast({ title: next ? t("settings.weeklyScheduleOn") : t("settings.weeklyScheduleOff"), icon: "none" });
+}
+
 const accountMenus = computed<MenuItem[]>(() => [
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
@@ -349,7 +364,7 @@ function handleMenuTap(item: MenuItem) {
 </script>
 
 <template>
-  <view class="settings-page page-fade-in">
+  <view class="settings-page">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
@@ -369,7 +384,7 @@ function handleMenuTap(item: MenuItem) {
       </view>
       <view class="menu-group">
         <view
-          class="menu-item press-feedback list-item menu-item--no-border"
+          class="menu-item press-feedback menu-item--no-border"
           hover-class="menu-item--hover"
           hover-stay-time="100"
           role="button"
@@ -396,7 +411,7 @@ function handleMenuTap(item: MenuItem) {
         <view
           v-for="(item, index) in accountMenus"
           :key="index"
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === accountMenus.length - 1 }"
           @tap="handleMenuTap(item)"
           hover-class="menu-item--hover"
@@ -421,7 +436,7 @@ function handleMenuTap(item: MenuItem) {
       <view class="menu-group">
         <!-- 功能6：免打扰入口，点击跳转到 /pages/settings/dnd -->
         <view
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           hover-class="menu-item--hover"
           hover-stay-time="100"
           @tap="goToDnd"
@@ -434,9 +449,24 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <text class="menu-item__arrow">›</text>
         </view>
+        <!-- 2026-08-10：本周安排用户级开关（开启后首页展示课表：报名活动 + 自编辑） -->
+        <view class="menu-item menu-item--no-border">
+          <view class="menu-item__left">
+            <view class="menu-item__icon settings-card--mint">
+              <image class="menu-item__emoji-img" :src="IMAGE_PATHS.ICONS_EMOJI.CALENDAR" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ t("settings.weeklySchedule") }}</text>
+          </view>
+          <switch
+            :checked="weeklyScheduleEnabled"
+            color="#3FCF8E"
+            @change="toggleWeeklySchedule"
+            :aria-label="t('settings.weeklySchedule')"
+          />
+        </view>
         <!-- 收尾轮：深色模式三态切换 -->
         <view
-          class="menu-item list-item press-feedback menu-item--no-border"
+          class="menu-item press-feedback menu-item--no-border"
           hover-class="menu-item--hover"
           hover-stay-time="100"
           role="button"
@@ -462,7 +492,7 @@ function handleMenuTap(item: MenuItem) {
       </view>
       <view class="menu-group">
         <view
-          class="menu-item press-feedback list-item menu-item--no-border"
+          class="menu-item press-feedback menu-item--no-border"
           @tap="viewPrivacyPolicy"
           hover-class="menu-item--hover"
           hover-stay-time="100"
@@ -485,7 +515,7 @@ function handleMenuTap(item: MenuItem) {
       </view>
       <view class="menu-group">
         <view
-          class="menu-item press-feedback list-item menu-item--no-border"
+          class="menu-item press-feedback menu-item--no-border"
           @tap="clearCache"
           hover-class="menu-item--hover"
           hover-stay-time="100"
@@ -513,7 +543,7 @@ function handleMenuTap(item: MenuItem) {
         <view
           v-for="(item, index) in aboutMenus"
           :key="index"
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === aboutMenus.length - 1 }"
           @tap="handleMenuTap(item)"
           hover-class="menu-item--hover"

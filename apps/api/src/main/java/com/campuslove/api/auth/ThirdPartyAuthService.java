@@ -61,6 +61,14 @@ public class ThirdPartyAuthService {
     private final WeChatClient weChatClient;
     private final AppleIdentityTokenVerifier appleIdentityTokenVerifier;
 
+    /**
+     * 设备会话服务（3-D 设备管理）：第三方（wechat/apple）登录成功后记录设备。
+     * 可选注入：单元测试（不加载 Spring）为 null 时跳过设备记录；
+     * real 环境由容器注入 RealDeviceSessionService。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DeviceSessionService deviceSessionService;
+
     public ThirdPartyAuthService(
             ThirdPartyAccountRepository thirdPartyAccountRepository,
             UserRepository userRepository,
@@ -85,12 +93,13 @@ public class ThirdPartyAuthService {
      *   <li>按 (WECHAT, openIdHash) 查询绑定记录，命中则登录，未命中则创建用户</li>
      * </ol>
      *
-     * @param code 微信 wx.login() 返回的临时 code（不可为空）
+     * @param code     微信 wx.login() 返回的临时 code（不可为空）
+     * @param deviceId 客户端设备标识（3-D 设备管理：可空，缺失时 "unknown"）
      * @return 用户会话视图（包含 JWT 令牌）
      * @throws IllegalArgumentException code 为空或微信验签失败时抛出
      */
     @Transactional
-    public UserSessionView loginWithWechat(String code) {
+    public UserSessionView loginWithWechat(String code, String deviceId) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException(ErrorMessages.CODE_REQUIRED);
         }
@@ -99,7 +108,7 @@ public class ThirdPartyAuthService {
             log.warn("微信第三方登录 code2session 返回空 openid");
             throw new IllegalArgumentException(ErrorMessages.WECHAT_CREDENTIAL_INVALID);
         }
-        return doLogin(PROVIDER_WECHAT, session.getOpenid(), session.getUnionid());
+        return doLogin(PROVIDER_WECHAT, session.getOpenid(), session.getUnionid(), deviceId);
     }
 
     /**
@@ -113,13 +122,14 @@ public class ThirdPartyAuthService {
      * </ol>
      *
      * @param identityToken Sign in with Apple 返回的 identityToken JWT（不可为空）
+     * @param deviceId      客户端设备标识（3-D 设备管理：可空，缺失时 "unknown"）
      * @return 用户会话视图（包含 JWT 令牌）
      * @throws IllegalArgumentException identityToken 为空或验签失败时抛出
      */
     @Transactional
-    public UserSessionView loginWithApple(String identityToken) {
+    public UserSessionView loginWithApple(String identityToken, String deviceId) {
         String appleSub = appleIdentityTokenVerifier.verifyAndGetSubject(identityToken);
-        return doLogin(PROVIDER_APPLE, appleSub, null);
+        return doLogin(PROVIDER_APPLE, appleSub, null, deviceId);
     }
 
     /**
@@ -128,9 +138,10 @@ public class ThirdPartyAuthService {
      * @param provider 第三方平台标识
      * @param openId   第三方 openId（明文）
      * @param unionId  第三方 unionId（可空）
+     * @param deviceId 客户端设备标识（3-D 设备管理：可空）
      * @return 用户会话视图
      */
-    private UserSessionView doLogin(String provider, String openId, String unionId) {
+    private UserSessionView doLogin(String provider, String openId, String unionId, String deviceId) {
         String openIdHash = hashIdentifier(openId);
 
         // 1. 查询绑定记录
@@ -166,7 +177,25 @@ public class ThirdPartyAuthService {
 
         // 2. 签发 JWT
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
+        // 3. 3-D 设备管理：记录登录设备（失败不影响登录主流程）
+        recordLoginDevice(user.getId(), deviceId, provider.toLowerCase(), token);
         return buildSessionView(user, token, provider.toLowerCase());
+    }
+
+    /**
+     * 记录登录设备（3-D 设备管理）。
+     * deviceSessionService 为 null（单元测试直接 new）时跳过；失败仅记录日志。
+     */
+    private void recordLoginDevice(Long userId, String deviceId, String platform, String jwtToken) {
+        if (deviceSessionService == null) {
+            return;
+        }
+        try {
+            String jti = jwtTokenProvider.getJtiFromToken(jwtToken);
+            deviceSessionService.recordLogin(userId, deviceId, platform, jti);
+        } catch (RuntimeException ex) {
+            log.warn("记录第三方登录设备失败, userId={}, platform={}: {}", userId, platform, ex.getMessage());
+        }
     }
 
     /**

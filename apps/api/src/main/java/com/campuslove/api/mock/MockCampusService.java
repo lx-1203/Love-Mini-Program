@@ -54,15 +54,42 @@ public class MockCampusService implements CampusService {
     }
 
     @Override
-    public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category, String title, String content) {
+    public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
+                                             String title, String content, List<String> tags) {
         long id = topicIdGen.incrementAndGet();
         MockTopicData topic = new MockTopicData(
                 id, schoolId, category, title, content, List.of(), userId,
                 "Mock校友", null, 0, 0, false,
-                LocalDateTime.now(TimeZones.BUSINESS), LocalDateTime.now(TimeZones.BUSINESS)
+                LocalDateTime.now(TimeZones.BUSINESS), LocalDateTime.now(TimeZones.BUSINESS),
+                // 3-L：标签归一化（去空白/去重/限 5 个/每个 ≤20 字），与 real 口径一致
+                normalizeTags(tags)
         );
         topics.add(0, topic);
         return toTopicView(topic);
+    }
+
+    /**
+     * 3-L：标签归一化——去空白、去重、限制 5 个、每个 ≤20 字符（与 real 口径一致）。
+     */
+    private static List<String> normalizeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String tag : tags) {
+            if (tag == null) {
+                continue;
+            }
+            String trimmed = tag.trim();
+            if (trimmed.isEmpty() || normalized.contains(trimmed)) {
+                continue;
+            }
+            normalized.add(trimmed.length() > 20 ? trimmed.substring(0, 20) : trimmed);
+            if (normalized.size() >= 5) {
+                break;
+            }
+        }
+        return normalized;
     }
 
     // ---- 校园话题回复 ----
@@ -171,7 +198,9 @@ public class MockCampusService implements CampusService {
                 t.isAnonymous ? "匿名校友" : t.authorName,
                 t.isAnonymous ? null : t.authorAvatar,
                 t.replyCount, t.viewCount, t.isAnonymous,
-                t.createdAt.toString()
+                t.createdAt.toString(),
+                // 3-L：标签列表（mock 存储即列表，直接回传）
+                t.tags != null ? t.tags : List.of()
         );
     }
 
@@ -278,11 +307,21 @@ public class MockCampusService implements CampusService {
         boolean isAnonymous;
         LocalDateTime createdAt;
         LocalDateTime updatedAt;
+        /** 3-L：话题标签列表（≤5 个，每个 ≤20 字符） */
+        List<String> tags;
 
         MockTopicData(Long id, Long schoolId, String category, String title, String content,
                       List<String> images, Long authorId, String authorName, String authorAvatar,
                       int replyCount, int viewCount, boolean isAnonymous,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
+            this(id, schoolId, category, title, content, images, authorId, authorName, authorAvatar,
+                    replyCount, viewCount, isAnonymous, createdAt, updatedAt, List.of());
+        }
+
+        MockTopicData(Long id, Long schoolId, String category, String title, String content,
+                      List<String> images, Long authorId, String authorName, String authorAvatar,
+                      int replyCount, int viewCount, boolean isAnonymous,
+                      LocalDateTime createdAt, LocalDateTime updatedAt, List<String> tags) {
             this.id = id;
             this.schoolId = schoolId;
             this.category = category;
@@ -297,6 +336,7 @@ public class MockCampusService implements CampusService {
             this.isAnonymous = isAnonymous;
             this.createdAt = createdAt;
             this.updatedAt = updatedAt;
+            this.tags = tags != null ? tags : List.of();
         }
     }
 

@@ -9,11 +9,12 @@
  * - 回复列表
  * - 底部回复输入框
  */
-import { ref, onUnmounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { ref } from "vue";
+import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../stores/campus";
+import { ROUTES } from "../../constants/routes";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../utils/media";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -22,29 +23,10 @@ const campusStore = useCampusStore();
 const { t } = useI18n();
 const { currentTopic, replies, loading, errorMessage } = storeToRefs(campusStore);
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器，避免在已销毁页面上修改响应式状态。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 /** 回复内容 */
 const replyContent = ref("");
 /** 是否正在提交回复 */
@@ -134,10 +116,22 @@ function retryLoad() {
   void campusStore.fetchCampusTopicDetail(topicId.value);
   void campusStore.fetchCampusReplies(topicId.value, 1);
 }
+
+/**
+ * 校园话题分享（2026-08-10 A3 补齐）：分享卡片指向话题详情，
+ * 标题取话题标题（无标题时用通用文案）。
+ */
+onShareAppMessage(() => {
+  const title = currentTopic.value?.title?.trim() || "";
+  return {
+    title: title ? t("share.shareCampusTopic", { title }) : t("share.shareVillage"),
+    path: `${ROUTES.CAMPUS.TOPIC_DETAIL}?topicId=${encodeURIComponent(topicId.value)}`,
+  };
+});
 </script>
 
 <template>
-  <view class="detail-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="detail-page">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

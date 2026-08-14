@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * CardDetailOverlay — 卡片详情全屏展示层
  *
@@ -24,11 +24,19 @@ import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
 // 2026-08-08 走查 P1：VIP 免费放行点统一受 membershipEnabled 门控
 import { featureFlags } from "../../config/feature-flags";
+// B3 恋爱小纸条（2026-08-13）：悄悄话解锁底部弹层 + real 模式解锁请求
+import WhisperUnlockSheet from "./WhisperUnlockSheet.vue";
+import { clientApi } from "../../services/api";
+import { useMock } from "../../stores/helpers/use-mock";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
+// 2026-08-11 新增：hero 放大头像（探探 Profile 范式）
+import AvatarFrame from "../common/AvatarFrame.vue";
+import type { AvatarFrameId } from "../../config/avatar-frames";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
 import { openAppPath } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+import { isDev } from "../../config/env";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 
@@ -371,11 +379,18 @@ watch(
   { immediate: true }
 );
 
-/** 悄悄话内容（whisper 字段） */
-const whisperText = computed(() => props.card?.whisper ?? "");
+/** 悄悄话内容（whisper 字段；real 模式后端不下发，解锁成功后写入 unlockedWhisperText） */
+const whisperText = computed(() => props.card?.whisper ?? unlockedWhisperText.value);
 
 /** 是否已发送悄悄话 */
 const whisperAlreadySent = computed(() => props.card?.whisperSent ?? false);
+
+/** B3 恋爱小纸条：悄悄话解锁弹层显隐 */
+const showWhisperSheet = ref(false);
+/** 悄悄话弹层组件引用（解锁成功后通过 expose 驱动 result 状态） */
+const whisperSheetRef = ref<InstanceType<typeof WhisperUnlockSheet> | null>(null);
+/** 解锁成功后的悄悄话文案（本地状态，详情面板文案取 card.whisper ?? 本字段） */
+const unlockedWhisperText = ref("");
 
 /** 期待的人物画像（expectedPartner 字段） */
 const expectedPartnerText = computed(() => props.card?.expectedPartner ?? "");
@@ -480,13 +495,14 @@ function onMomentPrivateMsg(): void {
   handleMessage();
 }
 
-/** 点击悄悄话（会员/交友币解锁发送；会员未启用时仅交友币路径） */
+/** 点击悄悄话（B3 恋爱小纸条：打开解锁底部弹层，解锁成功后展示文案） */
 function onWhisperTap(): void {
+  if (!props.card) return;
   if (whisperAlreadySent.value) {
     uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
     return;
   }
-  // 2026-08-08 走查 P1：VIP 免费放行受 membershipEnabled 门控；超级测试账号直通
+  // 2026-08-08 走查 P1：VIP 免费放行受 membershipEnabled 门控（B3 上线后此分支实际不可达）
   if (featureFlags.membershipEnabled && vipStore.isVip) {
     uni.showToast({ title: t("discover.whisperUnlockByVip"), icon: "none" });
     return;
@@ -495,28 +511,89 @@ function onWhisperTap(): void {
     emitMessage();
     return;
   }
-  // 交友币解锁：弹确认后扣费（演示流；完整悄悄话编辑页由后续版本补齐）
-  uni.showModal({
-    title: t("discover.whisperLabel"),
-    content: t("discover.whisperPaidHint", { coins: UNLOCK_COST_YUAN.WHISPER }),
-    confirmText: t("common.confirm"),
-    cancelText: t("common.cancel"),
-    success: async (res) => {
-      if (!res.confirm || !props.card) return;
-      try {
-        await coinsStore.spend("WHISPER", props.card.userId);
-        uni.showToast({ title: t("discover.whisperUnlocked"), icon: "success" });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        uni.showModal({
-          title: t("discover.unlockFailTitle"),
-          content: message,
-          confirmText: t("common.gotIt"),
-          showCancel: false,
-        });
+  // 刷新余额（弹层展示「当前余额」），未加载过或余额变化后实时取
+  void coinsStore.fetchBalance();
+  showWhisperSheet.value = true;
+  // real 模式：打开时幂等查询解锁状态，已解锁过则弹层直接展示结果（不重复扣费）
+  if (!useMock()) {
+    void preloadWhisperResult(props.card.userId);
+  }
+}
+
+/**
+ * real 模式：弹层打开时查询悄悄话解锁状态（GET /recommendations/{userId}/whisper）。
+ * 已解锁直接进入结果态；查询失败静默保持付费墙（解锁动作会再次校验）。
+ */
+async function preloadWhisperResult(userId: string): Promise<void> {
+  try {
+    const result = await clientApi.getWhisper(userId);
+    if (result.unlocked && result.whisper) {
+      whisperSheetRef.value?.showResult(result.whisper);
+    }
+  } catch (err) {
+    // 查询失败保持付费墙（静默降级；解锁请求会再次校验）
+    if (isDev) {
+      console.warn("[CardDetailOverlay] 悄悄话状态查询失败:", err);
+    }
+  }
+}
+
+/**
+ * 悄悄话弹层「解锁查看」确认：
+ * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whisper）
+ * - real：POST /recommendations/{userId}/whisper/unlock 后端幂等扣费（服务端定价 200 分），
+ *   返回 balanceCents 时同步本地余额
+ * 成功后 showResult 驱动弹层进入结果态；失败回退付费墙并提示。
+ */
+async function handleWhisperUnlock(): Promise<void> {
+  const card = props.card;
+  if (!card) return;
+  try {
+    if (useMock()) {
+      await coinsStore.spend("WHISPER", card.userId);
+      whisperSheetRef.value?.showResult(card.whisper ?? "");
+    } else {
+      const result = await clientApi.unlockWhisper(card.userId);
+      if (result.balanceCents != null) {
+        coinsStore.balanceCents = result.balanceCents;
       }
-    },
-  });
+      whisperSheetRef.value?.showResult(result.whisper ?? "");
+    }
+  } catch (err) {
+    // 回退付费墙（错误提示由下方 toast/modal 承载）
+    whisperSheetRef.value?.resetToPaywall();
+    // 409：余额不足（InsufficientBalanceException，后端契约）
+    const status =
+      err !== null && typeof err === "object" && "status" in err
+        ? (err as { status: number }).status
+        : 0;
+    if (status === 409) {
+      uni.showToast({ title: t("discover.whisperUnlockFailBalance"), icon: "none" });
+      return;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    uni.showModal({
+      title: t("discover.unlockFailTitle"),
+      content: message,
+      confirmText: t("common.gotIt"),
+      showCancel: false,
+    });
+  }
+}
+
+/** 解锁成功：本地记录文案并标记已发送（详情面板文案取 card.whisper ?? unlockedWhisperText） */
+function onWhisperUnlocked(whisperText: string): void {
+  unlockedWhisperText.value = whisperText;
+  if (props.card) {
+    props.card.whisperSent = true;
+    props.card.whisper = whisperText;
+  }
+}
+
+/** 弹层「去和TA聊天」：关闭弹层并进入会话 */
+function onWhisperChat(): void {
+  showWhisperSheet.value = false;
+  emitMessage();
 }
 
 /** [AUTOSHOT] 仅测试钩子：detail-scroll 的 scroll-into-view 目标面板 id */
@@ -602,6 +679,24 @@ function goToProfile() {
   safeAction(() => {
     openAppPath(`/pages/profile/index?userId=${encodeURIComponent(props.card!.userId)}`);
   }, t("cardDetail.profileNavFailed"));
+}
+
+/* ========== 2026-08-11 新增：hero 放大头像（探探 Profile 范式） ========== */
+
+/**
+ * hero 头像框 ID：校园认证展示品牌绿认证环，其余用户 default 品牌青绿框。
+ * 与认证徽章（VerificationBadge）语义一致，取自 card.verificationBadgeLevel。
+ * 2026-08-12 V3：none（浅灰环）→ default（品牌青绿环），与匹配卡片视觉统一、清晰可见。
+ */
+const detailAvatarFrameId = computed<AvatarFrameId>(() =>
+  props.card?.verificationBadgeLevel === "school" ? "school-verified" : "default"
+);
+
+/** 点击 hero 头像 → 全屏预览头像大图（card 无 avatar 时静默忽略） */
+function onAvatarPreview(): void {
+  const avatar = props.card?.avatar;
+  if (!avatar) return;
+  uni.previewImage({ urls: [avatar], current: avatar });
 }
 
 /** 展开/收起个人简介 */
@@ -859,46 +954,67 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 
           <!-- 叠加在图片上的核心信息 -->
           <view class="detail-hero__info">
-            <view class="detail-hero__name-row">
-              <text class="detail-hero__name">{{ card?.name }}</text>
-              <view class="detail-hero__age-badge">
-                <text class="detail-hero__age">{{ ageText }}</text>
-                <text class="detail-hero__age-unit">{{ t('cardDetail.ageUnit') }}</text>
+            <!-- 2026-08-11 新增：hero 放大头像（探探 Profile 范式：左头像 + 右信息，底部对齐悬浮） -->
+            <view class="detail-hero__avatar-row">
+              <!-- 2026-08-12 V3：内联尺寸兜底（同卡片双保险）+ 头像空值首字兜底（与卡片视觉一致） -->
+              <view class="detail-hero__avatar-hero" role="img" :aria-label="t('cardDetail.avatarHeroAria')" @tap="onAvatarPreview">
+                <AvatarFrame :frame-id="detailAvatarFrameId" style="width: 100%; height: 100%">
+                  <SafeImage
+                    v-if="card?.avatar"
+                    :src="card.avatar"
+                    root-class="detail-hero__avatar-safe"
+                    custom-class="detail-hero__avatar-img"
+                    mode="aspectFill"
+                    :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
+                  />
+                  <view v-else class="detail-hero__avatar-fallback">
+                    <text class="detail-hero__avatar-fallback-text">{{ card?.name?.[0] ?? '?' }}</text>
+                  </view>
+                </AvatarFrame>
               </view>
-              <VerificationBadge
-                v-if="card?.verificationBadgeLevel"
-                size="sm"
-                :level="(card.verificationBadgeLevel as 'none' | 'school' | 'email' | 'idcard')"
-                :show-cta-when-none="false"
-              />
-            </view>
+              <view class="detail-hero__avatar-info">
+                <view class="detail-hero__name-row">
+                  <text class="detail-hero__name">{{ card?.name }}</text>
+                  <view class="detail-hero__age-badge">
+                    <text class="detail-hero__age">{{ ageText }}</text>
+                    <text class="detail-hero__age-unit">{{ t('cardDetail.ageUnit') }}</text>
+                  </view>
+                  <VerificationBadge
+                    v-if="card?.verificationBadgeLevel"
+                    size="sm"
+                    :level="(card.verificationBadgeLevel as 'none' | 'school' | 'email' | 'idcard')"
+                    :show-cta-when-none="false"
+                  />
+                </view>
 
-            <view class="detail-hero__school-row">
-              <image class="detail-hero__school-icon" :src="icons.graduation" mode="aspectFit" alt="" />
-              <text class="detail-hero__school-text">{{ schoolNameText }}</text>
-              <text class="detail-hero__dot">·</text>
-              <text class="detail-hero__grade-text">{{ gradeText }}</text>
-            </view>
+                <view class="detail-hero__school-row">
+                  <image class="detail-hero__school-icon" :src="icons.graduation" mode="aspectFit" alt="" />
+                  <text class="detail-hero__school-text">{{ schoolNameText }}</text>
+                  <text class="detail-hero__dot">·</text>
+                  <text class="detail-hero__grade-text">{{ gradeText }}</text>
+                </view>
 
-            <view class="detail-hero__meta-row">
-              <view v-if="card?.onlineStatus === 'online'" class="detail-hero__online">
-                <view class="detail-hero__online-dot" />
-                <text>{{ t('cardDetail.onlineLabel') }}</text>
+                <view class="detail-hero__meta-row">
+                  <view v-if="card?.onlineStatus === 'online'" class="detail-hero__online">
+                    <view class="detail-hero__online-dot" />
+                    <text>{{ t('cardDetail.onlineLabel') }}</text>
+                  </view>
+                  <view class="detail-hero__match">
+                    <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" alt="" />
+                    <text>{{ matchScoreText }}</text>
+                  </view>
+                </view>
+
+                <!-- Phase Feedback1 · ID / 距离 / 活跃 / 双重认证 -->
+                <view v-if="detailDisplayIdLabel || detailDistanceLabel || detailActiveLabel || detailVerificationLabel" class="detail-hero__extra-row">
+                  <text v-if="detailDisplayIdLabel" class="detail-hero__extra-text">{{ detailDisplayIdLabel }}</text>
+                  <text v-if="detailDistanceLabel" class="detail-hero__extra-text">{{ detailDistanceLabel }}</text>
+                  <text v-if="detailActiveLabel" class="detail-hero__extra-text detail-hero__extra-text--active">
+                    ● {{ detailActiveLabel }}
+                  </text>
+                  <text v-if="detailVerificationLabel" class="detail-hero__extra-badge">{{ detailVerificationLabel }}</text>
+                </view>
               </view>
-              <view class="detail-hero__match">
-                <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" alt="" />
-                <text>{{ matchScoreText }}</text>
-              </view>
-            </view>
-
-            <!-- Phase Feedback1 · ID / 距离 / 活跃 / 双重认证 -->
-            <view v-if="detailDisplayIdLabel || detailDistanceLabel || detailActiveLabel || detailVerificationLabel" class="detail-hero__extra-row">
-              <text v-if="detailDisplayIdLabel" class="detail-hero__extra-text">{{ detailDisplayIdLabel }}</text>
-              <text v-if="detailDistanceLabel" class="detail-hero__extra-text">{{ detailDistanceLabel }}</text>
-              <text v-if="detailActiveLabel" class="detail-hero__extra-text detail-hero__extra-text--active">
-                ● {{ detailActiveLabel }}
-              </text>
-              <text v-if="detailVerificationLabel" class="detail-hero__extra-badge">{{ detailVerificationLabel }}</text>
             </view>
           </view>
         </view>
@@ -1200,6 +1316,18 @@ function onSwipeDownEnd(e: UniTouchEvent) {
         </view>
       </view>
     </view>
+
+    <!-- B3 恋爱小纸条 · 悄悄话解锁底部弹层（2026-08-13：付费解锁后展示恋爱小纸条） -->
+    <WhisperUnlockSheet
+      ref="whisperSheetRef"
+      :visible="showWhisperSheet"
+      :user-name="props.card?.name ?? ''"
+      :balance-cents="coinsStore.balanceCents"
+      @close="showWhisperSheet = false"
+      @chat="onWhisperChat"
+      @unlock="handleWhisperUnlock"
+      @unlocked="onWhisperUnlocked"
+    />
   </view>
 </template>
 
@@ -1231,7 +1359,11 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   background: var(--c-black-overlay-strong);
 }
 
-/* ========== 内容面板：全屏居中 + 缩放 ========== */
+/* ========== 内容面板：全屏居中 + 缩放 ==========
+   2026-08-12 V3.1 卡顿修复：去掉 bounce 回弹曲线（cubic-bezier(0.34,1.56,0.64,1)
+   overshoot 1.56 前 100ms 位移过快，全屏 fixed 弹层首帧大图重绘同步放大卡顿感），
+   缩放入场收敛为 260ms 缓出（与探探/Tinder 详情过渡一致）；关闭动画
+   scheduleCloseEmit(320) 与 260ms 仍匹配，无需改 JS。 */
 .card-detail-overlay__content {
   position: relative;
   width: 100vw;
@@ -1240,9 +1372,9 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   background: var(--c-bg-page);
   display: flex;
   flex-direction: column;
-  transform: scale(0.9) translateY(40rpx); /* 固定布局尺寸，无对应 token */
+  transform: scale(0.94) translateY(24rpx); /* 固定布局尺寸，无对应 token；首帧位移收敛，减轻布局冲击 */
   opacity: 0;
-  transition: transform var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1), opacity var(--d-fade, 300ms) ease;
+  transition: transform 260ms cubic-bezier(0.25, 0.8, 0.5, 1), opacity 220ms ease;
   overflow: hidden;
 }
 
@@ -1260,11 +1392,13 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   z-index: var(--z-header);
   padding-top: calc(env(safe-area-inset-top) + 12rpx);
   padding-bottom: 12rpx;
+  /* 2026-08-11 参考探探透明导航栏：顶部透明到轻微黑色渐隐，让背景图从顶部透出；
+     按钮/文字可读性由半透明圆底按钮（--c-overlay-bg-solid）+ 白字（--c-overlay-text-primary）保证 */
   background: linear-gradient(
     to bottom,
-    var(--c-overlay-bg-pure) 0%,
-    var(--c-overlay-text-secondary) 60%,
-    var(--c-overlay-bg-light) 100%
+    rgba(15, 23, 42, 0.45) 0%,
+    rgba(15, 23, 42, 0.18) 60%,
+    transparent 100%
   );
 }
 
@@ -1278,7 +1412,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   width: 44rpx;
   height: 6rpx;
   border-radius: var(--r-full);
-  background: var(--c-black-overlay-light);
+  /* 2026-08-11：透明渐变背景上原深色 bar 不可见，改半透明白 */
+  background: var(--c-overlay-white-bg-mid, rgba(255, 255, 255, 0.5));
 }
 
 .detail-top-bar__actions {
@@ -1334,7 +1469,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 .detail-top-bar__title {
   font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--c-text-primary);
+  /* 2026-08-11：top-bar 改透明渐变后，标题改白色（--c-overlay-text-primary）保证深色背景上可读 */
+  color: var(--c-overlay-text-primary);
 }
 
 /* ========== 滚动区 ========== */
@@ -1347,7 +1483,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 .detail-hero {
   position: relative;
   width: 100%;
-  height: 580rpx;
+  /* 2026-08-11：580→640rpx 加高，为放大头像（190rpx）预留空间，沉浸式相册头部更舒展 */
+  height: 640rpx;
   flex-shrink: 0;
 }
 
@@ -1384,7 +1521,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 60%;
+  /* 2026-08-11：60%→45% 收窄，仅压底部保证信息可读，顶部背景完全透出（正式清晰展示） */
+  height: 45%;
   background: linear-gradient(
     to top,
     var(--c-overlay-stronger) 0%,
@@ -1436,6 +1574,83 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+}
+
+/* ========== 2026-08-11 新增：hero 放大头像（探探 Profile 范式） ========== */
+
+/* 头像 + 右侧信息一行：底部对齐悬浮（头像底边与信息底边齐平，类似探探 Profile 头部布局） */
+.detail-hero__avatar-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-4);
+  margin-bottom: 12rpx;
+}
+
+/* 头像外层：固定布局尺寸（头像本体约 150rpx + AvatarFrame 白内边/渐变环），无对应 token。
+   白边 + 渐变环 + 外发光由 AvatarFrame 自带，在深色背景图上天然过渡；整体可点击预览大图 */
+.detail-hero__avatar-hero {
+  width: 190rpx;
+  height: 190rpx;
+  flex-shrink: 0;
+}
+
+/* AvatarFrame 根节点撑满外层容器（inline-flex 默认由内容决定尺寸，需显式拉伸，
+   否则内部 SafeImage 的 100% 高度循环解析为 0，头像不可见）——同 CardSwiper 范式 */
+.detail-hero__avatar-hero :deep(.avatar-frame) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 2026-08-13 V4 修复（同 CardSwiper「绿色小点」根因）：环/内圈/SafeImage 容器
+ * 三节点全链拉伸 + border-box，mp-weixin 下头像环稳定为圆形不塌缩 */
+.detail-hero__avatar-hero :deep(.avatar-frame__ring),
+.detail-hero__avatar-hero :deep(.avatar-frame__inner) {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.detail-hero__avatar-hero :deep(.detail-hero__avatar-safe) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 头像本体（SafeImage 内部 <image>，需 :deep() 穿透；rounded 呈圆形头像） */
+:deep(.detail-hero__avatar-img) {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* 2026-08-12 V3：无头像首字兜底（与卡片 .card__avatar-hero-fallback 视觉一致）：
+   撑满 AvatarFrame 插槽、圆形白圈 + 品牌渐变底 + 昵称首字 */
+.detail-hero__avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--c-brand-100) 0%, var(--c-brand-300) 100%);
+  border: 10rpx solid var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95));
+  box-shadow: var(--s-lg, 0 8rpx 32rpx rgba(15, 23, 42, 0.08));
+}
+
+.detail-hero__avatar-fallback-text {
+  /* 固定布局尺寸（64rpx 占位首字），无对应 token */
+  font-size: 64rpx;
+  font-weight: 700;
+  color: var(--c-brand-700);
+}
+
+/* 右侧信息区：姓名/年龄/认证/学校/在线/匹配/ID/距离/活跃 纵向堆叠 */
+.detail-hero__avatar-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-bottom: 6rpx;
 }
 
 .detail-hero__name-row {

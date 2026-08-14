@@ -4,10 +4,11 @@
  * 展示个性化用户卡片推荐，支持滑动浏览和每日签到
  */
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { onShow, onLoad, onUnload } from "@dcloudio/uni-app";
+import { onShow, onLoad, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useDiscoverStore, type SwipeDirection, type MatchScope, type SortBy } from "../../stores/discover";
+import { ROUTES } from "../../constants/routes";
 import { useCheckInStore } from "../../stores/checkin";
 // P2.7 修复：预注册懒加载组件引用的 store。
 // 本页组件链（CardSwiper→CardDetailOverlay）在页面 script 之后加载并 require
@@ -15,11 +16,21 @@ import { useCheckInStore } from "../../stores/checkin";
 // script 依赖树先执行注册，组件加载时报 "module 'stores/vip.js' is not defined"。
 import { useVipStore } from "../../stores/vip";
 import { useSessionStore } from "../../stores/session";
+// B6：后台配置即时生效——匹配/推荐功能开关（match_open / recommend_open）
+import { useAppConfigStore } from "../../stores/app-config";
 // R4-00009：匹配动画需要当前用户真实头像（UserSession 无 avatarUrl，改从 profileStore 读取）
 import { useProfileStore } from "../../stores/profile";
 import { resolveMediaUrl } from "../../utils/media";
 import { openAppPath } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
+// 2026-08-10 切换提速：寻觅页数据 30s TTL（onShow 免重复全量重拉）
+import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
+import { useMock } from "../../stores/helpers/use-mock";
+// B4 认证门控：右滑喜欢 / 超级喜欢为互动操作，需已通过实名认证（浏览不受限）
+import { ensureCertified } from "../../guards/campus-gate";
+
+/** 寻觅页数据新鲜度窗口 */
+const DISCOVER_TTL_MS = 30_000;
 // 2026-08-08 重构：小程序右上角胶囊安全距离（顶部标题/筛选栏不被遮挡）
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import CardSwiper from "../../components/discover/CardSwiper.vue";
@@ -50,6 +61,9 @@ const icons = {
 const sessionStore = useSessionStore();
 const discoverStore = useDiscoverStore();
 const profileStore = useProfileStore();
+// B6：匹配/推荐开关（store 未加载时默认开放，不误遮）
+const appConfigStore = useAppConfigStore();
+const { isMatchOpen } = storeToRefs(appConfigStore);
 const { t } = useI18n();
 
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/匹配1/圈子2/消息3/我的4）
@@ -144,7 +158,7 @@ function triggerMatchNavigation(partner?: { name?: string; avatar?: string }) {
     duration: TOAST_DURATION.NORMAL_MS,
   });
 
-  // 1.5 秒后跳转 likes 页
+  // 500ms 后跳转 likes 页（2026-08-10 切换提速：原 1500ms 感知偏慢，压缩至 500ms 保留匹配反馈仪式感）
   if (matchNavTimer) clearTimeout(matchNavTimer);
   matchNavTimer = setTimeout(() => {
     showMatchAnimation.value = false;
@@ -156,7 +170,7 @@ function triggerMatchNavigation(partner?: { name?: string; avatar?: string }) {
       matchNavReleaseTimer = null;
     }, 500);
     matchNavTimer = null;
-  }, 1500);
+  }, 500);
 }
 
 /**
@@ -188,6 +202,8 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
   // 2026-08-09：右滑（喜欢）需登录——未登录仅提示不跳转；
   // 左滑（不感兴趣/浏览）允许游客本地放行（store 内游客分支，不调后端）
   if (direction !== "left" && !requireLogin()) return;
+  // B4 认证门控：右滑（喜欢）为互动操作，需已通过实名认证（浏览/左滑不受限）
+  if (direction !== "left" && !ensureCertified("realname")) return;
   try {
     if (direction === "left") {
       await discoverStore.swipeLeft(cardId);
@@ -224,6 +240,8 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
 async function handleSuperLike(cardId: string) {
   // 2026-08-09：超级喜欢需登录——未登录仅提示不跳转
   if (!requireLogin()) return;
+  // B4 认证门控：超级喜欢为互动操作，需已通过实名认证
+  if (!ensureCertified("realname")) return;
   try {
     // 超级喜欢前获取卡片信息（swipeRight 后卡片会从列表移除）
     const card = discoverStore.cards.find((c) => c.id === cardId);
@@ -337,10 +355,19 @@ const DEFAULT_AGE_MAX = 35;
 const activeAgeMin = computed(() => discoverStore.recommendationFilter.ageMin ?? DEFAULT_AGE_MIN);
 const activeAgeMax = computed(() => discoverStore.recommendationFilter.ageMax ?? DEFAULT_AGE_MAX);
 
-/** 范围 chip 文案（不限/附近；同城/同校为后续枚举扩展，见 MatchScope 注释） */
-const scopeChipLabel = computed(() =>
-  activeMatchScope.value === "nearby" ? t("discover.nearby") : t("discover.unlimited"),
-);
+/** 范围 chip 文案（不限/附近/同城/同校；后端可能返回扩展枚举值，前端补全映射） */
+const scopeChipLabel = computed(() => {
+  switch (activeMatchScope.value) {
+    case "nearby":
+      return t("discover.nearby");
+    case "same_city":
+      return t("discover.sameCity");
+    case "same_school":
+      return t("discover.sameSchool");
+    default:
+      return t("discover.unlimited");
+  }
+});
 
 /** 年龄 chip 文案（如 "18-35岁"） */
 const ageChipLabel = computed(() => `${activeAgeMin.value}-${activeAgeMax.value}${t("discover.ageUnit")}`);
@@ -469,13 +496,13 @@ onMounted(() => {
   loadDiscoverData();
 });
 
-// D1 修复：登录成功后补发发现页数据（解决「登录回来数据不加载」）
+// D1 修复：登录成功后补发发现页数据（解决「登录回来数据不加载」）。
+// 2026-08-12 游客数据同步：登出（true→false）也走 TTL 补拉，避免游客继续看登录态旧数据
+// （logout 流程先 clearAllCaches 再置 userSession=null，顺序正确；TTL 判断保证幂等）
 watch(
   () => sessionStore.isLoggedIn,
-  (loggedIn) => {
-    if (loggedIn) {
-      loadDiscoverData();
-    }
+  () => {
+    loadDiscoverData();
   }
 );
 
@@ -485,14 +512,16 @@ watch(
  * onShow 时调用 store 的 resetDailyLimit：其内部对比本地存储的日期与当前日期，
  * 跨天时才清空 viewedCards / hasRewoundToday 等状态（同日调用为空操作）。
  * 跨天重置会更新 lastRefreshTime，据此判断是否需要补拉卡片。
+ *
+ * 2026-08-12 游客数据同步：去掉 isLoggedIn 门槛——游客切 tab 也走 30s TTL 判断，
+ * 新鲜则跳过（不重拉），超时/跨天才补拉（原实现游客永远看首次进入的内存快照）。
  */
 onShow(() => {
   const lastRefreshBefore = discoverStore.lastRefreshTime;
   discoverStore.resetDailyLimit();
-  if (
-    discoverStore.lastRefreshTime !== lastRefreshBefore &&
-    sessionStore.isLoggedIn
-  ) {
+  const dayChanged = discoverStore.lastRefreshTime !== lastRefreshBefore;
+  // 游客/登录统一走 30s TTL：新鲜则跳过；跨天强制刷新（loadDiscoverData 内部有 TTL 双重守卫）
+  if (dayChanged || !isCacheFresh("discover:data", DISCOVER_TTL_MS)) {
     loadDiscoverData();
   }
 });
@@ -504,12 +533,17 @@ onShow(() => {
  *   避免游客触发 401 被全局处理强拉登录页。
  */
 function loadDiscoverData() {
+  // 2026-08-10 切换提速：30s 新鲜度窗口（切 tab 回来不再全量重拉）
+  if (!useMock() && isCacheFresh("discover:data", DISCOVER_TTL_MS)) {
+    return;
+  }
   void discoverStore.fetchCards();
   if (sessionStore.isLoggedIn) {
     void checkInStore.fetchStatus();
     // R4-00009：预加载个人资料，保证匹配成功动画能展示用户真实头像
     void profileStore.load();
   }
+  setCachedValue("discover:data", true);
 }
 
 /**
@@ -533,11 +567,26 @@ watch(
 // 修复（严格模式 noUnusedLocals）：clearSearch 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ clearSearch });
+
+/**
+ * 发现页分享（2026-08-10 A3 补齐）：分享当前焦点卡片用户的主页
+ * （无卡片时回退分享发现页自身）。
+ */
+onShareAppMessage(() => {
+  const card = discoverStore.currentCard;
+  if (!card) {
+    return { title: t("share.shareVillage"), path: ROUTES.TAB.DISCOVER };
+  }
+  return {
+    title: t("profile.shareProfileTitle", { name: card.name || t("chat.privateMessageTitle") }),
+    path: `${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(card.userId)}`,
+  };
+});
 </script>
 
 <template>
   <!-- 寻觅/匹配页：浅青绿色背景，纵向排布，核心匹配卡片区占据主视觉 -->
-  <view class="discover-page page-bottom-safe page-fade-in" :style="menuStyleVars">
+  <view class="discover-page page-bottom-safe" :style="menuStyleVars">
     <!-- 标题行（2026-08-07 设计稿）：左「寻觅 发现心动的人」，右「今日剩余 X 次」 -->
     <view class="discover-header">
       <view class="discover-header__titles">
@@ -662,16 +711,27 @@ defineExpose({ clearSearch });
       <text class="error-banner__retry" role="button" :aria-label="t('common.retryAria')" @tap="reloadCards">{{ t('discover.errorRetry') }}</text>
     </view>
 
-    <!-- 加载状态：使用卡片骨架屏替代简单 spinner，更好呼应卡片布局 -->
-    <view v-if="loading" class="card-skeleton-wrap">
+    <!-- B6：后台关闭匹配/推荐功能（match_open / recommend_open=false）→
+         关闭提示替代卡片区（优雅降级，浏览不中断；后端同步返回空列表） -->
+    <view v-if="!isMatchOpen" class="card-empty-wrap">
+      <EmptyState type="no-data" :message="t('discover.matchClosed')" />
+    </view>
+
+    <!-- 加载状态：2026-08-12 卡顿修复——仅首次无卡时显示骨架屏；
+         有卡时保持旧卡（CardSwiper 不卸载，避免重挂载 + 入场动画 + 图片重载整链），
+         仅在卡片区上方显示轻量加载指示条 -->
+    <view v-if="isMatchOpen && loading && cards.length === 0" class="card-skeleton-wrap">
       <Skeleton variant="card" :count="1" />
       <view class="card-skeleton-hint">
         <text class="card-skeleton-hint__text">{{ t('discover.cardSkeletonHint') }}</text>
       </view>
     </view>
+    <view v-else-if="isMatchOpen && loading && cards.length > 0" class="card-refresh-indicator" aria-hidden="true">
+      <view class="card-refresh-indicator__bar" />
+    </view>
 
     <!-- 空状态：错误/未登录/配额耗尽/空列表统一收纳，主体始终有居中的说明与可点击动作（杜绝大面积空白） -->
-    <view v-else-if="cards.length === 0" class="card-empty-wrap">
+    <view v-else-if="isMatchOpen && cards.length === 0" class="card-empty-wrap">
       <EmptyState
         :type="errorMessage ? 'network' : 'no-data'"
         :message="
@@ -708,7 +768,8 @@ defineExpose({ clearSearch });
     </view>
 
     <!-- 核心匹配卡片区（页面主体核心）：占据页面中间 60%-70% 纵向空间 -->
-    <view v-else class="card-area">
+    <!-- v-else-if="isMatchOpen"：匹配关闭时由上方关闭提示分支承接，本分支不再渲染 -->
+    <view v-else-if="isMatchOpen" class="card-area">
       <!-- 2026-08-08 P0 修复：mp-weixin 中自定义组件宿主节点（<card-swiper> 标签本身）
            是 .card-area（flex column）的 flex 子项，但默认 flex:0 0 auto 高度只由内容决定，
            导致内部 .card-swiper 的 height:100% 塌缩为 0 → 卡片不可见。
@@ -826,7 +887,8 @@ defineExpose({ clearSearch });
 /* ========== 筛选栏 ========== */
 /* 2026-08-08 重构：右侧预留胶囊安全距离，滚动到最右端的「全部筛选」chip 不被右上角胶囊遮挡 */
 .filter-bar {
-  padding: 0 var(--sp-7) var(--sp-4);
+  /* 2026-08-13 卡片拉长：底部 padding 16→8rpx，压缩筛选行纵向占位释放给卡片区 */
+  padding: 0 var(--sp-7) var(--sp-2);
   padding-right: calc(var(--capsule-right, 0px) + var(--sp-7));
   position: relative;
   z-index: 9;
@@ -1050,8 +1112,10 @@ defineExpose({ clearSearch });
   /* mp-weixin 不支持 100vh，用 rpx 兜底。
      2026-08-08 重构：顶部模块压缩（双卡+每日一问约 300rpx → 0）后，
      1050rpx 的 min-height 在小屏（可视 ~1194rpx）会强制撑出滚动条；
-     下调至 860rpx ≈ 小屏可视高度 65-70%，大屏由 flex:1 自然扩展 */
-  min-height: 860rpx;
+     下调至 860rpx ≈ 小屏可视高度 65-70%，大屏由 flex:1 自然扩展。
+     2026-08-13 卡片再拉长：860→900rpx（与 CardSwiper .card-swiper 同步），
+     小屏验证无竖向滚动条，溢出则回退 860rpx */
+  min-height: 900rpx;
   // #endif
 }
 
@@ -1123,6 +1187,31 @@ defineExpose({ clearSearch });
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
   letter-spacing: 1rpx;
+}
+
+/* ========== 有卡时刷新轻量指示条（2026-08-12 卡顿修复：替代骨架屏卸载重挂） ========== */
+.card-refresh-indicator {
+  position: relative;
+  height: 4rpx;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.card-refresh-indicator__bar {
+  width: 30%;
+  height: 100%;
+  background: var(--c-brand-500, #ff6b81);
+  border-radius: 2rpx;
+  animation: card-refresh-slide 900ms linear infinite;
+}
+
+@keyframes card-refresh-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
 }
 
 /* ========== 推荐卡片空状态 ========== */

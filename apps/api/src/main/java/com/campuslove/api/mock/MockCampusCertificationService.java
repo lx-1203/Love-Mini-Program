@@ -73,7 +73,9 @@ public class MockCampusCertificationService implements CampusCertificationServic
     }
 
     @Override
-    public CampusCertificationView submitCertification(Long userId, String schoolName, String major, String studentIdCardUrl) {
+    public CampusCertificationView submitCertification(Long userId, String schoolName, String major,
+                                                       String studentIdCardUrl, String chsiCode,
+                                                       String chsiScreenshotUrl) {
         CampusCertificationView existing = store.get(userId);
         if (existing != null) {
             String currentStatus = existing.getStatus();
@@ -87,6 +89,8 @@ public class MockCampusCertificationService implements CampusCertificationServic
             existing.setSchoolName(schoolName);
             existing.setMajor(major);
             existing.setStudentIdCardUrl(studentIdCardUrl);
+            existing.setChsiCode(chsiCode);
+            existing.setChsiScreenshotUrl(chsiScreenshotUrl);
             existing.setStatus(STATUS_PENDING);
             existing.setStatusLabel(CampusCertificationView.toStatusLabel(STATUS_PENDING));
             existing.setReviewerId(null);
@@ -102,6 +106,8 @@ public class MockCampusCertificationService implements CampusCertificationServic
                 schoolName,
                 major,
                 studentIdCardUrl,
+                chsiCode,
+                chsiScreenshotUrl,
                 STATUS_PENDING,
                 CampusCertificationView.toStatusLabel(STATUS_PENDING),
                 null,

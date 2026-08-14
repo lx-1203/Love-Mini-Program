@@ -1,5 +1,8 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.block.BlockedException;
+import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.SensitiveWordFilter;
@@ -8,6 +11,7 @@ import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.PrivateConversationRepository;
 import com.campuslove.api.repository.PrivateMessageRepository;
+import com.campuslove.api.repository.UserBlockRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.growth.SocialProgressService;
 import java.time.LocalDateTime;
@@ -16,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +37,14 @@ import org.springframework.transaction.annotation.Transactional;
  * 真实私信服务实现。
  * 在 real profile 下激活，使用 Repository 实现数据库查询。
  * 提供私信会话管理、消息发送、消息读取等功能。
+ *
+ * <p>3-F 拉黑生效范围：</p>
+ * <ul>
+ *   <li>发送消息拦截：任一方拉黑另一方时抛 {@link BlockedException}（业务错误码 BLOCKED）；
+ *       WebSocket 私信链路（MessageWebSocketHandler）复用 sendMessage，同样被拦截</li>
+ *   <li>会话列表过滤：过滤存在拉黑关系的会话（双方均不可见该会话）</li>
+ *   <li>创建会话拦截：与已拉黑用户不可创建新会话</li>
+ * </ul>
  */
 @Profile("real")
 @Service
@@ -44,6 +57,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final SensitiveWordFilter sensitiveWordFilter;
+    /** 3-F 拉黑关系数据访问层（消息拦截 + 会话过滤） */
+    private final UserBlockRepository blockRepository;
     /** 活动卡片 JSON 解析（字段名后可能带空格，手写 indexOf 不可靠） */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
@@ -60,12 +75,14 @@ public class RealPrivateMessageService implements PrivateMessageService {
             PrivateMessageRepository messageRepository,
             UserRepository userRepository,
             SimpMessagingTemplate messagingTemplate,
-            SensitiveWordFilter sensitiveWordFilter) {
+            SensitiveWordFilter sensitiveWordFilter,
+            UserBlockRepository blockRepository) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
         this.sensitiveWordFilter = sensitiveWordFilter;
+        this.blockRepository = blockRepository;
         this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
     }
 
@@ -73,6 +90,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
      * 获取用户的会话列表。
      *
      * <p>Task 2.2.1：批量预加载对方用户信息，避免在 toConversationView 中触发 N+1 查询。</p>
+     *
+     * <p>3-F 拉黑：过滤存在拉黑关系的会话（我拉黑对方或对方拉黑我，该会话双方均不可见）。</p>
      */
     @Override
     @Transactional(readOnly = true)
@@ -83,6 +102,20 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         List<PrivateConversation> conversations =
                 conversationRepository.findByUserAIdOrUserBIdOrderByLastMessageAtDesc(userId, userId);
+
+        // 3-F：一次性查询当前用户全部拉黑关系（双向并集），内存过滤会话，
+        // 避免逐会话查库（N+1）
+        Set<Long> blockedRelationUserIds = Set.copyOf(blockRepository.findBlockedRelationUserIds(userId));
+        if (!blockedRelationUserIds.isEmpty()) {
+            conversations = conversations.stream()
+                    .filter(conv -> {
+                        Long otherUserId = conv.getUserAId().equals(userId)
+                                ? conv.getUserBId()
+                                : conv.getUserAId();
+                        return !blockedRelationUserIds.contains(otherUserId);
+                    })
+                    .toList();
+        }
 
         // 批量预加载对方用户信息，避免在循环中触发 N+1 查询
         List<Long> otherUserIds = conversations.stream()
@@ -136,6 +169,11 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("User not found: " + userBId);
         }
 
+        // 3-F：与已拉黑用户不可创建新会话（任一方拉黑另一方均拦截）
+        if (blockRepository.existsBlockedBetween(userAId, userBId)) {
+            throw new BlockedException(ErrorMessages.BLOCKED_MESSAGE_SEND_FORBIDDEN);
+        }
+
         // 查找已有会话
         Optional<PrivateConversation> existing = conversationRepository.findByUserPair(userAId, userBId);
         if (existing.isPresent()) {
@@ -179,6 +217,15 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("Sender is not a participant of this conversation");
         }
 
+        // 3-F：发送消息拦截——任一方拉黑另一方时拒绝发送（业务错误码 BLOCKED）。
+        // 覆盖 HTTP 与 WebSocket 两条链路（MessageWebSocketHandler 复用 sendMessage）。
+        Long recipientId = conversation.getUserAId().equals(senderId)
+                ? conversation.getUserBId()
+                : conversation.getUserAId();
+        if (blockRepository.existsBlockedBetween(senderId, recipientId)) {
+            throw new BlockedException(ErrorMessages.BLOCKED_MESSAGE_SEND_FORBIDDEN);
+        }
+
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         // 录音修复：kind 统一规范化为小写（客户端发送小写 text/voice，
@@ -218,10 +265,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         MessageView messageView = toMessageView(message);
 
-        // 通过 WebSocket 推送消息给接收者
-        Long recipientId = conversation.getUserAId().equals(senderId)
-                ? conversation.getUserBId()
-                : conversation.getUserAId();
+        // 通过 WebSocket 推送消息给接收者（recipientId 已在拉黑拦截处计算）
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(recipientId),
                 "/queue/messages",
@@ -268,9 +312,10 @@ public class RealPrivateMessageService implements PrivateMessageService {
         boolean asc = "asc".equalsIgnoreCase(order);
         // asc：正序分页（最早在前，@EntityGraph 预加载 conversation 避免 N+1）；
         // desc：倒序分页（最新在前）
+        // 3-G：两路查询均按当前用户过滤已软删消息（发送者本人删除的对自己隐藏，对方仍可见）
         Page<PrivateMessage> messagePage = asc
-                ? messageRepository.findWithConversationByConversationIdOrderByCreatedAtAscPage(conversationId, pageable)
-                : messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+                ? messageRepository.findWithConversationByConversationIdOrderByCreatedAtAscPage(conversationId, userId, pageable)
+                : messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, userId, pageable);
 
         // 标记非自己的未读消息为已读
         markAsRead(conversationId, userId);
@@ -320,6 +365,39 @@ public class RealPrivateMessageService implements PrivateMessageService {
         conversationRepository.save(conversation);
     }
 
+    // ---- 2026-08-10 B1③：会话级免打扰 ----
+
+    /**
+     * 设置当前用户对指定会话的免打扰状态（按用户侧独立存储）。
+     *
+     * <p>userA 操作写入 user_a_muted，userB 操作写入 user_b_muted，
+     * 防止 A 修改 B 的静音状态（越权）；仅会话参与者可操作。</p>
+     */
+    @Override
+    @Transactional
+    public void setConversationMuted(Long conversationId, boolean muted, Long userId) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        // 验证用户是否是会话参与者
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+
+        // 按当前用户侧写入（防越权：A 只能改自己的静音标记）
+        if (conversation.getUserAId().equals(userId)) {
+            conversation.setUserAMuted(muted);
+        } else {
+            conversation.setUserBMuted(muted);
+        }
+        conversation.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        conversationRepository.save(conversation);
+    }
+
     // ---- M-06/P0-07：删除会话 ----
 
     /**
@@ -350,6 +428,42 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         log.info("会话已删除：conversationId={}, userId={}, 消息清理 {} 条",
                 conversationId, userId, deletedMessages);
+    }
+
+    // ---- 3-G：删除消息（软删，微信语义：仅删除者对自己隐藏，不删对方） ----
+
+    /**
+     * 软删单条消息（仅消息发送者本人可操作）。
+     *
+     * <p>流程：按 ID 查消息 → 校验发送者身份（防 IDOR，非属主统一按「不存在」处理，
+     * 不泄露消息归属）→ 置 deletedForSender=true 持久化。</p>
+     *
+     * <p>幂等：已删除的消息重复删除直接返回成功（同一属主、同一条消息）。</p>
+     */
+    @Override
+    @Transactional
+    public void softDeleteMessage(Long messageId, Long userId) {
+        if (messageId == null || userId == null) {
+            throw new IllegalArgumentException("messageId and userId are required");
+        }
+
+        PrivateMessage message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("消息不存在或无权操作"));
+
+        // 校验消息属主：仅发送者本人可删除自己的消息（防 IDOR）
+        if (!message.getSenderId().equals(userId)) {
+            throw new ResourceNotFoundException("消息不存在或无权操作");
+        }
+
+        // 幂等：已软删则无操作
+        if (Boolean.TRUE.equals(message.getDeletedForSender())) {
+            log.info("消息已删除过，幂等返回：messageId={}, userId={}", messageId, userId);
+            return;
+        }
+
+        message.setDeletedForSender(true);
+        messageRepository.save(message);
+        log.info("消息已软删（仅发送者本人隐藏）：messageId={}, userId={}", messageId, userId);
     }
 
     // ---- 私有辅助方法 ----
@@ -434,6 +548,17 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // 会话类型：默认为 private（临时匿名会话后续迭代支持）
         String sessionType = "private";
 
+        // 会话级免打扰（2026-08-10 B1③）：按当前用户侧读取
+        boolean muted;
+        if (currentUserId.equals(conv.getUserAId())) {
+            muted = Boolean.TRUE.equals(conv.getUserAMuted());
+        } else if (currentUserId.equals(conv.getUserBId())) {
+            muted = Boolean.TRUE.equals(conv.getUserBMuted());
+        } else {
+            // 非参与者（理论不会发生，参与者校验在查询层完成）：默认未静音
+            muted = false;
+        }
+
         return new ConversationView(
                 conv.getId(),
                 conv.getConversationUid(),
@@ -447,7 +572,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 headline,
                 pinned,
                 phase,
-                sessionType
+                sessionType,
+                muted
         );
     }
 

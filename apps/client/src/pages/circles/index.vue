@@ -227,7 +227,7 @@ defineExpose({ toggleJoin });
           <view class="circles-card-list" role="list">
             <view
               v-for="(circle, index) in filteredCircles" :key="circle.id"
-              class="circle-card list-item"
+              class="circle-card"
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToTopics(circle)"
             >

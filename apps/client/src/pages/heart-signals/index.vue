@@ -195,7 +195,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
 </script>
 
 <template>
-  <view class="heart-signals-page page-fade-in">
+  <view class="heart-signals-page">
     <!-- 未完善资料：锁定页 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -214,14 +214,14 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            :aria-label="$t('common.back')"
+            :aria-label="t('common.back')"
             @tap="goBack"
           >
             <image class="page-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
           </view>
-          <text class="page-header__title">{{ $t("heartSignals.navTitle") }}</text>
+          <text class="page-header__title">{{ t("heartSignals.navTitle") }}</text>
         </view>
-        <text class="page-header__subtitle">{{ $t("heartSignals.navSubtitle") }}</text>
+        <text class="page-header__subtitle">{{ t("heartSignals.navSubtitle") }}</text>
       </view>
 
       <!-- 状态筛选 Tab -->
@@ -231,7 +231,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
           :class="{ 'signal-tabs__item--active': activeTab === 'pending' }"
           @tap="activeTab = 'pending'"
         >
-          <text class="signal-tabs__text">{{ $t("heartSignals.tabPending") }}</text>
+          <text class="signal-tabs__text">{{ t("heartSignals.tabPending") }}</text>
           <view v-if="pendingSignals.length > 0" class="signal-tabs__badge">
             <text class="signal-tabs__badge-text">{{ pendingSignals.length }}</text>
           </view>
@@ -241,41 +241,41 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
           :class="{ 'signal-tabs__item--active': activeTab === 'accepted' }"
           @tap="activeTab = 'accepted'"
         >
-          <text class="signal-tabs__text">{{ $t("heartSignals.tabAccepted") }}</text>
+          <text class="signal-tabs__text">{{ t("heartSignals.tabAccepted") }}</text>
         </view>
         <view
           class="signal-tabs__item press-feedback"
           :class="{ 'signal-tabs__item--active': activeTab === 'declined' }"
           @tap="activeTab = 'declined'"
         >
-          <text class="signal-tabs__text">{{ $t("heartSignals.tabDeclined") }}</text>
+          <text class="signal-tabs__text">{{ t("heartSignals.tabDeclined") }}</text>
         </view>
       </view>
 
       <!-- 加载 -->
       <view v-if="loading" class="loading-state" role="status" aria-live="polite">
         <view class="loading-state__spinner" />
-        <text class="loading-state__text">{{ $t("heartSignals.loadingText") }}</text>
+        <text class="loading-state__text">{{ t("heartSignals.loadingText") }}</text>
       </view>
 
       <!-- 空状态 -->
       <EmptyState
         v-else-if="activeTab === 'pending' && pendingSignals.length === 0"
         type="no-data"
-        :title="$t('heartSignals.emptyPendingTitle')"
-        :description="$t('heartSignals.emptyPendingDesc')"
+        :title="t('heartSignals.emptyPendingTitle')"
+        :description="t('heartSignals.emptyPendingDesc')"
       />
       <EmptyState
         v-else-if="activeTab === 'accepted' && acceptedSignals.length === 0"
         type="no-data"
-        :title="$t('heartSignals.emptyAcceptedTitle')"
-        :description="$t('heartSignals.emptyAcceptedDesc')"
+        :title="t('heartSignals.emptyAcceptedTitle')"
+        :description="t('heartSignals.emptyAcceptedDesc')"
       />
       <EmptyState
         v-else-if="activeTab === 'declined' && declinedSignals.length === 0"
         type="no-data"
-        :title="$t('heartSignals.emptyDeclinedTitle')"
-        :description="$t('heartSignals.emptyDeclinedDesc')"
+        :title="t('heartSignals.emptyDeclinedTitle')"
+        :description="t('heartSignals.emptyDeclinedDesc')"
       />
 
       <!-- 待处理信号列表 -->
@@ -301,18 +301,18 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
             </view>
             <view class="signal-card__user-info">
               <text class="signal-card__name">{{ signal.fromUserName }}</text>
-              <text class="signal-card__time">{{ getCountdown(signal.id) }}{{ $t("heartSignals.cardExpireSuffix") }}</text>
+              <text class="signal-card__time">{{ getCountdown(signal.id) }}{{ t("heartSignals.cardExpireSuffix") }}</text>
             </view>
           </view>
           <view class="signal-card__body">
-            <text class="signal-card__desc">{{ $t("heartSignals.cardDesc") }}</text>
+            <text class="signal-card__desc">{{ t("heartSignals.cardDesc") }}</text>
           </view>
           <view class="signal-card__actions">
             <view class="signal-card__btn signal-card__btn--decline press-feedback" @tap="handleDecline(signal.id)">
-              <text class="signal-card__btn-text">{{ $t("heartSignals.rejectBtn") }}</text>
+              <text class="signal-card__btn-text">{{ t("heartSignals.rejectBtn") }}</text>
             </view>
             <view class="signal-card__btn signal-card__btn--accept press-feedback" @tap="handleAccept(signal.id)">
-              <text class="signal-card__btn-text">{{ $t("heartSignals.acceptBtn") }}</text>
+              <text class="signal-card__btn-text">{{ t("heartSignals.acceptBtn") }}</text>
             </view>
           </view>
           <!-- 过期倒计时进度条（R4-00025：宽度按实际 expiresAt 动态计算） -->
@@ -356,7 +356,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
           <!-- 2026-08-08 走查 P0-3：已接受信号「开聊」按钮（过期信号不展示） -->
           <view v-if="activeTab === 'accepted'" class="signal-card__done-actions">
             <view class="signal-card__btn signal-card__btn--accept press-feedback" @tap="handleChat(signal.id)">
-              <text class="signal-card__btn-text">{{ $t("heartSignals.chatBtn") }}</text>
+              <text class="signal-card__btn-text">{{ t("heartSignals.chatBtn") }}</text>
             </view>
           </view>
         </view>

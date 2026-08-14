@@ -18,11 +18,14 @@
  * - 所有动画内联在 .vue 文件中
  */
 import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { lightHaptic } from "../../utils/haptic";
 import EmptyState from "../../components/common/EmptyState.vue";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../../constants/routes";
+
+const { t } = useI18n();
 
 /**
  * 当前页面对象（最小契约）。
@@ -193,7 +196,7 @@ onUnmounted(() => {
       >
         <image class="video-player__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
-      <text class="video-player__title">{{ $t("videoPlayer.navTitle") }}</text>
+      <text class="video-player__title">{{ t("videoPlayer.navTitle") }}</text>
       <view class="video-player__topbar-placeholder" />
     </view>
 
@@ -204,24 +207,24 @@ onUnmounted(() => {
         v-if="!hasVideo"
         type="no-data"
         :image="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION"
-        :title="$t('videoPlayer.emptyTitle')"
-        :description="$t('videoPlayer.emptyDesc')"
-        :action-text="$t('videoPlayer.emptyAction')"
+        :title="t('videoPlayer.emptyTitle')"
+        :description="t('videoPlayer.emptyDesc')"
+        :action-text="t('videoPlayer.emptyAction')"
         @action="handleBack"
       />
 
       <!-- 加载失败 -->
       <view v-else-if="isLoadError" class="video-player__state">
         <image class="video-player__state-icon" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
-        <text class="video-player__state-title">{{ $t("videoPlayer.loadFailedTitle") }}</text>
-        <text class="video-player__state-subtitle">{{ $t("videoPlayer.loadFailedSubtitle") }}</text>
+        <text class="video-player__state-title">{{ t("videoPlayer.loadFailedTitle") }}</text>
+        <text class="video-player__state-subtitle">{{ t("videoPlayer.loadFailedSubtitle") }}</text>
         <view
           class="video-player__state-btn press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="handleRetry"
         >
-          <text class="video-player__state-btn-text">{{ $t("videoPlayer.retryBtn") }}</text>
+          <text class="video-player__state-btn-text">{{ t("videoPlayer.retryBtn") }}</text>
         </view>
       </view>
 
@@ -248,7 +251,7 @@ onUnmounted(() => {
         <!-- 加载中遮罩（元数据加载前展示） -->
         <view v-if="isMetadataLoading" class="video-player__loading">
           <view class="video-player__loading-spinner" />
-          <text class="video-player__loading-text">{{ $t("videoPlayer.loadingText") }}</text>
+          <text class="video-player__loading-text">{{ t("videoPlayer.loadingText") }}</text>
         </view>
 
         <!-- 底部时长展示（辅助原生 controls，元数据加载后展示） -->

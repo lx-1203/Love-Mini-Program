@@ -224,7 +224,7 @@ onPullDownRefresh(async () => {
 </script>
 
 <template>
-  <view class="visitors-page page-fade-in">
+  <view class="visitors-page">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="visitors-header">
       <view

@@ -4,15 +4,19 @@
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
  * 资料未完善时展示 LockScreen 锁定页面
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { onShow, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 // 登录态守卫：未登录时不发受保护请求（冷启动免登录进本页时避免 401 雪崩）
-import { getToken } from "../../services/http";
+import { getToken, request } from "../../services/http";
+// 3-K 邀请奖励 real 链路：POST /invites 生成邀请码 + GET /invites/rewards 拉取奖励
+import { useMock } from "../../stores/helpers/use-mock";
 import { useProfileStore } from "../../stores/profile";
 import { useLikesStore } from "../../stores/likes";
+import { mockFixtures } from "../../services/mocks/fixtures";
+import type { RecommendedPersonView } from "../../stores/discover/types";
 import { useCoinsStore } from "../../stores/coins";
 import { useSocialProgressStore } from "../../stores/social-progress";
 import { useDiscoverStore } from "../../stores/discover";
@@ -30,6 +34,13 @@ import { ROUTES } from "../../constants/routes";
 import { OFFICIAL_ACCOUNT_CODES } from "../../config/official-accounts";
 import { useTabBar } from "../../composables/useTabBar";
 import { toProfileView } from "../../view-models/profile";
+import {
+  toOtherProfileView,
+  toOtherBasicProfile,
+} from "../../view-models/other-profile";
+// B5 认证成就名牌（2026-08-13）：三级认证名牌行 + 半屏专业详情面板
+import CertBadgeRow, { type CertBadgeItem } from "../../components/profile/CertBadgeRow.vue";
+import CertDetailSheet from "../../components/profile/CertDetailSheet.vue";
 import LockScreen from "../../components/common/LockScreen.vue";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -111,6 +122,24 @@ const villageStore = useVillageStore();
 const { frameId: myFrameId } = useAvatarFrame();
 
 /**
+ * 2026-08-12 V3：他人主页头像框按对方身份判定。
+ * 校园认证（对方 verificationStatus=verified）→ school-verified；其余 → default 品牌青绿框。
+ * 与验证徽章逻辑（verificationBadgeLevel）同源；他人 VIP/SVIP 前端无字段，不做判定。
+ * 2026-08-13：数据源修正——他人态读对方公开视图（otherProfile.verificationBadgeLevel），
+ * 原实现误读查看者自己的 campusProfile 认证状态。
+ */
+const viewerFrameId = computed(() => {
+  if (isOwnProfile.value) {
+    return profileStore.campusProfile?.verificationStatus === "verified"
+      ? "school-verified"
+      : "default";
+  }
+  return otherProfile.value?.verificationBadgeLevel === "school"
+    ? "school-verified"
+    : "default";
+});
+
+/**
  * 个人主页顶部背景图 URL（Phase D4 / Phase E1 上传支持）
  * 从 session store 获取，空字符串时使用品牌色渐变 fallback
  * 上传成功后由 profileStore.uploadBackground 同步更新此字段
@@ -119,6 +148,16 @@ const { frameId: myFrameId } = useAvatarFrame();
  * 与后端 schema / fixtures / api-types-supplement 对齐。
  */
 const { profileBackgroundUrl } = storeToRefs(sessionStore);
+
+/**
+ * 背景图是否已加载完成（个人主页背景自然过渡）：
+ * - 未加载前背景图 opacity 0，透出品牌渐变 fallback（.profile-bg 的 var(--c-gradient-brand)）；
+ * - @load 触发后置为 true，背景图 300ms 淡入，避免生硬闪现；
+ * - 更换背景图（URL 变化）时重置，保证每次上传新背景都重新淡入；
+ * - 加载失败时不置 true，保持渐变 fallback 可见（不破坏现有兜底逻辑）。
+ */
+const bgLoaded = ref(false);
+// 2026-08-12 V3：watch 延迟到 otherBgUrl 声明后定义（见 headerBgUrl 下方）
 
 /**
  * 照片墙状态（Phase E2 / E3）
@@ -227,6 +266,109 @@ const isOwnProfile = computed(() => {
 });
 
 /**
+ * 2026-08-12 V3：他人主页背景图 URL（仅他人态使用）。
+ * 数据源：GET /recommendations/{userId}/profile（推荐公开视图，含 profileBackgroundUrl）。
+ * 拉取失败/无背景时保持空 → 模板落到纯色兜底（.profile-bg 背景 var(--c-brand-400)）。
+ */
+const otherBgUrl = ref<string>("");
+
+/**
+ * 2026-08-13：他人公开资料视图（仅他人态使用）。
+ * 修复「他人主页误显示查看者自己数据」：头像/昵称/标签/动态全部改由
+ * 该视图驱动（toOtherProfileView / toOtherBasicProfile 映射）。
+ */
+const otherProfile = ref<RecommendedPersonView | null>(null);
+
+/**
+ * 加载他人主页公开资料（背景 + 完整视图）。
+ *
+ * 2026-08-13 游客门禁（核心 BUG 修复）：未登录直接 return——不发起受保护请求。
+ * 原实现未登录仍请求 GET /recommendations/{userId}/profile（@PreAuthorize USER）→
+ * 401 → http.ts 全局处理无 token 刷新失败 → reLaunch 登录页踢掉整个 Tab 栈
+ * （表现：落主页 Tab 后 toast「登录已过期」并被强拉登录页）。
+ * 门禁后未登录干净地停在 LockScreen（登录引导），不做任何受保护请求。
+ */
+async function loadOtherProfile(userId: string): Promise<void> {
+  // 2026-08-13 游客门禁（核心 BUG 修复）：未登录直接 return——不发起受保护请求。
+  // 原实现未登录仍请求 GET /recommendations/{userId}/profile（@PreAuthorize USER）→
+  // 401 → http.ts 全局处理无 token 刷新失败 → reLaunch 登录页踢掉整个 Tab 栈
+  // （表现：落主页 Tab 后 toast「登录已过期」并被强拉登录页）。
+  // 门禁后未登录干净地停在 LockScreen（登录引导），不做任何受保护请求。
+  // 注意：判断用 isLoggedIn 而非 getToken()——mock 模式登录为本地模拟会话
+  // （无真实 token），getToken() 恒空会误伤 mock 分支。
+  if (!sessionStore.isLoggedIn) {
+    otherProfile.value = null;
+    otherBgUrl.value = "";
+    return;
+  }
+  try {
+    if (useMock()) {
+      // mock 演示：从 mock 推荐池按 id 查找目标用户构造公开视图。
+      // 推荐池 id 为 4001-4007（card.userId = String(id)），与 likes/mock-data
+      // 的 "user-200x" 系列不同源——不能沿用 other.vue 的 mockLikedBy 查找。
+      const person = mockFixtures.getRecommendations({}).find(
+        (p) => String(p.id) === userId
+      );
+      if (!person) {
+        otherProfile.value = null;
+        otherBgUrl.value = "";
+        return;
+      }
+      otherProfile.value = {
+        id: person.id,
+        name: person.name,
+        initials: person.initials,
+        headline: person.headline,
+        commonGround: person.commonGround,
+        availability: person.availability,
+        campusName: person.campusName,
+        avatarUrl: person.avatarUrl,
+        tags: person.tags,
+        bio: person.bio || "",
+        images: person.images,
+        isSameSchool: person.isSameSchool,
+        isSameMajor: person.isSameMajor,
+        commonCircleCount: person.commonCircleCount,
+        halfBodyPhotoUrl: person.halfBodyPhotoUrl,
+        photoGallery: person.photoGallery,
+        verificationBadgeLevel: person.verificationBadgeLevel,
+        age: person.age,
+        educationLevel: person.educationLevel,
+        height: person.height,
+        profileBackgroundUrl: person.profileBackgroundUrl,
+      };
+      otherBgUrl.value = otherProfile.value.profileBackgroundUrl ?? "";
+      return;
+    }
+    const data = await request<RecommendedPersonView>({
+      url: `/recommendations/${encodeURIComponent(userId)}/profile`,
+      method: "GET",
+    });
+    otherProfile.value = data;
+    otherBgUrl.value = data?.profileBackgroundUrl ?? "";
+  } catch (error) {
+    // 拉取失败不阻断页面（他人主页其余区域按占位渲染），保持纯色兜底；
+    // 已登录 401 走既有刷新链路，不会误伤游客
+    if (isDev) {
+      console.warn("[ProfilePage] 拉取他人主页失败:", error);
+    }
+    otherProfile.value = null;
+    otherBgUrl.value = "";
+  }
+}
+
+/** 顶部背景图：本人 → sessionStore 自己上传的背景；他人 → 对方背景（V3 新增），空则纯色兜底 */
+const headerBgUrl = computed(() =>
+  isOwnProfile.value ? profileBackgroundUrl.value : otherBgUrl.value
+);
+
+/* 2026-08-12 V3：背景切换（本人上传 / 他人背景拉取）时重置淡入；
+   watch 依赖 otherBgUrl，须在声明之后注册 */
+watch([profileBackgroundUrl, otherBgUrl], () => {
+  bgLoaded.value = false;
+});
+
+/**
  * 页面是否解锁（2026-08-07 链路调整）。
  *
  * 原实现：isProfileComplete 完成才解锁，「我的」整页被 LockScreen 锁死，
@@ -254,6 +396,10 @@ const completionPercent = computed(() => sessionStore.profileCompletion);
  *   （showCtaWhenNone 由 computed 控制）
  */
 const verificationBadgeLevel = computed<VerificationBadgeLevel>(() => {
+  // 2026-08-13：他人态读对方公开视图的认证徽章级别（原实现误读查看者自己状态）
+  if (!isOwnProfile.value) {
+    return otherProfile.value?.verificationBadgeLevel === "school" ? "school" : "none";
+  }
   const status = profileStore.campusProfile?.verificationStatus;
   if (status === "verified") return "school";
   return "none";
@@ -265,6 +411,49 @@ const verificationBadgeLevel = computed<VerificationBadgeLevel>(() => {
  * - 对方的 profile：不显示 CTA（避免在他人主页显示引导按钮）
  */
 const showVerificationCta = computed(() => isOwnProfile.value);
+
+/* ========== 2026-08-13 B5：认证成就名牌（三级认证） ========== */
+
+/** 认证详情面板显隐 */
+const certSheetVisible = ref(false);
+
+/**
+ * 三级认证名牌数据组装：
+ * - 年龄「18+」：注册即满 18（后端 AgePolicy 强制），恒亮。
+ * - 实名「实名」：自己 → basicProfile.idCardVerified（后端新透传）；
+ *   他人 → otherProfile.verificationBadgeLevel === "idcard"。
+ * - 学历「学历」：verificationBadgeLevel === "school"（自己/他人已有派生）。
+ */
+const certBadges = computed<CertBadgeItem[]>(() => {
+  const own = isOwnProfile.value;
+  const level = verificationBadgeLevel.value; // 他人态已按对方视图切换
+  const realNameEarned = own
+    ? profileStore.basicProfile?.idCardVerified === true
+    : level === "idcard" || otherProfile.value?.verificationBadgeLevel === "idcard";
+  const educationEarned = level === "school" || (own && sessionStore.userSession?.campusVerified === true);
+  return [
+    {
+      id: "age",
+      icon: IMAGE_PATHS.ICONS_COMMON.NEW_BADGE,
+      earned: true,
+    },
+    {
+      id: "realname",
+      icon: IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG,
+      earned: realNameEarned,
+    },
+    {
+      id: "education",
+      icon: IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG,
+      earned: educationEarned,
+    },
+  ];
+});
+
+/** 打开认证详情面板 */
+function openCertSheet(): void {
+  certSheetVisible.value = true;
+}
 
 /**
  * 点击"去认证"CTA 处理：
@@ -279,33 +468,50 @@ function handleVerificationClick() {
 /**
  * 个人主页视图模型（统一聚合 session / profile 数据）
  * 修复：原 isVip 写死为 false、学校信息缺失，现统一从 profileStore.vipStatus / campusProfile 获取
+ * 2026-08-13：他人态改由 otherProfile（对方公开视图）驱动——修复他人主页
+ * 误显示查看者自己数据的问题（头像/昵称/标签/动态全部切换数据源）
  */
 const profileView = computed(() =>
-  toProfileView({
-    session: sessionStore.userSession,
-    basicProfile: profileStore.basicProfile,
-    campusProfile: profileStore.campusProfile,
-    vipStatus: profileStore.vipStatus,
-    myPosts: profileStore.myPosts,
-    postsTotal: profileStore.profileStats?.posts ?? 0,
-    avatarUrl: profileStore.avatarUrl,
-  })
+  isOwnProfile.value
+    ? toProfileView({
+        session: sessionStore.userSession,
+        basicProfile: profileStore.basicProfile,
+        campusProfile: profileStore.campusProfile,
+        vipStatus: profileStore.vipStatus,
+        myPosts: profileStore.myPosts,
+        postsTotal: profileStore.profileStats?.posts ?? 0,
+        avatarUrl: profileStore.avatarUrl,
+      })
+    : toOtherProfileView(otherProfile.value)
+);
+
+/**
+ * 基础资料数据源（标签/位置/学历等 computed 消费）。
+ * 2026-08-13：他人态映射对方公开视图（toOtherBasicProfile），
+ * 自己态保持 profileStore.basicProfile。
+ */
+const basicProfileSource = computed(() =>
+  isOwnProfile.value
+    ? profileStore.basicProfile
+    : toOtherBasicProfile(otherProfile.value)
 );
 
 /* ========== 2026-08-08 QQ 主页重构：APP 专属标签行（复用现有字段，不新增 i18n） ========== */
 
-/** 性别代词 · 年级标签（如「她/她 · 大三」，来自 basicProfile） */
+/** 性别代词 · 年级标签（如「她/她 · 大三」，来自 basicProfile）
+ *  2026-08-13：改读 basicProfileSource（他人态映射对方视图） */
 const genderGradeLabel = computed(() => {
-  const b = profileStore.basicProfile;
+  const b = basicProfileSource.value;
   const parts: string[] = [];
   if (b?.pronouns?.trim()) parts.push(b.pronouns.trim());
   if (b?.grade?.trim()) parts.push(b.grade.trim());
   return parts.join(" · ");
 });
 
-/** 位置行文案（家乡城市 → 未来城市，回退校区城市；QQ 主页风格） */
+/** 位置行文案（家乡城市 → 未来城市，回退校区城市；QQ 主页风格）
+ *  2026-08-13：改读 basicProfileSource（他人态无位置字段，回退校区/学校） */
 const locationLabel = computed(() => {
-  const b = profileStore.basicProfile;
+  const b = basicProfileSource.value;
   const home = [b?.hometownProvince, b?.hometownCity]
     .map((s) => s?.trim())
     .filter(Boolean)
@@ -315,12 +521,13 @@ const locationLabel = computed(() => {
   if (future) {
     return home ? `${home} · ${prefix}${future}` : `${prefix}${future}`;
   }
-  return home || profileStore.campusProfile?.city || "";
+  return home || (isOwnProfile.value ? profileStore.campusProfile?.city : "") || "";
 });
 
-/** 学历标签（educationLevel 映射，复用 discover 命名空间文案） */
+/** 学历标签（educationLevel 映射，复用 discover 命名空间文案）
+ *  2026-08-13：改读 basicProfileSource（他人态映射对方视图） */
 const educationTag = computed(() => {
-  const level = profileStore.basicProfile?.educationLevel;
+  const level = basicProfileSource.value?.educationLevel;
   if (!level) return "";
   const map: Record<string, string> = {
     high_school: t("discover.educationHighSchool"),
@@ -331,9 +538,10 @@ const educationTag = computed(() => {
   return map[level] ?? "";
 });
 
-/** 感情状态标签（relationshipStatus 映射） */
+/** 感情状态标签（relationshipStatus 映射）
+ *  2026-08-13：改读 basicProfileSource（他人态映射对方视图） */
 const relationshipTag = computed(() => {
-  const status = profileStore.basicProfile?.relationshipStatus;
+  const status = basicProfileSource.value?.relationshipStatus;
   if (!status) return "";
   const map: Record<string, string> = {
     never: t("discover.relationshipNever"),
@@ -344,14 +552,23 @@ const relationshipTag = computed(() => {
   return map[status] ?? "";
 });
 
-/** QQ 风格：APP 专属标签胶囊行（学历 / 感情状态 / 未来规划标签，最多 4 个） */
+/** QQ 风格：APP 专属标签胶囊行（学历 / 感情状态 / 未来规划标签，最多 4 个）
+ *  2026-08-13：他人态并入对方公开视图 tags（匹配标签） */
 const profileTagChips = computed<string[]>(() => {
   const chips: string[] = [];
   const edu = educationTag.value;
   if (edu) chips.push(edu);
   const rel = relationshipTag.value;
   if (rel) chips.push(rel);
-  const plans = profileStore.basicProfile?.futurePlanTags ?? [];
+  // 他人态：对方公开视图的兴趣标签直接并入（超出 4 个截断）
+  if (!isOwnProfile.value) {
+    for (const tag of otherProfile.value?.tags ?? []) {
+      if (chips.length >= 4) break;
+      const s = tag?.trim();
+      if (s) chips.push(s);
+    }
+  }
+  const plans = basicProfileSource.value?.futurePlanTags ?? [];
   for (const p of plans) {
     if (chips.length >= 4) break;
     const s = p?.trim();
@@ -362,6 +579,11 @@ const profileTagChips = computed<string[]>(() => {
 
 /** 是否展示 APP 专属标签行 */
 const showProfileTags = computed(() => profileTagChips.value.length > 0);
+
+/** 2026-08-13：他人态照片墙（对方公开视图 photoGallery，最多 6 张） */
+const otherGallery = computed<string[]>(() =>
+  isOwnProfile.value ? [] : (otherProfile.value?.photoGallery ?? []).slice(0, 6)
+);
 
 /* ========== 2026-08-08 QQ 主页重构：成就卡片（整合社交升温 + 匹配 + 喜欢） ========== */
 
@@ -667,12 +889,7 @@ const menuItems = computed<MenuItem[]>(() => [
     bgColor: "var(--c-lavender-100, #EDE9FE)",
     label: t("profile.shareFriend"),
     hint: t("profile.earnReward"),
-    action: () => {
-      uni.showShareMenu({
-        withShareTicket: true,
-        menus: ["shareAppMessage", "shareTimeline"],
-      });
-    },
+    action: openInviteModal,
   },
   /* 6. 帮助与客服（常见问题、联系人工客服） */
   {
@@ -797,6 +1014,99 @@ function handleMenuTap(item: MenuItem) {
   }
 }
 
+/* ========== 3-K 推荐给好友（邀请奖励） ========== */
+
+/**
+ * 邀请码视图（POST /invites 响应载荷）。
+ */
+interface InviteCodeView {
+  code: string;
+  inviteUrl: string;
+}
+
+/**
+ * 邀请奖励记录视图（GET /invites/rewards 响应项）。
+ */
+interface InviteRewardView {
+  id: number;
+  inviteeUserId: number;
+  inviteeName: string;
+  rewardPoints: number;
+  status: string;
+  createdAt: string;
+}
+
+/** 邀请弹窗可见性 */
+const showInviteModal = ref(false);
+/** 邀请码（生成中为空） */
+const inviteCode = ref("");
+/** 邀请码生成中 */
+const inviteLoading = ref(false);
+/** 邀请码生成失败文案 */
+const inviteError = ref("");
+/** 已获得邀请奖励积分（GET /invites/rewards 汇总） */
+const inviteRewardPoints = ref(0);
+
+/**
+ * 打开「推荐给好友」弹窗（3-K）。
+ * - mock：保留现有 showShareMenu 行为；
+ * - real：POST /invites 幂等生成/返回邀请码，GET /invites/rewards 拉取奖励记录。
+ */
+async function openInviteModal(): Promise<void> {
+  lightHaptic();
+  if (useMock()) {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ["shareAppMessage", "shareTimeline"],
+    });
+    return;
+  }
+  showInviteModal.value = true;
+  inviteCode.value = "";
+  inviteRewardPoints.value = 0;
+  inviteLoading.value = true;
+  inviteError.value = "";
+  try {
+    // 幂等生成/返回我的邀请码（重复进入直接返回已有 code）
+    const invite = await request<InviteCodeView, never>({
+      url: "/invites",
+      method: "POST",
+    });
+    inviteCode.value = invite?.code ?? "";
+    if (!inviteCode.value) {
+      inviteError.value = t("profile.inviteError");
+    }
+  } catch (error) {
+    inviteError.value = error instanceof Error ? error.message : t("profile.inviteError");
+  } finally {
+    inviteLoading.value = false;
+  }
+  // 奖励记录可选展示：失败不影响邀请码展示（静默）
+  if (inviteCode.value) {
+    try {
+      const rewards = await request<InviteRewardView[]>({ url: "/invites/rewards", method: "GET" });
+      inviteRewardPoints.value = (rewards ?? []).reduce(
+        (sum, r) => sum + (typeof r.rewardPoints === "number" ? r.rewardPoints : 0),
+        0
+      );
+    } catch (_e) {
+      // 拉取失败保持 0 积分展示
+    }
+  }
+}
+
+/** 复制邀请码到剪贴板 */
+function copyInviteCode(): void {
+  if (!inviteCode.value) return;
+  lightHaptic();
+  uni.setClipboardData({
+    data: inviteCode.value,
+    success: () => {
+      uni.showToast({ title: t("profile.inviteCopied"), icon: "success" });
+    },
+  });
+}
+
 /**
  * 跳转到资料编辑页
  */
@@ -819,6 +1129,12 @@ function goCompleteProfile() {
  * - 跳转到与该用户的私聊会话页（带 targetUserId 参数）
  */
 function handleSayHi() {
+  // 2026-08-13 防御门禁：他人态正常仅登录用户可见（未登录被 LockScreen 拦截），
+  // 此处兜底避免未来入口变化导致游客裸跳聊天页触发鉴权 401
+  if (!sessionStore.isLoggedIn) {
+    uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
+    return;
+  }
   successHaptic();
   const userId = targetUserId.value;
   if (!userId) return;
@@ -832,7 +1148,7 @@ function handleSayHi() {
  */
 function handleVipClick() {
   lightHaptic();
-  openAppPath("/pages/vip/index");
+  openAppPath("/subpackages/vip/index");
 }
 
 /* ========== Phase Feedback5：60s 语音状态（P2.6 真实化） ========== */
@@ -1371,6 +1687,15 @@ onShareAppMessage(() => {
 let profileRequestedOnce = false;
 onShow(() => {
   loadPageUserIdParam();
+  // 2026-08-12 V3：他人主页按对方背景显示（每次进入他人态都拉取，避免切换目标后残留）
+  // 2026-08-13：升级为完整他人资料加载（背景 + 头像/昵称/标签视图），
+  // 内部含游客门禁（未登录不发起受保护请求，稳定停在 LockScreen）
+  if (targetUserId.value && !isOwnProfile.value) {
+    void loadOtherProfile(targetUserId.value);
+  } else {
+    otherProfile.value = null;
+    otherBgUrl.value = "";
+  }
   if (profileRequestedOnce) return;
   // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
   // 冷启动无 token 时 onShow 会并发拉 basic/campus/schedule/stats/social-progress
@@ -1429,8 +1754,10 @@ onUnload(() => {
 </script>
 
 <template>
-  <view class="profile-page page-bottom-safe page-fade-in">
+  <view class="profile-page page-bottom-safe">
     <!-- ==================== 未完善资料：锁定页面 ==================== -->
+    <!-- 2026-08-13 保持锁定（用户确认）：未登录无论自己/他人主页均显示 LockScreen
+         登录引导；loadOtherProfile 内部游客门禁保证此处不发起受保护请求、无 401 踢跳 -->
     <LockScreen
       v-if="!isUnlocked"
       :completion-percent="completionPercent"
@@ -1496,47 +1823,20 @@ onUnload(() => {
         <!-- 顶部背景图（Phase D4 · 可配置，默认品牌色渐变；Phase E1 · 支持上传）
              2026-08-08 QQ 主页风格：widthFix 完整展示背景图（下拉可看全图），pexels 外链本地化 -->
         <view class="profile-bg">
+          <!-- 个人背景自然过渡：加载完成后淡入（bgLoaded 控制 opacity，@load 触发）
+               2026-08-12 V3：本人 → 自己上传的背景；他人 → 对方背景（headerBgUrl） -->
           <image
-            v-if="profileBackgroundUrl"
+            v-if="headerBgUrl"
             class="profile-bg__img"
-            :src="toLocalImage(profileBackgroundUrl)"
+            :class="{ 'profile-bg__img--loaded': bgLoaded }"
+            :src="toLocalImage(headerBgUrl)"
             mode="widthFix" lazy-load alt=""
+            @load="bgLoaded = true"
           />
           <view class="profile-bg__overlay" />
-          <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
-          <view
-            v-if="isOwnProfile"
-            class="profile-bg__edit press-feedback"
-            hover-class="profile-bg__edit--hover"
-            hover-stay-time="120"
-            role="button"
-            :aria-label="t('profile.editBgAria')"
-            @tap="handleEditBackground"
-          >
-            <image
-              v-if="!isUploading || uploadKind !== 'background'"
-              class="profile-bg__edit-icon"
-              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-              mode="aspectFit" alt=""
-            />
-            <view v-else class="profile-bg__edit-spinner" />
-            <text class="profile-bg__edit-text">
-              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
-            </text>
-          </view>
-          <!-- Phase E1 / H-10：上传中蒙层 -->
-          <view
-            v-if="isUploading && uploadKind === 'background'"
-            class="profile-bg__loading"
-          >
-            <text class="profile-bg__loading-text">{{ uploadProgress }}</text>
-          </view>
-        </view>
-
-        <!-- QQ 名片卡（2026-08-08 重构）：白色资料卡骑封面下缘，头像 + 昵称/标签/签名 + 整宽按钮 -->
-        <view class="profile-head-card">
-          <!-- 头像 + 信息区 -->
-          <view class="profile-info__main">
+          <!-- 2026-08-13 V4：头像 + 昵称叠加在背景上（首屏第一视觉锚点，参考图3）。
+               原白卡内头像/信息区整体上移；白卡改为下方升起的圆角面板，不再骑跨背景 -->
+          <view class="profile-bg__identity">
             <!-- 头像区域（2026-08-09 上传接线：点击弹底部菜单，查看大图/从相册/拍照；
                  他人主页保持预览大图。头像框按身份佩戴不同主题框） -->
             <view
@@ -1545,7 +1845,8 @@ onUnload(() => {
               :aria-label="t('profile.avatarPreviewAria')"
               @tap="handleAvatarTap"
             >
-              <AvatarFrame :frame-id="myFrameId">
+              <!-- 2026-08-12 V3：本人用 myFrameId（登录用户身份），他人用 viewerFrameId（对方身份） -->
+              <AvatarFrame :frame-id="isOwnProfile ? myFrameId : viewerFrameId">
                 <view class="avatar">
                   <SafeImage
                     v-if="profileView.avatarUrl"
@@ -1594,47 +1895,97 @@ onUnload(() => {
               </view>
             </view>
 
-            <view class="profile-info__right">
-              <!-- 用户信息 -->
-              <view class="user-info">
-                <view class="user-info__name-row">
-                  <text class="user-info__name">{{ profileView.displayName }}</text>
-                  <!-- QQ 风格：性别代词 · 年级 标签（APP 专属条件） -->
-                  <text v-if="genderGradeLabel" class="user-info__chip">{{ genderGradeLabel }}</text>
-                  <!-- 认证徽章：已认证显示对应徽章，未认证显示"去认证"CTA（仅自己主页） -->
-                  <VerificationBadge
-                    v-if="verificationBadgeLevel !== 'none' || showVerificationCta"
-                    :level="verificationBadgeLevel"
-                    size="md"
-                    :show-cta-when-none="showVerificationCta"
-                    @tap="handleVerificationClick"
-                  />
-                  <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-                  <view v-if="featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
-                    <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
-                    <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
-                  </view>
+            <!-- 右侧信息（昵称/性别年级/认证/学校/位置/简介，白色文字叠加在背景上） -->
+            <view class="profile-bg__idinfo">
+              <view class="profile-bg__name-row">
+                <text class="profile-bg__name">{{ profileView.displayName }}</text>
+                <!-- QQ 风格：性别代词 · 年级 标签（APP 专属条件） -->
+                <text v-if="genderGradeLabel" class="profile-bg__chip">{{ genderGradeLabel }}</text>
+                <!-- 认证徽章：已认证显示对应徽章，未认证显示"去认证"CTA（仅自己主页） -->
+                <VerificationBadge
+                  v-if="verificationBadgeLevel !== 'none' || showVerificationCta"
+                  :level="verificationBadgeLevel"
+                  size="md"
+                  :show-cta-when-none="showVerificationCta"
+                  @tap="handleVerificationClick"
+                />
+                <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏）；他人态无 VIP 语义 -->
+                <view v-if="isOwnProfile && featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
+                  <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
+                  <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
                 </view>
-                <!-- 学校信息（APP 专属条件） -->
-                <view class="user-info__school-row">
-                  <image class="user-info__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG" mode="aspectFit" alt="" />
-                  <text class="user-info__school">{{ school }}</text>
-                </view>
-                <!-- 位置行（QQ 风格：家乡城市 → 未来城市） -->
-                <view v-if="locationLabel" class="user-info__location-row">
-                  <image class="user-info__location-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
-                  <text class="user-info__school">{{ locationLabel }}</text>
-                </view>
-                <!-- APP 专属标签胶囊行（学历 / 感情状态 / 未来规划，QQ 风格） -->
-                <view v-if="showProfileTags" class="user-info__tags">
-                  <text
-                    v-for="(chip, idx) in profileTagChips" :key="idx"
-                    class="user-info__chip"
-                  >{{ chip }}</text>
-                </view>
-                <text class="user-info__bio">{{ bio }}</text>
               </view>
+              <!-- 2026-08-13 B5：认证成就名牌行（18+ / 实名 / 学历三级，QQ 认证名牌范式） -->
+              <CertBadgeRow
+                :badges="certBadges"
+                @tap="openCertSheet"
+              />
+              <view class="profile-bg__school-row">
+                <image class="profile-bg__school-icon" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG" mode="aspectFit" alt="" />
+                <text class="profile-bg__school">{{ school }}</text>
+              </view>
+              <!-- 位置行（QQ 风格：家乡城市 → 未来城市） -->
+              <view v-if="locationLabel" class="profile-bg__location-row">
+                <image class="profile-bg__location-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+                <text class="profile-bg__school">{{ locationLabel }}</text>
+              </view>
+              <text v-if="bio" class="profile-bg__bio">{{ bio }}</text>
             </view>
+          </view>
+          <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
+          <view
+            v-if="isOwnProfile"
+            class="profile-bg__edit press-feedback"
+            hover-class="profile-bg__edit--hover"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('profile.editBgAria')"
+            @tap="handleEditBackground"
+          >
+            <image
+              v-if="!isUploading || uploadKind !== 'background'"
+              class="profile-bg__edit-icon"
+              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+              mode="aspectFit" alt=""
+            />
+            <view v-else class="profile-bg__edit-spinner" />
+            <text class="profile-bg__edit-text">
+              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
+            </text>
+          </view>
+          <!-- Phase E1 / H-10：上传中蒙层 -->
+          <view
+            v-if="isUploading && uploadKind === 'background'"
+            class="profile-bg__loading"
+          >
+            <text class="profile-bg__loading-text">{{ uploadProgress }}</text>
+          </view>
+        </view>
+
+        <!-- QQ 名片卡（2026-08-13 V4 重构）：白色内容面板从背景下方升起（圆角顶），
+             首区为匹配标签 + 他人照片墙；头像/昵称已上移到背景 identity 叠加层 -->
+        <view class="profile-head-card">
+          <!-- APP 专属标签胶囊行（学历 / 感情状态 / 未来规划 / 对方兴趣标签，QQ 风格） -->
+          <view v-if="showProfileTags" class="profile-head-card__tags">
+            <text class="profile-head-card__tags-title">{{ t('profile.matchTagsTitle') }}</text>
+            <view class="profile-head-card__chips">
+              <text
+                v-for="(chip, idx) in profileTagChips" :key="idx"
+                class="user-info__chip"
+              >{{ chip }}</text>
+            </view>
+          </view>
+
+          <!-- 他人态：照片墙缩略图（来自对方公开视图 photoGallery） -->
+          <view v-if="!isOwnProfile && otherGallery.length > 0" class="profile-head-card__gallery">
+            <SafeImage
+              v-for="(url, idx) in otherGallery" :key="idx"
+              :src="url"
+              custom-class="profile-head-card__gallery-img"
+              mode="aspectFill"
+              :lazy-load="true"
+              :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
+            />
           </view>
 
           <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换（QQ 风格：资料卡底部整宽按钮） -->
@@ -1651,11 +2002,12 @@ onUnload(() => {
         </view>
 
         <!-- 核心数据统计栏（QQ 主页改造方案：我喜欢的/喜欢我的🔒/最近来访🔒/获赞，点击进对应页） -->
-        <view class="stats-bar">
+        <!-- 2026-08-13：仅自己主页展示（原他人态误显示查看者自己的统计/成就数据） -->
+        <view v-if="isOwnProfile" class="stats-bar">
           <view
             v-for="(stat, index) in stats"
             :key="index"
-            class="stats-bar__item list-item press-feedback"
+            class="stats-bar__item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
@@ -1674,7 +2026,8 @@ onUnload(() => {
         </view>
 
         <!-- 成就卡片（2026-08-08 QQ 主页重构：匹配次数 / 喜欢次数 / 社交升温） -->
-        <view class="achievement-card">
+        <!-- 2026-08-13：仅自己主页展示（他人态由匹配标签 + 照片墙替代） -->
+        <view v-if="isOwnProfile" class="achievement-card">
           <view class="section-header">
             <view class="section-header__left">
               <text class="section-header__title">{{ t('profile.achievementTitle') }}</text>
@@ -1855,13 +2208,14 @@ onUnload(() => {
         </view>
       </view>
 
-      <!-- 社交升温进度 -->
-      <view class="social-section">
+      <!-- 社交升温进度（2026-08-13：仅自己主页展示，他人态无自己进度语义） -->
+      <view v-if="isOwnProfile" class="social-section">
         <SocialProgressIndicator />
       </view>
 
-      <!-- 我的动态预览列表 -->
-      <view class="my-posts-section">
+      <!-- 我的动态预览列表（2026-08-13：仅自己主页展示；
+           他人动态已在白卡照片墙呈现，「查看全部」跳自己动态分区不适用于他人态） -->
+      <view v-if="isOwnProfile" class="my-posts-section">
         <view class="section-header">
           <view class="section-header__left">
             <text class="section-header__title">{{ t('profile.myPosts') }}</text>
@@ -1947,7 +2301,7 @@ onUnload(() => {
         <view
           v-for="(item, index) in menuItems"
           :key="index"
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === menuItems.length - 1 }"
           role="button"
           :aria-label="t('profile.menuItemAria', { label: item.label })"
@@ -1976,7 +2330,7 @@ onUnload(() => {
         <view
           v-for="(item, index) in settingsMenuItems"
           :key="index"
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === settingsMenuItems.length - 1 }"
           role="button"
           :aria-label="t('profile.menuItemAria', { label: item.label })"
@@ -2003,7 +2357,7 @@ onUnload(() => {
         <view
           v-for="(item, index) in bottomMenuItems"
           :key="index"
-          class="menu-item press-feedback list-item"
+          class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === bottomMenuItems.length - 1 }"
           role="button"
           :aria-label="t('profile.menuItemAria', { label: item.label })"
@@ -2036,7 +2390,7 @@ onUnload(() => {
       </view>
 
       <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath('/pages/dev/index')" hover-class="dev-entry--hover" hover-stay-time="100">
+      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="100">
         <text class="dev-entry__text">DEV</text>
       </view>
 
@@ -2045,7 +2399,74 @@ onUnload(() => {
 
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
+
+      <!-- 2026-08-13 B5：认证成就半屏详情面板（三级认证专业性展示） -->
+      <CertDetailSheet
+        :visible="certSheetVisible"
+        :badges="certBadges"
+        :own-profile="isOwnProfile"
+        @close="certSheetVisible = false"
+      />
     </template>
+
+    <!-- 3-K 推荐给好友：邀请码弹窗 -->
+    <view v-if="showInviteModal" class="invite-mask" @tap="showInviteModal = false">
+      <view class="invite-modal" @tap.stop>
+        <text class="invite-modal__title">{{ t('profile.shareFriend') }}</text>
+        <text class="invite-modal__desc">{{ t('profile.inviteHint') }}</text>
+
+        <!-- 加载态 -->
+        <view v-if="inviteLoading" class="invite-modal__loading">
+          <text class="invite-modal__loading-text">{{ t('profile.inviteLoading') }}</text>
+        </view>
+
+        <!-- 错误态（重试） -->
+        <view v-else-if="inviteError" class="invite-modal__error">
+          <text class="invite-modal__error-text">{{ inviteError }}</text>
+          <view
+            class="invite-modal__retry press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('common.retry')"
+            @tap="openInviteModal"
+          >
+            <text class="invite-modal__retry-text">{{ t('common.retry') }}</text>
+          </view>
+        </view>
+
+        <!-- 邀请码展示 + 复制 -->
+        <template v-else-if="inviteCode">
+          <view class="invite-modal__code">{{ inviteCode }}</view>
+          <view
+            class="invite-modal__copy press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('profile.inviteCopy')"
+            @tap="copyInviteCode"
+          >
+            <text class="invite-modal__copy-text">{{ t('profile.inviteCopy') }}</text>
+          </view>
+          <text class="invite-modal__share">{{ t('profile.inviteShareText', { code: inviteCode }) }}</text>
+          <text v-if="inviteRewardPoints > 0" class="invite-modal__earned">
+            {{ t('profile.inviteEarned', { n: inviteRewardPoints }) }}
+          </text>
+        </template>
+
+        <view class="invite-modal__actions">
+          <view
+            class="invite-modal__btn invite-modal__btn--cancel press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="showInviteModal = false"
+          >
+            <text>{{ t('common.close') }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -2126,41 +2547,26 @@ onUnload(() => {
   padding: 0;
 }
 
-/* QQ 名片卡（2026-08-08）：白色资料卡骑封面下缘，头像/信息/整宽按钮均位于卡内 */
+/* QQ 名片卡（2026-08-13 V4 重构）：白色内容面板从背景下方升起——
+ * 圆角顶 + 上阴影，自然接缝；不再负 margin 骑跨背景（头像/昵称已上移到背景
+ * identity 叠加层，背景主体完整露出不遮挡） */
 .profile-head-card {
   position: relative;
   z-index: 2;
-  margin: calc(var(--profile-avatar-size) * -0.5) var(--sp-7) 0;
-  padding: var(--sp-7) var(--sp-8) var(--sp-8);
+  margin: 0;
+  padding: 28rpx 36rpx 40rpx;
   background: var(--c-bg-container);
-  border-radius: var(--r-xl);
-  box-shadow: var(--s-card-soft);
-  border: var(--c-border-card);
+  border-radius: 32rpx 32rpx 0 0;
+  box-shadow: 0 -8rpx 32rpx rgba(15, 23, 42, 0.06);
+  border-top: var(--c-border-card);
 }
 
-/* 头像 + 信息 横排布局（左圆形头像，右昵称/标签/签名） */
-.profile-info__main {
-  display: flex;
-  align-items: center;
-  gap: 28rpx;
-  width: 100%;
-  padding: 0;
-}
-
-.profile-info__right {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-3);
-}
-
-/* 头像容器（QQ 名片卡：位于资料卡内，不再负 margin 骑封面） */
+/* 头像容器（2026-08-13 V4：上移到背景 identity 叠加层内，
+   不再负 margin 骑封面——由 .profile-bg__identity 定位，白描边（AvatarFrame 自带白圈）
+   + 阴影分离层次，背景主体不被遮挡 */
 .avatar-wrap {
   position: relative;
   z-index: 2;
-  margin: 0;
   flex-shrink: 0;
 }
 
@@ -2225,8 +2631,12 @@ onUnload(() => {
 .profile-bg {
   position: relative;
   width: 100%;
-  min-height: var(--profile-bg-height);
-  background: var(--c-gradient-brand);
+  /* 个人背景自然过渡：min-height 在 token 基础上上调 80rpx（固定布局偏移，无对应 token），
+     配合资料卡负 margin 骑跨，让背景图露出更多完整区域；
+     2026-08-12 V3：兜底由品牌渐变改为纯色（用户拍板「保底背景改为一个纯色就行」），
+     他人主页无背景/加载中均落到纯色，避免渐变抢背景主视觉 */
+  min-height: calc(var(--profile-bg-height) + 80rpx);
+  background: var(--c-brand-400);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -2234,6 +2644,13 @@ onUnload(() => {
 .profile-bg__img {
   width: 100%;
   display: block;
+  /* 个人背景自然过渡：加载完成前透明（透出品牌渐变 fallback），@load 后淡入 */
+  opacity: 0;
+  transition: opacity 300ms ease;
+
+  &--loaded {
+    opacity: 1;
+  }
 }
 
 /* 2026-08-08：改为半透明渐变（QQ 封面风格），背景图完整透出，底部轻微压暗保证可读性 */
@@ -2244,15 +2661,17 @@ onUnload(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 45%, rgba(15, 23, 42, 0.32) 100%);
+  /* 个人背景自然过渡：顶部更多透明、中部轻微压暗过渡、底部轻微压暗，过渡更平滑 */
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 30%, rgba(15, 23, 42, 0.18) 70%, rgba(15, 23, 42, 0.32) 100%);
   pointer-events: none;
 }
 
-/* Phase E1 / H-10：编辑背景图按钮（右下角相机图标，半透明白底胶囊） */
+/* Phase E1 / H-10：编辑背景图按钮（右下角相机图标，半透明白底胶囊）。
+   2026-08-13 V4：bottom 16→128rpx，避开背景 identity 叠加层（不压在头像信息上） */
 .profile-bg__edit {
   position: absolute;
   right: var(--sp-5);
-  bottom: var(--sp-4);
+  bottom: 128rpx;
   z-index: 3;
   display: inline-flex;
   align-items: center;
@@ -2307,6 +2726,139 @@ onUnload(() => {
   font-size: var(--fs-md);
   color: var(--c-neutral-0);
   font-weight: 600;
+}
+
+/* ========== 2026-08-13 V4：背景上的身份叠加层（首屏第一视觉锚点，参考图3） ========== */
+/* 头像 + 右侧信息整体悬浮于背景底部，白色文字压暗渐变保证可读性 */
+.profile-bg__identity {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24rpx;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 0 36rpx;
+}
+
+.profile-bg__idinfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8rpx;
+}
+
+.profile-bg__name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.profile-bg__name {
+  font-size: var(--fs-7xl);
+  font-weight: 800;
+  color: var(--c-text-inverse);
+  /* 与卡片昵称同款阴影 token，mp-weixin 无 backdrop-filter 下的可读性保障 */
+  text-shadow: var(--c-card-name-shadow);
+  letter-spacing: 0.02em;
+  max-width: 320rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 背景上的性别年级胶囊（半透明底，白色文字，区别于白卡内品牌色胶囊） */
+.profile-bg__chip {
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-full);
+  background: var(--c-overlay-bg-light);
+  border: 1rpx solid var(--c-overlay-border-mid);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+}
+
+.profile-bg__school-row,
+.profile-bg__location-row {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  max-width: 100%;
+}
+
+.profile-bg__school-icon,
+.profile-bg__location-icon {
+  width: 26rpx;
+  height: 26rpx;
+  flex-shrink: 0;
+}
+
+.profile-bg__school {
+  font-size: var(--fs-sm);
+  color: var(--c-overlay-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-bg__bio {
+  font-size: var(--fs-md);
+  color: var(--c-overlay-text-primary);
+  line-height: 1.5;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 背景编辑按钮位置已调整（见上方 .profile-bg__edit：bottom 128rpx 避开 identity 叠加层） */
+
+/* ========== 2026-08-13 V4：白卡首区（匹配标签 + 他人照片墙） ========== */
+.profile-head-card__tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.profile-head-card__tags-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-text-secondary);
+}
+
+.profile-head-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.profile-head-card__gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+
+/* 照片墙缩略图容器（SafeImage 根，rootClass 缺失时由 custom-class 直接拉伸） */
+.profile-head-card__gallery :deep(.safe-image) {
+  width: 208rpx;
+  height: 208rpx;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+:deep(.profile-head-card__gallery-img) {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-md);
 }
 
 /* 未完善资料：完善引导横幅（2026-08-07 链路调整） */
@@ -2481,28 +3033,9 @@ onUnload(() => {
 }
 
 /* 用户信息（设计需求：位于头像右侧，左对齐） */
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: var(--sp-2);
-}
-
-/* 昵称行（昵称 + 标签 + 认证 + VIP 徽章；允许换行避免溢出） */
-.user-info__name-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
-  margin-bottom: var(--sp-2);
-}
-
-.user-info__name {
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  color: var(--c-text-primary);
-  text-shadow: none;
-}
+/* 2026-08-13 V4：旧白卡内信息区样式清理——
+ * 头像/昵称/学校/位置/简介已上移到背景 identity 叠加层，
+ * 仅保留白卡标签胶囊（.user-info__chip）与 VIP 徽章（背景身份行复用） */
 
 /* QQ 风格标签胶囊（性别·年级 / 学历 / 感情状态 / 未来规划） */
 .user-info__chip {
@@ -2517,28 +3050,7 @@ onUnload(() => {
   flex-shrink: 0;
 }
 
-/* 标签胶囊行 */
-.user-info__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-2);
-}
-
-/* 位置行（QQ 风格：家乡 → 未来城市） */
-.user-info__location-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-bottom: var(--sp-2);
-}
-
-.user-info__location-icon {
-  width: 28rpx;
-  height: 28rpx;
-}
-
-/* VIP 徽章 */
+/* VIP 徽章（背景身份行） */
 .user-info__vip-badge {
   display: flex;
   align-items: center;
@@ -2560,45 +3072,6 @@ onUnload(() => {
   font-weight: 700;
   color: var(--c-text-vip);
   line-height: 1;
-}
-
-/* 学校信息行（白卡上浅灰胶囊 + 深色字） */
-.user-info__school-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-bottom: var(--sp-2);
-  padding: var(--sp-1) var(--sp-4);
-  background: var(--c-neutral-50);
-  border-radius: var(--r-full);
-}
-
-.user-info__school-icon {
-  /* 修复：png 图标未设宽高会按原图尺寸渲染，导致顶部出现超大图标；
-     改用 SVG 变体并固定 28rpx 尺寸 */
-  width: 28rpx;
-  height: 28rpx;
-  line-height: 1;
-}
-
-.user-info__school {
-  font-size: var(--fs-sm);
-  color: var(--c-text-secondary);
-  font-weight: 500;
-  max-width: 360rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-info__bio {
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-  max-width: 460rpx;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 编辑资料按钮（QQ 名片卡底部整宽） */
@@ -3570,5 +4043,129 @@ onUnload(() => {
   padding: var(--sp-2) var(--sp-8);
   border-radius: var(--r-md);
   letter-spacing: var(--sp-1);
+}
+
+/* ==================== 3-K 推荐给好友：邀请码弹窗 ==================== */
+.invite-mask {
+  position: fixed;
+  inset: 0;
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0 60rpx;
+}
+
+.invite-modal {
+  width: 100%;
+  background: var(--c-neutral-0);
+  border-radius: var(--r-lg);
+  padding: 40rpx 36rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.invite-modal__title {
+  font-size: var(--f-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.invite-modal__desc {
+  font-size: var(--f-sm);
+  color: var(--c-text-secondary);
+  line-height: 1.7;
+  text-align: center;
+}
+
+.invite-modal__loading-text {
+  font-size: var(--f-sm);
+  color: var(--c-text-tertiary);
+}
+
+.invite-modal__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.invite-modal__error-text {
+  font-size: var(--f-sm);
+  color: var(--c-error, #f43f5e);
+}
+
+.invite-modal__retry {
+  padding: 12rpx 40rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-500);
+}
+
+.invite-modal__retry-text {
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--c-neutral-0);
+}
+
+.invite-modal__code {
+  font-size: var(--f-2xl, 56rpx);
+  font-weight: 800;
+  letter-spacing: 8rpx;
+  color: var(--c-brand-600);
+  background: var(--c-bg-brand, #e8f8f0);
+  padding: 20rpx 48rpx;
+  border-radius: var(--r-md);
+}
+
+.invite-modal__copy {
+  padding: 14rpx 48rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand-500);
+}
+
+.invite-modal__copy-text {
+  font-size: var(--f-md);
+  font-weight: 600;
+  color: var(--c-neutral-0);
+}
+
+.invite-modal__share {
+  font-size: var(--f-sm);
+  color: var(--c-text-secondary);
+  line-height: 1.6;
+  text-align: center;
+  word-break: break-all;
+}
+
+.invite-modal__earned {
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--c-brand-600);
+}
+
+.invite-modal__actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 8rpx;
+  width: 100%;
+}
+
+.invite-modal__btn {
+  flex: 1;
+  height: 84rpx;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--f-md);
+  font-weight: 600;
+}
+
+.invite-modal__btn--cancel {
+  background: var(--c-bg-page, #f4f6fa);
+  color: var(--c-text-secondary);
 }
 </style>

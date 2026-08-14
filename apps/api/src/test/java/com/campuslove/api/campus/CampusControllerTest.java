@@ -58,12 +58,13 @@ class CampusControllerTest extends ControllerTestBase {
                 campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService);
     }
 
-    /** 创建测试用 CampusTopicView（13 字段 record）。 */
+    /** 创建测试用 CampusTopicView（14 字段 record）。 */
     private CampusTopicView buildTopicView(Long id, String title) {
         return new CampusTopicView(
                 id, 1L, "学习", title, "内容", null,
                 100L, "测试用户", "https://cdn.example.com/avatar.png",
-                0, 0, false, "2026-07-26T10:00:00");
+                0, 0, false, "2026-07-26T10:00:00",
+                java.util.List.of());
     }
 
     /** 创建测试用 CampusTopicReplyView（8 字段 record）。 */
@@ -151,10 +152,11 @@ class CampusControllerTest extends ControllerTestBase {
             when(schoolRepository.findByName("测试大学")).thenReturn(Optional.of(school(1L)));
 
             CampusTopicView created = buildTopicView(1L, "新话题");
-            when(campusService.createCampusTopic(eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容")))
+            when(campusService.createCampusTopic(
+                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试"))))
                     .thenReturn(created);
 
-            CreateCampusTopicRequest req = new CreateCampusTopicRequest("学习", "新话题", "内容");
+            CreateCampusTopicRequest req = new CreateCampusTopicRequest("学习", "新话题", "内容", java.util.List.of("考试"));
 
             // Act
             ApiResponse<CampusTopicView> result = controller.createTopic(req);
@@ -162,7 +164,8 @@ class CampusControllerTest extends ControllerTestBase {
             // Assert
             assertNotNull(result);
             assertSame(created, result.data());
-            verify(campusService).createCampusTopic(eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"));
+            verify(campusService).createCampusTopic(
+                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试")));
         });
     }
 
@@ -188,11 +191,11 @@ class CampusControllerTest extends ControllerTestBase {
         // Arrange
         withUserId(100L, () -> {
             CampusCertificationView view = buildCertView(1L, 100L, "PENDING");
-            when(certService.submitCertification(eq(100L), anyString(), anyString(), anyString()))
+            when(certService.submitCertification(eq(100L), anyString(), anyString(), anyString(), any(), any()))
                     .thenReturn(view);
 
             CampusCertificationRequest req = new CampusCertificationRequest(
-                    "测试大学", "计算机", "https://cdn.example.com/id.jpg");
+                    "测试大学", "计算机", "https://cdn.example.com/id.jpg", null, null);
 
             // Act
             ApiResponse<CampusCertificationView> result = controller.submitCertification(req);
@@ -200,7 +203,8 @@ class CampusControllerTest extends ControllerTestBase {
             // Assert
             assertNotNull(result);
             assertSame(view, result.data());
-            verify(certService).submitCertification(eq(100L), eq("测试大学"), eq("计算机"), eq("https://cdn.example.com/id.jpg"));
+            verify(certService).submitCertification(eq(100L), eq("测试大学"), eq("计算机"),
+                    eq("https://cdn.example.com/id.jpg"), eq(null), eq(null));
         });
     }
 

@@ -544,8 +544,8 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
   /**
    * Store 模块清单（SubTask 3.3.3 要求覆盖 14+ 个 Store）。
    * 每个 Store 对应 storeErrors.<module> 命名空间。
-   * 修复（R4-batch2）：原断言 14 但清单仅 13 项且漏掉 activity/report/session，
-   * 与 zh-CN/en-US 实际 16 个 storeErrors 子模块对齐。
+   * 修复（R4-batch2）：原断言 14 但清单仅 13 项且漏掉 activity/report/session。
+   * 2026-08-10：视频通话功能整体下架，storeErrors.videoCall 已随模块移除，断言 16 → 15。
    */
   const storeModules = [
     "storeErrors.campus",
@@ -553,7 +553,6 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
     "storeErrors.circle",
     "storeErrors.dailyQuestion",
     "storeErrors.chat",
-    "storeErrors.videoCall",
     "storeErrors.promoCode",
     "storeErrors.vip",
     "storeErrors.profile",
@@ -566,8 +565,8 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
     "storeErrors.session",
   ];
 
-  it("应覆盖 16 个 Store 模块", () => {
-    expect(storeModules.length).toBe(16);
+  it("应覆盖 15 个 Store 模块", () => {
+    expect(storeModules.length).toBe(15);
   });
 
   it.each(storeModules)(

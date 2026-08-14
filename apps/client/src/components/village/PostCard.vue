@@ -176,7 +176,7 @@ function openActivity(activityId: number | string) {
     >
       <view
         v-for="(img, idx) in post.images.slice(0, MAX_POST_IMAGES)"
-        :key="idx"
+        :key="img || idx"
         class="post-card__image-wrap"
         :class="{ 'post-card__image-wrap--single': post.images.length === 1 }"
       >

@@ -41,6 +41,8 @@ import { clientEnv } from "../config/env";
 import { getToken } from "../services/http";
 // infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
 import { ensurePrivacyAuthorized } from "./privacy";
+// 2026-08-10 包体积优化：mock 模式判断（纯 env 读取，无 pinia 依赖）
+import { useMock } from "../stores/helpers/use-mock";
 
 /**
  * 上传文件存储路径前缀。
@@ -57,6 +59,27 @@ const UPLOADS_PREFIX = "/uploads/";
  * 客户端拼接完整 URL 时使用 {@code clientEnv.apiBaseUrl + MEDIA_PROXY_PREFIX + userId/...}。</p>
  */
 const MEDIA_PROXY_PREFIX = "/api/v1/media/";
+
+/**
+ * 2026-08-10 包体积优化：应用资产公开端点前缀。
+ *
+ * <p>对应后端 {@code MediaAccessController} 的 {@code GET /api/v1/media/app-assets/{relpath}}
+ * （免登录、免 token，静态装饰图经种子脚本入库，后台可审核下线）。</p>
+ */
+const APP_ASSET_PREFIX = "/api/v1/media/app-assets/";
+
+/**
+ * 本地必需资源前缀（构建后保留在包内，不迁移后端）：
+ * - icons / logo / TabBar 图标等组件必需资源；
+ * - audio（本地音效）；
+ * - default-avatar（加载兜底用，本地更稳）。
+ */
+const LOCAL_ASSET_PREFIXES = [
+  "/static/assets/icons/",
+  "/static/audio/",
+  "/static/default-avatar",
+  "/static/assets/default-avatar",
+];
 
 /**
  * 查询参数 token 的参数名。
@@ -125,8 +148,50 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     return appendTokenIfMissing(proxyUrl);
   }
 
-  // 其他相对路径（如 /static/assets/...）→ 原样返回，由 uni-app 解析为本地资源
+  // 2026-08-10 包体积优化：/static/ 装饰资产（banner/poster/campus/avatars 等）
+  // → 改引后端 app-assets 公开端点（真实模式）；本地必需资源（icons/logo/audio/
+  // default-avatar）与 mock 模式保留本地路径。
+  if (path.startsWith("/static/") && !LOCAL_ASSET_PREFIXES.some((p) => path.startsWith(p))) {
+    if (useMock()) {
+      return path;
+    }
+    const apiRoot = clientEnv.apiBaseUrl.replace(/\/api\/?$/, "");
+    const rel = path.substring("/static/".length);
+    const appAssetUrl = `${apiRoot}${APP_ASSET_PREFIX}${rel}`;
+    // 复用鉴权代理补 token 逻辑（app-assets 端点 permitAll，带 token 也无害；
+    // 后续改签名 URL 策略时同一出口生效）
+    return appendTokenIfMissing(appAssetUrl);
+  }
+
+  // 其他相对路径（如 /static/assets/icons/...、/static/audio/...）→ 原样返回，由 uni-app 解析为本地资源
   return path;
+}
+
+/**
+ * 模块级 token 缓存：避免列表模板每项每图每次渲染都同步读 storage。
+ * 2026-08-10 切换提速：getToken() 底层是 uni.getStorageSync（原生桥接），
+ * 长列表（PostCard/WallPostCard 九宫格）重渲染时会触发 N×M 次同步读，
+ * 此处以 30s TTL 缓存，登录/登出或 401 时调用 invalidateMediaTokenCache() 主动失效。
+ */
+const TOKEN_CACHE_TTL_MS = 30_000;
+let cachedMediaToken: { token: string | null; ts: number } | null = null;
+
+/** 读取当前 token（优先缓存，TTL 内不重复读 storage） */
+function getCachedToken(): string | null {
+  const now = Date.now();
+  if (cachedMediaToken && now - cachedMediaToken.ts < TOKEN_CACHE_TTL_MS) {
+    return cachedMediaToken.token;
+  }
+  const token = getToken();
+  cachedMediaToken = { token, ts: now };
+  return token;
+}
+
+/**
+ * 主动失效 token 缓存（登录/登出/401 时调用）。
+ */
+export function invalidateMediaTokenCache(): void {
+  cachedMediaToken = null;
 }
 
 /**
@@ -135,8 +200,9 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
  * <p>如果 URL 已包含 {@code ?token=} 参数，则不重复附加；
  * 否则在 URL 末尾追加 {@code ?token=xxx} 或 {@code &token=xxx}。</p>
  *
- * <p>token 来源：{@link ../services/http.getToken}，与 {@code Authorization} 头使用同一
- * JWT。token 不存在时返回原 URL（鉴权代理端点会返回 403，由 SafeImage 触发 fallback）。</p>
+ * <p>token 来源：{@link ../services/http.getToken}（经 30s 模块级缓存），与
+ * {@code Authorization} 头使用同一 JWT。token 不存在时返回原 URL
+ * （鉴权代理端点会返回 403，由 SafeImage 触发 fallback）。</p>
  *
  * @param url 已构造的鉴权代理 URL（可能含其他查询参数）
  * @returns 附加 token 后的 URL；token 缺失时返回原 URL
@@ -152,7 +218,7 @@ function appendTokenIfMissing(url: string): string {
   if (url.includes(`?${TOKEN_QUERY_PARAM}=`) || url.includes(`&${TOKEN_QUERY_PARAM}=`)) {
     return url;
   }
-  const token = getToken();
+  const token = getCachedToken();
   if (!token) {
     // 未登录或 token 已过期：返回原 URL，由后端 401/403 触发 SafeImage fallback
     return url;

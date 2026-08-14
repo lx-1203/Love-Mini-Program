@@ -14,10 +14,19 @@
  * 2. 在非组件场景（如 services、stores、utils）：
  *    import { t } from '@/i18n';
  *    t('common.networkError');
+ *
+ * 包体积优化（2026-08-10）：
+ * - en-US 语言包（约 135KB 编译产物）仅保留给 H5/APP 端；
+ * - mp-weixin 构建通过条件编译（#ifndef MP-WEIXIN）将 en-US 静态导入与注册
+ *   整体剔除，主包因此减负约 135KB（主包 2MB 门禁，见 scripts/verify-package-size.mjs）。
+ *   依据：全代码库无 setLocale/locale 运行时切换调用，小程序端默认且始终为 zh-CN；
+ *   若未来需要小程序多语言，应改为分包按需加载 en-US，而非恢复静态全量导入。
  */
 import { createI18n } from "vue-i18n";
 import zhCN from "./locales/zh-CN";
+// #ifndef MP-WEIXIN
 import enUS from "./locales/en-US";
+// #endif
 
 /**
  * 创建 vue-i18n 实例。
@@ -41,7 +50,9 @@ export const i18n = createI18n({
   fallbackLocale: "zh-CN",
   messages: {
     "zh-CN": zhCN,
+    // #ifndef MP-WEIXIN
     "en-US": enUS,
+    // #endif
   },
 });
 

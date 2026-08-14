@@ -9,12 +9,15 @@
  * 2026-08-07 已落地真实内容源：四板块 → 咨询课程页 / 帮助客服页，测试 → MBTI 页。
  */
 import { useI18n } from "vue-i18n";
+import { onShareAppMessage } from "@dcloudio/uni-app";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 // 任务 E3：三个内容页（附近的人 / MBTI / 恋爱咨询课程）路由常量
 import { ROUTES } from "../../constants/routes";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /** 恋爱咨询四板块 */
 const consultingBoards = [
@@ -71,10 +74,19 @@ function onTestTap(_testId: string) {
   lightHaptic();
   uni.navigateTo({ url: ROUTES.LOVE_CENTER.MBTI });
 }
+
+/** 恋爱中心分享（2026-08-10 A3 补齐）：分享自己的个人主页 */
+onShareAppMessage(() => {
+  const name = sessionStore.userSession?.displayName || t("chat.privateMessageTitle");
+  return {
+    title: t("profile.shareProfileTitle", { name }),
+    path: "/pages/profile/index",
+  };
+});
 </script>
 
 <template>
-  <view class="love-center page-fade-in">
+  <view class="love-center">
     <!-- 顶部栏 -->
     <view class="love-center__header">
       <view class="love-center__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

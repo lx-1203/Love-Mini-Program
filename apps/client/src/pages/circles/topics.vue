@@ -3,8 +3,8 @@
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
  */
-import { ref, onUnmounted } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime } from "../../stores/circle";
@@ -43,29 +43,10 @@ const isRefreshing = ref(false);
 /** 加载更多中 */
 const isLoadingMore = ref(false);
 
-const pageVisible = ref(false);
-/** SubTask 1.5.2：页面进入淡入定时器引用，用于卸载时清理 */
-let pageEnterTimer: ReturnType<typeof setTimeout> | null = null;
-
-onShow(() => {
-  pageVisible.value = false;
-  if (pageEnterTimer) clearTimeout(pageEnterTimer);
-  pageEnterTimer = setTimeout(() => {
-    pageEnterTimer = null;
-    pageVisible.value = true;
-  }, 30);
-});
 
 /**
  * SubTask 1.5.2：页面卸载时清理未触发的淡入定时器。
  */
-onUnmounted(() => {
-  if (pageEnterTimer) {
-    clearTimeout(pageEnterTimer);
-    pageEnterTimer = null;
-  }
-});
-
 /**
  * 刷新话题列表
  */
@@ -153,7 +134,7 @@ defineExpose({ goToAuthorProfile });
 </script>
 
 <template>
-  <view class="topics-page" :class="{ 'page-fade-in': pageVisible }">
+  <view class="topics-page">
     <!-- 顶部导航栏 -->
     <view class="topics-header">
       <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">

@@ -29,12 +29,102 @@ import type {
   PostHistoryResponse,
   PostLikeResponse,
   PostListResponse,
+  PostSummaryView,
   ShareView,
   SimilarAuthor,
   // 修复 no-duplicate-imports：合并 ./types 的重复 import
   PostFilters,
 } from "./types";
 import type { CampusFeedView } from "../../services/generated/api-types-supplement";
+
+/**
+ * 帖子搜索结果（对应后端 record PostSearchView）。
+ * post 为 PostSummaryView（同列表卡片结构），hotScore 热度分，matchType 命中位置。
+ */
+export interface PostSearchResult {
+  post: PostSummaryView;
+  hotScore: number;
+  matchType: "title" | "tag" | "content";
+}
+
+/** 热搜词（对应后端 record HotSearchView）。 */
+export interface HotSearchItem {
+  keyword: string;
+  searchCount: number;
+}
+
+/** 分页响应（后端 Page<T> 信封解包后的形态）。 */
+export interface SearchPageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+/**
+ * 搜索帖子（2026-08-11）。
+ * GET /api/v1/search/posts?keyword=&page=&size=
+ */
+export async function searchPostsApi(
+  keyword: string,
+  page: number,
+  signal?: AbortSignal
+): Promise<SearchPageResponse<PostSearchResult>> {
+  const params = new URLSearchParams({
+    keyword,
+    page: String(Math.max(0, page - 1)),
+    size: String(PAGE_SIZE),
+  });
+  return request<SearchPageResponse<PostSearchResult>>({
+    url: `/search/posts?${params.toString()}`,
+    method: "GET",
+    signal,
+  });
+}
+
+/**
+ * 热搜词列表（2026-08-11）。
+ * GET /api/v1/search/hot?limit=
+ */
+export async function getHotSearchApi(limit = 10): Promise<HotSearchItem[]> {
+  return request<HotSearchItem[]>({
+    url: `/search/hot?limit=${limit}`,
+    method: "GET",
+  });
+}
+
+/**
+ * 热度榜（2026-08-11）。
+ * GET /api/v1/posts/hot-board?page=&pageSize=
+ */
+export async function getHotBoardApi(
+  page: number,
+  pageSize = PAGE_SIZE,
+  signal?: AbortSignal
+): Promise<PostListResponse> {
+  return request<PostListResponse>({
+    url: `/posts/hot-board?page=${page}&pageSize=${pageSize}`,
+    method: "GET",
+    signal,
+  });
+}
+
+/**
+ * 帖子推荐流（2026-08-11 贴吧式推流）。
+ * GET /api/v1/posts/recommend?page=&pageSize=
+ */
+export async function getPostRecommendApi(
+  page: number,
+  pageSize = PAGE_SIZE,
+  signal?: AbortSignal
+): Promise<PostListResponse> {
+  return request<PostListResponse>({
+    url: `/posts/recommend?page=${page}&pageSize=${pageSize}`,
+    method: "GET",
+    signal,
+  });
+}
 
 /**
  * 构建帖子列表请求参数对象。
