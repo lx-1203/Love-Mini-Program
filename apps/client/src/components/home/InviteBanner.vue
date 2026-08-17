@@ -8,11 +8,11 @@ defineEmits<{ (e: "invite"): void }>();
       <text class="invite-banner__icon-text">🎁</text>
     </view>
     <view class="invite-banner__body">
-      <text class="invite-banner__title">邀请好友一起寻觅</text>
-      <text class="invite-banner__desc">遇见更多美好，解锁专属权益</text>
+      <text class="invite-banner__title">邀请好友一起玩</text>
+      <text class="invite-banner__desc">各得7天会员体验</text>
     </view>
     <view class="invite-banner__btn">
-      <text class="invite-banner__btn-text">去邀请 ›</text>
+      <text class="invite-banner__btn-text">去邀请</text>
     </view>
     <text class="invite-banner__wing">💗</text>
   </view>

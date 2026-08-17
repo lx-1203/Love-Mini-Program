@@ -21,7 +21,7 @@ const { t } = useI18n();
 const icons = {
   pass: IMAGE_PATHS.ICONS_V2.X_GRAY,
   like: IMAGE_PATHS.ICONS_V2.HEART_WHITE,
-  superLike: IMAGE_PATHS.ICONS_V2.CHAT_WHITE,
+  superLike: IMAGE_PATHS.ICONS_V2.CHAT_PINK,
 } as const;
 </script>
 
@@ -64,7 +64,7 @@ const icons = {
       @tap="!disabled && !busy && emit('like')"
     >
       <view class="match-actions__btn match-actions__btn--like">
-        <image class="match-actions__icon" :src="icons.like" mode="aspectFit" alt="" />
+        <image class="match-actions__icon match-actions__icon--lg" :src="icons.like" mode="aspectFit" alt="" />
       </view>
       <text class="match-actions__label">{{ t('discover.like') }}</text>
     </view>
@@ -76,8 +76,8 @@ const icons = {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 76rpx;
-  padding: 24rpx 0 8rpx;
+  gap: 64rpx;
+  padding: 40rpx 0 8rpx;
 }
 
 .match-actions--disabled {
@@ -100,26 +100,29 @@ const icons = {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(30, 80, 65, 0.12);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.10);
 }
 
 .match-actions__btn--pass {
   width: 128rpx;
   height: 128rpx;
   background: #ffffff;
-  border: 2rpx solid #EDF0F0;
+  border: 1rpx solid #EDF0F0;
 }
 
 .match-actions__btn--super {
   width: 144rpx;
   height: 144rpx;
-  background: #FF6B81;
+  background: #ffffff;
+  border: 1rpx solid #EDF0F0;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.10);
 }
 
 .match-actions__btn--like {
-  width: 128rpx;
-  height: 128rpx;
-  background: #FF4D6A;
+  width: 160rpx;
+  height: 160rpx;
+  background: #FF6B81;
+  box-shadow: 0 12rpx 40rpx rgba(255, 107, 129, 0.35);
 }
 
 .match-actions__icon {
@@ -127,8 +130,13 @@ const icons = {
   height: 56rpx;
 }
 
+.match-actions__icon--lg {
+  width: 72rpx;
+  height: 72rpx;
+}
+
 .match-actions__label {
   font-size: 22rpx;
-  color: #6B7280;
+  color: #6B7571;
 }
 </style>

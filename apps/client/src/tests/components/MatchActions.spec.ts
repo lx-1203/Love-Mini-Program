@@ -24,7 +24,7 @@ describe("MatchActions", () => {
     const wrapper = mountActions();
     expect(wrapper.findAll(".match-actions__item")).toHaveLength(3);
     expect(wrapper.text()).toContain("跳过");
-    expect(wrapper.text()).toContain("超级喜欢");
+    expect(wrapper.text()).toContain("打招呼");
     expect(wrapper.text()).toContain("喜欢");
   });
 

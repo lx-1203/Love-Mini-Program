@@ -119,7 +119,10 @@ public record RecommendedPersonView(
     String profileBackgroundUrl,
     // ---- V2026.08.16.0002：性别 ----
     /** 性别（male/female），可空 */
-    String gender
+    String gender,
+    // ---- V2026.08.17.0001：星座 ----
+    /** 星座（如 双子座），由出生日期推导，可空 */
+    String constellation
 ) {
     /**
      * 紧凑构造器：确保 List 字段非 null 且不含 null 元素，避免下游 NPE。

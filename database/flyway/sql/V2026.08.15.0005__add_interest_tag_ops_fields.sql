@@ -1,0 +1,5 @@
+ALTER TABLE interest_tag
+    ADD COLUMN sort_order INT NULL DEFAULT 0,
+    ADD COLUMN category VARCHAR(32) NULL,
+    ADD COLUMN icon VARCHAR(128) NULL,
+    ADD COLUMN recommend_weight INT NULL DEFAULT 0;

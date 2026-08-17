@@ -287,6 +287,7 @@ export interface TodayRecommendationView {
   online: boolean;
   matchScore: number;
   photoUrl: string | null;
+  constellation: string | null;
 }
 
 export interface MatchCenterView {

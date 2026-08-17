@@ -33,6 +33,7 @@ public record AdminUserDetailView(
         String educationLevel,
         String relationshipStatus,
         Integer birthYear,
-        String expectedPartner
+        String expectedPartner,
+        String gender
 ) {
 }

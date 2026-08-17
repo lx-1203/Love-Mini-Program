@@ -156,6 +156,7 @@ onUnload(() => {
       <view class="discover-header__tabs">
         <view class="discover-header__tab discover-header__tab--active">
           <text class="discover-header__tab-text discover-header__tab-text--active">推荐</text>
+          <view class="discover-header__tab-line" />
         </view>
         <view class="discover-header__tab" @tap="goNearby">
           <text class="discover-header__tab-text">附近</text>
@@ -371,13 +372,14 @@ onUnload(() => {
 }
 
 .discover-header__filter {
-  width: 56rpx;
-  height: 56rpx;
+  width: 72rpx;
+  height: 72rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #F4F7F6;
+  background: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
 .discover-header__filter--pressed {
@@ -391,22 +393,30 @@ onUnload(() => {
 
 .discover-header__tabs {
   display: flex;
-  gap: 40rpx;
-  margin-top: 20rpx;
+  gap: 48rpx;
+  margin-top: 16rpx;
 }
 
 .discover-header__tab {
-  padding-bottom: 8rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 4rpx;
 }
 
 .discover-header__tab-text {
-  font-size: 28rpx;
-  color: #8A9694;
-  font-weight: 600;
+  font-size: 36rpx;
+  color: #9AA39F;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
-.discover-header__tab--active {
-  border-bottom: 6rpx solid #36C99A;
+.discover-header__tab-line {
+  width: 48rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+  margin-top: 8rpx;
 }
 
 .discover-header__tab-text--active {

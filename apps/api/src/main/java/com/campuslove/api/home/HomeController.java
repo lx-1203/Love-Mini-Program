@@ -130,7 +130,8 @@ record TodayRecommendationView(
     boolean certified,
     boolean online,
     int matchScore,
-    String photoUrl
+    String photoUrl,
+    String constellation
 ) {
 }
 

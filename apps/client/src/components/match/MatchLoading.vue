@@ -73,7 +73,7 @@ const PROGRESS = [
     <image class="match-loading__ring" :src="ringSrc" mode="aspectFit" alt="" />
 
     <text class="match-loading__title">正在寻找有缘的你...</text>
-    <text class="match-loading__subtitle">分析彼此兴趣，缘分匹配中</text>
+    <text class="match-loading__subtitle">与 {{ partnerName }} 分析彼此兴趣，缘分匹配中</text>
 
     <!-- 匹配度进度 -->
     <view class="match-loading__progress">

@@ -7,7 +7,7 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 const items = [
   { key: "likes", label: "我喜欢", icon: "♥", color: "#8D7BFF" },
   { key: "likedMe", label: "喜欢我的", icon: "♡", color: "#FF6B81" },
-  { key: "match", label: "获赞", icon: "👍", color: "#FF9A57" },
+  { key: "match", label: "我赞过", icon: "👍", color: "#FF9A57" },
   { key: "visitors", label: "访客", icon: "👁", color: "#4D8DFF" },
 ];
 </script>

@@ -1052,6 +1052,7 @@ export interface components {
             online: boolean;
             matchScore: number;
             photoUrl: string;
+            constellation?: string;
         };
         LoveProgress: {
             completed: number;

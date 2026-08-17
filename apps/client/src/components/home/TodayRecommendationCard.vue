@@ -27,7 +27,7 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
           <text class="today-card__online-text">在线</text>
         </view>
         <view class="today-card__match-badge">
-          <text class="today-card__match-score">♥ {{ item.matchScore }}%</text>
+          <text class="today-card__match-score">{{ item.matchScore }}%</text>
           <text class="today-card__match-label">合拍度</text>
         </view>
       </view>
@@ -41,7 +41,7 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
         <text v-if="item.bio" class="today-card__bio">{{ item.bio }}</text>
         <text v-if="item.expectation" class="today-card__expect">{{ item.expectation }}</text>
         <text class="today-card__distance">
-          {{ item.distanceText || '' }}<text v-if="item.distanceText && item.certified"> · </text><text v-if="item.certified">已认证</text>
+          {{ item.distanceText || '' }}<text v-if="item.distanceText && item.certified"> · </text><text v-if="item.certified">已认证</text><text v-if="item.constellation"> · {{ item.constellation }}</text>
         </text>
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap="$emit('view')">看看TA</view>

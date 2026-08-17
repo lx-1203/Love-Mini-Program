@@ -587,6 +587,7 @@ public final class ErrorMessages {
 
     /** educationLevel 必须为 high_school/bachelor/master/phd */
     public static final String EDUCATION_LEVEL_INVALID = "educationLevel 必须为 high_school/bachelor/master/phd";
+    public static final String GENDER_INVALID = "gender 必须为 male 或 female";
 
     /** relationshipStatus 必须为 never/married_before/divorced/widowed */
     public static final String RELATIONSHIP_STATUS_INVALID = "relationshipStatus 必须为 never/married_before/divorced/widowed";

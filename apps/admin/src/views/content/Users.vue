@@ -57,6 +57,7 @@ const editEducationLevel = ref("");
 const editRelationshipStatus = ref("");
 const editBirthYear = ref("");
 const editExpectedPartner = ref("");
+const editGender = ref("");
 const interestTagOptions = ref<InterestTagOption[]>([]);
 const selectedTagIds = ref<number[]>([]);
 
@@ -210,6 +211,7 @@ async function handleEdit(user: AdminUserSummary) {
   editRelationshipStatus.value = "";
   editBirthYear.value = "";
   editExpectedPartner.value = "";
+  editGender.value = "";
   errorMsg.value = "";
   try {
     const [detail, tags, ids] = await Promise.all([
@@ -224,6 +226,7 @@ async function handleEdit(user: AdminUserSummary) {
     editRelationshipStatus.value = detail.relationshipStatus ?? "";
     editBirthYear.value = detail.birthYear == null ? "" : String(detail.birthYear);
     editExpectedPartner.value = detail.expectedPartner ?? "";
+    editGender.value = detail.gender ?? "";
     interestTagOptions.value = tags;
     selectedTagIds.value = (ids ?? []).filter((id) => tags.some((tag) => tag.id === id));
   } catch (err) {
@@ -275,6 +278,7 @@ async function handleSaveEdit() {
       relationshipStatus: editRelationshipStatus.value || undefined,
       birthYear: editBirthYear.value.trim() ? Number(editBirthYear.value.trim()) : undefined,
       expectedPartner: editExpectedPartner.value.trim() || undefined,
+      gender: (editGender.value as "male" | "female" | undefined) || undefined,
     });
     await saveUserInterestTags(userId, selectedTagIds.value);
     editingUser.value = null;
@@ -286,6 +290,7 @@ async function handleSaveEdit() {
     editRelationshipStatus.value = "";
     editBirthYear.value = "";
     editExpectedPartner.value = "";
+    editGender.value = "";
     // 刷新列表以同步最新昵称
     await fetchUsers();
   } catch (err) {
@@ -673,6 +678,14 @@ onMounted(() => {
           <input v-model="editNickname" class="form-input" type="text" :maxlength="NICKNAME_MAX_LENGTH" />
         </view>
         <view class="form-row">
+          <text class="form-label">{{ t("users.genderLabel") }}</text>
+          <select v-model="editGender" class="form-input">
+            <option value="">{{ t("common.emptyPlaceholder") }}</option>
+            <option value="male">{{ t("users.genderMale") }}</option>
+            <option value="female">{{ t("users.genderFemale") }}</option>
+          </select>
+        </view>
+        <view class="form-row">
           <text class="form-label">{{ t("users.bioLabel") }}</text>
           <input v-model="editBio" class="form-input" type="text" maxlength="500" />
         </view>
@@ -733,6 +746,10 @@ onMounted(() => {
         <text class="modal-title">{{ t("users.detailTitle") }}</text>
         <view v-if="detailLoading" class="detail-loading">{{ t("common.loading") }}</view>
         <view v-else-if="detailUser" class="detail-body">
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.genderLabel") }}</text>
+            <text class="detail-value">{{ detailUser.gender === "male" ? t("users.genderMale") : detailUser.gender === "female" ? t("users.genderFemale") : t("common.emptyPlaceholder") }}</text>
+          </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnId") }}:</text>
             <text>{{ detailUser.id }}</text>

@@ -50,6 +50,7 @@ export interface AdminUserDetail {
   relationshipStatus: string | null;
   birthYear: number | null;
   expectedPartner: string | null;
+  gender: "male" | "female" | null;
 }
 
 /** 编辑用户请求体（对应后端 AdminUserUpdateRequest） */
@@ -65,6 +66,7 @@ export interface AdminUserUpdateRequest {
   relationshipStatus?: string;
   birthYear?: number;
   expectedPartner?: string;
+  gender?: "male" | "female";
 }
 
 /** 用户列表查询参数 */

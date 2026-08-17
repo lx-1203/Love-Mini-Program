@@ -618,6 +618,7 @@ export default {
     relationshipStatusLabel: "感情状态",
     birthYearLabel: "出生年份",
     expectedPartnerLabel: "期待画像",
+    genderLabel: "性别",
     photoGalleryLabel: "照片墙",
     bioLabel: "个人简介",
     campusLabel: "学校",

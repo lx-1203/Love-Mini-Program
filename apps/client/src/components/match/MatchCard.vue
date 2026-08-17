@@ -209,20 +209,18 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
 
 .match-card__score-ring {
   position: relative;
-  width: 120rpx;
-  height: 120rpx;
+  width: 128rpx;
+  height: 128rpx;
   border-radius: 50%;
-  background: #36C99A;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 8rpx rgba(255, 255, 255, 0.85);
 }
 
 .match-card__score-ring-inner {
   position: absolute;
-  width: 96rpx;
-  height: 96rpx;
+  width: 112rpx;
+  height: 112rpx;
   border-radius: 50%;
   background: rgba(10, 20, 16, 0.55);
   display: flex;
@@ -231,16 +229,16 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
 }
 
 .match-card__score-value {
-  font-size: 30rpx;
-  font-weight: 900;
+  font-size: 40rpx;
+  font-weight: 700;
   color: #ffffff;
   line-height: 1;
 }
 
 .match-card__score-label {
   font-size: 20rpx;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .match-card__info {
@@ -255,6 +253,8 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   width: 100%;
 }
 </style>
+
+
 
 
 

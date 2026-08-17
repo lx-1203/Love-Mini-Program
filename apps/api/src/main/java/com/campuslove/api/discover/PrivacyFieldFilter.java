@@ -94,7 +94,8 @@ public final class PrivacyFieldFilter {
             // ---- V3（2026-08-12）：他人主页背景 ----
             "profileBackgroundUrl", // 个人主页背景图 URL（用户主动上传，可公开）
             // ---- V2026.08.16.0002：性别 ----
-            "gender" // 性别（male/female，公开展示，非敏感）
+            "gender", // 性别（male/female，公开展示，非敏感）
+            "constellation" // 星座（由出生日期推导，公开展示，非敏感）
 
             // 注意：月收入档位（incomeRange）不在白名单且已从 RecommendedPersonView 移除
             // （R4-00337）——收入档位属敏感经济信息，不随推荐列表对全体用户公开

@@ -334,6 +334,8 @@ export const IMAGE_PATHS = {
     // 品牌色变体
     HEART_PINK: ICONS_BASE + '/v2/heart-pink.png',
     CHAT_WHITE: ICONS_BASE + '/v2/chat-white.png',
+    CHAT_PINK: ICONS_BASE + '/v2/chat-pink.png',
+    CHAT_GREEN: ICONS_BASE + '/v2/chat-green.png',
     X_WHITE: ICONS_BASE + '/v2/x-white.png',
     HEART_WHITE: ICONS_BASE + '/v2/heart-white.png',
     HEART_BRAND: ICONS_BASE + '/v2/heart-brand.png',
@@ -441,6 +443,8 @@ export const IMAGE_PATHS = {
     SPEECH:      ICONS_BASE + '/chat.svg',                  // 🗣️ 社交咨询
   },
 } as const;
+
+
 
 
 

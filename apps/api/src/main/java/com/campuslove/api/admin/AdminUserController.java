@@ -399,7 +399,8 @@ public class AdminUserController {
                 basic != null ? basic.getEducationLevel() : null,
                 basic != null ? basic.getRelationshipStatus() : null,
                 basic != null ? basic.getBirthYear() : null,
-                basic != null ? basic.getExpectedPartner() : null
+                basic != null ? basic.getExpectedPartner() : null,
+                basic != null ? basic.getGender() : null
         );
         return ResponseEntity.ok(view);
     }
@@ -474,6 +475,9 @@ public class AdminUserController {
             }
             if (req.expectedPartner() != null) {
                 basic.setExpectedPartner(req.expectedPartner());
+            }
+            if (req.gender() != null) {
+                basic.setGender(req.gender());
             }
             userBasicProfileRepository.save(basic);
         }
@@ -648,7 +652,8 @@ public class AdminUserController {
                 || req.educationLevel() != null
                 || req.relationshipStatus() != null
                 || req.birthYear() != null
-                || req.expectedPartner() != null;
+                || req.expectedPartner() != null
+                || req.gender() != null;
     }
 
     /**

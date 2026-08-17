@@ -28,7 +28,8 @@ public class HomeFeedFallbackProvider {
             true,
             true,
             92,
-            "/static/assets/images/people/person-01.webp"
+            "/static/assets/images/people/person-01.webp",
+            null // V2026.08.17.0001 星座（mock/fallback 未维护）
         );
     }
 

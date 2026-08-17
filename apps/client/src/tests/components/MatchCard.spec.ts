@@ -57,7 +57,8 @@ describe("MatchCard", () => {
     const wrapper = mountCard();
     expect(wrapper.find(".match-info__name").text()).toContain("林晓");
     expect(wrapper.find(".match-info__age").text()).toContain("25");
-    expect(wrapper.find(".match-info__meta").text()).toContain("北京大学 · 产品经理");
+    expect(wrapper.find(".match-info__school").text()).toContain("北京大学");
+    expect(wrapper.find(".match-info__college").text()).toContain("产品经理");
     expect(wrapper.find(".match-info__distance").text()).toContain("2.3km · 在线");
   });
 

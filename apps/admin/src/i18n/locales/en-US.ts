@@ -614,6 +614,7 @@ export default {
     relationshipStatusLabel: "Relationship",
     birthYearLabel: "Birth Year",
     expectedPartnerLabel: "Expected Partner",
+    genderLabel: "Gender",
     photoGalleryLabel: "Photos",
     bioLabel: "Bio",
     campusLabel: "School",

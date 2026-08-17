@@ -122,7 +122,8 @@ public class MockHomeService implements HomeService {
             true,
             true,
             92,
-            "/static/assets/images/people/person-01.webp"
+            "/static/assets/images/people/person-01.webp",
+            null // V2026.08.17.0001 星座（mock/fallback 未维护）
         ),
         new LoveProgressView(
             2,
@@ -179,7 +180,8 @@ public class MockHomeService implements HomeService {
         true,
         true,
         90,
-        "/static/assets/images/people/person-02.webp"
+        "/static/assets/images/people/person-02.webp",
+            null // V2026.08.17.0001 星座（mock/fallback 未维护）
     );
   }
 

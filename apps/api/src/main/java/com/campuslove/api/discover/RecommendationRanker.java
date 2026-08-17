@@ -631,6 +631,8 @@ public class RecommendationRanker {
                 : null;
         // V2026.08.16.0002：性别——随推荐视图下发（前端寻觅卡/主页显示 ♀/♂）
         String gender = basicProfile != null ? basicProfile.getGender() : null;
+        // V2026.08.17.0001：星座——由出生日期推导（无生日时为空）
+        String constellation = com.campuslove.api.utils.ZodiacUtil.from(user.getBirthDate());
 
         return new RecommendedPersonView(
                 user.getId(),
@@ -670,8 +672,10 @@ public class RecommendationRanker {
                 age,
                 registeredAt,
                 profileBackgroundUrl,
-                gender
-        );
+                        gender,
+        // V2026.08.17.0001：星座（随推荐视图下发）
+        constellation
+    );
     }
 
     /**

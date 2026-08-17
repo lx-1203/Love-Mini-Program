@@ -1015,6 +1015,7 @@ function buildHomeDashboard(): HomeDashboard {
         online: true,
         matchScore: 92,
         photoUrl: "/static/assets/images/people/person-01.webp",
+        constellation: "双鱼座",
       },
       loveProgress: {
         completed: 2,
@@ -1356,6 +1357,7 @@ export const mockFixtures = {
       online: true,
       matchScore: 90,
       photoUrl: "/static/assets/images/people/person-02.webp",
+      constellation: "双子座",
     });
   },
   getChatOverview(): ChatOverview {

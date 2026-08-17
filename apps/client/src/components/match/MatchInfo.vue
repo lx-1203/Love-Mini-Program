@@ -12,14 +12,12 @@ const genderSymbol = computed(() => {
   return "";
 });
 
-const metaText = computed(() => {
-  const parts = [props.user.school, props.user.gradeLabel || props.user.occupation].filter(Boolean);
-  return parts.join(" · ");
-});
+const school = computed(() => props.user.school || "");
+const secondary = computed(() => props.user.gradeLabel || props.user.occupation || "");
 
 function activeLabel(status?: string): string {
   if (!status || status === "offline") return "";
-  if (status === "online" || status === "just_now") return "在线";
+  if (status === "online" || status === "just_now" || status === "在线") return "在线";
   if (status === "today") return "今天活跃";
   const m = /^hours_(\d+)$/.exec(status);
   if (m) return `${m[1]}小时前活跃`;
@@ -42,18 +40,6 @@ const verified = computed(
     !!props.user.verificationBadgeLevel &&
     props.user.verificationBadgeLevel !== "none"
 );
-
-/** 标签配色：半透明白色胶囊 + 白字（参考图） */
-const TAG_STYLES = [
-  { bg: "rgba(255,255,255,0.22)", color: "#ffffff" },
-  { bg: "rgba(255,255,255,0.22)", color: "#ffffff" },
-  { bg: "rgba(255,255,255,0.22)", color: "#ffffff" },
-  { bg: "rgba(255,255,255,0.22)", color: "#ffffff" },
-] as const;
-
-function tagStyle(index: number) {
-  return TAG_STYLES[index % TAG_STYLES.length] ?? TAG_STYLES[0];
-}
 </script>
 
 <template>
@@ -62,20 +48,24 @@ function tagStyle(index: number) {
       <view class="match-info__name-row">
         <text class="match-info__name">{{ user.name }}</text>
         <text v-if="user.age" class="match-info__age">{{ user.age }}</text>
-        <text v-if="genderSymbol" class="match-info__gender">{{ genderSymbol }}</text>
+        <view v-if="genderSymbol" class="match-info__gender" :class="`match-info__gender--${user.gender}`">
+          <text class="match-info__gender-symbol">{{ genderSymbol }}</text>
+        </view>
         <text v-if="verified" class="match-info__verified">✓</text>
       </view>
-      <text v-if="metaText" class="match-info__meta">{{ metaText }}</text>
+      <view v-if="school" class="match-info__school-row">
+        <text class="match-info__school">{{ school }}</text>
+        <text v-if="secondary" class="match-info__college">{{ secondary }}</text>
+      </view>
       <text v-if="distanceLine" class="match-info__distance">{{ distanceLine }}</text>
     </slot>
 
     <slot name="tags">
       <view v-if="visibleTags.length > 0" class="match-info__tags">
         <text
-          v-for="(tag, index) in visibleTags"
+          v-for="tag in visibleTags"
           :key="tag"
           class="match-info__tag"
-          :style="{ background: tagStyle(index).bg, color: tagStyle(index).color }"
         >{{ tag }}</text>
       </view>
     </slot>
@@ -105,87 +95,128 @@ function tagStyle(index: number) {
 }
 
 .match-info__name {
-  font-size: 52rpx;
-  font-weight: 900;
-  line-height: 1.1;
+  font-size: 56rpx;
+  font-weight: 700;
+  line-height: 1.15;
   color: #ffffff;
   text-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.35);
 }
 
 .match-info__age {
-  font-size: 34rpx;
-  font-weight: 800;
+  font-size: 40rpx;
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.95);
 }
 
+/* 性别徽章：20×20px 圆形底色 + 白色符号（男蓝 #54A0FF / 女粉 #FF6B81） */
 .match-info__gender {
-  font-size: 30rpx;
-  font-weight: 800;
-  color: #FF6B81;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.match-info__gender--male {
+  background: #54A0FF;
+}
+
+.match-info__gender--female {
+  background: #FF6B81;
+}
+
+.match-info__gender-symbol {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
 }
 
 .match-info__verified {
-  width: 34rpx;
-  height: 34rpx;
+  width: 36rpx;
+  height: 36rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #36C99A;
   color: #ffffff;
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 800;
 }
 
-.match-info__meta,
-.match-info__distance {
-  font-size: 24rpx;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+/* 学校 16px Medium + 学院 14px 70% 白 */
+.match-info__school-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  flex-wrap: wrap;
 }
 
-.match-info__distance {
+.match-info__school {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.match-info__college {
+  font-size: 28rpx;
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* 距离+在线 14px 70% 白 */
+.match-info__distance {
+  font-size: 28rpx;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 兴趣标签：24px 高、半透明白底、1px 白边框、12px 白字 */
 .match-info__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
+  gap: 12rpx;
   margin-top: 4rpx;
 }
 
 .match-info__tag {
-  padding: 6rpx 20rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 16rpx;
   border-radius: 999rpx;
-  font-size: 22rpx;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #ffffff;
 }
 
+/* 个性签名：引号 16px + 白色 14px，两行 */
 .match-info__intro {
   display: flex;
   align-items: flex-start;
-  gap: 8rpx;
-  padding: 16rpx 22rpx;
-  border-radius: 18rpx;
-  background: rgba(0, 0, 0, 0.32);
+  gap: 10rpx;
   margin-top: 4rpx;
 }
 
 .match-info__intro-quote {
-  font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.5);
   line-height: 1;
 }
 
 .match-info__intro-text {
   flex: 1;
-  font-size: 23rpx;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.96);
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 </style>
+

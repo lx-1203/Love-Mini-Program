@@ -27,6 +27,7 @@ public record AdminUserUpdateRequest(
         @Pattern(regexp = "never|married_before|divorced|widowed",
                 message = ErrorMessages.RELATIONSHIP_STATUS_INVALID) String relationshipStatus,
         @Min(1900) @Max(2026) Integer birthYear,
-        @Size(max = 200) String expectedPartner
+        @Size(max = 200) String expectedPartner,
+        @Pattern(regexp = "male|female", message = ErrorMessages.GENDER_INVALID) String gender
 ) {
 }

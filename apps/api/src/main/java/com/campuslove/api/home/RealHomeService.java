@@ -473,7 +473,8 @@ public class RealHomeService implements HomeService {
             certified,
             online,
             matchScore,
-            photoUrl
+            photoUrl,
+            view.constellation()
         );
     }
 

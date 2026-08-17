@@ -306,6 +306,8 @@ public class MockRecommendationService implements RecommendationService {
         // V3（2026-08-12）：他人主页背景——mock 复用半身照/头像，保证他人主页有背景可展示
         avatar,
         // V2026.08.16.0002：性别（mock 未维护，为 null）
+        null,
+        // V2026.08.17.0001：星座（mock 未维护，为 null）
         null
     );
   }

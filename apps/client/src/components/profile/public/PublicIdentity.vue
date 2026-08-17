@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
+import { IMAGE_PATHS } from "../../../config/images";
 
-const props = defineProps<{ profile: UserProfileDTO }>();
+const props = defineProps<{ profile: UserProfileDTO; online?: boolean }>();
 const emit = defineEmits<{ (e: "like"): void; (e: "message"): void }>();
 
-const metaLine = computed(() => {
+/** 基本信息行：年龄 / 城市 / 学校（location 形如 "北京 · 北京大学"） */
+const basicInfo = computed(() => {
   const parts: string[] = [];
   if (props.profile.basic.age) parts.push(`${props.profile.basic.age}岁`);
-  if (props.profile.basic.location) parts.push(props.profile.basic.location);
-  return parts.join(" · ");
-});
-
-const certText = computed(() => {
-  if (!props.profile.identity.verified) return "";
-  return props.profile.identity.student ? "学生认证" : "已认证";
+  const loc = props.profile.basic.location || "";
+  const [city, school] = loc.split("·").map((s) => s.trim());
+  if (city) parts.push(city);
+  if (school) parts.push(school);
+  return parts;
 });
 
 const genderSymbol = computed(() => {
@@ -30,12 +30,13 @@ const genderSymbol = computed(() => {
       <view class="public-identity__info">
         <view class="public-identity__name-row">
           <text class="public-identity__name">{{ profile.basic.name }}</text>
-          <text v-if="genderSymbol" class="public-identity__gender">{{ genderSymbol }}</text>
-          <view v-if="certText" class="public-identity__online">
+          <view v-if="genderSymbol" class="public-identity__gender" :class="`public-identity__gender--${profile.basic.gender}`">
+            <text class="public-identity__gender-symbol">{{ genderSymbol }}</text>
+          </view>
+          <view v-if="online" class="public-identity__online">
             <text class="public-identity__online-dot"></text>
             <text class="public-identity__online-text">在线</text>
           </view>
-          <text v-if="metaLine" class="public-identity__meta">{{ metaLine }}</text>
         </view>
         <text v-if="profile.relation.matchScore" class="public-identity__match">
           匹配度 {{ profile.relation.matchScore }}%
@@ -43,20 +44,26 @@ const genderSymbol = computed(() => {
       </view>
       <view class="public-identity__actions">
         <view class="public-identity__btn public-identity__btn--like" hover-class="public-identity__btn--pressed" @tap="emit('like')">
-          <text class="public-identity__btn-text public-identity__btn-text--like">喜欢</text>
+          <image class="public-identity__btn-icon" :src="IMAGE_PATHS.ICONS_V2.HEART_WHITE" mode="aspectFit" alt="" />
         </view>
         <view class="public-identity__btn public-identity__btn--hello" hover-class="public-identity__btn--pressed" @tap="emit('message')">
-          <text class="public-identity__btn-text">打招呼</text>
+          <image class="public-identity__btn-icon" :src="IMAGE_PATHS.ICONS_V2.CHAT_GREEN" mode="aspectFit" alt="" />
         </view>
       </view>
+    </view>
+    <view v-if="basicInfo.length" class="public-identity__meta-row">
+      <template v-for="(part, index) in basicInfo" :key="part">
+        <text v-if="index > 0" class="public-identity__meta-sep">·</text>
+        <text class="public-identity__meta-item">{{ part }}</text>
+      </template>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
 .public-identity {
-  margin: -72rpx 24rpx 0;
-  padding: 100rpx 32rpx 32rpx;
+  margin: -72rpx 40rpx 0;
+  padding: 112rpx 32rpx 28rpx;
   border-radius: 40rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
@@ -78,28 +85,42 @@ const genderSymbol = computed(() => {
 
 .public-identity__name-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 12rpx;
 }
 
 .public-identity__name {
-  font-size: 52rpx;
-  font-weight: 800;
-  color: #222222;
-  line-height: 1.15;
-}
-
-.public-identity__meta {
-  font-size: 26rpx;
-  color: #666666;
-  font-weight: 500;
-}
-
-.public-identity__gender {
-  font-size: 30rpx;
+  font-size: 44rpx;
   font-weight: 700;
-  color: #FF6B81;
+  color: #333A37;
+  line-height: 1.2;
+}
+
+/* 性别徽章：20×20px 圆形底色 + 白色符号（男蓝 #54A0FF / 女粉 #FF6B81） */
+.public-identity__gender {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.public-identity__gender--male {
+  background: #54A0FF;
+}
+
+.public-identity__gender--female {
+  background: #FF6B81;
+}
+
+.public-identity__gender-symbol {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
 }
 
 .public-identity__online {
@@ -132,58 +153,58 @@ const genderSymbol = computed(() => {
   font-weight: 500;
 }
 
-.public-identity__cert {
-  align-self: flex-start;
-  margin-top: 12rpx;
-  display: inline-flex;
-  align-items: center;
-  padding: 6rpx 18rpx;
-  border-radius: 999rpx;
-  background: #E8FBF2;
-}
-
-.public-identity__cert-text {
-  font-size: 20rpx;
-  font-weight: 600;
-  color: #168B65;
-}
-
+/* 右侧按钮组：40px 喜欢（粉圆白心）+ 40px 打招呼（白圆绿气泡） */
 .public-identity__actions {
   display: flex;
-  flex-direction: column;
-  gap: 12rpx;
+  align-items: center;
+  gap: 16rpx;
   flex-shrink: 0;
 }
 
 .public-identity__btn {
-  padding: 12rpx 30rpx;
-  border-radius: 999rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .public-identity__btn--pressed {
-  opacity: 0.8;
+  transform: scale(0.92);
 }
 
 .public-identity__btn--like {
-  background: #ffffff;
-  border: 2rpx solid #FF6B81;
+  background: #FF6B81;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
 }
 
 .public-identity__btn--hello {
-  background: #36C99A;
-  box-shadow: 0 6rpx 16rpx rgba(61, 201, 148, 0.3);
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
 }
 
-.public-identity__btn-text {
-  font-size: 24rpx;
-  font-weight: 700;
-  color: #ffffff;
+.public-identity__btn-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
-.public-identity__btn-text--like {
-  color: #FF6B81;
+/* 基本信息行：13px 图标+文字，· 分隔 */
+.public-identity__meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 20rpx;
+}
+
+.public-identity__meta-item {
+  font-size: 26rpx;
+  color: #6B7571;
+}
+
+.public-identity__meta-sep {
+  font-size: 26rpx;
+  color: #DDE3E0;
 }
 </style>

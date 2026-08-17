@@ -1806,6 +1806,10 @@ components:
           type: integer
         photoUrl:
           type: string
+        constellation:
+          type: string
+          nullable: true
+          description: 星座（由出生日期推导，可空）
       required: [userId, name, age, campusName, tags, bio, certified, online, matchScore, photoUrl]
     LoveProgress:
       type: object
