@@ -87,6 +87,8 @@ const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value 
  */
 const heroTitle = computed(() => loginHero.value?.heroTitle || t("login.heroTitle"));
 const heroSubtitle = computed(() => loginHero.value?.heroSubtitle || t("login.heroSubtitle"));
+const heroDesc = computed(() => loginHero.value?.heroDesc || t("login.heroDesc"));
+const heroDescSub = computed(() => loginHero.value?.heroDescSub || t("login.heroDescSub"));
 
 
 /**
@@ -507,6 +509,10 @@ function openAccountBinding() {
         <text class="logo-title">{{ heroTitle }}</text>
         <text class="logo-subtitle">{{ heroSubtitle }}</text>
       </view>
+            <view class="hero-desc-wrap">
+              <text class="hero-desc">{{ heroDesc }}</text>
+              <text class="hero-desc hero-desc--sub">{{ heroDescSub }}</text>
+            </view>
     </view>
 
     <!-- 底部按钮区（占 30% 高度） -->
@@ -773,21 +779,69 @@ function openAccountBinding() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, var(--c-black-overlay-transparent) 0%, var(--c-bg-container) 100%);
+  background: linear-gradient(180deg, rgba(18, 48, 38, 0.28) 0%, rgba(255, 255, 255, 0.18) 38%, var(--c-bg-container) 100%);
   pointer-events: none;
 }
 
 /* 主标题 + 副标 —— 压底显示，在白色渐变之上保证可读 */
-.hero-title-wrap {
+.hero-desc-wrap {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: var(--sp-6);
+  top: 62%;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0 var(--sp-8);
   z-index: 1;
+}
+
+.hero-desc {
+  margin-top: 24rpx;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.6;
+  letter-spacing: 2rpx;
+  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.55);
+}
+
+.hero-desc--sub {
+  margin-top: 8rpx;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.hero-title-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--status-bar-height, 0px) + 96rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--sp-8);
+  z-index: 1;
+}
+
+.hero-desc {
+  margin-top: 24rpx;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.6;
+  letter-spacing: 2rpx;
+  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.55);
+}
+
+.hero-desc--sub {
+  margin-top: 8rpx;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .hero-mascot {
@@ -804,7 +858,8 @@ function openAccountBinding() {
 .logo-title {
   font-size: var(--fs-7xl);
   font-weight: 700;
-  color: var(--c-text-primary);
+  color: #ffffff;
+  text-shadow: 0 4rpx 20rpx rgba(20, 60, 45, 0.5);
   letter-spacing: 4rpx;
   line-height: 1.3;
   margin-bottom: var(--sp-3);
@@ -813,8 +868,9 @@ function openAccountBinding() {
 
 .logo-subtitle {
   font-size: var(--fs-lg);
-  font-weight: 400;
-  color: var(--c-text-secondary);
+  font-weight: 500;
+  color: #ffffff;
+  text-shadow: 0 2rpx 14rpx rgba(20, 60, 45, 0.5);
   text-align: center;
   line-height: 1.6;
   letter-spacing: 2rpx;

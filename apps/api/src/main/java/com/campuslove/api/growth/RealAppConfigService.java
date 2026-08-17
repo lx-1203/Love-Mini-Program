@@ -41,6 +41,12 @@ public class RealAppConfigService implements AppConfigService {
     /** 默认副标题 */
     private static final String DEFAULT_HERO_SUBTITLE = "校园恋爱，从这里开始";
 
+    /** 默认品牌描述 */
+    private static final String DEFAULT_HERO_DESC = "慢慢成为特别的人";
+
+    /** 默认品牌描述副行 */
+    private static final String DEFAULT_HERO_DESC_SUB = "校园里的每一次相遇都有美好记录";
+
     /** 默认视频失败时是否回退到动画 */
     private static final boolean DEFAULT_VIDEO_FALLBACK = true;
 
@@ -257,6 +263,8 @@ public class RealAppConfigService implements AppConfigService {
                 config.getHeroAnimationTheme(),
                 config.getHeroTitle(),
                 config.getHeroSubtitle(),
+                config.getHeroDesc(),
+                config.getHeroDescSub(),
                 videoFallback
         );
     }
@@ -275,6 +283,8 @@ public class RealAppConfigService implements AppConfigService {
                 DEFAULT_HERO_ANIMATION_THEME,
                 DEFAULT_HERO_TITLE,
                 DEFAULT_HERO_SUBTITLE,
+                DEFAULT_HERO_DESC,
+                DEFAULT_HERO_DESC_SUB,
                 DEFAULT_VIDEO_FALLBACK
         );
     }

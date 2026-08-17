@@ -56,6 +56,14 @@ public class AppLoginHeroConfig {
     @Column(name = "hero_subtitle", nullable = false, length = 255)
     private String heroSubtitle;
 
+    /** 品牌描述（如：慢慢成为特别的人） */
+    @Column(name = "hero_desc", length = 255)
+    private String heroDesc;
+
+    /** 品牌描述副行（如：校园里的每一次相遇都有美好记录） */
+    @Column(name = "hero_desc_sub", length = 255)
+    private String heroDescSub;
+
     /** 是否为当前生效配置（1=生效，0=停用） */
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
@@ -159,6 +167,22 @@ public class AppLoginHeroConfig {
 
     public void setHeroSubtitle(String heroSubtitle) {
         this.heroSubtitle = heroSubtitle;
+    }
+
+    public String getHeroDesc() {
+        return heroDesc;
+    }
+
+    public void setHeroDesc(String heroDesc) {
+        this.heroDesc = heroDesc;
+    }
+
+    public String getHeroDescSub() {
+        return heroDescSub;
+    }
+
+    public void setHeroDescSub(String heroDescSub) {
+        this.heroDescSub = heroDescSub;
     }
 
     public Boolean getIsActive() {

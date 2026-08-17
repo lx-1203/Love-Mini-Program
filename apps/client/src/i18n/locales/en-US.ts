@@ -1987,6 +1987,8 @@ export default {
   login: {
     heroTitle: "Campus Love",
     heroSubtitle: "Meet your crush",
+    heroDesc: "Slowly become someone special",
+    heroDescSub: "Every campus encounter leaves a beautiful memory",
     heroSubtitleDefault: "Naturally meet the right person on campus",
     wechatLogin: "Sign in with WeChat",
     wechatIconText: "WeChat",
@@ -3190,6 +3192,12 @@ export default {
   /* ========== Campus Hub (v3 Nearby) ========== */
   campusHub: {
     title: "Campus Circles",
+    subtitle: "Discover and join your campus circles",
+    joinedTitle: "Joined",
+    recommendTitle2: "Recommended",
+    enter: "Enter",
+    join: "Apply to join",
+    unverified: "Unverified",
     guideTitle: "Join a campus circle and meet schoolmates",
     guideDesc: "Verify your school first to enter the private circle",
     goCertify: "Verify",

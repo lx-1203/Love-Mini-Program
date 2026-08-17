@@ -39,9 +39,7 @@ onUnmounted(() => {
 });
 
 const heartSrc = IMAGE_PATHS.ICONS_MATCH_V1.HEART_MATCH;
-const ringSrc = IMAGE_PATHS.ICONS_MATCH_V1.LOADING_RING;
-
-/** 匹配度进度（参考图：旅行/音乐/电影/生活方式） */
+/** 匹配度进度（参考图：旅行/音乐/电影/生活方式 四项 + 总进度） */
 const PROGRESS = [
   { label: "旅行爱好", percent: 90 },
   { label: "音乐品味", percent: 85 },
@@ -49,8 +47,11 @@ const PROGRESS = [
   { label: "生活方式", percent: 79 },
 ];
 
-/** 底部总进度（规范 B.5：缘分匹配中... N%） */
-const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) / PROGRESS.length);
+/** 底部总进度（参考图：缘分匹配中... 89%） */
+const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) / PROGRESS.length) + 5;
+
+const ringSrc = IMAGE_PATHS.ICONS_MATCH_V1.LOADING_RING;
+
 </script>
 
 <template>
@@ -75,10 +76,10 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 
     <image class="match-loading__ring" :src="ringSrc" mode="aspectFit" alt="" />
 
-    <text class="match-loading__title">正在寻找有缘的你...</text>
-    <text class="match-loading__subtitle">与 {{ partnerName }} 分析彼此兴趣，缘分匹配中</text>
+    <text class="match-loading__title">正在寻找有缘的Ta...</text>
+    <text class="match-loading__subtitle">分析彼此兴趣，缘分匹配中</text>
 
-    <!-- 匹配度进度 -->
+    <!-- 匹配度进度（参考图对齐） -->
     <view class="match-loading__progress">
       <view v-for="p in PROGRESS" :key="p.label" class="match-loading__row">
         <text class="match-loading__row-label">{{ p.label }}</text>
@@ -105,7 +106,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #FFF0F6 0%, #F4FBF8 55%);
+  background: linear-gradient(180deg, #E8FAF3 0%, #F7FAF9 70%);
   padding: 80rpx 48rpx;
   box-sizing: border-box;
   overflow: hidden;
@@ -271,4 +272,34 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   border-radius: 999rpx;
   background: linear-gradient(90deg, #36C99A 0%, #55D5A7 100%);
 }
+.match-loading__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  margin-top: 48rpx;
+}
+
+.match-loading__dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  background: #36C99A;
+  opacity: 0.35;
+  animation: matchDot 1.2s ease-in-out infinite;
+}
+
+.match-loading__dot--2 {
+  animation-delay: 0.2s;
+}
+
+.match-loading__dot--3 {
+  animation-delay: 0.4s;
+}
+
+@keyframes matchDot {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
 </style>

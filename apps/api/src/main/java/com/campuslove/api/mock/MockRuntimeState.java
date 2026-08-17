@@ -47,8 +47,10 @@ public class MockRuntimeState {
       null,
       null,
       "campus-night",
-      "校园恋爱",
-      "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",
+      "寻觅",
+      "遇见同频的人",
+      "慢慢成为特别的人",
+      "校园里的每一次相遇都有美好记录",
       true
   );
 
@@ -328,6 +330,8 @@ public class MockRuntimeState {
         loginHero.heroAnimationTheme(),
         resolveText("mock.loginHero.title", loginHero.heroTitle()),
         resolveText("mock.loginHero.subtitle", loginHero.heroSubtitle()),
+        loginHero.heroDesc(),
+        loginHero.heroDescSub(),
         loginHero.videoFallbackToAnimation()
     );
   }
@@ -509,6 +513,8 @@ public class MockRuntimeState {
       String heroAnimationTheme,
       String heroTitle,
       String heroSubtitle,
+      String heroDesc,
+      String heroDescSub,
       boolean videoFallbackToAnimation
   ) {
   }

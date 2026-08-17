@@ -2052,6 +2052,8 @@ export default {
   "login": {
     "heroTitle": "校园恋爱",
     "heroSubtitle": "遇见你的心动",
+    "heroDesc": "慢慢成为特别的人",
+    "heroDescSub": "校园里的每一次相遇都有美好记录",
     "heroSubtitleDefault": "在校园里，自然地遇见对的人",
     "wechatLogin": "微信一键登录",
     "wechatIconText": "微",
@@ -3287,6 +3289,12 @@ export default {
   },
   "campusHub": {
     "title": "校园圈",
+    "subtitle": "发现和加入你的校园圈子",
+    "joinedTitle": "我加入的",
+    "recommendTitle2": "推荐圈子",
+    "enter": "进入",
+    "join": "申请加入",
+    "unverified": "未认证",
     "guideTitle": "加入校园圈，发现更多同校的 TA",
     "guideDesc": "需完成对应学校认证，认证后可进入私域",
     "goCertify": "去认证",

@@ -5,6 +5,10 @@ export interface LoginHeroInput {
   heroAnimationTheme: string;
   heroTitle: string;
   heroSubtitle: string;
+  /** 品牌描述（参考图：慢慢成为特别的人） */
+  heroDesc?: string | null;
+  /** 品牌描述副行（参考图：校园里的每一次相遇都有美好记录） */
+  heroDescSub?: string | null;
   videoFallbackToAnimation: boolean;
 }
 

@@ -7,6 +7,8 @@ public record LoginHeroConfigView(
     String heroAnimationTheme,
     String heroTitle,
     String heroSubtitle,
+    String heroDesc,
+    String heroDescSub,
     boolean videoFallbackToAnimation
 ) {
 }

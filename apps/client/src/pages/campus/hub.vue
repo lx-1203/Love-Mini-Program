@@ -25,6 +25,26 @@ const { certificationStatus, certificationInfo, isVerified } = storeToRefs(campu
 const selectedSchool = ref("");
 const schools = SCHOOLS.slice(0, 6);
 
+/** 校园圈展示数据（参考图视觉对齐；后续可由后端 campuses 接口扩展提供） */
+const schoolStats: Record<string, { members: string; posts: string; peers: string }> = {
+  pku: { members: "3.2k 位同学", posts: "2.8w 条动态", peers: "等 342 位同学" },
+  thu: { members: "2.6k 位同学", posts: "2.1w 条动态", peers: "等 256 位同学" },
+  ruc: { members: "2.1k 位同学", posts: "9,823 条动态", peers: "等 301 位同学" },
+  fudan: { members: "1.8k 位同学", posts: "1.5w 条动态", peers: "等 210 位同学" },
+  sjtu: { members: "2.4k 位同学", posts: "1.9w 条动态", peers: "等 278 位同学" },
+  tongji: { members: "1.7k 位同学", posts: "1.3w 条动态", peers: "等 194 位同学" },
+  zju: { members: "1.4k 位同学", posts: "1.1w 条动态", peers: "等 163 位同学" },
+};
+
+function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
+  return schoolStats[school.id] || { members: "1.0k 位同学", posts: "8,000 条动态", peers: "等 120 位同学" };
+}
+
+/** 我加入的（本校已认证） */
+const joinedSchools = computed(() => schools.filter((sc) => sc.name === ownSchool.value));
+/** 推荐圈子（其他学校） */
+const recommendedSchools = computed(() => schools.filter((sc) => sc.name !== ownSchool.value));
+
 const isPending = computed(() => certificationStatus.value === "pending");
 const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionStore.userSession?.campusName || "");
 
@@ -38,21 +58,6 @@ onShow(() => {
   void campusStore.fetchCertificationStatus().catch(() => {});
 });
 
-/** 学校状态：verified-own / pending-own / public */
-function schoolStatus(schoolName: string): "own-verified" | "own-pending" | "public" {
-  if (schoolName === ownSchool.value) {
-    if (isVerified.value) return "own-verified";
-    if (isPending.value) return "own-pending";
-  }
-  return "public";
-}
-
-function statusText(schoolName: string): string {
-  const s = schoolStatus(schoolName);
-  if (s === "own-verified") return t("campus.hub.statusVerified");
-  if (s === "own-pending") return t("campus.hub.statusPending");
-  return t("campus.hub.statusPublic");
-}
 
 function goSchool(schoolName: string) {
   openAppPath(`${ROUTES.CAMPUS.INDEX}?school=${encodeURIComponent(schoolName)}`);
@@ -73,8 +78,24 @@ function goBack() {
       <view class="campus-hub__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
         <text class="campus-hub__back-text">‹</text>
       </view>
-      <text class="campus-hub__title">{{ t('campus.hub.title') }}</text>
-      <view class="campus-hub__spacer" />
+      <view class="campus-hub__title-col">
+        <text class="campus-hub__title">{{ t('campusHub.title') }}</text>
+        <text class="campus-hub__subtitle">{{ t('campusHub.subtitle') }}</text>
+      </view>
+      <view
+        v-if="!isVerified"
+        class="campus-hub__cert-btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('campusHub.goCertify')"
+        @tap="goCertification"
+      >
+        <text class="campus-hub__cert-btn-text">{{ t('campusHub.goCertify') }}</text>
+      </view>
+      <view v-else class="campus-hub__cert-badge">
+        <text class="campus-hub__cert-badge-text">{{ t('campusHub.certified') }}</text>
+      </view>
     </view>
 
     <!-- 加入引导 -->
@@ -83,8 +104,8 @@ function goBack() {
         <image class="campus-guide__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
       </view>
       <view class="campus-guide__body">
-        <text class="campus-guide__title">{{ t('campus.hub.guideTitle') }}</text>
-        <text class="campus-guide__desc">{{ t('campus.hub.guideDesc') }}</text>
+        <text class="campus-guide__title">{{ t('campusHub.guideTitle') }}</text>
+        <text class="campus-guide__desc">{{ t('campusHub.guideDesc') }}</text>
       </view>
       <view
         v-if="!isVerified"
@@ -92,67 +113,76 @@ function goBack() {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="t('campus.hub.goCertify')"
+        :aria-label="t('campusHub.goCertify')"
         @tap="goCertification"
       >
-        <text class="campus-guide__btn-text">{{ isPending ? t('campus.hub.viewProgress') : t('campus.hub.goCertify') }}</text>
+        <text class="campus-guide__btn-text">{{ isPending ? t('campusHub.viewProgress') : t('campusHub.goCertify') }}</text>
       </view>
       <view v-else class="campus-guide__badge">
-        <text class="campus-guide__badge-text">{{ t('campus.hub.certified') }}</text>
+        <text class="campus-guide__badge-text">{{ t('campusHub.certified') }}</text>
       </view>
     </view>
 
-    <!-- 校园列表 -->
-    <view class="campus-hub__section">
-      <text class="campus-hub__section-title">{{ t('campus.hub.schoolListTitle') }}</text>
-      <text class="campus-hub__section-desc">{{ t('campus.hub.schoolListDesc') }}</text>
+    <!-- 我加入的 -->
+    <view v-if="joinedSchools.length > 0" class="campus-hub__section">
+      <text class="campus-hub__section-title">{{ t('campusHub.joinedTitle') }}</text>
       <view
-        v-for="school in schools"
+        v-for="school in joinedSchools"
         :key="school.id"
-        class="campus-school press-feedback"
+        class="campus-school-card press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
         :aria-label="school.name"
         @tap="goSchool(school.name)"
       >
-        <view class="campus-school__icon">
-          <image class="campus-school__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+        <view class="campus-school-card__thumb">
+          <image class="campus-school-card__thumb-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFill" alt="" />
         </view>
-        <view class="campus-school__body">
-          <text class="campus-school__name">{{ school.name }}</text>
-          <text class="campus-school__city">{{ school.city ?? '' }}</text>
+        <view class="campus-school-card__body">
+          <view class="campus-school-card__name-row">
+            <text class="campus-school-card__name">{{ school.name }}</text>
+            <view class="campus-school-card__badge" :class="'campus-school-card__badge--' + (isVerified ? 'verified' : 'pending')">
+              <text class="campus-school-card__badge-text">{{ isVerified ? t('campusHub.certified') : t('campusHub.statusPending') }}</text>
+            </view>
+          </view>
+          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
+          <text class="campus-school-card__peers">{{ statsOf(school).peers }}</text>
         </view>
-        <view class="campus-school__status" :class="`campus-school__status--${schoolStatus(school.name)}`">
-          <text class="campus-school__status-text">{{ statusText(school.name) }}</text>
+        <view class="campus-school-card__cta">
+          <text class="campus-school-card__cta-text">{{ t('campusHub.enter') }}</text>
         </view>
-        <text class="campus-school__arrow">›</text>
       </view>
     </view>
 
-    <!-- 校园圈推荐 -->
+    <!-- 推荐圈子 -->
     <view class="campus-hub__section">
-      <text class="campus-hub__section-title">{{ t('campus.hub.recommendTitle') }}</text>
-      <text class="campus-hub__section-desc">{{ t('campus.hub.recommendDesc') }}</text>
+      <text class="campus-hub__section-title">{{ t('campusHub.recommendTitle2') }}</text>
       <view
-        v-for="school in schools.slice(0, 3)"
-        :key="`rec-${school.id}`"
-        class="campus-reco press-feedback"
+        v-for="school in recommendedSchools"
+        :key="'rec-' + school.id"
+        class="campus-school-card press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
         :aria-label="school.name"
         @tap="goSchool(school.name)"
       >
-        <view class="campus-reco__icon">
-          <image class="campus-reco__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+        <view class="campus-school-card__thumb">
+          <image class="campus-school-card__thumb-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFill" alt="" />
         </view>
-        <view class="campus-reco__body">
-          <text class="campus-reco__name">{{ school.name }}</text>
-          <text class="campus-reco__desc">{{ t('campus.hub.recommendDesc') }}</text>
+        <view class="campus-school-card__body">
+          <view class="campus-school-card__name-row">
+            <text class="campus-school-card__name">{{ school.name }}</text>
+            <view class="campus-school-card__badge campus-school-card__badge--plain">
+              <text class="campus-school-card__badge-text">{{ t('campusHub.unverified') }}</text>
+            </view>
+          </view>
+          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
+          <text class="campus-school-card__peers">{{ statsOf(school).peers }}</text>
         </view>
-        <view class="campus-reco__cta">
-          <text class="campus-reco__cta-text">{{ statusText(school.name) }}</text>
+        <view class="campus-school-card__cta">
+          <text class="campus-school-card__cta-text">{{ t('campusHub.join') }}</text>
         </view>
       </view>
     </view>
@@ -434,4 +464,149 @@ function goBack() {
 .campus-hub__footer {
   height: 48rpx;
 }
+
+.campus-hub__title-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4rpx;
+}
+
+.campus-hub__subtitle {
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #8A9694;
+}
+
+.campus-hub__cert-btn {
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.32);
+}
+
+.campus-hub__cert-btn-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.campus-hub__cert-badge {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: #E8FAF3;
+}
+
+.campus-hub__cert-badge-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #36C99A;
+}
+
+.campus-school-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 20rpx;
+  padding: 24rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 6rpx 24rpx rgba(26, 55, 48, 0.08);
+}
+
+.campus-school-card__thumb {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #E8FAF3;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campus-school-card__thumb-img {
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.campus-school-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.campus-school-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.campus-school-card__name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #222222;
+}
+
+.campus-school-card__badge {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.campus-school-card__badge--verified {
+  background: #E8FAF3;
+}
+
+.campus-school-card__badge--verified .campus-school-card__badge-text {
+  color: #36C99A;
+}
+
+.campus-school-card__badge--pending {
+  background: #FFF4E5;
+}
+
+.campus-school-card__badge--pending .campus-school-card__badge-text {
+  color: #FF9A57;
+}
+
+.campus-school-card__badge--plain {
+  background: #F2F4F3;
+}
+
+.campus-school-card__badge--plain .campus-school-card__badge-text {
+  color: #8A9694;
+}
+
+.campus-school-card__badge-text {
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.campus-school-card__stats {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #4A524E;
+}
+
+.campus-school-card__peers {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #9AA39F;
+}
+
+.campus-school-card__cta {
+  flex-shrink: 0;
+  padding: 12rpx 26rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.campus-school-card__cta-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
 </style>

@@ -34,6 +34,8 @@ public class MockAppConfigService implements AppConfigService {
             loginHero.heroAnimationTheme(),
             loginHero.heroTitle(),
             loginHero.heroSubtitle(),
+            loginHero.heroDesc(),
+            loginHero.heroDescSub(),
             loginHero.videoFallbackToAnimation()
         );
     }
