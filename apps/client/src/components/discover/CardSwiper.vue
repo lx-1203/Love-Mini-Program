@@ -13,7 +13,6 @@
  * Phase D2 重构：
  * - 大图区采用 4:5 比例布局，照片墙 swiper 支持多图浏览
  * - 图片优先级：halfBodyPhotoUrl → photoGallery[0] → avatar → images[0]
- * - 视频角标（personalVideoUrl 存在时显示于右上角），点击 emit videoTap
  * - 照片墙分页指示器（多图场景下展示当前页 / 总页数）
  * - 卡片信息区集成 VerificationBadge（基于 verificationBadgeLevel 字段）
  *
@@ -42,30 +41,24 @@ import CardDetailOverlay from "./CardDetailOverlay.vue";
 import LongPressMenu from "./LongPressMenu.vue";
 // B3 恋爱小纸条（2026-08-13）：悄悄话解锁底部弹层
 import WhisperUnlockSheet from "./WhisperUnlockSheet.vue";
+import { openAppPath } from "../../utils/navigation";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
-import { featureFlags } from "../../config/feature-flags";
 import { isDev } from "../../config/env";
+import { computeSwipeRotate, resolveSwipeEnd } from "../common/swipe/SwipeGesture";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
 import { useCoinsStore } from "../../stores/coins";
-import { useVipStore } from "../../stores/vip";
 // B3：real 模式悄悄话解锁走 clientApi（mock 扣费由 coinsStore.spend 承载）
 import { clientApi } from "../../services/api";
 import { useMock } from "../../stores/helpers/use-mock";
-// 2026-08-08 走查 P1：超级测试账号悄悄话免费旁路（会话 store 的 isSuperTestAccount getter）
-import { useSessionStore } from "../../stores/session";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 // 统一常量：手势阈值、长按时延、卡片动画参数等
 import {
-  SWIPE_THRESHOLD,
-  SWIPE_ROTATION_MAX,
   LONG_PRESS_DELAY_MS,
   LONG_PRESS_MOVE_THRESHOLD,
-  TAP_MOVE_THRESHOLD,
   CARD_TILT_MAX_DEGREE,
   CARD_TILT_DIVISOR,
-  SWIPE_ROTATION_DIVISOR,
   DRAG_TINT_OPACITY_DIVISOR,
   SWIPE_INDICATOR_RATIO_DIVISOR,
   CARD_FLY_OUT_DURATION_MS,
@@ -83,6 +76,7 @@ import {
   NEXT_CARD_OPACITY_DRAGGING,
   NEXT_CARD_OPACITY_STATIC,
   DEFAULT_MATCH_SCORE,
+  MATCH_HIGH_THRESHOLD,
   MATCH_SCORE_BASE,
   MATCH_SCORE_STEP,
   MATCH_SCORE_MAX,
@@ -92,17 +86,14 @@ import {
 const { t } = useI18n();
 
 const coinsStore = useCoinsStore();
-const vipStore = useVipStore();
-const sessionStore = useSessionStore();
-
-/** 超级测试账号（2026-08-08 走查 P1：悄悄话免费旁路） */
-const isSuperTest = computed(() => sessionStore.isSuperTestAccount);
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
+  heartMatch: IMAGE_PATHS.ICONS_MATCH.HEART,
+  star: IMAGE_PATHS.ICONS_MATCH.STAR,
+  x: IMAGE_PATHS.ICONS_MATCH.X,
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
-  video: IMAGE_PATHS.ICONS_COMMON.CAMERA,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
   chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
   group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
@@ -114,30 +105,44 @@ const emojiIcons = {
   ring: IMAGE_PATHS.ICONS_COMMON.RING_SVG,
 } as const;
 
-const props = defineProps<{
-  /** 卡片数据列表 */
-  cards: DiscoverCard[];
-  /** 每日剩余次数 */
-  remainingCount: number;
-  /**
-   * 蒙面匿名模式（设计改进方案 · 附近的人）：
-   * 未解锁时头像模糊、昵称隐藏为 ????，卡片中上部展示解锁规则提示；
-   * 其余信息（ID/认证/活跃/距离/基础资料/标签）照常展示。
-   */
-  masked?: boolean;
-  /** [AUTOSHOT] 仅测试钩子：卡片就绪后自动打开详情弹层（一次），正常使用不传 */
-  autoOpenDetail?: boolean;
-  /** [AUTOSHOT] 仅测试钩子：透传给 CardDetailOverlay 的 initialAnchor */
-  detailAnchor?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    /** 卡片数据列表 */
+    cards: DiscoverCard[];
+    /** 每日剩余次数 */
+    remainingCount: number;
+    /**
+     * 蒙面匿名模式（设计改进方案 · 附近的人）：
+     * 未解锁时头像模糊、昵称隐藏为 ????，卡片中上部展示解锁规则提示；
+     * 其余信息（ID/认证/活跃/距离/基础资料/标签）照常展示。
+     */
+    masked?: boolean;
+    /** [AUTOSHOT] 仅测试钩子：卡片就绪后自动打开详情弹层（一次），正常使用不传 */
+    autoOpenDetail?: boolean;
+    /** [AUTOSHOT] 仅测试钩子：透传给 CardDetailOverlay 的 initialAnchor */
+    detailAnchor?: string;
+    /**
+     * v2 附近的人：☆ 按钮语义
+     * - superLike：超级喜欢（长按菜单入口）
+     * - whisper：悄悄话（v3 ☆ 动作，付费留言）
+     */
+    starAction?: "superLike" | "whisper";
+    /** 是否展示悄悄话动作（匹配页保留；附近页按 v2 三动作规范隐藏） */
+    showWhisper?: boolean;
+  }>(),
+  {
+    starAction: "superLike",
+    showWhisper: true,
+  }
+);
 
 const emit = defineEmits<{
   /** 滑动操作 */
   (e: "swipe", direction: SwipeDirection, cardId: string): void;
   /** 超级喜欢操作 */
   (e: "superLike", cardId: string): void;
-  /** 视频角标点击（Phase D2 新增） */
-  (e: "videoTap", cardId: string, videoUrl: string): void;
+  /** v3：☆ 悄悄话（付费留言） */
+  (e: "whisper", cardId: string): void;
   /** 发消息操作（由 CardDetailOverlay 透传，父组件负责导航到聊天页） */
   (e: "message", userId: string): void;
 }>();
@@ -293,14 +298,6 @@ const avatarDisplayName = computed<string>(() => {
 });
 
 /**
- * 当前卡片是否有视频（Phase D2 · 视频角标显隐依据）。
- * 2026-08-10：视频通话功能整体下架，角标保留（展示个人视频 → video-player 页），仅依赖数据字段。
- */
-const hasVideo = computed<boolean>(() => {
-  return !!currentCard.value?.personalVideoUrl;
-});
-
-/**
  * 当前卡片是否有多图（用于决定是否展示分页指示器）。
  */
 const hasMultipleImages = computed<boolean>(() => currentDisplayImages.value.length > 1);
@@ -338,9 +335,26 @@ const matchScore = computed(() => {
 });
 
 /**
+ * 匹配度强调文案（粉圈小字：>=85 高匹配，否则仅「匹配」）
+ */
+const matchLabel = computed<string>(() =>
+  matchScore.value >= MATCH_HIGH_THRESHOLD ? t('discover.matchHighLabel') : t('discover.matchLabel')
+);
+
+/** 匹配度粉圈无障碍描述 */
+const matchBadgeAria = computed<string>(() => `${matchScore.value}%${matchLabel.value}`);
+
+/**
  * 学校/学历文案（昵称行）：优先校区名，其次 headline 拆分，再回退学历层级。
  * 精简卡片蒙层第一行展示（昵称 + 年龄 + 学校/学历）。
  */
+const schoolGradeLabel = computed(() => {
+  const card = currentCard.value;
+  if (!card) return "";
+  if (card.campusName && card.gradeLabel) return `${card.campusName} · ${card.gradeLabel}`;
+  return schoolLabel.value;
+});
+
 const schoolLabel = computed(() => {
   const card = currentCard.value;
   if (!card) return "";
@@ -364,7 +378,7 @@ const activeStatusLabel = computed(() => {
   if (!card) return "";
   const raw = card.activeStatusText;
   if (raw) {
-    if (raw === "just_now") return t('discover.activeJustNow');
+    if (raw === "online" || raw === "just_now") return t('cardDetail.onlineLabel');
     if (raw === "today") return t('discover.activeToday');
     // 设计改进方案：弱化「离线」展示——不占用显眼位置，避免打击互动意愿
     if (raw === "offline") return "";
@@ -376,19 +390,19 @@ const activeStatusLabel = computed(() => {
     return raw;
   }
   // 回退：基于 onlineStatus 推断
-  if (card.onlineStatus === "online") return t('discover.activeJustNow');
+  if (card.onlineStatus === "online") return t('cardDetail.onlineLabel');
   if (card.onlineStatus === "away") return t('discover.activeToday');
   return "";
 });
 
 /**
  * 距离文案（基于 distanceText 字段）。
- * distanceText 为纯数值时拼接 km 单位；含单位/自定义文案直接展示；同校时展示"同校"。
+ * distanceText 为纯数值时拼接 km 单位；含单位/自定义文案直接展示。
+ * 2026-08-14：删除「同校」分支，同校用户回落为 distanceText 距离展示。
  */
 const distanceLabel = computed(() => {
   const card = currentCard.value;
   if (!card) return "";
-  if (card.isSameSchool) return t('discover.sameCampusDistance');
   const raw = card.distanceText;
   if (!raw) return card.availability || "";
   if (/^\d+(\.\d+)?$/.test(raw)) {
@@ -397,66 +411,13 @@ const distanceLabel = computed(() => {
   return raw;
 });
 
-/**
- * 认证文案（基于 machineVerified / humanVerified 字段）。
- * 双重认证展示"双重认证"，仅单项认证时展示对应文案，均无时返回空串。
- */
-const verificationLabel = computed(() => {
-  const card = currentCard.value;
-  if (!card) return "";
-  if (card.machineVerified && card.humanVerified) return t('discover.doubleVerified');
-  if (card.machineVerified) return t('discover.machineVerified');
-  if (card.humanVerified) return t('discover.humanVerified');
-  return "";
-});
-
-/**
- * 个人 ID 展示文案（基于 displayId 字段）。
- */
-const displayIdLabel = computed(() => {
-  const card = currentCard.value;
-  if (!card?.displayId) return "";
-  return t('discover.personalId', { id: card.displayId });
-});
 
 /* ========== 2026-08-08 走查 P0-2：卡片信息区块还原（基础资料/性格MBTI/期待画像/动态预览） ========== */
 
 /** 自我描述展开阈值（超 30 字时展示「展开/收起」按钮） */
 const BIO_CLAMP_CHARS = 30;
 
-/** 身高文案（基础资料胶囊：172cm，空值隐藏） */
-const heightText = computed(() => {
-  const card = currentCard.value;
-  return card?.height ? `${card.height}${t('cardDetail.heightUnit')}` : "";
-});
 
-/** 职业文案（基础资料胶囊） */
-const occupationText = computed(() => currentCard.value?.occupation ?? "");
-
-/** 月收入档位文案（基础资料胶囊） */
-const incomeText = computed(() => currentCard.value?.incomeRange ?? "");
-
-/**
- * 感情状态文案（基础资料胶囊）。
- * 枚举映射与 CardDetailOverlay 口径一致：never→未婚 / married_before→曾婚 / divorced→离异 / widowed→丧偶。
- */
-const relationshipText = computed(() => {
-  const card = currentCard.value;
-  if (!card?.relationshipStatus) return "";
-  const map: Record<string, string> = {
-    never: t('discover.relationshipNever'),
-    married_before: t('discover.relationshipMarriedBefore'),
-    divorced: t('discover.relationshipDivorced'),
-    widowed: t('discover.relationshipWidowed'),
-  };
-  return map[card.relationshipStatus] ?? card.relationshipStatus;
-});
-
-/** 性格标签（卡片仅展示前 3 个，避免信息过载） */
-const personalityFirst3 = computed<string[]>(() => (currentCard.value?.personality ?? []).slice(0, 3));
-
-/** 最新一条动态预览（卡片最底部「TA的动态」） */
-const latestPost = computed(() => currentCard.value?.recentPosts?.[0] ?? null);
 
 /** 自我描述展开态（3 行截断 → 展开全文） */
 const bioExpanded = ref(false);
@@ -534,9 +495,8 @@ const nextCardStyle = computed(() => {
 /** 认证详情弹窗显隐 */
 const showCertDetail = ref(false);
 
-/** 距离文案（「距离你12km」前缀格式，需求示例；同校时直接展示「同校」避免「距离你同校」） */
+/** 距离文案（「距离你12km」前缀格式；2026-08-14：删除「同校」展示，大学名保留在昵称行） */
 const identityDistance = computed(() => {
-  if (currentCard.value?.isSameSchool) return t('discover.sameCampusDistance');
   const label = distanceLabel.value;
   if (!label) return "";
   return `${t('discover.distancePrefix')}${label}`;
@@ -558,62 +518,32 @@ const educationLabel = computed(() => {
 /**
  * 底部操作栏「悄悄话」：B3 恋爱小纸条付费解锁入口。
  * 优先级：后端已允许（allowMessage）、会员（membershipEnabled 门控）或超级测试账号 → 直接进入会话；
- * 其余 → 打开 WhisperUnlockSheet 付费解锁（2 交友币）后展示恋爱小纸条。
+ * 其余 → 打开 WhisperUnlockSheet 付费解锁（2 交友币）后展示多条悄悄话。
  *
  * 2026-08-13 B3：原 WHISPER_ENABLED 本地常量废除，开关统一收敛到
  * featureFlags.whisperEnabled（置 false 时按钮置灰，点击仅提示）。
+ * 2026-08-14：解锁后按钮不再置灰，可幂等再次查看（不重复扣费）。
  */
 
 /** 悄悄话解锁弹层显隐 */
 const showWhisperSheet = ref(false);
 /** 悄悄话弹层组件引用（解锁成功后通过 expose 驱动 result 状态） */
 const whisperSheetRef = ref<InstanceType<typeof WhisperUnlockSheet> | null>(null);
+/** 已解锁悄悄话缓存（userId → 文案列表；mock 幂等：解锁后再次点击直接展示结果） */
+const unlockedWhispersMap = new Map<string, string[]>();
 
-function onWhisperTap(): void {
+/** 读取当前卡片的悄悄话文案列表（mock：fixtures 的 whispers/whisper；real：仅已解锁后缓存） */
+function currentWhispers(): string[] {
   const card = currentCard.value;
-  if (!card || isFlyingOut.value) return;
-  if (!featureFlags.whisperEnabled) {
-    uni.showToast({ title: t("discover.whisperComingSoon"), icon: "none" });
-    return;
-  }
-  if (card.whisperSent) {
-    uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
-    return;
-  }
-  // 后端已允许 / 会员（门控）/ 超级测试账号 → 直接进入会话（2026-08-08 走查保留语义）
-  if (card.allowMessage || (featureFlags.membershipEnabled && vipStore.isVip) || isSuperTest.value) {
-    emit("message", card.userId);
-    return;
-  }
-  // 刷新余额（弹层展示「当前余额」），未加载过或余额变化后实时取
-  void coinsStore.fetchBalance();
-  showWhisperSheet.value = true;
-  // real 模式：打开时幂等查询解锁状态，已解锁过则弹层直接展示结果（不重复扣费）
-  if (!useMock()) {
-    void preloadWhisperResult(card.userId);
-  }
-}
-
-/**
- * real 模式：弹层打开时查询悄悄话解锁状态（GET /recommendations/{userId}/whisper）。
- * 已解锁直接进入结果态；查询失败静默保持付费墙（解锁动作会再次校验）。
- */
-async function preloadWhisperResult(userId: string): Promise<void> {
-  try {
-    const result = await clientApi.getWhisper(userId);
-    if (result.unlocked && result.whisper) {
-      whisperSheetRef.value?.showResult(result.whisper);
-    }
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] 悄悄话状态查询失败:", err);
-    }
-  }
+  if (!card) return [];
+  const cached = unlockedWhispersMap.get(card.userId);
+  if (cached) return cached;
+  return card.whispers ?? (card.whisper ? [card.whisper] : []);
 }
 
 /**
  * 悄悄话弹层「解锁查看」确认：
- * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whisper）
+ * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whispers/whisper）
  * - real：POST /recommendations/{userId}/whisper/unlock 后端幂等扣费（服务端定价 200 分），
  *   返回 balanceCents 时同步本地余额
  * 成功后 showResult 驱动弹层进入结果态；失败回退付费墙并提示。
@@ -624,13 +554,14 @@ async function handleWhisperUnlock(): Promise<void> {
   try {
     if (useMock()) {
       await coinsStore.spend("WHISPER", card.userId);
-      whisperSheetRef.value?.showResult(card.whisper ?? "");
+      const texts = currentWhispers();
+      whisperSheetRef.value?.showResult(texts);
     } else {
       const result = await clientApi.unlockWhisper(card.userId);
       if (result.balanceCents != null) {
         coinsStore.balanceCents = result.balanceCents;
       }
-      whisperSheetRef.value?.showResult(result.whisper ?? "");
+      whisperSheetRef.value?.showResult(result.whispers);
     }
   } catch (err) {
     // 回退付费墙（错误提示由下方 toast/modal 承载）
@@ -654,12 +585,14 @@ async function handleWhisperUnlock(): Promise<void> {
   }
 }
 
-/** 解锁成功：标记当前卡片已发送（按钮置灰、详情页同步显示文案） */
-function onWhisperUnlocked(whisperText: string): void {
+/** 解锁成功：标记当前卡片已解锁并缓存文案列表 */
+function onWhisperUnlocked(whisperTexts: string[]): void {
   const card = currentCard.value;
   if (!card) return;
   card.whisperSent = true;
-  card.whisper = whisperText;
+  card.whisper = whisperTexts[0] ?? "";
+  card.whispers = whisperTexts;
+  unlockedWhispersMap.set(card.userId, whisperTexts);
 }
 
 /** 弹层关闭 */
@@ -673,6 +606,16 @@ function onWhisperSheetChat(): void {
   if (!card) return;
   showWhisperSheet.value = false;
   emit("message", card.userId);
+}
+
+/** 弹层「回复TA」：关闭弹层并带回复内容进入会话（chat-session prefillMessage 预填草稿） */
+function onWhisperReply(text: string): void {
+  const card = currentCard.value;
+  if (!card) return;
+  showWhisperSheet.value = false;
+  openAppPath(
+    `/pages/chat-session/index?userId=${encodeURIComponent(card.userId)}&prefillMessage=${encodeURIComponent(text)}`
+  );
 }
 
 /* ========== 卡片缩放效果（长按时缩小） ========== */
@@ -864,9 +807,7 @@ function onTouchMove(e: UniTouchEvent) {
   }
 
   translateX.value = deltaX;
-  // 根据滑动距离计算旋转角度
-  const ratio = Math.min(Math.abs(deltaX) / SWIPE_ROTATION_DIVISOR, 1);
-  rotate.value = (deltaX > 0 ? 1 : -1) * ratio * SWIPE_ROTATION_MAX;
+  rotate.value = computeSwipeRotate(deltaX);
 }
 
 /**
@@ -885,20 +826,17 @@ function onTouchEnd() {
 
   const deltaX = currentX - startX;
   const totalMove = Math.abs(deltaX) + Math.abs(currentY - startY);
+  const action = resolveSwipeEnd(deltaX, totalMove);
 
-  // 几乎没移动 → 点击
-  if (totalMove < TAP_MOVE_THRESHOLD) {
+  if (action === "tap") {
     resetCardPosition();
     handleTap();
     return;
   }
 
-  if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
-    // 超过阈值，触发飞出
-    const direction: SwipeDirection = deltaX > 0 ? "right" : "left";
-    performFlyOut(direction);
+  if (action === "swipe-right" || action === "swipe-left") {
+    performFlyOut(action === "swipe-right" ? "right" : "left");
   } else {
-    // 未超过阈值，回弹复位
     resetCardPosition();
   }
 }
@@ -987,8 +925,27 @@ function onLike() {
 }
 
 /**
- * 点击超级喜欢按钮
+ * v3：☆ 按钮（starAction 决定语义）
+ * - superLike：超级喜欢（长按菜单入口）
+ * - whisper：悄悄话（付费留言）
  */
+function onStarTap() {
+  if (isFlyingOut.value || !currentCard.value) return;
+  try {
+    heavyHaptic(); // 核心关系动作：重振动
+  } catch (err) {
+    if (isDev) {
+      console.warn("[CardSwiper] star action haptic failed:", err);
+    }
+  }
+  if (props.starAction === "whisper") {
+    emit("whisper", currentCard.value.id);
+  } else {
+    emit("superLike", currentCard.value.id);
+  }
+}
+
+/** 长按菜单的「超级喜欢」入口（始终为 superLike 语义） */
 function onSuperLike() {
   if (isFlyingOut.value || !currentCard.value) return;
   try {
@@ -1009,22 +966,6 @@ function onSuperLike() {
  */
 function onSwiperChange(e: { detail: { current: number } }) {
   currentImageIndex.value = e.detail.current;
-}
-
-/**
- * 视频角标点击（Phase D2 新增）。
- * 阻止冒泡到 card-stack 触摸事件，emit videoTap 由父组件跳转 video-player 页。
- */
-function onVideoBadgeTap() {
-  if (!currentCard.value?.personalVideoUrl) return;
-  try {
-    lightHaptic();
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] video-badge haptic failed:", err);
-    }
-  }
-  emit("videoTap", currentCard.value.id, currentCard.value.personalVideoUrl);
 }
 
 /* ========== 监听卡片变化 ========== */
@@ -1057,7 +998,7 @@ watch(
 
 // 修复（严格模式 noUnusedLocals）：onTouchMove/toggleBio/onVideoBadgeTap 通过 catchtap/catchtouchmove
 // 绑定到模板，vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ onTouchMove, onVideoBadgeTap });
+defineExpose({ onTouchMove });
 </script>
 
 <template>
@@ -1182,35 +1123,16 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
           :style="dragTintOpacity"
         />
 
-        <!-- 身份头部区（2026-08-08 精简卡片）：左上个人 ID 小字 + 右上双重认证角标（点击弹认证详情） -->
+        <!-- 顶部信息条（纯匹配版）：左上距离 / 右上在线 -->
         <view class="card__identity">
-          <text v-if="displayIdLabel" class="card__identity-id">{{ displayIdLabel }}</text>
-          <view
-            v-if="verificationLabel"
-            class="card__identity-cert press-feedback"
-            hover-class="card__identity-cert--pressed"
-            hover-stay-time="120"
-            @tap.stop="showCertDetail = true"
-            role="button"
-            :aria-label="t('discover.certDetailTitle')"
-          >
-            <text class="card__identity-cert-text">{{ verificationLabel }}</text>
-            <text class="card__identity-cert-arrow">›</text>
+          <view v-if="identityDistance" class="card__distance-badge" role="img" :aria-label="identityDistance">
+            <image class="card__distance-badge-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
+            <text class="card__distance-badge-text">{{ identityDistance }}</text>
           </view>
-        </view>
-
-        <!-- Phase D2 · 视频角标（右上角，personalVideoUrl 存在时展示） -->
-        <view
-          v-if="hasVideo"
-          class="card__video-badge press-feedback"
-          hover-class="card__video-badge--pressed"
-          hover-stay-time="120"
-  @tap.stop="onVideoBadgeTap"
-          role="button"
-          :aria-label="t('discover.videoBadge')"
-        >
-          <image class="card__video-badge-icon" :src="emojiIcons.video" mode="aspectFit" alt="" />
-          <text class="card__video-badge-text">{{ t('discover.videoBadge') }}</text>
+          <view v-if="activeStatusLabel" class="card__online-badge" role="img" :aria-label="activeStatusLabel">
+            <view class="card__online-dot" />
+            <text class="card__online-text">{{ activeStatusLabel }}</text>
+          </view>
         </view>
 
         <!-- Phase D2 · 照片墙分页指示器（多图场景下展示） -->
@@ -1229,7 +1151,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
         <view
           v-if="hasMultipleImages"
           class="card__image-counter"
-          :class="{ 'card__image-counter--with-video': hasVideo }"
         >
           <text class="card__image-counter-text">{{ currentImageIndex + 1 }}/{{ imageCount }}</text>
         </view>
@@ -1252,55 +1173,48 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
           <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
         </view>
 
-        <!-- 卡片内容（2026-08-08 走查 P0-2 还原：自上而下覆盖需求 13 项信息，决策信息一屏呈现） -->
+        <!-- 卡片内容（2026-08-14 改版：匹配度粉圈置顶 → 身份 → 标签上移 → 基础资料 → 简介 → 期待画像；删除动态/留言） -->
         <view class="card__content">
-          <!-- ① 昵称ID + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????） -->
+          <!-- ② 昵称ID + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????；同校文案已删除，大学名保留） -->
           <view class="card__name-row">
             <text class="card__name">{{ displayName }}</text>
             <text class="card__age">{{ extractAge(currentCard) }}{{ t('discover.ageUnit') }}</text>
-            <text v-if="schoolLabel" class="card__school">{{ schoolLabel }}</text>
+            <text v-if="schoolLabel" class="card__school">{{ schoolGradeLabel }}</text>
             <!-- Phase D3 · 集成 VerificationBadge（学校/邮箱/实名徽章） -->
-            <VerificationBadge
+            <view
               v-if="currentCard.verificationBadgeLevel"
-              :level="(currentCard.verificationBadgeLevel as 'none' | 'school' | 'email' | 'idcard')"
-              size="sm"
-              :show-cta-when-none="false"
-            />
+              class="card__verified-tap press-feedback"
+              hover-class="card__verified-tap--pressed"
+              hover-stay-time="120"
+              @tap.stop="showCertDetail = true"
+              role="button"
+              :aria-label="t('discover.certDetailTitle')"
+            >
+              <VerificationBadge
+                :level="(currentCard.verificationBadgeLevel as 'none' | 'school' | 'email' | 'idcard')"
+                size="sm"
+                :show-cta-when-none="false"
+              />
+            </view>
           </view>
 
-          <!-- ② 距离 · 活跃状态 · 匹配度（决策辅助） -->
+          <!-- ③ 距离 · 活跃状态（决策辅助，匹配度已上移为粉圈） -->
           <view class="card__meta-row">
             <text v-if="identityDistance" class="card__meta">{{ identityDistance }}</text>
             <text v-if="activeStatusLabel" class="card__meta card__meta--active">
               {{ activeStatusLabel }}
             </text>
-            <text class="card__meta card__meta--match">{{ matchScore }}{{ t('discover.matchSuffix') }}</text>
           </view>
 
-          <!-- ③ 基础资料 4 项：身高 / 职业 / 月收入 / 感情状态（仅渲染非空） -->
-          <view
-            v-if="heightText || occupationText || incomeText || relationshipText"
-            class="card__basics"
-          >
-            <view v-if="heightText" class="card__basics-item">
-              <image class="card__basics-icon" :src="emojiIcons.ruler" mode="aspectFit" alt="" />
-              <text>{{ heightText }}</text>
-            </view>
-            <view v-if="occupationText" class="card__basics-item">
-              <image class="card__basics-icon" :src="emojiIcons.briefcase" mode="aspectFit" alt="" />
-              <text>{{ occupationText }}</text>
-            </view>
-            <view v-if="incomeText" class="card__basics-item">
-              <image class="card__basics-icon" :src="emojiIcons.money" mode="aspectFit" alt="" />
-              <text>{{ incomeText }}</text>
-            </view>
-            <view v-if="relationshipText" class="card__basics-item">
-              <image class="card__basics-icon" :src="emojiIcons.ring" mode="aspectFit" alt="" />
-              <text>{{ relationshipText }}</text>
-            </view>
+          <!-- ④ 喜好兴趣标签（上移，紧跟身份行） -->
+          <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
+            <text
+              v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
+              class="tag-pill"
+            >{{ tag }}</text>
           </view>
 
-          <!-- ④ 自我描述：3 行截断 + 展开/收起（mp-weixin 不支持 -webkit-line-clamp，用 max-height 实现） -->
+          <!-- ⑦ 自我描述：3 行截断 + 展开/收起（mp-weixin 不支持 -webkit-line-clamp，用 max-height 实现） -->
           <view class="card__bio-block">
             <text class="card__bio" :class="{ 'card__bio--clamped': !bioExpanded }">
               {{ currentCard.bio || t('discover.defaultBio') }}
@@ -1315,67 +1229,15 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
             </view>
           </view>
 
-          <!-- ⑤ 喜好兴趣标签（3-4 个核心标签，统一浅底色胶囊） -->
-          <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
-            <text
-              v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
-              class="tag-pill"
-            >{{ tag }}</text>
-          </view>
-
-          <!-- ⑥ 性格标签 + MBTI 人格类型 -->
-          <view
-            v-if="currentCard.mbti || personalityFirst3.length > 0"
-            class="card__personality"
-          >
-            <text v-if="currentCard.mbti" class="card__mbti-badge">{{ currentCard.mbti }}</text>
-            <text
-              v-for="(pt, idx) in personalityFirst3" :key="idx"
-              class="tag-pill tag-pill--soft"
-            >{{ pt }}</text>
-          </view>
-
-          <!-- ⑦ 期待的人物画像（小标题 + 2 行截断） -->
-          <view v-if="currentCard.expectedPartner" class="card__expect">
-            <text class="card__expect-title">{{ t('discover.myExpectedPartner') }}</text>
-            <text class="card__expect-text">{{ currentCard.expectedPartner }}</text>
-          </view>
-
-          <!-- ⑧ 动态预览：最新 1 条（缩略图 + 文案 + 点赞/评论数），点击进入详情页动态分区 -->
-          <view
-            v-if="latestPost"
-            class="card__post-preview press-feedback"
-            hover-class="card__post-preview--pressed"
-            hover-stay-time="120"
-            @tap.stop="showDetail = true"
-            role="button"
-            :aria-label="t('discover.latestPostSection')"
-          >
-            <view class="card__post-preview-main">
-              <text class="card__post-preview-title">{{ t('discover.latestPostSection') }}</text>
-              <text class="card__post-preview-content">{{ latestPost.content }}</text>
-              <view class="card__post-preview-stats">
-                <view class="card__post-preview-stat">
-                  <image class="card__post-preview-stat-icon" :src="emojiIcons.heart" mode="aspectFit" alt="" />
-                  <text>{{ latestPost.likes }}</text>
-                </view>
-                <view class="card__post-preview-stat">
-                  <image class="card__post-preview-stat-icon" :src="emojiIcons.chat" mode="aspectFit" alt="" />
-                  <text>{{ latestPost.comments }}</text>
-                </view>
-              </view>
-            </view>
-            <SafeImage
-              v-if="latestPost.images && latestPost.images.length > 0"
-              :src="latestPost.images[0]"
-              custom-class="card__post-thumb"
-              mode="aspectFill"
-            />
+          <!-- ⑨ 匹配度（置底，设计稿：♥ 80% 与你很合拍） -->
+          <view class="card__match-badge" role="img" :aria-label="matchBadgeAria">
+            <text class="card__match-badge__heart">♥</text>
+            <text class="card__match-badge__value">{{ matchScore }}%</text>
+            <text class="card__match-badge__label">{{ matchLabel }}</text>
           </view>
         </view>
       </view>
     </view>
-
     <!-- 卡片详情弹出层 -->
     <!-- [AUTOSHOT] detail-anchor 透传给详情弹层（测试钩子，正常使用为空） -->
     <CardDetailOverlay
@@ -1399,6 +1261,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       @chat="onWhisperSheetChat"
       @unlock="handleWhisperUnlock"
       @unlocked="onWhisperUnlocked"
+      @reply="onWhisperReply"
     />
 
     <!-- 长按快捷菜单 -->
@@ -1412,44 +1275,19 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
       @not-interested="handleNotInterested"
     />
 
-    <!-- 独立操作栏（2026-08-09 改版：移出卡片悬浮层，置于卡片正下方，完全不遮挡卡片内容） -->
-    <!-- 布局：X 不喜欢 | 悄悄话（主入口，最大）| ❤️ 喜欢，横向居中排布，与卡片保持 16px 留白 -->
-    <view v-if="currentCard" class="action-bar">
-      <!-- 左侧：X 不喜欢（48px 白色圆形按钮 + 灰色叉号，等价左滑） -->
-      <view
-        class="action-btn action-btn--reject press-feedback"
-        hover-class="action-btn--pressed"
-        hover-stay-time="120"
-        @tap.stop="onReject"
-        role="button"
-        :aria-label="t('discover.skip')"
-      >
-        <image class="action-btn__reject-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
+    <!-- 底部横向操作（寻觅 v3）：× 跳过 / ☆ 悄悄话 / ♥ 喜欢 -->
+    <view v-if="currentCard" class="card-actions">
+      <view class="card-action card-action--skip press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onReject" role="button" :aria-label="t('discover.skip')">
+        <image class="card-action__icon" :src="emojiIcons.x" mode="aspectFit" alt="" />
+        <text class="card-action__label">{{ t('discover.skip') }}</text>
       </view>
-      <!-- 中间：悄悄话（64px 品牌绿填充圆形按钮，B3 恋爱小纸条付费解锁主入口，视觉权重最高；
-           2026-08-13：功能开关关闭或已发送悄悄话时置灰，点击仍走 onWhisperTap 分支提示） -->
-      <view
-        class="action-btn action-btn--whisper press-feedback"
-        :class="{ 'action-btn--whisper--disabled': !featureFlags.whisperEnabled || currentCard.whisperSent }"
-        hover-class="action-btn--pressed"
-        hover-stay-time="120"
-        @tap.stop="onWhisperTap"
-        role="button"
-        :aria-label="t('discover.whisperLabel')"
-      >
-        <image class="action-btn__whisper-icon" :src="emojiIcons.message" mode="aspectFit" alt="" />
-        <text class="action-btn__whisper-label">{{ t('discover.whisperLabel') }}</text>
+      <view class="card-action card-action--super press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onStarTap" role="button" :aria-label="props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike')">
+        <image class="card-action__icon" :src="emojiIcons.star" mode="aspectFit" alt="" />
+        <text class="card-action__label">{{ props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike') }}</text>
       </view>
-      <!-- 右侧：❤️ 喜欢（56px 粉色填充圆形按钮 + 白色爱心，等价右滑） -->
-      <view
-        class="action-btn action-btn--like press-feedback"
-        hover-class="action-btn--pressed"
-        hover-stay-time="120"
-        @tap.stop="onLike"
-        role="button"
-        :aria-label="t('discover.like')"
-      >
-        <image class="action-btn__like-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED" mode="aspectFit" alt="" />
+      <view class="card-action card-action--like press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onLike" role="button" :aria-label="t('discover.like')">
+        <image class="card-action__icon" :src="emojiIcons.heartMatch" mode="aspectFit" alt="" />
+        <text class="card-action__label">{{ t('discover.like') }}</text>
       </view>
     </view>
 
@@ -1910,7 +1748,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__online-badge {
   position: absolute;
   top: 28rpx;
-  left: 28rpx;
+  right: 28rpx;
   display: flex;
   align-items: center;
   gap: 8rpx;
@@ -1927,7 +1765,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
 .card__online-dot {
   width: 14rpx;
   height: 14rpx;
-  background: var(--c-text-inverse);
+  background: var(--c-success, #10B981);
   border-radius: var(--r-circle, 50%);
   animation: pulse-dot var(--d-particle, 1500ms) ease-in-out infinite;
 }
@@ -1943,39 +1781,30 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   font-weight: 600;
 }
 
-/* ========== Phase D2 · 视频角标（右上角） ========== */
-.card__video-badge {
+/* ========== 左上距离徽章（纯匹配版：3.8km） ========== */
+.card__distance-badge {
   position: absolute;
   top: 28rpx;
-  right: 28rpx;
+  left: 28rpx;
   display: flex;
   align-items: center;
   gap: 6rpx;
-  padding: var(--sp-2) var(--sp-4);
-  background: var(--c-badge-video-bg);
+  padding: 10rpx 20rpx;
+  background: var(--c-overlay-online-bg);
   border-radius: var(--r-full);
-  border: 1rpx solid var(--c-badge-video-border);
-  z-index: 4;
-  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1),
-              opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 3;
 }
 
-.card__video-badge--pressed {
-  transform: scale(0.94);
-  opacity: 0.85;
-}
-
-.card__video-badge-icon {
-  width: 24rpx;
-  height: 24rpx;
+.card__distance-badge-icon {
+  width: 22rpx;
+  height: 22rpx;
   flex-shrink: 0;
 }
 
-.card__video-badge-text {
-  font-size: var(--fs-xs);
+.card__distance-badge-text {
+  font-size: var(--fs-sm);
   color: var(--c-text-inverse);
   font-weight: 600;
-  line-height: 1;
 }
 
 /* ========== Phase D2 · 照片墙分页指示器（点状） ========== */
@@ -2015,11 +1844,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border-radius: var(--r-full);
   border: 1rpx solid var(--c-badge-video-border);
   z-index: 4;
-}
-
-/* 视频角标存在时，图片计数器上移避让（避免与底部信息区重叠） */
-.card__image-counter--with-video {
-  bottom: 96rpx;
 }
 
 .card__image-counter-text {
@@ -2139,7 +1963,7 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   font-weight: 700;
 }
 
-/* ========== 身份头部区（2026-08-08 精简卡片：左上 ID + 右上双重认证角标） ========== */
+/* ========== 顶部信息条（纯匹配版：左上距离 / 右上在线） ========== */
 .card__identity {
   position: absolute;
   top: 0;
@@ -2151,44 +1975,54 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   justify-content: space-between;
   gap: 20rpx;
   z-index: 4;
-  /* 两端渐变仅压暗顶部两角，保证 ID/认证角标可读，不遮挡中部头像 */
+  pointer-events: none;
   background: linear-gradient(to bottom, var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5)) 0%, var(--c-black-overlay-light, rgba(0, 0, 0, 0.16)) 55%, transparent 100%);
 }
 
-.card__identity-id {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
-  text-shadow: 0 1rpx 6rpx var(--c-text-shadow-overlay, rgba(0, 0, 0, 0.3));
-}
-
-.card__identity-cert {
+.card__verified-tap {
   display: inline-flex;
   align-items: center;
-  gap: 6rpx;
-  padding: 4rpx 14rpx;
-  border-radius: var(--r-full);
-  /* 品牌绿渐变近似 --c-gradient-brand；#2dd4bf→#14b8a6 无精确对应 token，保留原值 */
-  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
-  box-shadow: 0 2rpx 10rpx var(--c-black-shadow-xl, rgba(0, 0, 0, 0.24));
 }
 
-.card__identity-cert--pressed {
+.card__verified-tap--pressed {
   opacity: 0.85;
 }
 
-.card__identity-cert-text {
-  font-size: var(--fs-xs);
+/* ========== 匹配度（纯匹配版置底：♥ 80% 与你很合拍，粉色胶囊） ========== */
+.card__match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  align-self: flex-start;
+  padding: 12rpx 26rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8rpx 24rpx rgba(255, 104, 145, 0.45);
+  flex-shrink: 0;
+}
+
+.card__match-badge__heart {
+  font-size: var(--fs-lg);
+  color: #ffffff;
+  line-height: 1;
+}
+
+.card__match-badge__value {
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.card__match-badge__label {
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 700;
-  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
+  color: #ffffff;
+  line-height: 1;
 }
 
-.card__identity-cert-arrow {
-  font-size: var(--fs-sm);
-  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
-}
-
-/* ========== 精简卡片蒙层 4 行（2026-08-08：昵称年龄学校学历 / 距离活跃匹配度 / 一行简介 / 兴趣标签） ========== */
+/* ========== 精简卡片蒙层（2026-08-08：昵称年龄学校学历 / 距离活跃 / 标签上移 / 简介 / 期待画像） ========== */
 /* 行 1：昵称 + 年龄 + 学校/学历（学校为浅色半透明胶囊，防长校名溢出） */
 .card__school {
   font-size: var(--fs-sm, 22rpx);
@@ -2232,10 +2066,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   display: inline-block;
 }
 
-.card__meta--match {
-  color: var(--c-brand-300, #86efac);
-  font-weight: 700;
-}
 
 /* 行 3：一行自我简介（单行省略，完整展示在详情页） */
 /* ④ 自我描述：3 行截断 + 展开/收起（2026-08-08 走查 P0-2） */
@@ -2271,54 +2101,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   padding: 2rpx 6rpx;
 }
 
-/* ③ 基础资料 4 项胶囊（身高/职业/月收入/感情状态） */
-.card__basics {
-  display: flex;
-  flex-wrap: wrap;
-  /* 2026-08-09：gap 8→6rpx，压缩纵向占比 */
-  gap: 6rpx;
-}
-
-.card__basics-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 4rpx 14rpx;
-  border-radius: var(--r-full);
-  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
-  color: var(--c-neutral-700, #334155);
-  font-size: var(--fs-xs, 20rpx);
-  font-weight: 600;
-}
-
-.card__basics-icon {
-  width: 24rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-}
-
-/* ⑥ 性格标签 + MBTI 徽标 */
-.card__personality {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  /* 2026-08-09：gap 8→6rpx，压缩纵向占比 */
-  gap: 6rpx;
-}
-
-.card__mbti-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 76rpx;
-  padding: 4rpx 16rpx;
-  border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e), var(--c-brand-300, #7be0b4));
-  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
-  font-size: var(--fs-base);
-  font-weight: 700;
-  letter-spacing: 1rpx;
-}
 
 /* 性格胶囊弱化底色（区别于喜好兴趣标签） */
 .tag-pill--soft {
@@ -2326,94 +2108,6 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border-color: var(--c-overlay-border-stronger, rgba(255, 255, 255, 0.4));
 }
 
-/* ⑦ 期待的人物画像（小标题 + 2 行截断） */
-.card__expect {
-  display: flex;
-  flex-direction: column;
-  gap: 2rpx;
-}
-
-.card__expect-title {
-  font-size: var(--fs-xs, 20rpx);
-  font-weight: 700;
-  color: var(--c-overlay-text-primary);
-  letter-spacing: 1rpx;
-}
-
-.card__expect-text {
-  font-size: var(--fs-sm);
-  color: var(--c-overlay-text-secondary);
-  line-height: 1.4;
-  overflow: hidden;
-  max-height: 2.8em; /* 2 行 × 1.4 */
-  word-break: break-all;
-}
-
-/* ⑧ 动态预览卡（半透明底 + 圆角，样式参考贴吧帖子摘要） */
-.card__post-preview {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-  /* 2026-08-09：padding 10/14→8/12rpx，压缩纵向占比 */
-  padding: 8rpx 12rpx;
-  border-radius: var(--r-md, 12rpx);
-  background: var(--c-overlay-white-bg-tint-strong, rgba(255, 255, 255, 0.12));
-  border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
-}
-
-.card__post-preview--pressed {
-  background: var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25));
-}
-
-.card__post-preview-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2rpx;
-}
-
-.card__post-preview-title {
-  font-size: var(--fs-xs, 20rpx);
-  font-weight: 700;
-  color: var(--c-overlay-text-primary);
-}
-
-.card__post-preview-content {
-  font-size: var(--fs-sm);
-  color: var(--c-overlay-text-secondary);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.card__post-preview-stats {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.card__post-preview-stat {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-overlay-text-secondary);
-}
-
-.card__post-preview-stat-icon {
-  width: 20rpx;
-  height: 20rpx;
-}
-
-/* 动态缩略图（SafeImage 内部元素，需 :deep() 穿透） */
-:deep(.card__post-thumb) {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: var(--r-md, 12rpx);
-  flex-shrink: 0;
-  object-fit: cover;
-}
 
 /* ⑤ 兴趣标签（统一浅底色胶囊 + 深色文字，视觉规整） */
 .card__tags {
@@ -2435,98 +2129,66 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   border: 1rpx solid var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
 }
 
-/* ========== 独立操作栏（2026-08-09 改版：移出卡片悬浮层，置于卡片正下方，完全不遮挡卡片内容） ========== */
-.action-bar {
-  /* 静态流式排布：位于 .card-stack（flex:1 占满剩余高度）之后、组件最底部，
-   * 即匹配卡片正下方、全局底导航上方；卡片不随本栏滑动、本栏始终在视野内 */
+/* ========== 底部横向操作（寻觅 v3） ========== */
+.card-actions {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 40rpx;
-  /* 2026-08-09 改版：margin-top 从 16rpx 增至 40rpx，三个按钮整体往下移动，
-   * 与卡片拉开视觉距离（合计留白 ~24px），按钮不遮挡卡片任何内容，
-   * 页面纵向层次更清晰（卡片区 → 留白 → 操作栏） */
-  margin-top: 40rpx;
-  flex-shrink: 0;
+  padding: 24rpx 32rpx 0;
+  z-index: 5;
 }
 
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1), filter var(--d-normal, 200ms) ease;
-}
-
-/* 通用按压态（替代 :active，兼容 mp-weixin）：按压缩放反馈 */
-.action-btn--pressed {
-  transform: scale(0.88);
-  filter: brightness(0.92);
-}
-
-/* 左侧 X 不喜欢：48px 白色圆形按钮 + 灰色叉号（96rpx = 48px × 2） */
-.action-btn--reject {
-  width: 96rpx;
-  height: 96rpx;
+.card-action {
+  width: 116rpx;
+  height: 116rpx;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-bg-container);
-  box-shadow: 0 4rpx 16rpx var(--c-black-shadow-md, rgba(0, 0, 0, 0.1));
-  border: 2rpx solid var(--c-neutral-200);
-}
-
-.action-btn--reject.action-btn--pressed {
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-sm, rgba(0, 0, 0, 0.08));
-}
-
-.action-btn__reject-icon {
-  width: 36rpx;
-  height: 36rpx;
-}
-
-/* 中间悄悄话：64px 品牌绿填充圆形按钮（128rpx = 64px × 2），付费私信主入口，视觉权重最高；
- * 白色对话气泡图标 + 白色文字纵向堆叠 */
-.action-btn--whisper {
-  width: 128rpx;
-  height: 128rpx;
+  display: flex;
   flex-direction: column;
-  gap: 4rpx;
-  border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand-400, #2dd4bf) 0%, var(--c-brand-500, #3fcf8e) 100%);
-  box-shadow: var(--s-brand-lg, 0 8rpx 24rpx rgba(63, 207, 142, 0.3));
-  border: 3rpx solid var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8));
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.25);
+  transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
 }
 
-/* 2026-08-13 B3：恋爱小纸条上线——功能开关未开启或已发送悄悄话（whisperSent）时置灰，
- * 轻量弱化以保留主入口视觉层级（点击仍走 onWhisperTap 分支提示，不执行扣费/跳转） */
-.action-btn--whisper--disabled {
-  opacity: 0.72;
-  filter: saturate(0.75);
+.card-action--pressed {
+  transform: scale(0.92);
+  opacity: 0.85;
 }
 
-.action-btn__whisper-icon {
-  width: 40rpx;
-  height: 40rpx;
-  filter: brightness(0) invert(1);
-}
-
-.action-btn__whisper-label {
-  font-size: var(--fs-sm, 22rpx);
-  font-weight: 700;
-  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
-  line-height: 1;
-}
-
-/* 右侧 ❤️ 喜欢：56px 粉色填充圆形按钮 + 白色爱心（112rpx = 56px × 2） */
-.action-btn--like {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--r-circle, 50%);
+.card-action--like {
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  box-shadow: var(--s-romance-md, 0 4rpx 16rpx rgba(236, 72, 153, 0.3));
 }
 
-.action-btn__like-icon {
-  width: 48rpx;
-  height: 48rpx;
+.card-action--super {
+  /* v3 冻结：☆ 悄悄话 = 暖橙（白底/深色卡片上均醒目，不与 ❤️ 粉色抢视觉） */
+  background: linear-gradient(135deg, #FFB066 0%, #FF8A3D 100%);
+}
+
+.card-action--skip {
+  background: rgba(15, 23, 42, 0.55);
+  border: 2rpx solid rgba(255, 255, 255, 0.35);
+}
+
+.card-action--whisper {
+  width: 80rpx;
+  height: 80rpx;
+  background: rgba(15, 23, 42, 0.45);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.card-action--whisper--disabled {
+  opacity: 0.5;
+}
+
+.card-action__icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.card-action__label {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* ========== 认证详情弹窗（设计需求） ========== */
@@ -2621,3 +2283,8 @@ defineExpose({ onTouchMove, onVideoBadgeTap });
   color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 </style>
+
+
+
+
+

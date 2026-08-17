@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 通知免打扰设置页（功能6）
  *
@@ -26,7 +26,7 @@ import type {
 } from "../../services/generated/api-types-supplement";
 import { lightHaptic, successHaptic, errorHaptic } from "../../utils/haptic";
 // R4-00115：switch 为原生属性不支持 CSS 变量，激活色从 designTokens 取色
-// （与 scss --c-brand(#3FCF8E) 双源同步，改品牌色只需改 token 一处）
+// （与 scss --c-brand(#36C99A) 双源同步，改品牌色只需改 token 一处）
 import { designTokens } from "../../theme/tokens";
 
 const { t } = useI18n();

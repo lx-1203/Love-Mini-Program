@@ -310,7 +310,7 @@ defineExpose({ onContentTap, selectReason, submit });
 .report-sheet__title {
   font-size: var(--fs-lg, 32rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   line-height: 1.4;
 }
 
@@ -348,7 +348,7 @@ defineExpose({ onContentTap, selectReason, submit });
 
 .reason-item__label {
   font-size: var(--fs-md, 28rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   line-height: 1.4;
 }
 
@@ -364,8 +364,8 @@ defineExpose({ onContentTap, selectReason, submit });
 }
 
 .reason-item__radio--on {
-  background: var(--c-romance-500, #EC4899);
-  border-color: var(--c-romance-500, #EC4899);
+  background: var(--c-romance-500, #FF6B81);
+  border-color: var(--c-romance-500, #FF6B81);
 }
 
 .reason-item__radio-icon {
@@ -386,7 +386,7 @@ defineExpose({ onContentTap, selectReason, submit });
   width: 100%;
   min-height: 120rpx;
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   line-height: 1.5;
   background: transparent;
 }
@@ -422,7 +422,7 @@ defineExpose({ onContentTap, selectReason, submit });
 }
 
 .report-btn--submit {
-  background: var(--c-romance-500, #EC4899);
+  background: var(--c-romance-500, #FF6B81);
 }
 
 .report-btn--submit-disabled {
@@ -436,7 +436,7 @@ defineExpose({ onContentTap, selectReason, submit });
 .report-btn__text {
   font-size: var(--fs-md, 28rpx);
   font-weight: 500;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   line-height: 1.4;
 }
 

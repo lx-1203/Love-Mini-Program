@@ -56,10 +56,10 @@ describe("profile store - 数据加载", () => {
     await store.load();
 
     expect(store.basicProfile).not.toBeNull();
-    expect(store.basicProfile!.nickname).toBe("星野");
-    expect(store.basicProfile!.bio).toBe("安静、好奇，更喜欢一对一慢慢聊。");
+    expect(store.basicProfile!.nickname).toBe("林晓");
+    expect(store.basicProfile!.bio).toBe("热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。");
     expect(store.basicProfile!.grade).toBe("大三");
-    expect(store.basicProfile!.pronouns).toBe("她/她");
+    expect(store.basicProfile!.pronouns).toBe("TA");
   });
 
   // ------------------------------------------------------------------
@@ -70,10 +70,10 @@ describe("profile store - 数据加载", () => {
     await store.load();
 
     expect(store.campusProfile).not.toBeNull();
-    expect(store.campusProfile!.city).toBe("广州");
-    expect(store.campusProfile!.campusName).toBe("南校区");
+    expect(store.campusProfile!.city).toBe("北京");
+    expect(store.campusProfile!.campusName).toBe("北京大学");
     expect(store.campusProfile!.department).toBe("工业设计");
-    expect(store.campusProfile!.verificationStatus).toBe("draft");
+    expect(store.campusProfile!.verificationStatus).toBe("verified");
   });
 
   // ------------------------------------------------------------------

@@ -382,6 +382,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/home/today-recommendation/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate home today recommendation
+         * @description 更换首页今日推荐，不记录跳过、不消耗寻觅推荐额度。
+         */
+        post: operations["rotateHomeTodayRecommendation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/chat/overview": {
         parameters: {
             query?: never;
@@ -889,16 +909,15 @@ export interface components {
             futurePlanTags?: string[];
             photoGallery?: string[];
             halfBodyPhotoUrl?: string | null;
-            personalVideoUrl?: string | null;
             profileBackgroundUrl?: string | null;
             profileCompletion?: number;
             /** @enum {string} */
             verificationBadgeLevel?: "none" | "school" | "email" | "idcard";
-            /** 理想型画像描述（2026-08-11 匹配精细化） */
+            /** @description 理想型画像描述（2026-08-11 匹配精细化） */
             expectedPartner?: string | null;
-            /** 出生日期 yyyy-MM-dd（3-N 未成年人保护，2026-08-10 后端已返回） */
+            /** @description 出生日期 yyyy-MM-dd（3-N 未成年人保护，2026-08-10 后端已返回） */
             birthDate?: string | null;
-            /** 实名认证标志（B1-2，2026-08-13：true 表示已通过实名认证，校园认证前置门槛） */
+            /** @description 实名认证标志（B1-2，2026-08-13：true 表示已通过实名认证，校园认证前置门槛） */
             idCardVerified?: boolean | null;
         };
         BasicProfileRequest: {
@@ -915,7 +934,7 @@ export interface components {
             hometownCity?: string | null;
             futureCity?: string | null;
             futurePlanTags?: string[];
-            /** 理想型画像描述（2026-08-11 匹配精细化） */
+            /** @description 理想型画像描述（2026-08-11 匹配精细化） */
             expectedPartner?: string | null;
         };
         CampusProfile: {
@@ -991,6 +1010,94 @@ export interface components {
             pulseTitle?: string | null;
             pulseMeta?: string | null;
         };
+        /** @description 匹配中心聚合视图（寻觅 v3：首页 = 匹配中心）。 */
+        MatchCenter: {
+            quota: components["schemas"]["RecommendQuota"];
+            /** @description 当前在线速配人数（MVP：推荐池中 just_now 活跃人数） */
+            onlineCount: number;
+            relation: components["schemas"]["RelationProgress"];
+        };
+        RecommendQuota: {
+            /** @description 今日推荐总配额；-1 表示无限制（mock/服务未注入） */
+            dailyLimit: number;
+            used: number;
+            remaining: number;
+        };
+        /** @description 关系进度（crushing = myLikes - likedMe；matched = myLikes ∩ likedMe）。 */
+        RelationProgress: {
+            crushing: number;
+            matched: number;
+            whispers: number;
+        };
+        /** @description 首页 Feed 契约（首页 = 今日恋爱首页）。 */
+        HomeFeed: {
+            todayRecommendation: components["schemas"]["TodayRecommendation"];
+            loveProgress: components["schemas"]["LoveProgress"];
+            relationActivity: components["schemas"]["RelationActivity"];
+            interestRecommendations: components["schemas"]["InterestCircleSummary"][];
+            nearbyPeople: components["schemas"]["NearbyPersonSummary"][];
+            communityPosts: components["schemas"]["CommunityPostSummary"][];
+        };
+        TodayRecommendation: {
+            userId: number;
+            name: string;
+            age: number;
+            campusName: string;
+            gradeLabel?: string;
+            tags: string[];
+            bio: string;
+            expectation?: string;
+            distanceText?: string;
+            certified: boolean;
+            online: boolean;
+            matchScore: number;
+            photoUrl: string;
+        };
+        LoveProgress: {
+            completed: number;
+            total: number;
+            steps: components["schemas"]["LoveProgressStep"][];
+        };
+        LoveProgressStep: {
+            id: string;
+            title: string;
+            description: string;
+            completed: boolean;
+            action: string;
+        };
+        RelationActivity: {
+            likesReceived: number;
+            whispers: number;
+            visitors: number;
+            newMatches: number;
+            totalUnread: number;
+        };
+        InterestCircleSummary: {
+            id: number;
+            name: string;
+            icon: string;
+            memberCount: number;
+            joined: boolean;
+        };
+        NearbyPersonSummary: {
+            userId: number;
+            name: string;
+            distanceText: string;
+            avatarUrl: string;
+            online: boolean;
+            commonInterests: string[];
+        };
+        CommunityPostSummary: {
+            id: number;
+            authorName: string;
+            authorAvatar: string;
+            circleName: string;
+            timeText: string;
+            content: string;
+            images: string[];
+            likeCount: number;
+            commentCount: number;
+        };
         /** @description Homepage dashboard payload. AI planning stays inside this payload as `aiPlan`. */
         HomeDashboard: {
             scheduleSummary: components["schemas"]["HomeCard"];
@@ -1000,6 +1107,8 @@ export interface components {
             recommendedPeople: components["schemas"]["RecommendedPersonSummary"][];
             peopleLead: string;
             activityPreview: components["schemas"]["ActivityPreview"];
+            matchCenter: components["schemas"]["MatchCenter"];
+            homeFeed: components["schemas"]["HomeFeed"];
         };
         ChatOverview: {
             sessions: components["schemas"]["ChatSessionSummary"][];
@@ -1914,6 +2023,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeDashboard"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    rotateHomeTodayRecommendation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 下一位今日推荐；无候选时返回 null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayRecommendation"];
                 };
             };
             401: components["responses"]["Unauthorized"];

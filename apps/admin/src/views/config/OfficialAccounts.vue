@@ -148,6 +148,8 @@ onMounted(fetchAccounts);
               <th>{{ t("officialAccounts.colType") }}</th>
               <th>{{ t("officialAccounts.colContent") }}</th>
               <th>{{ t("officialAccounts.colCard") }}</th>
+              <th>关联活动</th>
+              <th>推荐理由 / 人数</th>
               <th>{{ t("officialAccounts.colTarget") }}</th>
               <th>{{ t("officialAccounts.colPublishedAt") }}</th>
             </tr>
@@ -166,6 +168,20 @@ onMounted(fetchAccounts);
               <td>
                 <span v-if="msg.cardTitle">{{ msg.cardTitle }}</span>
                 <span v-if="msg.cardTag" class="card-tag">{{ msg.cardTag }}</span>
+                <span v-else>-</span>
+              </td>
+              <td>
+                <template v-if="msg.cardActivity">
+                  <div>{{ msg.cardActivity.title }}</div>
+                  <div class="cell-time">{{ msg.cardActivity.timeText }}</div>
+                </template>
+                <span v-else>-</span>
+              </td>
+              <td>
+                <template v-if="msg.cardActivity">
+                  <div>{{ msg.cardActivity.recommendReason || "-" }}</div>
+                  <div>{{ msg.cardActivity.enrollmentCount }} 人</div>
+                </template>
                 <span v-else>-</span>
               </td>
               <td class="cell-target">
@@ -335,3 +351,4 @@ onMounted(fetchAccounts);
   color: var(--admin-color-text-quaternary);
 }
 </style>
+

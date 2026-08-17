@@ -259,7 +259,7 @@ public class ProfileController {
  * <p>扩展字段：
  * <ul>
  *   <li>身高、学历、感情状态、籍贯（省/市）、未来城市、未来规划标签</li>
- *   <li>照片墙、半身照 URL、个人视频 URL、个人主页背景图 URL</li>
+ *   <li>照片墙、半身照 URL、个人主页背景图 URL（个人视频已下线，不再对外暴露）</li>
  *   <li>资料完善度（0-100）、认证徽章级别（none/school/email/idcard）</li>
  * </ul>
  * </p>
@@ -278,7 +278,7 @@ record BasicProfileView(
     List<String> futurePlanTags,
     List<String> photoGallery,
     String halfBodyPhotoUrl,
-    String personalVideoUrl,
+
     String profileBackgroundUrl,
     int profileCompletion,
     String verificationBadgeLevel,

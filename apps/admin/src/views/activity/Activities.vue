@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * Admin v2 - 活动管理视图（活动运营域）。
  *
@@ -565,8 +565,8 @@ onMounted(() => {
   border-radius: 999px;
   font-size: 12px;
   line-height: 1.6;
-  color: var(--admin-color-primary, #3fcf8e);
-  background: color-mix(in srgb, var(--admin-color-primary, #3fcf8e) 12%, transparent);
+  color: var(--admin-color-primary, #34C98A);
+  background: color-mix(in srgb, var(--admin-color-primary, #34C98A) 12%, transparent);
   white-space: nowrap;
 }
 

@@ -9,7 +9,7 @@ const overview: Schemas["ChatOverview"] = {
     {
       id: "session-1",
       recommendedPersonId: "person-1",
-      partnerName: "林安",
+      partnerName: "夏言",
       partnerHeadline: "工业设计大三，偏好低压力的第一轮聊天。",
       availabilityHint: "合适时间：今晚 19:00 之后",
       phase: "matching",
@@ -26,7 +26,7 @@ const overview: Schemas["ChatOverview"] = {
   recommendedPeople: [
     {
       id: "person-1",
-      name: "林安",
+      name: "夏言",
       initials: "林",
       headline: "工业设计大三，偏好低压力的第一轮聊天。",
       commonGround: "共同兴趣：电影夜和安静的咖啡馆路线",

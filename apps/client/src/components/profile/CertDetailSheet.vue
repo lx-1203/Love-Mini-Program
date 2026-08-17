@@ -394,7 +394,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
 }
 
 .cert-item__triple-dot--machine { background: #4f8ef7; }
-.cert-item__triple-dot--human { background: var(--c-brand-500, #3fcf8e); }
+.cert-item__triple-dot--human { background: var(--c-brand-500, #36C99A); }
 .cert-item__triple-dot--chsi { background: #c9a36a; }
 
 .cert-item__triple-text {
@@ -441,7 +441,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
   justify-content: center;
   height: 64rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #3fcf8e, #6fe0b0));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
 }
 
 .cert-item__go-text {
@@ -472,3 +472,5 @@ function goCertify(id: CertBadgeItem["id"]): void {
   line-height: 1.6;
 }
 </style>
+
+

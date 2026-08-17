@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 56">
+  <defs>
+    <linearGradient id="input-bar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAFAFA"/>
+      <stop offset="100%" stop-color="#F0F0F0"/>
+    </linearGradient>
+  </defs>
+  <rect width="350" height="56" fill="url(#input-bar)"/>
+  <rect x="12" y="10" width="260" height="36" rx="18" fill="#fff" stroke="#E8E8E8" stroke-width="1"/>
+  <!-- Plus icon left -->
+  <circle cx="28" cy="28" r="2" fill="#999"/>
+  <path d="M28 24v8M24 28h8" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Emoji icon -->
+  <circle cx="256" cy="28" r="10" fill="none" stroke="#999" stroke-width="1.5"/>
+  <circle cx="252" cy="26" r="1" fill="#999"/>
+  <circle cx="260" cy="26" r="1" fill="#999"/>
+  <path d="M252 31c1 1.5 2.5 2.5 4 2.5s3-1 4-2.5" fill="none" stroke="#999" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Send button -->
+  <circle cx="300" cy="28" r="14" fill="#36C99A"/>
+  <path d="M294 28 308 20l-4 10-4-2v-4" fill="#fff"/>
+  <!-- Voice icon -->
+  <path d="M330 20v16M326 24v8M334 24v8" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+</svg>

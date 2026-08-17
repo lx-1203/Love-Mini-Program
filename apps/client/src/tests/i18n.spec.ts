@@ -389,9 +389,9 @@ describe("Task 3.1 - 设计 Token 完整性回归", () => {
     expect(designTokens.motion).toBeDefined();
   });
 
-  it("颜色应包含主色（brand 500 #3FCF8E）", async () => {
+  it("颜色应包含主色（brand 500 #36C99A）", async () => {
     const { designTokens } = await import("../theme/tokens");
-    expect(designTokens.color.brand[500]).toBe("#3FCF8E");
+    expect(designTokens.color.brand[500]).toBe("#36C99A");
   });
 
   it("字号应包含完整梯度（display/h1/h2/h3/body/caption）", async () => {

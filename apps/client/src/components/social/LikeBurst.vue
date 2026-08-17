@@ -160,7 +160,7 @@ defineExpose({ t, play });
 .like-burst__heart-icon {
   width: 56rpx;
   height: 56rpx;
-  color: var(--c-romance-500, #EC4899);
+  color: var(--c-romance-500, #FF6B81);
 }
 
 @keyframes like-burst-heart {
@@ -195,7 +195,7 @@ defineExpose({ t, play });
 .like-burst__particle-icon {
   width: 24rpx;
   height: 24rpx;
-  color: var(--particle-color, #EC4899);
+  color: var(--particle-color, #FF6B81);
   /* 微微旋转增加灵动感 */
   animation: like-burst-particle-rotate var(--d-particle, 1500ms) ease-out forwards;
   animation-delay: var(--particle-delay, 0ms);

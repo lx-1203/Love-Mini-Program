@@ -1,13 +1,15 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(defineProps<{
   count?: number;
   dot?: boolean;
+  tone?: "default" | "love";
 }>(), {
   count: 0,
   dot: false,
+  tone: "default",
 });
 
 const { t } = useI18n();
@@ -28,7 +30,7 @@ defineExpose({ ariaLabel });
   <view
     v-if="show"
     class="badge"
-    :class="{ 'badge--dot': dot }"
+    :class="{ 'badge--dot': dot, 'badge--love': tone === 'love' }"
     role="status"
     :aria-label="ariaLabel"
   >
@@ -52,8 +54,10 @@ defineExpose({ ariaLabel });
   padding: 0 var(--sp-2);
   animation: pulse-badge var(--d-loop-slow, 2000ms) ease-in-out infinite;
 }
+.badge--love {
+  background: #FF6B81;
+}
 .badge--dot {
-  /* 固定布局尺寸（红点 16rpx），无对应 token */
   width: 16rpx;
   height: 16rpx;
   min-width: 16rpx;

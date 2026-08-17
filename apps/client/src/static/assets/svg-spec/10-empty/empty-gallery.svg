@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="empty-gallery-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <!-- Mascot -->
+  <ellipse cx="100" cy="110" rx="45" ry="42" fill="url(#empty-gallery-body)"/>
+  <path d="M90 55c-3-8-10-14-16-14-4 7-2 16 5 18 5 2 9-1 11-5z" fill="#36C99A"/>
+  <path d="M110 55c3-8 10-14 16-14 4 7 2 16-5 18-5 2-9-1-11-5z" fill="#36C99A"/>
+  <path d="M100 58c0-10 5-18 13-20 0 7-2 15-11 20-2 1-2 0-2 0z" fill="#2BA87E"/>
+  <!-- Eyes -->
+  <circle cx="85" cy="102" r="5" fill="#333"/>
+  <circle cx="115" cy="102" r="5" fill="#333"/>
+  <circle cx="87" cy="100" r="1.5" fill="#fff"/>
+  <circle cx="117" cy="100" r="1.5" fill="#fff"/>
+  <!-- Cheeks -->
+  <ellipse cx="75" cy="118" rx="7" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="125" cy="118" rx="7" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Smile -->
+  <path d="M92 122c3 5 6 7 8 7s5-2 8-7" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Camera -->
+  <g transform="translate(70, 150)">
+    <rect width="60" height="40" rx="6" fill="#E0E0E0" stroke="#CCC" stroke-width="2"/>
+    <rect x="8" y="-8" width="16" height="10" rx="3" fill="#CCC"/>
+    <circle cx="30" cy="20" r="12" fill="#fff" stroke="#CCC" stroke-width="2"/>
+    <circle cx="30" cy="20" r="7" fill="#36C99A" opacity="0.5"/>
+    <circle cx="48" cy="10" r="3" fill="#FF6B81"/>
+  </g>
+</svg>

@@ -149,7 +149,7 @@ onUnmounted(() => {
 .voice-pill--playing {
   background: linear-gradient(135deg, var(--c-brand-400), var(--c-brand-600));
   color: var(--c-text-inverse, #FFFFFF);
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.25)));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.25)));
 }
 
 .voice-pill__wave {

@@ -247,3 +247,12 @@ export function replaceAppPath(url: string) {
 
   uni.redirectTo({ url: normalizedUrl });
 }
+
+/**
+ * v3 Nearby 统一恋爱 CTA：认识 TA / 查看作者 → 他人主页。
+ * 禁止在任何帖子/圈子/活动场景直接 like 或创建聊天。
+ */
+export function openUserProfile(userId: string | number | null | undefined): void {
+  if (userId === null || userId === undefined || String(userId).trim() === '') return;
+  openAppPath(`/pages/profile/other?userId=${encodeURIComponent(String(userId))}`);
+}

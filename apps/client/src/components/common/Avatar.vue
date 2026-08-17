@@ -15,6 +15,8 @@ const props = withDefaults(defineProps<{
   ring?: boolean;
   vipRing?: boolean;
   liveDot?: boolean | 'green' | 'red';
+  /** v3 头像分层 · 认证徽章（绿色 ✓，按需出现，不压主体脸部） */
+  verified?: boolean;
 }>(), {
   size: 'md',
   online: false,
@@ -22,6 +24,7 @@ const props = withDefaults(defineProps<{
   ring: false,
   vipRing: false,
   liveDot: false,
+  verified: false,
   gradient: designTokens.color.gradient.brand,
 });
 
@@ -133,6 +136,10 @@ const ringBg = computed(() => {
         borderWidth: `${dotBorderSize}rpx`,
       }"
     />
+    <!-- v3 头像分层 · Verification 层：绿色 ✓（按需出现，与在线点对角，8-12px 安全距离） -->
+    <view v-if="verified" class="avatar-badge avatar-badge--verified" role="img" aria-label="已认证">
+      <text class="avatar-badge__check">✓</text>
+    </view>
   </view>
 </template>
 
@@ -169,5 +176,33 @@ const ringBg = computed(() => {
 }
 .avatar-dot--live {
   background: var(--c-error);
+}
+
+/* ===== v3 头像分层 · Verification 层 ===== */
+.avatar-badge {
+  position: absolute;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: solid;
+  border-color: var(--c-neutral-0);
+  box-sizing: border-box;
+}
+
+.avatar-badge--verified {
+  bottom: 0;
+  left: 0;
+  width: 32rpx;
+  height: 32rpx;
+  background: var(--c-brand, #36C99A);
+  border-width: 4rpx;
+}
+
+.avatar-badge__check {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
 }
 </style>

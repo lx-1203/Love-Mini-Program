@@ -2,10 +2,14 @@ import type { components } from "../generated/api-types";
 import type {
   DoNotDisturbRequest,
   DoNotDisturbView,
+  FollowUserView,
   MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
   RecommendedPerson,
+  WhisperMessageView,
+  WhisperSendRequest,
+  UserSearchView,
   SubmissionDetailView,
   UpdateBasicProfileRequest,
 } from "../generated/api-types-supplement";
@@ -163,12 +167,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4001,
       name: t("mockData.recommendedPeople.name1"),
-      initials: "夏",
+      initials: "林",
       headline: t("mockData.recommendedPeople.headline1"),
       commonGround: t("mockData.recommendedPeople.commonGround1"),
       availability: t("mockData.recommendedPeople.availability1"),
       campusName: t("mockData.recommendedPeople.campusName1"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_1,
       tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
       bio: t("mockData.recommendedPeople.bio1"),
       images: [
@@ -184,9 +188,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_1,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
       verificationBadgeLevel: "school",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince1"),
@@ -207,6 +210,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["温柔体贴", "文艺安静"],
       mbti: "INFJ",
       whisper: "你相信一见钟情吗？",
+      whispers: ["你相信一见钟情吗？", "如果可以，我想先从一句晚安开始认识你。", "希望我们的故事，不只是一次擦肩。"],
       whisperSent: false,
       expectedPartner: "希望遇到一个喜欢猫、愿意一起逛展的男生",
       allowMessage: false,
@@ -219,14 +223,14 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4002,
       name: t("mockData.recommendedPeople.name2"),
-      initials: "顾",
+      initials: "夏",
       headline: t("mockData.recommendedPeople.headline2"),
       commonGround: t("mockData.recommendedPeople.commonGround2"),
       availability: t("mockData.recommendedPeople.availability2"),
-      campusName: t("mockData.recommendedPeople.campusName2"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
-      tags: ["美食", "音乐", "探店", "建筑", "胶片"],
-      bio: t("mockData.recommendedPeople.bio2"),
+      campusName: "北京大学",
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_2,
+      tags: ["旅行", "摄影", "音乐", "电影", "徒步"],
+      bio: "喜欢记录生活，也喜欢认识有趣的人。如果你也喜欢散步、电影和拍照，可以聊聊。",
       images: [
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
         IMAGE_PATHS.PRODUCTS.FOOD_1,
@@ -239,10 +243,11 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       photoGallery: [
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
         IMAGE_PATHS.PRODUCTS.FOOD_1,
+        IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
+        IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_2,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
       verificationBadgeLevel: "school",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince2"),
@@ -253,16 +258,17 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       zodiac: "水瓶座",
 
       registeredAt: "2025-11-02T08:00:00Z",
-      age: 24,
+      age: 22,
       occupation: "研究生在读",
       incomeRange: "3k-8k",
-      distanceText: "0.8",
+      distanceText: "3.4",
       activeStatusText: "today",
       machineVerified: true,
       humanVerified: true,
       personality: ["开朗外向", "幽默风趣"],
       mbti: "ENFP",
       whisper: "这家店你肯定没去过，改天带你去？",
+      whispers: ["这家店你肯定没去过，改天带你去？", "听说那家的甜品和夜景都很棒。", "想听听你最喜欢的一道菜是什么。"],
       whisperSent: false,
       expectedPartner: "想找一个爱吃、爱笑、能一起探店的人",
       allowMessage: false,
@@ -274,12 +280,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4003,
       name: t("mockData.recommendedPeople.name3"),
-      initials: "林",
+      initials: "阿",
       headline: t("mockData.recommendedPeople.headline3"),
       commonGround: t("mockData.recommendedPeople.commonGround3"),
       availability: t("mockData.recommendedPeople.availability3"),
       campusName: t("mockData.recommendedPeople.campusName3"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_3,
       tags: ["语言", "看展", "摄影", "日系", "手账"],
       bio: t("mockData.recommendedPeople.bio3"),
       images: [
@@ -295,9 +301,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_STUDY,
         IMAGE_PATHS.PRODUCTS.MERCH_1,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_3,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
       verificationBadgeLevel: "email",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince3"),
@@ -318,6 +323,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["文艺安静", "理性沉稳"],
       mbti: "ISFP",
       whisper: "喜欢胶片摄影的人一定很温柔吧。",
+      whispers: ["喜欢胶片摄影的人一定很温柔吧。", "我相机里还留着很多想给你看的角落。", "下次一起扫街，我教你构图。"],
       whisperSent: false,
       expectedPartner: "想遇到能一起看展、聊电影的男生",
       allowMessage: false,
@@ -329,12 +335,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4004,
       name: t("mockData.recommendedPeople.name4"),
-      initials: "周",
+      initials: "小",
       headline: t("mockData.recommendedPeople.headline4"),
       commonGround: t("mockData.recommendedPeople.commonGround4"),
       availability: t("mockData.recommendedPeople.availability4"),
       campusName: t("mockData.recommendedPeople.campusName4"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_4,
       tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
       bio: t("mockData.recommendedPeople.bio4"),
       images: [
@@ -350,9 +356,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
         IMAGE_PATHS.PRODUCTS.FOOD_2,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_4,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_4,
       verificationBadgeLevel: "school",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince4"),
@@ -373,6 +378,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["运动阳光", "幽默风趣"],
       mbti: "ESTP",
       whisper: "周末球局缺个队友，来吗？",
+      whispers: ["周末球局缺个队友，来吗？", "赢了请你喝奶茶，输了听你讲故事。", "其实我更想打完球和你散散步。"],
       whisperSent: true,
       expectedPartner: "喜欢运动、爱旅行、能吃辣的女生",
       allowMessage: false,
@@ -385,12 +391,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4005,
       name: t("mockData.recommendedPeople.name5"),
-      initials: "沈",
+      initials: "L",
       headline: t("mockData.recommendedPeople.headline5"),
       commonGround: t("mockData.recommendedPeople.commonGround5"),
       availability: t("mockData.recommendedPeople.availability5"),
       campusName: t("mockData.recommendedPeople.campusName5"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_5,
       tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
       bio: t("mockData.recommendedPeople.bio5"),
       images: [
@@ -406,9 +412,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
         IMAGE_PATHS.PRODUCTS.MERCH_2,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_5,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_5,
       verificationBadgeLevel: "none",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince5"),
@@ -429,6 +434,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["文艺安静"],
       mbti: "INFP",
       whisper: "最近在读《夜航西飞》，你也喜欢吗？",
+      whispers: ["最近在读《夜航西飞》，你也喜欢吗？", "想和你交换书单，也交换心事。", "周末的图书馆，我给你留了位置。"],
       whisperSent: false,
       expectedPartner: "想遇到一个愿意听我讲故事的男生",
       allowMessage: false,
@@ -438,12 +444,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4006,
       name: t("mockData.recommendedPeople.name6"),
-      initials: "苏",
+      initials: "草",
       headline: t("mockData.recommendedPeople.headline6"),
       commonGround: t("mockData.recommendedPeople.commonGround6"),
       availability: t("mockData.recommendedPeople.availability6"),
       campusName: t("mockData.recommendedPeople.campusName6"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_6,
       tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
       bio: t("mockData.recommendedPeople.bio6"),
       images: [
@@ -459,9 +465,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
         IMAGE_PATHS.PRODUCTS.TICKET_1,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_6,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_6,
       verificationBadgeLevel: "school",
       relationshipStatus: "divorced",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince6"),
@@ -482,6 +487,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["理性沉稳", "温柔体贴"],
       mbti: "INTJ",
       whisper: "辩论场上唇枪舌剑，生活里想找个温柔的人。",
+      whispers: ["辩论场上唇枪舌剑，生活里想找个温柔的人。", "赢了世界也想输给你一次。", "想听听你对「正确」和「温柔」的看法。"],
       whisperSent: false,
       expectedPartner: "欣赏有思想、爱阅读、独立的女生",
       allowMessage: false,
@@ -493,12 +499,12 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     {
       id: 4007,
       name: t("mockData.recommendedPeople.name7"),
-      initials: "陆",
+      initials: "苏",
       headline: t("mockData.recommendedPeople.headline7"),
       commonGround: t("mockData.recommendedPeople.commonGround7"),
       availability: t("mockData.recommendedPeople.availability7"),
       campusName: t("mockData.recommendedPeople.campusName7"),
-      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_7,
       tags: ["户外", "露营", "爬山", "医学", "纪录片"],
       bio: t("mockData.recommendedPeople.bio7"),
       images: [
@@ -514,9 +520,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
         IMAGE_PATHS.POSTS.CAMPUS_LIBRARY,
         IMAGE_PATHS.PRODUCTS.TICKET_2,
       ],
-      halfBodyPhotoUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
-      personalVideoUrl: "",
-      profileBackgroundUrl: "",
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_7,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
       verificationBadgeLevel: "idcard",
       relationshipStatus: "never",
       hometownProvince: t("mockData.recommendedPeople.hometownProvince7"),
@@ -537,12 +542,107 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       personality: ["运动阳光", "开朗外向"],
       mbti: "ESFJ",
       whisper: "下次露营想约你一起看星星。",
+      whispers: ["下次露营想约你一起看星星。", "篝火、吉他、还有说不完的话。", "想把你写进我的旅行日记第一页。"],
       whisperSent: false,
       expectedPartner: "喜欢户外、性格开朗、热爱生活的女生",
       allowMessage: false,
       ipLocation: "福建 · 厦门",
       recentPosts: [
         { id: "p4007-1", content: "凌晨四点的日出，值得！", likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
+      ],
+    },
+    {
+      id: 4008,
+      name: t("mockData.recommendedPeople.name8"),
+      initials: "周",
+      headline: t("mockData.recommendedPeople.headline8"),
+      commonGround: t("mockData.recommendedPeople.commonGround8"),
+      availability: t("mockData.recommendedPeople.availability8"),
+      campusName: t("mockData.recommendedPeople.campusName8"),
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_8,
+      tags: ["电影", "摄影", "咖啡", "旅行"],
+      bio: t("mockData.recommendedPeople.bio8"),
+      images: [IMAGE_PATHS.PEOPLE.CARD_8],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 168,
+      educationLevel: "bachelor",
+      photoGallery: [IMAGE_PATHS.PEOPLE.CARD_8],
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_8,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+      verificationBadgeLevel: "school",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince8"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity8"),
+      futureCity: t("mockData.recommendedPeople.futureCity8"),
+      displayId: "CL-4008",
+      zodiac: "巨蟹座",
+      registeredAt: "2026-02-14T08:00:00Z",
+      age: 22,
+      occupation: "学生",
+      incomeRange: "3k-8k",
+      distanceText: "2.4",
+      activeStatusText: "just_now",
+      machineVerified: true,
+      humanVerified: true,
+      personality: ["温柔细腻", "热爱生活"],
+      mbti: "ISFP",
+      whisper: "喜欢老电影，也想和你一起看新片。",
+      whispers: ["喜欢老电影，也想和你一起看新片。", "如果周末有空，一起去看展吧。", "想听听你最近单曲循环的歌。"],
+      whisperSent: false,
+      expectedPartner: "喜欢电影、愿意一起探索城市的人",
+      allowMessage: false,
+      ipLocation: "上海 · 徐汇",
+      recentPosts: [
+        { id: "p4008-1", content: "老电影放映厅的下午，太治愈了。", likes: 41, comments: 9, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
+      ],
+    },
+    {
+      id: 4009,
+      name: t("mockData.recommendedPeople.name9"),
+      initials: "林",
+      headline: t("mockData.recommendedPeople.headline9"),
+      commonGround: t("mockData.recommendedPeople.commonGround9"),
+      availability: t("mockData.recommendedPeople.availability9"),
+      campusName: t("mockData.recommendedPeople.campusName9"),
+      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_9,
+      tags: ["摄影", "旅行", "阅读", "音乐"],
+      bio: t("mockData.recommendedPeople.bio9"),
+      images: [IMAGE_PATHS.PEOPLE.CARD_9],
+      isSameSchool: false,
+      isSameMajor: false,
+      commonCircleCount: 0,
+      height: 172,
+      educationLevel: "bachelor",
+      photoGallery: [IMAGE_PATHS.PEOPLE.CARD_9],
+      halfBodyPhotoUrl: IMAGE_PATHS.PEOPLE.CARD_9,
+      profileBackgroundUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_4,
+      verificationBadgeLevel: "school",
+      relationshipStatus: "never",
+      hometownProvince: t("mockData.recommendedPeople.hometownProvince9"),
+      hometownCity: t("mockData.recommendedPeople.hometownCity9"),
+      futureCity: t("mockData.recommendedPeople.futureCity9"),
+      displayId: "CL-4009",
+      zodiac: "双鱼座",
+      registeredAt: "2026-04-08T08:00:00Z",
+      age: 21,
+      occupation: "学生",
+      incomeRange: "3k-8k",
+      distanceText: "1.6",
+      activeStatusText: "today",
+      machineVerified: true,
+      humanVerified: false,
+      personality: ["文艺安静", "细腻敏感"],
+      mbti: "INFJ",
+      whisper: "想和你分享我镜头里的校园四季。",
+      whispers: ["想和你分享我镜头里的校园四季。", "春天的花、夏天的树影，都想拍给你看。", "周末一起扫街吗？"],
+      whisperSent: false,
+      expectedPartner: "喜欢光影、愿意一起记录生活的人",
+      allowMessage: false,
+      ipLocation: "广东 · 广州",
+      recentPosts: [
+        { id: "p4009-1", content: "今天的晚霞很适合拍照。", likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
   ];
@@ -609,7 +709,7 @@ let photoGallery: string[] = [
   IMAGE_PATHS.AVATARS.AVATAR_2,
 ];
 
-// 修复（严格模式 noUnusedLocals）：personalVideoUrl / halfBodyPhotoUrl / profileBackgroundUrl
+// 修复（严格模式 noUnusedLocals）：halfBodyPhotoUrl / profileBackgroundUrl
 // 三个模块级变量仅被赋值从未被读取（mock 上传函数直接返回 URL，无需持久化状态），已移除。
 // 下方 uploadProfileBackground / uploadProfileVideo / uploadProfileHalfBody 函数内对应的赋值语句也已同步移除。
 
@@ -894,6 +994,74 @@ function buildHomeDashboard(): HomeDashboard {
       pulseTitle: buildDiscussionRecommendations()[0]?.title ?? null,
       pulseMeta: buildDiscussionRecommendations()[0]?.heatLabel ?? null,
     },
+    // 寻觅 v3 固定设计基准（xinDesignFixtures）：32 在线 / 今日剩余 10 / 今日已喜欢 1 / 心动中 1 / 已匹配 0 / 悄悄话 0
+    matchCenter: {
+      quota: { dailyLimit: 11, used: 1, remaining: 10 },
+      onlineCount: 32,
+      relation: { crushing: 1, matched: 0, whispers: 0 },
+    },
+    homeFeed: {
+      todayRecommendation: {
+        userId: 4001,
+        name: "林晓",
+        age: 22,
+        campusName: "北京大学",
+        gradeLabel: "大三",
+        tags: ["摄影", "旅行", "音乐"],
+        bio: "热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。",
+        expectation: "期待与你一起探索这个世界",
+        distanceText: "1.2km",
+        certified: true,
+        online: true,
+        matchScore: 92,
+        photoUrl: "/static/assets/images/people/person-01.webp",
+      },
+      loveProgress: {
+        completed: 2,
+        total: 4,
+        steps: [
+          { id: "profile", title: "完善资料", description: "让更多人了解你", completed: true, action: "profile" },
+          { id: "like", title: "今日心动", description: "认识一位心动的人", completed: true, action: "discover" },
+          { id: "whisper", title: "回复悄悄话", description: "回复一条悄悄话", completed: false, action: "messages" },
+          { id: "interest", title: "参与兴趣互动", description: "参与一个兴趣圈", completed: false, action: "nearby" },
+        ],
+      },
+      relationActivity: { likesReceived: 3, whispers: 2, visitors: 5, newMatches: 1, totalUnread: 11 },
+      interestRecommendations: [
+        { id: 1, name: "摄影圈", icon: "📷", memberCount: 12000, joined: false },
+        { id: 2, name: "旅行圈", icon: "✈️", memberCount: 8932, joined: false },
+        { id: 3, name: "音乐圈", icon: "🎵", memberCount: 16000, joined: false },
+        { id: 4, name: "美食圈", icon: "🍜", memberCount: 9210, joined: false },
+      ],
+      nearbyPeople: [
+        { userId: 4001, name: "林晓", distanceText: "1.2km", avatarUrl: "/static/assets/images/people/person-01.webp", online: true, commonInterests: ["摄影"] },
+        { userId: 4002, name: "夏言", distanceText: "1.5km", avatarUrl: "/static/assets/images/people/person-02.webp", online: true, commonInterests: ["建筑"] },
+        { userId: 4003, name: "阿辰", distanceText: "1.8km", avatarUrl: "/static/assets/images/people/person-03.webp", online: false, commonInterests: ["日语"] },
+        { userId: 4004, name: "小满", distanceText: "2.1km", avatarUrl: "/static/assets/images/people/person-04.webp", online: false, commonInterests: ["编程"] },
+        { userId: 4005, name: "Luna", distanceText: "2.8km", avatarUrl: "/static/assets/images/people/person-05.webp", online: false, commonInterests: ["新闻"] },
+        { userId: 4006, name: "草莓", distanceText: "3.1km", avatarUrl: "/static/assets/images/people/person-06.webp", online: false, commonInterests: ["法学"] },
+        { userId: 4007, name: "苏奈", distanceText: "3.6km", avatarUrl: "/static/assets/images/people/person-07.webp", online: false, commonInterests: ["医学"] },
+        { userId: 4008, name: "周岚", distanceText: "4.1km", avatarUrl: "/static/assets/images/people/person-08.webp", online: false, commonInterests: ["电影"] },
+        { userId: 4009, name: "林晚", distanceText: "4.5km", avatarUrl: "/static/assets/images/people/person-09.webp", online: false, commonInterests: ["摄影"] },
+      ],
+      communityPosts: [
+        {
+          id: 1,
+          authorName: "林晓",
+          authorAvatar: "/static/assets/images/people/person-01.webp",
+          circleName: "摄影圈",
+          timeText: "15 分钟前",
+          content: "今天在颐和园拍到超美的落日，光影太治愈了～",
+          images: [
+            "/static/assets/images/posts/post-1.jpg",
+            "/static/assets/images/posts/post-2.jpg",
+            "/static/assets/images/posts/post-3.jpg",
+          ],
+          likeCount: 128,
+          commentCount: 24,
+        },
+      ],
+    },
   };
 }
 
@@ -918,7 +1086,7 @@ function resolveRecommendedPerson(payload: CreateTempChatSessionRequest): Recomm
     // 修复（P1 BUG）：推荐人存在两套 id 体系——homeRecommendedPeople 的
     // "person-*" 前缀 id 与 buildRecommendedPersonsMock 的数字 id（4001-4007）。
     // 原实现只查 person-* 体系，数字 id 一律静默 fallback 到 recommendedPeople[0]
-    // （错位：会话显示“林安”但实际是其他推荐人）。现两套体系都查，
+    // （错位：会话显示“夏言”但实际是其他推荐人）。现两套体系都查，
     // 均未命中时抛明确错误，不再静默兜底。
     const personId = payload.recommendedPersonId;
     // 体系一：person-* 前缀 id（homeRecommendedPeople）
@@ -1095,6 +1263,9 @@ function buildChatOverview(): ChatOverview {
   };
 }
 
+
+/** v3.1 悄悄话 mock 内存收件箱（会话级） */
+const whisperInbox: WhisperMessageView[] = [];
 export const mockFixtures = {
   getLoginHero(): LoginHeroConfig {
     return clone(loginHero);
@@ -1169,6 +1340,23 @@ export const mockFixtures = {
   },
   getHomeDashboard(): HomeDashboard {
     return clone(buildHomeDashboard());
+  },
+  rotateTodayRecommendation() {
+    return clone({
+      userId: 4002,
+      name: "夏言",
+      age: 22,
+      campusName: "清华大学",
+      gradeLabel: "研一",
+      tags: ["音乐", "建筑", "探店"],
+      bio: "更喜欢从音乐话题切入，再配一段短距离校园散步。",
+      expectation: "想和你分享旅途里的故事",
+      distanceText: "1.5km",
+      certified: true,
+      online: true,
+      matchScore: 90,
+      photoUrl: "/static/assets/images/people/person-02.webp",
+    });
   },
   getChatOverview(): ChatOverview {
     return clone(buildChatOverview());
@@ -1508,7 +1696,7 @@ export const mockFixtures = {
    * 不再复用 uploadProfileBackground 的背景图语义）。
    */
   uploadAvatar(_file: UniUploadFileLike): { avatarUrl?: string; url?: string } {
-    return { avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1, url: IMAGE_PATHS.AVATARS.AVATAR_1 };
+    return { avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_1, url: IMAGE_PATHS.AVATARS.AVATAR_1 };
   },
 
   /**
@@ -1666,6 +1854,66 @@ export const mockFixtures = {
   /**
    * 获取通知免打扰设置（功能6）。
    */
+  getFollowingList(): FollowUserView[] {
+    // v2 收藏·稍后看（mock）：取前 3 位推荐用户作为「已收藏」
+    return buildRecommendedPersonsMock()
+      .slice(0, 3)
+      .map((person) => ({
+        userId: person.id,
+        nickname: person.name,
+        avatarUrl: person.avatarUrl ?? '',
+        bio: person.bio ?? '',
+        followingCount: 0,
+        followersCount: 0,
+      }));
+  },
+
+  searchUsers(keyword: string): UserSearchView[] {
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return [];
+    return buildRecommendedPersonsMock()
+      .filter((p) => p.name.toLowerCase().includes(kw) || (p.campusName || '').toLowerCase().includes(kw))
+      .slice(0, 20)
+      .map((p) => ({
+        userId: p.id,
+        nickname: p.name,
+        avatarUrl: p.avatarUrl,
+        campusName: p.campusName ?? '',
+        bio: p.bio ?? '',
+      }));
+  },
+
+  sendWhisper(request: WhisperSendRequest): WhisperMessageView {
+    const view: WhisperMessageView = {
+      id: Date.now(),
+      senderId: 1,
+      receiverId: request.receiverId,
+      content: request.content,
+      status: 'SENT',
+      priceCents: 200,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    };
+    whisperInbox.unshift(view);
+    return view;
+  },
+
+  getWhisperInbox(): WhisperMessageView[] {
+    return whisperInbox;
+  },
+
+  getWhisperSent(): WhisperMessageView[] {
+    return whisperInbox.filter((w) => w.senderId === 1);
+  },
+
+  readWhisper(id: number): WhisperMessageView {
+    const item = whisperInbox.find((w) => w.id === id);
+    if (!item) throw new Error('whisper not found');
+    item.status = 'READ';
+    item.readAt = new Date().toISOString();
+    return item;
+  },
+
   getDndSetting(): DoNotDisturbView {
     return clone(dndSetting);
   },

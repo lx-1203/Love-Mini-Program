@@ -138,6 +138,12 @@ paths:
           schema:
             type: integer
           description: Maximum age filter (R4-00163)
+        - in: query
+          name: onlineOnly
+          required: false
+          schema:
+            type: boolean
+          description: v3.1 online quick-match — keep only candidates active right now
       responses:
         '200':
           description: List of recommended people
@@ -518,7 +524,7 @@ components:
         halfBodyPhotoUrl:
           type: string
           nullable: true
-        personalVideoUrl:
+        gradeLabel:
           type: string
           nullable: true
         verificationBadgeLevel:

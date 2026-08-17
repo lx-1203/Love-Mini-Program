@@ -80,6 +80,9 @@ class AdminPermissionTest {
         // 通过 @MockBean 提供满足依赖的 mock Bean，避免 ApplicationContext 加载失败。
         // 此 mock 仅用于满足 Bean 依赖，不参与权限校验流程（权限校验由 SecurityFilterChain 在 Controller 调用前完成）。
         @org.springframework.boot.test.mock.mockito.MockBean
+        private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
+
+        @org.springframework.boot.test.mock.mockito.MockBean
         private com.campuslove.api.repository.UserRepository userRepository;
 
         @org.springframework.boot.test.mock.mockito.MockBean

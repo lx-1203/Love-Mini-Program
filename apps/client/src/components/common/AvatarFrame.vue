@@ -24,25 +24,44 @@
 /**
  * AvatarFrame - 头像框组件（2026-08-08，参考 QQ 头像框机制）。
  *
- * 设计：注册表驱动（config/avatar-frames.ts）。
- * - 主题按 frameId 从注册表取配置，通过 CSS 变量注入渐变/发光，组件样式零分支；
- * - 新增头像框主题只需在注册表追加一条配置，无需改动本组件；
- * - 支持旋转动画（VIP 贵族感）与身份角标（皇冠/认证/星标等）。
- *
- * 使用：<AvatarFrame :frame-id="myFrameId"><image/></AvatarFrame>
+ * 说明（2026-08-15 修复 mp-weixin module not defined）：
+ * 头像框注册表（config/avatar-frames.ts）原本被本组件运行时 require；
+ * 由于本组件是懒加载组件，mp-weixin 在 real 构建下会出现
+ * module 'config/avatar-frames.js' is not defined。
+ * 因此将主题注册表内联到本组件，消除跨模块运行时依赖；
+ * 类型 AvatarFrameId 仍从 config 以 type-only 导入（编译期擦除，不产生运行时 require）。
  */
 import { computed } from "vue";
-import {
-  getAvatarFrameTheme,
-  type AvatarFrameId,
-} from "../../config/avatar-frames";
+import type { AvatarFrameId } from "../../config/avatar-frames";
+
+interface AvatarFrameTheme {
+  id: AvatarFrameId;
+  name: string;
+  priority: number;
+  gradient: string[];
+  glow?: string;
+  badgeIcon?: string;
+  animated?: boolean;
+}
+
+const AVATAR_FRAMES: Record<AvatarFrameId, AvatarFrameTheme> = {
+  none: { id: "none", name: "基础白框", priority: 0, gradient: ["#E5E7EB", "#D1D5DB"] },
+  default: { id: "default", name: "品牌青绿框", priority: 5, gradient: ["#2DD4BF", "#14B8A6"], glow: "rgba(45, 212, 191, 0.35)" },
+  vip: { id: "vip", name: "贵族金框", priority: 10, gradient: ["#FDE68A", "#F59E0B"], glow: "rgba(245, 158, 11, 0.45)", animated: true },
+  svip: { id: "svip", name: "至尊炫彩框", priority: 20, gradient: ["#F472B6", "#8B5CF6", "#3B82F6"], glow: "rgba(139, 92, 246, 0.5)", badgeIcon: "/static/assets/icons/common/crown.svg", animated: true },
+  "school-verified": { id: "school-verified", name: "校园认证框", priority: 15, gradient: ["#36C99A", "#36C99A"], glow: "rgba(61, 201, 148, 0.4)", badgeIcon: "/static/assets/icons/common/check-circle.svg" },
+  "super-test": { id: "super-test", name: "超级体验官框", priority: 25, gradient: ["#C084FC", "#FF6B81"], glow: "rgba(192, 132, 252, 0.5)", badgeIcon: "/static/assets/icons/common/star.svg", animated: true },
+  anniversary: { id: "anniversary", name: "周年限定框", priority: 30, gradient: ["#FB7185", "#F43F5E", "#F97316"], glow: "rgba(244, 63, 94, 0.5)", badgeIcon: "/static/assets/icons/common/celebration.svg", animated: true },
+};
+
+function getAvatarFrameTheme(id: AvatarFrameId): AvatarFrameTheme {
+  return AVATAR_FRAMES[id] ?? AVATAR_FRAMES.none;
+}
 
 const props = withDefaults(defineProps<{
   /** 头像框主题 ID */
   frameId: AvatarFrameId;
 }>(), {
-  /* 2026-08-12 V3：默认值 none → default（品牌青绿框）。
-   * 未显式传 frameId 的调用路径自动获得可见彩色框（浅灰 none 环在深色背景上几乎不可见） */
   frameId: "default",
 });
 

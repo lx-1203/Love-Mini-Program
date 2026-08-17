@@ -140,7 +140,7 @@ function copyEmail(): void {
           :aria-label="t('help.contactEmail')"
           @tap="copyEmail"
         >
-          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8F8F0)' }">
+          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E6F8F1)' }">
             <image class="help-contact__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MAIL" mode="aspectFit" alt="" />
           </view>
           <view class="help-contact__info">
@@ -267,7 +267,7 @@ function copyEmail(): void {
 .help-contact__copy {
   font-size: var(--f-xs);
   color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E8F8F0);
+  background: var(--c-tint-brand, #E6F8F1);
   padding: 8rpx 20rpx;
   border-radius: var(--r-full);
 }

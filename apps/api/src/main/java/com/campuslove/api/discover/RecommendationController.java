@@ -220,7 +220,8 @@ public class RecommendationController {
           @RequestParam(value = "futureCity", required = false) String futureCity,
           @RequestParam(value = "keyword", required = false) String keyword,
           @RequestParam(value = "ageMin", required = false) Integer ageMin,
-          @RequestParam(value = "ageMax", required = false) Integer ageMax) {
+          @RequestParam(value = "ageMax", required = false) Integer ageMax,
+          @RequestParam(value = "onlineOnly", required = false) Boolean onlineOnly) {
     // B6：后台关闭匹配/推荐功能（app_switch.match_open / recommend_open=false）→ 返回空列表，
     // 客户端按 app-config 开关显示「匹配暂时关闭」空态，前后端行为一致
     if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_MATCH_OPEN)) {
@@ -270,14 +271,28 @@ public class RecommendationController {
     // 2026-08-09 免登录可逛：匿名用户返回中性排序的通用推荐（无个性化上下文），
     // 不调用 SecurityUtils.getCurrentUserId（匿名会抛 401）
     if (!SecurityUtils.isAuthenticated()) {
-      return PrivacyFieldFilter.sanitize(recommendationService.getRecommendationsForGuest(filter));
+      return PrivacyFieldFilter.sanitize(filterOnlineOnly(recommendationService.getRecommendationsForGuest(filter), onlineOnly));
     }
     Long userId = SecurityUtils.getCurrentUserId();
     // Task 15.2：隐私字段过滤白名单校验，确保推荐列表不返回手机号/身份证/真实姓名
     // RecommendedPersonView 为 record，字段在编译期固定，本调用为防御性校验：
     // 若未来有人向 record 误添加敏感字段，sanitize 会抛 IllegalStateException，
     // 由 GlobalExceptionHandler 转 500，强制运维修复
-    return PrivacyFieldFilter.sanitize(recommendationService.getRecommendations(userId, filter));
+    return PrivacyFieldFilter.sanitize(filterOnlineOnly(recommendationService.getRecommendations(userId, filter), onlineOnly));
+  }
+
+  /**
+   * v3.1 在线速配：onlineOnly=true 时仅保留「刚刚活跃」的候选（在线状态强实时，
+   * 客户端动作前仍会 re-check，服务端做首轮过滤）。
+   */
+  private List<RecommendedPersonView> filterOnlineOnly(
+      List<RecommendedPersonView> views, Boolean onlineOnly) {
+    if (!Boolean.TRUE.equals(onlineOnly)) {
+      return views;
+    }
+    return views.stream()
+        .filter(v -> "online".equals(v.activeStatusText()) || "just_now".equals(v.activeStatusText()))
+        .toList();
   }
 
   /**
@@ -429,11 +444,11 @@ public class RecommendationController {
    *
    * <p>R4-00314：悄悄话文案不再随推荐列表下发，本端点按解锁状态返回：
    * 当前用户已为该目标付费解锁（wallet_transaction_log 存在
-   * MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）时返回完整文案；未解锁返回
-   * {@code {unlocked:false, whisper:null}}，不泄露付费内容。</p>
+   * MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）时返回完整文案列表；未解锁返回
+   * {@code {unlocked:false, whispers:[]}}，不泄露付费内容。</p>
    *
    * @param targetUserId 目标用户 ID
-   * @return 悄悄话视图（unlocked / whisper / balanceCents）
+   * @return 悄悄话视图（unlocked / whispers / balanceCents）
    */
   @GetMapping("/recommendations/{userId}/whisper")
   @PreAuthorize("hasRole('USER')")
@@ -443,11 +458,9 @@ public class RecommendationController {
     }
     Long currentUserId = SecurityUtils.getCurrentUserId();
     if (isMessageOrWhisperUnlocked(currentUserId, targetUserId)) {
-      String whisper = recommendationRanker != null
-              ? recommendationRanker.resolveWhisper(targetUserId) : null;
-      return new WhisperUnlockView(true, whisper, balanceCents(currentUserId));
+      return new WhisperUnlockView(true, resolveWhispers(targetUserId), balanceCents(currentUserId));
     }
-    return new WhisperUnlockView(false, null, balanceCents(currentUserId));
+    return new WhisperUnlockView(false, List.of(), balanceCents(currentUserId));
   }
 
   /**
@@ -475,15 +488,11 @@ public class RecommendationController {
     }
     // 已解锁直接放行（不重复扣费，幂等）
     if (isMessageOrWhisperUnlocked(currentUserId, targetUserId)) {
-      String whisper = recommendationRanker != null
-              ? recommendationRanker.resolveWhisper(targetUserId) : null;
-      return new WhisperUnlockView(true, whisper, balanceCents(currentUserId));
+      return new WhisperUnlockView(true, resolveWhispers(targetUserId), balanceCents(currentUserId));
     }
     if (walletService == null) {
       // mock profile：钱包服务不可用，返回解锁成功但不含扣费（本地演示语义）
-      String whisper = recommendationRanker != null
-              ? recommendationRanker.resolveWhisper(targetUserId) : null;
-      return new WhisperUnlockView(true, whisper, null);
+      return new WhisperUnlockView(true, resolveWhispers(targetUserId), null);
     }
     // 服务端定价扣费（幂等：order_id 唯一索引兜底）
     Long balanceAfter = walletService.deduct(
@@ -492,9 +501,15 @@ public class RecommendationController {
             "UNLOCK-WHISPER-" + targetUserId,
             WalletTransactionLog.RELATED_TYPE_WHISPER_UNLOCK,
             String.valueOf(targetUserId));
-    String whisper = recommendationRanker != null
-            ? recommendationRanker.resolveWhisper(targetUserId) : null;
-    return new WhisperUnlockView(true, whisper, balanceAfter);
+    return new WhisperUnlockView(true, resolveWhispers(targetUserId), balanceAfter);
+  }
+
+  /** 解析目标用户悄悄话文案列表（rankRanker 不可用时返回空列表）。 */
+  private List<String> resolveWhispers(Long targetUserId) {
+    if (recommendationRanker == null) {
+      return List.of();
+    }
+    return recommendationRanker.resolveWhispers(targetUserId);
   }
 
   /**
@@ -533,15 +548,15 @@ public class RecommendationController {
 }
 
 /**
- * 悄悄话视图（R4-00314 解锁接口返回体）。
+ * 悄悄话视图（R4-00314 解锁接口返回体，2026-08-14 改为多条文案）。
  *
  * @param unlocked     当前用户是否已解锁该悄悄话
- * @param whisper      悄悄话文案（未解锁时为 null，不泄露付费内容）
+ * @param whispers     悄悄话文案列表（未解锁时为空列表，不泄露付费内容）
  * @param balanceCents 当前用户钱包余额（分，查询失败或服务不可用时为 null）
  */
 record WhisperUnlockView(
         boolean unlocked,
-        String whisper,
+        List<String> whispers,
         Long balanceCents
 ) {
 }
@@ -606,3 +621,4 @@ record SavePreferencesRequest(
     /** 校园优先：同校用户推荐权重+30% */
     Boolean campusPriority
 ) {}
+

@@ -129,14 +129,10 @@ const icons = {
   graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
-  heartOutline: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE,
   ruler: IMAGE_PATHS.ICONS_EMOJI.RULER,
   money: IMAGE_PATHS.ICONS_EMOJI.MONEY,
   clipboard: IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD,
-  chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
-  mail: IMAGE_PATHS.ICONS_EMOJI.MAIL,
   pass: IMAGE_PATHS.ICONS_SOCIAL.PASS,
-  superLike: IMAGE_PATHS.ICONS_SOCIAL.SUPER_LIKE,
   like: IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED,
   message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
 } as const;
@@ -323,7 +319,7 @@ const detailActiveLabel = computed(() => {
   if (!card) return "";
   const raw = card.activeStatusText;
   if (raw) {
-    if (raw === "just_now") return t("discover.activeJustNow");
+    if (raw === "online" || raw === "just_now") return t("cardDetail.onlineLabel");
     if (raw === "today") return t("discover.activeToday");
     if (raw === "offline") return t("discover.offline");
     const hoursMatch = raw.match(/^hours_(\d+)$/);
@@ -332,7 +328,7 @@ const detailActiveLabel = computed(() => {
     if (daysMatch?.[1]) return t("discover.activeDaysAgo", { n: daysMatch[1] });
     return raw;
   }
-  if (card.onlineStatus === "online") return t("discover.activeJustNow");
+  if (card.onlineStatus === "online") return t("cardDetail.onlineLabel");
   if (card.onlineStatus === "away") return t("discover.activeToday");
   return "";
 });
@@ -368,30 +364,24 @@ const basicInfoItems = computed(() => {
   return items;
 });
 
-/** 动态列表（recentPosts 字段，无则空数组）——组件内副本，避免直接 mutate props */
-const momentPosts = ref<NonNullable<DiscoverCard["recentPosts"]>>([]);
-
-// 同步 props.card.recentPosts 到组件内副本（每次卡片变化时重置，避免点赞状态残留）
-watch(
-  () => props.card?.recentPosts,
-  (posts) => {
-    momentPosts.value = posts ? posts.map((p) => ({ ...p, images: [...(p.images ?? [])] })) : [];
-  },
-  { immediate: true }
-);
-
-/** 悄悄话内容（whisper 字段；real 模式后端不下发，解锁成功后写入 unlockedWhisperText） */
-const whisperText = computed(() => props.card?.whisper ?? unlockedWhisperText.value);
 
 /** 是否已发送悄悄话 */
 const whisperAlreadySent = computed(() => props.card?.whisperSent ?? false);
+
+/** 已解锁悄悄话文案列表（本地状态；real 模式后端不下发，解锁成功后写入） */
+const unlockedWhispers = ref<string[]>([]);
+
+/** 悄悄话文案列表（已解锁后展示，未解锁不泄露内容） */
+const whisperTexts = computed<string[]>(() => {
+  if (unlockedWhispers.value.length > 0) return unlockedWhispers.value;
+  if (!whisperAlreadySent.value) return [];
+  return props.card?.whispers ?? (props.card?.whisper ? [props.card.whisper] : []);
+});
 
 /** B3 恋爱小纸条：悄悄话解锁弹层显隐 */
 const showWhisperSheet = ref(false);
 /** 悄悄话弹层组件引用（解锁成功后通过 expose 驱动 result 状态） */
 const whisperSheetRef = ref<InstanceType<typeof WhisperUnlockSheet> | null>(null);
-/** 解锁成功后的悄悄话文案（本地状态，详情面板文案取 card.whisper ?? 本字段） */
-const unlockedWhisperText = ref("");
 
 /** 期待的人物画像（expectedPartner 字段） */
 const expectedPartnerText = computed(() => props.card?.expectedPartner ?? "");
@@ -399,41 +389,6 @@ const expectedPartnerText = computed(() => props.card?.expectedPartner ?? "");
 /** IP 属地（Phase 4.1 验收新增） */
 const ipLocationText = computed(() => props.card?.ipLocation ?? "");
 
-/** 点击动态点赞（组件内状态翻转，不落库、不 mutate props） */
-function toggleMomentLike(postId: string): void {
-  const posts = momentPosts.value;
-  if (!posts) return;
-  const post = posts.find((p) => p.id === postId);
-  if (!post) return;
-  post.isLiked = !post.isLiked;
-  post.likes += post.isLiked ? 1 : -1;
-}
-
-/** 点击动态评论（展开评论输入条，Phase 4.1 验收：真实评论交互） */
-const commentTargetId = ref<string | null>(null);
-const commentDraft = ref("");
-
-function onMomentComment(postId: string): void {
-  lightHaptic();
-  commentTargetId.value = commentTargetId.value === postId ? null : postId;
-  commentDraft.value = "";
-}
-
-/** 提交评论：计数 +1 并收起输入条（mock 语义，真实环境走评论 API） */
-function submitComment(postId: string): void {
-  const text = commentDraft.value.trim();
-  if (!text) {
-    uni.showToast({ title: t("discover.momentCommentEmpty"), icon: "none" });
-    return;
-  }
-  const post = momentPosts.value.find((p) => p.id === postId);
-  if (!post) return;
-  post.comments += 1;
-  commentDraft.value = "";
-  commentTargetId.value = null;
-  successHaptic();
-  uni.showToast({ title: t("discover.momentCommentSent"), icon: "none" });
-}
 
 /** 私信是否已解锁（本次会话内解锁后免重复扣费） */
 const privateMsgUnlocked = ref(false);
@@ -490,18 +445,18 @@ function handleMessage(): void {
   });
 }
 
-/** 点击动态私信（与主发消息同一解锁流程） */
-function onMomentPrivateMsg(): void {
-  if (!props.card) return;
-  handleMessage();
-}
 
-/** 点击悄悄话（B3 恋爱小纸条：打开解锁底部弹层，解锁成功后展示文案） */
+/** 点击悄悄话（B3 恋爱小纸条：打开解锁底部弹层，解锁成功后展示多条文案） */
 function onWhisperTap(): void {
   if (!props.card) return;
-  if (whisperAlreadySent.value) {
-    uni.showToast({ title: t("discover.whisperSent"), icon: "none" });
-    return;
+  // 已解锁：幂等再次查看，直接展示结果（不重复扣费）
+  if (whisperAlreadySent.value || unlockedWhispers.value.length > 0) {
+    const texts = whisperTexts.value;
+    if (texts.length > 0) {
+      showWhisperSheet.value = true;
+      whisperSheetRef.value?.showResult(texts);
+      return;
+    }
   }
   // 2026-08-08 走查 P1：VIP 免费放行受 membershipEnabled 门控（B3 上线后此分支实际不可达）
   if (featureFlags.membershipEnabled && vipStore.isVip) {
@@ -528,8 +483,11 @@ function onWhisperTap(): void {
 async function preloadWhisperResult(userId: string): Promise<void> {
   try {
     const result = await clientApi.getWhisper(userId);
-    if (result.unlocked && result.whisper) {
-      whisperSheetRef.value?.showResult(result.whisper);
+    if (result.unlocked && result.whispers.length > 0) {
+      unlockedWhispers.value = result.whispers;
+      // eslint-disable-next-line vue/no-mutating-props -- 与父组件 currentCard 共享引用，保留既有行为
+      if (props.card) props.card.whispers = result.whispers;
+      whisperSheetRef.value?.showResult(result.whispers);
     }
   } catch (err) {
     // 查询失败保持付费墙（静默降级；解锁请求会再次校验）
@@ -541,7 +499,7 @@ async function preloadWhisperResult(userId: string): Promise<void> {
 
 /**
  * 悄悄话弹层「解锁查看」确认：
- * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whisper）
+ * - mock：coinsStore.spend 本地扣费（余额不足抛错），文案取自卡片 fixtures（card.whispers/whisper）
  * - real：POST /recommendations/{userId}/whisper/unlock 后端幂等扣费（服务端定价 200 分），
  *   返回 balanceCents 时同步本地余额
  * 成功后 showResult 驱动弹层进入结果态；失败回退付费墙并提示。
@@ -552,13 +510,14 @@ async function handleWhisperUnlock(): Promise<void> {
   try {
     if (useMock()) {
       await coinsStore.spend("WHISPER", card.userId);
-      whisperSheetRef.value?.showResult(card.whisper ?? "");
+      const texts = card.whispers ?? (card.whisper ? [card.whisper] : []);
+      whisperSheetRef.value?.showResult(texts);
     } else {
       const result = await clientApi.unlockWhisper(card.userId);
       if (result.balanceCents != null) {
         coinsStore.balanceCents = result.balanceCents;
       }
-      whisperSheetRef.value?.showResult(result.whisper ?? "");
+      whisperSheetRef.value?.showResult(result.whispers);
     }
   } catch (err) {
     // 回退付费墙（错误提示由下方 toast/modal 承载）
@@ -582,19 +541,31 @@ async function handleWhisperUnlock(): Promise<void> {
   }
 }
 
-/** 解锁成功：本地记录文案并标记已发送（详情面板文案取 card.whisper ?? unlockedWhisperText） */
-function onWhisperUnlocked(whisperText: string): void {
-  unlockedWhisperText.value = whisperText;
+/** 解锁成功：本地记录文案列表并标记已解锁 */
+function onWhisperUnlocked(whisperTexts: string[]): void {
+  unlockedWhispers.value = whisperTexts;
+  /* eslint-disable vue/no-mutating-props -- 与父组件 currentCard 共享引用，保留既有行为 */
   if (props.card) {
     props.card.whisperSent = true;
-    props.card.whisper = whisperText;
+    props.card.whisper = whisperTexts[0] ?? "";
+    props.card.whispers = whisperTexts;
   }
+  /* eslint-enable vue/no-mutating-props */
 }
 
 /** 弹层「去和TA聊天」：关闭弹层并进入会话 */
 function onWhisperChat(): void {
   showWhisperSheet.value = false;
   emitMessage();
+}
+
+/** 弹层「回复TA」：关闭弹层并带回复内容进入会话（chat-session prefillMessage 预填草稿） */
+function onWhisperReply(text: string): void {
+  if (!props.card) return;
+  showWhisperSheet.value = false;
+  openAppPath(
+    `/pages/chat-session/index?userId=${encodeURIComponent(props.card.userId)}&prefillMessage=${encodeURIComponent(text)}`
+  );
 }
 
 /** [AUTOSHOT] 仅测试钩子：detail-scroll 的 scroll-into-view 目标面板 id */
@@ -718,21 +689,6 @@ function onCircleTap(circleName: string): void {
   }, t("cardDetail.circleNavFailed"));
 }
 
-/** 点击单条动态 → 跳转动态详情页（贴吧式楼中楼评论区，pages/village/detail） */
-function onMomentTap(post: { id: string }): void {
-  safeAction(() => {
-    lightHaptic();
-    openAppPath(`/pages/village/detail?id=${encodeURIComponent(post.id)}`);
-  }, t("cardDetail.momentNavFailed"));
-}
-
-/** 「查看全部」→ 跳转圈子社区（TA 的动态独立列表页后端暂未提供，见验收报告遗留说明） */
-function onMomentsAllTap(): void {
-  safeAction(() => {
-    lightHaptic();
-    openAppPath("/pages/village/index");
-  }, t("cardDetail.momentsAllNavFailed"));
-}
 
 /* ========== 2026-08-08：更多操作（举报用户 / 不感兴趣） ========== */
 
@@ -1152,110 +1108,46 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </view>
         </view>
 
-        <!-- Phase Feedback1 · 悄悄话 -->
-        <view v-if="whisperText || !whisperAlreadySent" class="detail-panel detail-whisper">
+        <!-- Phase Feedback1 · 悄悄话（2026-08-14：多条文案 + 回复进会话） -->
+        <view v-if="!whisperAlreadySent || whisperTexts.length > 0" class="detail-panel detail-whisper">
           <view class="detail-panel__header">
             <text class="detail-panel__title">{{ t('discover.whisperLabel') }}</text>
           </view>
+          <!-- 未解锁：引导卡片（TA 有很多想对你说的话） -->
           <view
+            v-if="!whisperAlreadySent"
             class="detail-whisper__card press-feedback"
             hover-class="detail-whisper__card--pressed"
             hover-stay-time="120"
             role="button"
-            :aria-label="whisperAlreadySent ? t('discover.whisperSent') : t('discover.whisperSend')"
+            :aria-label="t('discover.whisperSend')"
             @tap="onWhisperTap"
           >
-            <text v-if="whisperText" class="detail-whisper__text">{{ whisperText }}</text>
-            <text v-else class="detail-whisper__text detail-whisper__text--placeholder">{{ t('discover.whisperEmpty') }}</text>
-            <text class="detail-whisper__action">{{ whisperAlreadySent ? t('discover.whisperSent') : t('discover.whisperSend') }}</text>
+            <text class="detail-whisper__text detail-whisper__text--placeholder">{{ t('discover.whisperGuideTitle') }}</text>
+            <text class="detail-whisper__action">{{ t('discover.whisperSend') }}</text>
+          </view>
+          <!-- 已解锁：多条文案列表，点击再次查看并回复 -->
+          <view
+            v-else
+            class="detail-whisper__card detail-whisper__card--list press-feedback"
+            hover-class="detail-whisper__card--pressed"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('discover.whisperListTitle')"
+            @tap="onWhisperTap"
+          >
+            <view
+              v-for="(text, idx) in whisperTexts" :key="idx"
+              class="detail-whisper__item"
+            >
+              <view class="detail-whisper__quote" />
+              <text class="detail-whisper__text">{{ text }}</text>
+            </view>
+            <text class="detail-whisper__action">{{ t('discover.whisperReplySend') }}</text>
           </view>
         </view>
 
-        <!-- Phase Feedback1 · 动态（贴吧式：发布时间 → 正文+配图 → 点赞/评论；点击进详情页） -->
-        <view id="panel-moments" class="detail-panel detail-moments">
-          <view class="detail-panel__header">
-            <text class="detail-panel__title">{{ t('discover.moments') }}</text>
-            <text
-              class="detail-panel__more press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              role="button"
-              :aria-label="t('discover.momentsAll')"
-              @tap="onMomentsAllTap"
-            >{{ t('discover.momentsAll') }}</text>
-          </view>
-          <view v-if="momentPosts.length > 0" class="detail-moments__list">
-            <view
-              v-for="post in momentPosts"
-              :key="post.id"
-              class="detail-moment-item press-feedback"
-              hover-class="detail-moment-item--pressed"
-              hover-stay-time="120"
-              @tap="onMomentTap(post)"
-              role="button"
-              :aria-label="t('discover.momentDetailAria')"
-            >
-              <text class="detail-moment-item__content">{{ post.content }}</text>
-              <view class="detail-moment-item__actions">
-                <view
-                  class="detail-moment-item__action press-feedback"
-                  hover-class="press-feedback--active"
-                  hover-stay-time="120"
-                  role="button"
-                  :aria-label="t('discover.momentLike')"
-                  :aria-pressed="post.isLiked"
-                  @tap.stop="toggleMomentLike(post.id)"
-                >
-                  <image class="detail-moment-item__action-icon" :src="post.isLiked ? icons.heart : icons.heartOutline" mode="aspectFit" alt="" />
-                  <text class="detail-moment-item__action-count">{{ post.likes }}</text>
-                </view>
-                <view
-                  class="detail-moment-item__action press-feedback"
-                  hover-class="press-feedback--active"
-                  hover-stay-time="120"
-                  role="button"
-                  :aria-label="t('discover.momentComment')"
-                  @tap.stop="onMomentComment(post.id)"
-                >
-                  <image class="detail-moment-item__action-icon" :src="icons.chat" mode="aspectFit" alt="" />
-                  <text class="detail-moment-item__action-count">{{ post.comments }}</text>
-                </view>
-                <view
-                  class="detail-moment-item__action detail-moment-item__action--paid press-feedback"
-                  hover-class="press-feedback--active"
-                  hover-stay-time="120"
-                  role="button"
-                  :aria-label="t('discover.momentPrivateMsg')"
-                  @tap.stop="onMomentPrivateMsg"
-                >
-                  <image class="detail-moment-item__action-icon" :src="icons.mail" mode="aspectFit" alt="" />
-                  <text class="detail-moment-item__action-count">{{ t('discover.momentPrivateMsg') }}</text>
-                </view>
-              </view>
-              <!-- Phase 4.1 验收 · 评论输入条（点击评论后展开） -->
-              <view v-if="commentTargetId === post.id" class="detail-moment-comment">
-                <input
-                  class="detail-moment-comment__input"
-                  v-model="commentDraft"
-                  :placeholder="t('discover.momentCommentPlaceholder')"
-                  @confirm.stop="submitComment(post.id)"
-                  :aria-label="t('discover.momentCommentPlaceholder')"
-                />
-                <view
-                  class="detail-moment-comment__send press-feedback"
-                  hover-class="press-feedback--active"
-                  hover-stay-time="120"
-                  role="button"
-                  :aria-label="t('common.send')"
-                  @tap="submitComment(post.id)"
-                >
-                  <text class="detail-moment-comment__send-text">{{ t('common.send') }}</text>
-                </view>
-              </view>
-            </view>
-          </view>
-          <text v-else class="detail-moments__empty">{{ t('discover.momentsEmpty') }}</text>
-        </view>
+        <!-- 2026-08-14：动态/留言（评论区）已整体移除，统一并入悄悄话 -->
 
         <!-- Phase Feedback1 · 期待的人物画像 -->
         <view id="panel-expected" v-if="expectedPartnerText" class="detail-panel detail-expected">
@@ -1328,6 +1220,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
       @chat="onWhisperChat"
       @unlock="handleWhisperUnlock"
       @unlocked="onWhisperUnlocked"
+      @reply="onWhisperReply"
     />
   </view>
 </template>
@@ -1813,7 +1706,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 
 .detail-panel__more {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   font-weight: 600;
   padding: 4rpx 8rpx;
 }
@@ -2022,6 +1915,29 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 }
 
 /* ========== Phase Feedback1 · 悄悄话 ========== */
+.detail-whisper__card--list {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 16rpx;
+}
+
+.detail-whisper__item {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-bg-page, #f8fafc);
+  border: 1rpx solid var(--c-divider-light, #e2e8f0);
+}
+
+.detail-whisper__quote {
+  flex-shrink: 0;
+  width: 6rpx;
+  border-radius: 3rpx;
+  background: linear-gradient(180deg, var(--c-brand-400) 0%, var(--c-romance-400) 100%);
+}
+
 .detail-whisper__card {
   display: flex;
   align-items: center;
@@ -2052,103 +1968,9 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   flex-shrink: 0;
   font-size: var(--fs-sm);
   font-weight: 700;
-  color: var(--c-romance-500, #ec4899);
+  color: var(--c-romance-500, #FF6B81);
 }
 
-/* ========== Phase Feedback1 · 动态 ========== */
-.detail-moments__list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  margin-top: 8rpx;
-}
-
-.detail-moment-item {
-  padding: 16rpx 20rpx;
-  border-radius: var(--r-lg);
-  background: var(--c-bg-page);
-  border: 1rpx solid var(--c-divider-light);
-}
-
-.detail-moment-item--pressed {
-  transform: scale(0.99);
-  opacity: 0.92;
-}
-
-.detail-moment-item__content {
-  font-size: var(--fs-base);
-  color: var(--c-text-primary);
-  line-height: 1.6;
-}
-
-.detail-moment-item__actions {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-top: 12rpx;
-}
-
-.detail-moment-item__action {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.detail-moment-item__action-icon {
-  width: 32rpx;
-  height: 32rpx;
-  color: var(--c-text-secondary);
-}
-
-/* Phase 4.1 验收 · 评论输入条 */
-.detail-moment-comment {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-top: 12rpx;
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-lg);
-  background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-border-light, #e5e7eb);
-}
-
-.detail-moment-comment__input {
-  flex: 1;
-  height: 64rpx;
-  font-size: var(--fs-base);
-  color: var(--c-text-primary);
-}
-
-.detail-moment-comment__send {
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full);
-  background: var(--c-brand-500);
-}
-
-.detail-moment-comment__send-text {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 600;
-}
-
-.detail-moment-item__action-count {
-  font-size: var(--fs-sm);
-  color: var(--c-text-secondary);
-}
-
-.detail-moment-item__action--paid {
-  margin-left: auto;
-  padding: 6rpx 14rpx;
-  border-radius: var(--r-full);
-  background: var(--c-brand-bg-tint, #e6f9f0);
-}
-
-.detail-moments__empty {
-  display: block;
-  margin-top: 8rpx;
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-}
 
 /* ========== Phase Feedback1 · 期待的人物画像 ========== */
 .detail-expected__text {
@@ -2275,3 +2097,5 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-text-inverse);
 }
 </style>
+
+

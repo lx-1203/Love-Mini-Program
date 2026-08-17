@@ -103,6 +103,15 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      */
     long countByConversationIdAndSenderIdNotAndIsRead(Long conversationId, Long senderId, boolean isRead);
 
+    /** 统计指定会话的全部消息数。 */
+    long countByConversationId(Long conversationId);
+
+    /** 统计指定会话中指定消息类型的数量（voice / image 等）。 */
+    long countByConversationIdAndMessageKind(Long conversationId, String messageKind);
+
+    /** 查询指定会话最近 50 条消息（倒序），用于关系分数计算。 */
+    List<PrivateMessage> findTop50ByConversationIdOrderByCreatedAtDesc(Long conversationId);
+
     /**
      * 批量标记会话中对方发送的未读消息为已读。
      * 使用 @Modifying 批量更新，避免逐条 save 的性能问题。
@@ -148,3 +157,5 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
     @Query("DELETE FROM PrivateMessage m WHERE m.conversation.id = :conversationId")
     int deleteByConversationId(@Param("conversationId") Long conversationId);
 }
+
+

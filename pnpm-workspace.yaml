@@ -8,3 +8,6 @@ allowBuilds:
   puppeteer: true
   sharp: true
   vue-demi: true
+
+overrides:
+  "@vitejs/plugin-vue": 5.0.5

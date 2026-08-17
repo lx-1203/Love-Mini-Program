@@ -26,16 +26,26 @@
 export const ROUTES = {
   /** TabBar 主页面 */
   TAB: {
-    /** 匹配页（寻觅） */
+    /** 匹配页（寻觅，中央核心入口） */
     DISCOVER: "/pages/discover/index",
-    /** 圈子页（村口） */
+    /** 附近页（新 Tab） */
+    NEARBY: "/pages/nearby/index",
+    /** 村口（社区二级页，不再占 Tab） */
     VILLAGE: "/pages/village/index",
-    /** 首页 */
+    /** 发现页（原首页重构） */
     HOME: "/pages/home/index",
+    /** v3 细分发现页 */
+    HOME_SEGMENT: "/pages/home/segment",
     /** 消息页（P1-09：tabBar 指向新版消息列表页；旧 /pages/chat/index 已移除注册） */
     CHAT: "/pages/messages/index",
     /** 我的页 */
     PROFILE: "/pages/profile/index",
+  },
+
+  /** 附近模块（v3 Nearby） */
+  NEARBY: {
+    /** 附近的人 / 同城的人 列表 */
+    PEOPLE: "/pages/nearby/people",
   },
 
   /** 登录 */
@@ -48,8 +58,10 @@ export const ROUTES = {
   DISCOVER: {
     /** 历史记录页 */
     HISTORY: "/pages/discover/history",
-    /** 视频播放页 */
-    VIDEO_PLAYER: "/pages/discover/video-player",
+    /** v3 匹配中 */
+    MATCHING: "/pages/discover/matching",
+    /** v3 匹配成功 */
+    MATCH_SUCCESS: "/pages/discover/match-success",
   },
 
   /** 喜欢模块 */
@@ -116,6 +128,8 @@ export const ROUTES = {
 
   /** 校园模块 */
   CAMPUS: {
+    /** 校园圈 Hub（校园列表 + 四态权限） */
+    HUB: "/pages/campus/hub",
     /** 校园首页 */
     INDEX: "/pages/campus/index",
     /** 发校园话题 */
@@ -227,9 +241,9 @@ export const LOGIN_ROUTE = ROUTES.LOGIN;
 
 /** TabBar 页面路径列表（用于判断是否使用 switchTab） */
 export const TAB_BAR_ROUTES: readonly string[] = [
-  ROUTES.TAB.DISCOVER,
-  ROUTES.TAB.VILLAGE,
   ROUTES.TAB.HOME,
+  ROUTES.TAB.NEARBY,
+  ROUTES.TAB.DISCOVER,
   ROUTES.TAB.CHAT,
   ROUTES.TAB.PROFILE,
 ] as const;

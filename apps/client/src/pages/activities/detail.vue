@@ -375,7 +375,7 @@ onShareTimeline(() => ({
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 
 .detail-header__back {
@@ -467,8 +467,8 @@ onShareTimeline(() => ({
   padding: 4rpx 16rpx;
   border-radius: 999rpx;
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-primary, #3fcf8e);
-  background: color-mix(in srgb, var(--c-primary, #3fcf8e) 12%, transparent);
+  color: var(--c-primary, #36C99A);
+  background: color-mix(in srgb, var(--c-primary, #36C99A) 12%, transparent);
 }
 
 .detail-status {
@@ -616,7 +616,7 @@ onShareTimeline(() => ({
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #6FD4AA 100%));
 }
 
 /* 收尾轮：退出报名按钮（次级样式，避免与报名主按钮混淆） */

@@ -73,18 +73,19 @@ export interface MyPostSummary {
  */
 /** Mock 基本资料数据 */
 const mockBasicProfile: Schemas["BasicProfile"] = {
-  nickname: "星野",
-  bio: "安静、好奇，更喜欢一对一慢慢聊。",
+  nickname: "林晓",
+  bio: "热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。",
   grade: "大三",
-  pronouns: "她/她",
+  pronouns: "TA",
+  photoGallery: ["/static/assets/images/people/person-01.webp"],
 };
 
 /** Mock 校区资料数据 */
 const mockCampusProfile: Schemas["CampusProfile"] = {
-  city: "广州",
-  campusName: "南校区",
+  city: "北京",
+  campusName: "北京大学",
   department: "工业设计",
-  verificationStatus: "draft",
+  verificationStatus: "verified",
 };
 
 /** Mock 日程资料数据 */
@@ -299,7 +300,7 @@ export const useProfileStore = defineStore("profile", {
             this.myPosts = clone(mockMyPosts);
             this.voiceStatusUrl = mockVoiceStatusUrl;
             this.voiceStatusDuration = MOCK_VOICE_STATUS_DURATION_SECONDS; // infra R2-00052
-            this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_8;
+            this.avatarUrl = IMAGE_PATHS.PEOPLE.AVATAR_1;
             // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
             this.photoGallery = Array.isArray(mockBasicProfile?.photoGallery)
               ? [...mockBasicProfile.photoGallery]
@@ -635,7 +636,7 @@ export const useProfileStore = defineStore("profile", {
     /**
      * 设置 60 秒语音状态（Phase Feedback5）。
      *
-     * 语音状态为最长 60 秒的音频，替代原"个人视频"位置。
+     * 语音状态为最长 60 秒的音频，作为主页声音名片。
      * Mock 模式直接更新本地状态；Real 模式待后端提供语音上传接口后接入。
      *
      * @param url - 语音文件 URL（本地临时路径或服务端 URL）

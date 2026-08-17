@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * UnlockGuideOverlay - 首次进入锁定页一次性教学蒙层
  *
@@ -137,7 +137,7 @@ function handleKnown() {
   width: 72rpx;
   height: 72rpx;
   border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,14 +165,14 @@ function handleKnown() {
 .unlock-overlay__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   margin-bottom: 12rpx;
 }
 
 /* 引导描述 */
 .unlock-overlay__desc {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary, #666666);
   text-align: center;
   line-height: 1.5;
   margin-bottom: var(--sp-7);
@@ -184,7 +184,7 @@ function handleKnown() {
   width: 100%;
   height: 84rpx; /* 固定布局尺寸（按钮高 84rpx，无对应 token） */
   border-radius: var(--r-xl, 42rpx);
-  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
   border: none;
   display: flex;
   align-items: center;

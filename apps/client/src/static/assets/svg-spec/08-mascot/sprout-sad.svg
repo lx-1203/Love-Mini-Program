@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="sprout-sad-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="70" rx="40" ry="38" fill="url(#sprout-sad-body)"/>
+  <!-- Wilting sprout -->
+  <path d="M55 34c-1-5-5-8-10-8-2 5 0 10 3 12 3 2 6 0 7-4z" fill="#8FCFAD"/>
+  <path d="M65 34c1-5 5-8 10-8 2 5 0 10-3 12-3 2-6 0-7-4z" fill="#8FCFAD"/>
+  <path d="M60 36c0-6 3-11 8-13 0 5-1 9-6 13-2 1-2 0-2 0z" fill="#7AB899"/>
+  <!-- Sad eyes -->
+  <path d="M43 64c2-2 4-3 6-2s3 2 5 4" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <path d="M66 64c2-2 4-3 6-2s3 2 5 4" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Tear -->
+  <path d="M45 72c-1 3-3 5-5 5s-2-1-2-3c0-3 4-6 7-2z" fill="#87CEEB"/>
+  <!-- Cheeks -->
+  <ellipse cx="40" cy="78" rx="5" ry="3.5" fill="#FFB6C1" opacity="0.5"/>
+  <ellipse cx="80" cy="78" rx="5" ry="3.5" fill="#FFB6C1" opacity="0.5"/>
+  <!-- Sad mouth -->
+  <path d="M54 86c2-3 4-5 6-5s4 2 6 5" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+</svg>

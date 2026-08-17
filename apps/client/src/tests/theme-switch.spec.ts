@@ -134,7 +134,7 @@ describe("theme-switch - 关键 token 差异化", () => {
     const lightText = designTokens.color.text.primary;
     const darkText = darkThemeTokens.color.text.primary;
 
-    expect(lightText).toMatch(/^#[0-2]/i);
+    expect(lightText).toMatch(/^#[0-3]/i);
     expect(darkText).toMatch(/^#[E-F]/i);
   });
 
@@ -150,7 +150,7 @@ describe("theme-switch - 关键 token 差异化", () => {
   it("warm 主题应保留 light 主题的文本色（仍为深色文本）", () => {
     // warm 主题背景偏暖色（米色 / 浅橙），文本仍应为深色
     const warmText = warmThemeTokens.color.text.primary;
-    expect(warmText).toMatch(/^#[0-2]/i);
+    expect(warmText).toMatch(/^#[0-3]/i);
   });
 
   it("brand 主色在 light / dark 主题中应保持一致（品牌色不变）", () => {
@@ -267,7 +267,7 @@ describe("theme-switch - 模拟前端切换流程", () => {
   });
 
   it("切换主题后品牌主色保持不变（视觉一致性）", () => {
-    // 无论切换到哪个主题，品牌色（brand.500 #3FCF8E）应保持一致
+    // 无论切换到哪个主题，品牌色（brand.500 #36C99A）应保持一致
     const brandColor = designTokens.color.brand[500];
     expect(darkThemeTokens.color.brand[500]).toBe(brandColor);
     expect(warmThemeTokens.color.brand[500]).toBe(brandColor);

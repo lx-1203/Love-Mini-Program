@@ -53,6 +53,18 @@ const tags = ref<string[]>([]);
 /** 选中的分类（R4-00095：默认值迁移到契约枚举，兼容旧 cat-* 常量） */
 const selectedCategory = ref(migrateCategory(DEFAULT_CATEGORY_ID));
 
+/** v3 Nearby 冻结：发帖三段式（动态 / 找搭子 / 活动）→ 内部 category 映射 */
+const postMode = ref<"life" | "dating" | "activity">("life");
+const MODE_CATEGORY: Record<"life" | "dating" | "activity", string> = {
+  life: "life",
+  dating: "dating",
+  activity: "activity",
+};
+function switchPostMode(mode: "life" | "dating" | "activity") {
+  postMode.value = mode;
+  selectedCategory.value = MODE_CATEGORY[mode];
+}
+
 /** 预置话题标签列表 */
 const presetTags = ref<string[]>([]);
 /** 选中的预置标签（#话题名 格式） */
@@ -543,7 +555,20 @@ function goBack() {
       </view>
     </view>
 
-    <!-- 分类选择 -->
+    <!-- v3 Nearby 冻结：动态 / 找搭子 / 活动 三段式 -->
+    <view class="post-mode" role="tablist" :aria-label="t('village.post.selectCategory')">
+      <view v-for="mode in ([{key:'life',label:t('village.post.modeLife')},{key:'dating',label:t('village.post.modeDating')},{key:'activity',label:t('village.post.modeActivity')}] as const)" :key="mode.key"
+        class="post-mode__tab"
+        :class="{ 'post-mode__tab--active': postMode === mode.key }"
+        role="tab"
+        :aria-selected="postMode === mode.key ? 'true' : 'false'"
+        @tap="switchPostMode(mode.key)"
+      >
+        <text class="post-mode__text">{{ mode.label }}</text>
+      </view>
+    </view>
+
+    <!-- 分类选择（高级） -->
     <view class="category-section">
       <text class="section-label">{{ t("village.post.selectCategory") }}</text>
       <view class="category-options">
@@ -1117,5 +1142,38 @@ $red-badge: var(--c-error);
   color: $pink-primary;
   padding: 0 4rpx;
   font-weight: 600;
+}
+
+/* ========== v3 Nearby 冻结：发帖三段式 ========== */
+.post-mode {
+  display: flex;
+  gap: 12rpx;
+  margin: 20rpx 0 0;
+}
+
+.post-mode__tab {
+  flex: 1;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-bg-container, #ffffff);
+  border: 2rpx solid var(--c-line, #ECEFF2);
+}
+
+.post-mode__tab--active {
+  border-color: var(--c-brand-500, #36C99A);
+  background: var(--c-brand-50, #E6F8F1);
+}
+
+.post-mode__text {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary, #666666);
+}
+
+.post-mode__tab--active .post-mode__text {
+  color: var(--c-brand-600, #36C99A);
 }
 </style>

@@ -23,7 +23,6 @@ import { useCircleStore } from "../../stores/circle";
 import { useActivityStore } from "../../stores/activity";
 import { useDailyQuestionStore } from "../../stores/daily-question";
 import { openAppPath, consumeTabQuery } from "../../utils/navigation";
-import { useTabBar } from "../../composables/useTabBar";
 // 2026-08-10 切换提速：村子页频道数据 30s TTL（onShow 免重复全量重拉）
 import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
 import { useMock } from "../../stores/helpers/use-mock";
@@ -71,7 +70,6 @@ const { currentTopics } = storeToRefs(circleStore);
 const { activities } = storeToRefs(activityStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 2）
-useTabBar(2);
 
 /* ========== 锁定状态 ========== */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);

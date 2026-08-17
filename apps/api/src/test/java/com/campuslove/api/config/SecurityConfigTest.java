@@ -44,6 +44,9 @@ import com.campuslove.api.testdata.MockAllRepositoriesConfig;
 @Import(MockAllRepositoriesConfig.class)
 class SecurityConfigTest {
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
+
     @Autowired
     private MockMvc mockMvc;
     /**

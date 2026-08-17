@@ -3,12 +3,17 @@ import type {
   AuthSessionResult,
   DoNotDisturbRequest,
   DoNotDisturbView,
+  FollowUserView,
   MakeUpCheckInResultView,
   ProfileStats,
   RecommendationFilter,
   RecommendedPerson,
   SubmissionDetailView,
   UpdateBasicProfileRequest,
+  TodayRecommendationView,
+  UserSearchView,
+  WhisperMessageView,
+  WhisperSendRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv, isDev, isMockMode } from "./env";
@@ -333,6 +338,15 @@ export const clientApi = {
       return mockFixtures.getHomeDashboard();
     }
     return request<Schemas["HomeDashboard"]>({ url: "/home/dashboard" });
+  },
+  async rotateTodayRecommendation() {
+    if (useMock()) {
+      return mockFixtures.rotateTodayRecommendation();
+    }
+    return request<TodayRecommendationView | null>({
+      url: "/home/today-recommendation/rotate",
+      method: "POST",
+    });
   },
   async getChatOverview() {
     if (useMock()) {
@@ -859,19 +873,166 @@ export const clientApi = {
   },
 
   /**
+   * 认识 TA / 喜欢某人（v2 兴趣圈帖子「认识 TA」= 喜欢链路）。
+   * 对应后端 POST /api/v1/matches/like（body: { targetUserId }），
+   * 后端仅在互相喜欢时返回 HeartSignalView（非空 = 匹配成功）。
+   * mock 模式返回未匹配（单向喜欢，不触发真实匹配）。
+   *
+   * @param targetUserId 目标用户 ID
+   */
+  async likeUser(targetUserId: string): Promise<{ matched: boolean; matchId?: string }> {
+    if (useMock()) {
+      return { matched: false };
+    }
+    const data = await request<{ id?: number; fromUserName?: string } | null>({
+      url: "/matches/like",
+      method: "POST",
+      data: { targetUserId },
+    });
+    return {
+      matched: data !== null && data !== undefined,
+      matchId: data && data.id != null ? String(data.id) : undefined,
+    };
+  },
+
+  /**
+   * 获取他人主页公开视图（v3 匹配成功/在线速配使用）。
+   * 对应后端 GET /api/v1/recommendations/{userId}/profile；mock 从推荐 fixtures 匹配。
+   */
+  async getPersonProfile(userId: string): Promise<RecommendedPerson | null> {
+    if (useMock()) {
+      const people = mockFixtures.getRecommendations({});
+      return people.find((p) => String(p.id) === String(userId)) ?? null;
+    }
+    return request<RecommendedPerson>({
+      url: `/recommendations/${encodeURIComponent(userId)}/profile`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 跳过 / 不感兴趣（v3 速配 ×）。
+   * 对应后端 POST /api/v1/matches/pass?passedUserId=；mock 模式直接成功。
+   */
+  async passUser(targetUserId: string): Promise<void> {
+    if (useMock()) {
+      return;
+    }
+    await request({ url: `/matches/pass?passedUserId=${encodeURIComponent(targetUserId)}`, method: "POST" });
+  },
+
+  /** 搜索用户（v3 搜索分组 · 用户）：GET /api/v1/search/users?keyword= */
+  async searchUsers(keyword: string): Promise<UserSearchView[]> {
+    if (useMock()) {
+      return mockFixtures.searchUsers(keyword);
+    }
+    return request<UserSearchView[]>({
+      url: `/search/users?keyword=${encodeURIComponent(keyword)}&page=0&size=20`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 发送付费悄悄话（v3.1，幂等 clientRequestId）。
+   * 对应后端 POST /api/v1/whispers/send；mock 写入会话级收件箱。
+   */
+  async sendWhisper(payload: WhisperSendRequest): Promise<WhisperMessageView> {
+    if (useMock()) {
+      return mockFixtures.sendWhisper(payload);
+    }
+    return request<WhisperMessageView>({ url: "/whispers/send", method: "POST", data: payload });
+  },
+
+  /** 悄悄话收件箱：GET /api/v1/whispers/inbox */
+  async getWhisperInbox(): Promise<WhisperMessageView[]> {
+    if (useMock()) {
+      return mockFixtures.getWhisperInbox();
+    }
+    return request<WhisperMessageView[]>({ url: "/whispers/inbox", method: "GET" });
+  },
+
+  /** 已发送悄悄话：GET /api/v1/whispers/sent */
+  async getWhisperSent(): Promise<WhisperMessageView[]> {
+    if (useMock()) {
+      return mockFixtures.getWhisperSent();
+    }
+    return request<WhisperMessageView[]>({ url: "/whispers/sent", method: "GET" });
+  },
+
+  /** 标记已读：POST /api/v1/whispers/{id}/read */
+  async readWhisper(id: number): Promise<WhisperMessageView> {
+    if (useMock()) {
+      return mockFixtures.readWhisper(id);
+    }
+    return request<WhisperMessageView>({ url: `/whispers/${id}/read`, method: "POST" });
+  },
+
+  /**
    * 查询悄悄话内容（B3 恋爱小纸条，付费解锁后可见）。
    *
    * 对应后端 GET /api/v1/recommendations/{userId}/whisper（R4-00314）：
    * 已解锁（wallet_transaction_log 存在 MESSAGE_UNLOCK / WHISPER_UNLOCK 流水）时
-   * 返回完整文案，未解锁返回 {unlocked:false, whisper:null}，不泄露付费内容。
+   * 返回完整文案列表，未解锁返回 {unlocked:false, whispers:[]}，不泄露付费内容。
    * 非幂等扣费端点，仅查询；mock 模式下文案随推荐卡片 fixtures 下发，此处返回空。
    *
    * @param userId - 目标用户 ID
-   * @returns 悄悄话视图（unlocked / whisper / balanceCents）
+   * @returns 悄悄话视图（unlocked / whispers / balanceCents）
    */
-  async getWhisper(userId: string): Promise<WhisperUnlockView> {
+    /**
+   * 收藏 / 关注某人（v2 附近页「收藏·稍后看」= 关注链路，零后端改动）。
+   * 对应后端 POST /api/v1/users/{userId}/follow；mock 模式直接成功。
+   *
+   * @param userId 目标用户 ID（卡片 userId）
+   */
+  async followUser(userId: string): Promise<void> {
     if (useMock()) {
-      return { unlocked: true, whisper: null, balanceCents: null };
+      return;
+    }
+    await request({ url: `/users/${encodeURIComponent(userId)}/follow`, method: "POST" });
+  },
+
+  /**
+   * 取消收藏 / 关注：DELETE /api/v1/users/{userId}/follow。
+   */
+  async unfollowUser(userId: string): Promise<void> {
+    if (useMock()) {
+      return;
+    }
+    await request({ url: `/users/${encodeURIComponent(userId)}/follow`, method: "DELETE" });
+  },
+
+  /**
+   * 我的收藏列表（= 我的关注）：GET /api/v1/users/{myUserId}/following?page=0&size=100。
+   * mock 模式返回本地收藏记录（followedIds 去重映射）。
+   *
+   * @param myUserId 当前登录用户 ID
+   */
+  async getMyFollowing(myUserId: string): Promise<FollowUserView[]> {
+    if (useMock()) {
+      return mockFixtures.getFollowingList();
+    }
+    return request<FollowUserView[]>({
+      url: `/users/${encodeURIComponent(myUserId)}/following?page=0&size=100`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * 是否已收藏 / 关注目标用户：GET /api/v1/users/{userId}/is-following。
+   */
+  async isFollowing(userId: string): Promise<{ isFollowing: boolean }> {
+    if (useMock()) {
+      return { isFollowing: false };
+    }
+    return request<{ isFollowing: boolean }>({
+      url: `/users/${encodeURIComponent(userId)}/is-following`,
+      method: "GET",
+    });
+  },
+
+async getWhisper(userId: string): Promise<WhisperUnlockView> {
+    if (useMock()) {
+      return { unlocked: true, whispers: [], balanceCents: null };
     }
     return request<WhisperUnlockView>({
       url: `/recommendations/${userId}/whisper`,
@@ -889,11 +1050,11 @@ export const clientApi = {
    * mock 模式下扣费由 coinsStore.spend 承载，此处返回空结果。
    *
    * @param userId - 目标用户 ID
-   * @returns 悄悄话视图（解锁成功后 unlocked=true 且含完整文案）
+   * @returns 悄悄话视图（解锁成功后 unlocked=true 且含完整文案列表）
    */
   async unlockWhisper(userId: string): Promise<WhisperUnlockView> {
     if (useMock()) {
-      return { unlocked: true, whisper: null, balanceCents: null };
+      return { unlocked: true, whispers: [], balanceCents: null };
     }
     return request<WhisperUnlockView>({
       url: `/recommendations/${userId}/whisper/unlock`,

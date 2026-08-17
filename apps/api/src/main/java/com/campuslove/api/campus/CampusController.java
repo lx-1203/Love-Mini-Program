@@ -55,6 +55,7 @@ public class CampusController {
     private final SchoolRepository schoolRepository;
     private final ActivityService activityService;
     private final VillageService villageService;
+    private final CampusPermissionService campusPermissionService;
 
     public CampusController(
             CampusService campusService,
@@ -62,13 +63,15 @@ public class CampusController {
             UserCampusProfileRepository campusProfileRepository,
             SchoolRepository schoolRepository,
             ActivityService activityService,
-            VillageService villageService) {
+            VillageService villageService,
+            CampusPermissionService campusPermissionService) {
         this.campusService = campusService;
         this.certService = certService;
         this.campusProfileRepository = campusProfileRepository;
         this.schoolRepository = schoolRepository;
         this.activityService = activityService;
         this.villageService = villageService;
+        this.campusPermissionService = campusPermissionService;
     }
 
     // ── 校园话题 ──
@@ -96,13 +99,19 @@ public class CampusController {
     @GetMapping("/topics")
     public ResponseEntity<CampusTopicPageResponse> listTopics(
             @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "school", required = false) String school,
             @PageableDefault(size = 20) Pageable pageable) {
         Long userId = SecurityUtils.getCurrentUserId();
-        Long schoolId = resolveSchoolId(userId);
+        // v3 Nearby 冻结：公开浏览——支持 ?school= 查看指定学校公开内容；
+        // 未传 school 时回退当前用户学校；两者都不可解析时返回空列表（不再抛 400 引导认证）。
+        Long schoolId = null;
+        if (school != null && !school.isBlank()) {
+            schoolId = schoolRepository.findByName(school).map(School::getId).orElse(null);
+        } else {
+            schoolId = resolveSchoolId(userId);
+        }
         if (schoolId == null) {
-            // A-26 修复：未绑定学校（或学校不在 schools 表）时返回明确业务错误，
-            // 而非静默空列表——引导用户先完成校园认证/绑定学校
-            throw new IllegalArgumentException(ErrorMessages.CAMPUS_VERIFICATION_REQUIRED);
+            return ResponseEntity.ok(CampusTopicPageResponse.from(new PageImpl<>(List.of(), pageable, 0)));
         }
 
         List<CampusTopicView> allTopics = campusService.getCampusTopics(schoolId, category);
@@ -162,6 +171,10 @@ public class CampusController {
             @Valid @RequestBody CreateCampusTopicRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();
         Long schoolId = resolveSchoolId(userId);
+        // v3 Nearby 冻结：私域互动门禁——仅本校已认证用户可发帖
+        String campusName = campusProfileRepository.findByUserId(userId)
+                .map(UserCampusProfile::getCampusName).orElse(null);
+        campusPermissionService.requireVerifiedSameSchool(userId, campusName);
         CampusTopicView topic = campusService.createCampusTopic(
                 userId, schoolId, req.category(), req.title(), req.content(), req.tags());
         return ApiResponse.ok(topic);
@@ -221,6 +234,11 @@ public class CampusController {
             @PathVariable("id") @Positive Long id,
             @Valid @RequestBody CreateCampusReplyRequest req) {
         Long userId = SecurityUtils.getCurrentUserId();
+        // v3 Nearby 冻结：私域互动门禁——仅目标学校本校已认证用户可回复
+        CampusTopicView topic = campusService.getCampusTopic(id);
+        String topicSchool = schoolRepository.findById(topic.schoolId())
+                .map(School::getName).orElse(null);
+        campusPermissionService.requireVerifiedSameSchool(userId, topicSchool);
         CampusTopicReplyView reply = campusService.replyCampusTopic(id, userId, req.content());
         return ApiResponse.ok(reply);
     }

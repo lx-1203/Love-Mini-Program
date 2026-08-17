@@ -254,8 +254,8 @@ const durationDisplay = computed(() => {
   /* 18rpx 无对应 token 档位，保留 */
   padding: 18rpx var(--sp-6);
   border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
-  background: var(--c-bg-brand, rgba(63, 207, 142, 0.08));
-  color: var(--c-brand-700, #1D8A5A);
+  background: var(--c-bg-brand, rgba(61, 201, 148, 0.08));
+  color: var(--c-brand-700, #12805A);
   box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: all var(--d-normal, 200ms) ease;
   /* 气泡固定最小宽度（时长布局值），无对应 token */
@@ -265,7 +265,7 @@ const durationDisplay = computed(() => {
 /* self 发送：右侧圆角反向 */
 .voice-bubble--self {
   border-radius: var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
   color: var(--c-text-inverse, #ffffff);
 }
 
@@ -276,7 +276,7 @@ const durationDisplay = computed(() => {
 }
 
 .voice-bubble--playing {
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.20)));
 }
 
 .voice-bubble--expired {
@@ -302,7 +302,7 @@ const durationDisplay = computed(() => {
   width: 6rpx;
   height: 12rpx;
   border-radius: var(--r-xs, 4rpx);
-  background: var(--c-brand-300, #7CD9A6);
+  background: var(--c-brand-300, #6FD4AA);
   transition: height var(--d-fast, 120ms) ease, background var(--d-normal, 200ms) ease;
 }
 

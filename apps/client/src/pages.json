@@ -34,12 +34,18 @@
   },
   "globalStyle": {
     "navigationStyle": "custom",
-    "backgroundColor": "#f8fafc",
+    "backgroundColor": "#F7FAF9",
     "backgroundTextStyle": "dark"
   },
   "pages": [
     {
       "path": "pages/discover/index"
+    },
+    {
+      "path": "pages/discover/matching"
+    },
+    {
+      "path": "pages/discover/match-success"
     },
     {
       "path": "pages/login/index"
@@ -48,11 +54,20 @@
       "path": "pages/home/index"
     },
     {
-      "path": "pages/discover/history"
+      "path": "pages/home/segment"
     },
     {
-      "path": "pages/discover/video-player"
+      "path": "pages/nearby/index",
+      "style": { "enablePullDownRefresh": true }
     },
+    {
+      "path": "pages/nearby/people",
+      "style": { "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/discover/history"
+    },
+
     {
       "path": "pages/likes/index",
       "style": { "enablePullDownRefresh": true }
@@ -108,6 +123,9 @@
     },
 
     {
+      "path": "pages/campus/hub"
+    },
+    {
       "path": "pages/campus/index"
     },
     {
@@ -158,6 +176,7 @@
     {
       "path": "pages/profile/tasks"
     },
+
     {
       "path": "pages/settings/dnd"
     },
@@ -192,6 +211,9 @@
         },
         {
           "path": "recommend-pref/index"
+        },
+        {
+          "path": "interest/index"
         },
         /* 2026-08-10 主包减负迁移：dev 调试页仅 DEV 构建注册（#ifdef DEV） */
         // #ifdef DEV
@@ -297,51 +319,55 @@
       "network": "all",
       "packages": ["subpackages/discover"]
     },
+    "pages/home/index": {
+      "network": "all",
+      "packages": ["subpackages/discover", "subpackages/setup"]
+    },
+    "pages/nearby/index": {
+      "network": "all",
+      "packages": ["subpackages/discover"]
+    },
     "pages/profile/index": {
       "network": "all",
       "packages": ["subpackages/setup", "subpackages/vip", "subpackages/market"]
-    },
-    "pages/village/index": {
-      "network": "all",
-      "packages": ["subpackages/support"]
     }
   },
   // TabBar list 配置必须与 src/config/navigation.ts 中的 appTabs 保持一致
   "tabBar": {
     "custom": true,
-    "color": "#94A3B8",
-    "selectedColor": "#3FCF8E",
+    "color": "#8A9694",
+    "selectedColor": "#34C98A",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
       {
         "pagePath": "pages/home/index",
         "text": "首页",
-        "iconPath": "static/assets/icons/tabbar/home-default.png",
+        "iconPath": "static/assets/icons/tabbar/home.png",
         "selectedIconPath": "static/assets/icons/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/discover/index",
-        "text": "匹配",
-        "iconPath": "static/assets/icons/tabbar/discover-default.png",
-        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
+        "pagePath": "pages/nearby/index",
+        "text": "附近",
+        "iconPath": "static/assets/icons/tabbar/nearby.png",
+        "selectedIconPath": "static/assets/icons/tabbar/nearby-active.png"
       },
       {
-        "pagePath": "pages/village/index",
-        "text": "圈子",
-        "iconPath": "static/assets/icons/tabbar/village-default.png",
-        "selectedIconPath": "static/assets/icons/tabbar/village-active.png"
+        "pagePath": "pages/discover/index",
+        "text": "寻觅",
+        "iconPath": "static/assets/icons/tabbar/match-heart.png",
+        "selectedIconPath": "static/assets/icons/tabbar/match-heart-active.png"
       },
       {
         "pagePath": "pages/messages/index",
         "text": "消息",
-        "iconPath": "static/assets/icons/tabbar/chat-default.png",
+        "iconPath": "static/assets/icons/tabbar/chat.png",
         "selectedIconPath": "static/assets/icons/tabbar/chat-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "static/assets/icons/tabbar/profile-default.png",
+        "iconPath": "static/assets/icons/tabbar/profile.png",
         "selectedIconPath": "static/assets/icons/tabbar/profile-active.png"
       }
     ]

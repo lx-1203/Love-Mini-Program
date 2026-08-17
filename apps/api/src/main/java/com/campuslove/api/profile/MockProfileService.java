@@ -414,7 +414,6 @@ public class MockProfileService implements ProfileService {
         p.futurePlanTags(),
         p.photoGallery(),
         p.halfBodyPhotoUrl(),
-        p.personalVideoUrl(),
         p.profileBackgroundUrl(),
         completion,
         resolveBadgeLevel(),

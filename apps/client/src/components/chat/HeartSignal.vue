@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
@@ -93,11 +93,11 @@ defineExpose({ ariaLabel });
 @keyframes heart-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 var(--c-brand-shadow-tint-strong, rgba(63, 207, 142, 0.3));
+    box-shadow: 0 0 0 0 var(--c-brand-shadow-tint-strong, rgba(61, 201, 148, 0.3));
   }
   50% {
     transform: scale(1.06);
-    box-shadow: 0 0 0 12rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0));
+    box-shadow: 0 0 0 12rpx var(--c-brand-bg-tint, rgba(61, 201, 148, 0));
   }
 }
 

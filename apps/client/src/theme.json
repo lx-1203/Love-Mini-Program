@@ -5,7 +5,7 @@
     "tabBgColor": "#ffffff",
     "tabBorderColor": "#e2e8f0",
     "tabFontColor": "#94a3b8",
-    "tabSelectedColor": "#3FCF8E",
+    "tabSelectedColor": "#34C98A",
     "pageBgColor": "#f4f6fa",
     "textPrimary": "#1f2329",
     "textSecondary": "#5b6470"
@@ -16,7 +16,7 @@
     "tabBgColor": "#1a1f26",
     "tabBorderColor": "#222831",
     "tabFontColor": "#5a6270",
-    "tabSelectedColor": "#3FCF8E",
+    "tabSelectedColor": "#34C98A",
     "pageBgColor": "#0e1116",
     "textPrimary": "#f0f2f5",
     "textSecondary": "#b8bec8"

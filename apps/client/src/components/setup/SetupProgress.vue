@@ -288,23 +288,23 @@ const currentStepLabel = computed(() => {
 .setup-progress__dot--completed {
   background: var(--c-brand);
   border-color: var(--c-brand);
-  box-shadow: var(--s-brand-sm, 0 2rpx 8rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.25)));
+  box-shadow: var(--s-brand-sm, 0 2rpx 8rpx var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.25)));
 }
 
 /* 当前状态：品牌色边框 + 脉冲动画 */
 .setup-progress__dot--current {
   background: var(--c-bg-brand);
   border-color: var(--c-brand);
-  box-shadow: 0 0 0 6rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.18));
+  box-shadow: 0 0 0 6rpx var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.18));
   animation: setup-progress-pulse var(--d-particle, 1600ms) ease-in-out infinite;
 }
 
 @keyframes setup-progress-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 6rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.18));
+    box-shadow: 0 0 0 6rpx var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.18));
   }
   50% {
-    box-shadow: 0 0 0 12rpx var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.08));
+    box-shadow: 0 0 0 12rpx var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.08));
   }
 }
 

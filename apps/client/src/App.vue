@@ -1,9 +1,13 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
+// 启动期预加载头像框注册表：AvatarFrame 为懒加载组件，运行时 require(config/avatar-frames)
+// 若不在此处注册，mp-weixin 会报 module 'config/avatar-frames.js' is not defined
+import { AVATAR_FRAMES } from "./config/avatar-frames";
+void AVATAR_FRAMES; // 启动期强制引用，确保该模块进入 mp-weixin 主包模块注册表
 import { useUnlockGuideStore } from "./stores/unlock-guide";
 // B6：后台配置即时生效——维护模式遮罩 + 切前台按 TTL 刷新配置
 import { useAppConfigStore } from "./stores/app-config";
@@ -727,16 +731,16 @@ textarea:focus-visible,
 button:focus-visible,
 view:focus-visible {
   outline: none;
-  border-color: var(--c-brand, #3FCF8E);
-  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0.12));
+  border-color: var(--c-brand, #36C99A);
+  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(61, 201, 148, 0.12));
 }
 
 /* mp-weixin / 触控端：保留原 :focus 行为（无 outline，仅 box-shadow） */
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--c-brand, #3FCF8E);
-  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(63, 207, 142, 0.12));
+  border-color: var(--c-brand, #36C99A);
+  box-shadow: 0 0 0 4rpx var(--c-brand-bg-tint, rgba(61, 201, 148, 0.12));
 }
 
 /* 高对比度模式：强制显示焦点环（a11y 增强） */
@@ -745,7 +749,7 @@ textarea:focus {
   textarea:focus,
   button:focus,
   view:focus {
-    outline: 2rpx solid var(--c-brand, #3FCF8E) !important;
+    outline: 2rpx solid var(--c-brand, #36C99A) !important;
     outline-offset: 2rpx;
   }
 }
@@ -774,14 +778,14 @@ textarea:focus {
    ================================================================ */
 /* #ifdef H5 */
 body {
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 #app {
   max-width: 750px;
   margin: 0 auto;
   min-height: 100vh;
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
   /* H5 限宽容器阴影：对齐 --c-elevation-2 token（ui-ux-review #5：消除裸阴影值） */
   box-shadow: var(--c-elevation-2, 0 4rpx 16rpx rgba(15, 23, 42, 0.08));
 }

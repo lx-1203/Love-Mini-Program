@@ -344,7 +344,7 @@ onUnmounted(() => {
   width: 8rpx;
   height: 24rpx;
   border-radius: var(--r-xs, 4rpx);
-  background: var(--c-brand-500, #3FCF8E);
+  background: var(--c-brand-500, #36C99A);
   animation: voice-wave var(--d-slowest, 600ms) ease-in-out infinite alternate;
 }
 
@@ -388,8 +388,8 @@ onUnmounted(() => {
 }
 
 .voice-recorder__btn--recording {
-  background: var(--c-brand-50, rgba(63, 207, 142, 0.08));
-  border-color: var(--c-brand-500, #3FCF8E);
+  background: var(--c-brand-50, rgba(61, 201, 148, 0.08));
+  border-color: var(--c-brand-500, #36C99A);
 }
 
 .voice-recorder__btn--cancel {
@@ -409,7 +409,7 @@ onUnmounted(() => {
 }
 
 .voice-recorder__btn--recording .voice-recorder__btn-text {
-  color: var(--c-brand-700, #1D8A5A);
+  color: var(--c-brand-700, #12805A);
 }
 
 .voice-recorder__btn--cancel .voice-recorder__btn-text {

@@ -14,8 +14,11 @@ import { computed, ref, nextTick, watch, getCurrentInstance } from "vue";
 import { onLoad, onShow, onHide, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import ChatBubble from "../../components/chat/ChatBubble.vue";
+import ChatHeader from "../../components/chat/ChatHeader.vue";
 import ActivityCard, { type ActivityCardData } from "../../components/chat/ActivityCard.vue";
 import MatchGreetingTip from "../../components/chat/MatchGreetingTip.vue";
+import BreakQuestion from "../../components/chat/BreakQuestion.vue";
+import { toBreakQuestionItems } from "../../view-models/chat";
 import EmojiPanel from "../../components/chat/EmojiPanel.vue";
 import { useMessagesStore, type MessageItem } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
@@ -38,7 +41,9 @@ import { resolveMediaUrl, chooseImages } from "../../utils/media";
 import { wsClient } from "../../services/websocket";
 import { clientApi, type UniUploadFileLike } from "../../services/api";
 import { request } from "../../services/http";
-import type { OnlineStatusView } from "../../services/generated/api-types-supplement";
+// 2026-08-15：对方在线状态改用统一批量端点 POST /users/online-status/batch（P0-05），
+// 替代已废弃的 GET /online-status（后端无此端点，real 模式 404）
+import { fetchOnlineStatusApi } from "../../stores/discover/api";
 // Sentry 监控：消息发送失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
 // 修复 no-duplicate-imports：合并 ./types 的重复 import
@@ -154,6 +159,11 @@ const matchGreetingButtons = computed(() => {
   const fallback = [t("chat.matchGreeting.buttonFallback1"), t("chat.matchGreeting.buttonFallback2")];
   return items.length >= 2 ? items : [...items, ...fallback].slice(0, 2);
 });
+
+/** 聊天输入区上方破冰卡片：共同喜欢 + 推荐开场 */
+const breakQuestionItems = computed(() =>
+  toBreakQuestionItems(chatStore.icebreakerItems)
+);
 
 /* ========== Phase Feedback3 P2.4：缘分速配渐进解锁 ==========
  *
@@ -363,9 +373,9 @@ function onScrollToUpper() {
 /** 查询消息滚动区内容高度（Promise 包装 createSelectorQuery） */
 function queryScrollHeight(): Promise<number> {
   return new Promise((resolve) => {
-    uni
-      .createSelectorQuery()
-      .in(getCurrentInstance())
+    const instance = getCurrentInstance();
+    const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
+    query
       .select(".chat-scroll")
       .fields({ size: true }, (res) => {
         // res 可能为 null / NodeInfo / NodeInfo[]，取 scrollHeight 数值
@@ -379,9 +389,9 @@ function queryScrollHeight(): Promise<number> {
 /** 查询消息滚动区视口高度（与 queryScrollHeight 同款，2026-08-09 新增：nearBottom 计算用） */
 function queryScrollViewportHeight(): Promise<number> {
   return new Promise((resolve) => {
-    uni
-      .createSelectorQuery()
-      .in(getCurrentInstance())
+    const instance = getCurrentInstance();
+    const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
+    query
       .select(".chat-scroll")
       .fields({ size: true }, (res) => {
         const info = Array.isArray(res) ? res[0] : res;
@@ -738,18 +748,19 @@ const pageTitle = computed(() => {
 
 /* ========== 顶部导航：对方状态文字 + 「···」更多菜单（2026-08-09 微信化重构） ========== */
 
-/** 2026-08-10 功能补齐：对方真实在线状态（GET /online-status?userIds= 批量接口） */
+/** 2026-08-15 修复：对方真实在线状态（POST /users/online-status/batch 批量接口） */
 const peerOnlineStatus = ref<"online" | "away" | "offline" | null>(null);
 
-/** 拉取对方在线状态（失败静默，保持默认展示） */
+/**
+ * 拉取对方在线状态（失败静默，保持默认展示）。
+ * 2026-08-15：废弃 GET /online-status?userIds=（后端无此端点，real 模式 404），
+ * 改用 POST /users/online-status/batch（fetchOnlineStatusApi 已封装解包）。
+ */
 async function loadPeerOnlineStatus(): Promise<void> {
   const peerId = resolvePeerUserId();
   if (!peerId) return;
   try {
-    const data = await request<OnlineStatusView[]>({
-      url: `/online-status?userIds=${encodeURIComponent(String(peerId))}`,
-      method: "GET",
-    });
+    const data = await fetchOnlineStatusApi([String(peerId)]);
     const item = data?.[0];
     if (item) {
       peerOnlineStatus.value =
@@ -762,25 +773,12 @@ async function loadPeerOnlineStatus(): Promise<void> {
 }
 
 /**
- * 对方在线状态文字（微信：昵称下方 12px 灰字）。
- * - mock 模式：按 sessionId 哈希取「在线/刚刚活跃/离线」三态（演示用）；
- * - real 模式：GET /online-status 真实数据，未取到/非私信会话回退「刚刚活跃」。
- */
-const peerStatusText = computed(() => {
-  if (!isPrivateSession.value) return ""; // 临时会话沿用 temp-banner，不展示状态文字
-  if (useMock()) {
-    const seed = (sessionId.value ?? "").split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    const mod = seed % 3;
-    return mod === 0 ? t("chat.statusOnline") : mod === 1 ? t("chat.statusActive") : t("chat.statusOffline");
-  }
-  if (peerOnlineStatus.value) {
-    return peerOnlineStatus.value === "online"
-      ? t("chat.statusOnline")
-      : peerOnlineStatus.value === "away"
-        ? t("chat.statusActive")
-        : t("chat.statusOffline");
-  }
-  return t("chat.statusActive");
+
+/** 认识天数（来自关系信息；无关系时按 1 天兜底） */
+const relationDays = computed(() => {
+  if (!sessionId.value) return 1;
+  const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
+  return session?.relationship?.relationDays ?? 1;
 });
 
 /** 顶部「···」菜单是否展开 */
@@ -1069,6 +1067,14 @@ function onInputBlur() {
 /** 微信风格输入栏：发送按钮点击（委托给 sendText） */
 async function onSend() {
   await sendText();
+}
+
+/** 点击破冰开场：填入草稿并直接发送 */
+function handleBreakQuestionSend(text: string) {
+  const value = (text || "").trim();
+  if (!value || isSessionClosed.value) return;
+  draft.value = value;
+  void sendText();
 }
 
 /** 键盘高度变化：动态调整输入栏 padding-bottom（mp-weixin 适用） */
@@ -1549,35 +1555,14 @@ defineExpose({ noop });
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
-    <!-- 顶部导航（2026-08-09 微信 1:1：返回箭头 + 两行标题（昵称/状态）+ 「···」更多） -->
-    <view class="chat-nav" role="banner" :aria-label="pageTitle">
-      <view
-        class="chat-nav__back press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        @tap="goBack"
-        role="button"
-        :aria-label="t('common.back')"
-      >
-        <image class="chat-nav__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
-      </view>
-      <view class="chat-nav__title-wrap">
-        <text class="chat-nav__title">{{ pageTitle }}</text>
-        <!-- 微信：昵称下方 12px 灰色状态文字（仅私信会话，temp 会话沿用 temp-banner） -->
-        <text v-if="peerStatusText" class="chat-nav__status">{{ peerStatusText }}</text>
-      </view>
-      <!-- 微信：右侧「···」更多按钮（查看主页/免打扰/拉黑/举报） -->
-      <view
-        class="chat-nav__more press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        @tap="openNavMenu"
-        role="button"
-        :aria-label="t('chat.nav.moreAria')"
-      >
-        <text class="chat-nav__more-text">···</text>
-      </view>
-    </view>
+    <ChatHeader
+      :avatar="peerAvatarSrc"
+      :nickname="pageTitle"
+      :online="peerOnlineStatus === 'online'"
+      :relation-days="relationDays"
+      @back="goBack"
+      @more="openNavMenu"
+    />
 
     <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处） -->
     <view v-if="isTempSession" class="temp-banner">
@@ -1747,6 +1732,13 @@ defineExpose({ noop });
           <image class="quote-reply-bar__close" :src="iconSrc.close" mode="aspectFit" alt="" />
         </view>
 
+        <BreakQuestion
+          v-if="showMatchGreeting && breakQuestionItems.length > 0"
+          :items="breakQuestionItems"
+          :loading="chatStore.loadingIcebreakers"
+          @send="handleBreakQuestionSend"
+        />
+
         <!-- 微信风格输入栏（2026-08-09 微信 1:1：表情按钮 + "+" + 输入框 + 常显发送按钮） -->
         <view
           class="wechat-input-bar"
@@ -1795,7 +1787,7 @@ defineExpose({ noop });
             hover-stay-time="120"
             @tap="onSend"
           >
-            <text class="wechat-input-bar__send-text">{{ t('chat.send') }}</text>
+            <image class="wechat-input-bar__send-img" :src="IMAGE_PATHS.MESSAGE_ICONS.SEND_HEART" mode="aspectFit" alt="" />
           </view>
         </view>
 
@@ -2483,9 +2475,10 @@ defineExpose({ noop });
 
 .wechat-input-bar__send {
   background: var(--c-brand);
-  padding: 0 var(--sp-6);
-  border-radius: var(--r-md);
-  height: 64rpx;
+  padding: 0;
+  border-radius: 50%;
+  width: 96rpx;
+  height: 96rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2855,7 +2848,7 @@ defineExpose({ noop });
 
 .unread-hint__text {
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-brand-500, #3FCF8E);
+  color: var(--c-brand-500, #36C99A);
   font-weight: 600;
 }
 
@@ -2991,7 +2984,14 @@ defineExpose({ noop });
 /* 「+」菜单：图片占位入口（品牌绿图标） */
 .more-menu-item__icon--green {
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
-  box-shadow: var(--s-brand-sm, 0 4rpx 12rpx rgba(63, 207, 142, 0.35));
+  box-shadow: var(--s-brand-sm, 0 4rpx 12rpx rgba(61, 201, 148, 0.35));
 }
 
 </style>
+
+
+
+
+
+
+

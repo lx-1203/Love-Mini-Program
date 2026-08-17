@@ -34,6 +34,12 @@ export const useHomeStore = defineStore("home", () => {
   /** 讨论热度（同上，类型定义宽松，运行时通过 Array.isArray 守卫） */
   const discussionHeat = ref<unknown[]>([]);
 
+  /** 匹配中心聚合（legacy） */
+  const matchCenter = ref<HomeDashboard["matchCenter"] | null>(null);
+
+  /** 首页 Feed 聚合（寻觅 v3：今日恋爱首页） */
+  const homeFeed = ref<HomeDashboard["homeFeed"] | null>(null);
+
   // ==================== Actions ====================
   /**
    * 加载首页 Dashboard 数据。
@@ -67,6 +73,8 @@ export const useHomeStore = defineStore("home", () => {
       const discussionHeatRaw: unknown = data.discussionHeat;
       activityPreview.value = Array.isArray(activityPreviewRaw) ? activityPreviewRaw : [];
       discussionHeat.value = Array.isArray(discussionHeatRaw) ? discussionHeatRaw : [];
+      matchCenter.value = data.matchCenter ?? null;
+      homeFeed.value = data.homeFeed ?? null;
     } catch (error: unknown) {
       // 修复：旧请求的错误不更新 errorMessage
       if (token !== fetchDashboardToken) return;
@@ -81,6 +89,13 @@ export const useHomeStore = defineStore("home", () => {
     }
   }
 
+  async function rotateTodayRecommendation() {
+    if (!homeFeed.value) return null;
+    const next = await clientApi.rotateTodayRecommendation();
+    homeFeed.value = { ...homeFeed.value, todayRecommendation: next };
+    return next;
+  }
+
   return {
     // State
     dashboard,
@@ -92,6 +107,10 @@ export const useHomeStore = defineStore("home", () => {
     aiPlan,
     activityPreview,
     discussionHeat,
+    matchCenter,
+    homeFeed,
+    // Actions
+    rotateTodayRecommendation,
     // Actions
     fetchDashboard,
   };

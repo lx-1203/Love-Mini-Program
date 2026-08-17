@@ -50,6 +50,10 @@ public class UserBasicProfile {
     @Column(name = "pronouns", nullable = false, length = 32)
     private String pronouns;
 
+    /** 性别（male/female），可空 */
+    @Column(name = "gender", length = 16)
+    private String gender;
+
     /** 兴趣标签列表（JSON数组格式，如 ["摄影","篮球","阅读"]，默认空数组） */
     @Column(name = "interest_tags", columnDefinition = "JSON DEFAULT '[]'")
     private String interestTags = "[]";
@@ -235,6 +239,14 @@ public class UserBasicProfile {
 
     public String getPronouns() {
         return pronouns;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public void setPronouns(String pronouns) {

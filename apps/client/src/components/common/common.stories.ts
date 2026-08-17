@@ -407,7 +407,7 @@ export const RippleStory: StoryObj<typeof Ripple> = {
     color: { control: 'color', description: '涟漪颜色' },
     duration: { control: 'number', description: '动画时长（ms）' },
   },
-  args: { color: '#FF6B9D', duration: 600 },
+  args: { color: '#FF6B81', duration: 600 },
 };
 
 // ============ ShareCard ============

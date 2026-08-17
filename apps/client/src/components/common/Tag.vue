@@ -108,7 +108,7 @@ const tagClass = computed(() => [
 .tag--romance {
   background: var(--c-romance-50);
   color: var(--c-romance-500);
-  border-color: var(--c-romance-border-tint, var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(236, 72, 153, 0.22))));
+  border-color: var(--c-romance-border-tint, var(--c-romance-border-tint, var(--c-romance-border-tint, rgba(255, 104, 145, 0.22))));
 }
 .tag--romance.tag--selected {
   background: var(--c-gradient-romance);

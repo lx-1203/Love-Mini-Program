@@ -385,7 +385,7 @@ export const useCampusStore = defineStore("campus", {
      * 修复（P1 BUG）：新增竞态 token——快速切换分类/翻页时，旧请求返回后
      * 不再覆盖新请求结果（旧请求的响应被静默丢弃）。
      */
-    async fetchCampusTopics(category?: CampusTopicCategory, page = 1) {
+    async fetchCampusTopics(category?: CampusTopicCategory, page = 1, school?: string) {
       // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
       const token = ++fetchCampusTopicsToken;
       this.loading = true;
@@ -396,6 +396,13 @@ export const useCampusStore = defineStore("campus", {
         if (useMock()) {
           // 修复：旧请求返回时不再修改状态
           if (token !== fetchCampusTopicsToken) return;
+          // v3 Nearby 冻结：mock 下查看非本校（非北京大学）公开内容返回空
+          if (school && school !== "北京大学") {
+            if (page === 1) { this.topics = []; }
+            this.topicPage = page;
+            this.topicHasMore = false;
+            return;
+          }
           const filtered = mockTopics.filter((t) => t.category === targetCategory);
           if (page === 1) {
             this.topics = [...filtered];
@@ -409,7 +416,7 @@ export const useCampusStore = defineStore("campus", {
 
         // 调用后端 API: GET /api/campus/topics?category={category}&page={page}&size={size}
         const data = await request<{ content: BackendCampusTopicView[]; totalElements: number; number: number; size: number }>({
-          url: `/campus/topics?category=${encodeURIComponent(targetCategory)}&page=${page - 1}&size=${TOPIC_PAGE_SIZE}`,
+          url: `/campus/topics?category=${encodeURIComponent(targetCategory)}&page=${page - 1}&size=${TOPIC_PAGE_SIZE}${school ? `&school=${encodeURIComponent(school)}` : ""}`,
           method: "GET",
         });
 

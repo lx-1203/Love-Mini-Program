@@ -386,8 +386,8 @@ function ageLabel(age: number): string {
 }
 
 .quick-filter-radio__item--active .quick-filter-radio__dot {
-  border-color: var(--c-brand-500, #3fcf8e);
-  background: radial-gradient(circle, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-500, #3fcf8e) 35%, transparent 40%);
+  border-color: var(--c-brand-500, #36C99A);
+  background: radial-gradient(circle, var(--c-brand-500, #36C99A) 0%, var(--c-brand-500, #36C99A) 35%, transparent 40%);
 }
 
 .quick-filter-radio__text {

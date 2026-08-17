@@ -41,6 +41,15 @@ export interface AdminUserDetail {
   verificationStatus: "draft" | "pending" | "verified" | "rejected" | null;
   createdAt: string;
   updatedAt: string;
+  interestTags: string[];
+  photoGallery: string[];
+  profileBackgroundUrl: string | null;
+  halfBodyPhotoUrl: string | null;
+  height: number | null;
+  educationLevel: string | null;
+  relationshipStatus: string | null;
+  birthYear: number | null;
+  expectedPartner: string | null;
 }
 
 /** 编辑用户请求体（对应后端 AdminUserUpdateRequest） */
@@ -50,6 +59,12 @@ export interface AdminUserUpdateRequest {
   gradeLabel?: string;
   pronouns?: string;
   status?: "active" | "disabled";
+  interestTags?: string[];
+  height?: number;
+  educationLevel?: string;
+  relationshipStatus?: string;
+  birthYear?: number;
+  expectedPartner?: string;
 }
 
 /** 用户列表查询参数 */
@@ -131,3 +146,39 @@ export function updateUser(
  * 统一实现见 system.ts disableAdmin（同一端点，R4-00518 收敛一套封装）。
  */
 export { disableAdmin as disableUser, enableAdmin as enableUser } from "./system";
+
+/** 兴趣标签字典项（对应后端 AdminInterestTagController.InterestTagView） */
+export interface InterestTagOption {
+  id: number;
+  groupKey: string | null;
+  name: string;
+  enabled: boolean;
+  sortOrder: number | null;
+  category: string | null;
+  icon: string | null;
+  recommendWeight: number | null;
+}
+
+/**
+ * 兴趣标签字典列表。
+ * GET /api/v1/admin/interest-tags
+ */
+export function listInterestTags(): Promise<InterestTagOption[]> {
+  return get<InterestTagOption[]>("/v1/admin/interest-tags");
+}
+
+/**
+ * 查询用户已选标签 ID。
+ * GET /api/v1/admin/users/{id}/interest-tags
+ */
+export function getUserInterestTagIds(id: number): Promise<number[]> {
+  return get<number[]>(`/v1/admin/users/${id}/interest-tags`);
+}
+
+/**
+ * 保存用户标签关系。
+ * PUT /api/v1/admin/users/{id}/interest-tags
+ */
+export function saveUserInterestTags(id: number, tagIds: number[]): Promise<number[]> {
+  return put<number[]>(`/v1/admin/users/${id}/interest-tags`, tagIds);
+}

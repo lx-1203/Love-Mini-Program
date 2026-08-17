@@ -6,6 +6,42 @@
 > 配套文档：`docs/CI-CD.md`、`docs/release-checklist.md`、`docs/GRADUAL-RELEASE.md`
 
 ---
+## [v3.1 设计契约重构] - 2026-08-14
+
+### 新增
+- 发现聚合页：筛选 chips + 快捷入口（在线/同校/同兴趣/附近/新加入/高匹配 → pages/home/segment）+ 认证引导 + CardSwiper + 细分列表 + 活动横滑 + 帖子推荐。
+- 匹配中心（Intent）：绿 Hero 开始匹配 + 今日剩余/已喜欢 + 🟢 在线速配 + 关系进度；匹配中（视觉进度）→ 匹配成功（双头像/共同 tags/发消息/继续探索）。
+- 悄悄话（付费留言）：whisper_message 表 + /whispers/send|inbox|sent|{id}/read，幂等 clientRequestId、A↔B 唯一、发送者每日 ≤5、扣费同事务失败自动退款；消息页悄悄话分组；卡片 ☆ 入口；他人主页入口；Admin 悄悄话管理。
+- 人物素材：素材/人物 9 张 → WebP 4:5 卡片 + 头像，mock fixtures 固定映射。
+- 兴趣选择页（subpackages/setup/interest，≥3 保存）。
+- 搜索分组：用户 / 标签 / 学校（校园主页内联预览）。
+
+### 变更
+- Token v3.1：Primary #34C98A、Love #FF6FA3、主文字 #333333、次文字 #8A9694、分隔线 #E8EEEE、brand-600 #22A976、状态 Token、兴趣标签三色；tabBar PNG 三态重导。
+- 附近的人：CardSwiper → 距离排序列表（操作进他人主页）。
+- 他人主页：单列 + CTA 状态机（喜欢 TA / 已送出心动 / 发消息）+ 悄悄话入口 + 关注入「更多」。
+- 我的主页：核心数据（匹配/我喜欢/获赞）+ 菜单列表（我的资料/兴趣偏好/我的动态/每日签到/隐私与安全）；移除心动值/稍后看/成就/VIP 首屏块。
+- 收藏（稍后看）下线，pages/profile/saved 删除；后端 recommendations 新增 onlineOnly 过滤。
+
+
+## [v2 纯匹配重构] - 2026-08-14
+
+### 新增
+- 图标资源：freesvglab flat-icon 自动下载脚本（`scripts/download-freesvglab-icons.mjs`）+ 素材复用，tabBar PNG 三态重建。
+- 附近页兴趣圈帖子流：PostCard + 粉底「认识 TA」+「分享一下今天」发帖入口。
+- 我的主页：心动值卡（前端派生）+ 稍后看入口（收藏=关注，新增 `pages/profile/saved`）。
+- 消息页：新匹配分组（互相喜欢优先打招呼）。
+
+### 变更
+- Token 升级至 v2（背景 #F7F9F8、品牌绿 #34C98F、深绿 #159C6C、心动粉 #F35C9D、消息蓝 #4D8DFF、主文字 #20242A、次文字 #7A838D、线 #E9EDF0）。
+- CardSwiper 新增 `starAction: "superLike" | "favorite"` 与 `showWhisper` prop（附近页三动作 ❤️/☆/×）。
+- 首页收敛：移除功能宫格/Banner/课表/社交进度，保留问候→搜索→小签到→今日心动推荐→校园入口。
+- 他人主页：深色 Hero + 你们的共同点置顶 + 更多资料折叠 + 底部「喜欢 TA / 聊天」双 CTA。
+- 客户端 API 新增 follow/unfollow/getMyFollowing/isFollowing/likeUser（收藏·认识链路，后端已有接口零改动）。
+
+### 移除
+- 旧图标目录 `icons/match`、`tabbar/*.svg` 与根目录遗留 Tab 图标；旧色值残留清零。
+
 
 ## 变更类型说明
 

@@ -23,6 +23,7 @@ import { isDev } from "../../config/env";
 import { useThemeStore, type ThemeMode } from "../../stores/theme";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
+import { switchTabWithQuery } from "../../utils/navigation";
 
 /** 操作定时器集合，用于卸载时统一清理 */
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -53,6 +54,8 @@ interface MenuItem {
   value?: string;
   action?: () => void;
   path?: string;
+  /** TabBar 页面传参（switchTab 不支持 query，走 storage 桥接） */
+  tabQuery?: Record<string, string>;
 }
 
 /** 缓存大小（R4-00064：真实读取 uni.getStorageInfo 统计） */
@@ -324,29 +327,119 @@ const accountMenus = computed<MenuItem[]>(() => [
   },
 ]);
 
+/** 社交资产分组菜单项（2026-08-14：从主页收敛到设置页） */
+const socialMenus = computed<MenuItem[]>(() => [
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.taskCenter"),
+    path: ROUTES.PROFILE.TASKS,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.coinBalance"),
+    path: ROUTES.WALLET,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.myCircles"),
+    path: ROUTES.CIRCLES.INDEX,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    label: t("profile.loveLab"),
+    path: ROUTES.LOVE_CENTER.INDEX,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
+    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
+    label: t("profile.myPosts"),
+    path: "/pages/village/index",
+    tabQuery: { tab: "mine" } as Record<string, string> | undefined,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
+    bgColor: "var(--c-bg-brand, #E6F8F1)",
+    label: t("profile.visitors"),
+    path: "/pages/profile/visitors",
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.browseHistory"),
+    path: ROUTES.VILLAGE.HISTORY,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
+    label: t("profile.albumTitle"),
+    path: "/pages/profile/album",
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
+    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+    label: t("profile.verification"),
+    path: "/pages/verification/index",
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
+    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+    label: t("profile.scheduleSetting"),
+    path: "/subpackages/setup/schedule/index",
+  },
+]);
+
+/** 隐私安全分组菜单项（2026-08-14：从主页收敛到设置页） */
+const privacyMenus = computed<MenuItem[]>(() => [
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
+    bgColor: "var(--c-lavender-100, #EDE9FE)",
+    label: t("profile.privacyPermission"),
+    path: ROUTES.PROFILE.PRIVACY,
+  },
+  {
+    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
+    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    label: t("profile.safetyCenter"),
+    path: ROUTES.SECURITY,
+  },
+]);
+
+/** 推荐给好友（2026-08-14：从主页菜单迁入；复用微信分享菜单） */
+function shareFriend(): void {
+  lightHaptic();
+  uni.showShareMenu({
+    withShareTicket: true,
+    menus: ["shareAppMessage", "shareTimeline"],
+  });
+}
+
 /** 关于分组菜单项（使用 computed 以响应 locale 切换） */
 const aboutMenus = computed<MenuItem[]>(() => [
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "var(--c-bg-page, #F4F6FA)",
+    bgColor: "var(--c-bg-page, #F7FAF9)",
     label: t("settings.userAgreement"),
     action: viewUserAgreement,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "var(--c-bg-page, #F4F6FA)",
+    bgColor: "var(--c-bg-page, #F7FAF9)",
     label: t("settings.privacyPolicy"),
     action: viewPrivacyPolicy,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-bg-page, #F4F6FA)",
+    bgColor: "var(--c-bg-page, #F7FAF9)",
     label: t("settings.checkUpdate"),
     action: checkUpdate,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
-    bgColor: "var(--c-bg-page, #F4F6FA)",
+    bgColor: "var(--c-bg-page, #F7FAF9)",
     label: t("settings.aboutUs"),
     action: aboutUs,
   },
@@ -356,7 +449,12 @@ const aboutMenus = computed<MenuItem[]>(() => [
 function handleMenuTap(item: MenuItem) {
   lightHaptic();
   if (item.path) {
-    uni.navigateTo({ url: item.path });
+    if (item.tabQuery && Object.keys(item.tabQuery).length > 0) {
+      // TabBar 页面传参（switchTab 不支持 query，走 storage 桥接）
+      switchTabWithQuery(item.path, item.tabQuery);
+    } else {
+      uni.navigateTo({ url: item.path });
+    }
   } else if (item.action) {
     item.action();
   }
@@ -384,7 +482,7 @@ function handleMenuTap(item: MenuItem) {
       </view>
       <view class="menu-group">
         <view
-          class="menu-item press-feedback menu-item--no-border"
+          class="menu-item press-feedback"
           hover-class="menu-item--hover"
           hover-stay-time="100"
           role="button"
@@ -396,6 +494,23 @@ function handleMenuTap(item: MenuItem) {
               <image class="menu-item__emoji-img" :src="menuIcons.megaphone" mode="aspectFit" alt="" />
             </view>
             <text class="menu-item__label">{{ t('settings.feedbackHelp') }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
+        <!-- 2026-08-14：推荐给好友（从主页菜单迁入） -->
+        <view
+          class="menu-item press-feedback menu-item--no-border"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+          role="button"
+          :aria-label="t('profile.shareFriend')"
+          @tap="shareFriend"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon settings-card--cream">
+              <image class="menu-item__emoji-img" :src="IMAGE_PATHS.ICONS_PROFILE.SHARE" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ t('profile.shareFriend') }}</text>
           </view>
           <text class="menu-item__arrow">›</text>
         </view>
@@ -413,6 +528,32 @@ function handleMenuTap(item: MenuItem) {
           :key="index"
           class="menu-item press-feedback"
           :class="{ 'menu-item--no-border': index === accountMenus.length - 1 }"
+          @tap="handleMenuTap(item)"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon" :style="{ background: item.bgColor }">
+              <image class="menu-item__emoji-img" :src="item.icon" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ item.label }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 社交资产分组（2026-08-14：主页功能入口收敛到设置页） -->
+    <view class="section">
+      <view class="section__title">
+        <text class="section__title-text">{{ t('settings.socialAssetsSection') }}</text>
+      </view>
+      <view class="menu-group">
+        <view
+          v-for="(item, index) in socialMenus"
+          :key="index"
+          class="menu-item press-feedback"
+          :class="{ 'menu-item--no-border': index === socialMenus.length - 1 }"
           @tap="handleMenuTap(item)"
           hover-class="menu-item--hover"
           hover-stay-time="100"
@@ -459,7 +600,7 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <switch
             :checked="weeklyScheduleEnabled"
-            color="#3FCF8E"
+            color="#36C99A"
             @change="toggleWeeklySchedule"
             :aria-label="t('settings.weeklySchedule')"
           />
@@ -491,6 +632,22 @@ function handleMenuTap(item: MenuItem) {
         <text class="section__title-text">{{ t('settings.privacySection') }}</text>
       </view>
       <view class="menu-group">
+        <view
+          v-for="(item, index) in privacyMenus"
+          :key="index"
+          class="menu-item press-feedback"
+          @tap="handleMenuTap(item)"
+          hover-class="menu-item--hover"
+          hover-stay-time="100"
+        >
+          <view class="menu-item__left">
+            <view class="menu-item__icon" :style="{ background: item.bgColor }">
+              <image class="menu-item__emoji-img" :src="item.icon" mode="aspectFit" alt="" />
+            </view>
+            <text class="menu-item__label">{{ item.label }}</text>
+          </view>
+          <text class="menu-item__arrow">›</text>
+        </view>
         <view
           class="menu-item press-feedback menu-item--no-border"
           @tap="viewPrivacyPolicy"
@@ -608,14 +765,14 @@ function handleMenuTap(item: MenuItem) {
   border-radius: var(--r-circle, 50%);
 
   &--hover {
-    background: var(--c-bg-page, #F4F6FA);
+    background: var(--c-bg-page, #F7FAF9);
     transform: scale(0.94);
   }
 }
 
 .nav-bar__back-icon {
   font-size: var(--fs-7xl, 56rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   font-weight: 300;
   line-height: 1;
 }
@@ -623,7 +780,7 @@ function handleMenuTap(item: MenuItem) {
 .nav-bar__title {
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
 }
 
 .nav-bar__placeholder {
@@ -657,7 +814,7 @@ function handleMenuTap(item: MenuItem) {
 
 .section__title-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary, #666666);
   font-weight: 500;
 }
 
@@ -674,7 +831,7 @@ function handleMenuTap(item: MenuItem) {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #EEF0F4);
+  border-bottom: 1rpx solid var(--c-border-light, #ECEFF2);
   transition: all var(--d-fast, 120ms) ease;
 
   &--no-border {
@@ -709,7 +866,7 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .settings-card--page {
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 .settings-card--lavender {
@@ -719,12 +876,12 @@ function handleMenuTap(item: MenuItem) {
 .menu-item__emoji-img {
   width: 36rpx;
   height: 36rpx;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
 }
 
 .menu-item__label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   font-weight: 500;
 }
 

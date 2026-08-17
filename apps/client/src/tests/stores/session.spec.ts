@@ -117,7 +117,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
     const store = useSessionStore();
     store.userSession = makeSession({
       profileCompleted: true,
-      displayName: "星野",
+      displayName: "林晓",
       campusName: "北京大学",
     });
     expect(store.profileCompletion).toBe(100);
@@ -142,7 +142,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
     const store = useSessionStore();
     store.userSession = makeSession({
       profileCompleted: false,
-      displayName: "星野",
+      displayName: "林晓",
       campusName: "北京大学",
     });
     expect(store.profileCompletion).toBe(30);
@@ -152,7 +152,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
     const store = useSessionStore();
     store.userSession = makeSession({
       profileCompleted: false,
-      displayName: "星野",
+      displayName: "林晓",
       campusName: null,
     });
     expect(store.profileCompletion).toBe(10);
@@ -204,7 +204,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
     const store = useSessionStore();
     store.userSession = makeSession({
       profileCompleted: false,
-      displayName: "星野",
+      displayName: "林晓",
       campusName: "",
     });
     // 仅昵称完成：10
@@ -254,8 +254,8 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
     // 各种状态组合
     const cases: Array<{ profileCompleted: boolean; displayName: string; campusName: string | null }> = [
       { profileCompleted: false, displayName: "", campusName: null },
-      { profileCompleted: true, displayName: "星野", campusName: "北京大学" },
-      { profileCompleted: false, displayName: "星野", campusName: "北京大学" },
+      { profileCompleted: true, displayName: "林晓", campusName: "北京大学" },
+      { profileCompleted: false, displayName: "林晓", campusName: "北京大学" },
       { profileCompleted: true, displayName: "", campusName: null },
     ];
     for (const c of cases) {
@@ -269,7 +269,7 @@ describe("session store - profileCompletion 加权平均算法（SubTask 1.4.2�
 describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复）", () => {
   const guestSession = makeSession({
     userId: "user-1001",
-    displayName: "体验用户",
+    displayName: "林晓",
     profileCompleted: true,
     campusVerified: true,
     scheduleCompleted: true,

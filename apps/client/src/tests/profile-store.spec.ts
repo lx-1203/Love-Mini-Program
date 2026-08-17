@@ -30,7 +30,7 @@ describe("profile store", () => {
       userId: "user-1",
       loggedIn: true,
       loginMethod: "wechat",
-      displayName: "星野",
+      displayName: "林晓",
       phoneBound: false,
       profileCompleted: false,
       campusVerified: false,
@@ -111,6 +111,6 @@ describe("profile store", () => {
   it("mock 模式下 load() 提供本地头像 avatarUrl", async () => {
     const store = useProfileStore();
     await store.load();
-    expect(store.avatarUrl).toContain("/static/assets/images/avatars/avatar-8.jpg");
+    expect(store.avatarUrl).toContain("/static/assets/images/avatars/person-01-avatar.webp");
   });
 });

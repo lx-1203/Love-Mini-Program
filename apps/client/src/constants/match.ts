@@ -82,6 +82,9 @@ export const NEXT_CARD_OPACITY_DRAGGING = 0.8;
 /** 下一张卡片在静止状态下的不透明度 */
 export const NEXT_CARD_OPACITY_STATIC = 0.58;
 
+/** 匹配度强调阈值（>= 此值展示「高匹配」强调文案） */
+export const MATCH_HIGH_THRESHOLD = 85;
+
 /** 默认匹配度分数（无卡片数据时的兜底值） */
 export const DEFAULT_MATCH_SCORE = 95;
 

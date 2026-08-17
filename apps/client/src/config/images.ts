@@ -38,6 +38,28 @@ export const IMAGE_PATHS = {
     DEFAULT: STATIC_BASE + '/default-avatar.jpg',
   },
 
+  /** v3.1 人物素材（素材/人物 9 张，docs/design/people-fixture.json 映射） */
+  PEOPLE: {
+    CARD_1: IMAGES + '/people/person-01.webp',
+    CARD_2: IMAGES + '/people/person-02.webp',
+    CARD_3: IMAGES + '/people/person-03.webp',
+    CARD_4: IMAGES + '/people/person-04.webp',
+    CARD_5: IMAGES + '/people/person-05.webp',
+    CARD_6: IMAGES + '/people/person-06.webp',
+    CARD_7: IMAGES + '/people/person-07.webp',
+    CARD_8: IMAGES + '/people/person-08.webp',
+    CARD_9: IMAGES + '/people/person-09.webp',
+    AVATAR_1: IMAGES + '/avatars/person-01-avatar.webp',
+    AVATAR_2: IMAGES + '/avatars/person-02-avatar.webp',
+    AVATAR_3: IMAGES + '/avatars/person-03-avatar.webp',
+    AVATAR_4: IMAGES + '/avatars/person-04-avatar.webp',
+    AVATAR_5: IMAGES + '/avatars/person-05-avatar.webp',
+    AVATAR_6: IMAGES + '/avatars/person-06-avatar.webp',
+    AVATAR_7: IMAGES + '/avatars/person-07-avatar.webp',
+    AVATAR_8: IMAGES + '/avatars/person-08-avatar.webp',
+    AVATAR_9: IMAGES + '/avatars/person-09-avatar.webp',
+  },
+
   POSTS: {
     CAMPUS_LIBRARY: IMAGES + '/posts/campus-library.jpg',
     POST_PLACEHOLDER: IMAGES + '/posts/post-placeholder.jpg',
@@ -69,6 +91,47 @@ export const IMAGE_PATHS = {
     MERCH_2: IMAGES + '/products/merch-2.jpg',
     TICKET_1: IMAGES + '/products/ticket-1.jpg',
     TICKET_2: IMAGES + '/products/ticket-2.jpg',
+  },
+
+  HOME_ICONS: {
+    HEART: '/static/assets/home/icons/heart.svg',
+    LOCATION: '/static/assets/home/icons/location.svg',
+    BELL: '/static/assets/home/icons/bell.svg',
+    CAMERA: '/static/assets/home/icons/camera.svg',
+    MESSAGE: '/static/assets/home/icons/message.svg',
+    STAR: '/static/assets/home/icons/star.svg',
+    CHECK: '/static/assets/home/icons/check.svg',
+    SEARCH: '/static/assets/home/icons/search.svg',
+    GIFT: '/static/assets/home/icons/gift.svg',
+  },
+
+  /** 消息模块 V3 图标（素材\消息\2 + 素材\消息\2\2） */
+  MESSAGE_ICONS: {
+    ASSISTANT_AVATAR: '/static/assets/message/svg/assistant_avatar.svg',
+    LIKE_NOTICE: '/static/assets/message/svg/like_notice.svg',
+    OFFICIAL: '/static/assets/message/svg/official.svg',
+    SEND_HEART: '/static/assets/message/svg/send_heart.svg',
+    VOICE: '/static/assets/message/svg/voice.svg',
+    LOCATION: '/static/assets/message/svg/location.svg',
+    CALENDAR: '/static/assets/message/svg/calendar.svg',
+    ONLINE: '/static/assets/message/svg/avatar/online.svg',
+    AVATAR_RING: '/static/assets/message/svg/avatar/avatar-ring.svg',
+    CARD_BASE: '/static/assets/message/svg/card/card-base.svg',
+    PHOTO_PLACEHOLDER: '/static/assets/message/svg/gallery/photo-placeholder.svg',
+    HERO_GRADIENT: '/static/assets/message/svg/hero/hero-gradient-bg.svg',
+    ADD: '/static/assets/message/svg/icon/add.svg',
+    HEART: '/static/assets/message/svg/icon/heart.svg',
+    COMMON_INTEREST_BG: '/static/assets/message/svg/interest/common-interest-bg.svg',
+    MATCH_PROGRESS: '/static/assets/message/svg/match/match-progress.svg',
+    EMPTY_STORY: '/static/assets/message/svg/story/story-empty.svg',
+    ACTIVITY_CARD: '/static/assets/message/svg/card/card-base.svg',
+    SEND_HEART_LEGACY: '/static/assets/message/svg/chat_send_heart.svg',
+    ONLINE_DOT: '/static/assets/message/svg/avatar/online.svg',
+    HEART_FILL: '/static/assets/message/svg/icon/heart.svg',
+    HEART_OUTLINE: '/static/assets/icons/heart.svg',
+    MESSAGE: '/static/assets/message/svg/message.svg',
+    CAMERA: '/static/assets/icons/common/camera.svg',
+    SMILE: '/static/assets/icons/smile.svg',
   },
 
   POSTERS: {
@@ -208,16 +271,74 @@ export const IMAGE_PATHS = {
 
   /** TabBar 图标（tabbar 目录） */
   ICONS_TABBAR: {
-    CHAT_ACTIVE: ICONS_BASE + '/tabbar/chat-active.png',
-    CHAT_DEFAULT: ICONS_BASE + '/tabbar/chat-default.png',
-    DISCOVER_ACTIVE: ICONS_BASE + '/tabbar/discover-active.png',
-    DISCOVER_DEFAULT: ICONS_BASE + '/tabbar/discover-default.png',
     HOME_ACTIVE: ICONS_BASE + '/tabbar/home-active.png',
-    HOME_DEFAULT: ICONS_BASE + '/tabbar/home-default.png',
+    HOME_DEFAULT: ICONS_BASE + '/tabbar/home.png',
+    CHAT_ACTIVE: ICONS_BASE + '/tabbar/chat-active.png',
+    CHAT_DEFAULT: ICONS_BASE + '/tabbar/chat.png',
+    DISCOVER_ACTIVE: ICONS_BASE + '/tabbar/discover-active.png',
+    DISCOVER_DEFAULT: ICONS_BASE + '/tabbar/discover.png',
+    MATCH_HEART: ICONS_BASE + '/tabbar/match-heart.png',
+    MATCH_HEART_ACTIVE: ICONS_BASE + '/tabbar/match-heart-active.png',
+    NEARBY_ACTIVE: ICONS_BASE + '/tabbar/nearby-active.png',
+    NEARBY_DEFAULT: ICONS_BASE + '/tabbar/nearby.png',
     PROFILE_ACTIVE: ICONS_BASE + '/tabbar/profile-active.png',
-    PROFILE_DEFAULT: ICONS_BASE + '/tabbar/profile-default.png',
-    VILLAGE_ACTIVE: ICONS_BASE + '/tabbar/village-active.png',
-    VILLAGE_DEFAULT: ICONS_BASE + '/tabbar/village-default.png',
+    PROFILE_DEFAULT: ICONS_BASE + '/tabbar/profile.png',
+  },
+
+  /** 纯匹配版动作图标（v2 图标资源：freesvglab flat + 素材回退，固定色 PNG） */
+  ICONS_MATCH: {
+    /** 喜欢（心动粉 #FF6B81） */
+    HEART: ICONS_BASE + '/v2/heart-pink.png',
+    /** 超级喜欢（消息蓝 #4D8DFF） */
+    STAR: ICONS_BASE + '/v2/star-blue.png',
+    /** 跳过（次文字灰 #666666） */
+    X: ICONS_BASE + '/v2/x-gray.png',
+    /** 匹配爱心（白色，供浮岛/图标使用） */
+    MATCH_HEART: ICONS_BASE + '/v2/heart-white.png',
+  },
+
+  /** 寻觅 V1 图标（icons/match 目录，构建期 SVG→PNG） */
+  ICONS_MATCH_V1: {
+    PASS: ICONS_BASE + '/match/pass.png',
+    LIKE: ICONS_BASE + '/match/like.png',
+    SUPER_LIKE: ICONS_BASE + '/match/super-like.png',
+    HEART_MATCH: ICONS_BASE + '/match/heart-match.png',
+    LOADING_RING: ICONS_BASE + '/match/loading-ring.png',
+  },
+
+  /** 寻觅 V1 聊天图标（icons/match 目录，构建期 SVG→PNG） */
+  ICONS_CHAT_V1: {
+    SEND: ICONS_BASE + '/match/chat-send.png',
+    IMAGE: ICONS_BASE + '/match/chat-image.png',
+    VOICE: ICONS_BASE + '/match/chat-voice.png',
+  },
+
+  /** v2 核心图标（icons/v2 目录：freesvglab flat-icon + 素材回退，96px 固定色 PNG） */
+  ICONS_V2: {
+    DISCOVER: ICONS_BASE + '/v2/discover.png',
+    NEARBY: ICONS_BASE + '/v2/nearby.png',
+    HEART: ICONS_BASE + '/v2/heart.png',
+    CHAT: ICONS_BASE + '/v2/chat.png',
+    PROFILE: ICONS_BASE + '/v2/profile.png',
+    STAR: ICONS_BASE + '/v2/star.png',
+    X: ICONS_BASE + '/v2/x.png',
+    SEARCH: ICONS_BASE + '/v2/search.png',
+    MORE: ICONS_BASE + '/v2/more.png',
+    BACK: ICONS_BASE + '/v2/back.png',
+    PLUS: ICONS_BASE + '/v2/plus.png',
+    EDIT: ICONS_BASE + '/v2/edit.png',
+    BELL: ICONS_BASE + '/v2/bell.png',
+    SLIDERS: ICONS_BASE + '/v2/sliders.png',
+    VERIFY: ICONS_BASE + '/v2/verify.png',
+    ONLINE: ICONS_BASE + '/v2/online.png',
+    // 品牌色变体
+    HEART_PINK: ICONS_BASE + '/v2/heart-pink.png',
+    CHAT_WHITE: ICONS_BASE + '/v2/chat-white.png',
+    X_WHITE: ICONS_BASE + '/v2/x-white.png',
+    HEART_WHITE: ICONS_BASE + '/v2/heart-white.png',
+    HEART_BRAND: ICONS_BASE + '/v2/heart-brand.png',
+    STAR_BLUE: ICONS_BASE + '/v2/star-blue.png',
+    X_GRAY: ICONS_BASE + '/v2/x-gray.png',
   },
 
   /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
@@ -320,3 +441,7 @@ export const IMAGE_PATHS = {
     SPEECH:      ICONS_BASE + '/chat.svg',                  // 🗣️ 社交咨询
   },
 } as const;
+
+
+
+

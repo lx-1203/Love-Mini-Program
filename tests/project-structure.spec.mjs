@@ -17,13 +17,13 @@ const requiredPaths = [
   "../apps/api/src/main/java/com/campuslove/api/feedback/FeedbackController.java",
   "../apps/api/src/main/resources/application.yml",
   "../apps/api/src/main/resources/application-mock.yml",
-  "../apps/api/src/main/resources/application-db.yml",
+  "../apps/api/src/main/resources/application-real.yml",
   "../apps/client/package.json",
   "../apps/client/.env.real",
-  "../apps/client/App.vue",
-  "../apps/client/main.ts",
+  "../apps/client/src/App.vue",
+  "../apps/client/src/main.ts",
   "../apps/client/src/pages.json",
-  "../apps/client/manifest.json",
+  "../apps/client/src/manifest.json",
   "../apps/client/tsconfig.json",
   "../apps/client/uni.scss",
   "../apps/client/vite.config.ts",
@@ -77,7 +77,7 @@ const appYaml = readFileSync(
   "utf8"
 );
 assert.match(appYaml, /spring:\s*\n\s*application:\s*\n\s*name:\s*campus-love-api/u);
-assert.match(appYaml, /profiles:\s*\n\s*default:\s*mock/u);
+assert.match(appYaml, /profiles:\s*(?:#[^\n]*\r?\n\s*)*default:\s*mock/u);
 
 const mockYaml = readFileSync(
   new URL("../apps/api/src/main/resources/application-mock.yml", import.meta.url),
@@ -87,7 +87,7 @@ assert.match(mockYaml, /DataSourceAutoConfiguration/u);
 assert.match(mockYaml, /FlywayAutoConfiguration/u);
 
 const dbYaml = readFileSync(
-  new URL("../apps/api/src/main/resources/application-db.yml", import.meta.url),
+  new URL("../apps/api/src/main/resources/application-real.yml", import.meta.url),
   "utf8"
 );
 assert.match(dbYaml, /datasource:/u);
@@ -143,28 +143,38 @@ const pagesJson = JSON.parse(
 // 主包页面数量：src/pages.json 包含全部主包页面（login/home/discover/likes/village/messages/
 // profile/circles/daily-question/chat/chat-session/shop/campus/verification/heart-signals/
 // vip/chat-video-call/chat-red-packet/dev/profile-visitors/profile-album/settings-dnd/feedback-history）
-// 共 38 个根页面
-assert.equal(pagesJson.pages.length, 38, "main package should contain thirty-eight root pages");
-assert.equal(pagesJson.subPackages.length, 4, "client should use four subpackages (setup/support/discover/legal)");
+// 共 47 个根页面（v3：-saved、+matching、+match-success、+home/segment）
+assert.equal(pagesJson.pages.length, 49, "main package should contain forty-nine root pages (v3: -saved +matching +match-success +home/segment +nearby/people +home/index)");
+assert.equal(pagesJson.subPackages.length, 6, "client should use six subpackages (setup/support/discover/legal/market/vip)");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");
-// TabBar 默认入口为「匹配」（discover），其次为圈子、首页、消息、我的
+// 寻觅 v3 五 Tab：首页、附近、寻觅、消息、我的（寻觅为中央核心入口）
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.text),
-  ["匹配", "圈子", "首页", "消息", "我的"],
-  "tab bar should follow the current IA order"
+  ["首页", "附近", "寻觅", "消息", "我的"],
+  "tab bar should follow the v3 explore IA order"
 );
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.pagePath),
   [
-    "pages/discover/index",
-    "pages/village/index",
     "pages/home/index",
-    "pages/chat/index",
+    "pages/nearby/index",
+    "pages/discover/index",
+    "pages/messages/index",
     "pages/profile/index",
   ],
-  "tab bar paths should match the five current primary tabs"
+  "tab bar paths should match the five pure-match primary tabs"
 );
+
+const homeIndex = readFileSync(new URL("../apps/client/src/pages/home/index.vue", import.meta.url), "utf8");
+const discoverIndex = readFileSync(new URL("../apps/client/src/pages/discover/index.vue", import.meta.url), "utf8");
+const nearbyIndex = readFileSync(new URL("../apps/client/src/pages/nearby/index.vue", import.meta.url), "utf8");
+assert.doesNotMatch(homeIndex, /import\s+CardSwiper/i, "home page must not import CardSwiper");
+assert.doesNotMatch(homeIndex, /<CardSwiper/i, "home page must not render CardSwiper");
+assert.match(homeIndex, /homeFeed/, "home page should consume homeFeed");
+assert.doesNotMatch(discoverIndex, /communityPosts/, "discover page must not own community feed");
+assert.doesNotMatch(discoverIndex, /loveProgress/, "discover page must not own love progress");
+assert.doesNotMatch(nearbyIndex, /matchCenter/, "nearby page must not own match center");
 
 const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
 assert.match(readme, /mock mode/iu);
@@ -172,3 +182,4 @@ assert.match(readme, /real mode/iu);
 assert.match(readme, /temporary anonymous chat/iu);
 
 console.log("project structure ok");
+

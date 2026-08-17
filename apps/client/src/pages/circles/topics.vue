@@ -1,14 +1,15 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useCircleStore, formatCircleTime } from "../../stores/circle";
-import { openAppPath } from "../../utils/navigation";
+import { useCircleStore, formatCircleTime, type TopicAuthor } from "../../stores/circle";
+import { useActivityStore } from "../../stores/activity";
+import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import EmptyState from "../../components/common/EmptyState.vue";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
@@ -98,6 +99,57 @@ function goToPostTopic() {
   openAppPath(`/pages/circles/post-topic?circleId=${circleId.value}`);
 }
 
+/** 兴趣圈详情 Tab（v3 Nearby 冻结）：动态 / 精选 / 成员 / 活动 */
+const detailTab = ref<"feed" | "hot" | "members" | "activities">("feed");
+
+/** 当前圈子（列表数据中查找，用于头部成员数/加入态） */
+const circle = computed(() => circleStore.circles.find((c) => c.id === circleId.value) ?? null);
+
+/** 精选 = 仅对当前已拉取话题按回复数排序（likes 字段缺失，score 用回复数） */
+const displayTopics = computed(() =>
+  detailTab.value === "hot"
+    ? [...currentTopics.value].sort((a, b) => b.replyCount - a.replyCount)
+    : currentTopics.value
+);
+
+/** 成员 Tab：成员数 + 圈内活跃作者头像（取帖子作者，无新成员列表接口） */
+const memberAvatars = computed(() => {
+  const map = new Map<string, TopicAuthor>();
+  for (const tp of currentTopics.value) {
+    if (tp.author.userId && !map.has(tp.author.userId)) map.set(tp.author.userId, tp.author);
+  }
+  return [...map.values()];
+});
+
+/** 加入/退出兴趣圈（开放圈，无需校园认证） */
+async function toggleJoin() {
+  const c = circle.value;
+  if (!c) return;
+  try {
+    if (c.isJoined) await circleStore.leaveCircle(c.id);
+    else await circleStore.joinCircle(c.id);
+  } catch (_e) {
+    // store 内部已提示错误
+  }
+}
+
+/** v3 冻结：认识 TA → 他人主页（不直接 like/建聊天） */
+function meetAuthor(userId: string) {
+  openUserProfile(userId);
+}
+
+/** 活动 Tab：复用活动列表 */
+const activityStore = useActivityStore();
+function goToActivityDetail(activityId: string | number) {
+  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
+}
+function switchTab(tab: "feed" | "hot" | "members" | "activities") {
+  detailTab.value = tab;
+  if (tab === "activities" && activityStore.activities.length === 0) {
+    void activityStore.fetchActivities().catch(() => {});
+  }
+}
+
 /**
  * 返回上一页
  */
@@ -117,6 +169,7 @@ onLoad((query) => {
   }
 
   if (circleId.value) {
+    void circleStore.fetchCircles().catch(() => {});
     const circle = circleStore.circles.find((c) => c.id === circleId.value);
     if (circle) {
       circleName.value = circle.name;
@@ -142,6 +195,38 @@ defineExpose({ goToAuthorProfile });
       </view>
       <text class="topics-header__title">{{ circleName || t("circle.topicsListTitle") }}</text>
       <view class="topics-header__spacer" />
+    </view>
+
+    <!-- 兴趣圈详情头部（v3 Nearby 冻结） -->
+    <view v-if="circle" class="circle-hero">
+      <view class="circle-hero__icon"><text class="circle-hero__emoji">{{ circle.icon }}</text></view>
+      <view class="circle-hero__body">
+        <text class="circle-hero__name">{{ circle.name }}</text>
+        <text class="circle-hero__meta">{{ circle.memberCount }} 成员 · {{ circle.topicCount }} 条动态</text>
+        <text class="circle-hero__desc">{{ circle.description }}</text>
+      </view>
+      <view
+        class="circle-hero__join"
+        :class="{ 'circle-hero__join--joined': circle.isJoined }"
+        role="button"
+        :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
+        @tap.stop="toggleJoin"
+      >
+        <text class="circle-hero__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn') }}</text>
+      </view>
+    </view>
+
+    <!-- 详情 Tab：动态 / 精选 / 成员 / 活动 -->
+    <view class="circle-tabs" role="tablist" :aria-label="t('circle.detailTabsAria')">
+      <view v-for="tab in [{key:'feed',label:t('circle.detailFeed')},{key:'hot',label:t('circle.detailHot')},{key:'members',label:t('circle.detailMembersTab')},{key:'activities',label:t('circle.detailActivitiesTab')}]" :key="tab.key"
+        class="circle-tab"
+        :class="{ 'circle-tab--active': detailTab === tab.key }"
+        role="tab"
+        :aria-selected="detailTab === tab.key ? 'true' : 'false'"
+        @tap="switchTab(tab.key as 'feed' | 'hot' | 'members' | 'activities')"
+      >
+        <text class="circle-tab__text">{{ tab.label }}</text>
+      </view>
     </view>
 
     <!-- 加载状态 -->
@@ -173,7 +258,7 @@ defineExpose({ goToAuthorProfile });
     >
       <!-- 空状态 -->
       <EmptyState
-        v-if="currentTopics.length === 0"
+        v-if="(detailTab === 'feed' || detailTab === 'hot') && displayTopics.length === 0"
         type="no-data"
         :image="chatIcon"
         :title="t('circle.topicsEmptyTitle')"
@@ -184,7 +269,7 @@ defineExpose({ goToAuthorProfile });
 
       <!-- 话题卡片 -->
       <view
-        v-for="topic in currentTopics" :key="topic.id"
+        v-for="topic in displayTopics" :key="topic.id"
         class="topic-card list-item"
         @tap="goToDetail(topic.id)"
       >
@@ -218,6 +303,35 @@ defineExpose({ goToAuthorProfile });
             <text class="topic-card__replies">{{ topic.replyCount }}</text>
             <text class="topic-card__time">{{ formatCircleTime(topic.createdAt) }}</text>
           </view>
+        </view>
+        <view class="topic-card__meet press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('circle.meetAuthor')" @tap.stop="meetAuthor(topic.author.userId)">
+          <text class="topic-card__meet-text">{{ t('circle.meetAuthor') }}</text>
+        </view>
+      </view>
+
+      <!-- 成员 Tab（v3 Nearby 冻结：成员数 + 圈内活跃作者，无成员列表接口） -->
+      <view v-if="detailTab === 'members'" class="detail-members">
+        <text class="detail-members__count">{{ t('circle.detailMembers', { n: circle?.memberCount ?? 0 }) }}</text>
+        <view class="detail-members__avatars">
+          <view v-for="author in memberAvatars" :key="author.userId" class="detail-members__avatar">
+            <text class="detail-members__avatar-char">{{ initialOf(author.name) }}</text>
+            <text class="detail-members__avatar-name">{{ author.name }}</text>
+          </view>
+          <view v-if="memberAvatars.length === 0" class="detail-members__empty">
+            <text class="detail-members__empty-text">{{ t('circle.detailMembersEmpty') }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 活动 Tab（v3 Nearby 冻结：复用活动列表） -->
+      <view v-if="detailTab === 'activities'" class="detail-activities">
+        <view v-for="act in activityStore.activities.slice(0, 5)" :key="act.id" class="detail-activity press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="act.title" @tap="goToActivityDetail(act.id)">
+          <text class="detail-activity__title">{{ act.title }}</text>
+          <text class="detail-activity__meta">{{ act.location || act.scheduleText }}</text>
+          <text class="detail-activity__arrow">›</text>
+        </view>
+        <view v-if="activityStore.activities.length === 0" class="detail-activities__empty">
+          <text class="detail-activities__empty-text">{{ t('circle.detailActivitiesEmpty') }}</text>
         </view>
       </view>
 
@@ -543,4 +657,216 @@ defineExpose({ goToAuthorProfile });
   line-height: 1;
   margin-top: -4rpx;
 }
-</style>
+
+/* ========== v3 Nearby 冻结：兴趣圈详情头部 + 四 Tab ========== */
+.circle-hero {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx;
+  margin: 0 0 20rpx;
+  border-radius: 20rpx;
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-line, #ECEFF2);
+}
+
+.circle-hero__icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-bg-surface, #F7FAF9);
+  flex-shrink: 0;
+}
+
+.circle-hero__emoji {
+  font-size: 48rpx;
+}
+
+.circle-hero__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.circle-hero__name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--c-text-primary, #222222);
+}
+
+.circle-hero__meta {
+  font-size: 22rpx;
+  color: var(--c-text-tertiary, #666666);
+}
+
+.circle-hero__desc {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #666666);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.circle-hero__join {
+  flex-shrink: 0;
+  padding: 12rpx 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+}
+
+.circle-hero__join--joined {
+  background: var(--c-bg-container, #ffffff);
+  border: 2rpx solid var(--c-line-strong, #DCE5E2);
+}
+
+.circle-hero__join-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.circle-hero__join--joined .circle-hero__join-text {
+  color: var(--c-text-secondary, #666666);
+}
+
+.circle-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.circle-tab {
+  flex: 1;
+  padding: 14rpx 0;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-bg-container, #ffffff);
+  border: 2rpx solid var(--c-line, #ECEFF2);
+}
+
+.circle-tab--active {
+  border-color: var(--c-brand-500, #36C99A);
+  background: var(--c-brand-50, #E6F8F1);
+}
+
+.circle-tab__text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary, #666666);
+}
+
+.circle-tab--active .circle-tab__text {
+  color: var(--c-brand-600, #36C99A);
+}
+
+.topic-card__meet {
+  display: inline-flex;
+  margin-top: 14rpx;
+  padding: 10rpx 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, #FF8DB7 0%, #FF6B81 100%);
+}
+
+.topic-card__meet-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.detail-members {
+  padding: 8rpx 4rpx;
+}
+
+.detail-members__count {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--c-text-primary, #222222);
+  margin-bottom: 20rpx;
+}
+
+.detail-members__avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.detail-members__avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  width: 120rpx;
+}
+
+.detail-members__avatar-char {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-brand-100, #CCF0E0);
+  color: var(--c-brand-700, #12805A);
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.detail-members__avatar-name {
+  font-size: 20rpx;
+  color: var(--c-text-secondary, #666666);
+}
+
+.detail-members__empty {
+  padding: 40rpx 0;
+}
+
+.detail-members__empty-text,
+.detail-activities__empty-text {
+  font-size: 24rpx;
+  color: var(--c-text-tertiary, #666666);
+}
+
+.detail-activities {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.detail-activity {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-line, #ECEFF2);
+}
+
+.detail-activity__title {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #222222);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-activity__meta {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #666666);
+}
+
+.detail-activity__arrow {
+  font-size: 28rpx;
+  color: var(--c-text-quaternary, #C8CFCD);
+}</style>

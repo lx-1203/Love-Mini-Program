@@ -133,13 +133,6 @@ function handleMessage(userId: string) {
   openAppPath(`/pages/chat-session/index?userId=${encodeURIComponent(userId)}`);
 }
 
-/** 视频角标：跳转全屏视频播放页（个人视频展示） */
-function handleVideoTap(cardId: string, videoUrl: string): void {
-  if (!videoUrl) return;
-  openAppPath(
-    `/pages/discover/video-player?videoUrl=${encodeURIComponent(videoUrl)}&cardId=${encodeURIComponent(cardId)}`
-  );
-}
 </script>
 
 <template>
@@ -179,7 +172,6 @@ function handleVideoTap(cardId: string, videoUrl: string): void {
         :masked="true"
         @swipe="handleSwipe"
         @superLike="handleSuperLike"
-        @videoTap="handleVideoTap"
         @message="handleMessage"
       />
     </view>

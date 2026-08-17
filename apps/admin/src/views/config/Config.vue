@@ -196,6 +196,13 @@ function enabledLabel(enabled: boolean): string {
   return enabled ? t("config.enabledLabel") : t("config.disabledLabel");
 }
 
+/** 开关友好标签（寻觅 v3：match_open / recommend_open 展示中文/英文名，其余回退裸 key） */
+function switchLabel(row: AdminSwitch): string {
+  const labelKey = row.key === "match_open" ? "config.switchMatchOpen"
+    : row.key === "recommend_open" ? "config.switchRecommendOpen" : "";
+  return labelKey ? t(labelKey) : row.key;
+}
+
 onMounted(() => {
   fetchConfigs();
 });
@@ -361,7 +368,7 @@ onBeforeUnmount(() => {
             <td colspan="5" class="empty-row">{{ t("config.noData") }}</td>
           </tr>
           <tr v-for="row in switches" :key="row.key">
-            <td class="key-cell">{{ row.key }}</td>
+            <td class="key-cell">{{ switchLabel(row) }}</td>
             <td>
               <label class="switch-label">
                 <input v-model="row.enabled" type="checkbox" class="switch-input" />

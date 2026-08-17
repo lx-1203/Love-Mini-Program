@@ -3,6 +3,7 @@ package com.campuslove.api.home;
 import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,6 +19,15 @@ public class HomeController {
 
   public HomeController(HomeService homeService) {
     this.homeService = homeService;
+  }
+
+  /**
+   * 首页「换一位」：只更换今日推荐，不记录跳过、不消耗寻觅额度。
+   */
+  @PostMapping("/today-recommendation/rotate")
+  public TodayRecommendationView rotateTodayRecommendation() {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return homeService.rotateTodayRecommendation(userId);
   }
 
   /**
@@ -37,8 +47,26 @@ record HomeDashboardView(
     HomeCardView aiPlan,
     List<RecommendedPersonSummaryView> recommendedPeople,
     String peopleLead,
-    ActivityPreviewView activityPreview
+    ActivityPreviewView activityPreview,
+    MatchCenterView matchCenter,
+    HomeFeedView homeFeed
 ) {
+}
+
+/**
+ * 匹配中心聚合视图（legacy：进入兼容期，不再新增首页字段）。
+ */
+record MatchCenterView(
+    QuotaView quota,
+    int onlineCount,
+    RelationProgressView relation
+) {
+}
+
+record QuotaView(int dailyLimit, int used, int remaining) {
+}
+
+record RelationProgressView(int crushing, int matched, int whispers) {
 }
 
 record HomeCardView(
@@ -75,5 +103,86 @@ record ActivityPreviewItemView(
     String title,
     String subtitle,
     String meta
+) {
+}
+
+/** 首页 Feed 契约（寻觅 v3：首页 = 今日恋爱首页，非匹配中心）。 */
+record HomeFeedView(
+    TodayRecommendationView todayRecommendation,
+    LoveProgressView loveProgress,
+    RelationActivityView relationActivity,
+    List<InterestCircleSummaryView> interestRecommendations,
+    List<NearbyPersonSummaryView> nearbyPeople,
+    List<CommunityPostSummaryView> communityPosts
+) {
+}
+
+record TodayRecommendationView(
+    Long userId,
+    String name,
+    Integer age,
+    String campusName,
+    String gradeLabel,
+    List<String> tags,
+    String bio,
+    String expectation,
+    String distanceText,
+    boolean certified,
+    boolean online,
+    int matchScore,
+    String photoUrl
+) {
+}
+
+record LoveProgressView(int completed, int total, List<LoveProgressStepView> steps) {
+}
+
+record LoveProgressStepView(
+    String id,
+    String title,
+    String description,
+    boolean completed,
+    String action
+) {
+}
+
+record RelationActivityView(
+    int likesReceived,
+    int whispers,
+    int visitors,
+    int newMatches,
+    int totalUnread
+) {
+}
+
+record InterestCircleSummaryView(
+    Long id,
+    String name,
+    String icon,
+    int memberCount,
+    boolean joined
+) {
+}
+
+record NearbyPersonSummaryView(
+    Long userId,
+    String name,
+    String distanceText,
+    String avatarUrl,
+    boolean online,
+    List<String> commonInterests
+) {
+}
+
+record CommunityPostSummaryView(
+    Long id,
+    String authorName,
+    String authorAvatar,
+    String circleName,
+    String timeText,
+    String content,
+    List<String> images,
+    int likeCount,
+    int commentCount
 ) {
 }

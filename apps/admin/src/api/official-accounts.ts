@@ -13,6 +13,16 @@ export interface OfficialAccountView {
   iconUrl: string;
 }
 
+export interface OfficialActivityCardView {
+  activityId: number;
+  title: string;
+  imageUrl: string | null;
+  timeText: string | null;
+  locationText: string | null;
+  enrollmentCount: number;
+  recommendReason: string | null;
+}
+
 /** 官方号消息视图（与后端 OfficialMessageView record 对齐） */
 export interface OfficialMessageView {
   id: number;
@@ -23,6 +33,7 @@ export interface OfficialMessageView {
   cardTag: string | null;
   cardTargetUrl: string | null;
   publishedAt: string;
+  cardActivity?: OfficialActivityCardView | null;
 }
 
 /** 查询全部启用官方账号 */
@@ -36,3 +47,4 @@ export function getOfficialAccountMessages(code: string) {
     `/v1/admin/official-accounts/${encodeURIComponent(code)}/messages`,
   );
 }
+

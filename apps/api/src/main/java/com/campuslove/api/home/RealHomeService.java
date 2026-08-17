@@ -4,12 +4,22 @@ import com.campuslove.api.discover.ActivityService;
 import com.campuslove.api.discover.ActivityView;
 import com.campuslove.api.discover.DailyQuestionService;
 import com.campuslove.api.discover.DailyQuestionView;
+import com.campuslove.api.discover.RecommendationFilter;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
+import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.Post;
+import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.growth.CheckInService;
 import com.campuslove.api.growth.CheckInStatusView;
+import com.campuslove.api.growth.RecommendQuotaService;
+import com.campuslove.api.match.LikedUserView;
+import com.campuslove.api.match.MatchService;
+import com.campuslove.api.whisper.WhisperService;
+import com.campuslove.api.profile.ProfileQueryService;
+import com.campuslove.api.repository.CircleMembershipRepository;
+import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.PostRepository;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +52,13 @@ public class RealHomeService implements HomeService {
     private final DailyQuestionService dailyQuestionService;
     private final ActivityService activityService;
     private final PostRepository postRepository;
+    private final MatchService matchService;
+    private final WhisperService whisperService;
+    private final RecommendQuotaService recommendQuotaService;
+    private final InterestCircleRepository interestCircleRepository;
+    private final CircleMembershipRepository circleMembershipRepository;
+    private final ProfileQueryService profileQueryService;
+    private final HomeFeedFallbackProvider homeFeedFallbackProvider;
 
     /**
      * 构造函数，注入所有子服务依赖。
@@ -51,12 +68,26 @@ public class RealHomeService implements HomeService {
             CheckInService checkInService,
             DailyQuestionService dailyQuestionService,
             ActivityService activityService,
-            PostRepository postRepository) {
+            PostRepository postRepository,
+            MatchService matchService,
+            WhisperService whisperService,
+            RecommendQuotaService recommendQuotaService,
+            InterestCircleRepository interestCircleRepository,
+            CircleMembershipRepository circleMembershipRepository,
+            ProfileQueryService profileQueryService,
+            HomeFeedFallbackProvider homeFeedFallbackProvider) {
         this.recommendationService = recommendationService;
         this.checkInService = checkInService;
         this.dailyQuestionService = dailyQuestionService;
         this.activityService = activityService;
         this.postRepository = postRepository;
+        this.matchService = matchService;
+        this.whisperService = whisperService;
+        this.recommendQuotaService = recommendQuotaService;
+        this.interestCircleRepository = interestCircleRepository;
+        this.circleMembershipRepository = circleMembershipRepository;
+        this.profileQueryService = profileQueryService;
+        this.homeFeedFallbackProvider = homeFeedFallbackProvider;
     }
 
     /**
@@ -97,6 +128,9 @@ public class RealHomeService implements HomeService {
                 new java.util.ArrayList<>(activityPreview.items());
         combinedItems.addAll(hotPosts);
 
+        MatchCenterView matchCenter = aggregateMatchCenter(userId);
+        HomeFeedView homeFeed = getHomeFeed(userId);
+
         return new HomeDashboardView(
             /* scheduleSummary */ scheduleSummary,
             /* freeSlots */ List.of(),
@@ -110,7 +144,9 @@ public class RealHomeService implements HomeService {
                 combinedItems,
                 activityPreview.pulseTitle(),
                 activityPreview.pulseMeta()
-            )
+            ),
+            /* matchCenter */ matchCenter,
+            /* homeFeed */ homeFeed
         );
     }
 
@@ -289,4 +325,299 @@ public class RealHomeService implements HomeService {
         }
         return content.substring(0, maxLength) + "...";
     }
+
+    /**
+     * 聚合匹配中心数据（寻觅 v3：首页 = 匹配中心）。
+     *
+     * <p>数据语义：</p>
+     * <ul>
+     *   <li>quota：RecommendQuotaService 聚合；服务未注入时返回 -1（无限制语义）</li>
+     *   <li>onlineCount：MVP 使用 guest 推荐结果中 just_now 活跃人数，不消耗用户配额</li>
+     *   <li>crushing = myLikes - likedMe（我喜欢但对方尚未喜欢）</li>
+     *   <li>matched = myLikes ∩ likedMe（互相喜欢）</li>
+     *   <li>whispers：MVP 使用收件箱数量；TODO 后续改为 pending/unread 数量</li>
+     * </ul>
+     */
+    private MatchCenterView aggregateMatchCenter(Long userId) {
+        QuotaView quota = aggregateQuota(userId);
+        int onlineCount = aggregateOnlineCount();
+        RelationProgressView relation = aggregateRelation(userId);
+        return new MatchCenterView(quota, onlineCount, relation);
+    }
+
+    private QuotaView aggregateQuota(Long userId) {
+        if (recommendQuotaService == null || userId == null) {
+            return new QuotaView(-1, 0, -1);
+        }
+        try {
+            int dailyLimit = recommendQuotaService.getDailyQuota(userId);
+            int used = recommendQuotaService.getUsedCount(userId);
+            return new QuotaView(dailyLimit, used, Math.max(0, dailyLimit - used));
+        } catch (RuntimeException e) {
+            log.warn("聚合推荐配额失败, userId={}: {}", userId, e.getMessage());
+            return new QuotaView(-1, 0, -1);
+        }
+    }
+
+    private int aggregateOnlineCount() {
+        try {
+            RecommendationFilter empty = new RecommendationFilter(null, null, null, null, null, null, null, null, null, null);
+            return (int) recommendationService.getRecommendationsForGuest(empty).stream()
+                    .filter(view -> "online".equals(view.activeStatusText()) || "just_now".equals(view.activeStatusText()))
+                    .count();
+        } catch (RuntimeException e) {
+            log.warn("聚合在线速配人数失败: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    private RelationProgressView aggregateRelation(Long userId) {
+        if (userId == null) {
+            return new RelationProgressView(0, 0, 0);
+        }
+        try {
+            java.util.Set<Long> likedMeIds = matchService.getLikedMe(userId).stream()
+                    .map(LikedUserView::userId)
+                    .collect(java.util.stream.Collectors.toSet());
+            java.util.List<LikedUserView> myLikes = matchService.getMyLikes(userId);
+            int matched = (int) myLikes.stream()
+                    .filter(like -> likedMeIds.contains(like.userId()))
+                    .count();
+            int crushing = Math.max(0, myLikes.size() - matched);
+            int whispers = whisperService.inbox(userId).size();
+            return new RelationProgressView(crushing, matched, whispers);
+        } catch (RuntimeException e) {
+            log.warn("聚合关系进度失败, userId={}: {}", userId, e.getMessage());
+            return new RelationProgressView(0, 0, 0);
+        }
+    }
+
+    /**
+     * 聚合首页 Feed（寻觅 v3：今日恋爱首页）。
+     */
+    @Override
+    public HomeFeedView getHomeFeed(Long userId) {
+        TodayRecommendationView recommendation = getTodayRecommendation(userId);
+        if (recommendation == null) {
+            recommendation = homeFeedFallbackProvider.fallbackTodayRecommendation();
+        }
+        LoveProgressView loveProgress = buildLoveProgress(userId);
+        RelationActivityView relationActivity = buildRelationActivity(userId);
+        java.util.List<InterestCircleSummaryView> interests = buildInterestRecommendations(userId);
+        if (interests.isEmpty()) {
+            interests = homeFeedFallbackProvider.fallbackInterestRecommendations();
+        }
+        java.util.List<NearbyPersonSummaryView> nearby = buildNearbyPeople();
+        if (nearby.isEmpty()) {
+            nearby = homeFeedFallbackProvider.fallbackNearbyPeople();
+        }
+        java.util.List<CommunityPostSummaryView> posts = buildCommunityPosts();
+        if (posts.isEmpty()) {
+            posts = homeFeedFallbackProvider.fallbackCommunityPosts();
+        }
+        return new HomeFeedView(recommendation, loveProgress, relationActivity, interests, nearby, posts);
+    }
+
+    /**
+     * 更换首页今日推荐。首页换一位不是寻觅跳过：不记录行为，也不消耗推荐额度。
+     */
+    @Override
+    public TodayRecommendationView rotateTodayRecommendation(Long userId) {
+        java.util.List<RecommendedPersonView> candidates = homeCandidates();
+        if (candidates.size() <= 1) {
+            return null;
+        }
+        return toTodayRecommendation(candidates.get(1));
+    }
+
+    /**
+     * 首页今日推荐候选：当前使用 guest 推荐池，避免首页展示消耗用户寻觅额度；
+     * TODO 后续接入独立的首页推荐策略。
+     */
+    private TodayRecommendationView getTodayRecommendation(Long userId) {
+        return homeCandidates().stream()
+            .findFirst()
+            .map(this::toTodayRecommendation)
+            .orElse(null);
+    }
+
+    private java.util.List<RecommendedPersonView> homeCandidates() {
+        try {
+            RecommendationFilter empty = new RecommendationFilter(null, null, null, null, null, null, null, null, null, null);
+            return recommendationService.getRecommendationsForGuest(empty);
+        } catch (RuntimeException e) {
+            log.warn("聚合首页推荐候选失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private TodayRecommendationView toTodayRecommendation(RecommendedPersonView view) {
+        boolean certified = view.verificationBadgeLevel() != null
+            && !"none".equalsIgnoreCase(view.verificationBadgeLevel());
+        boolean online = "online".equals(view.activeStatusText()) || "just_now".equals(view.activeStatusText());
+        int matchScore = Math.min(99, Math.max(50,
+            60 + view.commonCircleCount() * 10 + (view.isSameSchool() ? 10 : 0) + (online ? 5 : 0)));
+        String photoUrl = firstNonBlank(view.halfBodyPhotoUrl(),
+            view.photoGallery().stream().filter(java.util.Objects::nonNull).findFirst().orElse(null),
+            view.avatarUrl());
+        return new TodayRecommendationView(
+            view.id(),
+            view.name(),
+            view.age() == null ? 0 : view.age(),
+            view.campusName(),
+            view.gradeLabel(),
+            view.tags() == null ? List.of() : view.tags(),
+            view.bio(),
+            view.expectedPartner(),
+            view.distanceText(),
+            certified,
+            online,
+            matchScore,
+            photoUrl
+        );
+    }
+
+    private LoveProgressView buildLoveProgress(Long userId) {
+        boolean profile = false;
+        boolean like = false;
+        boolean whisper = false;
+        boolean interest = false;
+        if (userId != null) {
+            try {
+                profile = profileQueryService.calculateProfileCompletion(userId) >= 60;
+            } catch (RuntimeException e) {
+                log.warn("计算资料完善度失败, userId={}: {}", userId, e.getMessage());
+            }
+            try {
+                like = !matchService.getMyLikes(userId).isEmpty();
+            } catch (RuntimeException e) {
+                log.warn("聚合今日心动失败, userId={}: {}", userId, e.getMessage());
+            }
+            try {
+                whisper = !whisperService.inbox(userId).isEmpty();
+            } catch (RuntimeException e) {
+                log.warn("聚合悄悄话状态失败, userId={}: {}", userId, e.getMessage());
+            }
+            try {
+                var joinedIds = circleMembershipRepository.findByUserId(userId).stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(java.util.stream.Collectors.toSet());
+                interest = !joinedIds.isEmpty();
+            } catch (RuntimeException e) {
+                log.warn("聚合兴趣互动失败, userId={}: {}", userId, e.getMessage());
+            }
+        }
+        java.util.List<LoveProgressStepView> steps = List.of(
+            new LoveProgressStepView("profile", "完善资料", "让更多人了解你", profile, "profile"),
+            new LoveProgressStepView("like", "今日心动", "认识一位心动的人", like, "discover"),
+            new LoveProgressStepView("whisper", "回复悄悄话", "回复一条悄悄话", whisper, "messages"),
+            new LoveProgressStepView("interest", "参与兴趣互动", "参与一个兴趣圈", interest, "nearby")
+        );
+        int completed = (int) steps.stream().filter(LoveProgressStepView::completed).count();
+        return new LoveProgressView(completed, steps.size(), steps);
+    }
+
+    private RelationActivityView buildRelationActivity(Long userId) {
+        if (userId == null) {
+            return new RelationActivityView(0, 0, 0, 0, 0);
+        }
+        try {
+            java.util.List<LikedUserView> myLikes = matchService.getMyLikes(userId);
+            java.util.List<LikedUserView> likedMe = matchService.getLikedMe(userId);
+            java.util.Set<Long> likedMeIds = likedMe.stream()
+                .map(LikedUserView::userId)
+                .collect(java.util.stream.Collectors.toSet());
+            int newMatches = (int) myLikes.stream()
+                .filter(like -> likedMeIds.contains(like.userId()))
+                .count();
+            int whispers = whisperService.inbox(userId).size();
+            int visitors = matchService.getVisitors(userId).size();
+            int likesReceived = likedMe.size();
+            int totalUnread = likesReceived + whispers + visitors + newMatches;
+            return new RelationActivityView(likesReceived, whispers, visitors, newMatches, totalUnread);
+        } catch (RuntimeException e) {
+            log.warn("聚合关系动态失败, userId={}: {}", userId, e.getMessage());
+            return new RelationActivityView(0, 0, 0, 0, 0);
+        }
+    }
+
+    private java.util.List<InterestCircleSummaryView> buildInterestRecommendations(Long userId) {
+        try {
+            var joinedIds = userId == null ? java.util.Set.<Long>of()
+                : circleMembershipRepository.findByUserId(userId).stream()
+                    .map(m -> m.getCircle().getId())
+                    .collect(java.util.stream.Collectors.toSet());
+            return interestCircleRepository.findAllByOrderBySortOrderAsc().stream()
+                .sorted(java.util.Comparator.comparingInt((InterestCircle c) -> c.getMemberCount() == null ? 0 : c.getMemberCount()).reversed())
+                .limit(4)
+                .map((InterestCircle c) -> new InterestCircleSummaryView(
+                    c.getId(), c.getName(), c.getIcon(),
+                    c.getMemberCount() == null ? 0 : c.getMemberCount(),
+                    joinedIds.contains(c.getId())))
+                .toList();
+        } catch (RuntimeException e) {
+            log.warn("聚合兴趣推荐失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private java.util.List<NearbyPersonSummaryView> buildNearbyPeople() {
+        try {
+            return homeCandidates().stream()
+                .limit(5)
+                .map(view -> new NearbyPersonSummaryView(
+                    view.id(),
+                    view.name(),
+                    view.distanceText(),
+                    view.avatarUrl(),
+                    "online".equals(view.activeStatusText()) || "just_now".equals(view.activeStatusText()),
+                    view.tags() == null ? List.of() : view.tags().stream().limit(2).toList()))
+                .toList();
+        } catch (RuntimeException e) {
+            log.warn("聚合附近的人失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private java.util.List<CommunityPostSummaryView> buildCommunityPosts() {
+        try {
+            Page<Post> posts = postRepository.findByStatusOrderByLikesCountDesc(
+                PostStatus.active,
+                PageRequest.of(0, 2)
+            );
+            java.util.List<Post> items = posts.getContent();
+            java.util.List<Long> authorIds = items.stream().map(Post::getAuthorId).filter(java.util.Objects::nonNull).toList();
+            java.util.Map<Long, User> authorMap = profileQueryService.batchLoadUsers(authorIds);
+            return items.stream().map(post -> {
+                User author = post.getAuthorId() == null ? null : authorMap.get(post.getAuthorId());
+                return new CommunityPostSummaryView(
+                    post.getId(),
+                    author != null ? author.getNickname() : String.valueOf(post.getAuthorId()),
+                    author != null ? author.getAvatarUrl() : null,
+                    post.getCategory() == null ? "" : post.getCategory().name(),
+                    post.getCreatedAt() == null ? "" : post.getCreatedAt().toString(),
+                    truncateContent(post.getContent(), 80),
+                    profileQueryService.parseStringList(post.getImages()).stream().limit(3).toList(),
+                    post.getLikesCount() == null ? 0 : post.getLikesCount(),
+                    post.getCommentsCount() == null ? 0 : post.getCommentsCount()
+                );
+            }).toList();
+        } catch (RuntimeException e) {
+            log.warn("聚合社区动态失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
 }
+
+
+

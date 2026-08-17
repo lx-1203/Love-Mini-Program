@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 52">
+  <defs>
+    <linearGradient id="wechat-btn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7ED321"/>
+      <stop offset="100%" stop-color="#5BB012"/>
+    </linearGradient>
+  </defs>
+  <rect width="280" height="52" rx="26" fill="url(#wechat-btn)"/>
+  <!-- WeChat logo -->
+  <g transform="translate(70, 14)">
+    <path d="M20 0C9 0 0 7.5 0 16.8c0 5.3 2.8 10 7.3 13l-1.8 5.5 6.3-3.2c2.5.7 5.1 1.1 8.2 1.1 11 0 20-7.5 20-16.8S31 0 20 0zm-7 11.5c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3zm14 0c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z" fill="#fff"/>
+  </g>
+  <text x="140" y="33" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="16" font-weight="500">微信登录</text>
+</svg>

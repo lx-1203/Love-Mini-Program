@@ -5,7 +5,7 @@ const mockSession = {
   userId: "user-1",
   loggedIn: true,
   loginMethod: "wechat",
-  displayName: "星野",
+  displayName: "林晓",
   phoneBound: false,
   profileCompleted: false,
   campusVerified: false,

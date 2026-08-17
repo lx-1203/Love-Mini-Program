@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!--
     统一页面状态容器 PageStateContainer
     - 支持 loading / error / empty / content 四种状态
@@ -154,7 +154,7 @@ function handleRetry(): void {
     width: 56rpx;
     height: 56rpx;
     border: 4rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
-    border-top-color: var(--c-brand, #3FCF8E);
+    border-top-color: var(--c-brand, #36C99A);
     border-radius: var(--r-circle, 50%);
     animation: spinner-rotate var(--d-spinner, 800ms) linear infinite;
   }

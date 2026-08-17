@@ -1,125 +1,138 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { IMAGE_PATHS } from '../../config/images';
-
-defineProps<{
-  school?: string;
-}>();
-
-const emit = defineEmits<{
-  schoolTap: [];
-  searchTap: [];
-  notifyTap: [];
-}>();
-
-const { t } = useI18n();
+const props = withDefaults(defineProps<{ subtitle?: string; school?: string; locationText?: string }>(), {
+  subtitle: "发现今天值得遇见的人",
+  school: "",
+  locationText: "",
+});
+defineEmits<{ (e: "schoolTap"): void; (e: "searchTap"): void; (e: "notifyTap"): void }>();
+const schoolText = () => props.locationText || props.school || "北京大学 · 3km";
 </script>
 
 <template>
   <view class="home-header">
-    <view
-      class="header-left"
-      @tap="emit('schoolTap')"
-      role="button"
-      :aria-label="t('home.selectSchool')"
-    >
-      <text class="header-school">{{ school || t('home.welcome') }}</text>
-      <image class="header-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" alt="" />
-      <view class="header-badge">
-        <text class="header-badge-text">{{ t('home.schoolLimited') }}</text>
+    <view class="home-header__top">
+      <view class="header-left">
+        <text class="home-header__title">首页</text>
+        <text class="home-header__heart">♥</text>
+      </view>
+      <view class="header-right">
+        <view class="header-location" role="button" aria-label="定位" @tap="$emit('schoolTap')">
+          <text class="header-location__pin">📍</text>
+          <text class="header-location__text">{{ schoolText() }}</text>
+        </view>
+        <view class="header-icon" role="button" aria-label="通知" @tap="$emit('notifyTap')">
+          <text class="header-icon__bell">🔔</text>
+          <view class="header-badge">
+            <text class="header-badge__text">6</text>
+          </view>
+        </view>
       </view>
     </view>
-    <view class="header-right">
-      <view
-        class="header-icon"
-        @tap="emit('searchTap')"
-        role="button"
-        :aria-label="t('home.searchPlaceholder')"
-      >
-        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
-      </view>
-      <view
-        class="header-icon"
-        @tap="emit('notifyTap')"
-        role="button"
-        :aria-label="t('home.notifications')"
-      >
-        <image class="header-icon-img" :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" mode="aspectFit" alt="" />
-        <view class="header-dot" />
-      </view>
-    </view>
+    <text class="home-header__subtitle">{{ subtitle }}</text>
   </view>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .home-header {
+  padding: 20rpx 40rpx 16rpx;
+}
+
+.home-header__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 32rpx;
 }
+
 .header-left {
   display: flex;
-  align-items: center;
-  gap: 12rpx;
+  align-items: baseline;
+  gap: 10rpx;
 }
-.header-school {
-  font-size: var(--fs-xl);
+
+.home-header__title {
+  font-size: 48rpx;
   font-weight: 700;
-  color: var(--c-text-primary);
-  max-width: 240rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #333A37;
+  line-height: 1.1;
 }
-.header-arrow {
-  width: 28rpx;
-  height: 28rpx;
-  transform: rotate(90deg);
-  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+
+.home-header__heart {
+  font-size: 36rpx;
+  color: #FF6B81;
+  line-height: 1;
 }
-.header-badge {
-  padding: 4rpx 16rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-brand-50);
-  border: 1rpx solid var(--c-brand-100);
-}
-.header-badge-text {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--c-brand);
-}
+
 .header-right {
   display: flex;
+  align-items: center;
   gap: 16rpx;
+  flex-shrink: 0;
 }
+
+.header-location {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 56rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.header-location__pin {
+  font-size: 24rpx;
+}
+
+.header-location__text {
+  font-size: 24rpx;
+  color: #6B7571;
+  font-weight: 500;
+}
+
 .header-icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-neutral-100);
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-tertiary);
-  position: relative;
 }
-.header-icon-img {
-  width: 36rpx;
-  height: 36rpx;
+
+.header-icon__bell {
+  font-size: 30rpx;
 }
-/* #ifdef H5 */
-.header-icon:hover { background: var(--c-brand-100); }
-/* #endif */
-.header-dot {
+
+.header-badge {
   position: absolute;
-  top: 4rpx;
-  right: 4rpx;
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-error);
-  border: 3rpx solid var(--c-bg-container, #FFFFFF);
+  top: -4rpx;
+  right: -6rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 6rpx;
+  border-radius: 999rpx;
+  background: #FF6B81;
+  border: 2rpx solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.header-badge__text {
+  font-size: 20rpx;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.home-header__subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  color: #9AA39F;
 }
 </style>

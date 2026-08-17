@@ -334,7 +334,7 @@ class RealProfileServiceTest {
                 165, "bachelor", "never",
                 "广东省", "广州市", "广州市",
                 List.of("买房", "养猫"), List.of(),
-                "/half.jpg", "/video.mp4", "/bg.jpg",
+                "/half.jpg", "/bg.jpg",
                 85, "school", null,
                 List.of(), "approved", null,
                 java.time.LocalDate.of(2000, 1, 1),

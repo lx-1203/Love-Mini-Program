@@ -35,6 +35,53 @@ export interface AuthSessionResult {
   schoolBound?: boolean;
 }
 
+// ===== Search (users.yaml, v3.1) =====
+/** 用户搜索结果视图（镜像 users.yaml UserSearchView） */
+export interface UserSearchView {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  campusName: string;
+  bio: string;
+}
+
+// ===== Whisper (whispers.yaml, v3.1) =====
+/**
+ * 悄悄话（付费留言）视图（镜像 docs/openapi/whispers.yaml WhisperMessageView）。
+ */
+export interface WhisperMessageView {
+  id: number;
+  senderId: number;
+  receiverId: number;
+  content: string;
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'PAY_FAILED' | 'REFUNDED' | string;
+  priceCents: number;
+  createdAt: string;
+  readAt?: string | null;
+}
+
+/** 悄悄话发送请求（幂等 clientRequestId） */
+export interface WhisperSendRequest {
+  receiverId: number;
+  content: string;
+  clientRequestId: string;
+}
+
+// ===== Follow graph (users.yaml) =====
+/**
+ * 关注/粉丝用户视图（镜像 docs/openapi/users.yaml FollowUserView）。
+ * users.yaml 未纳入 generate:openapi 输入，此处手工镜像后端
+ * FollowUserView record（userId/nickname/avatarUrl/bio/followingCount/followersCount）。
+ */
+export interface FollowUserView {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  bio: string;
+  followingCount: number;
+  followersCount: number;
+}
+
 // ===== Profile Stats =====
 export interface ProfileStats {
   followers: number;
@@ -199,6 +246,53 @@ export interface HomeDashboardWithDiscussion {
   peopleLead: string;
   activityPreview: FlexibleObject;
   discussionHeat: FlexibleObject;
+  matchCenter: {
+    quota: { dailyLimit: number; used: number; remaining: number };
+    onlineCount: number;
+    relation: { crushing: number; matched: number; whispers: number };
+  };
+  homeFeed: HomeFeedView;
+}
+
+export interface HomeFeedView {
+  todayRecommendation: TodayRecommendationView | null;
+  loveProgress: {
+    completed: number;
+    total: number;
+    steps: Array<{ id: string; title: string; description: string; completed: boolean; action: string }>;
+  };
+  relationActivity: {
+    likesReceived: number;
+    whispers: number;
+    visitors: number;
+    newMatches: number;
+    totalUnread: number;
+  };
+  interestRecommendations: Array<{ id: number; name: string; icon: string; memberCount: number; joined: boolean }>;
+  nearbyPeople: Array<{ userId: number; name: string; distanceText: string; avatarUrl: string; online: boolean; commonInterests: string[] }>;
+  communityPosts: Array<{ id: number; authorName: string; authorAvatar: string | null; circleName: string; timeText: string; content: string; images: string[]; likeCount: number; commentCount: number }>;
+}
+
+export interface TodayRecommendationView {
+  userId: number;
+  name: string;
+  age: number;
+  campusName: string;
+  gradeLabel: string | null;
+  tags: string[];
+  bio: string;
+  expectation: string | null;
+  distanceText: string | null;
+  certified: boolean;
+  online: boolean;
+  matchScore: number;
+  photoUrl: string | null;
+}
+
+export interface MatchCenterView {
+  quota: { dailyLimit: number; used: number; remaining: number };
+  onlineCount: number;
+  relation: { crushing: number; matched: number; whispers: number };
 }
 
 export namespace Schemas {
@@ -291,7 +385,7 @@ export interface RecommendationFilter {
  * 推荐人物视图（Phase B 扩展）。
  *
  * 在原 RecommendedPersonView 基础上新增 Phase A 实体扩展字段：
- * height/educationLevel/photoGallery/halfBodyPhotoUrl/personalVideoUrl/verificationBadgeLevel。
+ * height/educationLevel/gradeLabel/photoGallery/halfBodyPhotoUrl/verificationBadgeLevel。
  * 兼容字段（id/name/headline/...）保持不变，便于现有 mapToDiscoverCard 复用。
  */
 export interface RecommendedPerson {
@@ -331,8 +425,8 @@ export interface RecommendedPerson {
   photoGallery?: string[];
   /** 半身照 URL */
   halfBodyPhotoUrl?: string;
-  /** 个人视频 URL */
-  personalVideoUrl?: string;
+  /** 年级标签（如 大三） */
+  gradeLabel?: string;
   /** 主页背景图 URL */
   profileBackgroundUrl?: string;
   /** 认证徽章级别：none/email/idcard/school */
@@ -366,6 +460,8 @@ export interface RecommendedPerson {
   mbti?: string;
   /** 悄悄话内容（付费可见/发送） */
   whisper?: string;
+  /** 悄悄话多条文案（2026-08-14：解锁后展示 3 条） */
+  whispers?: string[];
   /** 是否已发送悄悄话 */
   whisperSent?: boolean;
   /** 动态预览 */
@@ -500,6 +596,19 @@ export interface OfficialAccountView {
 }
 
 /**
+ * 官方号活动卡快照。
+ */
+export interface OfficialActivityCardView {
+  activityId: number;
+  title: string;
+  imageUrl: string | null;
+  timeText: string | null;
+  locationText: string | null;
+  enrollmentCount: number;
+  recommendReason: string | null;
+}
+
+/**
  * 官方号消息视图。
  * text 类型仅 content 有效；card 类型附带卡片字段（标题/描述/角标/CTA）。
  */
@@ -516,4 +625,84 @@ export interface OfficialMessageView {
   cardTargetUrl: string | null;
   /** 发布时间（ISO 字符串） */
   publishedAt: string;
+  /** 活动卡快照（card 类型且关联活动时有值） */
+  cardActivity?: OfficialActivityCardView | null;
 }
+
+// ===== 消息模块 V3：关系数据模型 =====
+export interface SuggestedActionView {
+  type: 'reply' | 'invite' | 'view_profile';
+  text: string;
+  targetUrl?: string | null;
+  reason?: string | null;
+}
+
+export interface RelationshipInfoView {
+  status: 'just_met' | 'chatting' | 'ambiguous' | 'mutual_follow';
+  score: number;
+  lastInteractionTime: string | null;
+  relationDays: number;
+  commonInterests: string[];
+  commonActivities: number;
+  suggestedAction: SuggestedActionView;
+}
+
+export interface TodayHeartView {
+  likedMeCount: number;
+  waitingReplyCount: number;
+  warmingCount: number;
+}
+
+export interface AssistantSuggestionView {
+  icon: string;
+  title: string;
+  subtitle: string;
+  targetUrl: string;
+}
+
+export interface RelationshipPersonView {
+  userId: number;
+  name: string;
+  avatarUrl: string;
+  headline: string;
+  relationship: RelationshipInfoView;
+}
+
+export interface PersonSummaryView {
+  userId: number;
+  name: string;
+  avatarUrl: string;
+  headline: string;
+  tags: string[];
+  distanceText: string | null;
+}
+
+export interface MessageDashboardConversationView {
+  id: number;
+  conversationUid: string;
+  userAId: number;
+  userBId: number;
+  otherUserName: string;
+  otherUserAvatar: string;
+  lastMessagePreview: string;
+  lastMessageAt: string | null;
+  unreadCount: number;
+  headline: string;
+  pinned: boolean;
+  phase: string;
+  sessionType: string;
+  muted: boolean;
+  relationship: RelationshipInfoView | null;
+}
+
+export interface MessageDashboardView {
+  todayHeart: TodayHeartView;
+  assistant: AssistantSuggestionView[];
+  warmPeople: RelationshipPersonView[];
+  recommendedPeople: PersonSummaryView[];
+  recentChats: MessageDashboardConversationView[];
+}
+
+
+
+

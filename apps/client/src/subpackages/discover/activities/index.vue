@@ -40,6 +40,22 @@ usePageAccess({
 type ViewMode = "list" | "calendar";
 const viewMode = ref<ViewMode>("list");
 
+/** v3 Nearby 冻结：快捷筛选 全部 / 今天 / 周末（客户端过滤，无新接口） */
+type QuickFilter = "all" | "today" | "weekend";
+const quickFilter = ref<QuickFilter>("all");
+const filteredActivities = computed(() => {
+  const all = activityStore.activities;
+  if (quickFilter.value === "all") return all;
+  return all.filter((a) => {
+    const text = a.scheduleText || "";
+    if (quickFilter.value === "today") return text.includes("今天") || text.includes("今晚") || text.includes("今日");
+    return text.includes("周末") || text.includes("周六") || text.includes("周日");
+  });
+});
+function switchQuickFilter(f: QuickFilter) {
+  quickFilter.value = f;
+}
+
 function switchView(mode: ViewMode) {
   if (viewMode.value === mode) return;
   viewMode.value = mode;
@@ -367,9 +383,21 @@ defineExpose({ toggleEnroll });
         @refresherrefresh="onRefresherRefresh"
         @scrolltolower="onScrollToLower"
       >
+        <view class="quick-filters" role="tablist" :aria-label="t('activities.quickFilterAria')">
+          <view v-for="f in ([{key:'all',label:t('activities.quickAll')},{key:'today',label:t('activities.quickToday')},{key:'weekend',label:t('activities.quickWeekend')}] as const)" :key="f.key"
+            class="quick-filter"
+            :class="{ 'quick-filter--active': quickFilter === f.key }"
+            role="tab"
+            :aria-selected="quickFilter === f.key ? 'true' : 'false'"
+            @tap="switchQuickFilter(f.key)"
+          >
+            <text class="quick-filter__text">{{ f.label }}</text>
+          </view>
+        </view>
+
         <view class="activity-list" role="list">
           <view
-            v-for="item in activityStore.activities"
+            v-for="item in filteredActivities"
             :key="item.id"
             class="activity-row"
             role="button"
@@ -413,6 +441,10 @@ defineExpose({ toggleEnroll });
               <text v-else>{{ item.isEnrolled ? t('activities.interestedDone') : t('activities.interested') }}</text>
             </button>
           </view>
+        </view>
+
+        <view v-if="quickFilter !== 'all' && filteredActivities.length === 0 && activityStore.activities.length > 0" class="filtered-empty">
+          <text class="filtered-empty__text">{{ t('activities.quickEmpty') }}</text>
         </view>
 
         <!-- 加载更多提示 -->
@@ -727,8 +759,8 @@ defineExpose({ toggleEnroll });
   border-radius: 999rpx;
   font-size: var(--fs-xs, 20rpx);
   line-height: 1.4;
-  color: var(--c-primary, #3fcf8e);
-  background: color-mix(in srgb, var(--c-primary, #3fcf8e) 12%, transparent);
+  color: var(--c-primary, #36C99A);
+  background: color-mix(in srgb, var(--c-primary, #36C99A) 12%, transparent);
 }
 
 .row-enrollment {
@@ -1055,5 +1087,46 @@ defineExpose({ toggleEnroll });
 .selected-date-empty__text {
   font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary);
+}
+
+/* ========== v3 Nearby 冻结：活动快捷筛选 ========== */
+.quick-filters {
+  display: flex;
+  gap: 12rpx;
+  padding: 0 32rpx 20rpx;
+}
+
+.quick-filter {
+  padding: 12rpx 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-container, #ffffff);
+  border: 2rpx solid var(--c-line, #ECEFF2);
+}
+
+.quick-filter--active {
+  border-color: var(--c-brand-500, #36C99A);
+  background: var(--c-brand-50, #E6F8F1);
+}
+
+.quick-filter__text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary, #666666);
+}
+
+.quick-filter--active .quick-filter__text {
+  color: var(--c-brand-600, #36C99A);
+}
+
+.filtered-empty {
+  padding: 40rpx 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filtered-empty__text {
+  font-size: 24rpx;
+  color: var(--c-text-tertiary, #666666);
 }
 </style>

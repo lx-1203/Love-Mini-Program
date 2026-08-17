@@ -2,7 +2,7 @@
  * 自定义 TabBar 样式（mp-weixin 原生 tabBar）
  * 设计需求对齐：
  *  - 全宽固定于屏幕最底部，高度 56px + 底部安全区
- *  - 激活态品牌主色 #3FCF8E（图标+文字），非激活态中性深灰 #6B7280
+ *  - 激活态品牌主色 #36C99A（图标+文字），非激活态中性深灰 #6B7280
  *    （修复 P2 颜色对比度，对比度 4.6:1 满足 WCAG AA）
  *  - 图标+文字组合，无冗余动画，点击即时切换
  * ============================================================ */
@@ -14,13 +14,13 @@
   bottom: 0;
   display: flex;
   align-items: stretch;
-  height: calc(112rpx + env(safe-area-inset-bottom));
+  height: calc(128rpx + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: content-box;
-  /* R4-00242：颜色走 design token（page 级 CSS 变量可级联到自定义 tabBar），
-     与 theme/design-variables.scss 双源一致，改品牌色只需改 token 一处 */
   background: var(--c-bg-container, #ffffff);
-  border-top: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
+  border-top-left-radius: 40rpx;
+  border-top-right-radius: 40rpx;
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06);
 }
 
 .tab-bar__item {
@@ -40,9 +40,9 @@
   line-height: 1;
 }
 
-/* 激活态文字主色：青藤绿 #3FCF8E（R4-00242：走 --c-brand token） */
+/* 激活态文字主色：青藤绿 #36C99A（R4-00242：走 --c-brand token） */
 .tab-bar__item--active {
-  color: var(--c-brand, #3FCF8E);
+  color: var(--c-brand, #36C99A);
 }
 
 .tab-bar__icon {
@@ -71,7 +71,7 @@
   height: 6rpx;
   border-radius: 3rpx;
   /* R4-00242：走 --c-brand design token，与激活态文字同源 */
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
 }
 
 /* ============================================================
@@ -102,4 +102,34 @@
   line-height: 1;
   font-weight: 600;
   color: var(--c-text-inverse, #ffffff);
+}
+
+/* ============================================================
+ * 中央「匹配」浮岛（纯匹配版设计：绿色圆形 + 白色爱心）
+ * 唯一凸起项：icon-wrap 上移并放大为圆形浮岛，标签品牌绿
+ * ============================================================ */
+.tab-bar__item--prominent {
+  color: #FF6B81;
+}
+
+.tab-bar__item--prominent .tab-bar__icon-wrap {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: #FF6B81;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -36rpx;
+}
+
+.tab-bar__item--prominent .tab-bar__icon {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.tab-bar__item--prominent .tab-bar__label {
+  color: #FF6B81;
+  font-weight: 600;
 }

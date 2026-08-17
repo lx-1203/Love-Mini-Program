@@ -25,6 +25,7 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
       personality: ["温柔体贴", "文艺安静"],
       mbti: "INFJ",
       whisper: "你相信一见钟情吗？",
+      whispers: ["你相信一见钟情吗？", "如果可以，我想先从一句晚安开始认识你。", "希望我们的故事，不只是一次擦肩。"],
       whisperSent: false,
       expectedPartner: "喜欢猫、愿意一起逛展",
       allowMessage: false,
@@ -55,6 +56,11 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
     expect(card.personality).toEqual(["温柔体贴", "文艺安静"]);
     expect(card.mbti).toBe("INFJ");
     expect(card.whisper).toBe("你相信一见钟情吗？");
+    expect(card.whispers).toEqual([
+      "你相信一见钟情吗？",
+      "如果可以，我想先从一句晚安开始认识你。",
+      "希望我们的故事，不只是一次擦肩。",
+    ]);
     expect(card.whisperSent).toBe(false);
     expect(card.expectedPartner).toBe("喜欢猫、愿意一起逛展");
     expect(card.allowMessage).toBe(false);
@@ -85,6 +91,7 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
     expect(card.personality).toBeUndefined();
     expect(card.mbti).toBeUndefined();
     expect(card.whisper).toBeUndefined();
+    expect(card.whispers).toBeUndefined();
     expect(card.recentPosts).toBeUndefined();
     expect(card.expectedPartner).toBeUndefined();
     expect(card.occupation).toBeUndefined();

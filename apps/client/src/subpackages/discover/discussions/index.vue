@@ -147,7 +147,7 @@ function openDiscussion(item: Awaited<ReturnType<typeof clientApi.getDiscussionR
 
 .retry-link {
   margin-left: 12rpx;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   font-weight: 600;
 }
 </style>

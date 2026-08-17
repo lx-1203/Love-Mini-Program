@@ -268,7 +268,7 @@ interface UploadResponse {
 | POST | `/api/v1/profile/background` | ✅ | 上传背景图 |
 | POST | `/api/v1/profile/photos?index={0-5}` | ✅ | 上传照片墙 |
 | DELETE | `/api/v1/profile/photos/{index}` | ✅ | 删除照片墙 |
-| POST | `/api/v1/profile/video` | ✅ | 上传个人视频 |
+| POST | `/api/v1/profile/video` | ⛔ 已下线（写入路径废弃兼容，客户端不再调用） | 上传个人视频（历史） |
 | POST | `/api/v1/profile/half-body` | ✅ | 上传半身照 |
 | GET | `/api/v1/profile/campus` | ✅ | 校园资料 |
 | PUT | `/api/v1/profile/campus` | ✅ | 保存校园资料 |

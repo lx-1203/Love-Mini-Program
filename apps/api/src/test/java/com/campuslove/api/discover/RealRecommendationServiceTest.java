@@ -136,7 +136,7 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京", null, null, null, null));
+                        null, false, "北京", null, null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getRecommendations(userId);
@@ -168,7 +168,7 @@ class RealRecommendationServiceTest {
                         165, "bachelor", List.of(), null, null, "none",
                         "CL-1", "1.2km", "offline", true, false,
                         List.of("开朗"), "INTJ", null, false, List.of(),
-                        null, false, "北京", null, null, null, null));
+                        null, false, "北京", null, null, null, null, null));
         when(cacheManager.getCachedRecommendations(userId)).thenReturn(cached);
         RecommendationFilter emptyFilter = new RecommendationFilter(
                 null, null, null, null, null, null, null, null, null, null);
@@ -210,7 +210,7 @@ class RealRecommendationServiceTest {
                 165, "bachelor", List.of(), null, null, "none",
                 "CL-1", "1.2km", "offline", true, false,
                 List.of("开朗"), "INTJ", null, false, List.of(),
-                null, false, "北京", null, null, null, null);
+                null, false, "北京", null, null, null, null, null);
         when(cacheManager.getCachedGuestRecommendations()).thenReturn(List.of(alice));
         // 关键词 filter：命中 Alice 的 name/bio/tags
         RecommendationFilter keywordFilter = new RecommendationFilter(
@@ -236,7 +236,7 @@ class RealRecommendationServiceTest {
                         180, "master", List.of(), null, null, "verified",
                         "CL-2", "1.2km", "offline", true, false,
                         List.of("沉稳"), "ISFJ", null, false, List.of(),
-                        null, false, "南京", null, null, null, null));
+                        null, false, "南京", null, null, null, null, null));
         when(cacheManager.buildHistory(userId)).thenReturn(expected);
 
         List<RecommendedPersonView> result = realService.getHistory(userId);

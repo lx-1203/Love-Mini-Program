@@ -50,6 +50,9 @@ import com.campuslove.api.repository.UserRepository;
 @DisplayName("Task 0.7.1 段一: SecurityFilterChain 端到端集成测试（mock profile）")
 class P0SecurityFilterChainIntegrationTest {
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
+
     @Autowired
     private MockMvc mockMvc;
 

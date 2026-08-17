@@ -163,7 +163,7 @@ function amountText(item: { type?: string; amount: number }): string {
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 
 .wallet__back {
@@ -196,12 +196,12 @@ function amountText(item: { type?: string; amount: number }): string {
   margin: var(--sp-5) var(--sp-4);
   padding: var(--sp-6);
   border-radius: var(--r-2xl, 32rpx);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
-  box-shadow: 0 16rpx 40rpx var(--c-brand-bg-tint-strong, rgba(63, 207, 142, 0.35));
+  box-shadow: 0 16rpx 40rpx var(--c-brand-bg-tint-strong, rgba(61, 201, 148, 0.35));
 }
 
 .wallet__balance-icon {

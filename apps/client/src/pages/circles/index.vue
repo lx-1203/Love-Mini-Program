@@ -3,7 +3,7 @@
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -15,9 +15,12 @@ import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 import AppShell from "../../components/layout/AppShell.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
+// 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
+import { getToken } from "../../services/http";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
+const sessionStore = useSessionStore();
 const { circles, loading, errorMessage } = storeToRefs(circleStore);
 
 /**
@@ -173,8 +176,21 @@ function formatMemberCount(count: number): string {
 }
 
 onMounted(() => {
+  // 2026-08-15：未登录时不发受保护请求（冷启动无 token 时拉取 circles → 401 雪崩），
+  // 登录后 watch(isLoggedIn) 自动补拉。
+  if (!getToken()) return;
   void circleStore.fetchCircles();
 });
+
+// 2026-08-15：登录态变化后自动补拉
+watch(
+  () => sessionStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn && circles.value.length === 0) {
+      void circleStore.fetchCircles();
+    }
+  }
+);
 
 // R4-00099：toggleJoin 已改为 @tap.stop 绑定（vue-tsc 可识别），
 // 保留 defineExpose 无副作用，避免将来模板绑定方式变化导致 noUnusedLocals。
@@ -238,10 +254,6 @@ defineExpose({ toggleJoin });
               <view class="circle-card__body">
                 <view class="circle-card__name-row">
                   <text class="circle-card__name">{{ circle.name }}</text>
-                  <view v-if="circle.campusVerified" class="circle-card__badge">
-                    <image class="circle-card__badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
-                    <text class="circle-card__badge-text">{{ t('circle.campusBadge') }}</text>
-                  </view>
                 </view>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">

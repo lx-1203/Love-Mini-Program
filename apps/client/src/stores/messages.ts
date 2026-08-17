@@ -18,6 +18,8 @@ const typingResetTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 import type {
   InteractionEventView,
   OfficialAccountView,
+  MessageDashboardView,
+  RelationshipInfoView,
   OfficialMessageView,
 } from "../services/generated/api-types-supplement";
 // 统一常量：异步操作超时时间
@@ -81,6 +83,8 @@ export interface MessageSession {
   isOfficial?: boolean;
   /** 官方号账号 ID（isOfficial=true 时有效，对应 official-chat 的 accountId） */
   officialAccountId?: string;
+  /** 消息 V3 关系信息（普通私信会话；官方号/临时会话可为 null） */
+  relationship?: RelationshipInfoView | null;
 }
 
 /**
@@ -175,6 +179,8 @@ export interface MessagesState {
   filterType: NotificationFilterType;
   /** 2026-08-10 B1④：对方「正在输入」状态映射（sessionId → typing，WS /queue/typing 驱动） */
   typingMap: Record<string, boolean>;
+  /** 消息 V3 首页聚合数据 */
+  dashboard: MessageDashboardView | null;
 }
 
 /* ========== 后端视图类型 ========== */
@@ -425,6 +431,7 @@ export const useMessagesStore = defineStore("messages", {
     errorMessage: null,
     filterType: "all",
     typingMap: {},
+    dashboard: null,
   }),
 
   getters: {
@@ -459,12 +466,42 @@ export const useMessagesStore = defineStore("messages", {
           fetchWithStaleWhileRevalidate(
             "messages:bootstrap",
             BOOTSTRAP_TTL_MS,
-            () => Promise.all([this.fetchSessions(), this.fetchHeartSignals(), this.fetchNotifications()])
+            () => Promise.all([this.fetchSessions(), this.fetchRelationshipDashboard(), this.fetchHeartSignals(), this.fetchNotifications()])
           ),
           ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutBootstrap") // infra R2-00028: 超时文案 i18n 化
         );
       } catch (error) {
         if (!this.errorMessage) this.errorMessage = error instanceof Error ? error.message : t("storeErrors.messages.loadMessagesFailed");
+      }
+    },
+
+    /** 拉取消息首页聚合数据（今日心动 / 助手建议 / 正在升温 / 最近聊天）。 */
+    async fetchRelationshipDashboard() {
+      try {
+        if (useMock()) {
+          return;
+        }
+        const data = await request<MessageDashboardView>({
+          url: "/messages/relationship-dashboard",
+          method: "GET",
+        });
+        this.dashboard = data;
+        // dashboard 携带的会话与 fetchSessions 结果保持一致
+        if (Array.isArray(data.recentChats)) {
+          const existing = new Map(this.sessions.map((s) => [s.id, s]));
+          const merged = data.recentChats.map((raw) => {
+            const oldSession = existing.get(String(raw.id));
+            const session = mapToMessageSession(raw as unknown as ConversationView);
+            if (oldSession) {
+              return { ...session, muted: oldSession.muted, unreadCount: oldSession.unreadCount, pinned: oldSession.pinned };
+            }
+            return session;
+          });
+          this.sessions = merged;
+        }
+      } catch (error) {
+        // dashboard 失败不阻塞会话列表，保留已有数据
+        console.warn("[messages] fetchRelationshipDashboard failed", error);
       }
     },
 
@@ -1276,3 +1313,16 @@ export const useMessagesStore = defineStore("messages", {
     },
   },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,7 +1,9 @@
 package com.campuslove.api.official;
 
+import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.OfficialAccount;
 import com.campuslove.api.entity.OfficialMessage;
+import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.OfficialAccountRepository;
 import com.campuslove.api.repository.OfficialMessageRepository;
 import java.util.List;
@@ -19,12 +21,15 @@ public class RealOfficialAccountService implements OfficialAccountService {
 
     private final OfficialAccountRepository accountRepository;
     private final OfficialMessageRepository messageRepository;
+    private final ActivityRepository activityRepository;
 
     public RealOfficialAccountService(
             OfficialAccountRepository accountRepository,
-            OfficialMessageRepository messageRepository) {
+            OfficialMessageRepository messageRepository,
+            ActivityRepository activityRepository) {
         this.accountRepository = accountRepository;
         this.messageRepository = messageRepository;
+        this.activityRepository = activityRepository;
     }
 
     @Override
@@ -65,6 +70,28 @@ public class RealOfficialAccountService implements OfficialAccountService {
                 message.getCardDesc(),
                 message.getCardTag(),
                 message.getCardTargetUrl(),
-                message.getPublishedAt());
+                message.getPublishedAt(),
+                buildCardActivity(message));
+    }
+
+    private OfficialActivityCardView buildCardActivity(OfficialMessage message) {
+        Long activityId = message.getCardActivityId();
+        if (activityId == null || !"card".equals(message.getMessageType())) {
+            return null;
+        }
+        return activityRepository.findById(activityId)
+                .map(this::toActivityCard)
+                .orElse(null);
+    }
+
+    private OfficialActivityCardView toActivityCard(Activity activity) {
+        return new OfficialActivityCardView(
+                activity.getId(),
+                activity.getTitle(),
+                activity.getCoverImage(),
+                activity.getScheduleText(),
+                activity.getLocation(),
+                activity.getEnrollmentCount() == null ? 0 : activity.getEnrollmentCount(),
+                null);
     }
 }

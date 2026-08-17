@@ -110,6 +110,8 @@ public class WalletTransactionLog {
     public static final String RELATED_TYPE_MESSAGE_UNLOCK = "MESSAGE_UNLOCK";
     /** 关联业务类型：悄悄话解锁（R4-00314，relatedId=目标用户 ID），流水存在即已解锁 */
     public static final String RELATED_TYPE_WHISPER_UNLOCK = "WHISPER_UNLOCK";
+    /** 关联业务类型：悄悄话付费留言发送（v3.1，relatedId=接收者用户 ID，orderId=WHISPER-{clientRequestId}） */
+    public static final String RELATED_TYPE_WHISPER_SEND = "WHISPER_SEND";
     /**
      * 关联业务类型：任务奖励入账（3-J 任务与积分，relatedId=任务编码）。
      * 领取任务奖励时调用 walletService.recharge 入账（1 积分 = 1 分）。

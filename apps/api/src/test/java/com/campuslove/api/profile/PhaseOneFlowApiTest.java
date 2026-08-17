@@ -37,6 +37,9 @@ import org.springframework.test.web.servlet.MvcResult;
 @Import(MockAllRepositoriesConfig.class)
 class PhaseOneFlowApiTest {
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
+
   @Autowired
   private MockMvc mockMvc;
 
@@ -98,13 +101,13 @@ class PhaseOneFlowApiTest {
 
     mockMvc.perform(get("/api/v1/home/dashboard"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.recommendedPeople.length()").value(5))
+        .andExpect(jsonPath("$.recommendedPeople.length()").value(9))
         .andExpect(jsonPath("$.activityPreview.items.length()").value(2));
 
     mockMvc.perform(get("/api/v1/chat/overview"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.sessions.length()").value(0))
-        .andExpect(jsonPath("$.recommendedPeople.length()").value(5));
+        .andExpect(jsonPath("$.recommendedPeople.length()").value(9));
 
     MvcResult createdSession = mockMvc.perform(post("/api/v1/temp-chat/sessions")
             .contentType(APPLICATION_JSON)

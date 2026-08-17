@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
   installAbortControllerPolyfill,
   installUrlSearchParamsPolyfill,
+  safeGetSystemInfo,
 } from "../compat";
 
 describe("compat polyfills", () => {
@@ -78,5 +79,75 @@ describe("compat polyfills", () => {
     const params = new Ctor("a=%&b=正常");
     expect(params.get("a")).toBe("%");
     expect(params.get("b")).toBe("正常");
+  });
+});
+
+describe("safeGetSystemInfo（split API 优先，避免 wx.getSystemInfoSync 弃用告警）", () => {
+  const uniAny = (globalThis as unknown as Record<string, unknown>).uni as Record<string, unknown>;
+  const SPLIT_KEYS = [
+    "getWindowInfo",
+    "getDeviceInfo",
+    "getAppBaseInfo",
+    "getSystemSetting",
+    "getAppAuthorizeSetting",
+  ] as const;
+
+  function removeSplitApis(): void {
+    for (const key of SPLIT_KEYS) {
+      delete uniAny[key];
+    }
+  }
+
+  function installSplitApis(): void {
+    uniAny.getWindowInfo = () => ({ windowWidth: 400, windowHeight: 800, pixelRatio: 3 });
+    uniAny.getDeviceInfo = () => ({ model: "iPhone 20", deviceModel: "iPhone 20" });
+    uniAny.getAppBaseInfo = () => ({ language: "zh_CN", version: "3.17.1" });
+    uniAny.getSystemSetting = () => ({ bluetoothEnabled: false });
+    uniAny.getAppAuthorizeSetting = () => ({ albumAuthorized: "authorized" });
+  }
+
+  beforeEach(() => {
+    removeSplitApis();
+  });
+
+  afterEach(() => {
+    removeSplitApis();
+  });
+
+  it("存在 split API 时优先组合，且不调用 getSystemInfoSync", () => {
+    installSplitApis();
+    let syncCalled = false;
+    const orig = uniAny.getSystemInfoSync as (() => Record<string, unknown>) | undefined;
+    uniAny.getSystemInfoSync = () => {
+      syncCalled = true;
+      return {};
+    };
+    try {
+      const info = safeGetSystemInfo();
+      expect(syncCalled).toBe(false);
+      expect(info.windowWidth).toBe(400);
+      expect(info.model).toBe("iPhone 20");
+      expect(info.language).toBe("zh_CN");
+      expect(info.bluetoothEnabled).toBe(false);
+      expect(info.albumAuthorized).toBe("authorized");
+    } finally {
+      if (orig) uniAny.getSystemInfoSync = orig;
+      else delete uniAny.getSystemInfoSync;
+    }
+  });
+
+  it("split API 全部缺失时回退 getSystemInfoSync（setup.ts 桩）", () => {
+    removeSplitApis();
+    const info = safeGetSystemInfo();
+    expect(info.windowWidth).toBe(375);
+    expect(info.pixelRatio).toBe(2);
+  });
+
+  it("部分 split API 缺失时仅合并可用项", () => {
+    uniAny.getWindowInfo = () => ({ windowWidth: 500 });
+    // 其余 split API 不安装
+    const info = safeGetSystemInfo();
+    expect(info.windowWidth).toBe(500);
+    expect(info.model).toBeUndefined();
   });
 });

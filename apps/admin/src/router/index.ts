@@ -47,6 +47,7 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/content/Feedback.vue": () => import("../views/content/Feedback.vue"),
   "views/content/SensitiveWords.vue": () => import("../views/content/SensitiveWords.vue"),
   "views/content/MediaAssets.vue": () => import("../views/content/MediaAssets.vue"),
+  "views/content/Whispers.vue": () => import("../views/content/Whispers.vue"),
   /* —— 社区论坛（forum） —— */
   "views/forum/VillagePosts.vue": () => import("../views/forum/VillagePosts.vue"),
   "views/forum/InterestCircles.vue": () => import("../views/forum/InterestCircles.vue"),
@@ -68,6 +69,7 @@ const componentMap: Record<string, ComponentLoader> = {
   /* —— 配置中心（config） —— */
   "views/config/NotifyConfig.vue": () => import("../views/config/NotifyConfig.vue"),
   "views/config/MatchConfig.vue": () => import("../views/config/MatchConfig.vue"),
+  "views/config/ProfileConfig.vue": () => import("../views/config/ProfileConfig.vue"),
   "views/config/Config.vue": () => import("../views/config/Config.vue"),
   "views/config/OfficialAccounts.vue": () => import("../views/config/OfficialAccounts.vue"),
 };

@@ -85,14 +85,21 @@ function persistKickedDevice(id: string): void {
 /**
  * 初始设备列表。
  * R4-00063：移除伪造设备（iPhone 15 Pro / 小米 14 / iPad Air 等假数据），
- * 仅展示真实当前设备（uni.getSystemInfoSync 读取型号）；后端设备管理接口
- * 就绪后可替换为 GET /security/devices 返回的完整设备列表。
+ * 仅展示真实当前设备（2026-08-15：改用 uni.getDeviceInfo 读取型号，规避
+ * wx.getSystemInfoSync 弃用告警；低版本基础库无该 API 时回退旧 API）。
+ * 后端设备管理接口就绪后可替换为 GET /security/devices 返回的完整设备列表。
  */
 function buildInitialDevices(): DeviceItem[] {
   let model = "";
   try {
-    const sys = uni.getSystemInfoSync();
-    model = sys?.model || sys?.deviceModel || "";
+    const uniAny = uni as unknown as Record<string, unknown>;
+    if (typeof uniAny.getDeviceInfo === "function") {
+      const device = (uniAny.getDeviceInfo as () => Record<string, unknown>)();
+      model = String(device?.model || device?.deviceModel || "");
+    } else {
+      const sys = uni.getSystemInfoSync();
+      model = sys?.model || sys?.deviceModel || "";
+    }
   } catch (_e) {
     // 系统信息读取失败时降级为空型号
   }
@@ -520,7 +527,7 @@ async function submitDeleteAccount(): Promise<void> {
           :key="device.id"
           class="sec-item"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8F8F0)' }">
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E6F8F1)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LIST" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -836,7 +843,7 @@ async function submitDeleteAccount(): Promise<void> {
 .sec-item__badge {
   font-size: var(--f-xs);
   color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E8F8F0);
+  background: var(--c-tint-brand, #E6F8F1);
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
 }

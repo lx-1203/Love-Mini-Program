@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 校园社交专区首页
  *
@@ -8,7 +8,8 @@
  * - 已认证用户展示6个话题分类Tab + 话题列表
  * - 底部悬浮"发布话题"按钮（FAB样式）
  */
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
@@ -29,6 +30,13 @@ const {
   isVerified,
   topicHasMore,
 } = storeToRefs(campusStore);
+
+/** v3 Nearby 冻结：查看学校（?school= 公开浏览；空 = 当前用户学校） */
+const viewSchool = ref("");
+/** 是否为「本校已认证」私域视角（可发帖/互动） */
+const isOwnCertifiedView = computed(() =>
+  isVerified.value && (!viewSchool.value || viewSchool.value === certificationInfo.value?.schoolName)
+);
 
 /** 6个话题分类Tab（R4-00109：模板不使用 icon 字段，删除死字段） */
 const categoryTabs: { key: CampusTopicCategory; label: string }[] = [
@@ -131,11 +139,18 @@ function onLoadMoreTopic() {
   });
 }
 
+onLoad((query) => {
+  // v3 Nearby 冻结：支持 ?school= 公开浏览指定学校
+  if (query && typeof query.school === "string" && query.school.trim()) {
+    viewSchool.value = query.school.trim();
+  }
+});
+
 onMounted(async () => {
   // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
   await Promise.allSettled([
     campusStore.fetchCertificationStatus(),
-    campusStore.fetchCampusTopics(activeCategory.value, 1),
+    campusStore.fetchCampusTopics(activeCategory.value, 1, viewSchool.value || undefined),
   ]);
 });
 </script>
@@ -158,7 +173,7 @@ onMounted(async () => {
         </view>
         <view class="header-school">
           <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
-          <text class="school-name">{{ certificationInfo?.schoolName || t('campus.index.defaultSchool') }}</text>
+          <text class="school-name">{{ viewSchool || certificationInfo?.schoolName || t('campus.index.defaultSchool') }}</text>
           <view class="cert-badge" :class="certStatusClass(certificationStatus)">
             <text class="cert-badge__text">{{ certStatusText(certificationStatus) }}</text>
           </view>
@@ -178,8 +193,14 @@ onMounted(async () => {
       </view>
     </view>
 
-    <!-- 已认证用户内容区 -->
-    <template v-if="isVerified">
+    <!-- v3 Nearby 冻结：非本校公开浏览提示（已认证但查看其他学校） -->
+    <view v-else-if="!isOwnCertifiedView" class="public-browse-banner card-base">
+      <text class="public-browse-banner__title">{{ t('campus.index.publicBrowseTitle') }}</text>
+      <text class="public-browse-banner__desc">{{ t('campus.index.publicBrowseDesc') }}</text>
+    </view>
+
+    <!-- 已认证本校 或 公开浏览 内容区 -->
+    <template v-if="isVerified || viewSchool">
       <!-- 话题分类Tab -->
       <scroll-view class="category-tabs" scroll-x :scroll-left="scrollLeft" :show-scrollbar="false">
         <view
@@ -249,7 +270,7 @@ onMounted(async () => {
     </template>
 
     <!-- 底部FAB -->
-    <view v-if="isVerified" class="campus-fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
+    <view v-if="isOwnCertifiedView" class="campus-fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
       <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.EDIT" custom-class="campus-fab__icon" mode="aspectFit" />
     </view>
   </view>
@@ -691,4 +712,26 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 44rpx;
   height: 44rpx;
 }
-</style>
+
+/* ========== v3 Nearby 冻结：非本校公开浏览提示 ========== */
+.public-browse-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin: 0 32rpx 20rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: var(--c-bg-surface, #F7FAF9);
+  border: 1rpx solid var(--c-line, #ECEFF2);
+}
+
+.public-browse-banner__title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #222222);
+}
+
+.public-browse-banner__desc {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #666666);
+}</style>

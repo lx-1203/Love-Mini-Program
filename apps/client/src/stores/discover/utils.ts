@@ -20,7 +20,7 @@ import type { DiscoverCard, ViewedCardRecord, SortBy } from "./types";
  *
  * Phase C 重构：参数类型从 RecommendedPersonView 改为 RecommendedPerson。
  * RecommendedPerson 是 RecommendedPersonView 的超集（额外包含 height、
- * educationLevel、photoGallery、halfBodyPhotoUrl、personalVideoUrl、
+ * educationLevel、gradeLabel、photoGallery、halfBodyPhotoUrl、
  * profileBackgroundUrl、verificationBadgeLevel 等扩展字段），
  * 视图层映射逻辑保持不变，扩展字段由消费方按需读取。
  *
@@ -45,12 +45,13 @@ export function mapToDiscoverCard(
     images: raw.images || [],
     campusName: raw.campusName,
     onlineStatus,
+    gender: (raw as { gender?: "male" | "female" | "unknown" }).gender,
     isSameSchool: raw.isSameSchool ?? false,
     isSameMajor: raw.isSameMajor ?? false,
     commonCircleCount: raw.commonCircleCount ?? 0,
     halfBodyPhotoUrl: raw.halfBodyPhotoUrl,
     photoGallery: raw.photoGallery,
-    personalVideoUrl: raw.personalVideoUrl,
+    gradeLabel: raw.gradeLabel,
     profileBackgroundUrl: raw.profileBackgroundUrl,
     height: raw.height,
     educationLevel: raw.educationLevel,
@@ -71,6 +72,7 @@ export function mapToDiscoverCard(
     incomeRange: raw.incomeRange,
     age: raw.age,
     whisper: raw.whisper,
+    whispers: raw.whispers,
     whisperSent: raw.whisperSent,
     recentPosts: raw.recentPosts,
     expectedPartner: raw.expectedPartner,

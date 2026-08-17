@@ -9,15 +9,13 @@
  *
  * 修改 Tab 配置时，请先修改此文件，再同步更新上述文件。
  *
- * 修复（R4-00209）：新增一致性校验脚本 `pnpm --filter client check:tabbar`
- * （scripts/check-tabbar-consistency.mjs），CI / 本地提交前运行即可自动比对
- * 本文件与 pages.json、custom-tab-bar/index.js 的顺序/路径/图标是否漂移，
- * 无需再完全依赖人工同步。
+ * 纯匹配版（2026-08-14）：五 Tab 顺序 发现 / 附近 / 匹配 / 消息 / 我的，
+ * 「匹配」为中央核心入口（prominent=true，绿色圆形浮岛 + 白色爱心）。
  */
 
 import { IMAGE_PATHS } from './images';
 
-export type AppTabId = "home" | "village" | "discover" | "chat" | "profile" | "messages" | "likes";
+export type AppTabId = "home" | "nearby" | "discover" | "chat" | "profile";
 
 export interface AppTab {
   id: AppTabId;
@@ -29,8 +27,8 @@ export interface AppTab {
 }
 
 /**
- * Tab 顺序（设计需求）：首页、匹配、圈子、消息、我的
- * 注意：APP 启动默认页仍是「匹配」（pages.json 中 pages 数组第一项为
+ * Tab 顺序（寻觅 v3）：首页、附近、寻觅、消息、我的
+ * 注意：APP 启动默认页仍是「寻觅」（pages.json 中 pages 数组第一项为
  * pages/discover/index），tab 顺序与启动页互不影响。
  */
 export const appTabs: AppTab[] = [
@@ -42,25 +40,24 @@ export const appTabs: AppTab[] = [
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.HOME_ACTIVE,
   },
   {
-    id: "discover",
-    label: "匹配",
-    path: "/pages/discover/index",
-    iconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_DEFAULT,
-    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_ACTIVE,
-    // 与 custom-tab-bar/index.js 保持一致：不使用凸起样式
-    prominent: false,
+    id: "nearby",
+    label: "附近",
+    path: "/pages/nearby/index",
+    iconPath: IMAGE_PATHS.ICONS_TABBAR.NEARBY_DEFAULT,
+    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.NEARBY_ACTIVE,
   },
   {
-    id: "village",
-    label: "圈子",
-    path: "/pages/village/index",
-    iconPath: IMAGE_PATHS.ICONS_TABBAR.VILLAGE_DEFAULT,
-    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.VILLAGE_ACTIVE,
+    id: "discover",
+    label: "寻觅",
+    path: "/pages/discover/index",
+    iconPath: IMAGE_PATHS.ICONS_TABBAR.MATCH_HEART,
+    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.MATCH_HEART_ACTIVE,
+    // 中央核心入口：绿色圆形浮岛 + 白色爱心（custom-tab-bar/index.js 同步 prominent）
+    prominent: true,
   },
   {
     id: "chat",
     label: "消息",
-    // 2026-08-07 消息页对标微信重构：tabBar 切换到新版消息列表页（搜索/快捷入口/左滑/长按/官方号角标）
     path: "/pages/messages/index",
     iconPath: IMAGE_PATHS.ICONS_TABBAR.CHAT_DEFAULT,
     selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.CHAT_ACTIVE,

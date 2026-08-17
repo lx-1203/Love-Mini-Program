@@ -1,4 +1,4 @@
-﻿view, text, image {
+view, text, image {
   box-sizing: border-box;
 }
 
@@ -266,7 +266,7 @@ scroll-view::-webkit-scrollbar {
   height: 32rpx;
   background: linear-gradient(180deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
   border-radius: var(--r-xs, 3rpx);
-  box-shadow: var(--s-glow, 0 0 8rpx rgba(63, 207, 142, 0.3));
+  box-shadow: var(--s-glow, 0 0 8rpx rgba(61, 201, 148, 0.3));
 }
 
 .press-feedback {

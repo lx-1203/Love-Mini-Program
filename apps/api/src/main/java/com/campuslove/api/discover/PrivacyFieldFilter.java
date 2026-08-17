@@ -72,7 +72,7 @@ public final class PrivacyFieldFilter {
             "educationLevel",  // 学历层级（推荐筛选条件，可公开）
             "photoGallery",    // 照片墙 URL 列表（用户主动上传）
             "halfBodyPhotoUrl", // 半身照 URL（用户主动上传）
-            "personalVideoUrl", // 个人视频 URL（用户主动上传）
+            "gradeLabel",       // 年级标签（公开展示，如 大三）
             "verificationBadgeLevel", // 认证徽章级别（仅级别，不含证件号）
             // ---- R4-00337：同步 Phase Feedback1 + V2026.08.08.0015 新增字段 ----
             "displayId",       // 展示用个人 ID（用户编号，如 CL-1024）
@@ -92,7 +92,10 @@ public final class PrivacyFieldFilter {
             "age",             // 年龄（出生年份推导）
             "registeredAt",    // 注册时间
             // ---- V3（2026-08-12）：他人主页背景 ----
-            "profileBackgroundUrl" // 个人主页背景图 URL（用户主动上传，可公开）
+            "profileBackgroundUrl", // 个人主页背景图 URL（用户主动上传，可公开）
+            // ---- V2026.08.16.0002：性别 ----
+            "gender" // 性别（male/female，公开展示，非敏感）
+
             // 注意：月收入档位（incomeRange）不在白名单且已从 RecommendedPersonView 移除
             // （R4-00337）——收入档位属敏感经济信息，不随推荐列表对全体用户公开
     );

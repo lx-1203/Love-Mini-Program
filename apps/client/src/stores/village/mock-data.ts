@@ -49,7 +49,7 @@ export const mockSimilarAuthors: SimilarAuthor[] = [
 export const mockTagPosts: PostItem[] = [
   {
     id: "mock-tag-post-1",
-    author: { userId: "user-3016", name: "星野", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
+    author: { userId: "user-3016", name: "林晓", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
     categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
     images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
@@ -187,7 +187,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   },
   {
     userId: "user-3009",
-    name: "林安",
+    name: "夏言",
     avatar: "/static/assets/images/avatars/avatar-21.jpg",
     headline: "94年 · 西安 · 医生 · 博士",
     campusName: "西安交通大学",

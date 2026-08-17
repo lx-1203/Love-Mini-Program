@@ -408,15 +408,15 @@ onShareTimeline(() => ({
 </template>
 
 <style scoped lang="scss">
-$green-primary: var(--c-brand, #3FCF8E);
+$green-primary: var(--c-brand, #36C99A);
 $green-light: var(--c-tint-green-50, #E8F9F4);
-$pink-primary: var(--c-romance-500, #EC4899);
+$pink-primary: var(--c-romance-500, #FF6B81);
 $pink-light: var(--c-tint-pink-soft, #FFF0F5);
-$bg-page: var(--c-bg-page, #F4F6FA);
+$bg-page: var(--c-bg-page, #F7FAF9);
 /* ui-ux 修复：$text-primary 统一为文本次要色 token（原 --c-neutral-800 语义漂移） */
-$text-primary: var(--c-text-primary, #1F2329);
+$text-primary: var(--c-text-primary, #222222);
 /* ui-ux 修复：$text-secondary 语义应为文本次要色（原映射到 tertiary） */
-$text-secondary: var(--c-text-secondary, #5B6470);
+$text-secondary: var(--c-text-secondary, #666666);
 $text-tertiary: var(--c-text-quaternary, #B8B8C8);
 $divider: var(--c-neutral-100, #EEF0F5);
 $white: var(--c-neutral-0, #FFFFFF);
@@ -438,7 +438,7 @@ $red-badge: var(--c-error, #FF4757);
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #7CD9A6) 50%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #6FD4AA) 50%, var(--c-romance-300, #F9A8C4) 100%);
 }
 
 .tag-header__back {
@@ -510,8 +510,8 @@ $red-badge: var(--c-error, #FF4757);
 .feed-state__btn {
   padding: 18rpx 48rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #2DB97A) 100%);
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-400, #36C99A) 100%);
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.20)));
   transition: transform var(--d-fast, 120ms) ease;
 }
 

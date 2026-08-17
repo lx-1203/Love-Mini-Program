@@ -23,4 +23,20 @@ public interface HomeService {
      * @return 首页仪表盘数据
      */
     HomeDashboardView getDashboard(Long userId);
+
+    /**
+     * 获取首页 Feed 聚合（寻觅 v3：今日恋爱首页）。
+     *
+     * @param userId 当前用户 ID，可为 null（游客）
+     * @return 首页 Feed 视图
+     */
+    HomeFeedView getHomeFeed(Long userId);
+
+    /**
+     * 更换首页今日推荐（不记录跳过、不消耗寻觅推荐额度）。
+     *
+     * @param userId 当前用户 ID，可为 null（游客）
+     * @return 下一位今日推荐；无候选时返回 null
+     */
+    TodayRecommendationView rotateTodayRecommendation(Long userId);
 }

@@ -323,7 +323,7 @@ function openActivity(activityId: number | string) {
 .user-avatar__char {
   font-size: 36rpx;
   font-weight: 600;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
 }
 
 .user-avatar__badge {
@@ -368,7 +368,7 @@ function openActivity(activityId: number | string) {
   padding: 2rpx 10rpx;
   border-radius: var(--r-full);
   font-size: 20rpx;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   background: var(--c-bg-brand, #f0fdf9);
   border: 1rpx solid var(--c-brand-100, #ccfbef);
 }
@@ -406,7 +406,7 @@ function openActivity(activityId: number | string) {
 .follow-chip__text {
   font-size: 22rpx;
   font-weight: 500;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
 }
 
 .follow-chip--active .follow-chip__text {
@@ -505,12 +505,12 @@ function openActivity(activityId: number | string) {
 }
 
 .post-card__tag--green {
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   background: var(--c-bg-brand, #f0fdf9);
 }
 
 .post-card__tag--pink {
-  color: var(--c-romance-500, #ec4899);
+  color: var(--c-romance-500, #FF6B81);
   background: var(--c-bg-romance-soft, #fdf2f8);
 }
 
@@ -543,7 +543,7 @@ function openActivity(activityId: number | string) {
   align-items: center;
   justify-content: center;
   font-size: 18rpx;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
 }
 
 .comment-preview__name {
@@ -603,7 +603,7 @@ function openActivity(activityId: number | string) {
 }
 
 .action-btn__count--liked {
-  color: var(--c-romance-500, #ec4899);
+  color: var(--c-romance-500, #FF6B81);
   font-weight: 600;
 }
 

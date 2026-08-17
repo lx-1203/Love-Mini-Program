@@ -355,7 +355,7 @@ function handleRetry(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--s-float-btn, 0 4rpx 12rpx rgba(63, 207, 142, 0.25));
+  box-shadow: var(--s-float-btn, 0 4rpx 12rpx rgba(61, 201, 148, 0.25));
 }
 
 .legal-footer__btn-text {

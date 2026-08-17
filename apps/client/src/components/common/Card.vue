@@ -50,8 +50,8 @@ const rippleColor = computed(() => {
   if (props.gradient === 'brand') return 'rgba(255,255,255,0.2)';
   if (props.gradient === 'vip') return 'rgba(255,255,255,0.2)';
   if (props.variant === 'gradient') return 'rgba(255,255,255,0.2)';
-  if (props.variant === 'atmosphere') return 'rgba(63,207,142,0.08)';
-  return 'rgba(63,207,142,0.06)';
+  if (props.variant === 'atmosphere') return 'rgba(61, 201, 148, 0.08)';
+  return 'rgba(61, 201, 148, 0.06)';
 });
 </script>
 

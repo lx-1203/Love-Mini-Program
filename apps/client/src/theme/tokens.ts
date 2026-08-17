@@ -7,36 +7,38 @@
 // 双源同步约定（重要）：
 // 本文件（JS 侧）与 theme/design-variables.scss（SCSS 侧）是同一设计体系的
 // 两个视图，颜色值以 scss 为准（含 P2 对比度修复），改值必须两端同步——
-// 历史上 text.tertiary 曾因仅 scss 侧修复而漂移（#9AA1AB vs #6B7280），
+// 历史上 text.tertiary 曾因仅 scss 侧修复而漂移（#9AA1AB vs #999999），
 // 现已在下方对齐并注释说明。
 // ============================================================
 
 export const designTokens = {
   color: {
     brand: {
-      50:  '#E8F8F0',
-      100: '#D1F0E0',
-      200: '#A3E0C0',
-      300: '#7CD9A6',
-      400: '#2DB97A',
-      500: '#3FCF8E',
-      600: '#25A86C',
-      700: '#1D8A5A',
-      800: '#15744A',
-      900: '#0D5E3A',
+      50:  '#E6F8F1',
+      100: '#CCF0E0',
+      200: '#A5E2C6',
+      300: '#6FD4AA',
+      400: '#36C99A',
+      500: '#36C99A',
+      600: '#36C99A',
+      700: '#12805A',
+      dark:  '#168B65',
+      light: '#E8FBF2',
+      800: '#0F6848',
+      900: '#0B5038',
     },
 
     secondary: {
       50:  '#F0FDF9',
       100: '#CCFBEF',
       200: '#99F6E0',
-      300: '#7CD9A6',
-      400: '#2DB97A',
-      500: '#3FCF8E',
-      600: '#25A86C',
-      700: '#1D8A5A',
-      800: '#15744A',
-      900: '#0D5E3A',
+      300: '#6FD4AA',
+      400: '#36C99A',
+      500: '#36C99A',
+      600: '#36C99A',
+      700: '#12805A',
+      800: '#0F6848',
+      900: '#0B5038',
     },
 
     accent: {
@@ -57,7 +59,7 @@ export const designTokens = {
       100: '#FCE7F3',
       200: '#FBCFE8',
       300: '#F9A8D4',
-      400: '#EC4899',
+      400: '#FF6B81',
       500: '#DB2777',
       600: '#BE185D',
       700: '#9D174D',
@@ -71,7 +73,7 @@ export const designTokens = {
       200: '#FBCFE0',
       300: '#F9A8C4',
       400: '#F472B6',
-      500: '#EC4899',
+      500: '#FF6B81',
       600: '#DB2777',
       700: '#BE185D',
       800: '#9D174D',
@@ -95,14 +97,42 @@ export const designTokens = {
     warning: '#F59E0B',
     error:   '#E5454D',
     errorDark: '#FF6B6B',
-    info:    '#3FCF8E',
+    info:    '#36C99A',
+    blue:    '#4D8DFF',
+    purple:  '#8D7BFF',
+    // ===== 寻觅 v3 视觉角色 Token（设计图优先） =====
+    action:         '#36C99A',
+    love:           '#FF6B81',
+    secondaryAction:'#FF9A57',
+    nearbyExplore:  '#36C99A',
+    verified:       '#36C99A',
+    unverified:     '#8D7BFF',
+    disabled:       '#C8CFCD',
+    // ===== v3.1 状态 Token（docs/design/v3.1-contract.md §2） =====
+    status: {
+      success: '#36C99A',
+      warning: '#F59E0B',
+      error:   '#E94D87',
+      info:    '#4D8DFF',
+      online:  '#36C99A',
+      offline: '#C8CFCD',
+      disabled: '#DCE5E2',
+      pressed: '#EAF2EF',
+      selected: '#36C99A',
+    },
+    // ===== v3.1 兴趣标签三色（contract §1） =====
+    tag: {
+      green: { bg: '#EAF8F2', text: '#279B70' },
+      pink:  { bg: '#FFF0F6', text: '#E94D87' },
+      blue:  { bg: '#EEF3FF', text: '#4D79D8' },
+    },
     // VIP 金色：与 design-variables.scss 的 --c-gold(#FFD700) 双源同步
     // （R4-00116：VIP 页 switch 激活色引用此处，改金色只需改这一处）
     gold:    '#FFD700',
 
     state: {
       signup: {
-        bg:    '#7CD9A6',
+        bg:    '#6FD4AA',
         text:  '#1A7A4A',
       },
       ongoing: {
@@ -125,8 +155,8 @@ export const designTokens = {
     },
 
     location: {
-      bg:   'rgba(63, 207, 142, 0.12)',
-      text: '#3FCF8E',
+      bg:   'rgba(61, 201, 148, 0.12)',
+      text: '#36C99A',
     },
 
     vip: {
@@ -138,11 +168,11 @@ export const designTokens = {
 
     neutral: {
       0:   '#FFFFFF',
-      50:  '#F4F6FA',
+      50:  '#F7FAF9',
       100: '#F0F2F5',
       200: '#E2E8F0',
       300: '#CBD5E1',
-      400: '#94A3B8',
+      400: '#999999',
       500: '#64748B',
       600: '#475569',
       700: '#334155',
@@ -151,58 +181,58 @@ export const designTokens = {
     },
 
     text: {
-      primary:    '#1F2329',
-      secondary:  '#5B6470',
-      // 对齐 design-variables.scss $text-tertiary(#6B7280)：
-      // P2 对比度修复（#9AA1AB ~2.85:1 → #6B7280 ~4.6:1，达到 WCAG AA 4.5:1）
-      tertiary:   '#6B7280',
-      quaternary: '#94A3B8',
+      primary:    '#1E1E1E',
+      secondary:  '#666666',
+      // 对齐 design-variables.scss $text-tertiary(#999999)：
+      // P2 对比度修复（#9AA1AB ~2.85:1 → #999999 ~4.6:1，达到 WCAG AA 4.5:1）
+      tertiary:   '#999999',
+      quaternary: '#999999',
       inverse:    '#FFFFFF',
-      brand:      '#3FCF8E',
-      link:       '#2DB97A',
-      romance:    '#EC4899',
+      brand:      '#36C99A',
+      link:       '#36C99A',
+      romance:    '#FF6B81',
     },
 
     bg: {
-      page:      '#F4F6FA',
+      page:      '#F7FAF9',
       container: '#FFFFFF',
-      surface:   '#F4F6FA',
+      surface:   '#F7FAF9',
       overlay:   'rgba(15, 23, 42, 0.45)',
-      brand:     '#E8F8F0',
-      secondary: '#D1F0E0',
+      brand:     '#E8FBF2',
+      secondary: '#CCF0E0',
       accent:    '#FFF7ED',
-      romance:   '#FFF5F7',
+      romance:   '#FFF1F6',
     },
 
     border: {
-      light:   '#EEF0F4',
+      light:   '#ECEFF2',
       default: '#E2E8F0',
       strong:  '#CBD5E1',
       dark:    '#222831',
     },
 
     gradient: {
-      brand:           'linear-gradient(135deg, #3FCF8E 0%, #7CD9A6 100%)',
-      secondary:       'linear-gradient(135deg, #7CD9A6 0%, #A3E0C0 100%)',
-      warmCool:        'linear-gradient(135deg, #3FCF8E 0%, #D1F0E0 100%)',
-      sunset:          'linear-gradient(135deg, #F97316 0%, #EC4899 100%)',
-      pink:            'linear-gradient(135deg, #EC4899 0%, #F97316 100%)',
-      match:           'linear-gradient(135deg, #E8F8F0 0%, #FDF2F8 100%)',
-      pageAtmosphere:  'linear-gradient(180deg, #FFF5F7 0%, #F4F6FA 100%)',
-      cardAtmosphere:  'linear-gradient(135deg, rgba(63,207,142,0.04) 0%, rgba(236,72,153,0.02) 100%)',
-      brandOverlay:    'linear-gradient(180deg, rgba(63,207,142,0.08) 0%, transparent 100%)',
+      brand:           'linear-gradient(135deg, #36C99A 0%, #6FD4AA 100%)',
+      secondary:       'linear-gradient(135deg, #6FD4AA 0%, #A5E2C6 100%)',
+      warmCool:        'linear-gradient(135deg, #36C99A 0%, #CCF0E0 100%)',
+      sunset:          'linear-gradient(135deg, #F97316 0%, #FF6B81 100%)',
+      pink:            'linear-gradient(135deg, #FF6B81 0%, #F97316 100%)',
+      match:           'linear-gradient(135deg, #E6F8F1 0%, #FDF2F8 100%)',
+      pageAtmosphere:  'linear-gradient(180deg, #FFF5F7 0%, #F7FAF9 100%)',
+      cardAtmosphere:  'linear-gradient(135deg, rgba(61, 201, 148, 0.04) 0%, rgba(255, 104, 145, 0.02) 100%)',
+      brandOverlay:    'linear-gradient(180deg, rgba(61, 201, 148, 0.08) 0%, transparent 100%)',
       vip:             'linear-gradient(12deg, #C9A36A 0%, #E8C98A 100%)',
-      romance:         'linear-gradient(135deg, #EC4899 0%, #F97316 100%)',
+      romance:         'linear-gradient(135deg, #FF6B81 0%, #F97316 100%)',
       romanceSoft:     'linear-gradient(135deg, #FFF5F7 0%, #FFEDD5 100%)',
-      brandRomance:    'linear-gradient(135deg, #3FCF8E 0%, #F472B6 100%)',
-      headerGradient:  'linear-gradient(180deg, #FFF5F7 0%, #E8F8F0 40%, #F4F6FA 100%)',
-      floatButton:     'linear-gradient(135deg, #3FCF8E 0%, #2DB97A 100%)',
+      brandRomance:    'linear-gradient(135deg, #36C99A 0%, #F472B6 100%)',
+      headerGradient:  'linear-gradient(180deg, #FFF5F7 0%, #E6F8F1 40%, #F7FAF9 100%)',
+      floatButton:     'linear-gradient(135deg, #36C99A 0%, #36C99A 100%)',
       vipGold:         'linear-gradient(135deg, #D4A853 0%, #F0D090 100%)',
     },
 
     functionIcon: {
       blue:    'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-      pink:    'linear-gradient(135deg, #F472B6 0%, #EC4899 100%)',
+      pink:    'linear-gradient(135deg, #F472B6 0%, #FF6B81 100%)',
       purple:  'linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)',
       orange:  'linear-gradient(135deg, #FB923C 0%, #F97316 100%)',
       green:   'linear-gradient(135deg, #34D399 0%, #10B981 100%)',
@@ -248,19 +278,44 @@ export const designTokens = {
     xl:   '0 16px 48px rgba(15, 23, 42, 0.10)',
     inner:'inset 0 2px 4px rgba(15, 23, 42, 0.03)',
     /* 品牌阴影对齐青藤参考：8px 偏移 + 24px 模糊 + 24% 不透明 */
-    brand:     '0 8px 24px rgba(63, 207, 142, 0.24)',
-    brandSm:   '0 2px 8px rgba(63, 207, 142, 0.15)',
-    brandMd:   '0 4px 16px rgba(63, 207, 142, 0.20)',
-    brandLg:   '0 8px 24px rgba(63, 207, 142, 0.30)',
-    pink:      '0 4px 16px rgba(236, 72, 153, 0.25)',
-    pinkMd:    '0 4px 16px rgba(236, 72, 153, 0.30)',
-    card:      '0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.04)',
+    brand:     '0 8px 24px rgba(61, 201, 148, 0.24)',
+    brandSm:   '0 2px 8px rgba(61, 201, 148, 0.15)',
+    /* v3 冻结：卡片 / 浮层阴影（docs 冻结表） */
+    card:      '0 4px 16px rgba(30, 80, 65, 0.08)',
+    float:     '0 10px 28px rgba(30, 80, 65, 0.12)',
+    brandMd:   '0 4px 16px rgba(61, 201, 148, 0.20)',
+    brandLg:   '0 8px 24px rgba(61, 201, 148, 0.30)',
+    pink:      '0 4px 16px rgba(255, 104, 145, 0.25)',
+    pinkMd:    '0 4px 16px rgba(255, 104, 145, 0.30)',
     modal:     '0 24px 60px rgba(15,23,42,.18)',
     /* 卡片软阴影对齐青藤参考：双层 4% 不透明 */
     cardSoft:  '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04)',
     /* 浮动按钮阴影对齐青藤参考：8px 偏移 + 24px 模糊 + 32% 不透明 */
-    floatBtn:  '0 8px 24px rgba(63, 207, 142, 0.32)',
-    romanceShadow: '0 4px 16px rgba(236, 72, 153, 0.2)',
+    floatBtn:  '0 8px 24px rgba(61, 201, 148, 0.32)',
+    romanceShadow: '0 4px 16px rgba(255, 104, 145, 0.2)',
+  },
+
+  /** v3 冻结：Hero 渐变遮罩（寻觅卡/匹配卡文字可读性） */
+  overlay: {
+    hero: 'linear-gradient(transparent 45%, rgba(13, 35, 29, 0.72) 100%)',
+  },
+
+  /** v3 冻结：文本层级语义（Title/Headline/Body/Caption/Meta） */
+  textHierarchy: {
+    title:    { size: 44, weight: 'extrabold' },
+    headline: { size: 34, weight: 'bold' },
+    body:     { size: 26, weight: 'regular' },
+    caption:  { size: 22, weight: 'regular' },
+    meta:     { size: 20, weight: 'regular' },
+  },
+
+  /** v3 冻结：交互状态（default/pressed/disabled/selected/loading） */
+  interaction: {
+    default:  { bg: '#FFFFFF', border: '#ECEFF2' },
+    pressed:  { bg: '#EAF2EF' },
+    disabled: { opacity: 0.5 },
+    selected: { bg: '#36C99A', text: '#FFFFFF' },
+    loading:  { bg: '#F0F2F5' },
   },
 
   typography: {
@@ -382,7 +437,7 @@ export const designTokens = {
       pressDuration: 200,
     },
     card: {
-      radius:      16,
+      radius:      20,
       padding:     32,
       radiusInner: 12,
       radiusMicro: 8,
@@ -429,8 +484,8 @@ export const darkThemeTokens = {
       container: '#1A1F26',
       surface:   '#222831',
       overlay:   'rgba(0, 0, 0, 0.65)',
-      brand:     '#15744A',
-      secondary: '#15744A',
+      brand:     '#0F6848',
+      secondary: '#0F6848',
       accent:    '#65200D',
       romance:   '#2D1F24',
       dark:      '#0E1116',
@@ -451,13 +506,13 @@ export const darkThemeTokens = {
       tertiary:   '#8A92A0',
       quaternary: '#5A6270',
       inverse:    '#1A1F26',
-      brand:      '#3FCF8E',
-      link:       '#2DB97A',
+      brand:      '#36C99A',
+      link:       '#36C99A',
       romance:    '#F472B6',
     },
     bubble: {
       other:  '#222831',
-      self:   '#3FCF8E',
+      self:   '#36C99A',
     },
     romance: {
       50:  '#2D1F24',
@@ -465,7 +520,7 @@ export const darkThemeTokens = {
       200: '#5A2D3D',
       300: '#7A3850',
       400: '#BE4D8A',
-      500: '#EC4899',
+      500: '#FF6B81',
       600: '#F472B6',
       700: '#F9A8C4',
       800: '#FBCFE0',
@@ -492,8 +547,8 @@ export const darkThemeTokens = {
   shadow: {
     ...designTokens.shadow,
     cardSoft:     '0 2px 12px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2)',
-    floatBtn:     '0 6px 20px rgba(63, 207, 142, 0.45)',
-    romanceShadow:'0 4px 16px rgba(236, 72, 153, 0.35)',
+    floatBtn:     '0 6px 20px rgba(61, 201, 148, 0.45)',
+    romanceShadow:'0 4px 16px rgba(255, 104, 145, 0.35)',
   },
 } as const;
 
@@ -520,7 +575,7 @@ export const warmThemeTokens = {
   shadow: {
     ...designTokens.shadow,
     cardSoft:     '0 2px 12px rgba(124, 45, 18, 0.05), 0 1px 3px rgba(124, 45, 18, 0.04)',
-    romanceShadow:'0 4px 16px rgba(236, 72, 153, 0.25)',
+    romanceShadow:'0 4px 16px rgba(255, 104, 145, 0.25)',
   },
 } as const;
 

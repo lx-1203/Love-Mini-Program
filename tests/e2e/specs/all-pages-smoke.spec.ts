@@ -20,12 +20,15 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 const ROUTES: string[] = [
-  // ── 主包（44 页，取自 pages.json；dev 调试页与 showcase 为演示页，不纳入） ──
+  // ── 主包（47 页，取自 pages.json；dev 调试页与 showcase 为演示页，不纳入） ──
   '/pages/discover/index',
+  '/pages/discover/matching',
+  '/pages/discover/match-success',
   '/pages/login/index',
   '/pages/home/index',
+  '/pages/home/segment',
+  '/pages/nearby/index',
   '/pages/discover/history',
-  '/pages/discover/video-player',
   '/pages/likes/index',
   '/pages/likes-visitors/index',
   '/pages/village/index',

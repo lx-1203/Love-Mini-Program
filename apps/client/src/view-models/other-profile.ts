@@ -79,7 +79,6 @@ export function toOtherBasicProfile(
     futurePlanTags: [],
     photoGallery: view.photoGallery ?? [],
     halfBodyPhotoUrl: view.halfBodyPhotoUrl ?? null,
-    personalVideoUrl: view.personalVideoUrl ?? null,
     profileBackgroundUrl: view.profileBackgroundUrl ?? null,
     profileCompletion: 0,
     verificationBadgeLevel: undefined,

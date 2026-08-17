@@ -236,26 +236,26 @@ function focusMainContent(): void {
   height: 100%;
   box-sizing: border-box;
   // 默认页面背景
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 // 背景变体
 .shell-bg--default {
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 .shell-bg--gradient {
   // 品牌色到背景色的渐变
   background: linear-gradient(
     180deg,
-    var(--c-bg-brand, #E8F8F0) 0%,
-    var(--c-bg-page, #F4F6FA) 280rpx
+    var(--c-bg-brand, #E6F8F1) 0%,
+    var(--c-bg-page, #F7FAF9) 280rpx
   );
 }
 
 .shell-bg--image {
   // 背景图通过 inline style 注入
-  background-color: var(--c-bg-page, #F4F6FA);
+  background-color: var(--c-bg-page, #F7FAF9);
 }
 
 // 变体内边距
@@ -313,13 +313,13 @@ function focusMainContent(): void {
 
 .shell__back-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-brand, #3FCF8E);
+  color: var(--c-brand, #36C99A);
   font-weight: 500;
 }
 
 .shell__eyebrow {
   display: block;
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary, #666666);
   font-size: var(--fs-base, 24rpx);
   margin-bottom: 8rpx;
   letter-spacing: 0;
@@ -329,7 +329,7 @@ function focusMainContent(): void {
   display: block;
   font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
 }
 
 .shell__body {
@@ -346,7 +346,7 @@ function focusMainContent(): void {
   top: 0;
   left: 0;
   z-index: 9999;
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
   color: var(--c-text-inverse, #ffffff);
   padding: 16rpx 24rpx;
   border-radius: 0 0 var(--r-md, 12rpx) 0;

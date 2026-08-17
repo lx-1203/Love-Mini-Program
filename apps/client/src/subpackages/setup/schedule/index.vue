@@ -164,11 +164,11 @@ async function save() {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full);
-  background: var(--c-bg-surface, #F4F6FA);
+  background: var(--c-bg-surface, #F7FAF9);
 }
 
 .time-window-remove__text {
-  color: var(--c-text-tertiary, #6B7280);
+  color: var(--c-text-tertiary, #999999);
   font-size: var(--fs-lg);
 }
 
@@ -184,7 +184,7 @@ async function save() {
 }
 
 .time-window-add__text {
-  color: var(--c-brand, #3FCF8E);
+  color: var(--c-brand, #36C99A);
   font-size: var(--fs-lg);
   font-weight: 500;
 }

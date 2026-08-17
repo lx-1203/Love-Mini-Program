@@ -294,6 +294,39 @@ export function getCurrentPagePath(): string {
 }
 
 /**
+ * 2026-08-15：组合微信 split 系统信息 API 读取（wx.getSystemInfoSync 已废弃）。
+ *
+ * 依次尝试 getAppBaseInfo / getDeviceInfo / getWindowInfo / getSystemSetting /
+ * getAppAuthorizeSetting，将各 API 返回对象合并；任一 API 缺失（低版本基础库）
+ * 或调用失败时跳过，全部缺失时返回 null 由调用方回退旧 API。
+ */
+function collectSplitSystemInfo(): Record<string, unknown> | null {
+  const uniAny = uni as unknown as Record<string, unknown>;
+  const parts: Record<string, unknown>[] = [];
+  const keys = [
+    "getAppBaseInfo",
+    "getDeviceInfo",
+    "getWindowInfo",
+    "getSystemSetting",
+    "getAppAuthorizeSetting",
+  ] as const;
+  for (const key of keys) {
+    const fn = uniAny[key];
+    if (typeof fn === "function") {
+      try {
+        const value = (fn as () => unknown)();
+        if (value && typeof value === "object") {
+          parts.push(value as Record<string, unknown>);
+        }
+      } catch (_e) {
+        // 单个 split API 失败不影响其余 API 组合
+      }
+    }
+  }
+  return parts.length > 0 ? Object.assign({}, ...parts) : null;
+}
+
+/**
  * Task 35：安全获取系统信息（替代散落的 uni.getSystemInfoSync / wx.getSystemInfoSync 调用）。
  *
  * 设计目的：封装平台差异，统一返回业务所需的 statusBarHeight / windowWidth 等字段。
@@ -302,6 +335,13 @@ export function getCurrentPagePath(): string {
 export function safeGetSystemInfo(): Record<string, unknown> {
   try {
     // #ifdef MP-WEIXIN
+    // 2026-08-15：wx.getSystemInfoSync 已废弃（基础库 3.17.1 起输出弃用告警），
+    // 优先组合 split API 读取系统信息，避免触发弃用告警；
+    // 低版本基础库无 split API 时回退旧 API（该路径下的弃用告警属预期降级）。
+    const split = collectSplitSystemInfo();
+    if (split) {
+      return split;
+    }
     return uni.getSystemInfoSync() as unknown as Record<string, unknown>;
     // #endif
     // #ifndef MP-WEIXIN
@@ -755,5 +795,15 @@ export function patchDeprecatedApi(): void {
     writable: false,
     value: patchedGetSystemInfo,
   });
+}
+
+// 2026-08-15：模块加载即同步应用弃用 API 补丁。
+// main.ts 在 createSSRApp / onLaunch 之前静态 import 本模块，保证 uni-app 运行时
+// 与业务代码早期对 wx.getSystemInfoSync / wx.getSystemInfo 的调用命中补丁，
+// 不再触发「wx.getSystemInfoSync is deprecated」告警；H5 构建该分支被剥离，无副作用。
+try {
+  patchDeprecatedApi();
+} catch (_e) {
+  // 补丁失败不影响应用启动（降级为原始 API，仅保留弃用告警）
 }
 // #endif

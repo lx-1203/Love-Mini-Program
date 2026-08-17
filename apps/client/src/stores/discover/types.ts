@@ -30,6 +30,8 @@ export interface DiscoverCard {
   campusName?: string;
   /** 在线状态：online-在线 / away-离开 / offline-离线 */
   onlineStatus?: "online" | "away" | "offline";
+  /** 性别（male/female，可空） */
+  gender?: "male" | "female" | "unknown";
   /** 是否同校 */
   isSameSchool?: boolean;
   /** 是否同专业 */
@@ -43,8 +45,8 @@ export interface DiscoverCard {
   halfBodyPhotoUrl?: string;
   /** 照片墙 URL 数组（最多 6 张，Phase D 新增） */
   photoGallery?: string[];
-  /** 个人视频 URL（Phase D 新增，存在时显示视频角标） */
-  personalVideoUrl?: string;
+  /** 年级标签（如 大三，纯匹配版新增） */
+  gradeLabel?: string;
   /** 主页背景图 URL（Phase D 新增） */
   profileBackgroundUrl?: string;
   /** 身高 cm（Phase D 新增，用于卡片信息展示） */
@@ -82,8 +84,10 @@ export interface DiscoverCard {
   incomeRange?: string;
   /** 年龄（由出生年份推导） */
   age?: number;
-  /** 悄悄话内容（付费可见/发送） */
+  /** 悄悄话内容（付费可见/发送；兼容字段，首条文案） */
   whisper?: string;
+  /** 悄悄话多条文案（2026-08-14：解锁后展示 3 条） */
+  whispers?: string[];
   /** 是否已发送悄悄话 */
   whisperSent?: boolean;
   /** 动态预览（卡片/详情页动态 Tab） */
@@ -112,16 +116,16 @@ export type SwipeDirection = "left" | "right";
 /**
  * 悄悄话解锁视图（B3 恋爱小纸条，GET/POST /recommendations/{userId}/whisper[/unlock] 响应体）。
  *
- * 对应后端 record WhisperUnlockView(boolean unlocked, String whisper, Long balanceCents)：
+ * 对应后端 record WhisperUnlockView(boolean unlocked, List<String> whispers, Long balanceCents)：
  * - unlocked：当前用户是否已解锁该悄悄话
- * - whisper：悄悄话文案（未解锁时为 null，不泄露付费内容）
+ * - whispers：悄悄话文案列表（未解锁时为空数组，不泄露付费内容）
  * - balanceCents：当前用户钱包余额（分，查询失败或服务不可用时为 null）
  */
 export interface WhisperUnlockView {
   /** 当前用户是否已解锁该悄悄话 */
   unlocked: boolean;
-  /** 悄悄话文案（未解锁时为 null） */
-  whisper: string | null;
+  /** 悄悄话文案列表（未解锁时为空数组） */
+  whispers: string[];
   /** 当前用户钱包余额（分） */
   balanceCents: number | null;
 }
@@ -289,8 +293,8 @@ export interface RecommendedPersonView {
   halfBodyPhotoUrl?: string;
   /** 照片墙 URL 数组 */
   photoGallery?: string[];
-  /** 个人视频 URL */
-  personalVideoUrl?: string;
+  /** 年级标签（如 大三） */
+  gradeLabel?: string;
   /** 身高 cm */
   height?: number;
   /** 学历：high_school/bachelor/master/phd */

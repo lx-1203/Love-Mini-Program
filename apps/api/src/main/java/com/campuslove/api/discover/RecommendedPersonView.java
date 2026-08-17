@@ -21,7 +21,7 @@ import java.util.List;
  *   <li>{@code educationLevel} —— 学历层级（high_school/bachelor/master/phd，可空）</li>
  *   <li>{@code photoGallery} —— 照片墙 URL 列表（最多 6 张）</li>
  *   <li>{@code halfBodyPhotoUrl} —— 半身照 URL（用于推荐卡片大图）</li>
- *   <li>{@code personalVideoUrl} —— 个人视频 URL</li>
+ *   <li>{@code gradeLabel} —— 年级标签（如 大三，可空）</li>
  *   <li>{@code verificationBadgeLevel} —— 认证徽章级别（school/email/idcard/none）</li>
  * </ul>
  * </p>
@@ -72,8 +72,8 @@ public record RecommendedPersonView(
     List<String> photoGallery,
     /** 半身照 URL（推荐卡片大图） */
     String halfBodyPhotoUrl,
-    /** 个人视频 URL */
-    String personalVideoUrl,
+    /** 年级标签（如 大三，可空；读 UserBasicProfile.grade_label） */
+    String gradeLabel,
     /** 认证徽章级别：school/email/idcard/none */
     String verificationBadgeLevel,
     // ---- Phase Feedback1：寻觅页卡片重设计新增字段 ----
@@ -116,7 +116,10 @@ public record RecommendedPersonView(
     String registeredAt,
     // ---- V3（2026-08-12）：他人主页背景 ----
     /** 个人主页背景图 URL（他人主页按对方显示；可空，前端纯色兜底） */
-    String profileBackgroundUrl
+    String profileBackgroundUrl,
+    // ---- V2026.08.16.0002：性别 ----
+    /** 性别（male/female），可空 */
+    String gender
 ) {
     /**
      * 紧凑构造器：确保 List 字段非 null 且不含 null 元素，避免下游 NPE。

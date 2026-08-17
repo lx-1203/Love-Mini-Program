@@ -39,16 +39,20 @@ const emit = defineEmits<{
   (e: "chat"): void;
   /** 点击「解锁查看」（父组件执行扣费/解锁，成功后调用 showResult） */
   (e: "unlock"): void;
-  /** 解锁成功进入结果态（携带悄悄话文案） */
-  (e: "unlocked", whisperText: string): void;
+  /** 解锁成功进入结果态（携带悄悄话文案列表） */
+  (e: "unlocked", whisperTexts: string[]): void;
+  /** 点击「回复TA」（父组件关闭弹层并带回复内容进入会话） */
+  (e: "reply", text: string): void;
 }>();
 
 const { t } = useI18n();
 
 /** 当前阶段 */
 const phase = ref<WhisperPhase>("paywall");
-/** 解锁成功后的悄悄话文案（结果态展示） */
-const whisperText = ref("");
+/** 解锁成功后的悄悄话文案列表（结果态展示，3 条） */
+const whisperTexts = ref<string[]>([]);
+/** 回复输入草稿（结果态「回复TA」） */
+const replyDraft = ref("");
 /** 关闭动画进行中标志（2026-08-13：先播放下滑出场 200ms 再通知父组件卸载） */
 const closing = ref(false);
 /** 关闭动画定时器引用（卸载时清理） */
@@ -75,7 +79,8 @@ watch(
       return;
     }
     phase.value = "paywall";
-    whisperText.value = "";
+    whisperTexts.value = [];
+    replyDraft.value = "";
   }
 );
 
@@ -107,12 +112,22 @@ function onConfirm(): void {
 
 /**
  * 解锁成功 → 结果态（由父组件在扣费/解锁成功后调用）。
- * @param text 悄悄话文案
+ * @param texts 悄悄话文案列表（3 条）
  */
-function showResult(text: string): void {
-  whisperText.value = text;
+function showResult(texts: string[]): void {
+  whisperTexts.value = texts;
   phase.value = "result";
-  emit("unlocked", text);
+  emit("unlocked", texts);
+}
+
+/** 点击「回复TA」：内容非空时通知父组件带回复进入会话 */
+function onReply(): void {
+  const text = replyDraft.value.trim();
+  if (!text) {
+    uni.showToast({ title: t("discover.whisperReplyEmpty"), icon: "none" });
+    return;
+  }
+  emit("reply", text);
 }
 
 /** 解锁失败 → 回到付费墙（由父组件在解锁失败后调用，错误提示由父组件承载） */
@@ -140,13 +155,14 @@ defineExpose({ showResult, resetToPaywall });
 
       <!-- ===== 付费墙：信纸视觉 + 费用提示 + 余额 ===== -->
       <template v-if="phase === 'paywall'">
-        <text class="whisper-sheet__title">{{ t('discover.whisperUnlockTitle') }}</text>
+        <text class="whisper-sheet__title">{{ t('discover.whisperGuideTitle') }}</text>
         <view class="whisper-letter">
           <view class="whisper-letter__seal">
             <image class="whisper-letter__lock" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
           </view>
           <text class="whisper-letter__name">{{ t('discover.whisperFromUser', { name: userName }) }}</text>
-          <text class="whisper-letter__hint">{{ t('discover.whisperCostHint', { n: UNLOCK_COST_YUAN.WHISPER }) }}</text>
+          <text class="whisper-letter__hint">{{ t('discover.whisperGuideDesc') }}</text>
+          <text class="whisper-letter__hint whisper-letter__cost">{{ t('discover.whisperCostHint', { n: UNLOCK_COST_YUAN.WHISPER }) }}</text>
         </view>
         <text
           class="whisper-sheet__balance"
@@ -184,13 +200,39 @@ defineExpose({ showResult, resetToPaywall });
         <text class="whisper-unlocking__text">{{ t('discover.unlocking') }}</text>
       </view>
 
-      <!-- ===== 结果：悄悄话文案（引用样式）+ 去聊天/关闭 ===== -->
+      <!-- ===== 结果：悄悄话文案列表（引用样式）+ 回复输入 + 去聊天/关闭 ===== -->
       <template v-else>
-        <text class="whisper-sheet__title">{{ t('discover.whisperUnlockTitle') }}</text>
-        <view class="whisper-result">
-          <view class="whisper-result__quote" />
-          <text class="whisper-result__text">{{ whisperText }}</text>
+        <text class="whisper-sheet__title">{{ t('discover.whisperListTitle') }}</text>
+        <view class="whisper-result-list">
+          <view
+            v-for="(text, idx) in whisperTexts" :key="idx"
+            class="whisper-result-item"
+          >
+            <view class="whisper-result__quote" />
+            <text class="whisper-result__text">{{ text }}</text>
+          </view>
         </view>
+        <view class="whisper-reply">
+          <input
+            class="whisper-reply__input"
+            v-model="replyDraft"
+            :placeholder="t('discover.whisperReplyPlaceholder')"
+            confirm-type="send"
+            @confirm="onReply"
+            :aria-label="t('discover.whisperReplyPlaceholder')"
+          />
+          <view
+            class="whisper-reply__send press-feedback"
+            hover-class="whisper-sheet__btn--pressed"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('discover.whisperReplySend')"
+            @tap="onReply"
+          >
+            <text class="whisper-reply__send-text">{{ t('discover.whisperReplySend') }}</text>
+          </view>
+        </view>
+        <text class="whisper-reply__hint">{{ t('discover.whisperReplyHint') }}</text>
         <view class="whisper-sheet__actions">
           <view
             class="whisper-sheet__btn whisper-sheet__btn--ghost press-feedback"
@@ -301,7 +343,7 @@ defineExpose({ showResult, resetToPaywall });
   height: 96rpx;
   border-radius: var(--r-circle, 50%);
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx rgba(63, 207, 142, 0.3));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx rgba(61, 201, 148, 0.3));
 }
 
 .whisper-letter__lock {
@@ -347,7 +389,7 @@ defineExpose({ showResult, resetToPaywall });
   height: 64rpx;
   border-radius: var(--r-circle, 50%);
   border: 6rpx solid var(--c-neutral-200, #e2e8f0);
-  border-top-color: var(--c-brand-500, #3fcf8e);
+  border-top-color: var(--c-brand-500, #36C99A);
   animation: whisper-spin 800ms linear infinite;
 }
 
@@ -360,12 +402,19 @@ defineExpose({ showResult, resetToPaywall });
   to { transform: rotate(360deg); }
 }
 
-/* ===== 结果态：引用样式文案 ===== */
-.whisper-result {
+/* ===== 结果态：多条悄悄话（引用样式列表） ===== */
+.whisper-result-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.whisper-result-item {
   width: 100%;
   display: flex;
   gap: 20rpx;
-  padding: 36rpx 28rpx;
+  padding: 24rpx 28rpx;
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #f8fafc);
   border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
@@ -384,6 +433,45 @@ defineExpose({ showResult, resetToPaywall });
   line-height: 1.7;
   color: var(--c-text-primary);
   word-break: break-all;
+}
+
+/* ===== 结果态：回复输入条 ===== */
+.whisper-reply {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 10rpx 8rpx 24rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container, #f8fafc);
+  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+}
+
+.whisper-reply__input {
+  flex: 1;
+  height: 64rpx;
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+}
+
+.whisper-reply__send {
+  flex-shrink: 0;
+  padding: 14rpx 32rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
+  box-shadow: 0 4rpx 16rpx rgba(255, 104, 145, 0.3);
+}
+
+.whisper-reply__send-text {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.whisper-reply__hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
+  text-align: center;
 }
 
 /* ===== 底部按钮 ===== */
@@ -413,7 +501,7 @@ defineExpose({ showResult, resetToPaywall });
 
 .whisper-sheet__btn--confirm {
   background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx rgba(63, 207, 142, 0.3));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx rgba(61, 201, 148, 0.3));
 }
 
 .whisper-sheet__btn-text {

@@ -403,7 +403,6 @@ public class ProfileQueryService {
                 parseStringList(profile.getFuturePlanTags()),
                 galleryUrls,
                 profile.getHalfBodyPhotoUrl(),
-                profile.getPersonalVideoUrl(),
                 profile.getProfileBackgroundUrl(),
                 completion,
                 badgeLevel,

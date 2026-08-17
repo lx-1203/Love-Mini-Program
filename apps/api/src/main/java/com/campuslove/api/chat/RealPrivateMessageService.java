@@ -682,3 +682,4 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 .collect(Collectors.toMap(User::getId, u -> u));
     }
 }
+

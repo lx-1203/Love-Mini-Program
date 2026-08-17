@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@vitejs/plugin-vue': 5.0.5
+
 importers:
 
   .:
@@ -62,7 +65,7 @@ importers:
         specifier: ~26.0.1
         version: 26.0.1
       '@vitejs/plugin-vue':
-        specifier: ~5.0.0
+        specifier: 5.0.5
         version: 5.0.5(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.3.3))
       typescript:
         specifier: ~5.3.0
@@ -96,7 +99,7 @@ importers:
         specifier: ~26.0.1
         version: 26.0.1
       '@vitejs/plugin-vue':
-        specifier: ~5.0.0
+        specifier: 5.0.5
         version: 5.0.5(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.3.3))
       typescript:
         specifier: ~5.3.0
@@ -175,7 +178,7 @@ importers:
         specifier: 3.0.0-alpha-1000920260525813
         version: 3.0.0-alpha-1000920260525813(@vueuse/core@11.3.0(vue@3.4.21(typescript@5.9.3)))(postcss@8.5.15)(rollup@4.62.2)(supports-color@10.2.2)(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
       '@vitejs/plugin-vue':
-        specifier: ~5.0.0
+        specifier: 5.0.5
         version: 5.0.5(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
       '@vitest/coverage-v8':
         specifier: ~2.1.9
@@ -2269,13 +2272,6 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
       vite: ^5.0.0
-      vue: ^3.2.25
-
-  '@vitejs/plugin-vue@6.0.7':
-    resolution: {integrity: sha512-km+p+XdSz9Sxm5rqUbqcSfZYaAniKxWBj1KURl+Jr7UaPvvX7BmaWMdP69I5rrFDeQGyxAG7NXdc57vz+snhWg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    peerDependencies:
-      vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
       vue: ^3.2.25
 
   '@vitest/coverage-v8@2.1.9':
@@ -7253,7 +7249,7 @@ snapshots:
       '@dcloudio/uni-shared': 3.0.0-alpha-1000920260525813
       '@rollup/pluginutils': 5.1.0(rollup@4.62.2)
       '@vitejs/plugin-legacy': 8.0.2(supports-color@10.2.2)(terser@5.49.0)(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))
-      '@vitejs/plugin-vue': 6.0.7(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
+      '@vitejs/plugin-vue': 5.0.5(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
       '@vitejs/plugin-vue-jsx': 5.1.5(supports-color@10.2.2)(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))
       '@vue/compiler-core': 3.4.21
       '@vue/compiler-dom': 3.4.21
@@ -8788,12 +8784,6 @@ snapshots:
 
   '@vitejs/plugin-vue@5.0.5(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))':
     dependencies:
-      vite: 5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0)
-      vue: 3.4.21(typescript@5.9.3)
-
-  '@vitejs/plugin-vue@6.0.7(vite@5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0))(vue@3.4.21(typescript@5.9.3))':
-    dependencies:
-      '@rolldown/pluginutils': 1.0.1
       vite: 5.4.21(@types/node@26.0.1)(lightningcss@1.32.0)(sass-embedded@1.93.3)(sass@1.101.0)(terser@5.49.0)
       vue: 3.4.21(typescript@5.9.3)
 

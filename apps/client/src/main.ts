@@ -5,7 +5,8 @@ import gsapPlugin from "./plugins/gsap";
 import { initSentry } from "./services/sentry";
 import i18n from "./i18n";
 // Phase R1：AbortController polyfill（mp-weixin 基础库无原生实现）
-// 注意：只 import 函数，不调用 patchDeprecatedApi（wx 相关逻辑仍走 MP-WEIXIN 条件分支）
+// 注意：本 import 会在模块加载时同步应用 wx 弃用 API 补丁（compat 模块内
+// MP-WEIXIN 分支顶层调用 patchDeprecatedApi），早于 createSSRApp / onLaunch。
 import { installAbortControllerPolyfill, installUrlSearchParamsPolyfill } from "./compat";
 import { useThemeStore } from "./stores/theme";
 import { reportGlobalError } from "./utils/global-error";
@@ -53,20 +54,6 @@ function registerGlobalErrorListeners(): void {
   }
 }
 
-// 微信小程序兼容层：仅在 mp-weixin 环境下动态加载，避免 H5 端 import 报错
-async function loadAndPatchWxCompat(): Promise<void> {
-  // #ifdef MP-WEIXIN
-  try {
-    const mod = await import("./compat");
-    if (typeof mod.patchDeprecatedApi === "function") {
-      mod.patchDeprecatedApi();
-    }
-  } catch (_e) {
-    console.warn("[compat] patchDeprecatedApi failed:", _e);
-  }
-  // #endif
-}
-
 /**
  * 初始化应用监控与国际化。
  *
@@ -89,7 +76,8 @@ export function createApp() {
   // Phase R1：注入全局 AbortController polyfill（mp-weixin 基础库无原生实现），
   // 必须在任何 store / service 首次实例化（new AbortController）之前执行。
   // 该模块可在任意平台安全 import（内部幂等：已有原生实现则跳过）。
-  // 注：compat 模块顶层仅导出函数，无副作用，不触发 wx 访问。
+  // 注：compat 模块顶层在 MP-WEIXIN 下会在 import 时同步应用 wx 弃用 API 补丁
+  // （见文件头 import 注释），H5 端无副作用。
   installAbortControllerPolyfill();
   // 收尾轮：注入 URLSearchParams polyfill（mp-weixin 无原生实现，
   // stores/village/api.ts 与 stores/profile.ts、feedback/history.vue 直接使用）
@@ -123,10 +111,8 @@ export function createApp() {
   // 与 app.config.errorHandler 形成完整的错误监控网，覆盖 Vue 之外的运行时错误
   registerGlobalErrorListeners();
 
-  // 在 Vue 应用创建完成后再 patch 微信弃用 API，
-  // 避免在 createSSRApp 之前修改 wx 全局对象导致组件作用域初始化异常
-  loadAndPatchWxCompat();
-
+  // 2026-08-15：wx 弃用 API 补丁已由 compat 模块在 import 时同步应用
+  // （早于 createSSRApp / onLaunch），此处无需再异步 patch。
   return {
     app,
     pinia,

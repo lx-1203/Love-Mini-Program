@@ -43,6 +43,9 @@ import { getToken } from "../services/http";
 import { ensurePrivacyAuthorized } from "./privacy";
 // 2026-08-10 包体积优化：mock 模式判断（纯 env 读取，无 pinia 依赖）
 import { useMock } from "../stores/helpers/use-mock";
+// 2026-08-16：pexels 外链本地化兜底（mp 端无法加载外链图，见 image-local.ts），
+// 与 SafeImage 的 toLocalImage(resolveMediaUrl(raw)) 语义一致
+import { toLocalImage } from "./image-local";
 
 /**
  * 上传文件存储路径前缀。
@@ -116,6 +119,14 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
   const path = rawPath.trim();
   if (path.length === 0) {
     return "";
+  }
+
+  // 2026-08-16：pexels 外链在 mp 端无法加载（渲染层网络错误），统一本地化兜底；
+  // 命中时直接返回本地包内路径（与 SafeImage 语义一致），不再走后续鉴权/静态重写。
+  // 非 pexels URL 原样返回，行为不变。
+  const localized = toLocalImage(path);
+  if (localized !== path) {
+    return localized;
   }
 
   // 绝对 URL / data URI / blob URL → 原样返回（无需鉴权）

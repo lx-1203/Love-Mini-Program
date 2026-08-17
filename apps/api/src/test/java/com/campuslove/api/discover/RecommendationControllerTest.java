@@ -133,7 +133,7 @@ class RecommendationControllerTest {
 
             // Act：全部筛选参数为 null
             List<RecommendedPersonView> result = controller.getRecommendations(
-                    null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null);
 
             // Assert
             assertSame(expected, result);
@@ -158,7 +158,7 @@ class RecommendationControllerTest {
 
             // Act
             List<RecommendedPersonView> result = controller.getRecommendations(
-                    null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null);
 
             // Assert
             assertSame(expected, result);
@@ -179,6 +179,6 @@ class RecommendationControllerTest {
                 "CL-1", "1.2km", "offline", true, true,
                 List.of("开朗"), "INTJ", null, false, new java.util.ArrayList<>(),
                 "期待", false, "江苏 · 南京",
-                "产品经理", 22, "2026-03-12T08:00:00", "/bg.jpg");
+                "产品经理", 22, "2026-03-12T08:00:00", "/bg.jpg", null);
     }
 }

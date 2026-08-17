@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 恋爱认证页
  * 校园身份认证流程：上传学生证 → 提交审核 → 审核通过
@@ -74,8 +74,8 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: t("verification.statusVerified"),
         desc: t("verification.statusVerifiedDesc"),
-        color: "var(--c-brand-500, #3FCF8E)",
-        bgColor: "var(--c-brand-50, #E8F8F0)",
+        color: "var(--c-brand-500, #36C99A)",
+        bgColor: "var(--c-brand-50, #E6F8F1)",
       };
     case "pending":
       return {
@@ -101,7 +101,7 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP,
         title: t("verification.statusUnverified"),
         desc: t("verification.statusUnverifiedDesc"),
-        color: "var(--c-brand-500, #3FCF8E)",
+        color: "var(--c-brand-500, #36C99A)",
         bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
       };
   }

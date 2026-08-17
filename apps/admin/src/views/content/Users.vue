@@ -14,9 +14,13 @@ import {
   enableUser,
   updateUser,
   getUserDetail,
+  listInterestTags,
+  getUserInterestTagIds,
+  saveUserInterestTags,
   type AdminUserSummary,
   type AdminUserDetail,
   type AdminUserListQuery,
+  type InterestTagOption,
 } from "@/api/users";
 import { changePassword } from "@/api/account";
 import { ApiError } from "@/api/http";
@@ -46,6 +50,15 @@ const totalPages = ref(1);
 const editingUser = ref<AdminUserSummary | null>(null);
 const editNickname = ref("");
 const savingEdit = ref(false);
+const editBio = ref("");
+const editInterestTags = ref<string[]>([]);
+const editHeight = ref("");
+const editEducationLevel = ref("");
+const editRelationshipStatus = ref("");
+const editBirthYear = ref("");
+const editExpectedPartner = ref("");
+const interestTagOptions = ref<InterestTagOption[]>([]);
+const selectedTagIds = ref<number[]>([]);
 
 // 禁用/启用确认弹窗状态
 const confirmVisible = ref(false);
@@ -187,15 +200,47 @@ function handlePageChange(newPage: number): void {
   fetchUsers();
 }
 
-function handleEdit(user: AdminUserSummary) {
+async function handleEdit(user: AdminUserSummary) {
   editingUser.value = user;
   editNickname.value = user.nickname;
+  editBio.value = "";
+  editInterestTags.value = [];
+  editHeight.value = "";
+  editEducationLevel.value = "";
+  editRelationshipStatus.value = "";
+  editBirthYear.value = "";
+  editExpectedPartner.value = "";
   errorMsg.value = "";
+  try {
+    const [detail, tags, ids] = await Promise.all([
+      getUserDetail(user.id),
+      listInterestTags(),
+      getUserInterestTagIds(user.id),
+    ]);
+    editBio.value = detail.bio ?? "";
+    editInterestTags.value = Array.isArray(detail.interestTags) ? detail.interestTags : [];
+    editHeight.value = detail.height == null ? "" : String(detail.height);
+    editEducationLevel.value = detail.educationLevel ?? "";
+    editRelationshipStatus.value = detail.relationshipStatus ?? "";
+    editBirthYear.value = detail.birthYear == null ? "" : String(detail.birthYear);
+    editExpectedPartner.value = detail.expectedPartner ?? "";
+    interestTagOptions.value = tags;
+    selectedTagIds.value = (ids ?? []).filter((id) => tags.some((tag) => tag.id === id));
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : t("users.loadDetailFailed");
+  }
 }
 
 function handleCancelEdit() {
   editingUser.value = null;
   editNickname.value = "";
+  editBio.value = "";
+  editInterestTags.value = [];
+  editHeight.value = "";
+  editEducationLevel.value = "";
+  editRelationshipStatus.value = "";
+  editBirthYear.value = "";
+  editExpectedPartner.value = "";
   savingEdit.value = false;
 }
 
@@ -221,9 +266,26 @@ async function handleSaveEdit() {
   const userId = editingUser.value.id;
   savingEdit.value = true;
   try {
-    await updateUser(userId, { nickname: trimmed });
+    await updateUser(userId, {
+      nickname: trimmed,
+      bio: editBio.value.trim() || undefined,
+      interestTags: editInterestTags.value,
+      height: editHeight.value.trim() ? Number(editHeight.value.trim()) : undefined,
+      educationLevel: editEducationLevel.value || undefined,
+      relationshipStatus: editRelationshipStatus.value || undefined,
+      birthYear: editBirthYear.value.trim() ? Number(editBirthYear.value.trim()) : undefined,
+      expectedPartner: editExpectedPartner.value.trim() || undefined,
+    });
+    await saveUserInterestTags(userId, selectedTagIds.value);
     editingUser.value = null;
     editNickname.value = "";
+    editBio.value = "";
+    editInterestTags.value = [];
+    editHeight.value = "";
+    editEducationLevel.value = "";
+    editRelationshipStatus.value = "";
+    editBirthYear.value = "";
+    editExpectedPartner.value = "";
     // 刷新列表以同步最新昵称
     await fetchUsers();
   } catch (err) {
@@ -610,6 +672,51 @@ onMounted(() => {
           <text class="form-label">{{ t("users.nicknameLabel") }}</text>
           <input v-model="editNickname" class="form-input" type="text" :maxlength="NICKNAME_MAX_LENGTH" />
         </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.bioLabel") }}</text>
+          <input v-model="editBio" class="form-input" type="text" maxlength="500" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.interestTagsLabel") }}</text>
+          <view class="tag-select">
+            <label v-for="tag in interestTagOptions" :key="tag.id" class="tag-option">
+              <input v-model="selectedTagIds" type="checkbox" :value="tag.id" />
+              <span>{{ tag.name }}</span>
+            </label>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.heightLabel") }}</text>
+          <input v-model="editHeight" class="form-input" type="number" min="120" max="250" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.educationLevelLabel") }}</text>
+          <select v-model="editEducationLevel" class="form-input">
+            <option value="">{{ t("common.emptyPlaceholder") }}</option>
+            <option value="high_school">高中</option>
+            <option value="bachelor">本科</option>
+            <option value="master">硕士</option>
+            <option value="phd">博士</option>
+          </select>
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.relationshipStatusLabel") }}</text>
+          <select v-model="editRelationshipStatus" class="form-input">
+            <option value="">{{ t("common.emptyPlaceholder") }}</option>
+            <option value="never">未婚</option>
+            <option value="married_before">曾婚</option>
+            <option value="divorced">离异</option>
+            <option value="widowed">丧偶</option>
+          </select>
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.birthYearLabel") }}</text>
+          <input v-model="editBirthYear" class="form-input" type="number" min="1900" max="2026" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("users.expectedPartnerLabel") }}</text>
+          <input v-model="editExpectedPartner" class="form-input" type="text" maxlength="200" />
+        </view>
         <view class="modal-actions">
           <button class="ghost-button" :disabled="savingEdit" @click="handleCancelEdit">{{ t("common.cancel") }}</button>
           <button class="primary-button" :disabled="savingEdit" @click="handleSaveEdit">
@@ -641,6 +748,37 @@ onMounted(() => {
           <view class="detail-row">
             <text class="detail-label">{{ t("users.bioLabel") }}:</text>
             <text>{{ detailUser.bio || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.interestTagsLabel") }}:</text>
+            <text>{{ detailUser.interestTags.join("、") || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.heightLabel") }}:</text>
+            <text>{{ detailUser.height == null ? t("common.emptyPlaceholder") : detailUser.height + "cm" }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.educationLevelLabel") }}:</text>
+            <text>{{ detailUser.educationLevel || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.relationshipStatusLabel") }}:</text>
+            <text>{{ detailUser.relationshipStatus || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.birthYearLabel") }}:</text>
+            <text>{{ detailUser.birthYear == null ? t("common.emptyPlaceholder") : detailUser.birthYear }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.expectedPartnerLabel") }}:</text>
+            <text>{{ detailUser.expectedPartner || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.photoGalleryLabel") }}:</text>
+            <view class="detail-thumbs">
+              <img v-for="url in detailUser.photoGallery" :key="url" class="detail-thumb" :src="url" alt="" @error="onAvatarError" />
+              <text v-if="!detailUser.photoGallery.length">{{ t("common.emptyPlaceholder") }}</text>
+            </view>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.campusLabel") }}:</text>
@@ -1056,5 +1194,34 @@ onMounted(() => {
   font-weight: 600;
   color: var(--admin-color-text-tertiary);
   min-width: var(--admin-action-min-width);
+}
+
+.tag-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.detail-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 </style>

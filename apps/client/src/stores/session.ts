@@ -38,7 +38,7 @@ const mockUserSession: UserSession = {
   userId: "user-1001",
   loggedIn: true,
   loginMethod: "wechat",
-  displayName: "测试用户",
+  displayName: "林晓",
   phoneBound: false,
   profileCompleted: true,
   campusVerified: true,

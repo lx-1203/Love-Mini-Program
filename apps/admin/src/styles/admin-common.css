@@ -52,7 +52,7 @@
 
   /* —— 渐变辅助色（Login/Forbidden 页面渐变背景） —— */
   --admin-color-gradient-secondary: #764ba2;
-  --admin-color-skip-link: #3FCF8E;
+  --admin-color-skip-link: #34C98A;
   --admin-color-skip-link-fg: #ffffff;
 
   /* —— Danger 加深色（ErrorState 标题/正文/hover） —— */

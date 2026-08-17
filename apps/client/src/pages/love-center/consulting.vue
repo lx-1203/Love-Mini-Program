@@ -119,7 +119,7 @@ function goBack() {
   align-items: center;
   justify-content: center;
   padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #3fcf8e) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 
 .content-header__title {
@@ -225,7 +225,7 @@ function goBack() {
 
 .course-card__signup {
   flex-shrink: 0;
-  background: var(--c-gradient-brand, linear-gradient(135deg, #3fcf8e, #6fe0b0));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
   padding: 12rpx var(--sp-5);
   border-radius: var(--r-full);
 }

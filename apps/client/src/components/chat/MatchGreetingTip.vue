@@ -88,7 +88,7 @@ const { t } = useI18n();
   padding: 12rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
   border: 2rpx solid var(--c-brand);
-  background: var(--c-brand-50, rgba(63, 207, 142, 0.08));
+  background: var(--c-brand-50, rgba(61, 201, 148, 0.08));
 }
 
 .match-greeting__btn-text {

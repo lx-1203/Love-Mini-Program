@@ -96,7 +96,91 @@ public class MockHomeService implements HomeService {
                 .toList(),
             discussionPulse == null ? null : discussionPulse.title(),
             discussionPulse == null ? null : discussionPulse.heatLabel()
+        ),
+        new MatchCenterView(
+            new QuotaView(-1, 0, -1),
+            32,
+            new RelationProgressView(1, 1, 0)
+        ),
+        getHomeFeed(userId)
+    );
+  }
+
+  @Override
+  public HomeFeedView getHomeFeed(Long userId) {
+    return new HomeFeedView(
+        new TodayRecommendationView(
+            1001L,
+            "林晓",
+            22,
+            "北京大学",
+            "大三",
+            List.of("摄影", "旅行", "音乐"),
+            "喜欢用镜头记录生活的美好瞬间",
+            "期待与你一起探索这个世界",
+            "1.2km",
+            true,
+            true,
+            92,
+            "/static/assets/images/people/person-01.webp"
+        ),
+        new LoveProgressView(
+            2,
+            4,
+            List.of(
+                new LoveProgressStepView("profile", "完善资料", "让更多人了解你", true, "profile"),
+                new LoveProgressStepView("like", "今日心动", "认识一位心动的人", true, "discover"),
+                new LoveProgressStepView("whisper", "回复悄悄话", "回复一条悄悄话", false, "messages"),
+                new LoveProgressStepView("interest", "参与兴趣互动", "参与一个兴趣圈", false, "nearby")
+            )
+        ),
+        new RelationActivityView(3, 2, 5, 1, 11),
+        List.of(
+            new InterestCircleSummaryView(1L, "摄影圈", "📷", 12000, false),
+            new InterestCircleSummaryView(2L, "旅行圈", "✈️", 8932, false),
+            new InterestCircleSummaryView(3L, "音乐圈", "🎵", 16000, false),
+            new InterestCircleSummaryView(4L, "美食圈", "🍜", 9210, false)
+        ),
+        List.of(
+            new NearbyPersonSummaryView(1001L, "林晓", "1.2km", "/static/assets/images/people/person-01.webp", true, List.of("摄影")),
+            new NearbyPersonSummaryView(1002L, "夏言", "1.5km", "/static/assets/images/people/person-02.webp", true, List.of("建筑")),
+            new NearbyPersonSummaryView(1003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.webp", false, List.of("日语")),
+            new NearbyPersonSummaryView(1004L, "小满", "2.1km", "/static/assets/images/people/person-04.webp", false, List.of("编程")),
+            new NearbyPersonSummaryView(1005L, "Luna", "2.8km", "/static/assets/images/people/person-05.webp", false, List.of("新闻"))
+        ),
+        List.of(
+            new CommunityPostSummaryView(
+                1L,
+                "林晓",
+                "/static/assets/images/people/person-01.webp",
+                "摄影圈",
+                "15 分钟前",
+                "今天在颐和园拍到超美的落日，光影太治愈了～",
+                List.of(),
+                128,
+                24
+            )
         )
     );
   }
+
+  @Override
+  public TodayRecommendationView rotateTodayRecommendation(Long userId) {
+    return new TodayRecommendationView(
+        1002L,
+        "夏言",
+        24,
+        "清华大学",
+        "研一",
+        List.of("旅行", "摄影"),
+        "喜欢在路上遇见不同的风景",
+        "想和你分享旅途里的故事",
+        "1.5km",
+        true,
+        true,
+        90,
+        "/static/assets/images/people/person-02.webp"
+    );
+  }
+
 }

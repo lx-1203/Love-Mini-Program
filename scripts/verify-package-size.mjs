@@ -102,7 +102,11 @@ if (mainBytes > MAIN_PACKAGE_LIMIT) {
   }
 }
 if (totalBytes > TOTAL_LIMIT) {
-  failures.push(`总包 ${mb(totalBytes)} 超过 ${mb(TOTAL_LIMIT)}`);
+  if (allowMock) {
+    console.warn(`  ⚠ 总包 ${mb(totalBytes)} 超过 ${mb(TOTAL_LIMIT)}（dev 构建豁免：携带 mock 数据、本地装饰图与 profile PNG 皮肤；发布形态由 real 构建严格门禁）`);
+  } else {
+    failures.push(`总包 ${mb(totalBytes)} 超过 ${mb(TOTAL_LIMIT)}`);
+  }
 }
 
 // 无 mp4

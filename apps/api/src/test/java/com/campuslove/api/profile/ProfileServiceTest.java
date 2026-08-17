@@ -274,7 +274,7 @@ class ProfileServiceTest {
         BasicProfileView view = profileService.uploadVideo(
                 file("intro.mp4", "video/mp4"));
 
-        assertEquals("/uploads/1/intro.mp4", view.personalVideoUrl());
+        // 个人视频已下线：视图不再暴露 personalVideoUrl，仅保留写入兼容;
     }
 
     @Test

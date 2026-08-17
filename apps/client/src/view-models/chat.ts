@@ -1,4 +1,5 @@
 import type { components } from "../services/generated/api-types";
+import type { BreakQuestionItem, BreakQuestionType } from "../types/chat";
 import { statusCopyMap } from "../config/status-copy";
 // 修复 no-duplicate-imports：合并 ./home 的重复 import
 import { type HomeCompletionState, getHomeSetupTasks } from "./home";
@@ -116,4 +117,43 @@ export function toChatSessionView(session: Schemas["TempChatSession"]) {
     ...session,
     contactExchangeLabel: toContactExchangeLabel(session.contactExchange.status),
   };
+}
+
+export interface IcebreakerSourceItem {
+  id: number;
+  content: string;
+  category: string;
+  source: string;
+}
+
+function toBreakQuestionType(source: string): BreakQuestionType {
+  if (source.includes("school")) return "same_school";
+  if (source.includes("activity")) return "same_activity";
+  if (source.includes("interest")) return "common_interest";
+  return "icebreaker";
+}
+
+/**
+ * 将 chatStore.icebreakerItems 映射为聊天页输入区上方的 BreakQuestionItem[]。
+ * category/source 作为共同喜欢展示句，content 作为可直发的推荐开场。
+ */
+export function toBreakQuestionItems(
+  items: IcebreakerSourceItem[]
+): BreakQuestionItem[] {
+  const seen = new Set<string>();
+  const result: BreakQuestionItem[] = [];
+  for (const item of items) {
+    const text = (item.category || item.source || "").trim();
+    const actionText = (item.content || "").trim();
+    if (!actionText) continue;
+    const key = `${text}:${actionText}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      type: toBreakQuestionType(item.source || item.category || ""),
+      text,
+      actionText,
+    });
+  }
+  return result;
 }

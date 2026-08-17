@@ -7,7 +7,7 @@ import { resolveMediaUrl } from "../../utils/media";
 
 const props = withDefaults(
   defineProps<{
-    sender: "self" | "peer" | "system";
+    sender: "self" | "peer" | "assistant" | "system";
     kind: "text" | "voice" | "emoji" | "image" | "system" | "activity";
     body: string;
     sentAt: string;
@@ -47,6 +47,12 @@ const isSelfSender = computed(() => props.sender === "self");
 
 /** 是否为对方发送的消息 */
 const isPeerSender = computed(() => props.sender === "peer");
+
+/** 是否为寻觅助手发送的消息 */
+const isAssistantSender = computed(() => props.sender === "assistant");
+
+/** 助手头像 */
+const assistantAvatar = IMAGE_PATHS.MESSAGE_ICONS.ASSISTANT_AVATAR;
 
 /** 引用消息发送者文案 */
 const quoteSenderLabel = computed(() => {
@@ -119,9 +125,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
     <view v-else class="bubble-row" :class="[`bubble-row--${sender}`]">
       <!-- 对方头像（左侧） -->
       <image
-        v-if="isPeerSender"
+        v-if="isPeerSender || isAssistantSender"
         class="bubble-avatar bubble-avatar--peer"
-        :src="resolveMediaUrl(peerAvatar)"
+        :src="isAssistantSender ? assistantAvatar : resolveMediaUrl(peerAvatar)"
         mode="aspectFill"
         lazy-load
         role="img"
@@ -235,9 +241,16 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 /* 2026-08-09 微信 1:1 重构：圆角 12px = 24rpx（微信 4px/16px 风格；无对应 token 档位，局部字面量）；
    我方右上直角、对方左上直角（圆角序列：左上 右上 右下 左下） */
 .bubble--self {
-  background: var(--c-brand);
-  color: var(--c-text-inverse);
-  border-radius: 24rpx 0 24rpx 24rpx;
+  background: #36C99A;
+  color: #FFFFFF;
+  border-radius: 20rpx 20rpx 4rpx 20rpx;
+}
+
+.bubble--assistant {
+  background: #E8F8F1;
+  color: #222222;
+  border-radius: 20rpx 20rpx 20rpx 4rpx;
+  max-width: 560rpx;
 }
 
 /* 对方气泡：纯白（--c-bubble-other 已改 #FFFFFF）、无阴影（微信白气泡无投影） */
@@ -356,3 +369,4 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   opacity: 0.85;
 }
 </style>
+

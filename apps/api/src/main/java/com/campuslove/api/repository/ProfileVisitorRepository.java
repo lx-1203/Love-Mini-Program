@@ -30,9 +30,11 @@ public interface ProfileVisitorRepository extends JpaRepository<ProfileVisitor, 
      * @param visitorId 访客用户 ID
      * @param hostId    被访用户 ID
      * @return 最近一次访问记录（不存在时为空）
-     */
-    java.util.Optional<ProfileVisitor> findTopByVisitorIdAndHostIdOrderByVisitedAtDesc(
+     */    java.util.Optional<ProfileVisitor> findTopByVisitorIdAndHostIdOrderByVisitedAtDesc(
             Long visitorId, Long hostId);
+
+    /** 统计指定访客访问指定用户主页的次数。 */
+    long countByVisitorIdAndHostId(Long visitorId, Long hostId);
 
     /**
      * 检查指定访客在指定时间区间内是否已访问过指定用户主页。
@@ -66,3 +68,6 @@ public interface ProfileVisitorRepository extends JpaRepository<ProfileVisitor, 
             LocalDateTime endTime
     );
 }
+
+
+

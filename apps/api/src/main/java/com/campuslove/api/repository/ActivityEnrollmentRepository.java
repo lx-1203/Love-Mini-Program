@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * 活动报名记录 Repository。
@@ -13,54 +15,24 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface ActivityEnrollmentRepository extends JpaRepository<ActivityEnrollment, Long> {
 
-    /**
-     * 根据活动 ID 查询报名记录。
-     *
-     * @param activityId 活动 ID
-     * @return 报名记录列表
-     */
     List<ActivityEnrollment> findByActivityId(Long activityId);
 
-    /**
-     * 根据用户 ID 查询报名记录。
-     *
-     * @param userId 用户 ID
-     * @return 报名记录列表
-     */
     List<ActivityEnrollment> findByUserId(Long userId);
 
-    /**
-     * 根据活动 ID 和用户 ID 查询报名记录。
-     *
-     * @param activityId 活动 ID
-     * @param userId     用户 ID
-     * @return 报名记录（可能为空）
-     */
     Optional<ActivityEnrollment> findByActivityIdAndUserId(Long activityId, Long userId);
 
-    /**
-     * 检查指定用户是否已报名指定活动。
-     *
-     * @param activityId 活动 ID
-     * @param userId     用户 ID
-     * @return 是否已报名
-     */
     boolean existsByActivityIdAndUserId(Long activityId, Long userId);
 
-    /**
-     * 根据活动 ID 分页查询报名记录，按报名时间倒序排列（管理后台报名列表）。
-     *
-     * @param activityId 活动 ID
-     * @param pageable   分页参数
-     * @return 报名记录分页列表（最新报名在前）
-     */
     Page<ActivityEnrollment> findByActivityIdOrderByEnrolledAtDesc(Long activityId, Pageable pageable);
 
-    /**
-     * 根据活动 ID 删除全部报名记录（删除活动时清理孤儿数据）。
-     *
-     * @param activityId 活动 ID
-     * @return 删除条数
-     */
     long deleteByActivityId(Long activityId);
+
+    /**
+     * 查询两个用户共同报名过的活动 ID 列表。
+     */
+    @Query("SELECT e1.activityId FROM ActivityEnrollment e1 WHERE e1.userId = :userIdA "
+            + "AND EXISTS (SELECT 1 FROM ActivityEnrollment e2 "
+            + "WHERE e2.activityId = e1.activityId AND e2.userId = :userIdB)")
+    List<Long> findCommonActivityIdsByUserIds(@Param("userIdA") Long userIdA,
+                                              @Param("userIdB") Long userIdB);
 }

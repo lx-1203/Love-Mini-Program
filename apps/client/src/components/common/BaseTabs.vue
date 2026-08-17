@@ -193,7 +193,7 @@ function formatBadge(badge: number | string): string {
 
 .base-tab-label {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary, #666666);
   transition: color var(--d-base, 300ms) ease, font-weight var(--d-base, 300ms) ease;
 }
 
@@ -218,13 +218,13 @@ function formatBadge(badge: number | string): string {
   width: 48rpx;
   height: 4rpx; /* 固定布局尺寸（下划线厚度），无对应 token */
   border-radius: var(--r-xs, 4rpx);
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
   transition: transform var(--d-base, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* 激活态：标签文字加粗 + 下划线展开 */
 .base-tab-item.is-active .base-tab-label {
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   font-weight: 600;
 }
 
@@ -242,7 +242,7 @@ function formatBadge(badge: number | string): string {
 .base-tabs--pill .base-tab-item {
   padding: var(--sp-3) var(--sp-7);
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 .base-tabs--pill .base-tab-label {
@@ -250,7 +250,7 @@ function formatBadge(badge: number | string): string {
 }
 
 .base-tabs--pill .base-tab-item.is-active {
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
 }
 
 .base-tabs--pill .base-tab-item.is-active .base-tab-label {
@@ -267,7 +267,7 @@ function formatBadge(badge: number | string): string {
 .base-tabs--block .base-tab-item {
   padding: var(--sp-4) var(--sp-6);
   border-radius: var(--r-md, 12rpx);
-  background: var(--c-bg-page, #F4F6FA);
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 .base-tabs--block .base-tab-label {
@@ -275,7 +275,7 @@ function formatBadge(badge: number | string): string {
 }
 
 .base-tabs--block .base-tab-item.is-active {
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
 }
 
 .base-tabs--block .base-tab-item.is-active .base-tab-label {

@@ -543,7 +543,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
   width: 48rpx;
   height: 4rpx;
   border-radius: var(--r-xs);
-  background: var(--c-brand, #3FCF8E);
+  background: var(--c-brand, #36C99A);
 }
 
 .tabs__badge {

@@ -19,7 +19,8 @@ describe("navigation utils", () => {
 
   it("detects tab bar paths", () => {
     expect(isTabPath("/pages/home/index")).toBe(true);
-    expect(isTabPath("pages/village/index")).toBe(true);
+    expect(isTabPath("pages/village/index")).toBe(false);
+    expect(isTabPath("/pages/nearby/index")).toBe(true);
     expect(isTabPath("/pages/discover/index")).toBe(true);
     expect(isTabPath("/pages/messages/index")).toBe(true);
     expect(isTabPath("/pages/profile/index")).toBe(true);

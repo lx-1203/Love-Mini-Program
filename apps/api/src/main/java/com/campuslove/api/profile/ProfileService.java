@@ -69,8 +69,7 @@ public interface ProfileService {
     BasicProfileView deletePhoto(int index);
 
     /**
-     * 上传个人视频。
-     * 校验视频格式与大小，写入 personalVideoUrl。
+     * 上传个人视频（已废弃兼容：个人视频功能已下线，仅保留服务端写入，
      *
      * @param file multipart 视频文件
      * @return 更新后的基本资料视图

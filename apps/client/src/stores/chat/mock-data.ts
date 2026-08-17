@@ -19,7 +19,7 @@ import { t } from "@/i18n";
 
 /** Mock 会话1：普通私信会话 */
 // 修复（P1 BUG）：recommendedPersonId 由 "rp-001" 改为 "4001"，与
-// services/mocks/fixtures.ts 的推荐人数字 id 体系对齐（4001=夏言，对应
+// services/mocks/fixtures.ts 的推荐人数字 id 体系对齐（4001=林晓，对应
 // i18n mockData.recommendedPeople.name1），消除三套 id 体系错位。
 export const mockSession1: TempChatSession = {
   id: "mock-session-1",
@@ -178,12 +178,12 @@ export const mockChatOverview: ChatOverview = {
   emptyStateLead: t("mockData.tempChat.emptyState"),
   recommendedPeople: [
     // 修复（P1 BUG）：id 由 rp-003/rp-004 改为 fixtures 数字体系 4003/4004
-    // （4003=林溪、4004=周屿，对应 i18n mockData.recommendedPeople.name3/name4）。
+    // （4003=阿辰、4004=小满，对应 i18n mockData.recommendedPeople.name3/name4）。
     // 展示文案（headline/commonGround/availability）经 i18n key 解析。
     {
       id: "4003",
       name: t("mockData.recommendedPeople.name3"),
-      initials: "林",
+      initials: "阿",
       headline: t("mockData.recommendedPeople.headline3"),
       commonGround: t("mockData.recommendedPeople.commonGround3"),
       availability: t("mockData.recommendedPeople.availability3"),
@@ -191,7 +191,7 @@ export const mockChatOverview: ChatOverview = {
     {
       id: "4004",
       name: t("mockData.recommendedPeople.name4"),
-      initials: "周",
+      initials: "小",
       headline: t("mockData.recommendedPeople.headline4"),
       commonGround: t("mockData.recommendedPeople.commonGround4"),
       availability: t("mockData.recommendedPeople.availability4"),

@@ -81,8 +81,8 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: t("realName.statusVerified"),
         desc: t("realName.statusVerifiedDesc"),
-        color: "var(--c-brand-500, #3FCF8E)",
-        bgColor: "var(--c-brand-50, #E8F8F0)",
+        color: "var(--c-brand-500, #36C99A)",
+        bgColor: "var(--c-brand-50, #E6F8F1)",
       };
     case "pending":
       return {
@@ -107,7 +107,7 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: t("realName.statusUnverified"),
         desc: t("realName.statusUnverifiedDesc"),
-        color: "var(--c-brand-500, #3FCF8E)",
+        color: "var(--c-brand-500, #36C99A)",
         bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
       };
   }

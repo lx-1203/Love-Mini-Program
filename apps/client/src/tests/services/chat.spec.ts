@@ -362,7 +362,7 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
     await chatStore.loadSession(mockSession1.id);
     expect(chatStore.activeSession).not.toBeNull();
     expect(chatStore.activeSession!.id).toBe(mockSession1.id);
-    expect(chatStore.activeSession!.partnerName).toBe("夏言");
+    expect(chatStore.activeSession!.partnerName).toBe("林晓");
     const session1MessageCount = chatStore.activeSession!.messages.length;
     expect(session1MessageCount).toBeGreaterThan(0);
 
@@ -370,7 +370,7 @@ describe("chat store - end-to-end scenarios (Task 1.7.1)", () => {
     await chatStore.loadSession(mockSession2.id);
     expect(chatStore.activeSession).not.toBeNull();
     expect(chatStore.activeSession!.id).toBe(mockSession2.id);
-    expect(chatStore.activeSession!.partnerName).toBe("顾北");
+    expect(chatStore.activeSession!.partnerName).toBe("夏言");
 
     // 会话 2 的消息内容与会话 1 不同（验证不是同一份数据）
     const session2FirstMessage = chatStore.activeSession!.messages[0];

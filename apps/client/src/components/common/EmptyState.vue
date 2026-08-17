@@ -11,6 +11,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
+import XunmiMascot from './XunmiMascot.vue';
 
 const props = withDefaults(defineProps<{
   /** 预设空状态类型 */
@@ -25,6 +26,8 @@ const props = withDefaults(defineProps<{
   description?: string;
   /** 操作按钮文案（传入即渲染按钮，点击触发 action 事件） */
   actionText?: string;
+  /** 吉祥物表情（传入则用寻觅芽替换图标） */
+  mascot?: 'default' | 'happy' | 'love' | 'thinking' | 'waving' | 'sad';
 }>(), {
   type: 'no-data',
   message: '',
@@ -81,7 +84,8 @@ function handleAction() {
     aria-live="polite"
     :aria-label="titleText"
   >
-    <image class="empty-icon" :src="iconSrc" mode="aspectFit" alt="" />
+    <XunmiMascot v-if="mascot" :mood="mascot" size="lg" animated />
+    <image v-else class="empty-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="empty-msg">{{ titleText }}</text>
     <text class="empty-sub">{{ descriptionText }}</text>
     <view

@@ -500,6 +500,8 @@ function openAccountBinding() {
       />
       <!-- 底部白色渐变叠加，增强文字可读性 -->
       <view class="hero-overlay" />
+      <!-- 吉祥物装饰（13-login mascot-center） -->
+      <image class="hero-mascot" src="/static/assets/images/login/mascot-center.png" mode="aspectFit" alt="" />
       <!-- 主标题 + 副标压底显示 -->
       <view class="hero-title-wrap">
         <text class="logo-title">{{ heroTitle }}</text>
@@ -639,6 +641,21 @@ function openAccountBinding() {
             </view>
           </view>
 
+          <view class="form-btns">
+            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
+              <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
+            </view>
+
+            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口 -->
+            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
+              <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
+            </view>
+
+            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
+              <text class="btn-text-link">{{ t('login.backToWechat') }}</text>
+            </view>
+          </view>
+        </view>
       <view class="terms-wrap">
         <view
           class="checkbox press-feedback"
@@ -659,21 +676,7 @@ function openAccountBinding() {
           <text class="terms-link" @tap="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
         </view>
       </view>
-          <view class="form-btns">
-            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
-              <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
-            </view>
 
-            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口 -->
-            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
-              <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
-            </view>
-
-            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
-              <text class="btn-text-link">{{ t('login.backToWechat') }}</text>
-            </view>
-          </view>
-        </view>
       </view>
 
       <!-- 展示模式（全功能展示版）：以演示者身份进入全功能展示页 -->
@@ -785,6 +788,17 @@ function openAccountBinding() {
   align-items: center;
   padding: 0 var(--sp-8);
   z-index: 1;
+}
+
+.hero-mascot {
+  position: absolute;
+  left: 50%;
+  top: 120rpx;
+  width: 320rpx;
+  height: 320rpx;
+  transform: translateX(-50%);
+  z-index: 1;
+  opacity: 0.9;
 }
 
 .logo-title {
@@ -1071,6 +1085,8 @@ function openAccountBinding() {
   align-items: flex-start;
   justify-content: center;
   gap: var(--sp-3);
+  /* 2026-08-14：登录协议行同时服务微信快捷登录与手机号登录，置底与按钮区拉开间距 */
+  margin-top: var(--sp-5, 20rpx);
   padding: 0 var(--sp-4);
 }
 

@@ -65,6 +65,14 @@ public class OfficialMessage {
     @Column(name = "card_target_url", length = 512)
     private String cardTargetUrl;
 
+    /** 活动卡关联的 activities.id（可空） */
+    @Column(name = "card_activity_id")
+    private Long cardActivityId;
+
+    /** 活动卡推荐理由（面向用户展示） */
+    @Column(name = "recommend_reason", columnDefinition = "TEXT")
+    private String recommendReason;
+
     /** 消息顺序（升序展示） */
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;
@@ -137,6 +145,22 @@ public class OfficialMessage {
         this.cardTargetUrl = cardTargetUrl;
     }
 
+    public Long getCardActivityId() {
+        return cardActivityId;
+    }
+
+    public void setCardActivityId(Long cardActivityId) {
+        this.cardActivityId = cardActivityId;
+    }
+
+    public String getRecommendReason() {
+        return recommendReason;
+    }
+
+    public void setRecommendReason(String recommendReason) {
+        this.recommendReason = recommendReason;
+    }
+
     public int getSortOrder() {
         return sortOrder;
     }
@@ -157,3 +181,4 @@ public class OfficialMessage {
         return createdAt;
     }
 }
+

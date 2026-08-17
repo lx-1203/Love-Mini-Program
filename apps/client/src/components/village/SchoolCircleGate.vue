@@ -212,6 +212,6 @@ const { t } = useI18n();
 .school-gate__simulate-text {
   font-size: 24rpx;
   font-weight: 500;
-  color: var(--c-romance-500, #ec4899);
+  color: var(--c-romance-500, #FF6B81);
 }
 </style>

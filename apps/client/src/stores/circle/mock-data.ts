@@ -6,7 +6,6 @@
  * 类型经 import type 引用（编译期擦除，无运行时循环依赖）。
  */
 import type { CircleItem, ReplyItem, TopicDetail, TopicItem } from "../circle";
-import { IMAGE_PATHS } from "../../config/images";
 
 /** Mock 当前用户 ID（模拟当前登录用户身份，仅 mock 分支使用） */
 export const MOCK_CURRENT_USER_ID = "user-1001";
@@ -14,74 +13,81 @@ export const MOCK_CURRENT_USER_ID = "user-1001";
 /* ========== Mock 数据 ========== */
 
 export const mockCircles: CircleItem[] = [
-  // infra R2-00042: 以下兴趣圈 name/description 为 mock 演示数据（useMock 守卫），
-  // real 分支由后端下发；若作为 real 空数据兜底展示需走 t("circle.*") 本地化
+  // v3 Nearby 冻结：8 个标准兴趣圈（system 种子），开放加入、无需校园认证。
+  // 既有/用户自建圈子继续存在，不被删除。
   {
-    id: "circle-campus",
-    name: "校园圈",
-    icon: IMAGE_PATHS.ICONS_COMMON.SCHOOL,
-    description: "本校认证同学的专属圈子：同校动态、活动与互助",
-    memberCount: 3420,
-    topicCount: 890,
-    isJoined: true,
-    campusVerified: true,
+    id: "circle-photo",
+    name: "摄影",
+    icon: "📷",
+    description: "分享光影与构图，一起扫街、看展、记录生活",
+    memberCount: 12000,
+    topicCount: 486,
+    isJoined: false,
   },
   {
-    id: "circle-1",
-    name: "电影迷",
-    icon: IMAGE_PATHS.ICONS_EMOJI.VIDEO,
-    description: "分享你喜欢的电影，寻找一起看片的伙伴",
-    memberCount: 1280,
-    topicCount: 356,
+    id: "circle-travel",
+    name: "旅行",
+    icon: "🧳",
+    description: "记录旅途中的美好，寻找同行旅伴",
+    memberCount: 8932,
+    topicCount: 352,
+    isJoined: false,
+  },
+  {
+    id: "circle-music",
+    name: "音乐",
+    icon: "🎵",
+    description: "分享你喜欢的音乐，发现更多好声音",
+    memberCount: 8123,
+    topicCount: 301,
     isJoined: true,
   },
   {
-    id: "circle-2",
-    name: "读书会",
-    icon: IMAGE_PATHS.ICONS_EMOJI.BOOK,
+    id: "circle-sports",
+    name: "运动",
+    icon: "⚽",
+    description: "跑步、篮球、羽毛球，运动让生活更精彩",
+    memberCount: 6532,
+    topicCount: 244,
+    isJoined: false,
+  },
+  {
+    id: "circle-food",
+    name: "美食",
+    icon: "🍜",
+    description: "发现身边的美食，分享你的味蕾体验",
+    memberCount: 7240,
+    topicCount: 287,
+    isJoined: true,
+  },
+  {
+    id: "circle-game",
+    name: "游戏",
+    icon: "🎮",
+    description: "组队开黑、聊新作，找到一起玩的人",
+    memberCount: 8123,
+    topicCount: 195,
+    isJoined: false,
+  },
+  {
+    id: "circle-reading",
+    name: "阅读",
+    icon: "📚",
     description: "一起读书，一起成长，分享读书心得",
-    memberCount: 890,
+    memberCount: 6532,
     topicCount: 210,
     isJoined: false,
   },
   {
-    id: "circle-3",
-    name: "运动达人",
-    icon: IMAGE_PATHS.ICONS_EMOJI.BOLT,
-    description: "跑步、篮球、羽毛球，运动让生活更精彩",
-    memberCount: 1560,
-    topicCount: 420,
-    isJoined: true,
-  },
-  {
-    id: "circle-4",
-    name: "美食探店",
-    icon: IMAGE_PATHS.ICONS_EMOJI.FOOD,
-    description: "发现身边的美食，分享你的味蕾体验",
-    memberCount: 2100,
-    topicCount: 580,
+    id: "circle-pet",
+    name: "宠物",
+    icon: "🐾",
+    description: "晒猫晒狗，交流养宠心得",
+    memberCount: 5621,
+    topicCount: 176,
     isJoined: false,
-  },
-  {
-    id: "circle-5",
-    name: "旅行日记",
-    icon: IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG,
-    description: "记录旅途中的美好，寻找同行旅伴",
-    memberCount: 960,
-    topicCount: 275,
-    isJoined: false,
-  },
-  {
-    id: "circle-6",
-    name: "音乐空间",
-    icon: IMAGE_PATHS.ICONS_EMOJI.HEART,
-    description: "分享你喜欢的音乐，发现更多好声音",
-    memberCount: 750,
-    topicCount: 180,
-    isJoined: true,
   },
 ];
-
 export const mockTopics: Record<string, TopicItem[]> = {
   "circle-campus": [
     {

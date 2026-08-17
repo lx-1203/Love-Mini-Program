@@ -91,13 +91,21 @@ public class RecommendationRanker {
      */
     private final PostRepository postRepository;
 
-    /** 悄悄话开场白候选池（V2026.08.08.0016：real 链路 whisper 兜底，与 mock 口径一致） */
+    /** 悄悄话开场白候选池（V2026.08.08.0016：real 链路 whisper 兜底，与 mock 口径一致；2026-08-14 扩至 9 条，按 userId 稳定取 3 条） */
     private static final List<String> WHISPER_POOL = List.of(
         "第一次见面可以从一杯咖啡开始，紧张也没关系。",
         "比起闲聊，我更想听听你今天真正在想什么。",
         "希望第一段对话能留下点想象空间。",
-        "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。"
+        "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。",
+        "你相信一见钟情吗？如果可以，我想先从一句晚安开始认识你。",
+        "听说这家店你肯定没去过，改天带你去？",
+        "喜欢胶片摄影的人一定很温柔吧。",
+        "周末球局缺个队友，来吗？赢了请你喝奶茶。",
+        "最近在读《夜航西飞》，想和你交换书单，也交换心事。"
     );
+
+    /** 解锁后展示的悄悄话条数（2026-08-14：多条文案） */
+    private static final int WHISPER_COUNT = 3;
 
     /**
      * 钱包流水 Repository（R4-00314/00315：私信/悄悄话解锁状态凭据）。
@@ -145,23 +153,29 @@ public class RecommendationRanker {
     }
 
     /**
-     * 解析用户悄悄话开场白文案（R4-00314 解锁接口专用）。
+     * 解析用户悄悄话文案列表（R4-00314 解锁接口专用，2026-08-14 改为多条）。
      *
      * <p>悄悄话内容不再随推荐列表明文下发，仅在本方法被解锁接口
      * （GET /recommendations/{userId}/whisper，付费解锁后）调用时返回。
      * 与 {@link MockRecommendationService#WHISPER_POOL} 口径一致：按 userId
-     * 稳定取模，同一用户文案恒定。</p>
+     * 稳定取模起始位置，连续取 {@link #WHISPER_COUNT} 条（越界循环），
+     * 同一用户文案恒定。</p>
      *
      * @param userId 目标用户 ID
-     * @return 悄悄话文案；userId 为 null 时返回 null
+     * @return 悄悄话文案列表（3 条）；userId 为 null 时返回空列表
      */
-    public String resolveWhisper(Long userId) {
+    public List<String> resolveWhispers(Long userId) {
         if (userId == null) {
-            return null;
+            return List.of();
         }
         // R4-00351：Math.floorMod 替代 Math.abs(hashCode()) % n——Integer.MIN_VALUE
         // 取 abs 仍为负数会导致索引越界 500
-        return WHISPER_POOL.get(Math.floorMod(userId.hashCode(), WHISPER_POOL.size()));
+        int start = Math.floorMod(userId.hashCode(), WHISPER_POOL.size());
+        java.util.ArrayList<String> result = new java.util.ArrayList<>(WHISPER_COUNT);
+        for (int i = 0; i < WHISPER_COUNT; i++) {
+            result.add(WHISPER_POOL.get((start + i) % WHISPER_POOL.size()));
+        }
+        return result;
     }
 
     /**
@@ -557,16 +571,16 @@ public class RecommendationRanker {
                     .toList();
         }
         String halfBodyPhotoUrl = basicProfile != null ? basicProfile.getHalfBodyPhotoUrl() : null;
-        String personalVideoUrl = basicProfile != null ? basicProfile.getPersonalVideoUrl() : null;
+        String gradeLabel = basicProfile != null ? basicProfile.getGradeLabel() : null;
         String verificationBadgeLevel = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);
 
         // ---- Phase Feedback1：卡片重设计扩展字段（可空，前端按缺省兜底） ----
         // 展示 ID：User 无独立字段，稳定推导为 CL-{id}（同 mock 口径）
         String displayId = user.getId() != null ? "CL-" + user.getId() : null;
         // 距离文案：同校为空；异地按稳定 hash 给 km（真实距离由推荐服务计算）
-        String distanceText = isSameSchool ? null : deriveDistanceText(user);
+        String distanceText = deriveDistanceText(user);
         // 活跃状态：离线为默认，在线用户由前端二次查询回填
-        String activeStatusText = "offline";
+        String activeStatusText = "online";
         // 双重认证：由认证徽章级别推导（有认证即视为机器认证；school/idcard 视为有人工认证）
         String resolvedBadge = resolveBadgeLevelSafe(user.getId(), badgeLevelMap);
         boolean machineVerified = !"none".equals(resolvedBadge);
@@ -615,6 +629,8 @@ public class RecommendationRanker {
         String profileBackgroundUrl = basicProfile != null
                 ? basicProfile.getProfileBackgroundUrl()
                 : null;
+        // V2026.08.16.0002：性别——随推荐视图下发（前端寻觅卡/主页显示 ♀/♂）
+        String gender = basicProfile != null ? basicProfile.getGender() : null;
 
         return new RecommendedPersonView(
                 user.getId(),
@@ -635,7 +651,7 @@ public class RecommendationRanker {
                 educationLevel,
                 photoGallery,
                 halfBodyPhotoUrl,
-                personalVideoUrl,
+                gradeLabel,
                 verificationBadgeLevel,
                 displayId,
                 distanceText,
@@ -653,7 +669,8 @@ public class RecommendationRanker {
                 occupation,
                 age,
                 registeredAt,
-                profileBackgroundUrl
+                profileBackgroundUrl,
+                gender
         );
     }
 

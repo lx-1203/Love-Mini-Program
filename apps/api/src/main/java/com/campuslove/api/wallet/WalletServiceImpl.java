@@ -77,7 +77,8 @@ public class WalletServiceImpl implements WalletService {
             "MESSAGE_UNLOCK",
             "VISITORS_UNLOCK",
             "LIKES_UNLOCK",
-            "WHISPER_UNLOCK"
+            "WHISPER_UNLOCK",
+            WalletTransactionLog.RELATED_TYPE_WHISPER_SEND
     );
 
     private final UserWalletRepository userWalletRepository;

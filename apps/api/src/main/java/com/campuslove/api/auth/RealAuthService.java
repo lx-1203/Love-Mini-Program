@@ -5,6 +5,8 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.MinorNotAllowedException;
 import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.common.TimeZones;
+import com.campuslove.api.verification.RealNameCertification;
+import com.campuslove.api.verification.RealNameCertificationRepository;
 import com.campuslove.api.admin.auth.AdminDisabledException;
 import com.campuslove.api.admin.auth.InvalidCredentialsException;
 import com.campuslove.api.config.AesEncryptor;
@@ -144,6 +146,13 @@ public class RealAuthService implements AuthService {
     @org.springframework.context.annotation.Lazy
     @org.springframework.beans.factory.annotation.Autowired
     private RealAuthService self;
+
+    /**
+     * 实名认证 Repository（v3 冻结：体验账号自动完成实名，保证悄悄话演示链路可用）。
+     * 可选注入：单元测试（不加载 Spring）为 null 时跳过实名播种。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private RealNameCertificationRepository realNameCertificationRepository;
 
     /**
      * 体验账号流程演示数据播种器（R4-00251 会话隔离后，新体验账号无按用户维度的
@@ -683,7 +692,7 @@ public class RealAuthService implements AuthService {
             newUser.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
             newUser.setPhone(null);
             newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            newUser.setNickname("体验用户");
+            newUser.setNickname("林晓");
             newUser.setRole("USER");
             newUser.setStatus("active");
             newUser.setProfileCompletion(0);
@@ -735,7 +744,7 @@ public class RealAuthService implements AuthService {
             if (userBasicProfileRepository.findByUserId(userId).isEmpty()) {
                 UserBasicProfile basic = new UserBasicProfile();
                 basic.setUserId(userId);
-                basic.setNickname("体验用户");
+                basic.setNickname("林晓");
                 basic.setBio("热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。");
                 basic.setGradeLabel("大三");
                 basic.setPronouns("TA");
@@ -747,6 +756,10 @@ public class RealAuthService implements AuthService {
                 basic.setHometownCity("北京");
                 basic.setFutureCity("北京");
                 basic.setFuturePlanTags("[\"旅行\",\"读书\",\"事业\",\"健康\"]");
+                // v3 冻结：体验账号使用真人素材（person-01：头像/相册/半身/背景）
+                basic.setPhotoGallery("[\"/static/assets/images/people/person-01.webp\"]");
+                basic.setHalfBodyPhotoUrl("/static/assets/images/people/person-01.webp");
+                basic.setProfileBackgroundUrl("/static/assets/images/people/person-01.webp");
                 userBasicProfileRepository.save(basic);
             }
             // 2. 校园资料（直接置为已认证通过）
@@ -759,6 +772,21 @@ public class RealAuthService implements AuthService {
                 campus.setVerificationStatus("verified");
                 userCampusProfileRepository.save(campus);
             }
+            // 2.5 实名认证（v3 冻结：体验账号自动 APPROVED，保证悄悄话可用）
+            if (realNameCertificationRepository != null
+                    && realNameCertificationRepository.findByUserId(userId).isEmpty()) {
+                RealNameCertification rn = new RealNameCertification();
+                rn.setUserId(userId);
+                rn.setUserName("林晓");
+                // 2026-08-15 修复：id_card_no 为 NOT NULL 且需 AES-GCM 密文落库
+                // （禁止明文），此前未设置导致体验账号预填插入失败（Column 'id_card_no' cannot be null）
+                rn.setIdCardNo(aesEncryptor.encrypt("DEMO-GUEST-000000000000000000"));
+                rn.setStatus("APPROVED");
+                rn.setSubmittedAt(LocalDateTime.now(TimeZones.BUSINESS));
+                rn.setReviewedAt(LocalDateTime.now(TimeZones.BUSINESS));
+                rn.setVersion(0L);
+                realNameCertificationRepository.save(rn);
+            }
             // 3. 课表偏好
             if (userScheduleProfileRepository.findByUserId(userId).isEmpty()) {
                 UserScheduleProfile schedule = new UserScheduleProfile();
@@ -770,6 +798,8 @@ public class RealAuthService implements AuthService {
             }
             // 4. 完善度 100
             user.setProfileCompletion(100);
+            // v3 冻结：体验账号头像使用真人素材 person-01
+            user.setAvatarUrl("/static/assets/images/avatars/person-01-avatar.webp");
             userRepository.save(user);
             log.info("体验账号资料预填完成: userId={}", userId);
             // 5. 流程演示数据播种（R4-00251 会话隔离后新账号无私信/喜欢/访客/通知，

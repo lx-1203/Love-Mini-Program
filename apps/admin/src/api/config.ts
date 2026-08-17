@@ -109,3 +109,29 @@ export function updateSwitch(
 ): Promise<AdminSwitch> {
   return put<AdminSwitch>(`/v1/admin/switches/${encodeURIComponent(key)}`, body);
 }
+
+
+/** 主页运营配置视图（对应后端 ProfileConfigView） */
+export interface ProfileConfigView {
+  showMBTI: boolean;
+  showVoice: boolean;
+  showCircle: boolean;
+  maxStories: number;
+  minHighQualityScore: number;
+}
+
+/**
+ * 获取主页运营配置。
+ * GET /api/v1/admin/profile-config
+ */
+export function getProfileConfig(): Promise<ProfileConfigView> {
+  return get<ProfileConfigView>("/v1/admin/profile-config");
+}
+
+/**
+ * 保存主页运营配置。
+ * PUT /api/v1/admin/profile-config
+ */
+export function saveProfileConfig(view: ProfileConfigView): Promise<ProfileConfigView> {
+  return put<ProfileConfigView>("/v1/admin/profile-config", view);
+}

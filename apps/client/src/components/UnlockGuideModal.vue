@@ -202,7 +202,7 @@ defineExpose({ handleConfirm, noop });
   width: 120rpx;
   height: 120rpx;
   border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand-100, #D1F0E0), var(--c-brand-200, #A3E0C0));
+  background: linear-gradient(135deg, var(--c-brand-100, #CCF0E0), var(--c-brand-200, #A5E2C6));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +220,7 @@ defineExpose({ handleConfirm, noop });
 .unlock-modal__title {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   margin-bottom: 16rpx;
   line-height: 1.4;
 }
@@ -228,7 +228,7 @@ defineExpose({ handleConfirm, noop });
 /* 主文案 */
 .unlock-modal__message {
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-primary, #1F2329);
+  color: var(--c-text-primary, #222222);
   text-align: center;
   line-height: 1.5;
   margin-bottom: 12rpx;
@@ -238,7 +238,7 @@ defineExpose({ handleConfirm, noop });
 /* 副文案 */
 .unlock-modal__subtitle {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #5B6470);
+  color: var(--c-text-secondary, #666666);
   text-align: center;
   line-height: 1.5;
   margin-bottom: 40rpx;
@@ -276,14 +276,14 @@ defineExpose({ handleConfirm, noop });
 
 /* 主按钮（品牌色） */
 .unlock-modal__btn--primary {
-  background: linear-gradient(135deg, var(--c-brand-500, #3FCF8E), var(--c-brand-700, #1D8A5A));
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(63, 207, 142, 0.20)));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
+  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.20)));
 }
 
 /* 次按钮（白底品牌字） */
 .unlock-modal__btn--secondary {
-  background: var(--c-bg-page, #F4F6FA);
-  border: 2rpx solid var(--c-border-light, #EEF0F4);
+  background: var(--c-bg-page, #F7FAF9);
+  border: 2rpx solid var(--c-border-light, #ECEFF2);
 }
 
 /* 按钮文案 */
@@ -294,7 +294,7 @@ defineExpose({ handleConfirm, noop });
 }
 
 .unlock-modal__btn-text--secondary {
-  color: var(--c-brand-700, #1D8A5A);
+  color: var(--c-brand-700, #12805A);
   font-weight: 500;
 }
 </style>

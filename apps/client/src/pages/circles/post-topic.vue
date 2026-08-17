@@ -135,7 +135,7 @@ const POST_TOPIC_NAV_DELAY_MS = 800;
 /**
  * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
  * 此处取 design token --c-brand 的实际色值，与主题保持一致（ui-ux B9 修复）。
- * R4-batch4：硬编码 #3FCF8E 改为引用 designTokens.color.brand[500]（与 --c-brand 同源）。
+ * R4-batch4：硬编码 #36C99A 改为引用 designTokens.color.brand[500]（与 --c-brand 同源）。
  */
 const brandColor = designTokens.color.brand[500];
 
@@ -1261,7 +1261,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .activity-picker__item-check {
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   font-size: 28rpx;
 }
 </style>

@@ -264,6 +264,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /search/users:
+    get:
+      summary: Search users by nickname / campus
+      operationId: searchUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: keyword
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Search result page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSearchView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:
@@ -272,6 +303,20 @@ components:
       bearerFormat: JWT
       description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
   schemas:
+    UserSearchView:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        campusName:
+          type: string
+        bio:
+          type: string
     FollowView:
       type: object
       properties:

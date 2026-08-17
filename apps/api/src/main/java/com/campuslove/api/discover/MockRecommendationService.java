@@ -157,12 +157,17 @@ public class MockRecommendationService implements RecommendationService {
   private static final List<String> PERSONALITY_POOL =
       List.of("阳光开朗", "慢热但真诚", "理性务实", "温柔细腻", "幽默健谈", "安静专注", "行动力强", "共情力强");
 
-  /** 悄悄话候选池 */
+  /** 悄悄话候选池（2026-08-14：扩至 9 条，与 RecommendationRanker 口径一致，解锁接口按 userId 稳定取 3 条） */
   private static final List<String> WHISPER_POOL = List.of(
       "第一次见面可以从一杯咖啡开始，紧张也没关系。",
       "比起闲聊，我更想听听你今天真正在想什么。",
       "希望第一段对话能留下点想象空间。",
-      "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。"
+      "我偏爱傍晚的校园散步，灯亮起来的时候最适合认识新朋友。",
+      "你相信一见钟情吗？如果可以，我想先从一句晚安开始认识你。",
+      "听说这家店你肯定没去过，改天带你去？",
+      "喜欢胶片摄影的人一定很温柔吧。",
+      "周末球局缺个队友，来吗？赢了请你喝奶茶。",
+      "最近在读《夜航西飞》，想和你交换书单，也交换心事。"
   );
 
   /** 期待画像候选池 */
@@ -276,7 +281,7 @@ public class MockRecommendationService implements RecommendationService {
         person.educationLevel(),
         photoGallery,
         avatar, // halfBodyPhotoUrl：复用头像
-        null, // personalVideoUrl：mock 未提供
+        null, // gradeLabel：mock 未提供
         person.id().equals("person-1") ? "school"
             : person.id().equals("person-2") ? "idcard"
             : person.id().equals("person-3") ? "email" : "none",
@@ -299,7 +304,9 @@ public class MockRecommendationService implements RecommendationService {
         person.age(),
         "2026-03-12T08:00:00",
         // V3（2026-08-12）：他人主页背景——mock 复用半身照/头像，保证他人主页有背景可展示
-        avatar
+        avatar,
+        // V2026.08.16.0002：性别（mock 未维护，为 null）
+        null
     );
   }
 

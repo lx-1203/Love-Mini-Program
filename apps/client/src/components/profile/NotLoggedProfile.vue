@@ -1,0 +1,360 @@
+<script setup lang="ts">
+const emit = defineEmits<{ (e: "goLogin"): void }>();
+
+const STATS = [
+  { label: "我喜欢", icon: "♥", color: "#8D7BFF" },
+  { label: "喜欢我的人", icon: "♡", color: "#FF6B81" },
+  { label: "我赞", icon: "👍", color: "#FF9A57" },
+  { label: "访客", icon: "👁", color: "#4D8DFF" },
+];
+
+const INTERACTIONS = [
+  { label: "喜欢我的人", value: 0, icon: "♥", color: "#FF6B81" },
+  { label: "我的匹配", value: 0, icon: "♡", color: "#FF9A57" },
+  { label: "我喜欢的人", value: 0, icon: "♥", color: "#8D7BFF" },
+  { label: "最近访客", value: 0, icon: "👁", color: "#4D8DFF" },
+];
+
+const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
+</script>
+
+<template>
+  <view class="not-logged-profile">
+    <!-- 头部：点击登录 -->
+    <view class="nlp-header" @tap="emit('goLogin')">
+      <view class="nlp-header__info">
+        <text class="nlp-header__title">点击登录</text>
+        <text class="nlp-header__sub">登录后遇见心动的TA</text>
+      </view>
+      <text class="nlp-header__arrow">›</text>
+    </view>
+
+    <!-- 资料完整度 -->
+    <view class="nlp-card nlp-completion">
+      <view class="nlp-completion__head">
+        <text class="nlp-completion__title">资料完整度</text>
+        <text class="nlp-completion__percent">0%</text>
+      </view>
+      <view class="nlp-completion__bar">
+        <view class="nlp-completion__bar-inner" />
+      </view>
+      <text class="nlp-completion__tip">完善资料可以获得更多曝光和匹配机会</text>
+      <view class="nlp-completion__btn" @tap.stop="emit('goLogin')">
+        <text class="nlp-completion__btn-text">去完善</text>
+      </view>
+    </view>
+
+    <!-- 统计 -->
+    <view class="nlp-card nlp-stats">
+      <view v-for="s in STATS" :key="s.label" class="nlp-stats__col">
+        <view class="nlp-stats__icon" :style="{ background: `${s.color}1F` }">
+          <text class="nlp-stats__icon-text" :style="{ color: s.color }">{{ s.icon }}</text>
+        </view>
+        <text class="nlp-stats__value">0</text>
+        <text class="nlp-stats__label">{{ s.label }}</text>
+      </view>
+    </view>
+
+    <!-- 我的故事 -->
+    <view class="nlp-section">
+      <text class="nlp-section__title">我的故事</text>
+      <scroll-view scroll-x class="nlp-stories" :show-scrollbar="false">
+        <view class="nlp-stories__list">
+          <view v-for="name in STORIES" :key="name" class="nlp-story" @tap="emit('goLogin')">
+            <view class="nlp-story__img">
+              <text class="nlp-story__plus">＋</text>
+            </view>
+            <text class="nlp-story__name">{{ name }}</text>
+          </view>
+          <view class="nlp-story nlp-story--add" @tap="emit('goLogin')">
+            <text class="nlp-story__plus">＋</text>
+            <text class="nlp-story__name">添加故事</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 我的互动 -->
+    <view class="nlp-section">
+      <text class="nlp-section__title">我的互动</text>
+      <view class="nlp-card nlp-interactions">
+        <view
+          v-for="(item, i) in INTERACTIONS"
+          :key="item.label"
+          class="nlp-interaction"
+          :class="{ 'nlp-interaction--last': i === INTERACTIONS.length - 1 }"
+          @tap="emit('goLogin')"
+        >
+          <view class="nlp-interaction__icon" :style="{ background: `${item.color}1F` }">
+            <text class="nlp-interaction__icon-text" :style="{ color: item.color }">{{ item.icon }}</text>
+          </view>
+          <text class="nlp-interaction__label">{{ item.label }}</text>
+          <text class="nlp-interaction__value">{{ item.value }}</text>
+          <text class="nlp-interaction__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="nlp-footer-btn" @tap="emit('goLogin')">
+      <text class="nlp-footer-btn__text">登录</text>
+    </view>
+  </view>
+</template>
+
+<style scoped lang="scss">
+.not-logged-profile {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #DFF8EF 0%, #F7FAF9 40%);
+  padding: 32rpx 24rpx 140rpx;
+}
+
+.nlp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 16rpx;
+}
+
+.nlp-header__title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #222222;
+}
+
+.nlp-header__sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8A9694;
+}
+
+.nlp-header__arrow {
+  font-size: 44rpx;
+  color: #36C99A;
+}
+
+.nlp-card {
+  border-radius: 32rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.nlp-completion {
+  padding: 28rpx 32rpx;
+}
+
+.nlp-completion__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nlp-completion__title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #222222;
+}
+
+.nlp-completion__percent {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #36C99A;
+}
+
+.nlp-completion__bar {
+  height: 10rpx;
+  margin-top: 20rpx;
+  border-radius: 999rpx;
+  background: #E6F5EF;
+  overflow: hidden;
+}
+
+.nlp-completion__bar-inner {
+  width: 0%;
+  height: 100%;
+  background: #36C99A;
+}
+
+.nlp-completion__tip {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 20rpx;
+  color: #999999;
+}
+
+.nlp-completion__btn {
+  align-self: flex-end;
+  margin-top: 18rpx;
+  padding: 12rpx 26rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+  display: inline-flex;
+}
+
+.nlp-completion__btn-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.nlp-stats {
+  display: flex;
+  padding: 28rpx 8rpx;
+  margin-top: 24rpx;
+}
+
+.nlp-stats__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.nlp-stats__icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nlp-stats__icon-text {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.nlp-stats__value {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #222222;
+}
+
+.nlp-stats__label {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.nlp-section {
+  margin-top: 32rpx;
+}
+
+.nlp-section__title {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #222222;
+}
+
+.nlp-stories {
+  width: 100%;
+}
+
+.nlp-stories__list {
+  display: inline-flex;
+  gap: 16rpx;
+  padding-right: 16rpx;
+}
+
+.nlp-story {
+  width: 220rpx;
+  flex-shrink: 0;
+}
+
+.nlp-story__img {
+  height: 300rpx;
+  border-radius: 24rpx;
+  background: #E8FBF2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nlp-story--add .nlp-story__img {
+  border: 3rpx dashed #36C99A;
+  background: #ffffff;
+}
+
+.nlp-story__plus {
+  font-size: 56rpx;
+  color: #36C99A;
+}
+
+.nlp-story__name {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #333333;
+  font-weight: 600;
+  text-align: center;
+}
+
+.nlp-interactions {
+  overflow: hidden;
+}
+
+.nlp-interaction {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 26rpx 32rpx;
+  border-bottom: 1rpx solid #EEF1F5;
+}
+
+.nlp-interaction--last {
+  border-bottom: 0;
+}
+
+.nlp-interaction__icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nlp-interaction__icon-text {
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.nlp-interaction__label {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #222222;
+}
+
+.nlp-interaction__value {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.nlp-interaction__arrow {
+  font-size: 32rpx;
+  color: #C6CDCC;
+}
+
+.nlp-footer-btn {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: calc(112rpx + env(safe-area-inset-bottom) + 20rpx);
+  height: 92rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nlp-footer-btn__text {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+</style>

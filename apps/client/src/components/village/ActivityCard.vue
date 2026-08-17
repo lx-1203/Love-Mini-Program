@@ -197,7 +197,7 @@ function enroll(e: { stopPropagation?: () => void }) {
   padding: 4rpx 12rpx;
   border-radius: var(--r-full);
   font-size: 20rpx;
-  color: var(--c-brand-500, #3fcf8e);
+  color: var(--c-brand-500, #36C99A);
   background: var(--c-bg-brand-soft, #f0fdf9);
   border: 1rpx solid var(--c-brand-100, #ccfbef);
 }

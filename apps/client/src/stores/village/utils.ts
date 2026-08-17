@@ -319,7 +319,7 @@ export function filterAndSortPosts(
       // 最新：不过滤（排序由 sortBy=latest 处理，mock 帖子无 cat-latest 分类）
       // 修复（收尾轮）：原走 else 精确匹配导致"最新"分类恒空
     } else if (filters.categoryId === MINE_CATEGORY_ID) {
-      // 收尾轮：我的动态 —— 作者为当前用户（mock 下星野无帖子 → 空态引导发帖）
+      // 收尾轮：我的动态 —— 作者为当前用户（mock 下林晓无帖子 → 空态引导发帖）
       try {
         const sessionStore = useSessionStore();
         const myUserId = sessionStore.userSession?.userId ?? "";

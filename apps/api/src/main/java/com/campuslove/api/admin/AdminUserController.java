@@ -7,7 +7,9 @@ import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
+import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -17,7 +19,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +74,8 @@ public class AdminUserController {
 
     private final UserRepository userRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
+    private final UserBasicProfileRepository userBasicProfileRepository;
+    private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
     /** 校园管理员数据隔离（商业模式：每个高校一个管理员） */
     private final AdminCampusScopeService campusScopeService;
@@ -80,8 +88,22 @@ public class AdminUserController {
             PasswordEncoder passwordEncoder,
             AdminCampusScopeService campusScopeService,
             AdminDataScope adminDataScope) {
+        this(userRepository, userCampusProfileRepository, null, null, passwordEncoder, campusScopeService, adminDataScope);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminUserController(
+            UserRepository userRepository,
+            UserCampusProfileRepository userCampusProfileRepository,
+            UserBasicProfileRepository userBasicProfileRepository,
+            ObjectMapper objectMapper,
+            PasswordEncoder passwordEncoder,
+            AdminCampusScopeService campusScopeService,
+            AdminDataScope adminDataScope) {
         this.userRepository = userRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
+        this.userBasicProfileRepository = userBasicProfileRepository;
+        this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.campusScopeService = campusScopeService;
         this.adminDataScope = adminDataScope;
@@ -348,6 +370,10 @@ public class AdminUserController {
         String campusName = campusOpt.map(UserCampusProfile::getCampusName).orElse(null);
         String verificationStatus = campusOpt.map(UserCampusProfile::getVerificationStatus).orElse(null);
 
+        UserBasicProfile basic = userBasicProfileRepository == null
+                ? null
+                : userBasicProfileRepository.findByUserId(id).orElse(null);
+
         AdminUserDetailView view = new AdminUserDetailView(
                 user.getId(),
                 user.getNickname(),
@@ -364,7 +390,16 @@ public class AdminUserController {
                 campusName,
                 verificationStatus,
                 user.getCreatedAt(),
-                user.getUpdatedAt()
+                user.getUpdatedAt(),
+                parseJsonList(basic != null ? basic.getInterestTags() : null),
+                parseJsonList(basic != null ? basic.getPhotoGallery() : null),
+                basic != null ? basic.getProfileBackgroundUrl() : null,
+                basic != null ? basic.getHalfBodyPhotoUrl() : null,
+                basic != null ? basic.getHeight() : null,
+                basic != null ? basic.getEducationLevel() : null,
+                basic != null ? basic.getRelationshipStatus() : null,
+                basic != null ? basic.getBirthYear() : null,
+                basic != null ? basic.getExpectedPartner() : null
         );
         return ResponseEntity.ok(view);
     }
@@ -415,6 +450,33 @@ public class AdminUserController {
         }
         user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
+
+        if (userBasicProfileRepository != null && hasBasicField(req)) {
+            UserBasicProfile basic = userBasicProfileRepository.findByUserId(id).orElseGet(() -> {
+                UserBasicProfile created = new UserBasicProfile();
+                created.setUserId(id);
+                return created;
+            });
+            if (req.interestTags() != null) {
+                basic.setInterestTags(serializeJsonList(req.interestTags()));
+            }
+            if (req.height() != null) {
+                basic.setHeight(req.height());
+            }
+            if (req.educationLevel() != null) {
+                basic.setEducationLevel(req.educationLevel());
+            }
+            if (req.relationshipStatus() != null) {
+                basic.setRelationshipStatus(req.relationshipStatus());
+            }
+            if (req.birthYear() != null) {
+                basic.setBirthYear(req.birthYear());
+            }
+            if (req.expectedPartner() != null) {
+                basic.setExpectedPartner(req.expectedPartner());
+            }
+            userBasicProfileRepository.save(basic);
+        }
 
         // 复用详情查询逻辑返回最新视图
         return getUserDetail(id);
@@ -553,6 +615,40 @@ public class AdminUserController {
                 user.getCampusName(),
                 user.getCreatedAt()
         );
+    }
+
+    private List<String> parseJsonList(String json) {
+        if (json == null || json.isBlank() || objectMapper == null) {
+            return new ArrayList<>();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    private String serializeJsonList(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return "[]";
+        }
+        if (objectMapper == null) {
+            return list.toString();
+        }
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    private boolean hasBasicField(AdminUserUpdateRequest req) {
+        return req.interestTags() != null
+                || req.height() != null
+                || req.educationLevel() != null
+                || req.relationshipStatus() != null
+                || req.birthYear() != null
+                || req.expectedPartner() != null;
     }
 
     /**

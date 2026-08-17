@@ -17,7 +17,7 @@ import { useMock } from "../../stores/helpers/use-mock";
 import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../utils/navigation";
 // R4-00088：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../constants/routes";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -133,6 +133,11 @@ async function toggleCollect() {
 }
 
 /** 2026-08-08 头像点击进主页：统一跳转用户主页 */
+/** v3 Nearby 冻结：认识 TA → 他人主页（不直接 like/建聊天） */
+function meetAuthor(userId: string) {
+  openUserProfile(userId);
+}
+
 function goToUserProfile(userId: string | number | undefined) {
   if (userId == null || userId === "") return;
   openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${userId}`);
@@ -694,6 +699,11 @@ onShareTimeline(() => {
               {{ authorMetaText(currentPost.author) }}
             </text>
           </view>
+        </view>
+
+        <!-- v3 Nearby 冻结：认识 TA → 他人主页 -->
+        <view class="author-meet press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.meetAuthor')" @tap="meetAuthor(currentPost.author.userId)">
+          <text class="author-meet__text">{{ t('nearby.meetAuthor') }}</text>
         </view>
 
         <!-- 学校标签 -->
@@ -2411,5 +2421,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .share-modal__btn--confirm .share-modal__btn-text {
   color: var(--c-text-inverse);
+}
+
+/* ========== v3 Nearby 冻结：帖子认识 TA ========== */
+.author-meet {
+  margin-top: 18rpx;
+  display: inline-flex;
+  padding: 12rpx 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, #FF8DB7 0%, #FF6B81 100%);
+}
+
+.author-meet__text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
 }
 </style>

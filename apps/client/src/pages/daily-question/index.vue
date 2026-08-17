@@ -384,7 +384,7 @@ function onAnswersScrollLower(): void {
   background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
   border: none;
   border-radius: var(--r-xxl);
-  box-shadow: 0 8rpx 32rpx var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(63, 207, 142, 0.15)));
+  box-shadow: 0 8rpx 32rpx var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.15)));
   position: relative;
   overflow: hidden;
 }
@@ -396,7 +396,7 @@ function onAnswersScrollLower(): void {
   right: -40rpx;
   width: 160rpx;
   height: 160rpx;
-  background: radial-gradient(circle, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(236, 72, 153, 0.1))) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--c-romance-bg-tint, var(--c-romance-bg-tint, rgba(255, 104, 145, 0.1))) 0%, transparent 70%);
   border-radius: var(--r-circle, 50%);
 }
 
@@ -547,8 +547,8 @@ function onAnswersScrollLower(): void {
   gap: var(--sp-3);
   margin: 0 var(--sp-6) var(--sp-6);
   padding: var(--sp-6);
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(63, 207, 142, 0.08))));
-  border: 2rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(63, 207, 142, 0.2)));
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-bg-tint, var(--c-brand-bg-tint, rgba(61, 201, 148, 0.08))));
+  border: 2rpx solid var(--c-brand-border-tint, var(--c-brand-border-tint, rgba(61, 201, 148, 0.2)));
   border-radius: var(--r-lg);
 }
 

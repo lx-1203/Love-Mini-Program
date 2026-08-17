@@ -240,6 +240,7 @@ export const useMenuStore = defineStore("menu", () => {
         { id: 32, parentId: 30, title: "layout.navNotifyConfig", name: "NotifyConfig", path: "notify", component: "views/config/NotifyConfig.vue", menuType: "MENU", type: "MENU" },
         { id: 33, parentId: 30, title: "layout.navMatchConfig", name: "MatchConfig", path: "match", component: "views/config/MatchConfig.vue", menuType: "MENU", type: "MENU" },
         { id: 34, parentId: 30, title: "layout.navOfficialAccounts", name: "OfficialAccounts", path: "official-accounts", component: "views/config/OfficialAccounts.vue", menuType: "MENU", type: "MENU" },
+        { id: 35, parentId: 30, title: "layout.navProfileConfig", name: "ProfileConfig", path: "profile", component: "views/config/ProfileConfig.vue", menuType: "MENU", type: "MENU" },
       ],
     },
   ];

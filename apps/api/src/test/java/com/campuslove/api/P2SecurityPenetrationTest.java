@@ -177,7 +177,7 @@ class P2SecurityPenetrationTest {
 
         // Act：调用 controller，恶意 keyword 应作为字符串原样传递
         List<RecommendedPersonView> result = controller.getRecommendations(
-                null, null, null, null, null, null, null, maliciousKeyword, null, null);
+                null, null, null, null, null, null, null, maliciousKeyword, null, null, null);
 
         // Assert：service 收到的 filter 应包含原始 keyword（JPA 已使用参数化查询）
         assertNotNull(result);
@@ -205,7 +205,7 @@ class P2SecurityPenetrationTest {
 
         // Act
         controller.getRecommendations(
-                null, null, null, null, maliciousPayload, null, null, null, null, null);
+                null, null, null, null, maliciousPayload, null, null, null, null, null, null);
 
         // Assert：filter 对象中 hometownProvince 应为原始 payload
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
@@ -231,7 +231,7 @@ class P2SecurityPenetrationTest {
 
         // Act
         controller.getRecommendations(
-                null, null, null, null, null, unionPayload, unionPayload, unionPayload, null, null);
+                null, null, null, null, null, unionPayload, unionPayload, unionPayload, null, null, null);
 
         // Assert
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
@@ -257,7 +257,7 @@ class P2SecurityPenetrationTest {
 
         // Act & Assert：不应抛异常，参数应被原样传递
         assertDoesNotThrow(() -> controller.getRecommendations(
-                null, null, null, null, null, null, null, maliciousKeyword, null, null));
+                null, null, null, null, null, null, null, maliciousKeyword, null, null, null));
         verify(recommendationService).getRecommendations(eq(USER_A_ID), eq(expectedFilter));
     }
 
@@ -576,7 +576,7 @@ class P2SecurityPenetrationTest {
 
         // Act：匿名请求不抛 401，走游客推荐分支
         List<?> result = controller.getRecommendations(
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
 
         // Assert：游客分支被调用，个性化推荐分支绝不被调用
         assertNotNull(result);

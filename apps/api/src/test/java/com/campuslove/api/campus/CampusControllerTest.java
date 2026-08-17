@@ -48,6 +48,7 @@ class CampusControllerTest extends ControllerTestBase {
     @Mock private SchoolRepository schoolRepository;
     @Mock private com.campuslove.api.discover.ActivityService activityService;
     @Mock private com.campuslove.api.village.VillageService villageService;
+    @Mock private CampusPermissionService campusPermissionService;
 
     private CampusController controller;
 
@@ -55,7 +56,7 @@ class CampusControllerTest extends ControllerTestBase {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         controller = new CampusController(
-                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService);
+                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService, campusPermissionService);
     }
 
     /** 创建测试用 CampusTopicView（14 字段 record）。 */
@@ -93,13 +94,16 @@ class CampusControllerTest extends ControllerTestBase {
 
     @Test
     void listTopics_shouldReturnEmptyPageWhenUserNotBoundToSchool() {
-        // Arrange：用户未绑定学校（A-26 修复：返回明确业务错误引导认证，而非静默空列表）
+        // v3 Nearby 冻结：未绑定学校不再抛错——公开浏览语义，返回空列表
         withUserId(100L, () -> {
             when(campusProfileRepository.findByUserId(100L)).thenReturn(Optional.empty());
 
-            // Act & Assert
-            assertThrows(IllegalArgumentException.class, () -> controller.listTopics(
-                    null, PageRequest.of(0, 10)), "未绑定学校应抛业务错误提示先完成校园认证");
+            // Act
+            ResponseEntity<CampusTopicPageResponse> resp = controller.listTopics(
+                    null, null, PageRequest.of(0, 10));
+
+            // Assert
+            assertEquals(0, resp.getBody().content().size(), "未绑定学校应返回空列表而非报错");
         });
     }
 
@@ -118,7 +122,7 @@ class CampusControllerTest extends ControllerTestBase {
 
             // Act
             ResponseEntity<CampusTopicPageResponse> resp = controller.listTopics(
-                    "学习", PageRequest.of(0, 10));
+                    "学习", null, PageRequest.of(0, 10));
 
             // Assert
             assertEquals(1, resp.getBody().content().size(), "应返回 1 条话题");
@@ -164,6 +168,7 @@ class CampusControllerTest extends ControllerTestBase {
             // Assert
             assertNotNull(result);
             assertSame(created, result.data());
+            verify(campusPermissionService).requireVerifiedSameSchool(eq(100L), eq("测试大学"));
             verify(campusService).createCampusTopic(
                     eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试")));
         });
@@ -214,6 +219,8 @@ class CampusControllerTest extends ControllerTestBase {
         withUserId(100L, () -> {
             Long topicId = 42L;
             CampusTopicReplyView reply = buildReplyView(1L, topicId);
+            when(campusService.getCampusTopic(topicId)).thenReturn(buildTopicView(topicId, "测试话题"));
+            when(schoolRepository.findById(1L)).thenReturn(Optional.of(school(1L)));
             when(campusService.replyCampusTopic(eq(topicId), eq(100L), anyString()))
                     .thenReturn(reply);
 
@@ -225,6 +232,7 @@ class CampusControllerTest extends ControllerTestBase {
             // Assert
             assertNotNull(result);
             assertSame(reply, result.data());
+            verify(campusPermissionService).requireVerifiedSameSchool(eq(100L), eq("测试大学"));
             verify(campusService).replyCampusTopic(eq(topicId), eq(100L), eq("回复内容"));
         });
     }
@@ -249,6 +257,6 @@ class CampusControllerTest extends ControllerTestBase {
     void constructor_shouldAcceptAllDependencies() {
         // Arrange & Act & Assert
         assertNotNull(new CampusController(
-                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService));
+                campusService, certService, campusProfileRepository, schoolRepository, activityService, villageService, campusPermissionService));
     }
 }

@@ -1,16 +1,23 @@
 package com.campuslove.api.auth;
 
 import com.campuslove.api.common.TimeZones;
+import com.campuslove.api.entity.Activity;
+import com.campuslove.api.entity.ActivityEnrollment;
 import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.PrivateConversation;
 import com.campuslove.api.entity.PrivateMessage;
+import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.entity.Visitor;
+import com.campuslove.api.repository.ActivityEnrollmentRepository;
+import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.PrivateConversationRepository;
 import com.campuslove.api.repository.PrivateMessageRepository;
+import com.campuslove.api.repository.UserFollowRepository;
 import com.campuslove.api.repository.VisitorRepository;
+import org.springframework.data.domain.PageRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
@@ -40,8 +47,8 @@ public class GuestDemoDataProvisioner {
     private static final Logger log = LoggerFactory.getLogger(GuestDemoDataProvisioner.class);
 
     /** 匹配池虚拟用户（V2026.08.07.0021/0023 创建，北京大学校区） */
-    private static final long PEER_ZHOUYU = 10001L;   // 周屿（徒步/爬山，双向喜欢对象）
-    private static final long PEER_LINWAN = 10002L;   // 林晚（摄影）
+    private static final long PEER_ZHOUYU = 10001L;   // 夏言（person-02，双向喜欢对象）
+    private static final long PEER_LINWAN = 10002L;   // 阿辰（person-03）
     private static final long PEER_WALKTHROUGH = 8L;  // 走查号
 
     /** 喜欢我的虚拟用户（V2026.08.09.0017 口径 10009-10014） */
@@ -54,18 +61,27 @@ public class GuestDemoDataProvisioner {
     private final LikeRepository likeRepository;
     private final VisitorRepository visitorRepository;
     private final NotificationRepository notificationRepository;
+    private final UserFollowRepository followRepository;
+    private final ActivityRepository activityRepository;
+    private final ActivityEnrollmentRepository enrollmentRepository;
 
     public GuestDemoDataProvisioner(
             PrivateConversationRepository conversationRepository,
             PrivateMessageRepository messageRepository,
             LikeRepository likeRepository,
             VisitorRepository visitorRepository,
-            NotificationRepository notificationRepository) {
+            NotificationRepository notificationRepository,
+            UserFollowRepository followRepository,
+            ActivityRepository activityRepository,
+            ActivityEnrollmentRepository enrollmentRepository) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.likeRepository = likeRepository;
         this.visitorRepository = visitorRepository;
         this.notificationRepository = notificationRepository;
+        this.followRepository = followRepository;
+        this.activityRepository = activityRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     /**
@@ -88,6 +104,7 @@ public class GuestDemoDataProvisioner {
             provisionLikes(guestUserId);
             provisionVisitors(guestUserId);
             provisionNotifications(guestUserId);
+            provisionRelationshipSignals(guestUserId);
             log.info("体验账号演示数据播种完成: userId={}", guestUserId);
         } catch (RuntimeException ex) {
             log.warn("体验账号演示数据播种失败, userId={}: {}", guestUserId, ex.getMessage());
@@ -97,22 +114,22 @@ public class GuestDemoDataProvisioner {
     // ---- 私信：3 个会话（红点 2 / 红点 0 / 红点 3） ----
 
     private void provisionChats(Long guestUserId) {
-        // 会话 1：与周屿（匹配对象），最后 2 条对方未读（红点 = 2）
+        // 会话 1：与夏言（匹配对象），最后 2 条对方未读（红点 = 2）
         seedConversation(guestUserId, PEER_ZHOUYU, "顺便吃个火锅？",
                 List.of(
-                        msg(PEER_ZHOUYU, 90, "你好呀，看到你也喜欢徒步", "text", true),
-                        msg(guestUserId, 85, "你好！对啊，周末经常去爬山", "text", true),
-                        msg(PEER_ZHOUYU, 80, "太巧了，我也喜欢户外", "text", true),
-                        msg(guestUserId, 75, "那下次可以一起约徒步", "text", true),
-                        msg(PEER_ZHOUYU, 70, "好呀，你一般去哪里", "text", true),
-                        msg(guestUserId, 65, "香山或者奥森，都挺近的", "text", true),
-                        msg(PEER_ZHOUYU, 60, "你主页的爬山照片拍得真好看", "text", true),
+                        msg(PEER_ZHOUYU, 90, "你好呀，看到你也喜欢建筑", "text", true),
+                        msg(guestUserId, 85, "你好！对啊，周末经常去逛展", "text", true),
+                        msg(PEER_ZHOUYU, 80, "太巧了，我也喜欢探店", "text", true),
+                        msg(guestUserId, 75, "那下次可以一起去看展", "text", true),
+                        msg(PEER_ZHOUYU, 70, "好呀，你喜欢什么风格", "text", true),
+                        msg(guestUserId, 65, "国贸或者三里屯，都挺近的", "text", true),
+                        msg(PEER_ZHOUYU, 60, "你主页的建筑照片拍得真好看", "text", true),
                         msg(guestUserId, 55, "谢谢～", "emoji", true),
                         msg(PEER_ZHOUYU, 30, "周末有空的话一起去看展吧？", "text", false),
                         msg(PEER_ZHOUYU, 15, "顺便吃个火锅？", "text", false)
                 ));
 
-        // 会话 2：与林晚（摄影话题），全部已读（红点 = 0）
+        // 会话 2：与阿辰（摄影话题），全部已读（红点 = 0）
         seedConversation(guestUserId, PEER_LINWAN, "嗯嗯",
                 List.of(
                         msg(PEER_LINWAN, 150, "嗨，你也喜欢摄影呀", "text", true),
@@ -189,7 +206,7 @@ public class GuestDemoDataProvisioner {
         for (int i = 0; i < LIKERS.length; i++) {
             saveLike(LIKERS[i], guestUserId, now.minusHours(3 + i));
         }
-        // 双向喜欢：体验账号 → 周屿（likes 互指即匹配，支撑「互相喜欢 → 进入聊天」演示）
+        // 双向喜欢：体验账号 → 夏言（likes 互指即匹配，支撑「互相喜欢 → 进入聊天」演示）
         saveLike(guestUserId, PEER_ZHOUYU, now.minusHours(20));
     }
 
@@ -204,6 +221,46 @@ public class GuestDemoDataProvisioner {
         like.setCreatedAt(at);
         like.setUpdatedAt(at);
         likeRepository.save(like);
+    }
+
+    // ---- 消息 V3：关系推进信号（互相关注 + 共同活动报名） ----
+
+    private void provisionRelationshipSignals(Long guestUserId) {
+        // 互相关注：和夏言互相关注，用于展示「互相关注」关系标签
+        saveFollow(guestUserId, PEER_ZHOUYU);
+        saveFollow(PEER_ZHOUYU, guestUserId);
+
+        // 共同活动：体验账号和阿辰报名同一活动，用于展示「暧昧中」关系标签
+        Long activityId = activityRepository.findAll(PageRequest.of(0, 1))
+                .getContent()
+                .stream()
+                .findFirst()
+                .map(Activity::getId)
+                .orElse(null);
+        if (activityId != null) {
+            saveEnrollment(guestUserId, activityId);
+            saveEnrollment(PEER_LINWAN, activityId);
+        }
+    }
+
+    private void saveFollow(Long followerId, Long followingId) {
+        if (followRepository.existsByFollowerIdAndFollowingId(followerId, followingId)) {
+            return;
+        }
+        UserFollow follow = new UserFollow(followerId, followingId);
+        followRepository.save(follow);
+    }
+
+    private void saveEnrollment(Long userId, Long activityId) {
+        if (enrollmentRepository.existsByActivityIdAndUserId(activityId, userId)) {
+            return;
+        }
+        ActivityEnrollment enrollment = new ActivityEnrollment();
+        enrollment.setActivityId(activityId);
+        enrollment.setUserId(userId);
+        enrollment.setEnrolledAt(LocalDateTime.now(TimeZones.BUSINESS));
+        enrollment.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        enrollmentRepository.save(enrollment);
     }
 
     // ---- 访客：虚拟用户访问过体验账号主页 ----
@@ -234,7 +291,7 @@ public class GuestDemoDataProvisioner {
             saveNotification(guestUserId, Notification.NotificationType.visitor,
                     VISITORS[i], now.minusHours(1 + i * 3));
         }
-        // match 通知：和周屿互相喜欢
+        // match 通知：和夏言互相喜欢
         saveNotification(guestUserId, Notification.NotificationType.match,
                 PEER_ZHOUYU, now.minusHours(20));
     }
@@ -253,3 +310,4 @@ public class GuestDemoDataProvisioner {
         notificationRepository.save(notification);
     }
 }
+
