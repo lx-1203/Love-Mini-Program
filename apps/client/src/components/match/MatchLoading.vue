@@ -48,6 +48,9 @@ const PROGRESS = [
   { label: "电影偏好", percent: 80 },
   { label: "生活方式", percent: 79 },
 ];
+
+/** 底部总进度（规范 B.5：缘分匹配中... N%） */
+const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) / PROGRESS.length);
 </script>
 
 <template>
@@ -83,6 +86,12 @@ const PROGRESS = [
           <view class="match-loading__row-bar-inner" :style="{ width: p.percent + '%' }" />
         </view>
         <text class="match-loading__row-percent">{{ p.percent }}%</text>
+      </view>
+      <view class="match-loading__total">
+        <text class="match-loading__total-text">缘分匹配中... {{ totalPercent }}%</text>
+        <view class="match-loading__total-bar">
+          <view class="match-loading__total-bar-inner" :style="{ width: totalPercent + '%' }" />
+        </view>
       </view>
     </view>
   </view>
@@ -233,5 +242,33 @@ const PROGRESS = [
 @keyframes match-loading-ring {
   0% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
   100% { transform: scale(1.12) rotate(360deg); opacity: 0; }
+}
+
+.match-loading__total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+
+.match-loading__total-text {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #36C99A;
+}
+
+.match-loading__total-bar {
+  width: 400rpx;
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: rgba(54, 201, 154, 0.2);
+  overflow: hidden;
+}
+
+.match-loading__total-bar-inner {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #36C99A 0%, #55D5A7 100%);
 }
 </style>

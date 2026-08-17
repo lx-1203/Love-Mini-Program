@@ -83,7 +83,7 @@ const heartSrc = IMAGE_PATHS.ICONS_MATCH_V1.HEART_MATCH;
         <text class="match-success__secondary-text">{{ t('matchSuccess.explore') }}</text>
       </view>
       <view class="match-success__share" hover-class="match-success__share--pressed" @tap="emit('share')">
-        <text class="match-success__share-text">分享喜讯</text>
+        <text class="match-success__share-text">分享喜悦 🎉</text>
       </view>
     </view>
   </view>
@@ -106,8 +106,8 @@ const heartSrc = IMAGE_PATHS.ICONS_MATCH_V1.HEART_MATCH;
 }
 
 .match-success__title {
-  font-size: 48rpx;
-  font-weight: 800;
+  font-size: 72rpx;
+  font-weight: 700;
   color: #36C99A;
 }
 
@@ -124,8 +124,11 @@ const heartSrc = IMAGE_PATHS.ICONS_MATCH_V1.HEART_MATCH;
 
 .match-success__subtitle {
   margin-top: 12rpx;
-  font-size: 26rpx;
-  color: #8a9694;
+  font-size: 32rpx;
+  color: #6B7571;
+  line-height: 1.5;
+  text-align: center;
+  max-width: 560rpx;
 }
 
 .match-success__avatars {
