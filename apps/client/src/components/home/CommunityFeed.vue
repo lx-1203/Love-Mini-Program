@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
 

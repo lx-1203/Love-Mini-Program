@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
@@ -89,7 +89,7 @@ function goToDetail(topicId: string) {
  */
 function goToAuthorProfile(authorId: string) {
   if (!authorId) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(authorId)}`);
+  openUserProfile(authorId);
 }
 
 /**

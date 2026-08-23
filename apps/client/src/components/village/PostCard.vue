@@ -122,7 +122,7 @@ function openActivity(activityId: number | string) {
         class="post-card__user clickable"
         hover-class="post-card__user--pressed"
         :hover-stay-time="100"
-        catchtap="emit('open-author', post.author.userId)"
+        @catchtap="emit('open-author', post.author.userId)"
       >
         <view class="user-avatar">
           <image
@@ -154,7 +154,7 @@ function openActivity(activityId: number | string) {
       <view
         class="follow-chip"
         :class="{ 'follow-chip--active': post.isFollowed }"
-        catchtap="emit('follow', post.author.userId)"
+        @catchtap="emit('follow', post.author.userId)"
       >
         <text class="follow-chip__text">
           {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
@@ -172,7 +172,7 @@ function openActivity(activityId: number | string) {
       v-if="post.images.length > 0"
       class="post-card__images"
       :class="'post-card__images--' + Math.min(post.images.length, MAX_POST_IMAGES)"
-      catchtap="noop"
+      @catchtap="noop"
     >
       <view
         v-for="(img, idx) in post.images.slice(0, MAX_POST_IMAGES)"
@@ -194,7 +194,7 @@ function openActivity(activityId: number | string) {
     </view>
 
     <!-- 关联活动卡（2026-08-08 频道化重构：帖子内直接发活动链接） -->
-    <view v-if="post.activity" class="post-card__activity" catchtap="noop">
+    <view v-if="post.activity" class="post-card__activity" @catchtap="noop">
       <ActivityCard :activity="post.activity" compact @open-detail="openActivity" />
     </view>
 
@@ -205,12 +205,12 @@ function openActivity(activityId: number | string) {
         :key="tag"
         class="post-card__tag"
         :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
-        catchtap="emit('open-tag', tag)"
+        @catchtap="emit('open-tag', tag)"
       >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
     </view>
 
     <!-- 最新 2 条评论预览（QQ 频道风格） -->
-    <view v-if="post.recentComments && post.recentComments.length > 0" class="post-card__comments" catchtap="noop">
+    <view v-if="post.recentComments && post.recentComments.length > 0" class="post-card__comments" @catchtap="noop">
       <view
         v-for="c in post.recentComments.slice(0, 2)"
         :key="c.id"
@@ -236,7 +236,7 @@ function openActivity(activityId: number | string) {
       <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
       <view class="post-card__actions">
         <!-- 评论 -->
-        <view class="action-btn" catchtap="emit('open-detail', post.id)">
+        <view class="action-btn" @catchtap="emit('open-detail', post.id)">
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
           <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
         </view>
@@ -244,20 +244,20 @@ function openActivity(activityId: number | string) {
         <view
           class="action-btn"
           :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimating }"
-          catchtap="handleLike"
+          @catchtap="handleLike"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
           <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
         </view>
         <!-- 分享 -->
-        <view class="action-btn" catchtap="noop">
+        <view class="action-btn" @catchtap="noop">
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
         </view>
         <!-- 收藏 -->
         <view
           class="action-btn"
           :class="{ 'action-btn--collected': post.isFavorite }"
-          catchtap="emit('favorite', post.id)"
+          @catchtap="emit('favorite', post.id)"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
           <text v-if="post.favorites > 0" class="action-btn__count">{{ post.favorites }}</text>
