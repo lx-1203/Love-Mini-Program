@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 3.5a5.4 5.4 0 1 1 0 10.8 5.4 5.4 0 0 1 0-10.8Zm-1 12.9H9v2h2v2.1h2v-2.1h2v-2h-2v-1.1h-2v1.1ZM12 5.5a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "GenderFemaleIcon" })
+</script>

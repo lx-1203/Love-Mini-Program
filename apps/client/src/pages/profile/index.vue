@@ -1,3 +1,4 @@
+﻿```vue
 <script setup lang="ts">
 /**
  * 个人中心 - 我的
@@ -730,9 +731,9 @@ const interactionItems = computed(() => [
 ]);
 
 const moreItems = computed(() => [
-  { key: "favorites", label: "我的收藏" },
+  { key: "favorites", label: "收藏帖子" },
   { key: "visitors", label: "谁看过我" },
-  { key: "album", label: "恋爱相册" },
+  { key: "album", label: "我的相册" },
   { key: "privacy", label: "隐私设置" },
 ]);
 
@@ -791,7 +792,7 @@ function onProfileShellMoreTap(key: string) {
     interest: "/subpackages/setup/interest/index",
     checkin: "/pages/profile/tasks",
     privacy: "/pages/settings/index",
-    favorites: "/pages/profile/album",
+    favorites: "/pages/profile/favorites",
     visitors: "/pages/profile/visitors",
     album: "/pages/profile/album",
   };
@@ -1413,7 +1414,7 @@ async function handlePostTap(postId: string) {
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
-  openAppPath("/pages/circles/post-topic");
+  openAppPath("/pages/village/post");
 }
 
 
@@ -1880,12 +1881,7 @@ onUnload(() => {
               class="photo-grid__img-wrap"
               @longpress="handleRemovePhoto(cell.index)"
             >
-              <image
-                class="photo-grid__img"
-                :src="toLocalImage(cell.url)"
-                mode="aspectFill"
-                lazy-load alt=""
-              />
+              <SafeImage class="photo-grid__img" :src="toLocalImage(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
               <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
               <view
                 v-if="cell.auditStatus === 'pending'"
@@ -1910,7 +1906,7 @@ onUnload(() => {
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
             >
-              <text class="photo-grid__add-icon">+</text>
+              <image class="photo-grid__add-icon-img" src="/static/assets/message/svg/icon/add.svg" mode="aspectFit" />
               <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
             </view>
           </view>
@@ -2027,10 +2023,7 @@ onUnload(() => {
         <text class="dev-entry__text">DEV</text>
       </view>
 
-      <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
-      <GlobalPublishFab @publish="goToPublishTopic" />
-
-      <!-- 底部安全区占位 -->
+            <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
         </template>
       </ProfileShell>
@@ -2468,12 +2461,7 @@ onUnload(() => {
               class="photo-grid__img-wrap"
               @longpress="handleRemovePhoto(cell.index)"
             >
-              <image
-                class="photo-grid__img"
-                :src="toLocalImage(cell.url)"
-                mode="aspectFill"
-                lazy-load alt=""
-              />
+              <SafeImage class="photo-grid__img" :src="toLocalImage(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
               <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
               <view
                 v-if="cell.auditStatus === 'pending'"
@@ -2498,7 +2486,7 @@ onUnload(() => {
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
             >
-              <text class="photo-grid__add-icon">+</text>
+              <image class="photo-grid__add-icon-img" src="/static/assets/message/svg/icon/add.svg" mode="aspectFit" />
               <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
             </view>
           </view>
@@ -2615,8 +2603,8 @@ onUnload(() => {
         <text class="dev-entry__text">DEV</text>
       </view>
 
-      <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
-      <GlobalPublishFab @publish="goToPublishTopic" />
+            <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
+      <GlobalPublishFab v-if="isOwnProfile" @publish="goToPublishTopic" />
 
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />
@@ -3813,6 +3801,8 @@ onUnload(() => {
 .photo-grid__img-wrap {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  border-radius: var(--r-md);
 }
 
 .photo-grid__img {
@@ -3841,7 +3831,7 @@ onUnload(() => {
   }
 }
 
-.photo-grid__add-icon {
+.photo-grid__add-icon-img { width: 56rpx; height: 56rpx; opacity: 0.4; } .photo-grid__add-icon {
   font-size: var(--fs-4xl);
   color: var(--c-text-quaternary);
   font-weight: 300;
@@ -4435,3 +4425,4 @@ onUnload(() => {
 }
 
 </style>
+```

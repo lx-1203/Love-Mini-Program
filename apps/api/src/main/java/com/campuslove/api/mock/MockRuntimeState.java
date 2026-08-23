@@ -35,11 +35,11 @@ public class MockRuntimeState {
     /** mock 媒体占位路径前缀（R4-01799 统一常量，替换本地演示素材时改一处即可） */
     public static final String MOCK_MEDIA_PATH_PREFIX = "/uploads/mock/";
 
-  private boolean loggedIn;
+  private boolean loggedIn = false;
   private boolean phoneBound;
-  private boolean profileCompleted;
-  private boolean campusVerified;
-  private boolean scheduleCompleted;
+  private boolean profileCompleted = true;
+  private boolean campusVerified = true;
+  private boolean scheduleCompleted = true;
   private String displayName = DEFAULT_DISPLAY_NAME;
   private String campusName;
   private LoginHeroData loginHero = new LoginHeroData(
@@ -105,7 +105,7 @@ public class MockRuntimeState {
           "工业设计大三，偏好低压力的第一轮聊天。",
           "共同兴趣：电影夜和安静的咖啡馆路线",
           "合适时间：今晚 19:00 之后",
-          "/static/assets/images/avatars/person-01-avatar.webp",
+          "/static/assets/images/avatars/person-01-avatar.png",
           21,
           168,
           "bachelor",
@@ -123,7 +123,7 @@ public class MockRuntimeState {
           "更适合从音乐话题切入，再配一段短距离校园散步。",
           "节奏接近：更喜欢短时见面和明确时段",
           "合适时间：周五 16:00-18:00",
-          "/static/assets/images/avatars/person-02-avatar.webp",
+          "/static/assets/images/avatars/person-02-avatar.png",
           22,
           175,
           "master",
@@ -141,7 +141,7 @@ public class MockRuntimeState {
           "喜欢直接定计划、边界清楚、气氛放松的咖啡聊天。",
           "共同偏好：校园人多时也接受室内兜底",
           "合适时间：周末下午",
-          "/static/assets/images/avatars/person-03-avatar.webp",
+          "/static/assets/images/avatars/person-03-avatar.png",
           21,
           180,
           "bachelor",
@@ -159,7 +159,7 @@ public class MockRuntimeState {
           "心理学硕士，喜欢深度的对话与长期规划的话题。",
           "共同兴趣：阅读与城市规划",
           "合适时间：周末上午",
-          "/static/assets/images/avatars/person-04-avatar.webp",
+          "/static/assets/images/avatars/person-04-avatar.png",
           23,
           162,
           "master",
@@ -177,7 +177,7 @@ public class MockRuntimeState {
           "建筑学大五，未来想去成都定居，喜欢户外运动与城市探索。",
           "共同兴趣：户外运动与城市探索",
           "合适时间：周六全天",
-          "/static/assets/images/avatars/person-05-avatar.webp",
+          "/static/assets/images/avatars/person-05-avatar.png",
           21,
           185,
           "bachelor",
@@ -195,7 +195,7 @@ public class MockRuntimeState {
           "南京大学 · 大三 · 法学",
           "你们都选了美食话题",
           "合适时间：周二、周四晚上",
-          "/static/assets/images/avatars/person-06-avatar.webp",
+          "/static/assets/images/avatars/person-06-avatar.png",
           22,
           168,
           "bachelor",
@@ -213,7 +213,7 @@ public class MockRuntimeState {
           "武汉大学 · 研二 · 医学",
           "你们都选了户外话题",
           "合适时间：周末全天",
-          "/static/assets/images/avatars/person-07-avatar.webp",
+          "/static/assets/images/avatars/person-07-avatar.png",
           25,
           175,
           "master",
@@ -231,7 +231,7 @@ public class MockRuntimeState {
           "上海交通大学 · 大三 · 电影研究",
           "你们都选了电影话题",
           "合适时间：周六下午",
-          "/static/assets/images/avatars/person-08-avatar.webp",
+          "/static/assets/images/avatars/person-08-avatar.png",
           22,
           168,
           "bachelor",
@@ -249,7 +249,7 @@ public class MockRuntimeState {
           "中山大学 · 大二 · 摄影",
           "你们都选了摄影话题",
           "合适时间：周三、周五晚上",
-          "/static/assets/images/avatars/person-09-avatar.webp",
+          "/static/assets/images/avatars/person-09-avatar.png",
           21,
           172,
           "bachelor",

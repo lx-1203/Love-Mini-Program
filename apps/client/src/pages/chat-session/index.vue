@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
@@ -460,11 +461,11 @@ function goBack() {
   // #endif
 }
 
-usePageAccess(chatPageRequirements);
+usePageAccess({ ...chatPageRequirements, requiresProfile: false });
 
 // 2026-08-09 免踢登录：未登录 → 展示 LockScreen 引导，不渲染会话、不发鉴权请求
 const sessionStore = useSessionStore();
-const isUnlocked = computed(() => sessionStore.isLoggedIn);
+const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
 /**
@@ -519,7 +520,7 @@ function syncChatStoreMessagesToMessagesStore(): void {
  * 防止 onShow 与 onLoad 异步创建会话竞态：仅在 sessionId 就绪时执行。
  */
 async function loadSessionData(): Promise<void> {
-  if (!sessionId.value) {
+  if (!sessionId.value || sessionId.value === "undefined" || sessionId.value === "null") {
     return;
   }
 
@@ -951,7 +952,7 @@ function updateTempCountdown() {
   // 使用纯函数格式化倒计时（R4-00077：已结束时返回 null，不再返回硬编码中文）
   tempCountdown.value = formatTempCountdown(diff) ?? "";
 
-  // 已结束时清理计时器并清空倒计时文本（review #51：避免“剩余时间：已结束”文案残留）
+  // 已结束时清理计时器并清空倒计时文本（review #51：避免"剩余时间：已结束"文案残留）
   if (diff <= 0) {
     tempCountdown.value = "";
     if (countdownTimer) {
@@ -1105,29 +1106,10 @@ function toggleEmojiPanel() {
  * utf8mb4 存储。发送失败 toast 提示（面板已收起，草稿不受影响）。
  */
 async function handleEmojiSelect(emoji: string) {
-  if (!sessionId.value) return;
-  emojiPanelVisible.value = false;
-  if (isSessionClosed.value) {
-    uni.showToast({ title: t("chat.sessionClosedCannotSend"), icon: "none" });
-    return;
-  }
-  try {
-    if (isTempSession.value) {
-      await chatStore.sendText(emoji, "emoji");
-      // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
-      syncChatStoreMessagesToMessagesStore();
-    } else {
-      await messagesStore.sendMessage(sessionId.value, emoji, undefined, "emoji");
-    }
-    // 表情消息发送后同样触发对方「正在输入」演示（mock 模式）
-    scheduleTypingSimulation();
-  } catch (error) {
-    captureException(error, {
-      source: "chat.sendEmoji",
-      sessionId: sessionId.value,
-    });
-    uni.showToast({ title: t("chat.sendFailed"), icon: "none" });
-  }
+  // 2026-08-23：表情先插入输入框（可叠加），用户可继续输入文字或直接发送
+  if (!emoji) return;
+  draft.value = (draft.value || "") + emoji;
+  notifyTyping();
 }
 
 /* ========== 破冰首条提示（2026-08-09 微信化重构） ========== */
@@ -1547,6 +1529,39 @@ async function handleImagePlaceholder() {
 
 // 修复（严格模式 noUnusedLocals）：noop 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+
+/**
+ * 2026-08-23：点头像 → 弹出「看主页 / 拍一拍」菜单；双击头像 → 拍一拍。
+ */
+const avatarMenuVisible = ref(false);
+
+function openAvatarMenu() {
+  avatarMenuVisible.value = true;
+}
+function closeAvatarMenu() {
+  avatarMenuVisible.value = false;
+}
+async function handleAvatarPat() {
+  avatarMenuVisible.value = false;
+  if (!sessionId.value) return;
+  try {
+    const name = pageTitle.value || "对方";
+    if (isTempSession.value) {
+      await chatStore.sendText("你拍了拍" + name);
+      syncChatStoreMessagesToMessagesStore();
+    } else {
+      await messagesStore.sendMessage(sessionId.value, "你拍了拍" + name);
+    }
+  } catch (error) {
+    captureException(error, { source: "chat.avatar-pat", sessionId: sessionId.value });
+  }
+}
+function handleAvatarProfile() {
+  avatarMenuVisible.value = false;
+  // 复用「看主页」逻辑（跳转对方个人主页）
+  goSignalProfile();
+}
+
 defineExpose({ noop });
 </script>
 
@@ -1562,6 +1577,8 @@ defineExpose({ noop });
       :relation-days="relationDays"
       @back="goBack"
       @more="openNavMenu"
+      @avatar-tap="openAvatarMenu"
+      @avatar-pat="handleAvatarPat"
     />
 
     <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处） -->
@@ -1664,6 +1681,8 @@ defineExpose({ noop });
               :quote-body="row.message.quoteBody"
               :quote-sender="row.message.quoteSender"
               :can-interact="true"
+              :peer-avatar="peerAvatarSrc"
+              @avatar-tap="openAvatarMenu"
               @longpress="handleMessageLongpress(row.message.id)"
               @tap-quote="handleTapQuote"
             />
@@ -1787,7 +1806,7 @@ defineExpose({ noop });
             hover-stay-time="120"
             @tap="onSend"
           >
-            <image class="wechat-input-bar__send-img" :src="IMAGE_PATHS.MESSAGE_ICONS.SEND_HEART" mode="aspectFit" alt="" />
+            <text class="wechat-input-bar__send-text">发送</text>
           </view>
         </view>
 
@@ -2055,7 +2074,35 @@ defineExpose({ noop });
         </view>
       </view>
     </view>
-    </template>
+
+    <!-- 2026-08-23：点头像弹出「看主页 / 拍一拍」 -->
+    <view
+      v-if="avatarMenuVisible"
+      class="avatar-menu-mask"
+      @tap="closeAvatarMenu"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="'头像操作'"
+    >
+      <view class="avatar-menu-sheet" @tap.stop="noop">
+        <view class="avatar-menu-head">
+          <image class="avatar-menu-avatar" :src="resolveMediaUrl(peerAvatarSrc)" mode="aspectFill" />
+          <text class="avatar-menu-name">{{ pageTitle }}</text>
+        </view>
+        <view class="avatar-menu-actions">
+          <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarProfile" role="button">
+            <text class="avatar-menu-item-text">看主页</text>
+          </view>
+          <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarPat" role="button">
+            <text class="avatar-menu-item-text">拍一拍</text>
+          </view>
+        </view>
+        <view class="avatar-menu-cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeAvatarMenu" role="button">
+          <text class="avatar-menu-cancel-text">取消</text>
+        </view>
+      </view>
+    </view>
+        </template>
   </view>
 </template>
 
@@ -2475,10 +2522,9 @@ defineExpose({ noop });
 
 .wechat-input-bar__send {
   background: var(--c-brand);
-  padding: 0;
-  border-radius: 50%;
-  width: 96rpx;
-  height: 96rpx;
+  border-radius: 999rpx;
+  padding: 0 40rpx;
+  height: 72rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2987,7 +3033,69 @@ defineExpose({ noop });
   box-shadow: var(--s-brand-sm, 0 4rpx 12rpx rgba(61, 201, 148, 0.35));
 }
 
+
+/* ========== 2026-08-23 点头像菜单 ========== */
+.avatar-menu-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--c-black-overlay-mid, rgba(0,0,0,0.45));
+  display: flex;
+  align-items: flex-end;
+}
+.avatar-menu-sheet {
+  width: 100%;
+  background: var(--c-bg-container, #FFFFFF);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+}
+.avatar-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
+}
+.avatar-menu-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+}
+.avatar-menu-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1E1E1E);
+}
+.avatar-menu-actions {
+  display: flex;
+  gap: 20rpx;
+  padding: 28rpx 0 20rpx;
+}
+.avatar-menu-item {
+  flex: 1;
+  padding: 28rpx 0;
+  border-radius: 20rpx;
+  background: var(--c-bg-surface, #F7FAF9);
+  text-align: center;
+}
+.avatar-menu-item-text {
+  font-size: 28rpx;
+  color: var(--c-brand-500, #36C99A);
+  font-weight: 600;
+}
+.avatar-menu-cancel {
+  padding: 24rpx 0;
+  border-radius: 20rpx;
+  background: var(--c-bg-hover, #F0F2F5);
+  text-align: center;
+}
+.avatar-menu-cancel-text {
+  font-size: 28rpx;
+  color: var(--c-text-primary, #1E1E1E);
+}
+
 </style>
+```
 
 
 

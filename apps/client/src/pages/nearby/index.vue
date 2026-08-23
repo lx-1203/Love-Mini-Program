@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 /**
  * 附近首页（v3 Nearby 冻结 · 01_nearby_home）
@@ -25,8 +26,8 @@ import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
-import LockScreen from "../../components/common/LockScreen.vue";
 
+import { fetchCurrentLocation, buildLocationText } from "../../utils/location";
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/附近1/匹配2/消息3/我的4）
 useTabBar(1);
 
@@ -44,6 +45,7 @@ const peopleError = ref("");
 
 /** 校园入口（前 4 所） */
 const schoolEntries = SCHOOLS.slice(0, 4);
+const schoolMainCover = "/static/assets/images/covers/school-main.png";
 
 /** 热门兴趣圈（8 个标准圈） */
 const { circles: circleList } = storeToRefs(circleStore);
@@ -53,36 +55,29 @@ const hotCircles = computed(() => circleList.value.slice(0, 8));
 const circlePosts = computed<PostItem[]>(() => villageStore.posts.slice(0, 6));
 
 /** 首页子标题：北京大学 · 3km */
-const activeTab = ref<"people" | "circles" | "campus" | "activities" | "posts">("people");
-const nearbyTabs = [
-  { key: "people" as const, label: t("nearby.peopleTitle") },
-  { key: "circles" as const, label: t("nearby.hotCircles") },
-  { key: "campus" as const, label: t("nearby.campusCircles") },
-  { key: "activities" as const, label: t("nearby.activitiesTitle") },
-  { key: "posts" as const, label: t("nearby.nearbyPosts") },
-];
 
-const homeSubtitle = computed(() => {
-  const school = sessionStore.userSession?.campusName || t("nearby.defaultSchool");
-  return t("nearby.homeSubtitle", { school, dist: t("nearby.defaultDist") });
-});
+const homeSubtitle = ref(buildLocationText("", sessionStore.userSession?.campusName));
+
+async function initLocation() {
+  const loc = await fetchCurrentLocation();
+  if (loc) {
+    homeSubtitle.value = buildLocationText(loc.city, sessionStore.userSession?.campusName);
+  }
+}
 
 onLoad(() => {
   loadNearbyData();
+  void initLocation();
 });
 
 onShow(() => {
-  if (!getToken()) return;
+  // 未登录时也加载预览数据，展示附近推荐
   if (peoplePreview.value.length === 0 && !peopleLoading.value) {
     void loadPeoplePreview();
   }
 });
 
 onPullDownRefresh(() => {
-  if (!getToken()) {
-    uni.stopPullDownRefresh();
-    return;
-  }
   void loadPeoplePreview().finally(() => uni.stopPullDownRefresh());
 });
 
@@ -91,23 +86,26 @@ onUnmounted(() => {
 });
 
 /**
- * 2026-08-15：未登录时不发受保护请求（冷启动无 token 时 onLoad/onShow 会拉取
- * people/circles/activities/posts → 401 雪崩）。登录后 watch(isLoggedIn) 自动补拉。
+ * 加载附近预览数据（未登录时也加载，点击交互时引导登录）
  */
 function loadNearbyData(): void {
-  if (!getToken()) return;
   void loadPeoplePreview();
-  void loadActivities();
-  void loadCirclePosts();
-  void circleStore.fetchCircles().catch(() => {});
+  // 受保护的数据源仅登录后加载
+  if (getToken()) {
+    void loadActivities();
+    void loadCirclePosts();
+    void circleStore.fetchCircles().catch(() => {});
+  }
 }
 
-// 2026-08-15：登录态变化后自动补拉（未登录时已跳过，登录成功即刷新数据）
+// 2026-08-15：登录态变化后自动补拉（登录成功即刷新数据）
 watch(
   () => sessionStore.isLoggedIn,
   (loggedIn) => {
     if (loggedIn) {
-      loadNearbyData();
+      loadActivities();
+      void loadCirclePosts();
+      void circleStore.fetchCircles().catch(() => {});
     }
   }
 );
@@ -213,6 +211,43 @@ function goAllPosts() {
   openAppPath("/pages/village/index");
 }
 
+/** 2026-08-21：兴趣圈封面照片（复用兴趣圈页素材，按名称匹配） */
+const CIRCLE_COVER = {
+  photo: "/static/assets/images/covers/circle-photo.png",
+  travel: "/static/assets/images/covers/circle-travel.png",
+  music: "/static/assets/images/covers/circle-music.png",
+  sports: "/static/assets/images/covers/circle-sports.png",
+  food: "/static/assets/images/covers/circle-food.png",
+  sky: "/static/assets/images/covers/circle-sky.png",
+  game: "/static/assets/images/covers/circle-game.png",
+  reading: "/static/assets/images/covers/circle-reading.png",
+  pet: "/static/assets/images/covers/circle-pet.png",
+  cutepets: "/static/assets/images/covers/circle-cutepets.png",
+  basketball: "/static/assets/images/covers/circle-basketball.png",
+  boardgame: "/static/assets/images/covers/circle-boardgame.png",
+  postgraduate: "/static/assets/images/covers/circle-postgraduate.png",
+  studybuddy: "/static/assets/images/covers/circle-studybuddy.png",
+} as const;
+
+function circleCover(circle: { name: string }): string {
+  const n = circle.name || "";
+  if (n.includes("摄影")) return CIRCLE_COVER.photo;
+  if (n.includes("旅行")) return CIRCLE_COVER.travel;
+  if (n.includes("音乐")) return CIRCLE_COVER.music;
+  if (n.includes("运动") || n.includes("篮球") || n.includes("健身")) return CIRCLE_COVER.sports;
+  if (n.includes("美食") || n.includes("食")) return CIRCLE_COVER.food;
+  if (n.includes("天文") || n.includes("星空")) return CIRCLE_COVER.sky;
+  if (n.includes("游戏")) return CIRCLE_COVER.game;
+  if (n.includes("阅读")) return CIRCLE_COVER.reading;
+  if (n.includes("宠物")) return CIRCLE_COVER.pet;
+  if (n.includes("萌宠")) return CIRCLE_COVER.cutepets;
+  if (n.includes("篮球")) return CIRCLE_COVER.basketball;
+  if (n.includes("桌游")) return CIRCLE_COVER.boardgame;
+  if (n.includes("考研")) return CIRCLE_COVER.postgraduate;
+  if (n.includes("学习搭子") || n.includes("学习")) return CIRCLE_COVER.studybuddy;
+  return "";
+}
+
 /** 成员数格式化 */
 function formatMemberCount(count: number): string {
   if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
@@ -230,15 +265,12 @@ function requireLogin(): boolean {
 
 <template>
   <view class="nearby-home page-bottom-safe" :style="menuStyleVars">
-    <!-- 2026-08-15：未登录时不发受保护请求，展示 LockScreen 登录引导 -->
-    <LockScreen v-if="!sessionStore.isLoggedIn" />
-    <template v-else>
     <scroll-view scroll-y class="nearby-home__scroll" :show-scrollbar="false">
       <!-- 顶部：附近 + 子标题 + 发帖 -->
       <view class="nearby-home__header">
         <view class="nearby-home__title-row">
           <text class="nearby-home__title">{{ t('nearby.title') }}</text>
-          <image class="nearby-home__search" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" role="button" :aria-label="t('nearby.searchPlaceholder')" @tap="goSearch" alt="" />
+          <image class="nearby-home__search" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" role="button" :aria-label="t('nearby.searchPlaceholder')" @tap="goSearch" alt="" />
           <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
             <text class="nearby-home__publish-text">{{ t('nearby.publishToday') }}</text>
           </view>
@@ -246,22 +278,42 @@ function requireLogin(): boolean {
         <text class="nearby-home__subtitle">{{ homeSubtitle }}</text>
       </view>
 
-      <view class="nearby-tabs">
-        <view
-          v-for="tab in nearbyTabs"
-          :key="tab.key"
-          class="nearby-tabs__item"
-          :class="{ 'nearby-tabs__item--active': activeTab === tab.key }"
-          role="button"
-          :aria-label="tab.label"
-          @tap="activeTab = tab.key"
-        >
-          <text class="nearby-tabs__text">{{ tab.label }}</text>
+      <!-- 功能入口：5 圆形图标（参考图对齐） -->
+      <view class="nearby-entries">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.peopleTitle')" @tap="goPeople('nearby')">
+          <view class="nearby-entry__icon nearby-entry__icon--people">
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.PEOPLE" mode="aspectFit" alt="" />
+          </view>
+          <text class="nearby-entry__label">{{ t('nearby.peopleTitle') }}</text>
+        </view>
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.hotCircles')" @tap="goCircleList">
+          <view class="nearby-entry__icon nearby-entry__icon--circle">
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CIRCLE" mode="aspectFit" alt="" />
+          </view>
+          <text class="nearby-entry__label">{{ t('nearby.hotCircles') }}</text>
+        </view>
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.campusCircles')" @tap="goCampusHub()">
+          <view class="nearby-entry__icon nearby-entry__icon--campus">
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CAMPUS" mode="aspectFit" alt="" />
+          </view>
+          <text class="nearby-entry__label">{{ t('nearby.campusCircles') }}</text>
+        </view>
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.activitiesTitle')" @tap="goActivityList">
+          <view class="nearby-entry__icon nearby-entry__icon--activity">
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.ACTIVITY" mode="aspectFit" alt="" />
+          </view>
+          <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
+        </view>
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.nearbyPosts')" @tap="goAllPosts">
+          <view class="nearby-entry__icon nearby-entry__icon--dynamic">
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.DYNAMIC" mode="aspectFit" alt="" />
+          </view>
+          <text class="nearby-entry__label">{{ t('nearby.nearbyPosts') }}</text>
         </view>
       </view>
 
       <!-- ① 附近的人（含同城） -->
-      <NearbySection v-if="activeTab === 'people'" :title="t('nearby.peopleTitle')">
+      <NearbySection :title="t('nearby.peopleTitle')">
         <view class="people-entry-list">
           <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.peopleNearby')" @tap="goPeople('nearby')">
             <view class="people-entry__icon-wrap">
@@ -287,7 +339,7 @@ function requireLogin(): boolean {
       </NearbySection>
 
       <!-- ② 热门兴趣圈（开放加入，无需校园认证） -->
-      <NearbySection v-if="activeTab === 'circles'" :title="t('nearby.hotCircles')" :more-text="t('nearby.viewAll')" @more="goCircleList">
+      <NearbySection :title="t('nearby.hotCircles')" :more-text="t('nearby.viewAll')" @more="goCircleList">
         <scroll-view scroll-x class="circle-scroll" :show-scrollbar="false">
           <view class="circle-scroll__list">
             <view
@@ -300,11 +352,13 @@ function requireLogin(): boolean {
               :aria-label="circle.name"
               @tap="goCircleDetail(circle.id)"
             >
-              <view class="circle-mini__icon">
-                <text class="circle-mini__emoji">{{ circle.icon }}</text>
+              <image v-if="circleCover(circle)" class="circle-mini__cover" :src="circleCover(circle)" mode="aspectFill" alt="" />
+              <text v-else class="circle-mini__emoji">{{ circle.icon }}</text>
+              <view class="circle-mini__overlay" />
+              <view class="circle-mini__info">
+                <text class="circle-mini__name">{{ circle.name }}</text>
+                <text class="circle-mini__count">{{ formatMemberCount(circle.memberCount) }} 人加入</text>
               </view>
-              <text class="circle-mini__name">{{ circle.name }}</text>
-              <text class="circle-mini__count">{{ formatMemberCount(circle.memberCount) }} 人加入</text>
               <view
                 class="circle-mini__join"
                 :class="{ 'circle-mini__join--joined': circle.isJoined }"
@@ -320,19 +374,21 @@ function requireLogin(): boolean {
       </NearbySection>
 
       <!-- ③ 校园圈（公开可看、认证进私域） -->
-      <NearbySection v-if="activeTab === 'campus'" :title="t('nearby.campusCircles')" :more-text="t('nearby.viewAll')" @more="goCampusHub()">
+      <NearbySection :title="t('nearby.campusCircles')" :more-text="t('nearby.viewAll')" @more="goCampusHub()">
         <view
           v-for="school in schoolEntries"
           :key="school.id"
           class="campus-entry press-feedback"
+          
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
           :aria-label="school.name"
           @tap="goCampusHub(school.name)"
         >
-          <view class="campus-entry__icon-wrap">
-            <image class="campus-entry__icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+          <view class="campus-entry__cover-wrap">
+            <image class="campus-entry__cover" :src="schoolMainCover" mode="aspectFill" alt="" />
+            <view class="campus-entry__cover-overlay" />
           </view>
           <view class="campus-entry__body">
             <text class="campus-entry__name">{{ school.name }}</text>
@@ -346,7 +402,7 @@ function requireLogin(): boolean {
       </NearbySection>
 
       <!-- ④ 活动（复用现有活动体系） -->
-      <NearbySection v-if="activeTab === 'activities'" :title="t('nearby.activitiesTitle')" :more-text="t('nearby.viewAll')" @more="goActivityList">
+      <NearbySection :title="t('nearby.activitiesTitle')" :more-text="t('nearby.viewAll')" @more="goActivityList">
         <view
           v-for="activity in activityStore.activities.slice(0, 3)"
           :key="activity.id"
@@ -372,7 +428,7 @@ function requireLogin(): boolean {
       </NearbySection>
 
       <!-- ⑤ 附近动态（复用 village 帖子流；最多 1 个显式「认识 TA」） -->
-      <NearbySection v-if="activeTab === 'posts'" :title="t('nearby.nearbyPosts')" :more-text="t('nearby.viewAll')" @more="goAllPosts">
+      <NearbySection :title="t('nearby.nearbyPosts')" :more-text="t('nearby.viewAll')" @more="goAllPosts">
         <view v-if="circlePosts.length === 0 && !villageStore.loading" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
         </view>
@@ -400,7 +456,6 @@ function requireLogin(): boolean {
 
       <view class="nearby-home__footer-space" />
     </scroll-view>
-    </template>
   </view>
 </template>
 
@@ -417,6 +472,12 @@ function requireLogin(): boolean {
 .nearby-home__scroll {
   flex: 1;
   min-height: 0;
+}
+
+/* 修复图片过大问题：全局约束附近页所有图片容器 */
+.nearby-home image {
+  max-width: 100%;
+  max-height: 400rpx;
 }
 
 .nearby-home__header {
@@ -452,7 +513,7 @@ function requireLogin(): boolean {
 .nearby-home__publish-text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .nearby-home__subtitle {
@@ -476,7 +537,7 @@ function requireLogin(): boolean {
   padding: 24rpx;
   border-radius: 20rpx;
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   box-shadow: var(--c-shadow-card, 0 4px 16px rgba(30, 80, 65, 0.08));
 }
 
@@ -487,12 +548,12 @@ function requireLogin(): boolean {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-brand-50, #E6F8F1);
+  background: var(--c-brand-50, #E8FAF3);
   flex-shrink: 0;
 }
 
 .people-entry__icon-wrap--city {
-  background: var(--c-romance-100, #FFE4E9);
+  background: var(--c-romance-100, #FFD9DF);
 }
 
 .people-entry__icon {
@@ -536,48 +597,70 @@ function requireLogin(): boolean {
 }
 
 .circle-mini {
-  width: 220rpx;
+  position: relative;
+  width: 300rpx;
+  height: 360rpx;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8rpx;
-  padding: 20rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  border-radius: 20rpx;
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: var(--c-line, #EEF2F0);
 }
 
-.circle-mini__icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 18rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-bg-surface, #F7FAF9);
+.circle-mini__cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .circle-mini__emoji {
-  font-size: 36rpx;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 88rpx;
+}
+
+.circle-mini__overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
+}
+
+.circle-mini__info {
+  position: absolute;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: 88rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  z-index: 1;
 }
 
 .circle-mini__name {
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  color: var(--c-text-primary, #222222);
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .circle-mini__count {
-  font-size: 20rpx;
-  color: var(--c-text-tertiary, #666666);
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .circle-mini__join {
-  margin-top: 4rpx;
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
   padding: 8rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  background: linear-gradient(135deg, #36C99A 0%, #22a976 100%);
+  z-index: 1;
 }
 
 .circle-mini__join--joined {
@@ -588,7 +671,7 @@ function requireLogin(): boolean {
 .circle-mini__join-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .circle-mini__join--joined .circle-mini__join-text {
@@ -603,7 +686,7 @@ function requireLogin(): boolean {
   padding: 24rpx;
   border-radius: 20rpx;
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   margin-bottom: 16rpx;
 }
 
@@ -632,67 +715,61 @@ function requireLogin(): boolean {
 }
 
 .campus-entry__name {
+  position: relative;
+  z-index: 1;
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--c-text-primary, #222222);
+  color: var(--c-text-inverse, #FFFFFF);
+  text-shadow: 0 1rpx 4rpx rgba(0,0,0,0.3);
 }
 
-.campus-entry__desc {
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
+.campus-entry__cover-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
-.campus-entry__status {
-  flex-shrink: 0;
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-surface, #F7FAF9);
+.campus-entry__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.campus-entry__status-text {
-  font-size: 20rpx;
-  color: var(--c-text-tertiary, #666666);
-}
-
-.campus-entry__arrow {
-  font-size: 30rpx;
+.campus-entry__cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%);
   color: var(--c-text-quaternary, #C8CFCD);
 }
 
-/* 活动 */
 .activity-entry {
   display: flex;
   align-items: center;
   gap: 20rpx;
   padding: 24rpx;
-  border-radius: 20rpx;
+  color: var(--c-text-inverse, #FFFFFF);
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   margin-bottom: 16rpx;
 }
-
 .activity-entry__icon-wrap {
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
-  display: flex;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   background: var(--c-apricot-100, #FFEDD5);
   flex-shrink: 0;
 }
-
 .activity-entry__icon {
   width: 40rpx;
   height: 40rpx;
-}
-
-.activity-entry__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
 }
 
 .activity-entry__title {
@@ -704,6 +781,14 @@ function requireLogin(): boolean {
 .activity-entry__desc {
   font-size: 22rpx;
   color: var(--c-text-secondary, #666666);
+}
+
+.activity-entry__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
 }
 
 .activity-entry__arrow {
@@ -727,7 +812,7 @@ function requireLogin(): boolean {
 .nearby-meet__text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .nearby-home__empty {
@@ -754,26 +839,87 @@ function requireLogin(): boolean {
   flex-shrink: 0;
   padding: 12rpx 24rpx;
   border-radius: 999rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #ECEFF2;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
 .nearby-tabs__item--active {
-  background: #E8F8F1;
-  border-color: #36C99A;
+  background: var(--c-bg-brand, #E8F8F1);
+  border-color: var(--c-brand, #36C99A);
+}
+
+
+.nearby-tabs__icon {
+  width: 30rpx;
+  height: 30rpx;
+  flex-shrink: 0;
 }
 
 .nearby-tabs__text {
   font-size: 24rpx;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .nearby-tabs__item--active .nearby-tabs__text {
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
   font-weight: 700;
 }
 
 .nearby-home__footer-space {
   height: 48rpx;
 }
+.nearby-entries {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin: 8rpx 0 24rpx;
+  padding: 24rpx 12rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  border-radius: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+.nearby-entry {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.nearby-entry__icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nearby-entry__icon--people { background: var(--c-bg-brand, #E8FAF3); }
+.nearby-entry__icon--circle { background: var(--c-bg-brand, #E8F5E4); }
+.nearby-entry__icon--campus { background: #EEF3FF; }
+.nearby-entry__icon--activity { background: #FFF5E6; }
+.nearby-entry__icon--dynamic { background: #F0EEFF; }
+
+.nearby-entry__img {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.nearby-entry__label {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #4A524E);
+  text-align: center;
+  white-space: nowrap;
+}
+
 </style>
+```
+
+
+

@@ -2,6 +2,8 @@ package com.campuslove.api.config;
 
 import com.campuslove.api.common.IdempotentInterceptor;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -165,6 +176,20 @@ public class WebConfig implements WebMvcConfigurer {
      *
      * @param registry 拦截器注册器
      */
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer jacksonMockIdLongCustomizer() {
+        return builder -> {
+            SimpleModule m = new SimpleModule("mockIdLong");
+            m.addDeserializer(Long.class, new MockIdLongDeserializer());
+            m.addDeserializer(Long.TYPE, new MockIdLongDeserializer());
+            builder.modulesToInstall(m);
+        };
+    }
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        // mock 用户 id 形如 "user-1001"/"person-1"，此处统一把 Long 路径变量/参数解析为数字 id
+        registry.addConverter(String.class, Long.class, MockStringLongConverter.INSTANCE);
+    }
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         if (idempotentInterceptor != null) {
@@ -191,3 +216,67 @@ public class WebConfig implements WebMvcConfigurer {
                 .toList();
     }
 }
+    /**
+     * 将 mock 字符串 id（如 "user-1001"/"person-1"）解析为数字 Long。
+     * 纯数字直接解析；非数字则取末尾数字段。
+     */
+    enum MockStringLongConverter implements Converter<String, Long> {
+        INSTANCE;
+
+        private static final Pattern TRAILING_DIGITS = Pattern.compile("(\\d+)\\s*$");
+
+        @Override
+        public Long convert(String source) {
+            if (source == null || source.isBlank()) {
+                return null;
+            }
+            String s = source.trim();
+            try {
+                return Long.valueOf(s);
+            } catch (NumberFormatException ignored) {
+                // fallthrough to trailing digits
+            }
+            Matcher m = TRAILING_DIGITS.matcher(s);
+            if (m.find()) {
+                try {
+                    return Long.valueOf(m.group(1));
+                } catch (NumberFormatException ignored) {
+                    // not numeric
+                }
+            }
+            return null;
+        }
+    }
+    /**
+     * Jackson Long 反序列化：数值直接透传；字符串若为 mock id（"user-1001"/"person-1"）则取末尾数字段，
+     * 使 JSON 体中 Long 字段同时兼容 real（纯数字）与 mock（字符串 id）。
+     */
+    class MockIdLongDeserializer extends JsonDeserializer<Long> {
+        private static final java.util.regex.Pattern TRAILING_DIGITS = java.util.regex.Pattern.compile("(\\d+)\\s*$");
+
+        @Override
+        public Long deserialize(JsonParser p, DeserializationContext ctxt) throws java.io.IOException {
+            if (p.currentToken() == JsonToken.VALUE_NUMBER_INT) {
+                return p.getLongValue();
+            }
+            String s = p.getValueAsString();
+            if (s == null || s.isBlank()) {
+                return null;
+            }
+            String v = s.trim();
+            try {
+                return Long.valueOf(v);
+            } catch (NumberFormatException ignored) {
+                // fallthrough
+            }
+            java.util.regex.Matcher m = TRAILING_DIGITS.matcher(v);
+            if (m.find()) {
+                try {
+                    return Long.valueOf(m.group(1));
+                } catch (NumberFormatException ignored) {
+                    // not numeric
+                }
+            }
+            return null;
+        }
+    }

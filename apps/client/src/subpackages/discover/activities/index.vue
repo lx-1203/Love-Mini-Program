@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 线下活动页 - 支持列表/日历双视图切换
  * 列表视图：展示所有活动卡片，支持下拉刷新、上拉加载更多
@@ -421,11 +421,11 @@ defineExpose({ toggleEnroll });
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load="true" alt="" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -575,11 +575,11 @@ defineExpose({ toggleEnroll });
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load="true" alt="" />
+                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load="true" alt="" />
+                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -1100,12 +1100,12 @@ defineExpose({ toggleEnroll });
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #ffffff);
-  border: 2rpx solid var(--c-line, #ECEFF2);
+  border: 2rpx solid var(--c-line, #EEF2F0);
 }
 
 .quick-filter--active {
   border-color: var(--c-brand-500, #36C99A);
-  background: var(--c-brand-50, #E6F8F1);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .quick-filter__text {
@@ -1130,3 +1130,4 @@ defineExpose({ toggleEnroll });
   color: var(--c-text-tertiary, #666666);
 }
 </style>
+

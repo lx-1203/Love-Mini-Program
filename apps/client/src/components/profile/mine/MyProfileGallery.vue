@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from "vue";
 import { profileSvg } from "../../../config/profile-svg";
 import PhotoCard from "../common/PhotoCard.vue";
@@ -42,7 +42,7 @@ const cells = computed(() => {
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-gallery__grid {

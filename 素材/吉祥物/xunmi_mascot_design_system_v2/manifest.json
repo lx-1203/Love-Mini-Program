@@ -1,0 +1,1208 @@
+[
+  {
+    "name": "mascot_default",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_default/mascot_default.master.png",
+    "svg_path": "01-mascot/mascot_default/mascot_default.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_default/png/mascot_default@16.png",
+      "24": "01-mascot/mascot_default/png/mascot_default@24.png",
+      "32": "01-mascot/mascot_default/png/mascot_default@32.png",
+      "48": "01-mascot/mascot_default/png/mascot_default@48.png",
+      "72": "01-mascot/mascot_default/png/mascot_default@72.png",
+      "128": "01-mascot/mascot_default/png/mascot_default@128.png",
+      "256": "01-mascot/mascot_default/png/mascot_default@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_smile",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_smile/mascot_smile.master.png",
+    "svg_path": "01-mascot/mascot_smile/mascot_smile.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_smile/png/mascot_smile@16.png",
+      "24": "01-mascot/mascot_smile/png/mascot_smile@24.png",
+      "32": "01-mascot/mascot_smile/png/mascot_smile@32.png",
+      "48": "01-mascot/mascot_smile/png/mascot_smile@48.png",
+      "72": "01-mascot/mascot_smile/png/mascot_smile@72.png",
+      "128": "01-mascot/mascot_smile/png/mascot_smile@128.png",
+      "256": "01-mascot/mascot_smile/png/mascot_smile@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_happy",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_happy/mascot_happy.master.png",
+    "svg_path": "01-mascot/mascot_happy/mascot_happy.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_happy/png/mascot_happy@16.png",
+      "24": "01-mascot/mascot_happy/png/mascot_happy@24.png",
+      "32": "01-mascot/mascot_happy/png/mascot_happy@32.png",
+      "48": "01-mascot/mascot_happy/png/mascot_happy@48.png",
+      "72": "01-mascot/mascot_happy/png/mascot_happy@72.png",
+      "128": "01-mascot/mascot_happy/png/mascot_happy@128.png",
+      "256": "01-mascot/mascot_happy/png/mascot_happy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_wink",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_wink/mascot_wink.master.png",
+    "svg_path": "01-mascot/mascot_wink/mascot_wink.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_wink/png/mascot_wink@16.png",
+      "24": "01-mascot/mascot_wink/png/mascot_wink@24.png",
+      "32": "01-mascot/mascot_wink/png/mascot_wink@32.png",
+      "48": "01-mascot/mascot_wink/png/mascot_wink@48.png",
+      "72": "01-mascot/mascot_wink/png/mascot_wink@72.png",
+      "128": "01-mascot/mascot_wink/png/mascot_wink@128.png",
+      "256": "01-mascot/mascot_wink/png/mascot_wink@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_surprised",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_surprised/mascot_surprised.master.png",
+    "svg_path": "01-mascot/mascot_surprised/mascot_surprised.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_surprised/png/mascot_surprised@16.png",
+      "24": "01-mascot/mascot_surprised/png/mascot_surprised@24.png",
+      "32": "01-mascot/mascot_surprised/png/mascot_surprised@32.png",
+      "48": "01-mascot/mascot_surprised/png/mascot_surprised@48.png",
+      "72": "01-mascot/mascot_surprised/png/mascot_surprised@72.png",
+      "128": "01-mascot/mascot_surprised/png/mascot_surprised@128.png",
+      "256": "01-mascot/mascot_surprised/png/mascot_surprised@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_sleepy",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_sleepy/mascot_sleepy.master.png",
+    "svg_path": "01-mascot/mascot_sleepy/mascot_sleepy.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_sleepy/png/mascot_sleepy@16.png",
+      "24": "01-mascot/mascot_sleepy/png/mascot_sleepy@24.png",
+      "32": "01-mascot/mascot_sleepy/png/mascot_sleepy@32.png",
+      "48": "01-mascot/mascot_sleepy/png/mascot_sleepy@48.png",
+      "72": "01-mascot/mascot_sleepy/png/mascot_sleepy@72.png",
+      "128": "01-mascot/mascot_sleepy/png/mascot_sleepy@128.png",
+      "256": "01-mascot/mascot_sleepy/png/mascot_sleepy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_angry",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_angry/mascot_angry.master.png",
+    "svg_path": "01-mascot/mascot_angry/mascot_angry.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_angry/png/mascot_angry@16.png",
+      "24": "01-mascot/mascot_angry/png/mascot_angry@24.png",
+      "32": "01-mascot/mascot_angry/png/mascot_angry@32.png",
+      "48": "01-mascot/mascot_angry/png/mascot_angry@48.png",
+      "72": "01-mascot/mascot_angry/png/mascot_angry@72.png",
+      "128": "01-mascot/mascot_angry/png/mascot_angry@128.png",
+      "256": "01-mascot/mascot_angry/png/mascot_angry@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_tearful",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_tearful/mascot_tearful.master.png",
+    "svg_path": "01-mascot/mascot_tearful/mascot_tearful.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_tearful/png/mascot_tearful@16.png",
+      "24": "01-mascot/mascot_tearful/png/mascot_tearful@24.png",
+      "32": "01-mascot/mascot_tearful/png/mascot_tearful@32.png",
+      "48": "01-mascot/mascot_tearful/png/mascot_tearful@48.png",
+      "72": "01-mascot/mascot_tearful/png/mascot_tearful@72.png",
+      "128": "01-mascot/mascot_tearful/png/mascot_tearful@128.png",
+      "256": "01-mascot/mascot_tearful/png/mascot_tearful@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_thinking",
+    "group": "mascot",
+    "source_category": "mascot_base",
+    "master_png": "01-mascot/mascot_thinking/mascot_thinking.master.png",
+    "svg_path": "01-mascot/mascot_thinking/mascot_thinking.svg",
+    "png_sizes": {
+      "16": "01-mascot/mascot_thinking/png/mascot_thinking@16.png",
+      "24": "01-mascot/mascot_thinking/png/mascot_thinking@24.png",
+      "32": "01-mascot/mascot_thinking/png/mascot_thinking@32.png",
+      "48": "01-mascot/mascot_thinking/png/mascot_thinking@48.png",
+      "72": "01-mascot/mascot_thinking/png/mascot_thinking@72.png",
+      "128": "01-mascot/mascot_thinking/png/mascot_thinking@128.png",
+      "256": "01-mascot/mascot_thinking/png/mascot_thinking@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_wave",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_wave/mascot_wave.master.png",
+    "svg_path": "02-expression/mascot_wave/mascot_wave.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_wave/png/mascot_wave@16.png",
+      "24": "02-expression/mascot_wave/png/mascot_wave@24.png",
+      "32": "02-expression/mascot_wave/png/mascot_wave@32.png",
+      "48": "02-expression/mascot_wave/png/mascot_wave@48.png",
+      "72": "02-expression/mascot_wave/png/mascot_wave@72.png",
+      "128": "02-expression/mascot_wave/png/mascot_wave@128.png",
+      "256": "02-expression/mascot_wave/png/mascot_wave@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_greeting",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_greeting/mascot_greeting.master.png",
+    "svg_path": "02-expression/mascot_greeting/mascot_greeting.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_greeting/png/mascot_greeting@16.png",
+      "24": "02-expression/mascot_greeting/png/mascot_greeting@24.png",
+      "32": "02-expression/mascot_greeting/png/mascot_greeting@32.png",
+      "48": "02-expression/mascot_greeting/png/mascot_greeting@48.png",
+      "72": "02-expression/mascot_greeting/png/mascot_greeting@72.png",
+      "128": "02-expression/mascot_greeting/png/mascot_greeting@128.png",
+      "256": "02-expression/mascot_greeting/png/mascot_greeting@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_heart",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_heart/mascot_heart.master.png",
+    "svg_path": "02-expression/mascot_heart/mascot_heart.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_heart/png/mascot_heart@16.png",
+      "24": "02-expression/mascot_heart/png/mascot_heart@24.png",
+      "32": "02-expression/mascot_heart/png/mascot_heart@32.png",
+      "48": "02-expression/mascot_heart/png/mascot_heart@48.png",
+      "72": "02-expression/mascot_heart/png/mascot_heart@72.png",
+      "128": "02-expression/mascot_heart/png/mascot_heart@128.png",
+      "256": "02-expression/mascot_heart/png/mascot_heart@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_love",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_love/mascot_love.master.png",
+    "svg_path": "02-expression/mascot_love/mascot_love.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_love/png/mascot_love@16.png",
+      "24": "02-expression/mascot_love/png/mascot_love@24.png",
+      "32": "02-expression/mascot_love/png/mascot_love@32.png",
+      "48": "02-expression/mascot_love/png/mascot_love@48.png",
+      "72": "02-expression/mascot_love/png/mascot_love@72.png",
+      "128": "02-expression/mascot_love/png/mascot_love@128.png",
+      "256": "02-expression/mascot_love/png/mascot_love@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_jump",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_jump/mascot_jump.master.png",
+    "svg_path": "02-expression/mascot_jump/mascot_jump.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_jump/png/mascot_jump@16.png",
+      "24": "02-expression/mascot_jump/png/mascot_jump@24.png",
+      "32": "02-expression/mascot_jump/png/mascot_jump@32.png",
+      "48": "02-expression/mascot_jump/png/mascot_jump@48.png",
+      "72": "02-expression/mascot_jump/png/mascot_jump@72.png",
+      "128": "02-expression/mascot_jump/png/mascot_jump@128.png",
+      "256": "02-expression/mascot_jump/png/mascot_jump@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_cheer",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_cheer/mascot_cheer.master.png",
+    "svg_path": "02-expression/mascot_cheer/mascot_cheer.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_cheer/png/mascot_cheer@16.png",
+      "24": "02-expression/mascot_cheer/png/mascot_cheer@24.png",
+      "32": "02-expression/mascot_cheer/png/mascot_cheer@32.png",
+      "48": "02-expression/mascot_cheer/png/mascot_cheer@48.png",
+      "72": "02-expression/mascot_cheer/png/mascot_cheer@72.png",
+      "128": "02-expression/mascot_cheer/png/mascot_cheer@128.png",
+      "256": "02-expression/mascot_cheer/png/mascot_cheer@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_clap",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_clap/mascot_clap.master.png",
+    "svg_path": "02-expression/mascot_clap/mascot_clap.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_clap/png/mascot_clap@16.png",
+      "24": "02-expression/mascot_clap/png/mascot_clap@24.png",
+      "32": "02-expression/mascot_clap/png/mascot_clap@32.png",
+      "48": "02-expression/mascot_clap/png/mascot_clap@48.png",
+      "72": "02-expression/mascot_clap/png/mascot_clap@72.png",
+      "128": "02-expression/mascot_clap/png/mascot_clap@128.png",
+      "256": "02-expression/mascot_clap/png/mascot_clap@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_party",
+    "group": "expression",
+    "source_category": "interaction",
+    "master_png": "02-expression/mascot_party/mascot_party.master.png",
+    "svg_path": "02-expression/mascot_party/mascot_party.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_party/png/mascot_party@16.png",
+      "24": "02-expression/mascot_party/png/mascot_party@24.png",
+      "32": "02-expression/mascot_party/png/mascot_party@32.png",
+      "48": "02-expression/mascot_party/png/mascot_party@48.png",
+      "72": "02-expression/mascot_party/png/mascot_party@72.png",
+      "128": "02-expression/mascot_party/png/mascot_party@128.png",
+      "256": "02-expression/mascot_party/png/mascot_party@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_like",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_like/mascot_like.master.png",
+    "svg_path": "02-expression/mascot_like/mascot_like.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_like/png/mascot_like@16.png",
+      "24": "02-expression/mascot_like/png/mascot_like@24.png",
+      "32": "02-expression/mascot_like/png/mascot_like@32.png",
+      "48": "02-expression/mascot_like/png/mascot_like@48.png",
+      "72": "02-expression/mascot_like/png/mascot_like@72.png",
+      "128": "02-expression/mascot_like/png/mascot_like@128.png",
+      "256": "02-expression/mascot_like/png/mascot_like@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_crush",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_crush/mascot_crush.master.png",
+    "svg_path": "02-expression/mascot_crush/mascot_crush.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_crush/png/mascot_crush@16.png",
+      "24": "02-expression/mascot_crush/png/mascot_crush@24.png",
+      "32": "02-expression/mascot_crush/png/mascot_crush@32.png",
+      "48": "02-expression/mascot_crush/png/mascot_crush@48.png",
+      "72": "02-expression/mascot_crush/png/mascot_crush@72.png",
+      "128": "02-expression/mascot_crush/png/mascot_crush@128.png",
+      "256": "02-expression/mascot_crush/png/mascot_crush@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_hug",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_hug/mascot_hug.master.png",
+    "svg_path": "02-expression/mascot_hug/mascot_hug.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_hug/png/mascot_hug@16.png",
+      "24": "02-expression/mascot_hug/png/mascot_hug@24.png",
+      "32": "02-expression/mascot_hug/png/mascot_hug@32.png",
+      "48": "02-expression/mascot_hug/png/mascot_hug@48.png",
+      "72": "02-expression/mascot_hug/png/mascot_hug@72.png",
+      "128": "02-expression/mascot_hug/png/mascot_hug@128.png",
+      "256": "02-expression/mascot_hug/png/mascot_hug@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_sleep",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_sleep/mascot_sleep.master.png",
+    "svg_path": "02-expression/mascot_sleep/mascot_sleep.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_sleep/png/mascot_sleep@16.png",
+      "24": "02-expression/mascot_sleep/png/mascot_sleep@24.png",
+      "32": "02-expression/mascot_sleep/png/mascot_sleep@32.png",
+      "48": "02-expression/mascot_sleep/png/mascot_sleep@48.png",
+      "72": "02-expression/mascot_sleep/png/mascot_sleep@72.png",
+      "128": "02-expression/mascot_sleep/png/mascot_sleep@128.png",
+      "256": "02-expression/mascot_sleep/png/mascot_sleep@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_shy",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_shy/mascot_shy.master.png",
+    "svg_path": "02-expression/mascot_shy/mascot_shy.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_shy/png/mascot_shy@16.png",
+      "24": "02-expression/mascot_shy/png/mascot_shy@24.png",
+      "32": "02-expression/mascot_shy/png/mascot_shy@32.png",
+      "48": "02-expression/mascot_shy/png/mascot_shy@48.png",
+      "72": "02-expression/mascot_shy/png/mascot_shy@72.png",
+      "128": "02-expression/mascot_shy/png/mascot_shy@128.png",
+      "256": "02-expression/mascot_shy/png/mascot_shy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_calm",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_calm/mascot_calm.master.png",
+    "svg_path": "02-expression/mascot_calm/mascot_calm.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_calm/png/mascot_calm@16.png",
+      "24": "02-expression/mascot_calm/png/mascot_calm@24.png",
+      "32": "02-expression/mascot_calm/png/mascot_calm@32.png",
+      "48": "02-expression/mascot_calm/png/mascot_calm@48.png",
+      "72": "02-expression/mascot_calm/png/mascot_calm@72.png",
+      "128": "02-expression/mascot_calm/png/mascot_calm@128.png",
+      "256": "02-expression/mascot_calm/png/mascot_calm@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_cry",
+    "group": "expression",
+    "source_category": "emotion",
+    "master_png": "02-expression/mascot_cry/mascot_cry.master.png",
+    "svg_path": "02-expression/mascot_cry/mascot_cry.svg",
+    "png_sizes": {
+      "16": "02-expression/mascot_cry/png/mascot_cry@16.png",
+      "24": "02-expression/mascot_cry/png/mascot_cry@24.png",
+      "32": "02-expression/mascot_cry/png/mascot_cry@32.png",
+      "48": "02-expression/mascot_cry/png/mascot_cry@48.png",
+      "72": "02-expression/mascot_cry/png/mascot_cry@72.png",
+      "128": "02-expression/mascot_cry/png/mascot_cry@128.png",
+      "256": "02-expression/mascot_cry/png/mascot_cry@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_search",
+    "group": "state",
+    "source_category": "scene_function",
+    "master_png": "03-state/mascot_search/mascot_search.master.png",
+    "svg_path": "03-state/mascot_search/mascot_search.svg",
+    "png_sizes": {
+      "16": "03-state/mascot_search/png/mascot_search@16.png",
+      "24": "03-state/mascot_search/png/mascot_search@24.png",
+      "32": "03-state/mascot_search/png/mascot_search@32.png",
+      "48": "03-state/mascot_search/png/mascot_search@48.png",
+      "72": "03-state/mascot_search/png/mascot_search@72.png",
+      "128": "03-state/mascot_search/png/mascot_search@128.png",
+      "256": "03-state/mascot_search/png/mascot_search@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_camera",
+    "group": "state",
+    "source_category": "scene_function",
+    "master_png": "03-state/mascot_camera/mascot_camera.master.png",
+    "svg_path": "03-state/mascot_camera/mascot_camera.svg",
+    "png_sizes": {
+      "16": "03-state/mascot_camera/png/mascot_camera@16.png",
+      "24": "03-state/mascot_camera/png/mascot_camera@24.png",
+      "32": "03-state/mascot_camera/png/mascot_camera@32.png",
+      "48": "03-state/mascot_camera/png/mascot_camera@48.png",
+      "72": "03-state/mascot_camera/png/mascot_camera@72.png",
+      "128": "03-state/mascot_camera/png/mascot_camera@128.png",
+      "256": "03-state/mascot_camera/png/mascot_camera@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_phone",
+    "group": "state",
+    "source_category": "scene_function",
+    "master_png": "03-state/mascot_phone/mascot_phone.master.png",
+    "svg_path": "03-state/mascot_phone/mascot_phone.svg",
+    "png_sizes": {
+      "16": "03-state/mascot_phone/png/mascot_phone@16.png",
+      "24": "03-state/mascot_phone/png/mascot_phone@24.png",
+      "32": "03-state/mascot_phone/png/mascot_phone@32.png",
+      "48": "03-state/mascot_phone/png/mascot_phone@48.png",
+      "72": "03-state/mascot_phone/png/mascot_phone@72.png",
+      "128": "03-state/mascot_phone/png/mascot_phone@128.png",
+      "256": "03-state/mascot_phone/png/mascot_phone@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_hi",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_hi/chat_hi.master.png",
+    "svg_path": "04-chat/chat_hi/chat_hi.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_hi/png/chat_hi@16.png",
+      "24": "04-chat/chat_hi/png/chat_hi@24.png",
+      "32": "04-chat/chat_hi/png/chat_hi@32.png",
+      "48": "04-chat/chat_hi/png/chat_hi@48.png",
+      "72": "04-chat/chat_hi/png/chat_hi@72.png",
+      "128": "04-chat/chat_hi/png/chat_hi@128.png",
+      "256": "04-chat/chat_hi/png/chat_hi@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_are_you",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_are_you/chat_are_you.master.png",
+    "svg_path": "04-chat/chat_are_you/chat_are_you.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_are_you/png/chat_are_you@16.png",
+      "24": "04-chat/chat_are_you/png/chat_are_you@24.png",
+      "32": "04-chat/chat_are_you/png/chat_are_you@32.png",
+      "48": "04-chat/chat_are_you/png/chat_are_you@48.png",
+      "72": "04-chat/chat_are_you/png/chat_are_you@72.png",
+      "128": "04-chat/chat_are_you/png/chat_are_you@128.png",
+      "256": "04-chat/chat_are_you/png/chat_are_you@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_good",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_good/chat_good.master.png",
+    "svg_path": "04-chat/chat_good/chat_good.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_good/png/chat_good@16.png",
+      "24": "04-chat/chat_good/png/chat_good@24.png",
+      "32": "04-chat/chat_good/png/chat_good@32.png",
+      "48": "04-chat/chat_good/png/chat_good@48.png",
+      "72": "04-chat/chat_good/png/chat_good@72.png",
+      "128": "04-chat/chat_good/png/chat_good@128.png",
+      "256": "04-chat/chat_good/png/chat_good@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_received",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_received/chat_received.master.png",
+    "svg_path": "04-chat/chat_received/chat_received.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_received/png/chat_received@16.png",
+      "24": "04-chat/chat_received/png/chat_received@24.png",
+      "32": "04-chat/chat_received/png/chat_received@32.png",
+      "48": "04-chat/chat_received/png/chat_received@48.png",
+      "72": "04-chat/chat_received/png/chat_received@72.png",
+      "128": "04-chat/chat_received/png/chat_received@128.png",
+      "256": "04-chat/chat_received/png/chat_received@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_great",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_great/chat_great.master.png",
+    "svg_path": "04-chat/chat_great/chat_great.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_great/png/chat_great@16.png",
+      "24": "04-chat/chat_great/png/chat_great@24.png",
+      "32": "04-chat/chat_great/png/chat_great@32.png",
+      "48": "04-chat/chat_great/png/chat_great@48.png",
+      "72": "04-chat/chat_great/png/chat_great@72.png",
+      "128": "04-chat/chat_great/png/chat_great@128.png",
+      "256": "04-chat/chat_great/png/chat_great@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "chat_goodnight",
+    "group": "chat",
+    "source_category": "chat_bubbles",
+    "master_png": "04-chat/chat_goodnight/chat_goodnight.master.png",
+    "svg_path": "04-chat/chat_goodnight/chat_goodnight.svg",
+    "png_sizes": {
+      "16": "04-chat/chat_goodnight/png/chat_goodnight@16.png",
+      "24": "04-chat/chat_goodnight/png/chat_goodnight@24.png",
+      "32": "04-chat/chat_goodnight/png/chat_goodnight@32.png",
+      "48": "04-chat/chat_goodnight/png/chat_goodnight@48.png",
+      "72": "04-chat/chat_goodnight/png/chat_goodnight@72.png",
+      "128": "04-chat/chat_goodnight/png/chat_goodnight@128.png",
+      "256": "04-chat/chat_goodnight/png/chat_goodnight@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "status_online",
+    "group": "state",
+    "source_category": "status",
+    "master_png": "03-state/status_online/status_online.master.png",
+    "svg_path": "03-state/status_online/status_online.svg",
+    "png_sizes": {
+      "16": "03-state/status_online/png/status_online@16.png",
+      "24": "03-state/status_online/png/status_online@24.png",
+      "32": "03-state/status_online/png/status_online@32.png",
+      "48": "03-state/status_online/png/status_online@48.png",
+      "72": "03-state/status_online/png/status_online@72.png",
+      "128": "03-state/status_online/png/status_online@128.png",
+      "256": "03-state/status_online/png/status_online@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "status_busy",
+    "group": "state",
+    "source_category": "status",
+    "master_png": "03-state/status_busy/status_busy.master.png",
+    "svg_path": "03-state/status_busy/status_busy.svg",
+    "png_sizes": {
+      "16": "03-state/status_busy/png/status_busy@16.png",
+      "24": "03-state/status_busy/png/status_busy@24.png",
+      "32": "03-state/status_busy/png/status_busy@32.png",
+      "48": "03-state/status_busy/png/status_busy@48.png",
+      "72": "03-state/status_busy/png/status_busy@72.png",
+      "128": "03-state/status_busy/png/status_busy@128.png",
+      "256": "03-state/status_busy/png/status_busy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "status_offline",
+    "group": "state",
+    "source_category": "status",
+    "master_png": "03-state/status_offline/status_offline.master.png",
+    "svg_path": "03-state/status_offline/status_offline.svg",
+    "png_sizes": {
+      "16": "03-state/status_offline/png/status_offline@16.png",
+      "24": "03-state/status_offline/png/status_offline@24.png",
+      "32": "03-state/status_offline/png/status_offline@32.png",
+      "48": "03-state/status_offline/png/status_offline@48.png",
+      "72": "03-state/status_offline/png/status_offline@72.png",
+      "128": "03-state/status_offline/png/status_offline@128.png",
+      "256": "03-state/status_offline/png/status_offline@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "status_crush",
+    "group": "state",
+    "source_category": "status",
+    "master_png": "03-state/status_crush/status_crush.master.png",
+    "svg_path": "03-state/status_crush/status_crush.svg",
+    "png_sizes": {
+      "16": "03-state/status_crush/png/status_crush@16.png",
+      "24": "03-state/status_crush/png/status_crush@24.png",
+      "32": "03-state/status_crush/png/status_crush@32.png",
+      "48": "03-state/status_crush/png/status_crush@48.png",
+      "72": "03-state/status_crush/png/status_crush@72.png",
+      "128": "03-state/status_crush/png/status_crush@128.png",
+      "256": "03-state/status_crush/png/status_crush@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_pink",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/heart_pink/heart_pink.master.png",
+    "svg_path": "07-decor/heart_pink/heart_pink.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_pink/png/heart_pink@16.png",
+      "24": "07-decor/heart_pink/png/heart_pink@24.png",
+      "32": "07-decor/heart_pink/png/heart_pink@32.png",
+      "48": "07-decor/heart_pink/png/heart_pink@48.png",
+      "72": "07-decor/heart_pink/png/heart_pink@72.png",
+      "128": "07-decor/heart_pink/png/heart_pink@128.png",
+      "256": "07-decor/heart_pink/png/heart_pink@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_mini",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/heart_mini/heart_mini.master.png",
+    "svg_path": "07-decor/heart_mini/heart_mini.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_mini/png/heart_mini@16.png",
+      "24": "07-decor/heart_mini/png/heart_mini@24.png",
+      "32": "07-decor/heart_mini/png/heart_mini@32.png",
+      "48": "07-decor/heart_mini/png/heart_mini@48.png",
+      "72": "07-decor/heart_mini/png/heart_mini@72.png",
+      "128": "07-decor/heart_mini/png/heart_mini@128.png",
+      "256": "07-decor/heart_mini/png/heart_mini@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_green",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/heart_green/heart_green.master.png",
+    "svg_path": "07-decor/heart_green/heart_green.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_green/png/heart_green@16.png",
+      "24": "07-decor/heart_green/png/heart_green@24.png",
+      "32": "07-decor/heart_green/png/heart_green@32.png",
+      "48": "07-decor/heart_green/png/heart_green@48.png",
+      "72": "07-decor/heart_green/png/heart_green@72.png",
+      "128": "07-decor/heart_green/png/heart_green@128.png",
+      "256": "07-decor/heart_green/png/heart_green@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "sparkle",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/sparkle/sparkle.master.png",
+    "svg_path": "07-decor/sparkle/sparkle.svg",
+    "png_sizes": {
+      "16": "07-decor/sparkle/png/sparkle@16.png",
+      "24": "07-decor/sparkle/png/sparkle@24.png",
+      "32": "07-decor/sparkle/png/sparkle@32.png",
+      "48": "07-decor/sparkle/png/sparkle@48.png",
+      "72": "07-decor/sparkle/png/sparkle@72.png",
+      "128": "07-decor/sparkle/png/sparkle@128.png",
+      "256": "07-decor/sparkle/png/sparkle@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "star",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/star/star.master.png",
+    "svg_path": "07-decor/star/star.svg",
+    "png_sizes": {
+      "16": "07-decor/star/png/star@16.png",
+      "24": "07-decor/star/png/star@24.png",
+      "32": "07-decor/star/png/star@32.png",
+      "48": "07-decor/star/png/star@48.png",
+      "72": "07-decor/star/png/star@72.png",
+      "128": "07-decor/star/png/star@128.png",
+      "256": "07-decor/star/png/star@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "exclamation",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/exclamation/exclamation.master.png",
+    "svg_path": "07-decor/exclamation/exclamation.svg",
+    "png_sizes": {
+      "16": "07-decor/exclamation/png/exclamation@16.png",
+      "24": "07-decor/exclamation/png/exclamation@24.png",
+      "32": "07-decor/exclamation/png/exclamation@32.png",
+      "48": "07-decor/exclamation/png/exclamation@48.png",
+      "72": "07-decor/exclamation/png/exclamation@72.png",
+      "128": "07-decor/exclamation/png/exclamation@128.png",
+      "256": "07-decor/exclamation/png/exclamation@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "question",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/question/question.master.png",
+    "svg_path": "07-decor/question/question.svg",
+    "png_sizes": {
+      "16": "07-decor/question/png/question@16.png",
+      "24": "07-decor/question/png/question@24.png",
+      "32": "07-decor/question/png/question@32.png",
+      "48": "07-decor/question/png/question@48.png",
+      "72": "07-decor/question/png/question@72.png",
+      "128": "07-decor/question/png/question@128.png",
+      "256": "07-decor/question/png/question@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "confetti",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/confetti/confetti.master.png",
+    "svg_path": "07-decor/confetti/confetti.svg",
+    "png_sizes": {
+      "16": "07-decor/confetti/png/confetti@16.png",
+      "24": "07-decor/confetti/png/confetti@24.png",
+      "32": "07-decor/confetti/png/confetti@32.png",
+      "48": "07-decor/confetti/png/confetti@48.png",
+      "72": "07-decor/confetti/png/confetti@72.png",
+      "128": "07-decor/confetti/png/confetti@128.png",
+      "256": "07-decor/confetti/png/confetti@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "flower",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/flower/flower.master.png",
+    "svg_path": "07-decor/flower/flower.svg",
+    "png_sizes": {
+      "16": "07-decor/flower/png/flower@16.png",
+      "24": "07-decor/flower/png/flower@24.png",
+      "32": "07-decor/flower/png/flower@32.png",
+      "48": "07-decor/flower/png/flower@48.png",
+      "72": "07-decor/flower/png/flower@72.png",
+      "128": "07-decor/flower/png/flower@128.png",
+      "256": "07-decor/flower/png/flower@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "party",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/party/party.master.png",
+    "svg_path": "07-decor/party/party.svg",
+    "png_sizes": {
+      "16": "07-decor/party/png/party@16.png",
+      "24": "07-decor/party/png/party@24.png",
+      "32": "07-decor/party/png/party@32.png",
+      "48": "07-decor/party/png/party@48.png",
+      "72": "07-decor/party/png/party@72.png",
+      "128": "07-decor/party/png/party@128.png",
+      "256": "07-decor/party/png/party@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_bubble",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/heart_bubble/heart_bubble.master.png",
+    "svg_path": "07-decor/heart_bubble/heart_bubble.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_bubble/png/heart_bubble@16.png",
+      "24": "07-decor/heart_bubble/png/heart_bubble@24.png",
+      "32": "07-decor/heart_bubble/png/heart_bubble@32.png",
+      "48": "07-decor/heart_bubble/png/heart_bubble@48.png",
+      "72": "07-decor/heart_bubble/png/heart_bubble@72.png",
+      "128": "07-decor/heart_bubble/png/heart_bubble@128.png",
+      "256": "07-decor/heart_bubble/png/heart_bubble@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "sprout",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/sprout/sprout.master.png",
+    "svg_path": "07-decor/sprout/sprout.svg",
+    "png_sizes": {
+      "16": "07-decor/sprout/png/sprout@16.png",
+      "24": "07-decor/sprout/png/sprout@24.png",
+      "32": "07-decor/sprout/png/sprout@32.png",
+      "48": "07-decor/sprout/png/sprout@48.png",
+      "72": "07-decor/sprout/png/sprout@72.png",
+      "128": "07-decor/sprout/png/sprout@128.png",
+      "256": "07-decor/sprout/png/sprout@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "camera_icon",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/camera_icon/camera_icon.master.png",
+    "svg_path": "07-decor/camera_icon/camera_icon.svg",
+    "png_sizes": {
+      "16": "07-decor/camera_icon/png/camera_icon@16.png",
+      "24": "07-decor/camera_icon/png/camera_icon@24.png",
+      "32": "07-decor/camera_icon/png/camera_icon@32.png",
+      "48": "07-decor/camera_icon/png/camera_icon@48.png",
+      "72": "07-decor/camera_icon/png/camera_icon@72.png",
+      "128": "07-decor/camera_icon/png/camera_icon@128.png",
+      "256": "07-decor/camera_icon/png/camera_icon@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_pink_large",
+    "group": "decor",
+    "source_category": "decor",
+    "master_png": "07-decor/heart_pink_large/heart_pink_large.master.png",
+    "svg_path": "07-decor/heart_pink_large/heart_pink_large.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_pink_large/png/heart_pink_large@16.png",
+      "24": "07-decor/heart_pink_large/png/heart_pink_large@24.png",
+      "32": "07-decor/heart_pink_large/png/heart_pink_large@32.png",
+      "48": "07-decor/heart_pink_large/png/heart_pink_large@48.png",
+      "72": "07-decor/heart_pink_large/png/heart_pink_large@72.png",
+      "128": "07-decor/heart_pink_large/png/heart_pink_large@128.png",
+      "256": "07-decor/heart_pink_large/png/heart_pink_large@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "nav_home_mascot",
+    "group": "nav",
+    "source_category": "nav",
+    "master_png": "05-nav/nav_home_mascot/nav_home_mascot.master.png",
+    "svg_path": "05-nav/nav_home_mascot/nav_home_mascot.svg",
+    "png_sizes": {
+      "16": "05-nav/nav_home_mascot/png/nav_home_mascot@16.png",
+      "24": "05-nav/nav_home_mascot/png/nav_home_mascot@24.png",
+      "32": "05-nav/nav_home_mascot/png/nav_home_mascot@32.png",
+      "48": "05-nav/nav_home_mascot/png/nav_home_mascot@48.png",
+      "72": "05-nav/nav_home_mascot/png/nav_home_mascot@72.png",
+      "128": "05-nav/nav_home_mascot/png/nav_home_mascot@128.png",
+      "256": "05-nav/nav_home_mascot/png/nav_home_mascot@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "nav_nearby_mascot",
+    "group": "nav",
+    "source_category": "nav",
+    "master_png": "05-nav/nav_nearby_mascot/nav_nearby_mascot.master.png",
+    "svg_path": "05-nav/nav_nearby_mascot/nav_nearby_mascot.svg",
+    "png_sizes": {
+      "16": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@16.png",
+      "24": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@24.png",
+      "32": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@32.png",
+      "48": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@48.png",
+      "72": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@72.png",
+      "128": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@128.png",
+      "256": "05-nav/nav_nearby_mascot/png/nav_nearby_mascot@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "nav_match_mascot",
+    "group": "nav",
+    "source_category": "nav",
+    "master_png": "05-nav/nav_match_mascot/nav_match_mascot.master.png",
+    "svg_path": "05-nav/nav_match_mascot/nav_match_mascot.svg",
+    "png_sizes": {
+      "16": "05-nav/nav_match_mascot/png/nav_match_mascot@16.png",
+      "24": "05-nav/nav_match_mascot/png/nav_match_mascot@24.png",
+      "32": "05-nav/nav_match_mascot/png/nav_match_mascot@32.png",
+      "48": "05-nav/nav_match_mascot/png/nav_match_mascot@48.png",
+      "72": "05-nav/nav_match_mascot/png/nav_match_mascot@72.png",
+      "128": "05-nav/nav_match_mascot/png/nav_match_mascot@128.png",
+      "256": "05-nav/nav_match_mascot/png/nav_match_mascot@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "nav_message_mascot",
+    "group": "nav",
+    "source_category": "nav",
+    "master_png": "05-nav/nav_message_mascot/nav_message_mascot.master.png",
+    "svg_path": "05-nav/nav_message_mascot/nav_message_mascot.svg",
+    "png_sizes": {
+      "16": "05-nav/nav_message_mascot/png/nav_message_mascot@16.png",
+      "24": "05-nav/nav_message_mascot/png/nav_message_mascot@24.png",
+      "32": "05-nav/nav_message_mascot/png/nav_message_mascot@32.png",
+      "48": "05-nav/nav_message_mascot/png/nav_message_mascot@48.png",
+      "72": "05-nav/nav_message_mascot/png/nav_message_mascot@72.png",
+      "128": "05-nav/nav_message_mascot/png/nav_message_mascot@128.png",
+      "256": "05-nav/nav_message_mascot/png/nav_message_mascot@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "nav_profile_mascot",
+    "group": "nav",
+    "source_category": "nav",
+    "master_png": "05-nav/nav_profile_mascot/nav_profile_mascot.master.png",
+    "svg_path": "05-nav/nav_profile_mascot/nav_profile_mascot.svg",
+    "png_sizes": {
+      "16": "05-nav/nav_profile_mascot/png/nav_profile_mascot@16.png",
+      "24": "05-nav/nav_profile_mascot/png/nav_profile_mascot@24.png",
+      "32": "05-nav/nav_profile_mascot/png/nav_profile_mascot@32.png",
+      "48": "05-nav/nav_profile_mascot/png/nav_profile_mascot@48.png",
+      "72": "05-nav/nav_profile_mascot/png/nav_profile_mascot@72.png",
+      "128": "05-nav/nav_profile_mascot/png/nav_profile_mascot@128.png",
+      "256": "05-nav/nav_profile_mascot/png/nav_profile_mascot@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "head_default",
+    "group": "avatar",
+    "source_category": "head_icons",
+    "master_png": "06-avatar/head_default/head_default.master.png",
+    "svg_path": "06-avatar/head_default/head_default.svg",
+    "png_sizes": {
+      "16": "06-avatar/head_default/png/head_default@16.png",
+      "24": "06-avatar/head_default/png/head_default@24.png",
+      "32": "06-avatar/head_default/png/head_default@32.png",
+      "48": "06-avatar/head_default/png/head_default@48.png",
+      "72": "06-avatar/head_default/png/head_default@72.png",
+      "128": "06-avatar/head_default/png/head_default@128.png",
+      "256": "06-avatar/head_default/png/head_default@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "head_happy",
+    "group": "avatar",
+    "source_category": "head_icons",
+    "master_png": "06-avatar/head_happy/head_happy.master.png",
+    "svg_path": "06-avatar/head_happy/head_happy.svg",
+    "png_sizes": {
+      "16": "06-avatar/head_happy/png/head_happy@16.png",
+      "24": "06-avatar/head_happy/png/head_happy@24.png",
+      "32": "06-avatar/head_happy/png/head_happy@32.png",
+      "48": "06-avatar/head_happy/png/head_happy@48.png",
+      "72": "06-avatar/head_happy/png/head_happy@72.png",
+      "128": "06-avatar/head_happy/png/head_happy@128.png",
+      "256": "06-avatar/head_happy/png/head_happy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "head_crush",
+    "group": "avatar",
+    "source_category": "head_icons",
+    "master_png": "06-avatar/head_crush/head_crush.master.png",
+    "svg_path": "06-avatar/head_crush/head_crush.svg",
+    "png_sizes": {
+      "16": "06-avatar/head_crush/png/head_crush@16.png",
+      "24": "06-avatar/head_crush/png/head_crush@24.png",
+      "32": "06-avatar/head_crush/png/head_crush@32.png",
+      "48": "06-avatar/head_crush/png/head_crush@48.png",
+      "72": "06-avatar/head_crush/png/head_crush@72.png",
+      "128": "06-avatar/head_crush/png/head_crush@128.png",
+      "256": "06-avatar/head_crush/png/head_crush@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "head_sleepy",
+    "group": "avatar",
+    "source_category": "head_icons",
+    "master_png": "06-avatar/head_sleepy/head_sleepy.master.png",
+    "svg_path": "06-avatar/head_sleepy/head_sleepy.svg",
+    "png_sizes": {
+      "16": "06-avatar/head_sleepy/png/head_sleepy@16.png",
+      "24": "06-avatar/head_sleepy/png/head_sleepy@24.png",
+      "32": "06-avatar/head_sleepy/png/head_sleepy@32.png",
+      "48": "06-avatar/head_sleepy/png/head_sleepy@48.png",
+      "72": "06-avatar/head_sleepy/png/head_sleepy@72.png",
+      "128": "06-avatar/head_sleepy/png/head_sleepy@128.png",
+      "256": "06-avatar/head_sleepy/png/head_sleepy@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "head_glasses",
+    "group": "avatar",
+    "source_category": "head_icons",
+    "master_png": "06-avatar/head_glasses/head_glasses.master.png",
+    "svg_path": "06-avatar/head_glasses/head_glasses.svg",
+    "png_sizes": {
+      "16": "06-avatar/head_glasses/png/head_glasses@16.png",
+      "24": "06-avatar/head_glasses/png/head_glasses@24.png",
+      "32": "06-avatar/head_glasses/png/head_glasses@32.png",
+      "48": "06-avatar/head_glasses/png/head_glasses@48.png",
+      "72": "06-avatar/head_glasses/png/head_glasses@72.png",
+      "128": "06-avatar/head_glasses/png/head_glasses@128.png",
+      "256": "06-avatar/head_glasses/png/head_glasses@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "sprout_outline",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/sprout_outline/sprout_outline.master.png",
+    "svg_path": "07-decor/sprout_outline/sprout_outline.svg",
+    "png_sizes": {
+      "16": "07-decor/sprout_outline/png/sprout_outline@16.png",
+      "24": "07-decor/sprout_outline/png/sprout_outline@24.png",
+      "32": "07-decor/sprout_outline/png/sprout_outline@32.png",
+      "48": "07-decor/sprout_outline/png/sprout_outline@48.png",
+      "72": "07-decor/sprout_outline/png/sprout_outline@72.png",
+      "128": "07-decor/sprout_outline/png/sprout_outline@128.png",
+      "256": "07-decor/sprout_outline/png/sprout_outline@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "leaf_pair",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/leaf_pair/leaf_pair.master.png",
+    "svg_path": "07-decor/leaf_pair/leaf_pair.svg",
+    "png_sizes": {
+      "16": "07-decor/leaf_pair/png/leaf_pair@16.png",
+      "24": "07-decor/leaf_pair/png/leaf_pair@24.png",
+      "32": "07-decor/leaf_pair/png/leaf_pair@32.png",
+      "48": "07-decor/leaf_pair/png/leaf_pair@48.png",
+      "72": "07-decor/leaf_pair/png/leaf_pair@72.png",
+      "128": "07-decor/leaf_pair/png/leaf_pair@128.png",
+      "256": "07-decor/leaf_pair/png/leaf_pair@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "heart_decor_pair",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/heart_decor_pair/heart_decor_pair.master.png",
+    "svg_path": "07-decor/heart_decor_pair/heart_decor_pair.svg",
+    "png_sizes": {
+      "16": "07-decor/heart_decor_pair/png/heart_decor_pair@16.png",
+      "24": "07-decor/heart_decor_pair/png/heart_decor_pair@24.png",
+      "32": "07-decor/heart_decor_pair/png/heart_decor_pair@32.png",
+      "48": "07-decor/heart_decor_pair/png/heart_decor_pair@48.png",
+      "72": "07-decor/heart_decor_pair/png/heart_decor_pair@72.png",
+      "128": "07-decor/heart_decor_pair/png/heart_decor_pair@128.png",
+      "256": "07-decor/heart_decor_pair/png/heart_decor_pair@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "sparkle_decor",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/sparkle_decor/sparkle_decor.master.png",
+    "svg_path": "07-decor/sparkle_decor/sparkle_decor.svg",
+    "png_sizes": {
+      "16": "07-decor/sparkle_decor/png/sparkle_decor@16.png",
+      "24": "07-decor/sparkle_decor/png/sparkle_decor@24.png",
+      "32": "07-decor/sparkle_decor/png/sparkle_decor@32.png",
+      "48": "07-decor/sparkle_decor/png/sparkle_decor@48.png",
+      "72": "07-decor/sparkle_decor/png/sparkle_decor@72.png",
+      "128": "07-decor/sparkle_decor/png/sparkle_decor@128.png",
+      "256": "07-decor/sparkle_decor/png/sparkle_decor@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "dotted_orbit",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/dotted_orbit/dotted_orbit.master.png",
+    "svg_path": "07-decor/dotted_orbit/dotted_orbit.svg",
+    "png_sizes": {
+      "16": "07-decor/dotted_orbit/png/dotted_orbit@16.png",
+      "24": "07-decor/dotted_orbit/png/dotted_orbit@24.png",
+      "32": "07-decor/dotted_orbit/png/dotted_orbit@32.png",
+      "48": "07-decor/dotted_orbit/png/dotted_orbit@48.png",
+      "72": "07-decor/dotted_orbit/png/dotted_orbit@72.png",
+      "128": "07-decor/dotted_orbit/png/dotted_orbit@128.png",
+      "256": "07-decor/dotted_orbit/png/dotted_orbit@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  },
+  {
+    "name": "mascot_corner_frame",
+    "group": "decor",
+    "source_category": "utility",
+    "master_png": "07-decor/mascot_corner_frame/mascot_corner_frame.master.png",
+    "svg_path": "07-decor/mascot_corner_frame/mascot_corner_frame.svg",
+    "png_sizes": {
+      "16": "07-decor/mascot_corner_frame/png/mascot_corner_frame@16.png",
+      "24": "07-decor/mascot_corner_frame/png/mascot_corner_frame@24.png",
+      "32": "07-decor/mascot_corner_frame/png/mascot_corner_frame@32.png",
+      "48": "07-decor/mascot_corner_frame/png/mascot_corner_frame@48.png",
+      "72": "07-decor/mascot_corner_frame/png/mascot_corner_frame@72.png",
+      "128": "07-decor/mascot_corner_frame/png/mascot_corner_frame@128.png",
+      "256": "07-decor/mascot_corner_frame/png/mascot_corner_frame@256.png"
+    },
+    "svg_type": "path-only",
+    "viewBox": "0 0 256 256"
+  }
+]

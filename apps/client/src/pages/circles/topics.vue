@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 兴趣圈话题列表页
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
@@ -105,6 +105,43 @@ const detailTab = ref<"feed" | "hot" | "members" | "activities">("feed");
 /** 当前圈子（列表数据中查找，用于头部成员数/加入态） */
 const circle = computed(() => circleStore.circles.find((c) => c.id === circleId.value) ?? null);
 
+/** 2026-08-21：圈子封面（复用兴趣圈页素材） */
+const CIRCLE_COVER = {
+  photo: "/static/assets/images/covers/circle-photo.png",
+  travel: "/static/assets/images/covers/circle-travel.png",
+  music: "/static/assets/images/covers/circle-music.png",
+  sports: "/static/assets/images/covers/circle-sports.png",
+  food: "/static/assets/images/covers/circle-food.png",
+  sky: "/static/assets/images/covers/circle-sky.png",
+  game: "/static/assets/images/covers/circle-game.png",
+  reading: "/static/assets/images/covers/circle-reading.png",
+  pet: "/static/assets/images/covers/circle-pet.png",
+  cutepets: "/static/assets/images/covers/circle-cutepets.png",
+  basketball: "/static/assets/images/covers/circle-basketball.png",
+  boardgame: "/static/assets/images/covers/circle-boardgame.png",
+  postgraduate: "/static/assets/images/covers/circle-postgraduate.png",
+  studybuddy: "/static/assets/images/covers/circle-studybuddy.png",
+} as const;
+
+function circleCover(circle: { name: string }): string {
+  const n = circle.name || "";
+  if (n.includes("摄影")) return CIRCLE_COVER.photo;
+  if (n.includes("旅行")) return CIRCLE_COVER.travel;
+  if (n.includes("音乐")) return CIRCLE_COVER.music;
+  if (n.includes("运动") || n.includes("篮球") || n.includes("健身")) return CIRCLE_COVER.sports;
+  if (n.includes("美食") || n.includes("食")) return CIRCLE_COVER.food;
+  if (n.includes("天文") || n.includes("星空")) return CIRCLE_COVER.sky;
+  if (n.includes("游戏")) return CIRCLE_COVER.game;
+  if (n.includes("阅读")) return CIRCLE_COVER.reading;
+  if (n.includes("宠物")) return CIRCLE_COVER.pet;
+  if (n.includes("萌宠")) return CIRCLE_COVER.cutepets;
+  if (n.includes("篮球")) return CIRCLE_COVER.basketball;
+  if (n.includes("桌游")) return CIRCLE_COVER.boardgame;
+  if (n.includes("考研")) return CIRCLE_COVER.postgraduate;
+  if (n.includes("学习搭子") || n.includes("学习")) return CIRCLE_COVER.studybuddy;
+  return "";
+}
+
 /** 精选 = 仅对当前已拉取话题按回复数排序（likes 字段缺失，score 用回复数） */
 const displayTopics = computed(() =>
   detailTab.value === "hot"
@@ -153,6 +190,10 @@ function switchTab(tab: "feed" | "hot" | "members" | "activities") {
 /**
  * 返回上一页
  */
+function goCircleDetail(_id: string) {
+  uni.navigateBack();
+}
+
 function goBack() {
   uni.navigateBack();
 }
@@ -199,9 +240,14 @@ defineExpose({ goToAuthorProfile });
 
     <!-- 兴趣圈详情头部（v3 Nearby 冻结） -->
     <view v-if="circle" class="circle-hero">
+      <image v-if="circleCover(circle)" class="circle-hero__bg" :src="circleCover(circle)" mode="aspectFill" alt="" />
+      <view class="circle-hero__bg-mask" />
       <view class="circle-hero__icon"><text class="circle-hero__emoji">{{ circle.icon }}</text></view>
       <view class="circle-hero__body">
-        <text class="circle-hero__name">{{ circle.name }}</text>
+        <view class="circle-hero__name-row">
+          <text class="circle-hero__name">{{ circle.name }}</text>
+          <text v-if="circle.memberCount >= 7000" class="circle-hero__hot">热门</text>
+        </view>
         <text class="circle-hero__meta">{{ circle.memberCount }} 成员 · {{ circle.topicCount }} 条动态</text>
         <text class="circle-hero__desc">{{ circle.description }}</text>
       </view>
@@ -256,6 +302,13 @@ defineExpose({ goToAuthorProfile });
       @refresherrefresh="onRefresh"
       @scrolltolower="onLoadMore"
     >
+      <!-- 2026-08-21：置顶规则条（参考图对齐） -->
+      <view v-if="detailTab === 'feed' || detailTab === 'hot'" class="topic-rule" @tap="goCircleDetail(circleId)">
+        <text class="topic-rule__pin">置顶</text>
+        <text class="topic-rule__text">【圈规】文明发言，友善交流，共同维护圈子氛围</text>
+        <text class="topic-rule__arrow">›</text>
+      </view>
+
       <!-- 空状态 -->
       <EmptyState
         v-if="(detailTab === 'feed' || detailTab === 'hot') && displayTopics.length === 0"
@@ -405,6 +458,41 @@ defineExpose({ goToAuthorProfile });
 
 .topics-header__spacer {
   min-width: 80rpx;
+}
+
+/* ===== 2026-08-21 置顶规则条 ===== */
+.topic-rule {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  margin-bottom: 20rpx;
+  border-radius: 16rpx;
+  background: var(--c-bg-brand, #E8FAF3);
+  border: 1rpx solid #B8EDDA;
+}
+
+.topic-rule__pin {
+  flex-shrink: 0;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  background: var(--c-brand, #36C99A);
+  color: var(--c-text-inverse, #FFFFFF);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.topic-rule__text {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--c-brand-700, #1F8D6A);
+  min-width: 0;
+}
+
+.topic-rule__arrow {
+  font-size: 30rpx;
+  color: var(--c-brand, #36C99A);
+  flex-shrink: 0;
 }
 
 /* ========== 加载/错误/空状态 ========== */
@@ -660,14 +748,34 @@ defineExpose({ goToAuthorProfile });
 
 /* ========== v3 Nearby 冻结：兴趣圈详情头部 + 四 Tab ========== */
 .circle-hero {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 20rpx;
-  padding: 24rpx;
+  padding: 32rpx 24rpx;
   margin: 0 0 20rpx;
   border-radius: 20rpx;
-  background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  overflow: hidden;
+  background: var(--c-text-primary, #2A3A34);
+}
+
+.circle-hero__bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(2rpx);
+  opacity: 0.55;
+}
+
+.circle-hero__bg-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(20,30,26,0.35) 0%, rgba(20,30,26,0.75) 100%);
 }
 
 .circle-hero__icon {
@@ -677,8 +785,9 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
+  position: relative;
 }
 
 .circle-hero__emoji {
@@ -696,17 +805,17 @@ defineExpose({ goToAuthorProfile });
 .circle-hero__name {
   font-size: 32rpx;
   font-weight: 800;
-  color: var(--c-text-primary, #222222);
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .circle-hero__meta {
   font-size: 22rpx;
-  color: var(--c-text-tertiary, #666666);
+  color: rgba(255,255,255,0.85);
 }
 
 .circle-hero__desc {
   font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
+  color: rgba(255,255,255,0.85);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -720,14 +829,14 @@ defineExpose({ goToAuthorProfile });
 }
 
 .circle-hero__join--joined {
-  background: var(--c-bg-container, #ffffff);
+  background: var(--c-bg-container, #FFFFFF);
   border: 2rpx solid var(--c-line-strong, #DCE5E2);
 }
 
 .circle-hero__join-text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .circle-hero__join--joined .circle-hero__join-text {
@@ -741,19 +850,24 @@ defineExpose({ goToAuthorProfile });
 }
 
 .circle-tab {
+  position: relative;
   flex: 1;
-  padding: 14rpx 0;
-  border-radius: 16rpx;
+  padding: 14rpx 0 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-container, #ffffff);
-  border: 2rpx solid var(--c-line, #ECEFF2);
 }
 
-.circle-tab--active {
-  border-color: var(--c-brand-500, #36C99A);
-  background: var(--c-brand-50, #E6F8F1);
+.circle-tab--active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand-500, #36C99A);
 }
 
 .circle-tab__text {
@@ -777,7 +891,7 @@ defineExpose({ goToAuthorProfile });
 .topic-card__meet-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .detail-members {
@@ -813,8 +927,8 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-brand-100, #CCF0E0);
-  color: var(--c-brand-700, #12805A);
+  background: var(--c-brand-100, #D1F5E7);
+  color: var(--c-brand-700, #2AAE83);
   font-size: 32rpx;
   font-weight: 800;
 }
@@ -846,8 +960,8 @@ defineExpose({ goToAuthorProfile });
   gap: 16rpx;
   padding: 20rpx 24rpx;
   border-radius: 16rpx;
-  background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .detail-activity__title {
@@ -869,4 +983,26 @@ defineExpose({ goToAuthorProfile });
 .detail-activity__arrow {
   font-size: 28rpx;
   color: var(--c-text-quaternary, #C8CFCD);
-}</style>
+}
+.circle-hero__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.circle-hero__hot {
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #FF6B81 0%, #FF9F43 100%);
+  color: var(--c-text-inverse, #FFFFFF);
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+</style>
+
+
+
+
+

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
@@ -175,6 +175,40 @@ function formatMemberCount(count: number): string {
   return String(count);
 }
 
+/** 兴趣圈名称 -> 封面图路径映射（摄影大图，统一 CIRCLE_COVERS） */
+const CIRCLE_COVER = {
+  photo: IMAGE_PATHS.CIRCLE_COVERS.PHOTO,
+  travel: IMAGE_PATHS.CIRCLE_COVERS.TRAVEL,
+  music: IMAGE_PATHS.CIRCLE_COVERS.MUSIC,
+  food: IMAGE_PATHS.CIRCLE_COVERS.FOOD,
+  sports: IMAGE_PATHS.CIRCLE_COVERS.SPORTS,
+  reading: IMAGE_PATHS.CIRCLE_COVERS.READING,
+  game: IMAGE_PATHS.CIRCLE_COVERS.GAME,
+  pet: IMAGE_PATHS.CIRCLE_COVERS.PET,
+  study: IMAGE_PATHS.CIRCLE_COVERS.STUDY,
+  postgrad: IMAGE_PATHS.CIRCLE_COVERS.POSTGRAD,
+  astronomy: IMAGE_PATHS.CIRCLE_COVERS.ASTRONOMY,
+} as const;
+
+/** 热门徽标阈值（成员数达到即显示「热门」） */
+const HOT_THRESHOLD = 8000;
+
+function circleCover(name: string): string {
+  const n = name || "";
+  if (n.includes("摄影")) return CIRCLE_COVER.photo;
+  if (n.includes("旅行")) return CIRCLE_COVER.travel;
+  if (n.includes("音乐")) return CIRCLE_COVER.music;
+  if (n.includes("美食") || n.includes("食")) return CIRCLE_COVER.food;
+  if (n.includes("运动") || n.includes("篮球") || n.includes("健身") || n.includes("体育")) return CIRCLE_COVER.sports;
+  if (n.includes("阅读") || n.includes("读书")) return CIRCLE_COVER.reading;
+  if (n.includes("游戏") || n.includes("桌游")) return CIRCLE_COVER.game;
+  if (n.includes("宠物") || n.includes("萌宠")) return CIRCLE_COVER.pet;
+  if (n.includes("学习") || n.includes("搭子")) return CIRCLE_COVER.study;
+  if (n.includes("考研") || n.includes("深造") || n.includes("学业")) return CIRCLE_COVER.postgrad;
+  if (n.includes("天文") || n.includes("星空")) return CIRCLE_COVER.astronomy;
+  return IMAGE_PATHS.CIRCLE_COVERS.DEFAULT;
+}
+
 onMounted(() => {
   // 2026-08-15：未登录时不发受保护请求（冷启动无 token 时拉取 circles → 401 雪崩），
   // 登录后 watch(isLoggedIn) 自动补拉。
@@ -200,7 +234,7 @@ defineExpose({ toggleJoin });
 <template>
   <AppShell
     variant="standard"
-    bg-variant="default"
+    bg-variant="gradient"
     :title="pageTitle"
     :show-back="true"
     :tab-bar-safe="false"
@@ -247,13 +281,16 @@ defineExpose({ toggleJoin });
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToTopics(circle)"
             >
-              <view class="circle-card__icon-wrap">
-                <image class="circle-card__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
+              <view class="circle-card__cover-wrap">
+                <image class="circle-card__cover" :src="circleCover(circle.name)" mode="aspectFill" lazy-load alt="" />
               </view>
 
               <view class="circle-card__body">
                 <view class="circle-card__name-row">
                   <text class="circle-card__name">{{ circle.name }}</text>
+                  <view v-if="circle.memberCount >= HOT_THRESHOLD" class="circle-card__hot-badge">
+                    <text class="circle-card__hot-text">{{ t("circle.hotBadge") }}</text>
+                  </view>
                 </view>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
@@ -517,21 +554,33 @@ defineExpose({ toggleJoin });
 }
 /* #endif */
 
-.circle-card__icon-wrap {
-  width: 88rpx;
-  height: 88rpx;
+.circle-card__cover-wrap {
+  position: relative;
+  width: 180rpx;
+  height: 160rpx;
   border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.circle-card__icon {
-  width: 44rpx;
-  height: 44rpx;
-  color: var(--c-brand-500);
+.circle-card__cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.circle-card__hot-badge {
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 77, 92, 0.92);
+  flex-shrink: 0;
+}
+
+.circle-card__hot-text {
+  font-size: var(--fs-xs, 22rpx);
+  color: #FFFFFF;
+  font-weight: 600;
 }
 
 .circle-card__body {
@@ -619,9 +668,10 @@ defineExpose({ toggleJoin });
 .circle-card__action {
   padding: var(--sp-3) var(--sp-7);
   border-radius: var(--r-full);
-  background: var(--c-gradient-float-btn);
+  background: #FFFFFF;
+  border: 2rpx solid var(--c-brand-500, #2DB98A);
+  color: var(--c-brand-500, #2DB98A);
   flex-shrink: 0;
-  box-shadow: var(--s-brand-md);
   transition: all var(--d-normal, 200ms) ease;
 }
 
@@ -632,14 +682,14 @@ defineExpose({ toggleJoin });
 /* #endif */
 
 .circle-card__action--joined {
-  background: var(--c-neutral-50);
-  box-shadow: none;
-  border: 2rpx solid var(--c-border-default);
+  background: var(--c-tint-green-soft, #E8F7EF);
+  border-color: var(--c-brand-light, #D1F5E7);
+  color: var(--c-text-tertiary);
 }
 
 .circle-card__action-text {
   font-size: var(--fs-md);
-  color: var(--c-neutral-0);
+  color: inherit;
   font-weight: 600;
   white-space: nowrap;
 }

@@ -1,5 +1,6 @@
 package com.campuslove.api.campus;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>注意：本模型只用于校园圈（CampusService 域），普通兴趣圈（CircleService）零校园校验。</p>
  */
+@Profile("real")
 @Component
 public class CampusPermissionService {
 

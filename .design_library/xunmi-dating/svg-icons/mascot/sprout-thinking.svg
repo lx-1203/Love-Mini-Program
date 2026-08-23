@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="bodyGrad4" x1="60" y1="20" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="leafGrad4" x1="50" y1="10" x2="50" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#88D8B0"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <!-- Left leaf -->
+  <path d="M45 20c-8-2-14 6-10 15 2 5 8 7 13 5 0-8 2-15-3-20z" fill="url(#leafGrad4)"/>
+  <!-- Right leaf -->
+  <path d="M75 20c8-2 14 6 10 15-2 5-8 7-13 5 0-8-2-15 3-20z" fill="url(#leafGrad4)"/>
+  <!-- Stem -->
+  <rect x="58" y="25" width="4" height="12" rx="2" fill="#36C99A"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="70" rx="38" ry="35" fill="url(#bodyGrad4)"/>
+  <!-- Highlight -->
+  <ellipse cx="48" cy="55" rx="12" ry="8" fill="#fff" opacity="0.25"/>
+  <!-- Eyes - thoughtful -->
+  <circle cx="48" cy="68" r="3.5" fill="#2D3748"/>
+  <path d="M68 66c3-1 7 0 8 3" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Cheek -->
+  <circle cx="40" cy="78" r="4" fill="#FFB6C1" opacity="0.5"/>
+  <!-- Mouth - thinking -->
+  <path d="M56 82c2-1 6-1 8 0" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Hand on chin -->
+  <ellipse cx="82" cy="84" rx="10" ry="8" fill="url(#bodyGrad4)"/>
+  <!-- Question marks -->
+  <text x="92" y="38" font-size="18" font-weight="bold" fill="#FF6B81" font-family="sans-serif">?</text>
+  <text x="22" y="32" font-size="12" font-weight="bold" fill="#FFD93D" font-family="sans-serif">?</text>
+</svg>

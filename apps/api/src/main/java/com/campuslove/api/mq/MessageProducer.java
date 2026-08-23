@@ -1,5 +1,6 @@
 package com.campuslove.api.mq;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.config.RabbitConfig;
 import com.campuslove.api.entity.OutboxEvent;
 import com.campuslove.api.repository.OutboxEventRepository;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>线程安全：RabbitTemplate 内部为线程安全，可在多线程环境下共享使用。</p>
  */
+@Profile("real")
 @Component
 public class MessageProducer {
 

@@ -60,10 +60,11 @@ export function buildMatchReasons(
   if (user.isSameSchool) reasons.push({ type: "same_school", text: "同校" });
   if (user.isSameMajor) reasons.push({ type: "same_major", text: "同专业" });
 
+  const userTags = Array.isArray(user.tags) ? user.tags : [];
   const commonTags =
     myTags.length > 0
-      ? user.tags.filter((tag) => myTags.includes(tag))
-      : user.tags.slice(0, 3);
+      ? userTags.filter((tag) => myTags.includes(tag))
+      : userTags.slice(0, 3);
 
   for (const tag of commonTags.slice(0, 3)) {
     reasons.push({ type: "common_interest", text: tag });

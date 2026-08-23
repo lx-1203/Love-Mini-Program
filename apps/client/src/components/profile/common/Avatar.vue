@@ -37,7 +37,7 @@ const initial = computed(() => (props.name || "?").charAt(0));
 .profile-avatar {
   overflow: hidden;
   border-radius: 50%;
-  background: #DFF8EF;
+  background: #E8FBF3;
   display: flex;
   align-items: center;
   justify-content: center;

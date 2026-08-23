@@ -17,13 +17,17 @@ import { useSessionStore } from "../../stores/session";
 import { openAppPath } from "../../utils/navigation";
 // infra R2-00078: 路由路径常量化
 import { ROUTES } from "../../constants/routes";
-import LockScreen from "../../components/common/LockScreen.vue";
+import NotLoggedWaiting from "../../components/discover/NotLoggedWaiting.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { likesPageRequirements } from "../../config/page-access";
 import { IMAGE_PATHS } from "../../config/images";
+
+function goLogin() {
+  openAppPath("/pages/login/index");
+}
 import BaseTabs from "../../components/common/BaseTabs.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
@@ -345,9 +349,6 @@ onUnmounted(() => {
 /** 资料是否已完善 */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
 
-/** 完善度百分比 */
-const completionPercent = computed(() => sessionStore.profileCompletion);
-
 /** 是否有心动信号 */
 const hasHeartSignal = computed(() => heartSignals.value.length > 0);
 
@@ -560,10 +561,7 @@ onShareAppMessage(() => {
 <template>
   <view class="likes-page">
     <!-- 未完善资料：显示锁定页面 -->
-    <LockScreen
-      v-if="!isUnlocked"
-      :completion-percent="completionPercent"
-    />
+    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" />
 
     <!-- 已完善资料：显示正常内容 -->
     <template v-else>

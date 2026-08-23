@@ -1,0 +1,64 @@
+{
+  "slug": "bottom-nav",
+  "schemaVersion": 2,
+  "name": "底部导航 Bottom Navigation",
+  "category": "Navigation",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "5 Tab + 中间凸起心形按钮，薄荷绿选中态",
+  "variantDimensions": {
+    "items": {
+      "values": [
+        5
+      ]
+    },
+    "centerElevated": {
+      "values": [
+        true,
+        false
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "5 Tab标准导航",
+      "traits": {
+        "items": 5,
+        "centerElevated": false
+      },
+      "whySelected": "标准五栏"
+    },
+    {
+      "name": "中间凸起主导航",
+      "traits": {
+        "items": 5,
+        "centerElevated": true
+      },
+      "whySelected": "匹配作为核心行动"
+    }
+  ],
+  "anatomy": [
+    "nav-container",
+    "nav-item",
+    "nav-icon",
+    "nav-label",
+    "nav-badge",
+    "center-fab"
+  ],
+  "structurePatterns": [
+    "5 tabs with centered elevated CTA"
+  ],
+  "usageHints": {
+    "priorityHint": "high",
+    "do": [
+      "固定底部56-64px",
+      "选中态用主色",
+      "中间凸起用于核心行动"
+    ],
+    "dont": [
+      "超过5个Tab"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

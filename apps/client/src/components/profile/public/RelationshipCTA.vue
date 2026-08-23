@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from "vue";
 
 const props = withDefaults(
@@ -90,7 +90,7 @@ const likeLabel = computed(() => {
 .relationship-cta__btn--hello {
   flex: 1.5;
   background: #36C99A;
-  box-shadow: 0 8rpx 20rpx rgba(61, 201, 148, 0.3);
+  box-shadow: 0 8rpx 20rpx rgba(54, 201, 154, 0.3);
 }
 
 .relationship-cta__btn--follow {
@@ -129,6 +129,6 @@ const likeLabel = computed(() => {
 }
 
 .relationship-cta__text--follow {
-  color: #168B65;
+  color: #36C99A;
 }
 </style>

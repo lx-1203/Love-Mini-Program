@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { MessageSession } from "../../stores/messages";
 import RelationshipTag from "../relationship/RelationshipTag.vue";
 import UnreadBadge from "../common/UnreadBadge.vue";
@@ -16,8 +16,17 @@ const emit = defineEmits<{
   delete: [session: MessageSession];
 }>();
 
-const partnerAvatar = computed(() => resolveMediaUrl(props.session.partnerAvatar));
+const avatarLoadError = ref(false);
+const partnerAvatar = computed(() => {
+  avatarLoadError.value = false;
+  return resolveMediaUrl(props.session.partnerAvatar);
+});
 const hasRelationship = computed(() => props.session.relationship != null && !props.session.isOfficial);
+const fallbackInitial = computed(() => (props.session.partnerName || "?").charAt(0));
+
+function onAvatarError() {
+  avatarLoadError.value = true;
+}
 
 function formatTime(iso: string | null): string {
   if (!iso) return "";
@@ -38,9 +47,15 @@ function formatTime(iso: string | null): string {
       <view v-if="session.isOfficial" class="conversation-item__official">
         <text class="conversation-item__official-text">🌱</text>
       </view>
-      <image v-else-if="session.partnerAvatar" class="conversation-item__avatar" :src="partnerAvatar" mode="aspectFill" />
+      <image
+        v-else-if="partnerAvatar && !avatarLoadError"
+        class="conversation-item__avatar"
+        :src="partnerAvatar"
+        mode="aspectFill"
+        @error="onAvatarError"
+      />
       <view v-else class="conversation-item__fallback">
-        <text class="conversation-item__fallback-text">{{ (session.partnerName || "?").charAt(0) }}</text>
+        <text class="conversation-item__fallback-text">{{ fallbackInitial }}</text>
       </view>
     </view>
 
@@ -117,7 +132,7 @@ function formatTime(iso: string | null): string {
 .conversation-item__name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #222222;
+  color: #333A37;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -140,6 +155,6 @@ function formatTime(iso: string | null): string {
 }
 .conversation-item__time {
   font-size: 24rpx;
-  color: #9AA29F;
+  color: #9AA39F;
 }
 </style>

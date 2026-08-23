@@ -24,7 +24,9 @@ INSERT INTO app_login_hero_config (
   hero_animation_theme,
   hero_title,
   hero_subtitle,
-  is_active
+  is_active,
+  created_at,
+  updated_at
 ) VALUES (
   'default',
   'animation',
@@ -33,7 +35,9 @@ INSERT INTO app_login_hero_config (
   'campus-night',
   '欢迎来到校园恋爱社区',
   '内容认识人，活动认识人，再把关系慢慢聊出来。',
-  1
+  1,
+  NOW(),
+  NOW()
 )
 ON DUPLICATE KEY UPDATE
   hero_mode = VALUES(hero_mode),

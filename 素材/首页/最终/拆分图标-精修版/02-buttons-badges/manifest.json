@@ -1,0 +1,88 @@
+{
+  "category": "02-buttons-badges",
+  "title": "按钮与徽章图标",
+  "description": "交互按钮、状态徽章、用户信息条等组件",
+  "total_icons": 8,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "btn_row2_01.png",
+      "dimensions": "200x77",
+      "semantic_label": "喜欢按钮(绿色)",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 18925
+    },
+    {
+      "index": 2,
+      "filename": "btn_row2_02.png",
+      "dimensions": "185x80",
+      "semantic_label": "看看TA按钮(红色)",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 23371
+    },
+    {
+      "index": 3,
+      "filename": "btn_row2_03.png",
+      "dimensions": "185x64",
+      "semantic_label": "已认证徽章",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 17503
+    },
+    {
+      "index": 4,
+      "filename": "btn_row2_04.png",
+      "dimensions": "172x96",
+      "semantic_label": "合拍度百分比",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 24553
+    },
+    {
+      "index": 5,
+      "filename": "btn_row2_05.png",
+      "dimensions": "149x65",
+      "semantic_label": "性别+星座+年龄信息条",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 14279
+    },
+    {
+      "index": 6,
+      "filename": "btn_row2_06.png",
+      "dimensions": "189x73",
+      "semantic_label": "距离信息",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 20098
+    },
+    {
+      "index": 7,
+      "filename": "btn_row2_07.png",
+      "dimensions": "78x80",
+      "semantic_label": "用户头像+基础信息",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 8464
+    },
+    {
+      "index": 8,
+      "filename": "btn_row2_08.png",
+      "dimensions": "80x79",
+      "semantic_label": "关注/互动按钮",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 8550
+    }
+  ]
+}

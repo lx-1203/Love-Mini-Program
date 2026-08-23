@@ -52,7 +52,7 @@ const icons = {
       <view class="match-actions__btn match-actions__btn--super">
         <image class="match-actions__icon" :src="icons.superLike" mode="aspectFit" alt="" />
       </view>
-      <text class="match-actions__label">打招呼</text>
+      <text class="match-actions__label">{{ t('discover.greet') }}</text>
     </view>
 
     <view
@@ -64,7 +64,7 @@ const icons = {
       @tap="!disabled && !busy && emit('like')"
     >
       <view class="match-actions__btn match-actions__btn--like">
-        <image class="match-actions__icon match-actions__icon--lg" :src="icons.like" mode="aspectFit" alt="" />
+        <image class="match-actions__icon" :src="icons.like" mode="aspectFit" alt="" />
       </view>
       <text class="match-actions__label">{{ t('discover.like') }}</text>
     </view>
@@ -75,9 +75,8 @@ const icons = {
 .match-actions {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
-  gap: 64rpx;
-  padding: 40rpx 0 8rpx;
+  justify-content: space-evenly;
+  padding: 40rpx 32rpx 8rpx;
 }
 
 .match-actions--disabled {
@@ -85,6 +84,7 @@ const icons = {
 }
 
 .match-actions__item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -96,6 +96,8 @@ const icons = {
 }
 
 .match-actions__btn {
+  width: 128rpx;
+  height: 128rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -104,23 +106,16 @@ const icons = {
 }
 
 .match-actions__btn--pass {
-  width: 128rpx;
-  height: 128rpx;
   background: #ffffff;
   border: 1rpx solid #EDF0F0;
 }
 
 .match-actions__btn--super {
-  width: 144rpx;
-  height: 144rpx;
   background: #ffffff;
   border: 1rpx solid #EDF0F0;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.10);
 }
 
 .match-actions__btn--like {
-  width: 160rpx;
-  height: 160rpx;
   background: #FF6B81;
   box-shadow: 0 12rpx 40rpx rgba(255, 107, 129, 0.35);
 }
@@ -128,11 +123,6 @@ const icons = {
 .match-actions__icon {
   width: 56rpx;
   height: 56rpx;
-}
-
-.match-actions__icon--lg {
-  width: 72rpx;
-  height: 72rpx;
 }
 
 .match-actions__label {

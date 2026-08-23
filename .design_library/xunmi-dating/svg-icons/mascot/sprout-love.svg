@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="bodyGrad3" x1="60" y1="20" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="leafGrad3" x1="50" y1="10" x2="50" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#88D8B0"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="heartGrad" x1="60" y1="85" x2="60" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF8FA3"/>
+      <stop offset="100%" stop-color="#FF6B81"/>
+    </linearGradient>
+  </defs>
+  <!-- Left leaf -->
+  <path d="M45 20c-8-2-14 6-10 15 2 5 8 7 13 5 0-8 2-15-3-20z" fill="url(#leafGrad3)"/>
+  <!-- Right leaf -->
+  <path d="M75 20c8-2 14 6 10 15-2 5-8 7-13 5 0-8-2-15 3-20z" fill="url(#leafGrad3)"/>
+  <!-- Stem -->
+  <rect x="58" y="25" width="4" height="12" rx="2" fill="#36C99A"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="70" rx="38" ry="35" fill="url(#bodyGrad3)"/>
+  <!-- Highlight -->
+  <ellipse cx="48" cy="55" rx="12" ry="8" fill="#fff" opacity="0.25"/>
+  <!-- Heart eyes -->
+  <path d="M44 65c-2-3-6-1-6 2 0 3 6 7 6 7s6-4 6-7c0-3-4-5-6-2z" fill="#FF6B81"/>
+  <path d="M70 65c-2-3-6-1-6 2 0 3 6 7 6 7s6-4 6-7c0-3-4-5-6-2z" fill="#FF6B81"/>
+  <!-- Cheeks -->
+  <circle cx="38" cy="78" r="6" fill="#FFB6C1" opacity="0.8"/>
+  <circle cx="82" cy="78" r="6" fill="#FFB6C1" opacity="0.8"/>
+  <!-- Happy mouth -->
+  <path d="M52 80c2.5 5 13.5 5 16 0" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Small heart held by sprout -->
+  <path d="M60 96c-5-3.5-10-1-10 4 0 4 6 8 10 10 4-2 10-6 10-10 0-5-5-7.5-10-4z" fill="url(#heartGrad)"/>
+  <!-- Tiny floating hearts -->
+  <path d="M25 40c-2-1.5-4-.5-4 2 0 2 3 4 4 5 1-1 4-3 4-5 0-2.5-2-3.5-4-2z" fill="#FFB6C1" opacity="0.7"/>
+  <path d="M95 35c-1.5-1-3-.5-3 1.5 0 1.5 2 3 3 3.5 1-.5 3-2 3-3.5 0-2-1.5-2.5-3-1.5z" fill="#FFB6C1" opacity="0.7"/>
+</svg>

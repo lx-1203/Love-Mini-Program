@@ -1,0 +1,2 @@
+import type {SVGProps} from "react";
+export function HomeIcon(props:SVGProps<SVGSVGElement>){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 10.5 12 3l9 7.5v9H3z"/><path d="M9 21v-6h6v6"/></svg>}

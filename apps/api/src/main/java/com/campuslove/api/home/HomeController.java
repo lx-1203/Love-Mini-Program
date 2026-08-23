@@ -152,7 +152,11 @@ record RelationActivityView(
     int whispers,
     int visitors,
     int newMatches,
-    int totalUnread
+    int totalUnread,
+    java.util.List<String> likesAvatars,
+    java.util.List<String> whisperAvatars,
+    java.util.List<String> visitorAvatars,
+    java.util.List<String> matchAvatars
 ) {
 }
 

@@ -1,0 +1,32 @@
+{
+  "brand": {
+    "primary": "#34C38F",
+    "deep": "#168B65",
+    "light": "#E8FBF2",
+    "heart": "#FF5A91"
+  },
+  "neutral": {
+    "ink": "#26364A",
+    "secondary": "#6F7C8F",
+    "disabled": "#C8D2DC",
+    "line": "#E8EDF2"
+  },
+  "grid": "16px",
+  "viewBox": "24x24",
+  "sizes": [
+    16,
+    20,
+    24,
+    32,
+    48,
+    64,
+    96,
+    128,
+    256
+  ],
+  "states": {
+    "default": "#6F7C8F",
+    "active": "#34C38F",
+    "disabled": "#C8D2DC"
+  }
+}

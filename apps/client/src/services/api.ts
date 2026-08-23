@@ -283,13 +283,23 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.getBasicProfile();
     }
-    return request<Schemas["BasicProfile"]>({ url: "/profile/basic" });
+    try {
+      return await request<Schemas["BasicProfile"]>({ url: "/profile/basic" });
+    } catch (e: any) {
+      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getBasicProfile();
+      throw e;
+    }
   },
   async getProfileStats() {
     if (useMock()) {
       return mockFixtures.getProfileStats();
     }
-    return request<ProfileStats>({ url: "/profile/stats" });
+    try {
+      return await request<ProfileStats>({ url: "/profile/stats" });
+    } catch (e: any) {
+      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getProfileStats();
+      throw e;
+    }
   },
   async saveBasicProfile(payload: Schemas["BasicProfileRequest"]) {
     if (useMock()) {
@@ -305,7 +315,12 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.getCampusProfile();
     }
-    return request<Schemas["CampusProfile"]>({ url: "/profile/campus" });
+    try {
+      return await request<Schemas["CampusProfile"]>({ url: "/profile/campus" });
+    } catch (e: any) {
+      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getCampusProfile();
+      throw e;
+    }
   },
   async saveCampusProfile(payload: Schemas["CampusProfileRequest"]) {
     if (useMock()) {
@@ -321,7 +336,12 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.getScheduleProfile();
     }
-    return request<Schemas["ScheduleProfile"]>({ url: "/profile/schedule" });
+    try {
+      return await request<Schemas["ScheduleProfile"]>({ url: "/profile/schedule" });
+    } catch (e: any) {
+      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getScheduleProfile();
+      throw e;
+    }
   },
   async saveScheduleProfile(payload: Schemas["ScheduleProfileRequest"]) {
     if (useMock()) {

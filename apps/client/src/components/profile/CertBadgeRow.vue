@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CertBadgeRow — 认证成就名牌行（2026-08-13，B5）
  *
@@ -114,7 +114,7 @@ function badgeIcon(id: CertBadgeItem["id"]): string {
 /* ① 年龄认证：品牌绿渐变 */
 .cert-badge--age {
   background: linear-gradient(135deg, var(--c-brand-400, #6fe0b0) 0%, var(--c-brand-500, #36C99A) 100%);
-  box-shadow: 0 2rpx 10rpx var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.35));
+  box-shadow: 0 2rpx 10rpx var(--c-brand-border-tint-stronger, rgba(54, 201, 154, 0.35));
 }
 
 /* ② 实名认证：蓝金渐变（中等级） */

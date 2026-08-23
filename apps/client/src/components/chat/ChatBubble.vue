@@ -32,6 +32,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   longpress: [messageId: string];
+    avatarTap: [];
   tapQuote: [quoteRef: string];
 }>();
 
@@ -120,8 +121,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
     </view>
 
     <!-- 正常消息 -->
-    <!-- 2026-08-08 微信化重构：自己消息不显示头像（微信惯例，仅对方显示），
-         左右区分靠气泡颜色 + 对齐方向 -->
+    <!-- 头像布局：对方消息头像在左侧，自己消息头像在右侧（row-reverse），左右区分靠气泡颜色 + 对齐方向 -->
     <view v-else class="bubble-row" :class="[`bubble-row--${sender}`]">
       <!-- 对方头像（左侧） -->
       <image
@@ -132,6 +132,17 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
         lazy-load
         role="img"
         :aria-label="t('chat.quotePeer')"
+        @tap="emit('avatarTap')"
+      />
+      <!-- 自己头像（右侧） -->
+      <image
+        v-if="isSelfSender"
+        class="bubble-avatar bubble-avatar--self"
+        :src="resolveMediaUrl(selfAvatar)"
+        mode="aspectFill"
+        lazy-load
+        role="img"
+        aria-label="我"
       />
 
       <view class="bubble" :class="[`bubble--${sender}`]">
@@ -139,7 +150,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
         <view
           v-if="quoteRef && quoteBody"
           class="bubble__quote"
-  @tap.stop="handleTapQuote"
+          @tap.stop="handleTapQuote"
           role="button"
           :aria-label="t('chat.quoteAria')"
         >
@@ -209,9 +220,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   /* 2026-08-09 微信 1:1 重构：头像与气泡间距 8px = 16rpx（原 --sp-2 = 8rpx ≈ 4px） */
   gap: 16rpx;
 }
-/* 2026-08-08 微信化重构：自己消息无头像，气泡直接靠右（不再 row-reverse 占位） */
+/* 自己消息头像在右侧，使用 row-reverse 实现 */
 .bubble-row--self {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 .bubble-row--peer {
   flex-direction: row;
@@ -225,6 +236,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   border: 2rpx solid var(--c-bg-container);
   flex-shrink: 0;
   background: var(--c-neutral-100);
+}
+.bubble-avatar--self {
+  cursor: pointer;
 }
 
 /* mp-weixin 不支持 display:grid，单列纵向堆叠改用 flex-direction: column */

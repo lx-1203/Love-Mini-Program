@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 校园社交专区首页
  *
@@ -19,6 +19,22 @@ import { IMAGE_PATHS } from "../../config/images";
 import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
+
+/** 2026-08-21：未认证推荐兴趣圈（复用封面素材） */
+const RECOMMEND_CIRCLES = [
+  { name: "摄影", cover: "/static/assets/images/covers/circle-photo.png" },
+  { name: "旅行", cover: "/static/assets/images/covers/circle-travel.png" },
+  { name: "音乐", cover: "/static/assets/images/covers/circle-music.png" },
+  { name: "运动", cover: "/static/assets/images/covers/circle-sports.png" },
+  { name: "美食", cover: "/static/assets/images/covers/circle-food.png" },
+  { name: "游戏", cover: "/static/assets/images/covers/circle-game.png" },
+  { name: "阅读", cover: "/static/assets/images/covers/circle-reading.png" },
+  { name: "宠物", cover: "/static/assets/images/covers/circle-pet.png" },
+];
+
+function goCircles() {
+  openAppPath("/pages/circles/index");
+}
 const { t } = useI18n();
 const {
   activeCategory,
@@ -193,6 +209,20 @@ onMounted(async () => {
       </view>
     </view>
 
+    <!-- 2026-08-21：未认证时推荐兴趣圈（避免内容区空白） -->
+    <view v-if="!isVerified" class="cert-recommend card-base">
+      <view class="cert-recommend__head">
+        <text class="cert-recommend__title">热门兴趣圈</text>
+        <text class="cert-recommend__more" @tap="goCircles">查看更多 ›</text>
+      </view>
+      <view class="cert-recommend__grid">
+        <view v-for="item in RECOMMEND_CIRCLES" :key="item.name" class="cert-recommend__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goCircles">
+          <image class="cert-recommend__cover" :src="item.cover" mode="aspectFill" alt="" />
+          <text class="cert-recommend__label">{{ item.name }}</text>
+        </view>
+      </view>
+    </view>
+
     <!-- v3 Nearby 冻结：非本校公开浏览提示（已认证但查看其他学校） -->
     <view v-else-if="!isOwnCertifiedView" class="public-browse-banner card-base">
       <text class="public-browse-banner__title">{{ t('campus.index.publicBrowseTitle') }}</text>
@@ -248,6 +278,12 @@ onMounted(async () => {
             </view>
             <text class="topic-card__preview">{{ topic.contentPreview }}</text>
             <view class="topic-card__footer">
+              <image
+                v-if="!topic.isAnonymous && topic.author?.avatar"
+                class="topic-card__avatar"
+                :src="topic.author.avatar"
+                mode="aspectFill"
+              />
               <text class="topic-card__author">
                 {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
               </text>
@@ -622,6 +658,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: $pink-primary;
   font-weight: 500;
 }
+.topic-card__avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+}
 
 .topic-card__replies {
   display: flex;
@@ -722,7 +765,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 24rpx;
   border-radius: 18rpx;
   background: var(--c-bg-surface, #F7FAF9);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .public-browse-banner__title {
@@ -734,4 +777,59 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .public-browse-banner__desc {
   font-size: 22rpx;
   color: var(--c-text-secondary, #666666);
-}</style>
+}/* ===== 2026-08-21 未认证推荐兴趣圈 ===== */
+.cert-recommend {
+  margin-top: 24rpx;
+  padding: 24rpx;
+}
+
+.cert-recommend__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.cert-recommend__title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #222222;
+}
+
+.cert-recommend__more {
+  font-size: 24rpx;
+  color: #36C99A;
+}
+
+.cert-recommend__grid {
+  display: flex;
+  gap: 16rpx;
+}
+
+.cert-recommend__item {
+  flex: 1;
+  border-radius: 16rpx;
+  overflow: hidden;
+  position: relative;
+  height: 120rpx;
+}
+
+.cert-recommend__cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.cert-recommend__label {
+  position: absolute;
+  left: 8rpx;
+  bottom: 8rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.5);
+}
+
+</style>

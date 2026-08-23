@@ -1,0 +1,33 @@
+{
+  "name": "寻觅 Nearby SVG Asset Pack V3",
+  "icons": 64,
+  "variants": [
+    "outline",
+    "filled"
+  ],
+  "states": [
+    "default",
+    "active",
+    "disabled"
+  ],
+  "sizes": [
+    16,
+    20,
+    24,
+    32,
+    48,
+    64,
+    96,
+    128,
+    256
+  ],
+  "tabbar": "5x2",
+  "exports": [
+    "SVG Path",
+    "SVG Sprite",
+    "Vue3",
+    "React",
+    "Lottie",
+    "Figma-ready SVG"
+  ]
+}

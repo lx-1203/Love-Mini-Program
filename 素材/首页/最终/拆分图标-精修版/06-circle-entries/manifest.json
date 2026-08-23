@@ -1,0 +1,98 @@
+{
+  "category": "06-circle-entries",
+  "title": "兴趣圈入口卡片",
+  "description": "各类兴趣圈的入口卡片、按钮、角标小图标",
+  "total_icons": 9,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "circle_row6_01.png",
+      "dimensions": "170x145",
+      "semantic_label": "摄影圈入口卡片",
+      "color": "深灰",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 32678
+    },
+    {
+      "index": 2,
+      "filename": "circle_row6_02.png",
+      "dimensions": "173x145",
+      "semantic_label": "旅行圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 32685
+    },
+    {
+      "index": 3,
+      "filename": "circle_row6_03.png",
+      "dimensions": "172x145",
+      "semantic_label": "美食圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 31763
+    },
+    {
+      "index": 4,
+      "filename": "circle_row6_04.png",
+      "dimensions": "177x145",
+      "semantic_label": "音乐圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 33479
+    },
+    {
+      "index": 5,
+      "filename": "circle_row6_05.png",
+      "dimensions": "167x78",
+      "semantic_label": "运动圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 18839
+    },
+    {
+      "index": 6,
+      "filename": "circle_row6_06.png",
+      "dimensions": "128x79",
+      "semantic_label": "读书圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 12928
+    },
+    {
+      "index": 7,
+      "filename": "circle_row6_07.png",
+      "dimensions": "59x53",
+      "semantic_label": "加入按钮",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5359
+    },
+    {
+      "index": 8,
+      "filename": "circle_row6_08.png",
+      "dimensions": "61x57",
+      "semantic_label": "成员数角标",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5579
+    },
+    {
+      "index": 9,
+      "filename": "circle_row6_09.png",
+      "dimensions": "60x53",
+      "semantic_label": "热度角标",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5256
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 标签聚合页
  * 展示指定话题标签下的所有帖子，支持下拉刷新和上拉加载更多
@@ -438,7 +438,7 @@ $red-badge: var(--c-error, #FF4757);
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #6FD4AA) 50%, var(--c-romance-300, #F9A8C4) 100%);
+  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #75E1B7) 50%, var(--c-romance-300, #FF8DA1) 100%);
 }
 
 .tag-header__back {
@@ -730,3 +730,4 @@ $red-badge: var(--c-error, #FF4757);
   height: 100rpx;
 }
 </style>
+

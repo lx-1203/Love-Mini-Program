@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 搜索页（2026-08-11，参考贴吧搜索）
  *
@@ -572,7 +572,7 @@ function goToActivity(activityId: number) {
   gap: 16rpx;
   padding: 12rpx 24rpx;
   background: #ffffff;
-  border-bottom: 1rpx solid var(--c-line, #ECEFF2);
+  border-bottom: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .search-tab {
@@ -607,7 +607,7 @@ function goToActivity(activityId: number) {
   margin-bottom: 16rpx;
   background: #ffffff;
   border-radius: 18rpx;
-  border: 1rpx solid #ECEFF2;
+  border: 1rpx solid #EEF2F0;
 }
 
 .user-row__avatar {
@@ -705,3 +705,4 @@ function goToActivity(activityId: number) {
 }
 
 </style>
+

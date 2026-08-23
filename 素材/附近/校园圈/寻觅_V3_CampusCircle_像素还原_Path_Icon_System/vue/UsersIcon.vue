@@ -1,0 +1,25 @@
+<script setup lang="ts">
+withDefaults(defineProps<{
+  size?: number | string
+  color?: string
+}>(), {
+  size: 24,
+  color: 'currentColor'
+})
+</script>
+
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 24 24"
+    fill="none"
+    :style="{ color }"
+    aria-hidden="true"
+  >
+    <path d="M9 5.15a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M3.7 19.9c.4-3.5 2.3-5.55 5.3-5.55s4.9 2.05 5.3 5.55" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M15.2 6.25a2.55 2.55 0 0 1 0 4.95M15.4 14.6c2.6.3 4.2 2 4.55 4.8" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/>
+  </svg>
+</template>

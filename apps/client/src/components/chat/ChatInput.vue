@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
 
 defineProps<{
@@ -14,8 +14,6 @@ const emit = defineEmits<{
 }>();
 
 const smileSrc = IMAGE_PATHS.MESSAGE_ICONS.SMILE;
-const sendHeartSrc = IMAGE_PATHS.MESSAGE_ICONS.SEND_HEART;
-
 function onInput(e: Event & { detail?: { value?: string } }) {
   emit("update:draft", e.detail?.value ?? "");
 }
@@ -46,8 +44,8 @@ function onInput(e: Event & { detail?: { value?: string } }) {
         placeholder="说点什么..."
         @input="onInput"
       />
-      <view class="chat-input__send" :class="{ 'chat-input__send--disabled': !draft || disabled }" @tap="emit('send')">
-        <image class="chat-input__send-img" :src="sendHeartSrc" mode="aspectFit" />
+            <view class="chat-input__send" :class="{ 'chat-input__send--disabled': !draft || disabled }" @tap="emit('send')">
+        <text class="chat-input__send-text">发送</text>
       </view>
     </view>
   </view>
@@ -56,7 +54,7 @@ function onInput(e: Event & { detail?: { value?: string } }) {
 <style scoped lang="scss">
 .chat-input {
   background: #FFFFFF;
-  border-top: 1rpx solid #ECEFF2;
+  border-top: 1rpx solid #EEF2F0;
 }
 .chat-input__suggestions {
   display: flex;
@@ -110,9 +108,9 @@ function onInput(e: Event & { detail?: { value?: string } }) {
   color: #222222;
 }
 .chat-input__send {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
+  height: 72rpx;
+  padding: 0 36rpx;
+  border-radius: 999rpx;
   background: #36C99A;
   display: flex;
   align-items: center;
@@ -122,10 +120,12 @@ function onInput(e: Event & { detail?: { value?: string } }) {
 .chat-input__send--disabled {
   opacity: 0.5;
 }
-.chat-input__send-img {
-  width: 48rpx;
-  height: 48rpx;
+.chat-input__send-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 600;
 }
 </style>
+
 
 

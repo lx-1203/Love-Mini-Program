@@ -1,0 +1,84 @@
+{
+  "slug": "button",
+  "schemaVersion": 2,
+  "name": "按钮 Button",
+  "category": "Action",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "薄荷绿主按钮 + 心动粉强调按钮，大圆角药丸形",
+  "variantDimensions": {
+    "variant": {
+      "values": [
+        "primary",
+        "secondary",
+        "outline",
+        "ghost",
+        "danger"
+      ]
+    },
+    "size": {
+      "values": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "主按钮 Primary",
+      "traits": {
+        "variant": "primary",
+        "size": "md"
+      },
+      "whySelected": "核心行动按钮"
+    },
+    {
+      "name": "次按钮 Secondary",
+      "traits": {
+        "variant": "secondary",
+        "size": "md"
+      },
+      "whySelected": "次要操作"
+    },
+    {
+      "name": "描边按钮 Outline",
+      "traits": {
+        "variant": "outline",
+        "size": "md"
+      },
+      "whySelected": "第三层级操作"
+    },
+    {
+      "name": "心动按钮 Heart",
+      "traits": {
+        "variant": "danger",
+        "size": "md"
+      },
+      "whySelected": "心动/喜欢类强调操作"
+    }
+  ],
+  "anatomy": [
+    "button-container",
+    "icon-left",
+    "label",
+    "icon-right"
+  ],
+  "structurePatterns": [
+    "pill-shaped",
+    "icon + text layout"
+  ],
+  "usageHints": {
+    "priorityHint": "high",
+    "do": [
+      "主按钮用于核心行动",
+      "粉色按钮用于心动/喜欢",
+      "按钮三档 48/40/32px"
+    ],
+    "dont": [
+      "同一页面不要超过2个主按钮"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

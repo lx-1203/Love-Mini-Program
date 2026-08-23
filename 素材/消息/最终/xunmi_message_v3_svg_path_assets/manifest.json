@@ -1,0 +1,311 @@
+{
+  "name": "寻觅消息 V3 SVG Path Asset Pack",
+  "source_reference": "用户提供的 /mnt/data/消息.png",
+  "note": "矢量素材为基于参考图重新绘制的可维护 Path SVG，不是从原始 Figma 文件导出的原始路径数据。",
+  "design_tokens": {
+    "primary_green": "#34C38F",
+    "heart_pink": "#FF5A91",
+    "deep_green": "#168B65",
+    "light_green": "#E8FBF2",
+    "spacing": [
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "common_radius": [
+      12,
+      16,
+      20
+    ]
+  },
+  "icons": [
+    {
+      "name": "arrow-left",
+      "label": "返回",
+      "svg": "svg/arrow-left.svg",
+      "vue": "vue/XnArrowLeft.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "search",
+      "label": "搜索",
+      "svg": "svg/search.svg",
+      "vue": "vue/XnSearch.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "plus",
+      "label": "添加",
+      "svg": "svg/plus.svg",
+      "vue": "vue/XnPlus.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "more-horizontal",
+      "label": "更多",
+      "svg": "svg/more-horizontal.svg",
+      "vue": "vue/XnMoreHorizontal.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "home",
+      "label": "首页",
+      "svg": "svg/home.svg",
+      "vue": "vue/XnHome.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "location",
+      "label": "附近",
+      "svg": "svg/location.svg",
+      "vue": "vue/XnLocation.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "heart-line",
+      "label": "喜欢",
+      "svg": "svg/heart-line.svg",
+      "vue": "vue/XnHeartLine.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "heart-fill",
+      "label": "喜欢_实心",
+      "svg": "svg/heart-fill.svg",
+      "vue": "vue/XnHeartFill.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "message-line",
+      "label": "消息_线性",
+      "svg": "svg/message-line.svg",
+      "vue": "vue/XnMessageLine.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "message-fill",
+      "label": "消息_实心",
+      "svg": "svg/message-fill.svg",
+      "vue": "vue/XnMessageFill.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "user",
+      "label": "我的",
+      "svg": "svg/user.svg",
+      "vue": "vue/XnUser.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "star-line",
+      "label": "收藏_线性",
+      "svg": "svg/star-line.svg",
+      "vue": "vue/XnStarLine.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "star-fill",
+      "label": "收藏_实心",
+      "svg": "svg/star-fill.svg",
+      "vue": "vue/XnStarFill.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "chat-line",
+      "label": "私信_线性",
+      "svg": "svg/chat-line.svg",
+      "vue": "vue/XnChatLine.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "chat-fill",
+      "label": "私信_实心",
+      "svg": "svg/chat-fill.svg",
+      "vue": "vue/XnChatFill.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "share",
+      "label": "分享",
+      "svg": "svg/share.svg",
+      "vue": "vue/XnShare.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "check",
+      "label": "勾选",
+      "svg": "svg/check.svg",
+      "vue": "vue/XnCheck.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "online-dot",
+      "label": "在线状态",
+      "svg": "svg/online-dot.svg",
+      "vue": "vue/XnOnlineDot.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "venus",
+      "label": "女性",
+      "svg": "svg/venus.svg",
+      "vue": "vue/XnVenus.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "official",
+      "label": "官方",
+      "svg": "svg/official.svg",
+      "vue": "vue/XnOfficial.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "image",
+      "label": "图片",
+      "svg": "svg/image.svg",
+      "vue": "vue/XnImage.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "play",
+      "label": "播放",
+      "svg": "svg/play.svg",
+      "vue": "vue/XnPlay.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "flame",
+      "label": "热门",
+      "svg": "svg/flame.svg",
+      "vue": "vue/XnFlame.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "music",
+      "label": "音乐",
+      "svg": "svg/music.svg",
+      "vue": "vue/XnMusic.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "camera",
+      "label": "摄影",
+      "svg": "svg/camera.svg",
+      "vue": "vue/XnCamera.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "film",
+      "label": "电影",
+      "svg": "svg/film.svg",
+      "vue": "vue/XnFilm.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "plane",
+      "label": "旅行",
+      "svg": "svg/plane.svg",
+      "vue": "vue/XnPlane.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "cat",
+      "label": "猫咪",
+      "svg": "svg/cat.svg",
+      "vue": "vue/XnCat.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 2
+    },
+    {
+      "name": "food",
+      "label": "美食",
+      "svg": "svg/food.svg",
+      "vue": "vue/XnFood.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "sprout",
+      "label": "小芽",
+      "svg": "svg/sprout.svg",
+      "vue": "vue/XnSprout.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "sparkles",
+      "label": "闪光",
+      "svg": "svg/sparkles.svg",
+      "vue": "vue/XnSparkles.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "smile",
+      "label": "表情",
+      "svg": "svg/smile.svg",
+      "vue": "vue/XnSmile.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "keyboard",
+      "label": "键盘",
+      "svg": "svg/keyboard.svg",
+      "vue": "vue/XnKeyboard.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "send",
+      "label": "发送",
+      "svg": "svg/send.svg",
+      "vue": "vue/XnSend.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    },
+    {
+      "name": "gift",
+      "label": "礼物",
+      "svg": "svg/gift.svg",
+      "vue": "vue/XnGift.vue",
+      "viewBox": "0 0 24 24",
+      "path_count": 1
+    }
+  ],
+  "special_components": [
+    "StatusOnlinePill.vue",
+    "ActionLike.vue",
+    "ActionHello.vue",
+    "ActionFollow.vue"
+  ]
+}

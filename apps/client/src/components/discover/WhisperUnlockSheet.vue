@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * B3 恋爱小纸条 · 悄悄话解锁底部弹层（2026-08-13）
  *
@@ -310,7 +310,7 @@ defineExpose({ showResult, resetToPaywall });
   width: 72rpx;
   height: 8rpx;
   border-radius: 4rpx;
-  background: var(--c-neutral-200, #e2e8f0);
+  background: var(--c-neutral-200, #DDE3E0);
   align-self: center;
 }
 
@@ -332,7 +332,7 @@ defineExpose({ showResult, resetToPaywall });
   border-radius: var(--r-2xl, 32rpx);
   /* 信纸渐变：品牌青绿→浪漫粉，无精确对应 token，直接写色值 */
   background: linear-gradient(150deg, #e8fffa 0%, #fdf3f8 60%, #fff7ed 100%);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .whisper-letter__seal {
@@ -388,7 +388,7 @@ defineExpose({ showResult, resetToPaywall });
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-circle, 50%);
-  border: 6rpx solid var(--c-neutral-200, #e2e8f0);
+  border: 6rpx solid var(--c-neutral-200, #DDE3E0);
   border-top-color: var(--c-brand-500, #36C99A);
   animation: whisper-spin 800ms linear infinite;
 }
@@ -417,7 +417,7 @@ defineExpose({ showResult, resetToPaywall });
   padding: 24rpx 28rpx;
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .whisper-result__quote {
@@ -444,7 +444,7 @@ defineExpose({ showResult, resetToPaywall });
   padding: 8rpx 10rpx 8rpx 24rpx;
   border-radius: var(--r-full);
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .whisper-reply__input {
@@ -496,7 +496,7 @@ defineExpose({ showResult, resetToPaywall });
 
 .whisper-sheet__btn--ghost {
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .whisper-sheet__btn--confirm {
@@ -514,3 +514,4 @@ defineExpose({ showResult, resetToPaywall });
   color: var(--c-text-inverse);
 }
 </style>
+

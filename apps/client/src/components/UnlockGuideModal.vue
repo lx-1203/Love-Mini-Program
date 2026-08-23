@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * UnlockGuideModal - 解锁引导弹窗组件
  *
@@ -202,7 +202,7 @@ defineExpose({ handleConfirm, noop });
   width: 120rpx;
   height: 120rpx;
   border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand-100, #CCF0E0), var(--c-brand-200, #A5E2C6));
+  background: linear-gradient(135deg, var(--c-brand-100, #D1F5E7), var(--c-brand-200, #A3EBCF));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,14 +276,14 @@ defineExpose({ handleConfirm, noop });
 
 /* 主按钮（品牌色） */
 .unlock-modal__btn--primary {
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #2AAE83));
   box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.20)));
 }
 
 /* 次按钮（白底品牌字） */
 .unlock-modal__btn--secondary {
   background: var(--c-bg-page, #F7FAF9);
-  border: 2rpx solid var(--c-border-light, #ECEFF2);
+  border: 2rpx solid var(--c-border-light, #EEF2F0);
 }
 
 /* 按钮文案 */
@@ -294,7 +294,10 @@ defineExpose({ handleConfirm, noop });
 }
 
 .unlock-modal__btn-text--secondary {
-  color: var(--c-brand-700, #12805A);
+  color: var(--c-brand-700, #2AAE83);
   font-weight: 500;
 }
 </style>
+
+
+

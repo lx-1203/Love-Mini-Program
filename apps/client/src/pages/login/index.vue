@@ -496,14 +496,20 @@ function openAccountBinding() {
     <view class="login-page__hero">
       <image
         class="hero-image"
-        :src="IMAGE_PATHS.POSTERS.LOGIN"
+        :src="IMAGE_PATHS.POSTERS.LOGIN_ILLUSTRATION"
         mode="aspectFill"
         aria-hidden="true" alt=""
       />
       <!-- 底部白色渐变叠加，增强文字可读性 -->
       <view class="hero-overlay" />
-      <!-- 吉祥物装饰（13-login mascot-center） -->
-      <image class="hero-mascot" src="/static/assets/images/login/mascot-center.png" mode="aspectFit" alt="" />
+      <!-- 2026-08-20：浮动爱心装饰（参考图对齐） -->
+      <view class="login-hearts" aria-hidden="true">
+        <text class="login-heart login-heart--1">💗</text>
+        <text class="login-heart login-heart--2">💕</text>
+        <text class="login-heart login-heart--3">💗</text>
+        <text class="login-heart login-heart--4">💖</text>
+        <text class="login-heart login-heart--5">💕</text>
+      </view>
       <!-- 主标题 + 副标压底显示 -->
       <view class="hero-title-wrap">
         <text class="logo-title">{{ heroTitle }}</text>
@@ -763,16 +769,16 @@ function openAccountBinding() {
 
 .hero-image {
   position: absolute;
-  top: 0;
+  align-items: center;
   left: 0;
   width: 100%;
   height: 100%;
   /* 实景图覆盖整个区域 */
-  object-fit: cover;
+  padding: 0 var(--sp-8);
+  width: 100%;
 }
 
 /* 底部白色渐变叠加 —— 增强文字可读性 */
-/* R4-batch4：渐变起点 rgba(255,255,255,0)（透明白）换用透明遮罩 token，终点已用 --c-bg-container */
 .hero-overlay {
   position: absolute;
   top: 0;
@@ -780,7 +786,7 @@ function openAccountBinding() {
   right: 0;
   bottom: 0;
   background: linear-gradient(180deg, rgba(18, 48, 38, 0.28) 0%, rgba(255, 255, 255, 0.18) 38%, var(--c-bg-container) 100%);
-  pointer-events: none;
+  z-index: 1;
 }
 
 /* 主标题 + 副标 —— 压底显示，在白色渐变之上保证可读 */
@@ -800,11 +806,11 @@ function openAccountBinding() {
   margin-top: 24rpx;
   font-size: var(--fs-md);
   font-weight: 500;
-  color: #ffffff;
+  color: #1ABC9C;
   text-align: center;
   line-height: 1.6;
   letter-spacing: 2rpx;
-  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.55);
+  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.35);
 }
 
 .hero-desc--sub {
@@ -826,34 +832,6 @@ function openAccountBinding() {
   z-index: 1;
 }
 
-.hero-desc {
-  margin-top: 24rpx;
-  font-size: var(--fs-md);
-  font-weight: 500;
-  color: #ffffff;
-  text-align: center;
-  line-height: 1.6;
-  letter-spacing: 2rpx;
-  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.55);
-}
-
-.hero-desc--sub {
-  margin-top: 8rpx;
-  font-size: var(--fs-sm);
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.hero-mascot {
-  position: absolute;
-  left: 50%;
-  top: 120rpx;
-  width: 320rpx;
-  height: 320rpx;
-  transform: translateX(-50%);
-  z-index: 1;
-  opacity: 0.9;
-}
 
 .logo-title {
   font-size: var(--fs-7xl);
@@ -1016,38 +994,37 @@ function openAccountBinding() {
   letter-spacing: 2rpx;
 }
 
-/* 一键体验按钮：虚线描边 + 品牌色，弱于主/次按钮 */
+/* 稍后再看按钮：浅灰描边，弱于主/次按钮 */
 .btn-guest {
   width: 100%;
-  min-height: var(--btn-height-md);
+  height: var(--btn-height-md);
   border-radius: var(--r-xl);
   background: var(--c-bg-container);
-  border: 2rpx dashed var(--c-border-strong, rgba(0, 0, 0, 0.12));
+  border: 2rpx solid var(--c-neutral-200, #E5E5E5);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  padding: var(--sp-2) var(--sp-4);
+  padding: 0 var(--sp-4);
 }
 
 /* #ifdef H5 */
 .btn-guest:active {
   transform: scale(0.96);
-  background: var(--c-neutral-50);
+  background: var(--c-neutral-100);
 }
 /* #endif */
 
 .btn-guest-text {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--c-brand);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--c-text-tertiary, #9AA39F);
   letter-spacing: 2rpx;
 }
 
 .btn-guest-desc {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
+  display: none;
 }
 
 .input-group {
@@ -1138,12 +1115,13 @@ function openAccountBinding() {
 
 .terms-wrap {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: var(--sp-3);
   /* 2026-08-14：登录协议行同时服务微信快捷登录与手机号登录，置底与按钮区拉开间距 */
   margin-top: var(--sp-5, 20rpx);
-  padding: 0 var(--sp-4);
+  padding: 0 var(--sp-8);
+  width: 100%;
 }
 
 /* ---------- 展示模式入口（全功能展示版） ---------- */
@@ -1324,4 +1302,33 @@ function openAccountBinding() {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
 }
+
+/* ===== 2026-08-20 浮动爱心装饰（参考图对齐） ===== */
+.login-hearts {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.login-heart {
+  position: absolute;
+  opacity: 0.45;
+  animation: login-heart-float 4.5s ease-in-out infinite alternate;
+}
+
+.login-heart--1 { left: 12%; top: 18%; font-size: 44rpx; animation-delay: 0s; }
+.login-heart--2 { right: 14%; top: 12%; font-size: 52rpx; animation-delay: 0.7s; }
+.login-heart--3 { left: 20%; bottom: 30%; font-size: 38rpx; animation-delay: 1.3s; }
+.login-heart--4 { right: 22%; top: 34%; font-size: 40rpx; animation-delay: 1.9s; }
+.login-heart--5 { left: 45%; top: 8%; font-size: 34rpx; opacity: 0.3; animation-delay: 0.4s; }
+
+@keyframes login-heart-float {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  100% { transform: translateY(-22rpx) rotate(10deg) scale(1.1); }
+}
+
 </style>

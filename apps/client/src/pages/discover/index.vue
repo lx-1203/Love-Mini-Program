@@ -1,3 +1,4 @@
+﻿```vue
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
@@ -13,7 +14,6 @@ import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
 import { ensureCertified } from "../../guards/campus-gate";
-// 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
@@ -23,7 +23,6 @@ import MatchActions from "../../components/match/MatchActions.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import FilterDrawer from "../../components/discover/FilterDrawer.vue";
-import NotLoggedWaiting from "../../components/discover/NotLoggedWaiting.vue";
 
 const DISCOVER_TTL_MS = 30_000;
 
@@ -100,9 +99,8 @@ async function handleSuperLike() {
 }
 
 function loadDiscoverData() {
-  // 2026-08-15：未登录时不发受保护请求（冷启动无 token 时拉取推荐卡片 → 401 雪崩），
-  // 登录后 watch(sessionStore.isLoggedIn) 自动补拉。
-  if (!isCacheFresh("discover:data", DISCOVER_TTL_MS) && getToken()) {
+  // 未登录时也加载mock预览数据（点击交互时再引导登录）
+  if (!isCacheFresh("discover:data", DISCOVER_TTL_MS) && (getToken() || !sessionStore.isLoggedIn)) {
     void discoverStore.fetchCards();
     setCachedValue("discover:data", true);
   }
@@ -127,7 +125,6 @@ watch(
   () => loadDiscoverData()
 );
 
-
 onUnload(() => {
   discoverStore.dispose();
 });
@@ -151,6 +148,7 @@ onUnload(() => {
           @tap="discoverStore.isFilterDrawerOpen = true"
         >
           <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
+          <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.DIAMOND_FILTER" mode="aspectFit" alt="" />
         </view>
       </view>
       <view class="discover-header__tabs">
@@ -181,9 +179,7 @@ onUnload(() => {
       </view>
 
       <view v-else-if="cards.length === 0" class="match-state">
-        <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" />
         <EmptyState
-          v-else
           :type="errorMessage ? 'network' : 'no-data'"
           :image="errorMessage ? '' : IMAGE_PATHS.ICONS_COMMON.HEART"
           mascot="sad"
@@ -218,6 +214,11 @@ onUnload(() => {
       </template>
     </scroll-view>
 
+    <!-- 未登录时：底部登录提示（不拦截全屏，卡片可预览） -->
+    <view v-if="!sessionStore.isLoggedIn" class="discover-login-hint" @tap="goLogin">
+      <text class="discover-login-hint__text">登录后可与 TA 互动</text>
+    </view>
+
     <FilterDrawer
       v-model:visible="discoverStore.isFilterDrawerOpen"
       :filter="discoverStore.recommendationFilter"
@@ -232,7 +233,7 @@ onUnload(() => {
   flex-direction: column;
   display: flex;
   height: 100vh;
-  background: #f4fbf8;
+  background: var(--c-bg-page, #f4fbf8);
   padding-top: env(safe-area-inset-top);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;
@@ -258,7 +259,7 @@ onUnload(() => {
 .match-header__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .match-header__subtitle {
@@ -291,7 +292,7 @@ onUnload(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   box-shadow: 0 6rpx 16rpx rgba(30, 80, 65, 0.08);
 }
 
@@ -342,7 +343,7 @@ onUnload(() => {
 .discover-header {
   flex-shrink: 0;
   padding: 24rpx 32rpx 16rpx;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
 }
 
 .discover-header__top {
@@ -378,7 +379,7 @@ onUnload(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
@@ -415,18 +416,39 @@ onUnload(() => {
   width: 48rpx;
   height: 6rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  background: #FF6B81;
   margin-top: 8rpx;
 }
 
 .discover-header__tab-text--active {
-  color: #36C99A;
-  font-weight: 600;
+  color: var(--c-text-primary, #222222);
+  font-weight: 700;
 }
 
 .match-card-area {
   margin: 0 40rpx;
   height: 880rpx;
+}
+
+.discover-login-hint {
+  position: fixed;
+  bottom: 120rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 40rpx;
+  background: linear-gradient(135deg, #36C99A, #4DD0A8);
+  border-radius: 999rpx;
+  box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.35);
+  z-index: 100;
+}
+
+.discover-login-hint__text {
+  font-size: 28rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .more-recommend {
@@ -443,7 +465,7 @@ onUnload(() => {
 .more-recommend__title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .more-recommend__all {
@@ -480,4 +502,5 @@ onUnload(() => {
   color: #5f6f6b;
 }
 </style>
+```
 

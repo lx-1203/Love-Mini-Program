@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 74">
+<rect x="0" y="0" width="360" height="74" rx="22" fill="#FFFFFF"/>
+<g font-family="Arial,'Microsoft YaHei',sans-serif" font-size="10" text-anchor="middle">
+  <g transform="translate(36 11)" color="#7A7A7A"><use href="#discover"/></g>
+  <text x="36" y="58" fill="#7A7A7A">发现</text>
+  <g transform="translate(102 11)" color="#7A7A7A"><use href="#nearby"/></g>
+  <text x="102" y="58" fill="#7A7A7A">附近</text>
+  <circle cx="180" cy="31" r="25" fill="#34C38F"/>
+  <g transform="translate(168 19)" color="#FFFFFF"><use href="#match-heart"/></g>
+  <text x="180" y="58" fill="#269B70">匹配</text>
+  <g transform="translate(234 11)" color="#7A7A7A"><use href="#chat"/></g>
+  <text x="234" y="58" fill="#7A7A7A">消息</text>
+  <g transform="translate(300 11)" color="#7A7A7A"><use href="#profile"/></g>
+  <text x="300" y="58" fill="#7A7A7A">我的</text>
+</g>
+</svg>

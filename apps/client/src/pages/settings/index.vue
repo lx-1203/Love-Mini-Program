@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 设置页
  * 分组：账号管理、通知设置、隐私安全、缓存管理、关于
@@ -45,6 +45,12 @@ function handleThemeTap(): void {
   const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? "auto";
   themeStore.setMode(next);
   uni.showToast({ title: themeModeText.value, icon: "none" });
+}
+
+/** Switch 开关切换深色/浅色模式 */
+function handleThemeSwitch(e: { detail: { value: boolean } }): void {
+  themeStore.toggleTheme();
+  uni.showToast({ title: themeStore.isDark ? t("settings.themeDark") : t("settings.themeLight"), icon: "none" });
 }
 
 interface MenuItem {
@@ -362,7 +368,7 @@ const socialMenus = computed<MenuItem[]>(() => [
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "var(--c-bg-brand, #E6F8F1)",
+    bgColor: "var(--c-bg-brand, #E8FAF3)",
     label: t("profile.visitors"),
     path: "/pages/profile/visitors",
   },
@@ -605,14 +611,10 @@ function handleMenuTap(item: MenuItem) {
             :aria-label="t('settings.weeklySchedule')"
           />
         </view>
-        <!-- 收尾轮：深色模式三态切换 -->
+        <!-- 深色模式开关 -->
         <view
-          class="menu-item press-feedback menu-item--no-border"
-          hover-class="menu-item--hover"
-          hover-stay-time="100"
-          role="button"
+          class="menu-item menu-item--no-border"
           :aria-label="t('settings.themeAria')"
-          @tap="handleThemeTap"
         >
           <view class="menu-item__left">
             <view class="menu-item__icon settings-card--lavender">
@@ -620,8 +622,12 @@ function handleMenuTap(item: MenuItem) {
             </view>
             <text class="menu-item__label">{{ t('settings.themeMode') }}</text>
           </view>
-          <text class="menu-item__value">{{ themeModeText }}</text>
-          <text class="menu-item__arrow">›</text>
+          <switch
+            :checked="themeStore.isDark"
+            color="#36C99A"
+            @change="handleThemeSwitch"
+            :aria-label="t('settings.themeAria')"
+          />
         </view>
       </view>
     </view>
@@ -831,7 +837,7 @@ function handleMenuTap(item: MenuItem) {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid var(--c-border-light, #ECEFF2);
+  border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
   transition: all var(--d-fast, 120ms) ease;
 
   &--no-border {
@@ -898,7 +904,7 @@ function handleMenuTap(item: MenuItem) {
 
 .menu-item__arrow {
   font-size: var(--fs-3xl, 36rpx);
-  color: var(--c-border-strong, #CBD5E1);
+  color: var(--c-border-strong, #C2CAC6);
   font-weight: 300;
   line-height: 1;
 }
@@ -943,3 +949,6 @@ function handleMenuTap(item: MenuItem) {
   color: var(--c-text-tertiary, #9AA1AB);
 }
 </style>
+
+
+

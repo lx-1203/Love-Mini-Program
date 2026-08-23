@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 export interface GrowthItem {
   key: string;
   label: string;
@@ -35,7 +35,7 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
   margin: 24rpx 24rpx 0;
   border-radius: 40rpx;
   background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
@@ -44,7 +44,7 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
   align-items: center;
   gap: 12rpx;
   padding: 26rpx 32rpx;
-  border-bottom: 1rpx solid #eef1f5;
+  border-bottom: 1rpx solid #EEF2F0;
 }
 
 .my-growth__row:last-child {
@@ -58,17 +58,17 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 .my-growth__label {
   flex: 1;
   font-size: 28rpx;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-growth__value {
   font-size: 26rpx;
-  color: #777777;
+  color: #6B7571;
 }
 
 .my-growth__arrow {
   font-size: 32rpx;
-  color: #777777;
+  color: #6B7571;
 }
 </style>
 

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="emptyGalleryBody" x1="100" y1="70" x2="100" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="emptyGalleryLeaf" x1="88" y1="50" x2="88" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#88D8B0"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <!-- Camera icon floating -->
+  <g transform="translate(120, 40)">
+    <path d="M0 10h5l5-8h20l5 8h5a3 3 0 0 1 3 3v24a3 3 0 0 1-3 3H0a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z" fill="#E5E7EB"/>
+    <circle cx="20" cy="22" r="7" fill="#D1D5DB"/>
+    <circle cx="20" cy="22" r="4" fill="#9CA3AF"/>
+  </g>
+  <!-- Mascot looking up at camera -->
+  <!-- Leaves -->
+  <path d="M78 65c-5-1-8 3-5 8 1 2.5 4 3.5 7 2.5 0-4 .5-8-2-10.5z" fill="url(#emptyGalleryLeaf)"/>
+  <path d="M92 65c5-1 8 3 5 8-1 2.5-4 3.5-7 2.5 0-4-.5-8 2-10.5z" fill="url(#emptyGalleryLeaf)"/>
+  <rect x="83" y="68" width="4" height="6" rx="2" fill="#36C99A"/>
+  <!-- Body -->
+  <ellipse cx="85" cy="125" rx="32" ry="30" fill="url(#emptyGalleryBody)"/>
+  <ellipse cx="75" cy="112" rx="10" ry="6" fill="#fff" opacity="0.25"/>
+  <!-- Eyes looking up -->
+  <path d="M73 120c2-4 7-4 9 0" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M89 120c2-4 7-4 9 0" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Cheeks -->
+  <circle cx="68" cy="130" r="4" fill="#FFB6C1" opacity="0.6"/>
+  <circle cx="102" cy="130" r="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Small smile -->
+  <path d="M78 135c2 2.5 7 2.5 9 0" stroke="#2D3748" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Thought dots -->
+  <circle cx="115" cy="55" r="2" fill="#9CA3AF"/>
+  <circle cx="108" cy="48" r="1.5" fill="#9CA3AF"/>
+  <circle cx="102" cy="42" r="1" fill="#9CA3AF"/>
+  <!-- Decorative photo frames -->
+  <rect x="30" y="150" width="25" height="20" rx="3" fill="#E5E7EB" opacity="0.5"/>
+  <rect x="160" y="160" width="20" height="16" rx="2" fill="#E5E7EB" opacity="0.5"/>
+</svg>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CertDetailSheet — 认证成就半屏详情面板（2026-08-13，B5）
  *
@@ -264,7 +264,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
   width: 72rpx;
   height: 8rpx;
   border-radius: 4rpx;
-  background: var(--c-neutral-200, #e2e8f0);
+  background: var(--c-neutral-200, #DDE3E0);
   align-self: center;
   margin-bottom: var(--sp-3, 16rpx);
 }
@@ -312,7 +312,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
   padding: var(--sp-4, 20rpx);
   border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-surface, #fafbfc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
   margin-bottom: var(--sp-3, 16rpx);
 }
 
@@ -353,7 +353,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
 
 .cert-item__status--pending {
   background: var(--c-neutral-100, #f1f5f9);
-  border: 1rpx solid var(--c-neutral-200, #e2e8f0);
+  border: 1rpx solid var(--c-neutral-200, #DDE3E0);
 }
 
 .cert-item__status-text {
@@ -362,7 +362,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
 }
 
 .cert-item__status--earned .cert-item__status-text {
-  color: var(--c-brand-600, #0d9488);
+  color: var(--c-brand-600, #36C99A);
 }
 
 .cert-item__status--pending .cert-item__status-text {
@@ -430,7 +430,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
 }
 
 .cert-item__value--reliability {
-  color: var(--c-brand-600, #0d9488);
+  color: var(--c-brand-600, #36C99A);
   font-weight: 700;
 }
 
@@ -472,5 +472,6 @@ function goCertify(id: CertBadgeItem["id"]): void {
   line-height: 1.6;
 }
 </style>
+
 
 

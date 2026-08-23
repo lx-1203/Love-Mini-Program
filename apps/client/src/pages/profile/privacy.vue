@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 权限设置 - 同校推荐开关（Phase Feedback5）
  *
@@ -173,12 +173,12 @@ function goBack() {
 .privacy-item__title {
   font-size: var(--fs-base, 28rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #333A37);
 }
 
 .privacy-item__desc {
   font-size: var(--fs-xs, 24rpx);
-  color: var(--c-text-tertiary, #9ca3af);
+  color: var(--c-text-tertiary, #9AA39F);
   line-height: 1.5;
 }
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 他人主页治理菜单（v3.1 契约 §8）。
  * 展示：举报 / 拉黑 / 取消匹配（仅已匹配显示）。
@@ -53,7 +53,7 @@ const emit = defineEmits<{
 .governance-sheet__title {
   text-align: center;
   font-size: 24rpx;
-  color: #666666;
+  color: #4A524E;
   padding-bottom: 12rpx;
 }
 
@@ -63,7 +63,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   font-size: 30rpx;
-  color: #222222;
+  color: #333A37;
   border-top: 1rpx solid #F0F3F2;
 }
 
@@ -78,7 +78,7 @@ const emit = defineEmits<{
   justify-content: center;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
   border-top: 12rpx solid #F7FAF9;
 }
 </style>

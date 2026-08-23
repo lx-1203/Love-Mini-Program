@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const props = defineProps<{
   verified: boolean;
   student: boolean;
@@ -25,7 +25,7 @@ const label = props.verified ? (props.student ? "学生认证" : "已认证") : 
 
 .verified-badge--off {
   opacity: 0.6;
-  border-color: #999999;
+  border-color: #9AA39F;
 }
 
 .verified-badge__text {
@@ -35,7 +35,7 @@ const label = props.verified ? (props.student ? "学生认证" : "已认证") : 
 }
 
 .verified-badge--off .verified-badge__text {
-  color: #999999;
+  color: #9AA39F;
 }
 </style>
 

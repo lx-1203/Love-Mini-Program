@@ -156,8 +156,8 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   left: 28rpx;
   padding: 10rpx 22rpx;
   border-radius: 999rpx;
-  background: #FF6B81;
-  box-shadow: 0 6rpx 16rpx rgba(255, 104, 145, 0.35);
+  background: rgba(255, 107, 129, 0.9);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 129, 0.35);
 }
 
 .match-card__distance-text {
@@ -188,7 +188,8 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
 
 .match-card__online-dot--away {
   background: #ffffff;
-  opacity: 0.7;
+  background: rgba(54, 201, 154, 0.9);
+  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.35);
 }
 
 .match-card__online-text {
@@ -225,6 +226,7 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   background: rgba(10, 20, 16, 0.55);
   display: flex;
   align-items: center;
+  background: rgba(0, 0, 0, 0.2);
   justify-content: center;
 }
 
@@ -232,7 +234,7 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   font-size: 40rpx;
   font-weight: 700;
   color: #ffffff;
-  line-height: 1;
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .match-card__score-label {

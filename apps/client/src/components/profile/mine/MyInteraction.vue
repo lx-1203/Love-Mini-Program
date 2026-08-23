@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 export interface InteractionItem {
   key: string;
   label: string;
@@ -14,8 +14,8 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
 const DEFAULT_ICONS: Record<string, { icon: string; color: string }> = {
   likedMe: { icon: "♥", color: "#FF6B81" },
-  match: { icon: "♡", color: "#FF9A57" },
-  likes: { icon: "♥", color: "#8D7BFF" },
+  match: { icon: "♡", color: "#FF9F43" },
+  likes: { icon: "♥", color: "#A29BFE" },
   visitors: { icon: "👁", color: "#4D8DFF" },
 };
 </script>
@@ -54,13 +54,13 @@ const DEFAULT_ICONS: Record<string, { icon: string; color: string }> = {
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-interaction__box {
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
@@ -98,13 +98,13 @@ const DEFAULT_ICONS: Record<string, { icon: string; color: string }> = {
 .my-interaction__label {
   flex: 1;
   font-size: 28rpx;
-  color: #222222;
+  color: #333A37;
   font-weight: 600;
 }
 
 .my-interaction__value {
   font-size: 26rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .my-interaction__arrow {

@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 21.2C11.6 20.8 4 14.7 4 8.9C4 5.7 6.4 3.4 9.2 3.4c1.6 0 2.8.8 3.8 2.1 1-1.3 2.2-2.1 3.8-2.1C19.6 3.4 22 5.7 22 8.9c0 5.8-7.6 11.9-10 12.3Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: 'XunmiLikeFill' })
+</script>

@@ -1,0 +1,91 @@
+{
+  "slug": "input",
+  "schemaVersion": 2,
+  "name": "输入框 Input",
+  "category": "Form",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "大圆角输入框，搜索/消息/默认三种形态",
+  "variantDimensions": {
+    "variant": {
+      "values": [
+        "search",
+        "message",
+        "default"
+      ]
+    },
+    "state": {
+      "values": [
+        "default",
+        "focus",
+        "disabled",
+        "error"
+      ]
+    },
+    "size": {
+      "values": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "搜索框",
+      "traits": {
+        "variant": "search",
+        "size": "md"
+      },
+      "whySelected": "顶部搜索"
+    },
+    {
+      "name": "消息输入框",
+      "traits": {
+        "variant": "message",
+        "size": "lg"
+      },
+      "whySelected": "聊天页底部输入"
+    },
+    {
+      "name": "默认输入框",
+      "traits": {
+        "variant": "default",
+        "size": "md"
+      },
+      "whySelected": "表单通用输入"
+    },
+    {
+      "name": "发布输入框",
+      "traits": {
+        "variant": "default",
+        "size": "lg"
+      },
+      "whySelected": "发帖多行输入"
+    }
+  ],
+  "anatomy": [
+    "input-wrapper",
+    "prefix-icon",
+    "input-field",
+    "suffix-icon",
+    "action-button"
+  ],
+  "structurePatterns": [
+    "rounded rectangle",
+    "soft border"
+  ],
+  "usageHints": {
+    "priorityHint": "high",
+    "do": [
+      "圆角12-16px",
+      "浅灰边框聚焦变主色",
+      "左右可放图标按钮"
+    ],
+    "dont": [
+      "高度低于40px"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

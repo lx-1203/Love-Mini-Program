@@ -24,6 +24,8 @@ export interface BackendCircleView {
   isJoined: boolean;
   /** 话题数量 */
   topicCount: number;
+  /** 已加入好友数（2026-08-21：参考图"等X位朋友已加入"） */
+  friendJoinedCount?: number;
 }
 
 /**
@@ -78,6 +80,7 @@ function mapToCircleItem(raw: BackendCircleView): CircleItem {
     memberCount: raw.memberCount,
     topicCount: raw.topicCount ?? 0,
     isJoined: raw.isJoined,
+    friendJoinedCount: raw.friendJoinedCount,
   };
 }
 
@@ -163,6 +166,8 @@ export interface CircleItem {
   isJoined: boolean;
   /** 校园认证圈（收尾轮：显示认证徽标；未认证用户点击需先认证） */
   campusVerified?: boolean;
+  /** 已加入好友数（2026-08-21：参考图"等X位朋友已加入"） */
+  friendJoinedCount?: number;
 }
 
 /**

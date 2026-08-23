@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * PostReportDialog — 帖子举报弹窗
  *
@@ -343,7 +343,7 @@ defineExpose({ onContentTap, selectReason, submit });
 }
 
 .reason-item--selected {
-  background: var(--c-brand-50, #fff5f7);
+  background: var(--c-brand-50, #FFECEF);
 }
 
 .reason-item__label {
@@ -445,3 +445,4 @@ defineExpose({ onContentTap, selectReason, submit });
   font-weight: 600;
 }
 </style>
+

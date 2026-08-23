@@ -77,7 +77,7 @@ const mockBasicProfile: Schemas["BasicProfile"] = {
   bio: "热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。",
   grade: "大三",
   pronouns: "TA",
-  photoGallery: ["/static/assets/images/people/person-01.webp"],
+  photoGallery: ["/static/assets/images/people/person-01.png"],
 };
 
 /** Mock 校区资料数据 */

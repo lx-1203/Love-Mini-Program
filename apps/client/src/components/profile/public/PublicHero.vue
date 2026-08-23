@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfileDTO } from "../../../types/profile";
 
 defineProps<{ profile: UserProfileDTO }>();
@@ -48,7 +48,7 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 }
 
 .public-hero__bg--fallback {
-  background: linear-gradient(180deg, #E8F8F1 0%, #FFFFFF 100%);
+  background: linear-gradient(180deg, #E8FBF3 0%, #FFFFFF 100%);
 }
 
 .public-hero__top-gradient {
@@ -78,10 +78,10 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
   width: 176rpx;
   height: 176rpx;
   border-radius: 50%;
-  border: 8rpx solid #ffffff;
+  border: 8rpx solid #36C99A;
   box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, 0.18);
   overflow: hidden;
-  background: #E8FBF2;
+  background: #E8FBF3;
   display: flex;
   align-items: center;
   justify-content: center;

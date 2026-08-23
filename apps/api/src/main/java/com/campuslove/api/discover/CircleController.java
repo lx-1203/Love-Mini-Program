@@ -189,7 +189,9 @@ record CircleView(
     /** 话题数量 */
     int topicCount,
     /** 圈子分类（study/sports/music/movie/travel/game/food/reading，null=未分类，2026-08-10 B4） */
-    String category
+    String category,
+    /** 已加入好友数（前端展示"等X位朋友已加入"；暂无独立统计，按成员数推算，2026-08-21） */
+    int friendJoinedCount
 ) {
 }
 

@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 消息首页聚合控制器（消息 V3）。
  */
+@Profile("real")
 @RestController
 @RequestMapping("/api/v1/messages")
 public class MessageDashboardController {

@@ -27,7 +27,8 @@ const props = withDefaults(defineProps<{
   /** 操作按钮文案（传入即渲染按钮，点击触发 action 事件） */
   actionText?: string;
   /** 吉祥物表情（传入则用寻觅芽替换图标） */
-  mascot?: 'default' | 'happy' | 'love' | 'thinking' | 'waving' | 'sad';
+  /** 吉祥物表情名称，支持全部V2变体：mascot_default/mascot_happy/mascot_cry/mascot_sad 等 */
+  mascot?: string;
 }>(), {
   type: 'no-data',
   message: '',

@@ -148,9 +148,9 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   width: 128rpx;
   height: 128rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #36C99A) 100%);
-  box-shadow: 0 8rpx 24rpx rgba(61, 201, 148, 0.35);
-  margin-top: -30rpx;
+  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
+  box-shadow: 0 8rpx 32rpx rgba(255, 107, 129, 0.35);
+  margin-top: -40rpx;
 }
 
 .tab-icon-wrap--prominent .tab-icon-image {
@@ -163,11 +163,12 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   top: -6rpx;
   right: -10rpx;
   min-width: 28rpx;
-  height: 28rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
   background: var(--c-error);
   border-radius: var(--r-full, 9999rpx);
   display: flex;
-  align-items: center;
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06);
   justify-content: center;
   padding: 0 6rpx;
   border: 3rpx solid var(--c-bg-container);

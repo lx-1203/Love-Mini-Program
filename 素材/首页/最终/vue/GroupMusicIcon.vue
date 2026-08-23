@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M17.8 4v8.9a3.5 3.5 0 1 1-2-3.1V6.1L9.2 7.4v8.1a3.5 3.5 0 1 1-2-3.1V5.7L17.8 4Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "GroupMusicIcon" })
+</script>

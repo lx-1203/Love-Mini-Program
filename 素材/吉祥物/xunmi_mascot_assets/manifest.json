@@ -1,0 +1,1074 @@
+[
+  {
+    "group": "mascot_base",
+    "name": "mascot_default",
+    "source_box": [
+      0,
+      10,
+      250,
+      345
+    ],
+    "png": "mascot_base/mascot_default.png",
+    "svg": "mascot_base/mascot_default.svg",
+    "size_px": [
+      259,
+      316
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_smile",
+    "source_box": [
+      275,
+      35,
+      385,
+      205
+    ],
+    "png": "mascot_base/mascot_smile.png",
+    "svg": "mascot_base/mascot_smile.svg",
+    "size_px": [
+      118,
+      145
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_happy",
+    "source_box": [
+      410,
+      35,
+      520,
+      205
+    ],
+    "png": "mascot_base/mascot_happy.png",
+    "svg": "mascot_base/mascot_happy.svg",
+    "size_px": [
+      118,
+      136
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_wink",
+    "source_box": [
+      540,
+      35,
+      650,
+      205
+    ],
+    "png": "mascot_base/mascot_wink.png",
+    "svg": "mascot_base/mascot_wink.svg",
+    "size_px": [
+      111,
+      141
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_surprised",
+    "source_box": [
+      680,
+      30,
+      800,
+      210
+    ],
+    "png": "mascot_base/mascot_surprised.png",
+    "svg": "mascot_base/mascot_surprised.svg",
+    "size_px": [
+      122,
+      164
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_sleepy",
+    "source_box": [
+      820,
+      35,
+      930,
+      210
+    ],
+    "png": "mascot_base/mascot_sleepy.png",
+    "svg": "mascot_base/mascot_sleepy.svg",
+    "size_px": [
+      115,
+      161
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_angry",
+    "source_box": [
+      950,
+      30,
+      1065,
+      210
+    ],
+    "png": "mascot_base/mascot_angry.png",
+    "svg": "mascot_base/mascot_angry.svg",
+    "size_px": [
+      119,
+      134
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_tearful",
+    "source_box": [
+      1090,
+      35,
+      1205,
+      210
+    ],
+    "png": "mascot_base/mascot_tearful.png",
+    "svg": "mascot_base/mascot_tearful.svg",
+    "size_px": [
+      120,
+      164
+    ]
+  },
+  {
+    "group": "mascot_base",
+    "name": "mascot_thinking",
+    "source_box": [
+      1230,
+      30,
+      1345,
+      210
+    ],
+    "png": "mascot_base/mascot_thinking.png",
+    "svg": "mascot_base/mascot_thinking.svg",
+    "size_px": [
+      120,
+      137
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_wave",
+    "source_box": [
+      275,
+      220,
+      395,
+      395
+    ],
+    "png": "interaction/mascot_wave.png",
+    "svg": "interaction/mascot_wave.svg",
+    "size_px": [
+      124,
+      144
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_greeting",
+    "source_box": [
+      410,
+      220,
+      530,
+      395
+    ],
+    "png": "interaction/mascot_greeting.png",
+    "svg": "interaction/mascot_greeting.svg",
+    "size_px": [
+      116,
+      135
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_heart",
+    "source_box": [
+      545,
+      220,
+      675,
+      405
+    ],
+    "png": "interaction/mascot_heart.png",
+    "svg": "interaction/mascot_heart.svg",
+    "size_px": [
+      117,
+      136
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_love",
+    "source_box": [
+      680,
+      220,
+      815,
+      405
+    ],
+    "png": "interaction/mascot_love.png",
+    "svg": "interaction/mascot_love.svg",
+    "size_px": [
+      117,
+      142
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_jump",
+    "source_box": [
+      825,
+      210,
+      945,
+      405
+    ],
+    "png": "interaction/mascot_jump.png",
+    "svg": "interaction/mascot_jump.svg",
+    "size_px": [
+      119,
+      180
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_cheer",
+    "source_box": [
+      950,
+      220,
+      1075,
+      405
+    ],
+    "png": "interaction/mascot_cheer.png",
+    "svg": "interaction/mascot_cheer.svg",
+    "size_px": [
+      112,
+      161
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_clap",
+    "source_box": [
+      1090,
+      220,
+      1210,
+      405
+    ],
+    "png": "interaction/mascot_clap.png",
+    "svg": "interaction/mascot_clap.svg",
+    "size_px": [
+      110,
+      137
+    ]
+  },
+  {
+    "group": "interaction",
+    "name": "mascot_party",
+    "source_box": [
+      1225,
+      215,
+      1360,
+      405
+    ],
+    "png": "interaction/mascot_party.png",
+    "svg": "interaction/mascot_party.svg",
+    "size_px": [
+      119,
+      168
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_like",
+    "source_box": [
+      10,
+      420,
+      145,
+      590
+    ],
+    "png": "emotion/mascot_like.png",
+    "svg": "emotion/mascot_like.svg",
+    "size_px": [
+      143,
+      138
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_crush",
+    "source_box": [
+      145,
+      420,
+      290,
+      590
+    ],
+    "png": "emotion/mascot_crush.png",
+    "svg": "emotion/mascot_crush.svg",
+    "size_px": [
+      116,
+      131
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_hug",
+    "source_box": [
+      280,
+      415,
+      425,
+      600
+    ],
+    "png": "emotion/mascot_hug.png",
+    "svg": "emotion/mascot_hug.svg",
+    "size_px": [
+      113,
+      170
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_sleep",
+    "source_box": [
+      410,
+      415,
+      555,
+      595
+    ],
+    "png": "emotion/mascot_sleep.png",
+    "svg": "emotion/mascot_sleep.svg",
+    "size_px": [
+      153,
+      132
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_shy",
+    "source_box": [
+      545,
+      420,
+      685,
+      590
+    ],
+    "png": "emotion/mascot_shy.png",
+    "svg": "emotion/mascot_shy.svg",
+    "size_px": [
+      117,
+      133
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_calm",
+    "source_box": [
+      675,
+      415,
+      815,
+      595
+    ],
+    "png": "emotion/mascot_calm.png",
+    "svg": "emotion/mascot_calm.svg",
+    "size_px": [
+      117,
+      135
+    ]
+  },
+  {
+    "group": "emotion",
+    "name": "mascot_cry",
+    "source_box": [
+      810,
+      415,
+      955,
+      595
+    ],
+    "png": "emotion/mascot_cry.png",
+    "svg": "emotion/mascot_cry.svg",
+    "size_px": [
+      122,
+      159
+    ]
+  },
+  {
+    "group": "scene_function",
+    "name": "mascot_search",
+    "source_box": [
+      930,
+      415,
+      1075,
+      600
+    ],
+    "png": "scene_function/mascot_search.png",
+    "svg": "scene_function/mascot_search.svg",
+    "size_px": [
+      115,
+      144
+    ]
+  },
+  {
+    "group": "scene_function",
+    "name": "mascot_camera",
+    "source_box": [
+      1085,
+      415,
+      1215,
+      600
+    ],
+    "png": "scene_function/mascot_camera.png",
+    "svg": "scene_function/mascot_camera.svg",
+    "size_px": [
+      122,
+      138
+    ]
+  },
+  {
+    "group": "scene_function",
+    "name": "mascot_phone",
+    "source_box": [
+      1225,
+      410,
+      1365,
+      600
+    ],
+    "png": "scene_function/mascot_phone.png",
+    "svg": "scene_function/mascot_phone.svg",
+    "size_px": [
+      101,
+      170
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_hi",
+    "source_box": [
+      0,
+      620,
+      155,
+      730
+    ],
+    "png": "chat_bubbles/chat_hi.png",
+    "svg": "chat_bubbles/chat_hi.svg",
+    "size_px": [
+      138,
+      93
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_are_you",
+    "source_box": [
+      155,
+      620,
+      290,
+      730
+    ],
+    "png": "chat_bubbles/chat_are_you.png",
+    "svg": "chat_bubbles/chat_are_you.svg",
+    "size_px": [
+      137,
+      89
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_good",
+    "source_box": [
+      290,
+      610,
+      430,
+      735
+    ],
+    "png": "chat_bubbles/chat_good.png",
+    "svg": "chat_bubbles/chat_good.svg",
+    "size_px": [
+      143,
+      104
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_received",
+    "source_box": [
+      420,
+      610,
+      570,
+      735
+    ],
+    "png": "chat_bubbles/chat_received.png",
+    "svg": "chat_bubbles/chat_received.svg",
+    "size_px": [
+      140,
+      105
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_great",
+    "source_box": [
+      560,
+      605,
+      730,
+      740
+    ],
+    "png": "chat_bubbles/chat_great.png",
+    "svg": "chat_bubbles/chat_great.svg",
+    "size_px": [
+      149,
+      89
+    ]
+  },
+  {
+    "group": "chat_bubbles",
+    "name": "chat_goodnight",
+    "source_box": [
+      705,
+      600,
+      880,
+      745
+    ],
+    "png": "chat_bubbles/chat_goodnight.png",
+    "svg": "chat_bubbles/chat_goodnight.svg",
+    "size_px": [
+      169,
+      103
+    ]
+  },
+  {
+    "group": "status",
+    "name": "status_online",
+    "source_box": [
+      900,
+      610,
+      1025,
+      730
+    ],
+    "png": "status/status_online.png",
+    "svg": "status/status_online.svg",
+    "size_px": [
+      76,
+      113
+    ]
+  },
+  {
+    "group": "status",
+    "name": "status_busy",
+    "source_box": [
+      1010,
+      610,
+      1135,
+      730
+    ],
+    "png": "status/status_busy.png",
+    "svg": "status/status_busy.svg",
+    "size_px": [
+      81,
+      72
+    ]
+  },
+  {
+    "group": "status",
+    "name": "status_offline",
+    "source_box": [
+      1120,
+      610,
+      1245,
+      730
+    ],
+    "png": "status/status_offline.png",
+    "svg": "status/status_offline.svg",
+    "size_px": [
+      40,
+      37
+    ]
+  },
+  {
+    "group": "status",
+    "name": "status_crush",
+    "source_box": [
+      1235,
+      605,
+      1365,
+      730
+    ],
+    "png": "status/status_crush.png",
+    "svg": "status/status_crush.svg",
+    "size_px": [
+      80,
+      31
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "heart_pink",
+    "source_box": [
+      10,
+      735,
+      150,
+      850
+    ],
+    "png": "decor/heart_pink.png",
+    "svg": "decor/heart_pink.svg",
+    "size_px": [
+      156,
+      131
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "heart_mini",
+    "source_box": [
+      120,
+      740,
+      220,
+      835
+    ],
+    "png": "decor/heart_mini.png",
+    "svg": "decor/heart_mini.svg",
+    "size_px": [
+      116,
+      111
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "heart_green",
+    "source_box": [
+      190,
+      735,
+      315,
+      845
+    ],
+    "png": "decor/heart_green.png",
+    "svg": "decor/heart_green.svg",
+    "size_px": [
+      132,
+      66
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "sparkle",
+    "source_box": [
+      285,
+      735,
+      420,
+      850
+    ],
+    "png": "decor/sparkle.png",
+    "svg": "decor/sparkle.svg",
+    "size_px": [
+      132,
+      88
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "star",
+    "source_box": [
+      410,
+      735,
+      505,
+      845
+    ],
+    "png": "decor/star.png",
+    "svg": "decor/star.svg",
+    "size_px": [
+      83,
+      74
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "exclamation",
+    "source_box": [
+      495,
+      735,
+      570,
+      845
+    ],
+    "png": "decor/exclamation.png",
+    "svg": "decor/exclamation.svg",
+    "size_px": [
+      91,
+      126
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "question",
+    "source_box": [
+      555,
+      725,
+      640,
+      845
+    ],
+    "png": "decor/question.png",
+    "svg": "decor/question.svg",
+    "size_px": [
+      76,
+      59
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "confetti",
+    "source_box": [
+      635,
+      725,
+      735,
+      850
+    ],
+    "png": "decor/confetti.png",
+    "svg": "decor/confetti.svg",
+    "size_px": [
+      25,
+      24
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "flower",
+    "source_box": [
+      715,
+      725,
+      820,
+      850
+    ],
+    "png": "decor/flower.png",
+    "svg": "decor/flower.svg",
+    "size_px": [
+      60,
+      63
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "party",
+    "source_box": [
+      790,
+      720,
+      875,
+      845
+    ],
+    "png": "decor/party.png",
+    "svg": "decor/party.svg",
+    "size_px": [
+      41,
+      41
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "heart_bubble",
+    "source_box": [
+      850,
+      725,
+      955,
+      845
+    ],
+    "png": "decor/heart_bubble.png",
+    "svg": "decor/heart_bubble.svg",
+    "size_px": [
+      46,
+      41
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "sprout",
+    "source_box": [
+      910,
+      725,
+      1010,
+      845
+    ],
+    "png": "decor/sprout.png",
+    "svg": "decor/sprout.svg",
+    "size_px": [
+      87,
+      68
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "camera_icon",
+    "source_box": [
+      1000,
+      720,
+      1090,
+      845
+    ],
+    "png": "decor/camera_icon.png",
+    "svg": "decor/camera_icon.svg",
+    "size_px": [
+      85,
+      70
+    ]
+  },
+  {
+    "group": "decor",
+    "name": "heart_pink_large",
+    "source_box": [
+      1110,
+      715,
+      1210,
+      845
+    ],
+    "png": "decor/heart_pink_large.png",
+    "svg": "decor/heart_pink_large.svg",
+    "size_px": [
+      75,
+      68
+    ]
+  },
+  {
+    "group": "nav",
+    "name": "nav_home_mascot",
+    "source_box": [
+      15,
+      850,
+      115,
+      1005
+    ],
+    "png": "nav/nav_home_mascot.png",
+    "svg": "nav/nav_home_mascot.svg",
+    "size_px": [
+      94,
+      111
+    ]
+  },
+  {
+    "group": "nav",
+    "name": "nav_nearby_mascot",
+    "source_box": [
+      115,
+      850,
+      220,
+      1005
+    ],
+    "png": "nav/nav_nearby_mascot.png",
+    "svg": "nav/nav_nearby_mascot.svg",
+    "size_px": [
+      70,
+      127
+    ]
+  },
+  {
+    "group": "nav",
+    "name": "nav_match_mascot",
+    "source_box": [
+      215,
+      850,
+      330,
+      1005
+    ],
+    "png": "nav/nav_match_mascot.png",
+    "svg": "nav/nav_match_mascot.svg",
+    "size_px": [
+      71,
+      79
+    ]
+  },
+  {
+    "group": "nav",
+    "name": "nav_message_mascot",
+    "source_box": [
+      320,
+      835,
+      430,
+      1005
+    ],
+    "png": "nav/nav_message_mascot.png",
+    "svg": "nav/nav_message_mascot.svg",
+    "size_px": [
+      61,
+      148
+    ]
+  },
+  {
+    "group": "nav",
+    "name": "nav_profile_mascot",
+    "source_box": [
+      420,
+      850,
+      530,
+      1005
+    ],
+    "png": "nav/nav_profile_mascot.png",
+    "svg": "nav/nav_profile_mascot.svg",
+    "size_px": [
+      38,
+      37
+    ]
+  },
+  {
+    "group": "head_icons",
+    "name": "head_default",
+    "source_box": [
+      500,
+      855,
+      620,
+      1005
+    ],
+    "png": "head_icons/head_default.png",
+    "svg": "head_icons/head_default.svg",
+    "size_px": [
+      91,
+      102
+    ]
+  },
+  {
+    "group": "head_icons",
+    "name": "head_happy",
+    "source_box": [
+      605,
+      855,
+      725,
+      1005
+    ],
+    "png": "head_icons/head_happy.png",
+    "svg": "head_icons/head_happy.svg",
+    "size_px": [
+      92,
+      98
+    ]
+  },
+  {
+    "group": "head_icons",
+    "name": "head_crush",
+    "source_box": [
+      705,
+      850,
+      835,
+      1005
+    ],
+    "png": "head_icons/head_crush.png",
+    "svg": "head_icons/head_crush.svg",
+    "size_px": [
+      104,
+      106
+    ]
+  },
+  {
+    "group": "head_icons",
+    "name": "head_sleepy",
+    "source_box": [
+      820,
+      850,
+      945,
+      1005
+    ],
+    "png": "head_icons/head_sleepy.png",
+    "svg": "head_icons/head_sleepy.svg",
+    "size_px": [
+      98,
+      102
+    ]
+  },
+  {
+    "group": "head_icons",
+    "name": "head_glasses",
+    "source_box": [
+      930,
+      845,
+      1060,
+      1005
+    ],
+    "png": "head_icons/head_glasses.png",
+    "svg": "head_icons/head_glasses.svg",
+    "size_px": [
+      124,
+      126
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "sprout_outline",
+    "source_box": [
+      1070,
+      845,
+      1185,
+      1010
+    ],
+    "png": "utility/sprout_outline.png",
+    "svg": "utility/sprout_outline.svg",
+    "size_px": [
+      113,
+      101
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "leaf_pair",
+    "source_box": [
+      1135,
+      845,
+      1260,
+      1010
+    ],
+    "png": "utility/leaf_pair.png",
+    "svg": "utility/leaf_pair.svg",
+    "size_px": [
+      122,
+      141
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "heart_decor_pair",
+    "source_box": [
+      1230,
+      850,
+      1360,
+      1005
+    ],
+    "png": "utility/heart_decor_pair.png",
+    "svg": "utility/heart_decor_pair.svg",
+    "size_px": [
+      137,
+      146
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "sparkle_decor",
+    "source_box": [
+      1340,
+      840,
+      1430,
+      1005
+    ],
+    "png": "utility/sparkle_decor.png",
+    "svg": "utility/sparkle_decor.svg",
+    "size_px": [
+      96,
+      113
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "dotted_orbit",
+    "source_box": [
+      1410,
+      845,
+      1530,
+      1005
+    ],
+    "png": "utility/dotted_orbit.png",
+    "svg": "utility/dotted_orbit.svg",
+    "size_px": [
+      124,
+      126
+    ]
+  },
+  {
+    "group": "utility",
+    "name": "mascot_corner_frame",
+    "source_box": [
+      1400,
+      850,
+      1535,
+      1020
+    ],
+    "png": "utility/mascot_corner_frame.png",
+    "svg": "utility/mascot_corner_frame.svg",
+    "size_px": [
+      124,
+      127
+    ]
+  }
+]

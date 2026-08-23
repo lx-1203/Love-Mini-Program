@@ -4,7 +4,7 @@ withDefaults(defineProps<{
   title: string;
   desc: string;
   cta: string;
-  variant?: "green" | "pink";
+  variant?: "green" | "greenDark" | "pink";
 }>(), {
   variant: "green",
 });
@@ -38,14 +38,15 @@ const emit = defineEmits<{ tap: [] }>();
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  background: #F8FAF8;
+  border: 2rpx solid #E6F7E6;
 }
 
-.quick-card--green {
-  background: linear-gradient(180deg, #E8FAF3 0%, #D1F5E7 100%);
-}
-
+.quick-card--green,
+.quick-card--greenDark,
 .quick-card--pink {
-  background: linear-gradient(180deg, #FFECEF 0%, #FFD9DF 100%);
+  background: #F8FAF8;
+  border: 2rpx solid #E6F7E6;
 }
 
 .quick-card--hover {
@@ -56,7 +57,7 @@ const emit = defineEmits<{ tap: [] }>();
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
+  background: #EAF8EA;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,6 +76,9 @@ const emit = defineEmits<{ tap: [] }>();
 
 .quick-card--green .quick-card__title {
   color: #1F8D6A;
+}
+.quick-card--greenDark .quick-card__title {
+  color: #17805D;
 }
 
 .quick-card--pink .quick-card__title {
@@ -106,6 +110,10 @@ const emit = defineEmits<{ tap: [] }>();
 .quick-card--green .quick-card__cta-text,
 .quick-card--green .quick-card__cta-arrow {
   color: #36C99A;
+}
+.quick-card--greenDark .quick-card__cta-text,
+.quick-card--greenDark .quick-card__cta-arrow {
+  color: #2AB88A;
 }
 
 .quick-card--pink .quick-card__cta-text,

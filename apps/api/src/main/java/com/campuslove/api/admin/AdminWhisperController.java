@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 管理后台 - 悄悄话管理（v3.1 审核红线：列表/查看/删除）。
  */
+@Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/whispers")
 @PreAuthorize("hasRole('ADMIN')")

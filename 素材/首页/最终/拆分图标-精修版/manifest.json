@@ -1,0 +1,667 @@
+{
+  "title": "首页图标拆分(精修版)",
+  "source": "ChatGPT Image 2026年8月17日 23_31_35.png",
+  "description": "首页设计系统图标集，已按功能分类到7个子目录",
+  "total_icons": 65,
+  "categories": {
+    "01-tabbar-top": "TabBar 顶部导航图标",
+    "02-buttons-badges": "按钮与徽章图标",
+    "03-tags": "标签与状态图标",
+    "04-photos-stats": "照片墙与数据统计",
+    "05-task-cards": "任务卡片与装饰元素",
+    "06-circle-entries": "兴趣圈入口卡片",
+    "07-toolbar": "底部工具栏图标"
+  },
+  "icons": [
+    {
+      "index": 1,
+      "filename": "icon_row1_01.png",
+      "dimensions": "72x113",
+      "semantic_label": "搜索图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 11925
+    },
+    {
+      "index": 2,
+      "filename": "icon_row1_02.png",
+      "dimensions": "62x109",
+      "semantic_label": "发现/首页图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 11178
+    },
+    {
+      "index": 3,
+      "filename": "icon_row1_03.png",
+      "dimensions": "176x182",
+      "semantic_label": "大号品牌图标/吉祥物",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 44251
+    },
+    {
+      "index": 4,
+      "filename": "icon_row1_04.png",
+      "dimensions": "92x119",
+      "semantic_label": "消息图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 17238
+    },
+    {
+      "index": 5,
+      "filename": "icon_row1_05.png",
+      "dimensions": "68x109",
+      "semantic_label": "附近图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 12276
+    },
+    {
+      "index": 6,
+      "filename": "icon_row1_06.png",
+      "dimensions": "47x54",
+      "semantic_label": "设置/更多图标(三点)",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 4811
+    },
+    {
+      "index": 7,
+      "filename": "icon_row1_07.png",
+      "dimensions": "68x67",
+      "semantic_label": "通知/铃铛图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 8502
+    },
+    {
+      "index": 8,
+      "filename": "icon_row1_08.png",
+      "dimensions": "57x57",
+      "semantic_label": "心形/点赞图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 5270
+    },
+    {
+      "index": 9,
+      "filename": "icon_row1_09.png",
+      "dimensions": "23x37",
+      "semantic_label": "小圆点/指示器",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 1644
+    },
+    {
+      "index": 1,
+      "filename": "btn_row2_01.png",
+      "dimensions": "200x77",
+      "semantic_label": "喜欢按钮(绿色)",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 18925
+    },
+    {
+      "index": 2,
+      "filename": "btn_row2_02.png",
+      "dimensions": "185x80",
+      "semantic_label": "看看TA按钮(红色)",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 23371
+    },
+    {
+      "index": 3,
+      "filename": "btn_row2_03.png",
+      "dimensions": "185x64",
+      "semantic_label": "已认证徽章",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 17503
+    },
+    {
+      "index": 4,
+      "filename": "btn_row2_04.png",
+      "dimensions": "172x96",
+      "semantic_label": "合拍度百分比",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 24553
+    },
+    {
+      "index": 5,
+      "filename": "btn_row2_05.png",
+      "dimensions": "149x65",
+      "semantic_label": "性别+星座+年龄信息条",
+      "color": "彩色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 14279
+    },
+    {
+      "index": 6,
+      "filename": "btn_row2_06.png",
+      "dimensions": "189x73",
+      "semantic_label": "距离信息",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 20098
+    },
+    {
+      "index": 7,
+      "filename": "btn_row2_07.png",
+      "dimensions": "78x80",
+      "semantic_label": "用户头像+基础信息",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 8464
+    },
+    {
+      "index": 8,
+      "filename": "btn_row2_08.png",
+      "dimensions": "80x79",
+      "semantic_label": "关注/互动按钮",
+      "color": "白色",
+      "category": "02-buttons-badges",
+      "category_title": "按钮与徽章图标",
+      "file_size": 8550
+    },
+    {
+      "index": 1,
+      "filename": "tag_row3_01.png",
+      "dimensions": "124x61",
+      "semantic_label": "兴趣标签-摄影",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11868
+    },
+    {
+      "index": 2,
+      "filename": "tag_row3_02.png",
+      "dimensions": "126x61",
+      "semantic_label": "兴趣标签-旅行",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11096
+    },
+    {
+      "index": 3,
+      "filename": "tag_row3_03.png",
+      "dimensions": "129x61",
+      "semantic_label": "兴趣标签-美食",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 10964
+    },
+    {
+      "index": 4,
+      "filename": "tag_row3_04.png",
+      "dimensions": "127x61",
+      "semantic_label": "兴趣标签-音乐",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11234
+    },
+    {
+      "index": 5,
+      "filename": "tag_row3_05.png",
+      "dimensions": "70x68",
+      "semantic_label": "兴趣标签-运动",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 7705
+    },
+    {
+      "index": 6,
+      "filename": "tag_row3_06.png",
+      "dimensions": "69x68",
+      "semantic_label": "兴趣标签-阅读",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 7163
+    },
+    {
+      "index": 7,
+      "filename": "tag_row3_07.png",
+      "dimensions": "63x62",
+      "semantic_label": "性别标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 6165
+    },
+    {
+      "index": 8,
+      "filename": "tag_row3_08.png",
+      "dimensions": "81x31",
+      "semantic_label": "星座标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 5862
+    },
+    {
+      "index": 9,
+      "filename": "tag_row3_09.png",
+      "dimensions": "41x47",
+      "semantic_label": "距离标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 3649
+    },
+    {
+      "index": 10,
+      "filename": "tag_row3_10.png",
+      "dimensions": "76x27",
+      "semantic_label": "在线状态标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 4333
+    },
+    {
+      "index": 1,
+      "filename": "item_row4_01.png",
+      "dimensions": "151x117",
+      "semantic_label": "照片1-旅行照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 36329
+    },
+    {
+      "index": 2,
+      "filename": "item_row4_02.png",
+      "dimensions": "160x118",
+      "semantic_label": "照片2-日常照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 40089
+    },
+    {
+      "index": 3,
+      "filename": "item_row4_03.png",
+      "dimensions": "154x116",
+      "semantic_label": "照片3-宠物照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 30682
+    },
+    {
+      "index": 4,
+      "filename": "item_row4_04.png",
+      "dimensions": "154x115",
+      "semantic_label": "照片4-美食照",
+      "color": "深灰",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 31898
+    },
+    {
+      "index": 5,
+      "filename": "item_row4_05.png",
+      "dimensions": "141x98",
+      "semantic_label": "照片5-活动照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 21634
+    },
+    {
+      "index": 6,
+      "filename": "item_row4_06.png",
+      "dimensions": "150x98",
+      "semantic_label": "照片6-自拍照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 22373
+    },
+    {
+      "index": 7,
+      "filename": "item_row4_07.png",
+      "dimensions": "145x94",
+      "semantic_label": "获赞数统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 20873
+    },
+    {
+      "index": 8,
+      "filename": "item_row4_08.png",
+      "dimensions": "82x81",
+      "semantic_label": "浏览量统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 9977
+    },
+    {
+      "index": 9,
+      "filename": "item_row4_09.png",
+      "dimensions": "85x69",
+      "semantic_label": "关注/粉丝数统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 8707
+    },
+    {
+      "index": 1,
+      "filename": "card_row5_01.png",
+      "dimensions": "166x167",
+      "semantic_label": "任务卡片-完善资料",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 40835
+    },
+    {
+      "index": 2,
+      "filename": "card_row5_02.png",
+      "dimensions": "179x168",
+      "semantic_label": "任务卡片-发布动态",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 43407
+    },
+    {
+      "index": 3,
+      "filename": "card_row5_03.png",
+      "dimensions": "196x167",
+      "semantic_label": "任务卡片-每日签到",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 47390
+    },
+    {
+      "index": 4,
+      "filename": "card_row5_04.png",
+      "dimensions": "181x167",
+      "semantic_label": "任务卡片-邀请好友",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 44726
+    },
+    {
+      "index": 5,
+      "filename": "card_row5_05.png",
+      "dimensions": "99x101",
+      "semantic_label": "进度条装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 13947
+    },
+    {
+      "index": 6,
+      "filename": "card_row5_06.png",
+      "dimensions": "142x111",
+      "semantic_label": "星星装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 24055
+    },
+    {
+      "index": 7,
+      "filename": "card_row5_07.png",
+      "dimensions": "265x104",
+      "semantic_label": "花瓣/点缀装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 40365
+    },
+    {
+      "index": 1,
+      "filename": "circle_row6_01.png",
+      "dimensions": "170x145",
+      "semantic_label": "摄影圈入口卡片",
+      "color": "深灰",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 32678
+    },
+    {
+      "index": 2,
+      "filename": "circle_row6_02.png",
+      "dimensions": "173x145",
+      "semantic_label": "旅行圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 32685
+    },
+    {
+      "index": 3,
+      "filename": "circle_row6_03.png",
+      "dimensions": "172x145",
+      "semantic_label": "美食圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 31763
+    },
+    {
+      "index": 4,
+      "filename": "circle_row6_04.png",
+      "dimensions": "177x145",
+      "semantic_label": "音乐圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 33479
+    },
+    {
+      "index": 5,
+      "filename": "circle_row6_05.png",
+      "dimensions": "167x78",
+      "semantic_label": "运动圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 18839
+    },
+    {
+      "index": 6,
+      "filename": "circle_row6_06.png",
+      "dimensions": "128x79",
+      "semantic_label": "读书圈入口卡片",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 12928
+    },
+    {
+      "index": 7,
+      "filename": "circle_row6_07.png",
+      "dimensions": "59x53",
+      "semantic_label": "加入按钮",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5359
+    },
+    {
+      "index": 8,
+      "filename": "circle_row6_08.png",
+      "dimensions": "61x57",
+      "semantic_label": "成员数角标",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5579
+    },
+    {
+      "index": 9,
+      "filename": "circle_row6_09.png",
+      "dimensions": "60x53",
+      "semantic_label": "热度角标",
+      "color": "彩色",
+      "category": "06-circle-entries",
+      "category_title": "兴趣圈入口卡片",
+      "file_size": 5256
+    },
+    {
+      "index": 1,
+      "filename": "toolbar_row7_01.png",
+      "dimensions": "78x76",
+      "semantic_label": "点赞/心形",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7182
+    },
+    {
+      "index": 2,
+      "filename": "toolbar_row7_02.png",
+      "dimensions": "78x75",
+      "semantic_label": "评论/气泡",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7061
+    },
+    {
+      "index": 3,
+      "filename": "toolbar_row7_03.png",
+      "dimensions": "68x74",
+      "semantic_label": "分享/转发",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7219
+    },
+    {
+      "index": 4,
+      "filename": "toolbar_row7_04.png",
+      "dimensions": "68x69",
+      "semantic_label": "收藏/星标",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7558
+    },
+    {
+      "index": 5,
+      "filename": "toolbar_row7_05.png",
+      "dimensions": "70x69",
+      "semantic_label": "更多操作",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 8208
+    },
+    {
+      "index": 6,
+      "filename": "toolbar_row7_06.png",
+      "dimensions": "70x70",
+      "semantic_label": "发送/发送按钮",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 8565
+    },
+    {
+      "index": 7,
+      "filename": "toolbar_row7_07.png",
+      "dimensions": "68x50",
+      "semantic_label": "表情/贴纸",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 4699
+    },
+    {
+      "index": 8,
+      "filename": "toolbar_row7_08.png",
+      "dimensions": "74x67",
+      "semantic_label": "图片/相册",
+      "color": "橙色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7574
+    },
+    {
+      "index": 9,
+      "filename": "toolbar_row7_09.png",
+      "dimensions": "75x74",
+      "semantic_label": "语音/麦克风",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 9631
+    },
+    {
+      "index": 10,
+      "filename": "toolbar_row7_10.png",
+      "dimensions": "75x74",
+      "semantic_label": "位置/地图",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 10158
+    },
+    {
+      "index": 11,
+      "filename": "toolbar_row7_11.png",
+      "dimensions": "77x75",
+      "semantic_label": "拍照/相机",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 13675
+    },
+    {
+      "index": 12,
+      "filename": "toolbar_row7_12.png",
+      "dimensions": "72x70",
+      "semantic_label": "红包/礼物",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7888
+    },
+    {
+      "index": 13,
+      "filename": "toolbar_row7_13.png",
+      "dimensions": "70x69",
+      "semantic_label": "删除/垃圾桶",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7657
+    }
+  ]
+}

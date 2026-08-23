@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VoiceMessageBubble — 语音消息气泡组件
  *
@@ -255,7 +255,7 @@ const durationDisplay = computed(() => {
   padding: 18rpx var(--sp-6);
   border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
   background: var(--c-bg-brand, rgba(61, 201, 148, 0.08));
-  color: var(--c-brand-700, #12805A);
+  color: var(--c-brand-700, #2AAE83);
   box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
   transition: all var(--d-normal, 200ms) ease;
   /* 气泡固定最小宽度（时长布局值），无对应 token */
@@ -302,7 +302,7 @@ const durationDisplay = computed(() => {
   width: 6rpx;
   height: 12rpx;
   border-radius: var(--r-xs, 4rpx);
-  background: var(--c-brand-300, #6FD4AA);
+  background: var(--c-brand-300, #75E1B7);
   transition: height var(--d-fast, 120ms) ease, background var(--d-normal, 200ms) ease;
 }
 
@@ -363,3 +363,5 @@ const durationDisplay = computed(() => {
   opacity: 0.6;
 }
 </style>
+
+

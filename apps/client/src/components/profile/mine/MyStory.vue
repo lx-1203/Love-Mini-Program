@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfileStory } from "../../../types/profile";
 
 const props = withDefaults(defineProps<{
@@ -83,7 +83,7 @@ const emit = defineEmits<{
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-story__scroll {
@@ -104,7 +104,7 @@ const emit = defineEmits<{
   flex-shrink: 0;
   border-radius: 24rpx;
   overflow: hidden;
-  background: #E8FBF2;
+  background: #E8FBF3;
 }
 
 .story-card__img {
@@ -122,7 +122,7 @@ const emit = defineEmits<{
 }
 
 .story-card__img--placeholder {
-  background: linear-gradient(180deg, #E8FBF2 0%, #C8EEDF 100%);
+  background: linear-gradient(180deg, #E8FBF3 0%, #C8EEDF 100%);
 }
 
 .story-card__video-icon {

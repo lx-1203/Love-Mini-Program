@@ -4,11 +4,13 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.entity.MediaAsset;
 import com.campuslove.api.repository.MediaAssetRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.context.annotation.Profile;
 import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.context.annotation.Profile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -64,6 +66,7 @@ import org.springframework.web.servlet.HandlerMapping;
  */
 @Tag(name = "Media", description = "媒体文件上传与鉴权访问接口")
 @SecurityRequirement(name = "bearerAuth")
+@Profile("real")
 @RestController
 @RequestMapping("/api/v1/media")
 public class MediaAccessController {

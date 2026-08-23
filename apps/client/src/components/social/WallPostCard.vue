@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * WallPostCard — 村口帖子卡片
  *
@@ -321,7 +321,8 @@ function onReportSubmitted() {
   font-weight: 600;
 }
 .wall-action--liked:active {
-  color: var(--c-romance-600, #DB2777);
+  color: var(--c-romance-600, #E85A70);
   transform: scale(0.97);
 }
 </style>
+

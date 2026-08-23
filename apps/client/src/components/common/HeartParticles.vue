@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * HeartParticles - 心形粒子撒花动画组件
  *
@@ -220,7 +220,7 @@ function particleStyle(index: number) {
   height: 56rpx;
   border-radius: var(--r-circle, 50%);
   background: var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.85));
-  border: 1rpx solid var(--c-border-default, #e2e8f0);
+  border: 1rpx solid var(--c-border-default, #DDE3E0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,3 +252,4 @@ function particleStyle(index: number) {
   }
 }
 </style>
+

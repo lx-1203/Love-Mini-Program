@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { IMAGE_PATHS } from "../../config/images";
-
 defineProps<{
   title: string;
   subtitle: string;
@@ -12,12 +10,10 @@ const emit = defineEmits<{
   closeSearch: [];
 }>();
 
-const heroBg = IMAGE_PATHS.MESSAGE_ICONS.HERO_GRADIENT;
 </script>
 
 <template>
   <view class="message-header">
-    <image class="message-header__bg" :src="heroBg" mode="widthFix" />
     <view class="message-header__content">
       <view class="message-header__title-row">
         <text class="message-header__title">{{ title }}</text>
@@ -39,19 +35,11 @@ const heroBg = IMAGE_PATHS.MESSAGE_ICONS.HERO_GRADIENT;
 .message-header {
   position: relative;
   padding: 24rpx 32rpx 20rpx;
+  background: #FFFFFF;
   overflow: hidden;
-}
-.message-header__bg {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
 }
 .message-header__content {
   position: relative;
-  z-index: 1;
 }
 .message-header__title-row {
   display: flex;

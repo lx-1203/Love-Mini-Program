@@ -1,0 +1,108 @@
+{
+  "category": "03-tags",
+  "title": "标签与状态图标",
+  "description": "兴趣标签、性别标签、星座标签、距离标签、在线状态等",
+  "total_icons": 10,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "tag_row3_01.png",
+      "dimensions": "124x61",
+      "semantic_label": "兴趣标签-摄影",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11868
+    },
+    {
+      "index": 2,
+      "filename": "tag_row3_02.png",
+      "dimensions": "126x61",
+      "semantic_label": "兴趣标签-旅行",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11096
+    },
+    {
+      "index": 3,
+      "filename": "tag_row3_03.png",
+      "dimensions": "129x61",
+      "semantic_label": "兴趣标签-美食",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 10964
+    },
+    {
+      "index": 4,
+      "filename": "tag_row3_04.png",
+      "dimensions": "127x61",
+      "semantic_label": "兴趣标签-音乐",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 11234
+    },
+    {
+      "index": 5,
+      "filename": "tag_row3_05.png",
+      "dimensions": "70x68",
+      "semantic_label": "兴趣标签-运动",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 7705
+    },
+    {
+      "index": 6,
+      "filename": "tag_row3_06.png",
+      "dimensions": "69x68",
+      "semantic_label": "兴趣标签-阅读",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 7163
+    },
+    {
+      "index": 7,
+      "filename": "tag_row3_07.png",
+      "dimensions": "63x62",
+      "semantic_label": "性别标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 6165
+    },
+    {
+      "index": 8,
+      "filename": "tag_row3_08.png",
+      "dimensions": "81x31",
+      "semantic_label": "星座标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 5862
+    },
+    {
+      "index": 9,
+      "filename": "tag_row3_09.png",
+      "dimensions": "41x47",
+      "semantic_label": "距离标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 3649
+    },
+    {
+      "index": 10,
+      "filename": "tag_row3_10.png",
+      "dimensions": "76x27",
+      "semantic_label": "在线状态标签",
+      "color": "彩色",
+      "category": "03-tags",
+      "category_title": "标签与状态图标",
+      "file_size": 4333
+    }
+  ]
+}

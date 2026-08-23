@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CardDetailOverlay — 卡片详情全屏展示层
  *
@@ -1928,7 +1928,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   padding: 16rpx 20rpx;
   border-radius: var(--r-md, 12rpx);
   background: var(--c-bg-page, #f8fafc);
-  border: 1rpx solid var(--c-divider-light, #e2e8f0);
+  border: 1rpx solid var(--c-divider-light, #DDE3E0);
 }
 
 .detail-whisper__quote {
@@ -2097,5 +2097,6 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   color: var(--c-text-inverse);
 }
 </style>
+
 
 

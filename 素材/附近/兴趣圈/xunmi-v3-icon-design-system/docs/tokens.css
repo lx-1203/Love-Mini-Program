@@ -1,0 +1,13 @@
+/* 寻觅 V3 Icon Design System */
+:root {
+  --xm-icon-default: #1A1A1A;
+  --xm-icon-muted: #667085;
+  --xm-icon-active: #00B86B;
+  --xm-icon-disabled: #B8C0CC;
+  --xm-icon-danger: #FF5A70;
+  --xm-icon-size-16: 16px;
+  --xm-icon-size-20: 20px;
+  --xm-icon-size-24: 24px;
+  --xm-icon-size-32: 32px;
+  --xm-icon-size-48: 48px;
+}

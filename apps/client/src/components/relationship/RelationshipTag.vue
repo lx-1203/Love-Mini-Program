@@ -17,18 +17,26 @@ const labelMap = {
 } as const;
 
 const colorMap = {
-  just_met: "#666666",
+  just_met: "#9AA39F",
   chatting: "#36C99A",
   ambiguous: "#FF6B81",
-  mutual_follow: "#36C99A",
+  mutual_follow: "#54A0FF",
+} as const;
+
+const bgColorMap = {
+  just_met: "#EEF2F0",
+  chatting: "#E8FAF3",
+  ambiguous: "#FFECEF",
+  mutual_follow: "#E8F0FF",
 } as const;
 
 const label = computed(() => labelMap[props.status]);
 const color = computed(() => colorMap[props.status]);
+const bgColor = computed(() => bgColorMap[props.status]);
 </script>
 
 <template>
-  <view class="relationship-tag" :class="[`relationship-tag--${size}`]" :style="{ color, borderColor: color }">
+  <view class="relationship-tag" :class="[`relationship-tag--${size}`]" :style="{ color, borderColor: color, backgroundColor: bgColor }">
     <text class="relationship-tag__text">{{ label }}</text>
   </view>
 </template>
@@ -40,7 +48,6 @@ const color = computed(() => colorMap[props.status]);
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
   border: 1rpx solid currentColor;
-  background: rgba(255, 255, 255, 0.6);
 }
 .relationship-tag--sm {
   font-size: 20rpx;

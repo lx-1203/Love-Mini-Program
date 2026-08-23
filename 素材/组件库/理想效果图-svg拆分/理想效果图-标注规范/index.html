@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寻觅 设计系统 · 标注规范总览</title>
+<style>
+  /* ========== Reset & Base ========== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #F7FAF9;
+    color: #333A37;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== Layout ========== */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* ========== Header ========== */
+  .header {
+    text-align: center;
+    padding: 60px 20px 80px;
+    background: linear-gradient(135deg, #E8FAF3 0%, #D1F5E7 50%, #F7FAF9 100%);
+    margin: -40px -24px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '🌱';
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.08;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .header h1 {
+    font-size: 42px;
+    font-weight: 700;
+    color: #333A37;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .header h1 span { color: #36C99A; }
+  .header .subtitle {
+    font-size: 18px;
+    color: #6B7571;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .header .meta {
+    font-size: 14px;
+    color: #9AA39F;
+    position: relative;
+  }
+  .header .meta span {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(54,201,154,0.1);
+    border-radius: 999px;
+    color: #36C99A;
+    margin: 0 4px;
+  }
+
+  /* ========== Section ========== */
+  .section {
+    margin-bottom: 64px;
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333A37;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 28px;
+    background: linear-gradient(180deg, #36C99A, #55D5A7);
+    border-radius: 999px;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: #9AA39F;
+    margin-bottom: 24px;
+    padding-left: 16px;
+  }
+
+  /* ========== Color Palette ========== */
+  .color-group {
+    margin-bottom: 32px;
+  }
+  .color-group-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4A524E;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+  .color-swatches {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+  }
+  .swatch {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .swatch:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.10);
+  }
+  .swatch-color {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .swatch-info {
+    padding: 8px 6px;
+    background: #fff;
+    text-align: center;
+  }
+  .swatch-info .name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #333A37;
+  }
+  .swatch-info .hex {
+    font-size: 10px;
+    color: #9AA39F;
+    font-family: 'SF Mono', Menlo, monospace;
+    margin-top: 2px;
+  }
+  .swatch.light .swatch-color { color: #6B7571; }
+  .swatch.dark .swatch-color { color: #fff; }
+
+  .semantic-colors {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .semantic-swatch {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    text-align: center;
+  }
+  .semantic-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+  }
+  .semantic-swatch .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333A37;
+  }
+  .semantic-swatch .hex {
+    font-size: 11px;
+    color: #9AA39F;
+    font-family: 'SF Mono', Menlo, monospace;
+    margin-top: 2px;
+  }
+
+  /* ========== Typography ========== */
+  .type-scale {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .type-row {
+    display: flex;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #F0F4F2;
+    gap: 32px;
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-sample {
+    flex: 1;
+    min-width: 300px;
+  }
+  .type-info {
+    width: 280px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 12px;
+  }
+  .type-info-item {
+    text-align: center;
+  }
+  .type-info-item .label {
+    color: #9AA39F;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .type-info-item .value {
+    color: #4A524E;
+    font-weight: 600;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+
+  /* ========== Spacing ========== */
+  .spacing-scale {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    gap: 20px;
+  }
+  .spacing-label {
+    width: 80px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4A524E;
+    text-align: right;
+  }
+  .spacing-bar-wrap {
+    flex: 1;
+    height: 32px;
+    position: relative;
+  }
+  .spacing-bar {
+    height: 32px;
+    background: linear-gradient(90deg, #36C99A, #55D5A7);
+    border-radius: 8px;
+    transition: width 0.5s ease;
+  }
+  .spacing-value {
+    width: 80px;
+    font-size: 13px;
+    color: #9AA39F;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-weight: 600;
+  }
+
+  /* ========== Radius ========== */
+  .radius-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+  }
+  .radius-item {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    text-align: center;
+  }
+  .radius-sample {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #36C99A, #55D5A7);
+    margin: 0 auto 12px;
+  }
+  .radius-item .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333A37;
+  }
+  .radius-item .value {
+    font-size: 11px;
+    color: #9AA39F;
+    margin-top: 2px;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+
+  /* ========== Shadows ========== */
+  .shadow-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .shadow-item {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .shadow-sample {
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    border-radius: 16px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .shadow-item .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333A37;
+  }
+  .shadow-item .value {
+    font-size: 10px;
+    color: #9AA39F;
+    margin-top: 4px;
+    font-family: 'SF Mono', Menlo, monospace;
+    line-height: 1.4;
+  }
+
+  /* ========== Components ========== */
+  .component-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .component-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .component-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+  }
+  .component-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .component-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #E8FAF3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .component-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333A37;
+  }
+  .component-tag {
+    font-size: 11px;
+    color: #9AA39F;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+  .component-preview {
+    padding: 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    border-top: 1px solid #F0F4F2;
+    border-bottom: 1px solid #F0F4F2;
+    margin-bottom: 12px;
+  }
+  .component-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .spec-item {
+    font-size: 11px;
+  }
+  .spec-item .label {
+    color: #9AA39F;
+  }
+  .spec-item .value {
+    color: #4A524E;
+    font-weight: 600;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+
+  /* ========== Button Samples ========== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: #36C99A;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(54,201,154,0.25);
+  }
+  .btn-heart {
+    background: #FF6B81;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(255,107,129,0.25);
+  }
+  .btn-outline {
+    background: transparent;
+    color: #36C99A;
+    border: 1.5px solid #36C99A;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: #6B7571;
+    border: 1.5px solid #DDE3E0;
+  }
+  .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
+  .btn-md { height: 40px; padding: 0 16px; font-size: 14px; }
+  .btn-lg { height: 52px; padding: 0 24px; font-size: 16px; }
+
+  /* ========== Tag Samples ========== */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 12px;
+    padding: 0 8px;
+    height: 24px;
+  }
+  .tag-interest { background: #E8FAF3; color: #36C99A; }
+  .tag-status { background: #EEF2F0; color: #9AA39F; }
+  .tag-hot { background: #FFF5E6; color: #FF9F43; }
+  .tag-match { background: #FFECEF; color: #FF6B81; }
+  .tag-new { background: #E8F0FF; color: #54A0FF; }
+
+  /* ========== Avatar Samples ========== */
+  .avatar-demo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .avatar {
+    border-radius: 50%;
+    background: linear-gradient(135deg, #D1F5E7, #A3EBCF);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #36C99A;
+    font-weight: 700;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .avatar-sm { width: 32px; height: 32px; font-size: 12px; }
+  .avatar-md { width: 40px; height: 40px; font-size: 14px; }
+  .avatar-lg { width: 56px; height: 56px; font-size: 18px; }
+  .avatar-xl { width: 72px; height: 72px; font-size: 22px; }
+  .avatar .online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #36C99A;
+    border-radius: 50%;
+    border: 2px solid #fff;
+  }
+  .avatar-ring {
+    padding: 2px;
+    background: linear-gradient(135deg, #FF6B81, #FF8DA1);
+    border-radius: 50%;
+  }
+  .avatar-ring .avatar {
+    border: 2px solid #fff;
+  }
+
+  /* ========== Card Samples ========== */
+  .mini-card {
+    width: 100%;
+    max-width: 180px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .mini-card-img {
+    height: 80px;
+    background: linear-gradient(135deg, #E8FAF3, #D1F5E7);
+    position: relative;
+  }
+  .mini-card-body {
+    padding: 10px;
+  }
+  .mini-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333A37;
+    margin-bottom: 2px;
+  }
+  .mini-card-desc {
+    font-size: 10px;
+    color: #9AA39F;
+  }
+
+  /* ========== Input Samples ========== */
+  .input-demo {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .input-field {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: #F7FAF9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #C2CAC6;
+  }
+  .input-field.focus {
+    background: #fff;
+    border: 1.5px solid #36C99A;
+    color: #333A37;
+  }
+
+  /* ========== Progress Samples ========== */
+  .progress-demo {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #EEF2F0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, #36C99A, #55D5A7);
+    border-radius: 999px;
+  }
+  .progress-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: conic-gradient(#36C99A 0deg, #55D5A7 270deg, #EEF2F0 270deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .progress-ring::before {
+    content: '';
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .progress-ring span {
+    position: relative;
+    z-index: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #36C99A;
+  }
+
+  /* ========== Badge Samples ========== */
+  .badge-demo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
+  }
+  .badge-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+  }
+  .badge-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #EEF2F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .badge-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #FF6B81;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+  }
+  .verified-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    background: #36C99A;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 9px;
+    border: 2px solid #fff;
+  }
+
+  /* ========== Bottom Nav Sample ========== */
+  .bottom-nav-demo {
+    width: 100%;
+    height: 60px;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: relative;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 9px;
+    color: #9AA39F;
+  }
+  .nav-item.active { color: #36C99A; }
+  .nav-icon { font-size: 18px; }
+  .nav-center-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #FF6B81;
+    box-shadow: 0 4px 12px rgba(255,107,129,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    margin-top: -16px;
+  }
+
+  /* ========== Bubble Samples ========== */
+  .bubble-demo {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bubble-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .bubble-row.right { justify-content: flex-end; }
+  .bubble-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #E8FAF3;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .bubble {
+    max-width: 70%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .bubble.other {
+    background: #fff;
+    color: #333A37;
+    border-top-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .bubble.self {
+    background: #36C99A;
+    color: #fff;
+    border-top-right-radius: 4px;
+  }
+
+  /* ========== Footer ========== */
+  .footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9AA39F;
+    font-size: 13px;
+    border-top: 1px solid #EEF2F0;
+    margin-top: 64px;
+  }
+  .footer .brand {
+    font-size: 16px;
+    font-weight: 700;
+    color: #36C99A;
+    margin-bottom: 8px;
+  }
+
+  /* ========== Responsive ========== */
+  @media (max-width: 900px) {
+    .color-swatches { grid-template-columns: repeat(5, 1fr); }
+    .semantic-colors { grid-template-columns: repeat(3, 1fr); }
+    .radius-grid { grid-template-columns: repeat(3, 1fr); }
+    .shadow-grid { grid-template-columns: repeat(2, 1fr); }
+    .component-grid { grid-template-columns: repeat(2, 1fr); }
+    .type-row { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .type-info { width: 100%; }
+  }
+  @media (max-width: 600px) {
+    .color-swatches { grid-template-columns: repeat(5, 1fr); }
+    .semantic-colors { grid-template-columns: repeat(2, 1fr); }
+    .radius-grid { grid-template-columns: repeat(2, 1fr); }
+    .component-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>寻觅 <span>设计系统</span></h1>
+    <div class="subtitle">Xunmi Design System · 校园恋爱小程序标注规范</div>
+    <div class="meta">
+      <span>375 × 812</span>
+      <span>PingFang SC</span>
+      <span>v1.0</span>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Color Palette -->
+    <div class="section">
+      <div class="section-title">色彩体系</div>
+      <div class="section-desc">Color Palette · 主色系 + 强调色 + 中性色 + 语义色</div>
+
+      <div class="color-group">
+        <div class="color-group-title">主色系 · 薄荷绿 Mint Green</div>
+        <div class="color-swatches">
+          <div class="swatch light"><div class="swatch-color" style="background:#E8FAF3">50</div><div class="swatch-info"><div class="name">50</div><div class="hex">#E8FAF3</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#D1F5E7">100</div><div class="swatch-info"><div class="name">100</div><div class="hex">#D1F5E7</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#A3EBCF">200</div><div class="swatch-info"><div class="name">200</div><div class="hex">#A3EBCF</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#75E1B7">300</div><div class="swatch-info"><div class="name">300</div><div class="hex">#75E1B7</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#55D5A7">400</div><div class="swatch-info"><div class="name">400</div><div class="hex">#55D5A7</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#36C99A">500</div><div class="swatch-info"><div class="name">500</div><div class="hex">#36C99A</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#2AAE83">600</div><div class="swatch-info"><div class="name">600</div><div class="hex">#2AAE83</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#1F8D6A">700</div><div class="swatch-info"><div class="name">700</div><div class="hex">#1F8D6A</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#156B51">800</div><div class="swatch-info"><div class="name">800</div><div class="hex">#156B51</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#0B4A38">900</div><div class="swatch-info"><div class="name">900</div><div class="hex">#0B4A38</div></div></div>
+        </div>
+      </div>
+
+      <div class="color-group">
+        <div class="color-group-title">强调色 · 心动粉 Heart Pink</div>
+        <div class="color-swatches">
+          <div class="swatch light"><div class="swatch-color" style="background:#FFECEF">50</div><div class="swatch-info"><div class="name">50</div><div class="hex">#FFECEF</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#FFD9DF">100</div><div class="swatch-info"><div class="name">100</div><div class="hex">#FFD9DF</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#FFB3C0">200</div><div class="swatch-info"><div class="name">200</div><div class="hex">#FFB3C0</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#FF8DA1">300</div><div class="swatch-info"><div class="name">300</div><div class="hex">#FF8DA1</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#FF7C91">400</div><div class="swatch-info"><div class="name">400</div><div class="hex">#FF7C91</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#FF6B81">500</div><div class="swatch-info"><div class="name">500</div><div class="hex">#FF6B81</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#E85A70">600</div><div class="swatch-info"><div class="name">600</div><div class="hex">#E85A70</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#CC4A5F">700</div><div class="swatch-info"><div class="name">700</div><div class="hex">#CC4A5F</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#A83B4D">800</div><div class="swatch-info"><div class="name">800</div><div class="hex">#A83B4D</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#7A2A37">900</div><div class="swatch-info"><div class="name">900</div><div class="hex">#7A2A37</div></div></div>
+        </div>
+      </div>
+
+      <div class="color-group">
+        <div class="color-group-title">中性色 Neutral</div>
+        <div class="color-swatches">
+          <div class="swatch light"><div class="swatch-color" style="background:#FFFFFF;border:1px solid #EEF2F0">0</div><div class="swatch-info"><div class="name">White</div><div class="hex">#FFFFFF</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#F7FAF9">50</div><div class="swatch-info"><div class="name">50</div><div class="hex">#F7FAF9</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#EEF2F0">100</div><div class="swatch-info"><div class="name">100</div><div class="hex">#EEF2F0</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#DDE3E0">200</div><div class="swatch-info"><div class="name">200</div><div class="hex">#DDE3E0</div></div></div>
+          <div class="swatch light"><div class="swatch-color" style="background:#C2CAC6">300</div><div class="swatch-info"><div class="name">300</div><div class="hex">#C2CAC6</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#9AA39F">400</div><div class="swatch-info"><div class="name">400</div><div class="hex">#9AA39F</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#6B7571">500</div><div class="swatch-info"><div class="name">500</div><div class="hex">#6B7571</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#4A524E">600</div><div class="swatch-info"><div class="name">600</div><div class="hex">#4A524E</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#333A37">700</div><div class="swatch-info"><div class="name">700</div><div class="hex">#333A37</div></div></div>
+          <div class="swatch dark"><div class="swatch-color" style="background:#1A1E1C">900</div><div class="swatch-info"><div class="name">900</div><div class="hex">#1A1E1C</div></div></div>
+        </div>
+      </div>
+
+      <div class="color-group">
+        <div class="color-group-title">语义色 Semantic Colors</div>
+        <div class="semantic-colors">
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#36C99A"></div><div class="name">成功 Success</div><div class="hex">#36C99A</div></div>
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#FF9F43"></div><div class="name">警告 Warning</div><div class="hex">#FF9F43</div></div>
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#FF4757"></div><div class="name">错误 Error</div><div class="hex">#FF4757</div></div>
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#54A0FF"></div><div class="name">信息 Info</div><div class="hex">#54A0FF</div></div>
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#A29BFE"></div><div class="name">紫色 Purple</div><div class="hex">#A29BFE</div></div>
+          <div class="semantic-swatch"><div class="semantic-dot" style="background:#FECA57"></div><div class="name">金色 Gold</div><div class="hex">#FECA57</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography -->
+    <div class="section">
+      <div class="section-title">字体层级</div>
+      <div class="section-desc">Typography Scale · 7 档字体层级 · PingFang SC</div>
+      <div class="type-scale">
+        <div class="type-row">
+          <div class="type-sample" style="font-size:36px;font-weight:700;line-height:44px;letter-spacing:-0.5px;">Display 展示大号</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">36px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Bold 700</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">44px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:28px;font-weight:700;line-height:36px;letter-spacing:-0.3px;">Title 1 一级标题</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">28px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Bold 700</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">36px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:24px;font-weight:600;line-height:32px;">Title 2 二级标题</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">24px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Semi 600</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">32px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:18px;font-weight:600;line-height:26px;">Headline 标题强调</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">18px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Semi 600</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">26px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:16px;font-weight:400;line-height:24px;">Body 正文内容 — 这是一段正文示例文字</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">16px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Regular 400</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">24px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:14px;font-weight:400;line-height:20px;color:#6B7571;">Caption 辅助文字 — 副标题、说明文字</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">14px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Regular 400</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">20px</div></div>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="type-sample" style="font-size:12px;font-weight:400;line-height:16px;letter-spacing:0.2px;color:#9AA39F;">META 元信息 · 标签 · 时间 · 距离</div>
+          <div class="type-info">
+            <div class="type-info-item"><div class="label">字号</div><div class="value">12px</div></div>
+            <div class="type-info-item"><div class="label">字重</div><div class="value">Regular 400</div></div>
+            <div class="type-info-item"><div class="label">行高</div><div class="value">16px</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spacing -->
+    <div class="section">
+      <div class="section-title">间距系统</div>
+      <div class="section-desc">Spacing Scale · 4px 基准 · 9 档间距</div>
+      <div class="spacing-scale">
+        <div class="spacing-row">
+          <div class="spacing-label">xs</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:4px;"></div></div>
+          <div class="spacing-value">4px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">sm</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:8px;"></div></div>
+          <div class="spacing-value">8px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">md</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:12px;"></div></div>
+          <div class="spacing-value">12px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">base</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:16px;"></div></div>
+          <div class="spacing-value">16px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">lg</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:20px;"></div></div>
+          <div class="spacing-value">20px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">xl</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:24px;"></div></div>
+          <div class="spacing-value">24px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">2xl</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:32px;"></div></div>
+          <div class="spacing-value">32px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">3xl</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:40px;"></div></div>
+          <div class="spacing-value">40px</div>
+        </div>
+        <div class="spacing-row">
+          <div class="spacing-label">4xl</div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:48px;"></div></div>
+          <div class="spacing-value">48px</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radius -->
+    <div class="section">
+      <div class="section-title">圆角规范</div>
+      <div class="section-desc">Radius Scale · 卡片 / 按钮 / 输入框 / 头像</div>
+      <div class="radius-grid">
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:4px;"></div>
+          <div class="name">微圆角</div>
+          <div class="value">4px</div>
+        </div>
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:8px;"></div>
+          <div class="name">小圆角</div>
+          <div class="value">8px</div>
+        </div>
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:12px;"></div>
+          <div class="name">输入框</div>
+          <div class="value">12px</div>
+        </div>
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:16px;"></div>
+          <div class="name">中圆角</div>
+          <div class="value">16px</div>
+        </div>
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:20px;"></div>
+          <div class="name">卡片圆角</div>
+          <div class="value">20px</div>
+        </div>
+        <div class="radius-item">
+          <div class="radius-sample" style="border-radius:999px;"></div>
+          <div class="name">药丸形</div>
+          <div class="value">999px</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shadows -->
+    <div class="section">
+      <div class="section-title">阴影规范</div>
+      <div class="section-desc">Shadow Scale · 5 级基础阴影 + 品牌阴影</div>
+      <div class="shadow-grid">
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 1px 2px rgba(0,0,0,0.04);">xs</div>
+          <div class="name">Extra Small</div>
+          <div class="value">0 1px 2px<br>rgba(0,0,0,0.04)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 2px 8px rgba(0,0,0,0.06);">sm</div>
+          <div class="name">Small</div>
+          <div class="value">0 2px 8px<br>rgba(0,0,0,0.06)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 4px 16px rgba(0,0,0,0.08);">md</div>
+          <div class="name">Medium</div>
+          <div class="value">0 4px 16px<br>rgba(0,0,0,0.08)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 8px 24px rgba(0,0,0,0.10);">lg</div>
+          <div class="name">Large</div>
+          <div class="value">0 8px 24px<br>rgba(0,0,0,0.10)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 16px 40px rgba(0,0,0,0.14);">xl</div>
+          <div class="name">Extra Large</div>
+          <div class="value">0 16px 40px<br>rgba(0,0,0,0.14)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 4px 16px rgba(54,201,154,0.25);color:#36C99A;">绿</div>
+          <div class="name">品牌绿阴影</div>
+          <div class="value">0 4px 16px<br>rgba(54,201,154,0.25)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 4px 16px rgba(255,107,129,0.25);color:#FF6B81;">粉</div>
+          <div class="name">心动粉阴影</div>
+          <div class="value">0 4px 16px<br>rgba(255,107,129,0.25)</div>
+        </div>
+        <div class="shadow-item">
+          <div class="shadow-sample" style="box-shadow:0 -2px 12px rgba(0,0,0,0.06);">↑</div>
+          <div class="name">顶部阴影</div>
+          <div class="value">0 -2px 12px<br>rgba(0,0,0,0.06)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Components -->
+    <div class="section">
+      <div class="section-title">组件规范</div>
+      <div class="section-desc">Component Library · 14 个核心组件预览</div>
+      <div class="component-grid">
+
+        <!-- 1. Button -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">🔘</div>
+            <div>
+              <div class="component-name">Button 按钮</div>
+              <div class="component-tag">XunmiButton</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <button class="btn btn-primary btn-sm">主按钮</button>
+            <button class="btn btn-heart btn-md">💖 喜欢</button>
+            <button class="btn btn-outline btn-md">描边</button>
+            <button class="btn btn-secondary btn-sm">次按钮</button>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">高度: </span><span class="value">32/40/52px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">999px</span></div>
+            <div class="spec-item"><span class="label">变体: </span><span class="value">5 种</span></div>
+            <div class="spec-item"><span class="label">字号: </span><span class="value">12/14/16px</span></div>
+          </div>
+        </div>
+
+        <!-- 2. Card -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">🃏</div>
+            <div>
+              <div class="component-name">Card 卡片</div>
+              <div class="component-tag">XunmiCard</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="mini-card">
+              <div class="mini-card-img"></div>
+              <div class="mini-card-body">
+                <div class="mini-card-title">卡片标题</div>
+                <div class="mini-card-desc">卡片描述文字</div>
+              </div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">12/16/20px</span></div>
+            <div class="spec-item"><span class="label">阴影: </span><span class="value">xs/sm/md</span></div>
+            <div class="spec-item"><span class="label">变体: </span><span class="value">4 种</span></div>
+            <div class="spec-item"><span class="label">内边距: </span><span class="value">8-16px</span></div>
+          </div>
+        </div>
+
+        <!-- 3. Avatar -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">👤</div>
+            <div>
+              <div class="component-name">Avatar 头像</div>
+              <div class="component-tag">XunmiAvatar</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="avatar-demo">
+              <div class="avatar avatar-sm">小</div>
+              <div class="avatar avatar-md">中</div>
+              <div class="avatar avatar-lg"><div class="online-dot"></div>大</div>
+              <div class="avatar-ring"><div class="avatar avatar-md">环</div></div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">尺寸: </span><span class="value">6 档</span></div>
+            <div class="spec-item"><span class="label">形状: </span><span class="value">圆形</span></div>
+            <div class="spec-item"><span class="label">状态点: </span><span class="value">8-12px</span></div>
+            <div class="spec-item"><span class="label">渐变环: </span><span class="value">2px</span></div>
+          </div>
+        </div>
+
+        <!-- 4. Tag -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">🏷️</div>
+            <div>
+              <div class="component-name">Tag / Chip 标签</div>
+              <div class="component-tag">XunmiTag</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <span class="tag tag-interest">📷 摄影</span>
+            <span class="tag tag-status">刚认识</span>
+            <span class="tag tag-hot">🔥 热门</span>
+            <span class="tag tag-match">💖 暧昧中</span>
+            <span class="tag tag-new">新</span>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">高度: </span><span class="value">20/24/32px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">999px</span></div>
+            <div class="spec-item"><span class="label">变体: </span><span class="value">7 种</span></div>
+            <div class="spec-item"><span class="label">字号: </span><span class="value">10-13px</span></div>
+          </div>
+        </div>
+
+        <!-- 5. Input -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">⌨️</div>
+            <div>
+              <div class="component-name">Input 输入框</div>
+              <div class="component-tag">XunmiInput</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="input-demo">
+              <div class="input-field">🔍 搜索...</div>
+              <div class="input-field focus">输入内容</div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">高度: </span><span class="value">36/44px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">12/999px</span></div>
+            <div class="spec-item"><span class="label">状态: </span><span class="value">4 种</span></div>
+            <div class="spec-item"><span class="label">字号: </span><span class="value">14/16px</span></div>
+          </div>
+        </div>
+
+        <!-- 6. Bottom Nav -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">📱</div>
+            <div>
+              <div class="component-name">Bottom Nav 底部导航</div>
+              <div class="component-tag">XunmiBottomNav</div>
+            </div>
+          </div>
+          <div class="component-preview" style="padding:0;">
+            <div class="bottom-nav-demo">
+              <div class="nav-item active"><div class="nav-icon">🏠</div>首页</div>
+              <div class="nav-item"><div class="nav-icon">📍</div>附近</div>
+              <div class="nav-center-btn">💖</div>
+              <div class="nav-item"><div class="nav-icon">💬</div>消息</div>
+              <div class="nav-item"><div class="nav-icon">👤</div>我的</div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">高度: </span><span class="value">64+34px</span></div>
+            <div class="spec-item"><span class="label">Tab数: </span><span class="value">5 个</span></div>
+            <div class="spec-item"><span class="label">凸起按钮: </span><span class="value">56px</span></div>
+            <div class="spec-item"><span class="label">图标: </span><span class="value">24px</span></div>
+          </div>
+        </div>
+
+        <!-- 7. Progress -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">📊</div>
+            <div>
+              <div class="component-name">Progress 进度条</div>
+              <div class="component-tag">XunmiProgress</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="progress-demo">
+              <div class="progress-bar"><div class="progress-fill"></div></div>
+              <div class="progress-ring"><span>92%</span></div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">类型: </span><span class="value">线/环/步</span></div>
+            <div class="spec-item"><span class="label">高度: </span><span class="value">4/6/8px</span></div>
+            <div class="spec-item"><span class="label">填充: </span><span class="value">渐变</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">999px</span></div>
+          </div>
+        </div>
+
+        <!-- 8. Badge -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">🔴</div>
+            <div>
+              <div class="component-name">Badge 徽章</div>
+              <div class="component-tag">XunmiBadge</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="badge-demo">
+              <div class="badge-wrap">
+                <div class="badge-icon">🔔</div>
+                <div class="badge-dot">6</div>
+              </div>
+              <div class="badge-wrap">
+                <div class="avatar avatar-md">✓</div>
+                <div class="verified-badge">✓</div>
+              </div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">通知: </span><span class="value">16-20px</span></div>
+            <div class="spec-item"><span class="label">认证: </span><span class="value">14-20px</span></div>
+            <div class="spec-item"><span class="label">在线点: </span><span class="value">8-12px</span></div>
+            <div class="spec-item"><span class="label">白边: </span><span class="value">2px</span></div>
+          </div>
+        </div>
+
+        <!-- 9. List Item -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">📋</div>
+            <div>
+              <div class="component-name">List Item 列表项</div>
+              <div class="component-tag">XunmiListItem</div>
+            </div>
+          </div>
+          <div class="component-preview" style="flex-direction:column;gap:8px;width:100%;">
+            <div style="display:flex;align-items:center;gap:10px;width:100%;">
+              <div class="avatar avatar-sm">小</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#333;">列表标题</div>
+                <div style="font-size:10px;color:#9AA39F;">副标题描述文字...</div>
+              </div>
+              <div style="font-size:10px;color:#C2CAC6;">刚刚</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;width:100%;">
+              <div class="avatar avatar-sm">小</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#333;">另一项</div>
+                <div style="font-size:10px;color:#9AA39F;">描述信息</div>
+              </div>
+              <div style="color:#C2CAC6;font-size:14px;">></div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">高度: </span><span class="value">56/72px</span></div>
+            <div class="spec-item"><span class="label">类型: </span><span class="value">2 种</span></div>
+            <div class="spec-item"><span class="label">分割线: </span><span class="value">1px</span></div>
+            <div class="spec-item"><span class="label">内边距: </span><span class="value">12px</span></div>
+          </div>
+        </div>
+
+        <!-- 10. Feed Card -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">📰</div>
+            <div>
+              <div class="component-name">Feed Card 动态卡片</div>
+              <div class="component-tag">XunmiFeedCard</div>
+            </div>
+          </div>
+          <div class="component-preview" style="padding:0;">
+            <div class="mini-card" style="max-width:100%;">
+              <div style="padding:10px;display:flex;align-items:center;gap:8px;">
+                <div class="avatar avatar-sm">F</div>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:600;">用户昵称</div>
+                  <div style="font-size:9px;color:#9AA39F;">北京大学 · 2小时前</div>
+                </div>
+                <span class="tag tag-interest" style="height:18px;font-size:9px;">关注</span>
+              </div>
+              <div style="padding:0 10px 8px;font-size:10px;color:#4A524E;line-height:1.4;">这是一条动态内容文字示例...</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 10px;">
+                <div style="height:40px;background:#E8FAF3;border-radius:4px;"></div>
+                <div style="height:40px;background:#D1F5E7;border-radius:4px;"></div>
+                <div style="height:40px;background:#A3EBCF;border-radius:4px;"></div>
+              </div>
+              <div style="padding:8px 10px;display:flex;gap:12px;justify-content:flex-end;font-size:10px;color:#9AA39F;">
+                <span>❤ 128</span>
+                <span>💬 36</span>
+              </div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">宽度: </span><span class="value">335px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">20px</span></div>
+            <div class="spec-item"><span class="label">图片: </span><span class="value">1/3/9 图</span></div>
+            <div class="spec-item"><span class="label">互动: </span><span class="value">3 项</span></div>
+          </div>
+        </div>
+
+        <!-- 11. Story Card -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">📖</div>
+            <div>
+              <div class="component-name">Story Card 故事卡片</div>
+              <div class="component-tag">XunmiStoryCard</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div style="display:flex;gap:8px;">
+              <div style="width:56px;height:75px;border-radius:10px;background:linear-gradient(135deg,#E8FAF3,#D1F5E7);position:relative;overflow:hidden;">
+                <div style="position:absolute;bottom:6px;left:6px;font-size:9px;color:#fff;font-weight:600;">故事</div>
+                <div style="position:absolute;top:4px;left:4px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #36C99A;"></div>
+              </div>
+              <div style="width:56px;height:75px;border-radius:10px;background:#fff;border:1.5px dashed #DDE3E0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+                <div style="font-size:16px;color:#C2CAC6;">+</div>
+                <div style="font-size:9px;color:#9AA39F;">添加</div>
+              </div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">尺寸: </span><span class="value">84×112px</span></div>
+            <div class="spec-item"><span class="label">比例: </span><span class="value">3:4</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">12px</span></div>
+            <div class="spec-item"><span class="label">间距: </span><span class="value">8px</span></div>
+          </div>
+        </div>
+
+        <!-- 12. Match Card -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">💌</div>
+            <div>
+              <div class="component-name">Match Card 匹配卡片</div>
+              <div class="component-tag">XunmiMatchCard</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div style="width:130px;height:170px;border-radius:16px;background:linear-gradient(135deg,#A3EBCF,#36C99A);position:relative;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+              <div style="position:absolute;top:10px;left:10px;"><span class="tag" style="background:rgba(255,107,129,0.85);color:#fff;height:20px;font-size:10px;">📍 5km</span></div>
+              <div style="position:absolute;top:10px;right:10px;"><span class="tag" style="background:rgba(54,201,154,0.85);color:#fff;height:20px;font-size:10px;">● 在线</span></div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:40px 10px 10px;background:linear-gradient(transparent,rgba(0,0,0,0.6));">
+                <div style="color:#fff;font-size:14px;font-weight:700;">姓名 23</div>
+                <div style="color:rgba(255,255,255,0.7);font-size:10px;margin-top:2px;">学校 · 学院</div>
+              </div>
+              <div style="position:absolute;bottom:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;border:3px solid #36C99A;">92%</div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">尺寸: </span><span class="value">335×440px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">24px</span></div>
+            <div class="spec-item"><span class="label">匹配环: </span><span class="value">64px</span></div>
+            <div class="spec-item"><span class="label">堆叠: </span><span class="value">3 层</span></div>
+          </div>
+        </div>
+
+        <!-- 13. Bubble -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">💬</div>
+            <div>
+              <div class="component-name">Bubble 消息气泡</div>
+              <div class="component-tag">XunmiBubble</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div class="bubble-demo">
+              <div class="bubble-row">
+                <div class="bubble-avatar">🌱</div>
+                <div class="bubble other">你好呀~</div>
+              </div>
+              <div class="bubble-row right">
+                <div class="bubble self">嗨！很高兴认识你</div>
+              </div>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">最大宽: </span><span class="value">240px</span></div>
+            <div class="spec-item"><span class="label">圆角: </span><span class="value">16px</span></div>
+            <div class="spec-item"><span class="label">变体: </span><span class="value">4 种</span></div>
+            <div class="spec-item"><span class="label">内边距: </span><span class="value">12px</span></div>
+          </div>
+        </div>
+
+        <!-- 14. Mascot -->
+        <div class="component-card">
+          <div class="component-header">
+            <div class="component-icon">🌱</div>
+            <div>
+              <div class="component-name">Mascot 吉祥物</div>
+              <div class="component-tag">XunmiMascot</div>
+            </div>
+          </div>
+          <div class="component-preview">
+            <div style="font-size:40px;">🌱</div>
+            <div style="display:flex;gap:8px;font-size:24px;">
+              <span>😊</span>
+              <span>🥰</span>
+              <span>🤔</span>
+              <span>💪</span>
+              <span>😴</span>
+            </div>
+          </div>
+          <div class="component-specs">
+            <div class="spec-item"><span class="label">表情: </span><span class="value">6 种</span></div>
+            <div class="spec-item"><span class="label">尺寸: </span><span class="value">4 档</span></div>
+            <div class="spec-item"><span class="label">主色: </span><span class="value">#36C99A</span></div>
+            <div class="spec-item"><span class="label">装饰色: </span><span class="value">#FF6B81</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="brand">寻觅 Xunmi Design System</div>
+      <div>版本 v1.0 · 更新于 2026-08-17</div>
+      <div style="margin-top:8px;">基于 375 × 812 px 设计基准 · PingFang SC 字体</div>
+    </div>
+
+  </div>
+</body>
+</html>

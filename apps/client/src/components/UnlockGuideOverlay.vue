@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * UnlockGuideOverlay - 首次进入锁定页一次性教学蒙层
  *
@@ -137,7 +137,7 @@ function handleKnown() {
   width: 72rpx;
   height: 72rpx;
   border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #2AAE83));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,7 +184,7 @@ function handleKnown() {
   width: 100%;
   height: 84rpx; /* 固定布局尺寸（按钮高 84rpx，无对应 token） */
   border-radius: var(--r-xl, 42rpx);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #12805A));
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A), var(--c-brand-700, #2AAE83));
   border: none;
   display: flex;
   align-items: center;

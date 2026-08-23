@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 快速筛选底部弹窗（设计需求：顶部筛选栏）
  *
@@ -264,7 +264,7 @@ function ageLabel(age: number): string {
   width: 72rpx;
   height: 8rpx;
   border-radius: 4rpx;
-  background: var(--c-neutral-200, #e2e8f0);
+  background: var(--c-neutral-200, #DDE3E0);
   align-self: center;
 }
 
@@ -298,7 +298,7 @@ function ageLabel(age: number): string {
   padding: 16rpx 0;
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
   text-align: center;
 }
 
@@ -336,7 +336,7 @@ function ageLabel(age: number): string {
   padding: 14rpx 0;
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .quick-filter-age__label {
@@ -369,7 +369,7 @@ function ageLabel(age: number): string {
   padding: 16rpx 20rpx;
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .quick-filter-radio__item--active {
@@ -381,7 +381,7 @@ function ageLabel(age: number): string {
   width: 28rpx;
   height: 28rpx;
   border-radius: 50%;
-  border: 3rpx solid var(--c-neutral-300, #cbd5e1);
+  border: 3rpx solid var(--c-neutral-300, #C2CAC6);
   flex-shrink: 0;
 }
 
@@ -416,7 +416,7 @@ function ageLabel(age: number): string {
 
 .quick-filter-sheet__btn--reset {
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .quick-filter-sheet__btn--confirm {
@@ -433,3 +433,5 @@ function ageLabel(age: number): string {
   color: var(--c-text-inverse);
 }
 </style>
+
+

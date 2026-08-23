@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "name": "02-home",
+      "desc": "首页",
+      "url": "/pages/home/index",
+      "ok": true,
+      "size": 91465,
+      "newErrors": 0,
+      "scrollSize": 94605
+    }
+  ],
+  "ts": "2026-08-19 14:36:12"
+}

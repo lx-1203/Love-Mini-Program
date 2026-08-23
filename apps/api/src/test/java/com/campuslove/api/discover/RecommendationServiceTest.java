@@ -546,8 +546,7 @@ class RecommendationServiceTest {
                 // Phase Feedback1 扩展字段
                 "CL-" + id, "1.2km", "offline",
                 true, false, List.of("开朗"), "INTJ",
-                null, false, List.of(), null, false, "江苏 · 南京"
-        , null, null, null, null, null);
+                null, false, List.of(), null, false, "江苏 · 南京", null, null, null, null, null, null);
     }
 
     /**
@@ -565,8 +564,7 @@ class RecommendationServiceTest {
                 // Phase Feedback1 扩展字段
                 "CL-" + id, "1.2km", "offline",
                 true, false, List.of("开朗"), "INTJ",
-                null, false, List.of(), null, false, "江苏 · 南京"
-        , null, null, null, null, null);
+                null, false, List.of(), null, false, "江苏 · 南京", null, null, null, null, null, null);
     }
 
     /**
@@ -584,7 +582,6 @@ class RecommendationServiceTest {
                 base.displayId(), base.distanceText(), base.activeStatusText(),
                 base.machineVerified(), base.humanVerified(), base.personality(),
                 base.mbti(), base.whisper(), base.whisperSent(), base.recentPosts(),
-                base.expectedPartner(), base.allowMessage(), base.ipLocation()
-        , null, null, null, null, null);
+                base.expectedPartner(), base.allowMessage(), base.ipLocation(), null, null, null, null, null, null);
     }
 }

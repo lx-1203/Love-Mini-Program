@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M5 4.8h14a3 3 0 0 1 3 3v5.9a3 3 0 0 1-3 3h-5.1l-3.9 2.6.6-2.6H5a3 3 0 0 1-3-3V7.8a3 3 0 0 1 3-3Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "CommentIcon" })
+</script>

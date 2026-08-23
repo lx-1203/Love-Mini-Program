@@ -1,0 +1,15 @@
+{
+  "system": "Xunmi V3 Campus Circle Icon Design System",
+  "source_size": "853x1844",
+  "viewBox": "0 0 24 24",
+  "icons": 25,
+  "colors": {
+    "primary": "#00B86B",
+    "text": "#1A1A1A",
+    "secondary": "#667085",
+    "disabled": "#C7CCD9",
+    "unverified": "#7C5CFF",
+    "verifiedBackground": "#E8FBEF"
+  },
+  "sizes": [16,20,24,32,48]
+}

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 帮助与客服页（Phase Feedback5 P2.6）
  *
@@ -140,7 +140,7 @@ function copyEmail(): void {
           :aria-label="t('help.contactEmail')"
           @tap="copyEmail"
         >
-          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E6F8F1)' }">
+          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
             <image class="help-contact__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MAIL" mode="aspectFit" alt="" />
           </view>
           <view class="help-contact__info">
@@ -267,7 +267,7 @@ function copyEmail(): void {
 .help-contact__copy {
   font-size: var(--f-xs);
   color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E6F8F1);
+  background: var(--c-tint-brand, #E8FAF3);
   padding: 8rpx 20rpx;
   border-radius: var(--r-full);
 }
@@ -285,3 +285,4 @@ function copyEmail(): void {
   line-height: 1.6;
 }
 </style>
+

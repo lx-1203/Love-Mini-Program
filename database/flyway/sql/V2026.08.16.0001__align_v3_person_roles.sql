@@ -32,17 +32,17 @@ SET nickname = CASE id
     ELSE nickname
   END,
   avatar_url = CASE id
-    WHEN 10001 THEN '/static/assets/images/avatars/person-02-avatar.webp'
-    WHEN 10002 THEN '/static/assets/images/avatars/person-03-avatar.webp'
-    WHEN 10003 THEN '/static/assets/images/avatars/person-04-avatar.webp'
-    WHEN 10004 THEN '/static/assets/images/avatars/person-05-avatar.webp'
-    WHEN 10005 THEN '/static/assets/images/avatars/person-06-avatar.webp'
-    WHEN 10009 THEN '/static/assets/images/avatars/person-07-avatar.webp'
-    WHEN 10010 THEN '/static/assets/images/avatars/person-08-avatar.webp'
-    WHEN 10011 THEN '/static/assets/images/avatars/person-09-avatar.webp'
-    WHEN 10012 THEN '/static/assets/images/avatars/person-02-avatar.webp'
-    WHEN 10013 THEN '/static/assets/images/avatars/person-03-avatar.webp'
-    WHEN 10014 THEN '/static/assets/images/avatars/person-04-avatar.webp'
+    WHEN 10001 THEN '/static/assets/images/avatars/person-02-avatar.png'
+    WHEN 10002 THEN '/static/assets/images/avatars/person-03-avatar.png'
+    WHEN 10003 THEN '/static/assets/images/avatars/person-04-avatar.png'
+    WHEN 10004 THEN '/static/assets/images/avatars/person-05-avatar.png'
+    WHEN 10005 THEN '/static/assets/images/avatars/person-06-avatar.png'
+    WHEN 10009 THEN '/static/assets/images/avatars/person-07-avatar.png'
+    WHEN 10010 THEN '/static/assets/images/avatars/person-08-avatar.png'
+    WHEN 10011 THEN '/static/assets/images/avatars/person-09-avatar.png'
+    WHEN 10012 THEN '/static/assets/images/avatars/person-02-avatar.png'
+    WHEN 10013 THEN '/static/assets/images/avatars/person-03-avatar.png'
+    WHEN 10014 THEN '/static/assets/images/avatars/person-04-avatar.png'
     ELSE avatar_url
   END,
   bio = CASE id

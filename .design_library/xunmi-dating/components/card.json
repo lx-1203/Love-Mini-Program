@@ -1,0 +1,79 @@
+{
+  "slug": "card",
+  "schemaVersion": 2,
+  "name": "卡片 Card",
+  "category": "Layout",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "大圆角20px + 柔和阴影，白色卡片在浅绿背景上",
+  "variantDimensions": {
+    "variant": {
+      "values": [
+        "user-card",
+        "feed-card",
+        "story-card",
+        "info-card"
+      ]
+    },
+    "padding": {
+      "values": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "用户卡片",
+      "traits": {
+        "variant": "user-card"
+      },
+      "whySelected": "匹配页核心卡片"
+    },
+    {
+      "name": "动态卡片",
+      "traits": {
+        "variant": "feed-card"
+      },
+      "whySelected": "社区动态流核心"
+    },
+    {
+      "name": "故事卡片",
+      "traits": {
+        "variant": "story-card"
+      },
+      "whySelected": "个人主页故事展示"
+    },
+    {
+      "name": "信息卡片",
+      "traits": {
+        "variant": "info-card"
+      },
+      "whySelected": "通用信息展示"
+    }
+  ],
+  "anatomy": [
+    "card-header",
+    "card-body",
+    "card-footer",
+    "card-media"
+  ],
+  "structurePatterns": [
+    "20px rounded corners",
+    "soft bottom shadow"
+  ],
+  "usageHints": {
+    "priorityHint": "high",
+    "do": [
+      "卡片圆角20px",
+      "柔和阴影",
+      "卡片间距16px"
+    ],
+    "dont": [
+      "避免信息过载"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

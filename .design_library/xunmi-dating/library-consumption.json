@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "library": "xunmi-dating",
+  "brandName": "寻觅 Xunmi",
+  "kitType": "mobile",
+  "readOrder": [
+    {
+      "phase": "entry",
+      "file": "SKILL.md",
+      "purpose": "Skill entry point — brand at a glance, file map, essentials",
+      "consumedBy": "agent-bootstrap",
+      "priority": 0
+    },
+    {
+      "phase": "brand-context",
+      "file": "README.md",
+      "purpose": "Full brand narrative — visual foundations, voice & tone, component patterns, caveats",
+      "consumedBy": "agent-understanding",
+      "priority": 1
+    },
+    {
+      "phase": "tokens",
+      "file": "css.json",
+      "purpose": "Structured design token source — colors, typography, spacing, radius, shadows, motion",
+      "consumedBy": "token-system",
+      "priority": 2,
+      "note": "Use css.json to understand tokens. colors_and_type.css is the runtime link target, not for comprehension."
+    },
+    {
+      "phase": "tokens-runtime",
+      "file": "colors_and_type.css",
+      "purpose": "Drop-in runtime CSS variables — link in HTML, do not parse for token understanding",
+      "consumedBy": "runtime-link",
+      "priority": 3,
+      "note": "Link this file in HTML pages. When css.json exists, read css.json instead to understand token values."
+    },
+    {
+      "phase": "component-index",
+      "file": "components/index.json",
+      "purpose": "Component catalog — slugs, names, categories, variant counts, key insights",
+      "consumedBy": "component-discovery",
+      "priority": 4
+    },
+    {
+      "phase": "component-resolution",
+      "file": "preview/component-{slug}.html",
+      "purpose": "Primary component source — DOM structure + CSS for highest fidelity rendering",
+      "consumedBy": "component-render",
+      "priority": 5,
+      "resolutionOrder": [
+        "preview/component-{slug}.html",
+        "components/{slug}.json",
+        "components/_evidence/{slug}.json"
+      ],
+      "note": "Preview HTML is the first source for DOM/CSS fidelity. Component JSON provides intent/variants. _evidence JSON is fallback only when preview is missing or insufficient."
+    },
+    {
+      "phase": "component-contract",
+      "file": "components/{slug}.json",
+      "purpose": "Component contract — intent, variants, states, anatomy, usage hints",
+      "consumedBy": "component-intent",
+      "priority": 6,
+      "kind": "compact-json"
+    },
+    {
+      "phase": "component-styles",
+      "file": "components.css",
+      "purpose": "Aggregated component CSS — auto-extracted from preview pages",
+      "consumedBy": "runtime-link",
+      "priority": 7,
+      "note": "Link after colors_and_type.css. Contains all component class definitions."
+    }
+  ],
+  "componentSlugs": ["button", "card", "bottom-nav", "avatar", "chip", "input"],
+  "uikit": {
+    "type": "mobile",
+    "componentSourcePriority": [
+      "preview/component-{slug}.html",
+      "components/{slug}.json",
+      "components/_evidence/{slug}.json"
+    ],
+    "note": "UI Kit reads preview HTML first for DOM/CSS. Falls back to _evidence JSON only when preview is missing or insufficient."
+  }
+}

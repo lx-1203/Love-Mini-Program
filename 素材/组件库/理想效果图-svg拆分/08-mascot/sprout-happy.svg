@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="sprout-happy-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="68" rx="40" ry="38" fill="url(#sprout-happy-body)"/>
+  <path d="M55 30c-2-6-7-10-12-10-3 5-1 12 4 14 4 1 7-1 8-4z" fill="#36C99A"/>
+  <path d="M65 30c2-6 7-10 12-10 3 5 1 12-4 14-4 1-7-1-8-4z" fill="#36C99A"/>
+  <path d="M60 32c0-8 4-14 10-16 0 6-2 12-8 16-2 0-2 0-2 0z" fill="#2BA87E"/>
+  <!-- Happy closed eyes -->
+  <path d="M42 62c2-4 5-6 8-6s6 2 8 6" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M62 62c2-4 5-6 8-6s6 2 8 6" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Cheeks -->
+  <ellipse cx="38" cy="72" rx="7" ry="5" fill="#FFB6C1" opacity="0.7"/>
+  <ellipse cx="82" cy="72" rx="7" ry="5" fill="#FFB6C1" opacity="0.7"/>
+  <!-- Big smile -->
+  <path d="M48 76c4 8 20 8 24 0" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

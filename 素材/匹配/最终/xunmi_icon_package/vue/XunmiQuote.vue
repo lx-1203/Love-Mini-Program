@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 9.5C3 6 5.1 4 8.7 4v4c-1.8 0-2.8.8-2.8 2.4v.1h2.4V16H3V9.5Zm10.7 0c0-3.5 2.1-5.5 5.7-5.5v4c-1.8 0-2.8.8-2.8 2.4v.1H19V16h-5.3V9.5Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: 'XunmiQuote' })
+</script>

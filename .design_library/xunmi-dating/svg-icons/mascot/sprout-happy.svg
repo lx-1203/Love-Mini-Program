@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="bodyGrad2" x1="60" y1="20" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="leafGrad2" x1="50" y1="10" x2="50" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#88D8B0"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <!-- Left leaf -->
+  <path d="M45 18c-8-2-14 6-10 15 2 5 8 7 13 5 0-8 2-15-3-20z" fill="url(#leafGrad2)"/>
+  <!-- Right leaf -->
+  <path d="M75 18c8-2 14 6 10 15-2 5-8 7-13 5 0-8-2-15 3-20z" fill="url(#leafGrad2)"/>
+  <!-- Stem -->
+  <rect x="58" y="23" width="4" height="12" rx="2" fill="#36C99A"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="70" rx="38" ry="35" fill="url(#bodyGrad2)"/>
+  <!-- Highlight -->
+  <ellipse cx="48" cy="55" rx="12" ry="8" fill="#fff" opacity="0.25"/>
+  <!-- Closed happy eyes -->
+  <path d="M44 68c2-4 8-4 10 0" stroke="#2D3748" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M66 68c2-4 8-4 10 0" stroke="#2D3748" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Cheeks -->
+  <circle cx="38" cy="78" r="6" fill="#FFB6C1" opacity="0.7"/>
+  <circle cx="82" cy="78" r="6" fill="#FFB6C1" opacity="0.7"/>
+  <!-- Big smile -->
+  <path d="M50 78c3 7 17 7 20 0" stroke="#2D3748" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Sparkle -->
+  <path d="M28 50l2-4 2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#FFD93D" opacity="0.8"/>
+  <path d="M92 48l1.5-3 1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#FFD93D" opacity="0.8"/>
+</svg>

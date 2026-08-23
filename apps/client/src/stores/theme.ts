@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 深色模式状态（收尾轮接线：tokens.scss 已提供 [data-theme="dark"] 手动覆盖，
  * 本 store 负责状态持久化与 H5 端 DOM 属性切换）。
  *
@@ -76,6 +76,12 @@ export const useThemeStore = defineStore("theme", {
     /** 初始化时应用一次主题属性（main.ts 调用） */
     init(): void {
       applyThemeAttribute(this.mode);
+    },
+
+    /** 直接切换深色/浅色模式（切换开关用） */
+    toggleTheme(): void {
+      const next: ThemeMode = this.mode === "dark" ? "light" : "dark";
+      this.setMode(next);
     },
   },
 });

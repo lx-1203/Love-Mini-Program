@@ -1,0 +1,17 @@
+底部工具栏图标
+页面底部工具栏的操作图标集合
+总数: 13 个
+
+  toolbar_row7_01.png          78x76  [点赞/心形]  白色  7.0KB
+  toolbar_row7_02.png          78x75  [评论/气泡]  彩色  6.9KB
+  toolbar_row7_03.png          68x74  [分享/转发]  白色  7.0KB
+  toolbar_row7_04.png          68x69  [收藏/星标]  彩色  7.4KB
+  toolbar_row7_05.png          70x69  [更多操作]  彩色  8.0KB
+  toolbar_row7_06.png          70x70  [发送/发送按钮]  彩色  8.4KB
+  toolbar_row7_07.png          68x50  [表情/贴纸]  彩色  4.6KB
+  toolbar_row7_08.png          74x67  [图片/相册]  橙色  7.4KB
+  toolbar_row7_09.png          75x74  [语音/麦克风]  彩色  9.4KB
+  toolbar_row7_10.png          75x74  [位置/地图]  彩色  9.9KB
+  toolbar_row7_11.png          77x75  [拍照/相机]  彩色  13.4KB
+  toolbar_row7_12.png          72x70  [红包/礼物]  白色  7.7KB
+  toolbar_row7_13.png          70x69  [删除/垃圾桶]  白色  7.5KB

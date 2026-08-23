@@ -16,6 +16,10 @@ export interface RelationActivityViewModel {
   visitors: number;
   newMatches: number;
   totalUnread: number;
+  likesAvatars?: string[];
+  whisperAvatars?: string[];
+  visitorAvatars?: string[];
+  matchAvatars?: string[];
 }
 
 export interface InterestCircleViewModel {
@@ -70,6 +74,10 @@ export function toHomeViewModel(feed: HomeFeedView | null): HomeViewModel {
       visitors: 0,
       newMatches: 0,
       totalUnread: 0,
+      likesAvatars: [],
+      whisperAvatars: [],
+      visitorAvatars: [],
+      matchAvatars: [],
     },
     interestRecommendations: feed?.interestRecommendations ?? [],
     nearbyPeople: feed?.nearbyPeople ?? [],

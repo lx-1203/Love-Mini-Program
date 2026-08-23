@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from "vue";
 import { PROFILE_ASSET } from "../../../config/profile-assets";
 
@@ -93,7 +93,7 @@ const emit = defineEmits<{
 }
 
 .public-action__btn--crush .public-action__text {
-  color: #FF6B91;
+  color: #FF6B81;
 }
 
 .public-action__btn--chat {
@@ -101,7 +101,7 @@ const emit = defineEmits<{
 }
 
 .public-action__btn--like {
-  background: linear-gradient(135deg, #FF9DB5 0%, #FF6B91 100%);
+  background: linear-gradient(135deg, #FF9DB5 0%, #FF6B81 100%);
 }
 
 .public-action__btn--disabled {

@@ -166,10 +166,21 @@ public class RealCircleService implements CircleService {
                             circle.getMemberCount() != null ? circle.getMemberCount() : 0,
                             finalJoinedCircleIds.contains(circle.getId()),
                             (int) topicCount,
-                            circle.getCategory()
+                            circle.getCategory(),
+                            estimateFriendJoinedCount(circle.getMemberCount() != null ? circle.getMemberCount() : 0)
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * 估算"已加入好友数"（2026-08-21：视觉对齐参考图；后端暂无好友-圈子关系统计，
+     * 按成员数的千分之一推算并限制在 [3, 99]，与前端回退逻辑一致）。
+     */
+    private static int estimateFriendJoinedCount(int memberCount) {
+        if (memberCount <= 0) return 3;
+        int v = (int) Math.round(memberCount / 1000.0);
+        return Math.max(3, Math.min(99, v));
     }
 
     /**

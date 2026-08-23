@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
 
@@ -70,8 +70,9 @@ const genderSymbol = computed(() => {
         <view class="my-header__name-row">
           <text class="my-header__name">{{ props.profile.basic.name }}</text>
           <text v-if="genderSymbol" class="my-header__gender">{{ genderSymbol }}</text>
-          <text v-if="metaLine" class="my-header__meta">{{ metaLine }}</text>
+          <view class="my-header__online"><text class="my-header__online-text">在线</text></view>
         </view>
+        <text v-if="metaLine" class="my-header__meta">{{ metaLine }}</text>
         <view v-if="certLabel" class="my-header__cert">
           <text class="my-header__cert-text">{{ certLabel }}</text>
         </view>
@@ -92,7 +93,7 @@ const genderSymbol = computed(() => {
 .my-header {
   position: relative;
   padding: 48rpx 32rpx 56rpx;
-  background: linear-gradient(180deg, #36C99A 0%, #B8F0DE 100%);
+  background: linear-gradient(160deg, #E8F5E9 0%, #F0FFF0 100%);
   border-radius: 0 0 40rpx 40rpx;
 }
 
@@ -121,7 +122,7 @@ const genderSymbol = computed(() => {
 
 .my-header__icon-text {
   font-size: 30rpx;
-  color: #ffffff;
+  color: #333333;
 }
 
 .my-header__content {
@@ -136,10 +137,10 @@ const genderSymbol = computed(() => {
   width: 180rpx;
   height: 180rpx;
   border-radius: 50%;
-  border: 6rpx solid #ffffff;
+  border: 6rpx solid #FFFFFF;
   box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  background: #E8FBF2;
+  background: #E8FBF3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,6 +186,22 @@ const genderSymbol = computed(() => {
   padding-top: 16rpx;
 }
 
+.my-header__online {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.my-header__online-text {
+  font-size: 20rpx;
+  color: #ffffff;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
 .my-header__name-row {
   display: flex;
   align-items: baseline;
@@ -195,39 +212,39 @@ const genderSymbol = computed(() => {
 .my-header__name {
   font-size: 52rpx;
   font-weight: 800;
-  color: #ffffff;
+  color: #222222;
   line-height: 1.1;
 }
 
 .my-header__meta {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.92);
+  color: #666666;
   font-weight: 500;
 }
 
 .my-header__gender {
   font-size: 34rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: #FF6B9D;
 }
 
 .my-header__cert {
   align-self: flex-start;
   padding: 6rpx 18rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.22);
-  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  background: #FFFFFF;
+  border: 1rpx solid rgba(54, 201, 154, 0.5);
 }
 
 .my-header__cert-text {
   font-size: 20rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: #36C99A;
 }
 
 .my-header__bio {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.95);
+  color: #555555;
   line-height: 1.5;
 }
 
@@ -239,8 +256,9 @@ const genderSymbol = computed(() => {
 .my-header__edit {
   padding: 12rpx 26rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.25);
-  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  background: #FFFFFF;
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
 .my-header__edit--pressed {
@@ -250,6 +268,6 @@ const genderSymbol = computed(() => {
 .my-header__edit-text {
   font-size: 26rpx;
   font-weight: 500;
-  color: #ffffff;
+  color: #222222;
 }
 </style>

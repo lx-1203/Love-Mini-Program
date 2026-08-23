@@ -1,0 +1,13 @@
+TabBar 顶部导航图标
+底部 TabBar 图标 + 页面顶部小图标，用于主导航切换
+总数: 9 个
+
+  icon_row1_01.png            72x113  [搜索图标]  彩色  11.6KB
+  icon_row1_02.png            62x109  [发现/首页图标]  彩色  10.9KB
+  icon_row1_03.png           176x182  [大号品牌图标/吉祥物]  彩色  43.2KB
+  icon_row1_04.png            92x119  [消息图标]  彩色  16.8KB
+  icon_row1_05.png            68x109  [附近图标]  彩色  12.0KB
+  icon_row1_06.png             47x54  [设置/更多图标(三点)]  彩色  4.7KB
+  icon_row1_07.png             68x67  [通知/铃铛图标]  彩色  8.3KB
+  icon_row1_08.png             57x57  [心形/点赞图标]  彩色  5.1KB
+  icon_row1_09.png             23x37  [小圆点/指示器]  彩色  1.6KB

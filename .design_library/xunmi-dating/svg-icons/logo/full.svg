@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" fill="none">
+  <defs>
+    <linearGradient id="fullLogoBody" x1="32" y1="12" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+    <linearGradient id="fullLogoLeaf" x1="26" y1="4" x2="26" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#88D8B0"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <!-- Mascot mark -->
+  <g>
+    <path d="M24 12c-5-1-9 4-6 10 1 3 5 4 8 3 0-5 1-10-2-13z" fill="url(#fullLogoLeaf)"/>
+    <path d="M40 12c5-1 9 4 6 10-1 3-5 4-8 3 0-5-1-10 2-13z" fill="url(#fullLogoLeaf)"/>
+    <rect x="30" y="16" width="4" height="8" rx="2" fill="#36C99A"/>
+    <ellipse cx="32" cy="38" rx="20" ry="18" fill="url(#fullLogoBody)"/>
+    <ellipse cx="26" cy="30" rx="6" ry="4" fill="#fff" opacity="0.25"/>
+    <circle cx="26" cy="37" r="2.5" fill="#2D3748"/>
+    <circle cx="38" cy="37" r="2.5" fill="#2D3748"/>
+    <circle cx="27" cy="36" r="1" fill="#fff"/>
+    <circle cx="39" cy="36" r="1" fill="#fff"/>
+    <circle cx="20" cy="43" r="3" fill="#FFB6C1" opacity="0.6"/>
+    <circle cx="44" cy="43" r="3" fill="#FFB6C1" opacity="0.6"/>
+    <path d="M28 44c1.5 3 6.5 3 8 0" stroke="#2D3748" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- Brand text -->
+  <text x="68" y="44" font-size="32" font-weight="700" fill="#2D3748" font-family="PingFang SC, Microsoft YaHei, sans-serif" letter-spacing="2">寻觅</text>
+  <text x="70" y="58" font-size="12" font-weight="400" fill="#36C99A" font-family="PingFang SC, Microsoft YaHei, sans-serif" letter-spacing="3">XUNMI</text>
+</svg>

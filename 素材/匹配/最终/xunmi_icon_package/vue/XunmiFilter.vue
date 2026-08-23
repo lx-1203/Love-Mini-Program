@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 5.5C3 4.7 3.7 4 4.5 4h15c.8 0 1.5.7 1.5 1.5 0 .4-.2.8-.5 1.1L14 13v5.3c0 .5-.3 1-.8 1.3l-2 1.1c-.9.5-2-.2-2-1.3V13L3.5 6.6c-.3-.3-.5-.7-.5-1.1Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: 'XunmiFilter' })
+</script>

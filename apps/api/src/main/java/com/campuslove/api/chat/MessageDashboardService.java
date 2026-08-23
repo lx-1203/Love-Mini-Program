@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
 import com.campuslove.api.entity.Like;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 /**
  * 消息首页聚合服务（消息 V3）。
  */
+@Profile("real")
 @Service
 public class MessageDashboardService {
 
@@ -61,10 +63,15 @@ public class MessageDashboardService {
         Long peerUserId = currentUserId.equals(conversation.userAId())
                 ? conversation.userBId()
                 : conversation.userAId();
+        String avatar = conversation.otherUserAvatar();
+        if (avatar == null || avatar.isBlank()) {
+            // 2026-08-21：种子用户无头像时用默认人物素材兜底，避免消息页"正在升温"显示占位符
+            avatar = "/static/assets/images/avatars/avatar-" + ((Math.abs(peerUserId) % 12) + 1) + ".jpg";
+        }
         return new RelationshipPersonView(
                 peerUserId,
                 conversation.otherUserName(),
-                conversation.otherUserAvatar(),
+                avatar,
                 conversation.headline(),
                 conversation.relationship());
     }

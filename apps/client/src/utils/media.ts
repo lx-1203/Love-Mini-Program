@@ -45,7 +45,7 @@ import { ensurePrivacyAuthorized } from "./privacy";
 import { useMock } from "../stores/helpers/use-mock";
 // 2026-08-16：pexels 外链本地化兜底（mp 端无法加载外链图，见 image-local.ts），
 // 与 SafeImage 的 toLocalImage(resolveMediaUrl(raw)) 语义一致
-import { toLocalImage } from "./image-local";
+import { toLocalImage, toLocalMockMedia } from "./image-local";
 
 /**
  * 上传文件存储路径前缀。
@@ -82,6 +82,13 @@ const LOCAL_ASSET_PREFIXES = [
   "/static/audio/",
   "/static/default-avatar",
   "/static/assets/default-avatar",
+  // 2026-08-21：头像/人物素材为构建包内本地资源（未入库后端 app-assets），
+  // 保留本地路径直连，避免 app-assets 代理 404 导致头像加载失败显示占位。
+  "/static/assets/images/avatars/",
+  "/static/assets/images/people/",
+  // 2026-08-21：消息/聊天相关静态资源（assistant_avatar.svg 等）保留本地直连，
+  // 避免 resolveMediaUrl 重写为 HTTP app-assets 端点导致微信不支持 HTTP 协议警告。
+  "/static/assets/message/",
 ];
 
 /**
@@ -127,6 +134,13 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
   const localized = toLocalImage(path);
   if (localized !== path) {
     return localized;
+  }
+
+  // 2026-08-23：mock 演示媒体（/uploads/mock/*）在 mp 端因 HTTP 无法加载，
+  // 统一本地化到包内 static 资源，避免 HTTP 拦截导致图片不渲染/布局撑大。
+  const mockLocal = toLocalMockMedia(path);
+  if (mockLocal !== path) {
+    return mockLocal;
   }
 
   // 绝对 URL / data URI / blob URL → 原样返回（无需鉴权）

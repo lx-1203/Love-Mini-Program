@@ -22,6 +22,7 @@
     "condition": false
   },
   "compileType": "miniprogram",
+  "libVersion": "3.7.12",
   "miniprogramRoot": "apps/client/dist/build/mp-weixin/",
   "simulatorPluginLibVersion": {},
   "packOptions": {

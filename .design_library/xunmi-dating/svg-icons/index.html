@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寻觅 SVG 图标库</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+      background: #f8fafb;
+      color: #2D3748;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--color-primary, #36C99A);
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      font-size: 14px;
+      color: #718096;
+    }
+    .category {
+      margin-bottom: 48px;
+    }
+    .category-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2D3748;
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--color-primary, #36C99A);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .category-title span {
+      font-size: 13px;
+      font-weight: 400;
+      color: #A0AEC0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 16px;
+    }
+    .icon-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+      border: 1px solid #EDF2F7;
+    }
+    .icon-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(54, 201, 154, 0.15);
+      border-color: rgba(54, 201, 154, 0.3);
+    }
+    .icon-preview {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary, #36C99A);
+    }
+    .icon-preview svg {
+      width: 100%;
+      height: 100%;
+    }
+    .icon-card.large .icon-preview {
+      width: 80px;
+      height: 80px;
+    }
+    .icon-name {
+      font-size: 12px;
+      color: #4A5568;
+      text-align: center;
+      word-break: break-all;
+      line-height: 1.4;
+      font-family: "SF Mono", Consolas, monospace;
+    }
+    .section-divider {
+      height: 1px;
+      background: #E2E8F0;
+      margin: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>寻觅 SVG 图标库</h1>
+      <p>Xunmi Dating App Icon Library · 共 73 个图标</p>
+    </div>
+
+    <!-- Tabbar Icons -->
+    <section class="category">
+      <h2 class="category-title">Tabbar 底部导航 <span>5个</span></h2>
+      <div class="grid">
+        <div class="icon-card">
+          <div class="icon-preview"><img src="tabbar/home.svg" alt="home"></div>
+          <span class="icon-name">home.svg</span>
+        </div>
+        <div class="icon-card">
+          <div class="icon-preview"><img src="tabbar/nearby.svg" alt="nearby"></div>
+          <span class="icon-name">nearby.svg</span>
+        </div>
+        <div class="icon-card">
+          <div class="icon-preview"><img src="tabbar/match.svg" alt="match" style="color:#FF6B81"></div>
+          <span class="icon-name">match.svg</span>
+        </div>
+        <div class="icon-card">
+          <div class="icon-preview"><img src="tabbar/message.svg" alt="message"></div>
+          <span class="icon-name">message.svg</span>
+        </div>
+        <div class="icon-card">
+          <div class="icon-preview"><img src="tabbar/profile.svg" alt="profile"></div>
+          <span class="icon-name">profile.svg</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Icons -->
+    <section class="category">
+      <h2 class="category-title">Action 功能图标 <span>24个</span></h2>
+      <div class="grid">
+        <div class="icon-card"><div class="icon-preview"><img src="action/search.svg" alt=""></div><span class="icon-name">search.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/heart.svg" alt=""></div><span class="icon-name">heart.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/heart-filled.svg" alt="" style="color:#FF6B81"></div><span class="icon-name">heart-filled.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/comment.svg" alt=""></div><span class="icon-name">comment.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/share.svg" alt=""></div><span class="icon-name">share.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/bookmark.svg" alt=""></div><span class="icon-name">bookmark.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/settings.svg" alt=""></div><span class="icon-name">settings.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/edit.svg" alt=""></div><span class="icon-name">edit.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/camera.svg" alt=""></div><span class="icon-name">camera.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/location.svg" alt=""></div><span class="icon-name">location.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/calendar.svg" alt=""></div><span class="icon-name">calendar.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/bell.svg" alt=""></div><span class="icon-name">bell.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/plus.svg" alt=""></div><span class="icon-name">plus.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/more.svg" alt=""></div><span class="icon-name">more.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/close.svg" alt=""></div><span class="icon-name">close.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/back.svg" alt=""></div><span class="icon-name">back.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/verify.svg" alt=""></div><span class="icon-name">verify.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/star.svg" alt="" style="color:#FFD93D"></div><span class="icon-name">star.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/filter.svg" alt=""></div><span class="icon-name">filter.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/image.svg" alt=""></div><span class="icon-name">image.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/emoji.svg" alt=""></div><span class="icon-name">emoji.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/gift.svg" alt=""></div><span class="icon-name">gift.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/music.svg" alt=""></div><span class="icon-name">music.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="action/flash.svg" alt=""></div><span class="icon-name">flash.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Interest Icons -->
+    <section class="category">
+      <h2 class="category-title">Interest 兴趣分类 <span>10个</span></h2>
+      <div class="grid">
+        <div class="icon-card"><div class="icon-preview"><img src="interest/photography.svg" alt=""></div><span class="icon-name">photography.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/travel.svg" alt=""></div><span class="icon-name">travel.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/music.svg" alt=""></div><span class="icon-name">music.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/movie.svg" alt=""></div><span class="icon-name">movie.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/reading.svg" alt=""></div><span class="icon-name">reading.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/food.svg" alt=""></div><span class="icon-name">food.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/gaming.svg" alt=""></div><span class="icon-name">gaming.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/sports.svg" alt=""></div><span class="icon-name">sports.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/art.svg" alt=""></div><span class="icon-name">art.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="interest/coffee.svg" alt=""></div><span class="icon-name">coffee.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Status Icons -->
+    <section class="category">
+      <h2 class="category-title">Status 状态图标 <span>8个</span></h2>
+      <div class="grid">
+        <div class="icon-card"><div class="icon-preview"><img src="status/online.svg" alt="" style="color:#36C99A"></div><span class="icon-name">online.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/offline.svg" alt="" style="color:#A0AEC0"></div><span class="icon-name">offline.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/verified.svg" alt="" style="color:#36C99A"></div><span class="icon-name">verified.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/new.svg" alt="" style="color:#FF6B81"></div><span class="icon-name">new.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/hot.svg" alt="" style="color:#FF6B81"></div><span class="icon-name">hot.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/success.svg" alt="" style="color:#36C99A"></div><span class="icon-name">success.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/warning.svg" alt="" style="color:#ECC94B"></div><span class="icon-name">warning.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="status/error.svg" alt="" style="color:#FC8181"></div><span class="icon-name">error.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Mascot -->
+    <section class="category">
+      <h2 class="category-title">Mascot 寻觅芽吉祥物 <span>6个</span></h2>
+      <div class="grid">
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-default.svg" alt=""></div><span class="icon-name">sprout-default.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-happy.svg" alt=""></div><span class="icon-name">sprout-happy.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-love.svg" alt=""></div><span class="icon-name">sprout-love.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-thinking.svg" alt=""></div><span class="icon-name">sprout-thinking.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-waving.svg" alt=""></div><span class="icon-name">sprout-waving.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview"><img src="mascot/sprout-sad.svg" alt=""></div><span class="icon-name">sprout-sad.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Decoration -->
+    <section class="category">
+      <h2 class="category-title">Decoration 装饰元素 <span>10个</span></h2>
+      <div class="grid">
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/leaf.svg" alt=""></div><span class="icon-name">leaf.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/leaf-fall.svg" alt=""></div><span class="icon-name">leaf-fall.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/heart-soft.svg" alt=""></div><span class="icon-name">heart-soft.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/heart-tiny.svg" alt="" style="color:#FF6B81"></div><span class="icon-name">heart-tiny.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/sparkle-1.svg" alt="" style="color:#FFD93D"></div><span class="icon-name">sparkle-1.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/sparkle-2.svg" alt="" style="color:#FFD93D"></div><span class="icon-name">sparkle-2.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/bubble.svg" alt=""></div><span class="icon-name">bubble.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/dot-pattern.svg" alt="" style="color:#36C99A"></div><span class="icon-name">dot-pattern.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/wing-left.svg" alt=""></div><span class="icon-name">wing-left.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="decoration/confetti.svg" alt=""></div><span class="icon-name">confetti.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Logo -->
+    <section class="category">
+      <h2 class="category-title">Logo 品牌标志 <span>2个</span></h2>
+      <div class="grid">
+        <div class="icon-card large"><div class="icon-preview"><img src="logo/mark.svg" alt=""></div><span class="icon-name">mark.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview" style="width:140px;height:48px"><img src="logo/full.svg" alt=""></div><span class="icon-name">full.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Avatar -->
+    <section class="category">
+      <h2 class="category-title">Avatar 头像框 <span>4个</span></h2>
+      <div class="grid">
+        <div class="icon-card"><div class="icon-preview"><img src="avatar/frame-gradient.svg" alt=""></div><span class="icon-name">frame-gradient.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="avatar/frame-pink.svg" alt=""></div><span class="icon-name">frame-pink.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="avatar/placeholder-male.svg" alt="" style="color:#4A5568"></div><span class="icon-name">placeholder-male.svg</span></div>
+        <div class="icon-card"><div class="icon-preview"><img src="avatar/placeholder-female.svg" alt="" style="color:#4A5568"></div><span class="icon-name">placeholder-female.svg</span></div>
+      </div>
+    </section>
+
+    <!-- Empty State -->
+    <section class="category">
+      <h2 class="category-title">Empty State 空状态插图 <span>4个</span></h2>
+      <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+        <div class="icon-card large"><div class="icon-preview" style="width:140px;height:140px"><img src="empty/story-empty.svg" alt=""></div><span class="icon-name">story-empty.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview" style="width:140px;height:140px"><img src="empty/gallery-empty.svg" alt=""></div><span class="icon-name">gallery-empty.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview" style="width:140px;height:140px"><img src="empty/feed-empty.svg" alt=""></div><span class="icon-name">feed-empty.svg</span></div>
+        <div class="icon-card large"><div class="icon-preview" style="width:140px;height:140px"><img src="empty/match-empty.svg" alt=""></div><span class="icon-name">match-empty.svg</span></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

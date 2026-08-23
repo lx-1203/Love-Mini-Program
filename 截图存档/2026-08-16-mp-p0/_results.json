@@ -1,0 +1,22 @@
+[
+  {
+    "ok": false,
+    "error": "timeout waiting for automator response",
+    "attempt": 4
+  },
+  {
+    "ok": true,
+    "bytes": 136272,
+    "attempt": 1
+  },
+  {
+    "ok": true,
+    "bytes": 241990,
+    "attempt": 1
+  },
+  {
+    "ok": true,
+    "bytes": 112054,
+    "attempt": 1
+  }
+]

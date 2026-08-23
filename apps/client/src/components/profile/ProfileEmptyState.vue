@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 withDefaults(defineProps<{
   title: string;
   description?: string;
@@ -28,7 +28,7 @@ const emit = defineEmits<{ (e: "action"): void }>();
   padding: 48rpx 32rpx;
   border-radius: 40rpx;
   background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -42,12 +42,12 @@ const emit = defineEmits<{ (e: "action"): void }>();
 .profile-empty__title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .profile-empty__desc {
   font-size: 24rpx;
-  color: #777777;
+  color: #6B7571;
   text-align: center;
 }
 
@@ -55,7 +55,7 @@ const emit = defineEmits<{ (e: "action"): void }>();
   margin-top: 12rpx;
   padding: 14rpx 32rpx;
   border-radius: 999rpx;
-  background: #DFF8EF;
+  background: #E8FBF3;
 }
 
 .profile-empty__action--pressed {

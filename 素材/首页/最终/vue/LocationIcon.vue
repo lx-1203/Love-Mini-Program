@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2.8a7.3 7.3 0 0 0-7.3 7.3c0 5 7.3 11.1 7.3 11.1s7.3-6.1 7.3-11.1A7.3 7.3 0 0 0 12 2.8Zm0 4.1a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "LocationIcon" })
+</script>

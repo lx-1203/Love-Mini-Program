@@ -81,26 +81,26 @@ export const mockSessions: MessageSession[] = [
 
 export const mockMessages: Record<string, MessageItem[]> = {
   "session-private-1": [
-    { id: "msg-1", sessionId: "session-private-1", sender: "peer", kind: "text", body: "嗨，看到你的资料觉得挺有缘的", sentAt: "2026-05-20T18:00:00Z" },
-    { id: "msg-2", sessionId: "session-private-1", sender: "self", kind: "text", body: "哈哈，我也觉得", sentAt: "2026-05-20T18:05:00Z" },
-    { id: "msg-3", sessionId: "session-private-1", sender: "peer", kind: "text", body: "明天下午有空吗？", sentAt: "2026-05-20T18:30:00Z" },
+    { id: "msg-1", sessionId: "session-private-1", sender: "peer", kind: "text", body: "嗨，看到你的资料觉得挺有缘的", sentAt: new Date(Date.now() - 4 * 3600_000).toISOString() },
+    { id: "msg-2", sessionId: "session-private-1", sender: "self", kind: "text", body: "哈哈，我也觉得", sentAt: new Date(Date.now() - 3.5 * 3600_000).toISOString() },
+    { id: "msg-3", sessionId: "session-private-1", sender: "peer", kind: "text", body: "明天下午有空吗？", sentAt: new Date(Date.now() - 8 * 60_000).toISOString() },
   ],
   "session-private-2": [
-    { id: "msg-4", sessionId: "session-private-2", sender: "peer", kind: "text", body: "图书馆三楼见", sentAt: "2026-05-19T21:00:00Z" },
+    { id: "msg-4", sessionId: "session-private-2", sender: "peer", kind: "text", body: "图书馆三楼见", sentAt: new Date(Date.now() - 2 * 3600_000).toISOString() },
   ],
   "session-private-3": [
-    { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: "2026-05-18T14:20:00Z" },
+    { id: "msg-5", sessionId: "session-private-3", sender: "peer", kind: "text", body: "上次拍的那组照片发你了", sentAt: new Date(Date.now() - 5 * 3600_000).toISOString() },
     {
       id: "msg-51",
       sessionId: "session-private-3",
       sender: "peer",
       kind: "activity",
       body: '{"title":"校园春日联谊会","desc":"一场轻松的春日联谊会，有破冰游戏、桌游互动、自由交流。","tag":"本周活动","targetUrl":"/pages/activities/detail?id=sample-weekend-party"}',
-      sentAt: "2026-05-18T14:25:00Z",
+      sentAt: new Date(Date.now() - 4 * 3600_000).toISOString(),
     },
   ],
   "session-temp-1": [
-    { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: "2026-05-20T20:00:00Z" },
+    { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: new Date(Date.now() - 3600_000).toISOString() },
   ],
 };
 
@@ -178,4 +178,3 @@ export const mockInteractionEvents: InteractionEvent[] = [
   { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_1, referenceId: 42, referenceType: "post", summary: "林晓评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
   { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "Luna", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_5, referenceId: 15, referenceType: "topic", summary: "Luna回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
-

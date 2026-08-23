@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M5.2 7.1h2.1l1.1-1.7h7.2l1.1 1.7h2.1A2.2 2.2 0 0 1 21 9.3v8.4a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 17.7V9.3a2.2 2.2 0 0 1 2.2-2.2Zm6.8 2.1a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4Zm0 2a2.7 2.7 0 1 1 0 5.4 2.7 2.7 0 0 1 0-5.4Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "CameraIcon" })
+</script>

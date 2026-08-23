@@ -1,0 +1,2 @@
+import type {SVGProps} from "react";
+export function HeartIcon(props:SVGProps<SVGSVGElement>){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20S4 15.3 3.5 9.8C3.1 6.8 5 4.5 7.8 4.5c1.8 0 3.3 1 4.2 2.4.9-1.4 2.4-2.4 4.2-2.4 2.8 0 4.7 2.3 4.3 5.3C19.9 15.3 12 20 12 20Z"/></svg>}

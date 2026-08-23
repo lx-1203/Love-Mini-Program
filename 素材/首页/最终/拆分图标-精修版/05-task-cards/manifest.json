@@ -1,0 +1,78 @@
+{
+  "category": "05-task-cards",
+  "title": "任务卡片与装饰元素",
+  "description": "每日任务卡片、进度提示、装饰性图案元素",
+  "total_icons": 7,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "card_row5_01.png",
+      "dimensions": "166x167",
+      "semantic_label": "任务卡片-完善资料",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 40835
+    },
+    {
+      "index": 2,
+      "filename": "card_row5_02.png",
+      "dimensions": "179x168",
+      "semantic_label": "任务卡片-发布动态",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 43407
+    },
+    {
+      "index": 3,
+      "filename": "card_row5_03.png",
+      "dimensions": "196x167",
+      "semantic_label": "任务卡片-每日签到",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 47390
+    },
+    {
+      "index": 4,
+      "filename": "card_row5_04.png",
+      "dimensions": "181x167",
+      "semantic_label": "任务卡片-邀请好友",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 44726
+    },
+    {
+      "index": 5,
+      "filename": "card_row5_05.png",
+      "dimensions": "99x101",
+      "semantic_label": "进度条装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 13947
+    },
+    {
+      "index": 6,
+      "filename": "card_row5_06.png",
+      "dimensions": "142x111",
+      "semantic_label": "星星装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 24055
+    },
+    {
+      "index": 7,
+      "filename": "card_row5_07.png",
+      "dimensions": "265x104",
+      "semantic_label": "花瓣/点缀装饰",
+      "color": "彩色",
+      "category": "05-task-cards",
+      "category_title": "任务卡片与装饰元素",
+      "file_size": 40365
+    }
+  ]
+}

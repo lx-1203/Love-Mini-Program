@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>头像 Avatar - 寻觅设计系统</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+/* Page scaffold — NOT extracted */
+body { margin: 0; padding: var(--space-3); background: var(--color-surface); font-family: var(--font-body); color: var(--color-on-surface); font-size: var(--font-size-body); }
+.row { display: flex; gap: var(--space-4); align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; }
+.label { font-size: var(--font-size-eyebrow); font-weight: var(--font-weight-eyebrow); color: var(--color-muted-foreground); text-transform: uppercase; letter-spacing: 0.08em; min-width: 92px; flex-shrink: 0; }
+.divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-4) 0; }
+
+/* @component-css-start */
+.avatar { display: inline-flex; position: relative; flex-shrink: 0; border-radius: var(--radius-full); overflow: hidden; background: var(--color-surface-variant); }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--color-on-primary); font-weight: 500; }
+.avatar-xs { width: 24px; height: 24px; font-size: 10px; }
+.avatar-sm { width: 32px; height: 32px; font-size: 12px; }
+.avatar-md { width: 40px; height: 40px; font-size: 14px; }
+.avatar-lg { width: 56px; height: 56px; font-size: 20px; }
+.avatar-xl { width: 80px; height: 80px; font-size: 28px; }
+.avatar-status { position: absolute; bottom: 0; right: 0; border-radius: var(--radius-full); border: 2px solid var(--color-surface); }
+.avatar-xs .avatar-status { width: 8px; height: 8px; border-width: 1px; }
+.avatar-sm .avatar-status { width: 10px; height: 10px; }
+.avatar-md .avatar-status { width: 12px; height: 12px; }
+.avatar-lg .avatar-status { width: 14px; height: 14px; }
+.avatar-xl .avatar-status { width: 16px; height: 16px; }
+.avatar-status.online { background: var(--color-success); }
+.avatar-status.offline { background: var(--color-muted-foreground); }
+.avatar-badge { position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--color-success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 2px solid var(--color-surface); }
+.avatar-lg .avatar-badge { width: 24px; height: 24px; font-size: 14px; }
+.avatar-xl .avatar-badge { width: 28px; height: 28px; font-size: 16px; }
+.avatar-ring { position: relative; display: inline-flex; border-radius: var(--radius-full); padding: 3px; flex-shrink: 0; }
+.avatar-ring.gradient { background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); }
+.avatar-ring.solid { background: var(--color-primary); }
+.avatar-ring .avatar { background: var(--color-surface); padding: 2px; }
+.avatar-ring .avatar-img { border: 2px solid var(--color-surface); }
+/* @component-css-end */
+</style>
+</head>
+<body>
+
+<div class="row">
+  <span class="label">尺寸</span>
+  <div class="avatar avatar-xs"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">寻</div></div>
+  <div class="avatar avatar-sm"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">寻</div></div>
+  <div class="avatar avatar-md"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">小寻</div></div>
+  <div class="avatar avatar-lg"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">小寻</div></div>
+  <div class="avatar avatar-xl"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">寻觅</div></div>
+</div>
+
+<hr class="divider">
+
+<div class="row">
+  <span class="label">状态</span>
+  <div class="avatar avatar-md"><div class="avatar-img" style="background:linear-gradient(135deg,#FFA3B3,#FF6B81)">雨桐</div><span class="avatar-status online"></span></div>
+  <div class="avatar avatar-md"><div class="avatar-img" style="background:linear-gradient(135deg,#B5B5A4,#767666)">思远</div><span class="avatar-status offline"></span></div>
+  <div class="avatar avatar-lg"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">嘉宁</div><span class="avatar-badge">✓</span></div>
+</div>
+
+<div class="row">
+  <span class="label">光环</span>
+  <div class="avatar-ring gradient"><div class="avatar avatar-xl"><div class="avatar-img" style="background:linear-gradient(135deg,#FFA3B3,#FF6B81)">VIP</div></div></div>
+  <div class="avatar-ring solid"><div class="avatar avatar-xl"><div class="avatar-img" style="background:linear-gradient(135deg,#7FE1BA,#36C99A)">达人</div></div></div>
+</div>
+
+</body>
+</html>

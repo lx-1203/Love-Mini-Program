@@ -508,6 +508,10 @@ public class RealPrivateMessageService implements PrivateMessageService {
         User otherUser = otherUserMap != null ? otherUserMap.get(otherUserId) : null;
         String otherUserName = otherUser != null ? otherUser.getNickname() : DisplayConstants.UNKNOWN_USER;
         String otherUserAvatar = otherUser != null ? otherUser.getAvatarUrl() : null;
+        if (otherUserAvatar == null || otherUserAvatar.isBlank()) {
+            // 2026-08-21：种子用户无头像时用默认人物素材兜底，避免聊天列表/正在升温显示占位符
+            otherUserAvatar = "/static/assets/images/avatars/avatar-" + ((Math.abs(otherUserId) % 12) + 1) + ".jpg";
+        }
 
         // 获取对方用户简介（从 User 的 bio 字段拼接年级和简介）
         String headline = "";
@@ -559,6 +563,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
             muted = false;
         }
 
+        RelationshipInfo relationship = buildRelationship(conv);
         return new ConversationView(
                 conv.getId(),
                 conv.getConversationUid(),
@@ -573,8 +578,34 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 pinned,
                 phase,
                 sessionType,
-                muted
+                muted,
+                relationship
         );
+    }
+
+    /**
+     * 构建会话关系信息（消息 V3：按会话 ID 确定性分配关系状态，供列表状态标签展示）。
+     * 状态映射对齐前端 RelationshipTag：chatting 聊天中 / just_met 刚认识 / mutual_follow 互相关注 / ambiguous 暧昧中。
+     */
+    private RelationshipInfo buildRelationship(PrivateConversation conv) {
+        try {
+            long seed = conv.getId() == null ? 0L : conv.getId();
+            int idx = (int) (seed % 4);
+            String[] statuses = {"chatting", "just_met", "mutual_follow", "ambiguous"};
+            String status = statuses[idx];
+            int score = 40 + (int) (seed % 60);
+            return new RelationshipInfo(
+                    status,
+                    score,
+                    LocalDateTime.now().minusDays(idx),
+                    idx + 1,
+                    java.util.List.of(),
+                    0,
+                    new SuggestedActionView("chat", "继续聊聊", null, null)
+            );
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**

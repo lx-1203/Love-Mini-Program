@@ -1,5 +1,6 @@
 package com.campuslove.api.chat;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.UserBasicProfile;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
  * 关系分数计算服务（消息 V3）。
  * 所有关系模块统一消费本服务，前端不自行计算。
  */
+@Profile("real")
 @Service
 public class RelationshipScoreService {
 

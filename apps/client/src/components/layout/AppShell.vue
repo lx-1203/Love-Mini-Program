@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * AppShell 应用布局组件
  *
@@ -248,7 +248,7 @@ function focusMainContent(): void {
   // 品牌色到背景色的渐变
   background: linear-gradient(
     180deg,
-    var(--c-bg-brand, #E6F8F1) 0%,
+    var(--c-bg-brand, #E8FAF3) 0%,
     var(--c-bg-page, #F7FAF9) 280rpx
   );
 }
@@ -362,3 +362,4 @@ function focusMainContent(): void {
   margin-top: auto;
 }
 </style>
+

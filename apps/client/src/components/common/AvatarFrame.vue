@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view
     class="avatar-frame"
     :class="[
@@ -48,7 +48,7 @@ const AVATAR_FRAMES: Record<AvatarFrameId, AvatarFrameTheme> = {
   none: { id: "none", name: "基础白框", priority: 0, gradient: ["#E5E7EB", "#D1D5DB"] },
   default: { id: "default", name: "品牌青绿框", priority: 5, gradient: ["#2DD4BF", "#14B8A6"], glow: "rgba(45, 212, 191, 0.35)" },
   vip: { id: "vip", name: "贵族金框", priority: 10, gradient: ["#FDE68A", "#F59E0B"], glow: "rgba(245, 158, 11, 0.45)", animated: true },
-  svip: { id: "svip", name: "至尊炫彩框", priority: 20, gradient: ["#F472B6", "#8B5CF6", "#3B82F6"], glow: "rgba(139, 92, 246, 0.5)", badgeIcon: "/static/assets/icons/common/crown.svg", animated: true },
+  svip: { id: "svip", name: "至尊炫彩框", priority: 20, gradient: ["#FF7C91", "#8B5CF6", "#3B82F6"], glow: "rgba(139, 92, 246, 0.5)", badgeIcon: "/static/assets/icons/common/crown.svg", animated: true },
   "school-verified": { id: "school-verified", name: "校园认证框", priority: 15, gradient: ["#36C99A", "#36C99A"], glow: "rgba(61, 201, 148, 0.4)", badgeIcon: "/static/assets/icons/common/check-circle.svg" },
   "super-test": { id: "super-test", name: "超级体验官框", priority: 25, gradient: ["#C084FC", "#FF6B81"], glow: "rgba(192, 132, 252, 0.5)", badgeIcon: "/static/assets/icons/common/star.svg", animated: true },
   anniversary: { id: "anniversary", name: "周年限定框", priority: 30, gradient: ["#FB7185", "#F43F5E", "#F97316"], glow: "rgba(244, 63, 94, 0.5)", badgeIcon: "/static/assets/icons/common/celebration.svg", animated: true },
@@ -166,3 +166,4 @@ const frameStyle = computed(() => ({
   filter: brightness(0) invert(1);
 }
 </style>
+

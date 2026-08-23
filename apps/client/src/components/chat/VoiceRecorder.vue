@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * VoiceRecorder — 语音录制组件
  *
@@ -409,10 +409,11 @@ onUnmounted(() => {
 }
 
 .voice-recorder__btn--recording .voice-recorder__btn-text {
-  color: var(--c-brand-700, #12805A);
+  color: var(--c-brand-700, #2AAE83);
 }
 
 .voice-recorder__btn--cancel .voice-recorder__btn-text {
   color: var(--c-error, #E5454D);
 }
 </style>
+

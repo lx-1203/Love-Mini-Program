@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev } from "../config/env";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
-import { loginWithWechat as authLoginWithWechat, loginAsGuest } from "../services/auth";
+import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
 import { getToken, clearTokens } from "../services/http";
 // 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
@@ -543,16 +543,12 @@ export const useSessionStore = defineStore("session", {
           // 修复（R4-00166）：自动 guest 重登仅限 mock/开发模式（isDev 或 apiMode=mock），
           // 真实模式改为静默登出——真实环境若自动切换体验账号会造成数据串号
           // （A 用户 token 失效后被当 B 体验账号写入数据）。
+          // 2026-08-23：默认未登录态。检测到失效 token 时仅清除并落地未登录态，
+          // 不再自动 guest 重登；用户需在登录页点「临时体验号」进入完整体验账号。
           if (!session?.loggedIn && getToken()) {
             clearTokens();
-            if (isDev || useMock()) {
-              console.warn("[SessionStore] 检测到失效 token，已清除并以体验账号自动重登（仅 mock/开发模式）");
-              this.userSession = await loginAsGuest();
-            } else {
-              // 真实模式：静默登出（保留未登录态，不自动切换账号）
-              console.warn("[SessionStore] 检测到失效 token，已静默登出（真实模式不自动切换体验账号）");
-              this.userSession = null;
-            }
+            console.warn("[SessionStore] 检测到失效 token，已清除并落地未登录态（不自动切换体验账号）");
+            this.userSession = null;
           } else {
             this.userSession = session;
           }

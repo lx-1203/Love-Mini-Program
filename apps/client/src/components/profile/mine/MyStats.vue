@@ -1,13 +1,13 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfileSocialProof } from "../../../types/profile";
 
 defineProps<{ socialProof: UserProfileSocialProof }>();
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
 const items = [
-  { key: "likes", label: "我喜欢", icon: "♥", color: "#8D7BFF" },
+  { key: "likes", label: "我喜欢", icon: "♥", color: "#A29BFE" },
   { key: "likedMe", label: "喜欢我的", icon: "♡", color: "#FF6B81" },
-  { key: "match", label: "我赞过", icon: "👍", color: "#FF9A57" },
+  { key: "match", label: "我赞过", icon: "👍", color: "#FF9F43" },
   { key: "visitors", label: "访客", icon: "👁", color: "#4D8DFF" },
 ];
 </script>
@@ -38,7 +38,7 @@ const items = [
   padding: 28rpx 8rpx;
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   display: flex;
 }
 
@@ -82,11 +82,11 @@ const items = [
 .my-stats__value {
   font-size: 34rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-stats__label {
   font-size: 22rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 </style>

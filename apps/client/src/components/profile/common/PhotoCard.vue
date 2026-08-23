@@ -39,7 +39,7 @@ const emit = defineEmits<{
   height: 216rpx;
   border-radius: 24rpx;
   overflow: hidden;
-  background: #DFF8EF;
+  background: #E8FBF3;
 }
 
 .photo-card__img {

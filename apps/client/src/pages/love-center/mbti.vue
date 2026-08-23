@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * MBTI 人格测试（任务 E3）
  *
@@ -578,7 +578,7 @@ function goBack() {
 
 .mbti-result-panel__btn--ghost {
   background: var(--c-bg-surface, #fafbfc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
 }
 
 .mbti-result-panel__btn--primary {
@@ -595,3 +595,4 @@ function goBack() {
   color: var(--c-text-inverse, #ffffff);
 }
 </style>
+

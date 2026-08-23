@@ -67,7 +67,7 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
   width: 104rpx;
   height: 104rpx;
   border-radius: 50%;
-  border: 4rpx solid #FFFFFF;
+  border: 4rpx solid #36C99A;
 }
 .warm-user__online {
   position: absolute;
@@ -84,7 +84,7 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
 .warm-user__name {
   font-size: 24rpx;
   font-weight: 500;
-  color: #222222;
+  color: #333A37;
 }
 .warm-user__heart {
   width: 28rpx;

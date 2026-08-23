@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "name": "02-home",
+      "ok": true,
+      "topSize": 100381,
+      "botSize": 161361
+    },
+    {
+      "name": "03-nearby",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "10-campus",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "11-circles-index",
+      "ok": true,
+      "topSize": 169792,
+      "botSize": 170976
+    },
+    {
+      "name": "12-circles-topic",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    },
+    {
+      "name": "13-village-detail",
+      "ok": false,
+      "error": "timeout waiting for automator response"
+    }
+  ],
+  "ts": "2026-08-23T11:40:09.023Z"
+}

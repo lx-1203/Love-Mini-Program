@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "name": "01-login",
+      "ok": true,
+      "topSize": 292064,
+      "botSize": 0
+    },
+    {
+      "name": "02-home",
+      "ok": true,
+      "topSize": 213784,
+      "botSize": 157931
+    },
+    {
+      "name": "03-nearby",
+      "ok": true,
+      "topSize": 145396,
+      "botSize": 170452
+    },
+    {
+      "name": "04-discover",
+      "ok": true,
+      "topSize": 331525,
+      "botSize": 336353
+    },
+    {
+      "name": "05-matching",
+      "ok": true,
+      "topSize": 331525,
+      "botSize": 0
+    },
+    {
+      "name": "06-match-success",
+      "ok": true,
+      "topSize": 108298,
+      "botSize": 0
+    },
+    {
+      "name": "07-messages",
+      "ok": true,
+      "topSize": 138385,
+      "botSize": 138337
+    },
+    {
+      "name": "08-profile",
+      "ok": true,
+      "topSize": 163296,
+      "botSize": 113792
+    },
+    {
+      "name": "09-other",
+      "ok": true,
+      "topSize": 12986,
+      "botSize": 12986
+    },
+    {
+      "name": "10-campus",
+      "ok": true,
+      "topSize": 88722,
+      "botSize": 88733
+    },
+    {
+      "name": "11-circles-index",
+      "ok": true,
+      "topSize": 191470,
+      "botSize": 213342
+    },
+    {
+      "name": "12-circles-topic",
+      "ok": true,
+      "topSize": 93105,
+      "botSize": 85745
+    },
+    {
+      "name": "13-village-detail",
+      "ok": true,
+      "topSize": 119706,
+      "botSize": 120056
+    },
+    {
+      "name": "14-notlogged-waiting",
+      "ok": true,
+      "topSize": 214376,
+      "botSize": 0
+    }
+  ],
+  "ts": "2026-08-21T16:26:26.892Z"
+}

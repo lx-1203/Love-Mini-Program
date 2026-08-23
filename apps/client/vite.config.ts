@@ -218,7 +218,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  define: resolveViteEnvDefine(mode),
+  define: { ...resolveViteEnvDefine(mode), "global": "globalThis" },
   plugins: [
     patchUniH5VueUpdateSlots(),
     uni.default(),

@@ -1,0 +1,58 @@
+{
+  "components": [
+    {
+      "slug": "button",
+      "name": "按钮 Button",
+      "category": "Action",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 4,
+      "keyInsightSeed": "薄荷绿主按钮 + 心动粉强调按钮，大圆角药丸形"
+    },
+    {
+      "slug": "card",
+      "name": "卡片 Card",
+      "category": "Layout",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 4,
+      "keyInsightSeed": "大圆角20px + 柔和阴影，白色卡片在浅绿背景上"
+    },
+    {
+      "slug": "bottom-nav",
+      "name": "底部导航 Bottom Navigation",
+      "category": "Navigation",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 2,
+      "keyInsightSeed": "5 Tab + 中间凸起心形按钮，薄荷绿选中态"
+    },
+    {
+      "slug": "avatar",
+      "name": "头像 Avatar",
+      "category": "Data Display",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 4,
+      "keyInsightSeed": "圆形头像 + 右下角状态点 + 可选渐变环"
+    },
+    {
+      "slug": "chip",
+      "name": "标签 Chip/Tag",
+      "category": "Data Display",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 4,
+      "keyInsightSeed": "药丸形小标签，兴趣/状态/距离多种类型"
+    },
+    {
+      "slug": "input",
+      "name": "输入框 Input",
+      "category": "Form",
+      "sourceKind": "from-scratch",
+      "confidence": "high",
+      "variantCount": 4,
+      "keyInsightSeed": "大圆角输入框，搜索/消息/默认三种形态"
+    }
+  ]
+}

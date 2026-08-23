@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 defineProps<{ photos: string[] }>();
 const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
 </script>
@@ -26,7 +26,7 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
   padding: 28rpx 28rpx;
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .public-gallery__title {
@@ -34,7 +34,7 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
   margin-bottom: 18rpx;
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .public-gallery__grid {
@@ -49,7 +49,7 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
   height: 150rpx;
   border-radius: 12rpx;
   overflow: hidden;
-  background: #EEF3F1;
+  background: #EEF2F0;
 }
 
 .public-gallery__cell--pressed {

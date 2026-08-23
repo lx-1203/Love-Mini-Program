@@ -1,5 +1,6 @@
 package com.campuslove.api.auth;
 
+import org.springframework.context.annotation.Profile;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.ActivityEnrollment;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component;
  * <p>幂等：按首个会话 conversation_uid（guest-demo-{userId}-{peerId}）判重，
  * 已播种过则整体跳过，避免重复灌入。</p>
  */
+@Profile("real")
 @Component
 public class GuestDemoDataProvisioner {
 
@@ -52,9 +54,9 @@ public class GuestDemoDataProvisioner {
     private static final long PEER_WALKTHROUGH = 8L;  // 走查号
 
     /** 喜欢我的虚拟用户（V2026.08.09.0017 口径 10009-10014） */
-    private static final long[] LIKERS = {10009L, 10010L, 10011L, 10012L, 10013L, 10014L};
+    private static final long[] LIKERS = {10001L, 10002L, 10003L, 10004L, 10005L, 10006L, 10007L, 10008L, 10009L, 10010L, 10011L, 10012L, 10013L, 10014L};
     /** 访客虚拟用户 */
-    private static final long[] VISITORS = {10001L, 10002L, 10003L, 10004L, 10005L};
+    private static final long[] VISITORS = {10001L, 10002L, 10003L, 10004L, 10005L, 10006L, 10007L, 10008L, 10009L, 10010L};
 
     private final PrivateConversationRepository conversationRepository;
     private final PrivateMessageRepository messageRepository;

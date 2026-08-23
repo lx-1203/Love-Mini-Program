@@ -14,62 +14,62 @@
 
 UPDATE users
 SET avatar_url = CASE id
-    WHEN 10001 THEN '/static/assets/images/avatars/person-02-avatar.webp'
-    WHEN 10002 THEN '/static/assets/images/avatars/person-03-avatar.webp'
-    WHEN 10003 THEN '/static/assets/images/avatars/person-04-avatar.webp'
-    WHEN 10004 THEN '/static/assets/images/avatars/person-05-avatar.webp'
-    WHEN 10005 THEN '/static/assets/images/avatars/person-06-avatar.webp'
-    WHEN 10009 THEN '/static/assets/images/avatars/person-07-avatar.webp'
-    WHEN 10010 THEN '/static/assets/images/avatars/person-08-avatar.webp'
-    WHEN 10011 THEN '/static/assets/images/avatars/person-09-avatar.webp'
-    WHEN 10012 THEN '/static/assets/images/avatars/person-02-avatar.webp'
-    WHEN 10013 THEN '/static/assets/images/avatars/person-03-avatar.webp'
-    WHEN 10014 THEN '/static/assets/images/avatars/person-04-avatar.webp'
+    WHEN 10001 THEN '/static/assets/images/avatars/person-02-avatar.png'
+    WHEN 10002 THEN '/static/assets/images/avatars/person-03-avatar.png'
+    WHEN 10003 THEN '/static/assets/images/avatars/person-04-avatar.png'
+    WHEN 10004 THEN '/static/assets/images/avatars/person-05-avatar.png'
+    WHEN 10005 THEN '/static/assets/images/avatars/person-06-avatar.png'
+    WHEN 10009 THEN '/static/assets/images/avatars/person-07-avatar.png'
+    WHEN 10010 THEN '/static/assets/images/avatars/person-08-avatar.png'
+    WHEN 10011 THEN '/static/assets/images/avatars/person-09-avatar.png'
+    WHEN 10012 THEN '/static/assets/images/avatars/person-02-avatar.png'
+    WHEN 10013 THEN '/static/assets/images/avatars/person-03-avatar.png'
+    WHEN 10014 THEN '/static/assets/images/avatars/person-04-avatar.png'
     ELSE avatar_url
   END
 WHERE id IN (10001, 10002, 10003, 10004, 10005, 10009, 10010, 10011, 10012, 10013, 10014);
 
 UPDATE user_basic_profile
 SET photo_gallery = CASE user_id
-    WHEN 10001 THEN JSON_ARRAY('/static/assets/images/people/person-02.webp')
-    WHEN 10002 THEN JSON_ARRAY('/static/assets/images/people/person-03.webp')
-    WHEN 10003 THEN JSON_ARRAY('/static/assets/images/people/person-04.webp')
-    WHEN 10004 THEN JSON_ARRAY('/static/assets/images/people/person-05.webp')
-    WHEN 10005 THEN JSON_ARRAY('/static/assets/images/people/person-06.webp')
-    WHEN 10009 THEN JSON_ARRAY('/static/assets/images/people/person-07.webp')
-    WHEN 10010 THEN JSON_ARRAY('/static/assets/images/people/person-08.webp')
-    WHEN 10011 THEN JSON_ARRAY('/static/assets/images/people/person-09.webp')
-    WHEN 10012 THEN JSON_ARRAY('/static/assets/images/people/person-02.webp')
-    WHEN 10013 THEN JSON_ARRAY('/static/assets/images/people/person-03.webp')
-    WHEN 10014 THEN JSON_ARRAY('/static/assets/images/people/person-04.webp')
+    WHEN 10001 THEN JSON_ARRAY('/static/assets/images/people/person-02.png')
+    WHEN 10002 THEN JSON_ARRAY('/static/assets/images/people/person-03.png')
+    WHEN 10003 THEN JSON_ARRAY('/static/assets/images/people/person-04.png')
+    WHEN 10004 THEN JSON_ARRAY('/static/assets/images/people/person-05.png')
+    WHEN 10005 THEN JSON_ARRAY('/static/assets/images/people/person-06.png')
+    WHEN 10009 THEN JSON_ARRAY('/static/assets/images/people/person-07.png')
+    WHEN 10010 THEN JSON_ARRAY('/static/assets/images/people/person-08.png')
+    WHEN 10011 THEN JSON_ARRAY('/static/assets/images/people/person-09.png')
+    WHEN 10012 THEN JSON_ARRAY('/static/assets/images/people/person-02.png')
+    WHEN 10013 THEN JSON_ARRAY('/static/assets/images/people/person-03.png')
+    WHEN 10014 THEN JSON_ARRAY('/static/assets/images/people/person-04.png')
     ELSE photo_gallery
   END,
   half_body_photo_url = CASE user_id
-    WHEN 10001 THEN '/static/assets/images/people/person-02.webp'
-    WHEN 10002 THEN '/static/assets/images/people/person-03.webp'
-    WHEN 10003 THEN '/static/assets/images/people/person-04.webp'
-    WHEN 10004 THEN '/static/assets/images/people/person-05.webp'
-    WHEN 10005 THEN '/static/assets/images/people/person-06.webp'
-    WHEN 10009 THEN '/static/assets/images/people/person-07.webp'
-    WHEN 10010 THEN '/static/assets/images/people/person-08.webp'
-    WHEN 10011 THEN '/static/assets/images/people/person-09.webp'
-    WHEN 10012 THEN '/static/assets/images/people/person-02.webp'
-    WHEN 10013 THEN '/static/assets/images/people/person-03.webp'
-    WHEN 10014 THEN '/static/assets/images/people/person-04.webp'
+    WHEN 10001 THEN '/static/assets/images/people/person-02.png'
+    WHEN 10002 THEN '/static/assets/images/people/person-03.png'
+    WHEN 10003 THEN '/static/assets/images/people/person-04.png'
+    WHEN 10004 THEN '/static/assets/images/people/person-05.png'
+    WHEN 10005 THEN '/static/assets/images/people/person-06.png'
+    WHEN 10009 THEN '/static/assets/images/people/person-07.png'
+    WHEN 10010 THEN '/static/assets/images/people/person-08.png'
+    WHEN 10011 THEN '/static/assets/images/people/person-09.png'
+    WHEN 10012 THEN '/static/assets/images/people/person-02.png'
+    WHEN 10013 THEN '/static/assets/images/people/person-03.png'
+    WHEN 10014 THEN '/static/assets/images/people/person-04.png'
     ELSE half_body_photo_url
   END,
   profile_background_url = CASE user_id
-    WHEN 10001 THEN '/static/assets/images/people/person-02.webp'
-    WHEN 10002 THEN '/static/assets/images/people/person-03.webp'
-    WHEN 10003 THEN '/static/assets/images/people/person-04.webp'
-    WHEN 10004 THEN '/static/assets/images/people/person-05.webp'
-    WHEN 10005 THEN '/static/assets/images/people/person-06.webp'
-    WHEN 10009 THEN '/static/assets/images/people/person-07.webp'
-    WHEN 10010 THEN '/static/assets/images/people/person-08.webp'
-    WHEN 10011 THEN '/static/assets/images/people/person-09.webp'
-    WHEN 10012 THEN '/static/assets/images/people/person-02.webp'
-    WHEN 10013 THEN '/static/assets/images/people/person-03.webp'
-    WHEN 10014 THEN '/static/assets/images/people/person-04.webp'
+    WHEN 10001 THEN '/static/assets/images/people/person-02.png'
+    WHEN 10002 THEN '/static/assets/images/people/person-03.png'
+    WHEN 10003 THEN '/static/assets/images/people/person-04.png'
+    WHEN 10004 THEN '/static/assets/images/people/person-05.png'
+    WHEN 10005 THEN '/static/assets/images/people/person-06.png'
+    WHEN 10009 THEN '/static/assets/images/people/person-07.png'
+    WHEN 10010 THEN '/static/assets/images/people/person-08.png'
+    WHEN 10011 THEN '/static/assets/images/people/person-09.png'
+    WHEN 10012 THEN '/static/assets/images/people/person-02.png'
+    WHEN 10013 THEN '/static/assets/images/people/person-03.png'
+    WHEN 10014 THEN '/static/assets/images/people/person-04.png'
     ELSE profile_background_url
   END
 WHERE user_id IN (10001, 10002, 10003, 10004, 10005, 10009, 10010, 10011, 10012, 10013, 10014);

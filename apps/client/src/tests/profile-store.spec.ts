@@ -111,6 +111,6 @@ describe("profile store", () => {
   it("mock 模式下 load() 提供本地头像 avatarUrl", async () => {
     const store = useProfileStore();
     await store.load();
-    expect(store.avatarUrl).toContain("/static/assets/images/avatars/person-01-avatar.webp");
+    expect(store.avatarUrl).toContain("/static/assets/images/avatars/person-01-avatar.png");
   });
 });

@@ -1,0 +1,132 @@
+{
+  "system": "寻觅 V3 Icon Design System",
+  "viewBox": "0 0 24 24",
+  "pathOnly": true,
+  "iconCount": 50,
+  "sizes": [
+    16,
+    20,
+    24,
+    32,
+    48
+  ],
+  "states": [
+    "default",
+    "muted",
+    "active",
+    "disabled",
+    "danger"
+  ],
+  "colors": {
+    "default": "#1A1A1A",
+    "muted": "#667085",
+    "active": "#00B86B",
+    "disabled": "#B8C0CC",
+    "danger": "#FF5A70"
+  },
+  "groups": {
+    "navigation": [
+      "arrow-left",
+      "search",
+      "menu",
+      "chevron-right",
+      "filter",
+      "refresh",
+      "close",
+      "check"
+    ],
+    "bottom-tab": [
+      "home",
+      "nearby",
+      "match",
+      "message",
+      "profile"
+    ],
+    "interest": [
+      "camera",
+      "travel",
+      "music",
+      "sport",
+      "food",
+      "star",
+      "book",
+      "movie",
+      "game",
+      "pet",
+      "science",
+      "paint",
+      "coffee",
+      "dance",
+      "more-grid"
+    ],
+    "home": [
+      "home",
+      "search",
+      "bell",
+      "star",
+      "people",
+      "calendar",
+      "clock",
+      "location",
+      "chevron-right",
+      "refresh"
+    ],
+    "nearby": [
+      "nearby",
+      "location",
+      "search",
+      "filter",
+      "people",
+      "camera",
+      "tag",
+      "calendar",
+      "clock",
+      "chevron-right",
+      "more-grid"
+    ],
+    "match": [
+      "match",
+      "heart",
+      "heart-fill",
+      "close",
+      "check",
+      "refresh",
+      "star",
+      "people",
+      "location",
+      "chevron-right"
+    ],
+    "message": [
+      "message",
+      "send",
+      "smile",
+      "more-circle",
+      "camera-plus",
+      "share",
+      "bell",
+      "search",
+      "close",
+      "check"
+    ],
+    "profile": [
+      "profile",
+      "edit",
+      "settings",
+      "share",
+      "camera-plus",
+      "lock",
+      "tag",
+      "heart",
+      "people",
+      "chevron-right"
+    ],
+    "system": [
+      "wifi",
+      "signal",
+      "battery",
+      "planet",
+      "plus"
+    ]
+  },
+  "note": "PNG screenshot based path reconstruction; original source paths require original SVG/Figma data."
+}

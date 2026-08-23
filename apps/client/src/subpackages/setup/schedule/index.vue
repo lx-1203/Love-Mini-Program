@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 时间安排页（课表导入，可选工具）。
  *
@@ -177,7 +177,7 @@ async function save() {
   margin-top: var(--sp-4);
   padding: var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
-  border: 1rpx dashed var(--c-border-strong, #CBD5E1);
+  border: 1rpx dashed var(--c-border-strong, #C2CAC6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,3 +189,4 @@ async function save() {
   font-weight: 500;
 }
 </style>
+

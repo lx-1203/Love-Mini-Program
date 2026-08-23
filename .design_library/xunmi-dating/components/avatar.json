@@ -1,0 +1,93 @@
+{
+  "slug": "avatar",
+  "schemaVersion": 2,
+  "name": "头像 Avatar",
+  "category": "Data Display",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "圆形头像 + 右下角状态点 + 可选渐变环",
+  "variantDimensions": {
+    "size": {
+      "values": [
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ]
+    },
+    "status": {
+      "values": [
+        "none",
+        "online",
+        "offline",
+        "verified"
+      ]
+    },
+    "ring": {
+      "values": [
+        "none",
+        "gradient",
+        "solid"
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "标准头像",
+      "traits": {
+        "size": "md",
+        "status": "none"
+      },
+      "whySelected": "列表最常用"
+    },
+    {
+      "name": "在线状态头像",
+      "traits": {
+        "size": "md",
+        "status": "online"
+      },
+      "whySelected": "显示在线状态"
+    },
+    {
+      "name": "认证头像",
+      "traits": {
+        "size": "lg",
+        "status": "verified"
+      },
+      "whySelected": "已认证用户"
+    },
+    {
+      "name": "大头像主页",
+      "traits": {
+        "size": "xl",
+        "ring": "gradient"
+      },
+      "whySelected": "个人主页顶部大头像"
+    }
+  ],
+  "anatomy": [
+    "avatar-wrapper",
+    "avatar-image",
+    "status-dot",
+    "verified-badge",
+    "ring-border"
+  ],
+  "structurePatterns": [
+    "circular shape",
+    "status dot at bottom-right"
+  ],
+  "usageHints": {
+    "priorityHint": "high",
+    "do": [
+      "圆形头像",
+      "状态点在右下角",
+      "认证标识绿色盾牌"
+    ],
+    "dont": [
+      "状态点过大"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

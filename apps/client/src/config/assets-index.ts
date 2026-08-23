@@ -37,10 +37,10 @@ export const ACTIVITY_IMAGES = {
 } as const;
 
 /** 默认海报（视频未加载时显示的封面） */
-export const HOME_POSTER = "/static/assets/images/posters/login-poster.jpg";
+export const HOME_POSTER = "/static/assets/images/posters/login-poster.png";
 
 /** 本次生成的登录页海报（无文字背景） */
-export const GENERATED_LOGIN_POSTER = "/static/generated/images/posters/login-poster.jpg";
+export const GENERATED_LOGIN_POSTER = "/static/generated/images/posters/login-poster.png";
 
 /** 本次生成的首页海报（无文字背景） */
 export const GENERATED_HOME_POSTER = "/static/generated/images/posters/home-poster.jpg";

@@ -14,7 +14,7 @@ const MOCK_ME: UserProfileDTO = {
   id: 4001,
   basic: {
     name: "林晓",
-    avatar: "/static/assets/images/avatars/person-01-avatar.webp",
+    avatar: "/static/assets/images/avatars/person-01-avatar.png",
     age: 22,
     location: "北京 · 北京大学",
     gender: "female",
@@ -32,8 +32,8 @@ const MOCK_ME: UserProfileDTO = {
     expectation: ["有趣", "真诚", "爱旅行"],
   },
   media: {
-    cover: "/static/assets/images/people/person-01.webp",
-    photos: ["/static/assets/images/people/person-01.webp"],
+    cover: "/static/assets/images/people/person-01.png",
+    photos: ["/static/assets/images/people/person-01.png"],
     videos: [],
   },
   socialProof: {
@@ -55,7 +55,7 @@ const MOCK_PUBLIC_FALLBACK: UserProfileDTO = {
   id: 4002,
   basic: {
     name: "夏言",
-    avatar: "/static/assets/images/avatars/person-02-avatar.webp",
+    avatar: "/static/assets/images/avatars/person-02-avatar.png",
     age: 24,
     location: "北京 · 清华大学",
     gender: "male",
@@ -73,8 +73,8 @@ const MOCK_PUBLIC_FALLBACK: UserProfileDTO = {
     expectation: ["真诚", "有边界感"],
   },
   media: {
-    cover: "/static/assets/images/people/person-02.webp",
-    photos: ["/static/assets/images/people/person-02.webp"],
+    cover: "/static/assets/images/people/person-02.png",
+    photos: ["/static/assets/images/people/person-02.png"],
     videos: [],
   },
   socialProof: {
@@ -134,10 +134,10 @@ function personToProfile(person: RecommendedPerson): UserProfileDTO {
       videos: [],
     },
     socialProof: {
-      likedMeCount: 0,
-      likesCount: 0,
-      visitorCount: 0,
-      matchCount: 0,
+      likedMeCount: 12,
+      likesCount: 86,
+      visitorCount: 34,
+      matchCount: 5,
     },
     relation: {
       liked: false,

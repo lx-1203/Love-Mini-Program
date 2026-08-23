@@ -1,17 +1,17 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const emit = defineEmits<{ (e: "goLogin"): void }>();
 
 const STATS = [
-  { label: "我喜欢", icon: "♥", color: "#8D7BFF" },
+  { label: "我喜欢", icon: "♥", color: "#A29BFE" },
   { label: "喜欢我的人", icon: "♡", color: "#FF6B81" },
-  { label: "我赞", icon: "👍", color: "#FF9A57" },
+  { label: "我赞", icon: "👍", color: "#FF9F43" },
   { label: "访客", icon: "👁", color: "#4D8DFF" },
 ];
 
 const INTERACTIONS = [
   { label: "喜欢我的人", value: 0, icon: "♥", color: "#FF6B81" },
-  { label: "我的匹配", value: 0, icon: "♡", color: "#FF9A57" },
-  { label: "我喜欢的人", value: 0, icon: "♥", color: "#8D7BFF" },
+  { label: "我的匹配", value: 0, icon: "♡", color: "#FF9F43" },
+  { label: "我喜欢的人", value: 0, icon: "♥", color: "#A29BFE" },
   { label: "最近访客", value: 0, icon: "👁", color: "#4D8DFF" },
 ];
 
@@ -104,7 +104,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 <style scoped lang="scss">
 .not-logged-profile {
   min-height: 100vh;
-  background: linear-gradient(180deg, #DFF8EF 0%, #F7FAF9 40%);
+  background: linear-gradient(180deg, #E8FBF3 0%, #F7FAF9 40%);
   padding: 32rpx 24rpx 140rpx;
 }
 
@@ -118,14 +118,14 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-header__title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .nlp-header__sub {
   display: block;
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: #8A9694;
+  color: #6B7571;
 }
 
 .nlp-header__arrow {
@@ -136,7 +136,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-card {
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .nlp-completion {
@@ -152,7 +152,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-completion__title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .nlp-completion__percent {
@@ -165,7 +165,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   height: 10rpx;
   margin-top: 20rpx;
   border-radius: 999rpx;
-  background: #E6F5EF;
+  background: #E8FBF3;
   overflow: hidden;
 }
 
@@ -179,7 +179,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   display: block;
   margin-top: 18rpx;
   font-size: 20rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .nlp-completion__btn {
@@ -228,12 +228,12 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-stats__value {
   font-size: 34rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .nlp-stats__label {
   font-size: 22rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .nlp-section {
@@ -245,7 +245,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .nlp-stories {
@@ -266,7 +266,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-story__img {
   height: 300rpx;
   border-radius: 24rpx;
-  background: #E8FBF2;
+  background: #E8FBF3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,12 +326,12 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   flex: 1;
   font-size: 28rpx;
   font-weight: 600;
-  color: #222222;
+  color: #333A37;
 }
 
 .nlp-interaction__value {
   font-size: 26rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .nlp-interaction__arrow {

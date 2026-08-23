@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 
 defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
@@ -10,9 +11,6 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
     <view class="today-card__head">
       <view class="today-card__titles">
         <text class="today-card__title">今日推荐</text>
-        <view class="today-card__pick">
-          <text class="today-card__pick-text">为你精选 1 位心动的人</text>
-        </view>
       </view>
       <text class="today-card__rotate" @tap="$emit('rotate')">↻ 换一位</text>
     </view>
@@ -46,7 +44,8 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap="$emit('like')">
-            ♥ 喜欢
+            <image class="today-card__btn-icon" :src="IMAGE_PATHS.HOME_ICONS.BTN_LIKE" mode="aspectFit" />
+            <text>喜欢</text>
           </view>
         </view>
       </view>
@@ -58,10 +57,9 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 .today-card {
   margin: 0 32rpx 16rpx;
   padding: 24rpx;
-  border-radius: 24rpx;
+  border-radius: 40rpx;
   background: #ffffff;
-  border: 1rpx solid #ECEFF2;
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
 
@@ -184,7 +182,6 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 }
 
 .today-card__info {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -238,7 +235,7 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 .today-card__distance {
   margin-top: 10rpx;
   font-size: 22rpx;
-  color: #168B65;
+  color: #36C99A;
 }
 
 .today-card__actions {
@@ -258,7 +255,7 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 .today-card__btn--outline {
   background: #FFFFFF;
   border: 2rpx solid #36C99A;
-  color: #168B65;
+  color: #36C99A;
 }
 
 .today-card__btn--love {
@@ -266,7 +263,14 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
   color: #FFFFFF;
 }
 
+.today-card__btn-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 6rpx;
+}
+
 .today-card__btn--loading {
   opacity: 0.6;
 }
 </style>
+

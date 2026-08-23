@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfileDTO, UserProfilePost } from "../../../types/profile";
 import MyStory from "./MyStory.vue";
 import ProfileEmptyState from "../ProfileEmptyState.vue";
@@ -63,7 +63,7 @@ const emit = defineEmits<{
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-content__post {
@@ -71,7 +71,7 @@ const emit = defineEmits<{
   padding: 24rpx;
   border-radius: 40rpx;
   background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .my-content__post--pressed {
@@ -85,14 +85,14 @@ const emit = defineEmits<{
   overflow: hidden;
   font-size: 28rpx;
   line-height: 1.5;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-content__post-meta {
   display: block;
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: #777777;
+  color: #6B7571;
 }
 </style>
 

@@ -199,6 +199,7 @@ export interface ConversationView {
   pinned: boolean;
   phase: string;
   sessionType: string;
+  relationship?: string | null;
 }
 
 export interface BackendMessageView {
@@ -259,6 +260,7 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
     sessionType: (raw.sessionType || "private") as SessionType,
     closesAt: null,
     closedReason: null,
+    relationship: (raw.relationship ?? null) as any,
   };
 }
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 defineProps<{
   label: string;
   active?: boolean;
@@ -24,7 +24,7 @@ const emit = defineEmits<{ (e: "tap", label: string): void }>();
   align-items: center;
   padding: 10rpx 24rpx;
   border-radius: 999rpx;
-  background: #E8F8F1;
+  background: #E8FBF3;
   border: 1rpx solid rgba(32, 201, 151, 0.12);
 }
 

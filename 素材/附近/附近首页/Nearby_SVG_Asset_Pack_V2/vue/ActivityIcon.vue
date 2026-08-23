@@ -1,0 +1,6 @@
+<script setup lang="ts">
+withDefaults(defineProps<{size?:number|string;color?:string}>(),{size:24,color:'#34C38F'})
+</script>
+<template>
+<svg :width="size" :height="size" viewBox="0 0 24 24" fill="none" :style="{color}"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M3 7h18v4H3z"/><path d="M12 7v13" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M12 7H8.4C6.7 7 6 6.1 6 5.1 6 4 7 3.5 8 3.5c1.7 0 3 1.6 4 3.5Zm0 0h3.6c1.7 0 2.4-.9 2.4-1.9 0-1.1-1-1.6-2-1.6-1.7 0-3 1.6-4 3.5Z"/></svg>
+</template>

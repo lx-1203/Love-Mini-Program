@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 活动详情页（任务 E2）
  *
@@ -591,7 +591,7 @@ onShareTimeline(() => ({
   padding: 0 var(--sp-6);
   border-radius: var(--r-full);
   background: var(--c-bg-surface, #F1F5F9);
-  border: 1rpx solid var(--c-border-strong, #CBD5E1);
+  border: 1rpx solid var(--c-border-strong, #C2CAC6);
   flex-shrink: 0;
   /* button 原生样式重置（去默认外边距/行高差异/边框伪元素） */
   margin: 0;
@@ -616,7 +616,7 @@ onShareTimeline(() => ({
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #6FD4AA 100%));
+  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #75E1B7 100%));
 }
 
 /* 收尾轮：退出报名按钮（次级样式，避免与报名主按钮混淆） */
@@ -628,7 +628,7 @@ onShareTimeline(() => ({
   height: 88rpx;
   border-radius: var(--r-full);
   background: var(--c-bg-surface, #F1F5F9);
-  border: 1rpx solid var(--c-border-strong, #CBD5E1);
+  border: 1rpx solid var(--c-border-strong, #C2CAC6);
 }
 
 .detail-quit-btn__text {
@@ -643,3 +643,5 @@ onShareTimeline(() => ({
   color: var(--c-text-inverse, #ffffff);
 }
 </style>
+
+

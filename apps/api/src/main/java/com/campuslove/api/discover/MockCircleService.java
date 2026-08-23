@@ -68,7 +68,8 @@ public class MockCircleService implements CircleService {
               circle.memberCount,
               joined,
               0,
-              circle.category
+              circle.category,
+              Math.max(3, Math.min(99, (int) Math.round(circle.memberCount / 1000.0)))
           );
         })
         .toList();

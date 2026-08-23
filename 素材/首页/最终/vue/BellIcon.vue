@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 3.1a5.5 5.5 0 0 0-5.5 5.5v3.1c0 1.8-.7 3.1-2.1 4.4l-.8.8h16.8l-.8-.8c-1.4-1.3-2.1-2.6-2.1-4.4V8.6A5.5 5.5 0 0 0 12 3.1Zm0 17.1a2.8 2.8 0 0 0 2.6-1.8H9.4a2.8 2.8 0 0 0 2.6 1.8Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "BellIcon" })
+</script>

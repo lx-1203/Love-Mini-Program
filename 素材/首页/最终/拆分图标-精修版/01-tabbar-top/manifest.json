@@ -1,0 +1,98 @@
+{
+  "category": "01-tabbar-top",
+  "title": "TabBar 顶部导航图标",
+  "description": "底部 TabBar 图标 + 页面顶部小图标，用于主导航切换",
+  "total_icons": 9,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "icon_row1_01.png",
+      "dimensions": "72x113",
+      "semantic_label": "搜索图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 11925
+    },
+    {
+      "index": 2,
+      "filename": "icon_row1_02.png",
+      "dimensions": "62x109",
+      "semantic_label": "发现/首页图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 11178
+    },
+    {
+      "index": 3,
+      "filename": "icon_row1_03.png",
+      "dimensions": "176x182",
+      "semantic_label": "大号品牌图标/吉祥物",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 44251
+    },
+    {
+      "index": 4,
+      "filename": "icon_row1_04.png",
+      "dimensions": "92x119",
+      "semantic_label": "消息图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 17238
+    },
+    {
+      "index": 5,
+      "filename": "icon_row1_05.png",
+      "dimensions": "68x109",
+      "semantic_label": "附近图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 12276
+    },
+    {
+      "index": 6,
+      "filename": "icon_row1_06.png",
+      "dimensions": "47x54",
+      "semantic_label": "设置/更多图标(三点)",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 4811
+    },
+    {
+      "index": 7,
+      "filename": "icon_row1_07.png",
+      "dimensions": "68x67",
+      "semantic_label": "通知/铃铛图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 8502
+    },
+    {
+      "index": 8,
+      "filename": "icon_row1_08.png",
+      "dimensions": "57x57",
+      "semantic_label": "心形/点赞图标",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 5270
+    },
+    {
+      "index": 9,
+      "filename": "icon_row1_09.png",
+      "dimensions": "23x37",
+      "semantic_label": "小圆点/指示器",
+      "color": "彩色",
+      "category": "01-tabbar-top",
+      "category_title": "TabBar 顶部导航图标",
+      "file_size": 1644
+    }
+  ]
+}

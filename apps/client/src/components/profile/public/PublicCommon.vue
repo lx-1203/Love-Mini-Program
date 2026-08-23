@@ -1,12 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from "vue";
 
 const props = defineProps<{ commonInterests: string[] }>();
 
 const COLORS = [
-  { bg: "#E8F8F1", fg: "#36C99A", icon: "♡" },
+  { bg: "#E8FBF3", fg: "#36C99A", icon: "♡" },
   { bg: "#EEF3FF", fg: "#4D8DFF", icon: "♥" },
-  { bg: "#FFF1E8", fg: "#FF9A57", icon: "★" },
+  { bg: "#FFF1E8", fg: "#FF9F43", icon: "★" },
   { bg: "#FFF0F6", fg: "#FF6B81", icon: "✿" },
 ];
 
@@ -49,7 +49,7 @@ const items = computed(() =>
   padding: 28rpx 28rpx 32rpx;
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .public-common__head {
@@ -59,7 +59,7 @@ const items = computed(() =>
 .public-common__title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .public-common__num {
@@ -98,13 +98,13 @@ const items = computed(() =>
 .public-common__item-title {
   font-size: 22rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
   line-height: 1.3;
 }
 
 .public-common__item-sub {
   font-size: 20rpx;
-  color: #999999;
+  color: #9AA39F;
   line-height: 1.3;
 }
 </style>

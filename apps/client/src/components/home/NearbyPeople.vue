@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { NearbyPersonViewModel } from "../../view-models/home-dashboard";
 
 defineProps<{ items: NearbyPersonViewModel[] }>();
@@ -123,12 +123,13 @@ defineEmits<{ (e: "more"): void; (e: "select", userId: number): void }>();
 
 .nearby-people__bar-text {
   font-size: 22rpx;
-  color: #168B65;
+  color: #36C99A;
   font-weight: 600;
 }
 
 .nearby-people__bar-arrow {
   font-size: 28rpx;
-  color: #168B65;
+  color: #36C99A;
 }
 </style>
+

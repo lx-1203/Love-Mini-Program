@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfileDTO, UserProfilePost, UserProfileSocialProof } from "../../types/profile";
 import PublicProfile from "./public/PublicProfile.vue";
 import { useProfileTracker } from "../../composables/useProfileTracker";
@@ -122,13 +122,13 @@ const emit = defineEmits<{
 
 .profile-shell__text {
   font-size: 28rpx;
-  color: #777777;
+  color: #6B7571;
 }
 
 .profile-shell__retry {
   padding: 16rpx 32rpx;
   border-radius: 999rpx;
-  background: #DFF8EF;
+  background: #E8FBF3;
 }
 
 .profile-shell__retry-text {

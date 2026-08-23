@@ -110,7 +110,10 @@ public class UserProfileController {
                 ? new ArrayList<>(preferenceCalculator.parseInterestTags(basic.getInterestTags()))
                 : new ArrayList<>();
 
-        String cover = basic != null ? basic.getProfileBackgroundUrl() : null;
+        // 2026-08-21：封面兜底——未设置背景图时使用默认风景图（对齐他人主页参考图封面结构）
+        String cover = basic != null && notBlank(basic.getProfileBackgroundUrl())
+                ? basic.getProfileBackgroundUrl()
+                : "/static/assets/images/posts/post-2.jpg";
         List<String> photos = basic != null
                 ? new ArrayList<>(preferenceCalculator.parseStringList(basic.getPhotoGallery()))
                 : new ArrayList<>();

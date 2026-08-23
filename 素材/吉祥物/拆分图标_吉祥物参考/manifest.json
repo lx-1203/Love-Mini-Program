@@ -1,0 +1,758 @@
+{
+  "title": "吉祥物参考图拆分素材",
+  "source": "参考吉祥物.png",
+  "source_size": "1536x1024",
+  "total": 62,
+  "categories": [
+    "expression",
+    "utility",
+    "decor",
+    "mascot_base"
+  ],
+  "icons": [
+    {
+      "index": 1,
+      "filename": "mascot_default.png",
+      "category": "mascot_base",
+      "dimensions": "254x297",
+      "position": [
+        1,
+        7,
+        267,
+        316
+      ]
+    },
+    {
+      "index": 2,
+      "filename": "mascot_smile.png",
+      "category": "mascot_base",
+      "dimensions": "119x162",
+      "position": [
+        262,
+        8,
+        393,
+        182
+      ]
+    },
+    {
+      "index": 3,
+      "filename": "mascot_happy.png",
+      "category": "mascot_base",
+      "dimensions": "109x125",
+      "position": [
+        408,
+        42,
+        529,
+        179
+      ]
+    },
+    {
+      "index": 4,
+      "filename": "mascot_wink.png",
+      "category": "mascot_base",
+      "dimensions": "109x130",
+      "position": [
+        545,
+        40,
+        666,
+        182
+      ]
+    },
+    {
+      "index": 5,
+      "filename": "mascot_thinking.png",
+      "category": "mascot_base",
+      "dimensions": "110x126",
+      "position": [
+        679,
+        43,
+        801,
+        181
+      ]
+    },
+    {
+      "index": 6,
+      "filename": "mascot_surprised.png",
+      "category": "mascot_base",
+      "dimensions": "104x123",
+      "position": [
+        816,
+        48,
+        932,
+        183
+      ]
+    },
+    {
+      "index": 7,
+      "filename": "mascot_tearful.png",
+      "category": "mascot_base",
+      "dimensions": "107x123",
+      "position": [
+        949,
+        45,
+        1068,
+        180
+      ]
+    },
+    {
+      "index": 8,
+      "filename": "mascot_angry.png",
+      "category": "mascot_base",
+      "dimensions": "108x124",
+      "position": [
+        1086,
+        44,
+        1206,
+        180
+      ]
+    },
+    {
+      "index": 9,
+      "filename": "mascot_sleepy.png",
+      "category": "mascot_base",
+      "dimensions": "111x127",
+      "position": [
+        1221,
+        40,
+        1344,
+        179
+      ]
+    },
+    {
+      "index": 10,
+      "filename": "mascot_extra_10.png",
+      "category": "mascot_base",
+      "dimensions": "181x554",
+      "position": [
+        1348,
+        10,
+        1536,
+        576
+      ]
+    },
+    {
+      "index": 11,
+      "filename": "mascot_extra_11.png",
+      "category": "mascot_base",
+      "dimensions": "112x120",
+      "position": [
+        270,
+        245,
+        394,
+        377
+      ]
+    },
+    {
+      "index": 12,
+      "filename": "mascot_extra_12.png",
+      "category": "mascot_base",
+      "dimensions": "104x124",
+      "position": [
+        406,
+        239,
+        522,
+        375
+      ]
+    },
+    {
+      "index": 13,
+      "filename": "mascot_extra_13.png",
+      "category": "mascot_base",
+      "dimensions": "105x128",
+      "position": [
+        545,
+        237,
+        662,
+        377
+      ]
+    },
+    {
+      "index": 14,
+      "filename": "mascot_extra_14.png",
+      "category": "mascot_base",
+      "dimensions": "130x132",
+      "position": [
+        681,
+        228,
+        823,
+        372
+      ]
+    },
+    {
+      "index": 15,
+      "filename": "mascot_extra_15.png",
+      "category": "mascot_base",
+      "dimensions": "110x120",
+      "position": [
+        821,
+        221,
+        943,
+        353
+      ]
+    },
+    {
+      "index": 16,
+      "filename": "mascot_extra_16.png",
+      "category": "mascot_base",
+      "dimensions": "130x124",
+      "position": [
+        948,
+        241,
+        1090,
+        377
+      ]
+    },
+    {
+      "index": 17,
+      "filename": "mascot_extra_17.png",
+      "category": "mascot_base",
+      "dimensions": "128x126",
+      "position": [
+        1085,
+        236,
+        1225,
+        374
+      ]
+    },
+    {
+      "index": 18,
+      "filename": "mascot_extra_18.png",
+      "category": "mascot_base",
+      "dimensions": "112x128",
+      "position": [
+        1236,
+        232,
+        1360,
+        372
+      ]
+    },
+    {
+      "index": 19,
+      "filename": "expression_19.png",
+      "category": "expression",
+      "dimensions": "138x40",
+      "position": [
+        58,
+        314,
+        208,
+        366
+      ]
+    },
+    {
+      "index": 20,
+      "filename": "expression_20.png",
+      "category": "expression",
+      "dimensions": "132x127",
+      "position": [
+        7,
+        422,
+        151,
+        561
+      ]
+    },
+    {
+      "index": 21,
+      "filename": "expression_21.png",
+      "category": "expression",
+      "dimensions": "105x121",
+      "position": [
+        147,
+        428,
+        264,
+        561
+      ]
+    },
+    {
+      "index": 22,
+      "filename": "expression_22.png",
+      "category": "expression",
+      "dimensions": "101x131",
+      "position": [
+        281,
+        420,
+        394,
+        563
+      ]
+    },
+    {
+      "index": 23,
+      "filename": "expression_23.png",
+      "category": "expression",
+      "dimensions": "114x121",
+      "position": [
+        405,
+        425,
+        531,
+        558
+      ]
+    },
+    {
+      "index": 24,
+      "filename": "expression_24.png",
+      "category": "expression",
+      "dimensions": "109x123",
+      "position": [
+        552,
+        427,
+        673,
+        562
+      ]
+    },
+    {
+      "index": 25,
+      "filename": "expression_25.png",
+      "category": "expression",
+      "dimensions": "105x125",
+      "position": [
+        687,
+        425,
+        804,
+        562
+      ]
+    },
+    {
+      "index": 26,
+      "filename": "expression_26.png",
+      "category": "expression",
+      "dimensions": "110x122",
+      "position": [
+        819,
+        430,
+        941,
+        564
+      ]
+    },
+    {
+      "index": 27,
+      "filename": "expression_27.png",
+      "category": "expression",
+      "dimensions": "111x124",
+      "position": [
+        950,
+        436,
+        1073,
+        572
+      ]
+    },
+    {
+      "index": 28,
+      "filename": "expression_28.png",
+      "category": "expression",
+      "dimensions": "109x123",
+      "position": [
+        1093,
+        433,
+        1214,
+        568
+      ]
+    },
+    {
+      "index": 29,
+      "filename": "expression_29.png",
+      "category": "expression",
+      "dimensions": "111x133",
+      "position": [
+        1236,
+        424,
+        1359,
+        569
+      ]
+    },
+    {
+      "index": 30,
+      "filename": "expression_30.png",
+      "category": "expression",
+      "dimensions": "88x110",
+      "position": [
+        898,
+        590,
+        998,
+        712
+      ]
+    },
+    {
+      "index": 31,
+      "filename": "decor_31.png",
+      "category": "decor",
+      "dimensions": "131x82",
+      "position": [
+        11,
+        622,
+        154,
+        716
+      ]
+    },
+    {
+      "index": 32,
+      "filename": "decor_32.png",
+      "category": "decor",
+      "dimensions": "126x78",
+      "position": [
+        149,
+        625,
+        287,
+        715
+      ]
+    },
+    {
+      "index": 33,
+      "filename": "decor_33.png",
+      "category": "decor",
+      "dimensions": "132x91",
+      "position": [
+        284,
+        612,
+        428,
+        715
+      ]
+    },
+    {
+      "index": 34,
+      "filename": "decor_34.png",
+      "category": "decor",
+      "dimensions": "128x91",
+      "position": [
+        430,
+        613,
+        570,
+        716
+      ]
+    },
+    {
+      "index": 35,
+      "filename": "decor_35.png",
+      "category": "decor",
+      "dimensions": "138x80",
+      "position": [
+        564,
+        621,
+        714,
+        713
+      ]
+    },
+    {
+      "index": 36,
+      "filename": "decor_36.png",
+      "category": "decor",
+      "dimensions": "158x91",
+      "position": [
+        709,
+        613,
+        879,
+        716
+      ]
+    },
+    {
+      "index": 37,
+      "filename": "decor_37.png",
+      "category": "decor",
+      "dimensions": "76x84",
+      "position": [
+        994,
+        616,
+        1082,
+        712
+      ]
+    },
+    {
+      "index": 38,
+      "filename": "decor_38.png",
+      "category": "decor",
+      "dimensions": "76x86",
+      "position": [
+        1084,
+        614,
+        1172,
+        712
+      ]
+    },
+    {
+      "index": 39,
+      "filename": "decor_39.png",
+      "category": "decor",
+      "dimensions": "71x83",
+      "position": [
+        1173,
+        618,
+        1256,
+        713
+      ]
+    },
+    {
+      "index": 40,
+      "filename": "decor_40.png",
+      "category": "decor",
+      "dimensions": "71x69",
+      "position": [
+        1268,
+        634,
+        1351,
+        715
+      ]
+    },
+    {
+      "index": 41,
+      "filename": "decor_41.png",
+      "category": "decor",
+      "dimensions": "99x85",
+      "position": [
+        1381,
+        623,
+        1492,
+        720
+      ]
+    },
+    {
+      "index": 42,
+      "filename": "decor_42.png",
+      "category": "decor",
+      "dimensions": "66x59",
+      "position": [
+        21,
+        752,
+        99,
+        823
+      ]
+    },
+    {
+      "index": 43,
+      "filename": "decor_43.png",
+      "category": "decor",
+      "dimensions": "61x53",
+      "position": [
+        185,
+        758,
+        258,
+        823
+      ]
+    },
+    {
+      "index": 44,
+      "filename": "decor_44.png",
+      "category": "decor",
+      "dimensions": "43x50",
+      "position": [
+        262,
+        762,
+        317,
+        824
+      ]
+    },
+    {
+      "index": 45,
+      "filename": "decor_45.png",
+      "category": "decor",
+      "dimensions": "61x62",
+      "position": [
+        342,
+        754,
+        415,
+        828
+      ]
+    },
+    {
+      "index": 46,
+      "filename": "decor_46.png",
+      "category": "decor",
+      "dimensions": "51x54",
+      "position": [
+        628,
+        755,
+        691,
+        821
+      ]
+    },
+    {
+      "index": 47,
+      "filename": "decor_47.png",
+      "category": "decor",
+      "dimensions": "51x54",
+      "position": [
+        686,
+        755,
+        749,
+        821
+      ]
+    },
+    {
+      "index": 48,
+      "filename": "decor_48.png",
+      "category": "decor",
+      "dimensions": "48x51",
+      "position": [
+        763,
+        764,
+        823,
+        827
+      ]
+    },
+    {
+      "index": 49,
+      "filename": "decor_49.png",
+      "category": "decor",
+      "dimensions": "66x60",
+      "position": [
+        834,
+        754,
+        912,
+        826
+      ]
+    },
+    {
+      "index": 50,
+      "filename": "decor_50.png",
+      "category": "decor",
+      "dimensions": "75x57",
+      "position": [
+        912,
+        756,
+        999,
+        825
+      ]
+    },
+    {
+      "index": 51,
+      "filename": "decor_51.png",
+      "category": "decor",
+      "dimensions": "74x59",
+      "position": [
+        1006,
+        758,
+        1092,
+        829
+      ]
+    },
+    {
+      "index": 52,
+      "filename": "decor_52.png",
+      "category": "decor",
+      "dimensions": "63x57",
+      "position": [
+        1116,
+        756,
+        1191,
+        825
+      ]
+    },
+    {
+      "index": 53,
+      "filename": "utility_53.png",
+      "category": "utility",
+      "dimensions": "109x127",
+      "position": [
+        6,
+        820,
+        127,
+        959
+      ]
+    },
+    {
+      "index": 54,
+      "filename": "utility_54.png",
+      "category": "utility",
+      "dimensions": "83x93",
+      "position": [
+        107,
+        855,
+        202,
+        960
+      ]
+    },
+    {
+      "index": 55,
+      "filename": "utility_55.png",
+      "category": "utility",
+      "dimensions": "83x94",
+      "position": [
+        200,
+        854,
+        295,
+        960
+      ]
+    },
+    {
+      "index": 56,
+      "filename": "utility_56.png",
+      "category": "utility",
+      "dimensions": "87x111",
+      "position": [
+        293,
+        835,
+        392,
+        958
+      ]
+    },
+    {
+      "index": 57,
+      "filename": "utility_57.png",
+      "category": "utility",
+      "dimensions": "86x92",
+      "position": [
+        386,
+        857,
+        484,
+        961
+      ]
+    },
+    {
+      "index": 58,
+      "filename": "utility_58.png",
+      "category": "utility",
+      "dimensions": "557x117",
+      "position": [
+        483,
+        854,
+        1052,
+        983
+      ]
+    },
+    {
+      "index": 59,
+      "filename": "utility_59.png",
+      "category": "utility",
+      "dimensions": "87x74",
+      "position": [
+        1087,
+        858,
+        1186,
+        944
+      ]
+    },
+    {
+      "index": 60,
+      "filename": "utility_60.png",
+      "category": "utility",
+      "dimensions": "50x45",
+      "position": [
+        1182,
+        861,
+        1244,
+        918
+      ]
+    },
+    {
+      "index": 61,
+      "filename": "utility_61.png",
+      "category": "utility",
+      "dimensions": "117x120",
+      "position": [
+        1406,
+        853,
+        1535,
+        985
+      ]
+    },
+    {
+      "index": 62,
+      "filename": "utility_62.png",
+      "category": "utility",
+      "dimensions": "51x46",
+      "position": [
+        1174,
+        925,
+        1237,
+        983
+      ]
+    }
+  ]
+}

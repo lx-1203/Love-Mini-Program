@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5H14v-6h-4v6H4.5A1.5 1.5 0 0 1 3 19.5v-9Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: 'XunmiHome' })
+</script>

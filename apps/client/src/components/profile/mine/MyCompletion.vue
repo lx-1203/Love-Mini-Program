@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const props = withDefaults(defineProps<{
   percent: number;
 }>(), {
@@ -32,7 +32,7 @@ const emit = defineEmits<{ (e: "complete"): void }>();
   padding: 28rpx 32rpx;
   border-radius: 32rpx;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .my-completion--pressed {
@@ -48,7 +48,7 @@ const emit = defineEmits<{ (e: "complete"): void }>();
 .my-completion__title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-completion__percent {
@@ -61,7 +61,7 @@ const emit = defineEmits<{ (e: "complete"): void }>();
   height: 10rpx;
   margin-top: 20rpx;
   border-radius: 999rpx;
-  background: #E6F5EF;
+  background: #E8FBF3;
   overflow: hidden;
 }
 
@@ -81,7 +81,7 @@ const emit = defineEmits<{ (e: "complete"): void }>();
 .my-completion__tip {
   flex: 1;
   font-size: 20rpx;
-  color: #999999;
+  color: #9AA39F;
   padding-right: 16rpx;
 }
 

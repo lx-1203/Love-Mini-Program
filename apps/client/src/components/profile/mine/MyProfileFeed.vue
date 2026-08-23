@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
 import { profileSvg } from "../../../config/profile-svg";
 
@@ -44,7 +44,7 @@ const emit = defineEmits<{ (e: "postTap", id: string): void }>();
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-feed__card {
@@ -78,14 +78,14 @@ const emit = defineEmits<{ (e: "postTap", id: string): void }>();
   overflow: hidden;
   font-size: 28rpx;
   line-height: 1.5;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-feed__meta {
   display: block;
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .my-feed__empty {
@@ -103,7 +103,7 @@ const emit = defineEmits<{ (e: "postTap", id: string): void }>();
 
 .my-feed__empty-text {
   font-size: 24rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 </style>
 

@@ -1,0 +1,548 @@
+/* ============================================================
+   寻觅 Xunmi — Design System Tokens
+   Brand: 寻觅 (恋爱社交小程序)
+   Personality: 温柔治愈 · 清新自然 · 轻松相遇
+   ============================================================ */
+
+/* @group-priority: primary, accent, success, info */
+
+:root {
+  /* =========================================
+     Layer 1 — Brand Color Scales (AI-generated)
+     ========================================= */
+
+  /* primary */
+  --xunmi-primary-50: #ECFBF5;   /* AI-generated */
+  --xunmi-primary-100: #D1F5E8;  /* AI-generated */
+  --xunmi-primary-200: #A8EBD1;  /* AI-generated */
+  --xunmi-primary-300: #7FE1BA;  /* AI-generated */
+  --xunmi-primary-400: #5BD5A8;  /* AI-generated */
+  --xunmi-primary-500: #36C99A;  /* @primary  AI-generated */
+  --xunmi-primary-600: #2BAE85;  /* AI-generated */
+  --xunmi-primary-700: #208E6D;  /* AI-generated */
+  --xunmi-primary-800: #166E55;  /* AI-generated */
+  --xunmi-primary-900: #0E4F3D;  /* AI-generated */
+
+  /* accent */
+  --xunmi-accent-50: #FFF0F2;   /* AI-generated */
+  --xunmi-accent-100: #FFE0E5;  /* AI-generated */
+  --xunmi-accent-200: #FFC2CC;  /* AI-generated */
+  --xunmi-accent-300: #FFA3B3;  /* AI-generated */
+  --xunmi-accent-400: #FF8799;  /* AI-generated */
+  --xunmi-accent-500: #FF6B81;  /* @primary  AI-generated */
+  --xunmi-accent-600: #E6526A;  /* AI-generated */
+  --xunmi-accent-700: #C93B54;  /* AI-generated */
+  --xunmi-accent-800: #A82A42;  /* AI-generated */
+  --xunmi-accent-900: #871D33;  /* AI-generated */
+
+  /* success */
+  --xunmi-success-50: #F0FDF4;   /* AI-generated */
+  --xunmi-success-100: #DCFCE7;  /* AI-generated */
+  --xunmi-success-200: #BBF7D0;  /* AI-generated */
+  --xunmi-success-300: #86EFAC;  /* AI-generated */
+  --xunmi-success-400: #4ADE80;  /* AI-generated */
+  --xunmi-success-500: #22C55E;  /* @primary  AI-generated */
+  --xunmi-success-600: #16A34A;  /* AI-generated */
+  --xunmi-success-700: #15803D;  /* AI-generated */
+  --xunmi-success-800: #166534;  /* AI-generated */
+  --xunmi-success-900: #14532D;  /* AI-generated */
+
+  /* warning */
+  --xunmi-warning-50: #FFFBEB;   /* AI-generated */
+  --xunmi-warning-100: #FEF3C7;  /* AI-generated */
+  --xunmi-warning-200: #FDE68A;  /* AI-generated */
+  --xunmi-warning-300: #FCD34D;  /* AI-generated */
+  --xunmi-warning-400: #FBBF24;  /* AI-generated */
+  --xunmi-warning-500: #F59E0B;  /* @primary  AI-generated */
+  --xunmi-warning-600: #D97706;  /* AI-generated */
+  --xunmi-warning-700: #B45309;  /* AI-generated */
+  --xunmi-warning-800: #92400E;  /* AI-generated */
+  --xunmi-warning-900: #78350F;  /* AI-generated */
+
+  /* error */
+  --xunmi-error-50: #FEF2F2;   /* AI-generated */
+  --xunmi-error-100: #FEE2E2;  /* AI-generated */
+  --xunmi-error-200: #FECACA;  /* AI-generated */
+  --xunmi-error-300: #FCA5A5;  /* AI-generated */
+  --xunmi-error-400: #F87171;  /* AI-generated */
+  --xunmi-error-500: #EF4444;  /* @primary  AI-generated */
+  --xunmi-error-600: #DC2626;  /* AI-generated */
+  --xunmi-error-700: #B91C1C;  /* AI-generated */
+  --xunmi-error-800: #991B1B;  /* AI-generated */
+  --xunmi-error-900: #7F1D1D;  /* AI-generated */
+
+  /* info */
+  --xunmi-info-50: #EFF6FF;   /* AI-generated */
+  --xunmi-info-100: #DBEAFE;  /* AI-generated */
+  --xunmi-info-200: #BFDBFE;  /* AI-generated */
+  --xunmi-info-300: #93C5FD;  /* AI-generated */
+  --xunmi-info-400: #60A5FA;  /* AI-generated */
+  --xunmi-info-500: #3B82F6;  /* @primary  AI-generated */
+  --xunmi-info-600: #2563EB;  /* AI-generated */
+  --xunmi-info-700: #1D4ED8;  /* AI-generated */
+  --xunmi-info-800: #1E40AF;  /* AI-generated */
+  --xunmi-info-900: #1E3A8A;  /* AI-generated */
+
+  /* neutral */
+  --xunmi-neutral-50: #FAFAF7;   /* AI-generated */
+  --xunmi-neutral-100: #F4F4EF;  /* AI-generated */
+  --xunmi-neutral-200: #E8E8DE;  /* AI-generated */
+  --xunmi-neutral-300: #D6D6C8;  /* AI-generated */
+  --xunmi-neutral-400: #B5B5A4;  /* AI-generated */
+  --xunmi-neutral-500: #949482;  /* @primary  AI-generated */
+  --xunmi-neutral-600: #767666;  /* AI-generated */
+  --xunmi-neutral-700: #5A5A4D;  /* AI-generated */
+  --xunmi-neutral-800: #3D3D34;  /* AI-generated */
+  --xunmi-neutral-900: #1F1F1A;  /* AI-generated */
+
+  /* =========================================
+     Layer 2 — Short Aliases
+     ========================================= */
+
+  /* Primary brand color */
+  --primary: var(--xunmi-primary-500);
+  --primary-foreground: #FFFFFF;
+
+  /* Accent / Heart color */
+  --accent: var(--xunmi-accent-500);
+  --accent-hover: var(--xunmi-accent-600);
+  --accent-foreground: #FFFFFF;
+
+  /* Background & Foreground */
+  --background: var(--xunmi-neutral-50);
+  --foreground: var(--xunmi-neutral-900);
+
+  /* Muted */
+  --muted: var(--xunmi-neutral-400);
+  --muted-foreground: var(--xunmi-neutral-600);
+
+  /* Secondary */
+  --secondary: var(--xunmi-neutral-100);
+  --secondary-foreground: var(--xunmi-neutral-800);
+
+  /* Border / Rule */
+  --border: var(--xunmi-neutral-200);
+  --rule: var(--xunmi-neutral-200);
+  --ring: var(--xunmi-primary-400);
+
+  /* Link */
+  --link: var(--xunmi-primary-600);
+
+  /* Error status */
+  --error: var(--xunmi-error-500);
+  --error-container: var(--xunmi-error-50);
+  --on-error: #FFFFFF;
+  --on-error-container: var(--xunmi-error-900);
+
+  /* Surface hierarchy (M3-inspired) */
+  --surface: #FFFFFF;
+  --surface-dim: var(--xunmi-neutral-100);
+  --surface-bright: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: var(--xunmi-neutral-50);
+  --surface-container: var(--xunmi-neutral-100);
+  --surface-container-high: var(--xunmi-neutral-200);
+  --surface-container-highest: var(--xunmi-neutral-300);
+  --inverse-surface: var(--xunmi-neutral-800);
+  --inverse-on-surface: var(--xunmi-neutral-50);
+
+  /* Interactive state layers */
+  --interactive-hover: rgba(54, 201, 154, 0.08);   /* Derived */
+  --interactive-focus: rgba(54, 201, 154, 0.12);   /* Derived */
+  --interactive-press: rgba(54, 201, 154, 0.16);   /* Derived */
+  --interactive-drag: rgba(54, 201, 154, 0.20);    /* Derived */
+
+  /* =========================================
+     Layer 3 — Portable Aliases
+     ========================================= */
+
+  /* === Surface & Background === */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-variant: var(--surface-container-high);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-card: var(--surface);
+  --color-sidebar: var(--surface-container-low);
+
+  /* === Text === */
+  --color-on-surface: var(--foreground);
+  --color-on-surface-variant: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* === Brand / Primary (mint green) === */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--xunmi-primary-600);
+  --color-on-primary: var(--primary-foreground);
+  --color-primary-container: var(--xunmi-primary-50);
+  --color-on-primary-container: var(--xunmi-primary-900);
+
+  /* === Accent / Heart (pink) === */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--accent-foreground);
+  --color-accent-container: var(--xunmi-accent-50);
+  --color-on-accent-container: var(--xunmi-accent-900);
+
+  /* === Secondary === */
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--xunmi-neutral-100);
+  --color-on-secondary-container: var(--xunmi-neutral-800);
+
+  /* === Error === */
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
+
+  /* === Borders === */
+  --color-outline: var(--rule);
+  --color-outline-variant: var(--xunmi-neutral-100);
+  --color-border: var(--border);
+
+  /* === Functional Status === */
+  --color-success: var(--xunmi-success-600);
+  --color-warning: var(--xunmi-warning-600);
+
+  /* === Link === */
+  --color-link: var(--link);
+
+  /* =========================================
+     Typography Variables
+     ========================================= */
+
+  --font-display: 'PingFang SC', 'PingFang SC Semibold', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+  --font-heading: 'PingFang SC', 'PingFang SC Semibold', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+  --font-body: 'PingFang SC', 'PingFang SC Regular', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+
+  --font-size-display: 40px;
+  --font-size-h1: 32px;
+  --font-size-h2: 26px;
+  --font-size-h3: 22px;
+  --font-size-h4: 18px;
+  --font-size-body: 16px;
+  --font-size-lead: 17px;
+  --font-size-caption: 12px;
+  --font-size-eyebrow: 11px;
+  --font-size-mono: 14px;
+
+  --font-weight-display: 600;
+  --font-weight-h1: 600;
+  --font-weight-h2: 600;
+  --font-weight-h3: 500;
+  --font-weight-h4: 500;
+  --font-weight-body: 400;
+  --font-weight-lead: 400;
+  --font-weight-caption: 400;
+  --font-weight-eyebrow: 500;
+  --font-weight-mono: 400;
+
+  --line-height-display: 1.15;
+  --line-height-h1: 1.25;
+  --line-height-h2: 1.3;
+  --line-height-h3: 1.35;
+  --line-height-h4: 1.4;
+  --line-height-body: 1.6;
+  --line-height-lead: 1.65;
+  --line-height-caption: 1.5;
+  --line-height-eyebrow: 1.4;
+  --line-height-mono: 1.6;
+
+  /* === Typography Portable Aliases === */
+  --type-display: var(--font-size-display) / var(--line-height-display) var(--font-display);
+  --type-h1: var(--font-size-h1) / var(--line-height-h1) var(--font-heading);
+  --type-h2: var(--font-size-h2) / var(--line-height-h2) var(--font-heading);
+  --type-h3: var(--font-size-h3) / var(--line-height-h3) var(--font-heading);
+  --type-body: var(--font-size-body) / var(--line-height-body) var(--font-body);
+  --type-lead: var(--font-size-lead) / var(--line-height-lead) var(--font-body);
+  --type-caption: var(--font-size-caption) / var(--line-height-caption) var(--font-body);
+
+  --font-family-base: var(--font-body);
+
+  /* =========================================
+     Spacing Scale (4px-based)
+     ========================================= */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* =========================================
+     Sizing (Component Dimensions)
+     ========================================= */
+
+  --size-button-sm: 36px;
+  --size-button-md: 44px;
+  --size-button-lg: 52px;
+  --size-input-height: 48px;
+  --size-icon-xs: 12px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --size-icon-xl: 32px;
+
+  /* =========================================
+     Border Radius
+     ========================================= */
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* =========================================
+     Shadows (5-level soft elevation)
+     ========================================= */
+
+  --shadow-1: 0 1px 3px rgba(31, 31, 26, 0.04), 0 1px 2px rgba(31, 31, 26, 0.02);  /* Subtle Card */
+  --shadow-2: 0 4px 12px -2px rgba(31, 31, 26, 0.08);  /* Card Hover */
+  --shadow-3: 0 8px 24px -6px rgba(31, 31, 26, 0.12);  /* Float */
+  --shadow-4: 0 16px 40px -10px rgba(31, 31, 26, 0.16);  /* Modal */
+  --shadow-5: 0 24px 60px -16px rgba(31, 31, 26, 0.22);  /* Overlay */
+
+  /* =========================================
+     Motion
+     ========================================= */
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  /* =========================================
+     Layout
+     ========================================= */
+
+  --max-content-width: 640px;
+  --gutter: 20px;
+  --nav-height: 64px;
+  --bottom-nav-height: 64px;
+}
+
+/* =========================================
+   Dark Theme
+   ========================================= */
+
+.dark {
+  /* primary — dark mode */
+  --xunmi-primary-50: #0E4F3D;   /* AI-generated */
+  --xunmi-primary-100: #166E55;  /* AI-generated */
+  --xunmi-primary-200: #208E6D;  /* AI-generated */
+  --xunmi-primary-300: #2BAE85;  /* AI-generated */
+  --xunmi-primary-400: #36C99A;  /* AI-generated */
+  --xunmi-primary-500: #5BD5A8;  /* @primary  AI-generated */
+  --xunmi-primary-600: #7FE1BA;  /* AI-generated */
+  --xunmi-primary-700: #A8EBD1;  /* AI-generated */
+  --xunmi-primary-800: #D1F5E8;  /* AI-generated */
+  --xunmi-primary-900: #ECFBF5;  /* AI-generated */
+
+  /* accent — dark mode */
+  --xunmi-accent-50: #871D33;   /* AI-generated */
+  --xunmi-accent-100: #A82A42;  /* AI-generated */
+  --xunmi-accent-200: #C93B54;  /* AI-generated */
+  --xunmi-accent-300: #E6526A;  /* AI-generated */
+  --xunmi-accent-400: #FF6B81;  /* AI-generated */
+  --xunmi-accent-500: #FF8799;  /* @primary  AI-generated */
+  --xunmi-accent-600: #FFA3B3;  /* AI-generated */
+  --xunmi-accent-700: #FFC2CC;  /* AI-generated */
+  --xunmi-accent-800: #FFE0E5;  /* AI-generated */
+  --xunmi-accent-900: #FFF0F2;  /* AI-generated */
+
+  /* success — dark mode */
+  --xunmi-success-50: #14532D;   /* AI-generated */
+  --xunmi-success-100: #166534;  /* AI-generated */
+  --xunmi-success-200: #15803D;  /* AI-generated */
+  --xunmi-success-300: #16A34A;  /* AI-generated */
+  --xunmi-success-400: #22C55E;  /* AI-generated */
+  --xunmi-success-500: #4ADE80;  /* @primary  AI-generated */
+  --xunmi-success-600: #86EFAC;  /* AI-generated */
+  --xunmi-success-700: #BBF7D0;  /* AI-generated */
+  --xunmi-success-800: #DCFCE7;  /* AI-generated */
+  --xunmi-success-900: #F0FDF4;  /* AI-generated */
+
+  /* warning — dark mode */
+  --xunmi-warning-50: #78350F;   /* AI-generated */
+  --xunmi-warning-100: #92400E;  /* AI-generated */
+  --xunmi-warning-200: #B45309;  /* AI-generated */
+  --xunmi-warning-300: #D97706;  /* AI-generated */
+  --xunmi-warning-400: #F59E0B;  /* AI-generated */
+  --xunmi-warning-500: #FBBF24;  /* @primary  AI-generated */
+  --xunmi-warning-600: #FCD34D;  /* AI-generated */
+  --xunmi-warning-700: #FDE68A;  /* AI-generated */
+  --xunmi-warning-800: #FEF3C7;  /* AI-generated */
+  --xunmi-warning-900: #FFFBEB;  /* AI-generated */
+
+  /* error — dark mode */
+  --xunmi-error-50: #7F1D1D;   /* AI-generated */
+  --xunmi-error-100: #991B1B;  /* AI-generated */
+  --xunmi-error-200: #B91C1C;  /* AI-generated */
+  --xunmi-error-300: #DC2626;  /* AI-generated */
+  --xunmi-error-400: #EF4444;  /* AI-generated */
+  --xunmi-error-500: #F87171;  /* @primary  AI-generated */
+  --xunmi-error-600: #FCA5A5;  /* AI-generated */
+  --xunmi-error-700: #FECACA;  /* AI-generated */
+  --xunmi-error-800: #FEE2E2;  /* AI-generated */
+  --xunmi-error-900: #FEF2F2;  /* AI-generated */
+
+  /* info — dark mode */
+  --xunmi-info-50: #1E3A8A;   /* AI-generated */
+  --xunmi-info-100: #1E40AF;  /* AI-generated */
+  --xunmi-info-200: #1D4ED8;  /* AI-generated */
+  --xunmi-info-300: #2563EB;  /* AI-generated */
+  --xunmi-info-400: #3B82F6;  /* AI-generated */
+  --xunmi-info-500: #60A5FA;  /* @primary  AI-generated */
+  --xunmi-info-600: #93C5FD;  /* AI-generated */
+  --xunmi-info-700: #BFDBFE;  /* AI-generated */
+  --xunmi-info-800: #DBEAFE;  /* AI-generated */
+  --xunmi-info-900: #EFF6FF;  /* AI-generated */
+
+  /* neutral — dark mode */
+  --xunmi-neutral-50: #1F1F1A;   /* AI-generated */
+  --xunmi-neutral-100: #3D3D34;  /* AI-generated */
+  --xunmi-neutral-200: #5A5A4D;  /* AI-generated */
+  --xunmi-neutral-300: #767666;  /* AI-generated */
+  --xunmi-neutral-400: #949482;  /* AI-generated */
+  --xunmi-neutral-500: #B5B5A4;  /* @primary  AI-generated */
+  --xunmi-neutral-600: #D6D6C8;  /* AI-generated */
+  --xunmi-neutral-700: #E8E8DE;  /* AI-generated */
+  --xunmi-neutral-800: #F4F4EF;  /* AI-generated */
+  --xunmi-neutral-900: #FAFAF7;  /* AI-generated */
+
+  /* Short aliases — dark mode overrides */
+  --primary: var(--xunmi-primary-400);
+  --primary-foreground: #1F1F1A;
+
+  --accent: var(--xunmi-accent-400);
+  --accent-hover: var(--xunmi-accent-300);
+  --accent-foreground: #1F1F1A;
+
+  --background: #141412;
+  --foreground: var(--xunmi-neutral-800);
+
+  --muted: var(--xunmi-neutral-500);
+  --muted-foreground: var(--xunmi-neutral-600);
+
+  --secondary: var(--xunmi-neutral-100);
+  --secondary-foreground: var(--xunmi-neutral-800);
+
+  --border: var(--xunmi-neutral-200);
+  --rule: var(--xunmi-neutral-200);
+  --ring: var(--xunmi-primary-400);
+
+  --link: var(--xunmi-primary-300);
+
+  --error: var(--xunmi-error-400);
+  --error-container: var(--xunmi-error-100);
+  --on-error: #1F1F1A;
+  --on-error-container: var(--xunmi-error-800);
+
+  /* Surface hierarchy — dark mode */
+  --surface: #1A1A17;
+  --surface-dim: #141412;
+  --surface-bright: #2A2A24;
+  --surface-container-lowest: #121210;
+  --surface-container-low: #1A1A17;
+  --surface-container: #23231E;
+  --surface-container-high: #2D2D27;
+  --surface-container-highest: #3A3A32;
+  --inverse-surface: var(--xunmi-neutral-100);
+  --inverse-on-surface: var(--xunmi-neutral-800);
+
+  /* Interactive state layers — dark mode */
+  --interactive-hover: rgba(91, 213, 168, 0.10);   /* Derived */
+  --interactive-focus: rgba(91, 213, 168, 0.14);   /* Derived */
+  --interactive-press: rgba(91, 213, 168, 0.18);   /* Derived */
+  --interactive-drag: rgba(91, 213, 168, 0.22);    /* Derived */
+
+  /* Portable aliases — dark mode */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-variant: var(--surface-container-high);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-card: var(--surface);
+  --color-sidebar: var(--surface-container-low);
+
+  --color-on-surface: var(--foreground);
+  --color-on-surface-variant: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--xunmi-primary-300);
+  --color-on-primary: var(--primary-foreground);
+  --color-primary-container: var(--xunmi-primary-100);
+  --color-on-primary-container: var(--xunmi-primary-800);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--accent-foreground);
+  --color-accent-container: var(--xunmi-accent-100);
+  --color-on-accent-container: var(--xunmi-accent-800);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--xunmi-neutral-100);
+  --color-on-secondary-container: var(--xunmi-neutral-800);
+
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
+
+  --color-outline: var(--rule);
+  --color-outline-variant: var(--xunmi-neutral-200);
+  --color-border: var(--border);
+
+  --color-success: var(--xunmi-success-400);
+  --color-warning: var(--xunmi-warning-400);
+
+  --color-link: var(--link);
+
+  /* Shadows — dark mode (softer, cooler tone) */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);  /* Subtle Card */
+  --shadow-2: 0 4px 12px -2px rgba(0, 0, 0, 0.40);  /* Card Hover */
+  --shadow-3: 0 8px 24px -6px rgba(0, 0, 0, 0.50);  /* Float */
+  --shadow-4: 0 16px 40px -10px rgba(0, 0, 0, 0.60);  /* Modal */
+  --shadow-5: 0 24px 60px -16px rgba(0, 0, 0, 0.70);  /* Overlay */
+}
+
+/* =========================================
+   Typography Classes (xunmi- prefix)
+   ========================================= */
+
+.xunmi-display  { font-family: var(--font-display); font-size: 2.5rem; font-weight: var(--font-weight-display); line-height: var(--line-height-display); letter-spacing: -0.01em; }
+.xunmi-h1       { font-family: var(--font-heading); font-size: 2rem; font-weight: var(--font-weight-h1); line-height: var(--line-height-h1); }
+.xunmi-h2       { font-family: var(--font-heading); font-size: 1.625rem; font-weight: var(--font-weight-h2); line-height: var(--line-height-h2); }
+.xunmi-h3       { font-family: var(--font-heading); font-size: 1.375rem; font-weight: var(--font-weight-h3); line-height: var(--line-height-h3); }
+.xunmi-h4       { font-family: var(--font-heading); font-size: 1.125rem; font-weight: var(--font-weight-h4); line-height: var(--line-height-h4); }
+.xunmi-body     { font-family: var(--font-body); font-size: 1rem; font-weight: var(--font-weight-body); line-height: var(--line-height-body); }
+.xunmi-lead     { font-family: var(--font-body); font-size: 1.0625rem; font-weight: var(--font-weight-lead); line-height: var(--line-height-lead); }
+.xunmi-caption  { font-family: var(--font-body); font-size: 0.75rem; font-weight: var(--font-weight-caption); line-height: var(--line-height-caption); }
+.xunmi-eyebrow  { font-family: var(--font-body); font-size: 0.6875rem; font-weight: var(--font-weight-eyebrow); line-height: var(--line-height-eyebrow); letter-spacing: 0.08em; text-transform: uppercase; }
+.xunmi-mono     { font-family: var(--font-mono); font-size: 0.875rem; font-weight: var(--font-weight-mono); line-height: var(--line-height-mono); }
+.xunmi-price    { font-family: var(--font-display); font-size: 1.5rem; font-weight: var(--font-weight-display); line-height: var(--line-height-display); font-variant-numeric: tabular-nums; }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InterestTag from "../common/InterestTag.vue";
 
 defineProps<{ tags: string[] }>();
@@ -29,7 +29,7 @@ defineProps<{ tags: string[] }>();
   margin-bottom: 18rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .public-interest__scroll {

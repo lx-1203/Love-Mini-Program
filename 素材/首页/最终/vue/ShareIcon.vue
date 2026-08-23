@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M17.5 3.6a2.5 2.5 0 1 1-2.2 3.7L9.1 11a2.8 2.8 0 0 1 0 2l6.2 3.7a2.5 2.5 0 1 1-1 1.7l-6.1-3.7a2.5 2.5 0 1 1 0-3.4l6.1-3.7a2.5 2.5 0 0 1 3.2-3.9Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "ShareIcon" })
+</script>

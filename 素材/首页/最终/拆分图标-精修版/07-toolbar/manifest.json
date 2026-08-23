@@ -1,0 +1,138 @@
+{
+  "category": "07-toolbar",
+  "title": "底部工具栏图标",
+  "description": "页面底部工具栏的操作图标集合",
+  "total_icons": 13,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "toolbar_row7_01.png",
+      "dimensions": "78x76",
+      "semantic_label": "点赞/心形",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7182
+    },
+    {
+      "index": 2,
+      "filename": "toolbar_row7_02.png",
+      "dimensions": "78x75",
+      "semantic_label": "评论/气泡",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7061
+    },
+    {
+      "index": 3,
+      "filename": "toolbar_row7_03.png",
+      "dimensions": "68x74",
+      "semantic_label": "分享/转发",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7219
+    },
+    {
+      "index": 4,
+      "filename": "toolbar_row7_04.png",
+      "dimensions": "68x69",
+      "semantic_label": "收藏/星标",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7558
+    },
+    {
+      "index": 5,
+      "filename": "toolbar_row7_05.png",
+      "dimensions": "70x69",
+      "semantic_label": "更多操作",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 8208
+    },
+    {
+      "index": 6,
+      "filename": "toolbar_row7_06.png",
+      "dimensions": "70x70",
+      "semantic_label": "发送/发送按钮",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 8565
+    },
+    {
+      "index": 7,
+      "filename": "toolbar_row7_07.png",
+      "dimensions": "68x50",
+      "semantic_label": "表情/贴纸",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 4699
+    },
+    {
+      "index": 8,
+      "filename": "toolbar_row7_08.png",
+      "dimensions": "74x67",
+      "semantic_label": "图片/相册",
+      "color": "橙色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7574
+    },
+    {
+      "index": 9,
+      "filename": "toolbar_row7_09.png",
+      "dimensions": "75x74",
+      "semantic_label": "语音/麦克风",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 9631
+    },
+    {
+      "index": 10,
+      "filename": "toolbar_row7_10.png",
+      "dimensions": "75x74",
+      "semantic_label": "位置/地图",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 10158
+    },
+    {
+      "index": 11,
+      "filename": "toolbar_row7_11.png",
+      "dimensions": "77x75",
+      "semantic_label": "拍照/相机",
+      "color": "彩色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 13675
+    },
+    {
+      "index": 12,
+      "filename": "toolbar_row7_12.png",
+      "dimensions": "72x70",
+      "semantic_label": "红包/礼物",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7888
+    },
+    {
+      "index": 13,
+      "filename": "toolbar_row7_13.png",
+      "dimensions": "70x69",
+      "semantic_label": "删除/垃圾桶",
+      "color": "白色",
+      "category": "07-toolbar",
+      "category_title": "底部工具栏图标",
+      "file_size": 7657
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "slug": "chip",
+  "schemaVersion": 2,
+  "name": "标签 Chip/Tag",
+  "category": "Data Display",
+  "sourceKind": "from-scratch",
+  "confidence": "high",
+  "keyInsightSeed": "药丸形小标签，兴趣/状态/距离多种类型",
+  "variantDimensions": {
+    "variant": {
+      "values": [
+        "interest",
+        "status",
+        "info",
+        "distance"
+      ]
+    },
+    "tone": {
+      "values": [
+        "primary",
+        "accent",
+        "success",
+        "warning",
+        "default"
+      ]
+    },
+    "size": {
+      "values": [
+        "sm",
+        "md"
+      ]
+    }
+  },
+  "representativeVariants": [
+    {
+      "name": "兴趣标签",
+      "traits": {
+        "variant": "interest",
+        "tone": "primary"
+      },
+      "whySelected": "用户兴趣爱好"
+    },
+    {
+      "name": "状态标签",
+      "traits": {
+        "variant": "status",
+        "tone": "success"
+      },
+      "whySelected": "用户状态标识"
+    },
+    {
+      "name": "距离标签",
+      "traits": {
+        "variant": "distance",
+        "tone": "default"
+      },
+      "whySelected": "显示用户距离"
+    },
+    {
+      "name": "热门标签",
+      "traits": {
+        "variant": "info",
+        "tone": "accent"
+      },
+      "whySelected": "热门/新内容标识"
+    }
+  ],
+  "anatomy": [
+    "chip-container",
+    "chip-icon",
+    "chip-label"
+  ],
+  "structurePatterns": [
+    "pill shape",
+    "small padding"
+  ],
+  "usageHints": {
+    "priorityHint": "medium",
+    "do": [
+      "药丸形圆角999px",
+      "小号字体12px",
+      "兴趣标签浅绿底深绿字"
+    ],
+    "dont": [
+      "同一行超过5个"
+    ]
+  },
+  "doNotInvent": [],
+  "unknowns": []
+}

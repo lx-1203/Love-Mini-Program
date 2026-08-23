@@ -55,7 +55,7 @@ defineProps<{
 .skeleton-card {
   height: 340rpx;
   border-radius: var(--r-xl);
-  background: linear-gradient(90deg, var(--c-neutral-50, #f1f5f9) 25%, var(--c-neutral-200, #e2e8f0) 50%, var(--c-neutral-50, #f1f5f9) 75%);
+  background: linear-gradient(90deg, var(--c-neutral-50, #f1f5f9) 25%, var(--c-neutral-200, #DDE3E0) 50%, var(--c-neutral-50, #f1f5f9) 75%);
   background-size: 200% 100%;
   animation: shimmer var(--d-particle, 1500ms) ease-in-out infinite;
 }
@@ -64,3 +64,4 @@ defineProps<{
   100% { background-position: -200% 0; }
 }
 </style>
+

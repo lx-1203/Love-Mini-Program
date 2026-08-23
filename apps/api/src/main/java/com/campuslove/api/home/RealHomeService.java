@@ -15,10 +15,12 @@ import com.campuslove.api.growth.CheckInService;
 import com.campuslove.api.growth.CheckInStatusView;
 import com.campuslove.api.growth.RecommendQuotaService;
 import com.campuslove.api.match.LikedUserView;
+import com.campuslove.api.match.VisitorView;
 import com.campuslove.api.match.MatchService;
 import com.campuslove.api.whisper.WhisperService;
 import com.campuslove.api.profile.ProfileQueryService;
 import com.campuslove.api.repository.CircleMembershipRepository;
+import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.PostRepository;
 import java.util.Collections;
@@ -58,6 +60,7 @@ public class RealHomeService implements HomeService {
     private final InterestCircleRepository interestCircleRepository;
     private final CircleMembershipRepository circleMembershipRepository;
     private final ProfileQueryService profileQueryService;
+    private final UserRepository userRepository;
     private final HomeFeedFallbackProvider homeFeedFallbackProvider;
 
     /**
@@ -75,7 +78,8 @@ public class RealHomeService implements HomeService {
             InterestCircleRepository interestCircleRepository,
             CircleMembershipRepository circleMembershipRepository,
             ProfileQueryService profileQueryService,
-            HomeFeedFallbackProvider homeFeedFallbackProvider) {
+            HomeFeedFallbackProvider homeFeedFallbackProvider,
+            UserRepository userRepository) {
         this.recommendationService = recommendationService;
         this.checkInService = checkInService;
         this.dailyQuestionService = dailyQuestionService;
@@ -87,6 +91,7 @@ public class RealHomeService implements HomeService {
         this.interestCircleRepository = interestCircleRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.profileQueryService = profileQueryService;
+        this.userRepository = userRepository;
         this.homeFeedFallbackProvider = homeFeedFallbackProvider;
     }
 
@@ -510,7 +515,7 @@ public class RealHomeService implements HomeService {
         }
         java.util.List<LoveProgressStepView> steps = List.of(
             new LoveProgressStepView("profile", "完善资料", "让更多人了解你", profile, "profile"),
-            new LoveProgressStepView("like", "今日心动", "认识一位心动的人", like, "discover"),
+            new LoveProgressStepView("discover", "认识新人", "认识一位心动的人", like, "discover"),
             new LoveProgressStepView("whisper", "回复悄悄话", "回复一条悄悄话", whisper, "messages"),
             new LoveProgressStepView("interest", "参与兴趣互动", "参与一个兴趣圈", interest, "nearby")
         );
@@ -520,7 +525,7 @@ public class RealHomeService implements HomeService {
 
     private RelationActivityView buildRelationActivity(Long userId) {
         if (userId == null) {
-            return new RelationActivityView(0, 0, 0, 0, 0);
+            return new RelationActivityView(0, 0, 0, 0, 0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of());
         }
         try {
             java.util.List<LikedUserView> myLikes = matchService.getMyLikes(userId);
@@ -535,10 +540,43 @@ public class RealHomeService implements HomeService {
             int visitors = matchService.getVisitors(userId).size();
             int likesReceived = likedMe.size();
             int totalUnread = likesReceived + whispers + visitors + newMatches;
-            return new RelationActivityView(likesReceived, whispers, visitors, newMatches, totalUnread);
+            java.util.List<String> likesAvatars = likedMe.stream()
+                .map(LikedUserView::avatarUrl)
+                .filter(a -> a != null && !a.isBlank())
+                .limit(5)
+                .toList();
+            java.util.List<String> visitorAvatars = matchService.getVisitors(userId).stream()
+                .map(VisitorView::avatarUrl)
+                .filter(a -> a != null && !a.isBlank())
+                .limit(5)
+                .toList();
+            java.util.List<String> matchAvatars = myLikes.stream()
+                .filter(like -> likedMeIds.contains(like.userId()))
+                .map(LikedUserView::avatarUrl)
+                .filter(a -> a != null && !a.isBlank())
+                .limit(5)
+                .toList();
+            java.util.List<String> whisperAvatars = whisperService.inbox(userId).stream()
+                .map(w -> w.senderId())
+                .map(this::resolveAvatarUrl)
+                .filter(a -> a != null && !a.isBlank())
+                .limit(5)
+                .toList();
+            return new RelationActivityView(likesReceived, whispers, visitors, newMatches, totalUnread,
+                likesAvatars, whisperAvatars, visitorAvatars, matchAvatars);
         } catch (RuntimeException e) {
             log.warn("聚合关系动态失败, userId={}: {}", userId, e.getMessage());
-            return new RelationActivityView(0, 0, 0, 0, 0);
+            return new RelationActivityView(0, 0, 0, 0, 0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of());
+        }
+    }
+
+    /** 通过 userId 解析用户头像 URL（悄悄话发件人头像） */
+    private String resolveAvatarUrl(Long userId) {
+        if (userId == null) return null;
+        try {
+            return userRepository.findById(userId).map(User::getAvatarUrl).orElse(null);
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 

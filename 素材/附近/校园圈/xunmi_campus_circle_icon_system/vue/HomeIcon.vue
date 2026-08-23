@@ -1,0 +1,22 @@
+<script setup lang="ts">
+withDefaults(defineProps<{ size?: number | string; strokeWidth?: number }>(), {
+  size: 24,
+  strokeWidth: 1.8,
+})
+</script>
+
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+  >
+    
+<path d="M3.2 10.8L12 3.6L20.8 10.8V20.2C20.8 20.64 20.44 21 20 21H4C3.56 21 3.2 20.64 3.2 20.2V10.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M9 21V14.2H15V21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+
+  </svg>
+</template>

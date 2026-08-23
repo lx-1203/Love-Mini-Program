@@ -692,7 +692,7 @@ public class RealAuthService implements AuthService {
             newUser.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
             newUser.setPhone(null);
             newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            newUser.setNickname("林晓");
+            newUser.setNickname("星野");
             newUser.setRole("USER");
             newUser.setStatus("active");
             newUser.setProfileCompletion(0);
@@ -744,11 +744,11 @@ public class RealAuthService implements AuthService {
             if (userBasicProfileRepository.findByUserId(userId).isEmpty()) {
                 UserBasicProfile basic = new UserBasicProfile();
                 basic.setUserId(userId);
-                basic.setNickname("林晓");
-                basic.setBio("热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。");
+                basic.setNickname("星野");
+                basic.setBio("喜欢慢跑和散步，期待遇见有趣的人");
                 basic.setGradeLabel("大三");
                 basic.setPronouns("TA");
-                basic.setInterestTags("[\"阅读\",\"旅行\",\"摄影\",\"音乐\",\"美食\"]");
+                basic.setInterestTags("[\"旅行\",\"摄影\",\"音乐\",\"电影\"]");
                 basic.setHeight(170);
                 basic.setEducationLevel("bachelor");
                 basic.setRelationshipStatus("never");
@@ -757,9 +757,9 @@ public class RealAuthService implements AuthService {
                 basic.setFutureCity("北京");
                 basic.setFuturePlanTags("[\"旅行\",\"读书\",\"事业\",\"健康\"]");
                 // v3 冻结：体验账号使用真人素材（person-01：头像/相册/半身/背景）
-                basic.setPhotoGallery("[\"/static/assets/images/people/person-01.webp\"]");
-                basic.setHalfBodyPhotoUrl("/static/assets/images/people/person-01.webp");
-                basic.setProfileBackgroundUrl("/static/assets/images/people/person-01.webp");
+                basic.setPhotoGallery("[\"/static/assets/images/people/person-01.png\"]");
+                basic.setHalfBodyPhotoUrl("/static/assets/images/people/person-01.png");
+                basic.setProfileBackgroundUrl("/static/assets/images/people/person-01.png");
                 userBasicProfileRepository.save(basic);
             }
             // 2. 校园资料（直接置为已认证通过）
@@ -768,7 +768,7 @@ public class RealAuthService implements AuthService {
                 campus.setUserId(userId);
                 campus.setCityName("北京");
                 campus.setCampusName("北京大学");
-                campus.setDepartmentName("工业设计");
+                campus.setDepartmentName("设计学院");
                 campus.setVerificationStatus("verified");
                 userCampusProfileRepository.save(campus);
             }
@@ -777,7 +777,7 @@ public class RealAuthService implements AuthService {
                     && realNameCertificationRepository.findByUserId(userId).isEmpty()) {
                 RealNameCertification rn = new RealNameCertification();
                 rn.setUserId(userId);
-                rn.setUserName("林晓");
+                rn.setUserName("星野");
                 // 2026-08-15 修复：id_card_no 为 NOT NULL 且需 AES-GCM 密文落库
                 // （禁止明文），此前未设置导致体验账号预填插入失败（Column 'id_card_no' cannot be null）
                 rn.setIdCardNo(aesEncryptor.encrypt("DEMO-GUEST-000000000000000000"));
@@ -799,7 +799,7 @@ public class RealAuthService implements AuthService {
             // 4. 完善度 100
             user.setProfileCompletion(100);
             // v3 冻结：体验账号头像使用真人素材 person-01
-            user.setAvatarUrl("/static/assets/images/avatars/person-01-avatar.webp");
+            user.setAvatarUrl("/static/assets/images/avatars/person-01-avatar.png");
             userRepository.save(user);
             log.info("体验账号资料预填完成: userId={}", userId);
             // 5. 流程演示数据播种（R4-00251 会话隔离后新账号无私信/喜欢/访客/通知，

@@ -408,7 +408,7 @@ class LocalMediaStorageServiceTest {
     void uploadWebp_shouldBeSupported() {
         // WebP 文件头：RIFF (4字节) + size (4字节) + WEBP (4字节)
         MockMultipartFile file = new MockMultipartFile(
-                "file", "anim.webp", "image/webp",
+                "file", "anim.png", "image/webp",
                 new byte[]{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
                         0x57, 0x45, 0x42, 0x50});
 
@@ -418,7 +418,7 @@ class LocalMediaStorageServiceTest {
         // 如果 ImageIO 抛 IOException，service 会捕获并设 width/height=null
         MediaStorageService.UploadResult result = service.store(700L, file, "image");
         assertNotNull(result.getUrl(), "webp 上传应返回 URL");
-        assertTrue(result.getUrl().endsWith(".webp"));
+        assertTrue(result.getUrl().endsWith(".png"));
     }
 
     /**

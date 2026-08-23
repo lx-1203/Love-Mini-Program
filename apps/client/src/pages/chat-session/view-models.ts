@@ -326,13 +326,16 @@ export function formatChatTimeBar(iso: string, now: number = Date.now()): string
 export function buildChatMessageRows<T extends { id: string; sentAt: string }>(
   messages: T[]
 ): Array<{ key: string; type: "timebar" | "message"; text?: string; message?: T }> {
-  const rows: Array<{ key: string; type: "timebar" | "message"; text?: string; message?: T }> = [];
+    const rows: Array<{ key: string; type: "timebar" | "message"; text?: string; message?: T }> = [];
   let prev: string | null = null;
-  for (const m of messages) {
+  // 2026-08-23：key 追加索引保证唯一，避免 mock 会话切换时消息 id 重复导致 wx:key 冲突
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (!m) continue;
     if (shouldShowTimeBar(prev, m.sentAt)) {
-      rows.push({ key: `time-${m.id}`, type: "timebar", text: formatChatTimeBar(m.sentAt) });
+      rows.push({ key: `time-${i}-${m.id}`, type: "timebar", text: formatChatTimeBar(m.sentAt) });
     }
-    rows.push({ key: `msg-${m.id}`, type: "message", message: m });
+    rows.push({ key: `msg-${i}-${m.id}`, type: "message", message: m });
     prev = m.sentAt;
   }
   return rows;

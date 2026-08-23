@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 defineProps<{
   counts: { likedMeCount: number; waitingReplyCount: number; warmingCount: number };
 }>();
@@ -45,7 +45,7 @@ const emit = defineEmits<{
   padding: 24rpx 12rpx;
   border-radius: 24rpx;
   background: #FFFFFF;
-  border: 1rpx solid #ECEFF2;
+  border: 1rpx solid #EEF2F0;
 }
 .today-heart__card--hover {
   opacity: 0.8;
@@ -56,10 +56,11 @@ const emit = defineEmits<{
 .today-heart__value {
   font-size: 40rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 .today-heart__label {
   font-size: 22rpx;
   color: #666666;
 }
 </style>
+

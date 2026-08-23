@@ -129,7 +129,7 @@ const genderSymbol = computed(() => {
   gap: 6rpx;
   padding: 4rpx 12rpx;
   border-radius: 999rpx;
-  background: #E8FAF3;
+  background: #E8FBF3;
 }
 
 .public-identity__online-dot {

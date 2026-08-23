@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // 校园恋爱小程序 — 统一设计令牌入口
 // 版本: 5.0.0 (Unified Design Tokens · 含 Dark Mode)
 // 说明:
@@ -263,8 +263,8 @@ page {
   --c-romance-200: #5A2D3D;
 
   // 品牌/浪漫背景：深色近似色
-  --c-bg-brand: #0F6848;
-  --c-bg-secondary: #0F6848;
+  --c-bg-brand: #156B51;
+  --c-bg-secondary: #156B51;
   --c-bg-romance: #2D1F24;
   --c-bg-hover: #222831;
 
@@ -281,7 +281,7 @@ page {
 
   // 状态徽章：背景用深色近似色、文字用浅色
   --c-state-signup-bg: #1B4A35;
-  --c-state-signup-text: #6FD4AA;
+  --c-state-signup-text: #75E1B7;
   --c-state-ongoing-bg: #4A3A12;
   --c-state-ongoing-text: #FFD479;
   --c-state-preview-bg: #2B3150;
@@ -300,7 +300,7 @@ page {
   --c-gold-bg-tint: rgba(255, 215, 0, 0.22);
 
   // 渐变：品牌渐变改用深绿阶，页头渐变改深色近似
-  --c-gradient-brand: linear-gradient(135deg, #36C99A 0%, #0F6848 100%);
+  --c-gradient-brand: linear-gradient(135deg, #36C99A 0%, #156B51 100%);
   --c-gradient-header: linear-gradient(180deg, #222831 0%, #1A1F26 40%, #0E1116 100%);
 }
 
@@ -341,3 +341,5 @@ html[data-theme="dark"] uni-page-body {
 //      H5 端通过 document.documentElement.setAttribute('data-theme', 'dark') 切换；
 //      mp-weixin 端通过设置当前页面的 root 元素属性切换（需在页面 onLoad 中调用）。
 // ============================================================
+
+

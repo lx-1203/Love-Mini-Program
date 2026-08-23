@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 寻觅页 - 卡片滑动推荐组件
  *
@@ -1036,7 +1036,7 @@ defineExpose({ onTouchMove });
 
       <!-- 当前卡片（可操作层）；2026-08-12 卡顿修复：拖动态加 card--dragging 类供 blur 降级；
            详情弹层打开时加 card--detail-open，移除底层 GPU 模糊避免遮罩下持续 re-filter -->
-      <view v-if="currentCard" class="card card--current" :class="{ 'card--dragging': isDragging, 'card--detail-open': showDetail }" :style="currentCardStyle">
+      <view v-if="currentCard" class="card card--current" :class="{ 'card--dragging': isDragging, 'card--detail-open': showDetail }" :style="currentCardStyle" @tap="handleTap">
         <!-- Phase D2 · 4:5 大图区，照片墙 swiper 支持多图浏览 -->
         <!-- 单图场景直接渲染 SafeImage，避免内部 swiper 与卡片整体拖动产生手势冲突 -->
         <SafeImage
@@ -2133,6 +2133,8 @@ defineExpose({ onTouchMove });
 .card-actions {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 24rpx;
   padding: 24rpx 32rpx 0;
   z-index: 5;
 }
@@ -2170,8 +2172,7 @@ defineExpose({ onTouchMove });
 }
 
 .card-action--whisper {
-  width: 80rpx;
-  height: 80rpx;
+  /* 2026-08-23：与 skip / like 等大（116rpx），消除三按钮大小不一 */
   background: rgba(15, 23, 42, 0.45);
   border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
@@ -2226,7 +2227,7 @@ defineExpose({ onTouchMove });
 
 .cert-modal__item {
   background: var(--c-bg-container, #f8fafc);
-  border: 1rpx solid var(--c-overlay-border-light, #e2e8f0);
+  border: 1rpx solid var(--c-overlay-border-light, #DDE3E0);
   border-radius: var(--r-lg, 16rpx);
   padding: 20rpx;
   display: flex;
@@ -2283,6 +2284,7 @@ defineExpose({ onTouchMove });
   color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
 }
 </style>
+
 
 
 

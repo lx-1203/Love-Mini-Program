@@ -122,7 +122,7 @@ public class MockHomeService implements HomeService {
             true,
             true,
             92,
-            "/static/assets/images/people/person-01.webp",
+            "/static/assets/images/people/person-01.png",
             null // V2026.08.17.0001 星座（mock/fallback 未维护）
         ),
         new LoveProgressView(
@@ -130,12 +130,12 @@ public class MockHomeService implements HomeService {
             4,
             List.of(
                 new LoveProgressStepView("profile", "完善资料", "让更多人了解你", true, "profile"),
-                new LoveProgressStepView("like", "今日心动", "认识一位心动的人", true, "discover"),
+                new LoveProgressStepView("discover", "认识新人", "认识一位心动的人", true, "discover"),
                 new LoveProgressStepView("whisper", "回复悄悄话", "回复一条悄悄话", false, "messages"),
                 new LoveProgressStepView("interest", "参与兴趣互动", "参与一个兴趣圈", false, "nearby")
             )
         ),
-        new RelationActivityView(3, 2, 5, 1, 11),
+        new RelationActivityView(3, 2, 5, 1, 11, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of()),
         List.of(
             new InterestCircleSummaryView(1L, "摄影圈", "📷", 12000, false),
             new InterestCircleSummaryView(2L, "旅行圈", "✈️", 8932, false),
@@ -143,23 +143,45 @@ public class MockHomeService implements HomeService {
             new InterestCircleSummaryView(4L, "美食圈", "🍜", 9210, false)
         ),
         List.of(
-            new NearbyPersonSummaryView(1001L, "林晓", "1.2km", "/static/assets/images/people/person-01.webp", true, List.of("摄影")),
-            new NearbyPersonSummaryView(1002L, "夏言", "1.5km", "/static/assets/images/people/person-02.webp", true, List.of("建筑")),
-            new NearbyPersonSummaryView(1003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.webp", false, List.of("日语")),
-            new NearbyPersonSummaryView(1004L, "小满", "2.1km", "/static/assets/images/people/person-04.webp", false, List.of("编程")),
-            new NearbyPersonSummaryView(1005L, "Luna", "2.8km", "/static/assets/images/people/person-05.webp", false, List.of("新闻"))
+            new NearbyPersonSummaryView(1001L, "林晓", "1.2km", "/static/assets/images/people/person-01.png", true, List.of("摄影")),
+            new NearbyPersonSummaryView(1002L, "夏言", "1.5km", "/static/assets/images/people/person-02.png", true, List.of("建筑")),
+            new NearbyPersonSummaryView(1003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.png", false, List.of("日语")),
+            new NearbyPersonSummaryView(1004L, "小满", "2.1km", "/static/assets/images/people/person-04.png", false, List.of("编程")),
+            new NearbyPersonSummaryView(1005L, "Luna", "2.8km", "/static/assets/images/people/person-05.png", false, List.of("新闻"))
         ),
         List.of(
-            new CommunityPostSummaryView(
+                        new CommunityPostSummaryView(
                 1L,
                 "林晓",
-                "/static/assets/images/people/person-01.webp",
+                "/static/assets/images/people/person-01.png",
                 "摄影圈",
                 "15 分钟前",
                 "今天在颐和园拍到超美的落日，光影太治愈了～",
-                List.of(),
+                List.of("/static/assets/images/posts/post-1.jpg","/static/assets/images/posts/post-2.jpg","/static/assets/images/posts/post-3.jpg"),
                 128,
                 24
+            ),
+            new CommunityPostSummaryView(
+                2L,
+                "阿辰",
+                "/static/assets/images/people/person-02.png",
+                "旅行圈",
+                "1 小时前",
+                "周末去了香山，大片超好看！一起感受大自然的鬼斧神工吧～",
+                List.of("/static/assets/images/posts/post-4.jpg","/static/assets/images/posts/post-5.jpg","/static/assets/images/posts/post-6.jpg"),
+                96,
+                18
+            ),
+            new CommunityPostSummaryView(
+                3L,
+                "草莓奶酪",
+                "/static/assets/images/people/person-03.png",
+                "美食圈",
+                "2 小时前",
+                "新发现一家超好吃的日料店！食材新鲜、味道超绝～",
+                List.of("/static/assets/images/posts/post-6.jpg","/static/assets/images/posts/post-7.jpg","/static/assets/images/posts/post-8.jpg"),
+                78,
+                12
             )
         )
     );
@@ -180,7 +202,7 @@ public class MockHomeService implements HomeService {
         true,
         true,
         90,
-        "/static/assets/images/people/person-02.webp",
+        "/static/assets/images/people/person-02.png",
             null // V2026.08.17.0001 星座（mock/fallback 未维护）
     );
   }

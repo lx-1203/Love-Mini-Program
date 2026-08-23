@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from "vue";
 import type { UserProfileDTO, UserProfilePost } from "../../../types/profile";
 import PublicHero from "./PublicHero.vue";
@@ -103,13 +103,13 @@ function closeGovernance() {
 
 .public-profile__state-text {
   font-size: 28rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 
 .public-profile__retry {
   padding: 16rpx 32rpx;
   border-radius: 999rpx;
-  background: #DFF8EF;
+  background: #E8FBF3;
 }
 
 .public-profile__retry-text {

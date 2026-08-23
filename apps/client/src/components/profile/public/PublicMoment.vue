@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
 
 defineProps<{ posts: UserProfilePost[] }>();
@@ -45,12 +45,12 @@ defineProps<{ posts: UserProfilePost[] }>();
 .public-moment__title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .public-moment__more {
   font-size: 36rpx;
-  color: #999999;
+  color: #9AA39F;
   line-height: 1;
 }
 
@@ -59,7 +59,7 @@ defineProps<{ posts: UserProfilePost[] }>();
   padding: 24rpx;
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
 .public-moment__content {
@@ -81,8 +81,8 @@ defineProps<{ posts: UserProfilePost[] }>();
 .public-moment__img {
   width: 200rpx;
   height: 200rpx;
-  border-radius: 16rpx;
-  background: #EEF3F1;
+  border-radius: 32rpx;
+  background: #EEF2F0;
 }
 
 .public-moment__footer {
@@ -93,6 +93,6 @@ defineProps<{ posts: UserProfilePost[] }>();
 
 .public-moment__stat {
   font-size: 22rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 </style>

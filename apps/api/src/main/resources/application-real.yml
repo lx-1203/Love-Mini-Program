@@ -167,3 +167,6 @@ app:
     # 此处补占位符接线（默认空 → 未配置仍 fail-fast，不引入公开兜底密钥）：
     # 通过 env APP_AES_SECRET（≥32 字符）或 --app.security.aes-secret=xxx 注入。
     aes-secret: ${APP_AES_SECRET:}
+  ai:
+    agnes:
+      api-base: ${AGNES_API_BASE:}

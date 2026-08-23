@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "screensGenerated": 3,
+  "coreComponentsUsed": ["button", "bottom-nav", "card", "chip", "avatar", "input"],
+  "supportComponentsUsed": [],
+  "previewClassReuseRate": 0.9,
+  "hasProductContext": true,
+  "inventedComponents": [],
+  "renderedFromEvidence": [],
+  "warnings": []
+}

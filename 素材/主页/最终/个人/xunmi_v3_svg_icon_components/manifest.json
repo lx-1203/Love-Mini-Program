@@ -1,0 +1,32 @@
+{
+  "package": "xunmi-v3-svg-icon-components",
+  "viewBoxDefault": "0 0 24 24",
+  "count": 24,
+  "icons": [
+    "add",
+    "album",
+    "eye-fill",
+    "favorite-star",
+    "gender-female",
+    "heart-fill",
+    "heart-outline",
+    "liked-me",
+    "nav-home",
+    "nav-match",
+    "nav-message",
+    "nav-nearby",
+    "nav-profile",
+    "online",
+    "people-fill",
+    "play",
+    "privacy",
+    "profile-verified",
+    "qr",
+    "settings",
+    "status-verified",
+    "target",
+    "thumb-up-fill",
+    "viewed-me"
+  ],
+  "sourceNote": "Vector recreation based on the supplied icon-sheet reference; it is a maintainable path reconstruction, not a byte-for-byte extraction from proprietary source vectors."
+}

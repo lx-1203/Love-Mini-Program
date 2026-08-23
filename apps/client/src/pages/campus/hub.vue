@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 校园圈 Hub（v3 Nearby 冻结 · 04_campus_circle）
  * 加入校园圈引导 + 校园列表（未认证/认证中/已认证/非本校 四态）+ 校园圈推荐。
@@ -23,6 +23,8 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { certificationStatus, certificationInfo, isVerified } = storeToRefs(campusStore);
 
 const selectedSchool = ref("");
+/** 2026-08-20：校园圈搜索关键词（参考图顶部搜索框对齐） */
+const searchKeyword = ref("");
 const schools = SCHOOLS.slice(0, 6);
 
 /** 校园圈展示数据（参考图视觉对齐；后续可由后端 campuses 接口扩展提供） */
@@ -48,6 +50,51 @@ const recommendedSchools = computed(() => schools.filter((sc) => sc.name !== own
 const isPending = computed(() => certificationStatus.value === "pending");
 const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionStore.userSession?.campusName || "");
 
+/** 当前选中的 Tab：joined = 我加入的，recommend = 推荐圈子 */
+const activeTab = ref<"joined" | "recommend">("joined");
+
+/** 校园圈封面图映射（使用 GENERATED 校园风景图） */
+const CAMPUS_COVERS: Record<string, string> = {
+  pku: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
+  thu: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
+  ruc: IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
+  fudan: IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
+  sjtu: IMAGE_PATHS.GENERATED.CAMPUS_PLAYGROUND,
+  tongji: IMAGE_PATHS.GENERATED.CAMPUS_CAFETERIA,
+  zju: IMAGE_PATHS.GENERATED.CAMPUS_RAIN,
+};
+
+/** 封面图兜底渐变色（每所学校一个独特渐变） */
+const CAMPUS_GRADIENTS: Record<string, string> = {
+  pku: "linear-gradient(135deg, #4A90A4 0%, #357A8C 100%)",
+  thu: "linear-gradient(135deg, #8B6914 0%, #A0522D 100%)",
+  ruc: "linear-gradient(135deg, #7B68AE 0%, #5B4C9A 100%)",
+  fudan: "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)",
+  sjtu: "linear-gradient(135deg, #C62828 0%, #8E0000 100%)",
+  tongji: "linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)",
+  zju: "linear-gradient(135deg, #00695C 0%, #004D40 100%)",
+};
+
+function campusCoverFor(schoolId: string): string {
+  return CAMPUS_COVERS[schoolId] || "";
+}
+
+function campusGradientFor(schoolId: string): string {
+  return CAMPUS_GRADIENTS[schoolId] || "linear-gradient(135deg, #36C99A 0%, #2BA882 100%)";
+}
+
+function schoolInitial(name: string): string {
+  return name ? name.charAt(0) : "?";
+}
+
+/** Tab 切换过滤列表 */
+const filteredSchools = computed(() => {
+  const base = activeTab.value === "joined" ? joinedSchools.value : recommendedSchools.value;
+  const kw = searchKeyword.value.trim();
+  if (!kw) return base;
+  return base.filter((sc) => sc.name.includes(kw) || sc.id.includes(kw.toLowerCase()));
+});
+
 onLoad((query) => {
   if (query && typeof query.school === "string" && query.school.trim()) {
     selectedSchool.value = query.school.trim();
@@ -57,7 +104,6 @@ onLoad((query) => {
 onShow(() => {
   void campusStore.fetchCertificationStatus().catch(() => {});
 });
-
 
 function goSchool(schoolName: string) {
   openAppPath(`${ROUTES.CAMPUS.INDEX}?school=${encodeURIComponent(schoolName)}`);
@@ -76,7 +122,7 @@ function goBack() {
   <view class="campus-hub" :style="menuStyleVars">
     <view class="campus-hub__header">
       <view class="campus-hub__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
-        <text class="campus-hub__back-text">‹</text>
+        <text class="campus-hub__back-text">&#x2039;</text>
       </view>
       <view class="campus-hub__title-col">
         <text class="campus-hub__title">{{ t('campusHub.title') }}</text>
@@ -101,7 +147,7 @@ function goBack() {
     <!-- 加入引导 -->
     <view class="campus-guide card-base">
       <view class="campus-guide__icon">
-        <image class="campus-guide__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+        <image class="campus-guide__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG" mode="aspectFit" alt="" />
       </view>
       <view class="campus-guide__body">
         <text class="campus-guide__title">{{ t('campusHub.guideTitle') }}</text>
@@ -123,67 +169,110 @@ function goBack() {
       </view>
     </view>
 
-    <!-- 我加入的 -->
-    <view v-if="joinedSchools.length > 0" class="campus-hub__section">
-      <text class="campus-hub__section-title">{{ t('campusHub.joinedTitle') }}</text>
+    <!-- 2026-08-20：搜索框（参考图对齐） -->
+    <view class="campus-search">
+      <view class="campus-search__icon">
+        <text class="campus-search__icon-text">🔍</text>
+      </view>
+      <input
+        v-model="searchKeyword"
+        class="campus-search__input"
+        :placeholder="t('campusHub.searchPlaceholder')"
+        placeholder-class="campus-search__placeholder"
+        confirm-type="search"
+        aria-label="搜索校园圈"
+      />
+      <text v-if="searchKeyword" class="campus-search__clear" role="button" aria-label="清除" @tap="searchKeyword = ''">×</text>
+    </view>
+
+    <!-- Tab 切换 -->
+    <view class="campus-hub__tabs">
       <view
-        v-for="school in joinedSchools"
-        :key="school.id"
-        class="campus-school-card press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="school.name"
-        @tap="goSchool(school.name)"
+        class="campus-hub__tab"
+        role="tab"
+        :aria-selected="activeTab === 'joined'"
+        @tap="activeTab = 'joined'"
       >
-        <view class="campus-school-card__thumb">
-          <image class="campus-school-card__thumb-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFill" alt="" />
-        </view>
-        <view class="campus-school-card__body">
-          <view class="campus-school-card__name-row">
-            <text class="campus-school-card__name">{{ school.name }}</text>
-            <view class="campus-school-card__badge" :class="'campus-school-card__badge--' + (isVerified ? 'verified' : 'pending')">
-              <text class="campus-school-card__badge-text">{{ isVerified ? t('campusHub.certified') : t('campusHub.statusPending') }}</text>
-            </view>
-          </view>
-          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
-          <text class="campus-school-card__peers">{{ statsOf(school).peers }}</text>
-        </view>
-        <view class="campus-school-card__cta">
-          <text class="campus-school-card__cta-text">{{ t('campusHub.enter') }}</text>
-        </view>
+        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'joined' }">{{ t('campusHub.joinedTitle') }}</text>
+        <view v-if="activeTab === 'joined'" class="campus-hub__tab-indicator" />
+      </view>
+      <view
+        class="campus-hub__tab"
+        role="tab"
+        :aria-selected="activeTab === 'recommend'"
+        @tap="activeTab = 'recommend'"
+      >
+        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'recommend' }">{{ t('campusHub.recommendTitle2') }}</text>
+        <view v-if="activeTab === 'recommend'" class="campus-hub__tab-indicator" />
       </view>
     </view>
 
-    <!-- 推荐圈子 -->
-    <view class="campus-hub__section">
-      <text class="campus-hub__section-title">{{ t('campusHub.recommendTitle2') }}</text>
-      <view
-        v-for="school in recommendedSchools"
-        :key="'rec-' + school.id"
-        class="campus-school-card press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="school.name"
-        @tap="goSchool(school.name)"
-      >
-        <view class="campus-school-card__thumb">
-          <image class="campus-school-card__thumb-img" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFill" alt="" />
+    <!-- 空状态 -->
+    <view v-if="filteredSchools.length === 0" class="campus-hub__empty">
+      <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? '暂未加入任何校园圈' : '暂无推荐圈子' }}</text>
+    </view>
+
+    <!-- 圈子卡片列表 -->
+    <view
+      v-for="school in filteredSchools"
+      :key="activeTab + '-' + school.id"
+      class="campus-school-card press-feedback"
+      hover-class="press-feedback--active"
+      hover-stay-time="120"
+      role="button"
+      :aria-label="school.name"
+      @tap="goSchool(school.name)"
+    >
+      <!-- 封面图 -->
+      <view class="campus-school-card__cover">
+        <image
+          v-if="campusCoverFor(school.id)"
+          class="campus-school-card__cover-img"
+          :src="campusCoverFor(school.id)"
+          mode="aspectFill"
+          alt=""
+        />
+        <view
+          v-else
+          class="campus-school-card__cover-fallback"
+          :style="{ background: campusGradientFor(school.id) }"
+        >
+          <text class="campus-school-card__cover-initial">{{ schoolInitial(school.name) }}</text>
         </view>
-        <view class="campus-school-card__body">
-          <view class="campus-school-card__name-row">
-            <text class="campus-school-card__name">{{ school.name }}</text>
-            <view class="campus-school-card__badge campus-school-card__badge--plain">
-              <text class="campus-school-card__badge-text">{{ t('campusHub.unverified') }}</text>
-            </view>
+      </view>
+
+      <!-- 内容 -->
+      <view class="campus-school-card__body">
+        <view class="campus-school-card__name-row">
+          <text class="campus-school-card__name">{{ school.name }}</text>
+          <view
+            class="campus-school-card__badge"
+            :class="{
+              'campus-school-card__badge--verified': activeTab === 'joined' && isVerified,
+              'campus-school-card__badge--pending': activeTab === 'joined' && isPending && !isVerified,
+              'campus-school-card__badge--unverified': activeTab === 'recommend',
+            }"
+          >
+            <text class="campus-school-card__badge-text">
+              {{ activeTab === 'joined' ? (isVerified ? t('campusHub.certified') : t('campusHub.statusPending')) : t('campusHub.unverified') }}
+            </text>
           </view>
-          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
+        </view>
+        <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
+        <!-- 成员头像预览 -->
+        <view class="campus-school-card__members">
+          <view class="campus-school-card__avatar-stack">
+            <image class="campus-school-card__avatar" :src="IMAGE_PATHS.AVATARS.AVATAR_1" mode="aspectFill" />
+            <image class="campus-school-card__avatar campus-school-card__avatar--2" :src="IMAGE_PATHS.AVATARS.AVATAR_2" mode="aspectFill" />
+            <image class="campus-school-card__avatar campus-school-card__avatar--3" :src="IMAGE_PATHS.AVATARS.AVATAR_3" mode="aspectFill" />
+          </view>
           <text class="campus-school-card__peers">{{ statsOf(school).peers }}</text>
         </view>
-        <view class="campus-school-card__cta">
-          <text class="campus-school-card__cta-text">{{ t('campusHub.join') }}</text>
-        </view>
+      </view>
+
+      <!-- 操作按钮（描边样式） -->
+      <view class="campus-school-card__cta">
+        <text class="campus-school-card__cta-text">{{ activeTab === 'joined' ? t('campusHub.enter') : t('campusHub.join') }}</text>
       </view>
     </view>
 
@@ -199,6 +288,7 @@ function goBack() {
   box-sizing: border-box;
 }
 
+/* ===== Header ===== */
 .campus-hub__header {
   display: flex;
   align-items: center;
@@ -213,8 +303,8 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .campus-hub__back-text {
@@ -223,16 +313,51 @@ function goBack() {
   line-height: 1;
 }
 
+.campus-hub__title-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4rpx;
+}
+
 .campus-hub__title {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: 800;
   color: var(--c-text-primary, #222222);
 }
 
-.campus-hub__spacer {
-  width: 64rpx;
+.campus-hub__subtitle {
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #8A9694;
 }
 
+.campus-hub__cert-btn {
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand, #36C99A);
+  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.32);
+}
+
+.campus-hub__cert-btn-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--c-text-inverse, #FFFFFF);
+}
+
+.campus-hub__cert-badge {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--c-bg-brand, #E8FAF3);
+}
+
+.campus-hub__cert-badge-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--c-brand, #36C99A);
+}
+
+/* ===== Certification Guide ===== */
 .campus-guide {
   display: flex;
   align-items: center;
@@ -240,7 +365,7 @@ function goBack() {
   padding: 28rpx;
   border-radius: 22rpx;
   background: linear-gradient(135deg, #EAF8F2 0%, #FFFFFF 100%);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   margin-bottom: 32rpx;
 }
 
@@ -251,7 +376,7 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-container, #ffffff);
+  background: var(--c-bg-container, #FFFFFF);
   flex-shrink: 0;
 }
 
@@ -289,14 +414,14 @@ function goBack() {
 .campus-guide__btn-text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .campus-guide__badge {
   flex-shrink: 0;
   padding: 12rpx 24rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-brand-50, #E6F8F1);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .campus-guide__badge-text {
@@ -305,235 +430,104 @@ function goBack() {
   color: var(--c-brand-600, #36C99A);
 }
 
-.campus-hub__section {
-  margin-bottom: 32rpx;
-}
-
-.campus-hub__section-title {
-  display: block;
-  font-size: 30rpx;
-  font-weight: 800;
-  color: var(--c-text-primary, #222222);
-}
-
-.campus-hub__section-desc {
-  display: block;
-  margin-top: 6rpx;
-  margin-bottom: 16rpx;
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
-}
-
-.campus-school {
+/* ===== Tab Bar ===== */
+.campus-hub__tabs {
   display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx;
-  margin-bottom: 16rpx;
-  background: var(--c-bg-container, #ffffff);
-  border-radius: 20rpx;
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  gap: 0;
+  margin-bottom: 28rpx;
+  border-bottom: 2rpx solid var(--c-line, #EEF2F0);
 }
 
-.campus-school__icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-blue-light, #EEF3FF);
-  flex-shrink: 0;
+.campus-hub__tab {
+  position: relative;
+  padding: 20rpx 0;
+  margin-right: 48rpx;
 }
 
-.campus-school__icon-img {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-.campus-school__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-.campus-school__name {
+.campus-hub__tab-text {
   font-size: 28rpx;
-  font-weight: 700;
-  color: var(--c-text-primary, #222222);
-}
-
-.campus-school__city {
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
-}
-
-.campus-school__status {
-  flex-shrink: 0;
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-surface, #F7FAF9);
-}
-
-.campus-school__status--own-verified {
-  background: var(--c-brand-50, #E6F8F1);
-}
-
-.campus-school__status--own-pending {
-  background: var(--c-warning-light, #FFF7ED);
-}
-
-.campus-school__status-text {
-  font-size: 20rpx;
-  color: var(--c-text-tertiary, #666666);
-}
-
-.campus-school__status--own-verified .campus-school__status-text {
-  color: var(--c-brand-600, #36C99A);
-}
-
-.campus-school__status--own-pending .campus-school__status-text {
-  color: var(--c-warning-600, #C2410C);
-}
-
-.campus-school__arrow {
-  font-size: 30rpx;
-  color: var(--c-text-quaternary, #C8CFCD);
-}
-
-.campus-reco {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx;
-  margin-bottom: 16rpx;
-  background: var(--c-bg-container, #ffffff);
-  border-radius: 20rpx;
-  border: 1rpx solid var(--c-line, #ECEFF2);
-}
-
-.campus-reco__icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-brand-50, #E6F8F1);
-  flex-shrink: 0;
-}
-
-.campus-reco__icon-img {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-.campus-reco__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-.campus-reco__name {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: var(--c-text-primary, #222222);
-}
-
-.campus-reco__desc {
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
-}
-
-.campus-reco__cta {
-  flex-shrink: 0;
-  padding: 10rpx 24rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-surface, #F7FAF9);
-}
-
-.campus-reco__cta-text {
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
-}
-
-.campus-hub__footer {
-  height: 48rpx;
-}
-
-.campus-hub__title-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4rpx;
-}
-
-.campus-hub__subtitle {
-  font-size: 24rpx;
-  font-weight: 400;
+  font-weight: 500;
   color: #8A9694;
 }
 
-.campus-hub__cert-btn {
-  padding: 12rpx 28rpx;
-  border-radius: 999rpx;
-  background: #36C99A;
-  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.32);
+.campus-hub__tab-text--active {
+  font-weight: 700;
+  color: var(--c-text-primary, #222222);
 }
 
-.campus-hub__cert-btn-text {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #ffffff;
+.campus-hub__tab-indicator {
+  position: absolute;
+  bottom: -2rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: var(--c-brand, #36C99A);
 }
 
-.campus-hub__cert-badge {
-  padding: 12rpx 24rpx;
-  border-radius: 999rpx;
-  background: #E8FAF3;
-}
-
-.campus-hub__cert-badge-text {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #36C99A;
-}
-
-.campus-school-card {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  margin-top: 20rpx;
-  padding: 24rpx;
-  border-radius: 28rpx;
-  background: #ffffff;
-  box-shadow: 0 6rpx 24rpx rgba(26, 55, 48, 0.08);
-}
-
-.campus-school-card__thumb {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 20rpx;
-  overflow: hidden;
-  background: #E8FAF3;
-  flex-shrink: 0;
+/* ===== Empty State ===== */
+.campus-hub__empty {
+  padding: 80rpx 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.campus-school-card__thumb-img {
-  width: 64rpx;
-  height: 64rpx;
+.campus-hub__empty-text {
+  font-size: 26rpx;
+  color: #8A9694;
+}
+
+/* ===== School Card ===== */
+.campus-school-card {
+  display: flex;
+  align-items: stretch;
+  gap: 20rpx;
+  margin-top: 20rpx;
+  padding: 20rpx;
+  border-radius: 28rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  box-shadow: 0 6rpx 24rpx rgba(26, 55, 48, 0.08);
+  overflow: hidden;
+}
+
+.campus-school-card__cover {
+  width: 180rpx;
+  height: 130rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--c-bg-brand, #E8FAF3);
+}
+
+.campus-school-card__cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.campus-school-card__cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campus-school-card__cover-initial {
+  font-size: 48rpx;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .campus-school-card__body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .campus-school-card__name-row {
@@ -545,20 +539,22 @@ function goBack() {
 .campus-school-card__name {
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
+/* ===== Badge ===== */
 .campus-school-card__badge {
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
+  flex-shrink: 0;
 }
 
 .campus-school-card__badge--verified {
-  background: #E8FAF3;
+  background: var(--c-bg-brand, #E8FAF3);
 }
 
 .campus-school-card__badge--verified .campus-school-card__badge-text {
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
 }
 
 .campus-school-card__badge--pending {
@@ -566,14 +562,14 @@ function goBack() {
 }
 
 .campus-school-card__badge--pending .campus-school-card__badge-text {
-  color: #FF9A57;
+  color: #FF9F43;
 }
 
-.campus-school-card__badge--plain {
+.campus-school-card__badge--unverified {
   background: #F2F4F3;
 }
 
-.campus-school-card__badge--plain .campus-school-card__badge-text {
+.campus-school-card__badge--unverified .campus-school-card__badge-text {
   color: #8A9694;
 }
 
@@ -582,31 +578,115 @@ function goBack() {
   font-weight: 600;
 }
 
+/* ===== Stats & Members ===== */
 .campus-school-card__stats {
   display: block;
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: #4A524E;
+  color: var(--c-text-secondary, #4A524E);
+}
+
+.campus-school-card__members {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.campus-school-card__avatar-stack {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.campus-school-card__avatar {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 2rpx solid var(--c-bg-container, #FFFFFF);
+  display: block;
+}
+
+.campus-school-card__avatar--2 {
+  margin-left: -10rpx;
+}
+
+.campus-school-card__avatar--3 {
+  margin-left: -10rpx;
 }
 
 .campus-school-card__peers {
-  display: block;
-  margin-top: 4rpx;
   font-size: 22rpx;
   color: #9AA39F;
 }
 
+/* ===== CTA (Outline) ===== */
 .campus-school-card__cta {
   flex-shrink: 0;
-  padding: 12rpx 26rpx;
+  align-self: center;
+  padding: 12rpx 28rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  border: 2rpx solid var(--c-brand, #36C99A);
+  background: transparent;
 }
 
 .campus-school-card__cta-text {
   font-size: 24rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-brand, #36C99A);
+}
+
+/* ===== Footer ===== */
+.campus-hub__footer {
+  height: 48rpx;
+}
+
+/* ===== 2026-08-20 校园圈搜索框（参考图对齐） ===== */
+.campus-search {
+  margin: 0 40rpx 20rpx;
+  height: 76rpx;
+  border-radius: 999rpx;
+  background: #F0F4F2;
+  display: flex;
+  align-items: center;
+  padding: 0 28rpx;
+  box-sizing: border-box;
+  gap: 12rpx;
+}
+
+.campus-search__icon {
+  flex-shrink: 0;
+}
+
+.campus-search__icon-text {
+  font-size: 28rpx;
+}
+
+.campus-search__input {
+  flex: 1;
+  height: 100%;
+  font-size: 28rpx;
+  color: var(--c-text-primary, #333A37);
+}
+
+.campus-search__placeholder {
+  color: #9AA39F;
+}
+
+.campus-search__clear {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--c-border-light, #D8E0DC);
+  color: var(--c-text-tertiary, #6B7571);
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 </style>
+
+
+

@@ -1,0 +1,9 @@
+<template>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 4.1a5.3 5.3 0 0 0-5.3 5.3v3.2c0 1.7-.6 2.8-1.8 4h14.2c-1.2-1.2-1.8-2.3-1.8-4V9.4A5.3 5.3 0 0 0 12 4.1ZM12 20.4a2.5 2.5 0 0 0 2.3-1.7H9.7a2.5 2.5 0 0 0 2.3 1.7Z" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: "NotificationBadgeIcon" })
+</script>

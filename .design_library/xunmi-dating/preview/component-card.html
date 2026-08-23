@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡片 Card - 寻觅设计系统</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  /* Page scaffold — NOT extracted */
+  body { margin: 0; padding: var(--space-3); background: var(--color-background); font-family: var(--font-body); color: var(--color-on-surface); font-size: var(--font-size-body); }
+  .story { margin-bottom: var(--space-4); }
+  .story-label { font-size: var(--font-size-eyebrow); font-weight: var(--font-weight-eyebrow); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-muted-foreground); margin-bottom: var(--space-2); display: block; }
+  .rail { display: flex; flex-direction: column; gap: var(--space-3); }
+  hr.divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-5) 0; }
+
+  /* @component-css-start */
+  /* Component definitions — extracted to components.css by deterministic script */
+  .card { background: var(--color-surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-1); overflow: hidden; width: 100%; transition: box-shadow var(--duration-fast) var(--easing-standard); }
+  .card:hover { box-shadow: var(--shadow-2); }
+  .card-user { padding: var(--space-5); }
+  .card-user .card-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .card-user .avatar { width: 56px; height: 56px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-on-primary); font-weight: 600; font-size: 18px; }
+  .card-user .user-info { flex: 1; min-width: 0; }
+  .card-user .user-name { font-size: var(--font-size-h4); font-weight: var(--font-weight-h4); color: var(--color-on-surface); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-user .user-meta { font-size: var(--font-size-caption); color: var(--color-muted-foreground); display: flex; align-items: center; gap: var(--space-2); }
+  .card-user .user-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--color-muted-foreground); }
+  .card-user .card-body { margin-bottom: var(--space-4); }
+  .card-user .bio { font-size: var(--font-size-body); color: var(--color-on-surface-variant); line-height: var(--line-height-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-user .card-footer { display: flex; gap: var(--space-2); }
+  .card-user .btn-like { flex: 1; height: var(--size-button-md); border: none; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); font-size: var(--font-size-body); font-weight: 500; cursor: pointer; transition: background var(--duration-fast) var(--easing-standard); }
+  .card-user .btn-like:hover { background: var(--color-accent-hover); }
+  .card-user .btn-pass { width: var(--size-button-md); height: var(--size-button-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-muted-foreground); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background var(--duration-fast) var(--easing-standard); }
+  .card-user .btn-pass:hover { background: var(--color-surface-container-low); }
+
+  .card-feed { padding: 0; }
+  .card-feed .card-header { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; align-items: center; gap: var(--space-3); }
+  .card-feed .avatar-sm { width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-on-primary); font-weight: 600; font-size: 14px; }
+  .card-feed .feed-user-info { flex: 1; min-width: 0; }
+  .card-feed .feed-name { font-size: var(--font-size-body); font-weight: 500; color: var(--color-on-surface); }
+  .card-feed .feed-time { font-size: var(--font-size-caption); color: var(--color-muted-foreground); }
+  .card-feed .card-body { padding: 0 var(--space-4) var(--space-3); }
+  .card-feed .feed-text { font-size: var(--font-size-body); color: var(--color-on-surface); line-height: var(--line-height-body); margin-bottom: var(--space-3); }
+  .card-feed .feed-image { width: 100%; aspect-ratio: 4/3; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--color-primary-container), var(--color-accent-container)); display: flex; align-items: center; justify-content: center; color: var(--color-muted-foreground); font-size: var(--font-size-caption); }
+  .card-feed .card-footer { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; align-items: center; gap: var(--space-6); border-top: 1px solid var(--color-outline-variant); }
+  .card-feed .action { display: flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-caption); color: var(--color-muted-foreground); cursor: pointer; transition: color var(--duration-fast) var(--easing-standard); }
+  .card-feed .action:hover { color: var(--color-accent); }
+  .card-feed .action-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+
+  .card-story { padding: 0; position: relative; aspect-ratio: 3/4; }
+  .card-story .card-media { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6) 100%), linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%); }
+  .card-story .card-body { position: absolute; bottom: 0; left: 0; right: 0; padding: var(--space-5) var(--space-4) var(--space-4); color: #fff; }
+  .card-story .story-title { font-size: var(--font-size-h4); font-weight: var(--font-weight-h4); margin-bottom: var(--space-1); }
+  .card-story .story-desc { font-size: var(--font-size-caption); opacity: 0.85; }
+  .card-story .card-badge { position: absolute; top: var(--space-3); left: var(--space-3); padding: 4px var(--space-2); background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); border-radius: var(--radius-full); font-size: var(--font-size-eyebrow); color: #fff; font-weight: 500; }
+
+  .card-info { padding: var(--space-5); }
+  .card-info .card-header { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .card-info .info-icon { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--color-primary-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--color-on-primary-container); }
+  .card-info .info-title { font-size: var(--font-size-h4); font-weight: var(--font-weight-h4); color: var(--color-on-surface); margin-bottom: 2px; }
+  .card-info .info-sub { font-size: var(--font-size-caption); color: var(--color-muted-foreground); }
+  .card-info .card-body { margin-bottom: var(--space-4); }
+  .card-info .info-desc { font-size: var(--font-size-body); color: var(--color-on-surface-variant); line-height: var(--line-height-body); }
+  .card-info .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .card-info .info-link { font-size: var(--font-size-body); color: var(--color-link); font-weight: 500; cursor: pointer; text-decoration: none; transition: opacity var(--duration-fast) var(--easing-standard); }
+  .card-info .info-link:hover { opacity: 0.8; }
+  .card-info .info-count { font-size: var(--font-size-caption); color: var(--color-muted-foreground); }
+
+  .padding-sm { padding: var(--space-3); }
+  .padding-md { padding: var(--space-5); }
+  .padding-lg { padding: var(--space-7); }
+  /* @component-css-end */
+</style>
+</head>
+<body>
+
+<div class="story" data-evidence-sample="user-card">
+  <span class="story-label">用户卡片</span>
+  <div class="rail">
+    <div class="card card-user">
+      <div class="card-header">
+        <div class="avatar">林</div>
+        <div class="user-info">
+          <div class="user-name">林小雨 · 25</div>
+          <div class="user-meta"><span>上海</span><span class="dot"></span><span>2km</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="bio">喜欢旅行和摄影，周末常去咖啡馆看书。希望遇到一个温柔有趣的人，一起探索生活的小美好。</p>
+      </div>
+      <div class="card-footer">
+        <button class="btn-pass" aria-label="跳过">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <button class="btn-like">喜欢</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="story" data-evidence-sample="feed-card">
+  <span class="story-label">动态卡片</span>
+  <div class="rail">
+    <div class="card card-feed">
+      <div class="card-header">
+        <div class="avatar-sm">陈</div>
+        <div class="feed-user-info">
+          <div class="feed-name">陈思思</div>
+          <div class="feed-time">2小时前 · 上海</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="feed-text">今天的夕阳好美，分享给大家～ 🌅 有没有一起看日落的小伙伴？</p>
+        <div class="feed-image">图片预览</div>
+      </div>
+      <div class="card-footer">
+        <div class="action">
+          <span class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          </span>
+          <span>128</span>
+        </div>
+        <div class="action">
+          <span class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <span>36</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="story" data-evidence-sample="story-card">
+  <span class="story-label">故事卡片</span>
+  <div class="rail">
+    <div class="card card-story">
+      <div class="card-media"></div>
+      <div class="card-badge">日常</div>
+      <div class="card-body">
+        <div class="story-title">周末咖啡时光</div>
+        <div class="story-desc">一个人、一本书、一杯拿铁</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="story" data-evidence-sample="info-card">
+  <span class="story-label">信息卡片</span>
+  <div class="rail">
+    <div class="card card-info">
+      <div class="card-header">
+        <div class="info-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="info-title">每日推荐</div>
+          <div class="info-sub">为你精选的优质匹配</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="info-desc">基于你的兴趣和偏好，我们每天为你推荐3位可能契合的用户，不要错过缘分哦。</p>
+      </div>
+      <div class="card-footer">
+        <a class="info-link">查看全部</a>
+        <span class="info-count">今日 +3</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

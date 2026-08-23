@@ -59,7 +59,8 @@ function goBack() {
 
 onMounted(async () => {
   await dailyQuestionStore.fetchTodayQuestion();
-  if (todayQuestion.value) {
+  // 2026-08-20：仅已回答后才拉取他人回答（后端 422 拒绝未答题拉取，避免无谓异常上报）
+  if (todayQuestion.value && hasAnswered.value) {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
 });
@@ -75,7 +76,8 @@ onUnload(() => {
  */
 async function retryQuestion() {
   await dailyQuestionStore.fetchTodayQuestion();
-  if (todayQuestion.value) {
+  // 2026-08-20：仅已回答后拉取
+  if (todayQuestion.value && hasAnswered.value) {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { profileSvg } from "../../../config/profile-svg";
 
 const props = withDefaults(defineProps<{
@@ -41,7 +41,7 @@ function iconFor(tag: string): string {
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-interest__tags {
@@ -57,7 +57,7 @@ function iconFor(tag: string): string {
   height: 56rpx;
   padding: 0 24rpx;
   border-radius: 28rpx;
-  background: #EAF8F3;
+  background: #E8FBF3;
 }
 
 .my-interest__icon {
@@ -68,7 +68,7 @@ function iconFor(tag: string): string {
 .my-interest__text {
   font-size: 24rpx;
   font-weight: 500;
-  color: #222222;
+  color: #333A37;
 }
 </style>
 

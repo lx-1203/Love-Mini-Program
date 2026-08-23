@@ -1,4 +1,5 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
 
 defineProps<{ items: CommunityPostViewModel[] }>();
@@ -34,9 +35,17 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
             <image v-for="img in post.images.slice(0, 3)" :key="img" class="post-card__img" :src="img" mode="aspectFill" alt="" />
           </view>
           <view class="post-card__meta">
-            <text class="post-card__stat post-card__stat--like">♥ {{ post.likeCount }}</text>
-            <text class="post-card__stat">○ {{ post.commentCount }}</text>
-            <text class="post-card__stat">↗</text>
+            <view class="post-card__stat-item">
+              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_LIKE" mode="aspectFit" />
+              <text class="post-card__stat post-card__stat--like">{{ post.likeCount }}</text>
+            </view>
+            <view class="post-card__stat-item">
+              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_COMMENT" mode="aspectFit" />
+              <text class="post-card__stat">{{ post.commentCount }}</text>
+            </view>
+            <view class="post-card__stat-item">
+              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_SHARE" mode="aspectFit" />
+            </view>
           </view>
         </view>
       </view>
@@ -71,7 +80,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   padding: 32rpx;
   border-radius: 20rpx;
   background: #ffffff;
-  border: 1rpx solid #ECEFF2;
+  border: 1rpx solid #EEF2F0;
   color: #999999;
   font-size: 22rpx;
   text-align: center;
@@ -91,10 +100,10 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   width: 320rpx;
   flex-shrink: 0;
   padding: 20rpx;
-  border-radius: 20rpx;
+  border-radius: 40rpx;
   background: #ffffff;
-  border: 1rpx solid #ECEFF2;
-  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .post-card__head {
@@ -134,7 +143,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
 
 .post-card__school {
   font-size: 18rpx;
-  color: #168B65;
+  color: #36C99A;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -154,7 +163,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
 
 .post-card__follow-text {
   font-size: 20rpx;
-  color: #168B65;
+  color: #36C99A;
   font-weight: 600;
 }
 
@@ -180,6 +189,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   width: 88rpx;
   height: 88rpx;
   border-radius: 10rpx;
+  object-fit: cover;
   background: #F0F2F5;
 }
 
@@ -198,3 +208,6 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   color: #FF6B81;
 }
 </style>
+
+
+

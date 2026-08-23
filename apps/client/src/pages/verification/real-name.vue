@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 实名认证页（B1-2）
  * 实名认证流程：填写姓名/身份证号 → 上传身份证正反面 → 提交审核 → 审核通过
@@ -82,7 +82,7 @@ const statusInfo = computed(() => {
         title: t("realName.statusVerified"),
         desc: t("realName.statusVerifiedDesc"),
         color: "var(--c-brand-500, #36C99A)",
-        bgColor: "var(--c-brand-50, #E6F8F1)",
+        bgColor: "var(--c-brand-50, #E8FAF3)",
       };
     case "pending":
       return {
@@ -919,3 +919,4 @@ function onBlur() {
   font-weight: 600;
 }
 </style>
+

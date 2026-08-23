@@ -1,0 +1,2531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寻觅 · 标注级设计稿</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  /* =========================================
+     Spec Page Base Styles
+     ========================================= */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--color-background);
+    color: var(--color-on-surface);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .spec-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-10) var(--gutter);
+  }
+
+  /* =========================================
+     Header
+     ========================================= */
+  .spec-header {
+    text-align: center;
+    padding: var(--space-16) 0 var(--space-12);
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--space-12);
+    position: relative;
+  }
+
+  .spec-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: var(--color-primary);
+    border-radius: var(--radius-full);
+  }
+
+  .spec-header h1 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-display);
+    font-weight: var(--font-weight-display);
+    line-height: var(--line-height-display);
+    color: var(--color-on-surface);
+    margin-bottom: var(--space-3);
+    letter-spacing: -0.01em;
+  }
+
+  .spec-header .subtitle {
+    font-size: var(--font-size-lead);
+    color: var(--color-muted-foreground);
+    font-weight: var(--font-weight-body);
+  }
+
+  .spec-header .device-badge {
+    display: inline-block;
+    margin-top: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-eyebrow);
+    letter-spacing: 0.02em;
+  }
+
+  /* =========================================
+     Section Styles
+     ========================================= */
+  .spec-section {
+    margin-bottom: var(--space-16);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: var(--font-size-body);
+  }
+
+  .section-title {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-h2);
+    font-weight: var(--font-weight-h2);
+    line-height: var(--line-height-h2);
+    color: var(--color-on-surface);
+  }
+
+  .section-desc {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+    margin-top: var(--space-1);
+  }
+
+  .subsection {
+    margin-bottom: var(--space-10);
+  }
+
+  .subsection-title {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-h4);
+    font-weight: var(--font-weight-h4);
+    color: var(--color-on-surface);
+    margin-bottom: var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .subsection-title::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    background: var(--color-primary);
+    border-radius: var(--radius-full);
+  }
+
+  /* =========================================
+     Color Palette Grid
+     ========================================= */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-3);
+  }
+
+  .color-family {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .color-family-label {
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-eyebrow);
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: var(--space-2) 0;
+  }
+
+  .color-swatch {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    min-height: 56px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+  }
+
+  .color-swatch .token-name {
+    opacity: 0.7;
+    max-width: 70%;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+
+  .color-swatch .hex {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  .color-swatch.dark-text { color: var(--color-on-surface); }
+  .color-swatch.light-text { color: #fff; }
+
+  /* =========================================
+     Typography Scale
+     ========================================= */
+  .type-scale {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .type-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 150px;
+    gap: var(--space-6);
+    align-items: center;
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+  }
+
+  .type-sample {
+    font-family: var(--font-body);
+    color: var(--color-on-surface);
+  }
+
+  .type-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .type-token {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    color: var(--color-primary);
+    background: var(--color-primary-container);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    display: inline-block;
+  }
+
+  .type-details {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+  }
+
+  /* =========================================
+     Radius & Spacing Scales
+     ========================================= */
+  .scale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .scale-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+  }
+
+  .scale-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+  }
+
+  .radius-box {
+    width: 56px;
+    height: 56px;
+    background: var(--color-primary-container);
+    border: 2px solid var(--color-primary);
+  }
+
+  .spacing-bar {
+    width: 4px;
+    background: var(--color-primary);
+    border-radius: var(--radius-full);
+  }
+
+  .scale-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-muted-foreground);
+    text-align: center;
+  }
+
+  .scale-value {
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  /* =========================================
+     Shadow Examples
+     ========================================= */
+  .shadow-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-4);
+  }
+
+  .shadow-card {
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+
+  .shadow-card .shadow-name {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    color: var(--color-primary);
+    margin-bottom: var(--space-2);
+  }
+
+  .shadow-card .shadow-desc {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+  }
+
+  /* =========================================
+     Component Spec Cards
+     ========================================= */
+  .component-spec {
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-1);
+    padding: var(--space-8);
+    margin-bottom: var(--space-8);
+  }
+
+  .component-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-6);
+  }
+
+  .component-name {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-h3);
+    font-weight: var(--font-weight-h3);
+    color: var(--color-on-surface);
+  }
+
+  .component-tag {
+    font-size: var(--font-size-eyebrow);
+    color: var(--color-primary);
+    background: var(--color-primary-container);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-eyebrow);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .component-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    align-items: flex-end;
+    padding: var(--space-6);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-6);
+    min-height: 120px;
+  }
+
+  .component-annotations {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .annotation-item {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-primary);
+  }
+
+  .annotation-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+    margin-bottom: var(--space-1);
+  }
+
+  .annotation-value {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-body);
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  .annotation-token {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-primary);
+    margin-top: var(--space-1);
+  }
+
+  /* =========================================
+     Button Previews
+     ========================================= */
+  .btn-spec {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border-radius: var(--radius-full);
+    font-family: var(--font-heading);
+    font-weight: 500;
+    cursor: default;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .btn-secondary {
+    background: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+  }
+
+  .btn-accent {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  .btn-lg { height: var(--size-button-lg); padding: 0 var(--space-6); font-size: var(--font-size-body); }
+  .btn-md { height: var(--size-button-md); padding: 0 var(--space-5); font-size: var(--font-size-body); }
+  .btn-sm { height: var(--size-button-sm); padding: 0 var(--space-4); font-size: var(--font-size-caption); }
+
+  /* Dimension markers */
+  .dim-marker-h {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dim-marker-h::before {
+    content: '';
+    position: absolute;
+    top: -16px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-primary);
+  }
+
+  .dim-marker-h::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-primary);
+    background: var(--color-surface);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-primary);
+    white-space: nowrap;
+  }
+
+  .dim-marker-h .dim-tick-l,
+  .dim-marker-h .dim-tick-r {
+    position: absolute;
+    top: -20px;
+    width: 1px;
+    height: 8px;
+    background: var(--color-primary);
+  }
+  .dim-marker-h .dim-tick-l { left: 0; }
+  .dim-marker-h .dim-tick-r { right: 0; }
+
+  /* =========================================
+     Card Previews
+     ========================================= */
+  .card-spec {
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2);
+    padding: var(--space-4);
+    position: relative;
+  }
+
+  .card-placeholder {
+    background: var(--color-surface-container);
+    border-radius: var(--radius-md);
+    height: 80px;
+    margin-bottom: var(--space-3);
+  }
+
+  .card-text-line {
+    height: 12px;
+    background: var(--color-surface-container-high);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+  }
+
+  .card-text-line.short { width: 60%; }
+
+  .card-sm { width: 140px; padding: var(--space-3); border-radius: var(--radius-xl); }
+  .card-md { width: 200px; padding: var(--space-4); border-radius: var(--radius-xl); }
+  .card-lg { width: 260px; padding: var(--space-6); border-radius: var(--radius-xl); }
+
+  /* =========================================
+     Avatar Previews
+     ========================================= */
+  .avatar-spec-group {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-6);
+  }
+
+  .avatar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .avatar-circle {
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--xunmi-primary-200), var(--xunmi-primary-400));
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-on-primary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .avatar-circle::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border-radius: 50%;
+    background: var(--color-success);
+    border: 2px solid var(--color-surface);
+  }
+
+  .avatar-xs { width: 24px; height: 24px; }
+  .avatar-xs::after { width: 6px; height: 6px; border-width: 1px; }
+  .avatar-sm { width: 32px; height: 32px; }
+  .avatar-sm::after { width: 8px; height: 8px; }
+  .avatar-md { width: 40px; height: 40px; }
+  .avatar-md::after { width: 10px; height: 10px; }
+  .avatar-lg { width: 48px; height: 48px; }
+  .avatar-lg::after { width: 12px; height: 12px; }
+  .avatar-xl { width: 64px; height: 64px; }
+  .avatar-xl::after { width: 14px; height: 14px; }
+  .avatar-xxl { width: 80px; height: 80px; }
+  .avatar-xxl::after { width: 16px; height: 16px; }
+
+  .avatar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-muted-foreground);
+  }
+
+  /* =========================================
+     Chip/Tag Previews
+     ========================================= */
+  .chip-spec {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-caption);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .chip-primary {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+  }
+
+  .chip-accent {
+    background: var(--color-accent-container);
+    color: var(--color-on-accent-container);
+  }
+
+  .chip-success {
+    background: var(--xunmi-success-50);
+    color: var(--xunmi-success-700);
+  }
+
+  .chip-default {
+    background: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .chip-sm { height: 24px; padding: 0 var(--space-3); font-size: 11px; }
+  .chip-md { height: 28px; padding: 0 var(--space-4); font-size: var(--font-size-caption); }
+
+  /* =========================================
+     Input Previews
+     ========================================= */
+  .input-spec {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 0 var(--space-4);
+    color: var(--color-muted-foreground);
+    font-size: var(--font-size-body);
+  }
+
+  .input-spec.focused {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--interactive-focus);
+  }
+
+  .input-sm { height: 40px; font-size: var(--font-size-caption); }
+  .input-md { height: var(--size-input-height); }
+  .input-lg { height: 56px; font-size: var(--font-size-lead); }
+
+  .input-icon {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+    color: var(--color-muted-foreground);
+    flex-shrink: 0;
+  }
+
+  /* =========================================
+     Bottom Nav Preview
+     ========================================= */
+  .bottom-nav-spec {
+    width: 375px;
+    height: var(--bottom-nav-height);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding-top: var(--space-2);
+    position: relative;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .nav-item .nav-icon-box {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+    color: var(--color-muted-foreground);
+  }
+
+  .nav-item.active .nav-icon-box {
+    color: var(--color-primary);
+  }
+
+  .nav-item .nav-label-text {
+    font-size: 10px;
+    color: var(--color-muted-foreground);
+  }
+
+  .nav-item.active .nav-label-text {
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+
+  .center-fab {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary), var(--xunmi-primary-600));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-on-primary);
+    box-shadow: var(--shadow-3);
+  }
+
+  .center-fab svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* =========================================
+     Page Layout Wireframes
+     ========================================= */
+  .page-wireframes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-8);
+  }
+
+  .wireframe-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-1);
+    padding: var(--space-6);
+  }
+
+  .wireframe-title {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-h4);
+    font-weight: var(--font-weight-h4);
+    color: var(--color-on-surface);
+    margin-bottom: var(--space-2);
+    text-align: center;
+  }
+
+  .wireframe-subtitle {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+    text-align: center;
+    margin-bottom: var(--space-6);
+  }
+
+  .phone-frame {
+    width: 280px;
+    height: 600px;
+    margin: 0 auto;
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-2xl);
+    border: 8px solid var(--xunmi-neutral-800);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 24px;
+    background: var(--xunmi-neutral-800);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    z-index: 10;
+  }
+
+  .wf-topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-4);
+  }
+
+  .wf-topbar .wf-title {
+    font-size: var(--font-size-h4);
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  .wf-topbar .wf-icon {
+    width: 24px;
+    height: 24px;
+    background: var(--color-surface-container);
+    border-radius: var(--radius-sm);
+  }
+
+  .wf-section {
+    position: absolute;
+    left: var(--space-4);
+    right: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--color-border);
+  }
+
+  /* Home page wireframe */
+  .wf-home .wf-search {
+    top: 72px;
+    height: 44px;
+    left: var(--space-4);
+    right: var(--space-4);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border);
+  }
+
+  .wf-home .wf-story {
+    top: 132px;
+    height: 100px;
+    background: transparent;
+    border: none;
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .wf-home .wf-story-item {
+    width: 60px;
+    height: 80px;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-primary);
+  }
+
+  .wf-home .wf-card-1 { top: 252px; height: 120px; }
+  .wf-home .wf-card-2 { top: 388px; height: 120px; }
+
+  .wf-home .wf-bottomnav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Match page wireframe */
+  .wf-match .wf-match-card {
+    top: 72px;
+    left: var(--space-4);
+    right: var(--space-4);
+    height: 360px;
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--color-primary);
+  }
+
+  .wf-match .wf-actions {
+    position: absolute;
+    bottom: 84px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: var(--space-5);
+  }
+
+  .wf-match .wf-action-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-2);
+  }
+
+  .wf-match .wf-action-btn.primary {
+    width: 56px;
+    height: 56px;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .wf-match .wf-bottomnav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Profile page wireframe */
+  .wf-profile .wf-profile-header {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(180deg, var(--color-primary-container), var(--color-surface-container-low));
+    border: none;
+    border-radius: 0;
+  }
+
+  .wf-profile .wf-avatar-lg {
+    position: absolute;
+    top: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 4px solid var(--color-surface);
+    z-index: 5;
+  }
+
+  .wf-profile .wf-info-section {
+    top: 240px;
+    height: 80px;
+  }
+
+  .wf-profile .wf-tag-section {
+    top: 336px;
+    height: 60px;
+  }
+
+  .wf-profile .wf-stats-section {
+    top: 412px;
+    height: 70px;
+  }
+
+  .wf-profile .wf-bottomnav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Wireframe dimension labels */
+  .wf-dim {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--color-primary);
+    background: var(--color-surface);
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid var(--color-primary);
+    white-space: nowrap;
+    z-index: 20;
+  }
+
+  .wf-dim-h {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .wf-dim-h::before,
+  .wf-dim-h::after {
+    content: '';
+    width: 8px;
+    height: 1px;
+    background: var(--color-primary);
+  }
+
+  /* =========================================
+     Icon Spec
+     ========================================= */
+  .icon-spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-8);
+  }
+
+  .icon-grid-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-lg);
+  }
+
+  .icon-grid-box {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-grid-box svg {
+    width: 64px;
+    height: 64px;
+    color: var(--color-primary);
+    stroke-width: 2;
+  }
+
+  .grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+
+  .grid-overlay line {
+    stroke: var(--color-primary);
+    stroke-width: 0.5;
+    stroke-dasharray: 2 2;
+    opacity: 0.3;
+  }
+
+  .icon-grid-labels {
+    display: grid;
+    grid-template-columns: 24px 1fr 24px;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .icon-specs-table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .icon-spec-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+  }
+
+  .icon-spec-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+  }
+
+  .icon-spec-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  .icon-samples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+
+  .icon-sample {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+    color: var(--color-on-surface-variant);
+  }
+
+  .icon-sample svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* =========================================
+     Mascot Spec
+     ========================================= */
+  .mascot-spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+
+  .mascot-sizes {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--space-6);
+    padding: var(--space-8) var(--space-4);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-lg);
+  }
+
+  .mascot-size-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .mascot-size-item img {
+    display: block;
+  }
+
+  .mascot-size-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-muted-foreground);
+  }
+
+  .mascot-do-dont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .do-dont-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+  }
+
+  .do-card {
+    background: var(--xunmi-success-50);
+    border: 1px solid var(--xunmi-success-200);
+  }
+
+  .dont-card {
+    background: var(--xunmi-error-50);
+    border: 1px solid var(--xunmi-error-200);
+  }
+
+  .do-dont-title {
+    font-weight: 600;
+    font-size: var(--font-size-h4);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .do-card .do-dont-title { color: var(--xunmi-success-700); }
+  .dont-card .do-dont-title { color: var(--xunmi-error-700); }
+
+  .do-dont-list {
+    list-style: none;
+    font-size: var(--font-size-caption);
+    line-height: 1.8;
+  }
+
+  .do-dont-list li {
+    padding-left: var(--space-4);
+    position: relative;
+  }
+
+  .do-card .do-dont-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--xunmi-success-600);
+    font-weight: 600;
+  }
+
+  .dont-card .do-dont-list li::before {
+    content: '✕';
+    position: absolute;
+    left: 0;
+    color: var(--xunmi-error-600);
+    font-weight: 600;
+  }
+
+  .mascot-expressions {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-lg);
+  }
+
+  .mascot-expression {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .mascot-expression img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .mascot-expression-label {
+    font-size: var(--font-size-caption);
+    color: var(--color-muted-foreground);
+  }
+
+  /* =========================================
+     Spec Table
+     ========================================= */
+  .spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-caption);
+  }
+
+  .spec-table th,
+  .spec-table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .spec-table th {
+    background: var(--color-surface-container-low);
+    font-weight: 600;
+    color: var(--color-on-surface);
+    font-size: var(--font-size-caption);
+  }
+
+  .spec-table td {
+    color: var(--color-muted-foreground);
+  }
+
+  .spec-table td.token {
+    font-family: var(--font-mono);
+    color: var(--color-primary);
+    font-size: 11px;
+  }
+
+  .spec-table td.value {
+    font-family: var(--font-mono);
+    color: var(--color-on-surface);
+    font-weight: 500;
+  }
+
+  /* =========================================
+     Footer
+     ========================================= */
+  .spec-footer {
+    margin-top: var(--space-20);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    color: var(--color-muted-foreground);
+    font-size: var(--font-size-caption);
+  }
+
+  /* =========================================
+     Utility
+     ========================================= */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  .gap-2 { gap: var(--space-2); }
+  .gap-3 { gap: var(--space-3); }
+  .gap-4 { gap: var(--space-4); }
+  .gap-6 { gap: var(--space-6); }
+  .mb-4 { margin-bottom: var(--space-4); }
+  .mb-6 { margin-bottom: var(--space-6); }
+  .mt-4 { margin-top: var(--space-4); }
+  .text-muted { color: var(--color-muted-foreground); }
+  .text-primary { color: var(--color-primary); }
+  .mono { font-family: var(--font-mono); }
+  .text-caption { font-size: var(--font-size-caption); }
+  .text-eyebrow { font-size: var(--font-size-eyebrow); font-weight: var(--font-weight-eyebrow); letter-spacing: 0.08em; text-transform: uppercase; }
+
+</style>
+</head>
+<body>
+
+<div class="spec-container">
+
+  <!-- ========== HEADER ========== -->
+  <header class="spec-header">
+    <h1>寻觅 · 标注级设计稿</h1>
+    <p class="subtitle">恋爱小程序 · 薄荷绿治愈风</p>
+    <span class="device-badge">375 × 812 · iPhone 13/14</span>
+  </header>
+
+  <!-- ========== SECTION 1: DESIGN TOKENS ========== -->
+  <section class="spec-section">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <div>
+        <h2 class="section-title">设计令牌 Design Tokens</h2>
+        <p class="section-desc">所有组件与页面样式的基础变量源</p>
+      </div>
+    </div>
+
+    <!-- 1.1 Color Palette -->
+    <div class="subsection">
+      <h3 class="subsection-title">色彩体系 Color Palette</h3>
+
+      <!-- Primary -->
+      <div class="color-family-label mb-4">主色 · Primary (薄荷绿)</div>
+      <div class="color-grid mb-6">
+        <div class="color-swatch dark-text" style="background: var(--xunmi-primary-50)">
+          <span class="token-name">50</span>
+          <span class="hex">#ECFBF5</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-primary-100)">
+          <span class="token-name">100</span>
+          <span class="hex">#D1F5E8</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-primary-200)">
+          <span class="token-name">200</span>
+          <span class="hex">#A8EBD1</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-primary-300)">
+          <span class="token-name">300</span>
+          <span class="hex">#7FE1BA</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-400)">
+          <span class="token-name">400</span>
+          <span class="hex">#5BD5A8</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-500)">
+          <span class="token-name">500</span>
+          <span class="hex">#36C99A</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-600)">
+          <span class="token-name">600</span>
+          <span class="hex">#2BAE85</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-700)">
+          <span class="token-name">700</span>
+          <span class="hex">#208E6D</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-800)">
+          <span class="token-name">800</span>
+          <span class="hex">#166E55</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-primary-900)">
+          <span class="token-name">900</span>
+          <span class="hex">#0E4F3D</span>
+        </div>
+      </div>
+
+      <!-- Accent -->
+      <div class="color-family-label mb-4">强调色 · Accent (心动粉)</div>
+      <div class="color-grid mb-6">
+        <div class="color-swatch dark-text" style="background: var(--xunmi-accent-50)">
+          <span class="token-name">50</span>
+          <span class="hex">#FFF0F2</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-accent-100)">
+          <span class="token-name">100</span>
+          <span class="hex">#FFE0E5</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-accent-200)">
+          <span class="token-name">200</span>
+          <span class="hex">#FFC2CC</span>
+        </div>
+        <div class="color-swatch dark-text" style="background: var(--xunmi-accent-300)">
+          <span class="token-name">300</span>
+          <span class="hex">#FFA3B3</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-400)">
+          <span class="token-name">400</span>
+          <span class="hex">#FF8799</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-500)">
+          <span class="token-name">500</span>
+          <span class="hex">#FF6B81</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-600)">
+          <span class="token-name">600</span>
+          <span class="hex">#E6526A</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-700)">
+          <span class="token-name">700</span>
+          <span class="hex">#C93B54</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-800)">
+          <span class="token-name">800</span>
+          <span class="hex">#A82A42</span>
+        </div>
+        <div class="color-swatch light-text" style="background: var(--xunmi-accent-900)">
+          <span class="token-name">900</span>
+          <span class="hex">#871D33</span>
+        </div>
+      </div>
+
+      <!-- Neutral & Status -->
+      <div class="color-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div>
+          <div class="color-family-label mb-4">中性色 · Neutral</div>
+          <div class="flex flex-col gap-2">
+            <div class="color-swatch dark-text" style="background: var(--xunmi-neutral-50)"><span class="token-name">50</span><span class="hex">#FAFAF7</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-neutral-200)"><span class="token-name">200</span><span class="hex">#E8E8DE</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-neutral-400)"><span class="token-name">400</span><span class="hex">#B5B5A4</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-neutral-600)"><span class="token-name">600</span><span class="hex">#767666</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-neutral-800)"><span class="token-name">800</span><span class="hex">#3D3D34</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-neutral-900)"><span class="token-name">900</span><span class="hex">#1F1F1A</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="color-family-label mb-4">成功 · Success</div>
+          <div class="flex flex-col gap-2">
+            <div class="color-swatch dark-text" style="background: var(--xunmi-success-50)"><span class="token-name">50</span><span class="hex">#F0FDF4</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-success-300)"><span class="token-name">300</span><span class="hex">#86EFAC</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-success-500)"><span class="token-name">500</span><span class="hex">#22C55E</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-success-700)"><span class="token-name">700</span><span class="hex">#15803D</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-success-900)"><span class="token-name">900</span><span class="hex">#14532D</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="color-family-label mb-4">警告 · Warning</div>
+          <div class="flex flex-col gap-2">
+            <div class="color-swatch dark-text" style="background: var(--xunmi-warning-50)"><span class="token-name">50</span><span class="hex">#FFFBEB</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-warning-300)"><span class="token-name">300</span><span class="hex">#FCD34D</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-warning-500)"><span class="token-name">500</span><span class="hex">#F59E0B</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-warning-700)"><span class="token-name">700</span><span class="hex">#B45309</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-warning-900)"><span class="token-name">900</span><span class="hex">#78350F</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="color-family-label mb-4">错误 · Error</div>
+          <div class="flex flex-col gap-2">
+            <div class="color-swatch dark-text" style="background: var(--xunmi-error-50)"><span class="token-name">50</span><span class="hex">#FEF2F2</span></div>
+            <div class="color-swatch dark-text" style="background: var(--xunmi-error-300)"><span class="token-name">300</span><span class="hex">#FCA5A5</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-error-500)"><span class="token-name">500</span><span class="hex">#EF4444</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-error-700)"><span class="token-name">700</span><span class="hex">#B91C1C</span></div>
+            <div class="color-swatch light-text" style="background: var(--xunmi-error-900)"><span class="token-name">900</span><span class="hex">#7F1D1D</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.2 Typography -->
+    <div class="subsection">
+      <h3 class="subsection-title">字体层级 Typography Scale</h3>
+      <div class="type-scale">
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-display</span>
+            <span class="type-details">Display · 40px / 1.15 · 600</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-display); font-size: 40px; font-weight: 600; line-height: 1.15;">寻觅，遇见对的人</div>
+          <div class="mono text-caption text-muted">40px · 600</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-h1</span>
+            <span class="type-details">Heading 1 · 32px / 1.25 · 600</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-heading); font-size: 32px; font-weight: 600; line-height: 1.25;">大标题 H1</div>
+          <div class="mono text-caption text-muted">32px · 600</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-h2</span>
+            <span class="type-details">Heading 2 · 26px / 1.3 · 600</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-heading); font-size: 26px; font-weight: 600; line-height: 1.3;">中标题 H2</div>
+          <div class="mono text-caption text-muted">26px · 600</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-h3</span>
+            <span class="type-details">Heading 3 · 22px / 1.35 · 500</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-heading); font-size: 22px; font-weight: 500; line-height: 1.35;">小节标题 H3</div>
+          <div class="mono text-caption text-muted">22px · 500</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-h4</span>
+            <span class="type-details">Heading 4 · 18px / 1.4 · 500</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-heading); font-size: 18px; font-weight: 500; line-height: 1.4;">卡片标题 H4</div>
+          <div class="mono text-caption text-muted">18px · 500</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-body</span>
+            <span class="type-details">Body · 16px / 1.6 · 400</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-body); font-size: 16px; font-weight: 400; line-height: 1.6;">正文内容 Body Text 这是一段示例文字</div>
+          <div class="mono text-caption text-muted">16px · 400</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-lead</span>
+            <span class="type-details">Lead · 17px / 1.65 · 400</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-body); font-size: 17px; font-weight: 400; line-height: 1.65;">引导文字 Lead Text</div>
+          <div class="mono text-caption text-muted">17px · 400</div>
+        </div>
+        <div class="type-row">
+          <div class="type-info">
+            <span class="type-token">--type-caption</span>
+            <span class="type-details">Caption · 12px / 1.5 · 400</span>
+          </div>
+          <div class="type-sample" style="font-family: var(--font-body); font-size: 12px; font-weight: 400; line-height: 1.5;">辅助说明文字 Caption</div>
+          <div class="mono text-caption text-muted">12px · 400</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.3 Radius Scale -->
+    <div class="subsection">
+      <h3 class="subsection-title">圆角半径 Border Radius</h3>
+      <div class="scale-grid">
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-sm);"></div>
+          </div>
+          <div class="scale-value">8px</div>
+          <div class="scale-label">--radius-sm</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-md);"></div>
+          </div>
+          <div class="scale-value">12px</div>
+          <div class="scale-label">--radius-md</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-lg);"></div>
+          </div>
+          <div class="scale-value">16px</div>
+          <div class="scale-label">--radius-lg</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-xl);"></div>
+          </div>
+          <div class="scale-value">20px</div>
+          <div class="scale-label">--radius-xl</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-2xl);"></div>
+          </div>
+          <div class="scale-value">24px</div>
+          <div class="scale-label">--radius-2xl</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual">
+            <div class="radius-box" style="border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="scale-value">9999px</div>
+          <div class="scale-label">--radius-full</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.4 Spacing Scale -->
+    <div class="subsection">
+      <h3 class="subsection-title">间距刻度 Spacing Scale (4px 基准)</h3>
+      <div class="scale-grid" style="grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));">
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 4px;"></div></div>
+          <div class="scale-value">4px</div>
+          <div class="scale-label">--space-1</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 8px;"></div></div>
+          <div class="scale-value">8px</div>
+          <div class="scale-label">--space-2</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 12px;"></div></div>
+          <div class="scale-value">12px</div>
+          <div class="scale-label">--space-3</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 16px;"></div></div>
+          <div class="scale-value">16px</div>
+          <div class="scale-label">--space-4</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 20px;"></div></div>
+          <div class="scale-value">20px</div>
+          <div class="scale-label">--space-5</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 24px;"></div></div>
+          <div class="scale-value">24px</div>
+          <div class="scale-label">--space-6</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 32px;"></div></div>
+          <div class="scale-value">32px</div>
+          <div class="scale-label">--space-8</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 48px;"></div></div>
+          <div class="scale-value">48px</div>
+          <div class="scale-label">--space-12</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 64px;"></div></div>
+          <div class="scale-value">64px</div>
+          <div class="scale-label">--space-16</div>
+        </div>
+        <div class="scale-item">
+          <div class="scale-visual"><div class="spacing-bar" style="height: 80px;"></div></div>
+          <div class="scale-value">80px</div>
+          <div class="scale-label">--space-20</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.5 Shadows -->
+    <div class="subsection">
+      <h3 class="subsection-title">阴影层级 Elevation Shadows</h3>
+      <div class="shadow-grid">
+        <div class="shadow-card" style="box-shadow: var(--shadow-1);">
+          <div class="shadow-name">--shadow-1</div>
+          <div class="shadow-desc">微浮卡片<br>0 1px 3px + 1px 2px</div>
+        </div>
+        <div class="shadow-card" style="box-shadow: var(--shadow-2);">
+          <div class="shadow-name">--shadow-2</div>
+          <div class="shadow-desc">卡片悬停<br>0 4px 12px -2px</div>
+        </div>
+        <div class="shadow-card" style="box-shadow: var(--shadow-3);">
+          <div class="shadow-name">--shadow-3</div>
+          <div class="shadow-desc">悬浮按钮<br>0 8px 24px -6px</div>
+        </div>
+        <div class="shadow-card" style="box-shadow: var(--shadow-4);">
+          <div class="shadow-name">--shadow-4</div>
+          <div class="shadow-desc">弹窗面板<br>0 16px 40px -10px</div>
+        </div>
+        <div class="shadow-card" style="box-shadow: var(--shadow-5);">
+          <div class="shadow-name">--shadow-5</div>
+          <div class="shadow-desc">底部浮层<br>0 24px 60px -16px</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SECTION 2: COMPONENT SPECIFICATIONS ========== -->
+  <section class="spec-section">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <div>
+        <h2 class="section-title">组件规格 Component Specifications</h2>
+        <p class="section-desc">核心组件的精确尺寸与标注</p>
+      </div>
+    </div>
+
+    <!-- 2.1 Button -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">按钮 Button</h3>
+          <p class="text-caption text-muted mt-4">大圆角药丸形 · 三档高度 · 五种变体</p>
+        </div>
+        <span class="component-tag">Action</span>
+      </div>
+
+      <div class="component-preview">
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-primary btn-lg">大号按钮 LG</div>
+          <span class="mono text-caption text-muted">52px</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-primary btn-md">中号按钮 MD</div>
+          <span class="mono text-caption text-muted">44px</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-primary btn-sm">小号 SM</div>
+          <span class="mono text-caption text-muted">36px</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-secondary btn-md">次要按钮</div>
+          <span class="mono text-caption text-muted">Secondary</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-outline btn-md">描边按钮</div>
+          <span class="mono text-caption text-muted">Outline</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="btn-spec btn-accent btn-md">心动按钮</div>
+          <span class="mono text-caption text-muted">Accent / Heart</span>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">大号高度</div>
+          <div class="annotation-value">52px</div>
+          <div class="annotation-token">--size-button-lg</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">中号高度</div>
+          <div class="annotation-value">44px</div>
+          <div class="annotation-token">--size-button-md</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">小号高度</div>
+          <div class="annotation-value">36px</div>
+          <div class="annotation-token">--size-button-sm</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">圆角</div>
+          <div class="annotation-value">9999px (pill)</div>
+          <div class="annotation-token">--radius-full</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">大号内边距</div>
+          <div class="annotation-value">0 24px</div>
+          <div class="annotation-token">padding: 0 var(--space-6)</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">中号内边距</div>
+          <div class="annotation-value">0 20px</div>
+          <div class="annotation-token">padding: 0 var(--space-5)</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">字号 (LG/MD)</div>
+          <div class="annotation-value">16px / 500</div>
+          <div class="annotation-token">--font-size-body</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">字号 (SM)</div>
+          <div class="annotation-value">12px / 500</div>
+          <div class="annotation-token">--font-size-caption</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.2 Card -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">卡片 Card</h3>
+          <p class="text-caption text-muted mt-4">大圆角 20px · 柔和阴影 · 三档内边距</p>
+        </div>
+        <span class="component-tag">Layout</span>
+      </div>
+
+      <div class="component-preview">
+        <div class="flex flex-col items-center gap-3">
+          <div class="card-spec card-sm">
+            <div class="card-placeholder" style="height: 40px;"></div>
+            <div class="card-text-line"></div>
+          </div>
+          <span class="mono text-caption text-muted">Padding SM (12px)</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="card-spec card-md">
+            <div class="card-placeholder" style="height: 60px;"></div>
+            <div class="card-text-line"></div>
+            <div class="card-text-line short"></div>
+          </div>
+          <span class="mono text-caption text-muted">Padding MD (16px)</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="card-spec card-lg">
+            <div class="card-placeholder" style="height: 80px;"></div>
+            <div class="card-text-line"></div>
+            <div class="card-text-line short"></div>
+          </div>
+          <span class="mono text-caption text-muted">Padding LG (24px)</span>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">圆角</div>
+          <div class="annotation-value">20px</div>
+          <div class="annotation-token">--radius-xl</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">默认阴影</div>
+          <div class="annotation-value">shadow-1</div>
+          <div class="annotation-token">--shadow-1</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">悬停阴影</div>
+          <div class="annotation-value">shadow-2</div>
+          <div class="annotation-token">--shadow-2</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">内边距 SM</div>
+          <div class="annotation-value">12px</div>
+          <div class="annotation-token">--space-3</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">内边距 MD</div>
+          <div class="annotation-value">16px</div>
+          <div class="annotation-token">--space-4</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">内边距 LG</div>
+          <div class="annotation-value">24px</div>
+          <div class="annotation-token">--space-6</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">卡片间距</div>
+          <div class="annotation-value">16px</div>
+          <div class="annotation-token">--space-4</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">卡片背景</div>
+          <div class="annotation-value">#FFFFFF</div>
+          <div class="annotation-token">--color-surface</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.3 Avatar -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">头像 Avatar</h3>
+          <p class="text-caption text-muted mt-4">圆形头像 · 六档尺寸 · 右下角状态点</p>
+        </div>
+        <span class="component-tag">Data Display</span>
+      </div>
+
+      <div class="component-preview">
+        <div class="avatar-spec-group" style="width: 100%; justify-content: center;">
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-xs">24</div>
+            <span class="avatar-label">24px · XS</span>
+          </div>
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-sm">32</div>
+            <span class="avatar-label">32px · SM</span>
+          </div>
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-md">40</div>
+            <span class="avatar-label">40px · MD</span>
+          </div>
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-lg">48</div>
+            <span class="avatar-label">48px · LG</span>
+          </div>
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-xl">64</div>
+            <span class="avatar-label">64px · XL</span>
+          </div>
+          <div class="avatar-item">
+            <div class="avatar-circle avatar-xxl">80</div>
+            <span class="avatar-label">80px · XXL</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">尺寸档位</div>
+          <div class="annotation-value">6 档</div>
+          <div class="annotation-token">24 / 32 / 40 / 48 / 64 / 80</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">形状</div>
+          <div class="annotation-value">圆形</div>
+          <div class="annotation-token">border-radius: 50%</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">状态点位置</div>
+          <div class="annotation-value">右下角</div>
+          <div class="annotation-token">bottom: 0; right: 0</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">状态点大小 (MD)</div>
+          <div class="annotation-value">10px</div>
+          <div class="annotation-token">头像尺寸 1/4</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">状态点边框</div>
+          <div class="annotation-value">2px 白色</div>
+          <div class="annotation-token">border: 2px solid surface</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">在线状态色</div>
+          <div class="annotation-value">绿色</div>
+          <div class="annotation-token">--color-success</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">认证标识</div>
+          <div class="annotation-value">绿色盾牌</div>
+          <div class="annotation-token">verified badge</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">渐变环宽度 (XL)</div>
+          <div class="annotation-value">3px</div>
+          <div class="annotation-token">gradient ring</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.4 Chip / Tag -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">标签 Chip / Tag</h3>
+          <p class="text-caption text-muted mt-4">药丸形 · 两档尺寸 · 五种色调</p>
+        </div>
+        <span class="component-tag">Data Display</span>
+      </div>
+
+      <div class="component-preview">
+        <div class="flex flex-col items-center gap-3">
+          <div class="chip-spec chip-primary chip-md">🏃 运动健身</div>
+          <span class="mono text-caption text-muted">MD · 28px · Primary</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="chip-spec chip-accent chip-md">🔥 热门</div>
+          <span class="mono text-caption text-muted">MD · 28px · Accent</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="chip-spec chip-success chip-md">在线</div>
+          <span class="mono text-caption text-muted">MD · 28px · Success</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="chip-spec chip-default chip-md">📍 1.2km</div>
+          <span class="mono text-caption text-muted">MD · 28px · Default</span>
+        </div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="chip-spec chip-primary chip-sm">小号标签</div>
+          <span class="mono text-caption text-muted">SM · 24px</span>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">中号高度</div>
+          <div class="annotation-value">28px</div>
+          <div class="annotation-token">height: 28px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">小号高度</div>
+          <div class="annotation-value">24px</div>
+          <div class="annotation-token">height: 24px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">圆角</div>
+          <div class="annotation-value">9999px (pill)</div>
+          <div class="annotation-token">--radius-full</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">中号内边距</div>
+          <div class="annotation-value">0 16px</div>
+          <div class="annotation-token">padding: 0 var(--space-4)</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">小号内边距</div>
+          <div class="annotation-value">0 12px</div>
+          <div class="annotation-token">padding: 0 var(--space-3)</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">字号 (MD)</div>
+          <div class="annotation-value">12px / 500</div>
+          <div class="annotation-token">--font-size-caption</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">字号 (SM)</div>
+          <div class="annotation-value">11px / 500</div>
+          <div class="annotation-token">font-size: 11px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">图标间距</div>
+          <div class="annotation-value">4px</div>
+          <div class="annotation-token">gap: var(--space-1)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 Input -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">输入框 Input</h3>
+          <p class="text-caption text-muted mt-4">大圆角 · 三档高度 · 聚焦主色描边</p>
+        </div>
+        <span class="component-tag">Form</span>
+      </div>
+
+      <div class="component-preview">
+        <div class="flex flex-col gap-4" style="flex: 1; min-width: 280px;">
+          <div class="input-spec input-lg">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>搜索感兴趣的人...</span>
+          </div>
+          <span class="mono text-caption text-muted">LG · 56px · Search</span>
+        </div>
+        <div class="flex flex-col gap-4" style="flex: 1; min-width: 280px;">
+          <div class="input-spec input-md focused">
+            <span>请输入昵称</span>
+          </div>
+          <span class="mono text-caption text-muted">MD · 48px · Focused</span>
+        </div>
+        <div class="flex flex-col gap-4" style="flex: 1; min-width: 280px;">
+          <div class="input-spec input-sm">
+            <span>小号输入框</span>
+          </div>
+          <span class="mono text-caption text-muted">SM · 40px</span>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">大号高度</div>
+          <div class="annotation-value">56px</div>
+          <div class="annotation-token">height: 56px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">中号高度</div>
+          <div class="annotation-value">48px</div>
+          <div class="annotation-token">--size-input-height</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">小号高度</div>
+          <div class="annotation-value">40px</div>
+          <div class="annotation-token">height: 40px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">圆角</div>
+          <div class="annotation-value">16px</div>
+          <div class="annotation-token">--radius-lg</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">默认边框</div>
+          <div class="annotation-value">1.5px 浅灰</div>
+          <div class="annotation-token">border: 1.5px solid --border</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">聚焦边框</div>
+          <div class="annotation-value">主色 + 光晕</div>
+          <div class="annotation-token">border: --primary + ring</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">内边距</div>
+          <div class="annotation-value">0 16px</div>
+          <div class="annotation-token">padding: 0 var(--space-4)</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">图标大小</div>
+          <div class="annotation-value">24px</div>
+          <div class="annotation-token">--size-icon-lg</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.6 Bottom Nav -->
+    <div class="component-spec">
+      <div class="component-header">
+        <div>
+          <h3 class="component-name">底部导航 Bottom Navigation</h3>
+          <p class="text-caption text-muted mt-4">5 Tab · 中间凸起心形按钮 · 薄荷绿选中态</p>
+        </div>
+        <span class="component-tag">Navigation</span>
+      </div>
+
+      <div class="component-preview" style="justify-content: center;">
+        <div class="flex flex-col items-center gap-4">
+          <div class="bottom-nav-spec">
+            <div class="nav-item">
+              <div class="nav-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <span class="nav-label-text">首页</span>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.657 16.657L13.414 20.9a2 2 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><path d="M15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
+              </div>
+              <span class="nav-label-text">附近</span>
+            </div>
+            <div class="nav-item" style="position: relative;">
+              <div class="center-fab">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-6.5-4-8.5-8A5 5 0 0 1 12 6.5 5 5 0 0 1 20.5 12C18.5 16 12 20 12 20z"/></svg>
+              </div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <span class="nav-label-text">消息</span>
+            </div>
+            <div class="nav-item active">
+              <div class="nav-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <span class="nav-label-text">我的</span>
+            </div>
+          </div>
+          <span class="mono text-caption text-muted">带中间凸起 FAB 版本</span>
+        </div>
+      </div>
+
+      <div class="component-annotations">
+        <div class="annotation-item">
+          <div class="annotation-label">导航栏高度</div>
+          <div class="annotation-value">64px</div>
+          <div class="annotation-token">--bottom-nav-height</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">图标大小</div>
+          <div class="annotation-value">24px</div>
+          <div class="annotation-token">--size-icon-lg</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">标签字号</div>
+          <div class="annotation-value">10px</div>
+          <div class="annotation-token">font-size: 10px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">图标-标签间距</div>
+          <div class="annotation-value">2px</div>
+          <div class="annotation-token">gap: 2px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">中间 FAB 尺寸</div>
+          <div class="annotation-value">56 × 56px</div>
+          <div class="annotation-token">width/height: 56px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">FAB 凸起高度</div>
+          <div class="annotation-value">28px</div>
+          <div class="annotation-token">top: -28px</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">选中态颜色</div>
+          <div class="annotation-value">主色薄荷绿</div>
+          <div class="annotation-token">--color-primary</div>
+        </div>
+        <div class="annotation-item">
+          <div class="annotation-label">FAB 阴影</div>
+          <div class="annotation-value">shadow-3</div>
+          <div class="annotation-token">--shadow-3</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SECTION 3: PAGE LAYOUT ANNOTATIONS ========== -->
+  <section class="spec-section">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <div>
+        <h2 class="section-title">页面布局标注 Page Layout Annotations</h2>
+        <p class="section-desc">三个核心页面的尺寸标注与间距规范</p>
+      </div>
+    </div>
+
+    <div class="page-wireframes">
+      <!-- Home Page -->
+      <div class="wireframe-card">
+        <h3 class="wireframe-title">首页 Home</h3>
+        <p class="wireframe-subtitle">动态流 + 故事条 + 搜索</p>
+        <div class="phone-frame wf-home">
+          <div class="phone-notch"></div>
+          <div class="wf-topbar">
+            <div class="wf-icon"></div>
+            <span class="wf-title">寻觅</span>
+            <div class="wf-icon"></div>
+          </div>
+          <div class="wf-dim" style="top: 24px; right: -60px;">56px</div>
+          <div class="wf-section wf-search">
+            <div class="wf-dim" style="top: -24px; left: 50%; transform: translateX(-50%);">宽度: 248px</div>
+          </div>
+          <div class="wf-section wf-story">
+            <div class="wf-story-item"></div>
+            <div class="wf-story-item"></div>
+            <div class="wf-story-item"></div>
+          </div>
+          <div class="wf-dim" style="top: 124px; right: -60px;">100px</div>
+          <div class="wf-section wf-card-1"></div>
+          <div class="wf-section wf-card-2"></div>
+          <div class="wf-dim" style="top: 244px; right: -60px;">120px</div>
+          <div class="wf-dim" style="top: 380px; right: -60px;">16px</div>
+          <div class="wf-bottomnav"></div>
+          <div class="wf-dim" style="bottom: 24px; right: -60px;">64px</div>
+
+          <!-- gutter annotation -->
+          <div class="wf-dim" style="top: 72px; left: -70px; writing-mode: vertical-rl;">
+            gutter: 20px
+          </div>
+        </div>
+      </div>
+
+      <!-- Match Page -->
+      <div class="wireframe-card">
+        <h3 class="wireframe-title">匹配页 Match</h3>
+        <p class="wireframe-subtitle">卡片滑动 + 操作按钮</p>
+        <div class="phone-frame wf-match">
+          <div class="phone-notch"></div>
+          <div class="wf-topbar">
+            <div class="wf-icon"></div>
+            <span class="wf-title">匹配</span>
+            <div class="wf-icon"></div>
+          </div>
+          <div class="wf-section wf-match-card">
+            <div class="wf-dim" style="top: 10px; left: 50%; transform: translateX(-50%);">卡片: 248 × 360px</div>
+          </div>
+          <div class="wf-dim" style="top: 64px; right: -60px;">360px</div>
+          <div class="wf-actions">
+            <div class="wf-action-btn"></div>
+            <div class="wf-action-btn primary"></div>
+            <div class="wf-action-btn"></div>
+          </div>
+          <div class="wf-dim" style="bottom: 100px; left: 50%; transform: translateX(-50%);">
+            按钮: 48px / 主按钮 56px
+          </div>
+          <div class="wf-bottomnav"></div>
+          <div class="wf-dim" style="bottom: 24px; right: -60px;">64px</div>
+        </div>
+      </div>
+
+      <!-- Profile Page -->
+      <div class="wireframe-card">
+        <h3 class="wireframe-title">我的 Profile</h3>
+        <p class="wireframe-subtitle">渐变头图 + 大头像 + 信息区</p>
+        <div class="phone-frame wf-profile">
+          <div class="phone-notch"></div>
+          <div class="wf-section wf-profile-header">
+            <div class="wf-dim" style="top: 10px; left: 50%; transform: translateX(-50%);">头图: 200px</div>
+          </div>
+          <div class="wf-avatar-lg">
+            <div class="wf-dim" style="top: -20px; left: 50%; transform: translateX(-50%);">80px</div>
+          </div>
+          <div class="wf-dim" style="top: 176px; right: -60px;">200px</div>
+          <div class="wf-section wf-info-section"></div>
+          <div class="wf-dim" style="top: 260px; right: -60px;">80px</div>
+          <div class="wf-section wf-tag-section"></div>
+          <div class="wf-dim" style="top: 356px; right: -60px;">16px</div>
+          <div class="wf-section wf-stats-section"></div>
+          <div class="wf-dim" style="top: 432px; right: -60px;">70px</div>
+          <div class="wf-bottomnav"></div>
+          <div class="wf-dim" style="bottom: 24px; right: -60px;">64px</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout Spec Table -->
+    <div class="subsection" style="margin-top: var(--space-10);">
+      <h3 class="subsection-title">通用布局规范 Layout Standards</h3>
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>属性</th>
+            <th>值</th>
+            <th>CSS 变量</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>页面左右边距</td>
+            <td class="value">20px</td>
+            <td class="token">--gutter</td>
+            <td>页面内容两侧统一留白</td>
+          </tr>
+          <tr>
+            <td>顶部导航栏高度</td>
+            <td class="value">56px</td>
+            <td class="token">--nav-height</td>
+            <td>含状态栏下方的标题栏</td>
+          </tr>
+          <tr>
+            <td>底部导航高度</td>
+            <td class="value">64px</td>
+            <td class="token">--bottom-nav-height</td>
+            <td>不含底部安全区域</td>
+          </tr>
+          <tr>
+            <td>卡片圆角</td>
+            <td class="value">20px</td>
+            <td class="token">--radius-xl</td>
+            <td>所有内容卡片统一圆角</td>
+          </tr>
+          <tr>
+            <td>卡片间距</td>
+            <td class="value">16px</td>
+            <td class="token">--space-4</td>
+            <td>列表中卡片之间的间距</td>
+          </tr>
+          <tr>
+            <td>区块间距</td>
+            <td class="value">24px</td>
+            <td class="token">--space-6</td>
+            <td>页面中各功能区块之间</td>
+          </tr>
+          <tr>
+            <td>内容最大宽度</td>
+            <td class="value">640px</td>
+            <td class="token">--max-content-width</td>
+            <td>大屏设备内容限制宽度</td>
+          </tr>
+          <tr>
+            <td>图标栏高度</td>
+            <td class="value">44px</td>
+            <td class="token">--size-button-md</td>
+            <td>搜索栏/工具条标准高度</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== SECTION 4: ICON SPECIFICATIONS ========== -->
+  <section class="spec-section">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <div>
+        <h2 class="section-title">图标规范 Icon Specifications</h2>
+        <p class="section-desc">图标栅格 · 描边粗细 · 图标分类</p>
+      </div>
+    </div>
+
+    <div class="icon-spec-grid">
+      <div>
+        <h3 class="subsection-title">图标栅格 Icon Grid</h3>
+        <div class="icon-grid-demo">
+          <div class="icon-grid-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20s-6.5-4-8.5-8A5 5 0 0 1 12 6.5 5 5 0 0 1 20.5 12C18.5 16 12 20 12 20z"/>
+            </svg>
+            <svg class="grid-overlay" viewBox="0 0 120 120">
+              <line x1="30" y1="0" x2="30" y2="120"/>
+              <line x1="60" y1="0" x2="60" y2="120"/>
+              <line x1="90" y1="0" x2="90" y2="120"/>
+              <line x1="0" y1="30" x2="120" y2="30"/>
+              <line x1="0" y1="60" x2="120" y2="60"/>
+              <line x1="0" y1="90" x2="120" y2="90"/>
+              <rect x="15" y="15" width="90" height="90" fill="none" stroke="var(--color-primary)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="text-caption text-muted">24 × 24px 栅格 · 2px 安全内边距</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="subsection-title">规格参数 Spec Parameters</h3>
+        <div class="icon-specs-table">
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">基础栅格</div>
+            <div class="icon-spec-value">24 × 24px</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">描边粗细</div>
+            <div class="icon-spec-value">2px (stroke-width: 2)</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">端点样式</div>
+            <div class="icon-spec-value">round (stroke-linecap)</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">转角样式</div>
+            <div class="icon-spec-value">round (stroke-linejoin)</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">视觉安全区</div>
+            <div class="icon-spec-value">内边距 2px</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">填充风格</div>
+            <div class="icon-spec-value">线性 (stroke) / 实心 (fill)</div>
+          </div>
+          <div class="icon-spec-row">
+            <div class="icon-spec-label">颜色继承</div>
+            <div class="icon-spec-value">currentColor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon Samples -->
+    <div class="subsection" style="margin-top: var(--space-10);">
+      <h3 class="subsection-title">图标库示例 Icon Library Samples</h3>
+      <div class="icon-samples">
+        <div class="icon-sample" title="首页">
+          <img src="../svg-icons/tabbar/home.svg" alt="首页" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="匹配">
+          <img src="../svg-icons/tabbar/match.svg" alt="匹配" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="消息">
+          <img src="../svg-icons/tabbar/message.svg" alt="消息" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="附近">
+          <img src="../svg-icons/tabbar/nearby.svg" alt="附近" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="我的">
+          <img src="../svg-icons/tabbar/profile.svg" alt="我的" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="心形">
+          <img src="../svg-icons/action/heart.svg" alt="心形" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="搜索">
+          <img src="../svg-icons/action/search.svg" alt="搜索" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="评论">
+          <img src="../svg-icons/action/comment.svg" alt="评论" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="位置">
+          <img src="../svg-icons/action/location.svg" alt="位置" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="通知">
+          <img src="../svg-icons/action/bell.svg" alt="通知" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="设置">
+          <img src="../svg-icons/action/settings.svg" alt="设置" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="编辑">
+          <img src="../svg-icons/action/edit.svg" alt="编辑" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="相机">
+          <img src="../svg-icons/action/camera.svg" alt="相机" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="礼物">
+          <img src="../svg-icons/action/gift.svg" alt="礼物" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="星星">
+          <img src="../svg-icons/action/star.svg" alt="星星" style="width: 24px; height: 24px;">
+        </div>
+        <div class="icon-sample" title="认证">
+          <img src="../svg-icons/status/verified.svg" alt="认证" style="width: 24px; height: 24px;">
+        </div>
+      </div>
+      <p class="text-caption text-muted mt-4">共 60+ 图标 · 分为 tabbar / action / status / interest / decoration / mascot / empty 等类别</p>
+    </div>
+  </section>
+
+  <!-- ========== SECTION 5: MASCOT SPECIFICATIONS ========== -->
+  <section class="spec-section">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <div>
+        <h2 class="section-title">吉祥物规范 Mascot Specifications</h2>
+        <p class="section-desc">小萌芽 · 品牌形象使用指南</p>
+      </div>
+    </div>
+
+    <div class="mascot-spec-grid">
+      <div>
+        <h3 class="subsection-title">尺寸规范 Size Guidelines</h3>
+        <div class="mascot-sizes">
+          <div class="mascot-size-item">
+            <img src="../svg-icons/mascot/sprout-default.svg" alt="小萌芽 大号" style="width: 120px; height: 120px;">
+            <span class="mascot-size-label">120px · Large</span>
+          </div>
+          <div class="mascot-size-item">
+            <img src="../svg-icons/mascot/sprout-default.svg" alt="小萌芽 中号" style="width: 80px; height: 80px;">
+            <span class="mascot-size-label">80px · Medium</span>
+          </div>
+          <div class="mascot-size-item">
+            <img src="../svg-icons/mascot/sprout-default.svg" alt="小萌芽 小号" style="width: 48px; height: 48px;">
+            <span class="mascot-size-label">48px · Small</span>
+          </div>
+        </div>
+        <p class="text-caption text-muted mt-4" style="text-align: center;">最小使用尺寸不小于 32px，确保识别度</p>
+      </div>
+
+      <div>
+        <h3 class="subsection-title">使用规范 Do & Don't</h3>
+        <div class="mascot-do-dont">
+          <div class="do-dont-card do-card">
+            <h4 class="do-dont-title">✓ 推荐做法</h4>
+            <ul class="do-dont-list">
+              <li>保持原始比例，不得拉伸变形</li>
+              <li>使用官方 SVG 矢量源文件</li>
+              <li>在浅色/白色背景上使用</li>
+              <li>空状态、欢迎页、引导页使用</li>
+              <li>与品牌主色调搭配使用</li>
+              <li>表情需与上下文情绪一致</li>
+            </ul>
+          </div>
+          <div class="do-dont-card dont-card">
+            <h4 class="do-dont-title">✕ 禁止做法</h4>
+            <ul class="do-dont-list">
+              <li>不得修改颜色或添加描边</li>
+              <li>不得旋转或翻转吉祥物</li>
+              <li>不得添加额外装饰元素</li>
+              <li>不得用于错误/警告类场景</li>
+              <li>不得缩小至 32px 以下</li>
+              <li>不得遮挡面部特征</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mascot Expressions -->
+    <div class="subsection" style="margin-top: var(--space-10);">
+      <h3 class="subsection-title">表情系统 Expression System</h3>
+      <div class="mascot-expressions">
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-default.svg" alt="默认">
+          <span class="mascot-expression-label">默认 · Default</span>
+        </div>
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-happy.svg" alt="开心">
+          <span class="mascot-expression-label">开心 · Happy</span>
+        </div>
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-love.svg" alt="心动">
+          <span class="mascot-expression-label">心动 · Love</span>
+        </div>
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-sad.svg" alt="失落">
+          <span class="mascot-expression-label">失落 · Sad</span>
+        </div>
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-thinking.svg" alt="思考">
+          <span class="mascot-expression-label">思考 · Thinking</span>
+        </div>
+        <div class="mascot-expression">
+          <img src="../svg-icons/mascot/sprout-waving.svg" alt="招手">
+          <span class="mascot-expression-label">招手 · Waving</span>
+        </div>
+      </div>
+      <p class="text-caption text-muted mt-4">共 6 种表情 · 覆盖欢迎、匹配成功、空状态、加载、思考等场景</p>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="spec-footer">
+    <p>寻觅 Xunmi · Design System v1.0 · 标注级设计稿</p>
+    <p class="mt-4">基于 375 × 812pt (iPhone 13/14) · 所有单位为 px（设计稿像素）</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

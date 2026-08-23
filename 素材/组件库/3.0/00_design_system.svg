@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<title>寻觅 Design System / Components</title>
+<rect width="1200" height="800" fill="#F7FAF9"/>
+<text x="40" y="58" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="28" font-weight="700" fill="#333">寻觅 · SVG Design System</text>
+<text x="40" y="88" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="14" fill="#7A8584">可直接复用的颜色、文字、按钮、标签、卡片、导航与状态组件</text>
+<g font-family="PingFang SC,Microsoft YaHei,sans-serif">
+<text x="40" y="135" font-size="18" font-weight="700" fill="#333">颜色</text>
+<rect x="40" y="155" width="90" height="52" rx="12" fill="#34C98A"/><text x="52" y="230" font-size="12" fill="#333">Primary #34C98A</text>
+<rect x="160" y="155" width="90" height="52" rx="12" fill="#FF6FA3"/><text x="172" y="230" font-size="12" fill="#333">Love #FF6FA3</text>
+<rect x="280" y="155" width="90" height="52" rx="12" fill="#F7FAF9"/><text x="292" y="230" font-size="12" fill="#333">BG #F7FAF9</text>
+<rect x="400" y="155" width="90" height="52" rx="12" fill="#FFFFFF" stroke="#E8EEEE"/><text x="412" y="230" font-size="12" fill="#333">Card #FFFFFF</text>
+<rect x="520" y="155" width="90" height="52" rx="12" fill="#333333"/><text x="532" y="230" font-size="12" fill="#333">Text #333333</text>
+<text x="40" y="285" font-size="18" font-weight="700" fill="#333">按钮</text>
+<rect x="40" y="305" width="180" height="48" rx="24" fill="#34C98A"/><text x="130" y="335" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Primary / CTA</text>
+<rect x="240" y="305" width="180" height="48" rx="24" fill="#fff" stroke="#FF6FA3"/><text x="330" y="335" text-anchor="middle" font-size="14" font-weight="700" fill="#FF5D98">Secondary / Love</text>
+<rect x="440" y="305" width="180" height="48" rx="24" fill="#fff" stroke="#DCE5E2"/><text x="530" y="335" text-anchor="middle" font-size="14" font-weight="600" fill="#66716F">Tertiary</text>
+<text x="40" y="405" font-size="18" font-weight="700" fill="#333">标签</text>
+<rect x="40" y="425" width="74" height="30" rx="15" fill="#EAF8F2"/><text x="77" y="445" text-anchor="middle" font-size="12" fill="#279B70">旅行</text>
+<rect x="130" y="425" width="74" height="30" rx="15" fill="#FFF0F6"/><text x="167" y="445" text-anchor="middle" font-size="12" fill="#E94D87">摄影</text>
+<rect x="220" y="425" width="74" height="30" rx="15" fill="#EEF3FF"/><text x="257" y="445" text-anchor="middle" font-size="12" fill="#4D79D8">音乐</text>
+<text x="40" y="505" font-size="18" font-weight="700" fill="#333">间距 / 圆角</text>
+<text x="40" y="535" font-size="13" fill="#66716F">基础间距 8px · 页面边距 20px · 卡片间距 12–16px · 大卡片圆角 20–24px · 按钮 24–28px</text>
+<text x="40" y="590" font-size="18" font-weight="700" fill="#333">交互状态</text>
+<text x="40" y="620" font-size="13" fill="#66716F">默认 / Hover / Pressed / Disabled / Loading / Success / Error / Empty / Offline / 已认证</text>
+<text x="40" y="675" font-size="18" font-weight="700" fill="#333">核心原则</text>
+<text x="40" y="705" font-size="13" fill="#66716F">一页一个主任务；匹配用粉色表达情绪，导航与行动用绿色表达可操作性；照片负责吸引，文字负责解释，CTA 负责推进。</text>
+</g></svg>

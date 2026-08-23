@@ -1,0 +1,104 @@
+{
+  "name": "寻觅 Photography Circle Icon System V1",
+  "grid": "24x24",
+  "style": "linear / rounded / single-stroke",
+  "icons": [
+    {
+      "name": "Back",
+      "svg": "svg/Back.svg",
+      "vue": "vue/BackIcon.vue"
+    },
+    {
+      "name": "Share",
+      "svg": "svg/Share.svg",
+      "vue": "vue/ShareIcon.vue"
+    },
+    {
+      "name": "More",
+      "svg": "svg/More.svg",
+      "vue": "vue/MoreIcon.vue"
+    },
+    {
+      "name": "ChevronRight",
+      "svg": "svg/ChevronRight.svg",
+      "vue": "vue/ChevronRightIcon.vue"
+    },
+    {
+      "name": "Heart",
+      "svg": "svg/Heart.svg",
+      "vue": "vue/HeartIcon.vue"
+    },
+    {
+      "name": "Message",
+      "svg": "svg/Message.svg",
+      "vue": "vue/MessageIcon.vue"
+    },
+    {
+      "name": "Edit",
+      "svg": "svg/Edit.svg",
+      "vue": "vue/EditIcon.vue"
+    },
+    {
+      "name": "Play",
+      "svg": "svg/Play.svg",
+      "vue": "vue/PlayIcon.vue"
+    },
+    {
+      "name": "Camera",
+      "svg": "svg/Camera.svg",
+      "vue": "vue/CameraIcon.vue"
+    },
+    {
+      "name": "Image",
+      "svg": "svg/Image.svg",
+      "vue": "vue/ImageIcon.vue"
+    },
+    {
+      "name": "Tag",
+      "svg": "svg/Tag.svg",
+      "vue": "vue/TagIcon.vue"
+    },
+    {
+      "name": "MapPin",
+      "svg": "svg/MapPin.svg",
+      "vue": "vue/MapPinIcon.vue"
+    },
+    {
+      "name": "Users",
+      "svg": "svg/Users.svg",
+      "vue": "vue/UsersIcon.vue"
+    },
+    {
+      "name": "UserPlus",
+      "svg": "svg/UserPlus.svg",
+      "vue": "vue/UserPlusIcon.vue"
+    },
+    {
+      "name": "Pin",
+      "svg": "svg/Pin.svg",
+      "vue": "vue/PinIcon.vue"
+    },
+    {
+      "name": "Cloud",
+      "svg": "svg/Cloud.svg",
+      "vue": "vue/CloudIcon.vue"
+    },
+    {
+      "name": "Shield",
+      "svg": "svg/Shield.svg",
+      "vue": "vue/ShieldIcon.vue"
+    },
+    {
+      "name": "Plus",
+      "svg": "svg/Plus.svg",
+      "vue": "vue/PlusIcon.vue"
+    }
+  ],
+  "colors": {
+    "primary": "#00B86B",
+    "text": "#1A1A1A",
+    "secondary": "#667085",
+    "accent": "#FF5A70",
+    "white": "#FFFFFF"
+  }
+}

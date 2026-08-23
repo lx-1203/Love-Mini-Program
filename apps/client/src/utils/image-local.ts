@@ -91,3 +91,57 @@ export function toLocalImage(url: string | null | undefined): string {
   }
   return pick(LOCAL_AVATARS, LOCAL_AVATARS[0] ?? "/static/default-avatar.png");
 }
+
+
+/**
+ * Mock 演示媒体本地化映射（2026-08-23）。
+ *
+ * 背景：后端 mock 种子数据的媒体路径形如 {@code /uploads/mock/avatar-linan.jpg}，
+ * 经 resolveMediaUrl 会重写为 http API 代理地址；微信 <image> 要求 HTTPS，HTTP 会被
+ * 拦截（log: "不再支持 HTTP 协议"），导致图片不渲染、布局被撑大。
+ * 因此把 {@code /uploads/mock/*} 确定性映射到包内 static 资源（与 MockMediaPaths 对齐）。
+ *
+ * 说明：仅映射图片；intro.mp4（视频）无本地等价，不映射，保留原行为由 SafeImage 兜底。
+ */
+
+/** mock 媒体路径前缀（与后端 MockMediaPaths.PREFIX 对齐） */
+const MOCK_MEDIA_PREFIX = "/uploads/mock/";
+
+/** mock 文件名 → 包内静态资源（复用现有素材目录，不新增外部素材） */
+const MOCK_MEDIA_LOCAL_MAP: Record<string, string> = {
+  // 头像（avatar-*）
+  "avatar-linan.jpg":   IMAGE_PATHS.AVATARS.AVATAR_1,
+  "avatar-zhoumu.jpg":  IMAGE_PATHS.AVATARS.AVATAR_2,
+  "avatar-xunuo.jpg":   IMAGE_PATHS.AVATARS.AVATAR_3,
+  "avatar-suli.jpg":    IMAGE_PATHS.AVATARS.AVATAR_4,
+  "avatar-xiaye.jpg":   IMAGE_PATHS.AVATARS.AVATAR_5,
+  "avatar-xingye.jpg":  IMAGE_PATHS.AVATARS.AVATAR_6,
+  // 帖子/话题图（post-* / topic-*）
+  "post-sunrise-1.jpg": IMAGE_PATHS.POSTS.POST_1,
+  "post-sunrise-2.jpg": IMAGE_PATHS.POSTS.POST_2,
+  "post-coffee-1.jpg":  IMAGE_PATHS.POSTS.POST_3,
+  "post-movie-1.jpg":   IMAGE_PATHS.POSTS.POST_4,
+  "topic-photo-1.jpg":  IMAGE_PATHS.CIRCLE_COVERS.PHOTO,
+  "topic-food-1.jpg":   IMAGE_PATHS.CIRCLE_COVERS.FOOD,
+  "topic-food-2.jpg":   IMAGE_PATHS.CIRCLE_COVERS.FOOD,
+  // 个人资料/认证（photo-* / half / bg / student-card）
+  "photo-1.jpg":        IMAGE_PATHS.PEOPLE.CARD_1,
+  "half.jpg":           IMAGE_PATHS.PEOPLE.CARD_1,
+  "bg.jpg":             IMAGE_PATHS.GENERATED.HOME_POSTER,
+  "student-card-1.jpg": IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
+};
+
+/**
+ * 把 {@code /uploads/mock/<file>} 映射到包内静态资源；非 mock 媒体原样返回。
+ *
+ * @param path 原始媒体路径
+ * @returns 本地包内路径，或原样返回
+ */
+export function toLocalMockMedia(path: string): string {
+  if (!path || !path.startsWith(MOCK_MEDIA_PREFIX)) {
+    return path;
+  }
+  const file = path.substring(MOCK_MEDIA_PREFIX.length);
+  const local = MOCK_MEDIA_LOCAL_MAP[file];
+  return local ?? path;
+}

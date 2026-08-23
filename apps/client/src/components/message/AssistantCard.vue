@@ -13,7 +13,8 @@ const emit = defineEmits<{
   tap: [];
 }>();
 
-const avatar = IMAGE_PATHS.MESSAGE_ICONS.ASSISTANT_AVATAR;
+// 2026-08-21：寻觅助手头像改用吉祥物拆分素材（素材/吉祥物/拆分图标_吉祥物参考/mascot_default.png）
+const avatar = "/static/assets/images/mascot/mascot_default.png";
 const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
 </script>
 
@@ -30,6 +31,7 @@ const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
       </view>
       <text class="assistant-card__desc">你的恋爱小管家</text>
       <text class="assistant-card__content">今天附近有 {{ activityCount }} 场活动适合你参加</text>
+      <text class="assistant-card__content-secondary">周末露营活动开始报名啦~</text>
     </view>
     <text class="assistant-card__arrow">›</text>
   </view>
@@ -45,11 +47,13 @@ const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
   border-radius: 40rpx;
   background: #FFFFFF;
   box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.05);
+
 }
 .assistant-card--hover {
   opacity: 0.85;
 }
 .assistant-card__avatar {
+
   width: 128rpx;
   height: 128rpx;
   border-radius: 50%;
@@ -67,7 +71,7 @@ const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
 .assistant-card__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 .assistant-card__official {
   width: 28rpx;
@@ -92,7 +96,7 @@ const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
   display: block;
   margin-top: 8rpx;
   font-size: 28rpx;
-  color: #999999;
+  color: #9AA39F;
 }
 .assistant-card__content {
   display: block;
@@ -103,6 +107,13 @@ const officialSrc = IMAGE_PATHS.MESSAGE_ICONS.OFFICIAL;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.assistant-card__content-secondary {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #86928C;
+}
+
 .assistant-card__arrow {
   font-size: 36rpx;
   color: #C8CFCD;

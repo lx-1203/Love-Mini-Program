@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 export interface MoreItem {
   key: string;
   label: string;
@@ -9,14 +9,14 @@ withDefaults(defineProps<{ items: MoreItem[] }>(), {
 });
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
-const ICONS: Record<string, { icon: string; color: string }> = {
-  favorites: { icon: "★", color: "#FFB020" },
-  visitors: { icon: "👁", color: "#4D8DFF" },
-  album: { icon: "🖼", color: "#FF6B81" },
-  privacy: { icon: "🔒", color: "#8D7BFF" },
+const ICONS: Record<string, { icon?: string; image?: string; color: string }> = {
+  favorites: { image: "/static/assets/images/profile-favorite.svg", color: "#FFB020" },
+  visitors: { image: "/static/assets/images/profile-visitors.svg", color: "#4D8DFF" },
+  album: { image: "/static/assets/images/profile-album.svg", color: "#FF6B81" },
+  privacy: { image: "/static/assets/images/profile-privacy.svg", color: "#A29BFE" },
   profile: { icon: "👤", color: "#36C99A" },
   interest: { icon: "♥", color: "#FF6B81" },
-  posts: { icon: "📝", color: "#FF9A57" },
+  posts: { icon: "📝", color: "#FF9F43" },
   checkin: { icon: "✓", color: "#36C99A" },
 };
 </script>
@@ -33,7 +33,8 @@ const ICONS: Record<string, { icon: string; color: string }> = {
         @tap="emit('tap', item.key)"
       >
         <view class="my-more__icon" :style="{ background: `${ICONS[item.key]?.color || '#36C99A'}22` }">
-          <text class="my-more__icon-text" :style="{ color: ICONS[item.key]?.color || '#36C99A' }">
+          <image v-if="ICONS[item.key]?.image" class="my-more__icon-img" :src="ICONS[item.key]?.image ?? ''" mode="aspectFit" alt="" />
+          <text v-else class="my-more__icon-text" :style="{ color: ICONS[item.key]?.color || '#36C99A' }">
             {{ ICONS[item.key]?.icon || '•' }}
           </text>
         </view>
@@ -53,7 +54,7 @@ const ICONS: Record<string, { icon: string; color: string }> = {
   margin-bottom: 16rpx;
   font-size: 30rpx;
   font-weight: 800;
-  color: #222222;
+  color: #333A37;
 }
 
 .my-more__grid {
@@ -61,7 +62,7 @@ const ICONS: Record<string, { icon: string; color: string }> = {
   flex-wrap: wrap;
   border-radius: 32rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   padding: 12rpx 0;
 }
 
@@ -93,9 +94,14 @@ const ICONS: Record<string, { icon: string; color: string }> = {
   font-weight: 800;
 }
 
+.my-more__icon-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+
 .my-more__label {
   font-size: 22rpx;
-  color: #666666;
+  color: #4A524E;
   font-weight: 500;
 }
 </style>

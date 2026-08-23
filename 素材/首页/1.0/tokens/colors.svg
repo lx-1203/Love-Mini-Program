@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240">
+<rect width="720" height="240" rx="28" fill="#F7FAF9"/>
+<text x="36" y="48" font-family="Arial,Microsoft YaHei" font-size="24" font-weight="700" fill="#222">寻觅 A+B 融合色彩</text>
+<g font-family="Arial,Microsoft YaHei" font-size="14" text-anchor="middle">
+<rect x="36" y="72" width="110" height="105" rx="22" fill="#34C38F"/><text x="91" y="202">品牌绿 #34C38F</text>
+<rect x="166" y="72" width="110" height="105" rx="22" fill="#FF5D9E"/><text x="221" y="202">心动粉 #FF5D9E</text>
+<rect x="296" y="72" width="110" height="105" rx="22" fill="#A87BFA"/><text x="351" y="202">浪漫紫 #A87BFA</text>
+<rect x="426" y="72" width="110" height="105" rx="22" fill="#4D8DFF"/><text x="481" y="202">互动蓝 #4D8DFF</text>
+<rect x="556" y="72" width="128" height="105" rx="22" fill="#FFF0F6"/><text x="620" y="202">心动浅粉</text>
+</g></svg>

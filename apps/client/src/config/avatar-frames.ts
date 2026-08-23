@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 头像框主题注册表（2026-08-08，参考 QQ 头像框机制设计）。
  *
  * QQ 机制研究结论：
@@ -72,7 +72,7 @@ export const AVATAR_FRAMES: Record<AvatarFrameId, AvatarFrameTheme> = {
     id: "svip",
     name: "至尊炫彩框",
     priority: 20,
-    gradient: ["#F472B6", "#8B5CF6", "#3B82F6"],
+    gradient: ["#FF7C91", "#8B5CF6", "#3B82F6"],
     glow: "rgba(139, 92, 246, 0.5)",
     badgeIcon: "/static/assets/icons/common/crown.svg",
     animated: true,
@@ -114,3 +114,4 @@ export const AVATAR_FRAME_ORDER: AvatarFrameTheme[] = Object.values(AVATAR_FRAME
 export function getAvatarFrameTheme(id: AvatarFrameId): AvatarFrameTheme {
   return AVATAR_FRAMES[id] ?? AVATAR_FRAMES.none;
 }
+

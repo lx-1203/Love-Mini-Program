@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 安全中心页（Phase Feedback5 P2.6）
  *
@@ -527,7 +527,7 @@ async function submitDeleteAccount(): Promise<void> {
           :key="device.id"
           class="sec-item"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E6F8F1)' }">
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LIST" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -843,7 +843,7 @@ async function submitDeleteAccount(): Promise<void> {
 .sec-item__badge {
   font-size: var(--f-xs);
   color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E6F8F1);
+  background: var(--c-tint-brand, #E8FAF3);
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
 }
@@ -950,3 +950,4 @@ async function submitDeleteAccount(): Promise<void> {
   color: var(--c-neutral-0);
 }
 </style>
+

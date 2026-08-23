@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
 const props = withDefaults(defineProps<{ subtitle?: string; school?: string; locationText?: string }>(), {
   subtitle: "发现今天值得遇见的人",
   school: "",
@@ -17,11 +18,11 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
       </view>
       <view class="header-right">
         <view class="header-location" role="button" aria-label="定位" @tap="$emit('schoolTap')">
-          <text class="header-location__pin">📍</text>
+          <image class="header-location__pin" :src="IMAGE_PATHS.HOME_ICONS.LOCATION_PIN" mode="aspectFit" />
           <text class="header-location__text">{{ schoolText() }}</text>
         </view>
         <view class="header-icon" role="button" aria-label="通知" @tap="$emit('notifyTap')">
-          <text class="header-icon__bell">🔔</text>
+          <image class="header-icon__bell" :src="IMAGE_PATHS.HOME_ICONS.HEADER_BELL" mode="aspectFit" />
           <view class="header-badge">
             <text class="header-badge__text">6</text>
           </view>
@@ -81,7 +82,8 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
 }
 
 .header-location__pin {
-  font-size: 24rpx;
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .header-location__text {
@@ -103,7 +105,8 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
 }
 
 .header-icon__bell {
-  font-size: 30rpx;
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .header-badge {

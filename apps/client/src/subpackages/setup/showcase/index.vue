@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   全功能展示页（超级管理员展示版）
   - 仅在 VITE_SHOWCASE_MODE=true 的展示构建中作为主入口使用
   - 覆盖 pages.json 全部页面，按业务模块分组，演示者可一键跳转体验
@@ -71,8 +71,8 @@ const groups: ShowcaseGroup[] = [
     subtitleKey: "showcase.groups.home.subtitle",
     accent: "linear-gradient(135deg, #36C99A, #5BC0DE)",
     items: [
-      { path: "/pages/home/index", titleKey: "showcase.groups.home.items.home.title", descKey: "showcase.groups.home.items.home.desc", chipBg: "var(--c-bg-brand, #E6F8F1)", isTab: true },
-      { path: "/pages/daily-question/index", titleKey: "showcase.groups.home.items.dailyQuestion.title", descKey: "showcase.groups.home.items.dailyQuestion.desc", chipBg: "var(--c-bg-brand, #E6F8F1)" },
+      { path: "/pages/home/index", titleKey: "showcase.groups.home.items.home.title", descKey: "showcase.groups.home.items.home.desc", chipBg: "var(--c-bg-brand, #E8FAF3)", isTab: true },
+      { path: "/pages/daily-question/index", titleKey: "showcase.groups.home.items.dailyQuestion.title", descKey: "showcase.groups.home.items.dailyQuestion.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
       { path: "/pages/love-center/index", titleKey: "showcase.groups.home.items.loveCenter.title", descKey: "showcase.groups.home.items.loveCenter.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
       { path: "/pages/love-center/consulting", titleKey: "showcase.groups.home.items.consulting.title", descKey: "showcase.groups.home.items.consulting.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
       { path: "/pages/love-center/mbti", titleKey: "showcase.groups.home.items.mbti.title", descKey: "showcase.groups.home.items.mbti.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
@@ -96,10 +96,10 @@ const groups: ShowcaseGroup[] = [
     subtitleKey: "showcase.groups.community.subtitle",
     accent: "linear-gradient(135deg, #10B981, #34D399)",
     items: [
-      { path: "/pages/village/index", titleKey: "showcase.groups.community.items.village.title", descKey: "showcase.groups.community.items.village.desc", chipBg: "var(--c-bg-brand, #E6F8F1)", isTab: true },
-      { path: "/pages/village/post", titleKey: "showcase.groups.community.items.post.title", descKey: "showcase.groups.community.items.post.desc", chipBg: "var(--c-bg-brand, #E6F8F1)" },
-      { path: "/pages/village/detail", titleKey: "showcase.groups.community.items.detail.title", descKey: "showcase.groups.community.items.detail.desc", chipBg: "var(--c-bg-brand, #E6F8F1)" },
-      { path: "/pages/village/tag-posts", titleKey: "showcase.groups.community.items.tagPosts.title", descKey: "showcase.groups.community.items.tagPosts.desc", chipBg: "var(--c-bg-brand, #E6F8F1)" },
+      { path: "/pages/village/index", titleKey: "showcase.groups.community.items.village.title", descKey: "showcase.groups.community.items.village.desc", chipBg: "var(--c-bg-brand, #E8FAF3)", isTab: true },
+      { path: "/pages/village/post", titleKey: "showcase.groups.community.items.post.title", descKey: "showcase.groups.community.items.post.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
+      { path: "/pages/village/detail", titleKey: "showcase.groups.community.items.detail.title", descKey: "showcase.groups.community.items.detail.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
+      { path: "/pages/village/tag-posts", titleKey: "showcase.groups.community.items.tagPosts.title", descKey: "showcase.groups.community.items.tagPosts.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
       { path: "/pages/circles/index", titleKey: "showcase.groups.community.items.circles.title", descKey: "showcase.groups.community.items.circles.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
       { path: "/pages/circles/topics", titleKey: "showcase.groups.community.items.topics.title", descKey: "showcase.groups.community.items.topics.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
       { path: "/pages/circles/topic-detail", titleKey: "showcase.groups.community.items.topicDetail.title", descKey: "showcase.groups.community.items.topicDetail.desc", chipBg: "var(--c-tint-pink-soft, #FFF0F5)" },
@@ -495,7 +495,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .sc-item__arrow {
   font-size: var(--fs-2xl, 32rpx);
-  color: var(--c-neutral-300, #CBD5E1);
+  color: var(--c-neutral-300, #C2CAC6);
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -504,3 +504,5 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   height: 48rpx;
 }
 </style>
+
+

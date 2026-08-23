@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 withDefaults(defineProps<{
   value: number | string;
   label: string;
@@ -44,7 +44,7 @@ const emit = defineEmits<{ (e: "tap"): void }>();
 .stat-item__value {
   font-size: 32rpx;
   font-weight: 600;
-  color: #222222;
+  color: #333A37;
 }
 
 .stat-item__value--emphasis {
@@ -53,7 +53,7 @@ const emit = defineEmits<{ (e: "tap"): void }>();
 
 .stat-item__label {
   font-size: 24rpx;
-  color: #666666;
+  color: #4A524E;
 }
 
 .stat-item__lock {

@@ -1,0 +1,25 @@
+{
+  "name": "xunmi-login-svg-path-assets",
+  "source": "登录页面.png",
+  "count": 16,
+  "icons": [
+    "nav-back",
+    "more",
+    "sprout",
+    "falling-leaf",
+    "wechat",
+    "check-selected",
+    "checkbox",
+    "arrow-right",
+    "signal",
+    "wifi",
+    "battery",
+    "lock-outline",
+    "lock-filled",
+    "privacy",
+    "user",
+    "security-shield"
+  ],
+  "default_size": 24,
+  "note": "Path-level reconstruction from the supplied reference image; not an extraction of the original editable vector source."
+}

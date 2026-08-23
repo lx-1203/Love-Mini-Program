@@ -1,17 +1,16 @@
+```vue
 <script setup lang="ts">
 /**
- * 寻觅助手会话页（消息 V3）。
- * 单账号官方号消息流，v1 只读。
+ * 寻觅助手会话页 — 理想图还原版
+ * 绿色渐变头部 + 吉祥物 + 聊天气泡 + 活动卡片 + 操作按钮 + 输入栏
  */
-import { computed, ref } from "vue";
+import { computed, ref, nextTick } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
 import LockScreen from "../../components/common/LockScreen.vue";
-import ChatBubble from "../../components/chat/ChatBubble.vue";
-import ActivityCard, { type ActivityCardData } from "../../components/chat/ActivityCard.vue";
 import { request } from "../../services/http";
 import { useMock } from "../../stores/helpers/use-mock";
 import { IMAGE_PATHS } from "../../config/images";
@@ -21,22 +20,91 @@ import type {
   OfficialMessageView,
 } from "../../services/generated/api-types-supplement";
 
-usePageAccess(chatPageRequirements);
-
 const { t } = useI18n();
 const sessionStore = useSessionStore();
-const isUnlocked = computed(() => sessionStore.isLoggedIn);
+const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
+// 寻觅助手只需登录即可进入，不需要完善资料
+const officialChatRequirements = { ...chatPageRequirements, requiresProfile: false };
+usePageAccess(officialChatRequirements);
+
 const accountId = ref("official-assistant");
-const assistantAvatar = IMAGE_PATHS.MESSAGE_ICONS.ASSISTANT_AVATAR;
 const accountName = ref("寻觅助手");
 const accountDesc = ref("你的恋爱小管家");
 const loading = ref(false);
 const errorMessage = ref("");
 const messages = ref<OfficialMessageView[]>([]);
 
+/* -------- 输入 -------- */
+const inputValue = ref("");
+const inputFocus = ref(false);
+const userAvatar = "/static/assets/images/avatars/avatar-1.jpg";
 
+/* -------- 本地发送 -------- */
+const sendMessage = () => {
+  const text = inputValue.value.trim();
+  if (!text) return;
+  messages.value.push({
+    id: Date.now(),
+    messageType: "user-text",
+    content: text,
+    cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
+    publishedAt: new Date().toISOString(), cardActivity: null,
+  } as any);
+  inputValue.value = "";
+  scrollToBottom();
+  // 模拟助手回复
+  setTimeout(() => {
+    messages.value.push({
+      id: Date.now() + 1,
+      messageType: "text",
+      content: "收到啦～我会帮你留意合适的活动和人哦 😊",
+      cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
+      publishedAt: new Date().toISOString(), cardActivity: null,
+    });
+    scrollToBottom();
+  }, 1200);
+};
+
+/* -------- 按钮点击 -------- */
+const onActionBtnTap = (label: string) => {
+  if (label === "去看看") {
+    openAppPath("/subpackages/discover/activities/index");
+  } else {
+    messages.value.push({
+      id: Date.now(),
+      messageType: "user-text",
+      content: "好的，稍后再说～",
+      cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
+      publishedAt: new Date().toISOString(), cardActivity: null,
+    } as any);
+    scrollToBottom();
+  }
+};
+
+/* -------- 滚动到底部 -------- */
+const scrollContainerId = "chat-scroll-" + Date.now();
+const scrollToBottom = () => {
+  nextTick(() => {
+    uni.createSelectorQuery()
+      .select("#" + scrollContainerId)
+      .boundingClientRect((rect: any) => {
+        if (rect) {
+          uni.pageScrollTo({ scrollTop: 99999, duration: 200 });
+        }
+      })
+      .exec();
+  });
+};
+
+/* -------- 判断消息类型 -------- */
+const isUserMsg = (msg: OfficialMessageView) =>
+  (msg as any).messageType === "user-text" || (msg as any).role === "user";
+const isActivityMsg = (msg: OfficialMessageView) =>
+  msg.messageType === "card" && msg.cardActivity;
+const isButtonMsg = (msg: OfficialMessageView) =>
+  (msg as any).messageType === "action-buttons";
 
 async function loadOfficialChat(): Promise<void> {
   if (loading.value) return;
@@ -47,39 +115,33 @@ async function loadOfficialChat(): Promise<void> {
       messages.value = [
         {
           id: 101, messageType: "text",
-          content: "你好，我是寻觅助手 🌱 今天也会帮你抓住真正重要的关系。",
+          content: "Hi~ 我是寻觅助手 🌱 我会帮你发现有趣的人和活动，让每一次相遇都更有意义✨",
           cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
-          publishedAt: new Date(Date.now() - 4 * 86400000).toISOString(), cardActivity: null,
+          publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(), cardActivity: null,
         },
         {
-          id: 102, messageType: "text",
-          content: "有人喜欢你：进入消息页今日心动，看看谁想认识你。",
-          cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
-          publishedAt: new Date(Date.now() - 3 * 86400000).toISOString(), cardActivity: null,
-        },
-        {
-          id: 103, messageType: "card",
-          content: "周末附近有一场适合你的露营活动，名额不多啦。",
+          id: 102, messageType: "card",
+          content: "这个活动和你的兴趣很匹配哦~ 要一起去认识新朋友吗？😊",
           cardTitle: "城市露营计划",
-          cardDesc: "周六 14:00 · 距离 2.3km",
-          cardTag: "周末活动",
+          cardDesc: "周六 14:00-18:00 · 中央公园 2.3km",
+          cardTag: "发现一个适合你的活动",
           cardTargetUrl: "/subpackages/discover/activities/index",
-          publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+          publishedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
           cardActivity: {
             activityId: 2001,
             title: "城市露营计划",
             imageUrl: IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
-            timeText: "周六 14:00",
-            locationText: "2.3km",
+            timeText: "周六 14:00-18:00",
+            locationText: "中央公园 2.3km",
             enrollmentCount: 12,
             recommendReason: "你和小林都喜欢咖啡与户外",
           },
         },
         {
-          id: 104, messageType: "text",
-          content: "建议回复小林：你们已经连续聊天 3 天啦。",
+          id: 103, messageType: "text",
+          content: "太好了！已经帮你报名成功啦✅ 活动开始前一天我会提醒你~ 另外有3位兴趣相近的人也参加🌹 要提前认识一下吗？",
           cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
-          publishedAt: new Date(Date.now() - 86400000).toISOString(), cardActivity: null,
+          publishedAt: new Date(Date.now() - 0.5 * 86400000).toISOString(), cardActivity: null,
         },
       ];
       return;
@@ -106,27 +168,23 @@ async function loadOfficialChat(): Promise<void> {
   }
 }
 
-function toActivityCard(msg: OfficialMessageView): ActivityCardData {
-  const activity = msg.cardActivity;
-  return {
-    title: activity?.title ?? msg.cardTitle ?? "活动",
-    desc: msg.cardDesc ?? msg.content,
-    tag: msg.cardTag ?? "活动",
-    targetUrl: msg.cardTargetUrl ?? "/subpackages/discover/activities/index",
-    image: activity?.imageUrl ?? null,
-    time: activity?.timeText ?? null,
-    distance: activity?.locationText ?? null,
-    count: activity?.enrollmentCount ?? null,
-    recommendReason: activity?.recommendReason ?? null,
-  };
-}
-
 function handleActivityTap(targetUrl: string) {
   openAppPath(targetUrl);
 }
 
 function goBack() {
   uni.navigateBack();
+}
+
+function shouldShowTime(idx: number): boolean {
+  return idx > 0 && idx % 3 === 0;
+}
+
+/* -------- 时间格式化 -------- */
+function formatTime(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 onLoad((query) => {
@@ -141,95 +199,237 @@ onLoad((query) => {
   <view class="assistant-chat">
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
-      <view class="assistant-chat__nav">
-        <view class="assistant-chat__back" @tap="goBack"><text class="assistant-chat__back-text">‹</text></view>
-        <view class="assistant-chat__title-wrap">
-          <text class="assistant-chat__title">🌱 {{ accountName }}</text>
-          <text class="assistant-chat__desc">{{ accountDesc }}</text>
+      <!-- ===== 顶部导航栏 ===== -->
+      <view class="nav-bar">
+        <view class="nav-left" @tap="goBack">
+          <text class="nav-back-icon">←</text>
         </view>
-        <view class="assistant-chat__more"><text>···</text></view>
+        <view class="nav-center">
+          <view class="nav-title-row">
+            <text class="nav-title">{{ accountName }}</text>
+            <view class="official-badge">
+              <text class="official-badge__text">官方</text>
+            </view>
+          </view>
+          <text class="nav-subtitle">{{ accountDesc }}</text>
+        </view>
+        <view class="nav-right">
+          <text class="nav-more-icon">···</text>
+        </view>
       </view>
 
-      <view v-if="loading" class="assistant-chat__state"><text>{{ t('common.loading') }}</text></view>
-      <view v-else-if="errorMessage" class="assistant-chat__state">
-        <text class="assistant-chat__error">{{ errorMessage }}</text>
-        <view class="assistant-chat__retry" @tap="loadOfficialChat"><text>重试</text></view>
+      <!-- ===== 加载 / 错误 ===== -->
+      <view v-if="loading" class="state-view"><text>加载中...</text></view>
+      <view v-else-if="errorMessage" class="state-view">
+        <text class="error-text">{{ errorMessage }}</text>
+        <view class="retry-btn" @tap="loadOfficialChat"><text>重试</text></view>
       </view>
-      <scroll-view v-else class="assistant-chat__scroll" scroll-y>
-        <view class="assistant-chat__list">
-          <view class="assistant-chat__intro">
-            <image class="assistant-chat__intro-avatar" :src="assistantAvatar" mode="aspectFit" />
-            <text class="assistant-chat__intro-title">Hi~ 我是寻觅助手 🌱</text>
-            <text class="assistant-chat__intro-desc">我会帮你发现有趣的人和活动</text>
+
+      <!-- ===== 聊天主体 ===== -->
+      <view v-else class="chat-body">
+        <!-- 绿色渐变区域 + 吉祥物 -->
+        <view class="hero-section">
+          <view class="hero-deco hero-deco-1">🌿</view>
+          <view class="hero-deco hero-deco-2">✨</view>
+          <view class="hero-deco hero-deco-3">🌿</view>
+          <view class="hero-deco hero-deco-4">🌱</view>
+          <image class="hero-mascot" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
+          <text class="hero-greeting">Hi~ 我是寻觅助手 🌱</text>
+          <text class="hero-desc">我会帮你发现有趣的人和活动</text>
+          <text class="hero-desc">让每一次相遇都更有意义 ✨</text>
+        </view>
+
+        <!-- 消息流 -->
+        <scroll-view
+          :id="scrollContainerId"
+          class="chat-scroll"
+          scroll-y
+          scroll-with-animation
+        >
+          <view class="chat-list">
+            <template v-for="(msg, idx) in messages" :key="msg.id">
+              <!-- 时间戳（每隔几条显示） -->
+              <view v-if="idx === 0 || shouldShowTime(idx)" class="msg-time">
+                <text class="msg-time__text">{{ formatTime(msg.publishedAt) }}</text>
+              </view>
+
+              <!-- ===== 助手消息（左对齐） ===== -->
+              <view v-if="!isUserMsg(msg)" class="msg-row msg-row--left">
+                <image class="msg-avatar" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
+                <view class="msg-content">
+                  <!-- 纯文本消息 -->
+                  <view v-if="msg.messageType === 'text'" class="bubble bubble--assistant">
+                    <text class="bubble__text" :user-select="true">{{ msg.content }}</text>
+                  </view>
+
+                  <!-- 活动卡片消息 -->
+                  <view v-else-if="isActivityMsg(msg)" class="bubble bubble--assistant bubble--card">
+                    <text class="bubble__text" v-if="msg.cardTag">{{ msg.cardTag }}</text>
+                    <view class="activity-embed" v-if="msg.cardActivity">
+                      <image
+                        class="activity-embed__image"
+                        src="/static/assets/images/activities/activity-1.jpg"
+                        mode="aspectFill"
+                      />
+                      <view class="activity-embed__info">
+                        <text class="activity-embed__title">{{ msg.cardActivity.title }}</text>
+                        <text class="activity-embed__meta">{{ msg.cardActivity.timeText }}</text>
+                        <text class="activity-embed__meta">{{ msg.cardActivity.locationText }}</text>
+                        <view class="activity-embed__participants">
+                          <view class="participant-dot" v-for="i in Math.min(msg.cardActivity.enrollmentCount ?? 0, 4)" :key="i" />
+                          <text class="activity-embed__count">{{ msg.cardActivity.enrollmentCount }}人已报名</text>
+                        </view>
+                      </view>
+                    </view>
+                    <view class="activity-detail-link" @tap="handleActivityTap(msg.cardTargetUrl ?? '/subpackages/discover/activities/index')">
+                      <text class="activity-detail-link__text">查看详情</text>
+                    </view>
+                    <text class="bubble__text bubble__text--mt" v-if="msg.content && msg.content !== msg.cardTag">{{ msg.content }}</text>
+                  </view>
+
+                  <!-- 按钮消息 -->
+                  <view v-else-if="isButtonMsg(msg)" class="msg-buttons">
+                    <view class="action-btn action-btn--primary" @tap="onActionBtnTap('去看看')">
+                      <text class="action-btn__text action-btn__text--primary">去看看</text>
+                    </view>
+                    <view class="action-btn action-btn--default" @tap="onActionBtnTap('稍后再说')">
+                      <text class="action-btn__text">稍后再说</text>
+                    </view>
+                  </view>
+
+                  <!-- 其他文本 -->
+                  <view v-else class="bubble bubble--assistant">
+                    <text class="bubble__text" :user-select="true">{{ msg.content }}</text>
+                  </view>
+                </view>
+              </view>
+
+              <!-- ===== 用户消息（右对齐） ===== -->
+              <view v-else class="msg-row msg-row--right">
+                <view class="msg-content msg-content--right">
+                  <view class="bubble bubble--user">
+                    <text class="bubble__text bubble__text--user">{{ msg.content }}</text>
+                  </view>
+                  <text class="read-receipt">已读</text>
+                </view>
+                <image class="msg-avatar" :src="userAvatar" mode="aspectFit" />
+              </view>
+            </template>
           </view>
-          <view v-for="msg in messages" :key="msg.id" class="assistant-chat__row">
-            <ChatBubble v-if="msg.messageType === 'text'" sender="peer" :peer-avatar="assistantAvatar" kind="text" :body="msg.content" :sent-at="msg.publishedAt" />
-            <ActivityCard v-else :card="toActivityCard(msg)" @tap-card="handleActivityTap" />
+          <view style="height: 20rpx" />
+        </scroll-view>
+      </view>
+
+      <!-- ===== 底部输入栏 ===== -->
+      <view class="input-bar">
+        <view class="input-bar__icon">
+          <view class="voice-btn">
+            <text class="voice-btn__icon">🎤</text>
           </view>
         </view>
-      </scroll-view>
-      <view class="assistant-chat__composer">
-        <view class="assistant-chat__composer-btn"><text>😊</text></view>
-        <view class="assistant-chat__composer-input"><text>对我说点什么吧～</text></view>
-        <view class="assistant-chat__composer-btn"><text>+</text></view>
+        <view class="input-bar__field">
+          <input
+            class="input-bar__input"
+            v-model="inputValue"
+            placeholder="对我说点什么吧～"
+            placeholder-class="input-placeholder"
+            confirm-type="send"
+            @confirm="sendMessage"
+            @focus="inputFocus = true"
+            @blur="inputFocus = false"
+          />
+        </view>
+        <view class="input-bar__icon">
+          <text class="input-icon-text">😊</text>
+        </view>
+        <view class="input-bar__icon input-bar__icon--plus">
+          <view class="plus-btn">
+            <text class="plus-btn__icon">+</text>
+          </view>
+        </view>
       </view>
     </template>
   </view>
 </template>
 
 <style scoped lang="scss">
-.assistant-chat {
-  min-height: 100vh;
-  background: #F4FBF8;
-}
-.assistant-chat__nav {
+/* ===== 导航栏 ===== */
+.nav-bar {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 24rpx 24rpx 20rpx;
-  padding-top: calc(env(safe-area-inset-top) + 24rpx);
-  background: #FFFFFF;
-  border-bottom: 1rpx solid #ECEFF2;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  height: 88rpx;
+  padding-top: env(safe-area-inset-top);
+  background: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+  z-index: 10;
 }
-.assistant-chat__back {
-  width: 64rpx;
-  height: 64rpx;
+.nav-left,
+.nav-right {
+  width: 80rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
-.assistant-chat__back-text {
-  font-size: 56rpx;
+.nav-right {
+  justify-content: flex-end;
+}
+.nav-back-icon {
+  font-size: 42rpx;
   color: #36C99A;
 }
-.assistant-chat__title-wrap {
-  flex: 1;
-}
-.assistant-chat__title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #222222;
-}
-.assistant-chat__desc {
-  display: block;
-  font-size: 22rpx;
-  color: #999999;
-}
-.assistant-chat__more {
+.nav-more-icon {
   font-size: 40rpx;
-  color: #666666;
+  color: #333;
+  letter-spacing: 2rpx;
 }
-.assistant-chat__state {
-  padding: 60rpx 32rpx;
+.nav-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.nav-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.nav-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #222;
+}
+.official-badge {
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+.official-badge__text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.nav-subtitle {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 2rpx;
+}
+
+/* ===== 加载/错误 ===== */
+.state-view {
+  padding: 80rpx 32rpx;
   text-align: center;
-  color: #999999;
+  color: #999;
 }
-.assistant-chat__error {
+.error-text {
   display: block;
   margin-bottom: 20rpx;
   color: #E94D87;
 }
-.assistant-chat__retry {
+.retry-btn {
   display: inline-flex;
   padding: 12rpx 32rpx;
   border-radius: 999rpx;
@@ -237,73 +437,306 @@ onLoad((query) => {
   color: #36C99A;
   font-weight: 600;
 }
-.assistant-chat__scroll {
-  height: calc(100vh - 200rpx - env(safe-area-inset-top));
-}
-.assistant-chat__list {
-  padding: 24rpx 32rpx;
+
+/* ===== 聊天主体 ===== */
+.chat-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  overflow: hidden;
 }
-.assistant-chat__row {
-  display: flex;
-}
-.assistant-chat__intro {
+
+/* ===== 吉祥物英雄区 ===== */
+.hero-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  margin-bottom: 32rpx;
+  padding: 40rpx 40rpx 28rpx;
+  background: linear-gradient(180deg, #e8faf0 0%, #f0fdf5 60%, #f5f6f8 100%);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 }
-.assistant-chat__intro-avatar {
+.hero-deco {
+  position: absolute;
+  font-size: 28rpx;
+  opacity: 0.4;
+}
+.hero-deco-1 {
+  top: 20rpx;
+  left: 60rpx;
+}
+.hero-deco-2 {
+  top: 60rpx;
+  right: 80rpx;
+}
+.hero-deco-3 {
+  bottom: 30rpx;
+  left: 120rpx;
+}
+.hero-deco-4 {
+  bottom: 60rpx;
+  right: 60rpx;
+}
+.hero-mascot {
   width: 160rpx;
   height: 160rpx;
+  border-radius: 50%;
+  margin-bottom: 16rpx;
 }
-.assistant-chat__intro-title {
-  margin-top: 8rpx;
+.hero-greeting {
   font-size: 34rpx;
   font-weight: 700;
-  color: #222222;
+  color: #222;
+  margin-bottom: 8rpx;
 }
-.assistant-chat__intro-desc {
+.hero-desc {
   font-size: 26rpx;
-  color: #62716A;
+  color: #666;
+  line-height: 1.6;
 }
-.assistant-chat__composer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+
+/* ===== 消息滚动区 ===== */
+.chat-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+.chat-list {
+  padding: 20rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+/* ===== 时间戳 ===== */
+.msg-time {
+  display: flex;
+  justify-content: center;
+  padding: 12rpx 0 4rpx;
+}
+.msg-time__text {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* ===== 消息行 ===== */
+.msg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+.msg-row--left {
+  flex-direction: row;
+}
+.msg-row--right {
+  flex-direction: row-reverse;
+}
+.msg-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #e8e8e8;
+}
+.msg-content {
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+.msg-content--right {
+  align-items: flex-end;
+}
+
+/* ===== 气泡 ===== */
+.bubble {
+  border-radius: 24rpx;
+  padding: 20rpx 28rpx;
+}
+.bubble--assistant {
+  background: #fff;
+  border: 1rpx solid #f0f0f0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+.bubble--card {
+  padding-bottom: 12rpx;
+}
+.bubble--user {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+.bubble__text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-line;
+}
+.bubble__text--user {
+  color: #fff;
+}
+.bubble__text--mt {
+  margin-top: 16rpx;
+}
+
+/* ===== 活动卡片嵌入 ===== */
+.activity-embed {
+  margin-top: 16rpx;
+  background: #f9fbfa;
+  border-radius: 16rpx;
+  overflow: hidden;
+  padding: 16rpx;
+}
+.activity-embed__image {
+  width: 100%;
+  height: 200rpx;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+.activity-embed__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.activity-embed__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #222;
+}
+.activity-embed__meta {
+  font-size: 22rpx;
+  color: #888;
+}
+.activity-embed__participants {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 16rpx 24rpx;
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: #FFFFFF;
-  border-top: 1rpx solid #F4F6F5;
+  gap: 8rpx;
+  margin-top: 6rpx;
 }
-.assistant-chat__composer-btn {
+.participant-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  border: 2rpx solid #fff;
+  margin-left: -6rpx;
+  &:first-child {
+    margin-left: 0;
+  }
+}
+.activity-embed__count {
+  font-size: 22rpx;
+  color: #999;
+}
+.activity-detail-link {
+  padding: 8rpx 0 4rpx;
+}
+.activity-detail-link__text {
+  font-size: 26rpx;
+  color: #36C99A;
+  font-weight: 500;
+}
+
+/* ===== 按钮组 ===== */
+.msg-buttons {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+.action-btn {
+  padding: 14rpx 36rpx;
+  border-radius: 40rpx;
+}
+.action-btn--primary {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+.action-btn--default {
+  background: #fff;
+  border: 1rpx solid #ddd;
+}
+.action-btn__text {
+  font-size: 26rpx;
+  color: #666;
+}
+.action-btn__text--primary {
+  color: #fff;
+}
+
+/* ===== 已读 ===== */
+.read-receipt {
+  font-size: 22rpx;
+  color: #bbb;
+  margin-top: 6rpx;
+}
+
+/* ===== 底部输入栏 ===== */
+.input-bar {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1rpx solid #f0f0f0;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+.input-bar__icon {
   width: 64rpx;
   height: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  color: #222222;
+  flex-shrink: 0;
 }
-.assistant-chat__composer-input {
-  flex: 1;
-  height: 72rpx;
+.input-bar__icon--plus {
+  margin-left: 4rpx;
+}
+.input-icon-text {
+  font-size: 40rpx;
+  color: #666;
+}
+.voice-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #f0f0f0;
   display: flex;
   align-items: center;
-  padding: 0 24rpx;
-  border-radius: 18rpx;
-  background: #F4F5F5;
-  font-size: 26rpx;
-  color: #999999;
+  justify-content: center;
+}
+.voice-btn__icon {
+  font-size: 32rpx;
+}
+.plus-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plus-btn__icon {
+  font-size: 36rpx;
+  color: #fff;
+  font-weight: 700;
+}
+.input-bar__field {
+  flex: 1;
+  background: #f5f6f8;
+  border-radius: 36rpx;
+  padding: 14rpx 24rpx;
+}
+.input-bar__input {
+  font-size: 28rpx;
+  color: #333;
+  width: 100%;
+}
+.input-placeholder {
+  color: #bbb;
+  font-size: 28rpx;
 }
 </style>
+```
+
 
 
 

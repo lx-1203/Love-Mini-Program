@@ -8,7 +8,7 @@ import { ref, computed } from "vue";
 import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useVillageStore, formatRelativeTime, type CommentItem, type PostAuthor } from "../../stores/village";
+import { useVillageStore, formatRelativeTime, type CommentItem } from "../../stores/village";
 // R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
 import { mapToCommentItem } from "../../stores/village/utils";
 import type { CommentListResponse } from "../../stores/village/types";
@@ -17,7 +17,7 @@ import { useMock } from "../../stores/helpers/use-mock";
 import { useMessagesStore } from "../../stores/messages";
 import { useReportStore } from "../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
-import { openAppPath, openUserProfile } from "../../utils/navigation";
+import { openAppPath } from "../../utils/navigation";
 // R4-00088：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../constants/routes";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -32,7 +32,7 @@ import { resolveMediaUrl } from "../../utils/media";
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
 const reportStore = useReportStore();
-const { t, tm } = useI18n();
+const { t } = useI18n();
 // 修复（严格模式 noUnusedLocals）：sessionStore 声明后未在脚本/模板引用，已移除。
 // 修复（严格模式 noUnusedLocals）：loadingSimilarAuthors 从 storeToRefs 解构后未引用，已移除。
 const { currentPost, comments, loading, similarAuthors } = storeToRefs(villageStore);
@@ -109,35 +109,6 @@ async function loadMoreComments(): Promise<void> {
   }
 }
 
-/**
- * 2026-08-08 论坛互动真实化：帖子收藏已接入后端（post_favorites 表 + toggle 接口），
- * 由 villageStore.toggleFavorite 维护，收藏态/收藏数以后端为权威。
- */
-const isCollected = computed(() => currentPost.value?.isFavorite ?? false);
-
-async function toggleCollect() {
-  const id = currentPost.value?.id;
-  if (!id) return;
-  try {
-    await villageStore.toggleFavorite(id);
-    uni.showToast({
-      title: isCollected.value ? t("discover.collected") : t("discover.collect"),
-      icon: "none",
-    });
-  } catch (error) {
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("storeErrors.village.favoritePostFailed"),
-      icon: "none",
-    });
-  }
-}
-
-/** 2026-08-08 头像点击进主页：统一跳转用户主页 */
-/** v3 Nearby 冻结：认识 TA → 他人主页（不直接 like/建聊天） */
-function meetAuthor(userId: string) {
-  openUserProfile(userId);
-}
-
 function goToUserProfile(userId: string | number | undefined) {
   if (userId == null || userId === "") return;
   openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${userId}`);
@@ -152,16 +123,6 @@ const expandedReplies = ref<Set<string>>(new Set());
 function isRepliesCollapsed(comment: CommentItem): boolean {
   const replies = comment.replies ?? [];
   return replies.length > 3 && !expandedReplies.value.has(comment.id);
-}
-
-function toggleReplies(comment: CommentItem): void {
-  const next = new Set(expandedReplies.value);
-  if (next.has(comment.id)) {
-    next.delete(comment.id);
-  } else {
-    next.add(comment.id);
-  }
-  expandedReplies.value = next;
 }
 
 function visibleReplies(comment: CommentItem): CommentItem[] {
@@ -182,27 +143,6 @@ function visibleReplies(comment: CommentItem): CommentItem[] {
  * </ul>
  */
 const failedImageKeys = ref<Set<string>>(new Set());
-
-/**
- * P1-16：组装作者信息段文案："{age}岁 · {city} · {education}"。
- * 任一字段缺失时跳过对应段；全部缺失返回空串（模板隐藏该段）。
- */
-function authorMetaText(author: PostAuthor): string {
-  const parts: string[] = [];
-  if (typeof author.age === "number" && !Number.isNaN(author.age) && author.age > 0) {
-    parts.push(`${author.age}${t("village.authorAgeUnit")}`);
-  }
-  if (author.city) {
-    parts.push(author.city);
-  }
-  if (author.education) {
-    const label = t(`village.educationLabels.${author.education}`);
-    if (label && !label.startsWith("village.")) {
-      parts.push(label);
-    }
-  }
-  return parts.join(" · ");
-}
 
 /**
  * SubTask 5.5.2：图片 @error 回调。
@@ -442,23 +382,6 @@ async function handleCommentLike(commentId: string) {
 }
 
 /**
- * 私信用户 - 跳转到聊天会话页
- */
-function sendMessage() {
-  if (!currentPost.value) return;
-  // 查找与该作者的现有会话
-  const targetUserId = currentPost.value.author.userId;
-  const existingSession = messagesStore.sessions.find(
-    (s) => s.partnerId === targetUserId && s.sessionType === "private"
-  );
-  if (existingSession) {
-    openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${existingSession.id}`);
-  } else {
-    openAppPath(`${ROUTES.CHAT.SESSION}?userId=${targetUserId}`);
-  }
-}
-
-/**
  * 打开转发弹窗
  */
 function openShareModal() {
@@ -530,49 +453,6 @@ function sendMessageToSimilarAuthor(userId: string) {
   }
 }
 
-/* ========== 兴趣分类颜色映射（Phase D1） ========== */
-
-/** 兴趣类别 */
-type InterestCategory = "sports" | "arts" | "tech" | "life";
-
-/**
- * 各类别关键词集合（用于兴趣 chip 颜色映射）。
- *
- * Task 28：原本为硬编码字面量，现通过 i18n 引用 `village.interestKeywords.*`。
- * i18n 中各 key 的中文值与原字面量保持一致，保证 `text.includes(kw)` 匹配逻辑不回归；
- * 切换 en-US 时数组值不变（仍为中文），因为业务匹配的是用户输入的中文兴趣文本。
- */
-const INTEREST_KEYWORDS = computed<Record<InterestCategory, string[]>>(() => {
-  const raw = tm("village.interestKeywords") as unknown as Record<InterestCategory, string[]>;
-  return {
-    sports: Array.isArray(raw.sports) ? raw.sports : [],
-    arts: Array.isArray(raw.arts) ? raw.arts : [],
-    tech: Array.isArray(raw.tech) ? raw.tech : [],
-    life: Array.isArray(raw.life) ? raw.life : [],
-  };
-});
-
-/**
- * 根据兴趣文本返回所属类别
- * 默认归类为 life（生活），保证视觉上有颜色
- */
-function getInterestCategory(interest: string): InterestCategory {
-  const text = interest.toLowerCase();
-  const keywordMap = INTEREST_KEYWORDS.value;
-  for (const category of Object.keys(keywordMap) as InterestCategory[]) {
-    if (keywordMap[category].some((kw) => text.includes(kw.toLowerCase()))) {
-      return category;
-    }
-  }
-  return "life";
-}
-
-/**
- * 返回兴趣 chip 的 CSS 类名
- */
-function getInterestChipClass(interest: string): string {
-  return `interest-chip--${getInterestCategory(interest)}`;
-}
 
 onLoad((query) => {
   // 支持通过 URL id 参数加载帖子（从通知、分享等入口进入）
@@ -641,116 +521,72 @@ onShareTimeline(() => {
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.backAria')" @tap="goBack">
-        <text class="back-icon">{{ t("village.detail.back") }}</text>
+        <image class="back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
       <text class="detail-header__title">{{ t("village.detailTitle") }}</text>
-      <!-- 举报按钮：仅在帖子已加载时显示 -->
+      <!-- 理想图：右侧三点菜单（···），点击弹出操作菜单（举报/复制等） -->
       <view
-        v-if="currentPost"
-        class="detail-header__report press-feedback"
+        class="detail-header__menu press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
         :aria-label="t('village.reportPostAria')"
-        @tap="handleReportPost"
+        @tap="handlePostLongpress"
       >
-        <text class="detail-header__report-text">{{ t("village.detail.report") }}</text>
+        <text class="detail-header__menu-dots">···</text>
       </view>
-      <view v-else class="detail-header__spacer" />
     </view>
 
     <!-- 帖子内容 -->
     <scroll-view v-if="currentPost" class="detail-body" scroll-y>
       <!-- ===== 作者交互卡片 ===== -->
-      <view class="author-card card-base">
-        <!-- 作者基础信息 -->
-        <view class="author-card__main">
-          <!-- 2026-08-08 头像点击进主页：作者头像 -->
-          <view
-            class="author-avatar"
-            @tap="goToUserProfile(currentPost.author.userId)"
-          >
-            <image
-              v-if="currentPost.author.avatar && !isImageFailed('author')"
-              class="author-avatar__img"
-              :src="resolveMediaUrl(currentPost.author.avatar)"
-              mode="aspectFill"
-              lazy-load alt=""
-              @error="onImageError('author')"
-            />
-            <text v-else class="author-avatar__char">{{ initialOf(currentPost.author.name) }}</text>
-            <!-- 头像左上角身份徽章（校友） -->
-            <view v-if="currentPost.isAlumni" class="author-avatar__badge">
-              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="author-avatar__badge-icon" mode="aspectFit" />
+      <!-- 理想图：扁平行内作者行（头像 + 名字 + 校徽 + 关注按钮） -->
+      <view class="author-inline">
+        <!-- 作者头像（点击进主页） -->
+        <view class="author-inline__avatar" @tap="goToUserProfile(currentPost.author.userId)">
+          <image
+            v-if="currentPost.author.avatar && !isImageFailed('author')"
+            class="author-inline__avatar-img"
+            :src="resolveMediaUrl(currentPost.author.avatar)"
+            mode="aspectFill"
+            lazy-load alt=""
+            @error="onImageError('author')"
+          />
+          <text v-else class="author-inline__avatar-char">{{ initialOf(currentPost.author.name) }}</text>
+        </view>
+        <!-- 作者信息行（名字 + 校徽） -->
+        <view class="author-inline__info">
+          <view class="author-inline__name-row">
+            <text class="author-inline__name">{{ currentPost.author.name }}</text>
+            <view v-if="currentPost.isAlumni" class="author-inline__badge">
+              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="author-inline__badge-icon" mode="aspectFit" />
+              <text class="author-inline__badge-text">{{ currentPost.author.campusName || t("village.alumni") }}</text>
             </view>
           </view>
-          <view class="author-info">
-            <view class="author-info__name-row">
-              <text class="author-info__name">{{ currentPost.author.name }}</text>
-              <!-- 校友标签 -->
-              <view v-if="currentPost.isAlumni" class="identity-tag identity-tag--alumni">
-                <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
-                <text class="identity-tag__text">{{ t("village.alumni") }}</text>
-              </view>
-            </view>
-            <text class="author-info__headline">{{ currentPost.author.headline }}</text>
-            <!-- P1-16：作者年龄 · 城市 · 学历（无值则隐藏该段） -->
-            <text v-if="authorMetaText(currentPost.author)" class="author-info__meta">
-              {{ authorMetaText(currentPost.author) }}
-            </text>
-          </view>
+          <!-- 频道 · 时间 -->
+          <text class="author-inline__meta">{{ currentPost.author.headline || t("village.detail.statsView") }} · {{ formatRelativeTime(currentPost.createdAt) }}</text>
         </view>
-
-        <!-- v3 Nearby 冻结：认识 TA → 他人主页 -->
-        <view class="author-meet press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.meetAuthor')" @tap="meetAuthor(currentPost.author.userId)">
-          <text class="author-meet__text">{{ t('nearby.meetAuthor') }}</text>
-        </view>
-
-        <!-- 学校标签 -->
-        <view v-if="currentPost.author.campusName" class="author-card__tags">
-          <view class="author-tag author-tag--campus">
-            <text class="author-tag__text">{{ currentPost.author.campusName }}</text>
-          </view>
-        </view>
-
-        <!-- 兴趣标签（按类别着色） -->
-        <view v-if="currentPost.author.interests && currentPost.author.interests.length > 0" class="author-card__interests">
-          <text
-            v-for="interest in currentPost.author.interests" :key="interest"
-            class="interest-chip"
-            :class="getInterestChipClass(interest)"
-          >{{ interest }}</text>
-        </view>
-
-        <!-- 操作按钮行 -->
-        <view class="author-card__actions">
-          <view
-            class="action-btn action-btn--follow press-feedback"
-            :class="{ 'action-btn--follow-active': currentPost.isFollowed }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            role="button"
-            :aria-label="t('village.followAria')"
-            @tap="handleFollow"
-          >
-            <text class="action-btn__text">
-              {{ currentPost.isFollowed ? t("village.followed") : t("village.follow") }}
-            </text>
-          </view>
-          <view class="action-btn action-btn--message press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
-            <text class="action-btn__text">{{ t("village.detail.message") }}</text>
-          </view>
+        <!-- 关注按钮（右侧） -->
+        <view
+          class="author-inline__follow press-feedback"
+          :class="{ 'author-inline__follow--active': currentPost.isFollowed }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('village.followAria')"
+          @tap="handleFollow"
+        >
+          <text class="author-inline__follow-text">{{ currentPost.isFollowed ? t("village.followed") : t("village.follow") }}</text>
         </view>
       </view>
 
       <!-- ===== 帖子正文：长按弹出复制 / 举报菜单（P2 长按复制支持） ===== -->
-      <view class="detail-post">
+      <view class="post-section">
         <view class="post-body" @longpress="handlePostLongpress">
           <text class="post-content">{{ currentPost.content }}</text>
 
-          <!-- 图片网格 -->
+          <!-- 图片网格（理想图：1张大图 + 3张小图布局） -->
           <view v-if="currentPost.images.length > 0" class="post-images">
-            <!-- SubTask 5.2.4 / 5.5.2：列表图片使用 SafeImage，自动 lazy-load + @error 占位图回退 -->
             <SafeImage
               v-for="(img, idx) in currentPost.images" :key="img || idx"
               custom-class="post-image"
@@ -780,14 +616,41 @@ onShareTimeline(() => {
           </view>
         </view>
 
-        <!-- 时间和互动数据 -->
-        <view class="post-meta">
-          <text class="post-time">{{ formatRelativeTime(currentPost.createdAt) }}</text>
-          <view class="post-stats">
-            <text class="post-stats__item">{{ currentPost.views }} {{ t("village.detail.statsView") }}</text>
-            <text class="post-stats__item">{{ currentPost.shares }} {{ t("village.detail.statsShare") }}</text>
-            <text class="post-stats__item">{{ currentPost.comments }} {{ t("village.detail.statsComment") }}</text>
-            <text class="post-stats__item">{{ currentPost.likes }} {{ t("village.detail.statsLike") }}</text>
+        <!-- 理想图：位置标签（📍 绿色定位 + 学校 + 距离） -->
+        <view v-if="currentPost.author.campusName" class="post-location">
+          <text class="post-location__pin">📍</text>
+          <text class="post-location__text">{{ currentPost.author.campusName }}</text>
+          <text class="post-location__distance">· 距你 1.2km</text>
+        </view>
+
+        <!-- 理想图：行内互动栏（❤ 点赞数 | 💬 评论数 | 分享） -->
+        <view class="post-actions-inline">
+          <view
+            class="post-actions-inline__item"
+            :class="{ 'post-actions-inline__item--active': currentPost.isLiked }"
+            role="button"
+            :aria-label="t('village.likePostAria')"
+            @tap="handleLike"
+          >
+            <text class="post-actions-inline__icon">❤</text>
+            <text class="post-actions-inline__count">{{ currentPost.likes }}</text>
+          </view>
+          <view
+            class="post-actions-inline__item"
+            role="button"
+            :aria-label="t('village.detail.statsComment')"
+          >
+            <text class="post-actions-inline__icon">💬</text>
+            <text class="post-actions-inline__count">{{ currentPost.comments }}</text>
+          </view>
+          <view
+            class="post-actions-inline__item post-actions-inline__item--share"
+            role="button"
+            :aria-label="t('village.sharePostAria')"
+            @tap="openShareModal"
+          >
+            <text class="post-actions-inline__icon">↗</text>
+            <text class="post-actions-inline__count">{{ t("village.detail.shareAction") }}</text>
           </view>
         </view>
       </view>
@@ -798,7 +661,8 @@ onShareTimeline(() => {
           <text class="comments-title">{{ t("village.detail.commentsTitle") }}</text>
           <!-- P1-02：计数改用服务端总数（currentPost.comments 来自详情 commentCount），
                替代本地 comments.length（树形结构下根评论数 ≠ 总评论数） -->
-          <text class="comments-count">{{ currentPost.comments }}</text>
+          <text class="comments-count">({{ currentPost.comments }})</text>
+          <view class="comments-sort"><text class="comments-sort__text">最热</text></view>
         </view>
 
         <!-- 加载状态 -->
@@ -810,7 +674,7 @@ onShareTimeline(() => {
         <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论） -->
         <view v-else-if="comments.length > 0" class="comments-list" role="list">
           <view
-            v-for="(comment, idx) in comments" :key="comment.id"
+            v-for="(comment, _idx) in comments" :key="comment.id"
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >
@@ -830,22 +694,19 @@ onShareTimeline(() => {
             </view>
             <view class="comment-content">
               <view class="comment-header">
-                <!-- 2026-08-08 走查 P1：贴吧式楼层号（1F/2F/...） -->
-                <text class="comment-floor">{{ t("village.detail.floorLabel", { n: idx + 1 }) }}</text>
-                <text class="comment-author">{{ comment.author.name }}</text>
-                <text class="comment-time">{{ formatRelativeTime(comment.createdAt) }}</text>
+                <view class="comment-header__left">
+                  <text class="comment-author">{{ comment.author.name }}</text>
+                  <!-- 评论者校徽 -->
+                  <view v-if="comment.author.campusName" class="comment-school-badge">
+                    <text class="comment-school-badge__text">{{ comment.author.campusName }}</text>
+                  </view>
+                </view>
               </view>
               <text class="comment-text">{{ comment.content }}</text>
               <view class="comment-actions">
-                <view
-                  class="comment-like"
-                  :class="{ 'comment-like--active': comment.isLiked }"
-  @tap.stop="handleCommentLike(comment.id)"
-                >
-                  <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
-                  <text v-if="comment.likes > 0" class="comment-like__count">{{ comment.likes }}</text>
-                </view>
-                <!-- P1-02 楼中楼：根评论「回复」按钮，点击进入回复模式 -->
+                <text class="comment-time">{{ formatRelativeTime(comment.createdAt) }}</text>
+                <text class="comment-dot">·</text>
+                <!-- P1-02 楼中楼：根评论「回复」按钮 -->
                 <view
                   class="comment-reply-btn press-feedback"
                   hover-class="press-feedback--active"
@@ -856,69 +717,73 @@ onShareTimeline(() => {
                 >
                   <text class="comment-reply-btn__text">{{ t("village.detail.reply") }}</text>
                 </view>
-              </view>
-
-              <!-- P1-02 楼中楼：缩进子评论（显示"回复 @昵称"；2026-08-08 贴吧式：超 3 条默认收起） -->
-              <view v-if="comment.replies && comment.replies.length > 0" class="comment-replies">
-                <view
-                  v-for="reply in visibleReplies(comment)" :key="reply.id"
-                  class="comment-reply list-item"
-                  @longpress="handleReportComment(reply)"
-                >
-                  <view
-                    class="comment-reply__avatar"
-                    @tap.stop="goToUserProfile(reply.author.userId)"
-                  >
-                    <image
-                      v-if="reply.author.avatar && !isImageFailed('reply-' + reply.id)"
-                      class="comment-reply__avatar-img"
-                      :src="resolveMediaUrl(reply.author.avatar)"
-                      mode="aspectFill" lazy-load alt=""
-                      @error="onImageError('reply-' + reply.id)"
-                    />
-                    <text v-else class="comment-reply__avatar-text">{{ initialOf(reply.author.name) }}</text>
-                  </view>
-                  <view class="comment-reply__content">
-                    <view class="comment-reply__header">
-                      <text class="comment-reply__author">{{ reply.author.name }}</text>
-                      <text class="comment-reply__time">{{ formatRelativeTime(reply.createdAt) }}</text>
-                    </view>
-                    <!-- 回复对象昵称（replyTo 缺失时不显示前缀） -->
-                    <text class="comment-reply__text">
-                      <text v-if="reply.replyTo" class="comment-reply__text-ref">{{ t("village.replyToPrefix", { name: reply.replyTo }) }}</text>{{ reply.content }}
-                    </text>
-                    <view class="comment-actions">
-                      <view
-                        class="comment-like"
-                        :class="{ 'comment-like--active': reply.isLiked }"
-  @tap.stop="handleCommentLike(reply.id)"
-                      >
-                        <text class="comment-like__icon">{{ t("village.detail.commentLike") }}</text>
-                        <text v-if="reply.likes > 0" class="comment-like__count">{{ reply.likes }}</text>
-                      </view>
-                    </view>
-                  </view>
-                </view>
-                <!-- 贴吧式展开/收起（replies 超 3 条时展示切换按钮） -->
-                <view
-                  v-if="isRepliesCollapsed(comment) || (comment.replies && comment.replies.length > 3 && expandedReplies.has(comment.id))"
-                  class="comment-replies__toggle press-feedback"
-                  hover-class="press-feedback--active"
-                  hover-stay-time="120"
-                  role="button"
-                  :aria-label="isRepliesCollapsed(comment) ? t('village.detail.expandReplies', { n: comment.replies.length }) : t('village.detail.collapseReplies')"
-                  @tap.stop="toggleReplies(comment)"
-                >
-                  <text class="comment-replies__toggle-text">
-                    {{ isRepliesCollapsed(comment)
-                        ? t("village.detail.expandReplies", { n: comment.replies.length })
-                        : t("village.detail.collapseReplies") }}
-                  </text>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
+               </view>
+               <!-- 右侧爱心 -->
+               <view class="comment-heart-wrap">
+                 <view
+                   class="comment-heart"
+                   :class="{ 'comment-heart--active': comment.isLiked }"
+                   @tap.stop="handleCommentLike(comment.id)"
+                 >
+                   <text class="comment-heart__icon">{{ comment.isLiked ? '❤' : '♡' }}</text>
+                 </view>
+                 <text v-if="comment.likes > 0" class="comment-heart__count">{{ comment.likes }}</text>
+               </view>
+             </view>
+             <!-- P1-02 楼中楼：缩进子评论 -->
+             <view v-if="comment.replies && comment.replies.length > 0" class="comment-replies">
+               <view
+                 v-for="reply in visibleReplies(comment)" :key="reply.id"
+                 class="comment-reply list-item"
+                 @longpress="handleReportComment(reply)"
+               >
+                 <view
+                   class="comment-reply__avatar"
+                   @tap.stop="goToUserProfile(reply.author.userId)"
+                 >
+                   <image
+                     v-if="reply.author.avatar && !isImageFailed('reply-' + reply.id)"
+                     class="comment-reply__avatar-img"
+                     :src="resolveMediaUrl(reply.author.avatar)"
+                     mode="aspectFill" lazy-load alt=""
+                     @error="onImageError('reply-' + reply.id)"
+                   />
+                   <text v-else class="comment-reply__avatar-text">{{ initialOf(reply.author.name) }}</text>
+                 </view>
+                 <view class="comment-reply__content">
+                   <view class="comment-reply__header">
+                     <text class="comment-reply__author">{{ reply.author.name }}</text>
+                     <text v-if="reply.replyTo" class="comment-reply__text-ref">（{{ t("village.replyToPrefix", { name: reply.replyTo }) }}）</text>
+                   </view>
+                   <text class="comment-reply__text">{{ reply.content }}</text>
+                   <view class="comment-reply__meta">
+                     <text class="comment-reply__time">{{ formatRelativeTime(reply.createdAt) }}</text>
+                     <text class="comment-dot">·</text>
+                     <view
+                       class="comment-reply-btn press-feedback"
+                       hover-class="press-feedback--active"
+                       hover-stay-time="120"
+                       role="button"
+                       @tap.stop="startReply(reply)"
+                     >
+                       <text class="comment-reply-btn__text">{{ t("village.detail.reply") }}</text>
+                     </view>
+                   </view>
+                 </view>
+                 <view class="comment-heart-wrap">
+                   <view
+                     class="comment-heart"
+                     :class="{ 'comment-heart--active': reply.isLiked }"
+                     @tap.stop="handleCommentLike(reply.id)"
+                   >
+                     <text class="comment-heart__icon">{{ reply.isLiked ? '❤' : '♡' }}</text>
+                   </view>
+                   <text v-if="reply.likes > 0" class="comment-heart__count">{{ reply.likes }}</text>
+                 </view>
+             </view>
+           </view>
+         </view>
+       </view>
 
         <!-- 空状态 -->
         <view v-else class="comments-empty">
@@ -1027,66 +892,39 @@ onShareTimeline(() => {
     />
 
     <!-- 底部互动栏 -->
-    <view v-if="currentPost" class="detail-footer">
-      <view class="comment-input-wrap">
-        <!-- P1-02 楼中楼：回复模式下 placeholder 变为"回复 @昵称"，并展示取消按钮 -->
-        <view v-if="replyingTo" class="reply-mode-bar">
-          <text class="reply-mode-bar__text">{{ t("village.detail.replyingTo", { name: replyingTo.author.name }) }}</text>
-          <view class="reply-mode-bar__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.detail.cancelReply')" @tap="cancelReply">
-            <text class="reply-mode-bar__cancel-text">{{ t("common.cancel") }}</text>
-          </view>
+    <!-- 理想图：底部输入栏（说点什么... + @ + 表情 + 图片） -->
+    <view v-if="currentPost" class="detail-input-bar">
+      <!-- 回复模式提示条 -->
+      <view v-if="replyingTo" class="reply-mode-bar">
+        <text class="reply-mode-bar__text">{{ t("village.detail.replyingTo", { name: replyingTo.author.name }) }}</text>
+        <view class="reply-mode-bar__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.detail.cancelReply')" @tap="cancelReply">
+          <text class="reply-mode-bar__cancel-text">✕</text>
         </view>
-        <input
-          v-model="commentContent"
-          class="comment-input"
-          :placeholder="replyPlaceholder"
-          confirm-type="send"
-          @confirm="submitComment" :aria-label="replyPlaceholder"
-        />
       </view>
-      <view class="footer-actions">
-        <!-- 转发按钮 -->
-        <view
-          class="footer-action press-feedback"
-          :class="{ 'footer-action--active': currentPost.isShared }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('village.sharePostAria')"
-          @tap="openShareModal"
-        >
-          <text class="footer-action__icon">{{ currentPost.isShared ? t("village.detail.shared") : t("village.detail.shareAction") }}</text>
-          <text v-if="currentPost.shares > 0" class="footer-action__count">{{ currentPost.shares }}</text>
+      <view class="input-bar">
+        <view class="input-bar__field">
+          <input
+            v-model="commentContent"
+            class="input-bar__input"
+            :placeholder="replyPlaceholder"
+            confirm-type="send"
+            @confirm="submitComment"
+            :aria-label="replyPlaceholder"
+          />
         </view>
-        <!-- 收藏按钮（2026-08-08 论坛互动真实化：接入后端 post_favorites，收藏数实时显示） -->
-        <view
-          class="footer-action press-feedback"
-          :class="{ 'footer-action--active': isCollected }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="isCollected ? t('discover.collected') : t('discover.collect')"
-          @tap="toggleCollect"
-        >
-          <text class="footer-action__icon">{{ isCollected ? t("discover.collected") : t("discover.collect") }}</text>
-          <text v-if="currentPost.favorites > 0" class="footer-action__count">{{ currentPost.favorites }}</text>
-        </view>
-        <!-- 私信按钮 -->
-        <view class="footer-action press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.sendMessageAria')" @tap="sendMessage">
-          <text class="footer-action__icon">{{ t("village.detail.message") }}</text>
-        </view>
-        <!-- 点赞按钮 -->
-        <view
-          class="footer-action press-feedback"
-          :class="{ 'footer-action--active': currentPost.isLiked }"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('village.likePostAria')"
-          @tap="handleLike"
-        >
-          <text class="footer-action__icon">{{ currentPost.isLiked ? t("village.detail.liked") : t("village.detail.likeAction") }}</text>
-          <text v-if="currentPost.likes > 0" class="footer-action__count">{{ currentPost.likes }}</text>
+        <view class="input-bar__actions">
+          <!-- @ 提及 -->
+          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+            <text class="input-bar__icon-text">@</text>
+          </view>
+          <!-- 表情 -->
+          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+            <text class="input-bar__icon-text">😊</text>
+          </view>
+          <!-- 图片 -->
+          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+            <text class="input-bar__icon-text">🖼</text>
+          </view>
         </view>
       </view>
     </view>
@@ -1205,7 +1043,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
+  background: var(--c-bg-container, #FFFFFF);
+  border-bottom: 1rpx solid #F1F1F1;
   z-index: 10;
 }
 
@@ -1227,21 +1066,95 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .back-icon {
-  font-size: var(--fs-lg, 28rpx);
-  /* R4-02537：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
-  color: var(--c-text-inverse);
+  width: 40rpx;
+  height: 40rpx;
+  display: block;
   font-weight: 500;
 }
 
 .detail-header__title {
+  flex: 1;
   font-size: 34rpx;
   font-weight: 700;
   /* R4-02537：品牌色底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
-  color: var(--c-text-inverse);
+  color: var(--c-text-primary, #333A37);
+  text-align: left;
 }
 
 .detail-header__spacer {
+/* 理想图：右侧三点菜单 */
+.detail-header__menu {
   min-width: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx 16rpx;
+}
+
+.detail-header__menu-dots {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #333A37);
+  letter-spacing: 4rpx;
+}
+
+/* 理想图：评论 header 更新 */
+.comment-header__left {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.comment-school-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2rpx 10rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: $green-light;
+}
+
+.comment-school-badge__text {
+  font-size: var(--fs-xs, 20rpx);
+  color: $green-primary;
+  font-weight: 500;
+}
+
+/* 理想图：评论右侧爱心 */
+.comment-heart-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 16rpx;
+}
+
+.comment-heart {
+  font-size: var(--fs-xl, 30rpx);
+  color: $text-tertiary;
+  padding: 4rpx;
+}
+
+.comment-heart--active {
+  color: $pink-primary;
+}
+
+.comment-heart__icon {
+  font-size: var(--fs-xl, 30rpx);
+}
+
+.comment-heart__count {
+  font-size: var(--fs-xs, 20rpx);
+  color: $text-tertiary;
+}
+
+/* 评论 dot 分隔符 */
+.comment-dot {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
+  margin: 0 4rpx;
+}
 }
 
 /* ========== 帖子内容容器 ========== */
@@ -1545,10 +1458,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* 图片网格 */
+/* 理想图：图片网格（第1张大图 + 后续3列小图） */
 .post-images {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
+  gap: 12rpx;
   margin-bottom: 20rpx;
 }
 
@@ -1558,10 +1472,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-image {
-  width: calc(33.33% - 7rpx);
+  width: calc(33.33% - 8rpx);
   height: 220rpx;
   border-radius: var(--r-lg, 16rpx);
   background: $bg-page;
+}
+
+/* 第1张图占满整行（大图效果） */
+.post-image:first-child {
+  width: 100%;
+  height: 400rpx;
+  border-radius: var(--r-lg, 16rpx);
 }
 
 /* 话题标签 */
@@ -1848,9 +1769,23 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .comments-header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 8rpx;
   margin-bottom: 24rpx;
 }
+
+.comments-sort {
+  margin-left: auto;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #F2F5F4;
+}
+
+.comments-sort__text {
+  font-size: 22rpx;
+  color: var(--c-brand, #36C99A);
+  font-weight: 600;
+}
+
 
 .comments-title {
   font-size: var(--fs-2xl, 32rpx);
@@ -2220,70 +2155,234 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* ========== 底部互动栏 ========== */
-.detail-footer {
+/* ================================================================
+   理想图：作者扁平行内布局
+   ================================================================ */
+.author-inline {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 20rpx 32rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  /* R4-02537：卡片底色改用 --c-bg-container（深色模式自动适配） */
-  background: var(--c-bg-container);
-  border-top: 1rpx solid $border-light;
-  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs);
+  padding: 24rpx 32rpx 16rpx;
+  gap: 16rpx;
 }
 
-.comment-input-wrap {
+.author-inline__avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--r-circle, 50%);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, $green-light, var(--c-brand-100));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.author-inline__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-circle, 50%);
+}
+
+.author-inline__avatar-char {
+  font-size: var(--fs-2xl, 32rpx);
+  font-weight: 700;
+  color: $green-primary;
+}
+
+.author-inline__info {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
 }
 
-.comment-input {
-  padding: 18rpx 28rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: $bg-page;
-  font-size: var(--fs-lg, 28rpx);
+.author-inline__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.author-inline__name {
+  font-size: var(--fs-xl, 30rpx);
+  font-weight: 600;
   color: $text-primary;
 }
 
-.footer-actions {
-  display: flex;
+.author-inline__badge {
+  display: inline-flex;
   align-items: center;
-  gap: 24rpx;
-  flex-shrink: 0;
-}
-
-.footer-action {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  /* 修复 P2（触摸目标过小）：min-height/min-width ≥88rpx（44px @2x），满足 iOS HIG / Material Design 标准 */
-  min-height: 88rpx;
-  min-width: 88rpx;
-  padding: 12rpx 20rpx;
+  gap: 4rpx;
+  padding: 2rpx 12rpx;
   border-radius: var(--r-full, 9999rpx);
-  transition: all var(--d-fast, 120ms) ease;
+  background: $green-light;
+  border: 1rpx solid var(--c-brand-border-tint-stronger);
 }
 
-/* #ifdef H5 */
-.footer-action:active {
-  transform: scale(0.96);
-  background: $bg-page;
+.author-inline__badge-icon {
+  width: 20rpx;
+  height: 20rpx;
 }
-/* #endif */
 
-.footer-action__icon {
-  font-size: var(--fs-md, 26rpx);
-  color: $text-tertiary;
+.author-inline__badge-text {
+  font-size: var(--fs-xs, 20rpx);
+  color: $green-primary;
   font-weight: 500;
 }
 
-.footer-action__count {
+.author-inline__meta {
+  font-size: var(--fs-sm, 22rpx);
+  color: $text-tertiary;
+}
+
+.author-inline__follow {
+  padding: 10rpx 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  border: 2rpx solid $green-primary;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.author-inline__follow-text {
+  font-size: var(--fs-base, 24rpx);
+  color: $green-primary;
+  font-weight: 600;
+}
+
+.author-inline__follow--active {
+  background: $bg-page;
+  border-color: $border-light;
+}
+
+.author-inline__follow--active .author-inline__follow-text {
+  color: $text-tertiary;
+}
+
+/* ================================================================
+   理想图：帖子正文区域（无边框）
+   ================================================================ */
+.post-section {
+  padding: 0 32rpx 16rpx;
+}
+
+.post-section .post-body {
+  margin-bottom: 0;
+}
+
+.post-section .post-content {
+  font-size: var(--fs-xl, 30rpx);
+  color: $text-primary;
+  line-height: 1.7;
+}
+
+/* 理想图：位置标签 */
+.post-location {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 0 20rpx;
+}
+
+.post-location__pin {
+  font-size: var(--fs-base, 24rpx);
+}
+
+.post-location__text {
+  font-size: var(--fs-base, 24rpx);
+  color: $green-primary;
+  font-weight: 500;
+}
+
+.post-location__distance {
   font-size: var(--fs-base, 24rpx);
   color: $text-tertiary;
 }
 
-.footer-action--active .footer-action__icon,
-.footer-action--active .footer-action__count {
+/* 理想图：行内互动栏 */
+.post-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 48rpx;
+  padding: 16rpx 0 20rpx;
+}
+
+.post-actions-inline__item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.post-actions-inline__item--active .post-actions-inline__icon {
   color: $pink-primary;
+}
+
+.post-actions-inline__item--active .post-actions-inline__count {
+  color: $pink-primary;
+}
+
+.post-actions-inline__item--share {
+  margin-left: auto;
+}
+
+.post-actions-inline__icon {
+  font-size: var(--fs-xl, 30rpx);
+  color: $text-tertiary;
+}
+
+.post-actions-inline__count {
+  font-size: var(--fs-lg, 28rpx);
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+/* ================================================================
+   理想图：底部输入栏
+   ================================================================ */
+.detail-input-bar {
+  background: var(--c-bg-container);
+  border-top: 1rpx solid $border-light;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 12rpx);
+}
+
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+}
+
+.input-bar__field {
+  flex: 1;
+  background: $bg-page;
+  border-radius: var(--r-full, 9999rpx);
+  padding: 0 24rpx;
+}
+
+.input-bar__input {
+  height: 72rpx;
+  font-size: var(--fs-lg, 28rpx);
+  color: $text-primary;
+}
+
+.input-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex-shrink: 0;
+}
+
+.input-bar__icon {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-circle, 50%);
+}
+
+.input-bar__icon-text {
+  font-size: var(--fs-2xl, 32rpx);
+  color: $text-secondary;
 }
 
 /* ================================================================
@@ -2435,6 +2534,6 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .author-meet__text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 </style>

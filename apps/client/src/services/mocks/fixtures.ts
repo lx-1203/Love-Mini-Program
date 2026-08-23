@@ -146,6 +146,7 @@ let session: UserSession = {
  * 这些过滤字段不暴露到视图层，仅在 mock 数据内部使用。
  */
 interface MockRecommendedPersonInternal extends RecommendedPerson {
+  gender?: string;
   relationshipStatus?: string;
   hometownProvince?: string;
   hometownCity?: string;
@@ -166,6 +167,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
   return [
     {
       id: 4001,
+      gender: "female",
       name: t("mockData.recommendedPeople.name1"),
       initials: "林",
       headline: t("mockData.recommendedPeople.headline1"),
@@ -222,6 +224,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4002,
+      gender: "male",
       name: t("mockData.recommendedPeople.name2"),
       initials: "夏",
       headline: t("mockData.recommendedPeople.headline2"),
@@ -279,6 +282,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4003,
+      gender: "male",
       name: t("mockData.recommendedPeople.name3"),
       initials: "阿",
       headline: t("mockData.recommendedPeople.headline3"),
@@ -334,6 +338,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4004,
+      gender: "female",
       name: t("mockData.recommendedPeople.name4"),
       initials: "小",
       headline: t("mockData.recommendedPeople.headline4"),
@@ -390,6 +395,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4005,
+      gender: "female",
       name: t("mockData.recommendedPeople.name5"),
       initials: "L",
       headline: t("mockData.recommendedPeople.headline5"),
@@ -439,10 +445,13 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       expectedPartner: "想遇到一个愿意听我讲故事的男生",
       allowMessage: false,
       ipLocation: "湖北 · 武汉",
-      recentPosts: [],
+      recentPosts: [
+        { id: "p4005-1", content: "最近在读《夜航西飞》，有些句子想和人分享。", likes: 34, comments: 8, isLiked: false, createdAt: "2026-07-19T14:00:00Z" },
+      ],
     },
     {
       id: 4006,
+      gender: "female",
       name: t("mockData.recommendedPeople.name6"),
       initials: "草",
       headline: t("mockData.recommendedPeople.headline6"),
@@ -498,6 +507,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4007,
+      gender: "male",
       name: t("mockData.recommendedPeople.name7"),
       initials: "苏",
       headline: t("mockData.recommendedPeople.headline7"),
@@ -553,6 +563,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4008,
+      gender: "female",
       name: t("mockData.recommendedPeople.name8"),
       initials: "周",
       headline: t("mockData.recommendedPeople.headline8"),
@@ -600,6 +611,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
     },
     {
       id: 4009,
+      gender: "male",
       name: t("mockData.recommendedPeople.name9"),
       initials: "林",
       headline: t("mockData.recommendedPeople.headline9"),
@@ -1014,7 +1026,7 @@ function buildHomeDashboard(): HomeDashboard {
         certified: true,
         online: true,
         matchScore: 92,
-        photoUrl: "/static/assets/images/people/person-01.webp",
+        photoUrl: "/static/assets/images/people/person-01.png",
         constellation: "双鱼座",
       },
       loveProgress: {
@@ -1022,7 +1034,7 @@ function buildHomeDashboard(): HomeDashboard {
         total: 4,
         steps: [
           { id: "profile", title: "完善资料", description: "让更多人了解你", completed: true, action: "profile" },
-          { id: "like", title: "今日心动", description: "认识一位心动的人", completed: true, action: "discover" },
+          { id: "discover", title: "认识新人", description: "认识一位心动的人", completed: true, action: "discover" },
           { id: "whisper", title: "回复悄悄话", description: "回复一条悄悄话", completed: false, action: "messages" },
           { id: "interest", title: "参与兴趣互动", description: "参与一个兴趣圈", completed: false, action: "nearby" },
         ],
@@ -1035,21 +1047,21 @@ function buildHomeDashboard(): HomeDashboard {
         { id: 4, name: "美食圈", icon: "🍜", memberCount: 9210, joined: false },
       ],
       nearbyPeople: [
-        { userId: 4001, name: "林晓", distanceText: "1.2km", avatarUrl: "/static/assets/images/people/person-01.webp", online: true, commonInterests: ["摄影"] },
-        { userId: 4002, name: "夏言", distanceText: "1.5km", avatarUrl: "/static/assets/images/people/person-02.webp", online: true, commonInterests: ["建筑"] },
-        { userId: 4003, name: "阿辰", distanceText: "1.8km", avatarUrl: "/static/assets/images/people/person-03.webp", online: false, commonInterests: ["日语"] },
-        { userId: 4004, name: "小满", distanceText: "2.1km", avatarUrl: "/static/assets/images/people/person-04.webp", online: false, commonInterests: ["编程"] },
-        { userId: 4005, name: "Luna", distanceText: "2.8km", avatarUrl: "/static/assets/images/people/person-05.webp", online: false, commonInterests: ["新闻"] },
-        { userId: 4006, name: "草莓", distanceText: "3.1km", avatarUrl: "/static/assets/images/people/person-06.webp", online: false, commonInterests: ["法学"] },
-        { userId: 4007, name: "苏奈", distanceText: "3.6km", avatarUrl: "/static/assets/images/people/person-07.webp", online: false, commonInterests: ["医学"] },
-        { userId: 4008, name: "周岚", distanceText: "4.1km", avatarUrl: "/static/assets/images/people/person-08.webp", online: false, commonInterests: ["电影"] },
-        { userId: 4009, name: "林晚", distanceText: "4.5km", avatarUrl: "/static/assets/images/people/person-09.webp", online: false, commonInterests: ["摄影"] },
+        { userId: 4001, name: "林晓", distanceText: "1.2km", avatarUrl: "/static/assets/images/people/person-01.png", online: true, commonInterests: ["摄影"] },
+        { userId: 4002, name: "夏言", distanceText: "1.5km", avatarUrl: "/static/assets/images/people/person-02.png", online: true, commonInterests: ["建筑"] },
+        { userId: 4003, name: "阿辰", distanceText: "1.8km", avatarUrl: "/static/assets/images/people/person-03.png", online: false, commonInterests: ["日语"] },
+        { userId: 4004, name: "小满", distanceText: "2.1km", avatarUrl: "/static/assets/images/people/person-04.png", online: false, commonInterests: ["编程"] },
+        { userId: 4005, name: "Luna", distanceText: "2.8km", avatarUrl: "/static/assets/images/people/person-05.png", online: false, commonInterests: ["新闻"] },
+        { userId: 4006, name: "草莓", distanceText: "3.1km", avatarUrl: "/static/assets/images/people/person-06.png", online: false, commonInterests: ["法学"] },
+        { userId: 4007, name: "苏奈", distanceText: "3.6km", avatarUrl: "/static/assets/images/people/person-07.png", online: false, commonInterests: ["医学"] },
+        { userId: 4008, name: "周岚", distanceText: "4.1km", avatarUrl: "/static/assets/images/people/person-08.png", online: false, commonInterests: ["电影"] },
+        { userId: 4009, name: "林晚", distanceText: "4.5km", avatarUrl: "/static/assets/images/people/person-09.png", online: false, commonInterests: ["摄影"] },
       ],
       communityPosts: [
         {
           id: 1,
           authorName: "林晓",
-          authorAvatar: "/static/assets/images/people/person-01.webp",
+          authorAvatar: "/static/assets/images/people/person-01.png",
           circleName: "摄影圈",
           timeText: "15 分钟前",
           content: "今天在颐和园拍到超美的落日，光影太治愈了～",
@@ -1356,7 +1368,7 @@ export const mockFixtures = {
       certified: true,
       online: true,
       matchScore: 90,
-      photoUrl: "/static/assets/images/people/person-02.webp",
+      photoUrl: "/static/assets/images/people/person-02.png",
       constellation: "双子座",
     });
   },

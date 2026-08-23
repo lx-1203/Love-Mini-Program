@@ -28,7 +28,7 @@ public class HomeFeedFallbackProvider {
             true,
             true,
             92,
-            "/static/assets/images/people/person-01.webp",
+            "/static/assets/images/people/person-01.png",
             null // V2026.08.17.0001 星座（mock/fallback 未维护）
         );
     }
@@ -44,11 +44,11 @@ public class HomeFeedFallbackProvider {
 
     public List<NearbyPersonSummaryView> fallbackNearbyPeople() {
         return List.of(
-            new NearbyPersonSummaryView(10001L, "林晓", "1.2km", "/static/assets/images/people/person-01.webp", true, List.of("摄影")),
-            new NearbyPersonSummaryView(10002L, "夏言", "1.5km", "/static/assets/images/people/person-02.webp", true, List.of("建筑")),
-            new NearbyPersonSummaryView(10003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.webp", false, List.of("日语")),
-            new NearbyPersonSummaryView(10004L, "小满", "2.1km", "/static/assets/images/people/person-04.webp", false, List.of("编程")),
-            new NearbyPersonSummaryView(10005L, "Luna", "2.8km", "/static/assets/images/people/person-05.webp", false, List.of("新闻"))
+            new NearbyPersonSummaryView(10001L, "林晓", "1.2km", "/static/assets/images/people/person-01.png", true, List.of("摄影")),
+            new NearbyPersonSummaryView(10002L, "夏言", "1.5km", "/static/assets/images/people/person-02.png", true, List.of("建筑")),
+            new NearbyPersonSummaryView(10003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.png", false, List.of("日语")),
+            new NearbyPersonSummaryView(10004L, "小满", "2.1km", "/static/assets/images/people/person-04.png", false, List.of("编程")),
+            new NearbyPersonSummaryView(10005L, "Luna", "2.8km", "/static/assets/images/people/person-05.png", false, List.of("新闻"))
         );
     }
 
@@ -57,7 +57,7 @@ public class HomeFeedFallbackProvider {
             new CommunityPostSummaryView(
                 1L,
                 "林晓",
-                "/static/assets/images/people/person-01.webp",
+                "/static/assets/images/people/person-01.png",
                 "摄影圈",
                 "15 分钟前",
                 "今天在颐和园拍到超美的落日，光影太治愈了～",

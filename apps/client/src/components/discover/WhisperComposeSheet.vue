@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * WhisperComposeSheet — 悄悄话（付费留言）弹层（v3.1 契约 §9）
  * ≤60 字 · 200 交友币（= 200 分，服务端定价）· 幂等 clientRequestId · 文案「已送达，优先展示给 TA」
@@ -160,7 +160,7 @@ async function handleSend() {
   box-sizing: border-box;
   border-radius: 18rpx;
   background: var(--c-bg-page, #F7FAF9);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   font-size: 26rpx;
   color: var(--c-text-primary, #222222);
 }
@@ -188,3 +188,4 @@ async function handleSend() {
   color: #ffffff;
 }
 </style>
+

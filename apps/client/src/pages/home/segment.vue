@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 细分发现页（v3.1 契约 01 发现 → 快捷入口）
  * ?type=online|sameSchool|sameInterest|nearby|newcomer|highMatch
@@ -198,7 +198,7 @@ function openProfile(userId: string) {
   padding: 20rpx 24rpx;
   background: var(--c-bg-container, #ffffff);
   border-radius: 18rpx;
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .segment-row__avatar {
@@ -244,5 +244,6 @@ function openProfile(userId: string) {
   color: var(--c-text-quaternary, #C8CFCD);
 }
 </style>
+
 
 

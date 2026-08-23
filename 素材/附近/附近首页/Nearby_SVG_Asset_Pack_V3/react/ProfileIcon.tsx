@@ -1,0 +1,2 @@
+import type {SVGProps} from "react";
+export function ProfileIcon(props:SVGProps<SVGSVGElement>){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="8" r="3"/><path d="M5 20c.4-4 2.7-6 7-6s6.6 2 7 6"/></svg>}

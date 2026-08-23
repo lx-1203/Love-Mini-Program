@@ -85,6 +85,6 @@ function handleShare() {
 <style scoped lang="scss">
 .success-page {
   min-height: 100%;
-  background: linear-gradient(180deg, #fff0f6 0%, #f7faf9 60%);
+  background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
 }
 </style>

@@ -1,0 +1,2 @@
+import type {SVGProps} from "react";
+export function CheckIcon(props:SVGProps<SVGSVGElement>){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m4 12 5 5 11-11"/></svg>}

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 附近的人 / 同城的人（v3 Nearby 冻结 · 单页双态）
  * ?scope=nearby|city
@@ -207,7 +207,7 @@ function switchScope(next: "nearby" | "city") {
   align-items: center;
   justify-content: center;
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .people-header__back-text {
@@ -240,12 +240,12 @@ function switchScope(next: "nearby" | "city") {
   align-items: center;
   justify-content: center;
   background: var(--c-bg-container, #FFFFFF);
-  border: 2rpx solid var(--c-line, #ECEFF2);
+  border: 2rpx solid var(--c-line, #EEF2F0);
 }
 
 .people-tab--active {
   border-color: var(--c-brand-500, #36C99A);
-  background: var(--c-brand-50, #E6F8F1);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .people-tab__text {
@@ -305,7 +305,7 @@ function switchScope(next: "nearby" | "city") {
   margin-bottom: 16rpx;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: 20rpx;
-  border: 1rpx solid var(--c-line, #ECEFF2);
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .people-row__avatar {
@@ -373,4 +373,6 @@ function switchScope(next: "nearby" | "city") {
   height: 48rpx;
 }
 </style>
+
+
 

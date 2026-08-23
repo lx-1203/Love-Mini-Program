@@ -267,6 +267,10 @@ export interface HomeFeedView {
     visitors: number;
     newMatches: number;
     totalUnread: number;
+    likesAvatars?: string[];
+    whisperAvatars?: string[];
+    visitorAvatars?: string[];
+    matchAvatars?: string[];
   };
   interestRecommendations: Array<{ id: number; name: string; icon: string; memberCount: number; joined: boolean }>;
   nearbyPeople: Array<{ userId: number; name: string; distanceText: string; avatarUrl: string; online: boolean; commonInterests: string[] }>;

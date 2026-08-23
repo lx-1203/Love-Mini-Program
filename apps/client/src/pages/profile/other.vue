@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 他人主页详情页（薄页面）。
  * 页面只保留业务逻辑（取 userId、访客记录、喜欢/打招呼/心动卡/举报拉黑），
@@ -370,13 +370,13 @@ onLoad((query) => {
 
 .other-header__back-arrow {
   font-size: 52rpx;
-  color: #222222;
+  color: #333A37;
   line-height: 1;
 }
 
 .other-header__more-dots {
   font-size: 36rpx;
-  color: #222222;
+  color: #333A37;
   line-height: 1;
 }
 

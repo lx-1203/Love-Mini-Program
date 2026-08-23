@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><style>
+:root{
+  --ink:#1a1a1a; --brand:#1F3864; --brand2:#2E5496; --brand3:#8FAADC;
+  --gray:#595959; --line:#BFBFBF; --band:#EEF1F8;
+}
+body{ font-family:"宋体","SimSun",serif; color:var(--ink); font-size:10.5pt; line-height:1.5; }
+h1{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:20pt; font-weight:bold; color:var(--brand); text-align:center; margin:18pt 0 6pt; }
+h2{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:14pt; font-weight:bold; color:var(--brand2); border-bottom:1.5pt solid var(--brand3); padding-bottom:3pt; margin:16pt 0 6pt; }
+h3{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:12pt; font-weight:bold; color:var(--brand2); margin:12pt 0 4pt; }
+h4{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:11pt; font-weight:bold; color:var(--gray); margin:10pt 0 3pt; }
+p{ margin:4pt 0; text-align:justify; }
+ul,ol{ margin:4pt 0 4pt 18pt; }
+li{ margin:2pt 0; }
+strong{ color:var(--brand); }
+code{ font-family:"Consolas","Courier New",monospace; background:#F2F2F2; padding:0 3pt; border-radius:2pt; font-size:9.5pt; }
+pre.codeblock{ font-family:"Consolas","Courier New",monospace; background:#F7F9FC; border:0.75pt solid var(--line); padding:8pt; border-radius:3pt; font-size:9pt; line-height:1.35; white-space:pre-wrap; }
+blockquote{ border-left:3pt solid var(--brand3); background:var(--band); margin:6pt 0; padding:4pt 10pt; color:var(--gray); }
+p.note{ border-left:3pt solid var(--brand3); background:var(--band); margin:6pt 0; padding:4pt 10pt; color:var(--gray); font-size:9.5pt; }
+table.doctable{ border-collapse:collapse; width:100%; margin:6pt 0; font-size:9.5pt; }
+table.doctable th{ background:var(--brand2); color:#fff; font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-weight:bold; border:0.75pt solid var(--brand2); padding:4pt 6pt; text-align:left; }
+table.doctable td{ border:0.75pt solid var(--line); padding:4pt 6pt; vertical-align:top; }
+table.doctable tbody tr:nth-child(even){ background:#F5F7FB; }
+ul.toc{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:11pt; line-height:1.9; }
+ul.toc li{ list-style:none; }
+.cover{ text-align:center; padding:60pt 0 0; }
+.cover .title{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:26pt; font-weight:bold; color:var(--brand); }
+.cover .sub{ font-family:"微软雅黑","Microsoft YaHei",sans-serif; font-size:13pt; color:var(--brand2); margin-top:10pt; }
+.cover .meta{ font-size:10.5pt; color:var(--gray); margin-top:40pt; line-height:1.8; }
+.section-num{}
+</style></head>
+<body>
+<section role="cover">
+  <div class="cover">
+    <div class="title">校园恋爱小程序「寻觅」</div>
+    <div class="sub">投资人立项书 · Investor Pitch</div>
+    <div class="meta">
+      文档版本：v2.0<br/>
+      编制日期：2026-08-20<br/>
+      文档定位：面向投资人 / 决策方的项目立项与融资说明
+    </div>
+  </div>
+</section>
+<section role="body" data-page-restart="1">
+  <h2>目录</h2>
+  <ul class='toc'><li>文档说明</li><li>一、执行摘要</li><li>二、项目概述</li><li>三、市场背景与用户痛点</li><li>四、产品与功能体系</li><li>五、商业模式</li><li>六、技术可行性（简要）</li><li>七、发展路线图与里程碑</li><li>八、团队</li><li>九、结论</li></ul>
+  <h1>校园恋爱小程序「寻觅」（Xunmi）立项书</h1>
+<table class="doctable">
+<thead><tr><th>项目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>文档名称</td><td>校园恋爱小程序「寻觅」（Xunmi）立项书</td></tr>
+<tr><td>文档版本</td><td>v1.0</td></tr>
+<tr><td>编制日期</td><td>2026-08-20</td></tr>
+<tr><td>文档定位</td><td>面向投资人 / 决策方的项目立项与融资说明</td></tr>
+<tr><td>编制依据</td><td>项目 CHANGELOG、2026-08-20 研发进展报告、已发布版本记录</td></tr>
+</tbody></table>
+<h2>文档说明</h2>
+<p>本文档基准日为 <strong>2026-08-20</strong>，定位为<strong>投资人 / 决策方视角</strong>的项目立项书，聚焦项目价值、市场机会、商业模式、当前成熟度与发展路线，供融资沟通与立项决策使用。</p>
+<ul><li><strong>事实段</strong>（已发布版本、当前研发状态、技术架构）来源于项目 <code>CHANGELOG</code> 与 2026-08-20 研发进展报告，均为已核实事实。</li><li><strong>计划段</strong>（融资节奏、上线时点、里程碑完成日期）为目标值，标注「计划目标，待干系人确认」。</li><li>市场规模、行业基准等采用艾媒咨询、教育部公报、公开招股书等权威来源并注明出处，<strong>不编造任何无来源数字与法规编号</strong>。</li></ul>
+<h2>一、执行摘要</h2>
+<p><strong>「寻觅」（Xunmi）是一款面向高校在校学生的微信小程序，专注于校园场景下的恋爱匹配与破冰社交。</strong> 项目已完成从 0 到 1 的产品研发，并于 2026-08-20 完成像素级 UI 一致性重构，整体研发已达<strong>可发布候选（Release Candidate）标准</strong>。</p>
+<p><strong>市场机会（真实数据）</strong>：教育部《2024 年全国教育事业发展统计公报》显示全国高等教育在学总规模 <strong>4846 万人</strong>；艾媒咨询显示 2025 年中国互联网婚恋交友市场规模 <strong>103.5 亿元</strong>（首破百亿）；灼识咨询援引 2024 年中国在线情感社交市场 <strong>226 亿元</strong>、预计 2029 年达 <strong>757 亿元</strong>——校园垂直恋爱赛道兼具规模基数与供给空白。</p>
+<p>核心亮点：</p>
+<ol><li><strong>产品完整度高</strong>——已建成覆盖"发现推荐 → 匹配 → 破冰沟通 → 社区沉淀 → 商业化"的完整功能链路，包含发现、匹配中心、悄悄话、附近的人、村落社区、活动、钱包等 15 类核心模块。</li><li><strong>商业化路径清晰</strong>——已形成以"交友币（coins）+ 悄悄话付费留言"为核心的闭环变现通道，计费具备幂等与退款保障；VIP 权益与聊天红包经决策已分别暂缓、下线，路线聚焦。</li><li><strong>技术底座扎实</strong>——采用 uni-app + Vue 3 + TypeScript 前端、Spring Boot 3 + Java 17 后端、MySQL 8 + Redis 7 数据层、Docker Compose 部署与 Prometheus / Grafana 监控，架构现代、可运维。</li><li><strong>临门一脚明确</strong>——剩余工作集中于真机验收、少量组件与动效补齐、后端接口对齐与微信审核提交，路线清晰，剩余为发布前的确定性工作项，确切上线时点取决于真机验收进度与微信审核时长。</li></ol>
+<p><strong>本轮诉求预览</strong>：以本立项书确认项目立项与发布准备节奏，并启动融资沟通。</p>
+<h2>二、项目概述</h2>
+<h3>2.1 项目简介</h3>
+<table class="doctable">
+<thead><tr><th>项目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>项目名称</td><td>校园恋爱小程序「寻觅」（Xunmi）</td></tr>
+<tr><td>项目类型</td><td>微信小程序 · 校园垂直社交 / 恋爱匹配</td></tr>
+<tr><td>载体平台</td><td>微信小程序（依托微信登录与支付生态）</td></tr>
+<tr><td>建设单位</td><td>南京皓瀚星网络科技有限公司</td></tr>
+<tr><td>项目负责人</td><td>一人统筹（产品 / 研发 / 运营负责人）</td></tr>
+<tr><td>当前版本</td><td>v3.1（设计契约重构完成，达发布候选标准）</td></tr>
+</tbody></table>
+<h3>2.2 当前研发状态（已核实事实）</h3>
+<p>项目已完成从原型到发布候选的完整研发，当前版本 <strong>v3.1</strong> 已完成设计契约重构与全量像素级 UI 一致性重构（2026-08-20），<strong>整体研发已达可发布候选（Release Candidate）标准</strong>，研发侧风险已大幅收敛。代码规模上已建成 65 张数据表、50+ 后端接口、15 类核心功能模块，并配套 API 契约与运维监控体系。</p>
+<h3>2.3 品牌定位与差异化</h3>
+<p><strong>「寻觅」相信：校园恋爱，值得被认真而温柔地对待。</strong></p>
+<p>我们不做泛社交的流量生意，而是深耕高校这一高信任场景，用产品把"想认识人"变成"自然地认识对的人"。</p>
+<ul><li><strong>真实校园，信任为先</strong>：限定在校场景 + 微信身份，过滤虚假与骚扰，让每一次匹配都更可信——这是「寻觅」的信任底色。</li><li><strong>破冰有温度</strong>：以悄悄话付费留言、临时匿名聊天、附近的人，把"开口难"变成"自然搭讪"，降低陌生人首轮触达门槛。</li><li><strong>关系能沉淀</strong>：村落（校园社区）、活动、兴趣把一次心动延伸为持续连接与日常留存，而非"用完即走"的快餐匹配。</li><li><strong>质感即品牌</strong>：统一 Design Token 设计契约，全量页面视觉一致、细腻克制，以"认真恋爱"的调性传递品牌质感。</li></ul>
+<h2>三、市场背景与用户痛点</h2>
+<h3>3.1 市场基数（真实数据）</h3>
+<ul><li><strong>高校用户池</strong>：教育部《2024 年全国教育事业发展统计公报》显示，全国各种形式高等教育在学总规模 <strong>4846 万人</strong>，普通 / 职业本专科在校生 <strong>3891 万</strong>，高等学校 3119 所，高等教育毛入学率 60.8%——规模庞大且天然高频使用微信。</li><li><strong>婚恋社交大盘</strong>：艾媒咨询数据，2025 年中国互联网婚恋交友市场规模 <strong>103.5 亿元</strong>（同比 +5.61%，首次破百亿）；灼识咨询援引，2024 年中国在线情感社交市场 <strong>226 亿元</strong>、用户约 2.8 亿，预计 2029 年达 <strong>757 亿元</strong>。</li><li><strong>需求刚性</strong>：公开报道显示，2024 年我国单身人口约 <strong>2.4 亿</strong>（占总人口 17%），20–40 岁适婚人群约 <strong>3 亿</strong>，"催婚焦虑"持续放大情感社交需求。</li></ul>
+<h3>3.2 校园垂直的真实需求验证</h3>
+<ul><li><strong>校园案例</strong>：上海交大校内恋爱匹配平台 SJTU Date 于 2025-03 上线，一周注册超 7000 人、首轮 2400 人成功匹配，印证高校恋爱需求强、爆发快、信任门槛低（同校邮箱注册）。</li><li><strong>供给空白</strong>：泛社交平台（陌陌 / 探探 / Soul）校园身份弱、信任成本高；高学历婚恋平台（青藤之恋）主要面向毕业生 / 研究生；"可信同校 + 轻关系破冰"尚未被结构化满足——这正是「寻觅」的切入位。</li></ul>
+<h3>3.3 核心痛点（由产品功能反证）</h3>
+<table class="doctable">
+<thead><tr><th>痛点</th><th>行业佐证</th><th>对应产品解法</th></tr></thead>
+<tbody>
+<tr><td>陌生人首轮触达门槛高、易冷场</td><td>艾媒：42% 用户担忧对象信息虚假、41.3% 担忧隐私泄露</td><td>悄悄话（付费留言）、临时匿名聊天降低破冰成本</td></tr>
+<tr><td>校内弱关系发现效率低</td><td>泛平台同校场景缺失</td><td>附近的人、兴趣选择、搜索精准定位同校同好</td></tr>
+<tr><td>匹配后缺乏持续关系承载</td><td>纯滑卡留存弱</td><td>村落（校园社区）、活动、每日签到提升留存</td></tr>
+<tr><td>信任与安全顾虑</td><td>行业信任危机突出</td><td>校园身份场景 + 后端鉴权（Token v2）+ 计费幂等保障</td></tr>
+</tbody></table>
+<h3>3.4 为什么是现在 / 为什么是我们</h3>
+<p>微信小程序降低安装与试用门槛、贴合学生习惯；项目已完成从启动到发布候选的完整研发，功能链路齐备、商业化闭环跑通——具备低成本验证、快速放量的前提。</p>
+<p class="note">数据来源：教育部《2024 年全国教育事业发展统计公报》（2025-06）、艾媒咨询《2025 中国婚恋社交服务市场研究报告》、灼识咨询（引自米连科技港交所招股书）、上观新闻 SJTU Date 报道、21 财经等公开资料。</p>
+<h2>四、产品与功能体系</h2>
+<h3>4.1 用户对象</h3>
+<table class="doctable">
+<thead><tr><th>用户对象</th><th>特征</th><th>与产品关系</th></tr></thead>
+<tbody>
+<tr><td>高校单身在校学生</td><td>有真实婚恋与社交需求，高频使用微信，信任同校弱关系</td><td>核心使用群体：发现、匹配、破冰、社区、消费</td></tr>
+<tr><td>平台运营方</td><td>负责内容治理、活动运营与合规</td><td>通过 Admin 后台维系社区健康与活跃</td></tr>
+</tbody></table>
+<h3>4.2 核心功能模块</h3>
+<table class="doctable">
+<thead><tr><th>编号</th><th>模块</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>F01</td><td>发现与推荐</td><td>基于兴趣与行为的推荐流（v3.1 发现聚合）</td></tr>
+<tr><td>F02</td><td>匹配中心</td><td>Intent 意图匹配核心</td></tr>
+<tr><td>F03</td><td>悄悄话</td><td>付费留言（<code>whisper_message</code>），核心变现触点</td></tr>
+<tr><td>F04</td><td>附近的人</td><td>同校 / 同场景地理发现</td></tr>
+<tr><td>F05</td><td>他人主页</td><td>用户公开资料与动态</td></tr>
+<tr><td>F06</td><td>我的主页</td><td>个人资料与设置</td></tr>
+<tr><td>F07</td><td>消息</td><td>聊天 + 临时匿名聊天</td></tr>
+<tr><td>F08</td><td>兴趣选择</td><td>匹配与推荐的特征输入</td></tr>
+<tr><td>F09</td><td>搜索</td><td>精准检索同好</td></tr>
+<tr><td>F10</td><td>每日签到</td><td>留存与活跃激励</td></tr>
+<tr><td>F11</td><td>村落（校园社区）</td><td>校园主题社区沉淀</td></tr>
+<tr><td>F12</td><td>活动</td><td>线上线下活动运营</td></tr>
+<tr><td>F13</td><td>钱包 · 交友币</td><td><code>coins</code> 计费闭环（幂等 / 退款）</td></tr>
+<tr><td>F14</td><td>VIP</td><td><strong>暂缓</strong>，占位说明，客户端入口已下线</td></tr>
+<tr><td>F15</td><td>Admin 后台</td><td>运营与治理</td></tr>
+</tbody></table>
+<p><strong>范围外</strong>：聊天红包功能已移除。</p>
+<h3>4.3 产品体验亮点</h3>
+<ul><li>统一 Design Token v3.1 设计契约，全量页面视觉一致、像素级还原。</li><li>轻量小程序入口，免下载、即开即用，贴合学生使用习惯。</li><li>破冰 → 匹配 → 社区 → 变现 闭环体验连贯。</li></ul>
+<h2>五、商业模式</h2>
+<h3>5.1 商业化现状（已跑通）</h3>
+<table class="doctable">
+<thead><tr><th>通道</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>交友币（coins）</td><td>运行中</td><td>虚拟币充值与消费，计费具备幂等与退款保障</td></tr>
+<tr><td>悄悄话付费留言</td><td>运行中</td><td>以付费留言作为核心破冰变现触点</td></tr>
+<tr><td>VIP 会员权益</td><td><strong>暂缓</strong></td><td>经决策暂缓，客户端入口已下线，仅保留占位说明</td></tr>
+<tr><td>聊天红包</td><td><strong>已移除</strong></td><td>功能已下线，相关代码已清理</td></tr>
+</tbody></table>
+<h3>5.2 商业化逻辑</h3>
+<p>以"低门槛免费匹配 + 高意愿付费破冰"组合，把高频免费行为转化为低频高客单价的付费触点；交友币作为通用计量，平滑多场景付费。</p>
+<h3>5.3 未来商业化空间</h3>
+<ul><li>会员订阅、增值匹配、活动付费、校园商家合作等方向的延展空间，待融资后结合运营数据验证。</li><li><strong>不在此文档臆测任何无来源的营收、转化率或用户规模数字。</strong></li></ul>
+<h3>5.4 行业变现参照（真实标杆）</h3>
+<ul><li><strong>伊对（米连科技）</strong>：2025-09 递交港交所招股书；2024 年营收 <strong>23.73 亿元</strong>、平均月活 <strong>990 万</strong>、月付费用户 <strong>120 万</strong>（付费率约 12%）、净利润 <strong>1.46 亿元</strong>——验证"虚拟币 / 会员 + 互动"情感社交模式可规模化盈利。</li><li><strong>付费意愿</strong>：行业头部付费用户 ARPU（2025）珍爱网 428 元、百合佳缘 395 元、青藤之恋 512 元，用户为高质量、高隐私匹配付费意愿持续增强。</li><li><strong>对「寻觅」的启示</strong>：以 coins + 悄悄话双通道切入，单位经济可对标上述标杆；校园场景信任更高、获客成本更低，具备更优变现效率空间。</li></ul>
+<h2>六、技术可行性（简要）</h2>
+<h3>6.1 总体架构</h3>
+<pre class="codeblock">接入层   Nginx（反向代理 / 静态托管）
+   ↓
+客户端   uni-app + Vue 3 + TypeScript + Pinia（状态管理）
+   ↓
+服务层   Spring Boot 3 / Java 17 / Spring Security + JWT（Token v2）/ JPA·MyBatis
+   ↓
+数据层   MySQL 8（业务数据） + Redis 7（缓存 / 会话）
+运行时   Docker Compose 部署；Prometheus / Grafana / Alertmanager 监控告警</pre>
+<h3>6.2 技术选型</h3>
+<table class="doctable">
+<thead><tr><th>层</th><th>选型</th></tr></thead>
+<tbody>
+<tr><td>前端</td><td>uni-app、Vue 3、TypeScript、Pinia</td></tr>
+<tr><td>后端</td><td>Spring Boot 3、Java 17、Spring Security、JWT、JPA / MyBatis</td></tr>
+<tr><td>数据</td><td>MySQL 8、Redis 7</td></tr>
+<tr><td>部署与监控</td><td>Docker Compose、Nginx、Prometheus、Grafana、Alertmanager</td></tr>
+<tr><td>平台集成</td><td>微信小程序（微信登录 / 支付等接入）</td></tr>
+</tbody></table>
+<h3>6.3 研发成熟度</h3>
+<p>项目已完成从 0 到 1 的完整研发与一轮全量 UI 重构，接口规模达 50+ Controller / 200+ 端点、数据层 65 张表，并已配套 API 契约、运维监控、灰度与灾难恢复预案——<strong>工程侧已达可发布标准</strong>，剩余为验收与合规动作（见第七节）。</p>
+<h2>七、发展路线图与里程碑</h2>
+<h3>7.1 总体节奏：四阶段成长路径</h3>
+<p>项目以"先发布、再验证、后扩张"的节奏推进。阶段一是当前确定的发布准备（时长待定），阶段二至四为融资后的成长框架，其量化指标将随运营验证动态校准，不在此编造。</p>
+<table class="doctable">
+<thead><tr><th>阶段</th><th>时间口径</th><th>核心目标</th><th>价值解锁</th><th>资金对齐</th></tr></thead>
+<tbody>
+<tr><td>阶段一 发布准备</td><td>当前 ~ 上线（时长待定）</td><td>真机验收、组件/动效补齐、RC、过审上线</td><td>产品从 0 到 1 面市</td><td>本轮启动资金</td></tr>
+<tr><td>阶段二 验证增长</td><td>上线后 0–6 个月</td><td>单校密度、留存与付费转化验证</td><td>验证单位经济，放量决策依据</td><td>本轮主体资金</td></tr>
+<tr><td>阶段三 规模扩张</td><td>上线后 6–18 个月</td><td>多校复制、区域密度、团队补齐</td><td>规模与营收跃升</td><td>下一轮 / 营收滚动</td></tr>
+<tr><td>阶段四 商业化深化</td><td>上线后 18 个月+</td><td>VIP 重启评估、商家合作、生态壁垒</td><td>多元变现与护城河</td><td>战略 / 盈利滚动</td></tr>
+</tbody></table>
+<p class="note">阶段二至四为规划框架，具体时间以 M5 实际上线为 T0 顺延；阶段性量化目标将在运营中动态校准。</p>
+<h3>7.2 阶段一：发布准备（当前 → 上线，时长待定）</h3>
+<h4>7.2.1 已完成里程碑（事实）</h4>
+<ul><li><strong>M0 像素级重构完成</strong>（2026-08-20）：全量 UI 一致性达发布标准，研发风险已大幅收敛。</li></ul>
+<h4>7.2.2 计划里程碑（次序确定，时点待定）</h4>
+<p class="note">当前处于发布准备阶段，剩余工作项与先后次序已明确，但<strong>确切上线时点取决于真机验收进度与微信审核时长</strong>，暂不锁定具体日历日期。</p>
+<table class="doctable">
+<thead><tr><th>里程碑</th><th>阶段</th><th>内容</th><th>前置 / 依赖</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>M1 真机验收</td><td>发布准备</td><td>多机型真机验证与缺陷修复</td><td>启动即进行</td><td>待启动</td></tr>
+<tr><td>M2 组件 · 动效 · 后端对齐</td><td>发布准备</td><td>补齐新组件、动效与接口对齐</td><td>依赖 M1 验收完成</td><td>待启动</td></tr>
+<tr><td>M3 商业化路线冻结（决策门）</td><td>决策门</td><td>冻结路线、避免范围漂移</td><td>可与 M1 / M2 并行</td><td>待启动</td></tr>
+<tr><td>M4 发布候选 RC 就绪</td><td>发布</td><td>RC 构建 + 灰度演练 + 监控联调</td><td>依赖 M2 完成</td><td>待启动</td></tr>
+<tr><td>M5 微信审核通过 · 正式上线</td><td>发布</td><td>提交审核、问题响应、灰度放量</td><td>依赖 M4；审核时长为外部不可控变量</td><td>待启动</td></tr>
+</tbody></table>
+<h4>7.2.3 关键路径</h4>
+<p>真机验收（M1）→ 组件/动效/后端对齐（M2）→ 发布候选（M4）→ 微信审核上线（M5）。M3 为并行决策门，不阻塞关键路径。<strong>微信审核时长</strong>为外部不可控变量，是上线时点的主要不确定因素。</p>
+<h3>7.3 阶段二：上市后验证增长（上线后 0–6 个月）</h3>
+<p><strong>核心目标</strong>：在首批试点高校验证"密度—留存—付费"的单位经济模型，为规模扩张与下一轮融资积累数据。</p>
+<table class="doctable">
+<thead><tr><th>里程碑</th><th>内容</th><th>量化指标</th></tr></thead>
+<tbody>
+<tr><td>G1 单校密度验证</td><td>首批试点高校达成活跃密度与社区氛围</td><td>覆盖高校数、单校活跃用户</td></tr>
+<tr><td>G2 留存与付费验证</td><td>验证留存曲线与付费转化，对标行业付费率 ~12%、ARPU 395–512 元</td><td>次留 / 30 留、付费率、ARPU</td></tr>
+<tr><td>G3 产品与生态打磨</td><td>村落/活动/兴趣活跃度与破冰体验优化</td><td>社区活跃、悄悄话转化</td></tr>
+</tbody></table>
+<p><strong>价值解锁</strong>：确认单位经济可跑通，形成可复制的"单校模型"，作为阶段三放量与第一轮机构融资的核心论据。</p>
+<h3>7.4 阶段三：规模扩张（上线后 6–18 个月）</h3>
+<p><strong>核心目标</strong>：将验证成功的单校模型向多校、多区域复制，建立校园密度网络，并补齐产品/运营/市场/合规团队。</p>
+<ul><li><strong>复制扩张</strong>：从试点高校走向区域集群，逐步覆盖更广高校网络。</li><li><strong>增长投入</strong>：校园推广、活动运营、品牌渗透，依托微信生态与校园 KOC 放大获客效率。</li><li><strong>团队补齐</strong>：随融资到位完善产品、运营、市场与合规编制，缓解执行资源集中度。</li><li><strong>规模里程碑</strong>：用户规模、营收阶梯（以 SAM 校园潜在用户约 2300 万为方向锚点）。</li></ul>
+<h3>7.5 阶段四：商业化深化（上线后 18 个月+）</h3>
+<p><strong>核心目标</strong>：在验证与规模基础上，深化变现与壁垒，构建可持续的校园情感社交生态。</p>
+<ul><li><strong>变现延展</strong>：基于运营数据重启评估 VIP 会员权益（当前暂缓）、拓展活动付费、校园商家合作等多元通道。</li><li><strong>生态壁垒</strong>：以"村落社区 + 活动 + 兴趣"沉淀持续关系，形成高信任校园场景护城河，提升迁移成本与留存。</li><li><strong>战略选项</strong>：区域密度成熟后可评估横向品类延伸或平台化开放能力。</li></ul>
+<h3>7.6 融资节奏与里程碑对齐</h3>
+<ul><li><strong>本轮资金</strong>主要支撑阶段一（发布准备）与阶段二（验证增长）起步；阶段三起可由营收滚动或下一轮融资接力。</li><li><strong>关键资金里程碑</strong>：M4（RC 就绪）前完成团队补齐；M5（上线）前完成合规与首轮推广预算到位；阶段二末（G1–G3 达标）触发规模扩张与下一轮融资决策。</li></ul>
+<h2>八、团队</h2>
+<p>项目由南京皓瀚星网络科技有限公司孵化，核心负责人一人统筹产品、研发与运营全局，团队为一体化小队协同推进。</p>
+<h2>九、结论</h2>
+<p>「寻觅」已完成从 0 到 1 的完整研发，产品链路齐备、商业化闭环跑通、技术底座稳定，并于 2026-08-20 达到像素级发布标准。项目具备进入<strong>发布准备与融资放大</strong>阶段的条件：剩余工作清晰可控，核心不确定项为微信审核时点与团队补齐节奏。</p>
+<p>建议据此立项，并启动融资沟通，以团队与推广资源放大已验证的产品价值。</p>
+</section>
+</body>
+</html>

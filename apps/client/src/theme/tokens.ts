@@ -14,31 +14,31 @@
 export const designTokens = {
   color: {
     brand: {
-      50:  '#E6F8F1',
-      100: '#CCF0E0',
-      200: '#A5E2C6',
-      300: '#6FD4AA',
+      50:  '#E8FAF3',
+      100: '#D1F5E7',
+      200: '#A3EBCF',
+      300: '#75E1B7',
       400: '#36C99A',
       500: '#36C99A',
       600: '#36C99A',
-      700: '#12805A',
-      dark:  '#168B65',
+      700: '#2AAE83',
+      dark:  '#36C99A',
       light: '#E8FBF2',
-      800: '#0F6848',
+      800: '#156B51',
       900: '#0B5038',
     },
 
     secondary: {
-      50:  '#F0FDF9',
-      100: '#CCFBEF',
-      200: '#99F6E0',
-      300: '#6FD4AA',
-      400: '#36C99A',
+      50:  '#E8FAF3',
+      100: '#D1F5E7',
+      200: '#A3EBCF',
+      300: '#75E1B7',
+      400: '#55D5A7',
       500: '#36C99A',
-      600: '#36C99A',
-      700: '#12805A',
-      800: '#0F6848',
-      900: '#0B5038',
+      600: '#2AAE83',
+      700: '#1F8D6A',
+      800: '#156B51',
+      900: '#0B4A38',
     },
 
     accent: {
@@ -55,27 +55,27 @@ export const designTokens = {
     },
 
     pink: {
-      50:  '#FDF2F8',
-      100: '#FCE7F3',
-      200: '#FBCFE8',
-      300: '#F9A8D4',
-      400: '#FF6B81',
-      500: '#DB2777',
-      600: '#BE185D',
-      700: '#9D174D',
+      50:  '#E8FAF3',
+      100: '#D1F5E7',
+      200: '#A3EBCF',
+      300: '#75E1B7',
+      400: '#55D5A7',
+      500: '#E85A70',
+      600: '#2AAE83',
+      700: '#1F8D6A',
       800: '#831843',
-      900: '#701A3D',
+      900: '#0B4A38',
     },
 
     romance: {
-      50:  '#FFF5F7',
-      100: '#FFE4E9',
-      200: '#FBCFE0',
-      300: '#F9A8C4',
-      400: '#F472B6',
+      50:  '#FFECEF',
+      100: '#FFD9DF',
+      200: '#FFB3C0',
+      300: '#FF8DA1',
+      400: '#FF7C91',
       500: '#FF6B81',
-      600: '#DB2777',
-      700: '#BE185D',
+      600: '#E85A70',
+      700: '#CC4A5F',
       800: '#9D174D',
       900: '#831843',
     },
@@ -93,20 +93,20 @@ export const designTokens = {
       900: '#7C2D12',
     },
 
-    success: '#10B981',
-    warning: '#F59E0B',
-    error:   '#E5454D',
+    success: '#36C99A',
+    warning: '#FF9F43',
+    error:   '#FF4757',
     errorDark: '#FF6B6B',
-    info:    '#36C99A',
+    info:    '#54A0FF',
     blue:    '#4D8DFF',
-    purple:  '#8D7BFF',
+    purple:  '#A29BFE',
     // ===== 寻觅 v3 视觉角色 Token（设计图优先） =====
     action:         '#36C99A',
     love:           '#FF6B81',
-    secondaryAction:'#FF9A57',
+    secondaryAction:'#FF9F43',
     nearbyExplore:  '#36C99A',
     verified:       '#36C99A',
-    unverified:     '#8D7BFF',
+    unverified:     '#A29BFE',
     disabled:       '#C8CFCD',
     // ===== v3.1 状态 Token（docs/design/v3.1-contract.md §2） =====
     status: {
@@ -132,7 +132,7 @@ export const designTokens = {
 
     state: {
       signup: {
-        bg:    '#6FD4AA',
+        bg:    '#55D5A7',
         text:  '#1A7A4A',
       },
       ongoing: {
@@ -146,93 +146,83 @@ export const designTokens = {
     },
 
     schedule: {
-      mint:    '#DCEFE2',
-      blue:    '#DCE6F2',
-      purple:  '#E8DCEF',
-      apricot: '#F2E8DC',
-      green:   '#DCEFDC',
-      pink:    '#EFDCE8',
+      50:  '#FFECEF',
+      100: '#FFD9DF',
+      200: '#FFB3C0',
+      300: '#FF8DA1',
+      400: '#FF7C91',
+      500: '#FF6B81',
+      600: '#E85A70',
+      700: '#CC4A5F',
+      800: '#9D174D',
+      900: '#831843',
     },
 
-    location: {
-      bg:   'rgba(61, 201, 148, 0.12)',
-      text: '#36C99A',
-    },
-
-    vip: {
-      from:  '#C9A36A',
-      to:    '#E8C98A',
-    },
-
-    price: '#E5454D',
-
-    neutral: {
-      0:   '#FFFFFF',
-      50:  '#F7FAF9',
-      100: '#F0F2F5',
-      200: '#E2E8F0',
-      300: '#CBD5E1',
-      400: '#999999',
-      500: '#64748B',
-      600: '#475569',
-      700: '#334155',
-      800: '#1A1F26',
-      900: '#0E1116',
-    },
+      neutral: {
+        50:  '#F7FAF9',
+        100: '#EEF2F0',
+        200: '#DDE3E0',
+        300: '#C2CAC6',
+        400: '#9AA39F',
+        500: '#6B7571',
+        600: '#4A524E',
+        700: '#333A37',
+        800: '#1A1F26',
+        900: '#1A1E1C',
+      },
 
     text: {
-      primary:    '#1E1E1E',
-      secondary:  '#666666',
-      // 对齐 design-variables.scss $text-tertiary(#999999)：
-      // P2 对比度修复（#9AA1AB ~2.85:1 → #999999 ~4.6:1，达到 WCAG AA 4.5:1）
-      tertiary:   '#999999',
-      quaternary: '#999999',
+        primary:    '#1A1E1C',
+        secondary:  '#4A524E',
+        tertiary:   '#6B7571',
+        quaternary: '#9AA39F',
       inverse:    '#FFFFFF',
       brand:      '#36C99A',
       link:       '#36C99A',
       romance:    '#FF6B81',
     },
 
-    bg: {
-      page:      '#F7FAF9',
-      container: '#FFFFFF',
-      surface:   '#F7FAF9',
-      overlay:   'rgba(15, 23, 42, 0.45)',
-      brand:     '#E8FBF2',
-      secondary: '#CCF0E0',
-      accent:    '#FFF7ED',
-      romance:   '#FFF1F6',
-    },
-
     border: {
-      light:   '#ECEFF2',
-      default: '#E2E8F0',
-      strong:  '#CBD5E1',
+      light:   '#EEF2F0',
+      default: '#DDE3E0',
+      strong:  '#C2CAC6',
       dark:    '#222831',
     },
 
     gradient: {
-      brand:           'linear-gradient(135deg, #36C99A 0%, #6FD4AA 100%)',
-      secondary:       'linear-gradient(135deg, #6FD4AA 0%, #A5E2C6 100%)',
-      warmCool:        'linear-gradient(135deg, #36C99A 0%, #CCF0E0 100%)',
+      brand:           'linear-gradient(135deg, #36C99A 0%, #55D5A7 100%)',
+      secondary:       'linear-gradient(135deg, #55D5A7 0%, #A3EBCF 100%)',
+      warmCool:        'linear-gradient(135deg, #36C99A 0%, #D1F5E7 100%)',
       sunset:          'linear-gradient(135deg, #F97316 0%, #FF6B81 100%)',
       pink:            'linear-gradient(135deg, #FF6B81 0%, #F97316 100%)',
-      match:           'linear-gradient(135deg, #E6F8F1 0%, #FDF2F8 100%)',
-      pageAtmosphere:  'linear-gradient(180deg, #FFF5F7 0%, #F7FAF9 100%)',
-      cardAtmosphere:  'linear-gradient(135deg, rgba(61, 201, 148, 0.04) 0%, rgba(255, 104, 145, 0.02) 100%)',
-      brandOverlay:    'linear-gradient(180deg, rgba(61, 201, 148, 0.08) 0%, transparent 100%)',
+      match:           'linear-gradient(135deg, #E8FAF3 0%, #FDF2F8 100%)',
+      pageAtmosphere:  'linear-gradient(180deg, #FFECEF 0%, #F7FAF9 100%)',
+      cardAtmosphere:  'linear-gradient(135deg, rgba(54, 201, 154, 0.04) 0%, rgba(255, 107, 129, 0.02) 100%)',
+      brandOverlay:    'linear-gradient(180deg, rgba(54, 201, 154, 0.08) 0%, transparent 100%)',
       vip:             'linear-gradient(12deg, #C9A36A 0%, #E8C98A 100%)',
       romance:         'linear-gradient(135deg, #FF6B81 0%, #F97316 100%)',
-      romanceSoft:     'linear-gradient(135deg, #FFF5F7 0%, #FFEDD5 100%)',
-      brandRomance:    'linear-gradient(135deg, #36C99A 0%, #F472B6 100%)',
-      headerGradient:  'linear-gradient(180deg, #FFF5F7 0%, #E6F8F1 40%, #F7FAF9 100%)',
+      romanceSoft:     'linear-gradient(135deg, #FFECEF 0%, #FFEDD5 100%)',
+      brandRomance:    'linear-gradient(135deg, #36C99A 0%, #FF7C91 100%)',
+      headerGradient:  'linear-gradient(180deg, #FFECEF 0%, #E8FAF3 40%, #F7FAF9 100%)',
       floatButton:     'linear-gradient(135deg, #36C99A 0%, #36C99A 100%)',
       vipGold:         'linear-gradient(135deg, #D4A853 0%, #F0D090 100%)',
+    },
+    bg: {
+      page:      '#F7FAF9',
+      container: '#FFFFFF',
+      surface:   '#FFFFFF',
+      overlay:   'rgba(0, 0, 0, 0.45)',
+      brand:     '#E8FAF3',
+      secondary: '#EEF2F0',
+      accent:    '#F0F9FF',
+      romance:   '#FFF0F6',
+      dark:      '#1A1E1C',
+      darkCard:  '#222831',
     },
 
     functionIcon: {
       blue:    'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-      pink:    'linear-gradient(135deg, #F472B6 0%, #FF6B81 100%)',
+      pink:    'linear-gradient(135deg, #FF7C91 0%, #FF6B81 100%)',
       purple:  'linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)',
       orange:  'linear-gradient(135deg, #FB923C 0%, #F97316 100%)',
       green:   'linear-gradient(135deg, #34D399 0%, #10B981 100%)',
@@ -247,7 +237,7 @@ export const designTokens = {
     xs:     4,
     sm:     8,
     md:     12,
-    lg:     16,
+    lg:     20,
     xl:     24,
     xxl:    28,
     full:   9999,
@@ -278,21 +268,21 @@ export const designTokens = {
     xl:   '0 16px 48px rgba(15, 23, 42, 0.10)',
     inner:'inset 0 2px 4px rgba(15, 23, 42, 0.03)',
     /* 品牌阴影对齐青藤参考：8px 偏移 + 24px 模糊 + 24% 不透明 */
-    brand:     '0 8px 24px rgba(61, 201, 148, 0.24)',
-    brandSm:   '0 2px 8px rgba(61, 201, 148, 0.15)',
+    brand:     '0 8px 24px rgba(54, 201, 154, 0.24)',
+    brandSm:   '0 2px 8px rgba(54, 201, 154, 0.15)',
     /* v3 冻结：卡片 / 浮层阴影（docs 冻结表） */
     card:      '0 4px 16px rgba(30, 80, 65, 0.08)',
     float:     '0 10px 28px rgba(30, 80, 65, 0.12)',
-    brandMd:   '0 4px 16px rgba(61, 201, 148, 0.20)',
-    brandLg:   '0 8px 24px rgba(61, 201, 148, 0.30)',
-    pink:      '0 4px 16px rgba(255, 104, 145, 0.25)',
-    pinkMd:    '0 4px 16px rgba(255, 104, 145, 0.30)',
+    brandMd:   '0 4px 16px rgba(54, 201, 154, 0.20)',
+    brandLg:   '0 8px 24px rgba(54, 201, 154, 0.30)',
+    pink:      '0 4px 16px rgba(255, 107, 129, 0.25)',
+    pinkMd:    '0 4px 16px rgba(255, 107, 129, 0.30)',
     modal:     '0 24px 60px rgba(15,23,42,.18)',
     /* 卡片软阴影对齐青藤参考：双层 4% 不透明 */
     cardSoft:  '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04)',
     /* 浮动按钮阴影对齐青藤参考：8px 偏移 + 24px 模糊 + 32% 不透明 */
-    floatBtn:  '0 8px 24px rgba(61, 201, 148, 0.32)',
-    romanceShadow: '0 4px 16px rgba(255, 104, 145, 0.2)',
+    floatBtn:  '0 8px 24px rgba(54, 201, 154, 0.32)',
+    romanceShadow: '0 4px 16px rgba(255, 107, 129, 0.2)',
   },
 
   /** v3 冻结：Hero 渐变遮罩（寻觅卡/匹配卡文字可读性） */
@@ -311,7 +301,7 @@ export const designTokens = {
 
   /** v3 冻结：交互状态（default/pressed/disabled/selected/loading） */
   interaction: {
-    default:  { bg: '#FFFFFF', border: '#ECEFF2' },
+    default:  { bg: '#FFFFFF', border: '#EEF2F0' },
     pressed:  { bg: '#EAF2EF' },
     disabled: { opacity: 0.5 },
     selected: { bg: '#36C99A', text: '#FFFFFF' },
@@ -484,8 +474,8 @@ export const darkThemeTokens = {
       container: '#1A1F26',
       surface:   '#222831',
       overlay:   'rgba(0, 0, 0, 0.65)',
-      brand:     '#0F6848',
-      secondary: '#0F6848',
+      brand:     '#156B51',
+      secondary: '#156B51',
       accent:    '#65200D',
       romance:   '#2D1F24',
       dark:      '#0E1116',
@@ -508,7 +498,7 @@ export const darkThemeTokens = {
       inverse:    '#1A1F26',
       brand:      '#36C99A',
       link:       '#36C99A',
-      romance:    '#F472B6',
+      romance:    '#FF7C91',
     },
     bubble: {
       other:  '#222831',
@@ -521,10 +511,10 @@ export const darkThemeTokens = {
       300: '#7A3850',
       400: '#BE4D8A',
       500: '#FF6B81',
-      600: '#F472B6',
-      700: '#F9A8C4',
-      800: '#FBCFE0',
-      900: '#FFE4E9',
+      600: '#FF7C91',
+      700: '#FF8DA1',
+      800: '#FFB3C0',
+      900: '#FFD9DF',
     },
     warm: {
       50:  '#2D2017',
@@ -547,8 +537,8 @@ export const darkThemeTokens = {
   shadow: {
     ...designTokens.shadow,
     cardSoft:     '0 2px 12px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2)',
-    floatBtn:     '0 6px 20px rgba(61, 201, 148, 0.45)',
-    romanceShadow:'0 4px 16px rgba(255, 104, 145, 0.35)',
+    floatBtn:     '0 6px 20px rgba(54, 201, 154, 0.45)',
+    romanceShadow:'0 4px 16px rgba(255, 107, 129, 0.35)',
   },
 } as const;
 
@@ -562,20 +552,20 @@ export const warmThemeTokens = {
       container: '#FFFFFF',
       surface:   '#FFF1EB',
       overlay:   'rgba(60, 30, 20, 0.45)',
-      brand:     '#FFF5F7',
+      brand:     '#FFECEF',
       secondary: '#FFEDD5',
       accent:    '#FFF7ED',
     },
     gradient: {
       ...designTokens.color.gradient,
-      pageAtmosphere: 'linear-gradient(180deg, #FFF5F7 0%, #FFFAF5 100%)',
-      headerGradient: 'linear-gradient(180deg, #FFF5F7 0%, #FFF7ED 50%, #FFFAF5 100%)',
+      pageAtmosphere: 'linear-gradient(180deg, #FFECEF 0%, #FFFAF5 100%)',
+      headerGradient: 'linear-gradient(180deg, #FFECEF 0%, #FFF7ED 50%, #FFFAF5 100%)',
     },
   },
   shadow: {
     ...designTokens.shadow,
     cardSoft:     '0 2px 12px rgba(124, 45, 18, 0.05), 0 1px 3px rgba(124, 45, 18, 0.04)',
-    romanceShadow:'0 4px 16px rgba(255, 104, 145, 0.25)',
+    romanceShadow:'0 4px 16px rgba(255, 107, 129, 0.25)',
   },
 } as const;
 
@@ -588,3 +578,21 @@ export const getThemeTokens = (mode: ThemeMode = 'light') => {
 };
 
 export default designTokens;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

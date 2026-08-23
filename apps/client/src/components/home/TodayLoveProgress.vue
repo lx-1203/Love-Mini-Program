@@ -1,19 +1,33 @@
 <script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
 import type { LoveProgressStepViewModel } from "../../view-models/home-dashboard";
 
 defineProps<{ completed: number; total: number; steps: LoveProgressStepViewModel[] }>();
 defineEmits<{ (e: "step", action: string): void }>();
 
-const STEP_META: Record<string, { bg: string; softBg: string; icon: string; todo: string }> = {
-  profile: { bg: "#36C99A", softBg: "#E8FAF3", icon: "✓", todo: "未完成" },
-  discover: { bg: "#FF6B81", softBg: "#FFECEF", icon: "♥", todo: "进行中" },
-  whisper: { bg: "#FF9F43", softBg: "#FFF5E6", icon: "☺", todo: "待处理" },
-  interest: { bg: "#A29BFE", softBg: "#F0EEFF", icon: "★", todo: "未完成" },
+const STEP_META: Record<string, { bg: string; softBg: string; icon: string; iconSrc: string; todo: string }> = {
+  profile: { bg: "#36C99A", softBg: "#E8FAF3", icon: "✓", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_PROFILE, todo: "已完成" },
+  discover: { bg: "#FF6B81", softBg: "#FFECEF", icon: "♥", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_DISCOVER, todo: "进行中" },
+  like: { bg: "#FF6B81", softBg: "#FFECEF", icon: "♥", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_DISCOVER, todo: "进行中" },
+  whisper: { bg: "#FF9F43", softBg: "#FFF5E6", icon: "☺", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_WHISPER, todo: "待开始" },
+  interest: { bg: "#A29BFE", softBg: "#F0EEFF", icon: "★", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_INTEREST, todo: "待开始" },
 };
 
 function stepMeta(id: string) {
-  return STEP_META[id] ?? { bg: "#36C99A", softBg: "#E8FAF3", icon: "♥", todo: "未完成" };
+  return STEP_META[id] ?? { bg: "#36C99A", softBg: "#E8FAF3", icon: "♥", iconSrc: "", todo: "未完成" };
 }
+const TITLE_FALLBACK: Record<string, string> = {
+  profile: "完善资料",
+  discover: "认识新人",
+  like: "今日心动",
+  whisper: "回复悄悄话",
+  interest: "参与兴趣互动",
+};
+
+function stepTitle(step: { id: string; title?: string }): string {
+  return step.title || TITLE_FALLBACK[step.id] || "任务";
+}
+
 </script>
 
 <template>
@@ -33,9 +47,15 @@ function stepMeta(id: string) {
     <view class="love-progress__steps">
       <view v-for="step in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
         <view class="love-step__icon" :style="{ background: stepMeta(step.id).bg }">
-          <text class="love-step__icon-text">{{ stepMeta(step.id).icon }}</text>
+          <image
+            v-if="stepMeta(step.id).iconSrc"
+            class="love-step__icon-img"
+            :src="stepMeta(step.id).iconSrc"
+            mode="aspectFit"
+          />
+          <text v-else class="love-step__icon-text">{{ stepMeta(step.id).icon }}</text>
         </view>
-        <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ step.title }}</text>
+        <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ stepTitle(step) }}</text>
         <text class="love-step__meta" :style="{ color: stepMeta(step.id).bg }">
           {{ step.completed ? '已完成' : stepMeta(step.id).todo }}
         </text>
@@ -140,6 +160,11 @@ function stepMeta(id: string) {
   font-size: 20rpx;
   color: #ffffff;
   font-weight: 700;
+}
+
+.love-step__icon-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .love-step__title {

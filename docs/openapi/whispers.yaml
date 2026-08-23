@@ -1,0 +1,128 @@
+﻿openapi: 3.0.1
+info:
+  title: Whispers API (v3.1 付费悄悄话)
+  version: v1
+  description: |
+    悄悄话（付费留言）模块。同一对用户 A↔B 最多 1 条有效；发送者每日 ≤5 条；
+    幂等 clientRequestId；钱包扣费与创建同事务，创建失败自动退款（REFUNDED）。
+    文案承诺：优先送达 / 直接进入 TA 的悄悄话。
+paths:
+  /whispers/send:
+    post:
+      summary: Send a paid whisper
+      operationId: sendWhisper
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhisperSendRequest'
+      responses:
+        '200':
+          description: Whisper sent (idempotent by clientRequestId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhisperMessageView'
+        '400':
+          description: Validation / business rule violation (balance, daily limit, pair limit)
+  /whispers/inbox:
+    get:
+      summary: List received whispers
+      operationId: getWhisperInbox
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Received whispers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WhisperMessageView'
+  /whispers/sent:
+    get:
+      summary: List sent whispers
+      operationId: getWhisperSent
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sent whispers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WhisperMessageView'
+  /whispers/{id}/read:
+    post:
+      summary: Mark a received whisper as read
+      operationId: readWhisper
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Updated whisper
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhisperMessageView'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    WhisperSendRequest:
+      type: object
+      required:
+        - receiverId
+        - content
+        - clientRequestId
+      properties:
+        receiverId:
+          type: integer
+          format: int64
+        content:
+          type: string
+          maxLength: 60
+        clientRequestId:
+          type: string
+          maxLength: 64
+    WhisperMessageView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        senderId:
+          type: integer
+          format: int64
+        receiverId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        status:
+          type: string
+          enum: [SENT, DELIVERED, READ, PAY_FAILED, REFUNDED]
+        priceCents:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+        readAt:
+          type: string
+          nullable: true

@@ -24,7 +24,7 @@ export interface ResolvedLoginHero extends LoginHeroInput {
 export const MOCK_LOGIN_HERO: LoginHeroInput = {
   heroMode: "animation",
   heroVideoUrl: null,
-  heroPosterUrl: "/static/assets/images/posters/login-poster.jpg",
+  heroPosterUrl: "/static/assets/images/posters/login-poster.png",
   heroAnimationTheme: "campus-night",
   heroTitle: "校园恋爱",
   heroSubtitle: "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",

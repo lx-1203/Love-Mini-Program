@@ -1,0 +1,25 @@
+<script setup lang="ts">
+interface Props {
+  size?: number | string
+  color?: string
+}
+const props = withDefaults(defineProps<Props>(), {
+  size: 24,
+  color: 'currentColor',
+})
+</script>
+
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    :width="props.size"
+    :height="props.size"
+    fill="none"
+    :style="{ color: props.color }"
+    aria-hidden="true"
+  >
+      <path :d="`M4 5.5A3.5 3.5 0 0 1 7.5 2h9A3.5 3.5 0 0 1 20 5.5v5.7a3.5 3.5 0 0 1-3.5 3.5h-6.3L6 18.5v-3.8a3.5 3.5 0 0 1-2-3.1v-6.1Z`" :fill="'none'" :stroke="'currentColor'" :stroke-width="'1.7'" :stroke-linecap="'round'" :stroke-linejoin="'round'" />
+      <path :d="`M8 8h8M8 11h5`" :fill="'none'" :stroke="'currentColor'" :stroke-width="'1.7'" :stroke-linecap="'round'" :stroke-linejoin="'round'" />
+  </svg>
+</template>

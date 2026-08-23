@@ -1159,12 +1159,12 @@ $red-badge: var(--c-error);
   align-items: center;
   justify-content: center;
   background: var(--c-bg-container, #ffffff);
-  border: 2rpx solid var(--c-line, #ECEFF2);
+  border: 2rpx solid var(--c-line, #EEF2F0);
 }
 
 .post-mode__tab--active {
   border-color: var(--c-brand-500, #36C99A);
-  background: var(--c-brand-50, #E6F8F1);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .post-mode__text {
@@ -1177,3 +1177,5 @@ $red-badge: var(--c-error);
   color: var(--c-brand-600, #36C99A);
 }
 </style>
+
+

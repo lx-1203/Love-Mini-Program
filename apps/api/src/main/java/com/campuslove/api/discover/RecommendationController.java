@@ -404,8 +404,16 @@ public class RecommendationController {
       throw new IllegalArgumentException(ErrorMessages.TARGET_USER_ID_POSITIVE);
     }
     if (userRepository == null || recommendationRanker == null) {
-      // mock profile：推荐排序器不可用，他人主页接口无数据可组装
-      throw new UnsupportedOperationException("他人主页详情接口仅在 real 模式可用");
+      // mock profile：推荐排序器不可用，改从推荐服务取目标用户（无精确匹配则取首条），保证 mock 下无 500
+      java.util.List<RecommendedPersonView> mockRecs =
+          recommendationService.getRecommendations(SecurityUtils.getCurrentUserId());
+      RecommendedPersonView mockFound = mockRecs.stream()
+          .filter(pp -> pp.id() != null && Long.toString(pp.id()).equals(Long.toString(targetUserId)))
+          .findFirst().orElse(mockRecs.isEmpty() ? null : mockRecs.get(0));
+      if (mockFound == null) {
+        throw new com.campuslove.api.common.ResourceNotFoundException("用户不存在: " + targetUserId);
+      }
+      return PrivacyFieldFilter.sanitize(java.util.List.of(mockFound)).get(0);
     }
     // 目标用户存在性校验
     com.campuslove.api.entity.User target = userRepository.findById(targetUserId)

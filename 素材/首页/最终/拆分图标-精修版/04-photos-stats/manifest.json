@@ -1,0 +1,98 @@
+{
+  "category": "04-photos-stats",
+  "title": "照片墙与数据统计",
+  "description": "用户照片网格、数据统计卡片等展示类组件",
+  "total_icons": 9,
+  "icons": [
+    {
+      "index": 1,
+      "filename": "item_row4_01.png",
+      "dimensions": "151x117",
+      "semantic_label": "照片1-旅行照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 36329
+    },
+    {
+      "index": 2,
+      "filename": "item_row4_02.png",
+      "dimensions": "160x118",
+      "semantic_label": "照片2-日常照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 40089
+    },
+    {
+      "index": 3,
+      "filename": "item_row4_03.png",
+      "dimensions": "154x116",
+      "semantic_label": "照片3-宠物照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 30682
+    },
+    {
+      "index": 4,
+      "filename": "item_row4_04.png",
+      "dimensions": "154x115",
+      "semantic_label": "照片4-美食照",
+      "color": "深灰",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 31898
+    },
+    {
+      "index": 5,
+      "filename": "item_row4_05.png",
+      "dimensions": "141x98",
+      "semantic_label": "照片5-活动照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 21634
+    },
+    {
+      "index": 6,
+      "filename": "item_row4_06.png",
+      "dimensions": "150x98",
+      "semantic_label": "照片6-自拍照",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 22373
+    },
+    {
+      "index": 7,
+      "filename": "item_row4_07.png",
+      "dimensions": "145x94",
+      "semantic_label": "获赞数统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 20873
+    },
+    {
+      "index": 8,
+      "filename": "item_row4_08.png",
+      "dimensions": "82x81",
+      "semantic_label": "浏览量统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 9977
+    },
+    {
+      "index": 9,
+      "filename": "item_row4_09.png",
+      "dimensions": "85x69",
+      "semantic_label": "关注/粉丝数统计",
+      "color": "彩色",
+      "category": "04-photos-stats",
+      "category_title": "照片墙与数据统计",
+      "file_size": 8707
+    }
+  ]
+}

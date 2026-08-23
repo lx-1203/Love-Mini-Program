@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<title>寻觅 SVG Symbol Library</title>
+<defs>
+<symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 20.5S4 15.8 4 9.7C4 6.9 6 5 8.6 5c1.5 0 2.8.7 3.4 1.8C12.6 5.7 13.9 5 15.4 5 18 5 20 6.9 20 9.7c0 6.1-8 10.8-8 10.8Z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 21 21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+<symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c.7-4.2 3.4-6.5 8-6.5s7.3 2.3 8 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+<symbol id="icon-message" viewBox="0 0 24 24"><path d="M4 5.5h16v11H9l-5 4v-15Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+<symbol id="icon-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+</defs>
+<rect width="800" height="600" fill="#F7FAF9"/>
+<text x="40" y="55" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="26" font-weight="700" fill="#333">SVG Symbols</text>
+<text x="40" y="84" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="13" fill="#7A8584">在你的 SVG 中使用 &lt;use href="#icon-heart"/&gt; 复用</text>
+<g color="#34C98A">
+<use href="#icon-heart" x="60" y="130" width="64" height="64"/>
+<use href="#icon-search" x="170" y="130" width="64" height="64"/>
+<use href="#icon-user" x="280" y="130" width="64" height="64"/>
+<use href="#icon-message" x="390" y="130" width="64" height="64"/>
+<use href="#icon-pin" x="500" y="130" width="64" height="64"/>
+</g>
+<g font-family="monospace" font-size="13" fill="#66716F">
+<text x="60" y="225">#icon-heart</text><text x="170" y="225">#icon-search</text><text x="280" y="225">#icon-user</text><text x="390" y="225">#icon-message</text><text x="500" y="225">#icon-pin</text>
+</g>
+<text x="40" y="300" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="700" fill="#333">调用示例</text>
+<text x="40" y="335" font-family="monospace" font-size="13" fill="#333">&lt;svg&gt;&lt;use href="symbols.svg#icon-heart" /&gt;&lt;/svg&gt;</text>
+</svg>

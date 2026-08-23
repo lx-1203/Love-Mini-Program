@@ -1,0 +1,165 @@
+{
+  "results": [
+    {
+      "name": "08-login",
+      "route": "/pages/login/index",
+      "desc": "登录页",
+      "ok": true,
+      "size": 201966,
+      "newErrors": 0
+    },
+    {
+      "name": "01-discover",
+      "route": "/pages/discover/index",
+      "desc": "寻觅首页（匹配卡片）",
+      "ok": true,
+      "size": 105180,
+      "newErrors": 0
+    },
+    {
+      "name": "02-home",
+      "route": "/pages/home/index",
+      "desc": "首页",
+      "ok": true,
+      "size": 91459,
+      "newErrors": 0
+    },
+    {
+      "name": "07-messages",
+      "route": "/pages/messages/index",
+      "desc": "消息页",
+      "ok": true,
+      "size": 269349,
+      "newErrors": 0
+    },
+    {
+      "name": "09-matching",
+      "route": "/pages/discover/matching",
+      "desc": "匹配中页",
+      "ok": true,
+      "size": 103590,
+      "newErrors": 0
+    },
+    {
+      "name": "10-match-success",
+      "route": "/pages/discover/match-success",
+      "desc": "匹配成功页",
+      "ok": true,
+      "size": 98784,
+      "newErrors": 0
+    },
+    {
+      "name": "03-nearby",
+      "route": "/pages/nearby/index",
+      "desc": "附近页",
+      "ok": true,
+      "size": 252349,
+      "newErrors": 0
+    },
+    {
+      "name": "05-notlogged-waiting",
+      "route": "/pages/discover/index?guest=1",
+      "desc": "未登录等待页",
+      "ok": true,
+      "size": 104928,
+      "newErrors": 0
+    },
+    {
+      "name": "04-profile-own",
+      "route": "/pages/profile/index",
+      "desc": "个人主页",
+      "ok": true,
+      "size": 93075,
+      "newErrors": 0
+    },
+    {
+      "name": "06-notlogged-profile",
+      "route": "/pages/profile/index?guest=1",
+      "desc": "未登录个人主页",
+      "ok": true,
+      "size": 93075,
+      "newErrors": 0
+    },
+    {
+      "name": "11-campus",
+      "route": "/pages/campus/hub",
+      "desc": "校园圈Hub",
+      "ok": true,
+      "size": 55917,
+      "newErrors": 0
+    },
+    {
+      "name": "12-circle-detail",
+      "route": "/pages/campus/index",
+      "desc": "圈子详情",
+      "ok": true,
+      "size": 53936,
+      "newErrors": 0
+    },
+    {
+      "name": "13-village",
+      "route": "/pages/village/index",
+      "desc": "帖子/社区",
+      "ok": true,
+      "size": 292807,
+      "newErrors": 0
+    },
+    {
+      "name": "14-chat",
+      "route": "/pages/chat-session/index",
+      "desc": "聊天会话",
+      "ok": true,
+      "size": 292894,
+      "newErrors": 0
+    },
+    {
+      "name": "15-love-center",
+      "route": "/pages/love-center/index",
+      "desc": "恋爱中心",
+      "ok": true,
+      "size": 68204,
+      "newErrors": 0
+    },
+    {
+      "name": "16-settings",
+      "route": "/pages/settings/index",
+      "desc": "设置页",
+      "ok": true,
+      "size": 73355,
+      "newErrors": 0
+    },
+    {
+      "name": "17-search",
+      "route": "/pages/search/index",
+      "desc": "搜索页",
+      "ok": true,
+      "size": 34394,
+      "newErrors": 0
+    },
+    {
+      "name": "18-likes",
+      "route": "/pages/likes/index",
+      "desc": "喜欢页",
+      "ok": true,
+      "size": 282361,
+      "newErrors": 0
+    },
+    {
+      "name": "19-daily-question",
+      "route": "/pages/daily-question/index",
+      "desc": "每日一问",
+      "ok": true,
+      "size": 43776,
+      "newErrors": 0
+    },
+    {
+      "name": "20-campus-cert",
+      "route": "/pages/campus/certification",
+      "desc": "校园认证",
+      "ok": true,
+      "size": 101771,
+      "newErrors": 0
+    }
+  ],
+  "ts": "2026-08-19 14:55:37"
+}

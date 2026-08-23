@@ -53,7 +53,7 @@ const icon = IMAGE_PATHS.MESSAGE_ICONS.LIKE_NOTICE;
   display: block;
   font-size: 36rpx;
   font-weight: 700;
-  color: #222222;
+  color: #333A37;
 }
 .heart-notice__desc {
   display: block;

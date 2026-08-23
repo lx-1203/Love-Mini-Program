@@ -1,0 +1,13 @@
+/* 寻觅 Interest Circle Icon System — design tokens */
+:root {
+  --xm-icon-color: #1A1A1A;
+  --xm-icon-muted: #667085;
+  --xm-icon-primary: #00B86B;
+  --xm-icon-danger: #FF5A70;
+  --xm-icon-stroke: 1.8;
+  --xm-icon-size-sm: 16px;
+  --xm-icon-size-md: 20px;
+  --xm-icon-size-lg: 24px;
+  --xm-icon-size-xl: 32px;
+  --xm-icon-size-2xl: 48px;
+}
