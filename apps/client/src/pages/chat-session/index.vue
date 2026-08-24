@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
@@ -1219,6 +1220,13 @@ const peerAvatarSrc = computed(() => {
   return IMAGE_PATHS.AVATARS.AVATAR_1;
 });
 
+/** 自己的头像（用于 ChatBubble 的 self-avatar prop，确保自己的消息显示正确头像） */
+const selfAvatarSrc = computed(() => {
+  // 从 sessionStore 获取当前用户头像，若不存在则使用默认头像
+  const user = (sessionStore as any).user || (sessionStore as any).currentUser;
+  return user?.avatar || IMAGE_PATHS.AVATARS.AVATAR_1;
+});
+
 /** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
 function resolvePeerUserId(): number | null {
   // 2026-08-09：临时会话（ChatSessionView）无 partnerId 字段，传 undefined
@@ -1391,25 +1399,11 @@ async function handleForwardTo(targetSessionId: string) {
   }
 }
 
-/**
- * 删除消息：微信语义软删（仅自己不可见，对方仍可见）。
- * 2026-08-10 功能补齐——real 模式调用 DELETE /messages/{messageId}（后端软删 deleted_for_sender）；
- * 无论服务端结果如何都本地隐藏（本地语义优先，服务端失败仅提示）。
- */
-async function handleDeleteMessage() {
+/** 删除消息（本地持久隐藏，仅当前设备生效） */
+function handleDeleteMessage() {
   const messageId = longPressMenu.value.messageId;
   closeLongPressMenu();
   if (!messageId) return;
-  if (!useMock()) {
-    try {
-      await request({
-        url: `/messages/${encodeURIComponent(messageId)}`,
-        method: "DELETE",
-      });
-    } catch (_e) {
-      // 服务端删除失败：仍本地隐藏（微信语义），不打断用户操作
-    }
-  }
   const next = new Set(deletedMessageIds.value);
   next.add(messageId);
   deletedMessageIds.value = next;
@@ -1681,6 +1675,7 @@ defineExpose({ noop });
               :quote-sender="row.message.quoteSender"
               :can-interact="true"
               :peer-avatar="peerAvatarSrc"
+              :self-avatar="selfAvatarSrc"
               @avatar-tap="openAvatarMenu"
               @longpress="handleMessageLongpress(row.message.id)"
               @tap-quote="handleTapQuote"
@@ -3094,3 +3089,4 @@ defineExpose({ noop });
 }
 
 </style>
+```
