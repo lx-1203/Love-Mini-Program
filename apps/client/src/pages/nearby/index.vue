@@ -627,19 +627,19 @@ function requireLogin(): boolean {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 40%;
+  height: 50%;
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
 }
 
 .circle-mini__info {
   position: absolute;
-  left: 20rpx;
-  right: 20rpx;
-  bottom: 88rpx;
+  left: 16rpx;
+  right: 16rpx;
+  bottom: 16rpx;
   display: flex;
   flex-direction: column;
   gap: 4rpx;
-  z-index: 1;
+  z-index: 2;
 }
 
 .circle-mini__name {

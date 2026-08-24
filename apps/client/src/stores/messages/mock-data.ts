@@ -98,9 +98,24 @@ export const mockMessages: Record<string, MessageItem[]> = {
       body: '{"title":"校园春日联谊会","desc":"一场轻松的春日联谊会，有破冰游戏、桌游互动、自由交流。","tag":"本周活动","targetUrl":"/pages/activities/detail?id=sample-weekend-party"}',
       sentAt: new Date(Date.now() - 4 * 3600_000).toISOString(),
     },
+    { id: "msg-52", sessionId: "session-private-3", sender: "self", kind: "text", body: "这个活动看起来不错！", sentAt: new Date(Date.now() - 3.5 * 3600_000).toISOString() },
+    { id: "msg-53", sessionId: "session-private-3", sender: "peer", kind: "text", body: "一起去吧？", sentAt: new Date(Date.now() - 3 * 3600_000).toISOString() },
+    { id: "msg-54", sessionId: "session-private-3", sender: "self", kind: "emoji", body: "😂", sentAt: new Date(Date.now() - 2.5 * 3600_000).toISOString() },
+    { id: "msg-55", sessionId: "session-private-3", sender: "peer", kind: "text", body: "约好了！", sentAt: new Date(Date.now() - 2 * 3600_000).toISOString() },
+  ],
+  "session-private-4": [
+    { id: "msg-10", sessionId: "session-private-4", sender: "peer", kind: "text", body: "周末去爬山吗？", sentAt: new Date(Date.now() - 24 * 3600_000).toISOString() },
+    { id: "msg-11", sessionId: "session-private-4", sender: "self", kind: "text", body: "好啊，去哪座山？", sentAt: new Date(Date.now() - 23 * 3600_000).toISOString() },
+    { id: "msg-12", sessionId: "session-private-4", sender: "peer", kind: "text", body: "白云山怎么样？", sentAt: new Date(Date.now() - 22 * 3600_000).toISOString() },
+    { id: "msg-13", sessionId: "session-private-4", sender: "self", kind: "text", body: "可以，几点出发？", sentAt: new Date(Date.now() - 21 * 3600_000).toISOString() },
+    { id: "msg-14", sessionId: "session-private-4", sender: "peer", kind: "text", body: "早上8点？", sentAt: new Date(Date.now() - 20 * 3600_000).toISOString() },
+    { id: "msg-15", sessionId: "session-private-4", sender: "self", kind: "text", body: "没问题！", sentAt: new Date(Date.now() - 19 * 3600_000).toISOString() },
+    { id: "msg-16", sessionId: "session-private-4", sender: "peer", kind: "text", body: "给你看看周末拍的风景", sentAt: new Date(Date.now() - 4 * 3600_000).toISOString() },
   ],
   "session-temp-1": [
     { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: new Date(Date.now() - 3600_000).toISOString() },
+    { id: "msg-7", sessionId: "session-temp-1", sender: "self", kind: "text", body: "你好！", sentAt: new Date(Date.now() - 1800_000).toISOString() },
+    { id: "msg-8", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "你好奇的天文馆我也去过！", sentAt: new Date(Date.now() - 1080_000).toISOString() },
   ],
 };
 
