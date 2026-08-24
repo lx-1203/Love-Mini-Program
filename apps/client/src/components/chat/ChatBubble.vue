@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -266,8 +265,6 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   color: #222222;
   border-radius: 20rpx 20rpx 20rpx 4rpx;
   max-width: 560rpx;
-  /* 修复：移除 box-shadow 防止背景分割（绿色/粉色异常） */
-  box-shadow: none;
 }
 
 /* 对方气泡：纯白（--c-bubble-other 已改 #FFFFFF）、无阴影（微信白气泡无投影） */
@@ -386,5 +383,4 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   opacity: 0.85;
 }
 </style>
-```
 

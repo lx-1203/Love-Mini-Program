@@ -1,26 +1,3 @@
-<chinese_thought>
-用户要求我将提供的代码更改应用到现有的Vue文件中。从描述来看，变更内容是将`selfAvatarSrc`通过`self-avatar` prop传递给`ChatBubble`组件。
-
-让我先分析一下代码块和现有文档：
-1. 在提供的代码块中，我看到在ChatBubble组件调用中添加了`:self-avatar="selfAvatarSrc"`属性
-2. 但在现有文件中，我检查了ChatBubble组件的调用位置，发现它已经包含了`:self-avatar="selfAvatarSrc"`属性
-
-让我仔细对比一下：
-- 在现有文件中，第2582行左右有ChatBubble组件调用
-- 在提供的代码块中，也显示了相同的ChatBubble调用
-
-看起来这两个部分已经完全相同了。那么，我需要检查用户是否提供了错误的变更描述，或者我是否遗漏了什么。
-
-我注意到在现有文件中，ChatBubble调用确实包含了`:self-avatar="selfAvatarSrc"`。所以变更描述中说的"将selfAvatarSrc通过self-avatar prop传递给ChatBubble组件"实际上已经存在了。
-
-不过，用户明确要求我"Rewrite the existing document to fully incorporate the code changes"，并且必须输出完整文件。
-
-由于提供的代码块与现有文件中的对应部分完全一致，这意味着不需要做任何修改。但我需要遵循用户的指示，输出完整文件。
-
-我将保持文件原样输出，因为变更已经包含在内。但为了确保完全遵循指令，我会仔细检查整个文件，确保没有遗漏其他需要修改的地方。
-</chinese_thought>
-
-```vue
 <script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
@@ -795,6 +772,8 @@ async function loadPeerOnlineStatus(): Promise<void> {
   }
 }
 
+/**
+
 /** 认识天数（来自关系信息；无关系时按 1 天兜底） */
 const relationDays = computed(() => {
   if (!sessionId.value) return 1;
@@ -1238,15 +1217,6 @@ const peerAvatarSrc = computed(() => {
     return session.partnerAvatar;
   }
   return IMAGE_PATHS.AVATARS.AVATAR_1;
-});
-
-// 2026-08-24 修复：当前用户自己的头像（用于 ChatBubble self 侧渲染）
-const selfAvatarSrc = computed(() => {
-  // 优先从 session store 的 profileBackgroundUrl 同级字段获取
-  const userSession = sessionStore.userSession as Record<string, unknown> | null;
-  const url = userSession?.avatarUrl ?? userSession?.profileAvatarUrl ?? "";
-  if (url && typeof url === "string") return resolveMediaUrl(url);
-  return IMAGE_PATHS.AVATARS.AVATAR_2;
 });
 
 /** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
@@ -1711,7 +1681,6 @@ defineExpose({ noop });
               :quote-sender="row.message.quoteSender"
               :can-interact="true"
               :peer-avatar="peerAvatarSrc"
-              :self-avatar="selfAvatarSrc"
               @avatar-tap="openAvatarMenu"
               @longpress="handleMessageLongpress(row.message.id)"
               @tap-quote="handleTapQuote"
@@ -3125,11 +3094,3 @@ defineExpose({ noop });
 }
 
 </style>
-```
-
-
-
-
-
-
-

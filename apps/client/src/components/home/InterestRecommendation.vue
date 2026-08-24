@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import type { InterestCircleViewModel } from "../../view-models/home-dashboard";
 import { IMAGE_PATHS } from "../../config/images";
@@ -121,8 +120,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 .interest-card__cover-wrap {
   position: relative;
   width: 100%;
-  /* 修复：从220rpx减小到180rpx，防止圈子图片占过大分量 */
-  height: 180rpx;
+  height: 220rpx;
   overflow: hidden;
 }
 
@@ -174,4 +172,3 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   border-color: var(--c-brand-light, #D1F5E7);
 }
 </style>
-```
