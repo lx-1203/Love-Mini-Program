@@ -65,7 +65,7 @@ class RealVillageServiceTest {
         Long userId = 100L;
         // CreatePostRequest(title, content, category, tags, images, activityId)
         CreatePostRequest request = new CreatePostRequest(
-                "标题", "hello", "all", List.of("tag"), List.of("img"), null);
+                "标题", "hello", "all", List.of("tag"), List.of("img"), null, null, null);
         PostDetailView expected = buildPostDetailView(1L, userId);
         when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null))
                 .thenReturn(expected);

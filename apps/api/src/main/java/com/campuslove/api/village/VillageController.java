@@ -115,6 +115,8 @@ public class VillageController {
     }
     Long userId = SecurityUtils.getCurrentUserId();
     // 2026-08-09 帖子关联活动：透传可选 activityId（无效值服务层宽松置 null）
+    // 统一发布（village/post 发布页）：targetType/targetId 作为扩展字段透传，
+    // 圈子发布由前端调用 /circles/{id}/topics（后端 post 保持通用，避免包私有 CircleTopicView 跨包问题）。
     PostDetailView view = villageService.createPost(userId, request.title(), request.content(),
         request.images(), request.tags(), request.category(), request.activityId());
     // 监控：记录帖子创建事件

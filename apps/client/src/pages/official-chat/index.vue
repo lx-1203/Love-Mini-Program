@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 寻觅助手会话页 — 理想图还原版
@@ -354,6 +353,12 @@ onLoad((query) => {
 
 <style scoped lang="scss">
 /* ===== 导航栏 ===== */
+
+.assistant-chat {
+  /* P0#4: 覆盖全局粉→灰页面渐变，使用浅薄荷底色，避免“上绿下粉” */
+  background: var(--c-bg-page, #F7FAF9);
+}
+
 .nav-bar {
   display: flex;
   align-items: center;
@@ -735,9 +740,3 @@ onLoad((query) => {
   font-size: 28rpx;
 }
 </style>
-```
-
-
-
-
-

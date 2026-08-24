@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
@@ -131,4 +130,3 @@ const icons = {
   color: #6B7571;
 }
 </style>
-```

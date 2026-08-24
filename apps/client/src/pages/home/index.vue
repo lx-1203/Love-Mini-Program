@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 首页 V3：今日恋爱首页（Explore Today）
@@ -236,4 +235,3 @@ function openInvite() {
   height: 48rpx;
 }
 </style>
-```

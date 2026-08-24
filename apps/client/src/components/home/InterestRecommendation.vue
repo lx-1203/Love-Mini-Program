@@ -40,7 +40,6 @@ function formatMemberCount(count: number): string {
   return String(count);
 }
 
-
 defineProps<{ items: InterestCircleViewModel[] }>();
 defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id: number): void }>();
 </script>
@@ -49,11 +48,17 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   <view class="interest-recommend">
     <view class="section-head">
       <text class="section-head__title">兴趣推荐</text>
-      <text class="section-head__more" @tap="$emit('more')">查看更多 ›</text>
+      <text class="section-head__more" @tap="$emit('more')">查看更多 &#8250;</text>
     </view>
     <scroll-view scroll-x class="interest-scroll" :show-scrollbar="false">
       <view class="interest-list">
-        <view v-for="item in items" :key="item.id" class="interest-card" @tap="$emit('select', item.id)">
+        <view
+          v-for="item in items"
+          :key="item.id"
+          class="interest-card"
+          @tap="$emit('select', item.id)"
+        >
+          <!-- 封面图（顶部，固定高度，不加黑色浮层） -->
           <view class="interest-card__cover-wrap">
             <image
               class="interest-card__cover"
@@ -61,12 +66,17 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
               mode="aspectFill"
               alt=""
             />
-            <view class="interest-card__cover-overlay">
-              <text class="interest-card__name">{{ item.name }}</text>
-              <text class="interest-card__count">{{ formatMemberCount(item.memberCount) }} 人加入</text>
-            </view>
           </view>
-          <view class="interest-card__join" :class="{ 'interest-card__join--joined': item.joined }" @tap.stop="$emit('join', item.id)">
+          <!-- 文案区：名称/人数在图下方（参考图：不上图覆盖） -->
+          <view class="interest-card__body">
+            <text class="interest-card__name">{{ item.name }}</text>
+            <text class="interest-card__count">{{ formatMemberCount(item.memberCount) }} 人加入</text>
+          </view>
+          <view
+            class="interest-card__join"
+            :class="{ 'interest-card__join--joined': item.joined }"
+            @tap.stop="$emit('join', item.id)"
+          >
             {{ item.joined ? '已加入' : '加入' }}
           </view>
         </view>
@@ -77,7 +87,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 
 <style scoped lang="scss">
 .interest-recommend {
-  padding: 8rpx 0 16rpx;
+  padding: 8rpx 32rpx 16rpx;
 }
 
 .section-head {
@@ -109,19 +119,21 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 }
 
 .interest-card {
-  width: 300rpx;
+  width: 216rpx;
   flex-shrink: 0;
-  border-radius: 20rpx;
-  background: var(--c-bg-container, #FFFFFF);
+  border-radius: 16rpx;
+  background: #ffffff;
   border: 1rpx solid var(--c-line, #EEF2F0);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .interest-card__cover-wrap {
   position: relative;
   width: 100%;
-  height: 220rpx;
+  height: 216rpx;
   overflow: hidden;
+  background: #EAF6F1;
 }
 
 .interest-card__cover {
@@ -130,13 +142,8 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   display: block;
 }
 
-.interest-card__cover-overlay {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 24rpx 16rpx 14rpx;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 100%);
+.interest-card__body {
+  padding: 14rpx 16rpx 6rpx;
   display: flex;
   flex-direction: column;
   gap: 4rpx;
@@ -145,19 +152,26 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 .interest-card__name {
   font-size: 26rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: #1E1E1E;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .interest-card__count {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.9);
+  color: #9AA39F;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .interest-card__join {
-  margin: 12rpx;
+  margin: 10rpx 16rpx 14rpx;
   text-align: center;
-  padding: 12rpx 0;
+  padding: 10rpx 0;
   border-radius: 999rpx;
   border: 2rpx solid var(--c-brand-dark, #36C99A);
   background: #ffffff;

@@ -79,6 +79,10 @@
       "path": "pages/village/index"
     },
     {
+      "path": "pages/village/publish",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/village/post"
     },
     {

@@ -1,4 +1,3 @@
-﻿```vue
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
@@ -502,5 +501,3 @@ onUnload(() => {
   color: #5f6f6b;
 }
 </style>
-```
-

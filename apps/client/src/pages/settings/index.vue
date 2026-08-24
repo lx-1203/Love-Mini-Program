@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 设置页
  * 分组：账号管理、通知设置、隐私安全、缓存管理、关于
@@ -20,7 +20,7 @@ import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { TOAST_DURATION } from "../../constants/limits";
 import { isDev } from "../../config/env";
 // 收尾轮：深色模式三态切换（auto/dark/light）
-import { useThemeStore, type ThemeMode } from "../../stores/theme";
+import { useThemeStore } from "../../stores/theme";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { switchTabWithQuery } from "../../utils/navigation";
@@ -30,25 +30,9 @@ const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const { t } = useI18n();
 const themeStore = useThemeStore();
-/** 深色模式三态循环（跟随系统 → 深色 → 浅色 → 跟随系统） */
-const THEME_CYCLE: ThemeMode[] = ["auto", "dark", "light"];
-const themeModeText = computed(() => {
-  const map: Record<ThemeMode, string> = {
-    auto: t("settings.themeAuto"),
-    dark: t("settings.themeDark"),
-    light: t("settings.themeLight"),
-  };
-  return map[themeStore.mode];
-});
-function handleThemeTap(): void {
-  const idx = THEME_CYCLE.indexOf(themeStore.mode);
-  const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? "auto";
-  themeStore.setMode(next);
-  uni.showToast({ title: themeModeText.value, icon: "none" });
-}
 
 /** Switch 开关切换深色/浅色模式 */
-function handleThemeSwitch(e: { detail: { value: boolean } }): void {
+function handleThemeSwitch(): void {
   themeStore.toggleTheme();
   uni.showToast({ title: themeStore.isDark ? t("settings.themeDark") : t("settings.themeLight"), icon: "none" });
 }

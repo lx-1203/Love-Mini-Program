@@ -5,6 +5,7 @@ import type {
   DoNotDisturbView,
   FollowUserView,
   MakeUpCheckInResultView,
+  PostDraftView,
   ProfileStats,
   RecommendationFilter,
   RecommendedPerson,
@@ -13,6 +14,7 @@ import type {
   TodayRecommendationView,
   UserSearchView,
   WhisperMessageView,
+  SaveDraftRequest,
   WhisperSendRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
@@ -1164,7 +1166,27 @@ async getWhisper(userId: string): Promise<WhisperUnlockView> {
    * @param id - 反馈记录 ID
    * @returns 反馈详情视图（含 content/attachments/latestReplyContent）
    */
-  async getSubmissionDetail(id: number): Promise<SubmissionDetailView> {
+  /** 获取当前用户发布草稿（统一发布页），无则 null。 */
+  async getDraft(): Promise<PostDraftView | null> {
+    if (useMock()) {
+      return ((mockFixtures as any).getDraft?.()) ?? null;
+    }
+    return request<PostDraftView | null>({ url: "/drafts/current", method: "GET" });
+  },
+  /** 保存当前用户发布草稿（前后端双写）。 */
+  async saveDraft(data: SaveDraftRequest): Promise<PostDraftView> {
+    if (useMock()) {
+      return ((mockFixtures as any).saveDraft?.(data)) ?? (data as PostDraftView);
+    }
+    return request<PostDraftView, SaveDraftRequest>({ url: "/drafts", method: "POST", data });
+  },
+  /** 删除当前用户发布草稿（发布成功后调用）。 */
+  async deleteDraft(): Promise<void> {
+    if (useMock()) {
+      return;
+    }
+    return request<void>({ url: "/drafts/current", method: "DELETE" });
+  },  async getSubmissionDetail(id: number): Promise<SubmissionDetailView> {
     if (useMock()) {
       return mockFixtures.getSubmissionDetail(id);
     }

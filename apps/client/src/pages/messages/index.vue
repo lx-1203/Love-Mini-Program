@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 消息首页 — 理想设计还原版
@@ -857,4 +856,3 @@ function formatTime(dateStr?: string): string {
   color: var(--c-text-tertiary, #9AA39F);
 }
 </style>
-```

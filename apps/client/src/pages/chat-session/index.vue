@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 聊天详情页 - 支持私信会话和临时匿名聊天会话
@@ -31,6 +30,7 @@ import { usePageAccess } from "../../composables/usePageAccess";
 import { chatPageRequirements } from "../../config/page-access";
 // 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
 import { useSessionStore } from "../../stores/session";
+import { useProfileStore } from "../../stores/profile";
 import LockScreen from "../../components/common/LockScreen.vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { ROUTES } from "../../constants/routes";
@@ -465,6 +465,7 @@ usePageAccess({ ...chatPageRequirements, requiresProfile: false });
 
 // 2026-08-09 免踢登录：未登录 → 展示 LockScreen 引导，不渲染会话、不发鉴权请求
 const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
@@ -991,6 +992,25 @@ async function sendText() {
       await chatStore.sendText(messageToSend);
       // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
       syncChatStoreMessagesToMessagesStore();
+      // 防御性兜底：确保刚发出的消息以 self 身份显示在右侧。
+      // （后端已存 sender=self；若同步/回显异常导致 sender 丢失被误判为 peer，这里补一条 self 消息）
+      const _now = Date.now();
+      const _recentSelf = messagesStore.currentMessages.some(
+        (m) => m.sender === "self" && m.body === messageToSend && (_now - Date.parse(m.sentAt || "")) < 8000
+      );
+      if (!_recentSelf) {
+        messagesStore.setCurrentMessages([
+          ...messagesStore.currentMessages,
+          {
+            id: `local-${Date.now()}`,
+            sessionId: currentSessionId,
+            sender: "self" as const,
+            kind: "text" as const,
+            body: messageToSend,
+            sentAt: new Date().toISOString(),
+          },
+        ]);
+      }
     } else {
       // 私信会话使用 messagesStore 的标准私信链路
       await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
@@ -1211,22 +1231,47 @@ function clearTypingStopTimer() {
   }
 }
 
-/** 对方头像（正在输入行展示；默认配置 AVATAR_1，与 ChatBubble 默认一致） */
+
+/** 对方头像（正在输入行展示）。
+ * 优先使用会话下发的 partnerAvatar；缺失时按会话稳定 hash 从头像池推导，
+ * 确保不同对象显示不同头像，避免"所有人都同一个头像"的错乱。 */
+const peerAvatarPool = [
+  IMAGE_PATHS.AVATARS.AVATAR_1,
+  IMAGE_PATHS.AVATARS.AVATAR_3,
+  IMAGE_PATHS.AVATARS.AVATAR_5,
+  IMAGE_PATHS.AVATARS.AVATAR_7,
+  IMAGE_PATHS.AVATARS.AVATAR_9,
+  IMAGE_PATHS.AVATARS.AVATAR_11,
+] as const;
+
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
 const peerAvatarSrc = computed(() => {
   const session = currentSession.value;
-  if (session && "partnerAvatar" in session && session.partnerAvatar) {
-    return session.partnerAvatar;
-  }
+  const raw = session && "partnerAvatar" in session ? session.partnerAvatar : "";
+  if (raw) return raw;
+  const key = String((session && "recommendedPersonId" in session ? session.recommendedPersonId : "") || session?.id || "");
+  if (key) return peerAvatarPool[hashString(key) % peerAvatarPool.length];
   return IMAGE_PATHS.AVATARS.AVATAR_1;
 });
 
-/** 自己的头像（用于 ChatBubble 的 self-avatar prop，确保自己的消息显示正确头像） */
+/** 自己的头像（用于 ChatBubble 的 self-avatar prop，确保自己的消息显示正确头像）。
+ * 优先使用当前用户真实头像（profileStore.avatarUrl），缺失时回退 AVATAR_2，
+ * 与对方默认 AVATAR_1 区分，避免"自己跟自己聊天"的观感。 */
 const selfAvatarSrc = computed(() => {
-  // 从 sessionStore 获取当前用户头像，若不存在则使用默认头像
-  const user = (sessionStore as any).user || (sessionStore as any).currentUser;
-  return user?.avatar || IMAGE_PATHS.AVATARS.AVATAR_1;
-});
 
+  if (profileStore.avatarUrl) return profileStore.avatarUrl;
+  const user = (sessionStore as any).user || (sessionStore as any).currentUser;
+  const ua = user && typeof user.avatar === "string" ? user.avatar : "";
+  if (ua) return ua;
+  return IMAGE_PATHS.AVATARS.AVATAR_2;
+});
 /** 解析对方用户 ID 为数字，用于 API 调用（委托给 view-models 纯函数） */
 function resolvePeerUserId(): number | null {
   // 2026-08-09：临时会话（ChatSessionView）无 partnerId 字段，传 undefined
@@ -3089,4 +3134,3 @@ defineExpose({ noop });
 }
 
 </style>
-```

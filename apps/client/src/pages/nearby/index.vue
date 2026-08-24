@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 附近首页（v3 Nearby 冻结 · 01_nearby_home）
@@ -680,6 +679,7 @@ function requireLogin(): boolean {
 
 /* 校园圈 */
 .campus-entry {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 20rpx;
@@ -919,7 +919,3 @@ function requireLogin(): boolean {
 }
 
 </style>
-```
-
-
-

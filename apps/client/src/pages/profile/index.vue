@@ -1413,7 +1413,7 @@ async function handlePostTap(postId: string) {
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
-  openAppPath("/pages/village/post");
+  openAppPath("/pages/village/publish");
 }
 
 

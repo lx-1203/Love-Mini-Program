@@ -708,6 +708,30 @@ export interface MessageDashboardView {
   recentChats: MessageDashboardConversationView[];
 }
 
+/* ========== 发布草稿（统一发布页 前后端双写） ========== */
+export interface PostDraftView {
+  id?: number | null;
+  /** 发布目标类型：general | circle | campus */
+  targetType?: string | null;
+  targetId?: number | null;
+  title?: string | null;
+  content?: string | null;
+  images?: string[];
+  tags?: string[];
+  topics?: string[];
+  location?: string | null;
+  visibility?: string | null;
+  updatedAt?: string | null;
+}
 
-
-
+export interface SaveDraftRequest {
+  targetType?: string | null;
+  targetId?: number | null;
+  title?: string | null;
+  content?: string | null;
+  images?: string[];
+  tags?: string[];
+  topics?: string[];
+  location?: string | null;
+  visibility?: string | null;
+}

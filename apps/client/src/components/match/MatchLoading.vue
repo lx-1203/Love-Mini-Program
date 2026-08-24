@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
@@ -475,4 +474,3 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   100% { transform: rotate(360deg) translateX(260rpx) rotate(-360deg); }
 }
 </style>
-```
