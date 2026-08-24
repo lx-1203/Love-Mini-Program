@@ -1,3 +1,4 @@
+```typescript
 /**
  * Messages Store Mock 数据（mock 模式专用）。
  */
@@ -99,8 +100,19 @@ export const mockMessages: Record<string, MessageItem[]> = {
       sentAt: new Date(Date.now() - 4 * 3600_000).toISOString(),
     },
   ],
+  "session-private-4": [
+    { id: "msg-10", sessionId: "session-private-4", sender: "peer", kind: "text", body: "周末去爬山吗？", sentAt: new Date(Date.now() - 24 * 3600_000).toISOString() },
+    { id: "msg-11", sessionId: "session-private-4", sender: "self", kind: "text", body: "好啊，去哪座山？", sentAt: new Date(Date.now() - 23 * 3600_000).toISOString() },
+    { id: "msg-12", sessionId: "session-private-4", sender: "peer", kind: "text", body: "白云山怎么样？", sentAt: new Date(Date.now() - 22 * 3600_000).toISOString() },
+    { id: "msg-13", sessionId: "session-private-4", sender: "self", kind: "text", body: "可以，几点出发？", sentAt: new Date(Date.now() - 21 * 3600_000).toISOString() },
+    { id: "msg-14", sessionId: "session-private-4", sender: "peer", kind: "text", body: "早上8点？", sentAt: new Date(Date.now() - 20 * 3600_000).toISOString() },
+    { id: "msg-15", sessionId: "session-private-4", sender: "self", kind: "text", body: "没问题！", sentAt: new Date(Date.now() - 19 * 3600_000).toISOString() },
+    { id: "msg-16", sessionId: "session-private-4", sender: "peer", kind: "text", body: "给你看看周末拍的风景", sentAt: new Date(Date.now() - 4 * 3600_000).toISOString() },
+  ],
   "session-temp-1": [
     { id: "msg-6", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "嗨，我是通过匹配进来的", sentAt: new Date(Date.now() - 3600_000).toISOString() },
+    { id: "msg-7", sessionId: "session-temp-1", sender: "self", kind: "text", body: "你好！", sentAt: new Date(Date.now() - 0.5 * 3600_000).toISOString() },
+    { id: "msg-8", sessionId: "session-temp-1", sender: "peer", kind: "text", body: "你好奇的天文馆我也去过！", sentAt: new Date(Date.now() - 0.3 * 3600_000).toISOString() },
   ],
 };
 
@@ -178,3 +190,4 @@ export const mockInteractionEvents: InteractionEvent[] = [
   { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_1, referenceId: 42, referenceType: "post", summary: "林晓评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
   { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "Luna", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_5, referenceId: 15, referenceType: "topic", summary: "Luna回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];
+```

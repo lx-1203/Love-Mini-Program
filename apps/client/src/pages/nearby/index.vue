@@ -599,7 +599,7 @@ function requireLogin(): boolean {
 .circle-mini {
   position: relative;
   width: 300rpx;
-  height: 360rpx;
+  height: 220rpx;
   flex-shrink: 0;
   border-radius: 24rpx;
   overflow: hidden;
