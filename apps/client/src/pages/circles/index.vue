@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+﻿```vue
+<script setup lang="ts">
 /**
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
@@ -543,9 +544,11 @@ defineExpose({ toggleJoin });
   padding: var(--sp-6) var(--sp-7);
   background: var(--c-neutral-0);
   border-radius: var(--r-lg);
-  box-shadow: var(--s-card-soft);
+  /* 修复：降低阴影强度，防止阴影笼罩导致内容显示不全 */
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transition: transform var(--d-normal, 200ms) ease;
+  overflow: hidden;
 }
 
 /* #ifdef H5 */
@@ -561,12 +564,15 @@ defineExpose({ toggleJoin });
   border-radius: var(--r-md);
   overflow: hidden;
   flex-shrink: 0;
+  /* 修复：确保封面图不溢出卡片 */
+  background: var(--c-neutral-100);
 }
 
 .circle-card__cover {
   width: 100%;
   height: 100%;
   display: block;
+  /* 修复：图片使用 aspectFill + overflow:hidden 确保裁切显示 */
   object-fit: cover;
 }
 
@@ -703,3 +709,4 @@ defineExpose({ toggleJoin });
   height: 60rpx;
 }
 </style>
+```

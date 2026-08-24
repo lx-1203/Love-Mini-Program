@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
@@ -102,7 +103,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   padding: 20rpx;
   border-radius: 40rpx;
   background: #ffffff;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -183,6 +184,8 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   display: flex;
   gap: 8rpx;
   margin-top: 14rpx;
+  max-height: 160rpx;
+  overflow: hidden;
 }
 
 .post-card__img {
@@ -191,6 +194,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   border-radius: 10rpx;
   object-fit: cover;
   background: #F0F2F5;
+  flex-shrink: 0;
 }
 
 .post-card__meta {
@@ -208,6 +212,7 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   color: #FF6B81;
 }
 </style>
+```
 
 
 

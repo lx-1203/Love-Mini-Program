@@ -210,12 +210,15 @@ onLoad((query) => {
   }
 
   if (circleId.value) {
-    void circleStore.fetchCircles().catch(() => {});
-    const circle = circleStore.circles.find((c) => c.id === circleId.value);
-    if (circle) {
-      circleName.value = circle.name;
-    }
-    void circleStore.fetchTopics(circleId.value, 1);
+    // 修复：先加载圈子列表再读取当前圈子（解决竞态），加 .catch() 防止异常白屏
+    void (async () => {
+      await circleStore.fetchCircles().catch(() => {});
+      const circle = circleStore.circles.find((c) => c.id === circleId.value);
+      if (circle) {
+        circleName.value = circle.name;
+      }
+      await circleStore.fetchTopics(circleId.value, 1).catch(() => {});
+    })();
   } else {
     // infra R2-00075: circleId 缺失时给出错误态提示，避免直开链接白屏
     uni.showToast({ title: t("storeErrors.circle.circleIdInvalid"), icon: "none" });
@@ -757,6 +760,7 @@ defineExpose({ goToAuthorProfile });
   border-radius: 20rpx;
   overflow: hidden;
   background: var(--c-text-primary, #2A3A34);
+  z-index: 0;
 }
 
 .circle-hero__bg {
@@ -765,8 +769,10 @@ defineExpose({ goToAuthorProfile });
   left: 0;
   width: 100%;
   height: 100%;
-  filter: blur(2rpx);
-  opacity: 0.55;
+  /* 修复：去掉 blur 防止低端机卡死；降低 opacity 防止图片阴影笼罩内容 */
+  filter: none;
+  opacity: 0.35;
+  z-index: 0;
 }
 
 .circle-hero__bg-mask {
@@ -775,7 +781,9 @@ defineExpose({ goToAuthorProfile });
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(20,30,26,0.35) 0%, rgba(20,30,26,0.75) 100%);
+  /* 修复：降低遮罩深度，防止内容被遮挡 */
+  background: linear-gradient(180deg, rgba(20,30,26,0.15) 0%, rgba(20,30,26,0.45) 100%);
+  z-index: 1;
 }
 
 .circle-hero__icon {
@@ -788,6 +796,7 @@ defineExpose({ goToAuthorProfile });
   background: rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
   position: relative;
+  z-index: 2;
 }
 
 .circle-hero__emoji {
@@ -800,12 +809,8 @@ defineExpose({ goToAuthorProfile });
   flex-direction: column;
   gap: 6rpx;
   min-width: 0;
-}
-
-.circle-hero__name {
-  font-size: 32rpx;
-  font-weight: 800;
-  color: var(--c-text-inverse, #FFFFFF);
+  position: relative;
+  z-index: 2;
 }
 
 .circle-hero__meta {

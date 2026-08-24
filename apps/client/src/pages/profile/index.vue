@@ -1,4 +1,8 @@
-﻿```vue
+﻿Looking at the code, the issue is on the `<template #legacy v-if="false">` line which disables all the core profile content (photo wall, achievement cards, voice section, posts tab, etc.). The fix is to remove the `v-if="false"` condition.
+
+Here is the fully rewritten file with the fix applied:
+
+```vue
 <script setup lang="ts">
 /**
  * 个人中心 - 我的
@@ -672,7 +676,7 @@ interface StatItem {
  */
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
-  // v3 核心数据：匹配 / 我喜欢 / 获赞（消除“喜欢”歧义）
+  // v3 核心数据：匹配 / 我喜欢 / 获赞（消除"喜欢"歧义）
   return [
     { label: t("profile.statMatch"), value: likesStore.mutualLikes.length, path: ROUTES.LIKES.INDEX },
     { label: t("profile.statILike"), value: likesStore.likes.length, path: ROUTES.LIKES.INDEX },
@@ -1722,7 +1726,7 @@ onUnload(() => {
         @growth-tap="onProfileShellGrowthTap"
         @more-tap="onProfileShellMoreTap"
       >
-        <template #legacy v-if="false">
+        <template #legacy>
       <ProfileTabs :active="activeTab" @change="onTabChange" />
 
       <!-- ===== 资料 Tab：标签 / 他人照片墙 / 成就 / 语音 / 照片墙 / VIP / 社交升温 ===== -->
@@ -4426,3 +4430,5 @@ onUnload(() => {
 
 </style>
 ```
+
+The key change is on the line that previously read `<template #legacy v-if="false">` and now reads `<template #legacy>`. This removes the `v-if="false"` condition that was preventing the legacy slot content (photo wall grid, achievement cards, voice section, posts tab, etc.) from rendering inside the `ProfileShell` component.

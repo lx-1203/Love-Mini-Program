@@ -54,8 +54,9 @@ onShow(() => {
   // 未登录也能加载预览数据（点击交互时再跳登录）
   if (!homeFeed.value) {
     void homeStore.fetchDashboard();
-  void initLocation();
   }
+  // 2026-08-24 修复：initLocation 必须在 if 外面，否则有缓存时永远不获取位置
+  void initLocation();
 });
 
 // 2026-08-21 修复：bootstrap 异步完成后 isLoggedIn 才为 true，onShow 可能已跳过加载；
