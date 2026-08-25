@@ -71,6 +71,62 @@ export interface ProfileFieldStatus {
   bio: boolean;
 }
 
+/* ========== dev-user=1 全局演示入口（第五轮 QA 验收入口） ========== */
+
+/** dev-user 演示入口 query key（任意页面携带 ?dev-user=1 即生效） */
+const DEV_USER_QUERY_KEY = "dev-user";
+/** dev-user 演示入口触发值 */
+const DEV_USER_QUERY_VALUE = "1";
+
+/**
+ * 读取 query 对象中的指定参数值（容错：undefined / null / 非字符串统一收敛为空串）。
+ *
+ * @param query 页面 onLoad options 或 launch options.query（可能为 undefined / null）
+ * @param key 参数名
+ * @returns 参数值的字符串形式；缺失时返回空串
+ */
+function readQueryParam(query: Record<string, unknown> | undefined | null, key: string): string {
+  if (!query) return "";
+  const raw = query[key];
+  if (raw === undefined || raw === null) return "";
+  return String(raw);
+}
+
+/**
+ * 判断页面 onLoad query 是否携带 dev-user=1 演示入口。
+ *
+ * 与既有 QA 入口模式（match-success.vue / matching.vue 的 q["dev-preview"]==="1"）对齐，
+ * 仅当显式携带 dev-user=1 时返回 true；不携带时行为完全不变。
+ *
+ * @param query 页面 onLoad options（Record<string, string | undefined> 或 undefined）
+ * @returns true 表示当前页面请求以 mock 用户身份进入
+ */
+export function hasDevUserFlag(query?: Record<string, unknown> | null): boolean {
+  return readQueryParam(query, DEV_USER_QUERY_KEY) === DEV_USER_QUERY_VALUE;
+}
+
+/**
+ * 判断小程序冷启动参数是否携带 dev-user=1 演示入口。
+ *
+ * 覆盖场景：微信开发者工具「编译模式」带启动参数、二维码 scene 携带、
+ * 分享卡片携带 query 等冷启动路径；页面内导航路径由 utils/dev-user.ts
+ * 的导航拦截器覆盖（uni.navigateTo / redirectTo / reLaunch / switchTab）。
+ *
+ * @returns true 表示启动参数携带 dev-user=1
+ */
+export function hasDevUserFromLaunch(): boolean {
+  try {
+    const launchOptions = uni.getLaunchOptionsSync();
+    const query = (launchOptions && launchOptions.query) as
+      | Record<string, unknown>
+      | undefined;
+    return hasDevUserFlag(query);
+  } catch (_e) {
+    // getLaunchOptionsSync 异常（个别环境不支持）时按未携带处理，不影响正常启动
+    return false;
+  }
+}
+
 /**
  * Session Store 持久化存储 Key。
  *
@@ -523,10 +579,24 @@ export const useSessionStore = defineStore("session", {
       try {
         this.isOffline = false;
 
+        // 第五轮 QA 验收入口：冷启动携带 dev-user=1 时，以 mock 用户身份注入会话，
+        // 跳过登录锁与资料二级锁（真实模式构建下无需后端即可进入任意页面截图验收）。
+        // App.onLaunch 会在 bootstrap 前调用 applyDevUserFromLaunch() 注入会话，
+        // 此处仅在 devUserRequested 时跳过「真实会话覆盖」，不重复注入。
+        const devUserRequested = hasDevUserFromLaunch();
+
         if (useMock()) {
           // Mock 模式：使用本地硬编码的登录主视觉和用户会话数据
           this.loginHero = toLoginHeroView({ ...mockLoginHero });
           this.userSession = { ...mockUserSession };
+        } else if (devUserRequested) {
+          // dev-user=1 演示入口：跳过真实后端会话获取，保留已注入的 mock 会话。
+          // 不发起 /auth/me，避免空会话覆盖演示身份；loginHero 缺省时用 mock 主视觉兜底
+          // （loginHero 仅影响登录页视觉，不影响受保护页面渲染）。
+          this.loginHero = this.loginHero ?? toLoginHeroView({ ...mockLoginHero });
+          if (isDev) {
+            console.warn("[SessionStore] dev-user=1 演示入口：跳过真实会话获取（保留 mock 会话）");
+          }
         } else {
           const [hero, session] = await Promise.all([
             clientApi.getLoginHero(),
@@ -624,6 +694,43 @@ export const useSessionStore = defineStore("session", {
           errorName: error instanceof Error ? error.name : "Unknown",
         });
         throw error;
+      }
+    },
+
+    /**
+     * dev-user=1 全局演示入口（第五轮 QA 验收入口）。
+     *
+     * <p>任意页面携带 ?dev-user=1 时调用：以 mock 用户身份（mockUserSession，user-1001）
+     * 注入会话，跳过登录锁与资料二级锁（chat-session / messages 等页面
+     * 的 isUnlocked = isLoggedIn || useMock() 随之放行）。不携带时不会被调用，
+     * 正常登录流程（wx.login / 手机号 / 体验账号）完全不受影响。</p>
+     *
+     * <p>调用时机（由 utils/dev-user.ts 统一编排）：</p>
+     * <ol>
+     *   <li>冷启动携带 dev-user=1：App.onLaunch 在 bootstrap 前调用，
+     *       bootstrap 感知 devUserRequested 后不再用真实空会话覆盖；</li>
+     *   <li>页面导航携带 dev-user=1：导航拦截器（navigateTo / redirectTo /
+     *       reLaunch / switchTab）在跳转前调用；</li>
+     *   <li>页面级兜底：chat-session / messages 等关键页 onLoad 顶部调用
+     *       applyDevUserFromQuery(query)，覆盖自动化脚本直开页面（wx.* 直调）场景。</li>
+     * </ol>
+     *
+     * <p>幂等：已登录（含真实登录 / 已注入）时直接返回，不覆盖已有会话。</p>
+     */
+    enterDevUserDemo() {
+      if (this.userSession?.loggedIn) return;
+      this.userSession = { ...mockUserSession };
+      this.loginHero = this.loginHero ?? toLoginHeroView({ ...mockLoginHero });
+      this.isOffline = false;
+      this.errorMessage = null;
+      // 同步用户身份到 Sentry，后续异常上报自动关联 mock 用户
+      syncSentryUser(this.userSession);
+      if (isDev) {
+        // 修复 no-console：调试日志改用 console.warn（允许的方法）
+        console.warn("[SessionStore] dev-user=1 演示入口：已注入 mock 会话", {
+          userId: this.userSession.userId,
+          displayName: this.userSession.displayName,
+        });
       }
     },
 

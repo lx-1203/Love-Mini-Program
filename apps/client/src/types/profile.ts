@@ -33,9 +33,13 @@ export interface UserProfileMedia {
 }
 
 export interface UserProfileSocialProof {
-  likedMeCount: number;
+  /** 关注数（4 列统计第 1 列，规格「关注/粉丝/获赞/匹配」） */
+  followingCount: number;
+  /** 粉丝数（4 列统计第 2 列） */
+  followersCount: number;
+  /** 获赞数（4 列统计第 3 列） */
   likesCount: number;
-  visitorCount: number;
+  /** 匹配数（4 列统计第 4 列） */
   matchCount: number;
 }
 

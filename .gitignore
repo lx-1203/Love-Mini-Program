@@ -258,3 +258,20 @@ project.private.config.json
 tests/e2e/test-results/
 tests/e2e/tests/
 
+
+# ===== 工具/临时数据（不提交）=====
+.workbuddy/
+.claude/
+.design_library/
+.trae/
+reasonix/
+.reasonix/
+
+# 调试残留
+*.bak
+*.old
+*.correct
+*.timestamp-*.mjs
+*driver.cjs
+scripts/__*.mjs
+static/generated_test/

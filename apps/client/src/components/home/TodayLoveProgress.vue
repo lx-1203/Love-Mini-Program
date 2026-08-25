@@ -1,31 +1,40 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import type { LoveProgressStepViewModel } from "../../view-models/home-dashboard";
+
+const { t } = useI18n();
 
 defineProps<{ completed: number; total: number; steps: LoveProgressStepViewModel[] }>();
 defineEmits<{ (e: "step", action: string): void }>();
 
 const STEP_META: Record<string, { bg: string; softBg: string; icon: string; iconSrc: string; todo: string }> = {
-  profile: { bg: "#36C99A", softBg: "#E8FAF3", icon: "✓", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_PROFILE, todo: "已完成" },
-  discover: { bg: "#FF6B81", softBg: "#FFECEF", icon: "♥", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_DISCOVER, todo: "进行中" },
-  like: { bg: "#FF6B81", softBg: "#FFECEF", icon: "♥", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_DISCOVER, todo: "进行中" },
-  whisper: { bg: "#FF9F43", softBg: "#FFF5E6", icon: "☺", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_WHISPER, todo: "待开始" },
-  interest: { bg: "#A29BFE", softBg: "#F0EEFF", icon: "★", iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_INTEREST, todo: "待开始" },
+  profile: { bg: "#36C99A", softBg: "#E8FAF3", icon: IMAGE_PATHS.ICONS_EMOJI.CHECK, iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_PROFILE, todo: "已完成" },
+  discover: { bg: "#FF6B81", softBg: "#FFECEF", icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_DISCOVER, todo: "进行中" },
+  whisper: { bg: "#FF9F43", softBg: "#FFF5E6", icon: IMAGE_PATHS.ICONS_EMOJI.SMILE, iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_WHISPER, todo: "待开始" },
+  interest: { bg: "#A29BFE", softBg: "#F0EEFF", icon: IMAGE_PATHS.ICONS_EMOJI.STAR, iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_INTEREST, todo: "待开始" },
 };
 
 function stepMeta(id: string) {
-  return STEP_META[id] ?? { bg: "#36C99A", softBg: "#E8FAF3", icon: "♥", iconSrc: "", todo: "未完成" };
+  return STEP_META[id] ?? { bg: "#36C99A", softBg: "#E8FAF3", icon: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, iconSrc: "", todo: "未完成" };
 }
+/**
+ * 2026-08-25 P1：步骤名接入 i18n（规格书 3.8）。
+ * 优先展示 i18n 步骤名，确保用户看到「完善资料/认识新人/回复悄悄话/参与兴趣互动」，
+ * 而非后端可能返回的状态标签（"已完成/待开始"）。
+ */
 const TITLE_FALLBACK: Record<string, string> = {
-  profile: "完善资料",
-  discover: "认识新人",
-  like: "今日心动",
-  whisper: "回复悄悄话",
-  interest: "参与兴趣互动",
+  profile: t("home.loveStepProfile"),
+  discover: t("home.loveStepDiscover"),
+  whisper: t("home.loveStepWhisper"),
+  interest: t("home.loveStepInterest"),
 };
 
 function stepTitle(step: { id: string; title?: string }): string {
-  return step.title || TITLE_FALLBACK[step.id] || "任务";
+  // 优先 i18n 步骤名（后端 title 可能被状态标签污染）
+  const fallback = TITLE_FALLBACK[step.id];
+  if (fallback) return fallback;
+  return step.title || "任务";
 }
 
 </script>
@@ -53,7 +62,7 @@ function stepTitle(step: { id: string; title?: string }): string {
             :src="stepMeta(step.id).iconSrc"
             mode="aspectFit"
           />
-          <text v-else class="love-step__icon-text">{{ stepMeta(step.id).icon }}</text>
+          <image v-else class="love-step__icon-img" :src="stepMeta(step.id).icon" mode="aspectFit" />
         </view>
         <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ stepTitle(step) }}</text>
         <text class="love-step__meta" :style="{ color: stepMeta(step.id).bg }">

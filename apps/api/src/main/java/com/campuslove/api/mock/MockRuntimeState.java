@@ -73,13 +73,17 @@ public class MockRuntimeState {
       // 的头像已置空走客户端占位。
       // R4-01799：占位路径统一收敛为常量（见 MOCK_MEDIA_PATH_PREFIX），
       // 替换本地演示素材时只需改一处。
-      List.of(MOCK_MEDIA_PATH_PREFIX + "photo-1.jpg"),
+      // D-03：我的故事区需 3 张图（生活日常/旅行足迹/我的心愿），
+      // photoGallery 下发 3 个路径，客户端按索引渲染 3 卡故事。
+      List.of(MOCK_MEDIA_PATH_PREFIX + "photo-1.jpg",
+              MOCK_MEDIA_PATH_PREFIX + "photo-2.jpg",
+              MOCK_MEDIA_PATH_PREFIX + "photo-3.jpg"),
       MOCK_MEDIA_PATH_PREFIX + "half.jpg",
       MOCK_MEDIA_PATH_PREFIX + "intro.mp4",
       MOCK_MEDIA_PATH_PREFIX + "bg.jpg"
   );
 
-  private ProfileStatsData profileStats = new ProfileStatsData(28, 16, 104);
+  private ProfileStatsData profileStats = new ProfileStatsData(28, 16, 104, 28, 104, 32);
 
   private CampusProfileData campusProfile = new CampusProfileData(
       "广州",
@@ -545,7 +549,10 @@ public class MockRuntimeState {
   public record ProfileStatsData(
       int followingCount,
       int followersCount,
-      int likesCount
+      int likesCount,
+      int likedMeCount,
+      int visitorCount,
+      int matchCount
   ) {
   }
 

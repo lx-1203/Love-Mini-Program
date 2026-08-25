@@ -17,10 +17,10 @@ export interface AdminWhisperView {
 
 /** 分页列表 */
 export async function listWhispers(page = 1, size = 20): Promise<AdminPageView<AdminWhisperView>> {
-  return get<AdminPageView<AdminWhisperView>>(`/admin/whispers?page=${page}&size=${size}`);
+  return get<AdminPageView<AdminWhisperView>>(`/v1/admin/whispers?page=${page}&size=${size}`);
 }
 
 /** 删除 */
 export async function deleteWhisper(id: number): Promise<{ id: number; success: boolean }> {
-  return del<{ id: number; success: boolean }>(`/admin/whispers/${id}`);
+  return del<{ id: number; success: boolean }>(`/v1/admin/whispers/${id}`);
 }

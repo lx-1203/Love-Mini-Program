@@ -381,6 +381,10 @@ export const IMAGE_PATHS = {
     HEART_BRAND: ICONS_BASE + '/v2/heart-brand.png',
     STAR_BLUE: ICONS_BASE + '/v2/star-blue.png',
     X_GRAY: ICONS_BASE + '/v2/x-gray.png',
+    /* 2026-08-25 P0：登录页微信绿色气泡 SVG（自绘，参见 报告/2026-08-25-逐页差异规格书.md 2.9） */
+    WECHAT_GREEN_SVG: ICONS_BASE + '/login/wechat-green.svg',
+    /* 2026-08-25 P0：登录页主标题后绿色小苗图标（复用吉祥物 sprout，渲染最稳） */
+    SPROUT: IMAGES + '/mascot/sprout.png',
   },
 
   /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
@@ -481,6 +485,21 @@ export const IMAGE_PATHS = {
     HEART_OUTLINE: ICONS_BASE + '/heart.svg',               // 🤍 空心心（未赞）
     DOUBLE_HEART:ICONS_BASE + '/common/heart-filled.svg',   // 💞 恋爱咨询
     SPEECH:      ICONS_BASE + '/chat.svg',                  // 🗣️ 社交咨询
+    // ===== 2026-08-25 emoji→SVG 全量替换补充映射（映射表 v1，P0/P1）=====
+    STAR:        STATIC_BASE + '/svg-spec/03-icons/star.svg',        // ☆ 空星（悄悄话/未赞）
+    CLOSE:       STATIC_BASE + '/svg-spec/03-icons/close.svg',       // ✕ 关闭
+    CHECK:       ICONS_BASE + '/common/check.svg',                   // ✓ 对勾
+    COMMENT:     STATIC_BASE + '/svg-spec/03-icons/comment.svg',     // 💬 聊天气泡
+    IMAGE:       STATIC_BASE + '/svg-spec/03-icons/image.svg',       // 🖼 图片/相册
+    EDIT:        STATIC_BASE + '/svg-spec/03-icons/edit.svg',        // ✎ / ✏ 铅笔编辑
+    PLAY:        ICONS_BASE + '/common/play.svg',                    // ▶ 播放
+    SCHOOL:      ICONS_BASE + '/common/school.svg',                  // 🏫 学校
+    SPROUT:      STATIC_BASE + '/svg-spec/08-mascot/sprout-default.svg', // 🌱 寻觅品牌嫩芽
+    LEAF:        STATIC_BASE + '/svg-spec/09-decorations/leaf-2.svg',    // 🌿 叶子
+    STATUS_ONLINE: STATIC_BASE + '/svg-spec/04-avatars/status-online.svg', // 🟢 在线
+    GENDER_FEMALE: ICONS_BASE + '/emoji/gender-female.svg',          // ♀ 女（新下载）
+    GENDER_MALE:   ICONS_BASE + '/emoji/gender-male.svg',            // ♂ 男（新下载）
+    RUN:         ICONS_BASE + '/emoji/run.svg',                      // 🏃 跑步（新下载）
   },
 
   /** 首页拆分素材（素材/首页/最终/拆分图标-精修版） */
@@ -506,69 +525,72 @@ export const IMAGE_PATHS = {
     MUSIC:     IMAGES + '/covers/circle-music.png',
     FOOD:      IMAGES + '/covers/circle-food.png',
     SPORTS:    IMAGES + '/covers/circle-sports.png',
-    READING:   IMAGES + '/covers/circle-reading.png',
-    GAME:      IMAGES + '/covers/circle-game.png',
-    PET:       IMAGES + '/covers/circle-pet.png',
+    // 第五轮 QA 一致性收敛：原 GAME/READING/PET 是宽幅场景大图（600KB+ AI 摄影），
+    // 与理想图 素材/理想效果图/兴趣圈列表.png 的方形场景缩略风格（Style A）不同，
+    // 改用本地 AI 生成的方形居中场景图（与 ideal style 一致：摄影感/场景图优先）。
+    GAME:      IMAGES + '/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png',
+    READING:   IMAGES + '/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png',
+    PET:       IMAGES + '/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png',
     STUDY:     IMAGES + '/covers/circle-studybuddy.png',
     POSTGRAD:  IMAGES + '/covers/circle-postgraduate.png',
     ASTRONOMY: IMAGES + '/covers/circle-sky.png',
     DEFAULT:   IMAGES + '/covers/circle-photo.png',
   },
 
-  /** 登录页拆分素材（素材/登录页/拆分图标_登录页） */
+  /** 登录页拆分素材（素材/登录页/拆分图标_登录页；文件前缀 登录页_） */
   LOGIN_SPLIT: {
-    "r01_c01": '/static/assets/images/login-split/r01_c01.png',
+    "r01_c01": '/static/assets/images/login-split/登录页_r01_c01.png',
     "r01_c02": '/static/assets/images/login-split/r01_c02.png',
-    "r02_c01": '/static/assets/images/login-split/r02_c01.png',
-    "r02_c02": '/static/assets/images/login-split/r02_c02.png',
-    "r02_c03": '/static/assets/images/login-split/r02_c03.png',
-    "r03_c01": '/static/assets/images/login-split/r03_c01.png',
-    "r03_c02": '/static/assets/images/login-split/r03_c02.png',
-    "r03_c03": '/static/assets/images/login-split/r03_c03.png',
-    "r03_c04": '/static/assets/images/login-split/r03_c04.png',
-    "r04_c01": '/static/assets/images/login-split/r04_c01.png',
-    "r04_c02": '/static/assets/images/login-split/r04_c02.png',
-    "r04_c03": '/static/assets/images/login-split/r04_c03.png',
-    "r04_c04": '/static/assets/images/login-split/r04_c04.png',
-    "r05_c01": '/static/assets/images/login-split/r05_c01.png',
-    "r06_c01": '/static/assets/images/login-split/r06_c01.png',
-    "r06_c02": '/static/assets/images/login-split/r06_c02.png',
-    "r06_c03": '/static/assets/images/login-split/r06_c03.png',
-    "r06_c04": '/static/assets/images/login-split/r06_c04.png',
-    "r07_c01": '/static/assets/images/login-split/r07_c01.png',
-    "r07_c02": '/static/assets/images/login-split/r07_c02.png',
-    "r07_c03": '/static/assets/images/login-split/r07_c03.png',
-    "r07_c04": '/static/assets/images/login-split/r07_c04.png',
-    "r08_c01": '/static/assets/images/login-split/r08_c01.png',
-    "r08_c02": '/static/assets/images/login-split/r08_c02.png',
-    "r08_c03": '/static/assets/images/login-split/r08_c03.png',
-    "r08_c04": '/static/assets/images/login-split/r08_c04.png',
-    "r09_c01": '/static/assets/images/login-split/r09_c01.png',
-    "r10_c01": '/static/assets/images/login-split/r10_c01.png',
-    "r10_c02": '/static/assets/images/login-split/r10_c02.png',
-    "r10_c03": '/static/assets/images/login-split/r10_c03.png',
-    "r10_c04": '/static/assets/images/login-split/r10_c04.png',
-    "r11_c01": '/static/assets/images/login-split/r11_c01.png',
-    "r11_c02": '/static/assets/images/login-split/r11_c02.png',
-    "r11_c03": '/static/assets/images/login-split/r11_c03.png',
-    "r11_c04": '/static/assets/images/login-split/r11_c04.png',
-    "r12_c01": '/static/assets/images/login-split/r12_c01.png',
-    "r12_c02": '/static/assets/images/login-split/r12_c02.png',
-    "r12_c03": '/static/assets/images/login-split/r12_c03.png',
-    "r12_c04": '/static/assets/images/login-split/r12_c04.png',
-    "r13_c01": '/static/assets/images/login-split/r13_c01.png',
-    "r13_c02": '/static/assets/images/login-split/r13_c02.png',
-    "r13_c03": '/static/assets/images/login-split/r13_c03.png',
-    "r13_c04": '/static/assets/images/login-split/r13_c04.png',
-    "r14_c01": '/static/assets/images/login-split/r14_c01.png',
-    "r14_c02": '/static/assets/images/login-split/r14_c02.png',
-    "r14_c03": '/static/assets/images/login-split/r14_c03.png',
-    "r14_c04": '/static/assets/images/login-split/r14_c04.png',
-    "r15_c01": '/static/assets/images/login-split/r15_c01.png',
-    "r15_c02": '/static/assets/images/login-split/r15_c02.png',
-    "r15_c03": '/static/assets/images/login-split/r15_c03.png',
-    "r15_c04": '/static/assets/images/login-split/r15_c04.png',
-    "r16_c01": '/static/assets/images/login-split/r16_c01.png',
+    "r02_c01": '/static/assets/images/login-split/登录页_r02_c01.png',
+    "r02_c02": '/static/assets/images/login-split/登录页_r02_c02.png',
+    "r02_c03": '/static/assets/images/login-split/登录页_r02_c03.png',
+    "r03_c01": '/static/assets/images/login-split/登录页_r03_c01.png',
+    "r03_c02": '/static/assets/images/login-split/登录页_r03_c02.png',
+    "r03_c03": '/static/assets/images/login-split/登录页_r03_c03.png',
+    "r03_c04": '/static/assets/images/login-split/登录页_r03_c04.png',
+    "r04_c01": '/static/assets/images/login-split/登录页_r04_c01.png',
+    "r04_c02": '/static/assets/images/login-split/登录页_r04_c02.png',
+    "r04_c03": '/static/assets/images/login-split/登录页_r04_c03.png',
+    "r04_c04": '/static/assets/images/login-split/登录页_r04_c04.png',
+    "r05_c01": '/static/assets/images/login-split/登录页_r05_c01.png',
+    "r06_c01": '/static/assets/images/login-split/登录页_r06_c01.png',
+    "r06_c02": '/static/assets/images/login-split/登录页_r06_c02.png',
+    "r06_c03": '/static/assets/images/login-split/登录页_r06_c03.png',
+    "r06_c04": '/static/assets/images/login-split/登录页_r06_c04.png',
+    "r07_c01": '/static/assets/images/login-split/登录页_r07_c01.png',
+    "r07_c02": '/static/assets/images/login-split/登录页_r07_c02.png',
+    "r07_c03": '/static/assets/images/login-split/登录页_r07_c03.png',
+    "r07_c04": '/static/assets/images/login-split/登录页_r07_c04.png',
+    "r08_c01": '/static/assets/images/login-split/登录页_r08_c01.png',
+    "r08_c02": '/static/assets/images/login-split/登录页_r08_c02.png',
+    "r08_c03": '/static/assets/images/login-split/登录页_r08_c03.png',
+    "r08_c04": '/static/assets/images/login-split/登录页_r08_c04.png',
+    "r09_c01": '/static/assets/images/login-split/登录页_r09_c01.png',
+    "r10_c01": '/static/assets/images/login-split/登录页_r10_c01.png',
+    "r10_c02": '/static/assets/images/login-split/登录页_r10_c02.png',
+    "r10_c03": '/static/assets/images/login-split/登录页_r10_c03.png',
+    "r10_c04": '/static/assets/images/login-split/登录页_r10_c04.png',
+    "r11_c01": '/static/assets/images/login-split/登录页_r11_c01.png',
+    "r11_c02": '/static/assets/images/login-split/登录页_r11_c02.png',
+    "r11_c03": '/static/assets/images/login-split/登录页_r11_c03.png',
+    "r11_c04": '/static/assets/images/login-split/登录页_r11_c04.png',
+    "r12_c01": '/static/assets/images/login-split/登录页_r12_c01.png',
+    "r12_c02": '/static/assets/images/login-split/登录页_r12_c02.png',
+    "r12_c03": '/static/assets/images/login-split/登录页_r12_c03.png',
+    "r12_c04": '/static/assets/images/login-split/登录页_r12_c04.png',
+    "r13_c01": '/static/assets/images/login-split/登录页_r13_c01.png',
+    "r13_c02": '/static/assets/images/login-split/登录页_r13_c02.png',
+    "r13_c03": '/static/assets/images/login-split/登录页_r13_c03.png',
+    "r13_c04": '/static/assets/images/login-split/登录页_r13_c04.png',
+    "r14_c01": '/static/assets/images/login-split/登录页_r14_c01.png',
+    "r14_c02": '/static/assets/images/login-split/登录页_r14_c02.png',
+    "r14_c03": '/static/assets/images/login-split/登录页_r14_c03.png',
+    "r14_c04": '/static/assets/images/login-split/登录页_r14_c04.png',
+    "r15_c01": '/static/assets/images/login-split/登录页_r15_c01.png',
+    "r15_c02": '/static/assets/images/login-split/登录页_r15_c02.png',
+    "r15_c03": '/static/assets/images/login-split/登录页_r15_c03.png',
+    "r15_c04": '/static/assets/images/login-split/登录页_r15_c04.png',
+    "r16_c01": '/static/assets/images/login-split/登录页_r16_c01.png',
   },
 
   /** 消息页拆分素材（素材/消息/最终/拆分图标_消息） */

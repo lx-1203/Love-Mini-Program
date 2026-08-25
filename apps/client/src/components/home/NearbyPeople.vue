@@ -60,7 +60,8 @@ defineEmits<{ (e: "more"): void; (e: "select", userId: number): void }>();
 
 .nearby-list {
   display: flex;
-  gap: 16rpx;
+  /* V-09（第五轮 QA）：附近的人横排头像间距 16→20rpx */
+  gap: 20rpx;
   padding-right: 16rpx;
 }
 

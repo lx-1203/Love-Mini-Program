@@ -224,10 +224,15 @@ public class MockProfileService implements ProfileService {
   @Override
   public ProfileStatsView getProfileStats() {
     MockRuntimeState.ProfileStatsData stats = runtimeState.profileStats();
+    // D-01：个人主页统计 4 列对齐（喜欢我/获赞/匹配/访客），
+    // 与前端 MyStats.vue 消费的 socialProof 字段一一对应。
     return new ProfileStatsView(
         stats.followingCount(),
         stats.followersCount(),
-        stats.likesCount()
+        stats.likesCount(),
+        stats.likedMeCount(),
+        stats.visitorCount(),
+        stats.matchCount()
     );
   }
 

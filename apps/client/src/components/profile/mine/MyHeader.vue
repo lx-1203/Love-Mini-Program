@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
+import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(defineProps<{
   profile: UserProfileDTO;
@@ -34,9 +35,9 @@ const certLabel = computed(() => {
   return props.profile.identity.student ? "学生认证" : "已认证";
 });
 
-const genderSymbol = computed(() => {
-  if (props.profile.basic.gender === "female") return "♀";
-  if (props.profile.basic.gender === "male") return "♂";
+const genderIconSrc = computed(() => {
+  if (props.profile.basic.gender === "female") return IMAGE_PATHS.ICONS_EMOJI.GENDER_FEMALE;
+  if (props.profile.basic.gender === "male") return IMAGE_PATHS.ICONS_EMOJI.GENDER_MALE;
   return "";
 });
 </script>
@@ -48,7 +49,7 @@ const genderSymbol = computed(() => {
         <text class="my-header__icon-text">▦</text>
       </view>
       <view class="my-header__icon" hover-class="my-header__icon--pressed" role="button" aria-label="设置" @tap="handleSettings">
-        <text class="my-header__icon-text">⚙</text>
+        <image class="my-header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
       </view>
     </view>
     <view class="my-header__content">
@@ -62,14 +63,14 @@ const genderSymbol = computed(() => {
         />
         <text v-else class="my-header__avatar-initial">{{ (props.profile.basic.name || "?").charAt(0) }}</text>
         <view v-if="props.profile.identity.verified" class="my-header__cert-dot">
-          <text class="my-header__cert-dot-icon">✓</text>
+          <image class="my-header__cert-dot-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
         </view>
       </view>
 
       <view class="my-header__info">
         <view class="my-header__name-row">
           <text class="my-header__name">{{ props.profile.basic.name }}</text>
-          <text v-if="genderSymbol" class="my-header__gender">{{ genderSymbol }}</text>
+          <image v-if="genderIconSrc" class="my-header__gender" :src="genderIconSrc" mode="aspectFit" alt="" />
           <view class="my-header__online"><text class="my-header__online-text">在线</text></view>
         </view>
         <text v-if="metaLine" class="my-header__meta">{{ metaLine }}</text>
@@ -125,6 +126,11 @@ const genderSymbol = computed(() => {
   color: #333333;
 }
 
+.my-header__icon-img {
+  width: 34rpx;
+  height: 34rpx;
+}
+
 .my-header__content {
   display: flex;
   align-items: flex-start;
@@ -172,9 +178,8 @@ const genderSymbol = computed(() => {
 }
 
 .my-header__cert-dot-icon {
-  font-size: 26rpx;
-  color: #ffffff;
-  font-weight: 800;
+  width: 26rpx;
+  height: 26rpx;
 }
 
 .my-header__info {
@@ -223,8 +228,9 @@ const genderSymbol = computed(() => {
 }
 
 .my-header__gender {
-  font-size: 34rpx;
-  font-weight: 700;
+  width: 34rpx;
+  height: 34rpx;
+  margin-left: 8rpx;
   color: #FF6B9D;
 }
 

@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
+import { IMAGE_PATHS } from "../../../config/images";
 
 defineProps<{ posts: UserProfilePost[] }>();
 </script>
@@ -23,7 +24,10 @@ defineProps<{ posts: UserProfilePost[] }>();
         />
       </view>
       <view class="public-moment__footer">
-        <text class="public-moment__stat">♥ {{ post.likes }}</text>
+        <view class="public-moment__stat">
+          <image class="public-moment__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+          <text>{{ post.likes }}</text>
+        </view>
         <text class="public-moment__stat">○ {{ post.comments }}</text>
       </view>
     </view>
@@ -94,5 +98,14 @@ defineProps<{ posts: UserProfilePost[] }>();
 .public-moment__stat {
   font-size: 22rpx;
   color: #9AA39F;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.public-moment__stat-icon {
+  width: 22rpx;
+  height: 22rpx;
+  color: #FF6B81;
 }
 </style>

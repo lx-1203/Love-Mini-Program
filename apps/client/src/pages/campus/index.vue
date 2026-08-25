@@ -20,16 +20,17 @@ import SafeImage from "../../components/common/SafeImage.vue";
 
 const campusStore = useCampusStore();
 
-/** 2026-08-21：未认证推荐兴趣圈（复用封面素材） */
+/** 2026-08-21：未认证推荐兴趣圈（复用封面素材）
+ * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈改用 Style A AI 生成图（与 ideal 方形场景风格一致） */
 const RECOMMEND_CIRCLES = [
   { name: "摄影", cover: "/static/assets/images/covers/circle-photo.png" },
   { name: "旅行", cover: "/static/assets/images/covers/circle-travel.png" },
   { name: "音乐", cover: "/static/assets/images/covers/circle-music.png" },
   { name: "运动", cover: "/static/assets/images/covers/circle-sports.png" },
   { name: "美食", cover: "/static/assets/images/covers/circle-food.png" },
-  { name: "游戏", cover: "/static/assets/images/covers/circle-game.png" },
-  { name: "阅读", cover: "/static/assets/images/covers/circle-reading.png" },
-  { name: "宠物", cover: "/static/assets/images/covers/circle-pet.png" },
+  { name: "游戏", cover: "/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png" },
+  { name: "阅读", cover: "/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png" },
+  { name: "宠物", cover: "/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png" },
 ];
 
 function goCircles() {
@@ -49,6 +50,8 @@ const {
 
 /** v3 Nearby 冻结：查看学校（?school= 公开浏览；空 = 当前用户学校） */
 const viewSchool = ref("");
+/** 2026-08-25 P0：无 school 参数时重定向到校园圈 Hub（规格书 16 的"校园圈"页面在 hub.vue） */
+const redirectedToHub = ref(false);
 /** 是否为「本校已认证」私域视角（可发帖/互动） */
 const isOwnCertifiedView = computed(() =>
   isVerified.value && (!viewSchool.value || viewSchool.value === certificationInfo.value?.schoolName)
@@ -156,13 +159,18 @@ function onLoadMoreTopic() {
 }
 
 onLoad((query) => {
-  // v3 Nearby 冻结：支持 ?school= 公开浏览指定学校
-  if (query && typeof query.school === "string" && query.school.trim()) {
-    viewSchool.value = query.school.trim();
+  // 2026-08-25 P0：无 ?school= 时，校园圈入口应落到 hub（规格书 16 的结构在 hub.vue）
+  const q = (query || {}) as Record<string, string>;
+  if (typeof q.school === "string" && q.school.trim()) {
+    viewSchool.value = q.school.trim();
+    return;
   }
+  redirectedToHub.value = true;
+  uni.redirectTo({ url: "/pages/campus/hub" });
 });
 
 onMounted(async () => {
+  if (redirectedToHub.value) return;
   // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
   await Promise.allSettled([
     campusStore.fetchCertificationStatus(),

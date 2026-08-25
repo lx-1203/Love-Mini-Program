@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
+
 defineProps<{
   title: string;
   subtitle: string;
@@ -19,7 +21,8 @@ const emit = defineEmits<{
         <text class="message-header__title">{{ title }}</text>
         <view class="message-header__actions">
           <view class="message-header__action" hover-class="message-header__action--hover" @tap="emit('searchTap')">
-            <text class="message-header__action-text">{{ searchActive ? "×" : "🔍" }}</text>
+            <image v-if="!searchActive" class="message-header__action-text" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
+            <image v-else class="message-header__action-text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
           </view>
           <view class="message-header__action" hover-class="message-header__action--hover">
             <text class="message-header__action-text">＋</text>
@@ -76,5 +79,10 @@ const emit = defineEmits<{
 .message-header__action-text {
   font-size: 36rpx;
   color: #666666;
+}
+
+.message-header__action image.message-header__action-text {
+  width: 34rpx;
+  height: 34rpx;
 }
 </style>

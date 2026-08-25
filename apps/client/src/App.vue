@@ -16,6 +16,8 @@ import { reportGlobalError } from "./utils/global-error";
 import { isShowcaseMode } from "./config/showcase";
 import { getToken } from "./services/http";
 import { loginAsGuest } from "./services/auth";
+// 第五轮 QA 验收入口：dev-user=1 全局演示入口（冷启动 + 导航拦截器 + 页面级兜底）
+import { applyDevUserFromLaunch, registerDevUserEntry } from "./utils/dev-user";
 import UnlockGuideModal from "./components/UnlockGuideModal.vue";
 import UnlockGuideOverlay from "./components/UnlockGuideOverlay.vue";
 import { useNetworkStatus } from "./composables/useNetworkStatus";
@@ -194,7 +196,14 @@ onLaunch(() => {
 
     // 修复（P0 BUG）：uni.onError / uni.onUnhandledRejection 已迁移至 main.ts 的
     // registerGlobalErrorListeners 统一注册，避免与 App.vue 重复监听导致同一错误被上报两次。
+    // 第五轮 QA 验收入口：注册全局导航拦截器（URL 含 dev-user=1 时跳转前注入 mock 会话），
+    // 幂等注册，应用生命周期内仅执行一次。
+    registerDevUserEntry();
+
     const startBootstrap = () => {
+      // 第五轮 QA 验收入口：冷启动携带 dev-user=1 时，在 bootstrap 前注入 mock 会话；
+      // bootstrap 感知 devUserRequested 后不再用真实空会话覆盖。
+      applyDevUserFromLaunch();
       sessionStore.bootstrap().catch((err: unknown) => {
         // 修复：bootstrap 异常上报到 main.ts 全局错误处理器，统一出口便于排查
         reportGlobalError("App.onLaunch.bootstrap", err);

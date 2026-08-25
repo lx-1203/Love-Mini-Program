@@ -184,7 +184,10 @@ public class ProfileQueryService {
     // ---- 用户统计 ----
 
     /**
-     * 获取当前用户的统计数据（关注数 / 粉丝数 / 获赞数）。
+     * 获取当前用户的统计数据（关注数 / 粉丝数 / 获赞数 / 喜欢我 / 访客 / 匹配数）。
+     * D-01：与前端 MyStats.vue 的 4 列 socialProof 对齐（likedMe/likes/match/visitor）。
+     * 注意：real 模式当前基于关注/粉丝/获赞统计；likedMe/visitor/match 暂无独立统计源，
+     * 返回 0 占位（QA 联调以 mock 后端为准，mock 后端已返回对齐数据）。
      */
     @Transactional(readOnly = true)
     public ProfileStatsView getProfileStats() {
@@ -197,7 +200,10 @@ public class ProfileQueryService {
         return new ProfileStatsView(
                 user.getFollowingCount(),
                 user.getFollowersCount(),
-                likesCount);
+                likesCount,
+                0,
+                0,
+                0);
     }
 
     // ---- 关注关系查询 ----

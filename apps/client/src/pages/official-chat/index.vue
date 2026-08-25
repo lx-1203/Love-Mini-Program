@@ -14,6 +14,7 @@ import { request } from "../../services/http";
 import { useMock } from "../../stores/helpers/use-mock";
 import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
+import EmojiText from "../../components/common/EmojiText.vue";
 import type {
   OfficialAccountView,
   OfficialMessageView,
@@ -201,14 +202,17 @@ onLoad((query) => {
       <!-- ===== 顶部导航栏 ===== -->
       <view class="nav-bar">
         <view class="nav-left" @tap="goBack">
-          <text class="nav-back-icon">←</text>
+          <!-- 2026-08-25 P0：返回箭头改为 ‹（规格书 9.1） -->
+          <text class="nav-back-icon">‹</text>
         </view>
         <view class="nav-center">
           <view class="nav-title-row">
             <text class="nav-title">{{ accountName }}</text>
-            <view class="official-badge">
-              <text class="official-badge__text">官方</text>
-            </view>
+            <!-- 2026-08-26 P1：V-08 官方小标签样式与参考图保持一致。
+       参考图：浅绿描边胶囊（白底 + 薄荷绿描边 + 深绿文本），不再是渐变填充。 -->
+          <view class="official-badge">
+            <text class="official-badge__text">官方</text>
+          </view>
           </view>
           <text class="nav-subtitle">{{ accountDesc }}</text>
         </view>
@@ -228,14 +232,20 @@ onLoad((query) => {
       <view v-else class="chat-body">
         <!-- 绿色渐变区域 + 吉祥物 -->
         <view class="hero-section">
-          <view class="hero-deco hero-deco-1">🌿</view>
-          <view class="hero-deco hero-deco-2">✨</view>
-          <view class="hero-deco hero-deco-3">🌿</view>
-          <view class="hero-deco hero-deco-4">🌱</view>
+          <image class="hero-deco hero-deco-1" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+          <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
+          <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+          <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
           <image class="hero-mascot" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
-          <text class="hero-greeting">Hi~ 我是寻觅助手 🌱</text>
+          <view class="hero-greeting">
+            <text>Hi~ 我是寻觅助手</text>
+            <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+          </view>
           <text class="hero-desc">我会帮你发现有趣的人和活动</text>
-          <text class="hero-desc">让每一次相遇都更有意义 ✨</text>
+          <view class="hero-desc">
+            <text>让每一次相遇都更有意义</text>
+            <image class="hero-desc-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
+          </view>
         </view>
 
         <!-- 消息流 -->
@@ -256,9 +266,13 @@ onLoad((query) => {
               <view v-if="!isUserMsg(msg)" class="msg-row msg-row--left">
                 <image class="msg-avatar" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
                 <view class="msg-content">
-                  <!-- 纯文本消息 -->
+                  <!-- 纯文本消息：body 中可能含 emoji（mock/后端），由 EmojiText 自动转 SVG -->
                   <view v-if="msg.messageType === 'text'" class="bubble bubble--assistant">
-                    <text class="bubble__text" :user-select="true">{{ msg.content }}</text>
+                    <EmojiText
+                      :text="msg.content"
+                      emoji-size="32rpx"
+                      text-class="bubble__text"
+                    />
                   </view>
 
                   <!-- 活动卡片消息 -->
@@ -296,9 +310,13 @@ onLoad((query) => {
                     </view>
                   </view>
 
-                  <!-- 其他文本 -->
+                  <!-- 其他文本（卡片附言等）：同样走 EmojiText -->
                   <view v-else class="bubble bubble--assistant">
-                    <text class="bubble__text" :user-select="true">{{ msg.content }}</text>
+                    <EmojiText
+                      :text="msg.content"
+                      emoji-size="32rpx"
+                      text-class="bubble__text"
+                    />
                   </view>
                 </view>
               </view>
@@ -323,7 +341,7 @@ onLoad((query) => {
       <view class="input-bar">
         <view class="input-bar__icon">
           <view class="voice-btn">
-            <text class="voice-btn__icon">🎤</text>
+            <image class="voice-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
           </view>
         </view>
         <view class="input-bar__field">
@@ -339,7 +357,7 @@ onLoad((query) => {
           />
         </view>
         <view class="input-bar__icon">
-          <text class="input-icon-text">😊</text>
+          <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
         </view>
         <view class="input-bar__icon input-bar__icon--plus">
           <view class="plus-btn">
@@ -406,16 +424,20 @@ onLoad((query) => {
   font-weight: 700;
   color: #222;
 }
+/* 2026-08-26 P1：V-08 官方小标签样式。
+   参考图：白底 + 薄荷绿描边 + 深绿文本的小标签（不再是绿色渐变胶囊）。 */
 .official-badge {
+  margin-left: 8rpx;
   padding: 2rpx 12rpx;
   border-radius: 8rpx;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: #FFFFFF;
+  border: 1rpx solid #36C99A;
 }
 .official-badge__text {
   font-size: 20rpx;
-  color: #fff;
+  color: #1F9A75;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 .nav-subtitle {
   font-size: 22rpx;
@@ -464,7 +486,9 @@ onLoad((query) => {
 }
 .hero-deco {
   position: absolute;
-  font-size: 28rpx;
+  width: 28rpx;
+  height: 28rpx;
+  color: #36C99A;
   opacity: 0.4;
 }
 .hero-deco-1 {
@@ -494,11 +518,27 @@ onLoad((query) => {
   font-weight: 700;
   color: #222;
   margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.hero-greeting-icon {
+  width: 32rpx;
+  height: 32rpx;
+  color: #36C99A;
 }
 .hero-desc {
   font-size: 26rpx;
   color: #666;
   line-height: 1.6;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+.hero-desc-icon {
+  width: 26rpx;
+  height: 26rpx;
+  color: #FF9F43;
 }
 
 /* ===== 消息滚动区 ===== */
@@ -695,7 +735,8 @@ onLoad((query) => {
   margin-left: 4rpx;
 }
 .input-icon-text {
-  font-size: 40rpx;
+  width: 40rpx;
+  height: 40rpx;
   color: #666;
 }
 .voice-btn {
@@ -708,7 +749,9 @@ onLoad((query) => {
   justify-content: center;
 }
 .voice-btn__icon {
-  font-size: 32rpx;
+  width: 36rpx;
+  height: 36rpx;
+  display: block;
 }
 .plus-btn {
   width: 56rpx;

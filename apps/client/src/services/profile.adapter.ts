@@ -26,9 +26,11 @@ export function toProfileDTO(source: UserProfileDTO): ProfileDTO {
     photos: source.media.photos,
     voiceIntro: (source.media as { voiceIntro?: string }).voiceIntro ?? "",
     circles: (source as { circles?: string[] }).circles ?? [],
-    likedMeCount: source.socialProof.likedMeCount,
+    // 修复#4：UserProfileSocialProof 已改为「关注/粉丝/获赞/匹配」4 键，
+    // 领域 ProfileDTO 保留 likedMeCount/visitorCount 字段，此处做近似映射（legacy 适配，未被调用）。
+    likedMeCount: source.socialProof.followersCount,
     likesCount: source.socialProof.likesCount,
-    visitorCount: source.socialProof.visitorCount,
+    visitorCount: source.socialProof.followersCount,
     matchCount: source.socialProof.matchCount,
     relation: {
       liked: source.relation.liked,

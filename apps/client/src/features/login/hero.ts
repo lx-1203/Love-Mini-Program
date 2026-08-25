@@ -26,8 +26,9 @@ export const MOCK_LOGIN_HERO: LoginHeroInput = {
   heroVideoUrl: null,
   heroPosterUrl: "/static/assets/images/posters/login-poster.png",
   heroAnimationTheme: "campus-night",
-  heroTitle: "校园恋爱",
-  heroSubtitle: "先从推荐的人、讨论圈、活动和临时聊天开始认识彼此。",
+  // 2026-08-25：与 i18n login.heroTitle/heroSubtitle 对齐（规格书 01/02 节）
+  heroTitle: "寻觅",
+  heroSubtitle: "遇见同频的人",
   videoFallbackToAnimation: true,
 };
 

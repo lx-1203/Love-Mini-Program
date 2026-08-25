@@ -77,7 +77,14 @@ const mockBasicProfile: Schemas["BasicProfile"] = {
   bio: "热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。",
   grade: "大三",
   pronouns: "TA",
-  photoGallery: ["/static/assets/images/people/person-01.png"],
+  // D-03（第五轮 QA）：照片墙从 1 空占位增强为 4 张真实人物配图
+  // （portraits/p1~p4.jpg 600px 本地图，照片墙 6 格中前 4 格有图、后 2 格仍为上传占位）
+  photoGallery: [
+    "/static/assets/images/portraits/p1.jpg",
+    "/static/assets/images/portraits/p2.jpg",
+    "/static/assets/images/portraits/p3.jpg",
+    "/static/assets/images/portraits/p4.jpg",
+  ],
 };
 
 /** Mock 校区资料数据 */
@@ -112,15 +119,19 @@ const mockScheduleProfile: Schemas["ScheduleProfile"] = {
 
 /** Mock 个人统计数据 */
 const mockProfileStats: ProfileStats = {
-  followers: 16,
-  following: 28,
-  likes: 104,
-  visitors: 50,
+  // D-01（第五轮 QA）：与理想图「已经填完资料的个人主页.png」观感对齐
+  // 关注 128 / 粉丝 96 / 获赞 356 / 匹配 42 / 访客 104 / 喜欢我 28
+  followers: 96,
+  following: 128,
+  likes: 356,
+  visitors: 104,
   posts: 12,
-  followingCount: 28,
-  followersCount: 16,
-  likesCount: 104,
-  visitorsCount: 50,
+  followingCount: 128,
+  followersCount: 96,
+  likesCount: 356,
+  visitorsCount: 104,
+  likedMeCount: 28,
+  matchCount: 42,
 };
 
 /** Mock VIP 状态（默认未开通，便于在主页展示开通卡片） */
@@ -300,7 +311,8 @@ export const useProfileStore = defineStore("profile", {
             this.myPosts = clone(mockMyPosts);
             this.voiceStatusUrl = mockVoiceStatusUrl;
             this.voiceStatusDuration = MOCK_VOICE_STATUS_DURATION_SECONDS; // infra R2-00052
-            this.avatarUrl = IMAGE_PATHS.PEOPLE.AVATAR_1;
+            // D-05（第五轮 QA）：mock 本人头像改用 avatars/avatar-1.jpg 新素材
+            this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_1;
             // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
             this.photoGallery = Array.isArray(mockBasicProfile?.photoGallery)
               ? [...mockBasicProfile.photoGallery]

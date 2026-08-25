@@ -14,7 +14,8 @@ const MOCK_ME: UserProfileDTO = {
   id: 4001,
   basic: {
     name: "林晓",
-    avatar: "/static/assets/images/avatars/person-01-avatar.png",
+    // D-05（第五轮 QA）：mock 本人头像改用 avatars/avatar-1.jpg 新素材
+    avatar: "/static/assets/images/avatars/avatar-1.jpg",
     age: 22,
     location: "北京 · 北京大学",
     gender: "female",
@@ -37,10 +38,11 @@ const MOCK_ME: UserProfileDTO = {
     videos: [],
   },
   socialProof: {
-    likedMeCount: 16,
-    likesCount: 104,
-    visitorCount: 32,
-    matchCount: 3,
+    // 修复#4：4 列统计「关注/粉丝/获赞/匹配」（对齐 mock 主页 128/96/356/42）
+    followingCount: 128,
+    followersCount: 96,
+    likesCount: 356,
+    matchCount: 42,
   },
   relation: {
     liked: false,
@@ -55,7 +57,8 @@ const MOCK_PUBLIC_FALLBACK: UserProfileDTO = {
   id: 4002,
   basic: {
     name: "夏言",
-    avatar: "/static/assets/images/avatars/person-02-avatar.png",
+    // D-05（第五轮 QA）：mock 公共主页头像改用 avatars/avatar-2.jpg 新素材
+    avatar: "/static/assets/images/avatars/avatar-2.jpg",
     age: 24,
     location: "北京 · 清华大学",
     gender: "male",
@@ -78,10 +81,11 @@ const MOCK_PUBLIC_FALLBACK: UserProfileDTO = {
     videos: [],
   },
   socialProof: {
-    likedMeCount: 28,
-    likesCount: 76,
-    visitorCount: 50,
-    matchCount: 4,
+    // 修复#4：他人主页兜底（关注 96 / 粉丝 64 / 获赞 256 / 匹配 8，真实感数字）
+    followingCount: 96,
+    followersCount: 64,
+    likesCount: 256,
+    matchCount: 8,
   },
   relation: {
     liked: false,
@@ -134,9 +138,10 @@ function personToProfile(person: RecommendedPerson): UserProfileDTO {
       videos: [],
     },
     socialProof: {
-      likedMeCount: 12,
+      // 修复#4：他人主页从推荐角色派生（关注 48 / 粉丝 32 / 获赞 86 / 匹配 5，真实感数字）
+      followingCount: 48,
+      followersCount: 32,
       likesCount: 86,
-      visitorCount: 34,
       matchCount: 5,
     },
     relation: {

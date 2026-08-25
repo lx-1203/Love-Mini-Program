@@ -17,9 +17,9 @@ const basicInfo = computed(() => {
   return parts;
 });
 
-const genderSymbol = computed(() => {
-  if (props.profile.basic.gender === "female") return "♀";
-  if (props.profile.basic.gender === "male") return "♂";
+const genderIconSrc = computed(() => {
+  if (props.profile.basic.gender === "female") return IMAGE_PATHS.ICONS_EMOJI.GENDER_FEMALE;
+  if (props.profile.basic.gender === "male") return IMAGE_PATHS.ICONS_EMOJI.GENDER_MALE;
   return "";
 });
 </script>
@@ -30,8 +30,8 @@ const genderSymbol = computed(() => {
       <view class="public-identity__info">
         <view class="public-identity__name-row">
           <text class="public-identity__name">{{ profile.basic.name }}</text>
-          <view v-if="genderSymbol" class="public-identity__gender" :class="`public-identity__gender--${profile.basic.gender}`">
-            <text class="public-identity__gender-symbol">{{ genderSymbol }}</text>
+          <view v-if="genderIconSrc" class="public-identity__gender" :class="`public-identity__gender--${profile.basic.gender}`">
+            <image class="public-identity__gender-symbol" :src="genderIconSrc" mode="aspectFit" alt="" />
           </view>
           <view v-if="online" class="public-identity__online">
             <text class="public-identity__online-dot"></text>
@@ -117,10 +117,9 @@ const genderSymbol = computed(() => {
 }
 
 .public-identity__gender-symbol {
-  font-size: 24rpx;
-  font-weight: 700;
+  width: 26rpx;
+  height: 26rpx;
   color: #ffffff;
-  line-height: 1;
 }
 
 .public-identity__online {

@@ -132,7 +132,10 @@ function openProfile(userId: string) {
         <view class="segment-row__info">
           <view class="segment-row__name-row">
             <text class="segment-row__name">{{ item.name }}</text>
-            <text v-if="isOnline(item.activeStatusText)" class="segment-row__online">🟢 {{ t('cardDetail.onlineLabel') }}</text>
+            <text v-if="isOnline(item.activeStatusText)" class="segment-row__online-wrap">
+              <image class="segment-row__online-dot" :src="IMAGE_PATHS.ICONS_EMOJI.STATUS_ONLINE" mode="aspectFit" alt="" />
+              <text class="segment-row__online">{{ t('cardDetail.onlineLabel') }}</text>
+            </text>
           </view>
           <text class="segment-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
         </view>
@@ -227,6 +230,18 @@ function openProfile(userId: string) {
   font-size: 30rpx;
   font-weight: 700;
   color: var(--c-text-primary, #222222);
+}
+
+.segment-row__online-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.segment-row__online-dot {
+  width: 16rpx;
+  height: 16rpx;
+  flex-shrink: 0;
 }
 
 .segment-row__online {

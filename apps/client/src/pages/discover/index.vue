@@ -14,6 +14,8 @@ import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
 import { ensureCertified } from "../../guards/campus-gate";
 import { getToken } from "../../services/http";
+// 修复#7（第五轮 QA）：mock 模式无网络请求，dev-user 会话（已登录但无真实 token）也允许拉取本地匹配卡
+import { useMock } from "../../stores/helpers/use-mock";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { toMatchCardUser } from "../../view-models/match";
@@ -99,7 +101,11 @@ async function handleSuperLike() {
 
 function loadDiscoverData() {
   // 未登录时也加载mock预览数据（点击交互时再引导登录）
-  if (!isCacheFresh("discover:data", DISCOVER_TTL_MS) && (getToken() || !sessionStore.isLoggedIn)) {
+  // 修复#7（第五轮 QA）：原守卫 (getToken() || !isLoggedIn) 会拦截「已登录但无真实 token」的
+  // dev-user mock 会话（enterDevUserDemo 不写 token），导致匹配卡/操作按钮缺失。
+  // mock 模式（useMock=true）fetchCards 走 mockFixtures.getRecommendations 本地数据，无网络请求，
+  // 故放行；真实模式保持原语义（游客放行 mock 预览、登录后带 token 拉真实数据）。
+  if (!isCacheFresh("discover:data", DISCOVER_TTL_MS) && (getToken() || !sessionStore.isLoggedIn || useMock())) {
     void discoverStore.fetchCards();
     setCachedValue("discover:data", true);
   }
@@ -136,7 +142,7 @@ onUnload(() => {
       <view class="discover-header__top">
         <view class="discover-header__titles">
           <text class="discover-header__title">寻觅</text>
-          <text class="discover-header__heart">♥</text>
+          <image class="discover-header__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
         </view>
         <view
           class="discover-header__filter"
@@ -147,7 +153,6 @@ onUnload(() => {
           @tap="discoverStore.isFilterDrawerOpen = true"
         >
           <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
-          <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.DIAMOND_FILTER" mode="aspectFit" alt="" />
         </view>
       </view>
       <view class="discover-header__tabs">
@@ -366,9 +371,10 @@ onUnload(() => {
 }
 
 .discover-header__heart {
-  font-size: 34rpx;
+  width: 34rpx;
+  height: 34rpx;
+  margin-left: 4rpx;
   color: #FF6B81;
-  line-height: 1;
 }
 
 .discover-header__filter {

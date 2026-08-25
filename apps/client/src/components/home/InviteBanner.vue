@@ -1,20 +1,28 @@
 <script setup lang="ts">
+/**
+ * 邀请好友 Banner
+ * 2026-08-25 P0：文案接入 i18n（home.inviteTitle / home.inviteSubtitle），与规格书 3.15 对齐
+ */
+import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../../config/images";
+
+const { t } = useI18n();
 defineEmits<{ (e: "invite"): void }>();
 </script>
 
 <template>
   <view class="invite-banner" @tap="$emit('invite')">
     <view class="invite-banner__icon">
-      <text class="invite-banner__icon-text">🎁</text>
+      <image class="invite-banner__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" />
     </view>
     <view class="invite-banner__body">
-      <text class="invite-banner__title">邀请好友一起玩</text>
-      <text class="invite-banner__desc">各得7天会员体验</text>
+      <text class="invite-banner__title">{{ t('home.inviteTitle') }}</text>
+      <text class="invite-banner__desc">{{ t('home.inviteSubtitle') }}</text>
     </view>
     <view class="invite-banner__btn">
       <text class="invite-banner__btn-text">去邀请</text>
     </view>
-    <text class="invite-banner__wing">💗</text>
+    <image class="invite-banner__wing" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
   </view>
 </template>
 
@@ -44,7 +52,9 @@ defineEmits<{ (e: "invite"): void }>();
 }
 
 .invite-banner__icon-text {
-  font-size: 34rpx;
+  width: 34rpx;
+  height: 34rpx;
+  color: #ffffff;
 }
 
 .invite-banner__body {
@@ -81,7 +91,9 @@ defineEmits<{ (e: "invite"): void }>();
   position: absolute;
   right: -16rpx;
   bottom: -16rpx;
-  font-size: 80rpx;
+  width: 80rpx;
+  height: 80rpx;
+  color: #ffffff;
   opacity: 0.5;
 }
 </style>

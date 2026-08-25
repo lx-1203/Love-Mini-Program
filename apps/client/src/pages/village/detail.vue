@@ -616,14 +616,14 @@ onShareTimeline(() => {
           </view>
         </view>
 
-        <!-- 理想图：位置标签（📍 绿色定位 + 学校 + 距离） -->
+        <!-- 2026-08-26 P0：理想图位置标签（绿色定位 + 学校 + 距离） -->
         <view v-if="currentPost.author.campusName" class="post-location">
-          <text class="post-location__pin">📍</text>
+          <image class="post-location__pin" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="post-location__text">{{ currentPost.author.campusName }}</text>
           <text class="post-location__distance">· 距你 1.2km</text>
         </view>
 
-        <!-- 理想图：行内互动栏（❤ 点赞数 | 💬 评论数 | 分享） -->
+        <!-- 2026-08-26 P0：理想图行内互动栏（点赞数 | 评论数 | 分享） -->
         <view class="post-actions-inline">
           <view
             class="post-actions-inline__item"
@@ -632,7 +632,7 @@ onShareTimeline(() => {
             :aria-label="t('village.likePostAria')"
             @tap="handleLike"
           >
-            <text class="post-actions-inline__icon">❤</text>
+            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
             <text class="post-actions-inline__count">{{ currentPost.likes }}</text>
           </view>
           <view
@@ -640,7 +640,7 @@ onShareTimeline(() => {
             role="button"
             :aria-label="t('village.detail.statsComment')"
           >
-            <text class="post-actions-inline__icon">💬</text>
+            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
             <text class="post-actions-inline__count">{{ currentPost.comments }}</text>
           </view>
           <view
@@ -725,7 +725,7 @@ onShareTimeline(() => {
                    :class="{ 'comment-heart--active': comment.isLiked }"
                    @tap.stop="handleCommentLike(comment.id)"
                  >
-                   <text class="comment-heart__icon">{{ comment.isLiked ? '❤' : '♡' }}</text>
+                   <image class="comment-heart__icon" :src="comment.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
                  </view>
                  <text v-if="comment.likes > 0" class="comment-heart__count">{{ comment.likes }}</text>
                </view>
@@ -776,7 +776,7 @@ onShareTimeline(() => {
                      :class="{ 'comment-heart--active': reply.isLiked }"
                      @tap.stop="handleCommentLike(reply.id)"
                    >
-                     <text class="comment-heart__icon">{{ reply.isLiked ? '❤' : '♡' }}</text>
+                     <image class="comment-heart__icon" :src="reply.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
                    </view>
                    <text v-if="reply.likes > 0" class="comment-heart__count">{{ reply.likes }}</text>
                  </view>
@@ -898,7 +898,7 @@ onShareTimeline(() => {
       <view v-if="replyingTo" class="reply-mode-bar">
         <text class="reply-mode-bar__text">{{ t("village.detail.replyingTo", { name: replyingTo.author.name }) }}</text>
         <view class="reply-mode-bar__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.detail.cancelReply')" @tap="cancelReply">
-          <text class="reply-mode-bar__cancel-text">✕</text>
+          <image class="reply-mode-bar__cancel-text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
         </view>
       </view>
       <view class="input-bar">
@@ -919,11 +919,11 @@ onShareTimeline(() => {
           </view>
           <!-- 表情 -->
           <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
-            <text class="input-bar__icon-text">😊</text>
+            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
           </view>
           <!-- 图片 -->
           <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
-            <text class="input-bar__icon-text">🖼</text>
+            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -1141,7 +1141,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .comment-heart__icon {
-  font-size: var(--fs-xl, 30rpx);
+  width: 32rpx;
+  height: 32rpx;
+  color: $text-tertiary;
 }
 
 .comment-heart__count {
@@ -2047,7 +2049,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .reply-mode-bar__cancel-text {
-  font-size: var(--fs-sm, 22rpx);
+  width: 26rpx;
+  height: 26rpx;
   color: $text-tertiary;
 }
 
@@ -2284,7 +2287,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-location__pin {
-  font-size: var(--fs-base, 24rpx);
+  width: 28rpx;
+  height: 28rpx;
+  color: $green-primary;
 }
 
 .post-location__text {
@@ -2325,7 +2330,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-actions-inline__icon {
-  font-size: var(--fs-xl, 30rpx);
+  width: 32rpx;
+  height: 32rpx;
   color: $text-tertiary;
 }
 

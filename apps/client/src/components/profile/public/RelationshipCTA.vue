@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed } from "vue";
+import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(
   defineProps<{
@@ -33,17 +34,17 @@ const likeLabel = computed(() => {
         hover-class="relationship-cta__btn--pressed"
         @tap="emit('like')"
       >
-        <text class="relationship-cta__heart">♥</text>
+        <image class="relationship-cta__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
         <text class="relationship-cta__text relationship-cta__text--like">{{ likeLabel }}</text>
       </view>
 
       <view class="relationship-cta__btn relationship-cta__btn--hello" hover-class="relationship-cta__btn--pressed" @tap="emit('message')">
-        <text class="relationship-cta__bubble">💬</text>
+        <image class="relationship-cta__bubble" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
         <text class="relationship-cta__text">打招呼</text>
       </view>
 
       <view class="relationship-cta__btn relationship-cta__btn--follow" hover-class="relationship-cta__btn--pressed" @tap="emit('follow')">
-        <text class="relationship-cta__star">☆</text>
+        <image class="relationship-cta__star" :src="IMAGE_PATHS.ICONS_EMOJI.STAR" mode="aspectFit" alt="" />
         <text class="relationship-cta__text relationship-cta__text--follow">关注</text>
       </view>
     </view>
@@ -104,17 +105,20 @@ const likeLabel = computed(() => {
 }
 
 .relationship-cta__heart {
-  font-size: 30rpx;
+  width: 30rpx;
+  height: 30rpx;
   color: #FF6B81;
 }
 
 .relationship-cta__bubble {
-  font-size: 28rpx;
+  width: 28rpx;
+  height: 28rpx;
   color: #ffffff;
 }
 
 .relationship-cta__star {
-  font-size: 30rpx;
+  width: 30rpx;
+  height: 30rpx;
   color: #36C99A;
 }
 

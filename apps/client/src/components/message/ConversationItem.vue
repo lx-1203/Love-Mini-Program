@@ -4,6 +4,7 @@ import type { MessageSession } from "../../stores/messages";
 import RelationshipTag from "../relationship/RelationshipTag.vue";
 import UnreadBadge from "../common/UnreadBadge.vue";
 import { resolveMediaUrl } from "../../utils/media";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   session: MessageSession;
@@ -45,7 +46,7 @@ function formatTime(iso: string | null): string {
   <view class="conversation-item" hover-class="conversation-item--hover" @tap="emit('tap', session)" @longpress="emit('longpress', session)">
     <view class="conversation-item__avatar-wrap">
       <view v-if="session.isOfficial" class="conversation-item__official">
-        <text class="conversation-item__official-text">🌱</text>
+        <image class="conversation-item__official-text" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
       </view>
       <image
         v-else-if="partnerAvatar && !avatarLoadError"
@@ -118,7 +119,9 @@ function formatTime(iso: string | null): string {
   background: #E8F8F1;
 }
 .conversation-item__official-text {
-  font-size: 44rpx;
+  width: 44rpx;
+  height: 44rpx;
+  color: #36C99A;
 }
 .conversation-item__content {
   flex: 1;

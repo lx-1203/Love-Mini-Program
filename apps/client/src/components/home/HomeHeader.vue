@@ -14,7 +14,7 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
     <view class="home-header__top">
       <view class="header-left">
         <text class="home-header__title">首页</text>
-        <text class="home-header__heart">♥</text>
+        <image class="home-header__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
       </view>
       <view class="header-right">
         <view class="header-location" role="button" aria-label="定位" @tap="$emit('schoolTap')">
@@ -58,9 +58,10 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
 }
 
 .home-header__heart {
-  font-size: 36rpx;
+  width: 36rpx;
+  height: 36rpx;
+  margin-left: 4rpx;
   color: #FF6B81;
-  line-height: 1;
 }
 
 .header-right {

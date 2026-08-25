@@ -1,18 +1,30 @@
 ﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
+
 const emit = defineEmits<{ (e: "goLogin"): void }>();
 
+/** 2026-08-25 P0：返回上一页（规格书 11.1） */
+function goBack() {
+  uni.navigateBack({ delta: 1 }).catch(() => {
+    uni.switchTab({ url: "/pages/home/index" }).catch(() => {
+      uni.reLaunch({ url: "/pages/home/index" });
+    });
+  });
+}
+
 const STATS = [
-  { label: "我喜欢", icon: "♥", color: "#A29BFE" },
-  { label: "喜欢我的人", icon: "♡", color: "#FF6B81" },
-  { label: "我赞", icon: "👍", color: "#FF9F43" },
-  { label: "访客", icon: "👁", color: "#4D8DFF" },
+  // 修复#4（第五轮 QA）：未登录版 4 列与已登录 MyStats 对齐「关注/粉丝/获赞/匹配」，数值保持 0 占位
+  { label: "关注", iconSrc: IMAGE_PATHS.ICONS_EMOJI.USER, color: "#36C99A" },
+  { label: "粉丝", iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#4D8DFF" },
+  { label: "获赞", iconSrc: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP, color: "#FF9F43" },
+  { label: "匹配", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
 ];
 
 const INTERACTIONS = [
-  { label: "喜欢我的人", value: 0, icon: "♥", color: "#FF6B81" },
-  { label: "我的匹配", value: 0, icon: "♡", color: "#FF9F43" },
-  { label: "我喜欢的人", value: 0, icon: "♥", color: "#A29BFE" },
-  { label: "最近访客", value: 0, icon: "👁", color: "#4D8DFF" },
+  { label: "喜欢我的人", value: 0, iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
+  { label: "我的匹配", value: 0, iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, color: "#FF9F43" },
+  { label: "我喜欢的人", value: 0, iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#A29BFE" },
+  { label: "最近访客", value: 0, iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
 ];
 
 const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
@@ -20,6 +32,42 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 
 <template>
   <view class="not-logged-profile">
+    <!-- 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2） -->
+    <view class="nlp-topbar">
+      <view
+        class="nlp-topbar__btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'返回'"
+        @tap="goBack"
+      >
+        <text class="nlp-topbar__icon">‹</text>
+      </view>
+      <view class="nlp-topbar__right">
+        <view
+          class="nlp-topbar__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="'应用中心'"
+          @tap="emit('goLogin')"
+        >
+          <image class="nlp-topbar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MOBILE" mode="aspectFit" alt="" />
+        </view>
+        <view
+          class="nlp-topbar__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="'设置'"
+          @tap="emit('goLogin')"
+        >
+          <image class="nlp-topbar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
+        </view>
+      </view>
+    </view>
+
     <!-- 头部：点击登录 -->
     <view class="nlp-header" @tap="emit('goLogin')">
       <view class="nlp-header__info">
@@ -48,7 +96,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
     <view class="nlp-card nlp-stats">
       <view v-for="s in STATS" :key="s.label" class="nlp-stats__col">
         <view class="nlp-stats__icon" :style="{ background: `${s.color}1F` }">
-          <text class="nlp-stats__icon-text" :style="{ color: s.color }">{{ s.icon }}</text>
+          <image class="nlp-stats__icon-img" :src="s.iconSrc" mode="aspectFit" alt="" />
         </view>
         <text class="nlp-stats__value">0</text>
         <text class="nlp-stats__label">{{ s.label }}</text>
@@ -86,7 +134,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
           @tap="emit('goLogin')"
         >
           <view class="nlp-interaction__icon" :style="{ background: `${item.color}1F` }">
-            <text class="nlp-interaction__icon-text" :style="{ color: item.color }">{{ item.icon }}</text>
+            <image class="nlp-interaction__icon-img" :src="item.iconSrc" mode="aspectFit" alt="" />
           </view>
           <text class="nlp-interaction__label">{{ item.label }}</text>
           <text class="nlp-interaction__value">{{ item.value }}</text>
@@ -106,6 +154,43 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   min-height: 100vh;
   background: linear-gradient(180deg, #E8FBF3 0%, #F7FAF9 40%);
   padding: 32rpx 24rpx 140rpx;
+}
+
+/* 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2） */
+.nlp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 8rpx 24rpx;
+}
+
+.nlp-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.nlp-topbar__btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nlp-topbar__icon {
+  font-size: 32rpx;
+  line-height: 1;
+  color: #36C99A;
+}
+
+.nlp-topbar__btn:nth-child(2) .nlp-topbar__icon,
+.nlp-topbar__btn:nth-child(3) .nlp-topbar__icon {
+  font-size: 28rpx;
+  color: #6B7571;
 }
 
 .nlp-header {
@@ -199,7 +284,8 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 
 .nlp-stats {
   display: flex;
-  padding: 28rpx 8rpx;
+  /* V-05（第五轮 QA）：未登录主页 4 icon 统计间距与已登录 MyStats 对齐 */
+  padding: 32rpx 8rpx;
   margin-top: 24rpx;
 }
 
@@ -208,7 +294,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10rpx;
+  gap: 12rpx;
 }
 
 .nlp-stats__icon {
@@ -223,6 +309,11 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-stats__icon-text {
   font-size: 30rpx;
   font-weight: 800;
+}
+
+.nlp-stats__icon-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .nlp-stats__value {
@@ -320,6 +411,11 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .nlp-interaction__icon-text {
   font-size: 26rpx;
   font-weight: 800;
+}
+
+.nlp-interaction__icon-img {
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .nlp-interaction__label {

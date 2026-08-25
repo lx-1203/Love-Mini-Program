@@ -667,7 +667,7 @@ interface StatItem {
 
 /**
  * 核心数据统计栏（QQ 主页改造方案）：
- * 我喜欢的 / 喜欢我的（🔒）/ 最近来访（🔒）/ 获赞
+ * 我喜欢的 / 喜欢我的（未开通）/ 最近来访（未开通）/ 获赞
  */
 const stats = computed<StatItem[]>(() => {
   const s = profileStore.profileStats;
@@ -692,10 +692,14 @@ const minePosts = computed(() =>
 );
 
 const mineSocialProof = computed(() => ({
-  likedMeCount: likesStore.likedBy.length,
-  likesCount: profileStore.profileStats?.likesCount ?? 0,
-  visitorCount: profileStore.profileStats?.visitorsCount ?? 0,
-  matchCount: likesStore.mutualLikes.length,
+  // 修复#4（第五轮 QA）：4 列统计「关注/粉丝/获赞/匹配」，
+  // 键值对齐 followingCount/followersCount/likesCount/matchCount（mock 128/96/356/42）
+  // 优先消费后端 /profile/stats（mockProfileStats 已含 following/followers 双字段），
+  // likesStore 数据作为匹配数兜底（互赞列表尚未加载时不为 0）。
+  followingCount: profileStore.profileStats?.followingCount ?? profileStore.profileStats?.following ?? 0,
+  followersCount: profileStore.profileStats?.followersCount ?? profileStore.profileStats?.followers ?? 0,
+  likesCount: profileStore.profileStats?.likesCount ?? profileStore.profileStats?.likes ?? 0,
+  matchCount: profileStore.profileStats?.matchCount ?? likesStore.mutualLikes.length,
 }));
 
 const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | null>(() => {
@@ -719,6 +723,13 @@ const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | n
     socialProof: mineSocialProof.value,
     relation: { liked: false, matched: false, commonInterests: [] },
     posts: minePosts.value,
+    // D-03：我的故事 3 卡（生活日常/旅行足迹/我的心愿），封面复用本地人物配图
+    // （第五轮 QA：原 CARD_1/2/3 为静态插画，改 portraits/p5~p7.jpg 增强真实感）
+    stories: [
+      { id: "story-1", cover: "/static/assets/images/portraits/p5.jpg", title: "生活日常", location: "", dateText: "3 篇" },
+      { id: "story-2", cover: "/static/assets/images/portraits/p6.jpg", title: "旅行足迹", location: "", dateText: "2 篇" },
+      { id: "story-3", cover: "/static/assets/images/portraits/p7.jpg", title: "我的心愿", location: "", dateText: "1 篇" },
+    ],
   };
 });
 
@@ -1642,7 +1653,9 @@ onShow(() => {
   // 冷启动无 token 时 onShow 会并发拉 basic/campus/schedule/stats/social-progress
   // → 全部 401 雪崩 + 每条上报 Sentry「登录已过期」）。
   // 不置 profileRequestedOnce：登录后首次 onShow 会再次进入并正常拉取。
-  if (!getToken()) return;
+  // 修复#4（第五轮 QA 最终）：mock 模式（useMock=true）fetchProfile → load() 走本地 mockProfileStats，
+  // 无网络请求，放行以注入 关注128/粉丝96/获赞356/匹配42（否则 dev-user 会话无 token 被拦截 → 4 列恒 0）。
+  if (!getToken() && !useMock()) return;
   profileRequestedOnce = true;
   profileStore.fetchProfile().then(() => {
     // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
@@ -2246,7 +2259,7 @@ onUnload(() => {
           </view>
         </view>
 
-        <!-- 核心数据统计栏（QQ 主页改造方案：我喜欢的/喜欢我的🔒/最近来访🔒/获赞，点击进对应页） -->
+        <!-- 2026-08-26 P0：核心数据统计栏（我喜欢的 / 喜欢我的（未开通）/ 最近来访（未开通）/ 获赞，点击进对应页） -->
         <!-- 2026-08-13：仅自己主页展示（原他人态误显示查看者自己的统计/成就数据） -->
         <view v-if="isOwnProfile" class="stats-bar">
           <view
@@ -3782,15 +3795,16 @@ onUnload(() => {
 .photo-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  /* V-04（第五轮 QA）：照片墙间距 sp-2 → sp-3，格子更透气 */
+  gap: var(--sp-3);
 }
 
 .photo-grid__cell {
   position: relative;
-  /* 3 列布局：每行 3 张，gap var(--sp-2) 共 2 个间隙 → width = calc((100% - 2*sp-2) / 3) */
-  width: calc((100% - 2 * var(--sp-2)) / 3);
+  /* 3 列布局：每行 3 张，gap var(--sp-3) 共 2 个间隙 → width = calc((100% - 2*sp-3) / 3) */
+  width: calc((100% - 2 * var(--sp-3)) / 3);
   /* mp-weixin 不支持 aspect-ratio，改用 padding-bottom 百分比（1:1 → 100%） */
-  padding-bottom: calc((100% - 2 * var(--sp-2)) / 3);
+  padding-bottom: calc((100% - 2 * var(--sp-3)) / 3);
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--c-neutral-50);

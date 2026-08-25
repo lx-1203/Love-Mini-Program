@@ -114,14 +114,16 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 
 .interest-list {
   display: flex;
-  gap: 16rpx;
+  /* V-09（第五轮 QA）：横滑卡片间距 16→20rpx */
+  gap: 20rpx;
   padding-right: 16rpx;
 }
 
 .interest-card {
   width: 216rpx;
   flex-shrink: 0;
-  border-radius: 16rpx;
+  /* V-09：卡片圆角 16→20rpx，与全局卡片体系一致 */
+  border-radius: 20rpx;
   background: #ffffff;
   border: 1rpx solid var(--c-line, #EEF2F0);
   overflow: hidden;

@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../config/images";
+
 withDefaults(defineProps<{
   title: string;
   description?: string;
@@ -13,7 +15,7 @@ const emit = defineEmits<{ (e: "action"): void }>();
 
 <template>
   <view class="profile-empty">
-    <text class="profile-empty__icon">🌿</text>
+    <image class="profile-empty__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
     <text class="profile-empty__title">{{ title }}</text>
     <text v-if="description" class="profile-empty__desc">{{ description }}</text>
     <view v-if="actionText" class="profile-empty__action" hover-class="profile-empty__action--pressed" @tap="emit('action')">
@@ -36,7 +38,9 @@ const emit = defineEmits<{ (e: "action"): void }>();
 }
 
 .profile-empty__icon {
-  font-size: 64rpx;
+  width: 64rpx;
+  height: 64rpx;
+  color: #36C99A;
 }
 
 .profile-empty__title {

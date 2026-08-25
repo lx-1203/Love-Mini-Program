@@ -101,16 +101,17 @@ describe("profile store - 数据加载", () => {
     await store.load();
 
     expect(store.profileStats).not.toBeNull();
-    expect(store.profileStats!.followers).toBe(16);
-    expect(store.profileStats!.following).toBe(28);
-    expect(store.profileStats!.likes).toBe(104);
-    expect(store.profileStats!.visitors).toBe(50);
+    // 修复#4（第五轮 QA）：mockProfileStats 已对齐理想图观感（关注 128 / 粉丝 96 / 获赞 356 / 匹配 42 / 访客 104）
+    expect(store.profileStats!.followers).toBe(96);
+    expect(store.profileStats!.following).toBe(128);
+    expect(store.profileStats!.likes).toBe(356);
+    expect(store.profileStats!.visitors).toBe(104);
     expect(store.profileStats!.posts).toBe(12);
     // 兼容字段
-    expect(store.profileStats!.followersCount).toBe(16);
-    expect(store.profileStats!.followingCount).toBe(28);
-    expect(store.profileStats!.likesCount).toBe(104);
-    expect(store.profileStats!.visitorsCount).toBe(50);
+    expect(store.profileStats!.followersCount).toBe(96);
+    expect(store.profileStats!.followingCount).toBe(128);
+    expect(store.profileStats!.likesCount).toBe(356);
+    expect(store.profileStats!.visitorsCount).toBe(104);
   });
 
   // ------------------------------------------------------------------
@@ -188,10 +189,11 @@ describe("profile store - 数据加载", () => {
     await store.loadStats();
 
     expect(store.profileStats).not.toBeNull();
-    expect(store.profileStats!.followers).toBe(16);
-    expect(store.profileStats!.following).toBe(28);
-    expect(store.profileStats!.likes).toBe(104);
-    expect(store.profileStats!.visitors).toBe(50);
+    // 修复#4（第五轮 QA）：与 mockProfileStats 新值对齐（关注 128 / 粉丝 96 / 获赞 356 / 访客 104）
+    expect(store.profileStats!.followers).toBe(96);
+    expect(store.profileStats!.following).toBe(128);
+    expect(store.profileStats!.likes).toBe(356);
+    expect(store.profileStats!.visitors).toBe(104);
     expect(store.profileStats!.posts).toBe(12);
     expect(store.errorMessage).toBeNull();
   });

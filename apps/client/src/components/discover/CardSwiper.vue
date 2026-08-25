@@ -1231,7 +1231,7 @@ defineExpose({ onTouchMove });
 
           <!-- ⑨ 匹配度（置底，设计稿：♥ 80% 与你很合拍） -->
           <view class="card__match-badge" role="img" :aria-label="matchBadgeAria">
-            <text class="card__match-badge__heart">♥</text>
+            <image class="card__match-badge__heart" :src="emojiIcons.heartMatch" mode="aspectFit" alt="" />
             <text class="card__match-badge__value">{{ matchScore }}%</text>
             <text class="card__match-badge__label">{{ matchLabel }}</text>
           </view>
@@ -2003,9 +2003,9 @@ defineExpose({ onTouchMove });
 }
 
 .card__match-badge__heart {
-  font-size: var(--fs-lg);
-  color: #ffffff;
-  line-height: 1;
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 6rpx;
 }
 
 .card__match-badge__value {

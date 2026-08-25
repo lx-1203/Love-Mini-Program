@@ -332,8 +332,9 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  padding: 12rpx 0;
+  gap: 16rpx;
+  /* R4-batch4 像素级对齐：参考图 4 行间距更舒展（原 12rpx → 14rpx） */
+  padding: 14rpx 0;
 }
 
 .match-loading__row-icon-wrap {
@@ -370,7 +371,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__row-bar-inner {
   height: 100%;
   border-radius: 999rpx;
-  background: #009A61;
+  /* R4-batch4 像素级对齐：参考图进度条用品牌绿 #36C99A，更柔和 */
+  background: #36C99A;
   transition: width 1.2s ease-out;
 }
 
@@ -378,7 +380,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   width: 160rpx;
   font-size: 22rpx;
   font-weight: 700;
-  color: #009A61;
+  /* R4-batch4 像素级对齐：参考图匹配度百分比为品牌绿 #36C99A */
+  color: #36C99A;
   text-align: right;
   flex-shrink: 0;
 }
@@ -410,7 +413,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__total-bar-inner {
   height: 100%;
   border-radius: 999rpx;
-  background: #009A61;
+  /* R4-batch4 像素级对齐：参考图总进度条使用品牌绿 #36C99A */
+  background: #36C99A;
   transition: width 1.5s ease-out;
 }
 

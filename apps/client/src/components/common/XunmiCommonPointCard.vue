@@ -1,27 +1,36 @@
 <script setup lang="ts">
 /**
- * XunmiCommonPointCard — 共同点卡片组件
- * 用于他人主页"我们有N个共同点"区域
+ * XunmiCommonPointCard — 共同点卡片组件（2026-08-26 第三轮 emoji→SVG）
+ * 用于他人主页"我们有N个共同点"区域。icon 改为 SVG 路径，不再接受 emoji 字符。
  */
+import { IMAGE_PATHS } from "../../config/images";
+
 withDefaults(defineProps<{
-  icon?: string;
+  /** SVG 路径（绝对路径，mp-weixin `<image>` 可直接使用） */
+  iconSrc?: string;
   title?: string;
   description?: string;
   color?: string;
   bgColor?: string;
 }>(), {
-  icon: '📷',
-  title: '',
-  description: '',
-  color: '#36C99A',
-  bgColor: '#E8FAF3',
+  iconSrc: IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON,
+  title: "",
+  description: "",
+  color: "#36C99A",
+  bgColor: "#E8FAF3",
 });
 </script>
 
 <template>
   <view class="common-card">
     <view class="common-card__icon" :style="{ background: bgColor }">
-      <text class="common-card__icon-text" :style="{ color }">{{ icon }}</text>
+      <image
+        class="common-card__icon-img"
+        :src="iconSrc"
+        mode="aspectFit"
+        :style="{ color }"
+        alt=""
+      />
     </view>
     <text class="common-card__title">{{ title }}</text>
     <text class="common-card__desc">{{ description }}</text>
@@ -50,8 +59,10 @@ withDefaults(defineProps<{
   justify-content: center;
 }
 
-.common-card__icon-text {
-  font-size: 24rpx;
+.common-card__icon-img {
+  width: 28rpx;
+  height: 28rpx;
+  display: block;
 }
 
 .common-card__title {

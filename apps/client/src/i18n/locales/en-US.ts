@@ -271,6 +271,8 @@ export default {
     campusPublicHint: "Public to browse · Private after verification",
     campusBrowse: "Browse",
     nearbyPosts: "Nearby Posts",
+    /* 2026-08-25 P0: 5th quick entry label (spec 4.4) */
+    myConnections: "My connections",
     postsEmpty: "No posts nearby yet — explore a circle",
     peopleEmpty: "No new people nearby",
     peopleEmptyHint: "Try a wider range or come back later",
@@ -533,6 +535,28 @@ export default {
     schoolBindRequireAuth: "Complete campus certification to bind your school",
     schoolBindLocked: "School is bound. Contact customer service to change it.",
     schoolBindFailed: "Failed to bind school. Please try again later.",
+    /* 2026-08-25 P0: invite banner copy (aligned to spec 3.15) */
+    inviteTitle: "Invite friends and find your match",
+    inviteSubtitle: "More beautiful moments, exclusive perks",
+    /* 2026-08-25 P1: love progress step names (aligned to spec 3.8) */
+    loveStepProfile: "Complete profile",
+    loveStepDiscover: "Meet someone new",
+    loveStepWhisper: "Reply whispers",
+    loveStepInterest: "Join an interest circle",
+  },
+
+  /* 2026-08-25 P0: NotLoggedWaiting copy (aligned to spec 12) */
+  notLoggedWaiting: {
+    title: "Looking for someone on your wavelength",
+    subtitle: "12 like-minded people nearby",
+    unlockHint: "Log in to unlock all features",
+    feature1: "Precision matching",
+    feature2: "Chat & interact",
+    feature3: "Campus encounters",
+    feature4: "Grow together",
+    wechatLogin: "Sign in with WeChat",
+    phoneLogin: "Sign in with Phone",
+    later: "Maybe later",
   },
 
   /* ========== Activities (Task E1/E2) ========== */
@@ -733,6 +757,7 @@ export default {
     like: "Like",
     likeSent: "Liked",
     skip: "Skip",
+    greet: "Say hi",
     superLike: "Super Like",
     favorite: "Save for later",
     favoriteSaved: "Saved — check 'Me > Saved' later",
@@ -1110,6 +1135,8 @@ export default {
     searchIconAria: "Search",
     addIconAria: "Add",
     headerTitle: "Messages",
+    /* 2026-08-25 P0: messages page header subtitle (spec 8.2) */
+    headerSubtitle: "New connections are happening today",
     /* "+" more menu */
     moreMenuTitle: "More",
     moreMenuCancel: "Cancel",
@@ -2002,10 +2029,11 @@ export default {
   },
 
   login: {
-    heroTitle: "Campus Love",
-    heroSubtitle: "Meet your crush",
-    heroDesc: "Slowly become someone special",
-    heroDescSub: "Every campus encounter leaves a beautiful memory",
+    heroTitle: "Seek",
+    heroSubtitle: "Meet someone on your wavelength",
+    heroDesc: "Meet someone on your wavelength",
+    heroDescSub: "Slowly become someone special",
+    discoverSubDesc: "Every campus encounter leaves a beautiful memory",
     heroSubtitleDefault: "Naturally meet the right person on campus",
     wechatLogin: "Sign in with WeChat",
     wechatIconText: "WeChat",
@@ -2027,7 +2055,7 @@ export default {
     loginButton: "Log In",
     backToWechat: "Back to WeChat login",
     /* 2026-08-13：与 zh-CN 对齐（成年 + 协议双重声明） */
-    agreedPrefix: "I am 18 or older, and have read and agree to",
+    agreedPrefix: "By logging in, you agree to",
     userAgreementLink: "User Agreement",
     privacyPolicyLink: "Privacy Policy",
     and: "and",
@@ -2049,6 +2077,8 @@ export default {
     /* R4-00002: Showcase entry copy (VITE_SHOWCASE_MODE build only) */
     showcaseEntryTitle: "Enter showcase as presenter",
     showcaseEntryDesc: "Super admin mode · One tap to unlock all features",
+    /* Round-5 QA entry: dev-user=1 demo mode (dev/mock build only) */
+    devUserEntryTitle: "Enter demo mode",
     /* B6: login closed by admin (app_switch.login_open=false) */
     closedTitle: "Sign-in Temporarily Unavailable",
     closedDesc: "Sign-in is under maintenance. Please try again later.",
@@ -2518,7 +2548,7 @@ export default {
     officialChatLoadFailed: "Failed to load official messages. Please retry.",
     officialActivityTitle: "Upcoming Events",
     officialActivityCta: "View details",
-    officialAssistantMsg1: "Hi, I'm the Love Assistant 🤖 Ask me anything about love!",
+    officialAssistantMsg1: "Hi, I'm the Love Assistant. Ask me anything about love!",
     officialAssistantMsg2: "Unlock visitors / who liked you: tap the entries in Messages and pay with coins.",
     officialAssistantMsg3: "Fate Match: exchange 5 messages to unlock more info, 20 to unlock their profile.",
     officialAssistantMsg4: "Become a member and unlock visitors / likes / DMs for free!",
@@ -3441,6 +3471,9 @@ export default {
     detailTabsAria: "Circle detail tabs",
     detailFeed: "Feed",
     detailHot: "Featured",
+    /* 2026-08-25 P0: circle detail works wall tab (spec 15.10) */
+    detailWorks: "Works",
+    worksEmptyTitle: "No works yet",
     detailMembersTab: "Members",
     detailActivitiesTab: "Activities",
     detailMembers: "{n} members",

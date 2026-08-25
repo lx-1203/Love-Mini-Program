@@ -76,7 +76,9 @@ const icons = {
   display: flex;
   align-items: flex-start;
   justify-content: space-evenly;
-  padding: 40rpx 32rpx 8rpx;
+  /* V-01（第五轮 QA）：与卡片区距离 40→32rpx，按钮间加最小间隙防贴边 */
+  gap: 16rpx;
+  padding: 32rpx 32rpx 8rpx;
 }
 
 .match-actions--disabled {

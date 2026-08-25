@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import type { UserProfileStory } from "../../../types/profile";
+import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(defineProps<{
   photos: string[];
@@ -55,7 +56,7 @@ const emit = defineEmits<{
 
         <view v-if="props.videos.length > 0" class="story-card" @tap="emit('tapVideo')">
           <view class="story-card__video">
-            <text class="story-card__video-icon">▶</text>
+            <image class="story-card__video-icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLAY" mode="aspectFit" alt="" />
           </view>
           <view class="story-card__mask" />
           <view class="story-card__info">
@@ -126,7 +127,8 @@ const emit = defineEmits<{
 }
 
 .story-card__video-icon {
-  font-size: 64rpx;
+  width: 64rpx;
+  height: 64rpx;
   color: #4D8DFF;
 }
 

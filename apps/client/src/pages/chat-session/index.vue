@@ -22,6 +22,8 @@ import { toBreakQuestionItems } from "../../view-models/chat";
 import EmojiPanel from "../../components/chat/EmojiPanel.vue";
 import { useMessagesStore, type MessageItem } from "../../stores/messages";
 import { useChatStore } from "../../stores/chat";
+// 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
+import { applyDevUserFromQuery } from "../../utils/dev-user";
 // 2026-08-09 微信 1:1 重构：正在输入提示的 mock 演示模式判定
 import { useMock } from "../../stores/helpers/use-mock";
 // 2026-08-09 微信 1:1 重构：「···」菜单举报入口复用举报 Store
@@ -543,6 +545,9 @@ async function loadSessionData(): Promise<void> {
 }
 
 onLoad(async (query) => {
+  // 第五轮 QA 验收入口：dev-user=1 页面级兜底（导航拦截器之外的直开/自动化场景）。
+  // 必须在登录锁判断之前注入 mock 会话，保证 isUnlocked 放行、onLoad 正常加载会话。
+  applyDevUserFromQuery(query);
   // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不创建会话、不发鉴权请求
   if (!isUnlocked.value) return;
 

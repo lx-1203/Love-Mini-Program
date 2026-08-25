@@ -326,7 +326,7 @@ function goToActivity(activityId: number) {
           @tap="openCampusProfile(t(s.nameKey ?? s.name))"
         >
           <view class="school-row__icon">
-            <text class="school-row__icon-text">🏫</text>
+            <image class="school-row__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SCHOOL" mode="aspectFit" alt="" />
           </view>
           <view class="school-row__info">
             <text class="school-row__name">{{ t(s.nameKey ?? s.name) }}</text>
@@ -654,8 +654,9 @@ function goToActivity(activityId: number) {
   flex-shrink: 0;
 }
 
-.school-row__icon-text {
-  font-size: 32rpx;
+.school-row__icon-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .campus-preview {

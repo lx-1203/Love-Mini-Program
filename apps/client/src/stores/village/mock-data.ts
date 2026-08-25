@@ -25,7 +25,8 @@ export const mockSimilarAuthors: SimilarAuthor[] = [
   {
     userId: "user-3004",
     name: "南风",
-    avatar: "/static/assets/default-avatar.jpg",
+    // D-05（第五轮 QA）：default-avatar 占位 → 真实头像
+    avatar: "/static/assets/images/avatars/avatar-5.jpg",
     campusName: "北京大学",
     headline: "97年 · 深圳 · 产品经理 · 本科",
     isAlumni: true,
@@ -35,7 +36,7 @@ export const mockSimilarAuthors: SimilarAuthor[] = [
   {
     userId: "user-3005",
     name: "北岛",
-    avatar: "/static/assets/default-avatar.jpg",
+    avatar: "/static/assets/images/avatars/avatar-6.jpg",
     campusName: "四川大学",
     headline: "93年 · 成都 · 创业者 · 博士",
     isAlumni: false,
@@ -51,7 +52,8 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-1",
     author: { userId: "user-3016", name: "林晓", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
     categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
-    images: [], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
+    // D-05b（第五轮 QA）：帖子配图从空补为 1-2 张（portraits + covers 混合）
+    images: ["/static/assets/images/portraits/p1.jpg", "/static/assets/images/covers/circle-reading.png"], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 10, isFavorite: false, views: 320, createdAt: new Date(Date.now() - 3600000).toISOString(),
   },
@@ -59,7 +61,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-2",
     author: { userId: "user-3002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
     categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
-    images: [], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
+    images: ["/static/assets/images/portraits/p2.jpg", "/static/assets/images/covers/circle-sports.png"], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
     isLiked: true, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 6, isFavorite: false, views: 180, createdAt: new Date(Date.now() - 10800000).toISOString(),
   },
@@ -67,7 +69,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-3",
     author: { userId: "user-3003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
     categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
-    images: [], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
+    images: ["/static/assets/images/covers/circle-studybuddy.png"], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
     isLiked: false, isFollowed: true, isShared: false, isAlumni: false,
     favorites: 15, isFavorite: true, views: 450, createdAt: new Date(Date.now() - 18000000).toISOString(),
   },
@@ -75,7 +77,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-4",
     author: { userId: "user-3005", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
     categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
-    images: [], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
+    images: ["/static/assets/images/portraits/p3.jpg"], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
     isLiked: false, isFollowed: false, isShared: true, isAlumni: false,
     favorites: 22, isFavorite: false, views: 670, createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
@@ -83,7 +85,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-5",
     author: { userId: "user-3004", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
     categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
-    images: [], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
+    images: ["/static/assets/images/covers/circle-food.png", "/static/assets/images/portraits/p4.jpg"], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 7, isFavorite: false, views: 230, createdAt: new Date(Date.now() - 90000000).toISOString(),
   },
@@ -91,7 +93,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-6",
     author: { userId: "user-3001", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
     categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
-    images: [], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
+    images: ["/static/assets/images/portraits/p4.jpg"], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 5, isFavorite: false, views: 150, createdAt: new Date(Date.now() - 172800000).toISOString(),
   },
@@ -303,7 +305,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。",
-    images: [],
+    // D-05b（第五轮 QA）：主 feed 帖子补配图（portraits/covers 混合）
+    images: ["/static/assets/images/portraits/p1.jpg"],
     tags: ["#这是一条520交友启事", "#诚意征友"],
     likes: 128,
     comments: 32,
@@ -323,7 +326,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "周末有一起去徒步的吗？计划去西湖周边走一圈，大概15公里，新手友好路线。已经有3个人了，再来2个就出发！",
-    images: [],
+    images: ["/static/assets/images/portraits/p2.jpg", "/static/assets/images/covers/circle-travel.png"],
     tags: ["#周末徒步", "#西湖", "#户外"],
     likes: 45,
     comments: 18,
@@ -343,7 +346,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "在杭州的四川老乡集合啦！想建一个老乡群，周末可以一起约火锅、打麻将。身在异乡，老乡最亲~",
-    images: [],
+    images: ["/static/assets/images/covers/circle-food.png", "/static/assets/images/portraits/p4.jpg"],
     tags: ["#四川老乡", "#杭州", "#火锅"],
     likes: 89,
     comments: 56,
@@ -362,7 +365,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "【蒙面话题】你们觉得相亲时最看重对方什么？我先说：三观一致最重要，颜值其次。",
-    images: [],
+    images: ["/static/assets/images/portraits/p5.jpg"],
     tags: ["#蒙面话题", "#相亲", "#三观"],
     likes: 234,
     comments: 89,
@@ -381,7 +384,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "创业第三年，公司步入正轨，终于有时间考虑个人问题了。喜欢运动、摄影，希望找一个能一起成长的伴侣。",
-    images: [],
+    images: ["/static/assets/images/covers/circle-photo.png", "/static/assets/images/portraits/p3.jpg"],
     tags: ["#创业", "#征友", "#摄影"],
     likes: 167,
     comments: 43,
@@ -400,7 +403,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "分享最近读的一本书《亲密关系》，里面讲到沟通的重要性，推荐给正在恋爱中的朋友们。",
-    images: [],
+    images: ["/static/assets/images/covers/circle-reading.png", "/static/assets/images/portraits/p6.jpg"],
     tags: ["#读书分享", "#亲密关系"],
     likes: 67,
     comments: 12,

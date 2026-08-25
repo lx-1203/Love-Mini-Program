@@ -5,6 +5,7 @@
  */
 import { computed, ref, watch } from "vue";
 import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
+import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useLikesStore } from "../../stores/likes";
 import { useMessagesStore, type MessageSession } from "../../stores/messages";
@@ -14,14 +15,21 @@ import { useTabBar } from "../../composables/useTabBar";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
 import { useMock } from "../../stores/helpers/use-mock";
+// 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
+import { applyDevUserFromQuery } from "../../utils/dev-user";
+import { IMAGE_PATHS } from "../../config/images";
 import NotLoggedWaiting from "../../components/discover/NotLoggedWaiting.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
+import EmojiText from "../../components/common/EmojiText.vue";
 import type { RelationshipPersonView } from "../../services/generated/api-types-supplement";
 
 useTabBar(3);
 usePageAccess({ ...messagesPageRequirements, requiresProfile: false });
+
+// 2026-08-25 P0：i18n（标题/副标接入 chat.headerTitle / chat.headerSubtitle）
+const { t } = useI18n();
 
 const sessionStore = useSessionStore();
 const messagesStore = useMessagesStore();
@@ -142,7 +150,12 @@ watch(isUnlocked, (unlocked) => {
   if (unlocked) void loadPage();
 });
 
-onLoad(() => { void loadPage(); });
+onLoad((query) => {
+  // 第五轮 QA 验收入口：dev-user=1 页面级兜底（导航拦截器之外的直开/自动化场景），
+  // 在 loadPage 登录锁判断前注入 mock 会话（watch(isUnlocked) 会随之触发加载）。
+  applyDevUserFromQuery(query);
+  void loadPage();
+});
 onShow(() => { void loadPage(); });
 onPullDownRefresh(async () => {
   await loadPage();
@@ -187,8 +200,12 @@ function formatTime(dateStr?: string): string {
       <!-- ========== Header ========== -->
       <view class="header">
         <view class="header__left">
-          <text class="header__title">消息</text>
-          <text class="header__subtitle">今天也有新的心动在发生</text>
+          <view class="header__title-row">
+            <text class="header__title">{{ t('chat.headerTitle') }}</text>
+            <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 8.1） -->
+            <image class="header__title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
+          </view>
+          <text class="header__subtitle">{{ t('chat.headerSubtitle') }}</text>
         </view>
         <view class="header__right">
           <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
@@ -254,7 +271,8 @@ function formatTime(dateStr?: string): string {
           <view class="assistant-card" hover-class="assistant-card--hover" @tap="openAssistant">
             <view class="assistant-card__main">
               <view class="assistant-card__avatar-wrap">
-                <image class="assistant-card__avatar" src="/static/assets/images/mascot/default.png" mode="aspectFit" />
+                <!-- 2026-08-25 P0：使用吉祥物 head（规格书 8.5） -->
+              <image class="assistant-card__avatar" src="/static/assets/images/mascot/head_default.png" mode="aspectFit" />
                 <view v-if="messagesStore.totalUnreadCount > 0" class="assistant-card__badge">
                   <text class="assistant-card__badge-text">{{ messagesStore.totalUnreadCount > 99 ? '99+' : messagesStore.totalUnreadCount }}</text>
                 </view>
@@ -272,7 +290,10 @@ function formatTime(dateStr?: string): string {
             </view>
             <view class="assistant-card__activity">
               <view class="assistant-card__activity-item">
-                <text class="assistant-card__activity-text">🌿 今天附近有 {{ assistantActivityCount }} 场活动适合你参加</text>
+                <view class="assistant-card__activity-text-wrap">
+                  <image class="assistant-card__activity-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+                  <text class="assistant-card__activity-text">今天附近有 {{ assistantActivityCount }} 场活动适合你参加</text>
+                </view>
               </view>
               <view class="assistant-card__activity-item">
                 <text class="assistant-card__activity-text">周末露营活动开始报名啦~</text>
@@ -334,7 +355,13 @@ function formatTime(dateStr?: string): string {
                       <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
                     </view>
                   </view>
-                  <text class="chat-item__preview">{{ session.lastMessagePreview || '暂无消息' }}</text>
+                  <EmojiText
+                    v-if="session.lastMessagePreview"
+                    :text="session.lastMessagePreview"
+                    emoji-size="24rpx"
+                    text-class="chat-item__preview"
+                  />
+                  <text v-else class="chat-item__preview">暂无消息</text>
                 </view>
                 <view class="chat-item__right">
                   <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
@@ -367,7 +394,13 @@ function formatTime(dateStr?: string): string {
                       <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
                     </view>
                   </view>
-                  <text class="chat-item__preview">{{ session.lastMessagePreview || '暂无消息' }}</text>
+                  <EmojiText
+                    v-if="session.lastMessagePreview"
+                    :text="session.lastMessagePreview"
+                    emoji-size="24rpx"
+                    text-class="chat-item__preview"
+                  />
+                  <text v-else class="chat-item__preview">暂无消息</text>
                 </view>
                 <view class="chat-item__right">
                   <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
@@ -405,11 +438,25 @@ function formatTime(dateStr?: string): string {
   flex-direction: column;
   gap: 6rpx;
 }
+.header__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
 .header__title {
   font-size: 44rpx;
   font-weight: 800;
   color: var(--c-text-primary, #1A1E1C);
 }
+
+.header__title-sprout {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  margin-top: -2rpx;
+}
+
 .header__subtitle {
   font-size: 24rpx;
   color: var(--c-text-tertiary, #9AA39F);
@@ -627,6 +674,18 @@ function formatTime(dateStr?: string): string {
   align-items: center;
   gap: 8rpx;
 }
+.assistant-card__activity-text-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.assistant-card__activity-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+}
+
 .assistant-card__activity-text {
   font-size: 24rpx;
   color: var(--c-text-secondary, #4A524E);
@@ -719,8 +778,9 @@ function formatTime(dateStr?: string): string {
 .chat-item {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 32rpx;
+  gap: 24rpx;
+  /* R4-batch4 像素级对齐：参考图消息行高更舒展（24rpx → 28rpx） */
+  padding: 28rpx 32rpx;
   border-bottom: 1rpx solid var(--c-border-light, #F2F5F3);
 }
 .chat-item--hover {

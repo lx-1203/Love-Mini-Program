@@ -74,7 +74,9 @@ export const ROUTES = {
 
   /** 村口社区模块 */
   VILLAGE: {
-    /** 发帖页 */
+    /** 统一发布动态页 */
+    PUBLISH: "/pages/village/publish",
+    /** 发帖页（旧，保留兼容） */
     POST: "/pages/village/post",
     /** 帖子详情页 */
     DETAIL: "/pages/village/detail",

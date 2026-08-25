@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<{
   loading: false,
   errorMessage: "",
   posts: () => [],
-  socialProof: () => ({ likedMeCount: 0, likesCount: 0, visitorCount: 0, matchCount: 0 }),
+  socialProof: () => ({ followingCount: 0, followersCount: 0, likesCount: 0, matchCount: 0 }),
   percent: 0,
   interactionItems: () => [],
   moreItems: () => [],

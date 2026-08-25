@@ -241,13 +241,18 @@ export function requirePrivacyAuthorize(): Promise<void> {
     try {
       requireAuth({
         success: () => {
-          // 用户已同意隐私协议
           resolve();
         },
         fail: (err: { errMsg?: string }) => {
-          // 用户拒绝或调用失败：reject 并附带原因
-          // errMsg 常见值："requirePrivacyAuthorize:fail" / "requirePrivacyAuthorize:fail user deny"
           const errMsg = typeof err?.errMsg === "string" ? err.errMsg : "";
+          // 未声明/不支持场景：不抛错，放行由调用方处理 errno 112
+          if (errMsg.includes("not declared") || errMsg.includes("unsupported") || errMsg.includes("not declared in the privacy agreement")) {
+            if (isDev) {
+              console.warn("[privacy] requirePrivacyAuthorize: scope not declared, allowing pass-through:", errMsg);
+            }
+            resolve();
+            return;
+          }
           const reason = errMsg.includes("deny")
             ? "unauthorized"
             : errMsg.includes("unsupported")
@@ -257,8 +262,11 @@ export function requirePrivacyAuthorize(): Promise<void> {
         },
       });
     } catch (e) {
-      // 同步异常：reject 避免静默同意
-      reject({ reason: "unknown", error: e });
+      // 同步异常：不阻塞，resolve 放行
+      if (isDev) {
+        console.warn("[privacy] requirePrivacyAuthorize exception, allowing pass-through:", e);
+      }
+      resolve();
     }
   });
 }

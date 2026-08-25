@@ -1,26 +1,38 @@
 <script setup lang="ts">
 /**
- * EmojiPanel - 表情面板（2026-08-09 微信 1:1 重构）
+ * EmojiPanel - 表情面板（2026-08-26 第三轮 emoji→SVG 重构）
  *
- * 8 列 × 4 行共 32 个系统 emoji（纯 Unicode 字符，无图片资源依赖，跨端一致）。
- * 点击表情 emit select，由父页面追加到输入框草稿末尾（微信行为：表情插入可继续编辑）。
+ * 8 列 × 4 行共 32 个表情格，全部用标准 SVG 渲染（mp-weixin `<image>`）。
+ * - 7 个品牌吉祥物情绪表情（mascot_calm/crush/shy/cry/hug/sleep/like）
+ *   来源：素材/吉祥物/xunmi_mascot_assets/emotion/
+ * - 25 个标准笑脸 / 手势表情（Twemoji 14.0.2，CC-BY 4.0）
+ *   来源：https://github.com/twitter/twemoji assets/svg/
+ *
+ * 数据格式保持兼容：emit 仍然是原始 emoji Unicode 字符（FE0F 变体符保留），
+ * ChatBubble / EmojiText 渲染层会再次把 emoji 字符转成同源 SVG，避免重复下载。
  */
 import { useI18n } from "vue-i18n";
+import { lookupEmoji } from "../../config/emoji-map";
 
 const emit = defineEmits<{
-  /** 选中某个表情 */
+  /** 选中某个表情（emit 仍是原始 Unicode 字符，保持数据兼容） */
   select: [emoji: string];
 }>();
 
 const { t } = useI18n();
 
-/** 系统 emoji 字符集（纯 Unicode，无资源依赖；32 个覆盖常用表情） */
+/** 表情顺序与 EmojiPanel v2 一致：32 个覆盖常用情绪/手势/动作 */
 const EMOJIS: string[] = [
-  "😀", "😁", "😂", "🤣", "😊", "😍", "🥰", "😘",
-  "😎", "🤩", "🥳", "😋", "😜", "🤔", "🥺", "😭",
-  "😤", "😡", "🤗", "😇", "😴", "🥱", "🤝", "👍",
-  "👎", "👏", "🙏", "💪", "❤️", "💔", "✨", "🎉",
+  "\u{1F600}", "\u{1F601}", "\u{1F602}", "\u{1F923}", "\u{1F60A}", "\u{1F60D}", "\u{1F970}", "\u{1F618}",
+  "\u{1F60E}", "\u{1F929}", "\u{1F973}", "\u{1F60B}", "\u{1F61C}", "\u{1F914}", "\u{1F97A}", "\u{1F62D}",
+  "\u{1F624}", "\u{1F621}", "\u{1F917}", "\u{1F607}", "\u{1F634}", "\u{1F971}", "\u{1F91D}", "\u{1F44D}",
+  "\u{1F44E}", "\u{1F44F}", "\u{1F64F}", "\u{1F4AA}", "\u2764\uFE0F", "\u{1F494}", "\u2728", "\u{1F389}",
 ];
+
+/** 每个表情格的 SVG 路径（运行期 lookup，缺图时降级为 system text 渲染） */
+function svgSrc(emoji: string): string {
+  return lookupEmoji(emoji) || "";
+}
 
 /** 表情 ARIA 标签：直接使用表情字符本身 */
 function emojiAria(emoji: string): string {
@@ -44,7 +56,14 @@ function emojiAria(emoji: string): string {
       role="option"
       :aria-label="emojiAria(emoji)"
     >
-      <text class="emoji-panel__emoji">{{ emoji }}</text>
+      <image
+        v-if="svgSrc(emoji)"
+        class="emoji-panel__emoji"
+        :src="svgSrc(emoji)"
+        mode="aspectFit"
+        lazy-load="true"
+      />
+      <text v-else class="emoji-panel__emoji-fallback">{{ emoji }}</text>
     </view>
   </view>
 </template>
@@ -76,6 +95,13 @@ function emojiAria(emoji: string): string {
 }
 
 .emoji-panel__emoji {
+  /* 与原 emoji 字号（44rpx）相当；显式声明防止 image 默认 320px */
+  width: 56rpx;
+  height: 56rpx;
+  display: block;
+}
+
+.emoji-panel__emoji-fallback {
   font-size: 44rpx;
   line-height: 1;
 }

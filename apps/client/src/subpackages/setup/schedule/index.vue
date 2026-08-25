@@ -7,6 +7,7 @@
  * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
 import { onMounted, reactive } from "vue";
+import { IMAGE_PATHS } from "../../../config/images";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
@@ -99,7 +100,7 @@ async function save() {
             :aria-label="t('setup.schedule.removeTimeWindow')"
             @tap="removeTimeWindow(idx)"
           >
-            <text class="time-window-remove__text">✕</text>
+            <image class="time-window-remove__text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -168,8 +169,9 @@ async function save() {
 }
 
 .time-window-remove__text {
+  width: 32rpx;
+  height: 32rpx;
   color: var(--c-text-tertiary, #999999);
-  font-size: var(--fs-lg);
 }
 
 /* 添加时段按钮 */

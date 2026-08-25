@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 /**
  * 统一发布动态页（village/publish）
@@ -8,7 +9,7 @@
  *  添加话题/位置/提及/谁可以看 → 发帖小贴士 → 底部工具栏
  *
  * 草稿：本地 storage(village:post-draft) + 后端 /drafts 双写；
- *      退出未发布提示“是否保留草稿”；进入自动恢复；发布成功后清除。
+ *      退出未发布提示"是否保留草稿"；进入自动恢复；发布成功后清除。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
@@ -61,7 +62,8 @@ const targetSubtitle = computed(() => {
     const n = targetCircle.value.memberCount ?? 0;
     return `${n >= 10000 ? (n / 10000).toFixed(1) + "w" : n} 成员`;
   }
-  return t("village.post.visibilityCircleMembers");
+  if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
+  return "默认公开 · 所有人可见";
 });
 
 /** 圈内成员可见（谁可以看） */
@@ -107,6 +109,13 @@ function chooseGeneral() {
   targetOpen.value = false;
 }
 
+function chooseCampus() {
+  targetType.value = "campus";
+  targetId.value = null;
+  targetCircle.value = null;
+  targetOpen.value = false;
+}
+
 /* ---------- 图片 ---------- */
 async function chooseImage() {
   if (images.value.length >= POST_MAX_IMAGES) {
@@ -124,8 +133,17 @@ async function chooseImage() {
     const tempPaths = (picked as string[]) || [];
     const compressed = await compressImages(tempPaths);
     images.value.push(...compressed);
-  } catch (e) {
-    console.error("选择图片失败:", e);
+  } catch (e: unknown) {
+    // errno 112: api scope 未在隐私指引声明 → 给用户明确提示
+    const errMsg = typeof e === "object" && e !== null && "errMsg" in e
+      ? String((e as { errMsg?: unknown }).errMsg)
+      : String(e ?? "");
+    if (errMsg.includes("112") || errMsg.includes("privacy agreement")) {
+      console.error("选择图片失败: 隐私协议未声明相册/相机 scope", e);
+      uni.showToast({ title: "请在微信后台隐私指引声明相册/相机权限", icon: "none" });
+    } else {
+      console.error("选择图片失败:", e);
+    }
   }
 }
 
@@ -246,7 +264,12 @@ function requestLeave() {
 
 function leave() {
   allowLeave.value = true;
-  uni.navigateBack();
+  // 兜底：首页/深链场景 navigateBack 会失败
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/pages/village/index" });
+  }
 }
 
 /* ---------- 提交 ---------- */
@@ -296,7 +319,13 @@ async function submitPublish() {
     }
     clearDraft();
     allowLeave.value = true;
-    setTimeout(() => uni.navigateBack(), 400);
+    setTimeout(() => {
+      if (getCurrentPages().length > 1) {
+        uni.navigateBack();
+      } else {
+        uni.reLaunch({ url: "/pages/village/index" });
+      }
+    }, 400);
   } catch (_e) {
     uni.showToast({ title: villageStore.errorMessage || t("village.post.publishFailed"), icon: "none" });
   } finally {
@@ -315,7 +344,7 @@ onUnmounted(() => {
     <!-- 顶部导航 -->
     <view class="publish-header">
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
-        <text class="publish-header__x">✕</text>
+        <image class="publish-header__x" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
       </view>
       <text class="publish-header__title">发布动态</text>
       <view class="publish-header__submit" :class="{ 'publish-header__submit--disabled': !canSubmit }" role="button" :aria-label="t('common.publish')" @tap="submitPublish">
@@ -330,7 +359,8 @@ onUnmounted(() => {
         <view class="publish-to__card press-feedback" role="button" @tap="targetOpen = !targetOpen">
           <view class="publish-to__avatar">
             <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT" mode="aspectFill" alt="" />
-            <text v-else class="publish-to__avatar-emoji">{{ isCircleTarget ? '📷' : '🏫' }}</text>
+            <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON" mode="aspectFit" alt="" />
+            <image v-else class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SCHOOL" mode="aspectFit" alt="" />
           </view>
           <view class="publish-to__info">
             <view class="publish-to__name-row">
@@ -348,8 +378,13 @@ onUnmounted(() => {
               <text class="publish-target-sheet__title">选择发布到</text>
             </view>
             <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseGeneral">
-              <text class="publish-target-sheet__name">校园圈（通用）</text>
-              <text class="publish-target-sheet__check">{{ targetType === 'general' ? '✓' : '' }}</text>
+              <text class="publish-target-sheet__name">个人动态</text>
+              <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
+              <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+            </view>
+            <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseCampus">
+              <text class="publish-target-sheet__name">校园圈</text>
+              <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
             <view
               v-for="circle in circleStore.circles.slice(0, 8)"
@@ -359,7 +394,7 @@ onUnmounted(() => {
               @tap="selectTarget(circle)"
             >
               <text class="publish-target-sheet__name">{{ circle.name }}</text>
-              <text class="publish-target-sheet__check">{{ isCircleTarget && targetId === Number(circle.id) ? '✓' : '' }}</text>
+              <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
           </view>
         </view>
@@ -383,7 +418,7 @@ onUnmounted(() => {
         <view v-for="(img, idx) in images" :key="idx" class="publish-image">
           <image class="publish-image__img" :src="img" mode="aspectFill" alt="" />
           <view class="publish-image__remove press-feedback" role="button" @tap="removeImage(idx)">
-            <text class="publish-image__remove-icon">✕</text>
+            <image class="publish-image__remove-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
           </view>
         </view>
         <view v-if="images.length < POST_MAX_IMAGES" class="publish-image publish-image--add press-feedback" role="button" @tap="chooseImage">
@@ -400,7 +435,7 @@ onUnmounted(() => {
           <text class="publish-row__arrow">›</text>
         </view>
         <view class="publish-row press-feedback" role="button" @tap="openLocationPicker">
-          <text class="publish-row__icon">📍</text>
+          <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
           <text class="publish-row__meta">{{ location || '北京大学 · 未名湖校区' }}</text>
           <text class="publish-row__arrow">›</text>
@@ -411,7 +446,7 @@ onUnmounted(() => {
           <text class="publish-row__arrow">›</text>
         </view>
         <view class="publish-row press-feedback" role="button" @tap="cycleVisibility">
-          <text class="publish-row__icon">👁</text>
+          <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
           <text class="publish-row__label">谁可以看</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
           <text class="publish-row__arrow">›</text>
@@ -421,11 +456,14 @@ onUnmounted(() => {
       <!-- 发帖小贴士 -->
       <view v-if="tipVisible" class="publish-tip">
         <view class="publish-tip__text-wrap">
-          <text class="publish-tip__title">🌱 发帖小贴士</text>
+          <view class="publish-tip__title">
+            <image class="publish-tip__title-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+            <text>发帖小贴士</text>
+          </view>
           <text class="publish-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
         </view>
         <view class="publish-tip__close press-feedback" role="button" @tap="tipVisible = false">
-          <text class="publish-tip__close-icon">✕</text>
+          <image class="publish-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
         </view>
       </view>
 
@@ -435,7 +473,7 @@ onUnmounted(() => {
     <!-- 底部工具栏 -->
     <view class="publish-toolbar">
       <view class="publish-tool press-feedback" role="button" @tap="chooseImage">
-        <text class="publish-tool__icon">🖼</text>
+        <image class="publish-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
         <text class="publish-tool__label">图片/视频</text>
       </view>
       <view class="publish-tool press-feedback" role="button" @tap="toggleTopic('#校园日常')">
@@ -443,7 +481,7 @@ onUnmounted(() => {
         <text class="publish-tool__label">话题</text>
       </view>
       <view class="publish-tool press-feedback" role="button" @tap="openLocationPicker">
-        <text class="publish-tool__icon">📍</text>
+        <image class="publish-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
         <text class="publish-tool__label">位置</text>
       </view>
       <view class="publish-tool press-feedback" role="button" @tap="openMentionPicker">
@@ -476,7 +514,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; }
-.publish-header__x { font-size: 40rpx; color: #1A1E1C; }
+.publish-header__x { width: 36rpx; height: 36rpx; color: #1A1E1C; }
 .publish-header__title { font-size: 32rpx; font-weight: 700; color: #1A1E1C; }
 .publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: #36C99A; }
 .publish-header__submit--disabled { background: #C7E9DC; }
@@ -489,7 +527,7 @@ onUnmounted(() => {
 .publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
 .publish-to__avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .publish-to__avatar-img { width: 100%; height: 100%; }
-.publish-to__avatar-emoji { font-size: 44rpx; }
+.publish-to__avatar-emoji { width: 44rpx; height: 44rpx; }
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }
 .publish-to__name { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
@@ -503,7 +541,8 @@ onUnmounted(() => {
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
 .publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
 .publish-target-sheet__name { font-size: 28rpx; color: #1A1E1C; }
-.publish-target-sheet__check { font-size: 30rpx; color: #36C99A; }
+.publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; }
+.publish-target-sheet__check { width: 32rpx; height: 32rpx; color: #36C99A; }
 
 .publish-content { padding: 24rpx 32rpx; }
 .publish-content__input { width: 100%; min-height: 220rpx; font-size: 30rpx; color: #1A1E1C; line-height: 1.6; }
@@ -513,27 +552,29 @@ onUnmounted(() => {
 .publish-image { width: 200rpx; height: 200rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: #EAF6F1; }
 .publish-image__img { width: 100%; height: 100%; }
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
-.publish-image__remove-icon { font-size: 22rpx; color: #fff; }
+.publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
 .publish-image--add { display: flex; align-items: center; justify-content: center; border: 1rpx dashed #C7D8D2; }
 .publish-image__plus { font-size: 56rpx; color: #9AA39F; }
 
 .publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
 .publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 24rpx; border-bottom: 1rpx solid #F2F5F3; }
-.publish-row__icon { font-size: 30rpx; color: #36C99A; width: 44rpx; text-align: center; }
+.publish-row__icon { width: 44rpx; height: 44rpx; color: #36C99A; text-align: center; }
 .publish-row__label { font-size: 28rpx; color: #1A1E1C; }
 .publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: #9AA39F; }
 .publish-row__arrow { font-size: 32rpx; color: #C2CAC6; }
 
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: 20rpx; display: flex; align-items: flex-start; gap: 16rpx; }
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.publish-tip__title { font-size: 26rpx; font-weight: 700; color: #36C99A; }
+.publish-tip__title { font-size: 26rpx; font-weight: 700; color: #36C99A; display: flex; align-items: center; gap: 8rpx; }
+.publish-tip__title-icon { width: 28rpx; height: 28rpx; color: #36C99A; }
 .publish-tip__desc { font-size: 24rpx; color: #6B7571; }
-.publish-tip__close-icon { font-size: 28rpx; color: #9AA39F; }
+.publish-tip__close-icon { width: 28rpx; height: 28rpx; color: #9AA39F; }
 
 .publish-body__bottom-space { height: 24rpx; }
 
 .publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
 .publish-tool { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
-.publish-tool__icon { font-size: 40rpx; color: #6B7571; }
+.publish-tool__icon { width: 40rpx; height: 40rpx; color: #6B7571; }
 .publish-tool__label { font-size: 20rpx; color: #9AA39F; }
 </style>
+```

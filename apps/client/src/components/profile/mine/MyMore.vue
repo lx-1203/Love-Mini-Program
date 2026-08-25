@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../../config/images";
+
 export interface MoreItem {
   key: string;
   label: string;
@@ -9,15 +11,15 @@ withDefaults(defineProps<{ items: MoreItem[] }>(), {
 });
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
-const ICONS: Record<string, { icon?: string; image?: string; color: string }> = {
+const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }> = {
   favorites: { image: "/static/assets/images/profile-favorite.svg", color: "#FFB020" },
   visitors: { image: "/static/assets/images/profile-visitors.svg", color: "#4D8DFF" },
   album: { image: "/static/assets/images/profile-album.svg", color: "#FF6B81" },
   privacy: { image: "/static/assets/images/profile-privacy.svg", color: "#A29BFE" },
-  profile: { icon: "👤", color: "#36C99A" },
-  interest: { icon: "♥", color: "#FF6B81" },
-  posts: { icon: "📝", color: "#FF9F43" },
-  checkin: { icon: "✓", color: "#36C99A" },
+  profile: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.USER, color: "#36C99A" },
+  interest: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
+  posts: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.FILE_TEXT, color: "#FF9F43" },
+  checkin: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.CHECK, color: "#36C99A" },
 };
 </script>
 
@@ -34,9 +36,8 @@ const ICONS: Record<string, { icon?: string; image?: string; color: string }> = 
       >
         <view class="my-more__icon" :style="{ background: `${ICONS[item.key]?.color || '#36C99A'}22` }">
           <image v-if="ICONS[item.key]?.image" class="my-more__icon-img" :src="ICONS[item.key]?.image ?? ''" mode="aspectFit" alt="" />
-          <text v-else class="my-more__icon-text" :style="{ color: ICONS[item.key]?.color || '#36C99A' }">
-            {{ ICONS[item.key]?.icon || '•' }}
-          </text>
+          <image v-else-if="ICONS[item.key]?.iconSrc" class="my-more__icon-img" :src="ICONS[item.key]?.iconSrc ?? ''" mode="aspectFit" alt="" />
+          <text v-else class="my-more__icon-text" :style="{ color: ICONS[item.key]?.color || '#36C99A' }">•</text>
         </view>
         <text class="my-more__label">{{ item.label }}</text>
       </view>
@@ -71,8 +72,9 @@ const ICONS: Record<string, { icon?: string; image?: string; color: string }> = 
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* V-04（第五轮 QA）：菜单行高 24→28rpx，触控区更舒适 */
   gap: 10rpx;
-  padding: 24rpx 0;
+  padding: 28rpx 0;
   box-sizing: border-box;
 }
 

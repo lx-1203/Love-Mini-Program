@@ -20,6 +20,7 @@ import type { DiscoverCard } from "../../stores/discover/types";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { SCHOOLS } from "../../config/schools";
+// 第五轮：校园圈卡片统一浅绿背景 + 名字（coverUrl 上传后显示图片），不再使用渐变底色
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
@@ -44,7 +45,9 @@ const peopleError = ref("");
 
 /** 校园入口（前 4 所） */
 const schoolEntries = SCHOOLS.slice(0, 4);
-const schoolMainCover = "/static/assets/images/covers/school-main.png";
+
+// 第五轮 QA（补做）：校园圈入口卡片统一浅绿背景 + 学校名字（移除 school-main.png 封面插图、
+// 渐变底色与首字徽标）。coverUrl 数据模型保留：非空 → 显示图片；空 → 浅绿背景 + 名字。
 
 /** 热门兴趣圈（8 个标准圈） */
 const { circles: circleList } = storeToRefs(circleStore);
@@ -210,7 +213,9 @@ function goAllPosts() {
   openAppPath("/pages/village/index");
 }
 
-/** 2026-08-21：兴趣圈封面照片（复用兴趣圈页素材，按名称匹配） */
+/** 2026-08-21：兴趣圈封面照片（复用兴趣圈页素材，按名称匹配）
+ * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈原 Style B 宽幅场景大图（与 ideal 方形缩略风格不一致）
+ * 改为本地 AI 生成 Style A 方形居中场景图，与 config/images.ts CIRCLE_COVERS 同步 */
 const CIRCLE_COVER = {
   photo: "/static/assets/images/covers/circle-photo.png",
   travel: "/static/assets/images/covers/circle-travel.png",
@@ -218,9 +223,11 @@ const CIRCLE_COVER = {
   sports: "/static/assets/images/covers/circle-sports.png",
   food: "/static/assets/images/covers/circle-food.png",
   sky: "/static/assets/images/covers/circle-sky.png",
-  game: "/static/assets/images/covers/circle-game.png",
-  reading: "/static/assets/images/covers/circle-reading.png",
-  pet: "/static/assets/images/covers/circle-pet.png",
+  // 第五轮 QA：游戏/阅读/宠物改用 Style A AI 生成图（与理想图风格一致）
+  game: "/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png",
+  reading: "/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png",
+  pet: "/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png",
+  // 非标准 8 圈（仅真实模式可能存在）：保留 Style B 原图，渲染后由真实圈名触发
   cutepets: "/static/assets/images/covers/circle-cutepets.png",
   basketball: "/static/assets/images/covers/circle-basketball.png",
   boardgame: "/static/assets/images/covers/circle-boardgame.png",
@@ -303,11 +310,12 @@ function requireLogin(): boolean {
           </view>
           <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.nearbyPosts')" @tap="goAllPosts">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.myConnections')" @tap="goAllPosts">
+          <!-- 2026-08-25 P0：第 5 项改为"我的人脉"，icon 用素材库 r10_c02（人物+加号），规格书 4.4 -->
           <view class="nearby-entry__icon nearby-entry__icon--dynamic">
-            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.DYNAMIC" mode="aspectFit" alt="" />
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.LOGIN_SPLIT['r10_c02']" mode="aspectFit" alt="" />
           </view>
-          <text class="nearby-entry__label">{{ t('nearby.nearbyPosts') }}</text>
+          <text class="nearby-entry__label">{{ t('nearby.myConnections') }}</text>
         </view>
       </view>
 
@@ -378,16 +386,17 @@ function requireLogin(): boolean {
           v-for="school in schoolEntries"
           :key="school.id"
           class="campus-entry press-feedback"
-          
+          :class="{ 'campus-entry--img': school.coverUrl }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
           :aria-label="school.name"
           @tap="goCampusHub(school.name)"
         >
-          <view class="campus-entry__cover-wrap">
-            <image class="campus-entry__cover" :src="schoolMainCover" mode="aspectFill" alt="" />
-            <view class="campus-entry__cover-overlay" />
+          <!-- 第五轮 QA（补做）：统一浅绿背景 + 名字；coverUrl 上传后显示图片（保留上传能力） -->
+          <image v-if="school.coverUrl" class="campus-entry__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
+          <view v-else class="campus-entry__badge">
+            <text class="campus-entry__badge-text">{{ school.name }}</text>
           </view>
           <view class="campus-entry__body">
             <text class="campus-entry__name">{{ school.name }}</text>
@@ -677,7 +686,7 @@ function requireLogin(): boolean {
   color: var(--c-text-secondary, #666666);
 }
 
-/* 校园圈 */
+/* 校园圈（第五轮 QA 补做：统一浅绿背景 + 学校名字；coverUrl 上传后显示图片） */
 .campus-entry {
   position: relative;
   display: flex;
@@ -685,25 +694,48 @@ function requireLogin(): boolean {
   gap: 20rpx;
   padding: 24rpx;
   border-radius: 20rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #EEF2F0);
+  /* 统一浅绿背景（不再每校一色渐变） */
+  background: #E6F6EF;
+  border: 1rpx solid #D3EDE0;
   margin-bottom: 16rpx;
+  overflow: hidden;
 }
 
-.campus-entry__icon-wrap {
+.campus-entry--img {
+  background: var(--c-neutral-100, #F2F4F3);
+}
+
+.campus-entry__cover-img {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 浅绿底圆角方块展示学校名字（替代原首字徽标） */
+.campus-entry__badge {
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-blue-light, #EEF3FF);
+  background: #FFFFFF;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.campus-entry__icon {
-  width: 40rpx;
-  height: 40rpx;
+.campus-entry__badge-text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #1F9A75;
+  line-height: 1.3;
+  text-align: center;
+  padding: 0 4rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .campus-entry__body {
@@ -714,32 +746,42 @@ function requireLogin(): boolean {
   min-width: 0;
 }
 
+/* 第五轮 QA（补做）：浅绿底上文字用深绿系，保证可读性 */
 .campus-entry__name {
-  position: relative;
-  z-index: 1;
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
-  text-shadow: 0 1rpx 4rpx rgba(0,0,0,0.3);
+  color: #1F9A75;
 }
 
-.campus-entry__cover-wrap {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+.campus-entry__desc {
+  font-size: 22rpx;
+  color: #2E8B6A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.campus-entry__cover {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.campus-entry__status {
+  flex-shrink: 0;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  /* 第五轮 QA（补做）：浅绿底上状态胶囊用白底 + 深绿字 */
+  background: #FFFFFF;
+  align-self: center;
 }
 
-.campus-entry__cover-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%);
-  color: var(--c-text-quaternary, #C8CFCD);
+.campus-entry__status-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #1F9A75;
+}
+
+.campus-entry__arrow {
+  font-size: 30rpx;
+  color: #1F9A75;
+  opacity: 0.85;
+  font-weight: 600;
+  align-self: center;
 }
 
 .activity-entry {
@@ -874,7 +916,7 @@ function requireLogin(): boolean {
 .nearby-entries {
   display: flex;
   justify-content: space-between;
-  gap: 12rpx;
+  gap: 8rpx;
   margin: 8rpx 0 24rpx;
   padding: 24rpx 12rpx;
   background: var(--c-bg-container, #FFFFFF);
@@ -900,7 +942,9 @@ function requireLogin(): boolean {
   justify-content: center;
 }
 
-.nearby-entry__icon--people { background: var(--c-bg-brand, #E8FAF3); }
+/* V-08（第五轮 QA）：5 功能入口 icon 底色五色系对齐（粉/绿/蓝/橙/紫），
+   原 people/circle 同为绿色系易混淆，people 改暖粉珊瑚色 */
+.nearby-entry__icon--people { background: #FFF0F3; }
 .nearby-entry__icon--circle { background: var(--c-bg-brand, #E8F5E4); }
 .nearby-entry__icon--campus { background: #EEF3FF; }
 .nearby-entry__icon--activity { background: #FFF5E6; }

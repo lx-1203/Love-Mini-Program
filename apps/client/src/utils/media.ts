@@ -39,6 +39,8 @@
 // 修复（R4-00205）：环境配置统一入口
 import { clientEnv } from "../config/env";
 import { getToken } from "../services/http";
+// 2026-08-25：独立失效标记模块，打破 http <-> media 循环依赖（http.ts 不再 import 本文件）
+import { getMediaTokenCacheVersion } from "./media-token-cache";
 // infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
 import { ensurePrivacyAuthorized } from "./privacy";
 // 2026-08-10 包体积优化：mock 模式判断（纯 env 读取，无 pinia 依赖）
@@ -199,25 +201,26 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
  * 此处以 30s TTL 缓存，登录/登出或 401 时调用 invalidateMediaTokenCache() 主动失效。
  */
 const TOKEN_CACHE_TTL_MS = 30_000;
-let cachedMediaToken: { token: string | null; ts: number } | null = null;
+let cachedMediaToken: { token: string | null; ts: number; ver: number } | null = null;
 
-/** 读取当前 token（优先缓存，TTL 内不重复读 storage） */
+/** 读取当前 token（优先缓存，TTL 内不重复读 storage；失效标记变化时强制重读） */
 function getCachedToken(): string | null {
   const now = Date.now();
-  if (cachedMediaToken && now - cachedMediaToken.ts < TOKEN_CACHE_TTL_MS) {
+  const ver = getMediaTokenCacheVersion();
+  if (cachedMediaToken && now - cachedMediaToken.ts < TOKEN_CACHE_TTL_MS && cachedMediaToken.ver === ver) {
     return cachedMediaToken.token;
   }
   const token = getToken();
-  cachedMediaToken = { token, ts: now };
+  cachedMediaToken = { token, ts: now, ver };
   return token;
 }
 
 /**
  * 主动失效 token 缓存（登录/登出/401 时调用）。
+ * 2026-08-25：实现迁至 utils/media-token-cache.ts（打破 http <-> media 循环依赖），
+ * 此处保留 re-export 以兼容旧引用。
  */
-export function invalidateMediaTokenCache(): void {
-  cachedMediaToken = null;
-}
+export { invalidateMediaTokenCache } from "./media-token-cache";
 
 /**
  * 为鉴权代理 URL 附加 token 查询参数。

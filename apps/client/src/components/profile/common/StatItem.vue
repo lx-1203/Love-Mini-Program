@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../../config/images";
+
 withDefaults(defineProps<{
   value: number | string;
   label: string;
@@ -19,7 +21,7 @@ const emit = defineEmits<{ (e: "tap"): void }>();
     <text v-if="icon" class="stat-item__icon">{{ icon }}</text>
     <text class="stat-item__value" :class="{ 'stat-item__value--emphasis': emphasis }">{{ value }}</text>
     <text class="stat-item__label">{{ label }}</text>
-    <text v-if="locked" class="stat-item__lock">🔒</text>
+    <image v-if="locked" class="stat-item__lock" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
   </view>
 </template>
 
@@ -60,7 +62,8 @@ const emit = defineEmits<{ (e: "tap"): void }>();
   position: absolute;
   top: -10rpx;
   right: 12rpx;
-  font-size: 20rpx;
+  width: 22rpx;
+  height: 22rpx;
 }
 </style>
 

@@ -39,6 +39,9 @@
   },
   "pages": [
     {
+      "path": "pages/login/index"
+    },
+    {
       "path": "pages/discover/index"
     },
     {
@@ -46,9 +49,6 @@
     },
     {
       "path": "pages/discover/match-success"
-    },
-    {
-      "path": "pages/login/index"
     },
     {
       "path": "pages/home/index"

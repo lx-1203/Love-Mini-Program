@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { MatchCardUser } from "../../types/match";
+import { IMAGE_PATHS } from "../../config/images";
 
 const props = defineProps<{
   user: MatchCardUser;
 }>();
 
-const genderSymbol = computed(() => {
-  if (props.user.gender === "female") return "♀";
-  if (props.user.gender === "male") return "♂";
+const genderIconSrc = computed(() => {
+  if (props.user.gender === "female") return IMAGE_PATHS.ICONS_EMOJI.GENDER_FEMALE;
+  if (props.user.gender === "male") return IMAGE_PATHS.ICONS_EMOJI.GENDER_MALE;
   return "";
 });
 
@@ -48,10 +49,12 @@ const verified = computed(
       <view class="match-info__name-row">
         <text class="match-info__name">{{ user.name }}</text>
         <text v-if="user.age" class="match-info__age">{{ user.age }}</text>
-        <view v-if="genderSymbol" class="match-info__gender" :class="`match-info__gender--${user.gender}`">
-          <text class="match-info__gender-symbol">{{ genderSymbol }}</text>
+        <view v-if="genderIconSrc" class="match-info__gender" :class="`match-info__gender--${user.gender}`">
+          <image class="match-info__gender-symbol" :src="genderIconSrc" mode="aspectFit" alt="" />
         </view>
-        <text v-if="verified" class="match-info__verified">✓</text>
+        <view v-if="verified" class="match-info__verified">
+          <image class="match-info__verified-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+        </view>
       </view>
       <view v-if="school" class="match-info__school-row">
         <text class="match-info__school">{{ school }}</text>
@@ -128,10 +131,9 @@ const verified = computed(
 }
 
 .match-info__gender-symbol {
-  font-size: 24rpx;
-  font-weight: 700;
+  width: 26rpx;
+  height: 26rpx;
   color: #ffffff;
-  line-height: 1;
 }
 
 .match-info__verified {
@@ -143,8 +145,12 @@ const verified = computed(
   justify-content: center;
   background: #36C99A;
   color: #ffffff;
-  font-size: 22rpx;
-  font-weight: 800;
+}
+
+.match-info__verified-icon {
+  width: 20rpx;
+  height: 20rpx;
+  color: #ffffff;
 }
 
 /* 学校 16px Medium + 学院 14px 70% 白 */

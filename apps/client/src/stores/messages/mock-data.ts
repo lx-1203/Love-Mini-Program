@@ -13,7 +13,7 @@ import { IMAGE_PATHS } from "../../config/images";
 export const mockSessions: MessageSession[] = [
   {
     id: "session-private-1", partnerId: "user-2001", partnerName: "夏言",
-    partnerAvatar: IMAGE_PATHS.PEOPLE.AVATAR_1,
+    partnerAvatar: IMAGE_PATHS.AVATARS.AVATAR_1,
     partnerHeadline: "大二 · 喜欢电影和咖啡", lastMessagePreview: "明天下午有空吗？",
     lastMessageSentAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(), unreadCount: 2, pinned: true,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
@@ -26,7 +26,7 @@ export const mockSessions: MessageSession[] = [
   },
   {
     id: "session-private-2", partnerId: "user-2002", partnerName: "陈默",
-    partnerAvatar: IMAGE_PATHS.PEOPLE.AVATAR_2,
+    partnerAvatar: IMAGE_PATHS.AVATARS.AVATAR_2,
     partnerHeadline: "大三 · 自习搭子", lastMessagePreview: "[语音] 30″",
     lastMessageSentAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(), unreadCount: 0, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
@@ -47,7 +47,7 @@ export const mockSessions: MessageSession[] = [
   },
   {
     id: "session-private-4", partnerId: "user-2006", partnerName: "叶知秋",
-    partnerAvatar: IMAGE_PATHS.PEOPLE.AVATAR_6,
+    partnerAvatar: IMAGE_PATHS.AVATARS.AVATAR_6,
     partnerHeadline: "暨南大学 · 大二 · 文学系", lastMessagePreview: "[图片] 给你看看周末拍的风景",
     lastMessageSentAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), unreadCount: 128, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
@@ -66,7 +66,7 @@ export const mockSessions: MessageSession[] = [
   },
   {
     id: "session-private-3", partnerId: "user-2005", partnerName: "顾言",
-    partnerAvatar: IMAGE_PATHS.PEOPLE.AVATAR_5,
+    partnerAvatar: IMAGE_PATHS.AVATARS.AVATAR_5,
     partnerHeadline: "研一 · 摄影爱好者", lastMessagePreview: "[表情] 😂 笑死",
     lastMessageSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), unreadCount: 5, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
@@ -121,7 +121,7 @@ export const mockMessages: Record<string, MessageItem[]> = {
 
 export const mockHeartSignals: MessageHeartSignal[] = [
   {
-    id: "signal-1", fromUserId: "user-2003", fromUserName: "小满", fromUserAvatar: "/static/assets/images/avatars/person-04-avatar.webp",
+    id: "signal-1", fromUserId: "user-2003", fromUserName: "小满", fromUserAvatar: "/static/assets/images/avatars/avatar-4.jpg",
     status: "pending", sentAt: "2026-05-20T16:45:00Z", expiresAt: "2026-05-21T16:45:00Z",
     school: "南校区", age: 20, city: "广州",
     bioHighlight: "ta的介绍很丰富，对于找对象ta是认真的",
@@ -186,10 +186,10 @@ export const mockNotifications: SystemNotification[] = [
 ];
 
 export const mockInteractionEvents: InteractionEvent[] = [
-  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_1, referenceId: 0, referenceType: "profile", summary: "林晓喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
-  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "夏言", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_2, referenceId: 0, referenceType: "profile", summary: "夏言访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "阿辰", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_3, referenceId: 0, referenceType: "profile", summary: "阿辰关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "小满", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_4, referenceId: 42, referenceType: "post", summary: "小满赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
-  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_1, referenceId: 42, referenceType: "post", summary: "林晓评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "Luna", triggerUserAvatar: IMAGE_PATHS.PEOPLE.AVATAR_5, referenceId: 15, referenceType: "topic", summary: "Luna回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+  { id: 1, eventType: "NEW_LIKE", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_1, referenceId: 0, referenceType: "profile", summary: "林晓喜欢了你", isRead: false, createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
+  { id: 2, eventType: "NEW_VISITOR", triggerUserId: 4002, triggerUserName: "夏言", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_2, referenceId: 0, referenceType: "profile", summary: "夏言访问了你的主页", isRead: false, createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  { id: 3, eventType: "NEW_FOLLOW", triggerUserId: 4003, triggerUserName: "阿辰", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_3, referenceId: 0, referenceType: "profile", summary: "阿辰关注了你", isRead: true, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+  { id: 4, eventType: "POST_LIKED", triggerUserId: 4004, triggerUserName: "小满", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_4, referenceId: 42, referenceType: "post", summary: "小满赞了你的帖子", isRead: false, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+  { id: 5, eventType: "POST_COMMENTED", triggerUserId: 4001, triggerUserName: "林晓", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_1, referenceId: 42, referenceType: "post", summary: "林晓评论了你的帖子：\"写得真好！\"", isRead: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+  { id: 6, eventType: "TOPIC_REPLIED", triggerUserId: 4005, triggerUserName: "Luna", triggerUserAvatar: IMAGE_PATHS.AVATARS.AVATAR_5, referenceId: 15, referenceType: "topic", summary: "Luna回复了你的话题", isRead: true, createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
 ];

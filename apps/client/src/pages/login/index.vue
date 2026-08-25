@@ -23,7 +23,7 @@ import { AppApiError } from "../../services/api-error";
 import { request, setToken, setRefreshToken } from "../../services/http";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
-import { isDev } from "../../config/env";
+import { isDev, isMockMode } from "../../config/env";
 
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
@@ -50,6 +50,15 @@ const birthDate = ref("");
 const phoneRegisterMode = ref(false);
 const agreed = ref(false);
 const showPhoneLogin = ref(false);
+
+/**
+ * 演示模式入口可见性（第五轮 QA 验收入口）。
+ * 仅开发 / mock 构建显示（dev 构建 NODE_ENV=development → isDev=true；
+ * mock 构建 VITE_API_MODE=mock → isMockMode=true）；真实生产构建两信号均为 false → 隐藏。
+ * 与展示模式入口（isShowcaseMode）互相独立：本入口直接以 mock 用户身份注入会话，
+ * 不需要后端 guest-login 可用。
+ */
+const showDevUserEntry = computed(() => isDev || isMockMode());
 
 /** 出生日期 picker 的最大可选日期（今天），未满 18 岁注册被后端拒绝 */
 const birthDateMax = new Date().toISOString().slice(0, 10);
@@ -312,6 +321,28 @@ async function enterShowcase() {
   }
 }
 
+/**
+ * dev-user=1 演示模式进入（第五轮 QA 验收入口，仅 dev/mock 构建显示）。
+ *
+ * 与「?dev-user=1」URL 入口等价：直接以 mock 用户身份（user-1001）注入会话后
+ * reLaunch 首页（寻觅）。不依赖导航 query 传递（switchTab/reLaunch 对 tab 页
+ * 不保留 query），保证微信开发者工具 / 自动化脚本一键进入登录态；页面内其它
+ * 导航携带 dev-user=1 时由 utils/dev-user.ts 拦截器自动注入。
+ *
+ * 本入口为内部 QA/开发辅助，不要求勾选协议（不发起任何真实登录/注册请求），
+ * 视觉克制：仅一行小号 DEV 徽标 + 文字，不干扰主登录流程。
+ */
+function onDevUserEntry() {
+  addBreadcrumb("ui", "button_click", { id: "login.devUser" });
+  try {
+    sessionStore.enterDevUserDemo();
+    uni.reLaunch({ url: ROUTES.TAB.DISCOVER });
+  } catch (error) {
+    // dev-user 注入异常不影响登录页主流程，仅提示
+    uni.showToast({ title: t("login.loginFailed"), icon: "none" });
+  }
+}
+
 function onAgreeTap() {
   agreed.value = !agreed.value;
 }
@@ -502,22 +533,28 @@ function openAccountBinding() {
       />
       <!-- 底部白色渐变叠加，增强文字可读性 -->
       <view class="hero-overlay" />
-      <!-- 2026-08-20：浮动爱心装饰（参考图对齐） -->
+      <!-- 2026-08-20：浮动爱心装饰（参考图对齐，SVG 复用 heart-filled） -->
       <view class="login-hearts" aria-hidden="true">
-        <text class="login-heart login-heart--1">💗</text>
-        <text class="login-heart login-heart--2">💕</text>
-        <text class="login-heart login-heart--3">💗</text>
-        <text class="login-heart login-heart--4">💖</text>
-        <text class="login-heart login-heart--5">💕</text>
+        <image class="login-heart login-heart--1" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <image class="login-heart login-heart--2" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <image class="login-heart login-heart--3" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <image class="login-heart login-heart--4" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <image class="login-heart login-heart--5" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
       </view>
       <!-- 主标题 + 副标压底显示 -->
       <view class="hero-title-wrap">
-        <text class="logo-title">{{ heroTitle }}</text>
+        <view class="hero-title-row">
+          <text class="logo-title">{{ heroTitle }}</text>
+          <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 1.2 / 2.3） -->
+          <image class="logo-title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
+        </view>
         <text class="logo-subtitle">{{ heroSubtitle }}</text>
       </view>
             <view class="hero-desc-wrap">
               <text class="hero-desc">{{ heroDesc }}</text>
               <text class="hero-desc hero-desc--sub">{{ heroDescSub }}</text>
+              <!-- 2026-08-25 P0：底部说明（规格书 2.8） -->
+              <text class="hero-desc-discover">{{ t('login.discoverSubDesc') }}</text>
             </view>
     </view>
 
@@ -541,7 +578,8 @@ function openAccountBinding() {
             @tap="onWechatLoginGuarded"
           >
             <view class="btn-icon-wrap">
-              <text class="btn-icon-wechat">{{ t('login.wechatIconText') }}</text>
+              <!-- 2026-08-25 P0：真实微信绿色气泡 SVG（自绘，规格书 2.9） -->
+              <image class="btn-icon-wechat" :src="IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG" mode="aspectFit" alt="" />
             </view>
             <text class="btn-primary-text">{{ t('login.wechatLogin') }}</text>
           </view>
@@ -709,6 +747,20 @@ function openAccountBinding() {
         <text class="showcase-entry__arrow">›</text>
       </view>
 
+      <!-- 第五轮 QA 验收入口：dev-user=1 演示模式进入（仅 dev/mock 构建显示，视觉克制） -->
+      <view
+        v-if="showDevUserEntry"
+        class="dev-user-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('login.devUserEntryTitle')"
+        @tap="onDevUserEntry"
+      >
+        <text class="dev-user-entry__badge">DEV</text>
+        <text class="dev-user-entry__text">{{ t('login.devUserEntryTitle') }}</text>
+      </view>
+
       <!-- 功能2：其他登录方式（Apple 登录 + 账号绑定入口） -->
       <view class="third-party-wrap">
         <view class="third-party-divider">
@@ -762,7 +814,8 @@ function openAccountBinding() {
 .login-page__hero {
   position: relative;
   width: 100%;
-  height: 70vh;
+  /* R4-batch4 像素级对齐：参考图 hero 占 72%（原 70vh → 72vh） */
+  height: 72vh;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -799,25 +852,37 @@ function openAccountBinding() {
   flex-direction: column;
   align-items: center;
   padding: 0 var(--sp-8);
+  /* R4-batch4 像素级对齐：参考图描述区与底部按钮拉开间距 */
+  padding-bottom: 16rpx;
   z-index: 1;
 }
 
 .hero-desc {
   margin-top: 24rpx;
-  font-size: var(--fs-md);
-  font-weight: 500;
-  color: #1ABC9C;
+  font-size: 40rpx;
+  /* R4-batch4 像素级对齐：参考图标版更突出（800 → 800 保持） */
+  font-weight: 800;
+  color: #1A1E1C;
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.5;
   letter-spacing: 2rpx;
-  text-shadow: 0 2rpx 12rpx rgba(20, 60, 45, 0.35);
 }
 
 .hero-desc--sub {
-  margin-top: 8rpx;
+  margin-top: 10rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #36C99A;
+}
+
+.hero-desc-discover {
+  display: block;
+  margin-top: 12rpx;
   font-size: var(--fs-sm);
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(26, 30, 28, 0.55);
+  text-align: center;
+  letter-spacing: 1rpx;
 }
 
 .hero-title-wrap {
@@ -833,22 +898,33 @@ function openAccountBinding() {
 }
 
 
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+}
+
 .logo-title {
-  font-size: var(--fs-7xl);
-  font-weight: 700;
-  color: #ffffff;
-  text-shadow: 0 4rpx 20rpx rgba(20, 60, 45, 0.5);
+  font-size: 60rpx;
+  font-weight: 800;
+  color: #1A1E1C;
   letter-spacing: 4rpx;
-  line-height: 1.3;
-  margin-bottom: var(--sp-3);
+  line-height: 1.2;
   text-align: center;
 }
 
+.logo-title-sprout {
+  width: 44rpx;
+  height: 44rpx;
+  flex-shrink: 0;
+  margin-top: -6rpx;
+}
+
 .logo-subtitle {
-  font-size: var(--fs-lg);
+  font-size: 28rpx;
   font-weight: 500;
-  color: #ffffff;
-  text-shadow: 0 2rpx 14rpx rgba(20, 60, 45, 0.5);
+  color: #6B7571;
   text-align: center;
   line-height: 1.6;
   letter-spacing: 2rpx;
@@ -956,9 +1032,8 @@ function openAccountBinding() {
 }
 
 .btn-icon-wechat {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 700;
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .btn-primary-text {
@@ -1180,6 +1255,31 @@ function openAccountBinding() {
   font-weight: 600;
 }
 
+/* ---------- dev-user=1 演示模式入口（第五轮 QA 验收入口，仅 dev/mock 构建显示） ---------- */
+.dev-user-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2);
+}
+
+.dev-user-entry__badge {
+  font-size: var(--fs-xs, 20rpx);
+  font-weight: 700;
+  color: var(--c-text-inverse);
+  background: var(--c-text-quaternary);
+  border-radius: var(--r-sm, 8rpx);
+  padding: 2rpx 8rpx;
+  letter-spacing: 1rpx;
+}
+
+.dev-user-entry__text {
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-quaternary);
+}
+
 .checkbox {
   width: 34rpx;
   height: 34rpx;
@@ -1316,15 +1416,18 @@ function openAccountBinding() {
 
 .login-heart {
   position: absolute;
+  width: 44rpx;
+  height: 44rpx;
+  color: #FF6B81;
   opacity: 0.45;
   animation: login-heart-float 4.5s ease-in-out infinite alternate;
 }
 
-.login-heart--1 { left: 12%; top: 18%; font-size: 44rpx; animation-delay: 0s; }
-.login-heart--2 { right: 14%; top: 12%; font-size: 52rpx; animation-delay: 0.7s; }
-.login-heart--3 { left: 20%; bottom: 30%; font-size: 38rpx; animation-delay: 1.3s; }
-.login-heart--4 { right: 22%; top: 34%; font-size: 40rpx; animation-delay: 1.9s; }
-.login-heart--5 { left: 45%; top: 8%; font-size: 34rpx; opacity: 0.3; animation-delay: 0.4s; }
+.login-heart--1 { left: 12%; top: 18%; width: 44rpx; height: 44rpx; animation-delay: 0s; }
+.login-heart--2 { right: 14%; top: 12%; width: 52rpx; height: 52rpx; animation-delay: 0.7s; }
+.login-heart--3 { left: 20%; bottom: 30%; width: 38rpx; height: 38rpx; animation-delay: 1.3s; }
+.login-heart--4 { right: 22%; top: 34%; width: 40rpx; height: 40rpx; animation-delay: 1.9s; }
+.login-heart--5 { left: 45%; top: 8%; width: 34rpx; height: 34rpx; opacity: 0.3; animation-delay: 0.4s; }
 
 @keyframes login-heart-float {
   0% { transform: translateY(0) rotate(0deg) scale(1); }

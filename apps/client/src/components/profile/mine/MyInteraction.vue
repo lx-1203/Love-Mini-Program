@@ -1,9 +1,12 @@
 ﻿<script setup lang="ts">
+import { IMAGE_PATHS } from "../../../config/images";
+
 export interface InteractionItem {
   key: string;
   label: string;
   value: number | string;
   icon?: string;
+  iconSrc?: string;
   color?: string;
 }
 
@@ -12,11 +15,11 @@ withDefaults(defineProps<{ items: InteractionItem[] }>(), {
 });
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
-const DEFAULT_ICONS: Record<string, { icon: string; color: string }> = {
-  likedMe: { icon: "♥", color: "#FF6B81" },
-  match: { icon: "♡", color: "#FF9F43" },
-  likes: { icon: "♥", color: "#A29BFE" },
-  visitors: { icon: "👁", color: "#4D8DFF" },
+const DEFAULT_ICONS: Record<string, { iconSrc: string; color: string }> = {
+  likedMe: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
+  match: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, color: "#FF9F43" },
+  likes: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#A29BFE" },
+  visitors: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
 };
 </script>
 
@@ -32,8 +35,9 @@ const DEFAULT_ICONS: Record<string, { icon: string; color: string }> = {
         @tap="emit('tap', item.key)"
       >
         <view class="my-interaction__icon" :style="{ background: `${item.color || DEFAULT_ICONS[item.key]?.color || '#36C99A'}22` }">
-          <text class="my-interaction__icon-text" :style="{ color: item.color || DEFAULT_ICONS[item.key]?.color || '#36C99A' }">
-            {{ item.icon || DEFAULT_ICONS[item.key]?.icon || '•' }}
+          <image v-if="item.iconSrc || DEFAULT_ICONS[item.key]?.iconSrc" class="my-interaction__icon-img" :src="item.iconSrc || DEFAULT_ICONS[item.key]?.iconSrc || ''" mode="aspectFit" alt="" />
+          <text v-else class="my-interaction__icon-text" :style="{ color: item.color || DEFAULT_ICONS[item.key]?.color || '#36C99A' }">
+            {{ item.icon || '•' }}
           </text>
         </view>
         <text class="my-interaction__label">{{ item.label }}</text>

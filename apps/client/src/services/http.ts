@@ -14,9 +14,10 @@ import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "
 import { ROUTES } from "../constants/routes";
 // R4-batch2: 错误/提示文案 i18n 化（apiErrors.* 键集）
 import { t } from "@/i18n";
-// 2026-08-10 切换提速：token 变更时失效媒体 URL 缓存（media.ts 亦 import 本文件的 getToken，
-// 构成运行时循环引用——仅函数体内使用，模块加载期无依赖，Rollup 可安全处理）
-import { invalidateMediaTokenCache } from "../utils/media";
+// 2026-08-25：从独立模块引入失效标记，打破 http <-> media 循环依赖
+// （原从 ../utils/media 引入会构成 Circular chunk: services/http -> utils/media -> services/http，
+//  极端情况下导致被循环命中的模块导出在运行时为 undefined）
+import { invalidateMediaTokenCache } from "../utils/media-token-cache";
 // 2026-08-10 切换提速：token 写入时清空 TTL 缓存（登录/换账号/401 刷新后防跨账号数据泄漏）
 import { clearAllCaches } from "../utils/cache-ttl";
 

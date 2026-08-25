@@ -99,13 +99,23 @@ function goToPostTopic() {
   openAppPath(`/pages/circles/post-topic?circleId=${circleId.value}`);
 }
 
-/** 兴趣圈详情 Tab（v3 Nearby 冻结）：动态 / 精选 / 成员 / 活动 */
-const detailTab = ref<"feed" | "hot" | "members" | "activities">("feed");
+/** 兴趣圈详情 Tab（v3 Nearby 冻结 + 2026-08-25 P0 补作品墙）：动态 / 精华 / 活动 / 作品墙 / 成员 */
+const detailTab = ref<"feed" | "hot" | "works" | "members" | "activities">("feed");
+
+/** 2026-08-25 P0：作品墙 = 带图片的话题（规格书 15.10 第五个 tab） */
+const worksTopics = computed(() =>
+  currentTopics.value.filter((tp) => (tp.images?.length ?? 0) > 0)
+);
+
+/** 当前 tab 展示列表（作品墙用带图话题，其余用 displayTopics） */
+const listForTab = computed(() => (detailTab.value === "works" ? worksTopics.value : displayTopics.value));
 
 /** 当前圈子（列表数据中查找，用于头部成员数/加入态） */
 const circle = computed(() => circleStore.circles.find((c) => c.id === circleId.value) ?? null);
 
-/** 2026-08-21：圈子封面（复用兴趣圈页素材） */
+/** 2026-08-21：圈子封面（复用兴趣圈页素材）
+ * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈原 Style B 宽幅场景大图（与 ideal 方形缩略风格不一致）
+ * 改为本地 AI 生成 Style A 方形居中场景图，与 config/images.ts CIRCLE_COVERS / nearby 同步 */
 const CIRCLE_COVER = {
   photo: "/static/assets/images/covers/circle-photo.png",
   travel: "/static/assets/images/covers/circle-travel.png",
@@ -113,9 +123,11 @@ const CIRCLE_COVER = {
   sports: "/static/assets/images/covers/circle-sports.png",
   food: "/static/assets/images/covers/circle-food.png",
   sky: "/static/assets/images/covers/circle-sky.png",
-  game: "/static/assets/images/covers/circle-game.png",
-  reading: "/static/assets/images/covers/circle-reading.png",
-  pet: "/static/assets/images/covers/circle-pet.png",
+  // 第五轮 QA：游戏/阅读/宠物改用 Style A AI 生成图（与理想图风格一致）
+  game: "/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png",
+  reading: "/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png",
+  pet: "/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png",
+  // 非标准 8 圈（仅真实模式可能存在）：保留 Style B 原图
   cutepets: "/static/assets/images/covers/circle-cutepets.png",
   basketball: "/static/assets/images/covers/circle-basketball.png",
   boardgame: "/static/assets/images/covers/circle-boardgame.png",
@@ -170,6 +182,46 @@ async function toggleJoin() {
   }
 }
 
+/**
+ * 2026-08-25 P0：格式化成员数量（与 circles/index.vue 一致，规格书 15.6）
+ */
+function formatMemberCount(count: number): string {
+  if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return String(count);
+}
+
+/** 2026-08-25 P0：等 N 位朋友已加入的头像（基于 circleId 哈希，规格书 15.7） */
+const FRIEND_AVATAR_POOL = [
+  IMAGE_PATHS.AVATARS.AVATAR_1,
+  IMAGE_PATHS.AVATARS.AVATAR_2,
+  IMAGE_PATHS.AVATARS.AVATAR_3,
+  IMAGE_PATHS.AVATARS.AVATAR_4,
+];
+function friendAvatars(cid: string): string[] {
+  const seed = cid.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return [
+    FRIEND_AVATAR_POOL[seed % 4]!,
+    FRIEND_AVATAR_POOL[(seed + 1) % 4]!,
+    FRIEND_AVATAR_POOL[(seed + 2) % 4]!,
+  ];
+}
+function friendJoinCount(cid: string, _memberCount: number): number {
+  const seed = cid.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return 5 + (seed % 8);
+}
+
+/** 2026-08-25 P0：右上角"写话题 + ···"操作（规格书 15.2） */
+function onTopicsMore() {
+  uni.showActionSheet({
+    itemList: ["写话题", "举报圈子", "分享圈子"],
+    success: ({ tapIndex }) => {
+      if (tapIndex === 0) goToPostTopic();
+      // 其他选项为占位
+    },
+  });
+}
+
 /** v3 冻结：认识 TA → 他人主页（不直接 like/建聊天） */
 function meetAuthor(userId: string) {
   openUserProfile(userId);
@@ -180,7 +232,7 @@ const activityStore = useActivityStore();
 function goToActivityDetail(activityId: string | number) {
   openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
 }
-function switchTab(tab: "feed" | "hot" | "members" | "activities") {
+function switchTab(tab: "feed" | "hot" | "works" | "members" | "activities") {
   detailTab.value = tab;
   if (tab === "activities" && activityStore.activities.length === 0) {
     void activityStore.fetchActivities().catch(() => {});
@@ -235,10 +287,32 @@ defineExpose({ goToAuthorProfile });
     <!-- 顶部导航栏 -->
     <view class="topics-header">
       <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">{{ t("circle.topicDetailBack") }}</text>
+        <text class="back-icon">‹</text>
       </view>
       <text class="topics-header__title">{{ circleName || t("circle.topicsListTitle") }}</text>
-      <view class="topics-header__spacer" />
+      <!-- 2026-08-25 P0：右上"写话题 + ···"（规格书 15.2） -->
+      <view class="topics-header__right">
+        <view
+          class="topics-header__icon-btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="'写话题'"
+          @tap="goToPostTopic"
+        >
+          <image class="topics-header__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.EDIT" mode="aspectFit" alt="" />
+        </view>
+        <view
+          class="topics-header__icon-btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="'更多'"
+          @tap="onTopicsMore"
+        >
+          <text class="topics-header__icon-text">···</text>
+        </view>
+      </view>
     </view>
 
     <!-- 兴趣圈详情头部（v3 Nearby 冻结） -->
@@ -251,8 +325,23 @@ defineExpose({ goToAuthorProfile });
           <text class="circle-hero__name">{{ circle.name }}</text>
           <text v-if="circle.memberCount >= 7000" class="circle-hero__hot">热门</text>
         </view>
-        <text class="circle-hero__meta">{{ circle.memberCount }} 成员 · {{ circle.topicCount }} 条动态</text>
+        <!-- 2026-08-25 P0：规格书 15.6 格式 "1.2w 人加入 · 362 条动态" -->
+        <text class="circle-hero__meta">{{ formatMemberCount(circle.memberCount) }} 人加入 · {{ circle.topicCount }} 条动态</text>
         <text class="circle-hero__desc">{{ circle.description }}</text>
+        <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 15.7） -->
+        <view v-if="circle" class="circle-hero__friends">
+          <view class="circle-hero__friends-avatars">
+            <image
+              v-for="(av, i) in friendAvatars(circle.id)"
+              :key="i"
+              class="circle-hero__friends-avatar"
+              :src="av"
+              mode="aspectFill"
+              alt=""
+            />
+          </view>
+          <text class="circle-hero__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友已加入</text>
+        </view>
       </view>
       <view
         class="circle-hero__join"
@@ -265,14 +354,14 @@ defineExpose({ goToAuthorProfile });
       </view>
     </view>
 
-    <!-- 详情 Tab：动态 / 精选 / 成员 / 活动 -->
+    <!-- 详情 Tab：动态 / 精华 / 活动 / 作品墙 / 成员（2026-08-25 P0 补作品墙，规格书 15.10） -->
     <view class="circle-tabs" role="tablist" :aria-label="t('circle.detailTabsAria')">
-      <view v-for="tab in [{key:'feed',label:t('circle.detailFeed')},{key:'hot',label:t('circle.detailHot')},{key:'members',label:t('circle.detailMembersTab')},{key:'activities',label:t('circle.detailActivitiesTab')}]" :key="tab.key"
+      <view v-for="tab in [{key:'feed',label:t('circle.detailFeed')},{key:'hot',label:t('circle.detailHot')},{key:'activities',label:t('circle.detailActivitiesTab')},{key:'works',label:t('circle.detailWorks')},{key:'members',label:t('circle.detailMembersTab')}]" :key="tab.key"
         class="circle-tab"
         :class="{ 'circle-tab--active': detailTab === tab.key }"
         role="tab"
         :aria-selected="detailTab === tab.key ? 'true' : 'false'"
-        @tap="switchTab(tab.key as 'feed' | 'hot' | 'members' | 'activities')"
+        @tap="switchTab(tab.key as 'feed' | 'hot' | 'works' | 'members' | 'activities')"
       >
         <text class="circle-tab__text">{{ tab.label }}</text>
       </view>
@@ -314,10 +403,10 @@ defineExpose({ goToAuthorProfile });
 
       <!-- 空状态 -->
       <EmptyState
-        v-if="(detailTab === 'feed' || detailTab === 'hot') && displayTopics.length === 0"
+        v-if="(detailTab === 'feed' || detailTab === 'hot' || detailTab === 'works') && listForTab.length === 0"
         type="no-data"
         :image="chatIcon"
-        :title="t('circle.topicsEmptyTitle')"
+        :title="detailTab === 'works' ? t('circle.worksEmptyTitle') : t('circle.topicsEmptyTitle')"
         :description="t('circle.topicsEmptyDesc')"
         :action-text="t('circle.topicsEmptyAction')"
         @action="goToPostTopic"
@@ -325,7 +414,7 @@ defineExpose({ goToAuthorProfile });
 
       <!-- 话题卡片 -->
       <view
-        v-for="topic in displayTopics" :key="topic.id"
+        v-for="topic in listForTab" :key="topic.id"
         class="topic-card list-item"
         @tap="goToDetail(topic.id)"
       >
@@ -405,9 +494,9 @@ defineExpose({ goToAuthorProfile });
       <view class="feed-bottom-spacer" />
     </scroll-view>
 
-    <!-- 浮动发帖按钮 (FAB) -->
+    <!-- 浮动发帖按钮 (FAB)：2026-08-25 P0 图标改 ✏（规格书 15.14） -->
     <view class="fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
-      <text class="fab__icon">+</text>
+      <image class="fab__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EDIT" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>
@@ -461,6 +550,38 @@ defineExpose({ goToAuthorProfile });
 
 .topics-header__spacer {
   min-width: 80rpx;
+}
+
+/* 2026-08-25 P0：右上写话题 + ··· */
+.topics-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-width: 80rpx;
+  justify-content: flex-end;
+}
+
+.topics-header__icon-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.topics-header__icon-text {
+  font-size: 28rpx;
+  color: #ffffff;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.topics-header__icon-btn image.topics-header__icon-text {
+  width: 32rpx;
+  height: 32rpx;
 }
 
 /* ===== 2026-08-21 置顶规则条 ===== */
@@ -721,7 +842,8 @@ defineExpose({ goToAuthorProfile });
 .fab {
   position: fixed;
   right: 40rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
+  /* V-03（第五轮 QA）：浮动写话题按钮下移（150→120rpx），更贴近拇指热区 */
+  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
   width: 112rpx;
   height: 112rpx;
   border-radius: var(--r-circle, 50%);
@@ -742,7 +864,8 @@ defineExpose({ goToAuthorProfile });
 /* #endif */
 
 .fab__icon {
-  font-size: var(--fs-6xl);
+  width: var(--fs-6xl);
+  height: var(--fs-6xl);
   color: var(--c-neutral-0);
   font-weight: 300;
   line-height: 1;
@@ -755,7 +878,8 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   align-items: center;
   gap: 20rpx;
-  padding: 32rpx 24rpx;
+  /* V-03（第五轮 QA）：封面区高度增加（32→40rpx 纵向），提升大图视觉占比 */
+  padding: 40rpx 28rpx;
   margin: 0 0 20rpx;
   border-radius: 20rpx;
   overflow: hidden;
@@ -850,7 +974,9 @@ defineExpose({ goToAuthorProfile });
 
 .circle-tabs {
   display: flex;
+  /* V-03（第五轮 QA）：5 个 tab 增加左右留白 + 行距，避免贴边/拥挤 */
   gap: 12rpx;
+  padding: 0 24rpx;
   margin-bottom: 20rpx;
 }
 
@@ -1003,6 +1129,40 @@ defineExpose({ goToAuthorProfile });
   font-weight: 700;
   line-height: 1.5;
   flex-shrink: 0;
+}
+
+/* 2026-08-25 P0：等 N 位朋友已加入 + 头像组 */
+.circle-hero__friends {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.circle-hero__friends-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.circle-hero__friends-avatar {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 2rpx solid #ffffff;
+  background: #EEF2F0;
+  margin-left: -10rpx;
+  flex-shrink: 0;
+}
+
+.circle-hero__friends-avatar:first-child {
+  margin-left: 0;
+}
+
+.circle-hero__friends-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 </style>

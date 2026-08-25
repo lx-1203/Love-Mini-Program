@@ -22,6 +22,8 @@ export interface School {
   cityKey?: string;
   /** 该校专业目录（可选；缺省时使用通用专业目录 MAJORS 兜底） */
   majors?: string[];
+  /** 校园圈封面图（可选；未上传时渲染浅绿背景+学校名字，上传后渲染图片——保留上传能力） */
+  coverUrl?: string;
 }
 
 // 展示文案 i18n 化（i18n-data-review #10）：学校名/城市已抽为 i18n key（config.schools.*，zh/en 同步）。

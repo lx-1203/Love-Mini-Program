@@ -167,7 +167,10 @@ function switchScope(next: "nearby" | "city") {
           <view class="people-row__name-row">
             <text class="people-row__name">{{ item.name }}</text>
             <text v-if="item.age" class="people-row__age">{{ item.age }}</text>
-            <text v-if="isOnline(item.activeStatusText)" class="people-row__online">🟢 {{ t('cardDetail.onlineLabel') }}</text>
+            <text v-if="isOnline(item.activeStatusText)" class="people-row__online-wrap">
+              <image class="people-row__online-dot" :src="IMAGE_PATHS.ICONS_EMOJI.STATUS_ONLINE" mode="aspectFit" alt="" />
+              <text class="people-row__online">{{ t('cardDetail.onlineLabel') }}</text>
+            </text>
           </view>
           <text class="people-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
           <view v-if="item.tags && item.tags.length" class="people-row__tags">
@@ -339,6 +342,18 @@ function switchScope(next: "nearby" | "city") {
 .people-row__age {
   font-size: 26rpx;
   color: var(--c-text-secondary, #666666);
+}
+
+.people-row__online-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.people-row__online-dot {
+  width: 16rpx;
+  height: 16rpx;
+  flex-shrink: 0;
 }
 
 .people-row__online {

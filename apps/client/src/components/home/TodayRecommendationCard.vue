@@ -157,8 +157,8 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 
 .today-card__match-badge {
   position: absolute;
-  right: 12rpx;
-  top: 12rpx;
+  left: 12rpx;
+  bottom: 12rpx;
   width: 104rpx;
   height: 104rpx;
   border-radius: 50%;

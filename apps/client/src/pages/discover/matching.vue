@@ -65,6 +65,21 @@ onLoad((query) => {
   const cardId = q.cardId || "";
   const action = q.action || "";
   const userId = q.userId || "";
+
+  // 2026-08-25 P1：dev-preview=1 直接停在匹配中页（QA 复验入口，规格书 06）
+  if (String(q["dev-preview"]) === "1") {
+    previewMode.value = true;
+    matchStore.beginCheck(
+      { userId: "dev-preview", id: "dev-preview", name: "星野", photo: IMAGE_PATHS.AVATARS.AVATAR_1, avatar: IMAGE_PATHS.AVATARS.AVATAR_1 } as MatchCardUser,
+      "dev-preview",
+      "like"
+    );
+    if (!profileStore.avatarUrl) {
+      void profileStore.load().catch(() => {});
+    }
+    return;
+  }
+
   // 2026-08-18：preview=1 预览模式（分享/演示）——不调匹配接口，动画结束停留页面
   if (String(q.preview) === "1" && cardId && action && userId) {
     previewMode.value = true;
@@ -139,6 +154,10 @@ onUnload(() => {
 
 <template>
   <view class="matching-page">
+    <!-- 2026-08-25 P0：顶部左上返回箭头（规格书 06.1） -->
+    <view class="matching-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
+      <text class="matching-page__back-icon">‹</text>
+    </view>
     <MatchLoading
       :my-avatar="myAvatar"
       :partner-avatar="partnerAvatar"
@@ -151,7 +170,30 @@ onUnload(() => {
 
 <style scoped lang="scss">
 .matching-page {
+  position: relative;
   min-height: 100%;
   background: #f4fbf8;
+}
+
+.matching-page__back {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 24rpx);
+  left: 24rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+
+.matching-page__back-icon {
+  font-size: 48rpx;
+  color: #333A37;
+  line-height: 1;
+  font-weight: 500;
 }
 </style>

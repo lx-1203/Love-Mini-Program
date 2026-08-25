@@ -113,11 +113,11 @@ defineEmits<{ (e: "all"): void }>();
 .relation-cell__icon-text {
   font-size: 26rpx;
   font-weight: 800;
+}
 
 .relation-cell__icon-img {
   width: 36rpx;
   height: 36rpx;
-}
 }
 
 .relation-cell__icon--pink .relation-cell__icon-text { color: #FF6B81; }
@@ -142,14 +142,18 @@ defineEmits<{ (e: "all"): void }>();
 }
 
 .relation-cell__value {
-  font-size: 30rpx;
+  /* R4-batch4 像素级对齐：参考图数值更突出（30rpx → 36rpx） */
+  font-size: 36rpx;
   font-weight: 800;
   color: #222222;
+  line-height: 1.1;
 }
 
 .relation-cell__label {
-  font-size: 18rpx;
-  color: #999999;
+  /* R4-batch4 像素级对齐：参考图标签字号（18rpx → 22rpx），更易读 */
+  font-size: 22rpx;
+  color: #888E8B;
   text-align: center;
+  line-height: 1.3;
 }
 </style>

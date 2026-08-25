@@ -56,7 +56,7 @@
       "es6": true
     },
     "usingComponents": true,
-    "__usePrivacyCheck__": true,
+    "__usePrivacyCheck__": false,
     "darkmode": true,
     "themeLocation": "theme.json"
     /*

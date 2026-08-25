@@ -174,7 +174,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround1"),
       availability: t("mockData.recommendedPeople.availability1"),
       campusName: t("mockData.recommendedPeople.campusName1"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_1,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1,
       tags: ["咖啡", "电影", "夜跑", "心理学", "猫奴"],
       bio: t("mockData.recommendedPeople.bio1"),
       images: [
@@ -218,8 +218,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "北京 · 海淀",
       recentPosts: [
-        { id: "p4001-1", content: "图书馆的橘猫今天又蹭了我一下午，太治愈了。", likes: 32, comments: 8, isLiked: false, createdAt: "2026-07-20T10:00:00Z" },
-        { id: "p4001-2", content: "周末去了艺术展，被一幅蓝色调的画击中了。", likes: 56, comments: 14, isLiked: false, createdAt: "2026-07-18T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图（portraits/covers 混合）
+        { id: "p4001-1", content: "图书馆的橘猫今天又蹭了我一下午，太治愈了。", images: ["/static/assets/images/portraits/p1.jpg"], likes: 32, comments: 8, isLiked: false, createdAt: "2026-07-20T10:00:00Z" },
+        { id: "p4001-2", content: "周末去了艺术展，被一幅蓝色调的画击中了。", images: ["/static/assets/images/portraits/p2.jpg"], likes: 56, comments: 14, isLiked: false, createdAt: "2026-07-18T10:00:00Z" },
       ],
     },
     {
@@ -231,7 +232,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround2"),
       availability: t("mockData.recommendedPeople.availability2"),
       campusName: "北京大学",
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_2,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_2,
       tags: ["旅行", "摄影", "音乐", "电影", "徒步"],
       bio: "喜欢记录生活，也喜欢认识有趣的人。如果你也喜欢散步、电影和拍照，可以聊聊。",
       images: [
@@ -277,7 +278,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "上海 · 杨浦",
       recentPosts: [
-        { id: "p4002-1", content: "发现一家藏在巷子里的宝藏小店，强烈推荐！", likes: 89, comments: 21, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4002-1", content: "发现一家藏在巷子里的宝藏小店，强烈推荐！", images: ["/static/assets/images/covers/circle-food.png"], likes: 89, comments: 21, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
     {
@@ -289,7 +291,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround3"),
       availability: t("mockData.recommendedPeople.availability3"),
       campusName: t("mockData.recommendedPeople.campusName3"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_3,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_3,
       tags: ["语言", "看展", "摄影", "日系", "手账"],
       bio: t("mockData.recommendedPeople.bio3"),
       images: [
@@ -333,7 +335,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "浙江 · 杭州",
       recentPosts: [
-        { id: "p4003-1", content: "胶片冲洗出来那一刻，时间好像变慢了。", likes: 41, comments: 6, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4003-1", content: "胶片冲洗出来那一刻，时间好像变慢了。", images: ["/static/assets/images/covers/circle-photo.png"], likes: 41, comments: 6, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
       ],
     },
     {
@@ -345,7 +348,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround4"),
       availability: t("mockData.recommendedPeople.availability4"),
       campusName: t("mockData.recommendedPeople.campusName4"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_4,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_4,
       tags: ["游戏", "篮球", "旅行", "编程", "火锅"],
       bio: t("mockData.recommendedPeople.bio4"),
       images: [
@@ -389,8 +392,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "江苏 · 南京",
       recentPosts: [
-        { id: "p4004-1", content: "今天三分球手感火热，连进 8 个！", likes: 77, comments: 18, isLiked: false, createdAt: "2026-07-22T10:00:00Z" },
-        { id: "p4004-2", content: "假期想去川西，有没有一起的？", likes: 45, comments: 30, isLiked: false, createdAt: "2026-07-15T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4004-1", content: "今天三分球手感火热，连进 8 个！", images: ["/static/assets/images/covers/circle-sports.png"], likes: 77, comments: 18, isLiked: false, createdAt: "2026-07-22T10:00:00Z" },
+        { id: "p4004-2", content: "假期想去川西，有没有一起的？", images: ["/static/assets/images/covers/circle-travel.png"], likes: 45, comments: 30, isLiked: false, createdAt: "2026-07-15T10:00:00Z" },
       ],
     },
     {
@@ -402,7 +406,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround5"),
       availability: t("mockData.recommendedPeople.availability5"),
       campusName: t("mockData.recommendedPeople.campusName5"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_5,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_5,
       tags: ["阅读", "写作", "咖啡", "新闻", "民谣"],
       bio: t("mockData.recommendedPeople.bio5"),
       images: [
@@ -446,7 +450,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "湖北 · 武汉",
       recentPosts: [
-        { id: "p4005-1", content: "最近在读《夜航西飞》，有些句子想和人分享。", likes: 34, comments: 8, isLiked: false, createdAt: "2026-07-19T14:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4005-1", content: "最近在读《夜航西飞》，有些句子想和人分享。", images: ["/static/assets/images/covers/circle-reading.png"], likes: 34, comments: 8, isLiked: false, createdAt: "2026-07-19T14:00:00Z" },
       ],
     },
     {
@@ -458,7 +463,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround6"),
       availability: t("mockData.recommendedPeople.availability6"),
       campusName: t("mockData.recommendedPeople.campusName6"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_6,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_6,
       tags: ["辩论", "古典音乐", "阅读", "法学", "博物馆"],
       bio: t("mockData.recommendedPeople.bio6"),
       images: [
@@ -502,7 +507,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "广东 · 广州",
       recentPosts: [
-        { id: "p4006-1", content: "博物馆新展开幕，讲解员讲得特别好。", likes: 23, comments: 5, isLiked: false, createdAt: "2026-07-17T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4006-1", content: "博物馆新展开幕，讲解员讲得特别好。", images: ["/static/assets/images/portraits/p3.jpg"], likes: 23, comments: 5, isLiked: false, createdAt: "2026-07-17T10:00:00Z" },
       ],
     },
     {
@@ -514,7 +520,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround7"),
       availability: t("mockData.recommendedPeople.availability7"),
       campusName: t("mockData.recommendedPeople.campusName7"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_7,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_7,
       tags: ["户外", "露营", "爬山", "医学", "纪录片"],
       bio: t("mockData.recommendedPeople.bio7"),
       images: [
@@ -558,7 +564,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "福建 · 厦门",
       recentPosts: [
-        { id: "p4007-1", content: "凌晨四点的日出，值得！", likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4007-1", content: "凌晨四点的日出，值得！", images: ["/static/assets/images/covers/circle-sky.png"], likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
       ],
     },
     {
@@ -570,7 +577,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround8"),
       availability: t("mockData.recommendedPeople.availability8"),
       campusName: t("mockData.recommendedPeople.campusName8"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_8,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_8,
       tags: ["电影", "摄影", "咖啡", "旅行"],
       bio: t("mockData.recommendedPeople.bio8"),
       images: [IMAGE_PATHS.PEOPLE.CARD_8],
@@ -606,7 +613,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "上海 · 徐汇",
       recentPosts: [
-        { id: "p4008-1", content: "老电影放映厅的下午，太治愈了。", likes: 41, comments: 9, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4008-1", content: "老电影放映厅的下午，太治愈了。", images: ["/static/assets/images/portraits/p5.jpg"], likes: 41, comments: 9, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
       ],
     },
     {
@@ -618,7 +626,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       commonGround: t("mockData.recommendedPeople.commonGround9"),
       availability: t("mockData.recommendedPeople.availability9"),
       campusName: t("mockData.recommendedPeople.campusName9"),
-      avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_9,
+      avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_9,
       tags: ["摄影", "旅行", "阅读", "音乐"],
       bio: t("mockData.recommendedPeople.bio9"),
       images: [IMAGE_PATHS.PEOPLE.CARD_9],
@@ -654,7 +662,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       allowMessage: false,
       ipLocation: "广东 · 广州",
       recentPosts: [
-        { id: "p4009-1", content: "今天的晚霞很适合拍照。", likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
+        // D-05b（第五轮 QA）：他人主页动态补配图
+        { id: "p4009-1", content: "今天的晚霞很适合拍照。", images: ["/static/assets/images/portraits/p6.jpg"], likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
   ];
@@ -758,16 +767,20 @@ const MAKE_UP_COST_POINTS = 50;
 const submissionDetails = new Map<number, SubmissionDetailView>();
 
 // 修复 prefer-const：profileStats 未被重新赋值，改为 const
+// 修复#5（第五轮 QA）：补上 ProfileStats 类型要求的 likedMeCount/matchCount，
+// 并与 stores/profile.ts mockProfileStats 对齐（关注 128 / 粉丝 96 / 获赞 356 / 匹配 42 / 访客 104）
 const profileStats: ProfileStats = {
-  followers: 16,
-  following: 28,
-  likes: 104,
-  visitors: 50,
+  followers: 96,
+  following: 128,
+  likes: 356,
+  visitors: 104,
   posts: 12,
-  followingCount: 28,
-  followersCount: 16,
-  likesCount: 104,
-  visitorsCount: 50,
+  followingCount: 128,
+  followersCount: 96,
+  likesCount: 356,
+  visitorsCount: 104,
+  likedMeCount: 28,
+  matchCount: 42,
 };
 
 let campusProfile: CampusProfile = {
@@ -1710,7 +1723,7 @@ export const mockFixtures = {
    * 不再复用 uploadProfileBackground 的背景图语义）。
    */
   uploadAvatar(_file: UniUploadFileLike): { avatarUrl?: string; url?: string } {
-    return { avatarUrl: IMAGE_PATHS.PEOPLE.AVATAR_1, url: IMAGE_PATHS.AVATARS.AVATAR_1 };
+    return { avatarUrl: IMAGE_PATHS.AVATARS.AVATAR_1, url: IMAGE_PATHS.AVATARS.AVATAR_1 };
   },
 
   /**

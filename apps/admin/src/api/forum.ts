@@ -377,7 +377,7 @@ export interface CircleView {
 export interface CircleForm {
   /** 圈名（新增必填，1-64 字；编辑可选） */
   name?: string;
-  /** emoji 图标（可选，≤16 字符；新增缺省 📋） */
+  /** 图标（可选，≤16 字符；新增缺省 📋） */
   icon?: string;
   /** 圈子描述（可选，≤256 字） */
   description?: string;

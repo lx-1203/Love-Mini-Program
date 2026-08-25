@@ -15,6 +15,8 @@ import { ROUTES } from "../../constants/routes";
 import { SCHOOLS } from "../../config/schools";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
+// 第五轮 QA（补做）：校园圈卡片统一浅绿背景 + 学校名字，移除每校一色渐变与首字徽标。
+// 渲染逻辑支持 coverUrl：coverUrl 非空 → 显示图片；空 → 浅绿背景 + 学校名字。
 
 const { t } = useI18n();
 const campusStore = useCampusStore();
@@ -53,39 +55,16 @@ const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionS
 /** 当前选中的 Tab：joined = 我加入的，recommend = 推荐圈子 */
 const activeTab = ref<"joined" | "recommend">("joined");
 
-/** 校园圈封面图映射（使用 GENERATED 校园风景图） */
-const CAMPUS_COVERS: Record<string, string> = {
-  pku: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
-  thu: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
-  ruc: IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
-  fudan: IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
-  sjtu: IMAGE_PATHS.GENERATED.CAMPUS_PLAYGROUND,
-  tongji: IMAGE_PATHS.GENERATED.CAMPUS_CAFETERIA,
-  zju: IMAGE_PATHS.GENERATED.CAMPUS_RAIN,
-};
-
-/** 封面图兜底渐变色（每所学校一个独特渐变） */
-const CAMPUS_GRADIENTS: Record<string, string> = {
-  pku: "linear-gradient(135deg, #4A90A4 0%, #357A8C 100%)",
-  thu: "linear-gradient(135deg, #8B6914 0%, #A0522D 100%)",
-  ruc: "linear-gradient(135deg, #7B68AE 0%, #5B4C9A 100%)",
-  fudan: "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)",
-  sjtu: "linear-gradient(135deg, #C62828 0%, #8E0000 100%)",
-  tongji: "linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)",
-  zju: "linear-gradient(135deg, #00695C 0%, #004D40 100%)",
-};
-
-function campusCoverFor(schoolId: string): string {
-  return CAMPUS_COVERS[schoolId] || "";
-}
-
-function campusGradientFor(schoolId: string): string {
-  return CAMPUS_GRADIENTS[schoolId] || "linear-gradient(135deg, #36C99A 0%, #2BA882 100%)";
-}
-
-function schoolInitial(name: string): string {
-  return name ? name.charAt(0) : "?";
-}
+/**
+ * 校园圈封面图映射（第五轮移除）：
+ * 原 CAMPUS_COVERS 映射 7 所学校的校园风景图（IMAGE_PATHS.GENERATED.CAMPUS_GATE/LIBRARY/...），
+ * 圈子卡片渲染封面插图。现按 QA 反馈移除封面插图与每校一色渐变，卡片统一为：
+ * 「浅绿色背景（#E6F6EF）+ 深绿文字（#1F9A75）+ 学校名字」。
+ *
+ * coverUrl 数据模型保留（config/schools.ts School.coverUrl?）：未来后端 campuses 接口
+ * 下发校徽/封面 URL 时，非空 → 封面区渲染图片（aspectFill）；空 → 浅绿背景 + 学校名字。
+ * 当前 SCHOOLS 均未配置 coverUrl → 走浅绿+名字兜底。
+ */
 
 /** Tab 切换过滤列表 */
 const filteredSchools = computed(() => {
@@ -172,7 +151,7 @@ function goBack() {
     <!-- 2026-08-20：搜索框（参考图对齐） -->
     <view class="campus-search">
       <view class="campus-search__icon">
-        <text class="campus-search__icon-text">🔍</text>
+        <image class="campus-search__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
       </view>
       <input
         v-model="searchKeyword"
@@ -223,22 +202,11 @@ function goBack() {
       :aria-label="school.name"
       @tap="goSchool(school.name)"
     >
-      <!-- 封面图 -->
-      <view class="campus-school-card__cover">
-        <image
-          v-if="campusCoverFor(school.id)"
-          class="campus-school-card__cover-img"
-          :src="campusCoverFor(school.id)"
-          mode="aspectFill"
-          alt=""
-        />
-        <view
-          v-else
-          class="campus-school-card__cover-fallback"
-          :style="{ background: campusGradientFor(school.id) }"
-        >
-          <text class="campus-school-card__cover-initial">{{ schoolInitial(school.name) }}</text>
-        </view>
+      <!-- 封面区：浅绿背景 + 学校名字（第五轮：移除校园风景插图与首字徽标，统一浅绿风格） -->
+      <!-- 保留上传能力：coverUrl 非空时渲染图片，为空时渲染浅绿背景 + 学校名字 -->
+      <view class="campus-school-card__cover" :class="{ 'campus-school-card__cover--img': school.coverUrl }">
+        <image v-if="school.coverUrl" class="campus-school-card__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
+        <text v-else class="campus-school-card__cover-name">{{ school.name }}</text>
       </view>
 
       <!-- 内容 -->
@@ -487,7 +455,9 @@ function goBack() {
   margin-top: 20rpx;
   padding: 20rpx;
   border-radius: 28rpx;
-  background: var(--c-bg-container, #FFFFFF);
+  /* 第五轮 QA（补做）：卡片统一浅绿色背景（#E6F6EF），深绿文字 #1F9A75 */
+  background: #E6F6EF;
+  border: 1rpx solid #D3EDE0;
   box-shadow: 0 6rpx 24rpx rgba(26, 55, 48, 0.08);
   overflow: hidden;
 }
@@ -499,27 +469,33 @@ function goBack() {
   overflow: hidden;
   flex-shrink: 0;
   align-self: center;
-  background: var(--c-bg-brand, #E8FAF3);
+  /* 第五轮：统一浅绿背景 + 学校名字（移除校园风景插图与每校一色渐变）；coverUrl 上传后显示图片 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E6F6EF;
+}
+
+.campus-school-card__cover--img {
+  background: var(--c-neutral-100, #F2F4F3);
 }
 
 .campus-school-card__cover-img {
   width: 100%;
   height: 100%;
-  display: block;
 }
 
-.campus-school-card__cover-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.campus-school-card__cover-initial {
-  font-size: 48rpx;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.85);
+.campus-school-card__cover-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1F9A75;
+  line-height: 1.3;
+  text-align: center;
+  padding: 0 8rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .campus-school-card__body {
@@ -539,7 +515,8 @@ function goBack() {
 .campus-school-card__name {
   font-size: 30rpx;
   font-weight: 700;
-  color: var(--c-text-primary, #222222);
+  /* 第五轮 QA（补做）：深绿文字 #1F9A75（浅绿底可读性） */
+  color: #1F9A75;
 }
 
 /* ===== Badge ===== */
@@ -550,11 +527,12 @@ function goBack() {
 }
 
 .campus-school-card__badge--verified {
-  background: var(--c-bg-brand, #E8FAF3);
+  /* 第五轮 QA（补做）：浅绿卡片上徽标用白底 + 深绿字，避免与卡底色融为一体 */
+  background: #FFFFFF;
 }
 
 .campus-school-card__badge--verified .campus-school-card__badge-text {
-  color: var(--c-brand, #36C99A);
+  color: #1F9A75;
 }
 
 .campus-school-card__badge--pending {
@@ -583,7 +561,8 @@ function goBack() {
   display: block;
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: var(--c-text-secondary, #4A524E);
+  /* 第五轮 QA（补做）：浅绿底上次要文字用中深绿，保证可读 */
+  color: #2E8B6A;
 }
 
 .campus-school-card__members {
@@ -626,14 +605,15 @@ function goBack() {
   align-self: center;
   padding: 12rpx 28rpx;
   border-radius: 999rpx;
-  border: 2rpx solid var(--c-brand, #36C99A);
-  background: transparent;
+  /* 第五轮 QA（补做）：浅绿底上 CTA 用深绿描边/文字提升对比 */
+  border: 2rpx solid #1F9A75;
+  background: #FFFFFF;
 }
 
 .campus-school-card__cta-text {
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--c-brand, #36C99A);
+  color: #1F9A75;
 }
 
 /* ===== Footer ===== */
@@ -659,7 +639,9 @@ function goBack() {
 }
 
 .campus-search__icon-text {
-  font-size: 28rpx;
+  width: 30rpx;
+  height: 30rpx;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 .campus-search__input {

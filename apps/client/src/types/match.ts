@@ -51,6 +51,7 @@ export type MatchReasonType =
   | "common_interest"
   | "same_school"
   | "same_major"
+  | "distance"
   | "fallback";
 
 export interface MatchReason {

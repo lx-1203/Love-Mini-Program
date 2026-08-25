@@ -3,7 +3,7 @@
  * 兴趣圈列表页
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -17,6 +17,8 @@ import AppShell from "../../components/layout/AppShell.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
+// 修复#3（第五轮 QA）：mock 模式无网络请求，直接加载本地 8 圈（dev-user 登录态可渲染）
+import { useMock } from "../../stores/helpers/use-mock";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -62,14 +64,21 @@ onLoad((query) => {
   if (query?.category) {
     category.value = String(query.category);
   }
+  // 修复#3（第五轮 QA）：onLoad 直接拉取兴趣圈列表。
+  // 未登录时按既有逻辑跳过（getToken 为空且非 mock，避免 401 雪崩）；
+  // mock 模式（useMock=true）无网络请求，直接加载本地 8 圈 Style A 封面，
+  // 保证 dev-user/mock 登录态下列表可渲染（原 onMounted 的 token 守卫在
+  // "已登录但无 token"的 mock 会话下会拦截，导致空态）。
+  if (getToken() || useMock()) {
+    void circleStore.fetchCircles();
+  }
 });
 
-/** 页面标题：携带 category 时展示对应兴趣分类名称，否则使用默认「兴趣圈」 */
-const pageTitle = computed(() => {
-  if (!category.value) return t("circle.circlesNavTitle");
-  const key = CATEGORY_KEY_MAP[category.value];
-  return key ? t(key) : t("circle.circlesNavTitle");
-});
+/**
+ * 2026-08-25 P0：页面标题在自定义 header slot 中硬编码 "兴趣<under>趣</under>圈"，
+ * 此处删除原 pageTitle computed（由 CATEGORY_KEY_MAP 派生，已不再被模板引用）。
+ * category / CATEGORY_KEYWORDS 仍由 filteredCircles 消费，保留。
+ */
 
 /**
  * 按 category 过滤后的兴趣圈列表（review #21：category 参数用于过滤而非仅改标题）。
@@ -136,12 +145,9 @@ function goToTopics(circle: { id: string; campusVerified?: boolean }) {
 }
 
 /**
- * 跳转到"附近的人"（寻觅页）快捷入口
- * Task F1 (M-08)：从圈子页快捷发现匹配
+ * 2026-08-25 P1：goToDiscover（附近的人快捷入口）随顶部卡片一并移除。
+ * 若后续需要"附近的人"入口，请重新接入（规格书 14 无此模块）。
  */
-function goToDiscover() {
-  openAppPath(ROUTES.TAB.DISCOVER); // infra R2-00102: 寻觅页为 Tab 页，走 TAB 分组常量
-}
 
 /**
  * 加入/退出兴趣圈
@@ -193,6 +199,63 @@ const CIRCLE_COVER = {
 /** 热门徽标阈值（成员数达到即显示「热门」） */
 const HOT_THRESHOLD = 8000;
 
+/** 2026-08-25 P0：快捷分类 tab（规格书 14.5） */
+type QuickTab = "all" | "photo" | "travel" | "music" | "sports" | "food" | "more";
+const QUICK_TABS: { key: QuickTab; label: string; keyword: string | null; iconSrc?: string }[] = [
+  { key: "all", label: "全部", keyword: null },
+  { key: "photo", label: "摄影", keyword: "摄影" },
+  { key: "travel", label: "旅行", keyword: "旅行" },
+  { key: "music", label: "音乐", keyword: "音乐" },
+  { key: "sports", label: "运动", keyword: "运动" },
+  { key: "food", label: "美食", keyword: "美食" },
+  { key: "more", label: "更多", keyword: null, iconSrc: IMAGE_PATHS.ICONS_EMOJI.LIST },
+];
+const activeQuickTab = ref<QuickTab>("all");
+
+/** 按 quick tab 过滤后的列表（与 category query 互不干扰） */
+const tabFilteredCircles = computed(() => {
+  if (activeQuickTab.value === "all" || activeQuickTab.value === "more") {
+    return filteredCircles.value;
+  }
+  const tab = QUICK_TABS.find((t) => t.key === activeQuickTab.value);
+  if (!tab?.keyword) return filteredCircles.value;
+  return filteredCircles.value.filter((c) => (c.name || "").includes(tab.keyword!));
+});
+
+/**
+ * 2026-08-25 P0：等 N 位朋友已加入的头像（基于 circle.id 哈希，规格书 14.6）
+ */
+const FRIEND_AVATAR_POOL = [
+  IMAGE_PATHS.AVATARS.AVATAR_1,
+  IMAGE_PATHS.AVATARS.AVATAR_2,
+  IMAGE_PATHS.AVATARS.AVATAR_3,
+  IMAGE_PATHS.AVATARS.AVATAR_4,
+];
+function friendAvatars(circleId: string): string[] {
+  // 用 circleId 长度做简单取模，让同一圈子头像稳定
+  const seed = circleId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return [FRIEND_AVATAR_POOL[seed % 4]!, FRIEND_AVATAR_POOL[(seed + 1) % 4]!, FRIEND_AVATAR_POOL[(seed + 2) % 4]!];
+}
+function friendJoinCount(circleId: string, _memberCount: number): number {
+  // 基于 circleId 推导一个 5~12 之间的数字（_memberCount 保留以便后续接真实数据）
+  const seed = circleId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return 5 + (seed % 8);
+}
+
+/** 2026-08-25 P0：返回上一页（自定义 header slot 使用） */
+function goBack() {
+  uni.navigateBack({ delta: 1 }).catch(() => {
+    uni.switchTab({ url: "/pages/home/index" }).catch(() => {
+      uni.reLaunch({ url: "/pages/home/index" });
+    });
+  });
+}
+
+/** 2026-08-25 P0：点击搜索 → 跳搜索页（占位，规格书 14.4） */
+function goSearch() {
+  uni.showToast({ title: "搜索功能即将上线", icon: "none" });
+}
+
 function circleCover(name: string): string {
   const n = name || "";
   if (n.includes("摄影")) return CIRCLE_COVER.photo;
@@ -209,14 +272,10 @@ function circleCover(name: string): string {
   return IMAGE_PATHS.CIRCLE_COVERS.DEFAULT;
 }
 
-onMounted(() => {
-  // 2026-08-15：未登录时不发受保护请求（冷启动无 token 时拉取 circles → 401 雪崩），
-  // 登录后 watch(isLoggedIn) 自动补拉。
-  if (!getToken()) return;
-  void circleStore.fetchCircles();
-});
+// 修复#3（第五轮 QA）：拉取逻辑已移入 onLoad（含 mock 放行），
+// 原 onMounted 的 token 守卫在 mock 会话下会拦截导致空态，已移除避免重复请求。
 
-// 2026-08-15：登录态变化后自动补拉
+// 2026-08-15：登录态变化后自动补拉（真实模式登录成功后兜底）
 watch(
   () => sessionStore.isLoggedIn,
   (loggedIn) => {
@@ -235,11 +294,38 @@ defineExpose({ toggleJoin });
   <AppShell
     variant="standard"
     bg-variant="gradient"
-    :title="pageTitle"
-    :show-back="true"
+    :show-back="false"
     :tab-bar-safe="false"
     :fixed="true"
   >
+    <!-- 2026-08-25 P0：自定义头部（返回 + 标题"趣"下划线 + 搜索） -->
+    <template #header>
+      <view class="circles-header">
+        <view
+          class="circles-header__back press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.back')"
+          @tap="goBack"
+        >
+          <text class="circles-header__back-icon">‹</text>
+        </view>
+        <text class="circles-header__title">兴<text class="circles-header__under">趣</text>圈</text>
+      </view>
+    </template>
+    <template #header-right>
+      <view
+        class="circles-header__search press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'搜索'"
+        @tap="goSearch"
+      >
+        <image class="circles-header__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+      </view>
+    </template>
     <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
     <PageStateContainer
       :state="pageState"
@@ -250,19 +336,7 @@ defineExpose({ toggleJoin });
       <template #default>
         <!-- 兴趣圈列表 -->
         <scroll-view class="circles-list" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
-          <!-- 附近的人快捷入口（Task F1 / M-08） -->
-          <view class="discover-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToDiscover">
-            <view class="discover-entry__left">
-              <view class="discover-entry__icon-wrap">
-                <image class="discover-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
-              </view>
-              <view class="discover-entry__text-wrap">
-                <text class="discover-entry__title">{{ t("circle.discoverEntryTitle") }}</text>
-                <text class="discover-entry__desc">{{ t("circle.discoverEntryDesc") }}</text>
-              </view>
-            </view>
-            <text class="discover-entry__arrow">›</text>
-          </view>
+          <!-- 2026-08-25 P1：移除顶部"附近的人"绿色头部卡（规格书 14 无此模块，QA 反馈位置错误） -->
 
           <!-- 推荐提示 -->
           <view class="circles-banner">
@@ -273,10 +347,28 @@ defineExpose({ toggleJoin });
             </view>
           </view>
 
+          <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
+          <scroll-view class="circles-tabs" scroll-x :show-scrollbar="false">
+            <view class="circles-tabs__list">
+              <view
+                v-for="tab in QUICK_TABS"
+                :key="tab.key"
+                class="circles-tab"
+                :class="{ 'circles-tab--active': activeQuickTab === tab.key }"
+                role="tab"
+                :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
+                @tap="activeQuickTab = tab.key"
+              >
+                <image v-if="tab.iconSrc" class="circles-tab__icon" :src="tab.iconSrc" mode="aspectFit" alt="" />
+                <text v-else class="circles-tab__text">{{ tab.label }}</text>
+              </view>
+            </view>
+          </scroll-view>
+
           <!-- 兴趣圈卡片 -->
           <view class="circles-card-list" role="list">
             <view
-              v-for="(circle, index) in filteredCircles" :key="circle.id"
+              v-for="(circle, index) in tabFilteredCircles" :key="circle.id"
               class="circle-card"
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToTopics(circle)"
@@ -295,10 +387,21 @@ defineExpose({ toggleJoin });
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
-                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}</text>
-                  <text class="circle-card__divider">·</text>
-                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
-                  <text class="circle-card__count">{{ circle.topicCount }} {{ t("circle.topicUnit") }}</text>
+                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 人加入 · {{ circle.topicCount }} 条动态</text>
+                </view>
+                <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6） -->
+                <view class="circle-card__friends">
+                  <view class="circle-card__friends-avatars">
+                    <image
+                      v-for="(av, i) in friendAvatars(circle.id)"
+                      :key="i"
+                      class="circle-card__friends-avatar"
+                      :src="av"
+                      mode="aspectFill"
+                      alt=""
+                    />
+                  </view>
+                  <text class="circle-card__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友已加入</text>
                 </view>
               </view>
 
@@ -701,5 +804,148 @@ defineExpose({ toggleJoin });
 
 .list-bottom-spacer {
   height: 60rpx;
+}
+
+/* ===== 2026-08-25 P0：自定义头部（兴趣<under>趣</under>圈 + 搜索） ===== */
+.circles-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.circles-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.circles-header__back-icon {
+  font-size: 44rpx;
+  color: #333A37;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.circles-header__title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--c-text-primary, #1A1E1C);
+  letter-spacing: 2rpx;
+}
+
+.circles-header__under {
+  /* 2026-08-26 P1：V-06 趣下划线视觉重叠修复（P2 残留二次调优）。
+     收窄下划线（6rpx → 3rpx）避免与"趣"字底画重叠；
+     增加 padding-bottom 给下划线留出"漂浮"空间；
+     字重 800 → 600 让"趣"字底部留白更清晰，避免与下划线连笔；
+     第五轮 V-06：字距 0 → 2rpx + 左右 padding 2rpx，与"兴/圈"整体字距更协调。 */
+  display: inline-block;
+  border-bottom: 3rpx solid #36C99A;
+  padding: 0 2rpx 8rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.circles-header__search {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-bg-surface, #F7FAF9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.circles-header__search-icon {
+  width: 36rpx;
+  height: 36rpx;
+  color: var(--c-text-tertiary, #6B7571);
+}
+
+/* ===== 2026-08-25 P0：7 个快捷分类 tab ===== */
+.circles-tabs {
+  width: 100%;
+  padding: 0 var(--sp-6);
+  margin-top: var(--sp-2);
+}
+
+.circles-tabs__list {
+  display: inline-flex;
+  gap: 16rpx;
+  padding-right: 16rpx;
+}
+
+.circles-tab {
+  flex-shrink: 0;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circles-tab--active {
+  background: var(--c-bg-brand, #E8F8F1);
+  border-color: var(--c-brand, #36C99A);
+}
+
+.circles-tab__text {
+  font-size: 26rpx;
+  color: var(--c-text-primary, #222222);
+  white-space: nowrap;
+}
+
+.circles-tab__icon {
+  width: 30rpx;
+  height: 30rpx;
+  color: var(--c-text-primary, #222222);
+}
+
+.circles-tab--active .circles-tab__text {
+  color: var(--c-brand, #36C99A);
+  font-weight: 700;
+}
+
+/* ===== 2026-08-25 P0：等 N 位朋友已加入 + 头像组 ===== */
+.circle-card__friends {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 6rpx;
+}
+
+.circle-card__friends-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.circle-card__friends-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2rpx solid #FFFFFF;
+  background: #EEF2F0;
+  margin-left: -10rpx;
+  flex-shrink: 0;
+}
+
+.circle-card__friends-avatar:first-child {
+  margin-left: 0;
+}
+
+.circle-card__friends-text {
+  font-size: 22rpx;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 </style>

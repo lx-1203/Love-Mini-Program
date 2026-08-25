@@ -1,13 +1,14 @@
 ﻿<script setup lang="ts">
 import { computed } from "vue";
+import { IMAGE_PATHS } from "../../../config/images";
 
 const props = defineProps<{ commonInterests: string[] }>();
 
 const COLORS = [
-  { bg: "#E8FBF3", fg: "#36C99A", icon: "♡" },
-  { bg: "#EEF3FF", fg: "#4D8DFF", icon: "♥" },
-  { bg: "#FFF1E8", fg: "#FF9F43", icon: "★" },
-  { bg: "#FFF0F6", fg: "#FF6B81", icon: "✿" },
+  { bg: "#E8FBF3", fg: "#36C99A", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE },
+  { bg: "#EEF3FF", fg: "#4D8DFF", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED },
+  { bg: "#FFF1E8", fg: "#FF9F43", iconSrc: IMAGE_PATHS.ICONS_EMOJI.STAR },
+  { bg: "#FFF0F6", fg: "#FF6B81", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED },
 ];
 
 const items = computed(() =>
@@ -34,7 +35,7 @@ const items = computed(() =>
     <view class="public-common__items">
       <view v-for="item in items" :key="item.key" class="public-common__item">
         <view class="public-common__icon" :style="{ background: item.bg }">
-          <text class="public-common__icon-text" :style="{ color: item.fg }">{{ item.icon }}</text>
+          <image class="public-common__icon-img" :src="item.iconSrc" mode="aspectFit" alt="" />
         </view>
         <text class="public-common__item-title">{{ item.title }}</text>
         <text v-if="item.subtitle" class="public-common__item-sub">{{ item.subtitle }}</text>
@@ -90,9 +91,9 @@ const items = computed(() =>
   justify-content: center;
 }
 
-.public-common__icon-text {
-  font-size: 30rpx;
-  font-weight: 800;
+.public-common__icon-img {
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .public-common__item-title {

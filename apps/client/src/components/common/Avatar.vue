@@ -138,7 +138,7 @@ const ringBg = computed(() => {
     />
     <!-- v3 头像分层 · Verification 层：绿色 ✓（按需出现，与在线点对角，8-12px 安全距离） -->
     <view v-if="verified" class="avatar-badge avatar-badge--verified" role="img" aria-label="已认证">
-      <text class="avatar-badge__check">✓</text>
+      <image class="avatar-badge__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
     </view>
   </view>
 </template>
@@ -200,9 +200,8 @@ const ringBg = computed(() => {
 }
 
 .avatar-badge__check {
-  font-size: 20rpx;
-  font-weight: 800;
+  width: 20rpx;
+  height: 20rpx;
   color: #ffffff;
-  line-height: 1;
 }
 </style>

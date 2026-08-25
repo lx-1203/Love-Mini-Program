@@ -37,8 +37,8 @@ const config = computed(() => {
       };
     case "whisper":
       return {
-        icon: "",
-        glyph: "☆",
+        icon: IMAGE_PATHS.ICONS_EMOJI.STAR,
+        glyph: "",
         glyphColor: "#FF8A3D",
         bg: "#FFFFFF",
         border: "2rpx solid #FF8A3D",

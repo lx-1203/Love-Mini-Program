@@ -93,6 +93,9 @@ export interface ProfileStats {
   followingCount: number;
   likesCount: number;
   visitorsCount: number;
+  // D-01：个人主页统计 4 列对齐（后端 ProfileStatsView 新增字段）
+  likedMeCount: number;
+  matchCount: number;
 }
 
 // ===== Online Status =====

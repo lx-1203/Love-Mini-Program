@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import VoicePill from "./VoicePill.vue";
 import { resolveMediaUrl } from "../../utils/media";
+import EmojiText from "../common/EmojiText.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -177,8 +178,15 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
           :aria-label="t('chat.imageMessage')"
         />
         <template v-else>
-          <!-- 2026-08-09 表情包机制：emoji 消息大号渲染（微信表情消息风格） -->
-          <text class="bubble__body" :class="{ 'bubble__body--emoji': kind === 'emoji' }">{{ body }}</text>
+          <!-- 2026-08-26 第三轮：emoji / 文本消息统一走 EmojiText，
+               body 中命中 EMOJI_SVG_MAP 的 emoji 字符会自动替换为 SVG，
+               兼容历史消息 / 后端字符串 / 跨端一致的 emoji 渲染 -->
+          <EmojiText
+            :text="body"
+            :emoji-size="kind === 'emoji' ? '56rpx' : '36rpx'"
+            text-class="bubble__body"
+            :class="kind === 'emoji' ? 'bubble__body bubble__body--emoji' : 'bubble__body'"
+          />
         </template>
 
         <!-- 底部元信息：送达状态（时间已移出气泡，由父页面微信式时间条承载） -->

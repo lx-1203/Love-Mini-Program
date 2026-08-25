@@ -395,6 +395,9 @@ record ScheduleProfileRequest(
 record ProfileStatsView(
     int followingCount,
     int followersCount,
-    int likesCount
+    int likesCount,
+    int likedMeCount,
+    int visitorCount,
+    int matchCount
 ) {
 }
