@@ -53,7 +53,8 @@ const smsCode = ref("");
 const smsCountdown = ref(0);
 let smsCountdownTimer: ReturnType<typeof setInterval> | null = null;
 const phoneRegisterMode = ref(false);
-const agreed = ref(false);
+/* 理想图《登录页面》协议行为绿色已勾选态：默认已同意（可点击取消） */
+const agreed = ref(true);
 const showPhoneLogin = ref(false);
 
 /**
@@ -565,7 +566,17 @@ function openAccountBinding() {
 
 <template>
   <view class="login-page">
-    <!-- 顶部实景图区（占 70% 高度） -->
+    <!-- 品牌区（理想图《登录页面》：品牌名+小苗+副标，深色文字于浅色背景） -->
+    <view class="login-page__brand">
+      <view class="hero-title-row">
+        <text class="logo-title">{{ heroTitle }}</text>
+        <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 1.2 / 2.3） -->
+        <image class="logo-title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
+      </view>
+      <text class="logo-subtitle">{{ heroSubtitle }}</text>
+    </view>
+
+    <!-- 中部实景插画区（纯插画，不叠加文字） -->
     <view class="login-page__hero">
       <image
         class="hero-image"
@@ -573,31 +584,14 @@ function openAccountBinding() {
         mode="aspectFill"
         aria-hidden="true" alt=""
       />
-      <!-- 底部白色渐变叠加，增强文字可读性 -->
-      <view class="hero-overlay" />
-      <!-- 2026-08-20：浮动爱心装饰（参考图对齐，SVG 复用 heart-filled） -->
-      <view class="login-hearts" aria-hidden="true">
-        <image class="login-heart login-heart--1" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
-        <image class="login-heart login-heart--2" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
-        <image class="login-heart login-heart--3" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
-        <image class="login-heart login-heart--4" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
-        <image class="login-heart login-heart--5" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
-      </view>
-      <!-- 主标题 + 副标压底显示 -->
-      <view class="hero-title-wrap">
-        <view class="hero-title-row">
-          <text class="logo-title">{{ heroTitle }}</text>
-          <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 1.2 / 2.3） -->
-          <image class="logo-title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
-        </view>
-        <text class="logo-subtitle">{{ heroSubtitle }}</text>
-      </view>
-            <view class="hero-desc-wrap">
-              <text class="hero-desc">{{ heroDesc }}</text>
-              <text class="hero-desc hero-desc--sub">{{ heroDescSub }}</text>
-              <!-- 2026-08-25 P0：底部说明（规格书 2.8） -->
-              <text class="hero-desc-discover">{{ t('login.discoverSubDesc') }}</text>
-            </view>
+    </view>
+
+    <!-- 图下 slogan 区（理想图：深色主句 + 绿色副句 + 灰色说明） -->
+    <view class="login-page__tagline">
+      <text class="hero-desc">{{ heroDesc }}</text>
+      <text class="hero-desc hero-desc--sub">{{ heroDescSub }}</text>
+      <!-- 2026-08-25 P0：底部说明（规格书 2.8） -->
+      <text class="hero-desc-discover">{{ t('login.discoverSubDesc') }}</text>
     </view>
 
     <!-- 底部按钮区（占 30% 高度） -->
@@ -834,40 +828,6 @@ function openAccountBinding() {
         <text class="dev-user-entry__badge">DEV</text>
         <text class="dev-user-entry__text">{{ t('login.devUserEntryTitle') }}</text>
       </view>
-
-      <!-- 功能2：其他登录方式（Apple 登录 + 账号绑定入口） -->
-      <view class="third-party-wrap">
-        <view class="third-party-divider">
-          <view class="third-party-divider__line" />
-          <text class="third-party-divider__text">{{ t('thirdPartyLogin.otherLoginMethods') }}</text>
-          <view class="third-party-divider__line" />
-        </view>
-
-        <view class="third-party-icons">
-          <!-- Apple 登录按钮（仅 H5 / APP-PLUS 显示） -->
-          <!-- #ifdef H5 || APP-PLUS -->
-          <view
-            class="third-party-icon-btn press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="40"
-            @tap="onAppleLogin"
-          >
-            <text class="third-party-icon third-party-icon--apple"></text>
-            <text class="third-party-icon-label">{{ t('thirdPartyLogin.appleLoginDesc') }}</text>
-          </view>
-          <!-- #endif -->
-          <!-- 账号绑定入口（已登录用户可管理第三方账号绑定） -->
-          <view
-            class="third-party-icon-btn press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="40"
-            @tap="openAccountBinding"
-          >
-            <image class="third-party-icon third-party-icon--bind" :src="loginIcons.link" mode="aspectFit" alt="" />
-            <text class="third-party-icon-label">{{ t('thirdPartyLogin.accountBinding') }}</text>
-          </view>
-        </view>
-      </view>
     </view>
   </view>
 </template>
@@ -884,13 +844,10 @@ function openAccountBinding() {
   background: var(--c-bg-page);
 }
 
-/* 顶部实景图区 —— 占 70% 高度 */
+/* 中部实景插画区 —— 理想图：品牌区之下、slogan 之上的纯插画，吃掉剩余高度 */
 .login-page__hero {
   position: relative;
   width: 100%;
-  /* R4-batch4 像素级对齐：参考图 hero 占 72%。
-   * 2026-08-29：固定 72vh + 底部按钮区导致小屏溢出（「其他登录方式」被截断），
-   * 改为 flex 弹性占位：hero 吃掉底部内容之外的剩余高度，不再溢出视口 */
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -898,43 +855,64 @@ function openAccountBinding() {
 
 .hero-image {
   position: absolute;
-  align-items: center;
   left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
-  /* 实景图覆盖整个区域 */
-  padding: 0 var(--sp-8);
-  width: 100%;
+  /* 理想图：插画全幅无边（不留两侧白边） */
 }
 
-/* 底部白色渐变叠加 —— 增强文字可读性 */
-.hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(18, 48, 38, 0.28) 0%, rgba(255, 255, 255, 0.18) 38%, var(--c-bg-container) 100%);
-  z-index: 1;
+/* 品牌区 —— 理想图《登录页面》：品牌名+小苗+副标，深色文字，左对齐 */
+.login-page__brand {
+  padding: calc(var(--status-bar-height, 0px) + 88rpx) var(--sp-8) 0;
+  background: var(--c-bg-page);
 }
 
-/* 主标题 + 副标 —— 压底显示，在白色渐变之上保证可读 */
-.hero-desc-wrap {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 62%;
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12rpx;
+}
+
+.logo-title {
+  font-size: 56rpx;
+  font-weight: 800;
+  color: #1A1E1C;
+  letter-spacing: 4rpx;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.logo-title-sprout {
+  width: 44rpx;
+  height: 44rpx;
+  flex-shrink: 0;
+  margin-top: -6rpx;
+}
+
+.logo-subtitle {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #6B7571;
+  text-align: left;
+  line-height: 1.6;
+  letter-spacing: 2rpx;
+}
+
+/* 图下 slogan 区 —— 理想图：居中（深色主句 + 绿色副句 + 灰色说明） */
+.login-page__tagline {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 var(--sp-8);
-  /* R4-batch4 像素级对齐：参考图描述区与底部按钮拉开间距 */
-  padding-bottom: 16rpx;
-  z-index: 1;
+  padding: 24rpx var(--sp-8) 0;
+  background: var(--c-bg-page);
 }
 
 .hero-desc {
-  margin-top: 24rpx;
+  margin-top: 0;
   font-size: 40rpx;
   /* R4-batch4 像素级对齐：参考图标版更突出（800 → 800 保持） */
   font-weight: 800;
@@ -961,50 +939,6 @@ function openAccountBinding() {
   letter-spacing: 1rpx;
 }
 
-.hero-title-wrap {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(var(--status-bar-height, 0px) + 96rpx);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 var(--sp-8);
-  z-index: 1;
-}
-
-
-.hero-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-}
-
-.logo-title {
-  font-size: 60rpx;
-  font-weight: 800;
-  color: #1A1E1C;
-  letter-spacing: 4rpx;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.logo-title-sprout {
-  width: 44rpx;
-  height: 44rpx;
-  flex-shrink: 0;
-  margin-top: -6rpx;
-}
-
-.logo-subtitle {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #6B7571;
-  text-align: center;
-  line-height: 1.6;
-  letter-spacing: 2rpx;
-}
 
 /* 底部按钮区 —— 占 30% 高度 */
 .login-page__bottom {
@@ -1497,37 +1431,6 @@ function openAccountBinding() {
 .third-party-icon-label {
   font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
-}
-
-/* ===== 2026-08-20 浮动爱心装饰（参考图对齐） ===== */
-.login-hearts {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.login-heart {
-  position: absolute;
-  width: 44rpx;
-  height: 44rpx;
-  color: #FF6B81;
-  opacity: 0.45;
-  animation: login-heart-float 4.5s ease-in-out infinite alternate;
-}
-
-.login-heart--1 { left: 12%; top: 18%; width: 44rpx; height: 44rpx; animation-delay: 0s; }
-.login-heart--2 { right: 14%; top: 12%; width: 52rpx; height: 52rpx; animation-delay: 0.7s; }
-.login-heart--3 { left: 20%; bottom: 30%; width: 38rpx; height: 38rpx; animation-delay: 1.3s; }
-.login-heart--4 { right: 22%; top: 34%; width: 40rpx; height: 40rpx; animation-delay: 1.9s; }
-.login-heart--5 { left: 45%; top: 8%; width: 34rpx; height: 34rpx; opacity: 0.3; animation-delay: 0.4s; }
-
-@keyframes login-heart-float {
-  0% { transform: translateY(0) rotate(0deg) scale(1); }
-  100% { transform: translateY(-22rpx) rotate(10deg) scale(1.1); }
 }
 
 </style>
