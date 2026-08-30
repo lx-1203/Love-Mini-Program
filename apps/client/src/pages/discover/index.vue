@@ -290,7 +290,7 @@ onUnload(() => {
   flex-direction: column;
   display: flex;
   height: 100vh;
-  background: var(--c-bg-page, #f4fbf8);
+  background: var(--c-bg-page, #F7FAF9);
   padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;

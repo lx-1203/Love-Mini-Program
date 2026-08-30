@@ -50,6 +50,9 @@ const currentLength = computed(() => content.value.length);
 const canSubmit = computed(() => content.value.trim().length > 0 && !submitting.value);
 const isCircleTarget = computed(() => targetType.value === "circle");
 
+/** 可发布的目标圈子（仅当前用户已加入的兴趣圈），保持上限 8 个展示 */
+const joinedCircles = computed(() => circleStore.circles.filter((c) => c.isJoined).slice(0, 8));
+
 /** 发布到展示文案 */
 const targetTitle = computed(() => {
   if (isCircleTarget.value && targetCircle.value) return targetCircle.value.name;
@@ -90,7 +93,17 @@ async function loadTarget() {
   try {
     if (circleStore.circles.length === 0) await circleStore.fetchCircles();
     targetCircle.value = circleStore.circles.find((c) => c.id === String(targetId.value)) ?? null;
+    // 修复：目标圈子已不可选（未加入 / 不存在）时回退到「个人动态」，
+    // 避免选中空圈子提交导致 400。
+    const selected = targetCircle.value;
+    if (!selected || !selected.isJoined) {
+      targetType.value = "general";
+      targetId.value = null;
+      targetCircle.value = null;
+    }
   } catch (_e) {
+    targetType.value = "general";
+    targetId.value = null;
     targetCircle.value = null;
   }
 }
@@ -234,7 +247,8 @@ async function restoreDraft() {
   else if (Array.isArray(draft.tags)) topics.value = draft.tags;
   if (typeof draft.location === "string") location.value = draft.location;
   if (typeof draft.visibility === "string") visibility.value = draft.visibility;
-  if (images.value.length > 0) void loadTarget();
+  // 草稿为圈子目标时同样校验是否仍为「已加入」圈子（否则回退到个人动态）
+  if (isCircleTarget.value || images.value.length > 0) void loadTarget();
 }
 
 function clearDraft() {
@@ -394,13 +408,16 @@ onUnmounted(() => {
               <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
             <view
-              v-for="circle in circleStore.circles.slice(0, 8)"
+              v-for="circle in joinedCircles"
               :key="circle.id"
               class="publish-target-sheet__option press-feedback"
               role="button"
               @tap="selectTarget(circle)"
             >
-              <text class="publish-target-sheet__name">{{ circle.name }}</text>
+              <view class="publish-target-sheet__circle-opt">
+                <text class="publish-target-sheet__name">{{ circle.name }}</text>
+                <text class="publish-target-sheet__joined">已加入</text>
+              </view>
               <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
           </view>
@@ -508,7 +525,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F7FAF9;
+  background: var(--c-bg-page, #F7FAF9);
 }
 
 .publish-header {
@@ -549,6 +566,8 @@ onUnmounted(() => {
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
 .publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
 .publish-target-sheet__name { font-size: 28rpx; color: #1A1E1C; }
+.publish-target-sheet__circle-opt { display: flex; align-items: center; }
+.publish-target-sheet__joined { font-size: 20rpx; color: #2FA366; background: #E8F6EE; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
 .publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; }
 .publish-target-sheet__check { width: 32rpx; height: 32rpx; color: #36C99A; }
 

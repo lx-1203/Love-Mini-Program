@@ -36,6 +36,40 @@ import type {
 import type { DiscoverStoreThis } from "../store-type";
 
 /**
+ * 按 userId（card.id）批内去重，保留每个 id 第一次出现的位置。
+ *
+ * 修复：数据源（mock 或后端）同一批内若含重复 userId，会导致上下相邻出现同一人。
+ * 此函数保证同批返回的推荐卡片 userId 全局唯一。
+ */
+function dedupByUserId(cards: DiscoverCard[]): DiscoverCard[] {
+  const seen = new Set<string | number>();
+  const out: DiscoverCard[] = [];
+  for (const card of cards) {
+    if (card.id == null || seen.has(card.id)) continue;
+    seen.add(card.id);
+    out.push(card);
+  }
+  return out;
+}
+
+/**
+ * 乱序（Fisher-Yates）。
+ *
+ * 用于 mock 兜底分支：当一批卡片全部被看过后，乱序输出以打破
+ * 「上下相邻同一人」的重复观感（仅当人数 ≥3 时可完全避免，属数据量限制）。
+ */
+function shuffleCards(cards: DiscoverCard[]): DiscoverCard[] {
+  const arr = [...cards];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i]!;
+    arr[i] = arr[j]!;
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+/**
  * 获取推荐卡片列表（带重试机制，最多2次）
  *
  * Phase C 重构：原实现区分 mock / real 两条分支（mock 用本地 mockCards 数组过滤，
@@ -103,14 +137,17 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
         let availableCards = rawData
           .map((item) => mapToDiscoverCard(item))
           .filter((card) => !viewedIds.has(card.id));
+        // 修复（推荐流去重）：同一批 rawData 内按 userId 去重，保证
+        // 「同一个人不重复推荐、上下相邻不同人」。同时天然覆盖 real/query 列表。
+        availableCards = dedupByUserId(availableCards);
 
-        // Mock / 本地测试兜底：如果所有卡片都被看过了，清空今日记录重新展示，
-        // 避免首次体验或刷新后页面空白。生产环境（real 模式）保持业务规则不变。
+        // Mock / 本地测试兜底：如果该批卡片全部都被看过了，不再清空已看记录后原样
+        // 全量返回（那样会上下同一人重复观感），改为对原始数据乱序输出以打破相邻重复。
+        // 生产环境（real 模式）保持业务规则不变。数据量 ≥3 时可完全避免相邻同人；
+        // 仅 1-2 人时无法避免，属数据量限制例外。
         if (availableCards.length === 0 && this.viewedCards.length > 0 && useMock()) {
-          this.viewedCards = [];
-          this.historyCards = [];
-          this.passedCards = [];
-          availableCards = rawData.map((item) => mapToDiscoverCard(item));
+          const allCards = dedupByUserId(rawData.map((item) => mapToDiscoverCard(item)));
+          availableCards = shuffleCards(allCards);
         }
 
         // 匹配范围（设计需求）：附近 = 过滤距离 ≤20km；不限 = 不过滤

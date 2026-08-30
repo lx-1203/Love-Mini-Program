@@ -467,7 +467,7 @@ function formatTime(dateStr?: string): string {
 <style scoped lang="scss">
 .messages-page {
   min-height: 100vh;
-  background: var(--c-bg-page, #EFF8F4);
+  background: var(--c-bg-page, #F7FAF9);
   display: flex;
   flex-direction: column;
 }

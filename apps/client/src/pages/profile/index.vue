@@ -22,6 +22,7 @@ import { useProfileStore } from "../../stores/profile";
 import { useLikesStore } from "../../stores/likes";
 import { useCheckInStore } from "../../stores/checkin";
 import { mockFixtures } from "../../services/mocks/fixtures";
+import { mockAuthors } from "../../stores/village/mock-data";
 import type { RecommendedPersonView } from "../../stores/discover/types";
 
 import { useSocialProgressStore } from "../../stores/social-progress";
@@ -311,41 +312,73 @@ async function loadOtherProfile(userId: string): Promise<void> {
   }
   try {
     if (useMock()) {
-      // mock 演示：从 mock 推荐池按 id 查找目标用户构造公开视图。
-      // 推荐池 id 为 4001-4007（card.userId = String(id)），与 likes/mock-data
+      // mock 演示：先从 mock 推荐池（4001-4009）按 id 查找目标用户构造公开视图。
+      // 推荐池 id 为 4001-4009（card.userId = String(id)），与 likes/mock-data
       // 的 "user-200x" 系列不同源——不能沿用 other.vue 的 mockLikedBy 查找。
-      const person = mockFixtures.getRecommendations({}).find(
-        (p) => String(p.id) === userId
-      );
-      if (!person) {
-        otherProfile.value = null;
-        otherBgUrl.value = "";
+      // P0-26（第六轮）：帖子/圈子 mock 作者使用 user-30xx（mockAuthors 池），
+      // 推荐池查不到时回退到 mockAuthors 池，保证「帖子内点击头像 → 他人主页」可打开。
+      const recommendPerson = mockFixtures
+        .getRecommendations({})
+        .find((p) => String(p.id) === userId);
+      if (recommendPerson) {
+        otherProfile.value = {
+          id: recommendPerson.id,
+          name: recommendPerson.name,
+          initials: recommendPerson.initials,
+          headline: recommendPerson.headline,
+          commonGround: recommendPerson.commonGround,
+          availability: recommendPerson.availability,
+          campusName: recommendPerson.campusName,
+          avatarUrl: recommendPerson.avatarUrl,
+          tags: recommendPerson.tags,
+          bio: recommendPerson.bio || "",
+          images: recommendPerson.images,
+          isSameSchool: recommendPerson.isSameSchool,
+          isSameMajor: recommendPerson.isSameMajor,
+          commonCircleCount: recommendPerson.commonCircleCount,
+          halfBodyPhotoUrl: recommendPerson.halfBodyPhotoUrl,
+          photoGallery: recommendPerson.photoGallery,
+          verificationBadgeLevel: recommendPerson.verificationBadgeLevel,
+          age: recommendPerson.age,
+          educationLevel: recommendPerson.educationLevel,
+          height: recommendPerson.height,
+          profileBackgroundUrl: recommendPerson.profileBackgroundUrl,
+        };
+        otherBgUrl.value = otherProfile.value.profileBackgroundUrl ?? "";
         return;
       }
-      otherProfile.value = {
-        id: person.id,
-        name: person.name,
-        initials: person.initials,
-        headline: person.headline,
-        commonGround: person.commonGround,
-        availability: person.availability,
-        campusName: person.campusName,
-        avatarUrl: person.avatarUrl,
-        tags: person.tags,
-        bio: person.bio || "",
-        images: person.images,
-        isSameSchool: person.isSameSchool,
-        isSameMajor: person.isSameMajor,
-        commonCircleCount: person.commonCircleCount,
-        halfBodyPhotoUrl: person.halfBodyPhotoUrl,
-        photoGallery: person.photoGallery,
-        verificationBadgeLevel: person.verificationBadgeLevel,
-        age: person.age,
-        educationLevel: person.educationLevel,
-        height: person.height,
-        profileBackgroundUrl: person.profileBackgroundUrl,
-      };
-      otherBgUrl.value = otherProfile.value.profileBackgroundUrl ?? "";
+      // 回退：帖子/圈子 mock 作者（user-30xx 池）
+      const mockAuthor = mockAuthors.find((a) => a.userId === userId);
+      if (mockAuthor) {
+        otherProfile.value = {
+          id: -1,
+          name: mockAuthor.name,
+          initials: mockAuthor.name.slice(0, 1),
+          headline: mockAuthor.headline ?? "",
+          commonGround: "",
+          availability: "",
+          campusName: mockAuthor.campusName ?? "",
+          avatarUrl: mockAuthor.avatar,
+          tags: mockAuthor.interests ?? [],
+          bio: "",
+          images: [],
+          isSameSchool: false,
+          isSameMajor: false,
+          commonCircleCount: 0,
+          halfBodyPhotoUrl: "",
+          photoGallery: [],
+          verificationBadgeLevel: "",
+          age: undefined,
+          educationLevel: "",
+          height: undefined,
+          profileBackgroundUrl: "",
+        };
+        const authorBg = otherProfile.value.profileBackgroundUrl ?? "";
+        otherBgUrl.value = authorBg;
+        return;
+      }
+      otherProfile.value = null;
+      otherBgUrl.value = "";
       return;
     }
     const data = await request<RecommendedPersonView>({

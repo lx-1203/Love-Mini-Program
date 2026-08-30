@@ -912,7 +912,7 @@ defineExpose({ toggleJoin });
   padding: 12rpx 28rpx;
   border-radius: 999rpx;
   /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面） */
-  background: var(--c-bg-page, #F5F7F6);
+  background: var(--c-bg-page, #F7FAF9);
   border: 1rpx solid var(--c-line, #EEF2F0);
   display: flex;
   align-items: center;

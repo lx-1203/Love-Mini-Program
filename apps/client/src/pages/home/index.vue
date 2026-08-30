@@ -217,7 +217,7 @@ function openInvite() {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #EFF8F4;
+  background: var(--c-bg-page, #F7FAF9);
   padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -225,7 +225,7 @@ function openInvite() {
 .home-scroll {
   flex: 1;
   overflow: hidden;
-  background: linear-gradient(180deg, #EAF6F1 0%, #F3FAF7 360rpx, #F8FCFA 100%);
+  background: var(--c-bg-page, #F7FAF9);
   /* P0#11: 背景通过伪元素延伸到滚动内容下方 */
   &::before {
     content: "";
