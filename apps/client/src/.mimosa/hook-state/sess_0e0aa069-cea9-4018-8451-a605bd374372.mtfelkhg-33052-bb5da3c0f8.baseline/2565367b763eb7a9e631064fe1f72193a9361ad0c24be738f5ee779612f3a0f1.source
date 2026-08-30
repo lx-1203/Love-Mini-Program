@@ -1,0 +1,117 @@
+import { defineStore } from "pinia";
+import { ref } from "vue";
+// 修复（严格模式 noUnusedLocals）：components 类型未在本文件引用，已移除；
+// HomeDashboardWithDiscussion 已包含所需字段。
+import type { HomeDashboardWithDiscussion } from "../services/generated/api-types-supplement";
+import { clientApi } from "../services/api";
+
+type HomeDashboard = HomeDashboardWithDiscussion;
+// 修复（严格模式 noUnusedLocals）：FlexibleObject 类型未使用，已移除。
+
+/**
+ * 首页 Store。
+ * 管理首页 Dashboard 数据（课表摘要、推荐的人、AI 计划、活动预览等）。
+ */
+export const useHomeStore = defineStore("home", () => {
+  // ==================== State ====================
+  const dashboard = ref<HomeDashboard | null>(null);
+  const loading = ref(false);
+  const errorMessage = ref<string | null>(null);
+
+  // ==================== Getters ====================
+  /** 课表摘要 */
+  const scheduleSummary = ref<HomeDashboard["scheduleSummary"] | null>(null);
+
+  /** 推荐的人 */
+  const recommendedPeople = ref<HomeDashboard["recommendedPeople"]>([]);
+
+  /** AI 计划 */
+  const aiPlan = ref<HomeDashboard["aiPlan"] | null>(null);
+
+  /** 活动预览（类型定义为 FlexibleObject，运行时可能为数组或对象，使用 unknown 收敛） */
+  const activityPreview = ref<unknown[]>([]);
+
+  /** 讨论热度（同上，类型定义宽松，运行时通过 Array.isArray 守卫） */
+  const discussionHeat = ref<unknown[]>([]);
+
+  /** 匹配中心聚合（legacy） */
+  const matchCenter = ref<HomeDashboard["matchCenter"] | null>(null);
+
+  /** 首页 Feed 聚合（寻觅 v3：今日恋爱首页） */
+  const homeFeed = ref<HomeDashboard["homeFeed"] | null>(null);
+
+  // ==================== Actions ====================
+  /**
+   * 加载首页 Dashboard 数据。
+   *
+   * 修复（P1 BUG）：新增竞态 token——快速切换页面/下拉刷新时，
+   * 旧请求返回后不再覆盖新请求结果。
+   */
+  let fetchDashboardToken = 0;
+
+  async function fetchDashboard() {
+    // 竞态 token：递增计数，仅最新 token 的请求允许更新状态
+    const token = ++fetchDashboardToken;
+    loading.value = true;
+    errorMessage.value = null;
+
+    try {
+      // 后端实际返回含 discussionHeat 字段，但 OpenAPI 生成类型 Schemas["HomeDashboard"]
+      // 未同步更新，此处通过类型断言收敛为 HomeDashboardWithDiscussion 以保留运行时字段访问。
+      const data = (await clientApi.getHomeDashboard()) as unknown as HomeDashboard;
+      // 修复：旧请求（被新请求取代）返回时不再修改状态
+      if (token !== fetchDashboardToken) return;
+      dashboard.value = data;
+
+      // 提取各模块数据（防御性处理：确保数组类型，避免 .slice 等数组方法调用失败）
+      scheduleSummary.value = data.scheduleSummary ?? null;
+      recommendedPeople.value = Array.isArray(data.recommendedPeople) ? data.recommendedPeople : [];
+      aiPlan.value = data.aiPlan ?? null;
+      // activityPreview / discussionHeat 在类型定义中为 FlexibleObject（对象），
+      // 但历史代码使用 Array.isArray 做防御性检查，此处保持原行为：仅在确为数组时使用，否则空数组
+      const activityPreviewRaw: unknown = data.activityPreview;
+      const discussionHeatRaw: unknown = data.discussionHeat;
+      activityPreview.value = Array.isArray(activityPreviewRaw) ? activityPreviewRaw : [];
+      discussionHeat.value = Array.isArray(discussionHeatRaw) ? discussionHeatRaw : [];
+      matchCenter.value = data.matchCenter ?? null;
+      homeFeed.value = data.homeFeed ?? null;
+    } catch (error: unknown) {
+      // 修复：旧请求的错误不更新 errorMessage
+      if (token !== fetchDashboardToken) return;
+      const msg = error instanceof Error ? error.message : "加载首页数据失败";
+      errorMessage.value = msg;
+      console.error("[home-store] fetchDashboard error:", error);
+    } finally {
+      // 修复：仅最新 token 的请求才允许清 loading
+      if (token === fetchDashboardToken) {
+        loading.value = false;
+      }
+    }
+  }
+
+  async function rotateTodayRecommendation() {
+    if (!homeFeed.value) return null;
+    const next = await clientApi.rotateTodayRecommendation();
+    homeFeed.value = { ...homeFeed.value, todayRecommendation: next };
+    return next;
+  }
+
+  return {
+    // State
+    dashboard,
+    loading,
+    errorMessage,
+    // Getters
+    scheduleSummary,
+    recommendedPeople,
+    aiPlan,
+    activityPreview,
+    discussionHeat,
+    matchCenter,
+    homeFeed,
+    // Actions
+    rotateTodayRecommendation,
+    // Actions
+    fetchDashboard,
+  };
+});

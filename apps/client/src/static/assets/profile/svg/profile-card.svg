@@ -1,0 +1,5 @@
+<svg width="350" height="120" xmlns="http://www.w3.org/2000/svg">
+<rect width="350" height="120" rx="20" fill="white"/>
+<text x="20" y="45" font-size="18">个人介绍</text>
+<text x="20" y="75" font-size="14" fill="#888">一句话展示人格和生活方式</text>
+</svg>

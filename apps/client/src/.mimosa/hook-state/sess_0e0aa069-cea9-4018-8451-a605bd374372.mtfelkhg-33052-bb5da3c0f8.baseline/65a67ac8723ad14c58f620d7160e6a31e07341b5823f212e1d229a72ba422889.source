@@ -1,0 +1,882 @@
+import { defineStore } from "pinia";
+import { resolveMediaUrl } from "@/utils/media";
+import type { components } from "../services/generated/api-types";
+import type { ProfileStats } from "../services/generated/api-types-supplement";
+// 修复 no-duplicate-imports：合并 ../services/api 的重复 import
+import { clientApi, type UniUploadFileLike } from "../services/api";
+import { IMAGE_PATHS } from "../config/images";
+import { STORAGE_KEYS } from "../constants/storage-keys";
+import { useSessionStore } from "./session";
+import { useMock } from "./helpers/use-mock";
+// 展示模式（全功能展示版）：VIP 全亮
+import { isShowcaseMode } from "../config/showcase";
+// SubTask 1.4.1：loadMyPosts 复用 village API 拉取当前用户发布的帖子
+import { request } from "../services/http";
+// i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
+import { t } from "@/i18n";
+// 2026-08-10 切换提速：个人资料 60s TTL 缓存（避免每次切「我的」tab 全量重拉 5 个请求）
+import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+
+/** 个人资料新鲜度窗口（60s） */
+const PROFILE_TTL_MS = 60_000;
+
+type Schemas = components["schemas"];
+
+/* ========== 视图模型类型 ========== */
+
+/**
+ * VIP 状态信息
+ * 用于个人主页 VIP 徽章与卡片展示
+ */
+export interface VipStatus {
+  /** 是否为 VIP */
+  isVip: boolean;
+  /** VIP 等级名称（如「月度会员」） */
+  planName?: string;
+  /** 到期时间（ISO 字符串） */
+  expireDate?: string | null;
+}
+
+/**
+ * 规范化 VIP 状态：展示模式下强制 VIP 全亮（全功能展示版）。
+ * - 展示模式（VITE_SHOWCASE_MODE=true）：一律视为 VIP，展示全部会员权益
+ * - 非展示模式：透传原值，无 VIP 则返回默认未开通状态
+ */
+function normalizeVipStatus(status: VipStatus | null | undefined): VipStatus {
+  if (isShowcaseMode) {
+    return { isVip: true, planName: "超级管理员展示版", expireDate: null };
+  }
+  return status ?? { isVip: false, planName: "", expireDate: null };
+}
+
+/**
+ * 我的动态预览项（简化版，用于个人主页列表展示）
+ */
+export interface MyPostSummary {
+  id: string;
+  /** 帖子内容摘要（前 N 字） */
+  summary: string;
+  /** 点赞数 */
+  likes: number;
+  /** 评论数 */
+  comments: number;
+  /** 发布时间（ISO 字符串） */
+  createdAt: string;
+  /** 配图（首图，可空） */
+  coverImage?: string;
+}
+
+/* ========== Mock 数据 ========== */
+
+/**
+ * infra R2-00051: 以下 mock 基本/校区/日程资料为演示数据（仅 useMock 分支使用，
+ * real 分支由后端下发），中文内容不迁移 i18n，避免 mock 数据占据运营文案位
+ */
+/** Mock 基本资料数据 */
+const mockBasicProfile: Schemas["BasicProfile"] = {
+  nickname: "林晓",
+  bio: "热爱生活，喜欢图书馆的下午和操场晚风。想认识有趣的灵魂。",
+  grade: "大三",
+  pronouns: "TA",
+  // D-03（第五轮 QA）：照片墙从 1 空占位增强为 4 张真实人物配图
+  // （portraits/p1~p4.jpg 600px 本地图，照片墙 6 格中前 4 格有图、后 2 格仍为上传占位）
+  photoGallery: [
+    resolveMediaUrl("/static/assets/images/portraits/p1.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p2.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p3.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p4.jpg"),
+  ],
+};
+
+/** Mock 校区资料数据 */
+const mockCampusProfile: Schemas["CampusProfile"] = {
+  city: "北京",
+  campusName: "北京大学",
+  department: "工业设计",
+  verificationStatus: "verified",
+};
+
+/** Mock 日程资料数据 */
+const mockScheduleProfile: Schemas["ScheduleProfile"] = {
+  preferredCampusArea: "图书馆和北草坪",
+  preferredTimeWindows: ["今晚", "本周"],
+  courseBlocks: [
+    {
+      id: "b-1",
+      weekday: "周一",
+      start: "09:00",
+      end: "10:30",
+      label: "设计课",
+    },
+    {
+      id: "b-2",
+      weekday: "周三",
+      start: "14:00",
+      end: "15:30",
+      label: "专题讨论",
+    },
+  ],
+};
+
+/** Mock 个人统计数据 */
+const mockProfileStats: ProfileStats = {
+  // D-01（第五轮 QA）：与理想图「已经填完资料的个人主页.png」观感对齐
+  // 关注 128 / 粉丝 96 / 获赞 356 / 匹配 42 / 访客 104 / 喜欢我 28
+  followers: 96,
+  following: 128,
+  likes: 356,
+  visitors: 104,
+  posts: 12,
+  followingCount: 128,
+  followersCount: 96,
+  likesCount: 356,
+  visitorsCount: 104,
+  likedMeCount: 28,
+  matchCount: 42,
+};
+
+/** Mock VIP 状态（默认未开通，便于在主页展示开通卡片） */
+const mockVipStatus: VipStatus = {
+  isVip: false,
+  planName: "",
+  expireDate: null,
+};
+
+/**
+ * infra R2-00050: mock 语音状态占位地址。
+ * 原值指向无效外域 example.com（会触发无效网络请求），改为本地占位路径；
+ * 本地暂无音频资源，播放演示将静默失败，待接入真实语音资源后替换。
+ */
+const mockVoiceStatusUrl =
+  "/static/assets/mock/voice-status.mp3";
+
+/** infra R2-00052: mock 语音状态时长（秒）——原 42 魔法数字具名化 */
+const MOCK_VOICE_STATUS_DURATION_SECONDS = 42;
+
+/** Mock 同校推荐权限（默认不把自己推给同校，但接收同校信息） */
+const mockPrivacySettings = {
+  allowSameSchoolRecommend: false,
+  receiveSameSchoolInfo: true,
+};
+
+/** 权限开关本地持久化 key（Phase 4.5 验收：开关状态持久化并同步后端；2026-08-10 统一至 STORAGE_KEYS） */
+const PRIVACY_STORAGE_KEY = STORAGE_KEYS.PRIVACY_SETTINGS;
+
+/** 读取本地持久化的权限设置（无记录时返回 mock 默认值） */
+function loadPersistedPrivacy(): { allowSameSchoolRecommend: boolean; receiveSameSchoolInfo: boolean } {
+  try {
+    const raw = uni.getStorageSync(PRIVACY_STORAGE_KEY) as
+      | { allowSameSchoolRecommend?: boolean; receiveSameSchoolInfo?: boolean }
+      | undefined;
+    if (raw && typeof raw === "object") {
+      return {
+        allowSameSchoolRecommend: typeof raw.allowSameSchoolRecommend === "boolean" ? raw.allowSameSchoolRecommend : false,
+        receiveSameSchoolInfo: raw.receiveSameSchoolInfo !== false,
+      };
+    }
+  } catch (_e) {
+    // 读取失败时回退默认值
+  }
+  return { ...mockPrivacySettings };
+}
+
+/** Mock 我的动态列表（个人主页预览用，最多展示 3 条） */
+const mockMyPosts: MyPostSummary[] = [
+  {
+    id: "my-post-1",
+    summary: "今天在图书馆遇到一只很亲人的橘猫，分享几张照片～",
+    likes: 32,
+    comments: 8,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: "my-post-2",
+    summary: "周末去看了场艺术展，被一幅画击中了，推荐给大家。",
+    likes: 56,
+    comments: 14,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+  },
+  {
+    id: "my-post-3",
+    summary: "整理了一下这学期的设计作业，复盘的过程很有收获。",
+    likes: 21,
+    comments: 5,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+  },
+];
+
+/**
+ * 深拷贝工具函数，避免 Mock 数据被直接修改
+ */
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * 当前 in-flight 的 load 请求 Promise（模块级单例）。
+ *
+ * 修复（P1 BUG）：原 load() 无并发守卫，组件 onShow 与 onMounted 同时触发
+ * load() 时会发起两次完整 API 请求，响应顺序无法保证，
+ * 后到的旧响应可能覆盖新响应，导致展示陈旧资料。
+ * 现保存 in-flight 的 Promise，并发调用复用同一次请求，
+ * 仅在请求完成后才允许下一次 load。
+ */
+let inflightLoadPromise: Promise<void> | null = null;
+
+/**
+ * 个人资料 Store 状态
+ */
+export interface ProfileState {
+  basicProfile: Awaited<ReturnType<typeof clientApi.getBasicProfile>> | null;
+  campusProfile: Awaited<ReturnType<typeof clientApi.getCampusProfile>> | null;
+  scheduleProfile: Awaited<ReturnType<typeof clientApi.getScheduleProfile>> | null;
+  profileStats: Awaited<ReturnType<typeof clientApi.getProfileStats>> | null;
+  /** VIP 状态（用于个人主页徽章展示） */
+  vipStatus: VipStatus | null;
+  /** 我的动态预览列表（用于个人主页展示） */
+  myPosts: MyPostSummary[];
+  /** 照片墙 URL 数组（最多 6 张，Phase E3） */
+  photoGallery: string[];
+  /** 60 秒语音状态 URL（Phase Feedback5：移除视频，改为语音状态） */
+  voiceStatusUrl: string;
+  /** 语音状态时长（秒，最长 60） */
+  voiceStatusDuration: number;
+  /** 头像 URL（mock 模式生效：本地头像；真实模式头像由后端用户接口返回，当前前端未单独接线） */
+  avatarUrl: string;
+  /** 是否允许推荐给本校学生（默认 false：不把自己的信息推给同校，但可收到同校信息） */
+  allowSameSchoolRecommend: boolean;
+  /** 是否接收同校信息（默认 true） */
+  receiveSameSchoolInfo: boolean;
+  /** 是否正在加载 */
+  loading: boolean;
+  /** 错误信息 */
+  errorMessage: string | null;
+}
+
+/**
+ * 个人资料 Store
+ *
+ * 管理用户基本资料、校区资料、日程资料和统计数据。
+ * 支持 Mock 模式和 Real 模式，Mock 模式下返回本地硬编码数据。
+ */
+export const useProfileStore = defineStore("profile", {
+  state: (): ProfileState => ({
+    basicProfile: null,
+    campusProfile: null,
+    scheduleProfile: null,
+    profileStats: null,
+    vipStatus: null,
+    myPosts: [],
+    photoGallery: [],
+    voiceStatusUrl: "",
+    voiceStatusDuration: 0,
+    avatarUrl: "",
+    allowSameSchoolRecommend: false,
+    receiveSameSchoolInfo: true,
+    loading: false,
+    errorMessage: null,
+  }),
+
+  actions: {
+    /**
+     * 加载所有个人资料数据。
+     * Mock 模式下返回本地硬编码数据，Real 模式下调用后端 API。
+     *
+     * 修复：补充 vipStatus 与 myPosts 字段加载，确保个人主页可展示完整信息。
+     *
+     * 修复（P1 BUG）：新增并发守卫。组件 onShow 与 onMounted 可能同时触发 load()，
+     * 原实现会发起两次完整 API 请求，响应顺序不可控，旧响应可能覆盖新响应。
+     * 现保存 in-flight Promise，并发调用复用同一次请求，避免重复请求与状态错乱。
+     */
+    async load() {
+      // 2026-08-10 切换提速：60s 内已加载且有数据时直接跳过（内容已在 store，秒开）
+      if (!useMock() && this.basicProfile && isCacheFresh("profile:load", PROFILE_TTL_MS)) {
+        return;
+      }
+      // 修复（P1 BUG）：并发守卫——若已有 in-flight 请求，复用其 Promise
+      if (inflightLoadPromise) {
+        return inflightLoadPromise;
+      }
+
+      const run = async () => {
+        this.loading = true;
+        this.errorMessage = null;
+
+        try {
+          if (useMock()) {
+            this.basicProfile = clone(mockBasicProfile);
+            this.campusProfile = clone(mockCampusProfile);
+            this.scheduleProfile = clone(mockScheduleProfile);
+            this.profileStats = clone(mockProfileStats);
+            this.vipStatus = normalizeVipStatus(clone(mockVipStatus));
+            this.myPosts = clone(mockMyPosts);
+            this.voiceStatusUrl = mockVoiceStatusUrl;
+            this.voiceStatusDuration = MOCK_VOICE_STATUS_DURATION_SECONDS; // infra R2-00052
+            // D-05（第五轮 QA）：mock 本人头像改用 avatars/avatar-1.jpg 新素材
+            this.avatarUrl = IMAGE_PATHS.AVATARS.AVATAR_1;
+            // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
+            this.photoGallery = Array.isArray(mockBasicProfile?.photoGallery)
+              ? [...mockBasicProfile.photoGallery]
+              : [];
+            const persistedPrivacy = loadPersistedPrivacy();
+            this.allowSameSchoolRecommend = persistedPrivacy.allowSameSchoolRecommend;
+            this.receiveSameSchoolInfo = persistedPrivacy.receiveSameSchoolInfo;
+            return;
+          }
+
+          const [basic, campus, schedule, stats] = await Promise.all([
+            clientApi.getBasicProfile(),
+            clientApi.getCampusProfile(),
+            clientApi.getScheduleProfile(),
+            clientApi.getProfileStats(),
+          ]);
+          // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳（下次 60s 内进入直接跳过）
+          setCachedValue("profile:load", true);
+          this.basicProfile = basic;
+          this.campusProfile = campus;
+          this.scheduleProfile = schedule;
+          this.profileStats = stats;
+
+          // 2026-08-07：头像 URL 从 GET /profile/basic 响应中同步
+          // （BasicProfileView 已新增 avatarUrl 字段，存于 users.avatar_url）
+          const basicRaw = basic as { avatarUrl?: string } | null;
+          this.avatarUrl = typeof basicRaw?.avatarUrl === "string" ? basicRaw.avatarUrl : "";
+
+          // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
+          this.photoGallery = Array.isArray(basic?.photoGallery) ? [...basic.photoGallery] : [];
+
+          // SubTask 1.4.1：解析 vipStatus。
+          // 当前后端 UserSession schema 暂未声明 vipStatus 字段，但实际响应可能已包含
+          // （后端 DTO 扩展常常先于 OpenAPI 重新生成）。这里通过类型断言安全读取：
+          // - 若响应包含 vipStatus 对象，则按其字段解析
+          // - 否则回退到默认（未开通 VIP），保证 UI 不出现 undefined
+          const session = useSessionStore();
+          const sessionRaw = session.userSession as
+            | {
+                vipStatus?: {
+                  isVip?: boolean;
+                  planName?: string;
+                  expireDate?: string | null;
+                };
+              }
+            | null
+            | undefined;
+          const rawVip = sessionRaw?.vipStatus;
+          this.vipStatus = normalizeVipStatus({
+            isVip: Boolean(rawVip?.isVip),
+            planName: typeof rawVip?.planName === "string" ? rawVip.planName : "",
+            expireDate:
+              typeof rawVip?.expireDate === "string" || rawVip?.expireDate === null
+                ? (rawVip.expireDate as string | null)
+                : null,
+          });
+
+          // 我的动态：load() 不阻塞主流程，留空由 loadMyPosts() 按需拉取
+          this.myPosts = this.myPosts ?? [];
+        } catch (error) {
+          this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadProfileFailed");
+          // 异常时确保数据不为 undefined
+          this.basicProfile = this.basicProfile ?? null;
+          this.campusProfile = this.campusProfile ?? null;
+          this.scheduleProfile = this.scheduleProfile ?? null;
+          this.profileStats = this.profileStats ?? null;
+          this.vipStatus = normalizeVipStatus(this.vipStatus);
+          this.myPosts = this.myPosts ?? [];
+        } finally {
+          this.loading = false;
+        }
+      };
+
+      // 保存 in-flight Promise，结束后清理
+      inflightLoadPromise = run().finally(() => {
+        inflightLoadPromise = null;
+      });
+      return inflightLoadPromise;
+    },
+
+    /**
+     * 拉取个人主页数据（load 的语义别名，供 onShow 调用）。
+     *
+     * 修复：原页面仅 onMounted 调用 loadStats，切换 Tab 返回时不会刷新资料。
+     * 现新增 fetchProfile 作为 onShow 入口，确保每次进入个人主页都能获取最新数据，
+     * 同时保持与 load 的兼容（fetchProfile 内部委托 load，避免重复实现）。
+     */
+    async fetchProfile() {
+      await this.load();
+    },
+
+    /**
+     * SubTask 1.4.1：拉取当前用户的动态列表（个人主页"我的动态"模块）。
+     *
+     * <p>实现策略：</p>
+     * <ul>
+     *   <li>Mock 模式：直接返回 mockMyPosts，不发起网络请求</li>
+     *   <li>Real 模式：复用后端 GET /api/posts?authorId={currentUserId} 接口拉取当前用户发布的帖子，
+     *       取前 3 条作为个人主页预览。后端响应字段映射到 MyPostSummary：
+     *       id / content 截摘要 / likes / comments / createdAt / coverImage（首图）</li>
+     *   <li>错误处理：失败时清空 myPosts 并设置 errorMessage，不抛出，避免阻塞页面渲染</li>
+     * </ul>
+     *
+     * <p>设计考量：将 myPosts 拆分为独立 action 而非塞入 load()，原因：</p>
+     * <ul>
+     *   <li>个人主页首屏只需 basic/campus/schedule/stats + vipStatus，动态列表可懒加载</li>
+     *   <li>用户进入"我的动态"分页时才需要完整列表，避免 load() 拉取冗余数据</li>
+     *   <li>独立 action 便于失败重试，不影响主资料展示</li>
+     * </ul>
+     */
+    async loadMyPosts() {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          this.myPosts = clone(mockMyPosts);
+          return;
+        }
+
+        // Real 模式：从 sessionStore 获取当前用户 ID，调用 /posts?authorId=... 拉取
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId;
+        if (!userId) {
+          // 未登录场景下没有"我的动态"可展示，清空即可
+          this.myPosts = [];
+          return;
+        }
+
+        // 后端 PostListResponse 结构（与 village store 一致），仅取所需字段
+        type PostListItem = {
+          id: string | number;
+          content?: string;
+          text?: string;
+          title?: string;
+          likeCount?: number;
+          likes?: number;
+          commentCount?: number;
+          comments?: number;
+          createdAt?: string;
+          images?: string[];
+        };
+        type PostListResponse = {
+          items?: PostListItem[];
+          data?: PostListItem[];
+          list?: PostListItem[];
+        };
+
+        const query = new URLSearchParams({
+          authorId: String(userId),
+          page: "1",
+          pageSize: "3",
+        }).toString();
+        const resp = await request<PostListResponse>({
+          url: `/posts?${query}`,
+          method: "GET",
+        });
+
+        const items = resp.items ?? resp.data ?? resp.list ?? [];
+        this.myPosts = items.map((p): MyPostSummary => {
+          const summary =
+            (p.content && p.content.trim()) ||
+            (p.text && p.text.trim()) ||
+            (p.title && p.title.trim()) ||
+            "";
+          const truncated =
+            summary.length > 50 ? summary.slice(0, 50) + "..." : summary;
+          return {
+            id: String(p.id),
+            summary: truncated,
+            likes: p.likeCount ?? p.likes ?? 0,
+            comments: p.commentCount ?? p.comments ?? 0,
+            createdAt: p.createdAt ?? new Date().toISOString(),
+            coverImage: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : undefined,
+          };
+        });
+      } catch (error) {
+        // 失败时清空 myPosts，避免展示陈旧数据；记录 errorMessage 便于 UI 提示
+        this.myPosts = [];
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadMyPostsFailed");
+      }
+    },
+
+    /**
+     * 加载个人统计数据。
+     */
+    async loadStats() {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          this.profileStats = clone(mockProfileStats);
+          return;
+        }
+        this.profileStats = await clientApi.getProfileStats();
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadStatsFailed");
+      }
+    },
+
+    /**
+     * 保存基本资料。
+     * Mock 模式下更新本地 Mock 数据并同步会话状态。
+     */
+    async saveBasicProfile(payload: Schemas["BasicProfileRequest"]) {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          const updated: Schemas["BasicProfile"] = {
+            nickname: payload.nickname,
+            bio: payload.bio,
+            grade: payload.grade,
+            pronouns: payload.pronouns,
+          };
+          this.basicProfile = clone(updated);
+          await useSessionStore().refreshSession();
+          return;
+        }
+        this.basicProfile = await clientApi.saveBasicProfile(payload);
+        await useSessionStore().refreshSession();
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveBasicFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 保存校区资料。
+     * Mock 模式下更新本地 Mock 数据，验证状态设为 pending。
+     */
+    async saveCampusProfile(payload: Parameters<typeof clientApi.saveCampusProfile>[0]) {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          const updated: Schemas["CampusProfile"] = {
+            city: payload.city,
+            campusName: payload.campusName,
+            department: payload.department,
+            verificationStatus: "pending",
+          };
+          this.campusProfile = clone(updated);
+          await useSessionStore().refreshSession();
+          return;
+        }
+        this.campusProfile = await clientApi.saveCampusProfile(payload);
+        await useSessionStore().refreshSession();
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveCampusFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 保存日程资料。
+     * Mock 模式下更新本地 Mock 数据。
+     */
+    async saveScheduleProfile(payload: Schemas["ScheduleProfileRequest"]) {
+      this.errorMessage = null;
+      try {
+        if (useMock()) {
+          // ScheduleProfileRequest 中 preferredTimeWindows/courseBlocks 为可选字段，
+          // 而 ScheduleProfile（响应）中为必填。Mock 模式下用空数组兜底，保持响应契约。
+          const updated: Schemas["ScheduleProfile"] = {
+            preferredCampusArea: payload.preferredCampusArea,
+            preferredTimeWindows: payload.preferredTimeWindows ?? [],
+            courseBlocks: payload.courseBlocks ?? [],
+          };
+          this.scheduleProfile = clone(updated);
+          await useSessionStore().refreshSession();
+          return;
+        }
+        this.scheduleProfile = await clientApi.saveScheduleProfile(payload);
+        await useSessionStore().refreshSession();
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveScheduleFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 上传个人主页背景图（Phase E1 / H-10）。
+     *
+     * 调用 clientApi.uploadProfileBackground 上传至服务端，上传成功后：
+     * - 更新 sessionStore.profileBackgroundUrl（驱动 profile 页面顶部背景渲染）
+     * - 同步更新本地状态
+     *
+     * @param file - 图片文件（jpg/png/webp，≤10MB）
+     * @returns 服务端返回的图片 URL
+     */
+    async uploadBackground(file: UniUploadFileLike): Promise<string> {
+      this.errorMessage = null;
+      try {
+        const result = await clientApi.uploadProfileBackground(file);
+        const url = result.url;
+        // 同步更新 sessionStore.profileBackgroundUrl（同时持久化到本地存储）
+        const sessionStore = useSessionStore();
+        sessionStore.setProfileBackgroundUrl(url);
+        return url;
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadBackgroundFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 上传头像（2026-08-07 新增接线）。
+     *
+     * 调用后端 POST /profile/avatar（更新 users.avatar_url），
+     * 成功后同步更新本 store 的 avatarUrl 与 basicProfile.avatarUrl，
+     * 使个人主页与推荐卡片均可显示新头像。
+     *
+     * @param file - 头像图片文件（jpg/png/webp，≤10MB）
+     * @returns 服务端返回的图片 URL
+     */
+    async uploadAvatar(file: UniUploadFileLike): Promise<string> {
+      this.errorMessage = null;
+      try {
+        const view = await clientApi.uploadAvatar(file);
+        const url = (view as { avatarUrl?: string; url?: string } | null)?.avatarUrl
+          ?? (view as { url?: string } | null)?.url
+          ?? "";
+        this.avatarUrl = url;
+        if (this.basicProfile) {
+          this.basicProfile = {
+            ...this.basicProfile,
+            avatarUrl: url,
+          } as typeof this.basicProfile;
+        }
+        return url;
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadAvatarFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 设置 60 秒语音状态（Phase Feedback5）。
+     *
+     * 语音状态为最长 60 秒的音频，作为主页声音名片。
+     * Mock 模式直接更新本地状态；Real 模式待后端提供语音上传接口后接入。
+     *
+     * @param url - 语音文件 URL（本地临时路径或服务端 URL）
+     * @param duration - 语音时长（秒，≤60）
+     */
+    setVoiceStatus(url: string, duration: number): void {
+      this.errorMessage = null;
+      // 修复（第三轮审查）：url 为空时视为清除语音状态，避免"空 URL + 非零时长"的不一致状态
+      if (!url || url.trim().length === 0) {
+        this.voiceStatusUrl = "";
+        this.voiceStatusDuration = 0;
+        return;
+      }
+      const safeDuration = Math.min(Math.max(0, duration), 60);
+      if (safeDuration <= 0) {
+        this.voiceStatusUrl = "";
+        this.voiceStatusDuration = 0;
+        return;
+      }
+      this.voiceStatusUrl = url;
+      this.voiceStatusDuration = safeDuration;
+    },
+
+    /**
+     * P2.6：上传 60s 语音状态并更新本地状态（Phase Feedback5）。
+     *
+     * Mock 模式由 fixtures 生成 mock URL；Real 模式上传到
+     * POST /api/v1/media/upload?type=audio（后端校验 aac/mp3/m4a/wav ≤8MB）。
+     *
+     * @param file - 录音临时文件（RecorderManager onStop 的 tempFilePath 包装）
+     * @param durationMs - 录音时长（毫秒），服务端按 ≤60s 收敛
+     */
+    async uploadVoice(file: UniUploadFileLike, durationMs: number): Promise<void> {
+      this.errorMessage = null;
+      try {
+        const result = await clientApi.uploadProfileVoice(file, durationMs);
+        this.setVoiceStatus(result.url, Math.round(durationMs / 1000));
+      } catch (error) {
+        this.errorMessage =
+          error instanceof Error ? error.message : t("storeErrors.profile.uploadVoiceFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 清除语音状态。
+     */
+    clearVoiceStatus(): void {
+      this.voiceStatusUrl = "";
+      this.voiceStatusDuration = 0;
+    },
+
+    /**
+     * 更新同校推荐权限（Phase Feedback5）。
+     *
+     * allowSameSchoolRecommend = true 时，自己的信息会推荐给本校学生；
+     * false 时不推荐，但仍可收到同校学生的信息（receiveSameSchoolInfo 独立控制）。
+     *
+     * @param allow - 是否允许推荐给本校学生
+     */
+    setAllowSameSchoolRecommend(allow: boolean): void {
+      this.allowSameSchoolRecommend = allow;
+      // Phase 4.5 验收：权限开关状态持久化（真实环境同步后端接口，mock 模式本地存储）
+      try {
+        uni.setStorageSync(PRIVACY_STORAGE_KEY, {
+          allowSameSchoolRecommend: this.allowSameSchoolRecommend,
+          receiveSameSchoolInfo: this.receiveSameSchoolInfo,
+        });
+      } catch (_e) {
+        // 存储失败时静默（不影响当前会话状态）
+      }
+    },
+
+    /**
+     * 更新是否接收同校信息（Phase Feedback5）。
+     *
+     * @param receive - 是否接收同校信息
+     */
+    setReceiveSameSchoolInfo(receive: boolean): void {
+      this.receiveSameSchoolInfo = receive;
+      // Phase 4.5 验收：权限开关状态持久化
+      try {
+        uni.setStorageSync(PRIVACY_STORAGE_KEY, {
+          allowSameSchoolRecommend: this.allowSameSchoolRecommend,
+          receiveSameSchoolInfo: this.receiveSameSchoolInfo,
+        });
+      } catch (_e) {
+        // 存储失败时静默（不影响当前会话状态）
+      }
+    },
+
+    /**
+     * 上传照片墙指定索引（Phase E3 / H-08 补充）。
+     *
+     * 调用 clientApi.uploadProfilePhoto 上传至服务端，上传成功后更新 photoGallery。
+     * photoGallery 为稠密数组：已上传的照片按顺序排列，无空槽位。
+     * - 若 index === 当前长度：追加新照片
+     * - 若 index < 当前长度：替换该位置照片（重新上传场景）
+     *
+     * @param file - 图片文件
+     * @param index - 照片墙目标索引（0-5）
+     * @returns 服务端返回的图片 URL
+     */
+    async uploadPhotoAtIndex(file: UniUploadFileLike, index: number): Promise<string> {
+      if (index < 0 || index > 5) {
+        throw new Error(t("storeErrors.profile.photoIndexOutOfRange"));
+      }
+      this.errorMessage = null;
+      try {
+        const result = await clientApi.uploadProfilePhoto(file, index);
+        const url = result.url;
+        const next = [...this.photoGallery];
+        if (index < next.length) {
+          // 替换现有位置
+          next[index] = url;
+        } else if (index === next.length) {
+          // 追加到末尾
+          next.push(url);
+        } else {
+          // index > next.length：跳过空位追加（不应出现在 UI 流程中）
+          next.push(url);
+        }
+        this.photoGallery = next;
+        // 2026-08-09：同步 basicProfile 与审核项（新上传默认 pending，待审核）
+        this.syncBasicProfileGallery(next, { url, auditStatus: "pending", auditRemark: null });
+        return url;
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadPhotoFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 删除照片墙指定索引（Phase E3 / H-08 补充）。
+     *
+     * 调用 clientApi.deleteProfilePhoto 删除服务端记录，并从本地 photoGallery 中移除。
+     * 删除后后续照片前移，保持稠密数组结构。
+     *
+     * @param index - 照片墙索引（0 到 photoGallery.length-1）
+     */
+    async removePhotoAtIndex(index: number): Promise<void> {
+      if (index < 0 || index >= this.photoGallery.length) {
+        throw new Error(t("storeErrors.profile.photoIndexNotFound"));
+      }
+      this.errorMessage = null;
+      try {
+        await clientApi.deleteProfilePhoto(index);
+        // 从数组中移除指定索引，并压缩（后续照片前移）
+        const next = [
+          ...this.photoGallery.slice(0, index),
+          ...this.photoGallery.slice(index + 1),
+        ];
+        this.photoGallery = next;
+        // 2026-08-09：同步 basicProfile（保持审核项与 URL 数组一一对应）
+        this.syncBasicProfileGallery(next, null);
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.deletePhotoFailed");
+        throw error;
+      }
+    },
+
+    /**
+     * 同步 basicProfile 的照片墙字段（2026-08-09）。
+     * 上传/删除后保持 URL 数组与审核项一致。
+     *
+     * @param next - 最新照片墙 URL 数组
+     * @param newItem - 本次新增的审核项（删除时传 null）
+     */
+    syncBasicProfileGallery(
+      next: string[],
+      newItem: { url: string; auditStatus: string; auditRemark: string | null } | null
+    ): void {
+      const current = this.basicProfile as {
+        photoGallery?: string[];
+        photoGalleryItems?: Array<{ url: string; auditStatus: string; auditRemark: string | null }>;
+      } | null;
+      if (!current) return;
+      const prevItems = Array.isArray(current.photoGalleryItems) ? current.photoGalleryItems : [];
+      const items = next
+        .filter((url) => url && url.length > 0)
+        .map((url) => {
+          const found = prevItems.find((it) => it.url === url);
+          if (found) return found;
+          if (newItem && newItem.url === url) return newItem;
+          return { url, auditStatus: "approved" as const, auditRemark: null };
+        });
+      this.basicProfile = {
+        ...current,
+        photoGallery: next,
+        photoGalleryItems: items,
+      } as unknown as typeof this.basicProfile;
+    },
+  },
+
+  getters: {
+    /**
+     * 照片墙审核项列表（2026-08-09）。
+     *
+     * 优先取 basicProfile.photoGalleryItems（后端返回的审核状态）；
+     * 缺失时按 photoGallery 兜底组装 approved（mock 模式 / 旧数据无审核语义）。
+     */
+    photoGalleryItems(state): Array<{
+      url: string;
+      auditStatus: string;
+      auditRemark: string | null;
+    }> {
+      const items = (state.basicProfile as { photoGalleryItems?: Array<{
+        url: string;
+        auditStatus: string;
+        auditRemark: string | null;
+      }> } | null)?.photoGalleryItems;
+      if (Array.isArray(items) && items.length > 0) {
+        return items;
+      }
+      return state.photoGallery
+        .filter((url) => url && url.length > 0)
+        .map((url) => ({ url, auditStatus: "approved", auditRemark: null }));
+    },
+
+    /** 头像审核状态（2026-08-09，mock/旧数据兜底 approved） */
+    avatarAuditStatus(state): string {
+      return (state.basicProfile as { avatarAuditStatus?: string } | null)?.avatarAuditStatus ?? "approved";
+    },
+
+    /** 头像审核备注（拒绝原因等） */
+    avatarAuditRemark(state): string | null {
+      return (state.basicProfile as { avatarAuditRemark?: string | null } | null)?.avatarAuditRemark ?? null;
+    },
+  },
+});

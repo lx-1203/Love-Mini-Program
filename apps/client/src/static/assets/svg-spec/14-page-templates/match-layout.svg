@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812">
+  <!-- Status bar -->
+  <rect width="375" height="44" fill="#fff"/>
+  <text x="30" y="28" fill="#333" font-size="14" font-weight="600">9:41</text>
+  <rect x="280" y="15" width="20" height="12" rx="2" fill="#333"/>
+  <rect x="305" y="17" width="25" height="10" rx="2" fill="#333"/>
+  <rect x="335" y="16" width="20" height="12" rx="3" fill="none" stroke="#333" stroke-width="1"/>
+  <rect x="337" y="18" width="16" height="8" rx="1" fill="#333"/>
+
+  <!-- Header -->
+  <rect y="44" width="375" height="50" fill="#fff"/>
+  <path d="M25 69l-5-5 5-5" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="187" y="75" text-anchor="middle" fill="#333" font-size="17" font-weight="600">匹配</text>
+
+  <!-- Match percentage ring -->
+  <circle cx="187" cy="170" r="60" fill="#F5F5F5"/>
+  <circle cx="187" cy="170" r="50" fill="none" stroke="#E8F8F0" stroke-width="8"/>
+  <text x="187" y="168" text-anchor="middle" fill="#36C99A" font-size="28" font-weight="bold">92%</text>
+  <text x="187" y="190" text-anchor="middle" fill="#999" font-size="12">匹配度</text>
+
+  <!-- Profile card -->
+  <rect x="40" y="260" width="295" height="340" rx="24" fill="#F8F8F8" stroke="#EEE" stroke-width="1"/>
+  <defs>
+    <linearGradient id="match-card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="460" width="295" height="140" rx="24" fill="url(#match-card-grad)"/>
+  <rect x="70" y="510" width="100" height="16" rx="8" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="532" width="150" height="10" rx="5" fill="#fff" opacity="0.7"/>
+  <rect x="70" y="550" width="50" height="18" rx="9" fill="#36C99A" opacity="0.8"/>
+  <rect x="130" y="550" width="40" height="18" rx="9" fill="#FF6B81" opacity="0.8"/>
+
+  <!-- Info tags -->
+  <rect x="40" y="620" width="295" height="80" rx="16" fill="#fff" stroke="#F0F0F0" stroke-width="1"/>
+  <rect x="60" y="640" width="60" height="24" rx="12" fill="#E8F8F0"/>
+  <rect x="130" y="640" width="60" height="24" rx="12" fill="#FFE4E9"/>
+  <rect x="200" y="640" width="60" height="24" rx="12" fill="#F0F0FF"/>
+  <rect x="60" y="670" width="80" height="10" rx="5" fill="#E0E0E0"/>
+  <rect x="150" y="670" width="100" height="10" rx="5" fill="#F0F0F0"/>
+
+  <!-- Action buttons -->
+  <circle cx="100" cy="745" r="26" fill="#fff" stroke="#E0E0E0" stroke-width="2"/>
+  <path d="M92 737 108 753M108 737 92 753" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="187" cy="745" r="30" fill="#FF6B81"/>
+  <path d="M187 760s-10-5-10-11a4.5 4.5 0 0 1 8-2l2 2 2-2a4.5 4.5 0 0 1 8 2c0 6-10 11-10 11h-2z" fill="#fff"/>
+  <circle cx="275" cy="745" r="26" fill="#fff" stroke="#36C99A" stroke-width="2"/>
+  <path d="M266 737h14v10h-10l-6 5z" fill="none" stroke="#36C99A" stroke-width="2" stroke-linejoin="round"/>
+</svg>

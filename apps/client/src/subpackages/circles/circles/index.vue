@@ -6,7 +6,7 @@
  * 展示所有兴趣圈，支持加入/退出操作，点击进入话题列表
  */
 import { computed, ref, watch } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../../stores/circle";
@@ -72,6 +72,14 @@ onLoad((query) => {
   // 保证 dev-user/mock 登录态下列表可渲染（原 onMounted 的 token 守卫在
   // "已登录但无 token"的 mock 会话下会拦截，导致空态）。
   if (getToken() || useMock()) {
+    void circleStore.fetchCircles();
+  }
+});
+
+// 2026-08-30 韧性修复：onLoad 时 token 尚未就绪（登录竞态/门槛重定向）会跳过拉取，
+// 页面永久停在空态。onShow 补拉：已登录但列表为空且不在加载中时自愈。
+onShow(() => {
+  if ((getToken() || useMock()) && circleStore.circles.length === 0 && !circleStore.loading) {
     void circleStore.fetchCircles();
   }
 });

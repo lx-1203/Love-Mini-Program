@@ -1,0 +1,154 @@
+import type { components } from "../services/generated/api-types";
+// 修复（R4-00219）：首页资料完善任务标题/副标题 i18n 化
+import { t } from "@/i18n";
+
+type Schemas = components["schemas"];
+
+export interface HomeSetupTaskView {
+  id: "profile" | "campus" | "schedule";
+  title: string;
+  subtitle: string;
+  path: string;
+}
+
+export interface HomeSectionItemView {
+  id: string;
+  title: string;
+  subtitle: string;
+  meta: string;
+  badge: string;
+  tone: "brand" | "success" | "warning";
+}
+
+export interface HomeRecommendationActionView {
+  label: string;
+  mode: "complete-setup" | "go-chat";
+  target: string;
+}
+
+export type HomeRecommendedPersonView = Schemas["RecommendedPersonSummary"] & {
+  action: HomeRecommendationActionView;
+};
+
+export interface HomeActivityPreviewView {
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  items: Schemas["ActivityPreviewItem"][];
+  pulseTitle: string | null;
+  pulseMeta: string | null;
+}
+
+export interface HomePageView {
+  sectionOrder: Array<"schedule" | "people" | "activity">;
+  setupTasks: HomeSetupTaskView[];
+  scheduleCards: HomeSectionItemView[];
+  recommendedPeople: HomeRecommendedPersonView[];
+  peopleLead: string;
+  activityPreview: HomeActivityPreviewView;
+}
+
+export interface HomeCompletionState {
+  profileCompleted: boolean;
+  campusCompleted: boolean;
+  scheduleCompleted: boolean;
+}
+
+function toCardItem(
+  item: Schemas["HomeCard"],
+  badge: string,
+  tone: "brand" | "success" | "warning"
+): HomeSectionItemView {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: item.subtitle,
+    meta: item.meta,
+    badge,
+    tone,
+  };
+}
+
+export function getHomeSetupTasks(completion: HomeCompletionState): HomeSetupTaskView[] {
+  const tasks: HomeSetupTaskView[] = [];
+
+  // 修复（R4-00219）：标题/副标题经 t() 渲染，随 locale 切换
+  if (!completion.profileCompleted) {
+    tasks.push({
+      id: "profile",
+      title: t("homeSetup.profileTitle"),
+      subtitle: t("homeSetup.profileSubtitle"),
+      path: "/subpackages/setup/profile/index",
+    });
+  }
+
+  if (!completion.campusCompleted) {
+    tasks.push({
+      id: "campus",
+      title: t("homeSetup.campusTitle"),
+      subtitle: t("homeSetup.campusSubtitle"),
+      path: "/subpackages/setup/campus/index",
+    });
+  }
+
+  if (!completion.scheduleCompleted) {
+    tasks.push({
+      id: "schedule",
+      title: t("homeSetup.scheduleTitle"),
+      subtitle: t("homeSetup.scheduleSubtitle"),
+      path: "/subpackages/setup/schedule/index",
+    });
+  }
+
+  return tasks;
+}
+
+function getRecommendationAction(completion: HomeCompletionState): HomeRecommendationActionView {
+  const tasks = getHomeSetupTasks(completion);
+
+  if (tasks.length > 0) {
+    return {
+      // R4-00221：与 view-models/chat.ts（经 statusCopyMap）统一文案源 config.statusCopy.chatAction.*
+      label: t("config.statusCopy.chatAction.completeSetup"),
+      mode: "complete-setup",
+      target: tasks[0]!.path,
+    };
+  }
+
+  return {
+    label: t("config.statusCopy.chatAction.goChat"),
+    mode: "go-chat",
+    // 2026-08-07 消息页重构：tabBar 消息 tab 已切到新版消息列表页
+    target: "/pages/messages/index",
+  };
+}
+
+export function toHomePageView(
+  dashboard: Schemas["HomeDashboard"],
+  completion: HomeCompletionState
+): HomePageView {
+  const action = getRecommendationAction(completion);
+
+  return {
+    sectionOrder: ["schedule", "people", "activity"],
+    setupTasks: getHomeSetupTasks(completion),
+    scheduleCards: [
+      toCardItem(dashboard.scheduleSummary, "今日", "brand"),
+      ...dashboard.freeSlots.map((item) => toCardItem(item, "空档", "success")),
+      // AI 计划卡片已移除（Phase 7），由规则引擎推荐（discover）替代
+    ],
+    recommendedPeople: dashboard.recommendedPeople.map((person) => ({
+      ...person,
+      action,
+    })),
+    peopleLead: dashboard.peopleLead,
+    activityPreview: {
+      title: dashboard.activityPreview.title,
+      subtitle: dashboard.activityPreview.subtitle,
+      actionLabel: dashboard.activityPreview.actionLabel,
+      items: dashboard.activityPreview.items,
+      pulseTitle: dashboard.activityPreview.pulseTitle ?? null,
+      pulseMeta: dashboard.activityPreview.pulseMeta ?? null,
+    },
+  };
+}
