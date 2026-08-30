@@ -374,7 +374,11 @@ async function submitPublish() {
       });
     } else {
       await villageStore.createPost({
-        categoryId: "life",
+        // 第五轮 P0 修复：原值 "life" 不在后端支持列表
+        // （all/interest/sincere/hometown/anonymous/latest/campus/activity），
+        // 导致统一发帖页通用发布恒 400「请求参数错误」。
+        // 与 publish.vue 对齐，通用动态默认归类 interest（DB 帖子主流分类）。
+        categoryId: "interest",
         title: titleText,
         content: titleText,
         images: finalImages,
