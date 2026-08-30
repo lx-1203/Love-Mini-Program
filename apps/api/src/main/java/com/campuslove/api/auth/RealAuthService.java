@@ -758,6 +758,11 @@ public class RealAuthService implements AuthService {
                 basic.setBio("喜欢慢跑和散步，期待遇见有趣的人");
                 basic.setGradeLabel("大三");
                 basic.setPronouns("TA");
+                // 第五轮（2026-08-30）R1：补齐性别/出生年份——推荐卡片依赖
+                // user_basic_profile.gender 与 birth_year 渲染「年龄+性别」小标，
+                // 此前缺失导致寻觅/附近卡片与理想图不一致（age/gender 为 null）
+                basic.setGender("female");
+                basic.setBirthYear(2003);
                 basic.setInterestTags("[\"旅行\",\"摄影\",\"音乐\",\"电影\"]");
                 basic.setHeight(170);
                 basic.setEducationLevel("bachelor");
@@ -810,6 +815,8 @@ public class RealAuthService implements AuthService {
             user.setProfileCompletion(100);
             // v3 冻结：体验账号头像使用真人素材 person-01
             user.setAvatarUrl("/static/assets/images/avatars/person-01-avatar.png");
+            // 第五轮 R1：出生日期（星座推导依赖 users.birth_date；与 birth_year=2003 对齐）
+            user.setBirthDate(java.time.LocalDate.of(2003, 6, 15));
             userRepository.save(user);
             log.info("体验账号资料预填完成: userId={}", userId);
             // 5. 流程演示数据播种（R4-00251 会话隔离后新账号无私信/喜欢/访客/通知，

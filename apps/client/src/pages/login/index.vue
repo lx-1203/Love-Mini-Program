@@ -19,8 +19,6 @@ import { captureException, addBreadcrumb } from "../../services/sentry";
 import { loginWithPhone, registerUser, loginAsGuest, sendSmsCode } from "../../services/auth";
 // 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
 import { AppApiError } from "../../services/api-error";
-// 功能2：Apple 登录 real 链路（POST /auth/third-party/apple）
-import { request, setToken, setRefreshToken } from "../../services/http";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
 import { isDev, isMockMode } from "../../config/env";
@@ -455,113 +453,10 @@ function openPrivacyPolicy() {
  * - 微信登录已有 onWechatLogin 处理，这里复用按钮即可
  * - Apple 登录仅 H5 / iOS 环境可用，通过条件编译控制显示
  * - 账号绑定入口跳转到设置页（已登录用户可管理第三方绑定）
+ * - 2026-08-30 第五轮：登录页移除第三方登录区与账号绑定入口后，
+ *   onAppleLogin / openAccountBinding 已无模板引用，按死代码删除
+ *   （Apple 登录与绑定管理能力保留在安全中心页，未删除功能本身）
  * ============================================================ */
-
-/**
- * Apple 登录会话视图（POST /auth/third-party/apple 响应载荷）。
- * 后端 UserSession 中的 token / refreshToken 字段未在 OpenAPI 类型声明，
- * 此处用最小契约类型收敛，避免散落的 `as Record<string, unknown>` 断言。
- */
-interface AppleLoginSession {
-  token?: string;
-  refreshToken?: string;
-  userId?: string;
-}
-
-/**
- * 触发 Apple 登录（功能2 real 链路）。
- * - 仅 H5 / APP-PLUS 环境调用，mp-weixin 不支持
- * - 流程：uni.login(provider: "apple") 取 identityToken（回退 authorizationCode）
- *   → POST /auth/third-party/apple 换 JWT → 保存 token → 同步会话 → 统一跳转
- * - 失败时通过 toast 展示后端 message
- */
-async function onAppleLogin() {
-  if (!agreed.value) {
-    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
-    return;
-  }
-  // 记录关键按钮点击面包屑
-  addBreadcrumb("ui", "button_click", { id: "login.apple" });
-  // #ifdef H5 || APP-PLUS
-  try {
-    // uni.login(provider: "apple")：不同版本返回 authorizationCode / identityToken，
-    // 优先取 identityToken（后端验签必需），缺失时回退 authorizationCode
-    const appleRes = await new Promise<{ identityToken?: string; authorizationCode?: string }>((resolve, reject) => {
-      uni.login({
-        provider: "apple",
-        success: (res) => {
-          const record = res as unknown as Record<string, unknown>;
-          resolve({
-            identityToken:
-              typeof record.identityToken === "string" ? record.identityToken : undefined,
-            authorizationCode:
-              typeof record.authorizationCode === "string" ? record.authorizationCode : undefined,
-          });
-        },
-        fail: (err) => reject(new Error(err?.errMsg || t("thirdPartyLogin.appleLoginFailed"))),
-      });
-    });
-    const identityToken = appleRes.identityToken ?? appleRes.authorizationCode;
-    if (!identityToken) {
-      throw new Error(t("thirdPartyLogin.appleLoginFailed"));
-    }
-    // 换取后端 JWT（登录前无 token，skipAuth；失败不重试，明确返回错误）
-    const session = await request<AppleLoginSession, { identityToken: string }>({
-      url: "/auth/third-party/apple",
-      method: "POST",
-      data: { identityToken },
-      skipAuth: true,
-      noRetry: true,
-    });
-    if (typeof session.token === "string" && session.token.length > 0) {
-      setToken(session.token);
-    }
-    if (typeof session.refreshToken === "string" && session.refreshToken.length > 0) {
-      setRefreshToken(session.refreshToken);
-    }
-    uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
-    // P0-32 修复（2026-08-08）：登录只 setToken 不更新 userSession，
-    // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
-    // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）
-    sessionStore.refreshSession().catch((err: unknown) => {
-      // R4-batch4：诊断日志仅开发环境输出
-      if (isDev) {
-        console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
-      }
-    });
-    if (loginNavTimer) clearTimeout(loginNavTimer);
-    loginNavTimer = setTimeout(() => {
-      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
-      navigateAfterLogin();
-      loginNavTimer = null;
-    }, 1500);
-  } catch (error) {
-    // Apple 登录失败：上报到 Sentry，source 标记为 login.apple
-    captureException(error, { source: "login.apple" });
-    const message = error instanceof Error ? error.message : t("thirdPartyLogin.appleLoginFailed");
-    uni.showToast({ title: message, icon: "none" });
-  }
-  // #endif
-  // #ifndef H5 || APP-PLUS
-  uni.showToast({ title: t("thirdPartyLogin.appleNotSupported"), icon: "none" });
-  // #endif
-}
-
-/**
- * 跳转到账号绑定管理页（已登录用户可查看/管理第三方账号绑定）。
- * - 未登录时提示先登录（原实现误用「请先勾选同意协议」，与场景不符）
- * - 已登录时跳转安全中心（/subpackages/tools/security/index），账号安全区展示
- *   手机号 + 微信/Apple 绑定状态，与登录页顶部登录方式保持一致。
- *   原实现跳转 /subpackages/profile-extra/settings/index，但设置页无第三方绑定管理区，
- *   存在「入口展示了账号绑定、落地页却没有」的不一致。
- */
-function openAccountBinding() {
-  if (!sessionStore.isLoggedIn) {
-    uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
-    return;
-  }
-  replaceAppPath(ROUTES.SECURITY);
-}
 </script>
 
 <template>
