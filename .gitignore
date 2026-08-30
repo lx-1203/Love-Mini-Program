@@ -280,8 +280,11 @@ static/generated_test/
 /appendonly.aof
 /dump.rdb
 /.mimosa/
+**/.mimosa/
 /tmp-*.*
 /tmp_*.*
+# 自签本地 HTTPS 代理证书（2026-08-31 第六轮修复：禁止入仓）
+*.pem
 /api-*.log
 /devtools-*.log
 /debug.log

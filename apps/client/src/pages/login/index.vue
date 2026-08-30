@@ -773,7 +773,7 @@ function openPrivacyPolicy() {
 .logo-title {
   font-size: 56rpx;
   font-weight: 800;
-  color: #1A1E1C;
+  color: var(--c-text-primary);
   letter-spacing: 4rpx;
   line-height: 1.2;
   text-align: left;
@@ -791,7 +791,7 @@ function openPrivacyPolicy() {
   margin-top: 6rpx;
   font-size: 28rpx;
   font-weight: 500;
-  color: #6B7571;
+  color: var(--c-text-tertiary);
   text-align: left;
   line-height: 1.6;
   letter-spacing: 2rpx;
@@ -811,7 +811,7 @@ function openPrivacyPolicy() {
   font-size: 40rpx;
   /* R4-batch4 像素级对齐：参考图标版更突出（800 → 800 保持） */
   font-weight: 800;
-  color: #1A1E1C;
+  color: var(--c-text-primary);
   text-align: center;
   line-height: 1.5;
   letter-spacing: 2rpx;
@@ -821,7 +821,7 @@ function openPrivacyPolicy() {
   margin-top: 10rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #36C99A;
+  color: var(--c-brand);
 }
 
 .hero-desc-discover {
@@ -829,7 +829,8 @@ function openPrivacyPolicy() {
   margin-top: 12rpx;
   font-size: var(--fs-sm);
   font-weight: 400;
-  color: rgba(26, 30, 28, 0.55);
+  color: var(--c-text-primary);
+  opacity: 0.55;
   text-align: center;
   letter-spacing: 1rpx;
 }

@@ -114,6 +114,10 @@ export const ROUTES = {
     TASKS: "/subpackages/profile-extra/profile/tasks",
     /** 2026-08-09：他人主页详情页（喜欢/访客/通知闭环专用） */
     OTHER: "/subpackages/profile-extra/profile/other",
+    /** 2026-08-31：收藏/稍后看页（第六轮全面审查：补登记，替代裸字符串跳转） */
+    FAVORITES: "/subpackages/profile-extra/profile/favorites",
+    /** 2026-08-31：兴趣标签设置页（第六轮全面审查：补登记） */
+    SETUP_INTEREST: "/subpackages/setup/interest/index",
   },
 
   /** 圈子模块 */
@@ -147,6 +151,8 @@ export const ROUTES = {
 
   /** 商城 */
   SHOP: "/subpackages/market/shop/index",
+  /** 2026-08-31：商品详情页（第六轮全面审查：补登记） */
+  MARKET_DETAIL: "/subpackages/market/detail/index",
 
   /** 设置模块 */
   SETTINGS: {
