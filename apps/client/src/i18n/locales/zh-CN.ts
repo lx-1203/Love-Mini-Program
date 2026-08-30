@@ -383,7 +383,7 @@ export default {
     "peopleCity": "同城的人",
     "peopleNearbyDesc": "按距离找到身边的人",
     "peopleCityDesc": "同城更多心动可能",
-    "hotCircles": "兴趣圈",
+    "hotCircles": "热门兴趣圈",
     "campusCircles": "校园圈",
     "campusPublicHint": "公开可看 · 认证后进入私域",
     "campusBrowse": "公开浏览",

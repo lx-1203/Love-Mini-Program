@@ -634,16 +634,27 @@ onShareTimeline(() => {
         <view class="post-body" @longpress="handlePostLongpress">
           <text class="post-content">{{ currentPost.content }}</text>
 
-          <!-- 图片网格（理想图：1张大图 + 3张小图布局） -->
+          <!-- 图片网格（理想图：1张大图 + 3张小图布局）
+               第五轮 P1 修复：SafeImage 的 custom-class 属于子组件内部元素，
+               无法命中本页 scoped 样式（.post-image.data-v-xxx 永不匹配），
+               导致图片无尺寸约束而塌陷不显示。改为「包裹 view 定尺寸 +
+               SafeImage 100% 填充」（与 PostCard/MatchCard 同模式）。 -->
           <view v-if="currentPost.images.length > 0" class="post-images">
-            <SafeImage
-              v-for="(img, idx) in currentPost.images" :key="img || idx"
-              custom-class="post-image"
-              :src="img"
-              :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
-              mode="aspectFill"
-              :lazy-load="true"
-            />
+            <view
+              v-for="(img, idx) in currentPost.images"
+              :key="img || idx"
+              class="post-image-wrap"
+              :class="{ 'post-image-wrap--first': idx === 0 }"
+            >
+              <SafeImage
+                :src="img"
+                :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
+                mode="aspectFill"
+                :lazy-load="true"
+                custom-style="width:100%;height:100%"
+                alt=""
+              />
+            </view>
           </view>
 
           <!-- 2026-08-08 频道化重构：关联活动卡（活动链接帖展开） -->
@@ -1635,18 +1646,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin-bottom: 20rpx;
 }
 
-.post-image {
+/* 第五轮 P1 修复：定尺寸包裹层（scoped 类命中本页 view，SafeImage 以 100% 填充） */
+.post-image-wrap {
   width: calc(33.33% - 8rpx);
   height: 220rpx;
   border-radius: var(--r-lg, 16rpx);
+  overflow: hidden;
   background: $bg-page;
 }
 
 /* 第1张图占满整行（大图效果） */
-.post-image:first-child {
+.post-image-wrap--first {
   width: 100%;
   height: 400rpx;
-  border-radius: var(--r-lg, 16rpx);
 }
 
 /* 话题标签 */

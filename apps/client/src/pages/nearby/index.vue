@@ -191,14 +191,6 @@ function goCircleDetail(circleId: string) {
 function goCircleList() {
   openAppPath(ROUTES.CIRCLES.INDEX);
 }
-function toggleJoinCircle(circleId: string, isJoined: boolean) {
-  if (!requireLogin()) return;
-  if (isJoined) {
-    void circleStore.leaveCircle(circleId).catch(() => {});
-  } else {
-    void circleStore.joinCircle(circleId).catch(() => {});
-  }
-}
 
 /** 校园圈 */
 function goCampusHub(school?: string) {
@@ -405,15 +397,6 @@ function requireLogin(): boolean {
               <view class="circle-mini__info">
                 <text class="circle-mini__name">{{ circle.name }}</text>
                 <text class="circle-mini__count">{{ formatMemberCount(circle.memberCount) }} 人加入</text>
-              </view>
-              <view
-                class="circle-mini__join"
-                :class="{ 'circle-mini__join--joined': circle.isJoined }"
-                role="button"
-                :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
-                @tap.stop="toggleJoinCircle(circle.id, circle.isJoined)"
-              >
-                <text class="circle-mini__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn') }}</text>
               </view>
             </view>
           </view>
@@ -659,16 +642,18 @@ function requireLogin(): boolean {
 
 .circle-scroll__list {
   display: flex;
-  gap: 16rpx;
+  gap: 12rpx;
   padding-right: 16rpx;
 }
 
 .circle-mini {
+  /* 第五轮 R5：对齐理想图《附近的首页》——竖版 3:4 小海报卡
+   * （750rpx 屏宽下 4 张可见：4×166 + 3×12 gap ≈ 满宽），圆角 16px 级 */
   position: relative;
-  width: 300rpx;
-  height: 220rpx;
+  width: 166rpx;
+  height: 222rpx;
   flex-shrink: 0;
-  border-radius: 24rpx;
+  border-radius: 32rpx;
   overflow: hidden;
   background: var(--c-line, #EEF2F0);
 }
@@ -720,39 +705,17 @@ function requireLogin(): boolean {
 }
 
 .circle-mini__name {
-  font-size: 30rpx;
+  font-size: 26rpx;
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .circle-mini__count {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: rgba(255, 255, 255, 0.85);
-}
-
-.circle-mini__join {
-  position: absolute;
-  right: 20rpx;
-  bottom: 20rpx;
-  padding: 8rpx 28rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #22a976 100%);
-  z-index: 1;
-}
-
-.circle-mini__join--joined {
-  background: var(--c-bg-container, #FFFFFF);
-  border: 2rpx solid var(--c-line-strong, #DCE5E2);
-}
-
-.circle-mini__join-text {
-  font-size: 22rpx;
-  font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
-}
-
-.circle-mini__join--joined .circle-mini__join-text {
-  color: var(--c-text-secondary, #666666);
 }
 
 /* 校园圈（第五轮 QA 补做：统一浅绿背景 + 学校名字；coverUrl 上传后显示图片） */
