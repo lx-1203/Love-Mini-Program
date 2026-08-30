@@ -361,15 +361,18 @@ public class RealCircleService implements CircleService {
         Page<CircleTopic> topicPage = circleTopicRepository
                 .findByCircleIdOrderByIsPinnedDescCreatedAtDesc(circleId, pageable);
 
-        // 转换为视图对象（批量预加载作者，避免 N+1 查询）
-        List<CircleTopic> topics = topicPage.getContent();
+        // 转换为视图对象（批量预加载作者，避免 N+1 查询）；
+        // 审核链路：前台仅展示已审核通过（approved）的话题
+        List<CircleTopic> topics = topicPage.getContent().stream()
+                .filter(t -> t.getAuditStatus() == CircleTopic.AuditStatus.approved)
+                .toList();
         Map<Long, User> authorMap = loadAuthorMap(
                 topics.stream().map(CircleTopic::getAuthorId).toList());
         List<CircleTopicView> views = topics.stream()
                 .map(t -> toTopicView(t, authorMap))
                 .toList();
 
-        return new PageImpl<>(views, pageable, topicPage.getTotalElements());
+        return new PageImpl<>(views, pageable, views.size());
     }
 
     /**
@@ -421,6 +424,9 @@ public class RealCircleService implements CircleService {
         topic.setImages(toJsonString(images));
         topic.setReplyCount(0);
         topic.setIsPinned(false);
+        // CircleTopic 审核链路：新建话题进入待审（pending），后台审核通过后前台才可见；
+        // 本路径仅由 CircleController（用户发布）调用，不影响 admin 测试数据创建
+        topic.setAuditStatus(CircleTopic.AuditStatus.pending);
         topic.setCreatedAt(now);
 
         circleTopicRepository.save(topic);
@@ -565,15 +571,18 @@ public class RealCircleService implements CircleService {
         // 查询所有话题
         Page<CircleTopic> topicPage = circleTopicRepository.findAll(sortedPageable);
 
-        // 转换为视图对象（批量预加载作者，避免 N+1 查询）
-        List<CircleTopic> topics = topicPage.getContent();
+        // 转换为视图对象（批量预加载作者，避免 N+1 查询）；
+        // 审核链路：前台精选话题仅展示已审核通过（approved）的话题
+        List<CircleTopic> topics = topicPage.getContent().stream()
+                .filter(t -> t.getAuditStatus() == CircleTopic.AuditStatus.approved)
+                .toList();
         Map<Long, User> authorMap = loadAuthorMap(
                 topics.stream().map(CircleTopic::getAuthorId).toList());
         List<CircleTopicView> views = topics.stream()
                 .map(t -> toTopicView(t, authorMap))
                 .toList();
 
-        return new PageImpl<>(views, pageable, topicPage.getTotalElements());
+        return new PageImpl<>(views, pageable, views.size());
     }
 
     // ==================== 私有辅助方法 ====================

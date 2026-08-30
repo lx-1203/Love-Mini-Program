@@ -10,6 +10,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.time.LocalDateTime;
 import jakarta.persistence.EntityListeners;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,6 +25,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "circle_topics")
 public class CircleTopic {
+
+    /**
+     * 话题审核状态枚举。
+     * <p>由管理后台审核接口维护（CircleTopic 无 status 字段，审核状态独立记录）。
+     * pending：待审核（前台不可见）；approved：通过（前台可见）；rejected：拒绝（前台不可见）。</p>
+     */
+    public enum AuditStatus {
+        pending, approved, rejected
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,6 +67,23 @@ public class CircleTopic {
     /** 是否置顶 */
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
+
+    /** 审核状态（管理后台审核接口维护，默认 approved 视为已通过；新建话题默认 pending） */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "audit_status", nullable = false, columnDefinition = "VARCHAR(16) DEFAULT 'approved'")
+    private AuditStatus auditStatus = AuditStatus.approved;
+
+    /** 审核备注（管理员审核时填写，拒绝原因等） */
+    @Column(name = "audit_remark", length = 500)
+    private String auditRemark;
+
+    /** 审核人用户 ID */
+    @Column(name = "auditor_id")
+    private Long auditorId;
+
+    /** 审核时间 */
+    @Column(name = "audited_at")
+    private LocalDateTime auditedAt;
 
     /** 记录创建时间（话题发布时间，用于排序展示） */
 
@@ -142,6 +170,38 @@ public class CircleTopic {
 
     public void setIsPinned(Boolean isPinned) {
         this.isPinned = isPinned;
+    }
+
+    public AuditStatus getAuditStatus() {
+        return auditStatus;
+    }
+
+    public void setAuditStatus(AuditStatus auditStatus) {
+        this.auditStatus = auditStatus;
+    }
+
+    public String getAuditRemark() {
+        return auditRemark;
+    }
+
+    public void setAuditRemark(String auditRemark) {
+        this.auditRemark = auditRemark;
+    }
+
+    public Long getAuditorId() {
+        return auditorId;
+    }
+
+    public void setAuditorId(Long auditorId) {
+        this.auditorId = auditorId;
+    }
+
+    public LocalDateTime getAuditedAt() {
+        return auditedAt;
+    }
+
+    public void setAuditedAt(LocalDateTime auditedAt) {
+        this.auditedAt = auditedAt;
     }
 
     public LocalDateTime getCreatedAt() {

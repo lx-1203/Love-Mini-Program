@@ -1,10 +1,12 @@
 package com.campuslove.api.admin;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.CircleTopic;
+import com.campuslove.api.entity.CircleTopic.AuditStatus;
 import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.CircleTopicRepository;
@@ -15,6 +17,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -375,6 +378,54 @@ public class AdminCircleController {
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", id);
+        body.put("success", true);
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 审核兴趣圈话题（通过或拒绝）。
+     * <p>CircleTopic 无 status 字段，审核结果独立记录在 audit_status：
+     * 通过（approved）保持可展示；拒绝（rejected）仅记录审核状态，
+     * 前台 getTopics / getFeaturedTopics 已按 audit_status=approved 过滤，
+     * 被拒绝/待审话题天然不可见（与 AdminCampusTopicController 审核语义一致）。</p>
+     *
+     * @param id  话题 ID
+     * @param req 审核请求体（decision: approved/rejected，remark 可选）
+     * @return 操作结果；话题不存在返回 404
+     */
+    @PostMapping("/topics/{id}/audit")
+    @Transactional
+    @Auditable(value = AuditOperation.AUDIT_POST, targetType = "CIRCLE_TOPIC",
+            description = "管理员审核兴趣圈话题")
+    public ResponseEntity<Map<String, Object>> auditTopic(
+            @PathVariable("id") @Positive Long id,
+            @Valid @RequestBody AdminPostAuditRequest req) {
+        Long auditorId = SecurityUtils.getCurrentUserId();
+
+        Optional<CircleTopic> topicOpt = circleTopicRepository.findById(id);
+        if (topicOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        CircleTopic topic = topicOpt.get();
+        // 话题属于圈子，圈子为全局资源（无校区维度），按 null 校区断言放行
+        adminDataScope.assertCampusAccess(null);
+
+        AuditStatus newStatus = "approved".equals(req.decision())
+                ? AuditStatus.approved
+                : AuditStatus.rejected;
+        topic.setAuditStatus(newStatus);
+        topic.setAuditRemark(req.remark());
+        topic.setAuditorId(auditorId);
+        topic.setAuditedAt(LocalDateTime.now(TimeZones.BUSINESS));
+
+        circleTopicRepository.save(topic);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", topic.getId());
+        body.put("auditStatus", topic.getAuditStatus().name());
+        body.put("auditRemark", topic.getAuditRemark());
+        body.put("auditorId", topic.getAuditorId());
+        body.put("auditedAt", topic.getAuditedAt());
         body.put("success", true);
         return ResponseEntity.ok(body);
     }
