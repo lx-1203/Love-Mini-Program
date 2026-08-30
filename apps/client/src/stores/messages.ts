@@ -181,6 +181,14 @@ export interface MessagesState {
   typingMap: Record<string, boolean>;
   /** 消息 V3 首页聚合数据 */
   dashboard: MessageDashboardView | null;
+  /**
+   * 2026-08-30 竞态修复：bootstrap 会并发跑 fetchSessions / fetchHeartSignals /
+   * fetchNotifications / loadInteractionEvents，过去共用一个 loading 标志，
+   * 交叉置位/清除会让页面永久停在「加载中」。拆分为各动作独立标志。
+   */
+  loadingSignals: boolean;
+  loadingNotifications: boolean;
+  loadingInteractions: boolean;
 }
 
 /* ========== 后端视图类型 ========== */
@@ -430,6 +438,9 @@ export const useMessagesStore = defineStore("messages", {
     messageHasMore: true,
     activeSessionId: null,
     loading: false,
+    loadingSignals: false,
+    loadingNotifications: false,
+    loadingInteractions: false,
     errorMessage: null,
     filterType: "all",
     typingMap: {},
@@ -437,6 +448,9 @@ export const useMessagesStore = defineStore("messages", {
   }),
 
   getters: {
+    /** 2026-08-30 竞态修复：消息首页聚合加载态（会话/心动信号/通知/互动 任一在加载） */
+    pageLoading: (state): boolean =>
+      state.loading || state.loadingSignals || state.loadingNotifications || state.loadingInteractions,
     // 2026-08-08 红点修复：免打扰会话不计入 tabBar 总角标
     // （MessageSession.muted 注释「免打扰会话不再在列表顶栏统计未读数」，原实现未生效）
     totalUnreadCount: (state): number =>
@@ -882,7 +896,8 @@ export const useMessagesStore = defineStore("messages", {
     async fetchHeartSignals() {
       // 修复（P1 BUG - 异步竞态）：递增 token，旧请求的响应被静默丢弃
       const token = ++fetchHeartSignalsToken;
-      this.loading = true; this.errorMessage = null;
+      // 2026-08-30 竞态修复：改用独立 loadingSignals，不再与 fetchSessions 抢同一 loading 标志
+      this.loadingSignals = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
           if (useMock()) {
@@ -904,7 +919,7 @@ export const useMessagesStore = defineStore("messages", {
       }
       finally {
         if (token === fetchHeartSignalsToken) {
-          this.loading = false;
+          this.loadingSignals = false;
         }
       }
     },
@@ -945,7 +960,8 @@ export const useMessagesStore = defineStore("messages", {
     async fetchNotifications(filterType?: NotificationFilterType) {
       // 修复（P1 BUG）：递增 token，旧请求的响应被静默丢弃
       const token = ++fetchNotificationsToken;
-      this.loading = true; this.errorMessage = null;
+      // 2026-08-30 竞态修复：改用独立 loadingNotifications
+      this.loadingNotifications = true; this.errorMessage = null;
       if (filterType !== undefined) this.filterType = filterType;
       const activeFilter = this.filterType;
       try {
@@ -981,7 +997,7 @@ export const useMessagesStore = defineStore("messages", {
       }
       finally {
         if (token === fetchNotificationsToken) {
-          this.loading = false;
+          this.loadingNotifications = false;
         }
       }
     },
@@ -1249,7 +1265,8 @@ export const useMessagesStore = defineStore("messages", {
     async loadInteractionEvents(page: number = 0) {
       // 修复（P1 BUG）：递增 token，旧请求的响应被静默丢弃
       const token = ++loadInteractionEventsToken;
-      this.loading = true; this.errorMessage = null;
+      // 2026-08-30 竞态修复：改用独立 loadingInteractions
+      this.loadingInteractions = true; this.errorMessage = null;
       try {
         await withTimeout((async () => {
           if (useMock()) {
@@ -1279,7 +1296,7 @@ export const useMessagesStore = defineStore("messages", {
       }
       finally {
         if (token === loadInteractionEventsToken) {
-          this.loading = false;
+          this.loadingInteractions = false;
         }
       }
     },

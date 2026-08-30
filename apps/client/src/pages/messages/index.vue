@@ -100,7 +100,8 @@ const filteredSessions = computed(() => {
 });
 
 const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
-  if (messagesStore.loading) return "loading";
+  // 2026-08-30 竞态修复：改用聚合 pageLoading（sessions/signals/notifications/interactions 各自独立标志）
+  if (messagesStore.pageLoading) return "loading";
   if (messagesStore.errorMessage) return "error";
   if (privateSessions.value.length === 0 && warmPeople.value.length === 0) return "empty";
   return "content";
@@ -262,7 +263,7 @@ function formatTime(dateStr?: string): string {
           <view class="quick-cards">
             <view class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
-                <image class="quick-card__icon-img" src="/static/assets/images/mascot/heart.png" mode="aspectFit" />
+                <image class="quick-card__icon-img" src="/static/assets/images/mascot/heart_green.png" mode="aspectFit" />
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">有人喜欢你</text>
@@ -335,7 +336,7 @@ function formatTime(dateStr?: string): string {
                 @tap="openWarmPerson(person)"
               >
                 <view class="warm-item__avatar-wrap">
-                  <image class="warm-item__avatar" :src="person.avatarUrl || '/static/assets/images/default-avatar.jpg'" mode="aspectFill" />
+                  <image class="warm-item__avatar" :src="person.avatarUrl || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
                   <view class="warm-item__heart-icon">
                     <image class="warm-item__heart-img" src="/static/assets/images/mascot/sprout.png" mode="aspectFit" />
                   </view>
@@ -391,7 +392,7 @@ function formatTime(dateStr?: string): string {
                 @longpress="onSessionLongpress(session)"
               >
                 <view class="chat-item__avatar-wrap">
-                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/images/default-avatar.jpg'" mode="aspectFill" />
+                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
                   <view v-if="(session as any).online" class="chat-item__online-dot"></view>
                 </view>
                 <view class="chat-item__content">
@@ -431,7 +432,7 @@ function formatTime(dateStr?: string): string {
                 @longpress="onSessionLongpress(session)"
               >
                 <view class="chat-item__avatar-wrap">
-                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/images/default-avatar.jpg'" mode="aspectFill" />
+                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
                 </view>
                 <view class="chat-item__content">
                   <view class="chat-item__top-row">

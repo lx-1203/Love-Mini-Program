@@ -572,7 +572,7 @@ export const IMAGE_PATHS = {
   /** 登录页拆分素材（素材/登录页/拆分图标_登录页；文件前缀 登录页_） */
   LOGIN_SPLIT: {
     "r01_c01": '/static/assets/images/login-split/登录页_r01_c01.png',
-    "r01_c02": '/static/assets/images/login-split/r01_c02.png',
+    "r01_c02": '/static/assets/images/login-split/登录页_r01_c02.png',
     "r02_c01": '/static/assets/images/login-split/登录页_r02_c01.png',
     "r02_c02": '/static/assets/images/login-split/登录页_r02_c02.png',
     "r02_c03": '/static/assets/images/login-split/登录页_r02_c03.png',

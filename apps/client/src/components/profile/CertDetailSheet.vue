@@ -206,7 +206,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
         <view class="cert-sheet__privacy">
           <image
             class="cert-sheet__privacy-icon"
-            src="/static/assets/icons/common/lock.png"
+            src="/static/assets/icons/common/lock.svg"
             mode="aspectFit"
             alt=""
           />

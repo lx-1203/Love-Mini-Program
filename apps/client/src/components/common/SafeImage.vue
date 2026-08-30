@@ -46,7 +46,7 @@
  * 4. 重试机制：原 src 最多重试 2 次，避免瞬时网络抖动导致的误降级
  * 5. 加载成功：隐藏骨架屏，淡入显示图片
  *
- * 使用方式：<SafeImage :src="url" fallback="/static/assets/default-avatar.png" mode="aspectFill" />
+ * 使用方式：<SafeImage :src="url" fallback="/static/assets/default-avatar.jpg" mode="aspectFill" />
  */
 import { computed, ref, watch } from 'vue';
 import { resolveMediaUrl } from '../../utils/media';
@@ -131,7 +131,7 @@ const fallbackLoaded = ref(false);
 /**
  * Task 0.3.4：将 fallback prop 经 resolveMediaUrl 处理后使用。
  *
- * <p>静态资源路径（如 {@code /static/assets/default-avatar.png}）会被 resolveMediaUrl
+ * <p>静态资源路径（如 {@code /static/assets/default-avatar.jpg}）会被 resolveMediaUrl
  * 原样返回；用户上传的 fallback 路径（如 {@code /uploads/...}）会被重写为鉴权代理 URL。</p>
  */
 const resolvedFallback = computed(() => resolveMediaUrl(props.fallback));
