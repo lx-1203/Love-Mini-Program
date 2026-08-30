@@ -348,13 +348,9 @@ defineExpose({ toggleJoin });
         <scroll-view class="circles-list" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
           <!-- 2026-08-25 P1：移除顶部"附近的人"绿色头部卡（规格书 14 无此模块，QA 反馈位置错误） -->
 
-          <!-- 推荐提示 -->
+          <!-- 推荐提示（对齐理想图：标题下灰字副标题，无卡片/emoji 装饰） -->
           <view class="circles-banner">
-            <image class="circles-banner__emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
-            <view class="circles-banner__text-wrap">
-              <text class="circles-banner__title">{{ t("circle.bannerTitle") }}</text>
-              <text class="circles-banner__desc">{{ t("circle.bannerDesc") }}</text>
-            </view>
+            <text class="circles-banner__title">{{ t("circle.bannerTitle") }}</text>
           </view>
 
           <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
@@ -584,45 +580,16 @@ defineExpose({ toggleJoin });
   margin-left: var(--sp-2);
 }
 
-/* ========== 推荐 Banner ========== */
+/* ========== 推荐副标题（对齐理想图"找到与你志趣相投的人"） ========== */
 .circles-banner {
   display: flex;
   align-items: center;
-  gap: var(--sp-5);
-  margin: var(--sp-6) var(--sp-6) 0;
-  padding: var(--sp-7);
-  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
-  border-radius: var(--r-lg);
-  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.circles-banner__emoji {
-  width: 56rpx;
-  height: 56rpx;
-  color: var(--c-brand-500);
-  flex-shrink: 0;
-}
-
-.circles-banner__text-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
+  margin: var(--sp-5) var(--sp-6) 0;
 }
 
 .circles-banner__title {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--c-text-primary);
-}
-
-.circles-banner__desc {
   font-size: var(--fs-base);
   color: var(--c-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ========== 兴趣圈列表 ========== */
