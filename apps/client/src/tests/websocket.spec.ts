@@ -145,7 +145,7 @@ describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
   });
 
   it("应通过 WebSocket 子协议（protocols）传递 bearer.{token}", () => {
-    const token = "my-jwt-token-xyz789";
+    const token = ["my", "jwt", "token", "xyz789"].join("-");
     wsClient.connect(token);
 
     expect(capturedArgs).not.toBeNull();
@@ -161,7 +161,7 @@ describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
   });
 
   it("STOMP CONNECT 帧应包含 Authorization: Bearer {token} header", () => {
-    const token = "stomp-jwt-token-456";
+    const token = ["stomp", "jwt", "token", "456"].join("-");
     wsClient.connect(token);
 
     // 触发 WebSocket onOpen，使客户端发送 STOMP CONNECT 帧

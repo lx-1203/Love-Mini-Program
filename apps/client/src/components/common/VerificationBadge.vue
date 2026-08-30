@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  /** 点击"去认证"CTA 时触发，父组件跳转到 /pages/campus/certification */
+  /** 点击"去认证"CTA 时触发，父组件跳转到 /subpackages/campus/campus/certification */
   (e: "click"): void;
   /** CTA 按下时触发轻振动反馈 */
   (e: "tap"): void;

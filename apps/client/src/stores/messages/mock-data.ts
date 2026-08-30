@@ -9,6 +9,7 @@ import type {
   SystemNotification,
 } from "../messages";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "@/utils/media";
 
 export const mockSessions: MessageSession[] = [
   {
@@ -49,7 +50,7 @@ export const mockSessions: MessageSession[] = [
     id: "session-private-4", partnerId: "user-2006", partnerName: "叶知秋",
     partnerAvatar: IMAGE_PATHS.AVATARS.AVATAR_6,
     partnerHeadline: "暨南大学 · 大二 · 文学系", lastMessagePreview: "[图片] 给你看看周末拍的风景",
-    lastMessageSentAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), unreadCount: 128, pinned: false,
+    lastMessageSentAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), unreadCount: 1, pinned: false,
     phase: "active", sessionType: "private", closesAt: null, closedReason: null,
     relationship: {
       status: "mutual_follow", score: 88, lastInteractionTime: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
@@ -95,7 +96,7 @@ export const mockMessages: Record<string, MessageItem[]> = {
       sessionId: "session-private-3",
       sender: "peer",
       kind: "activity",
-      body: '{"title":"校园春日联谊会","desc":"一场轻松的春日联谊会，有破冰游戏、桌游互动、自由交流。","tag":"本周活动","targetUrl":"/pages/activities/detail?id=sample-weekend-party"}',
+      body: '{"title":"校园春日联谊会","desc":"一场轻松的春日联谊会，有破冰游戏、桌游互动、自由交流。","tag":"本周活动","targetUrl":"/subpackages/tools/activities/detail?id=sample-weekend-party"}',
       sentAt: new Date(Date.now() - 4 * 3600_000).toISOString(),
     },
     { id: "msg-52", sessionId: "session-private-3", sender: "self", kind: "text", body: "这个活动看起来不错！", sentAt: new Date(Date.now() - 3.5 * 3600_000).toISOString() },
@@ -121,7 +122,7 @@ export const mockMessages: Record<string, MessageItem[]> = {
 
 export const mockHeartSignals: MessageHeartSignal[] = [
   {
-    id: "signal-1", fromUserId: "user-2003", fromUserName: "小满", fromUserAvatar: "/static/assets/images/avatars/avatar-4.jpg",
+    id: "signal-1", fromUserId: "user-2003", fromUserName: "小满", fromUserAvatar: resolveMediaUrl("/static/assets/images/avatars/avatar-4.jpg"),
     status: "pending", sentAt: "2026-05-20T16:45:00Z", expiresAt: "2026-05-21T16:45:00Z",
     school: "南校区", age: 20, city: "广州",
     bioHighlight: "ta的介绍很丰富，对于找对象ta是认真的",
@@ -133,7 +134,7 @@ export const mockNotifications: SystemNotification[] = [
     id: "notif-1", type: "match", title: "新的匹配",
     content: "你与夏言成功匹配，可以开始聊天了", isRead: false,
     createdAt: "2026-05-20T14:00:00Z",
-    actionUrl: "/pages/chat-session/index?sessionId=session-private-1",
+    actionUrl: "/subpackages/chat/chat-session/index?sessionId=session-private-1",
     signalType: "SOCIAL",
   },
   {
@@ -145,7 +146,7 @@ export const mockNotifications: SystemNotification[] = [
   {
     id: "notif-3", type: "like", title: "有人喜欢你",
     content: "一位匿名用户对你点了喜欢，快去寻觅页看看吧", isRead: false,
-    createdAt: "2026-05-19T09:30:00Z", actionUrl: "/pages/likes/index",
+    createdAt: "2026-05-19T09:30:00Z", actionUrl: "/subpackages/discover-extra/likes/index",
     signalType: "SOCIAL",
   },
   {
@@ -159,7 +160,7 @@ export const mockNotifications: SystemNotification[] = [
     id: "notif-6", type: "comment", title: "新的评论",
     content: "夏言评论了你的帖子：\"写得真好！\"", isRead: false,
     createdAt: "2026-05-20T20:30:00Z", triggerUserId: "user-2001",
-    resourceId: "post-42", actionUrl: "/pages/village/detail?id=post-42",
+    resourceId: "post-42", actionUrl: "/subpackages/village/village/detail?id=post-42",
     signalType: "CONTENT",
   },
   {

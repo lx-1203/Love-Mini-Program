@@ -2,8 +2,19 @@
 import { IMAGE_PATHS } from "../../config/images";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
 
-defineProps<{ items: CommunityPostViewModel[] }>();
-defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
+defineProps<{
+  items: CommunityPostViewModel[];
+  /** 2026-08-26 R1：帖子区加载中（骨架行） */
+  loading?: boolean;
+  /** 2026-08-26 R1：帖子区错误信息（非空展示错误态 + 重试） */
+  error?: string | null;
+}>();
+defineEmits<{
+  (e: "more"): void;
+  (e: "select", id: number): void;
+  /** 2026-08-26 R1：错误态重试 */
+  (e: "retry"): void;
+}>();
 </script>
 
 <template>
@@ -13,12 +24,32 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
       <text class="section-head__more" @tap="$emit('more')">查看更多 ›</text>
     </view>
 
-    <view v-if="items.length === 0" class="community-feed__empty">今天还没有新的动态，去附近看看</view>
+    <!-- 2026-08-26 R1：加载中骨架行 -->
+    <view v-if="loading" class="community-feed__loading">
+      <view class="community-feed__skeleton" v-for="n in 2" :key="n">
+        <view class="skeleton-avatar" />
+        <view class="skeleton-body">
+          <view class="skeleton-line skeleton-line--short" />
+          <view class="skeleton-line" />
+          <view class="skeleton-line skeleton-line--thumb" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 2026-08-26 R1：错误态 + 重试 -->
+    <view v-else-if="error" class="community-feed__error">
+      <text class="community-feed__error-text">动态加载失败：{{ error }}</text>
+      <view class="community-feed__retry" hover-class="community-feed__retry--pressed" @tap="$emit('retry')">
+        <text class="community-feed__retry-text">重试</text>
+      </view>
+    </view>
+
+    <view v-else-if="items.length === 0" class="community-feed__empty">今天还没有新的动态，去附近看看</view>
     <scroll-view v-else scroll-x class="community-feed__scroll" :show-scrollbar="false">
       <view class="community-feed__list">
         <view v-for="post in items" :key="post.id" class="post-card" @tap="$emit('select', post.id)">
           <view class="post-card__head">
-            <image class="post-card__avatar" :src="post.authorAvatar || ''" mode="aspectFill" alt="" />
+            <image class="post-card__avatar" :src="post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
             <view class="post-card__author">
               <view class="post-card__name-row">
                 <text class="post-card__name">{{ post.authorName }}</text>
@@ -84,6 +115,91 @@ defineEmits<{ (e: "more"): void; (e: "select", id: number): void }>();
   color: #999999;
   font-size: 22rpx;
   text-align: center;
+}
+
+/* 2026-08-26 R1：加载骨架行 */
+.community-feed__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.community-feed__skeleton {
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+}
+
+.skeleton-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #F0F2F5;
+  flex-shrink: 0;
+}
+
+.skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.skeleton-line {
+  height: 22rpx;
+  border-radius: 6rpx;
+  background: #F0F2F5;
+}
+
+.skeleton-line--short {
+  width: 40%;
+}
+
+.skeleton-line--thumb {
+  width: 70%;
+  height: 120rpx;
+}
+
+/* 2026-08-26 R1：错误态 + 重试 */
+.community-feed__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #FFE3E3;
+  color: #999999;
+  font-size: 22rpx;
+}
+
+.community-feed__error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 16rpx;
+}
+
+.community-feed__retry {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.community-feed__retry--pressed {
+  opacity: 0.8;
+}
+
+.community-feed__retry-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .community-feed__scroll {

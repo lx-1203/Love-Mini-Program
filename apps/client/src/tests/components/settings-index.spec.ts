@@ -25,7 +25,7 @@ vi.mock("../../utils/navigation", () => ({
   switchTabWithQuery: vi.fn(),
 }));
 
-import SettingsIndex from "../../pages/settings/index.vue";
+import SettingsIndex from "../../subpackages/profile-extra/settings/index.vue";
 
 function mountSettings() {
   return mount(SettingsIndex, {

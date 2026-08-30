@@ -68,17 +68,19 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional(readOnly = true)
     public PostDetailView getPostDetail(Long id) {
-        // 2026-08-08 论坛互动真实化：浏览量原子 +1 + 登录用户写浏览历史。
-        // recordPostView 为 REQUIRES_NEW 独立读写事务，不受本方法只读事务影响；
-        // 匿名浏览（currentUserId=null）仅累加 view_count 不写历史。
+        // 2026-08-26 P2 验收：先在校验帖子存在（queryService.getPost 内部 findPostOrThrow
+        // 对不存在的帖子抛 404），再记录浏览——原实现 recordPostView 先于查询，
+        // 帖子已删除时插入 post_view_history 触发 FK 1452 → 409 Conflict 覆盖 404。
+        // 查询成功后 recordPostView 为 REQUIRES_NEW 独立读写事务，不受本方法只读事务影响。
         Long currentUserId = null;
         try {
             currentUserId = SecurityUtils.getCurrentUserId();
         } catch (HttpClientErrorException.Unauthorized ignored) {
             // 匿名详情浏览：不写浏览历史，仅计浏览量
         }
+        PostDetailView view = queryService.getPost(id);
         interactionService.recordPostView(currentUserId, id);
-        return queryService.getPost(id);
+        return view;
     }
 
     @Override
@@ -135,9 +137,13 @@ public class RealVillageService implements VillageService {
             // 按设计意图允许未认证用户匿名查看帖子（isLiked/isAuthor 均为 false），
             // 无需 setRollbackOnly 或重新抛出（spec SubTask 10.5/10.6 适用于 DB 异常场景）。
         }
+        // 2026-08-26 P2 验收：先校验帖子存在，再记录浏览——
+        // 原实现 recordPostView 先于 findPostOrThrow，帖子已删除时插入
+        // post_view_history 触发 FK 1452 → 409 Conflict 覆盖 404 Not Found，
+        // 现调整为"存在性校验在前"，保证已删除帖子详情正确返回 404
+        Post post = queryService.findPostOrThrow(postId);
         // 2026-08-08 论坛互动真实化：浏览量原子 +1 + 登录用户写浏览历史（REQUIRES_NEW）
         interactionService.recordPostView(currentUserId, postId);
-        Post post = queryService.findPostOrThrow(postId);
         // 已下架（hidden）/已删除的帖子详情不可见：返回 404，与列表过滤语义一致
         if (post.getStatus() != Post.PostStatus.active) {
             throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + postId);

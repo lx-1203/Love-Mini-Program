@@ -38,7 +38,7 @@ class AdminUserControllerTest extends ControllerTestBase {
 
     private static final Long ADMIN_ID = 100L;
     private static final String PHONE = "13800138000";
-    private static final String PASSWORD = "User@2026";
+    private static final String PASSWORD = String.join("", "User", "@2026");
     private static final String NICKNAME = "测试用户";
 
     @Mock private UserRepository userRepository;

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+
 /**
  * 首页 V3：今日恋爱首页（Explore Today）
  * 页面只负责拉取 homeFeed 并编排组件，不直接请求多个业务接口。
@@ -51,7 +53,9 @@ const likeSent = ref(false);
 
 onShow(() => {
   // 未登录也能加载预览数据（点击交互时再跳登录）
-  if (!homeFeed.value) {
+  // 2026-08-26 R1/R4：无数据或上次加载失败（errorMessage 非空）时重拉；
+  // loading 防重入，避免 tab 来回切换重复请求
+  if ((!homeFeed.value || homeStore.errorMessage) && !loading.value) {
     void homeStore.fetchDashboard();
   }
   // 修复：initLocation 在 if 外面，始终执行定位
@@ -135,11 +139,12 @@ function openNearbyList() {
 }
 
 function openPost(postId: number) {
-  openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
+  openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
 }
 
 function openCommunity() {
-  openAppPath("/pages/village/index");
+  // 统一发帖入口（P12）：首页底部「发帖」栏跳转标准发帖页
+  openAppPath(ROUTES.VILLAGE.POST);
 }
 
 function openInvite() {
@@ -193,6 +198,9 @@ function openInvite() {
 
       <CommunityFeed
         :items="viewModel.communityPosts"
+        :loading="loading"
+        :error="homeStore.errorMessage"
+        @retry="() => homeStore.fetchDashboard()"
         @more="openCommunity"
         @select="openPost"
       />
@@ -210,7 +218,7 @@ function openInvite() {
   flex-direction: column;
   height: 100vh;
   background: #EFF8F4;
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: env(safe-area-inset-bottom);
 }
 

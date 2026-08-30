@@ -63,7 +63,7 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
       class="tab-item"
       :class="{ 'tab-item--active': current === tab.key, 'tab-item--prominent': tab.prominent }"
       hover-class="tab-item--pressed"
-      :hover-stay-time="80"
+      :hover-stay-time="40"
       @tap="emit('change', tab.key)"
       role="tab"
       :aria-selected="current === tab.key ? 'true' : 'false'"

@@ -1,4 +1,4 @@
-// 路由表与动态路由注册（eladmin 风格：后端菜单驱动）
+﻿// 路由表与动态路由注册（eladmin 风格：后端菜单驱动）
 import {
   createRouter,
   createWebHistory,
@@ -32,6 +32,7 @@ type ComponentLoader = () => Promise<{ default: unknown }>;
 const componentMap: Record<string, ComponentLoader> = {
   "views/Dashboard.vue": () => import("../views/Dashboard.vue"),
   /* —— 系统管理（system） —— */
+  "views/system/CircleLayers.vue": () => import("../views/system/CircleLayers.vue"),
   "views/system/Menus.vue": () => import("../views/system/Menus.vue"),
   "views/system/Roles.vue": () => import("../views/system/Roles.vue"),
   "views/system/Schools.vue": () => import("../views/system/Schools.vue"),
@@ -74,6 +75,14 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/config/OfficialAccounts.vue": () => import("../views/config/OfficialAccounts.vue"),
 };
 
+/** 404 catch-all 兜底路由定义（动态注册与初始注册共用同一常量，防重复添加）。 */
+export const notFoundRoute: RouteRecordRaw = {
+  path: "/:pathMatch(.*)*",
+  name: "NotFound",
+  component: () => import("../views/NotFound.vue"),
+  meta: { requiresAuth: false },
+};
+
 /** 静态路由表：仅登录/403/布局容器/404 兜底，业务路由全部动态注册 */
 const routes: RouteRecordRaw[] = [
   {
@@ -96,15 +105,12 @@ const routes: RouteRecordRaw[] = [
     // children 由 addDynamicRoutes 在菜单加载后动态注册
     children: [],
   },
+  // 404 catch-all 从启动即注册：vue-router 4 按路径打分匹配（静态/动态路由恒优先于通配符），
+  // 提前注册可让「整页刷新/深链直达业务路径」先落入 NotFound（requiresAuth 语义），
+  // 由守卫加载动态菜单后重入导航；否则无匹配路由时守卫直接放行 → router-view 空白。
+  // 动态路由注册后通配符仍由守卫 `if (!router.hasRoute(...))` 防重复，不会覆盖业务路由。
+  notFoundRoute,
 ];
-
-/** 404 catch-all 兜底路由定义（需在动态路由注册后再加入，否则通配符会优先匹配）。 */
-export const notFoundRoute: RouteRecordRaw = {
-  path: "/:pathMatch(.*)*",
-  name: "NotFound",
-  component: () => import("../views/NotFound.vue"),
-  meta: { requiresAuth: false },
-};
 
 const router = createRouter({
   history: createWebHistory(),

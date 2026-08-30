@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * HomeBanner - 首页 Banner 自动轮播组件
  *
@@ -114,7 +114,7 @@ function onImageError(item: HomeBannerItem, event: Event) {
         <view
           class="home-banner__item press-feedback"
           hover-class="press-feedback--active"
-          hover-stay-time="120"
+          hover-stay-time="40"
           @tap="onTapBanner(banner)"
         >
           <image

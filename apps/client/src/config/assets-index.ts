@@ -16,42 +16,58 @@
  */
 
 /** 校园场景图片 */
+/**
+ * 2026-08-29 真机 2MB 门禁：real 模式下 /static 基址直出后端 app-assets（与 config/images.ts 同规则）。
+ */
+const APP_ASSETS_BASE = "/api/v1/media/app-assets";
+const REAL_STATIC = (() => {
+  try {
+    const mode = String(import.meta.env.VITE_API_MODE);
+    const base = String(import.meta.env.VITE_API_BASE_URL);
+    if (mode === "real" && base) {
+      return base.replace(/\/api\/?$/, "") + APP_ASSETS_BASE + "/static";
+    }
+  } catch (_e) { /* 本地兜底 */ }
+  return "/static";
+})();
+const S = REAL_STATIC + "/";
+
 export const CAMPUS_IMAGES = {
-  gate: "/static/generated/images/campus/campus-gate.jpg",
-  library: "/static/generated/images/campus/campus-library.jpg",
-  lake: "/static/generated/images/campus/campus-lake.jpg",
-  playground: "/static/generated/images/campus/campus-playground.jpg",
-  classroom: "/static/generated/images/campus/campus-classroom.jpg",
-  cafeteria: "/static/generated/images/campus/campus-cafeteria.jpg",
-  dorm: "/static/generated/images/campus/campus-dorm.jpg",
-  club: "/static/generated/images/campus/campus-club.jpg",
-  night: "/static/generated/images/campus/campus-night.jpg",
-  rain: "/static/generated/images/campus/campus-rain.jpg",
+  gate: S + "/generated/images/campus/campus-gate.jpg",
+  library: S + "/generated/images/campus/campus-library.jpg",
+  lake: S + "/generated/images/campus/campus-lake.jpg",
+  playground: S + "/generated/images/campus/campus-playground.jpg",
+  classroom: S + "/generated/images/campus/campus-classroom.jpg",
+  cafeteria: S + "/generated/images/campus/campus-cafeteria.jpg",
+  dorm: S + "/generated/images/campus/campus-dorm.jpg",
+  club: S + "/generated/images/campus/campus-club.jpg",
+  night: S + "/generated/images/campus/campus-night.jpg",
+  rain: S + "/generated/images/campus/campus-rain.jpg",
 } as const;
 
 /** 活动图片 */
 export const ACTIVITY_IMAGES = {
-  musicFestival: "/static/generated/images/activities/music-festival.jpg",
-  sportsDay: "/static/generated/images/activities/sports-day.jpg",
-  artExhibition: "/static/generated/images/activities/art-exhibition.jpg",
+  musicFestival: S + "/generated/images/activities/music-festival.jpg",
+  sportsDay: S + "/generated/images/activities/sports-day.jpg",
+  artExhibition: S + "/generated/images/activities/art-exhibition.jpg",
 } as const;
 
 /** 默认海报（视频未加载时显示的封面） */
-export const HOME_POSTER = "/static/assets/images/posters/login-poster.png";
+export const HOME_POSTER = S + "/assets/images/posters/login-poster.png";
 
 /** 本次生成的登录页海报（无文字背景） */
-export const GENERATED_LOGIN_POSTER = "/static/generated/images/posters/login-poster.png";
+export const GENERATED_LOGIN_POSTER = S + "/generated/images/posters/login-poster.png";
 
 /** 本次生成的首页海报（无文字背景） */
-export const GENERATED_HOME_POSTER = "/static/generated/images/posters/home-poster.jpg";
+export const GENERATED_HOME_POSTER = S + "/generated/images/posters/home-poster.jpg";
 
 /** 默认头像 */
 export const DEFAULT_AVATARS = {
-  boy: "/static/generated/images/avatars/default-boy.jpg",
-  girl: "/static/generated/images/avatars/default-girl.jpg",
+  boy: S + "/generated/images/avatars/default-boy.jpg",
+  girl: S + "/generated/images/avatars/default-girl.jpg",
 } as const;
 
 /** 空状态插画 */
 export const EMPTY_ILLUSTRATIONS = {
-  noData: "/static/generated/images/illustrations/empty-no-data.jpg",
+  noData: S + "/generated/images/illustrations/empty-no-data.jpg",
 } as const;

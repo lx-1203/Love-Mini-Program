@@ -16,7 +16,7 @@ import { createButtonGuard } from "../../utils/debounce";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import { loginWithPhone, registerUser, loginAsGuest } from "../../services/auth";
+import { loginWithPhone, registerUser, loginAsGuest, sendSmsCode } from "../../services/auth";
 // 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
 import { AppApiError } from "../../services/api-error";
 // 功能2：Apple 登录 real 链路（POST /auth/third-party/apple）
@@ -47,6 +47,11 @@ const password = ref("");
 const nickname = ref("");
 // 3-N 未成年人保护：注册模式必填出生日期（picker mode="date"，end 为今天）
 const birthDate = ref("");
+// 短信验证码（注册模式：POST /v1/sms/send-code 发送后回填）
+const smsCode = ref("");
+// 获取验证码倒计时（秒，>0 时按钮禁用）
+const smsCountdown = ref(0);
+let smsCountdownTimer: ReturnType<typeof setInterval> | null = null;
 const phoneRegisterMode = ref(false);
 const agreed = ref(false);
 const showPhoneLogin = ref(false);
@@ -84,8 +89,8 @@ onShow(() => {
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
 const isCodeValid = computed(() => password.value.length >= 6 && password.value.length <= 64);
 const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && agreed.value);
-// 注册模式额外要求昵称 + 出生日期非空
-const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && birthDate.value.length > 0 && agreed.value);
+// 注册模式额外要求昵称 + 出生日期 + 短信验证码非空
+const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && birthDate.value.length > 0 && smsCode.value.trim().length === 6 && agreed.value);
 
 /**
  * 安全读取登录页 Hero 文案。
@@ -130,6 +135,40 @@ function navigateAfterLogin() {
 
 function toggleRegisterMode() {
   phoneRegisterMode.value = !phoneRegisterMode.value;
+}
+
+/**
+ * 发送短信验证码（模拟短信：默认发送成功，返回 mockCode 供联调输入）。
+ * 注册模式：校验手机号 → POST /v1/sms/send-code → 60s 倒计时。
+ */
+async function onSendSmsCode() {
+  if (smsCountdown.value > 0) return;
+  if (!isPhoneValid.value) {
+    uni.showToast({ title: t("login.phoneInvalid"), icon: "none" });
+    return;
+  }
+  try {
+    const res = await sendSmsCode(phone.value.trim());
+    if (res?.success === false && res.message) {
+      uni.showToast({ title: res.message, icon: "none" });
+      return;
+    }
+    // 模拟短信：提示 mockCode（真实短信网关接入后不展示验证码本体）
+    const hint = res?.mockCode ? `验证码已发送（模拟：${res.mockCode}）` : t("login.smsSent");
+    uni.showToast({ title: hint, icon: "none" });
+    smsCountdown.value = 60;
+    if (smsCountdownTimer) clearInterval(smsCountdownTimer);
+    smsCountdownTimer = setInterval(() => {
+      smsCountdown.value -= 1;
+      if (smsCountdown.value <= 0 && smsCountdownTimer) {
+        clearInterval(smsCountdownTimer);
+        smsCountdownTimer = null;
+      }
+    }, 1000);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : t("apiErrors.operationFailed");
+    uni.showToast({ title: msg, icon: "none" });
+  }
 }
 
 /**
@@ -203,7 +242,7 @@ async function onPhoneLogin() {
   // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
   try {
     if (phoneRegisterMode.value) {
-      await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value);
+      await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value, smsCode.value.trim());
       addBreadcrumb("ui", "button_click", { id: "login.register" });
     } else {
       await loginWithPhone(phone.value.trim(), password.value);
@@ -508,16 +547,19 @@ async function onAppleLogin() {
 }
 
 /**
- * 跳转到账号绑定管理页（已登录用户可绑定 / 解绑第三方账号）。
- * - 未登录时提示用户先登录
- * - 已登录时跳转到 /pages/settings/index（账号绑定入口）
+ * 跳转到账号绑定管理页（已登录用户可查看/管理第三方账号绑定）。
+ * - 未登录时提示先登录（原实现误用「请先勾选同意协议」，与场景不符）
+ * - 已登录时跳转安全中心（/subpackages/tools/security/index），账号安全区展示
+ *   手机号 + 微信/Apple 绑定状态，与登录页顶部登录方式保持一致。
+ *   原实现跳转 /subpackages/profile-extra/settings/index，但设置页无第三方绑定管理区，
+ *   存在「入口展示了账号绑定、落地页却没有」的不一致。
  */
 function openAccountBinding() {
   if (!sessionStore.isLoggedIn) {
-    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
     return;
   }
-  replaceAppPath("/pages/settings/index");
+  replaceAppPath(ROUTES.SECURITY);
 }
 </script>
 
@@ -572,7 +614,7 @@ function openAccountBinding() {
             class="btn-primary press-feedback"
             :class="{ 'btn--loading': loading }"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('login.wechatLogin')"
             @tap="onWechatLoginGuarded"
@@ -587,7 +629,7 @@ function openAccountBinding() {
           <view
             class="btn-secondary press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('login.phoneLogin')"
             @tap="togglePhoneLogin"
@@ -599,7 +641,7 @@ function openAccountBinding() {
             class="btn-guest press-feedback"
             :class="{ 'btn--loading': loading }"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('login.guestLogin')"
             @tap="onGuestLoginGuarded"
@@ -689,19 +731,51 @@ function openAccountBinding() {
                 </view>
               </picker>
             </view>
+
+            <!-- 短信验证码（注册模式必填；模拟短信：获取后输入返回的 mockCode 即视为已收到） -->
+            <view v-if="phoneRegisterMode" class="input-divider" />
+            <view v-if="phoneRegisterMode" class="input-item">
+              <view class="input-icon" aria-hidden="true">
+                <image class="input-icon-text" :src="loginIcons.mobile" mode="aspectFit" alt="" />
+              </view>
+              <label class="sr-only" for="login-sms-code">{{ t('login.smsCodePlaceholder') }}</label>
+              <input
+                id="login-sms-code"
+                class="input-field"
+                type="number"
+                maxlength="6"
+                :placeholder="t('login.smsCodePlaceholder')"
+                placeholder-class="input-placeholder"
+                v-model="smsCode"
+                :aria-label="t('login.smsCodePlaceholder')"
+                aria-required="true"
+                inputmode="numeric"
+              />
+              <view
+                class="sms-send-btn"
+                :class="{ 'sms-send-btn--disabled': smsCountdown > 0 }"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="t('login.getSmsCode')"
+                @tap="onSendSmsCode"
+              >
+                <text class="sms-send-btn-text">{{ smsCountdown > 0 ? `${smsCountdown}s` : t('login.getSmsCode') }}</text>
+              </view>
+            </view>
           </view>
 
           <view class="form-btns">
-            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="120" @tap="onPhoneLoginGuarded">
+            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="40" @tap="onPhoneLoginGuarded">
               <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
             </view>
 
             <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口 -->
-            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="toggleRegisterMode">
+            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="toggleRegisterMode">
               <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
             </view>
 
-            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="togglePhoneLogin">
+            <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="togglePhoneLogin">
               <text class="btn-text-link">{{ t('login.backToWechat') }}</text>
             </view>
           </view>
@@ -711,7 +785,7 @@ function openAccountBinding() {
           class="checkbox press-feedback"
           :class="{ 'checkbox--checked': agreed }"
           hover-class="press-feedback--active"
-          hover-stay-time="120"
+          hover-stay-time="40"
           @tap="onAgreeTap"
           role="checkbox"
           :aria-checked="agreed ? 'true' : 'false'"
@@ -734,7 +808,7 @@ function openAccountBinding() {
         v-if="isShowcaseMode"
         class="showcase-entry press-feedback"
         hover-class="press-feedback--active"
-        hover-stay-time="120"
+        hover-stay-time="40"
         @tap="enterShowcase"
       >
         <view class="showcase-entry__badge">
@@ -752,7 +826,7 @@ function openAccountBinding() {
         v-if="showDevUserEntry"
         class="dev-user-entry press-feedback"
         hover-class="press-feedback--active"
-        hover-stay-time="120"
+        hover-stay-time="40"
         role="button"
         :aria-label="t('login.devUserEntryTitle')"
         @tap="onDevUserEntry"
@@ -775,7 +849,7 @@ function openAccountBinding() {
           <view
             class="third-party-icon-btn press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             @tap="onAppleLogin"
           >
             <text class="third-party-icon third-party-icon--apple"></text>
@@ -786,7 +860,7 @@ function openAccountBinding() {
           <view
             class="third-party-icon-btn press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             @tap="openAccountBinding"
           >
             <image class="third-party-icon third-party-icon--bind" :src="loginIcons.link" mode="aspectFit" alt="" />
@@ -814,9 +888,11 @@ function openAccountBinding() {
 .login-page__hero {
   position: relative;
   width: 100%;
-  /* R4-batch4 像素级对齐：参考图 hero 占 72%（原 70vh → 72vh） */
-  height: 72vh;
-  flex-shrink: 0;
+  /* R4-batch4 像素级对齐：参考图 hero 占 72%。
+   * 2026-08-29：固定 72vh + 底部按钮区导致小屏溢出（「其他登录方式」被截断），
+   * 改为 flex 弹性占位：hero 吃掉底部内容之外的剩余高度，不再溢出视口 */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -1128,6 +1204,26 @@ function openAccountBinding() {
   width: 36rpx;
   height: 36rpx;
   color: var(--c-text-tertiary);
+}
+
+/* 短信验证码发送按钮（注册模式） */
+.sms-send-btn {
+  flex-shrink: 0;
+  margin-left: var(--sp-2);
+  padding: 14rpx 24rpx;
+  border-radius: var(--r-full);
+  background: var(--c-brand, #36C99A);
+}
+.sms-send-btn--disabled {
+  background: var(--c-neutral-200, #E8ECEA);
+}
+.sms-send-btn-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+.sms-send-btn--disabled .sms-send-btn-text {
+  color: var(--c-text-tertiary, #999999);
 }
 
 .input-field {

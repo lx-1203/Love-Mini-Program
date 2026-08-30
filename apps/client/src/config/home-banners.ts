@@ -85,7 +85,7 @@ export const homeBanners: HomeBannerItem[] = [
     titleKey: "config.homeBanners.bannerGraduation.title",
     subtitle: "勇敢说出心里话",
     subtitleKey: "config.homeBanners.bannerGraduation.subtitle",
-    link: "/pages/circles/index",
+    link: "/subpackages/circles/circles/index",
   },
 ];
 

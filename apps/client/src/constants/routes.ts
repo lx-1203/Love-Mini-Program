@@ -31,11 +31,11 @@ export const ROUTES = {
     /** 附近页（新 Tab） */
     NEARBY: "/pages/nearby/index",
     /** 村口（社区二级页，不再占 Tab） */
-    VILLAGE: "/pages/village/index",
+    VILLAGE: "/subpackages/village/village/index",
     /** 发现页（原首页重构） */
     HOME: "/pages/home/index",
     /** v3 细分发现页 */
-    HOME_SEGMENT: "/pages/home/segment",
+    HOME_SEGMENT: "/subpackages/discover-extra/home/segment",
     /** 消息页（P1-09：tabBar 指向新版消息列表页；旧 /pages/chat/index 已移除注册） */
     CHAT: "/pages/messages/index",
     /** 我的页 */
@@ -45,45 +45,45 @@ export const ROUTES = {
   /** 附近模块（v3 Nearby） */
   NEARBY: {
     /** 附近的人 / 同城的人 列表 */
-    PEOPLE: "/pages/nearby/people",
+    PEOPLE: "/subpackages/discover-extra/nearby/people",
   },
 
   /** 登录 */
   LOGIN: "/pages/login/index",
 
   /** 搜索（2026-08-11 帖子搜索页） */
-  SEARCH: "/pages/search/index",
+  SEARCH: "/subpackages/tools/search/index",
 
   /** 寻觅模块 */
   DISCOVER: {
     /** 历史记录页 */
-    HISTORY: "/pages/discover/history",
+    HISTORY: "/subpackages/discover-extra/discover/history",
     /** v3 匹配中 */
-    MATCHING: "/pages/discover/matching",
+    MATCHING: "/subpackages/discover-extra/discover/matching",
     /** v3 匹配成功 */
-    MATCH_SUCCESS: "/pages/discover/match-success",
+    MATCH_SUCCESS: "/subpackages/discover-extra/discover/match-success",
   },
 
   /** 喜欢模块 */
   LIKES: {
     /** 喜欢页（互相喜欢列表） */
-    INDEX: "/pages/likes/index",
+    INDEX: "/subpackages/discover-extra/likes/index",
     /** 2026-08-07 消息页重构：喜欢与访客独立二级页（喜欢我的 / 我的访客 + 解锁） */
-    VISITORS_LIKES: "/pages/likes-visitors/index",
+    VISITORS_LIKES: "/subpackages/discover-extra/likes-visitors/index",
   },
 
   /** 村口社区模块 */
   VILLAGE: {
     /** 统一发布动态页 */
-    PUBLISH: "/pages/village/publish",
+    PUBLISH: "/subpackages/village/village/publish",
     /** 发帖页（旧，保留兼容） */
-    POST: "/pages/village/post",
+    POST: "/subpackages/village/village/post",
     /** 帖子详情页 */
-    DETAIL: "/pages/village/detail",
+    DETAIL: "/subpackages/village/village/detail",
     /** 标签帖子列表页 */
-    TAG_POSTS: "/pages/village/tag-posts",
+    TAG_POSTS: "/subpackages/village/village/tag-posts",
     /** R4-00226：浏览记录页 */
-    HISTORY: "/pages/village/history",
+    HISTORY: "/subpackages/village/village/history",
   },
 
   /** 消息模块 */
@@ -91,13 +91,13 @@ export const ROUTES = {
     /** 消息列表页 */
     INDEX: "/pages/messages/index",
     /** 官方号会话页（Phase Feedback3 P2.4） */
-    OFFICIAL_CHAT: "/pages/official-chat/index",
+    OFFICIAL_CHAT: "/subpackages/chat/official-chat/index",
   },
 
   /** 聊天模块 */
   CHAT: {
     /** 聊天会话页 */
-    SESSION: "/pages/chat-session/index",
+    SESSION: "/subpackages/chat/chat-session/index",
   },
 
   /** 个人资料模块 */
@@ -105,45 +105,45 @@ export const ROUTES = {
     /** 我的页 */
     INDEX: "/pages/profile/index",
     /** 访客页 */
-    VISITORS: "/pages/profile/visitors",
+    VISITORS: "/subpackages/profile-extra/profile/visitors",
     /** 相册页 */
-    ALBUM: "/pages/profile/album",
+    ALBUM: "/subpackages/profile-extra/profile/album",
     /** R4-00226：权限设置页 */
-    PRIVACY: "/pages/profile/privacy",
+    PRIVACY: "/subpackages/profile-extra/profile/privacy",
     /** R4-00226：任务中心页 */
-    TASKS: "/pages/profile/tasks",
+    TASKS: "/subpackages/profile-extra/profile/tasks",
     /** 2026-08-09：他人主页详情页（喜欢/访客/通知闭环专用） */
-    OTHER: "/pages/profile/other",
+    OTHER: "/subpackages/profile-extra/profile/other",
   },
 
   /** 圈子模块 */
   CIRCLES: {
     /** 圈子首页 */
-    INDEX: "/pages/circles/index",
+    INDEX: "/subpackages/circles/circles/index",
     /** 话题列表 */
-    TOPICS: "/pages/circles/topics",
+    TOPICS: "/subpackages/circles/circles/topics",
     /** 话题详情 */
-    TOPIC_DETAIL: "/pages/circles/topic-detail",
+    TOPIC_DETAIL: "/subpackages/circles/circles/topic-detail",
     /** 发话题 */
-    POST_TOPIC: "/pages/circles/post-topic",
+    POST_TOPIC: "/subpackages/circles/circles/post-topic",
   },
 
   /** 校园模块 */
   CAMPUS: {
     /** 校园圈 Hub（校园列表 + 四态权限） */
-    HUB: "/pages/campus/hub",
+    HUB: "/subpackages/campus/campus/hub",
     /** 校园首页 */
-    INDEX: "/pages/campus/index",
+    INDEX: "/subpackages/campus/campus/index",
     /** 发校园话题 */
-    POST_TOPIC: "/pages/campus/post-topic",
+    POST_TOPIC: "/subpackages/campus/campus/post-topic",
     /** 话题详情 */
-    TOPIC_DETAIL: "/pages/campus/topic-detail",
+    TOPIC_DETAIL: "/subpackages/campus/campus/topic-detail",
     /** 校园认证 */
-    CERTIFICATION: "/pages/campus/certification",
+    CERTIFICATION: "/subpackages/campus/campus/certification",
   },
 
   /** 每日一问 */
-  DAILY_QUESTION: "/pages/daily-question/index",
+  DAILY_QUESTION: "/subpackages/tools/daily-question/index",
 
   /** 商城 */
   SHOP: "/subpackages/market/shop/index",
@@ -151,24 +151,24 @@ export const ROUTES = {
   /** 设置模块 */
   SETTINGS: {
     /** 设置首页 */
-    INDEX: "/pages/settings/index",
+    INDEX: "/subpackages/profile-extra/settings/index",
     /** 免打扰设置 */
-    DND: "/pages/settings/dnd",
+    DND: "/subpackages/profile-extra/settings/dnd",
   },
 
   /** 恋爱认证（校园身份认证） */
-  VERIFICATION: "/pages/verification/index",
+  VERIFICATION: "/subpackages/profile-extra/verification/index",
   /** 实名认证（B1-2；B4 认证门控目标页，2026-08-13） */
-  REAL_NAME_CERTIFICATION: "/pages/verification/real-name",
+  REAL_NAME_CERTIFICATION: "/subpackages/profile-extra/verification/real-name",
 
   /** P2.6：帮助与客服 */
-  HELP: "/pages/help/index",
+  HELP: "/subpackages/tools/help/index",
 
   /** P2.6：安全中心 */
-  SECURITY: "/pages/security/index",
+  SECURITY: "/subpackages/tools/security/index",
 
   /** 心动信号 */
-  HEART_SIGNALS: "/pages/heart-signals/index",
+  HEART_SIGNALS: "/subpackages/tools/heart-signals/index",
 
   /** VIP 模块 */
   VIP: {
@@ -181,21 +181,21 @@ export const ROUTES = {
   },
 
   /** 反馈历史 */
-  FEEDBACK_HISTORY: "/pages/feedback/history",
+  FEEDBACK_HISTORY: "/subpackages/profile-extra/feedback/history",
 
   /** 活动详情（任务 E2） */
-  ACTIVITY_DETAIL: "/pages/activities/detail",
+  ACTIVITY_DETAIL: "/subpackages/tools/activities/detail",
 
   /** 恋爱中心模块（任务 E3） */
   LOVE_CENTER: {
     /** 恋爱中心首页 */
-    INDEX: "/pages/love-center/index",
+    INDEX: "/subpackages/tools/love-center/index",
     /** 附近的人 */
-    NEARBY: "/pages/love-center/nearby",
+    NEARBY: "/subpackages/tools/love-center/nearby",
     /** MBTI 人格测试 */
-    MBTI: "/pages/love-center/mbti",
+    MBTI: "/subpackages/tools/love-center/mbti",
     /** 恋爱咨询课程 */
-    CONSULTING: "/pages/love-center/consulting",
+    CONSULTING: "/subpackages/tools/love-center/consulting",
   },
 
   /** 开发者页面（2026-08-10 主包减负迁移至 setup 分包，仅 DEV 构建注册） */

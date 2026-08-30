@@ -187,14 +187,12 @@ onMounted(() => {
 
 .data-table th {
   background: #f5f7fa;
-  padding: 10px 12px;
   text-align: left;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .data-table td {
-  padding: 10px 12px;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -234,8 +232,6 @@ onMounted(() => {
 }
 
 .action-button {
-  height: 26px;
-  padding: 0 8px;
   border-radius: 4px;
   border: 1px solid #dcdfe6;
   background: #fff;

@@ -566,6 +566,23 @@ page {
   /* 对方气泡灰色 */
   --c-bubble-other: #{$bubble-other};
 
+  /* ===== 2026-08-26 R3：聊天气泡尺寸规范（统一双方，仅颜色/方向差异） ===== */
+  // PRD R3 口径：最大宽度 84%、padding 上下16rpx 左右24rpx、主圆角 20rpx、
+  // 尾巴 4rpx（self 右上 / peer 左上）、阴影统一禁用、头像 64rpx/白边2rpx、
+  // 正文 30rpx 行高1.6、emoji 56rpx、送达状态图标 20rpx
+  --bubble-max-width: 84%;
+  --bubble-padding-y: 16rpx;
+  --bubble-padding-x: 24rpx;
+  --bubble-radius-main: 20rpx;
+  --bubble-radius-tail: 4rpx;
+  --bubble-shadow: none;                // 决策①：统一禁用
+  --bubble-font-size: 30rpx;
+  --bubble-line-height: 1.6;
+  --bubble-emoji-font-size: 56rpx;
+  --bubble-avatar-size: 64rpx;
+  --bubble-avatar-border: 2rpx solid var(--c-bg-container);
+  --bubble-status-icon-size: 20rpx;
+
   /* 消息列表分隔色 */
   --c-divider-light: #{$divider-light};
 

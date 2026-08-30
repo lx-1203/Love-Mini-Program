@@ -10,6 +10,7 @@
  * 类型经 import type 引用（编译期擦除，无运行时循环依赖）。
  */
 import type { HeartSignal, LikeRecord, VisitorRecord } from "../likes";
+import { resolveMediaUrl } from "@/utils/media";
 
 /** Mock 当前用户 ID（模拟当前登录用户身份，仅 mock 分支使用） */
 export const MOCK_CURRENT_USER_ID = "user-1001";
@@ -22,7 +23,7 @@ export const mockLikes: LikeRecord[] = [
     userId: "user-2001",
     name: "林夕",
     // D-05（第五轮 QA）：default-avatar 占位 → 真实头像 avatar-1.jpg
-    avatar: "/static/assets/images/avatars/avatar-1.jpg",
+    avatar: resolveMediaUrl("/static/assets/images/avatars/avatar-1.jpg"),
     headline: "中山大学 · 大二 · 喜欢电影和咖啡",
     likedAt: "2026-05-20T14:30:00Z",
   },
@@ -30,7 +31,7 @@ export const mockLikes: LikeRecord[] = [
     id: "like-2",
     userId: "user-2002",
     name: "陈默",
-    avatar: "/static/assets/images/avatars/avatar-2.jpg",
+    avatar: resolveMediaUrl("/static/assets/images/avatars/avatar-2.jpg"),
     headline: "华南理工 · 大三 · 自习搭子",
     likedAt: "2026-05-19T10:15:00Z",
   },
@@ -448,7 +449,7 @@ export const mockHeartSignals: HeartSignal[] = [
     id: "signal-2",
     fromUserId: "user-2006",
     fromUserName: "叶知秋",
-    fromUserAvatar: "/static/assets/images/avatars/avatar-4.jpg",
+    fromUserAvatar: resolveMediaUrl("/static/assets/images/avatars/avatar-4.jpg"),
     toUserId: "user-1001",
     status: "pending",
     sentAt: "2026-05-17T20:10:00Z",

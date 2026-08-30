@@ -1,4 +1,6 @@
 <script setup lang="ts">
+
+
 import { computed, ref, watch } from "vue";
 import { onLoad, onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
@@ -24,6 +26,9 @@ import MatchActions from "../../components/match/MatchActions.vue";
 import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import FilterDrawer from "../../components/discover/FilterDrawer.vue";
+// 2026-08-26：寻觅「附近」卡片化——本地距离筛选 + 近→远排序，复用推荐卡片视图
+import { filterNearby, sortNearbyFirst, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
+import type { DiscoverCard } from "../../stores/discover/types";
 
 const DISCOVER_TTL_MS = 30_000;
 
@@ -41,9 +46,35 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { cards, loading, errorMessage } = storeToRefs(discoverStore);
 const { isMatchOpen } = storeToRefs(appConfigStore);
 
-const currentCard = computed(() => cards.value[0] ?? null);
+/** 寻觅页分段：recommend-推荐 / nearby-附近（卡片视图） */
+type DiscoverMode = "recommend" | "nearby";
+const activeMode = ref<DiscoverMode>("recommend");
+
+/**
+ * 当前展示卡片列表：
+ * - 推荐：保持 store 原始顺序（推荐算法权重）；
+ * - 附近：复用推荐卡片样式，先按 ≤20km 过滤，再按同校→距离升序（近→远）排序。
+ */
+const visibleCards = computed<DiscoverCard[]>(() => {
+  const list = cards.value;
+  if (activeMode.value !== "nearby") return list;
+  return sortNearbyFirst(filterNearby(list));
+});
+
+const currentCard = computed(() => visibleCards.value[0] ?? null);
 const currentUser = computed(() =>
   currentCard.value ? toMatchCardUser(currentCard.value) : null
+);
+
+/** 空态文案：附近模式与推荐模式分开，便于用户理解为何无卡 */
+const emptyMessage = computed(() =>
+  errorMessage.value
+    ? t("discover.loadFailedTitle")
+    : discoverStore.quotaExhausted
+      ? t("discover.card.quotaExhaustedTitle")
+      : activeMode.value === "nearby"
+        ? t("discover.card.nearbyEmptyTitle")
+        : t("discover.card.emptyTitle")
 );
 
 function requireLogin(): boolean {
@@ -56,8 +87,21 @@ function goLogin() {
   openAppPath("/pages/login/index");
 }
 
-function goNearby() {
-  uni.switchTab({ url: ROUTES.TAB.NEARBY });
+/**
+ * 切换寻觅分段（推荐 / 附近）。
+ * - 原实现「附近」直接 switchTab 跳附近页（Explore），与用户预期「同款卡片」不符；
+ * - 现改为页内切换：本地即时过滤/排序（无需网络请求，响应零延迟），
+ *   同时同步 store 匹配范围，使后续 fetchCards / 下拉刷新沿用附近限定（≤20km）。
+ */
+function switchDiscoverMode(mode: DiscoverMode) {
+  activeMode.value = mode;
+  discoverStore.activeFilter = mode === "nearby" ? "nearby" : "all";
+  discoverStore.matchScope = mode === "nearby" ? "nearby" : "all";
+  // 同步透传参数：附近限定 distanceMax=20，真实接口下轮拉取同样按距离过滤
+  discoverStore.recommendationFilter = {
+    ...discoverStore.recommendationFilter,
+    distanceMax: mode === "nearby" ? NEARBY_MAX_DISTANCE_KM : undefined,
+  };
 }
 
 function handleCardTap() {
@@ -147,7 +191,7 @@ onUnload(() => {
         <view
           class="discover-header__filter"
           hover-class="discover-header__filter--pressed"
-          hover-stay-time="120"
+          hover-stay-time="40"
           role="button"
           :aria-label="'筛选'"
           @tap="discoverStore.isFilterDrawerOpen = true"
@@ -156,12 +200,27 @@ onUnload(() => {
         </view>
       </view>
       <view class="discover-header__tabs">
-        <view class="discover-header__tab discover-header__tab--active">
-          <text class="discover-header__tab-text discover-header__tab-text--active">推荐</text>
-          <view class="discover-header__tab-line" />
+        <view
+          class="discover-header__tab"
+          :class="{ 'discover-header__tab--active': activeMode === 'recommend' }"
+          role="tab"
+          :aria-selected="activeMode === 'recommend' ? 'true' : 'false'"
+          :aria-label="'推荐'"
+          @tap="switchDiscoverMode('recommend')"
+        >
+          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'recommend' }">推荐</text>
+          <view v-if="activeMode === 'recommend'" class="discover-header__tab-line" />
         </view>
-        <view class="discover-header__tab" @tap="goNearby">
-          <text class="discover-header__tab-text">附近</text>
+        <view
+          class="discover-header__tab"
+          :class="{ 'discover-header__tab--active': activeMode === 'nearby' }"
+          role="tab"
+          :aria-selected="activeMode === 'nearby' ? 'true' : 'false'"
+          :aria-label="'附近'"
+          @tap="switchDiscoverMode('nearby')"
+        >
+          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">附近</text>
+          <view v-if="activeMode === 'nearby'" class="discover-header__tab-line" />
         </view>
       </view>
     </view>
@@ -182,18 +241,12 @@ onUnload(() => {
         <Skeleton variant="card" :count="1" />
       </view>
 
-      <view v-else-if="cards.length === 0" class="match-state">
+      <view v-else-if="visibleCards.length === 0" class="match-state">
         <EmptyState
           :type="errorMessage ? 'network' : 'no-data'"
           :image="errorMessage ? '' : IMAGE_PATHS.ICONS_COMMON.HEART"
           mascot="sad"
-          :message="
-            errorMessage
-              ? t('discover.loadFailedTitle')
-              : discoverStore.quotaExhausted
-                ? t('discover.card.quotaExhaustedTitle')
-                : t('discover.card.emptyTitle')
-          "
+          :message="emptyMessage"
         />
       </view>
 
@@ -238,7 +291,7 @@ onUnload(() => {
   display: flex;
   height: 100vh;
   background: var(--c-bg-page, #f4fbf8);
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;
 }

@@ -5,7 +5,7 @@
  * 会话恢复（bootstrap）已由 main.ts 负责，此处不再重复调用。
  * 登录页（route.name === 'Login'）隐藏语言切换器，避免视觉干扰。
  */
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { setLocale, getLocale } from "./i18n";
@@ -14,6 +14,13 @@ const route = useRoute();
 const { t } = useI18n();
 
 const currentLocale = ref<string>(getLocale());
+
+/** 独立页（登录/403/404）：语言切换器浮层仅在这些页面显示；
+ * 后台布局内（Layout）顶栏不做浮层（设计稿顶栏右侧仅搜索+头像），
+ * 语言切换入口移至 Layout 头像下拉菜单。 */
+const isStandalonePage = computed(
+  () => ["Login", "Forbidden", "NotFound"].includes(String(route.name ?? "")),
+);
 
 function handleLocaleChange(event: Event): void {
   const value = (event.target as HTMLSelectElement).value;
@@ -39,8 +46,8 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <!-- 语言切换入口（i18n/setLocale 的唯一调用方，登录页隐藏） -->
-    <div v-if="route.name !== 'Login'" class="locale-switcher">
+    <!-- 语言切换入口（独立页浮层；Layout 内的入口在头像下拉） -->
+    <div v-if="isStandalonePage" class="locale-switcher">
       <label class="locale-label" :for="'locale-select'">{{ t("common.language") }}</label>
       <select
         id="locale-select"

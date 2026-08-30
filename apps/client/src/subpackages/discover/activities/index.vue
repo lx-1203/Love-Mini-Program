@@ -133,7 +133,7 @@ function shortDesc(desc?: string): string {
  * 详情页通过 onLoad 读取 id 匹配活动数据；未匹配时展示通用示例内容。
  */
 function goToActivityDetail(activityId: string) {
-  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(activityId)}`);
+  openAppPath(`/subpackages/tools/activities/detail?id=${encodeURIComponent(activityId)}`);
 }
 
 /* ================================================================

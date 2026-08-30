@@ -453,7 +453,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 复用 VillagePosts 同款布局类（toolbar/data-table/modal 等来自全局样式 + 局部补充） */
+/* 复用 VillagePosts 同款布局类（toolbar/data-table/modal 等来自共享样式 + 局部补充） */
+@import "../../styles/admin-common.css";
+
 .media-assets-page {
   padding: var(--admin-space-lg);
 }

@@ -22,7 +22,7 @@
     "condition": false
   },
   "compileType": "miniprogram",
-  "libVersion": "3.7.12",
+  "libVersion": "3.17.1",
   "miniprogramRoot": "apps/client/dist/build/mp-weixin/",
   "simulatorPluginLibVersion": {},
   "packOptions": {
@@ -31,5 +31,6 @@
   },
   "appid": "wxc67cd233d72388d0",
   "sitemapLocation": "sitemap.json",
-  "editorSetting": {}
+  "editorSetting": {},
+  "isGameTourist": false
 }

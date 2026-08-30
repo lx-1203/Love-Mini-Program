@@ -81,12 +81,23 @@ const shellStyle = computed(() => {
   return style;
 });
 
+/** 状态栏高度（px）：微信小程序 env(safe-area-inset-top) 在模拟器/部分机型为 0，
+ * 必须用 getSystemInfoSync().statusBarHeight 注入，否则自定义导航与状态栏叠印（2026-08-29 视觉验收修复） */
+const statusBarHeightPx = (() => {
+  try {
+    const info = uni.getSystemInfoSync();
+    return Number(info.statusBarHeight ?? 0) || 0;
+  } catch (_e) {
+    return 0;
+  }
+})();
+
 /** 头部样式 */
 const headerStyle = computed(() => {
   if (!props.safeArea) return {};
-  // 通过 CSS env() 函数获取状态栏高度
+  // 状态栏高度优先用系统能力值，env() 仅作兜底叠加
   return {
-    paddingTop: 'calc(env(safe-area-inset-top) + 24rpx)',
+    paddingTop: `${statusBarHeightPx + 8}px`,
   };
 });
 

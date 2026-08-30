@@ -1,4 +1,5 @@
 import type { components } from "../generated/api-types";
+import { resolveMediaUrl } from "@/utils/media";
 import type {
   DoNotDisturbRequest,
   DoNotDisturbView,
@@ -19,6 +20,9 @@ import { homeRecommendedPeople } from "../../config/home-recommended-people";
 import { createMockApiError } from "../api-error";
 // 统一图片资源路径常量，避免在 mock 数据中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
+// 2026-08-27 修复：首页「社区动态」数据派生自 village 帖子 mock 数据，
+// 保证首页动态与村口帖子同源、点击直达真实帖子详情（id 对齐 post-N）。
+import { mockPosts } from "../../stores/village/mock-data";
 // i18n 翻译函数（SubTask 3.3.4：Mock 数据文案 i18n 化）
 // 在非组件场景使用 i18n.global.t，与组件内 useI18n().t 行为一致。
 import { t } from "@/i18n";
@@ -205,7 +209,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       age: 21,
       occupation: "产品经理",
       incomeRange: "8k-15k",
-      distanceText: "1.2",
+      distanceText: "1.2km",
       activeStatusText: "just_now",
       machineVerified: true,
       humanVerified: true,
@@ -219,8 +223,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "北京 · 海淀",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图（portraits/covers 混合）
-        { id: "p4001-1", content: "图书馆的橘猫今天又蹭了我一下午，太治愈了。", images: ["/static/assets/images/portraits/p1.jpg"], likes: 32, comments: 8, isLiked: false, createdAt: "2026-07-20T10:00:00Z" },
-        { id: "p4001-2", content: "周末去了艺术展，被一幅蓝色调的画击中了。", images: ["/static/assets/images/portraits/p2.jpg"], likes: 56, comments: 14, isLiked: false, createdAt: "2026-07-18T10:00:00Z" },
+        { id: "p4001-1", content: "图书馆的橘猫今天又蹭了我一下午，太治愈了。", images: [resolveMediaUrl("/static/assets/images/portraits/p1.jpg")], likes: 32, comments: 8, isLiked: false, createdAt: "2026-07-20T10:00:00Z" },
+        { id: "p4001-2", content: "周末去了艺术展，被一幅蓝色调的画击中了。", images: [resolveMediaUrl("/static/assets/images/portraits/p2.jpg")], likes: 56, comments: 14, isLiked: false, createdAt: "2026-07-18T10:00:00Z" },
       ],
     },
     {
@@ -279,7 +283,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "上海 · 杨浦",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4002-1", content: "发现一家藏在巷子里的宝藏小店，强烈推荐！", images: ["/static/assets/images/covers/circle-food.png"], likes: 89, comments: 21, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
+        { id: "p4002-1", content: "发现一家藏在巷子里的宝藏小店，强烈推荐！", images: [resolveMediaUrl("/static/assets/images/covers/circle-food.png")], likes: 89, comments: 21, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
     {
@@ -336,7 +340,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "浙江 · 杭州",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4003-1", content: "胶片冲洗出来那一刻，时间好像变慢了。", images: ["/static/assets/images/covers/circle-photo.png"], likes: 41, comments: 6, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
+        { id: "p4003-1", content: "胶片冲洗出来那一刻，时间好像变慢了。", images: [resolveMediaUrl("/static/assets/images/covers/circle-photo.png")], likes: 41, comments: 6, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
       ],
     },
     {
@@ -393,8 +397,8 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "江苏 · 南京",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4004-1", content: "今天三分球手感火热，连进 8 个！", images: ["/static/assets/images/covers/circle-sports.png"], likes: 77, comments: 18, isLiked: false, createdAt: "2026-07-22T10:00:00Z" },
-        { id: "p4004-2", content: "假期想去川西，有没有一起的？", images: ["/static/assets/images/covers/circle-travel.png"], likes: 45, comments: 30, isLiked: false, createdAt: "2026-07-15T10:00:00Z" },
+        { id: "p4004-1", content: "今天三分球手感火热，连进 8 个！", images: [resolveMediaUrl("/static/assets/images/covers/circle-sports.png")], likes: 77, comments: 18, isLiked: false, createdAt: "2026-07-22T10:00:00Z" },
+        { id: "p4004-2", content: "假期想去川西，有没有一起的？", images: [resolveMediaUrl("/static/assets/images/covers/circle-travel.png")], likes: 45, comments: 30, isLiked: false, createdAt: "2026-07-15T10:00:00Z" },
       ],
     },
     {
@@ -437,7 +441,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       age: 23,
       occupation: "设计",
       incomeRange: "8k-15k",
-      distanceText: "5.0",
+      distanceText: "5.0km",
       activeStatusText: "days_2",
       machineVerified: false,
       humanVerified: false,
@@ -451,7 +455,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "湖北 · 武汉",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4005-1", content: "最近在读《夜航西飞》，有些句子想和人分享。", images: ["/static/assets/images/covers/circle-reading.png"], likes: 34, comments: 8, isLiked: false, createdAt: "2026-07-19T14:00:00Z" },
+        { id: "p4005-1", content: "最近在读《夜航西飞》，有些句子想和人分享。", images: [resolveMediaUrl("/static/assets/images/covers/circle-reading.png")], likes: 34, comments: 8, isLiked: false, createdAt: "2026-07-19T14:00:00Z" },
       ],
     },
     {
@@ -494,7 +498,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       age: 26,
       occupation: "互联网运营",
       incomeRange: "15k-30k",
-      distanceText: "0.5",
+      distanceText: "0.5km",
       activeStatusText: "today",
       machineVerified: true,
       humanVerified: true,
@@ -508,7 +512,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "广东 · 广州",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4006-1", content: "博物馆新展开幕，讲解员讲得特别好。", images: ["/static/assets/images/portraits/p3.jpg"], likes: 23, comments: 5, isLiked: false, createdAt: "2026-07-17T10:00:00Z" },
+        { id: "p4006-1", content: "博物馆新展开幕，讲解员讲得特别好。", images: [resolveMediaUrl("/static/assets/images/portraits/p3.jpg")], likes: 23, comments: 5, isLiked: false, createdAt: "2026-07-17T10:00:00Z" },
       ],
     },
     {
@@ -565,7 +569,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "福建 · 厦门",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4007-1", content: "凌晨四点的日出，值得！", images: ["/static/assets/images/covers/circle-sky.png"], likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
+        { id: "p4007-1", content: "凌晨四点的日出，值得！", images: [resolveMediaUrl("/static/assets/images/covers/circle-sky.png")], likes: 66, comments: 12, isLiked: false, createdAt: "2026-07-16T10:00:00Z" },
       ],
     },
     {
@@ -600,7 +604,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       age: 22,
       occupation: "学生",
       incomeRange: "3k-8k",
-      distanceText: "2.4",
+      distanceText: "2.4km",
       activeStatusText: "just_now",
       machineVerified: true,
       humanVerified: true,
@@ -614,7 +618,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "上海 · 徐汇",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4008-1", content: "老电影放映厅的下午，太治愈了。", images: ["/static/assets/images/portraits/p5.jpg"], likes: 41, comments: 9, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
+        { id: "p4008-1", content: "老电影放映厅的下午，太治愈了。", images: [resolveMediaUrl("/static/assets/images/portraits/p5.jpg")], likes: 41, comments: 9, isLiked: false, createdAt: "2026-07-19T10:00:00Z" },
       ],
     },
     {
@@ -663,7 +667,7 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "广东 · 广州",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4009-1", content: "今天的晚霞很适合拍照。", images: ["/static/assets/images/portraits/p6.jpg"], likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
+        { id: "p4009-1", content: "今天的晚霞很适合拍照。", images: [resolveMediaUrl("/static/assets/images/portraits/p6.jpg")], likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
   ];
@@ -972,6 +976,41 @@ function buildMatchResult(
   };
 }
 
+/**
+ * 首页「社区动态」帖子（2026-08-27 修复：由 village 帖子 mock 数据派生）。
+ *
+ * 与 {@link mockPosts} 同源，取最新 4 条映射为首页社区动态卡片：
+ * - id 取 post-N 的数字部分（"post-7" → 7），点击后详情页 setCurrentPost 的
+ *   "N → post-N" 兼容映射可直达真实帖子详情，避免「帖子不存在/已删除」。
+ * - 图片/点赞/评论数/作者均来自 village 帖子，保证首页与村口数据一致。
+ * - circleName 用帖子分类名（如「兴趣圈」/「诚意帖」）兜底。
+ */
+function buildCommunityPostsFromVillage() {
+  const postCategoryNames: Record<string, string> = {
+    "cat-sincere": "诚意帖",
+    "cat-interest": "兴趣圈",
+    "cat-campus": "校园圈",
+    "cat-hometown": "同乡圈",
+    "cat-activity": "活动圈",
+    "cat-mask": "树洞",
+    "cat-life": "生活圈",
+  };
+  return [...mockPosts]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 4)
+    .map((p) => ({
+      id: Number(p.id.replace(/^post-/, "")) || 0,
+      authorName: p.author.name,
+      authorAvatar: p.author.avatar || IMAGE_PATHS.DEFAULT_AVATAR,
+      circleName: postCategoryNames[p.categoryId] ?? "兴趣圈",
+      timeText: p.createdAt,
+      content: p.content,
+      images: p.images.slice(0, 3),
+      likeCount: p.likes,
+      commentCount: p.comments,
+    }));
+}
+
 function buildHomeDashboard(): HomeDashboard {
   return {
     scheduleSummary: {
@@ -1054,39 +1093,23 @@ function buildHomeDashboard(): HomeDashboard {
       },
       relationActivity: { likesReceived: 3, whispers: 2, visitors: 5, newMatches: 1, totalUnread: 11 },
       interestRecommendations: [
-        { id: 1, name: "摄影圈", icon: "📷", memberCount: 12000, joined: false },
-        { id: 2, name: "旅行圈", icon: "✈️", memberCount: 8932, joined: false },
-        { id: 3, name: "音乐圈", icon: "🎵", memberCount: 16000, joined: false },
-        { id: 4, name: "美食圈", icon: "🍜", memberCount: 9210, joined: false },
+        { id: 1, name: "摄影圈", icon: "/static/assets/icons/common/camera.svg", memberCount: 12000, joined: false },
+        { id: 2, name: "旅行圈", icon: "/static/assets/icons/common/travel.svg", memberCount: 8932, joined: false },
+        { id: 3, name: "音乐圈", icon: "/static/assets/icons/common/music.svg", memberCount: 16000, joined: false },
+        { id: 4, name: "美食圈", icon: "/static/assets/icons/common/food.svg", memberCount: 9210, joined: false },
       ],
       nearbyPeople: [
         { userId: 4001, name: "林晓", distanceText: "1.2km", avatarUrl: "/static/assets/images/people/person-01.png", online: true, commonInterests: ["摄影"] },
-        { userId: 4002, name: "夏言", distanceText: "1.5km", avatarUrl: "/static/assets/images/people/person-02.png", online: true, commonInterests: ["建筑"] },
+        { userId: 4002, name: "夏言", distanceText: "1.5km", avatarUrl: resolveMediaUrl(resolveMediaUrl("/static/assets/images/people/person-02.png")), online: true, commonInterests: ["建筑"] },
         { userId: 4003, name: "阿辰", distanceText: "1.8km", avatarUrl: "/static/assets/images/people/person-03.png", online: false, commonInterests: ["日语"] },
         { userId: 4004, name: "小满", distanceText: "2.1km", avatarUrl: "/static/assets/images/people/person-04.png", online: false, commonInterests: ["编程"] },
         { userId: 4005, name: "Luna", distanceText: "2.8km", avatarUrl: "/static/assets/images/people/person-05.png", online: false, commonInterests: ["新闻"] },
-        { userId: 4006, name: "草莓", distanceText: "3.1km", avatarUrl: "/static/assets/images/people/person-06.png", online: false, commonInterests: ["法学"] },
+        { userId: 4006, name: "草莓", distanceText: "3.1km", avatarUrl: resolveMediaUrl("/static/assets/images/people/person-06.png"), online: false, commonInterests: ["法学"] },
         { userId: 4007, name: "苏奈", distanceText: "3.6km", avatarUrl: "/static/assets/images/people/person-07.png", online: false, commonInterests: ["医学"] },
         { userId: 4008, name: "周岚", distanceText: "4.1km", avatarUrl: "/static/assets/images/people/person-08.png", online: false, commonInterests: ["电影"] },
-        { userId: 4009, name: "林晚", distanceText: "4.5km", avatarUrl: "/static/assets/images/people/person-09.png", online: false, commonInterests: ["摄影"] },
+        { userId: 4009, name: "林晚", distanceText: "4.5km", avatarUrl: resolveMediaUrl("/static/assets/images/people/person-09.png"), online: false, commonInterests: ["摄影"] },
       ],
-      communityPosts: [
-        {
-          id: 1,
-          authorName: "林晓",
-          authorAvatar: "/static/assets/images/people/person-01.png",
-          circleName: "摄影圈",
-          timeText: "15 分钟前",
-          content: "今天在颐和园拍到超美的落日，光影太治愈了～",
-          images: [
-            "/static/assets/images/posts/post-1.jpg",
-            "/static/assets/images/posts/post-2.jpg",
-            "/static/assets/images/posts/post-3.jpg",
-          ],
-          likeCount: 128,
-          commentCount: 24,
-        },
-      ],
+      communityPosts: buildCommunityPostsFromVillage(),
     },
   };
 }
@@ -1381,7 +1404,7 @@ export const mockFixtures = {
       certified: true,
       online: true,
       matchScore: 90,
-      photoUrl: "/static/assets/images/people/person-02.png",
+      photoUrl: resolveMediaUrl(resolveMediaUrl("/static/assets/images/people/person-02.png")),
       constellation: "双子座",
     });
   },

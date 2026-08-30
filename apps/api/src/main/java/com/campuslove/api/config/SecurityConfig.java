@@ -118,6 +118,8 @@ public class SecurityConfig {
                 // 登录端点不需要认证
                 // Task 2.4.1：所有路径统一升级为 /api/v1/**
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                // 短信验证码（模拟短信：注册前获取验证码需未登录访问）
+                .requestMatchers("/api/v1/sms/**").permitAll()
                 // WebSocket 握手由单独机制处理
                 .requestMatchers("/ws/**").permitAll()
                 // 公开端点：内容敏感词预检查（前端实时提示，不暴露敏感词字典）

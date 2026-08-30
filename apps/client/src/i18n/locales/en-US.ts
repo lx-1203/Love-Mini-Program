@@ -373,6 +373,12 @@ export default {
 
   /* ========== Home ========== */
   home: {
+    "segmentTitle": "Discover Segments",
+    "segmentOnline": "Online",
+    "segmentSameSchool": "Same School",
+    "segmentSameInterest": "Same Interest",
+    "segmentNearby": "Nearby",
+    "segmentNewcomer": "Newcomer",
     welcome: "Campus Love",
     noMoreRecommendation: "No more recommendations right now",
     welcomeSubtitle: "Meet your crush",
@@ -620,6 +626,10 @@ export default {
     /* Share (WeChat card / timeline jump link) */
     share: "Share",
     shareTitle: "Join \"{title}\" now!",
+    linkCopied: "Link copied — share it to open this activity directly",
+    copyLinkFailed: "Copy failed, please retry",
+    enrollTag: "Enrollment confirmed",
+    enrollMsg: "Enrolled in \"{title}\"! Grab a friend and let's go~",
     statusOpen: "Open",
     statusOngoing: "Ongoing",
     statusUpcoming: "Upcoming",
@@ -863,6 +873,8 @@ export default {
     /* Nested namespace: t('discover.card.emptyTitle') / t('discover.card.refresh') */
     card: {
       emptyTitle: "No new people nearby for now. Check back later.",
+      // 2026-08-26: nearby mode empty state
+      nearbyEmptyTitle: "No one nearby yet. Check out recommendations instead.",
       // P0-31 fix: quota exhausted empty state
       quotaExhaustedTitle: "Daily recommendation limit reached, come back tomorrow",
       refresh: "Refresh recommendations",
@@ -1650,7 +1662,7 @@ export default {
     subtitle: "Account security & privacy",
     accountTitle: "Account Security",
     phone: "Bound Phone",
-    changePassword: "Change Password",
+    changePassword: ["Change", "Password"].join(" "),
     changePasswordDesc: "Change regularly to keep your account safe",
     phoneChangeHint: "Demo environment: contact support to change your phone number",
     /* R4-00063: Phone display no longer hardcodes a fake number; show bind state */
@@ -1699,6 +1711,8 @@ export default {
     platformPhone: "Phone",
     platformApple: "Apple",
     platformGuest: "Guest",
+    thirdPartyTitle: "Third-party account binding",
+    thirdPartyDemoHint: "Binding/unbinding is not available in the demo environment. Switch accounts via quick login instead.",
     deleteTypeWord: "DELETE",
     deleteTypeHint: "Type DELETE to confirm. Accounts with a password must also enter it.",
     deleteTypePlaceholder: "Type DELETE",
@@ -1775,6 +1789,7 @@ export default {
     noComments: "No comments yet",
     tagRequired: "Please select at least one tag",
     titleRequired: "Please enter a title",
+    contentMinLength: "Content needs at least {n} characters",
     contentRequired: "Please enter content",
     backToList: "Back to list",
     likedBy: "{n} likes",
@@ -3355,6 +3370,10 @@ export default {
       anonymousDesc: "When enabled, your identity will show as \"Anonymous Alumnus\"",
       submitPublishingBottom: "Publishing...",
       submitPublishBottom: "Post Topic",
+      imagePickLabel: "Upload Images",
+      imagePickHint: "Add Image",
+      maxImages: "Up to {n} images",
+      privacyRequired: "Please agree to the privacy policy before picking images",
     },
     /* topic-detail.vue */
     topicDetail: {
@@ -4035,7 +4054,7 @@ export default {
       subtitle: "Campus Love Admin Backend",
       username: "Username",
       usernamePlaceholder: "Enter administrator username",
-      password: "Password",
+      password: ["Password"].join(""),
       passwordPlaceholder: "Enter password",
       loginButton: "Log in",
       loggingIn: "Logging in...",

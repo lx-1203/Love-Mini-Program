@@ -51,7 +51,7 @@ public class GuestDemoDataProvisioner {
     /** 匹配池虚拟用户（V2026.08.07.0021/0023 创建，北京大学校区） */
     private static final long PEER_ZHOUYU = 10001L;   // 夏言（person-02，双向喜欢对象）
     private static final long PEER_LINWAN = 10002L;   // 阿辰（person-03）
-    private static final long PEER_WALKTHROUGH = 8L;  // 走查号
+    private static final long PEER_WALKTHROUGH = 10024L;  // 走查号（历史 id=8 体验账号在 seed 库不存在，对齐迁移脚本 0005 改为 10024）
 
     /** 喜欢我的虚拟用户（V2026.08.09.0017 口径 10009-10014） */
     private static final long[] LIKERS = {10001L, 10002L, 10003L, 10004L, 10005L, 10006L, 10007L, 10008L, 10009L, 10010L, 10011L, 10012L, 10013L, 10014L};

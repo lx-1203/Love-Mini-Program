@@ -1,8 +1,10 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 
-const props = defineProps<{ commonInterests: string[] }>();
+const props = withDefaults(defineProps<{ commonInterests: string[] }>(), {
+  commonInterests: () => [],
+});
 
 const COLORS = [
   { bg: "#E8FBF3", fg: "#36C99A", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE },
@@ -11,15 +13,31 @@ const COLORS = [
   { bg: "#FFF0F6", fg: "#FF6B81", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED },
 ];
 
+/** 共同点图标按主题映射（理想图：旅行→飞机 / 音乐→音符 / 猫猫→猫咪） */
+const ICON_BY_TITLE: Array<{ keys: string[]; iconSrc: string }> = [
+  { keys: ["旅行"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.PLANE },
+  { keys: ["音乐"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.MUSIC },
+  { keys: ["猫", "宠物"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.CIRCLE_CAT },
+  { keys: ["电影"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.CLAPPER },
+  { keys: ["摄影"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.CIRCLE_CAMERA },
+  { keys: ["阅读", "书"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.BOOK },
+  { keys: ["吃货", "美食"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.FOOD },
+  { keys: ["运动"], iconSrc: IMAGE_PATHS.ICONS_EMOJI.CIRCLE_SPORT },
+];
+
 const items = computed(() =>
   props.commonInterests.slice(0, 4).map((raw, index) => {
     const parts = raw.split("/").map((s) => s.trim()).filter(Boolean);
-    const color = COLORS[index % COLORS.length] ?? COLORS[0];
+    const title = parts[0] || raw;
+    const color = (COLORS[index % COLORS.length] ?? COLORS[0])!;
+    const iconSrc =
+      ICON_BY_TITLE.find((m) => m.keys.some((k) => title.includes(k)))?.iconSrc ?? color.iconSrc;
     return {
       key: `${index}-${raw}`,
-      title: parts[0] || raw,
+      title,
       subtitle: parts[1] || "",
       ...color,
+      iconSrc,
     };
   })
 );

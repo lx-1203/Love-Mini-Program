@@ -28,6 +28,24 @@
   },
   "mp-weixin": {
     /*
+     * 2026-08-29 真机定位权限声明（P0）：
+     * utils/location.ts 的 initLocation 真实调用 uni.getLocation，
+     * 真机要求 manifest 声明 requiredPrivateInfos + scope.userLocation，
+     * 否则 getLocation 直接 fail（开发者工具不校验，真机必现）。
+     */
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于展示附近的人、同校匹配与距离信息"
+      }
+    },
+    "requiredPrivateInfos": ["getLocation"],
+    /*
+     * 2026-08-29：关闭开发者工具隐私弹窗模拟。
+     * 真机的隐私授权由微信平台统一处理（上传时该开关仅影响开发工具模拟行为）；
+     * 开启会导致自动化回归被「位置授权弹窗」阻塞（本次审查实测）。
+     */
+    "__usePrivacyCheck__": false,
+    /*
      * ============================================================
      *  AppID 状态（P1.18 / 2026-07-28 统一）
      * ============================================================
@@ -61,7 +79,8 @@
     "themeLocation": "theme.json"
     /*
      * 2026-08-10：移除 scope.userLocation 权限声明。
-     * 依据：全代码库无 getLocation/chooseLocation 实际调用（仅 utils/privacy.ts 注释提及），
+     * 2026-08-29 更新：utils/location.ts 已真实调用 uni.getLocation（initLocation），
+     * 并已在上方 permission/requiredPrivateInfos 声明；
      * 声明未使用的定位权限会导致审核问询「声明定位但无定位功能」。
      * 若未来实现「附近的人」LBS 功能，需同时补回此处声明 + wx.authorize 流程 + 隐私指引更新。
      */

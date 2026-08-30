@@ -39,171 +39,204 @@
   },
   "pages": [
     {
-      "path": "pages/login/index"
-    },
+          "path": "pages/login/index"
+        },
     {
-      "path": "pages/discover/index"
-    },
+          "path": "pages/discover/index"
+        },
     {
-      "path": "pages/discover/matching"
-    },
+          "path": "pages/home/index"
+        },
     {
-      "path": "pages/discover/match-success"
-    },
+          "path": "pages/nearby/index",
+          "style": { "enablePullDownRefresh": true }
+        },
     {
-      "path": "pages/home/index"
-    },
+          "path": "pages/messages/index",
+          "style": { "enablePullDownRefresh": true }
+        },
     {
-      "path": "pages/home/segment"
-    },
-    {
-      "path": "pages/nearby/index",
-      "style": { "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/nearby/people",
-      "style": { "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/discover/history"
-    },
-
-    {
-      "path": "pages/likes/index",
-      "style": { "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/likes-visitors/index"
-    },
-    {
-      "path": "pages/village/index"
-    },
-    {
-      "path": "pages/village/publish",
-      "style": { "navigationStyle": "custom" }
-    },
-    {
-      "path": "pages/village/post"
-    },
-    {
-      "path": "pages/village/detail"
-    },
-    {
-      "path": "pages/messages/index",
-      "style": { "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/profile/index"
-    },
-    {
-      "path": "pages/circles/index"
-    },
-    {
-      "path": "pages/circles/topics"
-    },
-    {
-      "path": "pages/circles/topic-detail"
-    },
-    {
-      "path": "pages/circles/post-topic"
-    },
-    {
-      "path": "pages/daily-question/index"
-    },
-    {
-      "path": "pages/love-center/index"
-    },
-    {
-      "path": "pages/chat-session/index"
-    },
-    {
-      "path": "pages/official-chat/index"
-    },
-    {
-      "path": "pages/help/index"
-    },
-    {
-      "path": "pages/security/index"
-    },
-
-    {
-      "path": "pages/campus/hub"
-    },
-    {
-      "path": "pages/campus/index"
-    },
-    {
-      "path": "pages/campus/post-topic"
-    },
-    {
-      "path": "pages/campus/topic-detail"
-    },
-    {
-      "path": "pages/campus/certification"
-    },
-    {
-      "path": "pages/village/tag-posts"
-    },
-    {
-      "path": "pages/village/history"
-    },
-    {
-      "path": "pages/search/index"
-    },
-    {
-      "path": "pages/settings/index"
-    },
-    {
-      "path": "pages/verification/index"
-    },
-    {
-      "path": "pages/verification/real-name"
-    },
-    {
-      "path": "pages/heart-signals/index"
-    },
-    {
-      "path": "pages/profile/visitors",
-      "style": {
-          "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/profile/other"
-    },
-    {
-      "path": "pages/profile/privacy"
-    },
-    {
-      "path": "pages/profile/album"
-    },
-    {
-      "path": "pages/profile/favorites"
-    },
-    {
-      "path": "pages/profile/tasks"
-    },
-
-    {
-      "path": "pages/settings/dnd"
-    },
-    {
-      "path": "pages/feedback/history"
-    },
-    {
-      "path": "pages/activities/detail"
-    },
-    {
-      "path": "pages/love-center/nearby"
-    },
-    {
-      "path": "pages/love-center/mbti"
-    },
-    {
-      "path": "pages/love-center/consulting"
-    }
+          "path": "pages/profile/index"
+        }
   ],
   "subPackages": [
+
+    {
+      "root": "subpackages/village",
+      "pages": [
+      {
+            "path": "village/index"
+          },
+      {
+            "path": "village/publish",
+            "style": { "navigationStyle": "custom" }
+          },
+      {
+            "path": "village/post"
+          },
+      {
+            "path": "village/detail"
+          },
+      {
+            "path": "village/tag-posts"
+          },
+      {
+            "path": "village/history"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/circles",
+      "pages": [
+      {
+            "path": "circles/index"
+          },
+      {
+            "path": "circles/topics"
+          },
+      {
+            "path": "circles/topic-detail"
+          },
+      {
+            "path": "circles/post-topic"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/campus",
+      "pages": [
+      {
+            "path": "campus/hub"
+          },
+      {
+            "path": "campus/index"
+          },
+      {
+            "path": "campus/post-topic"
+          },
+      {
+            "path": "campus/topic-detail"
+          },
+      {
+            "path": "campus/certification"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/discover-extra",
+      "pages": [
+      {
+            "path": "discover/matching"
+          },
+      {
+            "path": "discover/match-success"
+          },
+      {
+            "path": "home/segment"
+          },
+      {
+            "path": "nearby/people",
+            "style": { "enablePullDownRefresh": true }
+          },
+      {
+            "path": "discover/history"
+          },
+      {
+            "path": "likes/index",
+            "style": { "enablePullDownRefresh": true }
+          },
+      {
+            "path": "likes-visitors/index"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/tools",
+      "pages": [
+      {
+            "path": "daily-question/index"
+          },
+      {
+            "path": "love-center/index"
+          },
+      {
+            "path": "help/index"
+          },
+      {
+            "path": "security/index"
+          },
+      {
+            "path": "search/index"
+          },
+      {
+            "path": "heart-signals/index"
+          },
+      {
+            "path": "activities/detail"
+          },
+      {
+            "path": "love-center/nearby"
+          },
+      {
+            "path": "love-center/mbti"
+          },
+      {
+            "path": "love-center/consulting"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/profile-extra",
+      "pages": [
+      {
+            "path": "settings/index"
+          },
+      {
+            "path": "verification/index"
+          },
+      {
+            "path": "verification/real-name"
+          },
+      {
+            "path": "profile/visitors",
+            "style": {
+                "enablePullDownRefresh": true
+            }
+          },
+      {
+            "path": "profile/other"
+          },
+      {
+            "path": "profile/privacy"
+          },
+      {
+            "path": "profile/album"
+          },
+      {
+            "path": "profile/favorites"
+          },
+      {
+            "path": "profile/tasks"
+          },
+      {
+            "path": "settings/dnd"
+          },
+      {
+            "path": "feedback/history"
+          }
+      ]
+    },
+    {
+      "root": "subpackages/chat",
+      "pages": [
+      {
+            "path": "chat-session/index"
+          },
+      {
+            "path": "official-chat/index"
+          }
+      ]
+    },
     {
       "root": "subpackages/setup",
       "pages": [

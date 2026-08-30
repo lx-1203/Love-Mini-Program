@@ -61,8 +61,8 @@ export function isEducationVerified(): boolean {
  * 在 requireLogin() 通过之后调用（浏览类操作不受门控，保持浏览自由）。
  *
  * 未通过时弹出引导弹窗（i18n 文案）：
- * - "realname"（实名）→ 跳转 /pages/verification/real-name（实名认证页）；
- * - "education"（学历）→ 跳转 /pages/campus/certification（校园认证页）。
+ * - "realname"（实名）→ 跳转 /subpackages/profile-extra/verification/real-name（实名认证页）；
+ * - "education"（学历）→ 跳转 /subpackages/campus/campus/certification（校园认证页）。
  *
  * 同步语义：不发起异步加载，profile 未就绪时按未认证处理（返回 false + 弹窗引导）。
  *

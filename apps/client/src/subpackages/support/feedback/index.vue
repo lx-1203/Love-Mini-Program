@@ -9,7 +9,7 @@
  * - 提交时将图片 URL 数组通过 attachments 字段一并发送
  *
  * 功能10（反馈历史记录）：
- * - 顶部「查看历史」入口，跳转到 /pages/feedback/history
+ * - 顶部「查看历史」入口，跳转到 /subpackages/profile-extra/feedback/history
  * - 提交记录列表项支持点击，跳转到历史详情页并带上 id 参数
  *
  * mp-weixin 兼容性：
@@ -89,7 +89,7 @@ const canAddImage = computed(
 );
 
 /** 历史页路径（功能10 入口跳转） */
-const HISTORY_PAGE_URL = "/pages/feedback/history";
+const HISTORY_PAGE_URL = "/subpackages/profile-extra/feedback/history";
 
 onMounted(() => {
   void feedbackStore.load();
@@ -358,7 +358,7 @@ async function submit(): Promise<void> {
 /**
  * 跳转到反馈历史页（功能10 入口）。
  *
- * 使用 uni.navigateTo 跳转到 /pages/feedback/history。
+ * 使用 uni.navigateTo 跳转到 /subpackages/profile-extra/feedback/history。
  * 失败时静默处理（如页面栈已满），不抛出异常。
  */
 function goHistory(): void {

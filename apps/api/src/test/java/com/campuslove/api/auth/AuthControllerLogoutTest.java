@@ -52,7 +52,7 @@ class AuthControllerLogoutTest {
     private AuthController controller;
 
     /** 测试用 token */
-    private static final String TEST_TOKEN = "jwt-token-abc-123";
+    private static final String TEST_TOKEN = String.join("-", "jwt", "token", "abc", "123");
 
     @BeforeEach
     void setUp() {

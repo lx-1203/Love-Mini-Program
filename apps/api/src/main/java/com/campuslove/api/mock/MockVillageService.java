@@ -455,7 +455,9 @@ public class MockVillageService implements VillageService {
         p.activityId,
         p.activityId != null ? MOCK_ACTIVITIES.get(p.activityId) : null,
         p.isPinned,
-        recentCommentsOf(p.id)
+        recentCommentsOf(p.id),
+        // 2026-08-26 R4：mock 列表最多 3 张图（PostData.images 透传）
+        p.images == null ? List.of() : p.images.stream().limit(3).toList()
     );
   }
 

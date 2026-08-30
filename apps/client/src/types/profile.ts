@@ -41,6 +41,18 @@ export interface UserProfileSocialProof {
   likesCount: number;
   /** 匹配数（4 列统计第 4 列） */
   matchCount: number;
+  /**
+   * 理想图口径 4 列统计（已填完资料的个人主页）：
+   * 我喜欢 / 喜欢我的 / 我赞 / 访客。均为可选，兼容既有「关注/粉丝/获赞/匹配」消费者。
+   */
+  /** 我喜欢（我喜欢的人数量） */
+  iLikeCount?: number;
+  /** 喜欢我的（喜欢我的人数量） */
+  likedMeCount?: number;
+  /** 我赞（获赞数） */
+  praisedCount?: number;
+  /** 访客（最近访客数） */
+  visitorCount?: number;
 }
 
 export interface UserProfileRelation {
@@ -81,6 +93,10 @@ export interface UserProfileDTO {
   stories?: UserProfileStory[];
   circles?: string[];
   state?: string;
+  /** 距离文案（他人主页展示，如 "2.3km"），可空 */
+  distanceText?: string;
+  /** 是否在线（他人主页展示），可空 */
+  online?: boolean;
 }
 
 /** 主页状态体系 */

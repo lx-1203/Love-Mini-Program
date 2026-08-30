@@ -1,4 +1,9 @@
 <script setup lang="ts">
+
+
+import { useMenuButtonRect } from "@/composables/useMenuButtonRect";
+
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 /**
  * 个人中心 - 我的
  * 展示用户头像、昵称、学校、签名、VIP 状态、我的动态、数据统计、资料完善度、社交升温进度、功能菜单入口
@@ -461,11 +466,11 @@ function openCertSheet(): void {
 /**
  * 点击"去认证"CTA 处理：
  * - 触发轻振动反馈
- * - 跳转到校园认证页（/pages/campus/certification）
+ * - 跳转到校园认证页（/subpackages/campus/campus/certification）
  */
 function handleVerificationClick() {
   lightHaptic();
-  openAppPath("/pages/campus/certification");
+  openAppPath("/subpackages/campus/campus/certification");
 }
 
 /**
@@ -700,6 +705,11 @@ const mineSocialProof = computed(() => ({
   followersCount: profileStore.profileStats?.followersCount ?? profileStore.profileStats?.followers ?? 0,
   likesCount: profileStore.profileStats?.likesCount ?? profileStore.profileStats?.likes ?? 0,
   matchCount: profileStore.profileStats?.matchCount ?? likesStore.mutualLikes.length,
+  // 理想图口径：我喜欢 / 喜欢我的 / 我赞 / 访客（MyStats 4 列消费）
+  iLikeCount: likesStore.likes.length,
+  likedMeCount: profileStore.profileStats?.likedMeCount ?? likesStore.likedBy.length,
+  praisedCount: profileStore.profileStats?.likesCount ?? profileStore.profileStats?.likes ?? 0,
+  visitorCount: profileStore.profileStats?.visitorsCount ?? profileStore.profileStats?.visitors ?? 0,
 }));
 
 const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | null>(() => {
@@ -726,9 +736,9 @@ const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | n
     // D-03：我的故事 3 卡（生活日常/旅行足迹/我的心愿），封面复用本地人物配图
     // （第五轮 QA：原 CARD_1/2/3 为静态插画，改 portraits/p5~p7.jpg 增强真实感）
     stories: [
-      { id: "story-1", cover: "/static/assets/images/portraits/p5.jpg", title: "生活日常", location: "", dateText: "3 篇" },
-      { id: "story-2", cover: "/static/assets/images/portraits/p6.jpg", title: "旅行足迹", location: "", dateText: "2 篇" },
-      { id: "story-3", cover: "/static/assets/images/portraits/p7.jpg", title: "我的心愿", location: "", dateText: "1 篇" },
+      { id: "story-1", cover: resolveMediaUrl("/static/assets/images/portraits/p5.jpg"), title: "生活日常", location: "", dateText: "3 篇" },
+      { id: "story-2", cover: resolveMediaUrl("/static/assets/images/portraits/p6.jpg"), title: "旅行足迹", location: "", dateText: "2 篇" },
+      { id: "story-3", cover: resolveMediaUrl("/static/assets/images/portraits/p7.jpg"), title: "我的心愿", location: "", dateText: "1 篇" },
     ],
   };
 });
@@ -741,9 +751,10 @@ const interactionItems = computed(() => [
 ]);
 
 const moreItems = computed(() => [
-  { key: "favorites", label: "收藏帖子" },
+  // 理想图口径「更多功能」：我的收藏 / 谁看过我 / 恋爱相册 / 隐私设置
+  { key: "favorites", label: "我的收藏" },
   { key: "visitors", label: "谁看过我" },
-  { key: "album", label: "我的相册" },
+  { key: "album", label: "恋爱相册" },
   { key: "privacy", label: "隐私设置" },
 ]);
 
@@ -767,11 +778,24 @@ function onProfileShellEdit() {
 function onProfileShellComplete() {
   goCompleteProfile();
 }
+/** P0-3：我的故事照片/视频卡点击 → 相册页 */
+function onProfileShellStoryPhoto() {
+  openAppPath(ROUTES.PROFILE.ALBUM);
+}
+function onProfileShellStoryVideo() {
+  openAppPath(ROUTES.PROFILE.ALBUM);
+}
+/** P0-3：添加故事 → 相册页（上传新故事/相册照片） */
+function onProfileShellAddStory() {
+  openAppPath(ROUTES.PROFILE.ALBUM);
+}
 function onProfileShellStatTap(key: string) {
   const map: Record<string, string> = {
+    iLike: ROUTES.LIKES.INDEX,
     likedMe: ROUTES.LIKES.INDEX,
-    likes: ROUTES.LIKES.INDEX,
+    praised: ROUTES.LIKES.INDEX,
     visitor: ROUTES.LIKES.INDEX,
+    likes: ROUTES.LIKES.INDEX,
     match: ROUTES.LIKES.INDEX,
   };
   const path = map[key];
@@ -800,11 +824,11 @@ function onProfileShellMoreTap(key: string) {
   const map: Record<string, string> = {
     profile: "/subpackages/setup/profile/index",
     interest: "/subpackages/setup/interest/index",
-    checkin: "/pages/profile/tasks",
-    privacy: "/pages/settings/index",
-    favorites: "/pages/profile/favorites",
-    visitors: "/pages/profile/visitors",
-    album: "/pages/profile/album",
+    checkin: "/subpackages/profile-extra/profile/tasks",
+    privacy: "/subpackages/profile-extra/settings/index",
+    favorites: "/subpackages/profile-extra/profile/favorites",
+    visitors: "/subpackages/profile-extra/profile/visitors",
+    album: "/subpackages/profile-extra/profile/album",
   };
   const path = map[key];
   if (path) openAppPath(path);
@@ -1400,7 +1424,7 @@ function handleRemoveVoice() {
  */
 function goToMyPosts() {
   lightHaptic();
-  switchTabWithQuery("/pages/village/index", { tab: "mine" });
+  switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
 }
 
 /**
@@ -1410,21 +1434,22 @@ function goToMyPosts() {
 async function handlePostTap(postId: string) {
   lightHaptic();
   if (!postId) {
-    switchTabWithQuery("/pages/village/index", { tab: "mine" });
+    switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
     return;
   }
   await villageStore.setCurrentPost(postId);
   if (villageStore.currentPost) {
-    openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
+    openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
     return;
   }
   // 帖子不存在（可能已被删除）：回退"我的"分区
-  switchTabWithQuery("/pages/village/index", { tab: "mine" });
+  switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
 }
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
-  openAppPath("/pages/village/publish");
+  // 统一发帖入口（P12）：个人主页加号跳转标准发帖页
+  openAppPath(ROUTES.VILLAGE.POST);
 }
 
 
@@ -1708,7 +1733,7 @@ onUnload(() => {
 </script>
 
 <template>
-  <view class="profile-page page-bottom-safe">
+  <view class="profile-page page-bottom-safe" :style="menuStyleVars">
     <!-- ==================== 未完善资料：锁定页面 ==================== -->
     <!-- 2026-08-13 保持锁定（用户确认）：未登录无论自己/他人主页均显示 LockScreen
          登录引导；loadOtherProfile 内部游客门禁保证此处不发起受保护请求、无 401 踢跳 -->
@@ -1730,6 +1755,9 @@ onUnload(() => {
         @edit="onProfileShellEdit"
         @complete="onProfileShellComplete"
         @stat-tap="onProfileShellStatTap"
+        @story-photo="onProfileShellStoryPhoto"
+        @story-video="onProfileShellStoryVideo"
+        @add-story="onProfileShellAddStory"
         @interaction-tap="onProfileShellInteractionTap"
         @growth-tap="onProfileShellGrowthTap"
         @more-tap="onProfileShellMoreTap"
@@ -1800,7 +1828,7 @@ onUnload(() => {
           v-if="!voiceStatusUrl"
           class="video-cta press-feedback"
           hover-class="video-cta--hover"
-          hover-stay-time="120"
+          hover-stay-time="40"
           role="button"
           :aria-label="t('profile.recordVoiceAria')"
           @tap="handleRecordVoice"
@@ -1823,7 +1851,7 @@ onUnload(() => {
             <view
               class="voice-preview__play press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.playVoiceAria')"
               @tap="handlePlayVoice"
@@ -1846,7 +1874,7 @@ onUnload(() => {
             <view
               class="voice-preview__delete press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.voiceReRecordAria')"
               @tap="handleRecordVoice"
@@ -1856,7 +1884,7 @@ onUnload(() => {
             <view
               class="voice-preview__delete press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.deleteVoiceAria')"
               @tap="handleRemoveVoice"
@@ -1913,7 +1941,7 @@ onUnload(() => {
               v-else
               class="photo-grid__add press-feedback"
               hover-class="photo-grid__add--hover"
-              hover-stay-time="100"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
@@ -1926,7 +1954,7 @@ onUnload(() => {
       </view>
 
         <!-- VIP 卡片：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
+      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -1960,7 +1988,7 @@ onUnload(() => {
             :aria-label="t('profile.viewAllPostsAria')"
             @tap="goToMyPosts"
             hover-class="section-header__more--hover"
-            hover-stay-time="100"
+            hover-stay-time="40"
           >
             <text class="section-header__more-text">{{ t('common.viewAll') }}</text>
             <text class="section-header__more-arrow">›</text>
@@ -1978,7 +2006,7 @@ onUnload(() => {
             :aria-label="post.summary"
             @tap="handlePostTap(post.id)"
             hover-class="my-post-item--hover"
-            hover-stay-time="100"
+            hover-stay-time="40"
           >
             <!-- 说说头部：发布时间 + 更多 -->
             <view class="my-post-item__head">
@@ -2020,7 +2048,7 @@ onUnload(() => {
           :aria-label="t('profile.publishFirstAria')"
           @tap="goToMyPosts"
           hover-class="my-posts-empty--hover"
-          hover-stay-time="100"
+          hover-stay-time="40"
         >
           <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
           <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
@@ -2031,7 +2059,7 @@ onUnload(() => {
       <!-- 2026-08-14：主页 3 组功能菜单 / 退出登录 / 底部版本已收敛到设置页（pages/settings/index） -->
 
       <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="100">
+      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="40">
         <text class="dev-entry__text">DEV</text>
       </view>
 
@@ -2060,7 +2088,7 @@ onUnload(() => {
         v-if="!sessionStore.isProfileComplete"
         class="profile-complete-banner press-feedback"
         hover-class="press-feedback--active"
-        hover-stay-time="120"
+        hover-stay-time="40"
         role="button"
         :aria-label="t('profile.completeBannerAria', { n: completionPercent })"
         @tap="goCompleteProfile"
@@ -2088,7 +2116,7 @@ onUnload(() => {
           <view
             class="profile-settings press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('profile.settings')"
             @tap="openSettings"
@@ -2218,7 +2246,7 @@ onUnload(() => {
             v-if="isOwnProfile"
             class="profile-bg__edit press-feedback"
             hover-class="profile-bg__edit--hover"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('profile.editBgAria')"
             @tap="handleEditBackground"
@@ -2248,12 +2276,12 @@ onUnload(() => {
         <view class="profile-head-card">
           <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换（2026-08-14：Hero 主 CTA；标签/照片墙已移入资料 Tab） -->
           <!-- 自己的 profile：显示"编辑资料"按钮 -->
-          <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="120">
+          <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="40">
             <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
             <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
           </view>
           <!-- 对方 profile：显示"打个招呼"按钮 -->
-          <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="120">
+          <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="40">
             <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
             <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
           </view>
@@ -2267,7 +2295,7 @@ onUnload(() => {
             :key="index"
             class="stats-bar__item press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="stat.label"
             @tap="handleStatTap(index)"
@@ -2287,27 +2315,27 @@ onUnload(() => {
 
       <!-- ===== v3 我的主页：菜单列表（我的资料 / 兴趣偏好 / 我的动态 / 每日签到 / 隐私与安全） ===== -->
       <view v-if="isOwnProfile" class="profile-menu">
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('profile.menuProfile')" @tap="openAppPath('/subpackages/setup/profile/index')">
+        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuProfile')" @tap="openAppPath('/subpackages/setup/profile/index')">
           <text class="profile-menu__label">{{ t('profile.menuProfile') }}</text>
           <text class="profile-menu__hint">{{ t('profile.completionPercent', { percent: completionPercent }) }}</text>
           <text class="profile-menu__arrow">›</text>
         </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('profile.menuInterest')" @tap="openAppPath('/subpackages/setup/interest/index')">
+        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuInterest')" @tap="openAppPath('/subpackages/setup/interest/index')">
           <text class="profile-menu__label">{{ t('profile.menuInterest') }}</text>
           <text class="profile-menu__hint">{{ t('profile.menuInterestHint') }}</text>
           <text class="profile-menu__arrow">›</text>
         </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('profile.menuPosts')" @tap="onTabChange('posts')">
+        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuPosts')" @tap="onTabChange('posts')">
           <text class="profile-menu__label">{{ t('profile.menuPosts') }}</text>
           <text class="profile-menu__hint">{{ t('profile.menuPostsHint') }}</text>
           <text class="profile-menu__arrow">›</text>
         </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('profile.menuCheckin')" @tap="handleProfileCheckin">
+        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuCheckin')" @tap="handleProfileCheckin">
           <text class="profile-menu__label">{{ t('profile.menuCheckin') }}</text>
           <text class="profile-menu__hint">{{ checkInStore.checkedIn ? t('profile.checkinDone', { n: checkInStore.consecutiveDays }) : t('profile.checkinToday') }}</text>
           <text class="profile-menu__arrow">›</text>
         </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('profile.menuPrivacy')" @tap="openAppPath('/pages/settings/index')">
+        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuPrivacy')" @tap="openAppPath('/subpackages/profile-extra/settings/index')">
           <text class="profile-menu__label">{{ t('profile.menuPrivacy') }}</text>
           <text class="profile-menu__hint">{{ t('profile.menuPrivacyHint') }}</text>
           <text class="profile-menu__arrow">›</text>
@@ -2380,7 +2408,7 @@ onUnload(() => {
           v-if="!voiceStatusUrl"
           class="video-cta press-feedback"
           hover-class="video-cta--hover"
-          hover-stay-time="120"
+          hover-stay-time="40"
           role="button"
           :aria-label="t('profile.recordVoiceAria')"
           @tap="handleRecordVoice"
@@ -2403,7 +2431,7 @@ onUnload(() => {
             <view
               class="voice-preview__play press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.playVoiceAria')"
               @tap="handlePlayVoice"
@@ -2426,7 +2454,7 @@ onUnload(() => {
             <view
               class="voice-preview__delete press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.voiceReRecordAria')"
               @tap="handleRecordVoice"
@@ -2436,7 +2464,7 @@ onUnload(() => {
             <view
               class="voice-preview__delete press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.deleteVoiceAria')"
               @tap="handleRemoveVoice"
@@ -2493,7 +2521,7 @@ onUnload(() => {
               v-else
               class="photo-grid__add press-feedback"
               hover-class="photo-grid__add--hover"
-              hover-stay-time="100"
+              hover-stay-time="40"
               role="button"
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
@@ -2506,7 +2534,7 @@ onUnload(() => {
       </view>
 
         <!-- VIP 卡片：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="120">
+      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -2540,7 +2568,7 @@ onUnload(() => {
             :aria-label="t('profile.viewAllPostsAria')"
             @tap="goToMyPosts"
             hover-class="section-header__more--hover"
-            hover-stay-time="100"
+            hover-stay-time="40"
           >
             <text class="section-header__more-text">{{ t('common.viewAll') }}</text>
             <text class="section-header__more-arrow">›</text>
@@ -2558,7 +2586,7 @@ onUnload(() => {
             :aria-label="post.summary"
             @tap="handlePostTap(post.id)"
             hover-class="my-post-item--hover"
-            hover-stay-time="100"
+            hover-stay-time="40"
           >
             <!-- 说说头部：发布时间 + 更多 -->
             <view class="my-post-item__head">
@@ -2600,7 +2628,7 @@ onUnload(() => {
           :aria-label="t('profile.publishFirstAria')"
           @tap="goToMyPosts"
           hover-class="my-posts-empty--hover"
-          hover-stay-time="100"
+          hover-stay-time="40"
         >
           <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
           <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
@@ -2611,7 +2639,7 @@ onUnload(() => {
       <!-- 2026-08-14：主页 3 组功能菜单 / 退出登录 / 底部版本已收敛到设置页（pages/settings/index） -->
 
       <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="100">
+      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="40">
         <text class="dev-entry__text">DEV</text>
       </view>
 
@@ -2644,7 +2672,7 @@ onUnload(() => {
           <view
             class="invite-modal__retry press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('common.retry')"
             @tap="openInviteModal"
@@ -2659,7 +2687,7 @@ onUnload(() => {
           <view
             class="invite-modal__copy press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('profile.inviteCopy')"
             @tap="copyInviteCode"
@@ -2676,7 +2704,7 @@ onUnload(() => {
           <view
             class="invite-modal__btn invite-modal__btn--cancel press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             @tap="showInviteModal = false"
           >
@@ -2741,8 +2769,8 @@ onUnload(() => {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  height: calc(constant(safe-area-inset-top) + var(--sp-5));
-  height: calc(env(safe-area-inset-top) + var(--sp-5));
+  height: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
+  height: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -3083,7 +3111,7 @@ onUnload(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: calc(env(safe-area-inset-top) + var(--sp-5)) var(--sp-5) 0;
+  margin: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5)) var(--sp-5) 0;
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--c-brand-50);
@@ -3111,8 +3139,8 @@ onUnload(() => {
 /* 顶部右上角 chip 容器（Phase C1） */
 .profile-top-bar {
   position: absolute;
-  top: calc(constant(safe-area-inset-top) + var(--sp-5));
-  top: calc(env(safe-area-inset-top) + var(--sp-5));
+  top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
+  top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
   right: 0;
   z-index: 10;
   display: flex;
@@ -3149,6 +3177,8 @@ onUnload(() => {
   align-items: center;
   gap: var(--sp-3);
   flex-shrink: 0;
+  /* 右侧避让微信胶囊（完善资料/齿轮不再被胶囊叠压） */
+  padding-right: calc(var(--capsule-right, 96px) + 8px);
 }
 
 /* 空间分享按钮（2026-08-08 QQ 主页重构：mp-weixin button 原生分享，重置默认样式） */

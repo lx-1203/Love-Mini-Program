@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="pring-match" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6FD4AA"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#E8F8F0" stroke-width="8"/>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="url(#pring-match)" stroke-width="8" stroke-linecap="round" stroke-dasharray="300.5" stroke-dashoffset="24" transform="rotate(-90 60 60)"/>
+  <text x="60" y="56" text-anchor="middle" fill="#36C99A" font-family="Arial, sans-serif" font-size="24" font-weight="bold">92%</text>
+  <text x="60" y="76" text-anchor="middle" fill="#999" font-family="Arial, sans-serif" font-size="11">匹配度</text>
+</svg>

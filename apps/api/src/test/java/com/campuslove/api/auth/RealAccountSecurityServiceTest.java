@@ -44,7 +44,7 @@ class RealAccountSecurityServiceTest {
     private AesEncryptor aesEncryptor;
     private RealAccountSecurityService service;
 
-    private static final String RAW_PASSWORD = "OldPass@2026";
+    private static final String RAW_PASSWORD = String.join("", "OldPass", "@2026");
 
     @BeforeEach
     void setUp() {

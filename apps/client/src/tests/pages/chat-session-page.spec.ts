@@ -10,7 +10,7 @@ import { resolve } from "node:path";
  */
 describe("ChatSession 页面 smoke", () => {
   const chatSource = readFileSync(
-    resolve(__dirname, "../../pages/chat-session/index.vue"),
+    resolve(__dirname, "../../subpackages/chat/chat-session/index.vue"),
     "utf-8"
   );
 

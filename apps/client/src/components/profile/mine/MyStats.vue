@@ -1,18 +1,25 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { UserProfileSocialProof } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
 
-defineProps<{ socialProof: UserProfileSocialProof }>();
+const props = defineProps<{ socialProof: UserProfileSocialProof }>();
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
 const items = [
-  // 修复#4（第五轮 QA）：4 列统计按规格「关注/粉丝/获赞/匹配」，
-  // 键值对齐 followingCount/followersCount/likesCount/matchCount（mock 128/96/356/42）
-  { key: "following", label: "关注", iconSrc: IMAGE_PATHS.ICONS_EMOJI.USER, color: "#36C99A" },
-  { key: "followers", label: "粉丝", iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#4D8DFF" },
-  { key: "likes", label: "获赞", iconSrc: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP, color: "#FF9F43" },
-  { key: "match", label: "匹配", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
+  // 理想图口径：我喜欢 / 喜欢我的 / 我赞 / 访客
+  // （彩色图标+数字+文字四宫格，颜色区分互动类型）
+  { key: "iLike", label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#A29BFE" },
+  { key: "likedMe", label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#FF6B81" },
+  { key: "praised", label: "我赞", iconSrc: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP, color: "#FF9F43" },
+  { key: "visitor", label: "访客", iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
 ];
+
+function statValue(key: string, socialProof: UserProfileSocialProof): number {
+  if (key === "iLike") return socialProof.iLikeCount ?? 0;
+  if (key === "likedMe") return socialProof.likedMeCount ?? 0;
+  if (key === "praised") return socialProof.praisedCount ?? socialProof.likesCount ?? 0;
+  return socialProof.visitorCount ?? 0;
+}
 </script>
 
 <template>
@@ -28,7 +35,7 @@ const items = [
         <image class="my-stats__icon-img" :src="item.iconSrc" mode="aspectFit" alt="" />
       </view>
       <text class="my-stats__value">
-        {{ item.key === "following" ? socialProof.followingCount : item.key === "followers" ? socialProof.followersCount : item.key === "likes" ? socialProof.likesCount : socialProof.matchCount }}
+        {{ statValue(item.key, props.socialProof) }}
       </text>
       <text class="my-stats__label">{{ item.label }}</text>
     </view>

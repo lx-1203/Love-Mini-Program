@@ -1,0 +1,185 @@
+/* ============================================================
+ * Admin 全局设计令牌（:root 变量 + body 基础渲染）
+ * ------------------------------------------------------------
+ * ⚠ 必须由 main.ts 全局引入（不能放 <style scoped> 内 @import）：
+ *   vue SFC scoped 会把 :root 重写为 :root[data-v-xxx]，永远无法
+ *   匹配 <html>，导致全部 var(--admin-*) 变量未定义、整站样式失效。
+ * ============================================================ */
+
+/* ========== 设计 Token（design-tokens-admin.md 对齐） ========== */
+/* 颜色与像素尺寸的单一来源，与 adminTokens (theme/tokens.ts) 对齐 */
+:root {
+  /* —— 主色（仅主操作 / 激活态 / 链接 / 聚焦环） —— */
+  --admin-color-primary: #0064e0;
+  --admin-color-primary-hover: #0457cb;
+  --admin-color-primary-soft: #e9f1fd;
+  --admin-color-primary-softer: #d7e7fb;
+  --admin-color-on-primary: #ffffff;
+
+  /* —— 语义色（状态 / 反馈，徽章 = 浅底 + 同色字） —— */
+  --admin-color-success: #31a24c;
+  --admin-color-success-soft: #e8f5ec;
+  --admin-color-success-softer: #d4eedd;
+  --admin-color-warning: #f2a918;
+  --admin-color-warning-text: #a96f00;
+  --admin-color-warning-soft: #fbf1dc;
+  --admin-color-warning-softer: #f5e3c2;
+  --admin-color-danger: #e41e3f;
+  --admin-color-danger-hover: #c2132f;
+  --admin-color-danger-soft: #fce8ec;
+  --admin-color-danger-softer: #f8d3da;
+  --admin-color-info: #0064e0;
+  --admin-color-info-soft: #e9f1fd;
+  --admin-color-info-softer: #d7e7fb;
+  --admin-color-accent: #0064e0;
+  --admin-color-accent-soft: #e9f1fd;
+
+  /* —— 渐变辅助色（保留变量名兼容历史引用，取值收敛为主色系） —— */
+  --admin-color-gradient-secondary: #0457cb;
+  --admin-color-skip-link: #0064e0;
+  --admin-color-skip-link-fg: #ffffff;
+
+  /* —— Danger 加深色（ErrorState 标题/正文/hover） —— */
+  --admin-color-danger-border: #f5b6c2;
+  --admin-color-danger-title: #b01230;
+  --admin-color-danger-message: #8f1027;
+  --admin-color-danger-active: #c2132f;
+
+  /* —— Stat 卡片配色（Dashboard 统计数字，cobalt 单色系） —— */
+  --admin-color-stat-primary: #0064e0;
+  --admin-color-stat-pink: #e41e3f;
+  --admin-color-stat-blue: #5b99ef;
+  --admin-color-stat-green: #31a24c;
+
+  /* —— 文本色（三级层次 + 占位/禁用） —— */
+  --admin-color-text-primary: #1c1e21;
+  --admin-color-text-secondary: #5d6c7b;
+  --admin-color-text-tertiary: #8595a4;
+  --admin-color-text-quaternary: #8595a4;
+  --admin-color-text-placeholder: #bcc0c4;
+  --admin-color-disabled-text: #bcc0c4;
+  --admin-color-disabled-bg: #f1f4f7;
+
+  /* —— 边框与背景（灰底托白卡 + 1px 边框） —— */
+  --admin-color-border: #ced0d4;
+  --admin-color-border-light: #dee3e9;
+  --admin-color-bg-page: #f1f4f7;
+  --admin-color-bg-container: #ffffff;
+  --admin-color-bg-subtle: #f1f4f7;
+  --admin-color-bg-hover: #f1f4f7;
+  --admin-color-overlay: rgba(10, 19, 23, 0.45);
+
+  /* —— 侧边栏（白色，激活态三合一：浅蓝底 + 左 3px 主色竖条 + 主色字） —— */
+  --admin-sidebar-bg: #ffffff;
+  --admin-sidebar-bg-hover: #f1f4f7;
+  --admin-sidebar-bg-active: #e9f1fd;
+  --admin-sidebar-text: #5d6c7b;
+  --admin-sidebar-text-active: #0064e0;
+  --admin-sidebar-logo-bg: #ffffff;
+  --admin-sidebar-submenu-bg: #ffffff;
+  --admin-header-bg: #ffffff;
+  --admin-tabs-bg: #f1f4f7;
+
+  /* —— 字体 —— */
+  --admin-font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+  --admin-font-family-mono: "JetBrains Mono", "SF Mono", "Roboto Mono", Menlo,
+    Consolas, "Courier New", monospace;
+
+  /* —— 间距（4px 基准，8px 主步长） —— */
+  --admin-space-xs: 4px;
+  --admin-space-xxs: 6px;
+  --admin-space-sm: 8px;
+  --admin-space-md-sm: 10px;
+  --admin-space-md: 12px;
+  --admin-space-md-lg: 14px;
+  --admin-space-lg: 16px;
+  --admin-space-xl: 20px;
+  --admin-space-xxl: 24px;
+  --admin-space-xxxl: 32px;
+  --admin-space-section: 40px;
+
+  /* —— 圆角（后台收敛 4–10px，禁用胶囊） —— */
+  --admin-radius-sm: 4px;
+  --admin-radius-md: 6px;
+  --admin-radius-lg: 8px;
+  --admin-radius-xl: 8px;
+  --admin-radius-xxl: 12px;
+  /* 圆形（仅头像/状态点场景，§4.2 radius-full） */
+  --admin-radius-full: 9999px;
+
+  /* —— 字号（后台紧凑基准 14px，跨级 ≤6px 跳变） —— */
+  --admin-font-xs: 12px;
+  --admin-font-sm: 12px;
+  --admin-font-md: 13px;
+  --admin-font-lg: 14px;
+  --admin-font-xl: 16px;
+  --admin-font-xxl: 16px;
+  --admin-font-xxxl: 24px;
+  --admin-font-display: 28px;
+  --admin-font-display-xl: 72px;
+
+  /* —— 阴影（后台以边框分层；阴影仅 hover/弹层） —— */
+  --admin-shadow-sm: none;
+  --admin-shadow-md: 0 4px 16px rgba(20, 22, 26, 0.12);
+  --admin-shadow-lg: 0 8px 32px rgba(20, 22, 26, 0.16);
+  --admin-shadow-raised: 0 1px 4px rgba(20, 22, 26, 0.08);
+
+  /* —— 布局与页面尺寸 —— */
+  --admin-layout-sidebar-width: 220px;
+  --admin-layout-bar-height: 56px;
+  --admin-tab-close-size: 16px;
+  --admin-page-max-width: 1400px;
+  --admin-page-max-width-narrow: 1200px;
+  --admin-dialog-width: 720px;
+  --admin-dialog-width-sm: 420px;
+  --admin-text-ellipsis-width: 320px;
+  --admin-content-max-width: 280px;
+  --admin-content-max-height: 120px;
+  --admin-action-min-width: 90px;
+  --admin-icon-size: 56px;
+  --admin-icon-size-sm: 28px;
+  --admin-control-width: 120px;
+  --admin-control-max-width: 200px;
+  --admin-underline-width: 2px;
+  --admin-focus-ring-offset: 2px;
+  --admin-card-hover-offset: -4px;
+  /* —— 控件高度（按钮/输入统一 36px，小号 32px） —— */
+  --admin-control-height: 36px;
+  --admin-control-height-sm: 32px;
+  /* —— 聚焦浅环 —— */
+  --admin-focus-ring: 0 0 0 3px rgba(0, 100, 224, 0.15);
+  --admin-focus-ring-danger: 0 0 0 3px rgba(228, 30, 63, 0.12);
+}
+
+/* 全局字体族与文字渲染（全局引入，:root 直接作用于文档根） */
+:root {
+  font-family: var(--admin-font-family);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: var(--admin-font-family);
+  font-size: 14px;
+  color: var(--admin-color-text-primary);
+  background: var(--admin-color-bg-page);
+}
+
+/* ========== Web 端 uni-app 风格标签兜底 ==========
+ * 视图模板沿用 <view>/<text>/<image> 标签：它们在 Web 端是未知元素，
+ * 默认 display:inline，导致 height/background/border 等盒模型属性失效
+ * （表现为卡片背景碎裂、图表绘图区高度为 0）。此处统一给出盒模型默认值，
+ * 组件内的 display:flex/grid 等显式声明仍可覆盖。 */
+view {
+  display: block;
+}
+
+text {
+  display: inline;
+}
+
+image {
+  display: inline-block;
+}

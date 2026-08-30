@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { resolveMediaUrl } from "@/utils/media";
 import type { components } from "../services/generated/api-types";
 import type { ProfileStats } from "../services/generated/api-types-supplement";
 // 修复 no-duplicate-imports：合并 ../services/api 的重复 import
@@ -80,10 +81,10 @@ const mockBasicProfile: Schemas["BasicProfile"] = {
   // D-03（第五轮 QA）：照片墙从 1 空占位增强为 4 张真实人物配图
   // （portraits/p1~p4.jpg 600px 本地图，照片墙 6 格中前 4 格有图、后 2 格仍为上传占位）
   photoGallery: [
-    "/static/assets/images/portraits/p1.jpg",
-    "/static/assets/images/portraits/p2.jpg",
-    "/static/assets/images/portraits/p3.jpg",
-    "/static/assets/images/portraits/p4.jpg",
+    resolveMediaUrl("/static/assets/images/portraits/p1.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p2.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p3.jpg"),
+    resolveMediaUrl("/static/assets/images/portraits/p4.jpg"),
   ],
 };
 

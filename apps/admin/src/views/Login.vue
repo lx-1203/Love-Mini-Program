@@ -117,12 +117,15 @@ async function handleLogin() {
 </template>
 
 <style scoped>
+@import "../styles/admin-common.css";
+
+/* 登录页（后台语言：灰底托白卡 + 1px 边框 + cobalt 主按钮，无营销渐变） */
 .login-page {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--admin-color-primary) 0%, var(--admin-color-gradient-secondary) 100%);
+  background: var(--admin-color-bg-page);
   padding: var(--admin-space-xl);
 }
 
@@ -130,9 +133,10 @@ async function handleLogin() {
   width: 100%;
   max-width: 400px;
   background: var(--admin-color-bg-container);
-  border-radius: var(--admin-radius-xxl);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-lg);
   padding: var(--admin-space-section) var(--admin-space-xxxl);
-  box-shadow: var(--admin-shadow-lg);
+  box-shadow: none;
 }
 
 .login-header {
@@ -142,15 +146,16 @@ async function handleLogin() {
 
 .login-title {
   display: block;
-  font-size: var(--admin-font-xxxl);
-  font-weight: 700;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
   color: var(--admin-color-text-primary);
   margin-bottom: var(--admin-space-sm);
 }
 
 .login-subtitle {
   display: block;
-  font-size: var(--admin-font-lg);
+  font-size: var(--admin-font-md);
   color: var(--admin-color-text-tertiary);
 }
 
@@ -173,16 +178,20 @@ async function handleLogin() {
 }
 
 .form-input {
-  padding: var(--admin-space-md) var(--admin-space-md-lg);
+  height: var(--admin-control-height);
+  padding: 0 var(--admin-space-md);
   border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-lg);
+  border-radius: var(--admin-radius-md);
   font-size: var(--admin-font-lg);
-  transition: border-color 0.2s;
+  font-family: inherit;
+  color: var(--admin-color-text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--admin-color-primary);
+  box-shadow: var(--admin-focus-ring);
 }
 
 .error-message {
@@ -194,15 +203,16 @@ async function handleLogin() {
 }
 
 .login-button {
-  padding: var(--admin-space-md);
+  height: var(--admin-control-height);
   background: var(--admin-color-primary);
-  color: var(--admin-color-bg-container);
+  color: var(--admin-color-on-primary);
   border: none;
-  border-radius: var(--admin-radius-lg);
-  font-size: var(--admin-font-xl);
-  font-weight: 600;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
 .login-button:hover {
@@ -211,7 +221,8 @@ async function handleLogin() {
 
 .login-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  background: var(--admin-color-disabled-text);
+  opacity: 1;
 }
 
 .login-hint {
@@ -219,7 +230,7 @@ async function handleLogin() {
   flex-direction: column;
   gap: var(--admin-space-xs);
   padding: var(--admin-space-md-sm) var(--admin-space-md);
-  background: var(--admin-color-accent-soft);
+  background: var(--admin-color-primary-soft);
   border-radius: var(--admin-radius-md);
   font-size: var(--admin-font-sm);
   color: var(--admin-color-primary);

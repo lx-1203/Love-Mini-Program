@@ -113,6 +113,39 @@ export function filterNearby(cards: DiscoverCard[]): DiscoverCard[] {
 }
 
 /**
+ * 距离排序权重（越小越靠前）：
+ * 同校（0）→ distanceText 数值 km 升序 → 无距离信息（末尾兜底）。
+ *
+ * 2026-08-26：寻觅页「附近」分段按距离从近到远展示，复用推荐卡片样式。
+ *
+ * @param card - 卡片
+ * @returns 距离排序权重
+ */
+function distanceRank(card: DiscoverCard): number {
+  if (card.isSameSchool) return 0;
+  const raw = card.distanceText;
+  if (!raw) return Number.MAX_SAFE_INTEGER;
+  const km = Number.parseFloat(raw);
+  return Number.isFinite(km) ? km : Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * 距离优先排序（附近卡片）：同校优先，其次按 distanceText 数值升序（近→远），
+ * 无距离信息者排末尾。稳定排序，同权重保持原顺序。
+ *
+ * @param cards - 卡片列表
+ * @returns 排序后的卡片列表
+ */
+export function sortNearbyFirst(cards: DiscoverCard[]): DiscoverCard[] {
+  return [...cards].sort((a, b) => {
+    const ra = distanceRank(a);
+    const rb = distanceRank(b);
+    if (ra === rb) return 0;
+    return ra < rb ? -1 : 1;
+  });
+}
+
+/**
  * 活跃状态排序权重（越小越活跃）：
  * online(在线) → just_now → today → hours_{n}（n 小优先）→ away(离开) →
  * days_{n} → offline → 缺失

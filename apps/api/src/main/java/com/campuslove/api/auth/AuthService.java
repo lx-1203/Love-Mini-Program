@@ -64,11 +64,13 @@ public interface AuthService {
      * @param nickname  昵称(1-20 字)
      * @param birthDate 出生日期(3-N 未成年人保护：必填，服务端校验年龄 >= 18)
      * @param deviceId  客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
+     * @param verificationCode 短信验证码（模拟短信：发送后由 SmsCodeService 校验；可空=跳过校验）
      * @return 用户会话视图(包含 JWT 令牌)
-     * @throws IllegalArgumentException 手机号已注册/参数非法时抛出
+     * @throws IllegalArgumentException 手机号已注册/参数非法/验证码错误时抛出
      */
     UserSessionView registerUser(String phone, String password, String nickname,
-                                 java.time.LocalDate birthDate, String deviceId);
+                                 java.time.LocalDate birthDate, String deviceId,
+                                 String verificationCode);
 
     /**
      * 手机号 + 密码登录。

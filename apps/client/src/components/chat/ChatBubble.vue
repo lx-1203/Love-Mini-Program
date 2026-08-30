@@ -26,7 +26,9 @@ const props = withDefaults(
     selfAvatar?: string;
   }>(),
   {
-    peerAvatar: IMAGE_PATHS.AVATARS.AVATAR_1,
+    // 2026-08-26 P1-2：peer 默认头像由 AVATAR_1 改为 AVATAR_3——
+    // AVATAR_1(person-01) 与 self 真实头像可能同图(person-01)，会话缺失 partnerAvatar 时易出现自他头像"同名错位"观感
+    peerAvatar: IMAGE_PATHS.AVATARS.AVATAR_3,
     selfAvatar: IMAGE_PATHS.AVATARS.AVATAR_2,
   }
 );
@@ -209,7 +211,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 .bubble-wrap {
   display: flex;
   flex-direction: column;
-  max-width: 84%;
+  /* 微信聊天规范：气泡最大宽度 ≤ 容器 70%（避免框太长太宽横向撑爆） */
+  max-width: 70%;
 }
 .bubble-wrap--self {
   align-self: flex-end;
@@ -236,12 +239,12 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   flex-direction: row;
 }
 
-/* 头像：圆形 + 白边（参考微信风格，64rpx 直径；固定布局尺寸，无对应 token） */
+/* 头像：圆形 + 白边（2026-08-26 R3：尺寸收敛到 --bubble-avatar-* token） */
 .bubble-avatar {
-  width: 64rpx;
-  height: 64rpx;
+  width: var(--bubble-avatar-size);
+  height: var(--bubble-avatar-size);
   border-radius: var(--r-full);
-  border: 2rpx solid var(--c-bg-container);
+  border: var(--bubble-avatar-border);
   flex-shrink: 0;
   background: var(--c-neutral-100);
 }
@@ -249,23 +252,27 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   cursor: pointer;
 }
 
-/* mp-weixin 不支持 display:grid，单列纵向堆叠改用 flex-direction: column */
+/* mp-weixin 不支持 display:grid，单列纵向堆叠改用 flex-direction: column
+   2026-08-26 R3：padding / 阴影 / 主圆角收敛到 --bubble-* token（双方一致） */
 .bubble {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-lg);
-  box-shadow: var(--s-sm);
+  padding: var(--bubble-padding-y) var(--bubble-padding-x);
+  border-radius: var(--bubble-radius-main);
+  box-shadow: var(--bubble-shadow);
   min-width: 0;
 }
 
-/* 2026-08-09 微信 1:1 重构：圆角 12px = 24rpx（微信 4px/16px 风格；无对应 token 档位，局部字面量）；
-   我方右上直角、对方左上直角（圆角序列：左上 右上 右下 左下） */
+/* 2026-08-26 R3：self/peer 圆角统一 token 档位（主圆角 20rpx、尾巴 4rpx 保留方向性），
+   阴影统一禁用（box-shadow: none）。
+   P3 规范收敛：self「上左大、下右小」16rpx/6rpx；peer「上左小（贴头像）、其余大」6rpx/16rpx。
+   （备注：__tail 指贴近头像的小圆角，self 头像在右侧故右下为尾、peer 头像在左侧故左上为尾） */
 .bubble--self {
   background: #36C99A;
   color: #FFFFFF;
-  border-radius: 20rpx 20rpx 4rpx 20rpx;
+  border-radius: 16rpx 16rpx 6rpx 16rpx;
+  box-shadow: var(--bubble-shadow);
 }
 
 .bubble--assistant {
@@ -275,12 +282,12 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   max-width: 560rpx;
 }
 
-/* 对方气泡：纯白（--c-bubble-other 已改 #FFFFFF）、无阴影（微信白气泡无投影） */
+/* 对方气泡：白/浅灰底 + 深字、无阴影（微信白气泡无投影），左上小圆角贴近头像 */
 .bubble--peer {
   background: var(--c-bubble-other);
   color: var(--c-text-primary);
-  border-radius: 0 24rpx 24rpx 24rpx;
-  box-shadow: none;
+  border-radius: 6rpx 16rpx 16rpx 16rpx;
+  box-shadow: var(--bubble-shadow);
 }
 
 .bubble--system {
@@ -296,10 +303,12 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 }
 
 .bubble__body {
-  line-height: 1.6;
-  /* 2026-08-09 微信 1:1 重构：正文 15px = 30rpx（原 --fs-lg = 28rpx ≈ 14px；
-     无对应 token 档位，局部字面量） */
-  font-size: 30rpx;
+  line-height: var(--bubble-line-height);
+  /* 2026-08-26 R3：正文 30rpx 收敛到 --bubble-font-size token */
+  font-size: var(--bubble-font-size);
+  /* P3：文本自动换行，长串/URL 不横向撑爆气泡（mp-weixin 支持 word-break/overflow-wrap） */
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .bubble__body--recalled {
@@ -309,9 +318,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   text-align: center;
 }
 
-/* 2026-08-09 表情包机制：emoji 消息 28px = 56rpx 大号渲染（无对应 token 档位，局部字面量） */
+/* 2026-08-26 R3：emoji 消息 56rpx 收敛到 --bubble-emoji-font-size token */
 .bubble__body--emoji {
-  font-size: 56rpx;
+  font-size: var(--bubble-emoji-font-size);
   line-height: 1.2;
   padding: 4rpx 0;
 }
@@ -385,9 +394,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   gap: 2rpx;
 }
 .bubble__status-icon {
-  /* 状态图标固定尺寸（20rpx），无对应 token */
-  width: 20rpx;
-  height: 20rpx;
+  /* 2026-08-26 R3：送达状态图标 20rpx 收敛到 --bubble-status-icon-size token */
+  width: var(--bubble-status-icon-size);
+  height: var(--bubble-status-icon-size);
   opacity: 0.85;
 }
 </style>

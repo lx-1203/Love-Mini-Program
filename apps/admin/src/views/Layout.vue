@@ -1,23 +1,23 @@
 <script setup lang="ts">
 /**
- * Admin v2 布局视图（eladmin 风格：深色侧边栏 + 动态菜单 + 多标签页）。
+ * Admin v2 布局视图（对齐 design-tokens-admin.md 统一布局骨架）。
  *
- * 结构：
- *   - 左侧深色侧边栏：logo（「校园恋爱管理」）+ 动态菜单（两级：
- *     目录显示为可折叠分组标题，菜单项渲染为路由链接）；
+ * 结构（design Frame 00–12 统一骨架）：
+ *   - 左侧白色侧边栏 220px：品牌名「恋爱运营后台」+ 动态菜单
+ *     （目录渲染为分组标题 12px/500 #8595a4，菜单项高 40px；
+ *     选中态三合一：浅蓝底 #e9f1fd + 左 3px #0064e0 竖条 + 主色字 600）；
  *   - 右侧主区域：
- *       · 顶部栏：面包屑（按当前路由在菜单树中定位）+ 用户信息 + 退出登录；
- *       · 多标签页（tabs-view）：已访问页面显示为标签，可点击切换/关闭，
- *         关闭当前标签时跳回相邻标签（右侧优先，否则左侧）；Dashboard 固定不可关；
- *       · 主内容区 router-view。
+ *       · 顶部工具栏 56px：左页面标题 20px/600，右菜单快搜 + 用户头像下拉；
+ *       · 主内容区灰底 #f1f4f7 + 24px 内距，router-view。
  *
  * 菜单数据源：menuStore.menuTree（由守卫/登录页在进入前 loadMenus 填充）。
  */
-import { computed, ref, watch } from "vue";
-import { useRoute, useRouter, type RouteLocationNormalizedLoaded } from "vue-router";
+import { computed, nextTick, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { setLocale, getLocale } from "../i18n";
 import { useSessionStore } from "../stores/session";
-import { useMenuStore, type AdminMenuNode, resolveMenuPath } from "../stores/menu";
+import { useMenuStore, type AdminMenuNode } from "../stores/menu";
 import { logger } from "../utils/logger";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 
@@ -115,35 +115,20 @@ function childLocation(child: AdminMenuNode, parent: AdminMenuNode): string {
   return resolvePath(child, resolvePath(parent));
 }
 
-/**
- * 在菜单树中按路由 name 定位节点完整 path（如 "Dashboard" → "/dashboard"）。
- * 用于首页 tab / 面包屑首页的跳转目标；未找到返回 null。
- */
-function findNodePathByName(menus: AdminMenuNode[], name: string, parentPath = ""): string | null {
-  for (const node of menus) {
-    const fullPath = resolvePath(node, parentPath);
-    if (node.type === "MENU" && node.name === name) {
-      return fullPath;
-    }
-    if (node.children && node.children.length > 0) {
-      const found = findNodePathByName(node.children, name, fullPath);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/* ==================== 目录折叠状态 ==================== */
-
-/** 展开的目录 id 集合（默认全部展开，点击目录标题切换） */
+/** 目录折叠状态：默认全部展开（分组标题可见性即导航全貌） */
 const expandedGroups = ref<Set<number>>(new Set());
 
-/** 初始化时展开全部目录（按角色可见菜单树） */
-visibleMenuTree.value.forEach((node) => {
-  if (node.type === "DIR") {
-    expandedGroups.value.add(node.id);
-  }
-});
+watch(
+  () => menuStore.menuTree,
+  (tree) => {
+    tree.forEach((node) => {
+      if (node.type === "DIR") {
+        expandedGroups.value.add(node.id);
+      }
+    });
+  },
+  { immediate: true, deep: false },
+);
 
 function isGroupExpanded(id: number): boolean {
   return expandedGroups.value.has(id);
@@ -159,7 +144,7 @@ function toggleGroup(id: number): void {
   expandedGroups.value = next;
 }
 
-/* ==================== 面包屑 ==================== */
+/* ==================== 顶栏页面标题（面包屑链末位） ==================== */
 
 interface BreadcrumbItem {
   title: string;
@@ -167,7 +152,7 @@ interface BreadcrumbItem {
 }
 
 /**
- * 在菜单树中按目标 path 定位节点链（目录 → 菜单），用于渲染面包屑。
+ * 在菜单树中按目标 path 定位节点链（目录 → 菜单），用于解析页面标题。
  * 递归时维护父级 path 前缀；返回 null 表示未命中（页面不在菜单树中，如 403）。
  */
 function findBreadcrumbChain(
@@ -194,147 +179,75 @@ function findBreadcrumbChain(
 }
 
 /**
- * 菜单中 Dashboard 节点的完整 path（首页 tab / 面包屑首页的跳转目标）。
- * 用 computed 包裹：菜单树加载完成后自动重算，避免深链直入时
- * 菜单未加载导致路径退化为 "/"。
+ * 顶栏页面标题：菜单链末位（当前页）标题；
+ * 未命中菜单树时回退 route.meta.title / 路由 name。
  */
-const dashboardPath = computed<string>(
-  () => findNodePathByName(menuStore.menuTree, "Dashboard") ?? "/",
-);
-
-/**
- * 查找菜单树中第一个可跳转的 MENU（含 name/path/title）。
- * 校区管理员等无 Dashboard 权限的账号，初始标签落点用其首个菜单，
- * 避免初始"数据看板"标签指向无权限页面。
- */
-function findFirstMenuTab(menus: AdminMenuNode[], parentPath = ""): TabItem | null {
-  for (const node of menus) {
-    const fullPath = resolveMenuPath(node, parentPath);
-    if (node.type === "MENU") {
-      return { name: node.name, path: fullPath, title: menuLabel(node.title) };
-    }
-    if (node.children && node.children.length > 0) {
-      const child = findFirstMenuTab(node.children, fullPath);
-      if (child) return child;
-    }
-  }
-  return null;
-}
-
-/** 当前面包屑链（未命中时退化为仅显示当前页标题） */
-const breadcrumb = computed<BreadcrumbItem[]>(() => {
+const pageTitle = computed<string>(() => {
   const chain = findBreadcrumbChain(menuStore.menuTree, route.path);
-  if (chain) {
-    return [{ title: t("layout.breadcrumbHome"), path: dashboardPath.value }, ...chain];
+  if (chain && chain.length > 0) {
+    return menuLabel(chain[chain.length - 1]!.title);
   }
   const title = typeof route.meta.title === "string" ? route.meta.title : String(route.name ?? "");
-  return [{ title: t("layout.breadcrumbHome"), path: dashboardPath.value }, { title: menuLabel(title) }];
+  return menuLabel(title);
 });
 
-/* ==================== 多标签页（tabs-view） ==================== */
+/* ==================== 顶栏菜单快搜 ==================== */
 
-interface TabItem {
-  /** 路由 name（唯一标识） */
+interface FlatMenu {
   name: string;
-  /** 跳转 path */
   path: string;
-  /** 标签标题 */
-  title: string;
+  label: string;
+  group: string;
 }
 
-/**
- * 已访问标签列表（Dashboard 固定首位且不可关闭；无 Dashboard 权限时用首个菜单占位）。
- * 初始为空，待菜单加载完成后由下方 watch 补齐首页标签——
- * 避免深链直入且菜单尚未加载（loadMenus 完成前）时，初始标签退化为占位 Dashboard
- * 与后端菜单不一致（R4-00520）。
- */
-const visitedTabs = ref<TabItem[]>([]);
-
-/** 菜单加载完成后初始化首页标签（首个可跳转菜单；无则 Dashboard 占位） */
-watch(
-  () => menuStore.loaded,
-  (loaded) => {
-    if (!loaded) return;
-    const home = findFirstMenuTab(visibleMenuTree.value) ?? {
-      name: "Dashboard",
-      path: dashboardPath.value,
-      title: t("layout.navDashboard"),
-    };
-    if (!visitedTabs.value.some((tab) => tab.name === home.name)) {
-      visitedTabs.value.unshift(home);
+/** 展平菜单树（仅 MENU 节点），供快搜索引 */
+const flatMenus = computed<FlatMenu[]>(() => {
+  const out: FlatMenu[] = [];
+  function walk(nodes: AdminMenuNode[], parentPath: string, group: string): void {
+    for (const node of nodes) {
+      const fullPath = resolvePath(node, parentPath);
+      if (node.type === "MENU") {
+        out.push({
+          name: node.name,
+          path: fullPath,
+          label: menuLabel(node.title),
+          group,
+        });
+      }
+      if (node.children && node.children.length > 0) {
+        walk(node.children, fullPath, node.type === "DIR" ? menuLabel(node.title) : group);
+      }
     }
-  },
-  { immediate: true },
-);
-
-/** 解析路由对应的标签标题：菜单树 → meta.title → 路由 name 兜底 */
-function resolveTabTitle(target: RouteLocationNormalizedLoaded): string {
-  const chain = findBreadcrumbChain(menuStore.menuTree, target.path);
-  if (chain) {
-    const last = chain[chain.length - 1];
-    if (last) return menuLabel(last.title);
   }
-  const metaTitle = target.meta.title;
-  if (typeof metaTitle === "string" && metaTitle) {
-    return menuLabel(metaTitle);
-  }
-  return String(target.name ?? target.path);
-}
-
-/** 监听路由变化，将新访问页面加入标签列表（登录/403/404 不加入） */
-watch(
-  () => route.fullPath,
-  () => {
-    const name = route.name;
-    if (typeof name !== "string") return;
-    if (name === "Login" || name === "Forbidden" || name === "NotFound") return;
-    const existing = visitedTabs.value.find((tab) => tab.name === name);
-    if (existing) {
-      // 首次进入 Dashboard 时校准其 path（后端菜单 path 可能不是 "/"）
-      existing.path = route.fullPath;
-      return;
-    }
-    visitedTabs.value.push({
-      name,
-      path: route.fullPath,
-      title: resolveTabTitle(route),
-    });
-  },
-  { immediate: true },
-);
-
-/** 当前激活标签（跟随路由 name） */
-const activeTabName = computed<string>(() => {
-  const name = route.name;
-  return typeof name === "string" ? name : "";
+  walk(visibleMenuTree.value, "", "");
+  return out;
 });
 
-/** Dashboard 固定标签不可关闭 */
-function isFixedTab(name: string): boolean {
-  return name === "Dashboard";
+const searchQuery = ref("");
+const searchFocused = ref(false);
+
+/** 快搜结果（按 label/group 前缀包含匹配，最多 8 条） */
+const searchResults = computed<FlatMenu[]>(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return [];
+  return flatMenus.value
+    .filter((m) => m.label.toLowerCase().includes(q) || m.group.toLowerCase().includes(q))
+    .slice(0, 8);
+});
+
+const showSearchPanel = computed(() => searchFocused.value && searchResults.value.length > 0);
+
+function goToMenu(menu: FlatMenu): void {
+  searchQuery.value = "";
+  searchFocused.value = false;
+  router.push(menu.path);
 }
 
-/** 切换标签：跳转到对应 path */
-function switchTab(tab: TabItem): void {
-  if (tab.name === activeTabName.value) return;
-  router.push(tab.path);
-}
-
-/** 关闭标签：移除后跳回相邻标签（右侧优先，否则左侧）；Dashboard 不可关闭 */
-function closeTab(tab: TabItem): void {
-  if (isFixedTab(tab.name)) return;
-  const idx = visitedTabs.value.findIndex((item) => item.name === tab.name);
-  if (idx < 0) return;
-  const isActive = tab.name === activeTabName.value;
-  visitedTabs.value.splice(idx, 1);
-  if (isActive) {
-    const next = visitedTabs.value[idx] ?? visitedTabs.value[idx - 1];
-    if (next) {
-      router.push(next.path);
-    } else {
-      router.push({ name: "Dashboard" });
-    }
-  }
+function onSearchBlur(): void {
+  // 延迟收起，避免点击结果前面板先关闭
+  window.setTimeout(() => {
+    searchFocused.value = false;
+  }, 150);
 }
 
 /* ==================== 用户信息与退出登录 ==================== */
@@ -343,6 +256,9 @@ function closeTab(tab: TabItem): void {
 const displayName = computed(() =>
   sessionStore.user?.displayName || sessionStore.user?.username || "-",
 );
+
+/** 头像圆内展示的字符（显示名首字符，design Frame 顶栏右侧圆头像） */
+const avatarChar = computed(() => displayName.value.trim().charAt(0).toUpperCase() || "A");
 
 /** 当前管理员角色（识别 SUPER_ADMIN / ADMIN，未知角色直出原文） */
 const displayRole = computed(() => {
@@ -355,11 +271,30 @@ const displayRole = computed(() => {
 /** 管辖校区（校区管理员显示，全局管理员隐藏） */
 const campusName = computed(() => sessionStore.user?.campusName || "");
 
+/** 头像下拉菜单开关 */
+const userMenuOpen = ref(false);
+
+/** 当前语言（下拉切换，与 App 独立页浮层共用 setLocale） */
+const currentLocale = ref<string>(getLocale());
+
+function handleLocaleChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  if (value === "zh-CN" || value === "en-US") {
+    setLocale(value);
+    currentLocale.value = value;
+  }
+}
+
+function toggleUserMenu(): void {
+  userMenuOpen.value = !userMenuOpen.value;
+}
+
 // 退出登录确认弹窗状态（复用 ConfirmDialog）
 const logoutVisible = ref(false);
 const loggingOut = ref(false);
 
 function handleLogoutClick(): void {
+  userMenuOpen.value = false;
   logoutVisible.value = true;
 }
 
@@ -384,19 +319,37 @@ function handleCancelLogout(): void {
   logoutVisible.value = false;
   loggingOut.value = false;
 }
+
+/** 路由变化/首帧后把当前选中菜单滚入可视区（长菜单场景，design 侧边栏选中态需一眼可见） */
+watch(
+  () => route.path,
+  async () => {
+    await nextTick();
+    document.querySelector(".menu-item--active")?.scrollIntoView({ block: "nearest" });
+  },
+  { immediate: true },
+);
+
+/** 路由切换时收起头像下拉 */
+watch(
+  () => route.fullPath,
+  () => {
+    userMenuOpen.value = false;
+  },
+);
 </script>
 
 <template>
   <div class="layout">
-    <!-- 左侧深色侧边栏（eladmin 风格） -->
+    <!-- 左侧白色侧边栏（design-tokens §5.1） -->
     <aside class="sidebar" role="navigation" :aria-label="t('layout.navAriaLabel')">
-      <div class="sidebar-logo">
-        <span class="sidebar-logo-text">{{ t("login.title") }}</span>
+      <div class="sidebar-brand">
+        <span class="sidebar-brand-text">{{ t("layout.brand") }}</span>
       </div>
 
       <nav class="sidebar-menu">
         <template v-for="node in visibleMenuTree" :key="node.id">
-          <!-- 目录：可折叠分组标题 + 子菜单 -->
+          <!-- 目录：分组标题 + 子菜单（§10.1 分组标题 12px/500 #8595a4） -->
           <div v-if="node.type === 'DIR'" class="menu-group">
             <button
               type="button"
@@ -437,58 +390,74 @@ function handleCancelLogout(): void {
 
     <!-- 右侧主区域 -->
     <section class="layout-main">
-      <!-- 顶部栏：面包屑 + 用户信息 + 退出登录 -->
+      <!-- 顶部工具栏 56px：页面标题 + 快搜 + 用户头像（§5.2） -->
       <header class="layout-header">
-        <nav class="breadcrumb" aria-label="breadcrumb">
-          <template v-for="(item, index) in breadcrumb" :key="index">
-            <router-link
-              v-if="item.path"
-              class="breadcrumb-item"
-              :to="item.path"
-            >{{ menuLabel(item.title) }}</router-link>
-            <span v-else class="breadcrumb-item breadcrumb-item--current">{{ menuLabel(item.title) }}</span>
-            <span v-if="index < breadcrumb.length - 1" class="breadcrumb-sep">/</span>
-          </template>
-        </nav>
+        <h1 class="header-title">{{ pageTitle }}</h1>
 
-        <div class="header-user">
-          <div class="user-info">
-            <span class="user-name">{{ displayName }}</span>
-            <!-- campusName 为空（全局超级管理员）时不渲染校区徽标 -->
-            <div class="user-role">
-              <span>{{ displayRole }}</span>
-              <span v-if="campusName"> · {{ campusName }}</span>
+        <div class="header-actions">
+          <!-- 菜单快搜（高频操作放顶栏右侧，§7 Prefer） -->
+          <div class="header-search">
+            <input
+              v-model="searchQuery"
+              class="header-search-input"
+              type="text"
+              :placeholder="t('layout.searchPlaceholder')"
+              :aria-label="t('layout.searchPlaceholder')"
+              @focus="searchFocused = true"
+              @blur="onSearchBlur"
+            />
+            <div v-if="showSearchPanel" class="search-panel">
+              <button
+                v-for="item in searchResults"
+                :key="item.name"
+                type="button"
+                class="search-panel-item"
+                @mousedown.prevent="goToMenu(item)"
+              >
+                <span class="search-panel-label">{{ item.label }}</span>
+                <span class="search-panel-group">{{ item.group }}</span>
+              </button>
             </div>
           </div>
-          <button class="logout-button" @click="handleLogoutClick">
-            {{ t("common.logout") }}
-          </button>
+
+          <!-- 用户头像下拉（头像 32px 圆，design Frame 顶栏右侧） -->
+          <div class="user-menu">
+            <button
+              type="button"
+              class="avatar-button"
+              :aria-label="displayName"
+              @click.stop="toggleUserMenu"
+            >
+              {{ avatarChar }}
+            </button>
+            <div v-if="userMenuOpen" class="user-dropdown">
+              <div class="user-dropdown-info">
+                <span class="user-name">{{ displayName }}</span>
+                <span class="user-role">
+                  {{ displayRole }}<template v-if="campusName"> · {{ campusName }}</template>
+                </span>
+              </div>
+              <div class="user-dropdown-locale">
+                <label class="user-dropdown-locale-label" for="layout-locale-select">{{ t("common.language") }}</label>
+                <select
+                  id="layout-locale-select"
+                  class="user-dropdown-locale-select"
+                  :value="currentLocale"
+                  @change="handleLocaleChange"
+                >
+                  <option value="zh-CN">{{ t("common.chinese") }}</option>
+                  <option value="en-US">{{ t("common.english") }}</option>
+                </select>
+              </div>
+              <button type="button" class="user-dropdown-logout" @click="handleLogoutClick">
+                {{ t("common.logout") }}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <!-- 多标签页（tabs-view） -->
-      <div class="tabs-view" role="tablist">
-        <div
-          v-for="tab in visitedTabs"
-          :key="tab.name"
-          class="tab-item"
-          :class="{ 'tab-item--active': tab.name === activeTabName }"
-          role="tab"
-          :aria-selected="tab.name === activeTabName"
-          @click="switchTab(tab)"
-        >
-          <span class="tab-label">{{ menuLabel(tab.title) }}</span>
-          <button
-            v-if="!isFixedTab(tab.name)"
-            type="button"
-            class="tab-close"
-            :aria-label="t('layout.tabsClose')"
-            @click.stop="closeTab(tab)"
-          >×</button>
-        </div>
-      </div>
-
-      <!-- 主内容区 -->
+      <!-- 主内容区（灰底 + 24px 内距） -->
       <main class="layout-content">
         <router-view />
       </main>
@@ -516,56 +485,58 @@ function handleCancelLogout(): void {
   background: var(--admin-color-bg-page);
 }
 
-/* ========== 深色侧边栏（eladmin 风格） ========== */
+/* ========== 白色侧边栏（220px，右接 1px 分隔） ========== */
 
 .sidebar {
   width: var(--admin-layout-sidebar-width);
   flex-shrink: 0;
   background: var(--admin-sidebar-bg);
+  border-right: 1px solid var(--admin-color-border-light);
+  position: sticky;
+  top: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
 }
 
-.sidebar-logo {
+.sidebar-brand {
   height: var(--admin-layout-bar-height);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: var(--admin-sidebar-logo-bg);
+  padding: 0 var(--admin-space-xxl);
 }
 
-.sidebar-logo-text {
-  font-size: var(--admin-font-xl);
-  font-weight: 700;
-  color: var(--admin-sidebar-text-active);
+.sidebar-brand-text {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+  white-space: nowrap;
 }
 
 .sidebar-menu {
   flex: 1;
-  padding: var(--admin-space-sm) 0;
+  padding: var(--admin-space-sm);
 }
 
+/* 分组标题（§10.1：12px/500 #8595a4，上 16 下 8） */
 .menu-group-title {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-sm);
-  padding: var(--admin-space-md-lg) var(--admin-space-xl);
+  padding: var(--admin-space-lg) var(--admin-space-sm) var(--admin-space-sm) var(--admin-space-md);
   background: transparent;
   border: none;
-  color: var(--admin-sidebar-text);
-  font-size: var(--admin-font-md);
-  font-weight: 600;
+  color: var(--admin-color-text-tertiary);
+  font-size: var(--admin-font-sm);
+  line-height: 18px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.menu-group-title:hover {
-  background: var(--admin-sidebar-bg-hover);
-  color: var(--admin-sidebar-text-active);
 }
 
 .menu-group-text {
@@ -574,6 +545,7 @@ function handleCancelLogout(): void {
 
 .menu-group-arrow {
   font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-tertiary);
   transition: transform 0.2s;
 }
 
@@ -581,36 +553,52 @@ function handleCancelLogout(): void {
   transform: rotate(180deg);
 }
 
-.menu-group-children {
-  background: var(--admin-sidebar-submenu-bg);
-}
-
+/* 菜单项：高 40px · 圆角 6px · 14px #5d6c7b（§5.1） */
 .menu-item {
+  position: relative;
   display: flex;
   align-items: center;
-  padding: var(--admin-space-md-lg) var(--admin-space-xl);
+  height: 40px;
+  padding: 0 var(--admin-space-md);
+  margin-bottom: 2px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-sidebar-text);
   text-decoration: none;
   font-size: var(--admin-font-lg);
+  line-height: 22px;
   cursor: pointer;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
+  transition: background 0.2s, color 0.2s;
 }
 
 .menu-group-children .menu-item {
-  padding-left: var(--admin-space-xxxl);
-  font-size: var(--admin-font-md);
+  margin-left: var(--admin-space-md);
+  padding-left: var(--admin-space-lg);
 }
 
 .menu-item:hover {
   background: var(--admin-sidebar-bg-hover);
-  color: var(--admin-sidebar-text-active);
 }
 
+/* 选中态三合一：浅蓝底 + 左 3px 主色竖条（紧贴侧边栏左缘）+ 主色字 600 */
 .menu-item--active {
   background: var(--admin-sidebar-bg-active);
   color: var(--admin-sidebar-text-active);
-  border-left-color: var(--admin-color-bg-container);
+  font-weight: 600;
+}
+
+.menu-item--active::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--admin-space-sm));
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--admin-color-primary);
+  border-radius: 0 2px 2px 0;
+}
+
+.menu-group-children .menu-item--active::before {
+  left: calc(-1 * var(--admin-space-md));
 }
 
 /* ========== 右侧主区域 ========== */
@@ -622,6 +610,7 @@ function handleCancelLogout(): void {
   min-width: 0;
 }
 
+/* 顶部工具栏：56px 白底下边线，sticky（§5.2） */
 .layout-header {
   height: var(--admin-layout-bar-height);
   flex-shrink: 0;
@@ -629,140 +618,202 @@ function handleCancelLogout(): void {
   align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-lg);
-  padding: 0 var(--admin-space-xl);
+  padding: 0 var(--admin-space-xxl);
   background: var(--admin-header-bg);
-  box-shadow: var(--admin-shadow-sm);
-  z-index: 10;
+  border-bottom: 1px solid var(--admin-color-border-light);
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
-.breadcrumb {
+.header-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-actions {
   display: flex;
   align-items: center;
-  gap: var(--admin-space-xs);
-  min-width: 0;
+  gap: var(--admin-space-md);
+  flex-shrink: 0;
+}
+
+/* 菜单快搜（高 36px · 圆角 6px · 边框 #ced0d4） */
+.header-search {
+  position: relative;
+}
+
+.header-search-input {
+  width: 240px;
+  height: var(--admin-control-height);
+  padding: 0 var(--admin-space-md);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-lg);
+  font-family: inherit;
+  color: var(--admin-color-text-primary);
+  background: var(--admin-color-bg-container);
+}
+
+.header-search-input::placeholder {
+  color: var(--admin-color-text-tertiary);
+}
+
+.header-search-input:focus {
+  outline: none;
+  border-color: var(--admin-color-primary);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.search-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 280px;
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  z-index: 300;
   overflow: hidden;
+}
+
+.search-panel-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  height: 40px;
+  padding: 0 var(--admin-space-md);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search-panel-item:hover {
+  background: var(--admin-color-bg-hover);
+}
+
+.search-panel-label {
+  font-size: var(--admin-font-lg);
+  color: var(--admin-color-text-primary);
+}
+
+.search-panel-group {
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-tertiary);
   white-space: nowrap;
 }
 
-.breadcrumb-item {
-  font-size: var(--admin-font-md);
-  color: var(--admin-color-text-tertiary);
-  text-decoration: none;
+/* 用户头像（32px 圆）+ 下拉 */
+.user-menu {
+  position: relative;
 }
 
-.breadcrumb-item--current {
-  color: var(--admin-color-text-primary);
+.avatar-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--admin-radius-full, 9999px);
+  border: none;
+  background: var(--admin-color-text-secondary);
+  color: var(--admin-color-on-primary);
+  font-size: var(--admin-font-lg);
   font-weight: 500;
-}
-
-.breadcrumb-sep {
-  color: var(--admin-color-text-placeholder);
-}
-
-.header-user {
+  font-family: inherit;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: var(--admin-space-lg);
+  justify-content: center;
 }
 
-.user-info {
-  text-align: right;
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  z-index: 300;
+  overflow: hidden;
+}
+
+.user-dropdown-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-bottom: 1px solid var(--admin-color-border-light);
 }
 
 .user-name {
-  display: block;
-  font-size: var(--admin-font-md);
+  font-size: var(--admin-font-lg);
   font-weight: 600;
   color: var(--admin-color-text-primary);
 }
 
 .user-role {
-  display: block;
   font-size: var(--admin-font-xs);
-  color: var(--admin-color-text-quaternary);
-}
-
-.logout-button {
-  padding: var(--admin-space-xxs) var(--admin-space-md-lg);
-  background: var(--admin-color-bg-hover);
-  border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-md);
   color: var(--admin-color-text-tertiary);
-  font-size: var(--admin-font-md);
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.logout-button:hover {
-  background: var(--admin-color-danger-soft);
-  color: var(--admin-color-danger);
-  border-color: var(--admin-color-danger-border);
-}
-
-/* ========== 多标签页（tabs-view） ========== */
-
-.tabs-view {
+.user-dropdown-locale {
   display: flex;
   align-items: center;
-  gap: var(--admin-space-sm);
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-tabs-bg);
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
   border-bottom: 1px solid var(--admin-color-border-light);
-  overflow-x: auto;
-  flex-shrink: 0;
 }
 
-.tab-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--admin-space-xs);
-  padding: var(--admin-space-xxs) var(--admin-space-md);
-  background: var(--admin-color-bg-container);
+.user-dropdown-locale-label {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-secondary);
+}
+
+.user-dropdown-locale-select {
+  height: 28px;
+  padding: 0 var(--admin-space-sm);
   border: 1px solid var(--admin-color-border);
   border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-md);
-  color: var(--admin-color-text-tertiary);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
+  font-size: var(--admin-font-sm);
+  font-family: inherit;
+  color: var(--admin-color-text-primary);
+  background: var(--admin-color-bg-container);
 }
 
-.tab-item:hover {
-  color: var(--admin-color-primary);
-}
-
-.tab-item--active {
-  background: var(--admin-color-primary);
-  border-color: var(--admin-color-primary);
-  color: var(--admin-color-bg-container);
-}
-
-.tab-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--admin-tab-close-size);
-  height: var(--admin-tab-close-size);
-  border: none;
-  border-radius: 50%;
+.user-dropdown-logout {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--admin-space-lg);
   background: transparent;
-  color: inherit;
+  border: none;
+  color: var(--admin-color-danger);
   font-size: var(--admin-font-lg);
-  line-height: 1;
+  font-family: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
-.tab-close:hover {
-  /* 主题自适应 hover 背景（暗色模式下自动适配，替代硬编码 rgba(255,255,255,.35)） */
-  background: var(--admin-color-bg-hover);
+.user-dropdown-logout:hover {
+  background: var(--admin-color-danger-soft);
 }
 
-/* ========== 主内容区 ========== */
+/* ========== 主内容区（灰底 + 24px 内距） ========== */
 
 .layout-content {
   flex: 1;
-  padding: var(--admin-space-xl);
-  overflow-y: auto;
+  padding: var(--admin-space-xxl);
+  min-width: 0;
 }
 </style>

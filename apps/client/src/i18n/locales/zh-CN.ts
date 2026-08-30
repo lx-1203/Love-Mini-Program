@@ -485,6 +485,12 @@ export default {
     "publish": "发布"
   },
   "home": {
+    "segmentTitle": "细分发现",
+    "segmentOnline": "在线",
+    "segmentSameSchool": "同校",
+    "segmentSameInterest": "同兴趣",
+    "segmentNearby": "附近",
+    "segmentNewcomer": "新人",
     "welcome": "校园恋爱",
     "noMoreRecommendation": "暂无更多推荐，稍后再来看看",
     "welcomeSubtitle": "遇见你的心动",
@@ -712,6 +718,9 @@ export default {
     "quitSignupSuccess": "已退出报名",
     "share": "分享",
     "shareTitle": "快来参加「{title}」",
+    "linkCopied": "链接已复制，发到微信即可直达活动详情",
+    "enrollTag": "报名成功",
+    "enrollMsg": "{title} 报名成功，快叫上朋友一起去吧～",
     "statusOpen": "报名中",
     "statusOngoing": "进行中",
     "statusUpcoming": "预告",
@@ -973,6 +982,7 @@ export default {
     "cardSkeletonHint": "正在为你挑选推荐...",
     "card": {
       "emptyTitle": "附近暂时没有新的人，稍后再来看看",
+      "nearbyEmptyTitle": "附近暂时没有可匹配的人，去看看推荐吧",
       "refresh": "刷新推荐",
       "quotaExhaustedTitle": "今日推荐次数已用完，明天再来吧",
       "loginTitle": "登录后开启寻觅，遇见心动的 TA",
@@ -1745,6 +1755,8 @@ export default {
     "platformPhone": "手机号登录",
     "platformApple": "Apple 登录",
     "platformGuest": "体验账号",
+    "thirdPartyTitle": "第三方账号绑定",
+    "thirdPartyDemoHint": "演示环境暂不开放第三方绑定/解绑，请通过快捷登录方式切换账号",
     "deleteTypeWord": "注销",
     "deleteTypeHint": "请输入「注销」确认删除，有密码账号还需输入旧密码",
     "deleteTypePlaceholder": "请输入「注销」",
@@ -1812,6 +1824,7 @@ export default {
     "noComments": "暂无评论",
     "tagRequired": "请至少选择一个标签",
     "titleRequired": "请输入标题",
+    "contentMinLength": "正文至少 {n} 个字再发布哦",
     "contentRequired": "请输入内容",
     "backToList": "返回列表",
     "likedBy": "{n}人点赞",
@@ -1910,7 +1923,7 @@ export default {
       "shareFailed": "转发失败"
     },
     "post": {
-      "headerTitle": "发布帖子",
+      "headerTitle": "发布动态",
       "selectCategory": "选择分类",
       "topicTags": "话题标签",
       "topicTagsHint": "最多选择{n}个",
@@ -2121,6 +2134,9 @@ export default {
     "codeSent": "验证码已发送",
     "phoneInvalid": "请输入正确的手机号",
     "phoneAndCodeInvalid": "请输入正确的手机号和验证码",
+    "smsCodePlaceholder": "请输入短信验证码",
+    "getSmsCode": "获取验证码",
+    "smsSent": "验证码已发送（模拟短信）",
     "loginSuccess": "登录成功",
     "wechatTimeout": "微信登录超时，请重试",
     "stateInvalid": "登录状态校验失败，请重试",
@@ -3436,7 +3452,11 @@ export default {
       "labelAnonymous": "匿名发布",
       "anonymousDesc": "开启后，你的信息将显示为\"匿名校友\"",
       "submitPublishingBottom": "发布中...",
-      "submitPublishBottom": "发布话题"
+      "submitPublishBottom": "发布话题",
+      "imagePickLabel": "上传图片",
+      "imagePickHint": "添加图片",
+      "maxImages": "最多上传{n}张图片",
+      "privacyRequired": "需同意隐私协议后才能选择图片"
     },
     "topicDetail": {
       "replySuccess": "回复成功",

@@ -324,22 +324,24 @@ export async function loginWithPhone(phone: string, password: string): Promise<U
  * @param password  密码（6-64 位）
  * @param nickname  昵称（1-20 字）
  * @param birthDate 出生日期（ISO 日期串 yyyy-MM-dd）
+ * @param verificationCode 短信验证码（模拟短信：POST /v1/sms/send-code 发送后回填）
  * @returns 用户会话信息
- * @throws Error 手机号已注册/未成年/参数非法时抛出(含后端 message)
+ * @throws Error 手机号已注册/未成年/参数非法/验证码错误时抛出(含后端 message)
  */
 export async function registerUser(
   phone: string,
   password: string,
   nickname: string,
   birthDate: string,
+  verificationCode?: string,
 ): Promise<UserSession> {
   const response = await request<
     UserSession,
-    { phone: string; password: string; nickname: string; birthDate: string }
+    { phone: string; password: string; nickname: string; birthDate: string; verificationCode?: string }
   >({
     url: "/v1/auth/register",
     method: "POST",
-    data: { phone, password, nickname, birthDate },
+    data: { phone, password, nickname, birthDate, verificationCode },
     skipAuth: true,
     noRetry: true,
   });
@@ -367,6 +369,19 @@ export async function registerUser(
  * @returns 用户会话信息
  * @throws Error 网络错误/入口关闭时抛出(含后端 message)
  */
+export async function sendSmsCode(
+  phone: string,
+): Promise<{ success: boolean; mockCode?: string; message?: string }> {
+  const response = await request<{ success: boolean; mockCode?: string; message?: string }, { phone: string }>({
+    url: "/v1/sms/send-code",
+    method: "POST",
+    data: { phone },
+    skipAuth: true,
+    noRetry: true,
+  });
+  return response;
+}
+
 export async function loginAsGuest(): Promise<UserSession> {
   const response = await request<UserSession, never>({
     url: "/v1/auth/guest-login",

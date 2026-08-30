@@ -165,8 +165,9 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 /* ========== 跳过按钮 ========== */
 .match-loading__skip {
   position: absolute;
-  top: 48rpx;
-  right: 40rpx;
+  /* 避开微信胶囊安全区（右上角）：下移至胶囊下方，right 预留胶囊宽度 */
+  top: calc(calc(env(safe-area-inset-top) + 20px) + 200rpx);
+  right: 220rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
   background: rgba(54, 201, 154, 0.85);

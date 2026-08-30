@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 迁移：50+ 虚拟用户基本资料 + 校园认证 + 动态种子
 -- ============================================================
 -- 说明：
@@ -126,12 +126,12 @@ SELECT u.id, u.nickname, '全功能超级测试账号：可体验匹配/消息/�
        ''
 FROM users u
 WHERE u.id = 1
-  AND NOT EXISTS (SELECT 1 FROM user_basic_profile b WHERE b.user_id = 1);
+  AND NOT EXISTS (SELECT 1 FROM user_basic_profile b WHERE b.user_id = 100000);
 
 INSERT INTO user_campus_profile (user_id, city_name, campus_name, department_name, verification_status)
-SELECT 1, '北京', '北京大学', '工业设计', 'verified'
+SELECT 100000, '北京', '北京大学', '工业设计', 'verified'
 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM user_campus_profile c WHERE c.user_id = 1);
+WHERE NOT EXISTS (SELECT 1 FROM user_campus_profile c WHERE c.user_id = 100000);
 
 -- ============================================================
 -- DOWN 回滚脚本（手动执行）

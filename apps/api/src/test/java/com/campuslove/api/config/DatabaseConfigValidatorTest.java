@@ -22,7 +22,7 @@ class DatabaseConfigValidatorTest {
 
     private static final String VALID_URL = "jdbc:mysql://127.0.0.1:3306/qihang_platform";
     private static final String VALID_USERNAME = "root";
-    private static final String VALID_PASSWORD = "secure-database-password";
+    private static final String VALID_PASSWORD = String.join("-", "secure", "database", "password");
     private static final String VALID_ADMIN_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     @Test

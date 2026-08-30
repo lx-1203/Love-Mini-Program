@@ -13,10 +13,28 @@
  *   （指向 /static/generated/**），与手工维护的本文件职责不同；
  *   业务代码统一走本文件，生成素材按需引用 assets-index。
  */
-const STATIC_BASE = '/static/assets';
+/**
+ * 2026-08-29 真机 2MB 门禁（主包素材全量迁后端）：
+ * real 模式下基址直出后端 app-assets（免登录端点），
+ * 全站 IMAGE_PATHS 常量自动指向后端托管资源；dev/mock 仍为 /static 本地包内路径。
+ */
+const APP_ASSETS_BASE = "/api/v1/media/app-assets";
+const REAL_ASSETS = (() => {
+  try {
+    // 环境判定：与 services/env.ts 的 VITE_API_MODE 对齐（real → 后端托管基址）
+    const mode = String(import.meta.env.VITE_API_MODE);
+    const base = String(import.meta.env.VITE_API_BASE_URL);
+    if (mode === "real" && base) {
+      return base.replace(/\/api\/?$/, "") + APP_ASSETS_BASE;
+    }
+  } catch (_e) { /* 忽略：按本地处理 */ }
+  return "";
+})();
+const STATIC_BASE = (REAL_ASSETS ? REAL_ASSETS + "/assets" : "/static/assets");
 const IMAGES = STATIC_BASE + '/images';
 const AVATAR_BASE = IMAGES + '/avatars';
 const ICONS_BASE = STATIC_BASE + '/icons';
+const GENERATED_BASE = (REAL_ASSETS ? REAL_ASSETS + '/generated' : '/static/generated');
 
 export const IMAGE_PATHS = {
   POST_PLACEHOLDER: IMAGES + '/posts/post-placeholder.jpg',
@@ -135,15 +153,15 @@ export const IMAGE_PATHS = {
    * 不再散落硬编码 /static/generated/... 路径）。
    */
   GENERATED: {
-    CAMPUS_GATE: '/static/generated/images/campus/campus-gate.jpg',
-    CAMPUS_LAKE: '/static/generated/images/campus/campus-lake.jpg',
-    CAMPUS_LIBRARY: '/static/generated/images/campus/campus-library.jpg',
-    CAMPUS_NIGHT: '/static/generated/images/campus/campus-night.jpg',
-    CAMPUS_PLAYGROUND: '/static/generated/images/campus/campus-playground.jpg',
-    CAMPUS_CAFETERIA: '/static/generated/images/campus/campus-cafeteria.jpg',
-    CAMPUS_CLASSROOM: '/static/generated/images/campus/campus-classroom.jpg',
-    CAMPUS_RAIN: '/static/generated/images/campus/campus-rain.jpg',
-    HOME_POSTER: '/static/generated/images/posters/home-poster.jpg',
+    CAMPUS_GATE: GENERATED_BASE + '/images/campus/campus-gate.jpg',
+    CAMPUS_LAKE: GENERATED_BASE + '/images/campus/campus-lake.jpg',
+    CAMPUS_LIBRARY: GENERATED_BASE + '/images/campus/campus-library.jpg',
+    CAMPUS_NIGHT: GENERATED_BASE + '/images/campus/campus-night.jpg',
+    CAMPUS_PLAYGROUND: GENERATED_BASE + '/images/campus/campus-playground.jpg',
+    CAMPUS_CAFETERIA: GENERATED_BASE + '/images/campus/campus-cafeteria.jpg',
+    CAMPUS_CLASSROOM: GENERATED_BASE + '/images/campus/campus-classroom.jpg',
+    CAMPUS_RAIN: GENERATED_BASE + '/images/campus/campus-rain.jpg',
+    HOME_POSTER: GENERATED_BASE + '/images/posters/home-poster.jpg',
   },
 
   BANNERS: {
@@ -263,7 +281,7 @@ export const IMAGE_PATHS = {
   /** 附近页入口图标 */
   NEARBY_ICONS: {
     PEOPLE:  ICONS_BASE + '/common/user.svg',
-    CIRCLE:  ICONS_BASE + '/common/group.svg',
+    CIRCLE:  ICONS_BASE + '/group.svg',          // 2026-08-26 P1-1：原 common/group.svg 不存在导致渲染 404 → 指向真实文件
     CAMPUS:  ICONS_BASE + '/common/school.svg',
     ACTIVITY: ICONS_BASE + '/common/schedule.svg',
     DYNAMIC: ICONS_BASE + '/common/fire.svg',
@@ -500,6 +518,20 @@ export const IMAGE_PATHS = {
     GENDER_FEMALE: ICONS_BASE + '/emoji/gender-female.svg',          // ♀ 女（新下载）
     GENDER_MALE:   ICONS_BASE + '/emoji/gender-male.svg',            // ♂ 男（新下载）
     RUN:         ICONS_BASE + '/emoji/run.svg',                      // 🏃 跑步（新下载）
+    // ===== 2026-08-26 兴趣圈图标 emoji→SVG 全量替换（来源：素材/附近/兴趣圈 icon system + xunmi icon pack）=====
+    CIRCLE_CAMERA:  ICONS_BASE + '/common/camera.svg',   // 📷 摄影
+    CIRCLE_TRAVEL:  ICONS_BASE + '/common/travel.svg',   // 🧳 / ✈️ 旅行
+    CIRCLE_MUSIC:   ICONS_BASE + '/common/music.svg',    // 🎵 音乐
+    CIRCLE_SPORT:   ICONS_BASE + '/common/sport.svg',    // ⚽ / 🏀 运动 / 篮球
+    CIRCLE_FOOD:    ICONS_BASE + '/common/food.svg',     // 🍜 美食
+    CIRCLE_GAME:    ICONS_BASE + '/common/gamepad.svg',  // 🎮 游戏
+    CIRCLE_BOOK:    ICONS_BASE + '/common/book.svg',     // 📚 阅读 / 考研
+    CIRCLE_PET:     ICONS_BASE + '/common/paw.svg',      // 🐾 宠物
+    CIRCLE_CAT:     ICONS_BASE + '/common/cat.svg',      // 🐱 萌宠
+    CIRCLE_PLANET:  ICONS_BASE + '/common/planet.svg',   // 🪐 天文 / 星空
+    CIRCLE_DICE:    ICONS_BASE + '/common/ticket.svg',   // 🎲 桌游（票券代）
+    CIRCLE_STAR:    ICONS_BASE + '/common/star.svg',     // ⭐ 通用
+    CIRCLE_FIRE:    ICONS_BASE + '/fire.svg',            // 🔥 热门 / 活力
   },
 
   /** 首页拆分素材（素材/首页/最终/拆分图标-精修版） */

@@ -305,7 +305,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import "@/styles/admin-common.css";
+@import "../../styles/admin-common.css";
 
 .cert-page {
   max-width: 1400px;

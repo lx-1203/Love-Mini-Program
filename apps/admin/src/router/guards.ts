@@ -151,8 +151,11 @@ export function setupRouterGuards(router: Router): void {
           if (!router.hasRoute(notFoundRoute.name!)) {
             router.addRoute(notFoundRoute);
           }
-          // 动态路由注册完成后重入当前导航，确保路径匹配到新注册的路由
-          return { ...to, replace: true };
+          // 动态路由注册完成后重入当前导航，确保路径匹配到新注册的路由。
+          // ⚠ 不能用 { ...to } 展开：to.name 此时是 "NotFound"，vue-router 对
+          // 同时含 name 与 path 的 location 按 name 优先解析，会再次命中
+          // catch-all 并退化到首页回退；必须仅按 path/query/hash 重入。
+          return { path: to.path, query: to.query, hash: to.hash, replace: true };
         } catch (err) {
           // 已登录但菜单拉取失败（后端异常/无菜单权限）→ 403，避免空白页
           logger.error("[AdminV2 Guards] 动态菜单加载失败", err);

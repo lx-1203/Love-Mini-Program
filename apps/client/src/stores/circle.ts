@@ -7,7 +7,7 @@ import { IMAGE_PATHS } from "../config/images";
 import { t } from "@/i18n";
 // Mock 数据（R4-batch2：mock 用户/圈子数据移入 stores/circle/mock-data.ts，
 // 仅 useMock() 分支引用，real 模式不会读取 mock ID）
-import { MOCK_CURRENT_USER_ID, mockCircles, mockReplies, mockTopicDetail, mockTopics } from "./circle/mock-data";
+import { MOCK_CURRENT_USER_ID, mockCircles, mockReplies, mockTopicDetail, mockTopics, resolveMockCircleId } from "./circle/mock-data";
 
 /* ========== 后端视图类型 ========== */
 
@@ -418,7 +418,10 @@ export const useCircleStore = defineStore("circle", {
         }
 
         if (useMock()) {
-          const topics = mockTopics[circleId] ?? [];
+          // 2026-08-27 兴趣圈修复：数字 ID（首页入口 1~14）→ 标准圈子 ID 归一，
+          // 保证任意入口进入详情页都能拉到种子话题（不再空态"暂无话题"）。
+          const resolvedCircleId = resolveMockCircleId(circleId) ?? circleId;
+          const topics = mockTopics[resolvedCircleId] ?? [];
           if (page === 1) {
             this.currentTopics = [...topics];
           } else {
@@ -541,18 +544,32 @@ export const useCircleStore = defineStore("circle", {
           const detail = mockTopicDetail[topicId];
           if (detail) {
             this.currentTopic = { ...detail };
-          } else {
-            // 如果没有 mock 详情，从话题列表中构造
-            const topic = this.currentTopics.find((t) => t.id === topicId);
-            if (topic) {
-              this.currentTopic = {
-                ...topic,
-                content: topic.content,
-              };
-            } else {
-              this.currentTopic = null;
-            }
+            return;
           }
+          // 2026-08-27 兴趣圈修复：详情不再仅依赖当前列表缓存——
+          // 先查全量 mock 话题（跨圈子扁平），再查当前列表，最后用数字 ID
+          // 归一映射到标准圈子的首条话题兜底，保证 topic-detail 能正常打开。
+          const allMockTopics = Object.values(mockTopics).flat();
+          const topic =
+            this.currentTopics.find((t) => t.id === topicId) ??
+            allMockTopics.find((t) => t.id === topicId);
+          if (topic) {
+            this.currentTopic = {
+              ...topic,
+              content: topic.content,
+            };
+            return;
+          }
+          const resolvedCircleId = resolveMockCircleId(topicId);
+          const fallbackTopic = resolvedCircleId ? (mockTopics[resolvedCircleId] ?? [])[0] : undefined;
+          if (fallbackTopic) {
+            this.currentTopic = {
+              ...fallbackTopic,
+              content: fallbackTopic.content,
+            };
+            return;
+          }
+          this.currentTopic = null;
           return;
         }
 

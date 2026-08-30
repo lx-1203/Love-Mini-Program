@@ -6,6 +6,15 @@ import { IMAGE_PATHS } from "../../../config/images";
 const props = defineProps<{ profile: UserProfileDTO; online?: boolean }>();
 const emit = defineEmits<{ (e: "like"): void; (e: "message"): void }>();
 
+/** 在线状态：优先数据（profile.online），其次 prop，默认在线（理想图展示「在线」标签） */
+const online = computed(() => props.profile.online ?? props.online ?? true);
+
+/** 距离+在线行（理想图：如 "2.3km · 在线"） */
+const distanceLine = computed(() => {
+  const d = props.profile.distanceText;
+  return d ? `${d} · 在线` : "在线";
+});
+
 /** 基本信息行：年龄 / 城市 / 学校（location 形如 "北京 · 北京大学"） */
 const basicInfo = computed(() => {
   const parts: string[] = [];
@@ -57,13 +66,18 @@ const genderIconSrc = computed(() => {
         <text class="public-identity__meta-item">{{ part }}</text>
       </template>
     </view>
+    <!-- 距离 · 在线（理想图第三行：如 "2.3km · 在线"） -->
+    <view v-if="distanceLine" class="public-identity__distance-row">
+      <text class="public-identity__distance-dot" />
+      <text class="public-identity__distance-text">{{ distanceLine }}</text>
+    </view>
   </view>
 </template>
 
 <style scoped lang="scss">
 .public-identity {
   margin: -72rpx 40rpx 0;
-  padding: 112rpx 32rpx 28rpx;
+  padding: 148rpx 32rpx 28rpx;
   border-radius: 40rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
@@ -205,5 +219,29 @@ const genderIconSrc = computed(() => {
 .public-identity__meta-sep {
   font-size: 26rpx;
   color: #DDE3E0;
+}
+
+/* 距离 · 在线行（理想图：绿色圆点 + 文案，如 "2.3km · 在线"） */
+.public-identity__distance-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 16rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #E8FBF3;
+}
+
+.public-identity__distance-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #36C99A;
+}
+
+.public-identity__distance-text {
+  font-size: 24rpx;
+  color: #36C99A;
+  font-weight: 600;
 }
 </style>

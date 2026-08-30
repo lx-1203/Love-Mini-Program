@@ -1,8 +1,37 @@
-﻿<script setup lang="ts">
+```vue
+<script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
 
-defineProps<{ posts: UserProfilePost[] }>();
+withDefaults(
+  defineProps<{
+    posts: UserProfilePost[];
+    authorName?: string;
+    authorAvatar?: string;
+  }>(),
+  {
+    posts: () => [],
+    authorName: "",
+    authorAvatar: "",
+  },
+);
+
+/** 将 ISO 时间转成 "3天前" 这种相对文案（理想图：最近动态 3天前·北京） */
+function relativeTime(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "刚刚";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}分钟前`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}小时前`;
+  const diffDay = Math.floor(diffSec / 86400);
+  if (diffDay < 30) return `${diffDay}天前`;
+  if (diffDay < 365) return `${Math.floor(diffDay / 30)}个月前`;
+  return `${Math.floor(diffDay / 365)}年前`;
+}
 </script>
 
 <template>
@@ -12,6 +41,22 @@ defineProps<{ posts: UserProfilePost[] }>();
       <text class="public-moment__more">···</text>
     </view>
     <view v-for="post in posts" :key="post.id" class="public-moment__card">
+      <view class="public-moment__author">
+        <image
+          v-if="authorAvatar"
+          class="public-moment__avatar"
+          :src="authorAvatar"
+          mode="aspectFill"
+          alt=""
+        />
+        <view v-else class="public-moment__avatar public-moment__avatar--placeholder">
+          <text class="public-moment__avatar-text">{{ (authorName || "·").slice(0, 1) }}</text>
+        </view>
+        <view class="public-moment__author-meta">
+          <text class="public-moment__author-name">{{ authorName || "匿名用户" }}</text>
+          <text class="public-moment__author-sub">{{ relativeTime(post.createdAt) }}</text>
+        </view>
+      </view>
       <text class="public-moment__content">{{ post.content }}</text>
       <view v-if="post.images && post.images.length > 0" class="public-moment__images">
         <image
@@ -66,6 +111,55 @@ defineProps<{ posts: UserProfilePost[] }>();
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
+.public-moment__author {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.public-moment__avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #EEF2F0;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-moment__avatar--placeholder {
+  background: linear-gradient(135deg, #E8FBF3 0%, #C7F0E0 100%);
+}
+
+.public-moment__avatar-text {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #36C99A;
+}
+
+.public-moment__author-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.public-moment__author-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #333A37;
+  line-height: 1.3;
+}
+
+.public-moment__author-sub {
+  font-size: 22rpx;
+  color: #9AA39F;
+  line-height: 1.3;
+}
+
 .public-moment__content {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -109,3 +203,4 @@ defineProps<{ posts: UserProfilePost[] }>();
   color: #FF6B81;
 }
 </style>
+```

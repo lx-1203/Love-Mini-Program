@@ -34,12 +34,12 @@ const emit = defineEmits<{ (e: "start"): void; (e: "onlineStart"): void }>();
           <text class="match-hub__quota-label">今日已喜欢（人）</text>
         </view>
       </view>
-      <view class="match-hub__start press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="emit('start')">
+      <view class="match-hub__start press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('start')">
         <text class="match-hub__start-text">开始匹配</text>
       </view>
     </view>
 
-    <view class="match-hub__online press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="emit('onlineStart')">
+    <view class="match-hub__online press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('onlineStart')">
       <view class="match-hub__online-dot" />
       <view class="match-hub__online-body">
         <text class="match-hub__online-title">现在在线</text>

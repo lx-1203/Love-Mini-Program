@@ -275,3 +275,14 @@ reasonix/
 *driver.cjs
 scripts/__*.mjs
 static/generated_test/
+
+# 本机运行时产物与临时调试文件（2026-08-30 补充）
+/appendonly.aof
+/dump.rdb
+/.mimosa/
+/tmp-*.*
+/tmp_*.*
+/api-*.log
+/devtools-*.log
+/debug.log
+/logs/

@@ -48,6 +48,7 @@ const emit = defineEmits<{
       :photos="props.profile.media.photos"
       :videos="props.profile.media.videos"
       :stories="props.profile.stories ?? []"
+      :posts="props.posts"
       @tap-photo="emit('storyPhoto', $event)"
       @tap-video="emit('storyVideo')"
       @add-story="emit('addStory')"

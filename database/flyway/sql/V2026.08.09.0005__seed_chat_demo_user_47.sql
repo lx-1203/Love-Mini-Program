@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 迁移：体验账号 47 「今天」多会话聊天演示数据
 -- ============================================================
 -- 背景（2026-08-08 聊天页微信化重构验收演示）：
@@ -27,31 +27,31 @@
 -- 1.1 47 ↔ 8（走查号）
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-demo-47-8', 47, 8, '等你回复哦～', DATE_SUB(NOW(), INTERVAL 5 MINUTE), 0, NOW(), NOW()
+SELECT 'conv-demo-47-8', 100000, 10024, '等你回复哦～', DATE_SUB(NOW(), INTERVAL 5 MINUTE), 0, NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM private_conversations c
-    WHERE (c.user_a_id = 47 AND c.user_b_id = 8) OR (c.user_a_id = 8 AND c.user_b_id = 47)
+    WHERE (c.user_a_id = 100000 AND c.user_b_id = 10024) OR (c.user_a_id = 10024 AND c.user_b_id = 100000)
 );
 
 -- 1.2 47 ↔ 10001（周屿）
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-demo-47-10001', 47, 10001, '想约你去看那个新上映的电影', DATE_SUB(NOW(), INTERVAL 30 MINUTE), 0, NOW(), NOW()
+SELECT 'conv-demo-47-10001', 100000, 10001, '想约你去看那个新上映的电影', DATE_SUB(NOW(), INTERVAL 30 MINUTE), 0, NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM private_conversations c
-    WHERE (c.user_a_id = 47 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 47)
+    WHERE (c.user_a_id = 100000 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 100000)
 );
 
 -- 1.3 47 ↔ 10002（林晚）
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-demo-47-10002', 47, 10002, '好，周六下午见', DATE_SUB(NOW(), INTERVAL 150 MINUTE), 0, NOW(), NOW()
+SELECT 'conv-demo-47-10002', 100000, 10002, '好，周六下午见', DATE_SUB(NOW(), INTERVAL 150 MINUTE), 0, NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM private_conversations c
-    WHERE (c.user_a_id = 47 AND c.user_b_id = 10002) OR (c.user_a_id = 10002 AND c.user_b_id = 47)
+    WHERE (c.user_a_id = 100000 AND c.user_b_id = 10002) OR (c.user_a_id = 10002 AND c.user_b_id = 100000)
 );
 
 -- ========== 2. 会话 1 消息（47 ↔ 8，28 条，最后 3 条对方未读） ==========
@@ -106,7 +106,7 @@ FROM (
     SELECT 'b', 5, '等你回复哦～', 'text', 0, NULL
 ) m
 JOIN private_conversations c
-  ON (c.user_a_id = 47 AND c.user_b_id = 8) OR (c.user_a_id = 8 AND c.user_b_id = 47)
+  ON (c.user_a_id = 100000 AND c.user_b_id = 10024) OR (c.user_a_id = 10024 AND c.user_b_id = 100000)
 WHERE NOT EXISTS (SELECT 1 FROM private_messages pm WHERE pm.conversation_id = c.id AND pm.content = m.body);
 
 -- ========== 3. 会话 2 消息（47 ↔ 10001 周屿，20 条，含语音/emoji/活动卡片，对方 2 条未读） ==========
@@ -142,7 +142,7 @@ FROM (
     SELECT 'b', 30, '想约你去看那个新上映的电影', 'text', 0, NULL
 ) m
 JOIN private_conversations c
-  ON (c.user_a_id = 47 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 47)
+  ON (c.user_a_id = 100000 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 100000)
 WHERE NOT EXISTS (SELECT 1 FROM private_messages pm WHERE pm.conversation_id = c.id AND pm.content = m.body);
 
 -- ========== 4. 会话 3 消息（47 ↔ 10002 林晚，15 条，全部已读 → 红点 0） ==========
@@ -171,7 +171,7 @@ FROM (
     SELECT 'b', 150, '好，周六下午见', 'text', 1, NULL
 ) m
 JOIN private_conversations c
-  ON (c.user_a_id = 47 AND c.user_b_id = 10002) OR (c.user_a_id = 10002 AND c.user_b_id = 47)
+  ON (c.user_a_id = 100000 AND c.user_b_id = 10002) OR (c.user_a_id = 10002 AND c.user_b_id = 100000)
 WHERE NOT EXISTS (SELECT 1 FROM private_messages pm WHERE pm.conversation_id = c.id AND pm.content = m.body);
 
 -- ============================================================

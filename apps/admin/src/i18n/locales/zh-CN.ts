@@ -77,6 +77,16 @@ export default {
     jumpTo: "跳转",
   },
 
+  evidence: {
+    title: "举报调阅 · 圈层可见的管辖内容",
+    typeChat: "聊天内容",
+    typeImage: "上传图片",
+    typePost: "帖子",
+    typeTempChat: "临时聊天",
+    forbidden: "该用户不在您的管辖圈层范围内，越级调阅已被拦截",
+    loadFailed: "调阅失败，请稍后重试",
+  },
+
   /* ========== 登录页文案 ========== */
   login: {
     title: "校园恋爱管理后台",
@@ -102,6 +112,8 @@ export default {
 
   /* ========== 顶部导航布局文案（eladmin 风格：动态菜单 + 多标签页） ========== */
   layout: {
+    brand: "恋爱运营后台",
+    searchPlaceholder: "搜索菜单",
     sidebarCollapse: "收起侧边栏",
     sidebarExpand: "展开侧边栏",
     breadcrumbHome: "首页",
@@ -128,7 +140,7 @@ export default {
     navSensitiveWords: "敏感词库",
     navMediaAssets: "图片审核",
   navWhispers: "悄悄话",
-    navVillagePosts: "村居帖子",
+    navVillagePosts: "村落动态",
     navInterestCircles: "兴趣圈子",
     navCircleTopics: "圈子话题",
     navCampusTopics: "校园话题",
@@ -572,6 +584,15 @@ export default {
     activeStatsLoadFailed: "活跃度统计加载失败",
     matchStatsLoadFailed: "匹配统计加载失败",
     lastUpdated: "最近更新：{time}",
+    sectionOverview: "实时总览",
+    chartTitle: "核心指标趋势（近 30 天）",
+    legendMatches: "每日匹配",
+    recentUsers: "近期注册用户",
+    colUserId: "用户ID",
+    colNickname: "昵称",
+    colStatus: "状态",
+    colCreatedAt: "注册时间",
+    reportsLoadFailed: "待处理举报统计加载失败",
     refreshButton: "刷新数据",
     dataUnavailable: "数据暂不可用",
     metricLabelUsers: "用户",
@@ -582,6 +603,13 @@ export default {
 
   /* ========== 用户管理文案 ========== */
   users: {
+    selectAll: "全选当前页",
+    batchSelected: "已选 {n} 项",
+    batchDisable: "批量封禁",
+    batchEnable: "批量解封",
+    batchClear: "清空选择",
+    batchSuccess: "批量操作成功（{n} 项）",
+    batchPartialFailed: "部分用户操作失败（{n} 项），已保留勾选",
     title: "用户管理",
     subtitle: "查看与管理注册用户",
     tableSubtitle: "管理系统用户与权限",
@@ -1409,6 +1437,12 @@ export default {
 
   /* ========== 举报处理文案 ========== */
   reports: {
+    statPending: "待处理举报",
+    statTotal: "全部举报",
+    statHandled: "已处理",
+    statRejected: "已驳回",
+    actionEvidence: "调阅",
+    evidenceTitle: "举报调阅",
     title: "举报处理",
     pageTitle: "举报管理",
     subtitle: "处理用户举报的内容与账号",

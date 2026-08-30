@@ -37,8 +37,8 @@ describe("profile-guard", () => {
   });
 
   it("isPageLocked returns true for locked page paths", () => {
-    expect(isPageLocked("/pages/likes/index")).toBe(true);
-    expect(isPageLocked("/pages/village/index")).toBe(true);
+    expect(isPageLocked("/subpackages/discover-extra/likes/index")).toBe(true);
+    expect(isPageLocked("/subpackages/village/village/index")).toBe(true);
     expect(isPageLocked("/pages/messages/index")).toBe(true);
   });
 
@@ -54,11 +54,11 @@ describe("profile-guard", () => {
   });
 
   it("getFeatureName returns correct name for likes page", () => {
-    expect(getFeatureName("/pages/likes/index")).toBe("喜欢列表");
+    expect(getFeatureName("/subpackages/discover-extra/likes/index")).toBe("喜欢列表");
   });
 
   it("getFeatureName returns correct name for village page", () => {
-    expect(getFeatureName("/pages/village/index")).toBe("村口/讨论圈");
+    expect(getFeatureName("/subpackages/village/village/index")).toBe("村口/讨论圈");
   });
 
   it("getFeatureName returns correct name for messages page", () => {
@@ -90,7 +90,7 @@ describe("profile-guard", () => {
   });
 
   it("resolveProfileGuard returns shouldShowModal=true for locked likes page when incomplete", () => {
-    const result = resolveProfileGuard("/pages/likes/index");
+    const result = resolveProfileGuard("/subpackages/discover-extra/likes/index");
     expect(result.allowed).toBe(false);
     expect(result.shouldShowModal).toBe(true);
     expect(result.featureName).toBe("喜欢列表");
@@ -99,7 +99,7 @@ describe("profile-guard", () => {
   });
 
   it("resolveProfileGuard returns shouldShowModal=true for locked village page when incomplete", () => {
-    const result = resolveProfileGuard("/pages/village/index");
+    const result = resolveProfileGuard("/subpackages/village/village/index");
     expect(result.allowed).toBe(false);
     expect(result.shouldShowModal).toBe(true);
     expect(result.featureName).toBe("村口/讨论圈");
@@ -119,13 +119,13 @@ describe("profile-guard", () => {
   });
 
   it("LOCKED_PAGES contains the five protected pages (excluding profile)", () => {
-    expect(LOCKED_PAGES).toContain("/pages/likes/index");
-    expect(LOCKED_PAGES).toContain("/pages/village/index");
+    expect(LOCKED_PAGES).toContain("/subpackages/discover-extra/likes/index");
+    expect(LOCKED_PAGES).toContain("/subpackages/village/village/index");
     expect(LOCKED_PAGES).toContain("/pages/messages/index");
     // 2026-08-13：likes-visitors / heart-signals 与 likes 同属「喜欢与访客」功能域，
     // 统一弹 UnlockGuideModal（原落 session-guard 静默重定向，体验不一致）
-    expect(LOCKED_PAGES).toContain("/pages/likes-visitors/index");
-    expect(LOCKED_PAGES).toContain("/pages/heart-signals/index");
+    expect(LOCKED_PAGES).toContain("/subpackages/discover-extra/likes-visitors/index");
+    expect(LOCKED_PAGES).toContain("/subpackages/tools/heart-signals/index");
     expect(LOCKED_PAGES).not.toContain("/pages/profile/index");
     expect(LOCKED_PAGES).toHaveLength(5);
   });

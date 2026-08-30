@@ -121,7 +121,7 @@ function getScoreIcon(index: number): string {
       <view
         class="match-success__primary press-feedback"
         hover-class="press-feedback--active"
-        hover-stay-time="120"
+        hover-stay-time="40"
         role="button"
         :aria-label="t('matchSuccess.sayHi')"
         @tap="emit('chat')"
@@ -131,7 +131,7 @@ function getScoreIcon(index: number): string {
       <view
         class="match-success__secondary press-feedback"
         hover-class="press-feedback--active"
-        hover-stay-time="120"
+        hover-stay-time="40"
         role="button"
         :aria-label="t('matchSuccess.explore')"
         @tap="emit('explore')"

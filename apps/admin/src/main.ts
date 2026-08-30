@@ -1,4 +1,6 @@
 import { createApp } from "vue";
+// 全局设计令牌（:root 变量）——必须全局引入，scoped 内 :root 会失效（见 admin-tokens.css 头注释）
+import "./styles/admin-tokens.css";
 import { createPinia } from "pinia";
 import router from "./router";
 import App from "./App.vue";

@@ -564,7 +564,7 @@ function onWhisperReply(text: string): void {
   if (!props.card) return;
   showWhisperSheet.value = false;
   openAppPath(
-    `/pages/chat-session/index?userId=${encodeURIComponent(props.card.userId)}&prefillMessage=${encodeURIComponent(text)}`
+    `/subpackages/chat/chat-session/index?userId=${encodeURIComponent(props.card.userId)}&prefillMessage=${encodeURIComponent(text)}`
   );
 }
 
@@ -631,7 +631,7 @@ function handlePass() {
 
 /**
  * 发消息：向父组件发射 message 事件并携带 userId。
- * 父组件（CardSwiper）负责关闭弹层并导航到 /pages/chat-session/index?userId={userId}。
+ * 父组件（CardSwiper）负责关闭弹层并导航到 /subpackages/chat/chat-session/index?userId={userId}。
  * 由 handleMessage（解锁校验）在放行后调用。
  */
 function emitMessage() {
@@ -685,7 +685,7 @@ function toggleBio() {
 function onCircleTap(circleName: string): void {
   safeAction(() => {
     lightHaptic();
-    openAppPath(`/pages/village/index?focus=${encodeURIComponent(circleName)}`);
+    openAppPath(`/subpackages/village/village/index?focus=${encodeURIComponent(circleName)}`);
   }, t("cardDetail.circleNavFailed"));
 }
 

@@ -193,6 +193,17 @@ function openActivity(activityId: number | string) {
       </view>
     </view>
 
+    <!-- 2026-08-26 R3：无图帖子图片区占位（POST_PLACEHOLDER 兜底，保证不破版） -->
+    <view v-else class="post-card__images post-card__images--placeholder">
+      <image
+        class="post-card__placeholder-img"
+        :src="IMAGE_PATHS.POST_PLACEHOLDER"
+        mode="aspectFill"
+        lazy-load
+        alt=""
+      />
+    </view>
+
     <!-- 关联活动卡（2026-08-08 频道化重构：帖子内直接发活动链接） -->
     <view v-if="post.activity" class="post-card__activity" @catchtap="noop">
       <ActivityCard :activity="post.activity" compact @open-detail="openActivity" />
@@ -483,6 +494,18 @@ function openActivity(activityId: number | string) {
 .post-card__image-more-text {
   font-size: 20rpx;
   color: var(--c-neutral-0);
+}
+
+/* 2026-08-26 R3：无图帖子占位区（POST_PLACEHOLDER） */
+.post-card__images--placeholder {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.post-card__placeholder-img {
+  width: 100%;
+  height: 180rpx;
+  border-radius: var(--r-md);
+  background: var(--c-neutral-50);
 }
 
 /* ---------- 活动卡 ---------- */

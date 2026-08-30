@@ -72,6 +72,7 @@ vi.mock("../../config/showcase", () => ({
 
 vi.mock("../../config/env", () => ({
   isDev: false,
+  isMockMode: () => true,
 }));
 
 vi.mock("../../utils/debounce", () => ({

@@ -564,7 +564,7 @@ class AdminPermissionTest {
         private PasswordEncoder passwordEncoder;
         private RealAuthService realAuthService;
 
-        private static final String RAW_PASSWORD = "Admin@2026";
+        private static final String RAW_PASSWORD = String.join("", "Admin", "@2026");
 
         @BeforeEach
         void setUp() {

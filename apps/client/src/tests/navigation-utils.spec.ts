@@ -24,7 +24,7 @@ describe("navigation utils", () => {
     expect(isTabPath("/pages/discover/index")).toBe(true);
     expect(isTabPath("/pages/messages/index")).toBe(true);
     expect(isTabPath("/pages/profile/index")).toBe(true);
-    expect(isTabPath("/pages/chat-session/index")).toBe(false);
+    expect(isTabPath("/subpackages/chat/chat-session/index")).toBe(false);
     expect(isTabPath("/subpackages/setup/schedule/index")).toBe(false);
   });
 

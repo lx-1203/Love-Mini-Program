@@ -24,7 +24,7 @@ import type { CampusTopicCategory } from "../stores/campus";
 import type { MessageDeliveryStatus, MessageDeliveryStatusMap } from "../stores/chat/types";
 import type { SessionPersistedFields } from "../stores/session";
 import type { DailyRecord } from "../stores/discover/utils";
-import type { QuoteContext } from "../pages/chat-session/types";
+import type { QuoteContext } from "../subpackages/chat/chat-session/types";
 
 /* ========== 基础类型守卫 ========== */
 

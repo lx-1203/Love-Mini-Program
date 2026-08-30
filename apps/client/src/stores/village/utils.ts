@@ -116,7 +116,8 @@ export function mapToPostItem(raw: PostSummaryView): PostItem {
     categoryId: raw.category,
     title: raw.title,
     content: raw.summary,
-    images: [],
+    // 2026-08-26 R4：后端 summary 透传 images（最多 3 张），缺失回退空数组
+    images: raw.images ?? [],
     tags: raw.tags,
     likes: raw.likeCount,
     comments: raw.commentCount,

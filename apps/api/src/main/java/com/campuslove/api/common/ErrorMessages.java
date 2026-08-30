@@ -237,6 +237,12 @@ public final class ErrorMessages {
     /** 该手机号不可注册 */
     public static final String PHONE_CANNOT_REGISTER = "该手机号不可注册";
 
+    /** 短信验证码不能为空 */
+    public static final String SMS_CODE_REQUIRED = "请输入短信验证码";
+
+    /** 短信验证码错误 */
+    public static final String SMS_CODE_INVALID = "短信验证码错误，请重新输入";
+
     /** 该手机号不可登录 */
     public static final String PHONE_CANNOT_LOGIN = "该手机号不可登录";
 

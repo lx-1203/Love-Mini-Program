@@ -122,7 +122,9 @@ public class VillageViewMapper {
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
                 isFollowed, favoriteCount, isFavorite, post.getViewCount(),
-                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments);
+                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments,
+                // 2026-08-26 R4：列表最多 3 张图，与详情全量（toPostDetailView）解耦
+                parseJsonToList(post.getImages()).stream().limit(3).toList());
     }
 
     /**
@@ -247,7 +249,9 @@ public class VillageViewMapper {
                 tags, post.getLikesCount(), post.getCommentsCount(), post.getShareCount(),
                 post.getCreatedAt().toString(), post.getLikesCount() >= HOT_POST_THRESHOLD, isAlumni,
                 isFollowed, favoriteCount, isFavorite, post.getViewCount(),
-                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments);
+                post.getActivityId(), activity, Boolean.TRUE.equals(post.getIsPinned()), recentComments,
+                // 2026-08-26 R4：列表最多 3 张图，与详情全量（toPostDetailView）解耦
+                parseJsonToList(post.getImages()).stream().limit(3).toList());
     }
 
     PostDetailView toPostDetailView(Post post, Long currentUserId) {

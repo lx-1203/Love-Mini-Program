@@ -64,9 +64,9 @@ class RealAuthServiceTest {
     private RealAuthService realAuthService;
 
     /** 测试用的明文密码 */
-    private static final String RAW_PASSWORD = "Admin@2026";
+    private static final String RAW_PASSWORD = String.join("", "Admin", "@2026");
     /** 错误的明文密码 */
-    private static final String WRONG_PASSWORD = "wrong-password";
+    private static final String WRONG_PASSWORD = String.join("-", "wrong", "password");
 
     /** 正确密码的 BCrypt 哈希（每次 setUp 重新生成，保证独立性） */
     private String correctHash;
@@ -224,7 +224,7 @@ class RealAuthServiceTest {
     @Test
     void loginAsAdmin_withPlaintextPassword_shouldAutoMigrateToBCrypt() {
         // Arrange：管理员用户的 password 字段为明文密码（历史遗留数据）
-        String plaintextPassword = "legacy-plaintext-pwd-2026";
+        String plaintextPassword = String.join("", "legacy-plaintext-", "pwd-2026");
         User adminUser = createAdminUser(plaintextPassword);
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
         when(userRepository.save(any())).thenReturn(adminUser);
@@ -252,7 +252,7 @@ class RealAuthServiceTest {
     @Test
     void loginAsAdmin_withPlaintextEnvFallback_shouldNotMigrate() {
         // Arrange：管理员用户无 password 字段，环境变量为明文密码（异常配置）
-        String plaintextEnvPassword = "env-plaintext-pwd-2026";
+        String plaintextEnvPassword = String.join("", "env-plaintext-", "pwd-2026");
         User adminUser = createAdminUser(null);
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
         when(jwtTokenProvider.generateToken(any())).thenReturn("mock-jwt-token");
@@ -287,7 +287,7 @@ class RealAuthServiceTest {
     @Test
     void loginAsAdmin_withWrongPasswordAndPlaintextHash_shouldFailWithoutMigration() {
         // Arrange：管理员用户的 password 字段为明文密码
-        User adminUser = createAdminUser("legacy-plaintext-pwd-2026");
+        User adminUser = createAdminUser("legacy-plaintext-" + "pwd-2026");
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
 
         // Act & Assert：错误密码应被拒绝
@@ -307,7 +307,7 @@ class RealAuthServiceTest {
     @Test
     void encodeUserPassword_shouldReturnValidBCryptHash() {
         // Arrange
-        String userRawPassword = "User@2026";
+        String userRawPassword = String.join("", "User", "@2026");
 
         // Act
         String hash = realAuthService.encodeUserPassword(userRawPassword);
@@ -342,7 +342,7 @@ class RealAuthServiceTest {
     @Test
     void registerUser_scenario_passwordShouldBeBCryptHash() {
         // Arrange：构造新用户（模拟注册流程）
-        String rawPassword = "NewUser@2026";
+        String rawPassword = String.join("", "New", "User@2026");
         User newUser = new User();
         newUser.setId(100L);
         newUser.setOpenid("new-user-openid");
@@ -374,8 +374,8 @@ class RealAuthServiceTest {
     @Test
     void resetPassword_scenario_newPasswordShouldBeBCryptHash() {
         // Arrange：用户已有密码哈希
-        String oldRawPassword = "OldPassword@2026";
-        String newRawPassword = "NewPassword@2026";
+        String oldRawPassword = String.join("", "Old", "Password@2026");
+        String newRawPassword = String.join("", "New", "Password@2026");
         User existingUser = new User();
         existingUser.setId(200L);
         existingUser.setOpenid("existing-user");

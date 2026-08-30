@@ -118,7 +118,7 @@ const TIER_ACTIONS: Record<string, { icon: string; titleKey: string; descKey: st
     titleKey: 'socialProgress.actionL5Title',
     descKey: 'socialProgress.actionL5Desc',
     btnKey: 'socialProgress.actionL5Btn',
-    path: '/pages/circles/index',
+    path: '/subpackages/circles/circles/index',
   },
   L6_SCENE: {
     icon: SOCIAL_ICONS.FOLLOW,

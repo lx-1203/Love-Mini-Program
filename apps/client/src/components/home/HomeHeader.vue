@@ -35,7 +35,8 @@ const schoolText = () => props.locationText || props.school || "北京大学 · 
 
 <style scoped lang="scss">
 .home-header {
-  padding: 20rpx 40rpx 16rpx;
+  /* 右侧避让微信胶囊：通知铃铛不再被胶囊叠压/裁切（--capsule-right 由父级注入） */
+  padding: calc(env(safe-area-inset-top) + 20rpx) calc(var(--capsule-right, 96px) + 20px) 16rpx 40rpx;
 }
 
 .home-header__top {

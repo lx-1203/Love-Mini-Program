@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+<rect width="375" height="812" fill="#F8FFFC"/>
+<rect width="375" height="300" fill="url(#mint)"/>
+<defs><linearGradient id="mint" x2="0" y2="1"><stop stop-color="#65E6B5"/><stop offset="1" stop-color="#20C997"/></linearGradient></defs>
+<text x="20" y="340" font-size="20" fill="#333">Profile View</text>
+<text x="20" y="375" font-size="14" fill="#999">Hero / Identity / Tags / Photos / Moments</text>
+</svg>

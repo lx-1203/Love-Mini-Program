@@ -1,10 +1,13 @@
 <script setup lang="ts">
+
+
 /**
  * 附近首页（v3 Nearby 冻结 · 01_nearby_home）
  * 分区顺序严格冻结：附近的人（含同城）→ 热门兴趣圈 → 校园圈 → 活动 → 附近动态。
  * 附近 = Explore：不出现速配入口、不使用滑动卡片核心交互。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
+import { resolveMediaUrl } from "@/utils/media";
 import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
@@ -24,6 +27,8 @@ import { SCHOOLS } from "../../config/schools";
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
+// 2026-08-26：圈子图标 emoji→SVG 解析（业务组件图标禁用 emoji 字符）
+import { resolveCircleIcon } from "../../config/circle-icons";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
 
@@ -53,8 +58,11 @@ const schoolEntries = SCHOOLS.slice(0, 4);
 const { circles: circleList } = storeToRefs(circleStore);
 const hotCircles = computed(() => circleList.value.slice(0, 8));
 
-/** 附近动态（复用 village 帖子流，不新建数据源） */
-const circlePosts = computed<PostItem[]>(() => villageStore.posts.slice(0, 6));
+/** 附近动态（2026-08-26 R2：独立维度数据源 villageStore.nearbyPosts，不复用全局 posts） */
+const circlePosts = computed<PostItem[]>(() => villageStore.nearbyPosts.slice(0, 6));
+
+/** 当前城市（fetchNearbyPosts 城市过滤用；来自定位，定位失败则空） */
+const currentCity = ref("");
 
 /** 首页子标题：北京大学 · 3km */
 
@@ -64,18 +72,32 @@ async function initLocation() {
   const loc = await fetchCurrentLocation();
   if (loc) {
     homeSubtitle.value = buildLocationText(loc.city, sessionStore.userSession?.campusName);
+    // 2026-08-27 修复：定位成功后用真实城市刷新附近动态（不再仅登录态）
+    if (loc.city && loc.city !== currentCity.value) {
+      currentCity.value = loc.city;
+      void loadCirclePosts();
+    }
   }
 }
 
 onLoad(() => {
   loadNearbyData();
+  // 2026-08-27 修复：兴趣圈列表在 onLoad 直接触发（不再依赖登录态），
+  // 热门兴趣圈横滑区按理想图始终可见
+  void circleStore.fetchCircles().catch(() => {});
+  // 2026-08-27 修复：附近动态也直接在 onLoad 拉取（mock 默认就返回数据）
+  void loadCirclePosts();
   void initLocation();
 });
 
 onShow(() => {
   // 未登录时也加载预览数据，展示附近推荐
   if (peoplePreview.value.length === 0 && !peopleLoading.value) {
-    void loadPeoplePreview();
+    // 2026-08-26 R4：失败重试退避——距上次失败 < 2s 不自动重试，
+    // 避免 onLoad/onShow 双入口在失败场景下连发请求
+    if (Date.now() - lastPeopleLoadFailedAt > 2000) {
+      void loadPeoplePreview();
+    }
   }
 });
 
@@ -88,7 +110,8 @@ onUnmounted(() => {
 });
 
 /**
- * 加载附近预览数据（未登录时也加载，点击交互时引导登录）
+ * 加载附近预览数据（未登录时也加载，点击交互时引导登录）。
+ * 2026-08-26 R2：附近动态独立维度——登录后按城市加载 nearbyPosts。
  */
 function loadNearbyData(): void {
   void loadPeoplePreview();
@@ -96,7 +119,6 @@ function loadNearbyData(): void {
   if (getToken()) {
     void loadActivities();
     void loadCirclePosts();
-    void circleStore.fetchCircles().catch(() => {});
   }
 }
 
@@ -107,13 +129,16 @@ watch(
     if (loggedIn) {
       loadActivities();
       void loadCirclePosts();
-      void circleStore.fetchCircles().catch(() => {});
     }
   }
 );
 
-/** 附近的人预览（distanceMax 过滤，真实链路） */
+/** 2026-08-26 R4：附近的人预览最近一次加载失败时间戳（失败重试退避用，0=未失败） */
+let lastPeopleLoadFailedAt = 0;
+
+/** 附近的人预览（distanceMax 过滤，真实链路；2026-08-26 R4：in-flight 防抖 + 失败退避） */
 async function loadPeoplePreview() {
+  if (peopleLoading.value) return; // 2026-08-26 R4：in-flight 防抖（onLoad/onShow 双入口去重）
   peopleLoading.value = true;
   peopleError.value = "";
   try {
@@ -121,7 +146,9 @@ async function loadPeoplePreview() {
       distanceMax: NEARBY_MAX_DISTANCE_KM,
     });
     peoplePreview.value = people.map((person) => mapToDiscoverCard(person));
+    lastPeopleLoadFailedAt = 0;
   } catch (error) {
+    lastPeopleLoadFailedAt = Date.now();
     peopleError.value = error instanceof Error ? error.message : t("nearby.loadFailed");
   } finally {
     peopleLoading.value = false;
@@ -135,11 +162,16 @@ async function loadActivities() {
   }
 }
 
-/** 拉取附近动态（复用 village store 帖子流） */
+/** 拉取附近动态（2026-08-26 R2：独立维度 fetchNearbyPosts，按当前城市过滤；空态由页面登录引导承接） */
 async function loadCirclePosts() {
-  if (villageStore.posts.length === 0) {
-    await villageStore.fetchPosts({}, true);
+  if (villageStore.nearbyPosts.length === 0 && !villageStore.loadingNearbyPosts) {
+    await villageStore.fetchNearbyPosts(currentCity.value || undefined);
   }
+}
+
+/** 未登录引导：跳登录页（文案复用 apiErrors.loginRequired） */
+function goLogin() {
+  openAppPath(ROUTES.LOGIN);
 }
 
 /** 搜索（附近内容） */
@@ -183,7 +215,7 @@ function goActivityDetail(id: string) {
 
 /** 帖子详情 / 作者 */
 function onPostDetail(postId: string) {
-  openAppPath(`/pages/village/detail?id=${encodeURIComponent(postId)}`);
+  openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
 }
 function onPostAuthor(userId: string) {
   openUserProfile(userId);
@@ -197,42 +229,42 @@ function meetAuthor(userId: string) {
 
 /** 帖子标签/关联活动 */
 function onPostTag(tagName: string) {
-  openAppPath(`/pages/village/tag-posts?tagName=${encodeURIComponent(tagName)}`);
+  openAppPath(`/subpackages/village/village/tag-posts?tagName=${encodeURIComponent(tagName)}`);
 }
 function onPostActivity(activityId: number | string) {
-  openAppPath(`/pages/activities/detail?id=${encodeURIComponent(String(activityId))}`);
+  openAppPath(`/subpackages/tools/activities/detail?id=${encodeURIComponent(String(activityId))}`);
 }
 
 /** 发帖（动态/找搭子/活动 三段式入口） */
 function goToPublishPost() {
-  openAppPath("/pages/village/post");
+  openAppPath("/subpackages/village/village/post");
 }
 
 /** 查看全部动态 */
 function goAllPosts() {
-  openAppPath("/pages/village/index");
+  openAppPath("/subpackages/village/village/index");
 }
 
 /** 2026-08-21：兴趣圈封面照片（复用兴趣圈页素材，按名称匹配）
  * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈原 Style B 宽幅场景大图（与 ideal 方形缩略风格不一致）
  * 改为本地 AI 生成 Style A 方形居中场景图，与 config/images.ts CIRCLE_COVERS 同步 */
 const CIRCLE_COVER = {
-  photo: "/static/assets/images/covers/circle-photo.png",
-  travel: "/static/assets/images/covers/circle-travel.png",
-  music: "/static/assets/images/covers/circle-music.png",
-  sports: "/static/assets/images/covers/circle-sports.png",
-  food: "/static/assets/images/covers/circle-food.png",
-  sky: "/static/assets/images/covers/circle-sky.png",
+  photo: resolveMediaUrl("/static/assets/images/covers/circle-photo.png"),
+  travel: resolveMediaUrl("/static/assets/images/covers/circle-travel.png"),
+  music: resolveMediaUrl("/static/assets/images/covers/circle-music.png"),
+  sports: resolveMediaUrl("/static/assets/images/covers/circle-sports.png"),
+  food: resolveMediaUrl("/static/assets/images/covers/circle-food.png"),
+  sky: resolveMediaUrl("/static/assets/images/covers/circle-sky.png"),
   // 第五轮 QA：游戏/阅读/宠物改用 Style A AI 生成图（与理想图风格一致）
-  game: "/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png",
-  reading: "/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png",
-  pet: "/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png",
+  game: resolveMediaUrl("/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png"),
+  reading: resolveMediaUrl("/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png"),
+  pet: resolveMediaUrl("/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png"),
   // 非标准 8 圈（仅真实模式可能存在）：保留 Style B 原图，渲染后由真实圈名触发
-  cutepets: "/static/assets/images/covers/circle-cutepets.png",
-  basketball: "/static/assets/images/covers/circle-basketball.png",
-  boardgame: "/static/assets/images/covers/circle-boardgame.png",
-  postgraduate: "/static/assets/images/covers/circle-postgraduate.png",
-  studybuddy: "/static/assets/images/covers/circle-studybuddy.png",
+  cutepets: resolveMediaUrl("/static/assets/images/covers/circle-cutepets.png"),
+  basketball: resolveMediaUrl("/static/assets/images/covers/circle-basketball.png"),
+  boardgame: resolveMediaUrl("/static/assets/images/covers/circle-boardgame.png"),
+  postgraduate: resolveMediaUrl("/static/assets/images/covers/circle-postgraduate.png"),
+  studybuddy: resolveMediaUrl("/static/assets/images/covers/circle-studybuddy.png"),
 } as const;
 
 function circleCover(circle: { name: string }): string {
@@ -277,7 +309,7 @@ function requireLogin(): boolean {
         <view class="nearby-home__title-row">
           <text class="nearby-home__title">{{ t('nearby.title') }}</text>
           <image class="nearby-home__search" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" role="button" :aria-label="t('nearby.searchPlaceholder')" @tap="goSearch" alt="" />
-          <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
+          <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
             <text class="nearby-home__publish-text">{{ t('nearby.publishToday') }}</text>
           </view>
         </view>
@@ -286,31 +318,31 @@ function requireLogin(): boolean {
 
       <!-- 功能入口：5 圆形图标（参考图对齐） -->
       <view class="nearby-entries">
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.peopleTitle')" @tap="goPeople('nearby')">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.peopleTitle')" @tap="goPeople('nearby')">
           <view class="nearby-entry__icon nearby-entry__icon--people">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.PEOPLE" mode="aspectFit" alt="" />
           </view>
           <text class="nearby-entry__label">{{ t('nearby.peopleTitle') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.hotCircles')" @tap="goCircleList">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.hotCircles')" @tap="goCircleList">
           <view class="nearby-entry__icon nearby-entry__icon--circle">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CIRCLE" mode="aspectFit" alt="" />
           </view>
           <text class="nearby-entry__label">{{ t('nearby.hotCircles') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.campusCircles')" @tap="goCampusHub()">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.campusCircles')" @tap="goCampusHub()">
           <view class="nearby-entry__icon nearby-entry__icon--campus">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CAMPUS" mode="aspectFit" alt="" />
           </view>
           <text class="nearby-entry__label">{{ t('nearby.campusCircles') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.activitiesTitle')" @tap="goActivityList">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.activitiesTitle')" @tap="goActivityList">
           <view class="nearby-entry__icon nearby-entry__icon--activity">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.ACTIVITY" mode="aspectFit" alt="" />
           </view>
           <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.myConnections')" @tap="goAllPosts">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.myConnections')" @tap="goAllPosts">
           <!-- 2026-08-25 P0：第 5 项改为"我的人脉"，icon 用素材库 r10_c02（人物+加号），规格书 4.4 -->
           <view class="nearby-entry__icon nearby-entry__icon--dynamic">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.LOGIN_SPLIT['r10_c02']" mode="aspectFit" alt="" />
@@ -322,7 +354,7 @@ function requireLogin(): boolean {
       <!-- ① 附近的人（含同城） -->
       <NearbySection :title="t('nearby.peopleTitle')">
         <view class="people-entry-list">
-          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.peopleNearby')" @tap="goPeople('nearby')">
+          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.peopleNearby')" @tap="goPeople('nearby')">
             <view class="people-entry__icon-wrap">
               <image class="people-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
             </view>
@@ -332,7 +364,7 @@ function requireLogin(): boolean {
             </view>
             <text class="people-entry__arrow">›</text>
           </view>
-          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('nearby.peopleCity')" @tap="goPeople('city')">
+          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.peopleCity')" @tap="goPeople('city')">
             <view class="people-entry__icon-wrap people-entry__icon-wrap--city">
               <image class="people-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
             </view>
@@ -354,13 +386,21 @@ function requireLogin(): boolean {
               :key="circle.id"
               class="circle-mini press-feedback"
               hover-class="press-feedback--active"
-              hover-stay-time="120"
+              hover-stay-time="40"
               role="button"
               :aria-label="circle.name"
               @tap="goCircleDetail(circle.id)"
             >
               <image v-if="circleCover(circle)" class="circle-mini__cover" :src="circleCover(circle)" mode="aspectFill" alt="" />
-              <text v-else class="circle-mini__emoji">{{ circle.icon }}</text>
+              <!-- 2026-08-26：图标优先 SVG（封面缺失时也不再用 emoji 字符） -->
+              <image
+                v-else-if="resolveCircleIcon(circle.icon)"
+                class="circle-mini__icon"
+                :src="resolveCircleIcon(circle.icon)"
+                mode="aspectFit"
+                alt=""
+              />
+              <text v-else class="circle-mini__emoji">{{ circle.name.slice(0, 1) }}</text>
               <view class="circle-mini__overlay" />
               <view class="circle-mini__info">
                 <text class="circle-mini__name">{{ circle.name }}</text>
@@ -388,7 +428,7 @@ function requireLogin(): boolean {
           class="campus-entry press-feedback"
           :class="{ 'campus-entry--img': school.coverUrl }"
           hover-class="press-feedback--active"
-          hover-stay-time="120"
+          hover-stay-time="40"
           role="button"
           :aria-label="school.name"
           @tap="goCampusHub(school.name)"
@@ -416,7 +456,7 @@ function requireLogin(): boolean {
           :key="activity.id"
           class="activity-entry press-feedback"
           hover-class="press-feedback--active"
-          hover-stay-time="120"
+          hover-stay-time="40"
           role="button"
           :aria-label="activity.title"
           @tap="goActivityDetail(String(activity.id))"
@@ -435,9 +475,26 @@ function requireLogin(): boolean {
         </view>
       </NearbySection>
 
-      <!-- ⑤ 附近动态（复用 village 帖子流；最多 1 个显式「认识 TA」） -->
+      <!-- ⑤ 附近动态（2026-08-26 R2：独立维度 nearbyPosts；最多 1 个显式「认识 TA」） -->
       <NearbySection :title="t('nearby.nearbyPosts')" :more-text="t('nearby.viewAll')" @more="goAllPosts">
-        <view v-if="circlePosts.length === 0 && !villageStore.loading" class="nearby-home__empty">
+        <!-- 未登录：登录引导卡片（文案复用 apiErrors.loginRequired） -->
+        <view v-if="!sessionStore.isLoggedIn" class="nearby-login-guide">
+          <text class="nearby-login-guide__text">{{ t('apiErrors.loginRequired') }}</text>
+          <view
+            class="nearby-login-guide__btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('discover.card.goLogin')"
+            @tap="goLogin"
+          >
+            <text class="nearby-login-guide__btn-text">{{ t('discover.card.goLogin') }}</text>
+          </view>
+        </view>
+        <view v-else-if="circlePosts.length === 0 && villageStore.loadingNearbyPosts" class="nearby-home__empty">
+          <text class="nearby-home__empty-text">{{ t('common.loading') }}</text>
+        </view>
+        <view v-else-if="circlePosts.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
         </view>
         <view v-for="(post, idx) in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
@@ -452,7 +509,7 @@ function requireLogin(): boolean {
             v-if="idx === 0"
             class="nearby-meet press-feedback"
             hover-class="press-feedback--active"
-            hover-stay-time="120"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('nearby.meetAuthor')"
             @tap.stop="meetAuthor(post.author.userId)"
@@ -471,7 +528,7 @@ function requireLogin(): boolean {
 .nearby-home {
   min-height: 100%;
   background: var(--c-bg-page, #F7FAF9);
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 0;
+  padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -490,6 +547,8 @@ function requireLogin(): boolean {
 
 .nearby-home__header {
   margin-bottom: 8rpx;
+  /* 右侧避让微信胶囊（--capsule-right 由 useMenuButtonRect 注入） */
+  padding-right: calc(var(--capsule-right, 96px) + 8px);
 }
 
 .nearby-home__title-row {
@@ -628,6 +687,16 @@ function requireLogin(): boolean {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 88rpx;
+}
+
+/* 2026-08-26：圈子图标 SVG（替代 emoji 字符，视觉尺寸与原 emoji 一致） */
+.circle-mini__icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .circle-mini__overlay {
@@ -867,6 +936,40 @@ function requireLogin(): boolean {
 .nearby-home__empty-text {
   font-size: 24rpx;
   color: var(--c-text-tertiary, #666666);
+}
+
+/* 2026-08-26 R2：未登录「附近动态」登录引导卡片 */
+.nearby-login-guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 28rpx 24rpx;
+  border-radius: 20rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
+  box-shadow: var(--c-shadow-card, 0 4px 16px rgba(30, 80, 65, 0.08));
+}
+
+.nearby-login-guide__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: var(--c-text-secondary, #666666);
+  line-height: 1.5;
+}
+
+.nearby-login-guide__btn {
+  flex-shrink: 0;
+  padding: 12rpx 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+}
+
+.nearby-login-guide__btn-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .nearby-tabs {

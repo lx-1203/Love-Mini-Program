@@ -72,12 +72,32 @@ export interface BackendCertificationView {
 
 /* ========== 映射函数 ========== */
 
+/**
+ * 2026-08-26 P7：解析后端 images 字段（string | null）。
+ * 兼容 JSON 数组 / 逗号分隔 / 空串三种形态，解析失败回退空数组。
+ */
+function parseCampusImages(images: string | null | undefined): string[] {
+  if (!images) return [];
+  const trimmed = images.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      const arr = JSON.parse(trimmed) as unknown;
+      return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+  return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 function mapToCampusTopicItem(raw: BackendCampusTopicView): CampusTopicItem {
   return {
     id: String(raw.id),
     category: raw.category as CampusTopicCategory,
     title: raw.title,
     contentPreview: raw.content ?? "",
+    images: parseCampusImages(raw.images),
     author: {
       userId: raw.authorId != null ? String(raw.authorId) : "",
       name: raw.authorName,
@@ -96,6 +116,7 @@ function mapToCampusTopicDetail(raw: BackendCampusTopicView): CampusTopicDetail 
     category: raw.category as CampusTopicCategory,
     title: raw.title,
     content: raw.content ?? "",
+    images: parseCampusImages(raw.images),
     author: {
       userId: raw.authorId != null ? String(raw.authorId) : "",
       name: raw.authorName,
@@ -179,6 +200,8 @@ export interface CampusTopicItem {
   category: CampusTopicCategory;
   title: string;
   contentPreview: string;
+  /** 2026-08-26 P7：话题配图（上传图片发帖） */
+  images?: string[];
   author: CampusTopicAuthor;
   replyCount: number;
   isAnonymous: boolean;
@@ -191,6 +214,8 @@ export interface CampusTopicDetail {
   category: CampusTopicCategory;
   title: string;
   content: string;
+  /** 2026-08-26 P7：话题配图（上传图片发帖） */
+  images?: string[];
   author: CampusTopicAuthor;
   replyCount: number;
   isAnonymous: boolean;
@@ -562,6 +587,8 @@ export const useCampusStore = defineStore("campus", {
       isAnonymous: boolean;
       /** 2026-08-10 B5：话题标签（后端 ≤5 个、每个 ≤20 字符；mock 分支由调用方拼入内容） */
       tags?: string[];
+      /** 2026-08-26 P7：话题配图（上传图片发帖） */
+      images?: string[];
     }) {
       this.errorMessage = null;
 
@@ -579,11 +606,14 @@ export const useCampusStore = defineStore("campus", {
         if (useMock()) {
           // infra R2-00099: mock 发布作者从当前会话生成（原硬编码 "匿名校友/我/广州大学"）
           const me = useSessionStore().userSession;
+          // 审核机制（2026-08-26 P7）：mock 本地模拟「PENDING → 审核通过」同步闭环，
+          // 发布后立即加入可见列表，保证帖子审核后可见。
           const newTopic: CampusTopicItem = {
             id: `campus-topic-${Date.now()}`,
             category: data.category,
             title: data.title.trim(),
             contentPreview: data.content.trim(),
+            images: data.images ?? [],
             author: {
               userId: me?.userId ?? MOCK_CURRENT_USER_ID,
               name: data.isAnonymous ? t("campus.index.anonymousAuthor") : (me?.displayName ?? "我"),
@@ -605,6 +635,7 @@ export const useCampusStore = defineStore("campus", {
           title: string;
           content: string;
           tags?: string[];
+          images?: string[];
         }>({
           url: "/campus/topics",
           method: "POST",
@@ -613,6 +644,7 @@ export const useCampusStore = defineStore("campus", {
             title: data.title.trim(),
             content: data.content.trim(),
             ...(data.tags && data.tags.length > 0 ? { tags: data.tags } : {}),
+            ...(data.images && data.images.length > 0 ? { images: data.images } : {}),
           },
         });
 

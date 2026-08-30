@@ -620,6 +620,9 @@ public class RealHomeService implements HomeService {
 
     private java.util.List<CommunityPostSummaryView> buildCommunityPosts() {
         try {
+            // 2026-08-26 R4 契约：timeText 保持 ISO 字符串下发（LocalDateTime.toString()），
+            // 相对时间由前端统一 formatRelativeTime 格式化（解析失败原样透传）；
+            // 列表 images 最多 3 张，与 mock fixtures 的展示字符串兼容。
             Page<Post> posts = postRepository.findByStatusOrderByLikesCountDesc(
                 PostStatus.active,
                 PageRequest.of(0, 2)

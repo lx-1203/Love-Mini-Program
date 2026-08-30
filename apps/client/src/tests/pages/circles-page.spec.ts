@@ -11,7 +11,7 @@ import { i18n } from "../../i18n";
  */
 describe("Circles 页面 smoke", () => {
   const circlesSource = readFileSync(
-    resolve(__dirname, "../../pages/circles/index.vue"),
+    resolve(__dirname, "../../subpackages/circles/circles/index.vue"),
     "utf-8"
   );
 

@@ -5,18 +5,17 @@
 // "设计 Token 三合一"，客户端与 Admin v2 共用一套 Token 数据，
 // 避免双套维护导致的视觉漂移。
 //
-// Token 主色（参考 project_memory）：
-//   - 薄荷绿主色：#34C98A（brand.400）— 客户端品牌主色（匹配/喜欢/心动等交互态）
-//   - 粉色辅助：#EC4899（pink.400）/ #FF6B9D 浪漫色 — 客户端用于匹配/喜欢/心动
-//   - 中性灰：#1F2329 / #5B6470 / #9AA1AB — 三级文本色
-//   - Admin 后台主色：#667EEA（靛蓝）— adminTokens.colors.primary 为后台独立品牌色，
-//     与客户端薄荷绿有意区分（后台视觉自成体系，见 admin-common.css :root 对齐）
+// Token 主色（对齐 design-tokens-admin.md，2026-08 后台视觉重构）：
+//   - cobalt 主色：#0064e0 — 后台唯一主操作/激活态色（§2.1）
+//   - 画布：#f1f4f7 托白卡 #ffffff，1px #dee3e9 边框分层
+//   - 文字三级：#1c1e21 / #5d6c7b / #8595a4
+//   - 语义色：成功 #31a24c · 警告 #f2a918（徽章字 #a96f00）· 危险 #e41e3f
 //
 // 使用方式：
 //   import { designTokens, getThemeTokens, adminTokens } from "@/theme/tokens";
 //   const primaryColor = designTokens.color.brand[400]; // #34C98A
 //   const darkTokens = getThemeTokens("dark");
-//   const adminPrimary = adminTokens.colors.primary; // #667eea
+//   const adminPrimary = adminTokens.colors.primary; // #0064e0
 //
 // adminTokens 用于补齐 Admin v2 后台特有的语义化 token，
 // 与 admin-common.css 中 :root 变量保持一致，便于主题切换/暗色模式落地。
@@ -51,58 +50,64 @@ export type { ThemeMode } from "../../../client/src/theme/tokens";
  */
 export const adminTokens = {
   colors: {
-    primary: "#667eea",
-    primaryHover: "#5568d3",
-    primarySoft: "#e6f7ff",
-    primarySofter: "#bae7ff",
-    success: "#52c41a",
-    successSoft: "#f6ffed",
-    successSofter: "#d9f7be",
-    warning: "#fa8c16",
-    warningSoft: "#fff7e6",
-    danger: "#f5222d",
-    dangerHover: "#d4380d",
-    dangerSoft: "#fff1f0",
-    dangerSofter: "#ffccc7",
-    info: "#1890ff",
-    infoSoft: "#e6f7ff",
-    infoSofter: "#bae7ff",
-    accent: "#2f54eb",
-    accentSoft: "#f0f5ff",
-    // 渐变辅助色（Login/Forbidden 渐变背景）
-    gradientSecondary: "#764ba2",
-    skipLink: "#34C98A",
+    // 主色 cobalt：仅主操作 / 激活态 / 链接 / 聚焦环（design-tokens-admin.md §2.1）
+    primary: "#0064e0",
+    primaryHover: "#0457cb",
+    primarySoft: "#e9f1fd",
+    primarySofter: "#d7e7fb",
+    // 语义色：徽章 = 浅底 + 同色字（§2.2 / §5.6）
+    success: "#31a24c",
+    successSoft: "#e8f5ec",
+    successSofter: "#d4eedd",
+    warning: "#f2a918",
+    warningText: "#a96f00",
+    warningSoft: "#fbf1dc",
+    warningSofter: "#f5e3c2",
+    danger: "#e41e3f",
+    dangerHover: "#c2132f",
+    dangerSoft: "#fce8ec",
+    dangerSofter: "#f8d3da",
+    info: "#0064e0",
+    infoSoft: "#e9f1fd",
+    infoSofter: "#d7e7fb",
+    accent: "#0064e0",
+    accentSoft: "#e9f1fd",
+    // 渐变辅助色（变量名保留兼容，取值收敛主色系）
+    gradientSecondary: "#0457cb",
+    skipLink: "#0064e0",
     skipLinkFg: "#ffffff",
     // Danger 加深色（ErrorState 标题/正文/hover）
-    dangerBorder: "#ffa39e",
-    dangerTitle: "#a8071a",
-    dangerMessage: "#5c0011",
-    dangerActive: "#cf1322",
-    // Stat 卡片配色（Dashboard 统计卡片图标背景）
-    statPrimary: "#667eea",
-    statPink: "#f093fb",
-    statBlue: "#4facfe",
-    statGreen: "#43e97b",
-    textPrimary: "#333",
-    textSecondary: "#555",
-    textTertiary: "#666",
-    textQuaternary: "#999",
-    textPlaceholder: "#ccc",
-    border: "#e0e0e0",
-    borderLight: "#f0f0f0",
-    bgPage: "#f5f5f5",
+    dangerBorder: "#f5b6c2",
+    dangerTitle: "#b01230",
+    dangerMessage: "#8f1027",
+    dangerActive: "#c2132f",
+    // Stat 数字配色（cobalt 单色系 + 语义色）
+    statPrimary: "#0064e0",
+    statPink: "#e41e3f",
+    statBlue: "#5b99ef",
+    statGreen: "#31a24c",
+    // 文字三级层次（§2.3）：主 #1c1e21 → 次 #5d6c7b → 辅 #8595a4
+    textPrimary: "#1c1e21",
+    textSecondary: "#5d6c7b",
+    textTertiary: "#8595a4",
+    textQuaternary: "#8595a4",
+    textPlaceholder: "#bcc0c4",
+    border: "#ced0d4",
+    borderLight: "#dee3e9",
+    bgPage: "#f1f4f7",
     bgContainer: "#ffffff",
-    bgSubtle: "#f9f9f9",
-    bgHover: "#f5f5f5",
-    overlay: "rgba(0, 0, 0, 0.4)",
-    // eladmin 风格侧边栏专用色（Layout 深色侧边栏）
-    sidebarBg: "#304156",
-    sidebarBgActive: "#263445",
-    sidebarText: "#bfcbd9",
-    sidebarTextActive: "#ffffff",
-    sidebarLogoBg: "#2b3a4d",
+    bgSubtle: "#f1f4f7",
+    bgHover: "#f1f4f7",
+    overlay: "rgba(10, 19, 23, 0.45)",
+    // 白色侧边栏（激活态三合一：浅蓝底 + 左竖条 + 主色字）
+    sidebarBg: "#ffffff",
+    sidebarBgHover: "#f1f4f7",
+    sidebarBgActive: "#e9f1fd",
+    sidebarText: "#5d6c7b",
+    sidebarTextActive: "#0064e0",
+    sidebarLogoBg: "#ffffff",
     headerBg: "#ffffff",
-    tabsBg: "#f0f2f5",
+    tabsBg: "#f1f4f7",
   },
   spacing: {
     xs: 4,
@@ -118,23 +123,23 @@ export const adminTokens = {
     sm: 4,
     md: 6,
     lg: 8,
-    xl: 12,
-    xxl: 16,
+    xl: 8,
+    xxl: 12,
   },
   fontSize: {
-    xs: 11,
+    xs: 12,
     sm: 12,
     md: 13,
     lg: 14,
     xl: 16,
-    xxl: 18,
+    xxl: 16,
     xxxl: 24,
     display: 28,
   },
   shadow: {
-    sm: "0 2px 8px rgba(0, 0, 0, 0.05)",
-    md: "0 8px 32px rgba(0, 0, 0, 0.16)",
-    lg: "0 8px 24px rgba(0, 0, 0, 0.1)",
+    sm: "none",
+    md: "0 4px 16px rgba(20, 22, 26, 0.12)",
+    lg: "0 8px 32px rgba(20, 22, 26, 0.16)",
   },
 } as const;
 

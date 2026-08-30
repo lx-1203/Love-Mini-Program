@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 迁移：圈子页三 Tab + 热门话题 + 评论楼中楼种子
 -- ============================================================
 -- 背景（用户需求）：
@@ -113,16 +113,16 @@ JOIN (
     SELECT 0, 10008, '收藏了慢慢看', 8 UNION ALL
     SELECT 0, 10009, '看到这个心情都变好了', 9 UNION ALL
     SELECT 0, 10010, '回复楼上：确实呢', 10 UNION ALL
-    SELECT 1, 10011, '太棒了！', 1 UNION ALL
-    SELECT 1, 10012, '求详细教程', 2 UNION ALL
-    SELECT 1, 10013, '同求+1', 3 UNION ALL
-    SELECT 1, 10014, '楼主好厉害', 4 UNION ALL
-    SELECT 1, 10015, '学到了学到了', 5 UNION ALL
-    SELECT 1, 10016, '评论区都是人才', 6 UNION ALL
-    SELECT 1, 10017, '支持支持', 7 UNION ALL
-    SELECT 1, 10018, '有点东西啊', 8 UNION ALL
-    SELECT 1, 10019, '已转发给朋友', 9 UNION ALL
-    SELECT 1, 10020, '坐等更新', 10 UNION ALL
+    SELECT 100000, 10011, '太棒了！', 1 UNION ALL
+    SELECT 100000, 10012, '求详细教程', 2 UNION ALL
+    SELECT 100000, 10013, '同求+1', 3 UNION ALL
+    SELECT 100000, 10014, '楼主好厉害', 4 UNION ALL
+    SELECT 100000, 10015, '学到了学到了', 5 UNION ALL
+    SELECT 100000, 10016, '评论区都是人才', 6 UNION ALL
+    SELECT 100000, 10017, '支持支持', 7 UNION ALL
+    SELECT 100000, 10018, '有点东西啊', 8 UNION ALL
+    SELECT 100000, 10019, '已转发给朋友', 9 UNION ALL
+    SELECT 100000, 10020, '坐等更新', 10 UNION ALL
     SELECT 2, 10021, '路过帮顶', 1 UNION ALL
     SELECT 2, 10022, '这个观点不错', 2 UNION ALL
     SELECT 2, 10023, '我也遇到过', 3 UNION ALL
@@ -202,7 +202,7 @@ INSERT INTO daily_questions (question_date, question_text, category, created_at)
 SELECT DATE_SUB(CURDATE(), INTERVAL q.days_ago DAY), q.text, q.category, NOW()
 FROM (
     SELECT 0 days_ago, '你理想中的第一次约会是什么样？' text, '恋爱' category UNION ALL
-    SELECT 1, '你觉得异地恋靠谱吗？', '恋爱' UNION ALL
+    SELECT 100000, '你觉得异地恋靠谱吗？', '恋爱' UNION ALL
     SELECT 2, '第一次见家长应该注意什么？', '恋爱' UNION ALL
     SELECT 3, '你的 MBTI 是什么？准吗？', '趣味' UNION ALL
     SELECT 4, '大学里最难忘的一件事是什么？', '校园' UNION ALL
@@ -217,7 +217,7 @@ INSERT INTO daily_answers (question_id, user_id, content, is_anonymous, created_
 SELECT dq.id, 1, '想去看一场日落，然后在江边散步，聊一些有的没的，简单但浪漫。', 0, NOW()
 FROM daily_questions dq
 WHERE dq.question_date = CURDATE()
-  AND NOT EXISTS (SELECT 1 FROM daily_answers da WHERE da.question_id = dq.id AND da.user_id = 1);
+  AND NOT EXISTS (SELECT 1 FROM daily_answers da WHERE da.question_id = dq.id AND da.user_id = 100000);
 
 INSERT INTO daily_answers (question_id, user_id, content, is_anonymous, created_at)
 SELECT dq.id, 10001, '一起吃火锅！没有什么是一顿火锅解决不了的。', 0, NOW()

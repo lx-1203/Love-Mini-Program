@@ -85,7 +85,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "upcoming",
-    coverImage: IMAGE_PATHS.BANNERS.VILLAGE,
+    coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
   },
   {
     id: "a-3",
@@ -113,7 +113,7 @@ const mockActivities: ActivityItem[] = [
     participantAvatars: [],
     isEnrolled: false,
     status: "open",
-    coverImage: IMAGE_PATHS.PRODUCTS.TICKET_1,
+    coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_4,
   },
 ];
 

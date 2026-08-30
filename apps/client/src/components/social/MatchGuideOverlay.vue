@@ -8,6 +8,8 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { IMAGE_PATHS } from '../../config/images'
+// 2026-08-26：圈子图标 emoji→SVG 解析（业务组件图标禁用 emoji 字符）
+import { resolveCircleIcon } from '../../config/circle-icons'
 
 const { t } = useI18n()
 
@@ -133,7 +135,15 @@ defineExpose({ overlayAriaLabel });
             role="img"
             :aria-label="circle.name"
           >
-            <text class="mgo-circle-icon">{{ circle.icon }}</text>
+            <!-- 2026-08-26：图标优先 SVG（不再直接渲染 emoji 字符） -->
+            <image
+              v-if="resolveCircleIcon(circle.icon)"
+              class="mgo-circle-icon-img"
+              :src="resolveCircleIcon(circle.icon)"
+              mode="aspectFit"
+              alt=""
+            />
+            <text v-else class="mgo-circle-icon">{{ circle.name.slice(0, 1) }}</text>
             <text class="mgo-circle-name">{{ circle.name }}</text>
           </view>
         </view>
@@ -316,6 +326,13 @@ defineExpose({ overlayAriaLabel });
 
 .mgo-circle-icon {
   font-size: var(--fs-lg, 28rpx);
+}
+
+/* 2026-08-26：圈子图标 SVG（替代 emoji 字符，视觉尺寸与原 emoji 一致） */
+.mgo-circle-icon-img {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
 }
 
 .mgo-circle-name {

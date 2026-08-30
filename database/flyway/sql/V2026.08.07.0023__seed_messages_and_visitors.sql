@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 迁移：消息会话 + 喜欢我的 + 访客数据种子
 -- ============================================================
 -- 背景（用户需求）：
@@ -30,49 +30,49 @@ BEGIN
 -- 1.1 与「周屿」(10001) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10001', 1, 10001, '周末一起去看展吗？', DATE_SUB(NOW(), INTERVAL 1 HOUR), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10001', 100000, 10001, '周末一起去看展吗？', DATE_SUB(NOW(), INTERVAL 1 HOUR), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10001');
 
 -- 1.2 与「林晚」(10002) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10002', 1, 10002, '那家咖啡店我常去，他家手冲很赞', DATE_SUB(NOW(), INTERVAL 2 HOUR), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10002', 100000, 10002, '那家咖啡店我常去，他家手冲很赞', DATE_SUB(NOW(), INTERVAL 2 HOUR), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10002');
 
 -- 1.3 与「顾一鸣」(10003) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10003', 1, 10003, '哈哈哈那就说定了，周末约球', DATE_SUB(NOW(), INTERVAL 3 HOUR), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10003', 100000, 10003, '哈哈哈那就说定了，周末约球', DATE_SUB(NOW(), INTERVAL 3 HOUR), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10003');
 
 -- 1.4 与「苏念」(10004) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10004', 1, 10004, '我最近在学播音，可以交流一下', DATE_SUB(NOW(), INTERVAL 5 HOUR), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10004', 100000, 10004, '我最近在学播音，可以交流一下', DATE_SUB(NOW(), INTERVAL 5 HOUR), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10004');
 
 -- 1.5 与「陈叙」(10005) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10005', 1, 10005, '下次带你看我收藏的科幻小说', DATE_SUB(NOW(), INTERVAL 1 DAY), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10005', 100000, 10005, '下次带你看我收藏的科幻小说', DATE_SUB(NOW(), INTERVAL 1 DAY), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10005');
 
 -- 1.6 与「许知夏」(10006) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10006', 1, 10006, '民谣现场真的值得一去', DATE_SUB(NOW(), INTERVAL 2 DAY), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10006', 100000, 10006, '民谣现场真的值得一去', DATE_SUB(NOW(), INTERVAL 2 DAY), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10006');
 
 -- 1.7 与「沈亦舟」(10007) 的会话（置顶会话）
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10007', 1, 10007, '健身房走起？老地方见', DATE_SUB(NOW(), INTERVAL 4 DAY), 1, NOW(), NOW()
+SELECT 'conv-seed-1-10007', 100000, 10007, '健身房走起？老地方见', DATE_SUB(NOW(), INTERVAL 4 DAY), 1, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10007');
 
 -- 1.8 与「叶清欢」(10008) 的会话
 INSERT INTO private_conversations (conversation_uid, user_a_id, user_b_id, last_message_preview,
                                    last_message_at, pinned, created_at, updated_at)
-SELECT 'conv-seed-1-10008', 1, 10008, '我家猫今天又拆家了，愁', DATE_SUB(NOW(), INTERVAL 6 DAY), 0, NOW(), NOW()
+SELECT 'conv-seed-1-10008', 100000, 10008, '我家猫今天又拆家了，愁', DATE_SUB(NOW(), INTERVAL 6 DAY), 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM private_conversations WHERE conversation_uid = 'conv-seed-1-10008');
 
 -- ========== 2. 私信消息（private_messages，对应上面会话） ==========
@@ -140,7 +140,7 @@ WHERE NOT EXISTS (SELECT 1 FROM temp_chat_message tm WHERE tm.session_id = s.id 
 
 -- ========== 4. 「喜欢我的」（likes 表：target_user_id=1 被喜欢） ==========
 INSERT INTO likes (user_id, target_user_id, status, created_at, updated_at)
-SELECT v.id, 1, 'active', DATE_SUB(NOW(), INTERVAL v.days_ago DAY), NOW()
+SELECT v.id, 100000, 'active', DATE_SUB(NOW(), INTERVAL v.days_ago DAY), NOW()
 FROM (
     SELECT 10001 id, 0 days_ago UNION ALL SELECT 10002, 0 UNION ALL SELECT 10003, 0
     UNION ALL SELECT 10004, 1 UNION ALL SELECT 10005, 1 UNION ALL SELECT 10006, 1
@@ -151,11 +151,11 @@ FROM (
     UNION ALL SELECT 10019, 6 UNION ALL SELECT 10020, 6 UNION ALL SELECT 10021, 6
     UNION ALL SELECT 10022, 7 UNION ALL SELECT 10023, 7 UNION ALL SELECT 10024, 7
 ) v
-WHERE NOT EXISTS (SELECT 1 FROM likes l WHERE l.user_id = v.id AND l.target_user_id = 1);
+WHERE NOT EXISTS (SELECT 1 FROM likes l WHERE l.user_id = v.id AND l.target_user_id = 100000);
 
 -- ========== 5. 「我的访客」（visitors 表：visited_user_id=1 被访问） ==========
 INSERT INTO visitors (visitor_id, visited_user_id, is_read, created_at)
-SELECT v.id, 1, 0, DATE_SUB(NOW(), INTERVAL v.days_ago DAY)
+SELECT v.id, 100000, 0, DATE_SUB(NOW(), INTERVAL v.days_ago DAY)
 FROM (
     SELECT 10001 id, 0 days_ago UNION ALL SELECT 10002, 0 UNION ALL SELECT 10003, 1
     UNION ALL SELECT 10004, 1 UNION ALL SELECT 10005, 2 UNION ALL SELECT 10006, 2
@@ -166,11 +166,11 @@ FROM (
     UNION ALL SELECT 10019, 9 UNION ALL SELECT 10020, 9 UNION ALL SELECT 10021, 10
     UNION ALL SELECT 10022, 10 UNION ALL SELECT 10023, 11 UNION ALL SELECT 10024, 11
 ) v
-WHERE NOT EXISTS (SELECT 1 FROM visitors vis WHERE vis.visitor_id = v.id AND vis.visited_user_id = 1);
+WHERE NOT EXISTS (SELECT 1 FROM visitors vis WHERE vis.visitor_id = v.id AND vis.visited_user_id = 100000);
 
 -- ========== 6. 关注关系（user_follows：超级账号关注虚拟用户 → 圈子「关注 Tab」数据源） ==========
 INSERT INTO user_follows (follower_id, following_id, created_at)
-SELECT 1, v.id, DATE_SUB(NOW(), INTERVAL v.days_ago DAY)
+SELECT 100000, v.id, DATE_SUB(NOW(), INTERVAL v.days_ago DAY)
 FROM (
     SELECT 10001 id, 0 days_ago UNION ALL SELECT 10002, 0 UNION ALL SELECT 10003, 1
     UNION ALL SELECT 10004, 1 UNION ALL SELECT 10005, 2 UNION ALL SELECT 10006, 2
@@ -178,11 +178,11 @@ FROM (
     UNION ALL SELECT 10010, 4 UNION ALL SELECT 10011, 5 UNION ALL SELECT 10012, 5
     UNION ALL SELECT 10013, 6 UNION ALL SELECT 10014, 6 UNION ALL SELECT 10015, 7
 ) v
-WHERE NOT EXISTS (SELECT 1 FROM user_follows f WHERE f.follower_id = 1 AND f.following_id = v.id);
+WHERE NOT EXISTS (SELECT 1 FROM user_follows f WHERE f.follower_id = 10000000000 AND f.following_id = v.id);
 
 -- 同步超级账号关注数
-UPDATE users SET following_count = (SELECT COUNT(*) FROM user_follows WHERE follower_id = 1) WHERE id = 1;
-UPDATE users SET followers_count = (SELECT COUNT(*) FROM user_follows WHERE following_id = 1) WHERE id = 1;
+UPDATE users SET following_count = (SELECT COUNT(*) FROM user_follows WHERE follower_id = 100000) WHERE id = 100000;
+UPDATE users SET followers_count = (SELECT COUNT(*) FROM user_follows WHERE following_id = 100000) WHERE id = 100000;
 
   END IF;
 END $$
@@ -199,6 +199,6 @@ DROP PROCEDURE seed_messages_visitors_guard;
 -- DELETE FROM private_conversations WHERE conversation_uid LIKE 'conv-seed-%';
 -- DELETE FROM temp_chat_message WHERE session_id IN (SELECT id FROM temp_chat_session WHERE session_uid = 'tmp-seed-1-10020');
 -- DELETE FROM temp_chat_session WHERE session_uid = 'tmp-seed-1-10020';
--- DELETE FROM likes WHERE target_user_id = 1 AND user_id BETWEEN 10001 AND 10024;
--- DELETE FROM visitors WHERE visited_user_id = 1 AND visitor_id BETWEEN 10001 AND 10024;
--- DELETE FROM user_follows WHERE follower_id = 1 AND following_id BETWEEN 10001 AND 10015;
+-- DELETE FROM likes WHERE target_user_id = 100000 AND user_id BETWEEN 10001 AND 10024;
+-- DELETE FROM visitors WHERE visited_user_id = 100000 AND visitor_id BETWEEN 10001 AND 10024;
+-- DELETE FROM user_follows WHERE follower_id = 100000 AND following_id BETWEEN 10001 AND 10015;

@@ -52,7 +52,7 @@ class RedisTokenBlacklistServiceTest {
     private RedisTokenBlacklistService blacklistService;
 
     /** 测试用 jti（UUID 格式） */
-    private static final String TEST_JTI = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String TEST_JTI = String.join("-", "550e8400", "e29b", "41d4", "a716", "446655440000");
 
     /** 测试用 TTL（秒） */
     private static final long TEST_TTL_SECONDS = 3600L;

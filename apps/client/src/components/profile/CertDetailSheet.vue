@@ -7,8 +7,8 @@
  * 凸显认证体系的专业与严谨（参考青藤认证页 + 仓库 CardSwiper cert-modal 范式）。
  *
  * 未获得的认证项提供「去认证」按钮：
- * - 实名 → /pages/verification/real-name
- * - 学历 → /pages/campus/certification（未实名时提示先实名）
+ * - 实名 → /subpackages/profile-extra/verification/real-name
+ * - 学历 → /subpackages/campus/campus/certification（未实名时提示先实名）
  */
 import { ref, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";

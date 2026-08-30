@@ -29,7 +29,6 @@ import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
-import { formatDateTime } from "@/utils/format";
 import { DEFAULT_PAGE_SIZE, NICKNAME_MAX_LENGTH } from "@/utils/constants";
 
 const { t } = useI18n();
@@ -66,6 +65,87 @@ const confirmVisible = ref(false);
 const confirmAction = ref<"disable" | "enable">("disable");
 const confirmTarget = ref<AdminUserSummary | null>(null);
 const confirming = ref(false);
+
+/* ==================== 批量选择（design Frame 03 批量条） ==================== */
+
+/** 当前页勾选的用户 ID 集合 */
+const selectedIds = ref<Set<number>>(new Set());
+/** 批量操作执行中 */
+const batchRunning = ref(false);
+/** 批量操作结果提示 */
+const batchTip = ref("");
+
+const selectedCount = computed(() => selectedIds.value.size);
+
+/** 当前页是否全选（仅可选行参与） */
+const allSelectableSelected = computed(() => {
+  const selectable = users.value.filter((u) => canToggleUser(u) && u.id !== currentAdminId.value);
+  return selectable.length > 0 && selectable.every((u) => selectedIds.value.has(u.id));
+});
+
+function isUserSelectable(user: AdminUserSummary): boolean {
+  return canToggleUser(user) && user.id !== currentAdminId.value;
+}
+
+function toggleSelect(user: AdminUserSummary, checked: boolean): void {
+  const next = new Set(selectedIds.value);
+  if (checked) {
+    next.add(user.id);
+  } else {
+    next.delete(user.id);
+  }
+  selectedIds.value = next;
+}
+
+function toggleSelectAll(checked: boolean): void {
+  const next = new Set(selectedIds.value);
+  for (const u of users.value) {
+    if (!isUserSelectable(u)) continue;
+    if (checked) {
+      next.add(u.id);
+    } else {
+      next.delete(u.id);
+    }
+  }
+  selectedIds.value = next;
+}
+
+function clearSelection(): void {
+  selectedIds.value = new Set();
+  batchTip.value = "";
+}
+
+/**
+ * 批量封禁/解封：对勾选用户逐个调用状态接口（后端无批量端点，串行提交），
+ * 部分失败时聚合提示，结束后刷新列表并保留失败项勾选。
+ */
+async function runBatch(action: "disable" | "enable"): Promise<void> {
+  if (batchRunning.value || selectedIds.value.size === 0) return;
+  batchRunning.value = true;
+  batchTip.value = "";
+  const ids = [...selectedIds.value];
+  const failed: number[] = [];
+  for (const id of ids) {
+    try {
+      if (action === "disable") {
+        await disableUser(id);
+      } else {
+        await enableUser(id);
+      }
+    } catch {
+      failed.push(id);
+    }
+  }
+  batchRunning.value = false;
+  if (failed.length > 0) {
+    selectedIds.value = new Set(failed);
+    batchTip.value = t("users.batchPartialFailed", { n: failed.length });
+  } else {
+    selectedIds.value = new Set();
+    batchTip.value = t("users.batchSuccess", { n: ids.length });
+  }
+  await fetchUsers();
+}
 
 // 用户详情弹窗状态
 const detailVisible = ref(false);
@@ -155,6 +235,12 @@ async function fetchUsers() {
     // 丢弃过期响应（序号小于当前请求的响应不再写入状态）
     if (isStale(seq)) return;
     users.value = result.items;
+    // 翻页/筛选后清理不在当前页的勾选，避免批量误伤不可见行
+    const pageIds = new Set(users.value.map((u) => u.id));
+    const valid = [...selectedIds.value].filter((id) => pageIds.has(id));
+    if (valid.length !== selectedIds.value.size) {
+      selectedIds.value = new Set(valid);
+    }
     total.value = result.total;
     totalPages.value = result.totalPages;
   } catch (err) {
@@ -347,8 +433,12 @@ function handleConfirmCancel() {
   confirming.value = false;
 }
 
+/** 表格日期：yyyy-MM-dd HH:mm（对齐设计稿时间格式，不带秒） */
 function formatDate(iso: string): string {
-  return formatDateTime(iso);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function statusLabel(status: string): string {
@@ -360,6 +450,26 @@ function statusLabel(status: string): string {
     default:
       return status;
   }
+}
+
+/** 学历枚举 → 中文文案（与编辑表单 option 一致） */
+function educationLabel(value: string | null): string {
+  const map: Record<string, string> = {
+    highschool: "高中", associate: "大专", bachelor: "本科",
+    master: "硕士", doctor: "博士", other: "其他",
+  };
+  if (!value) return t("common.emptyPlaceholder");
+  return map[value] ?? value;
+}
+
+/** 感情状态枚举 → 中文文案（与编辑表单 option 一致） */
+function relationshipLabel(value: string | null): string {
+  const map: Record<string, string> = {
+    single: "单身", dating: "恋爱中", engaged: "已订婚",
+    married: "已婚", never: "未婚", secret: "保密",
+  };
+  if (!value) return t("common.emptyPlaceholder");
+  return map[value] ?? value;
 }
 
 /** 头像加载失败兜底——隐藏裂图（URL 失效时不显示 broken image） */
@@ -582,10 +692,33 @@ onMounted(() => {
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchUsers" />
 
+    <!-- 批量操作条（design Frame 03：已选 N 项 + 批量动作） -->
+    <view v-if="selectedCount > 0" class="batch-bar">
+      <text class="batch-bar__count">{{ t("users.batchSelected", { n: selectedCount }) }}</text>
+      <view class="batch-bar__actions">
+        <button class="link-button link-button--danger" :disabled="batchRunning" @click="runBatch('disable')">
+          {{ t("users.batchDisable") }}
+        </button>
+        <button class="link-button" :disabled="batchRunning" @click="runBatch('enable')">
+          {{ t("users.batchEnable") }}
+        </button>
+        <button class="link-button" @click="clearSelection">{{ t("users.batchClear") }}</button>
+      </view>
+    </view>
+    <text v-if="batchTip" class="batch-tip">{{ batchTip }}</text>
+
     <view class="table-container">
       <table class="data-table">
         <thead>
           <tr>
+            <th class="col-check" scope="col">
+              <input
+                type="checkbox"
+                :checked="allSelectableSelected"
+                :aria-label="t('users.selectAll')"
+                @change="toggleSelectAll(($event.target as HTMLInputElement).checked)"
+              />
+            </th>
             <th scope="col">{{ t("users.columnId") }}</th>
             <th scope="col">{{ t("users.columnNickname") }}</th>
             <th scope="col">{{ t("users.columnRole") }}</th>
@@ -598,12 +731,25 @@ onMounted(() => {
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
+            <td colspan="9" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="users.length === 0">
-            <td colspan="8" class="empty-cell">{{ t("users.noData") }}</td>
+            <td colspan="9" class="empty-cell">{{ t("users.noData") }}</td>
           </tr>
-          <tr v-for="user in users" :key="user.id">
+          <tr
+            v-for="user in users"
+            :key="user.id"
+            :class="{ 'row--selected': selectedIds.has(user.id) }"
+          >
+            <td class="col-check">
+              <input
+                v-if="isUserSelectable(user)"
+                type="checkbox"
+                :checked="selectedIds.has(user.id)"
+                :aria-label="user.nickname"
+                @change="toggleSelect(user, ($event.target as HTMLInputElement).checked)"
+              />
+            </td>
             <td>{{ user.id }}</td>
             <td>
               <view class="user-cell">
@@ -776,11 +922,11 @@ onMounted(() => {
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.educationLevelLabel") }}:</text>
-            <text>{{ detailUser.educationLevel || t("common.emptyPlaceholder") }}</text>
+            <text>{{ educationLabel(detailUser.educationLevel) }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.relationshipStatusLabel") }}:</text>
-            <text>{{ detailUser.relationshipStatus || t("common.emptyPlaceholder") }}</text>
+            <text>{{ relationshipLabel(detailUser.relationshipStatus) }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.birthYearLabel") }}:</text>
@@ -807,7 +953,7 @@ onMounted(() => {
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnProfileCompletion") }}:</text>
-            <text>{{ t("users.profileCompletionValue", { n: detailUser.profileCompletion }) }}</text>
+            <text>{{ detailUser.profileCompletion }}%</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnFollowing") }}:</text>
@@ -880,7 +1026,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import "@/styles/admin-common.css";
+@import "../../styles/admin-common.css";
 
 .users-page {
   max-width: var(--admin-page-max-width-narrow);
@@ -987,7 +1133,6 @@ onMounted(() => {
 
 .data-table th,
 .data-table td {
-  padding: var(--admin-space-md-lg) var(--admin-space-lg);
   text-align: left;
   border-bottom: 1px solid var(--admin-color-border-light);
 }
@@ -1070,7 +1215,6 @@ onMounted(() => {
 }
 
 .action-button {
-  padding: var(--admin-space-xxs) var(--admin-space-md);
   border: none;
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-sm);
@@ -1240,5 +1384,50 @@ onMounted(() => {
   height: 56px;
   object-fit: cover;
   border-radius: 8px;
+}
+/* ========== 批量选择（Frame 03 批量条） ========== */
+
+.col-check {
+  width: 40px;
+}
+
+.col-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--admin-color-primary);
+  cursor: pointer;
+}
+
+.batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  height: 48px;
+  padding: 0 var(--admin-space-lg);
+  margin-bottom: var(--admin-space-md);
+  background: var(--admin-color-bg-container);
+  border-top: 2px solid var(--admin-color-primary);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-md);
+}
+
+.batch-bar__count {
+  font-size: var(--admin-font-lg);
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+}
+
+.batch-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.batch-tip {
+  display: block;
+  margin-bottom: var(--admin-space-md);
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-warning-text);
 }
 </style>

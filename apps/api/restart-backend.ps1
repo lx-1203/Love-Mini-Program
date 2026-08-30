@@ -1,0 +1,26 @@
+$ErrorActionPreference = "Stop"
+$env:JWT_SECRET = 'ee7ce81ce054c99c7e31c20ad020fb7797b29ff75dd6bc091c593c965040f0f88aeef759fc25a5e3fa60736303a78eb0'
+$env:DB_URL = 'jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai'
+$env:DB_USERNAME = 'campus'
+$env:DB_PASSWORD = 'CampusLove@2026'
+$env:REDIS_HOST = '127.0.0.1'
+$env:REDIS_PORT = '6379'
+$env:REDIS_PASSWORD = 'CampusRedis@2026'
+$env:DEMO_SEED = 'true'
+$env:APP_AES_SECRET = '2bd4f59ea4c783d12e4f9990f8972bdf2a1485ef6cd651a1cd0325cb0de187f8'
+$env:AGNES_API_BASE = 'https://api.agnes.example.com'
+$env:ADMIN_OPENID = 'oTestAdminOpenid0000000000000001'
+$env:ADMIN_PASSWORD = 'Admin@12345'
+$env:ADMIN_INITIAL_PASSWORD_HASH = '$2a$10$VYLfVMUcGu85XCNEcOh2UO5EGnmJEIWMbeph3cn7KAPyM4rPQ/8ZG'
+$env:APP_ADMIN_STRICT_OPENID = 'false'
+$env:APP_ADMIN_STRICT_PASSWORD = 'false'
+$env:MANAGEMENT_HEALTH_RABBIT_ENABLED = 'false'
+$env:SPRING_RABBITMQ_LISTENER_SIMPLE_AUTO_STARTUP = 'false'
+$env:SPRING_AUTOCONFIGURE_EXCLUDE = 'org.redisson.spring.starter.RedissonAutoConfigurationV2'
+$env:APP_REDISSON_MANUAL_CONFIG = 'true'
+$env:APP_GUEST_LOGIN_ENABLED = 'true'
+$env:APP_GUEST_LOGIN_BLACKLIST_PHONE = '13900000000'
+$cp = Get-Content "$PSScriptRoot\target\cp.txt" -Raw
+Push-Location $PSScriptRoot
+& 'D:\jdk17\bin\java.exe' -cp "target/classes;$cp" com.campuslove.api.CampusLoveApplication '--spring.profiles.active=real' '--server.port=8080'
+Pop-Location

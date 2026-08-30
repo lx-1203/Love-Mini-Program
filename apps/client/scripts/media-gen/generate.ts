@@ -83,7 +83,13 @@ async function generateAllVideos() {
     console.log("生成视频:", item.name, "-", item.id);
     try {
       const url = await generateVideo(item.prompt, item.duration);
-      const outputPath = path.join(OUTPUT_DIR, "videos", item.id + ".mp4");
+      // 输出固定在 OUTPUT_DIR/videos 内：先归一化为纯文件名，再校验解析结果不越出根目录
+      const videosRoot = path.resolve(OUTPUT_DIR, "videos");
+      const safeName = path.basename(String(item.id).replace(/[^a-zA-Z0-9._-]/g, "")) || "video";
+      const outputPath = path.resolve(videosRoot, safeName + ".mp4");
+      if (outputPath !== videosRoot && !outputPath.startsWith(videosRoot + path.sep)) {
+        throw new Error("越界输出路径: " + item.id);
+      }
       await downloadFile(url, outputPath);
       success++;
     } catch (err) {

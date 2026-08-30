@@ -194,6 +194,12 @@ export interface VillageState {
   historyPosts: PostHistoryItem[];
   /** 浏览记录是否正在加载 */
   loadingHistory: boolean;
+  /** 2026-08-26 R2：附近动态独立维度 - 帖子列表（不复用 posts，避免村口/首页/附近互相污染） */
+  nearbyPosts: PostItem[];
+  /** 2026-08-26 R2：附近动态是否正在加载 */
+  loadingNearbyPosts: boolean;
+  /** 2026-08-26 R2：附近动态错误信息 */
+  nearbyError: string | null;
 }
 
 /**
@@ -237,6 +243,8 @@ export interface PostSummaryView {
   activity?: ActivitySummaryView | null;
   /** 2026-08-08 频道化重构：最新 2 条评论预览（QQ 频道风格） */
   recentComments?: CommentPreviewView[];
+  /** 2026-08-26 R4：列表图片（最多 3 张，后端缺失时回退空数组；详情全量见 PostDetailView.images） */
+  images?: string[];
 }
 
 /**

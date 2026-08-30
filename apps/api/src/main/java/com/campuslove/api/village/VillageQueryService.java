@@ -251,8 +251,25 @@ public class VillageQueryService {
         Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
 
         // 同城：按作者校区城市过滤
-        if ("samecity".equals(category) && city != null && !city.isBlank()) {
-            List<Long> cityUserIds = userCampusProfileRepository.findByCityName(city).stream()
+        // 2026-08-26 P1-3：city 为空时不再落入旧 parseCategory("samecity") 抛 400——
+        // 改为按当前用户校区城市兜底过滤（前端 fetchNearbyPosts 未传 city 的兼容场景）：
+        //   1) 用户已填校区城市 → 按该城市过滤同城帖
+        //   2) 用户无校区城市资料 → 返回全量 active 帖（同城语义退化为全量，不报错）
+        if ("samecity".equals(category)) {
+            String effectiveCity = city;
+            if (effectiveCity == null || effectiveCity.isBlank()) {
+                effectiveCity = userId != null
+                        ? userCampusProfileRepository.findByUserId(userId)
+                                .map(UserCampusProfile::getCityName).orElse("")
+                        : "";
+            }
+            if (effectiveCity.isBlank()) {
+                Page<Post> fallbackPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+                return new PostListResponse(
+                        toPostSummaryViews(fallbackPage.getContent(), "", loadFollowedUserIds(userId)),
+                        (int) fallbackPage.getTotalElements(), page, pageSize);
+            }
+            List<Long> cityUserIds = userCampusProfileRepository.findByCityName(effectiveCity).stream()
                     .map(UserCampusProfile::getUserId)
                     .toList();
             if (cityUserIds.isEmpty()) {
@@ -1040,8 +1057,10 @@ public class VillageQueryService {
     }
 
     Post findPostOrThrow(Long postId) {
+        // 2026-08-26 P2 验收：帖子不存在应返回 404（ResourceNotFoundException），
+        // 而非 IllegalArgumentException（被映射为 400/409），保证 GET /posts/{id} 语义正确
         return postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
+                .orElseThrow(() -> new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + postId));
     }
 
     /**

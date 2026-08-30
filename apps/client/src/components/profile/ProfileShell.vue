@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { UserProfileDTO, UserProfilePost, UserProfileSocialProof } from "../../types/profile";
 import PublicProfile from "./public/PublicProfile.vue";
 import { useProfileTracker } from "../../composables/useProfileTracker";
@@ -46,6 +46,7 @@ const emit = defineEmits<{
   (e: "statTap", key: string): void;
   (e: "storyPhoto", index: number): void;
   (e: "storyVideo"): void;
+  (e: "addStory"): void;
   (e: "interactionTap", key: string): void;
   (e: "moreTap", key: string): void;
 }>();
@@ -85,6 +86,7 @@ const emit = defineEmits<{
     <MyProfile
       v-else-if="mode === 'mine' && profile"
       :profile="profile"
+      :posts="props.posts"
       :social-proof="props.socialProof"
       :percent="props.percent"
       :interaction-items="props.interactionItems"
@@ -95,6 +97,7 @@ const emit = defineEmits<{
       @stat-tap="emit('statTap', $event)"
       @story-photo="emit('storyPhoto', $event)"
       @story-video="emit('storyVideo')"
+      @add-story="emit('addStory')"
       @interaction-tap="emit('interactionTap', $event)"
       @more-tap="emit('moreTap', $event)"
     >

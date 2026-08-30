@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { mapToDiscoverCard } from "../../stores/discover/utils";
+import { filterNearby, mapToDiscoverCard, sortNearbyFirst } from "../../stores/discover/utils";
 import type { RecommendedPerson } from "../../services/generated/api-types-supplement";
+import type { DiscoverCard } from "../../stores/discover/types";
 
 /**
  * mapToDiscoverCard 新字段透传测试（Phase Feedback1：寻觅页改版字段）。
@@ -97,5 +98,81 @@ describe("mapToDiscoverCard (Phase Feedback1 字段透传)", () => {
     expect(card.occupation).toBeUndefined();
     expect(card.incomeRange).toBeUndefined();
     expect(card.age).toBeUndefined();
+  });
+});
+
+/**
+ * sortNearbyFirst / filterNearby（2026-08-26：寻觅「附近」卡片化）。
+ *
+ * 覆盖：同校最优先、km 升序（近→远）、无距离信息兜底、稳定排序、不修改原数组、
+ * 附近过滤（≤20km + 同校保留）。
+ */
+describe("sortNearbyFirst / filterNearby（附近卡片距离排序）", () => {
+  /** 构造最小测试卡片（仅关心排序字段） */
+  function makeCard(overrides: Partial<DiscoverCard> & { id: string }): DiscoverCard {
+    return {
+      id: overrides.id,
+      userId: overrides.userId ?? overrides.id,
+      name: `用户${overrides.id}`,
+      avatar: "",
+      headline: "",
+      bio: "",
+      tags: [],
+      commonGround: "",
+      availability: "",
+      images: [],
+      ...overrides,
+    } as DiscoverCard;
+  }
+
+  it("同校最优先，其次按距离 km 升序（近→远）", () => {
+    const far = makeCard({ id: "far", distanceText: "18.0" });
+    const near = makeCard({ id: "near", distanceText: "0.8" });
+    const school = makeCard({ id: "school", isSameSchool: true, distanceText: "5.0" });
+    const mid = makeCard({ id: "mid", distanceText: "3.2" });
+
+    const sorted = sortNearbyFirst([far, near, school, mid]).map((c) => c.id);
+
+    expect(sorted).toEqual(["school", "near", "mid", "far"]);
+  });
+
+  it("无距离信息的卡片排末尾且保持相对顺序（稳定排序）", () => {
+    const unknownA = makeCard({ id: "unknown-a" });
+    const unknownB = makeCard({ id: "unknown-b" });
+    const near = makeCard({ id: "near", distanceText: "1.1" });
+
+    const sorted = sortNearbyFirst([unknownA, near, unknownB]).map((c) => c.id);
+
+    expect(sorted).toEqual(["near", "unknown-a", "unknown-b"]);
+  });
+
+  it("不修改原数组（返回新数组引用）", () => {
+    const a = makeCard({ id: "a", distanceText: "9.9" });
+    const b = makeCard({ id: "b", distanceText: "0.1" });
+    const input = [a, b];
+
+    const result = sortNearbyFirst(input);
+
+    expect(result).not.toBe(input);
+    expect(input.map((c) => c.id)).toEqual(["a", "b"]);
+    expect(result.map((c) => c.id)).toEqual(["b", "a"]);
+  });
+
+  it("filterNearby 按 ≤20km 过滤且保留同校用户", () => {
+    const near = makeCard({ id: "near", distanceText: "5.0" });
+    const far = makeCard({ id: "far", distanceText: "25.0" });
+    const school = makeCard({ id: "school", isSameSchool: true, distanceText: "100.0" });
+    const unknown = makeCard({ id: "unknown" });
+
+    const kept = filterNearby([near, far, school, unknown]).map((c) => c.id);
+
+    expect(kept).toEqual(["near", "school", "unknown"]);
+  });
+
+  it("sortNearbyFirst 支持带单位距离文本（如 1.2km）", () => {
+    const a = makeCard({ id: "a", distanceText: "4.2km" });
+    const b = makeCard({ id: "b", distanceText: "1.2km" });
+
+    expect(sortNearbyFirst([a, b]).map((c) => c.id)).toEqual(["b", "a"]);
   });
 });

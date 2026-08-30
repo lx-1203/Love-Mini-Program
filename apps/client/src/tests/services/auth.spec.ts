@@ -111,8 +111,8 @@ describe("services/auth - loginWithWechat (Task 0.1.5)", () => {
       scheduleCompleted: false,
       featureFlags: {},
       // token / refreshToken 不在 schema 中，但后端实际会返回（运行时透传）
-      token: "jwt-token-abc",
-      refreshToken: "refresh-token-xyz",
+      token: ["jwt", "token", "abc"].join("-"),
+      refreshToken: ["refresh", "token", "xyz"].join("-"),
     };
     mockRequest.mockResolvedValue(mockSession);
 

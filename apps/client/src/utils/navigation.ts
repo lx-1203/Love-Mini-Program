@@ -189,11 +189,11 @@ export function consumePendingLoginRedirect(): string | null {
 
 /**
  * 切换 TabBar 页面并携带 query（收尾轮修复：switchTab 不支持 query string，
- * 原 `openAppPath('/pages/village/index?tab=hot')` 的 query 会被静默丢弃）。
+ * 原 `openAppPath('/subpackages/village/village/index?tab=hot')` 的 query 会被静默丢弃）。
  *
  * R4-00231：统一走 PENDING_TAB_QUERY_KEY 桥接（带 path 匹配，防止跨 Tab 误消费）。
  *
- * 用法：源页面调用 `switchTabWithQuery('/pages/village/index', { tab: 'hot' })`；
+ * 用法：源页面调用 `switchTabWithQuery('/subpackages/village/village/index', { tab: 'hot' })`；
  * 目标页面在 onLoad/onShow 中调用 `consumeTabQuery()` 读取并消费。
  */
 export function switchTabWithQuery(url: string, query: Record<string, string>): void {
@@ -254,5 +254,5 @@ export function replaceAppPath(url: string) {
  */
 export function openUserProfile(userId: string | number | null | undefined): void {
   if (userId === null || userId === undefined || String(userId).trim() === '') return;
-  openAppPath(`/pages/profile/other?userId=${encodeURIComponent(String(userId))}`);
+  openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(String(userId))}`);
 }

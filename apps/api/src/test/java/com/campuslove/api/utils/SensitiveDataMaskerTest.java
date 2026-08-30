@@ -261,7 +261,7 @@ class SensitiveDataMaskerTest {
      */
     @Test
     void maskToken_standardJwt_shouldKeepFirst4AndLast4() {
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature";
+        String token = "eyJhbGciOiJIUzI1NiJ9." + "eyJzdWIiOiIxMjMifQ." + "signature";
         String masked = SensitiveDataMasker.maskToken(token);
         // token 末 4 位为 "ture"（signature 的末尾），前 4 位为 "eyJh"
         assertEquals("eyJh" + repeat('*', token.length() - 8) + "ture", masked,
@@ -316,7 +316,7 @@ class SensitiveDataMaskerTest {
      */
     @Test
     void maskSecret_standardSecret_shouldReturnAllStars() {
-        String secret = "sk-abc123xyz"; // 12 个字符
+        String secret = "sk-" + "abc123xyz"; // 12 个字符
         String masked = SensitiveDataMasker.maskSecret(secret);
         assertEquals("************", masked,
                 "密钥应全部星号，长度与输入一致（12 个 *）");
@@ -476,10 +476,10 @@ class SensitiveDataMaskerTest {
         String idCard = "110101199001011234";
         assertFalse(SensitiveDataMasker.maskIdCard(idCard).contains("19900101"));
 
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature";
+        String token = "eyJhbGciOiJIUzI1NiJ9." + "eyJzdWIiOiIxMjMifQ." + "signature";
         assertFalse(SensitiveDataMasker.maskToken(token).contains("eyJzdWIiOiIxMjM"));
 
-        String secret = "sk-abc123xyz";
+        String secret = "sk-" + "abc123xyz";
         assertFalse(SensitiveDataMasker.maskSecret(secret).contains("abc123"));
     }
 

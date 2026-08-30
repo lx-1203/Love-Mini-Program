@@ -173,7 +173,7 @@ describe("ChatBubble component - 聊天气泡组件", () => {
     const wrapper = mountBubble({
       sender: "peer",
       kind: "activity" as "text",
-      body: '{"title":"桌游","targetUrl":"/pages/activities/detail?id=1"}',
+      body: '{"title":"桌游","targetUrl":"/subpackages/tools/activities/detail?id=1"}',
     });
     expect(wrapper.find(".bubble__body").text()).toContain("桌游");
   });

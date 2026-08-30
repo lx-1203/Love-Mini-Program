@@ -16,6 +16,7 @@ import {
 } from "@/api/reports";
 import { ApiError } from "@/api/http";
 import Pagination from "@/components/Pagination.vue";
+import EvidencePanel from "@/components/EvidencePanel.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
@@ -44,6 +45,16 @@ const pageSize = ref(DEFAULT_PAGE_SIZE);
 const total = ref(0);
 /** 总页数 */
 const totalPages = ref(1);
+
+/** 举报统计条（Frame 09：待处理 / 全部 / 已处理 / 已驳回，pageSize=1 仅取 total） */
+const statPending = ref(0);
+const statTotal = ref(0);
+const statHandled = ref(0);
+const statRejected = ref(0);
+
+/** 举报调阅（RBAC 圈层取证）：调阅目标用户 ID（null 表示弹窗关闭） */
+const evidenceUserId = ref<number | null>(null);
+const evidenceUserName = ref("");
 
 /** 当前正在处理的举报（null 表示弹窗关闭） */
 const handlingReport = ref<AdminReportView | null>(null);
@@ -96,6 +107,37 @@ async function fetchReports() {
 }
 
 /**
+ * 拉取举报统计条数据：四个状态维度各发一次 pageSize=1 请求仅取 total。
+ */
+async function fetchReportStats(): Promise<void> {
+  try {
+    const [pending, all, handled, rejected] = await Promise.all([
+      listReports({ status: "PENDING", page: 1, pageSize: 1 }),
+      listReports({ page: 1, pageSize: 1 }),
+      listReports({ status: "HANDLED", page: 1, pageSize: 1 }),
+      listReports({ status: "REJECTED", page: 1, pageSize: 1 }),
+    ]);
+    statPending.value = pending.total;
+    statTotal.value = all.total;
+    statHandled.value = handled.total;
+    statRejected.value = rejected.total;
+  } catch {
+    // 统计条失败不阻塞主列表，静默降级为 0
+  }
+}
+
+/** 打开举报调阅弹窗（仅 USER 类举报：targetId 即被举报用户 ID） */
+function openEvidence(report: AdminReportView): void {
+  evidenceUserId.value = report.targetId;
+  evidenceUserName.value = report.targetType === "USER" ? `UID: ${report.targetId}` : "";
+}
+
+/** 关闭举报调阅弹窗 */
+function closeEvidence(): void {
+  evidenceUserId.value = null;
+}
+
+/**
  * 触发查询：重置页码到第一页后拉取（带防抖）。
  */
 function scheduleSearch() {
@@ -112,6 +154,7 @@ function handleSearch() {
   searchTimer = null;
   page.value = 1;
   fetchReports();
+  void fetchReportStats();
 }
 
 /**
@@ -223,7 +266,8 @@ function handlerDisplay(report: AdminReportView): string {
 }
 
 onMounted(() => {
-  fetchReports();
+  void fetchReports();
+  void fetchReportStats();
 });
 </script>
 
@@ -233,6 +277,26 @@ onMounted(() => {
     <view class="page-header">
       <text class="page-title">{{ t("reports.pageTitle") }}</text>
       <text class="page-subtitle">{{ t("reports.pageSubtitle") }}</text>
+    </view>
+
+    <!-- 举报统计条（Frame 09 四卡） -->
+    <view class="report-stats">
+      <view class="report-stat-card">
+        <text class="report-stat-label">{{ t("reports.statPending") }}</text>
+        <text class="report-stat-value report-stat-value--warning">{{ statPending }}</text>
+      </view>
+      <view class="report-stat-card">
+        <text class="report-stat-label">{{ t("reports.statTotal") }}</text>
+        <text class="report-stat-value">{{ statTotal }}</text>
+      </view>
+      <view class="report-stat-card">
+        <text class="report-stat-label">{{ t("reports.statHandled") }}</text>
+        <text class="report-stat-value">{{ statHandled }}</text>
+      </view>
+      <view class="report-stat-card">
+        <text class="report-stat-label">{{ t("reports.statRejected") }}</text>
+        <text class="report-stat-value">{{ statRejected }}</text>
+      </view>
     </view>
 
     <!-- 筛选工具栏 -->
@@ -306,6 +370,12 @@ onMounted(() => {
                 class="action-button handle"
                 @click="openHandleModal(report)"
               >{{ t("reports.actionProcess") }}</button>
+              <!-- 举报调阅（RBAC 圈层取证，USER 类举报 targetId 即用户 ID） -->
+              <button
+                v-if="report.targetType === 'USER'"
+                class="action-button audit"
+                @click="openEvidence(report)"
+              >{{ t("reports.actionEvidence") }}</button>
               <!-- 已处理/已驳回展示处理备注，便于误驳回追责复核 -->
               <text v-else class="handled-text" :title="report.handleRemark || undefined">
                 {{ t("reports.handledText") }}{{ report.handleRemark ? `：${report.handleRemark}` : "" }}
@@ -385,11 +455,21 @@ onMounted(() => {
         </view>
       </view>
     </view>
+    <!-- 举报调阅弹窗（RBAC 圈层取证） -->
+    <view v-if="evidenceUserId !== null" class="modal-mask" @click.self="closeEvidence">
+      <view class="modal evidence-modal">
+        <text class="modal-title">{{ t("reports.evidenceTitle") }}{{ evidenceUserName ? ` · ${evidenceUserName}` : "" }}</text>
+        <EvidencePanel :user-id="evidenceUserId" />
+        <view class="modal-actions">
+          <button class="ghost-button" @click="closeEvidence">{{ t("common.close") }}</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <style scoped>
-@import "@/styles/admin-common.css";
+@import "../../styles/admin-common.css";
 
 .reports-page {
   max-width: 1400px;
@@ -401,10 +481,52 @@ onMounted(() => {
 
 .page-title {
   display: block;
-  font-size: var(--admin-font-display);
-  font-weight: 700;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
   color: var(--admin-color-text-primary);
   margin-bottom: var(--admin-space-xs);
+}
+
+/* 举报统计条（Frame 09：四卡，标签 13px 次级灰 + 数字 28/600） */
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--admin-space-xxl);
+  margin-bottom: var(--admin-space-xxl);
+}
+
+.report-stat-card {
+  background: var(--admin-color-bg-container);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.report-stat-label {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-secondary);
+}
+
+.report-stat-value {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-stat-value--warning {
+  color: var(--admin-color-warning-text);
+}
+
+.evidence-modal {
+  width: 560px;
+  max-height: 86vh;
+  overflow-y: auto;
 }
 
 .page-subtitle {
@@ -483,12 +605,10 @@ onMounted(() => {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;
 }
 
 .data-table th,
 .data-table td {
-  padding: var(--admin-space-md-lg) var(--admin-space-lg);
   text-align: left;
   border-bottom: 1px solid var(--admin-color-border-light);
   vertical-align: middle;

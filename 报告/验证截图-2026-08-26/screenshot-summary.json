@@ -1,0 +1,102 @@
+[
+  {
+    "page": "pages/login/index",
+    "status": "PASS",
+    "file": "login/index/01-注册登录.png"
+  },
+  {
+    "page": "pages/home/index",
+    "status": "PASS",
+    "file": "home/index/02-首页.png"
+  },
+  {
+    "page": "pages/home/index",
+    "status": "PASS",
+    "file": "home/index/02b-首页-帖子区(滚动后).png"
+  },
+  {
+    "page": "pages/nearby/index",
+    "status": "PASS",
+    "file": "nearby/index/03-附近.png"
+  },
+  {
+    "page": "pages/nearby/people",
+    "status": "PASS",
+    "file": "nearby/people/03b-附近-附近的人.png"
+  },
+  {
+    "page": "pages/discover/index",
+    "status": "PASS",
+    "file": "discover/index/04-寻觅.png"
+  },
+  {
+    "page": "pages/village/index",
+    "status": "PASS",
+    "file": "village/index/05-帖子流(村口).png"
+  },
+  {
+    "page": "pages/village/detail?id=1",
+    "status": "PASS",
+    "file": "village/detail/05b-帖子详情.png"
+  },
+  {
+    "page": "pages/circles/index",
+    "status": "PASS",
+    "file": "circles/index/06-兴趣圈.png"
+  },
+  {
+    "page": "pages/circles/topics?circleId=1",
+    "status": "PASS",
+    "file": "circles/topics/06b-圈子详情.png"
+  },
+  {
+    "page": "pages/messages/index",
+    "status": "PASS",
+    "file": "messages/index/07-消息列表.png"
+  },
+  {
+    "page": "pages/chat-session/index",
+    "status": "PASS",
+    "file": "chat-session/index/08-聊天气泡(含self/peer同屏).png"
+  },
+  {
+    "page": "pages/likes/index",
+    "status": "PASS",
+    "file": "likes/index/09-喜欢.png"
+  },
+  {
+    "page": "pages/profile/index",
+    "status": "PASS",
+    "file": "profile/index/10-我的主页.png"
+  },
+  {
+    "page": "pages/verification/index",
+    "status": "PASS",
+    "file": "verification/index/11-认证中心.png"
+  },
+  {
+    "page": "pages/verification/real-name",
+    "status": "PASS",
+    "file": "verification/real-name/11b-实名认证.png"
+  },
+  {
+    "page": "pages/discover/matching",
+    "status": "PASS",
+    "file": "discover/matching/12-匹配中.png"
+  },
+  {
+    "page": "pages/discover/match-success",
+    "status": "PASS",
+    "file": "discover/match-success/12b-匹配成功.png"
+  },
+  {
+    "page": "pages/search/index",
+    "status": "PASS",
+    "file": "search/index/13-搜索.png"
+  },
+  {
+    "page": "pages/security/index",
+    "status": "PASS",
+    "file": "security/index/14-安全设置.png"
+  }
+]

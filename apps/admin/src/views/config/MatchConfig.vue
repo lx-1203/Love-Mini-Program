@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@import "@/styles/admin-common.css";
+@import "../../styles/admin-common.css";
 
 .match-page {
   max-width: 1200px;

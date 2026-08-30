@@ -320,23 +320,23 @@ page {
 }
 
 /* ================================================================
-   2026-08-13 页面切换动画（B1 修复）：
+   页面切换动画（B1 修复 + 2026-08-26 点击/切 tab 卡顿优化）：
    修复此前引用了不存在的 @keyframes page-fade-in（页面切换无过渡）。
-   250ms 淡入 + 轻微上移，mp-weixin webview 下 page 选择器在 app.wxss 中生效。
-   与 wx.navigateTo 默认滑入动画共存（本动画仅作用于页面内容淡入）。
+   卡顿优化：250ms+位移 → 100ms 纯透明度。每次 navigateTo / switchTab
+   新页面都有 250ms 淡入（含 transform 布局变化），叠加原生切换动画后
+   体感点击响应接近甚至超过 300ms；缩短为 100ms 纯 opacity（仅合成层
+   开销），保证肉眼几乎无感、交互响应在 300ms 以内。
    ================================================================ */
 page {
-  animation: page-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: page-fade-in 100ms ease-out both;
 }
 
 @keyframes page-fade-in {
   from {
     opacity: 0;
-    transform: translateY(12rpx);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

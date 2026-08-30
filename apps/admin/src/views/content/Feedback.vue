@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@import "@/styles/admin-common.css";
+@import "../../styles/admin-common.css";
 
 .feedback-page {
   max-width: 1200px;
@@ -353,7 +353,6 @@ onBeforeUnmount(() => {
 
 .data-table th,
 .data-table td {
-  padding: var(--admin-space-lg);
   text-align: left;
   border-bottom: 1px solid var(--admin-color-border-light);
 }
@@ -447,7 +446,6 @@ onBeforeUnmount(() => {
 }
 
 .action-button {
-  padding: var(--admin-space-xxs) var(--admin-space-md);
   border: none;
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-sm);

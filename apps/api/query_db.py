@@ -1,12 +1,15 @@
+import os
 import pymysql
 import json
 import urllib.request
 import urllib.error
+from urllib.parse import urlparse
 
 DB_HOST = '127.0.0.1'
 DB_PORT = 3307
 DB_USER = 'root'
-DB_PASSWORD = 'hyp5022940'
+# 口令从环境变量读取，禁止写入源码
+DB_PASSWORD = os.environ.get('AUDIT_DB_PASSWORD', '')
 DB_NAME = 'campus_love'
 
 conn = pymysql.connect(
@@ -37,6 +40,11 @@ def resolve_url(url):
 
 def check_url(url, timeout=10):
     resolved = resolve_url(url)
+    # 仅允许 http(s) 且只访问本机 BASE_URL 主机（SSRF 边界校验）
+    parsed = urlparse(resolved)
+    base_host = (urlparse(BASE_URL).hostname or '').lower()
+    if parsed.scheme not in ('http', 'https') or (parsed.hostname or '').lower() != base_host:
+        return 'blocked-unsafe-url', resolved, None
     try:
         req = urllib.request.Request(resolved, method='HEAD', headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'

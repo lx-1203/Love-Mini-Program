@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <defs>
+    <linearGradient id="bubble-self" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6FD4AA"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <path d="M188 8H28c-6.6 0-12 5.4-12 12v20c0 6.6 5.4 12 12 12h136l24 8V8z" fill="url(#bubble-self)"/>
+</svg>

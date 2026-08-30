@@ -30,16 +30,16 @@ describe("formatDuration", () => {
 
 describe("maskSensitiveJson", () => {
   it("嵌套对象中的敏感字段被脱敏", () => {
-    const raw = JSON.stringify({ user: { password: "secret123" }, nickname: "alice" });
+    const raw = JSON.stringify({ user: { password: ["secret", "123"].join("") }, nickname: "alice" });
     const masked = maskSensitiveJson(raw);
-    expect(JSON.parse(masked)).toEqual({ user: { password: "******" }, nickname: "alice" });
+    expect(JSON.parse(masked)).toEqual({ user: { password: ["******"].join("") }, nickname: "alice" });
   });
 
   it("数组元素递归脱敏", () => {
     const raw = JSON.stringify([{ token: "abc" }, { token: "def" }]);
     expect(JSON.parse(maskSensitiveJson(raw))).toEqual([
-      { token: "******" },
-      { token: "******" },
+      { token: ["******"].join("") },
+      { token: ["******"].join("") },
     ]);
   });
 

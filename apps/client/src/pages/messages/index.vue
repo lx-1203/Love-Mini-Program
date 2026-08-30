@@ -1,15 +1,19 @@
 <script setup lang="ts">
+
+
 /**
  * 消息首页 — 理想设计还原版
  * 顺序：Header → QuickActionCards → 寻觅助手 → 正在升温 → 最近聊天
  */
 import { computed, ref, watch } from "vue";
+import { resolveMediaUrl } from "@/utils/media";
 import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useLikesStore } from "../../stores/likes";
 import { useMessagesStore, type MessageSession } from "../../stores/messages";
 import { usePageAccess } from "../../composables/usePageAccess";
+import XunmiMascot from "../../components/common/XunmiMascot.vue";
 import { messagesPageRequirements } from "../../config/page-access";
 import { useTabBar } from "../../composables/useTabBar";
 import { openAppPath } from "../../utils/navigation";
@@ -48,14 +52,25 @@ const dashboard = computed(() => messagesStore.dashboard);
 const likedMeCount = computed(() => dashboard.value?.todayHeart.likedMeCount ?? likesStore.likedBy.length);
 const waitingReplyCount = computed(() => dashboard.value?.todayHeart.waitingReplyCount ?? Math.max(0, likesStore.likes.length - likesStore.mutualLikes.length));
 const assistantActivityCount = computed(() => dashboard.value?.assistant.length ?? 2);
+/** 活动推荐卡片数据（来自 dashboard.assistant，仅在有数据时展示） */
+const activityRecommendations = computed(() =>
+  (dashboard.value?.assistant ?? [])
+    .filter((a) => a && a.title)
+    .map((a) => ({
+      title: a.title,
+      subtitle: a.subtitle || "",
+      icon: a.icon || "",
+      targetUrl: a.targetUrl || "",
+    }))
+);
 const warmPeople = computed(() => {
   const api = dashboard.value?.warmPeople ?? [];
   if (api.length > 0) return api;
   return [
-    { userId: 101, name: "小林", avatarUrl: "/static/assets/images/avatars/avatar-1.jpg", relationship: { score: 60, status: "chatting" as const, suggestedAction: { type: "chat" as const } } },
-    { userId: 102, name: "小雨", avatarUrl: "/static/assets/images/avatars/avatar-2.jpg", relationship: { score: 45, status: "just_met" as const, suggestedAction: { type: "chat" as const } } },
+    { userId: 101, name: "小林", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-1.jpg"), relationship: { score: 60, status: "chatting" as const, suggestedAction: { type: "chat" as const } } },
+    { userId: 102, name: "小雨", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-2.jpg"), relationship: { score: 45, status: "just_met" as const, suggestedAction: { type: "chat" as const } } },
     { userId: 103, name: "小周", avatarUrl: "/static/assets/images/avatars/avatar-3.jpg", relationship: { score: 72, status: "ambiguous" as const, suggestedAction: { type: "chat" as const } } },
-    { userId: 104, name: "阿杰", avatarUrl: "/static/assets/images/avatars/avatar-4.jpg", relationship: { score: 55, status: "mutual_follow" as const, suggestedAction: { type: "chat" as const } } },
+    { userId: 104, name: "阿杰", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-4.jpg"), relationship: { score: 55, status: "mutual_follow" as const, suggestedAction: { type: "chat" as const } } },
   ] as any[];
 });
 
@@ -120,6 +135,10 @@ function openWarmPerson(item: RelationshipPersonView) {
 
 function openSession(session: MessageSession) {
   openAppPath(`${ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(session.id)}`);
+}
+
+function openActivity(targetUrl?: string) {
+  if (targetUrl) openAppPath(targetUrl);
 }
 
 function onSessionLongpress(session: MessageSession) {
@@ -232,7 +251,7 @@ function formatTime(dateStr?: string): string {
         </template>
         <template #empty>
           <view class="empty-chat">
-            <image class="empty-chat__img" src="/static/assets/images/mascot/default.png" mode="aspectFit" />
+            <image class="empty-chat__img" :src="resolveMediaUrl('/static/assets/images/mascot/default.png')" mode="aspectFit" />
             <text class="empty-chat__title">还没有新的缘分</text>
             <text class="empty-chat__desc">去附近看看吧</text>
           </view>
@@ -271,8 +290,8 @@ function formatTime(dateStr?: string): string {
           <view class="assistant-card" hover-class="assistant-card--hover" @tap="openAssistant">
             <view class="assistant-card__main">
               <view class="assistant-card__avatar-wrap">
-                <!-- 2026-08-25 P0：使用吉祥物 head（规格书 8.5） -->
-              <image class="assistant-card__avatar" src="/static/assets/images/mascot/head_default.png" mode="aspectFit" />
+                <!-- 2026-08-29：换用品牌吉祥物「寻觅芽」（素材库 V2 mascot_smile，与等待页/空态同一 IP 形象） -->
+                <XunmiMascot mood="mascot_smile" size="md" mini class="assistant-card__avatar" />
                 <view v-if="messagesStore.totalUnreadCount > 0" class="assistant-card__badge">
                   <text class="assistant-card__badge-text">{{ messagesStore.totalUnreadCount > 99 ? '99+' : messagesStore.totalUnreadCount }}</text>
                 </view>
@@ -322,6 +341,33 @@ function formatTime(dateStr?: string): string {
                   </view>
                 </view>
                 <text class="warm-item__name">{{ person.name }}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- ========== 活动推荐 ========== -->
+          <view v-if="activityRecommendations.length > 0" class="section">
+            <view class="section__head">
+              <text class="section__title">活动推荐</text>
+            </view>
+            <view class="activity-list">
+              <view
+                v-for="(act, idx) in activityRecommendations"
+                :key="idx"
+                class="activity-rec-card"
+                hover-class="activity-rec-card--hover"
+                @tap="openActivity(act.targetUrl)"
+              >
+                <image v-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
+                <view v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder" />
+                <view class="activity-rec-card__body">
+                  <text class="activity-rec-card__title">{{ act.title }}</text>
+                  <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
+                  <view class="activity-rec-card__cta">
+                    <text class="activity-rec-card__cta-text">查看详情</text>
+                    <text class="activity-rec-card__cta-arrow">›</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -430,7 +476,8 @@ function formatTime(dateStr?: string): string {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 24rpx 32rpx 16rpx;
+  /* --statusbar 由 page-meta 注入（px），修复自定义导航与状态栏叠印 */
+  padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 16rpx;
   background: var(--c-bg-container, #FFFFFF);
 }
 .header__left {
@@ -565,16 +612,18 @@ function formatTime(dateStr?: string): string {
 }
 .quick-card__btn {
   align-self: flex-start;
-  padding: 10rpx 28rpx;
-  border-radius: 28rpx;
-  border: 1rpx solid var(--c-border-brand, #36C99A);
-  background: transparent;
-  margin-top: 4rpx;
+  padding: 12rpx 32rpx;
+  border-radius: 999rpx;
+  border: none;
+  /* 实心绿色按钮（对齐 2026-08-27 理想图修复：原为文字链接样式） */
+  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
+  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.4));
+  margin-top: 8rpx;
 }
 .quick-card__btn-text {
   font-size: 22rpx;
-  font-weight: 600;
-  color: var(--c-text-brand, #36C99A);
+  font-weight: 700;
+  color: var(--c-neutral-0, #FFFFFF);
 }
 
 /* ========== 寻觅助手 ========== */
@@ -613,7 +662,8 @@ function formatTime(dateStr?: string): string {
   height: 32rpx;
   padding: 0 8rpx;
   border-radius: 16rpx;
-  background: var(--c-text-error, #E5454D);
+  /* 未读徽章柔和粉色系（对齐 2026-08-27 理想图修复） */
+  background: var(--c-romance-400, #FF7C91);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -774,6 +824,75 @@ function formatTime(dateStr?: string): string {
   max-width: 130rpx;
 }
 
+/* ========== 活动推荐 ========== */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 0 32rpx;
+}
+.activity-rec-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  box-shadow: 0 2rpx 12rpx rgba(54, 201, 154, 0.06);
+}
+.activity-rec-card--hover {
+  opacity: 0.85;
+}
+.activity-rec-card__icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  background: var(--c-brand-50, #E8FAF3);
+}
+.activity-rec-card__icon--placeholder {
+  background: var(--c-brand-bg-tint, rgba(61, 201, 148, 0.08));
+}
+.activity-rec-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.activity-rec-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1A1E1C);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-rec-card__subtitle {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #6B7571);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-rec-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  margin-top: 4rpx;
+}
+.activity-rec-card__cta-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--c-brand, #36C99A);
+}
+.activity-rec-card__cta-arrow {
+  font-size: 28rpx;
+  line-height: 1;
+  color: var(--c-brand, #36C99A);
+}
+
 /* ========== 最近聊天 ========== */
 .chat-item {
   display: flex;
@@ -882,7 +1001,8 @@ function formatTime(dateStr?: string): string {
   height: 36rpx;
   padding: 0 10rpx;
   border-radius: 18rpx;
-  background: var(--c-text-error, #E5454D);
+  /* 未读徽章柔和粉色系（对齐 2026-08-27 理想图修复） */
+  background: var(--c-romance-400, #FF7C91);
   display: flex;
   align-items: center;
   justify-content: center;

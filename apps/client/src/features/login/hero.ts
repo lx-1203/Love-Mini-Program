@@ -1,3 +1,4 @@
+import { resolveMediaUrl } from "@/utils/media";
 export interface LoginHeroInput {
   heroMode: "animation" | "video";
   heroVideoUrl?: string | null;
@@ -24,7 +25,7 @@ export interface ResolvedLoginHero extends LoginHeroInput {
 export const MOCK_LOGIN_HERO: LoginHeroInput = {
   heroMode: "animation",
   heroVideoUrl: null,
-  heroPosterUrl: "/static/assets/images/posters/login-poster.png",
+  heroPosterUrl: resolveMediaUrl("/static/assets/images/posters/login-poster.png"),
   heroAnimationTheme: "campus-night",
   // 2026-08-25：与 i18n login.heroTitle/heroSubtitle 对齐（规格书 01/02 节）
   heroTitle: "寻觅",

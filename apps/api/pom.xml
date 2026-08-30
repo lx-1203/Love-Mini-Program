@@ -269,22 +269,17 @@
           </layers>
         </configuration>
       </plugin>
-      <!-- maven-jar-plugin：排除 mock 包。
-           SubTask 22.3：将 Mock 服务隔离到 com.campuslove.api.mock 包后，
-           通过 maven-jar-plugin 在打包阶段排除该包，确保生产 jar 不含 Mock 类字节码。
-           注意：target/classes 仍保留 mock 类供 test 编译/运行使用，
-           仅最终 jar 产物排除。spring-boot-maven-plugin repackage 基于
-           此 jar 产物，因此 fat jar 也不会包含 mock 类。
-           R4 审计修复：恢复排除（本地 mock 模式经 spring-boot:run 直接运行
-           target/classes，不依赖 jar 内 mock 类，故排除不影响本地开发）。 -->
+      <!-- maven-jar-plugin：移除 mock 包排除配置。
+           由于 jar 启动时需要 mock 类（mock profile 需要这些类），
+           此处不再在最终 jar 中排除 mock 包。
+           生产安全由 @Profile("mock") 注解保护（real profile 不会装配这些 bean）。 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.4.1</version>
         <configuration>
-          <excludes>
-            <exclude>com/campuslove/api/mock/**</exclude>
-          </excludes>
+          <!-- mock 包不再从最终 jar 排除：jar 启动 mock profile 时需要这些类。
+               生产安全由 @Profile("mock") 注解保护（real profile 不会装配这些 bean）。 -->
         </configuration>
       </plugin>
       <!-- JaCoCo 覆盖率插件：

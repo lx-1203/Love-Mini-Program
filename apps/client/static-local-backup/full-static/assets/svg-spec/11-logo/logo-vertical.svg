@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180">
+  <defs>
+    <linearGradient id="logo-vert-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <!-- Mascot full -->
+  <ellipse cx="60" cy="70" rx="38" ry="36" fill="url(#logo-vert-body)"/>
+  <path d="M52 35c-2-6-7-10-11-10-3 5-1 12 4 14 4 1 7-1 7-4z" fill="#36C99A"/>
+  <path d="M68 35c2-6 7-10 11-10 3 5 1 12-4 14-4 1-7-1-7-4z" fill="#36C99A"/>
+  <path d="M60 37c0-8 4-14 10-16 0 6-2 12-8 16-2 0-2 0-2 0z" fill="#2BA87E"/>
+  <circle cx="48" cy="64" r="4.5" fill="#333"/>
+  <circle cx="72" cy="64" r="4.5" fill="#333"/>
+  <ellipse cx="42" cy="76" rx="5" ry="3" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="78" cy="76" rx="5" ry="3" fill="#FFB6C1" opacity="0.6"/>
+  <path d="M54 80c2 3 4 5 6 5s4-2 6-5" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Arms -->
+  <ellipse cx="24" cy="75" rx="8" ry="5" fill="#7DDEBB" transform="rotate(-10 24 75)"/>
+  <ellipse cx="96" cy="75" rx="8" ry="5" fill="#7DDEBB" transform="rotate(10 96 75)"/>
+  <!-- Feet -->
+  <ellipse cx="48" cy="108" rx="10" ry="6" fill="#7DDEBB"/>
+  <ellipse cx="72" cy="108" rx="10" ry="6" fill="#7DDEBB"/>
+  <!-- Text -->
+  <text x="60" y="140" text-anchor="middle" fill="#36C99A" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="28" font-weight="bold">寻觅</text>
+  <text x="60" y="160" text-anchor="middle" fill="#999" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11">遇见同频的人</text>
+</svg>

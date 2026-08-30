@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 
@@ -34,7 +34,7 @@ const likeLabel = computed(() => {
         hover-class="relationship-cta__btn--pressed"
         @tap="emit('like')"
       >
-        <image class="relationship-cta__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <image class="relationship-cta__heart" :src="IMAGE_PATHS.ICONS_V2.HEART_WHITE" mode="aspectFit" alt="" />
         <text class="relationship-cta__text relationship-cta__text--like">{{ likeLabel }}</text>
       </view>
 
@@ -84,8 +84,9 @@ const likeLabel = computed(() => {
 
 .relationship-cta__btn--like {
   flex: 1.1;
-  background: #FFF0F6;
-  border: 2rpx solid #FFD3E0;
+  /* 理想图：喜欢按钮粉色渐变填充（--c-gradient-pink）+ 白字白心 */
+  background: var(--c-gradient-pink, linear-gradient(135deg, #FF8FB0 0%, #FF6B81 100%));
+  box-shadow: 0 8rpx 20rpx rgba(255, 107, 129, 0.35);
 }
 
 .relationship-cta__btn--hello {
@@ -129,7 +130,7 @@ const likeLabel = computed(() => {
 }
 
 .relationship-cta__text--like {
-  color: #FF6B81;
+  color: #ffffff;
 }
 
 .relationship-cta__text--follow {

@@ -301,7 +301,9 @@ public class RealCampusService implements CampusService {
                     post.getActivityId(),
                     null, // activity
                     Boolean.TRUE.equals(post.getIsPinned()),
-                    List.of() // recentComments
+                    List.of(), // recentComments
+                    // 2026-08-26 R4：同校流列表最多 3 张图
+                    parseJsonToList(post.getImages()).stream().limit(3).toList()
             ));
         }
         return result;

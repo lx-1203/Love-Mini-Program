@@ -92,7 +92,9 @@ public class MockPostTagService implements PostTagService {
                         false,
                         p.viewCount,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 标签页无上下文，按 null/空列表兜底
-                        null, null, false, List.of()
+                        null, null, false, List.of(),
+                        // 2026-08-26 R4：mock 标签帖暂无图片数据，按空列表兜底
+                        List.of()
                 ))
                 .toList();
     }

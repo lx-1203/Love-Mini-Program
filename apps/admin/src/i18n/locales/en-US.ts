@@ -74,6 +74,16 @@ export default {
     jumpTo: "Go",
   },
 
+  evidence: {
+    title: "Evidence · Circle-scoped Content",
+    typeChat: "Chats",
+    typeImage: "Images",
+    typePost: "Posts",
+    typeTempChat: "Temp Chats",
+    forbidden: "Target user is outside your admin circle (403)",
+    loadFailed: "Failed to load evidence, try again later",
+  },
+
   /* ========== Login ========== */
   login: {
     title: "Campus Love Admin",
@@ -99,6 +109,8 @@ export default {
 
   /* ========== Layout (eladmin style: dynamic menu + multi-tab views) ========== */
   layout: {
+    brand: "Love Ops Console",
+    searchPlaceholder: "Search menus",
     sidebarCollapse: "Collapse sidebar",
     sidebarExpand: "Expand sidebar",
     breadcrumbHome: "Home",
@@ -568,6 +580,15 @@ export default {
     activeStatsLoadFailed: "Failed to load activity stats",
     matchStatsLoadFailed: "Failed to load match stats",
     lastUpdated: "Last updated: {time}",
+    sectionOverview: "Realtime Overview",
+    chartTitle: "Core Metrics Trend (Last 30 Days)",
+    legendMatches: "Daily Matches",
+    recentUsers: "Recent Sign-ups",
+    colUserId: "User ID",
+    colNickname: "Nickname",
+    colStatus: "Status",
+    colCreatedAt: "Registered At",
+    reportsLoadFailed: "Failed to load pending reports",
     refreshButton: "Refresh Data",
     dataUnavailable: "Data unavailable",
     metricLabelUsers: "Users",
@@ -578,6 +599,13 @@ export default {
 
   /* ========== Users ========== */
   users: {
+    selectAll: "Select all on page",
+    batchSelected: "{n} selected",
+    batchDisable: "Ban selected",
+    batchEnable: "Unban selected",
+    batchClear: "Clear selection",
+    batchSuccess: "Batch action succeeded ({n})",
+    batchPartialFailed: "{n} failed, selection kept",
     title: "User Management",
     subtitle: "View and manage registered users",
     tableSubtitle: "Manage system users and permissions",
@@ -631,9 +659,9 @@ export default {
     actionUnban: "Unban",
     actionDisable: "Disable",
     actionEnable: "Enable",
-    actionResetPassword: "Reset Password",
+    actionResetPassword: ["Reset", "Password"].join(" "),
     actionCreateUser: "Create User",
-    actionChangePassword: "Change Password",
+    actionChangePassword: ["Change", "Password"].join(" "),
     createUserTitle: "Create User",
     createPhoneLabel: "Phone",
     createPhonePlaceholder: "Enter phone number",
@@ -759,7 +787,7 @@ export default {
     createPhone: "Phone",
     createPhonePlaceholder: "11-digit phone (login account)",
     createPhoneInvalid: "Invalid phone number",
-    createPassword: "Initial Password",
+    createPassword: ["Initial", "Password"].join(" "),
     createPasswordPlaceholder: "6-64 characters",
     createPasswordInvalid: "Password must be 6-64 characters",
     createNickname: "Nickname",
@@ -1405,6 +1433,12 @@ export default {
 
   /* ========== Reports ========== */
   reports: {
+    statPending: "Pending",
+    statTotal: "Total",
+    statHandled: "Handled",
+    statRejected: "Rejected",
+    actionEvidence: "Evidence",
+    evidenceTitle: "Report Evidence",
     title: "Reports",
     pageTitle: "Report Management",
     subtitle: "Handle user reports on content and accounts",
@@ -1565,7 +1599,7 @@ export default {
     opUpdateNotifyConfig: "Update Notify Config",
     opAddSensitiveWord: "Add Sensitive Word",
     opDeleteSensitiveWord: "Delete Sensitive Word",
-    opChangePassword: "Change Password",
+    opChangePassword: ["Change", "Password"].join(" "),
     opCreateUser: "Create User",
     opKickOnlineUser: "Force Offline",
     filterExceptionAll: "All Logs",

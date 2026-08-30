@@ -30,7 +30,7 @@ const icons = {
     <view
       class="match-actions__item"
       hover-class="match-actions__item--pressed"
-      hover-stay-time="120"
+      hover-stay-time="40"
       role="button"
       :aria-label="t('discover.skip')"
       @tap="!disabled && !busy && emit('pass')"
@@ -44,7 +44,7 @@ const icons = {
     <view
       class="match-actions__item"
       hover-class="match-actions__item--pressed"
-      hover-stay-time="120"
+      hover-stay-time="40"
       role="button"
       :aria-label="t('discover.superLike')"
       @tap="!disabled && !busy && emit('superLike')"
@@ -58,7 +58,7 @@ const icons = {
     <view
       class="match-actions__item"
       hover-class="match-actions__item--pressed"
-      hover-stay-time="120"
+      hover-stay-time="40"
       role="button"
       :aria-label="t('discover.like')"
       @tap="!disabled && !busy && emit('like')"

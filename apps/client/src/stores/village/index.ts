@@ -157,6 +157,10 @@ export const useVillageStore = defineStore("village", {
     // 2026-08-08 论坛互动真实化：浏览记录
     historyPosts: [],
     loadingHistory: false,
+    // 2026-08-26 R2：附近动态独立维度（不复用 posts，避免村口/首页/附近互相污染）
+    nearbyPosts: [],
+    loadingNearbyPosts: false,
+    nearbyError: null,
   }),
 
   getters: {
@@ -279,6 +283,37 @@ export const useVillageStore = defineStore("village", {
           this.loading = false;
           fetchPostsController = null;
         }
+      }
+    },
+
+    /**
+     * 2026-08-26 R2：获取附近动态（独立维度）。
+     *
+     * <p>与 fetchPosts 解耦：数据存 nearbyPosts，不复用全局 posts，
+     * 避免附近页 / 村口页 / 首页社区动态互相污染。</p>
+     *
+     * @param city - 当前城市名（可选；传入则按城市过滤，缺省走「同城」分类）
+     */
+    async fetchNearbyPosts(city?: string) {
+      this.loadingNearbyPosts = true;
+      this.nearbyError = null;
+
+      try {
+        if (useMock()) {
+          // mock 分支：与 real 同语义，按 city 过滤 mockPosts（缺省取全部，截取前 6 条）
+          const result = filterAndSortPosts(mockPosts, { city }, "");
+          this.nearbyPosts = result.slice(0, 6);
+          return;
+        }
+
+        // real 分支：复用 posts 列表接口；有 city 传城市参数（无分类过滤），
+        // 无 city 走「同城」分类（fetchPostsApi 已支持 city 透传，buildPostListParams）
+        const data = await fetchPostsApi(city ? { city } : { categoryId: "cat-samecity" }, 1);
+        this.nearbyPosts = data.items.map(mapToPostItem);
+      } catch (error) {
+        this.nearbyError = error instanceof Error ? error.message : t("storeErrors.village.loadPostsFailed");
+      } finally {
+        this.loadingNearbyPosts = false;
       }
     },
 
@@ -982,7 +1017,15 @@ export const useVillageStore = defineStore("village", {
      */
     async setCurrentPost(postId: string) {
       if (useMock()) {
-        this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
+        // 修复（2026-08-26 P10）：mock 下优先从 mockPosts 直接解析，兼容
+        // 从首页社区动态等未先加载帖子列表的入口直入详情，避免报"帖子不存在"。
+        // 首页社区动态用数字 id（"7"），村庄帖子 id 为 "post-N"，做 "N → post-N" 兼容映射。
+        const candidates = [postId, postId.startsWith("post-") ? "" : `post-${postId}`];
+        this.currentPost =
+          mockPosts.find((p) => p.id === postId) ??
+          this.posts.find((p) => p.id === postId) ??
+          candidates.map((id) => mockPosts.find((p) => p.id === id)).find(Boolean) ??
+          null;
         return;
       }
 

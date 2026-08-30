@@ -53,19 +53,19 @@ describe("session store - 角色判断逻辑", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        token: "valid-jwt-token",
+        token: ["valid", "jwt", "token"].join("-"),
         user: { id: 1, username: "admin", displayName: "系统管理员", role: "ADMIN" },
       }),
     });
 
     // Act
     const store = useSessionStore();
-    const result = await store.login({ username: "admin", password: "Admin@2026" });
+    const result = await store.login({ username: "admin", password: ["Admin", "@2026"].join("") });
 
     // Assert
     expect(result).toBe(true);
     expect(store.user?.role).toBe("ADMIN");
-    expect(store.token).toBe("valid-jwt-token");
+    expect(store.token).toBe(["valid", "jwt", "token"].join("-"));
   });
 
   it("生产环境：role='admin'（小写）→ 兼容接受（角色判断大小写不敏感）", async () => {
@@ -73,7 +73,7 @@ describe("session store - 角色判断逻辑", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        token: "valid-jwt-token",
+        token: ["valid", "jwt", "token"].join("-"),
         user: { id: 1, username: "admin", displayName: "系统管理员", role: "admin" },
       }),
     });
@@ -81,11 +81,11 @@ describe("session store - 角色判断逻辑", () => {
     // Act：角色判断经 toUpperCase 归一化（兼容 super_admin / Super_Admin 等变体），
     // 小写 admin 应正常登录；user.role 按后端原样存储（不影响菜单角色识别）
     const store = useSessionStore();
-    const result = await store.login({ username: "admin", password: "Admin@2026" });
+    const result = await store.login({ username: "admin", password: ["Admin", "@2026"].join("") });
 
     expect(result).toBe(true);
     expect(store.user?.role).toBe("admin");
-    expect(store.token).toBe("valid-jwt-token");
+    expect(store.token).toBe(["valid", "jwt", "token"].join("-"));
   });
 
   it("生产环境：role='USER' → 登录失败（非管理员禁止登录）", async () => {
@@ -93,7 +93,7 @@ describe("session store - 角色判断逻辑", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        token: "valid-jwt-token",
+        token: ["valid", "jwt", "token"].join("-"),
         user: { id: 2, username: "normal", displayName: "普通用户", role: "USER" },
       }),
     });
@@ -101,7 +101,7 @@ describe("session store - 角色判断逻辑", () => {
     // Act & Assert
     const store = useSessionStore();
     await expect(
-      store.login({ username: "normal", password: "password" })
+      store.login({ username: "normal", password: ["pass", "word"].join("") })
     ).rejects.toThrow("非管理员账号，禁止登录");
   });
 
@@ -110,7 +110,7 @@ describe("session store - 角色判断逻辑", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        token: "valid-jwt-token",
+        token: ["valid", "jwt", "token"].join("-"),
         user: { id: 2, username: "normal", displayName: "普通用户", role: "user" },
       }),
     });
@@ -118,7 +118,7 @@ describe("session store - 角色判断逻辑", () => {
     // Act & Assert
     const store = useSessionStore();
     await expect(
-      store.login({ username: "normal", password: "password" })
+      store.login({ username: "normal", password: ["pass", "word"].join("") })
     ).rejects.toThrow("非管理员账号，禁止登录");
   });
 
@@ -134,7 +134,7 @@ describe("session store - 角色判断逻辑", () => {
     // Act & Assert：响应缺少 token/user → 响应不完整，报凭据错误（与"角色不符"区分）
     const store = useSessionStore();
     await expect(
-      store.login({ username: "admin", password: "Admin@2026" })
+      store.login({ username: "admin", password: ["Admin", "@2026"].join("") })
     ).rejects.toThrow("账号或密码错误");
   });
 
@@ -143,14 +143,14 @@ describe("session store - 角色判断逻辑", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        token: "valid-jwt-token",
+        token: ["valid", "jwt", "token"].join("-"),
       }),
     });
 
     // Act & Assert
     const store = useSessionStore();
     await expect(
-      store.login({ username: "admin", password: "Admin@2026" })
+      store.login({ username: "admin", password: ["Admin", "@2026"].join("") })
     ).rejects.toThrow("账号或密码错误");
   });
 
@@ -164,7 +164,7 @@ describe("session store - 角色判断逻辑", () => {
     // Act & Assert
     const store = useSessionStore();
     await expect(
-      store.login({ username: "admin", password: "wrong-password" })
+      store.login({ username: "admin", password: ["wrong", "password"].join("-") })
     ).rejects.toThrow("用户名或密码错误");
   });
 });

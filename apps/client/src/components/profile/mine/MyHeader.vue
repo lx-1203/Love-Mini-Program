@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 function handleSettings() {
-  uni.navigateTo({ url: "/pages/settings/index" });
+  uni.navigateTo({ url: "/subpackages/profile-extra/settings/index" });
 }
 
 function handleShare() {

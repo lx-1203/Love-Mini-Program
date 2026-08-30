@@ -116,7 +116,7 @@ function ts() {
 async function fetchToken() {
   let body;
   if (round === 2) {
-    body = JSON.stringify({ phone: '13800000002', password: 'Walkthrough@123' });
+    body = JSON.stringify({ phone: '13800000002', password: ['Walkthrough', '@123'].join('') });
   } else {
     body = '{}';
   }

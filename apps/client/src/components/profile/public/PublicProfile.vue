@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+```vue
+<script setup lang="ts">
 import { ref } from "vue";
 import type { UserProfileDTO, UserProfilePost } from "../../../types/profile";
 import PublicHero from "./PublicHero.vue";
@@ -63,7 +64,11 @@ function closeGovernance() {
       <PublicInterest :tags="profile.intro.tags" />
       <PublicCommon :common-interests="profile.relation.commonInterests" />
       <PublicGallery :photos="profile.media.photos" @tap-photo="emit('tapPhoto', $event)" />
-      <PublicMoment :posts="props.posts" />
+      <PublicMoment
+        :posts="props.posts"
+        :author-name="profile.basic.name"
+        :author-avatar="profile.basic.avatar"
+      />
       <view class="public-profile__spacer" />
 
       <RelationshipCTA
@@ -89,7 +94,8 @@ function closeGovernance() {
 .public-profile {
   min-height: 100vh;
   background: #F7FAF9;
-  padding-bottom: 200rpx;
+  /* 2026-08-26 P0-2：底内边距覆盖固定底栏 RelationshipCTA + 安全区 + 流内 spacer(220rpx)，保证可完整下滑 */
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom) + 60rpx);
 }
 
 .public-profile__state {
@@ -122,3 +128,4 @@ function closeGovernance() {
   height: 220rpx;
 }
 </style>
+```

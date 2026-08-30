@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { UserProfileDTO } from "../../../types/profile";
 
 defineProps<{ profile: UserProfileDTO }>();
@@ -37,7 +37,8 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 .public-hero {
   position: relative;
   width: 100%;
-  height: 520rpx;
+  /* 理想图：宽幅横版风景大图（封面放大，沉浸式） */
+  height: 640rpx;
 }
 
 .public-hero__bg {
@@ -74,7 +75,7 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 .public-hero__avatar {
   position: absolute;
   left: 40rpx;
-  bottom: -72rpx;
+  bottom: -40rpx;
   width: 176rpx;
   height: 176rpx;
   border-radius: 50%;

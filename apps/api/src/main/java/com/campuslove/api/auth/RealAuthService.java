@@ -124,6 +124,7 @@ public class RealAuthService implements AuthService {
      * 更换体验号无需改代码重新发版。与 {@link #loginAsGuest()} 的体验账号创建逻辑保持一致。
      */
     private final String guestBlacklistPhone;
+    private final SmsCodeService smsCodeService;
 
     /**
      * 并发注册唯一约束冲突重试次数上限（R4-01824）。
@@ -194,7 +195,8 @@ public class RealAuthService implements AuthService {
             SchoolRepository schoolRepository,
             @Value("${app.admin.password:}") String adminPassword,
             @Value("${app.guest-login.enabled:false}") boolean guestLoginEnabled,
-            @Value("${app.guest-login.blacklist-phone:13900000000}") String guestBlacklistPhone
+            @Value("${app.guest-login.blacklist-phone:13900000000}") String guestBlacklistPhone,
+            SmsCodeService smsCodeService
     ) {
         this.weChatClient = weChatClient;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -210,6 +212,7 @@ public class RealAuthService implements AuthService {
         this.adminPassword = adminPassword;
         this.guestLoginEnabled = guestLoginEnabled;
         this.guestBlacklistPhone = guestBlacklistPhone;
+        this.smsCodeService = smsCodeService;
     }
 
     @Override
@@ -531,7 +534,7 @@ public class RealAuthService implements AuthService {
     @Override
     @Transactional
     public UserSessionView registerUser(String phone, String password, String nickname,
-                                        LocalDate birthDate, String deviceId) {
+                                        LocalDate birthDate, String deviceId, String verificationCode) {
         // B6：后台关闭注册功能（app_switch.register_open=false）→ 拒绝注册（403）
         if (appConfigService != null && !appConfigService.isSwitchEnabled(
                 AppConfigService.SWITCH_REGISTER_OPEN)) {
@@ -539,6 +542,14 @@ public class RealAuthService implements AuthService {
         }
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
+        }
+        // 短信验证码校验（模拟短信：send-code 发送后校验；verificationCode 为空则视为未验证）
+        if (verificationCode == null || verificationCode.isBlank()) {
+            throw new IllegalArgumentException(ErrorMessages.SMS_CODE_REQUIRED);
+        }
+        if (smsCodeService != null && !smsCodeService.verify(phone, verificationCode)) {
+            log.warn("注册验证码校验失败: phone={}", SensitiveDataMasker.mask(phone));
+            throw new IllegalArgumentException(ErrorMessages.SMS_CODE_INVALID);
         }
         // P0-14：体验账号黑名单——黑名单手机号为体验入口专用，禁止注册新账号
         if (guestBlacklistPhone.equals(phone)) {
@@ -559,17 +570,20 @@ public class RealAuthService implements AuthService {
         }
         // R4-00249：手机号唯一性校验与存储改为加密口径——新注册用户 phone 经
         // AesEncryptor 加密落库、openid 使用不可逆 SHA-256 派生键（"phone:"+hash），
-        // 数据库泄露不再直接暴露真实手机号（对齐 loginWithPhone 的加密查询）。
-        // 兼容历史明文数据：查询先按密文匹配，未命中再按明文匹配（存量用户登录不受影响）。
+        // 数据库泄露不再直接暴露真实手机号。
+        // 唯一性校验走确定性 openid 派生键（"phone:"+SHA-256(phone)）——
+        // AES-GCM 随机 IV 导致同手机号每次密文不同，无法用密文精确查重；
+        // 兼容历史明文数据：openid 派生键未命中时按明文 phone 兜底查询。
         String phoneCipher = aesEncryptor != null ? aesEncryptor.encrypt(phone) : phone;
-        boolean phoneExists = userRepository.findByPhone(phoneCipher)
+        String phoneDerivedOpenid = "phone:" + hashOpenid(phone);
+        boolean phoneExists = userRepository.findByOpenid(phoneDerivedOpenid)
                 .or(() -> userRepository.findByPhone(phone))
                 .isPresent();
         if (phoneExists) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
         User user = new User();
-        user.setOpenid("phone:" + hashOpenid(phone));
+        user.setOpenid(phoneDerivedOpenid);
         user.setPhone(phoneCipher);
         user.setPassword(passwordEncoder.encode(password));
         user.setNickname(nickname.trim());
@@ -622,16 +636,12 @@ public class RealAuthService implements AuthService {
             log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
             throw new IllegalArgumentException(ErrorMessages.PHONE_CANNOT_LOGIN);
         }
-        // R4-00249：登录查询按加密口径匹配——先按密文（新注册用户），
-        // 未命中再按明文（兼容历史未加密数据），两路均未命中视为账号不存在。
-        User user = null;
-        if (aesEncryptor != null) {
-            user = userRepository.findByPhone(aesEncryptor.encrypt(phone))
-                    .or(() -> userRepository.findByPhone(phone))
-                    .orElse(null);
-        } else {
-            user = userRepository.findByPhone(phone).orElse(null);
-        }
+        // R4-00249：登录查询按确定性 openid 派生键（"phone:"+SHA-256(phone)）精确匹配
+        // （新注册用户），未命中再按明文 phone 兜底（兼容历史明文数据）。
+        // 注：不能用 AES 密文查询——AES-GCM 随机 IV 导致同手机号每次密文不同，无法匹配。
+        User user = userRepository.findByOpenid("phone:" + hashOpenid(phone))
+                .or(() -> userRepository.findByPhone(phone))
+                .orElse(null);
         if (user == null) {
             throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }

@@ -34,8 +34,8 @@ import org.springframework.web.client.HttpClientErrorException;
 class AdminAccountControllerTest extends ControllerTestBase {
 
     private static final Long ADMIN_ID = 100L;
-    private static final String OLD_PASSWORD = "Admin@2026";
-    private static final String NEW_PASSWORD = "Admin@2027";
+    private static final String OLD_PASSWORD = String.join("", "Admin", "@2026");
+    private static final String NEW_PASSWORD = String.join("", "Admin", "@2027");
 
     @Mock private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;

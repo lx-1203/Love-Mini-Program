@@ -31,7 +31,14 @@ const onlineText = computed(() => {
 });
 
 const distanceText = computed(() => {
-  if (props.user.distanceText) return props.user.distanceText;
+  const raw = props.user.distanceText;
+  if (raw && raw.trim().length > 0) {
+    const value = raw.trim();
+    // 纯数字（如 "1.2"）：自动补 km 单位 → "1.2km"
+    if (/^\d+(\.\d+)?$/.test(value)) return `${value}km`;
+    // 已带单位（"km" / "米"）或 "同校" 等非数值文案：原样保留
+    return value;
+  }
   if (props.user.isSameSchool) return "同校";
   return "";
 });
@@ -154,10 +161,12 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   position: absolute;
   top: 28rpx;
   left: 28rpx;
-  padding: 10rpx 22rpx;
+  padding: 10rpx 24rpx;
   border-radius: 999rpx;
   background: rgba(255, 107, 129, 0.9);
   box-shadow: 0 6rpx 16rpx rgba(255, 107, 129, 0.35);
+  /* 距离文字不换行、不截断，保证胶囊完整展示 */
+  white-space: nowrap;
 }
 
 .match-card__distance-text {

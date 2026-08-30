@@ -1,5 +1,7 @@
-﻿<script setup lang="ts">
-defineProps<{ photos: string[] }>();
+<script setup lang="ts">
+withDefaults(defineProps<{ photos: string[] }>(), {
+  photos: () => [],
+});
 const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
 </script>
 
@@ -8,7 +10,7 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
     <text class="public-gallery__title">生活瞬间</text>
     <view class="public-gallery__grid">
       <view
-        v-for="(photo, index) in photos.slice(0, 8)"
+        v-for="(photo, index) in photos.slice(0, 4)"
         :key="`${photo}-${index}`"
         class="public-gallery__cell"
         hover-class="public-gallery__cell--pressed"
@@ -38,18 +40,19 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
 }
 
 .public-gallery__grid {
+  /* 理想图：生活瞬间 4 张等宽方形横排（mp-weixin 用 flex + calc） */
   display: flex;
-  flex-wrap: wrap;
   gap: 12rpx;
 }
 
 .public-gallery__cell {
   position: relative;
-  width: 150rpx;
-  height: 150rpx;
-  border-radius: 12rpx;
+  width: calc((100% - 3 * 12rpx) / 4);
+  padding-top: calc((100% - 3 * 12rpx) / 4);
+  border-radius: 16rpx;
   overflow: hidden;
   background: #EEF2F0;
+  box-sizing: border-box;
 }
 
 .public-gallery__cell--pressed {

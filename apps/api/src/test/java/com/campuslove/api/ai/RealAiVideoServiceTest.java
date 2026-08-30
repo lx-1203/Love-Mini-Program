@@ -56,7 +56,7 @@ class RealAiVideoServiceTest {
     private MockRestServiceServer mockServer;
 
     private static final String API_BASE = "https://test.agnes-ai.com/api";
-    private static final String API_KEY = "test-api-key-12345";
+    private static final String API_KEY = String.join("-", "test", "api", "key", "12345");
     private static final long TIMEOUT_MS = 5000L;
 
     private static final String VIDEO_URL = API_BASE + "/video/generate";

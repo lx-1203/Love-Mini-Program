@@ -1,7 +1,9 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InterestTag from "../common/InterestTag.vue";
 
-defineProps<{ tags: string[] }>();
+withDefaults(defineProps<{ tags: string[] }>(), {
+  tags: () => [],
+});
 </script>
 
 <template>

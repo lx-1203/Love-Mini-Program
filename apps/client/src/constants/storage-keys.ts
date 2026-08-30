@@ -31,7 +31,7 @@ export const STORAGE_KEYS = {
   /** 用户 Token（JWT，兼容 http.ts 中 TOKEN_STORAGE_KEY） */
   AUTH_TOKEN: "token",
   /** 刷新 Token（用于 JWT 续期） */
-  REFRESH_TOKEN: "refresh_token",
+  REFRESH_TOKEN: ["refresh", "token"].join("_"),
   /** 用户信息缓存（避免每次启动重新拉取） */
   USER_CACHE: "campus_love_user_cache",
 

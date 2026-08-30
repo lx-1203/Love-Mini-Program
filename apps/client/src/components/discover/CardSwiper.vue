@@ -614,7 +614,7 @@ function onWhisperReply(text: string): void {
   if (!card) return;
   showWhisperSheet.value = false;
   openAppPath(
-    `/pages/chat-session/index?userId=${encodeURIComponent(card.userId)}&prefillMessage=${encodeURIComponent(text)}`
+    `/subpackages/chat/chat-session/index?userId=${encodeURIComponent(card.userId)}&prefillMessage=${encodeURIComponent(text)}`
   );
 }
 

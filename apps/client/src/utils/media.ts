@@ -79,18 +79,10 @@ const APP_ASSET_PREFIX = "/api/v1/media/app-assets/";
  * - audio（本地音效）；
  * - default-avatar（加载兜底用，本地更稳）。
  */
-const LOCAL_ASSET_PREFIXES = [
-  "/static/assets/icons/",
-  "/static/audio/",
-  "/static/default-avatar",
-  "/static/assets/default-avatar",
-  // 2026-08-21：头像/人物素材为构建包内本地资源（未入库后端 app-assets），
-  // 保留本地路径直连，避免 app-assets 代理 404 导致头像加载失败显示占位。
-  "/static/assets/images/avatars/",
-  "/static/assets/images/people/",
-  // 2026-08-21：消息/聊天相关静态资源（assistant_avatar.svg 等）保留本地直连，
-  // 避免 resolveMediaUrl 重写为 HTTP app-assets 端点导致微信不支持 HTTP 协议警告。
-  "/static/assets/message/",
+const LOCAL_ASSET_PREFIXES: string[] = [
+  // 2026-08-29 主包瘦身（真机 2MB 门禁）：static 全部资产迁至后端 app-assets 托管，
+  // real 模式下 /static/** 统一改写为 {apiRoot}/api/v1/media/app-assets/**（免登录端点）。
+  // mock/dev 形态仍携带本地 static（useMock 分支原样返回，不受影响）。
 ];
 
 /**

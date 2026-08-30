@@ -33,6 +33,8 @@ public record PostSummaryView(
     /** 2026-08-09 帖子置顶：是否置顶（置顶帖列表优先展示） */
     boolean isPinned,
     /** 2026-08-09 列表评论预览：最新 2 条根评论（无则空列表） */
-    List<CommentPreviewView> recentComments
+    List<CommentPreviewView> recentComments,
+    /** 2026-08-26 R4：列表图片（最多 3 张，无图返回空列表；详情全量见 PostDetailView.images） */
+    List<String> images
 ) {
 }

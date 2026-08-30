@@ -1,3 +1,4 @@
+import { resolveMediaUrl } from "@/utils/media";
 /**
  * Village Store Mock 数据（mock 模式专用，自 stores/village/utils.ts 拆分）。
  *
@@ -53,7 +54,7 @@ export const mockTagPosts: PostItem[] = [
     author: { userId: "user-3016", name: "林晓", avatar: "", headline: "北京·985硕士", campusName: "北京大学" },
     categoryId: "sincere", title: "", content: "今天在图书馆遇到一个认真学习的女生，感觉好有气质！",
     // D-05b（第五轮 QA）：帖子配图从空补为 1-2 张（portraits + covers 混合）
-    images: ["/static/assets/images/portraits/p1.jpg", "/static/assets/images/covers/circle-reading.png"], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p1.jpg")), resolveMediaUrl(resolveMediaUrl("/static/assets/images/covers/circle-reading.png"))], tags: ["#校园日常", "#表白墙"], likes: 32, comments: 8, shares: 3,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 10, isFavorite: false, views: 320, createdAt: new Date(Date.now() - 3600000).toISOString(),
   },
@@ -61,7 +62,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-2",
     author: { userId: "user-3002", name: "阿泽", avatar: "", headline: "上海·互联网大厂", campusName: "复旦大学" },
     categoryId: "interest", title: "", content: "有没有一起打羽毛球的？周末约起来！求搭子！",
-    images: ["/static/assets/images/portraits/p2.jpg", "/static/assets/images/covers/circle-sports.png"], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p2.jpg")), resolveMediaUrl("/static/assets/images/covers/circle-sports.png")], tags: ["#找搭子", "#兴趣分享"], likes: 18, comments: 12, shares: 4,
     isLiked: true, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 6, isFavorite: false, views: 180, createdAt: new Date(Date.now() - 10800000).toISOString(),
   },
@@ -69,7 +70,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-3",
     author: { userId: "user-3003", name: "橙子", avatar: "", headline: "杭州·设计师", campusName: "浙江大学" },
     categoryId: "activity", title: "", content: "急！计算机组成原理期末怎么复习？求大佬带带",
-    images: ["/static/assets/images/covers/circle-studybuddy.png"], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
+    images: [resolveMediaUrl("/static/assets/images/covers/circle-studybuddy.png")], tags: ["#求助", "#技术交流"], likes: 45, comments: 23, shares: 6,
     isLiked: false, isFollowed: true, isShared: false, isAlumni: false,
     favorites: 15, isFavorite: true, views: 450, createdAt: new Date(Date.now() - 18000000).toISOString(),
   },
@@ -77,7 +78,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-4",
     author: { userId: "user-3005", name: "北岛", avatar: "", headline: "成都·创业者", campusName: "四川大学" },
     categoryId: "sincere", title: "", content: "毕业5年了，想问问学弟学妹们学校现在变化大吗？",
-    images: ["/static/assets/images/portraits/p3.jpg"], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p3.jpg"))], tags: ["#校友动态", "#生活记录"], likes: 67, comments: 19, shares: 10,
     isLiked: false, isFollowed: false, isShared: true, isAlumni: false,
     favorites: 22, isFavorite: false, views: 670, createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
@@ -85,7 +86,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-5",
     author: { userId: "user-3004", name: "南风", avatar: "", headline: "深圳·产品经理", campusName: "北京大学" },
     categoryId: "life", title: "", content: "记录一下今天在食堂吃到的好吃的！麻辣香锅绝了",
-    images: ["/static/assets/images/covers/circle-food.png", "/static/assets/images/portraits/p4.jpg"], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/covers/circle-food.png")), resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p4.jpg")))], tags: ["#生活记录", "#校园日常"], likes: 23, comments: 5, shares: 2,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 7, isFavorite: false, views: 230, createdAt: new Date(Date.now() - 90000000).toISOString(),
   },
@@ -93,7 +94,7 @@ export const mockTagPosts: PostItem[] = [
     id: "mock-tag-post-6",
     author: { userId: "user-3001", name: "小鹿", avatar: "", headline: "北京·Java开发", campusName: "清华大学" },
     categoryId: "interest", title: "", content: "想找个一起刷 LeetCode 的队友，每天互相监督",
-    images: ["/static/assets/images/portraits/p4.jpg"], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p4.jpg")))], tags: ["#技术交流", "#找搭子"], likes: 15, comments: 7, shares: 3,
     isLiked: false, isFollowed: false, isShared: false, isAlumni: false,
     favorites: 5, isFavorite: false, views: 150, createdAt: new Date(Date.now() - 172800000).toISOString(),
   },
@@ -276,7 +277,7 @@ export const mockActivities: ActivitySummaryView[] = [
     activityDate: upcomingWeekdayDate(5),
     status: "upcoming",
     enrollmentCount: 23,
-    coverImage: "/static/assets/images/posts/post-2.jpg",
+    coverImage: resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg"))))),
   },
   {
     id: 202,
@@ -306,7 +307,7 @@ const mockPostsRaw: Array<
     content:
       "认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。",
     // D-05b（第五轮 QA）：主 feed 帖子补配图（portraits/covers 混合）
-    images: ["/static/assets/images/portraits/p1.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p1.jpg"))],
     tags: ["#这是一条520交友启事", "#诚意征友"],
     likes: 128,
     comments: 32,
@@ -326,7 +327,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "周末有一起去徒步的吗？计划去西湖周边走一圈，大概15公里，新手友好路线。已经有3个人了，再来2个就出发！",
-    images: ["/static/assets/images/portraits/p2.jpg", "/static/assets/images/covers/circle-travel.png"],
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p2.jpg")), resolveMediaUrl("/static/assets/images/covers/circle-travel.png")],
     tags: ["#周末徒步", "#西湖", "#户外"],
     likes: 45,
     comments: 18,
@@ -346,7 +347,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "在杭州的四川老乡集合啦！想建一个老乡群，周末可以一起约火锅、打麻将。身在异乡，老乡最亲~",
-    images: ["/static/assets/images/covers/circle-food.png", "/static/assets/images/portraits/p4.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/covers/circle-food.png")), resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p4.jpg")))],
     tags: ["#四川老乡", "#杭州", "#火锅"],
     likes: 89,
     comments: 56,
@@ -365,7 +366,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "【蒙面话题】你们觉得相亲时最看重对方什么？我先说：三观一致最重要，颜值其次。",
-    images: ["/static/assets/images/portraits/p5.jpg"],
+    images: [resolveMediaUrl("/static/assets/images/portraits/p5.jpg")],
     tags: ["#蒙面话题", "#相亲", "#三观"],
     likes: 234,
     comments: 89,
@@ -384,7 +385,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "创业第三年，公司步入正轨，终于有时间考虑个人问题了。喜欢运动、摄影，希望找一个能一起成长的伴侣。",
-    images: ["/static/assets/images/covers/circle-photo.png", "/static/assets/images/portraits/p3.jpg"],
+    images: [resolveMediaUrl("/static/assets/images/covers/circle-photo.png"), resolveMediaUrl(resolveMediaUrl("/static/assets/images/portraits/p3.jpg"))],
     tags: ["#创业", "#征友", "#摄影"],
     likes: 167,
     comments: 43,
@@ -403,7 +404,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "分享最近读的一本书《亲密关系》，里面讲到沟通的重要性，推荐给正在恋爱中的朋友们。",
-    images: ["/static/assets/images/covers/circle-reading.png", "/static/assets/images/portraits/p6.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl("/static/assets/images/covers/circle-reading.png")), resolveMediaUrl("/static/assets/images/portraits/p6.jpg")],
     tags: ["#读书分享", "#亲密关系"],
     likes: 67,
     comments: 12,
@@ -423,7 +424,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "周末去爬山，山顶的日落太治愈了，有一起的朋友吗？",
-    images: ["/static/assets/images/posts/post-1.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
     tags: ['#爬山', '#周末活动'],
     likes: 20,
     comments: 3,
@@ -442,7 +443,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "刚看完《长安三万里》，李白的一生太浪漫了，推荐！",
-    images: ["/static/assets/images/posts/post-2.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
     tags: ['#电影', '#分享'],
     likes: 27,
     comments: 6,
@@ -461,7 +462,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "想找个人一起学做咖啡，拉花入门中，进度缓慢但快乐～",
-    images: ["/static/assets/images/posts/post-3.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
     tags: ['#咖啡', '#兴趣'],
     likes: 34,
     comments: 9,
@@ -480,7 +481,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "分享我的旅行清单：想去冰岛看极光，攒钱中！",
-    images: ["/static/assets/images/posts/post-4.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#校园日常', '#图书馆'],
     likes: 41,
     comments: 12,
@@ -499,7 +500,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "第一次尝试露营，星空下的北京近郊太美了。",
-    images: ["/static/assets/images/posts/post-5.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
     tags: ['#露营', '#户外'],
     likes: 48,
     comments: 15,
@@ -518,7 +519,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "养了一只英短，叫年糕，每天回家都治愈一天的疲惫。",
-    images: ["/static/assets/images/posts/post-6.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
     tags: ['#宠物', '#日常'],
     likes: 55,
     comments: 18,
@@ -575,7 +576,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "周末羽毛球局缺人，有没有组队的朋友？",
-    images: ["/static/assets/images/posts/post-1.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
     tags: ['#运动', '#球局'],
     likes: 76,
     comments: 27,
@@ -594,7 +595,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "雨天宅家，泡杯茶看看书，难得的悠闲时光。",
-    images: ["/static/assets/images/posts/post-2.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
     tags: ['#雨天', '#阅读'],
     likes: 83,
     comments: 30,
@@ -613,7 +614,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "辞职后gap三个月，计划走遍中国西部，有人同行吗？",
-    images: ["/static/assets/images/posts/post-3.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
     tags: ['#旅行', '#辞职gap'],
     likes: 90,
     comments: 3,
@@ -632,7 +633,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "有没有喜欢逛博物馆的朋友？周末组个局？",
-    images: ["/static/assets/images/posts/post-4.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#手作', '#陶艺'],
     likes: 97,
     comments: 6,
@@ -651,7 +652,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "深夜放毒：亲手做的红烧肉，肥而不腻，绝了！",
-    images: ["/static/assets/images/posts/post-5.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
     tags: ['#美食', '#深夜食堂'],
     likes: 104,
     comments: 9,
@@ -670,7 +671,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "想找语伴练英语口语，每周两次线上，有人吗？",
-    images: ["/static/assets/images/posts/post-6.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
     tags: ['#学习', '#英语'],
     likes: 111,
     comments: 12,
@@ -727,7 +728,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "加班到深夜，楼下便利店的热豆浆是唯一的慰藉。",
-    images: ["/static/assets/images/posts/post-1.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
     tags: ['#加班', '#打工日常'],
     likes: 132,
     comments: 21,
@@ -746,7 +747,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "春天来了，想找个人一起看樱花，武汉的樱花开好了。",
-    images: ["/static/assets/images/posts/post-2.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
     tags: ['#春天', '#樱花'],
     likes: 139,
     comments: 24,
@@ -765,7 +766,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "学了三个月吉他，终于能弹完整一首《晴天》了！",
-    images: ["/static/assets/images/posts/post-3.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
     tags: ['#吉他', '#音乐'],
     likes: 146,
     comments: 27,
@@ -784,7 +785,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "MBTI测试分享：我是INFJ，有一样的吗？",
-    images: ["/static/assets/images/posts/post-4.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#童年', '#回忆'],
     likes: 153,
     comments: 30,
@@ -803,7 +804,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "跑步第100天打卡！从3公里到10公里，变化看得见。",
-    images: ["/static/assets/images/posts/post-5.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
     tags: ['#跑步', '#坚持'],
     likes: 160,
     comments: 3,
@@ -822,7 +823,7 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "最近在研究咖啡手冲，喜欢的朋友可以交流下～",
-    images: ["/static/assets/images/posts/post-6.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
     tags: ['#咖啡', '#手冲'],
     likes: 167,
     comments: 6,
@@ -899,7 +900,7 @@ const mockPostsRaw: Array<
     title: "今晚电影社放映《你的名字》，现场报名 ing！",
     content:
       "周五 19:00 影像楼 B 厅放映《你的名字》，映后自由讨论，免费入场！已报名 23 人，活动链接点卡片直达～",
-    images: ["/static/assets/images/posts/post-2.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
     tags: ["#电影", "#活动"],
     likes: 42,
     comments: 11,
@@ -930,7 +931,7 @@ const mockPostsRaw: Array<
     title: "图书馆四楼新增自习区，环境超棒！",
     content:
       "今天去图书馆发现四楼新开了自习区，每个座位都有插座和台灯，还有独立隔板，学习效率直接拉满，推荐给同校的同学们！",
-    images: ["/static/assets/images/posts/post-1.jpg"],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
     tags: ["#校园日常", "#图书馆"],
     likes: 35,
     comments: 9,
@@ -944,11 +945,52 @@ const mockPostsRaw: Array<
 ];
 
 /**
+ * Mock 帖子标题映射（2026-08-27 补充：主 feed 帖子补齐标题，保证帖子数据完整、
+ * 卡片/详情/搜索/分享等按标题展示的场景不空）。
+ * mockPostsRaw 中 post-1 ~ post-30 的 title 原为空串，这里按内容补充可读标题；
+ * post-31 ~ post-33 自带标题，不在映射内（保留原值）。
+ */
+const mockPostTitles: Record<string, string> = {
+  "post-1": "520诚友帖｜认真找对的人",
+  "post-2": "周末西湖徒步，还差2人出发！",
+  "post-3": "杭州四川老乡群，约火锅麻将～",
+  "post-4": "蒙面话题：相亲最看重什么？",
+  "post-5": "创业第三年，征一位同频的TA",
+  "post-6": "书单分享《亲密关系》值得一读",
+  "post-7": "周末爬山，山顶日落太治愈了",
+  "post-8": "看完《长安三万里》，强烈推荐",
+  "post-9": "有没有一起学手冲咖啡的？",
+  "post-10": "旅行清单：攒钱去看冰岛极光",
+  "post-11": "第一次露营，北京近郊星空很美",
+  "post-12": "我家英短「年糕」的治愈日常",
+  "post-13": "健身第三个月打卡，初见成效",
+  "post-14": "MBTI：INFJ 有没有同款？",
+  "post-15": "周末羽毛球局，缺人组队！",
+  "post-16": "雨天宅家泡茶读书，难得的清闲",
+  "post-17": "辞职 gap 三个月，计划走西部",
+  "post-18": "周末逛博物馆，有人一起吗？",
+  "post-19": "深夜放毒：自制红烧肉，绝了！",
+  "post-20": "求英语口语语伴，每周两次线上",
+  "post-21": "滑雪初体验，摔了十几次终于会刹车",
+  "post-22": "分享旅行清单：冰岛极光攒钱中",
+  "post-23": "加班夜里的热豆浆，唯一慰藉",
+  "post-24": "春天来了，一起去看武汉樱花吧",
+  "post-25": "学了三个月吉他，终于弹完《晴天》",
+  "post-26": "MBTI 测试：INFJ 求同款",
+  "post-27": "跑步第100天打卡！3公里到10公里",
+  "post-28": "手冲咖啡研究笔记，欢迎交流",
+  "post-29": "周末看展，遇见一幅很喜欢的画",
+  "post-30": "博物馆周末局，组队报名ing",
+};
+
+/**
  * Mock 帖子列表（2026-08-08 论坛互动真实化）：
  * 收藏数/浏览量派生自点赞数；post-1 / post-4 预置收藏态便于演示初始状态。
+ * 2026-08-27：主 feed 帖子标题由 {@link mockPostTitles} 补齐（post-31~33 保留自带标题）。
  */
 export const mockPosts: PostItem[] = mockPostsRaw.map((p) => ({
   ...p,
+  title: mockPostTitles[p.id] ?? p.title,
   favorites: Math.floor(p.likes / 3),
   views: p.likes * 10,
   isFavorite: p.id === "post-1" || p.id === "post-4",

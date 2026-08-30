@@ -1,4 +1,4 @@
--- =============================================================
+﻿-- =============================================================
 -- 2026-08-09 表情包机制：真实 emoji 消息种子
 --
 -- 1. 修正 V2026.08.09.0005 的假 emoji（kind=emoji 但 body 是普通文本 '谢谢～'）
@@ -15,7 +15,7 @@ JOIN private_conversations c ON c.id = pm.conversation_id
 SET pm.content = '😊'
 WHERE pm.message_kind = 'emoji'
   AND pm.content = '谢谢～'
-  AND ((c.user_a_id = 47 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 47));
+  AND ((c.user_a_id = 100000 AND c.user_b_id = 10001) OR (c.user_a_id = 10001 AND c.user_b_id = 100000));
 
 -- 2. 私信：会话 1（47↔8）已读区补一条对方发送的真 emoji 消息（280 分钟前，未读区之前）
 INSERT INTO private_messages (conversation_id, sender_id, content, message_kind, is_read,
@@ -23,7 +23,7 @@ INSERT INTO private_messages (conversation_id, sender_id, content, message_kind,
 SELECT c.id, c.user_b_id, '🎉', 'emoji', 1,
        DATE_SUB(NOW(), INTERVAL 280 MINUTE), 'sent', NULL
 FROM private_conversations c
-WHERE ((c.user_a_id = 47 AND c.user_b_id = 8) OR (c.user_a_id = 8 AND c.user_b_id = 47))
+WHERE ((c.user_a_id = 100000 AND c.user_b_id = 10024) OR (c.user_a_id = 10024 AND c.user_b_id = 100000))
   AND NOT EXISTS (
     SELECT 1 FROM private_messages pm
     WHERE pm.conversation_id = c.id AND pm.message_kind = 'emoji' AND pm.content = '🎉'

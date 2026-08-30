@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 迁移：活动 + 签到 + 积分/交友币 + 语音介绍 + 官方消息 + 外链配置种子
 -- ============================================================
 -- 背景（用户需求）：
@@ -40,23 +40,23 @@ WHERE NOT EXISTS (SELECT 1 FROM activities a WHERE a.title = m.title AND a.activ
 
 -- ========== 2. 超级账号签到记录（check_ins，连续 7 天） ==========
 INSERT INTO check_ins (user_id, check_in_date, consecutive_days, source, created_at)
-SELECT 1, DATE_SUB(CURDATE(), INTERVAL n.days_ago DAY), n.consecutive, 'NORMAL', NOW()
+SELECT 100000, DATE_SUB(CURDATE(), INTERVAL n.days_ago DAY), n.consecutive, 'NORMAL', NOW()
 FROM (
-    SELECT 0 days_ago, 7 consecutive UNION ALL SELECT 1, 6 UNION ALL SELECT 2, 5
+    SELECT 0 days_ago, 7 consecutive UNION ALL SELECT 100000, 6 UNION ALL SELECT 2, 5
     UNION ALL SELECT 3, 4 UNION ALL SELECT 4, 3 UNION ALL SELECT 5, 2 UNION ALL SELECT 6, 1
 ) n
-WHERE NOT EXISTS (SELECT 1 FROM check_ins c WHERE c.user_id = 1 AND c.check_in_date = DATE_SUB(CURDATE(), INTERVAL n.days_ago DAY));
+WHERE NOT EXISTS (SELECT 1 FROM check_ins c WHERE c.user_id = 100000 AND c.check_in_date = DATE_SUB(CURDATE(), INTERVAL n.days_ago DAY));
 
 -- ========== 3. 钱包（user_wallet，积分=balance_cents 单位分 + 交友币表） ==========
 -- 3.1 user_wallet（交友币余额 2000 分 = 20 交友币）
 INSERT INTO user_wallet (user_id, balance_cents, frozen_cents, created_at, updated_at)
-SELECT 1, 2000, 0, NOW(), NOW()
+SELECT 100000, 2000, 0, NOW(), NOW()
 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM user_wallet w WHERE w.user_id = 1);
+WHERE NOT EXISTS (SELECT 1 FROM user_wallet w WHERE w.user_id = 10000000000);
 
 -- 3.2 wallet_transaction_log（获取/消费流水）
 INSERT INTO wallet_transaction_log (user_id, type, amount, balance_after, related_type, related_id, order_id, remark, created_at)
-SELECT 1, m.type, m.amount, m.balance, m.related_type, m.related_id, m.order_id, m.remark, DATE_SUB(NOW(), INTERVAL m.days_ago DAY)
+SELECT 100000, m.type, m.amount, m.balance, m.related_type, m.related_id, m.order_id, m.remark, DATE_SUB(NOW(), INTERVAL m.days_ago DAY)
 FROM (
     SELECT 'INCOME' type, 100 amount, 100 balance, 'CHECKIN' related_type, NULL related_id, CONCAT('txn-seed-in-1') order_id, '每日签到奖励' remark, 0 days_ago UNION ALL
     SELECT 'INCOME', 300, 400, 'TASK', NULL, 'txn-seed-in-2', '完成新人任务', 1 UNION ALL
@@ -71,7 +71,7 @@ FROM (
 WHERE NOT EXISTS (SELECT 1 FROM wallet_transaction_log w WHERE w.order_id = m.order_id);
 
 -- 同步余额为最新值
-UPDATE user_wallet SET balance_cents = 2000 WHERE user_id = 1;
+UPDATE user_wallet SET balance_cents = 2000 WHERE user_id = 100000;
 
 -- ========== 4. 超级账号语音介绍（users.bio 已有，语音存 voice 相关字段） ==========
 -- 4.1 检查是否有语音字段（若存在则填充；VoiceMessage 相关表可能不存在，用 app_config 存语音 URL 供前端读取）
@@ -174,6 +174,6 @@ WHERE NOT EXISTS (SELECT 1 FROM circle_topics ct WHERE ct.title = m.title);
 -- DELETE FROM app_config WHERE config_key LIKE 'link.%' OR config_key LIKE 'voice.%';
 -- DELETE FROM official_messages WHERE content IN (...);
 -- DELETE FROM wallet_transaction_log WHERE order_id LIKE 'txn-seed-%';
--- DELETE FROM user_wallet WHERE user_id = 1;
--- DELETE FROM check_ins WHERE user_id = 1;
+-- DELETE FROM user_wallet WHERE user_id = 100000;
+-- DELETE FROM check_ins WHERE user_id = 100000;
 -- DELETE FROM activities WHERE title IN ('校园春日联谊会','周末桌游之夜','校园歌手大赛决赛','骑行踏春活动','春季招聘会（往期）','迎新晚会（往期）','读书分享会');

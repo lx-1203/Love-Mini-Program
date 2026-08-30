@@ -197,7 +197,9 @@ public class RealPostTagService implements PostTagService {
                 post.getActivityId(),
                 null, // activity
                 Boolean.TRUE.equals(post.getIsPinned()),
-                List.of() // recentComments
+                List.of(), // recentComments
+                // 2026-08-26 R4：标签页列表最多 3 张图
+                parseJsonToList(post.getImages()).stream().limit(3).toList()
         );
     }
 

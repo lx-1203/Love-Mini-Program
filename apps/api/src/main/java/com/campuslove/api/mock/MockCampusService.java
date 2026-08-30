@@ -129,7 +129,9 @@ public class MockCampusService implements CampusService {
                         LocalDateTime.now(TimeZones.BUSINESS).minusHours(2).toString(), true, true, false,
                         42, false, 1280,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
-                        null, null, false, List.of()
+                        null, null, false, List.of(),
+                        // 2026-08-26 R4：mock 校园流硬编码帖子暂无图片数据，按空列表兜底
+                        List.of()
                 ),
                 new PostSummaryView(
                         102L, null, "高数考试自救小组招人啦！大二以上，认真不摸鱼。",
@@ -138,7 +140,9 @@ public class MockCampusService implements CampusService {
                         LocalDateTime.now(TimeZones.BUSINESS).minusHours(5).toString(), false, true, false,
                         22, false, 670,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
-                        null, null, false, List.of()
+                        null, null, false, List.of(),
+                        // 2026-08-26 R4：mock 校园流硬编码帖子暂无图片数据，按空列表兜底
+                        List.of()
                 ),
                 new PostSummaryView(
                         103L, null, "周末一起去后山看日出吧！记得带外套~",
@@ -147,7 +151,9 @@ public class MockCampusService implements CampusService {
                         LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).toString(), false, false, false,
                         29, false, 890,
                         // 2026-08-09 帖子关联活动 + 评论预览：mock 校园流无上下文，按 null/空列表兜底
-                        null, null, false, List.of()
+                        null, null, false, List.of(),
+                        // 2026-08-26 R4：mock 校园流硬编码帖子暂无图片数据，按空列表兜底
+                        List.of()
                 )
         );
     }

@@ -19,15 +19,15 @@ describe("Nearby v3 页面 smoke", () => {
     "utf-8"
   );
   const peopleSource = readFileSync(
-    resolve(__dirname, "../../pages/nearby/people.vue"),
+    resolve(__dirname, "../../subpackages/discover-extra/nearby/people.vue"),
     "utf-8"
   );
   const topicsSource = readFileSync(
-    resolve(__dirname, "../../pages/circles/topics.vue"),
+    resolve(__dirname, "../../subpackages/circles/circles/topics.vue"),
     "utf-8"
   );
   const campusHubSource = readFileSync(
-    resolve(__dirname, "../../pages/campus/hub.vue"),
+    resolve(__dirname, "../../subpackages/campus/campus/hub.vue"),
     "utf-8"
   );
 
@@ -76,7 +76,7 @@ describe("Nearby v3 页面 smoke", () => {
 
   it("认识 TA 统一进入他人主页（不直接 like/建聊天）", () => {
     const detailSource = readFileSync(
-      resolve(__dirname, "../../pages/village/detail.vue"),
+      resolve(__dirname, "../../subpackages/village/village/detail.vue"),
       "utf-8"
     );
     for (const src of [nearbySource, peopleSource, detailSource]) {
