@@ -29,6 +29,7 @@ const STUB_TARGETS = [
   "stores/campus/mock-data.ts",
   "stores/likes/mock-data.ts",
   "stores/messages/mock-data.ts",
+  "stores/circle/mock-data.ts",
   "i18n/locales/en-US.ts",
 ];
 

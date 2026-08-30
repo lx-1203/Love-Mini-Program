@@ -1,10 +1,17 @@
 /**
  * real 构建静态资源引用可达性清理（主包瘦身最后一道）。
  *
- * 背景：real 构建要求主包 ≤2MB。static/assets/icons/** 等目录由设计整包交付，
- * 含「图标预览_联系表.png」等非运行时资产与未被 config/images.ts 引用的图标行，
- * 累计数 MB。本脚本扫描 src 源码中出现的静态路径字面量，删除 dist 产物中
- * 不可达的静态文件（仅动 dist，不动 src 源资产）。
+ * 背景：real 构建要求主包 ≤2MB。static/assets/** 由设计整包交付，含大量
+ * 「运行时经 resolveMediaUrl 改写为后端 app-assets URL」的托管资产——这些文件
+ * 在 real 包内是死重量（dist 里带着但运行时永远走 HTTP）。
+ *
+ * 判定规则（2026-08-30 增强）：
+ *  1. 源码扫描收集两类引用：
+ *     - raw 引用：不在 resolveMediaUrl(...) 包裹内的路径字面量（含模板 src="/static/..."）
+ *     - wrapped 引用：resolveMediaUrl('...') 参数里的路径（运行时改写 → 后端托管）
+ *  2. dist/static 中被「raw 引用」的文件保留；仅被 wrapped 引用或完全无引用的文件，
+ *     若后端 app-assets 已托管同路径文件则删除，否则保留并告警。
+ *  3. icons/tabbar/**（wx.setTabBarItem 原生读取）与 audio/** 永不删除。
  *
  * 用法：node scripts/prune-unreferenced-static.mjs
  * 挂载：build:mp-weixin:real 链中 verify-package-size 之前。
@@ -17,6 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const clientDir = resolve(__dirname, "..");
 const srcDir = join(clientDir, "src");
 const distStatic = join(clientDir, "dist/build/mp-weixin/static");
+const backendAssetsDir = resolve(clientDir, "../../apps/api/uploads/app-assets");
 
 /** 递归收集 src 文本文件 */
 function walkSrc(dir, out = []) {
@@ -24,7 +32,7 @@ function walkSrc(dir, out = []) {
     const p = join(dir, name);
     const st = statSync(p);
     if (st.isDirectory()) {
-      if (name === "node_modules" || name === "static") continue; // static 目录本身不是引用方
+      if (name === "node_modules" || name === "static" || name === ".mimosa") continue;
       walkSrc(p, out);
     } else if (/\.(ts|vue|js|json|scss|css)$/.test(name)) {
       out.push(p);
@@ -33,18 +41,23 @@ function walkSrc(dir, out = []) {
   return out;
 }
 
-/** 收集引用片段集合（如 "icons/home/tabbar-top/icon_row1_01.png"） */
-const referenced = new Set();
+/** raw 引用（任意上下文，一律保留）与 wrapped 引用（仅出现在 resolveMediaUrl 行内） */
+const rawReferenced = new Set();
+const wrappedReferenced = new Set();
+const PATH_RE = /['"]\/?((?:[\w-]+\/)+[\w-]+\.(?:png|svg|jpg|jpeg|gif|webp))['"]/g;
 for (const f of walkSrc(srcDir)) {
-  const text = readFileSync(f, "utf-8");
-    // resolveMediaUrl(...) 参数为运行时改写路径：从扫描文本剔除，使对应文件不保留在 dist
-    const scanText = text.replace(/resolveMediaUrl\(\s*['"][^'"]+['"]\s*\)/g, "");
-  // 匹配相对 static/assets 之后的路径字面量：'/home/xx/yy.png'、"/svg-spec/.../a.svg" 等
-  // 允许前导 /（custom-tab-bar 的 "/static/assets/icons/tabbar/..."），否则误删 tabBar 图标
-  const re = /['"]\/?((?:[\w-]+\/)+[\w-]+\.(?:png|svg|jpg|jpeg|gif|webp))['"]/g;
-  let m;
-  while ((m = re.exec(scanText)) !== null) {
-    referenced.add(m[1]);
+  const lines = readFileSync(f, "utf-8").split(/\r?\n/);
+  for (const line of lines) {
+    // 先移除 resolveMediaUrl('...') 实参，剩下的路径字面量视为 raw
+    const stripped = line.replace(/resolveMediaUrl\(\s*['"][^'"]*['"]\s*(?:,[^)]*)?\)/g, "");
+    const isWrappedLine = /resolveMediaUrl\s*\(/.test(line);
+    let m;
+    PATH_RE.lastIndex = 0;
+    while ((m = PATH_RE.exec(stripped)) !== null) rawReferenced.add(m[1]);
+    if (isWrappedLine) {
+      PATH_RE.lastIndex = 0;
+      while ((m = PATH_RE.exec(line)) !== null) wrappedReferenced.add(m[1]);
+    }
   }
 }
 
@@ -58,46 +71,60 @@ function walkDist(dir, out = []) {
   return out;
 }
 
-/** 只清理这些「设计整包交付」目录（其余如 audio/mascot/message 全保留，避免误伤） */
+/** 清理范围：全部静态资产目录（tabbar/audio 另有硬保护） */
 const PRUNE_ROOTS = [
-  join(distStatic, "assets/icons"),
-  join(distStatic, "assets/profile"),
+  join(distStatic, "assets"),
   join(distStatic, "svg-spec"),
+];
+
+const NEVER_DELETE = [
+  /icons\/tabbar\//, // wx.setTabBarItem 原生读取
+  /\/audio\//, // 本地音频
+  /default-avatar\.(jpg|png)/, // 头像兜底（SafeImage 同步路径）
+  /app\.json|project\./, // 误配兜底
 ];
 
 let removedBytes = 0;
 let removedCount = 0;
+let keptMissingOnBackend = 0;
 for (const root of PRUNE_ROOTS) {
   if (!existsSync(root)) continue;
   for (const file of walkDist(root)) {
     const rel = file.slice(distStatic.length + 1).split(sep).join("/");
-    // 对每个文件，检查「从 assets/ 或根开始」的若干后缀是否命中引用集合
-    const parts = rel.split("/");
-    let hit = false;
-    for (let i = 0; i < parts.length; i++) {
-      const suffix = parts.slice(i).join("/");
-      if (referenced.has(suffix)) {
-        hit = true;
-        break;
-      }
-    }
+    if (NEVER_DELETE.some((re) => re.test(rel))) continue;
     // 联系表/预览图无论是否被引用都删（设计交付物，非运行时资产）
     const isPreviewSheet = /预览|联系表|preview/.test(file);
-    if (/icons\/tabbar\//.test(file)) continue; // tabBar 图标原生读取，永不删除
-    if (!hit || isPreviewSheet) {
-      removedBytes += statSync(file).size;
-      removedCount++;
-      if (existsSync(file)) unlinkSync(file);
+    // 计算各后缀是否命中引用集合
+    const parts = rel.split("/");
+    let rawHit = false;
+    for (let i = 0; i < parts.length; i++) {
+      const suffix = parts.slice(i).join("/");
+      if (rawReferenced.has(suffix)) { rawHit = true; break; }
     }
+    if (rawHit && !isPreviewSheet) continue; // raw 引用：保留
+    // 无 raw 引用（仅 wrapped 或无引用）→ 检查后端是否已托管
+    // 后端目录结构：uploads/app-assets/assets/images/...（即 dist static 相对路径原样映射）
+    const backendFile = join(backendAssetsDir, rel);
+    const backendOk = existsSync(backendFile);
+    if (!backendOk && !isPreviewSheet) {
+      keptMissingOnBackend++;
+      continue; // 后端没有同路径文件 → 保守保留
+    }
+    removedBytes += statSync(file).size;
+    removedCount++;
+    if (existsSync(file)) unlinkSync(file);
   }
   // 删除清空目录
   (function pruneEmpty(d) {
+    let emptied = true;
     for (const name of readdirSync(d)) {
       const p = join(d, name);
-      if (statSync(p).isDirectory()) pruneEmpty(p);
+      if (statSync(p).isDirectory()) { if (pruneEmpty(p)) continue; emptied = false; continue; }
+      emptied = false;
     }
-    if (readdirSync(d).length === 0) rmdirSync(d);
+    if (emptied && readdirSync(d).length === 0) { rmdirSync(d); return true; }
+    return false;
   })(root);
 }
 
-console.log(`[prune-static] removed ${removedCount} files, ${(removedBytes / 1024).toFixed(0)}KB`);
+console.log(`[prune-static] removed ${removedCount} files, ${(removedBytes / 1024).toFixed(0)}KB, kept(no backend copy): ${keptMissingOnBackend}`);
