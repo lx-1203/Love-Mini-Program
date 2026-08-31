@@ -791,6 +791,9 @@ public final class ErrorMessages {
     /** 圈子描述长度不能超过 256 字 */
     public static final String CIRCLE_DESC_MAX_LENGTH = "圈子描述长度不能超过 256 字";
 
+    /** 2026-08-31 圈子发帖成员校验：未加入圈子不允许在圈内发帖（前端选项过滤之外的越权兜底） */
+    public static final String CIRCLE_JOIN_REQUIRED = "请先加入该圈子，再在圈内发帖";
+
     /** 校区名长度不能超过 128 字 */
     public static final String CAMPUS_NAME_MAX_LENGTH = "校区名长度不能超过 128 字";
 

@@ -1923,7 +1923,7 @@ export default {
       contentTooLong: "Content cannot exceed {n} characters",
       privacyRequiredImage: "Please agree to the privacy policy before selecting images",
       publishFailed: "Post failed",
-      publishToGeneral: "Campus (General)",
+      publishToGeneral: "Public Square",
       visibilityCircleMembers: "Visible to circle members",
       visibilityPublic: "Visible to everyone",
       visibilityPrivate: "Only me",

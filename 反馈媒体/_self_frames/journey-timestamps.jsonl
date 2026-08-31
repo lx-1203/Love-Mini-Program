@@ -1,0 +1,76 @@
+﻿
+{"t": 3.672, "act": "nav", "sel": "reLaunch", "label": "冷启动登录页", "result": "ok"}
+{"t": 9.754, "act": "shot", "sel": "", "label": "00-login", "result": "ok"}
+{"t": 11.673, "act": "tap", "sel": ".checkbox", "label": "勾选同意协议", "result": "ok"}
+{"t": 13.494, "act": "tap", "sel": ".btn-guest", "label": "游客登录", "result": "ok"}
+{"t": 20.475, "act": "shot", "sel": "", "label": "01-after-login", "result": "ok"}
+{"t": 22.38, "act": "tap", "sel": ".match-actions__btn--like", "label": "寻觅-喜欢", "result": "fail"}
+{"t": 26.742, "act": "shot", "sel": "", "label": "02-discover-like", "result": "ok"}
+{"t": 28.654, "act": "tap", "sel": ".match-actions__btn--pass", "label": "寻觅-跳过", "result": "fail"}
+{"t": 33.082, "act": "shot", "sel": "", "label": "03-discover-pass", "result": "ok"}
+{"t": 34.904, "act": "tap", "sel": ".match-actions__btn--super", "label": "寻觅-超级喜欢", "result": "fail"}
+{"t": 39.784, "act": "shot", "sel": "", "label": "04-discover-super", "result": "ok"}
+{"t": 41.665, "act": "tap", "sel": ".discover-header__filter", "label": "寻觅-筛选抽屉", "result": "fail"}
+{"t": 45.425, "act": "shot", "sel": "", "label": "05-filter-drawer", "result": "ok"}
+{"t": 47.353, "act": "tap", "sel": ".filter-drawer__close", "label": "筛选-关闭", "result": "fail"}
+{"t": 49.813, "act": "tap", "sel": ".discover-header__tabs .discover-header__tab:nth-child(2)", "label": "寻觅-附近tab", "result": "fail"}
+{"t": 54.683, "act": "shot", "sel": "", "label": "06-discover-nearby", "result": "ok"}
+{"t": 56.578, "act": "tap", "sel": ".discover-header__tabs .discover-header__tab:nth-child(1)", "label": "寻觅-回推荐tab", "result": "fail"}
+{"t": 62.838, "act": "nav", "sel": "navigateTo", "label": "喜欢页", "result": "ok"}
+{"t": 68.962, "act": "shot", "sel": "", "label": "07-likes", "result": "ok"}
+{"t": 70.938, "act": "scroll", "sel": "600", "label": "scrollTo-600", "result": "ok"}
+{"t": 74.313, "act": "shot", "sel": "", "label": "08-likes-mid", "result": "ok"}
+{"t": 76.191, "act": "nav", "sel": "navigateBack", "label": "navigateBack ", "result": "ok"}
+{"t": 81.21, "act": "nav", "sel": "navigateTo", "label": "村口广场", "result": "ok"}
+{"t": 87.886, "act": "shot", "sel": "", "label": "09-village", "result": "ok"}
+{"t": 89.783, "act": "tap", "sel": ".channel-tab:nth-child(2)", "label": "村口-频道2", "result": "fail"}
+{"t": 94.813, "act": "shot", "sel": "", "label": "10-village-ch2", "result": "ok"}
+{"t": 96.687, "act": "tap", "sel": ".channel-tab:nth-child(3)", "label": "村口-频道3", "result": "fail"}
+{"t": 101.691, "act": "shot", "sel": "", "label": "11-village-ch3", "result": "ok"}
+{"t": 103.572, "act": "tap", "sel": ".channel-tab:nth-child(1)", "label": "村口-回频道1", "result": "fail"}
+{"t": 107.442, "act": "scroll", "sel": "700", "label": "scrollTo-700", "result": "ok"}
+{"t": 111.125, "act": "shot", "sel": "", "label": "12-village-scrolled", "result": "ok"}
+{"t": 112.978, "act": "tap", "sel": ".post-card", "label": "村口-帖子卡进详情", "result": "fail"}
+{"t": 119.017, "act": "shot", "sel": "", "label": "13-post-detail", "result": "ok"}
+{"t": 120.886, "act": "tap", "sel": ".author-inline__avatar", "label": "帖子-作者头像进主页", "result": "fail"}
+{"t": 126.971, "act": "shot", "sel": "", "label": "14-other-profile", "result": "ok"}
+{"t": 128.915, "act": "scroll", "sel": "700", "label": "scrollTo-700", "result": "ok"}
+{"t": 132.42, "act": "shot", "sel": "", "label": "15-other-profile-mid", "result": "ok"}
+{"t": 134.255, "act": "nav", "sel": "navigateBack", "label": "navigateBack ", "result": "ok"}
+{"t": 136.648, "act": "nav", "sel": "navigateBack", "label": "navigateBack ", "result": "fail"}
+{"t": 141.28, "act": "nav", "sel": "navigateTo", "label": "发帖页", "result": "ok"}
+{"t": 147.33, "act": "shot", "sel": "", "label": "16-publish", "result": "ok"}
+{"t": 149.218, "act": "tap", "sel": ".post-to__card", "label": "发帖-选择发布目标", "result": "ok"}
+{"t": 153.059, "act": "shot", "sel": "", "label": "17-target-sheet", "result": "ok"}
+{"t": 155.219, "act": "tap", "sel": ".post-target-sheet__option:nth-child(2)", "label": "发帖-选第2个目标", "result": "ok"}
+{"t": 159.109, "act": "shot", "sel": "", "label": "18-target-selected", "result": "ok"}
+{"t": 161.004, "act": "input", "sel": ".post-content__input", "label": "发帖-输入内容", "result": "ok"}
+{"t": 163.87, "act": "shot", "sel": "", "label": "19-publish-filled", "result": "ok"}
+{"t": 165.734, "act": "tap", "sel": ".post-header__submit", "label": "发帖-发布", "result": "ok"}
+{"t": 172.239, "act": "shot", "sel": "", "label": "20-publish-result", "result": "ok"}
+{"t": 176.417, "act": "nav", "sel": "switchTab", "label": "消息tab", "result": "ok"}
+{"t": 181.993, "act": "shot", "sel": "", "label": "21-messages", "result": "ok"}
+{"t": 183.967, "act": "tap", "sel": ".chat-item", "label": "消息-进入会话", "result": "fail"}
+{"t": 189.867, "act": "shot", "sel": "", "label": "22-chat", "result": "ok"}
+{"t": 191.867, "act": "input", "sel": ".wechat-input-bar__input", "label": "聊天-输入消息1", "result": "fail"}
+{"t": 194.627, "act": "shot", "sel": "", "label": "23-chat-typed", "result": "ok"}
+{"t": 196.541, "act": "tap", "sel": ".wechat-input-bar__send", "label": "聊天-发送1", "result": "fail"}
+{"t": 200.881, "act": "shot", "sel": "", "label": "24-chat-sent", "result": "ok"}
+{"t": 202.814, "act": "input", "sel": ".wechat-input-bar__input", "label": "聊天-输入消息2", "result": "fail"}
+{"t": 204.758, "act": "tap", "sel": ".wechat-input-bar__send", "label": "聊天-发送2", "result": "fail"}
+{"t": 209.079, "act": "shot", "sel": "", "label": "25-chat-sent2", "result": "ok"}
+{"t": 210.927, "act": "nav", "sel": "navigateBack", "label": "navigateBack ", "result": "fail"}
+{"t": 215.616, "act": "nav", "sel": "switchTab", "label": "我的tab", "result": "ok"}
+{"t": 221.027, "act": "shot", "sel": "", "label": "26-profile", "result": "ok"}
+{"t": 222.843, "act": "scroll", "sel": "700", "label": "scrollTo-700", "result": "ok"}
+{"t": 226.326, "act": "shot", "sel": "", "label": "27-profile-mid", "result": "ok"}
+{"t": 228.253, "act": "scroll", "sel": "1400", "label": "scrollTo-1400", "result": "ok"}
+{"t": 231.687, "act": "shot", "sel": "", "label": "28-profile-bottom", "result": "ok"}
+{"t": 235.624, "act": "nav", "sel": "switchTab", "label": "首页tab", "result": "ok"}
+{"t": 241.011, "act": "shot", "sel": "", "label": "29-home", "result": "ok"}
+{"t": 242.85, "act": "scroll", "sel": "700", "label": "scrollTo-700", "result": "ok"}
+{"t": 246.236, "act": "shot", "sel": "", "label": "30-home-mid", "result": "ok"}
+{"t": 250.533, "act": "nav", "sel": "switchTab", "label": "附近tab", "result": "ok"}
+{"t": 256.071, "act": "shot", "sel": "", "label": "31-nearby", "result": "ok"}
+{"t": 258.018, "act": "scroll", "sel": "700", "label": "scrollTo-700", "result": "ok"}
+{"t": 261.406, "act": "shot", "sel": "", "label": "32-nearby-mid", "result": "ok"}

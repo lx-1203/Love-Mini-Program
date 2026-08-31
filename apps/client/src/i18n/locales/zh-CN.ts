@@ -1937,7 +1937,7 @@ export default {
       "contentTooLong": "内容不能超过{n}字",
       "privacyRequiredImage": "需同意隐私协议后才能选择图片",
       "publishFailed": "发布失败",
-      "publishToGeneral": "校园圈（通用）",
+      "publishToGeneral": "公开广场",
       "visibilityCircleMembers": "圈内成员可见",
       "visibilityPublic": "所有人可见",
       "visibilityPrivate": "仅自己可见",

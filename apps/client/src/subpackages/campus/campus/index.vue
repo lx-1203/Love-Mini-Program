@@ -342,7 +342,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex-direction: column;
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  height: 100%;
+  min-height: 100%;
   background: $bg-page;
 }
 

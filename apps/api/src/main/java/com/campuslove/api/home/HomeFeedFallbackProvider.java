@@ -56,6 +56,7 @@ public class HomeFeedFallbackProvider {
         return List.of(
             new CommunityPostSummaryView(
                 1L,
+                1001L,
                 "林晓",
                 "/static/assets/images/people/person-01.png",
                 "摄影圈",

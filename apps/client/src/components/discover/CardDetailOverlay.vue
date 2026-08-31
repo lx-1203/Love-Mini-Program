@@ -34,7 +34,7 @@ import SafeImage from "../common/SafeImage.vue";
 import AvatarFrame from "../common/AvatarFrame.vue";
 import type { AvatarFrameId } from "../../config/avatar-frames";
 import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
-import { openAppPath } from "../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { isDev } from "../../config/env";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
@@ -649,7 +649,7 @@ function emitMessage() {
 function goToProfile() {
   if (!props.card) return;
   safeAction(() => {
-    openAppPath(`/pages/profile/index?userId=${encodeURIComponent(props.card!.userId)}`);
+    openUserProfile(props.card!.userId);
   }, t("cardDetail.profileNavFailed"));
 }
 

@@ -142,6 +142,11 @@ function openPost(postId: number) {
   openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
 }
 
+/** 2026-08-31：社区动态作者头像/昵称点击 → 他人大主页（无 authorId 时降级不跳转） */
+function onCommunityAuthorTap(post: { authorId?: number | null }) {
+  if (post?.authorId != null) openUserProfile(post.authorId);
+}
+
 function openCommunity() {
   // 统一发帖入口（P12）：首页底部「发帖」栏跳转标准发帖页
   openAppPath(ROUTES.VILLAGE.POST);
@@ -203,6 +208,7 @@ function openInvite() {
         @retry="() => homeStore.fetchDashboard()"
         @more="openCommunity"
         @select="openPost"
+        @open-author="onCommunityAuthorTap"
       />
 
       <view class="home-section-gap"></view>

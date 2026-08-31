@@ -43,6 +43,8 @@ export interface NearbyPersonViewModel {
 
 export interface CommunityPostViewModel {
   id: number;
+  /** 2026-08-31：作者 id——帖子头像/昵称点击跳转他人主页（缺失时降级不跳转） */
+  authorId?: number | null;
   authorName: string;
   authorAvatar: string | null;
   circleName: string;

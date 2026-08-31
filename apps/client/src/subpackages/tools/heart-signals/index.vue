@@ -10,7 +10,7 @@ import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../../stores/likes";
 import { useSessionStore } from "../../../stores/session";
 import { useChatStore } from "../../../stores/chat";
-import { openAppPath } from "../../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../../utils/navigation";
 // R4-00023：用户上传头像 URL 需经 resolveMediaUrl 重写鉴权代理路径（否则真实模式 403/404）
 import { resolveMediaUrl } from "../../../utils/media";
 import LockScreen from "../../../components/common/LockScreen.vue";
@@ -158,7 +158,7 @@ async function handleChat(signalId: string) {
 
 function goToUserProfile(userId: string) {
   if (!userId) return;
-  openAppPath(`/pages/profile/index?userId=${encodeURIComponent(userId)}`);
+  openUserProfile(userId);
 }
 
 function getCountdown(signalId: string): string {

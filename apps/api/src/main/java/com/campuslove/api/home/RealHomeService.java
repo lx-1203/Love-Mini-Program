@@ -634,6 +634,7 @@ public class RealHomeService implements HomeService {
                 User author = post.getAuthorId() == null ? null : authorMap.get(post.getAuthorId());
                 return new CommunityPostSummaryView(
                     post.getId(),
+                    post.getAuthorId(),
                     author != null ? author.getNickname() : String.valueOf(post.getAuthorId()),
                     author != null ? author.getAvatarUrl() : null,
                     post.getCategory() == null ? "" : post.getCategory().name(),

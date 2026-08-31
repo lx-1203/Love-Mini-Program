@@ -20,7 +20,7 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { useMessagesStore } from "../../../stores/messages";
 import { useReportStore } from "../../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
-import { openAppPath } from "../../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../../utils/navigation";
 // R4-00088：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../../constants/routes";
 import SafeImage from "../../../components/common/SafeImage.vue";
@@ -139,7 +139,9 @@ async function loadMoreComments(): Promise<void> {
 
 function goToUserProfile(userId: string | number | undefined) {
   if (userId == null || userId === "") return;
-  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${userId}`);
+  // 2026-08-31 修复：原跳转 pages/profile/index（tab 页，navigateTo 必失败）→
+  // 统一改 openUserProfile（subpackages/profile-extra/profile/other 他人大主页）
+  openUserProfile(userId);
 }
 
 /**
@@ -1110,8 +1112,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  height: 100%;
+  /* 2026-08-31 滚动断层修复：height:100% 会把根元素钉在一屏高——
+     长评论页无法上下滚动、超屏区域露出系统白底断层。改 min-height 让内容自然撑高。 */
+  min-height: 100%;
   background: $bg-page;
   /* ===== 2026-08-27 修复：帖子详情页强制浅色主题（对齐理想图 素材/理想效果图/帖子.png） =====
      页面默认跟随系统/设置深色模式（page[data-theme=dark] 覆盖 --c-* token），

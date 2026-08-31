@@ -24,7 +24,7 @@ import { getToken } from "../../../services/http";
 import { useCircleStore } from "../../../stores/circle";
 import { useActivityStore } from "../../../stores/activity";
 import { useDailyQuestionStore } from "../../../stores/daily-question";
-import { openAppPath, consumeTabQuery } from "../../../utils/navigation";
+import { openAppPath, consumeTabQuery, openUserProfile } from "../../../utils/navigation";
 // 2026-08-10 切换提速：村子页频道数据 30s TTL（onShow 免重复全量重拉）
 import { isCacheFresh, setCachedValue } from "../../../utils/cache-ttl";
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -318,7 +318,8 @@ function goToDetail(postId: string) {
 
 function goToAuthorProfile(authorId: string) {
   if (!authorId) return;
-  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(authorId)}`);
+  // 2026-08-31 修复：tab 页无法 navigateTo → 他人大主页
+  openUserProfile(authorId);
 }
 
 function goToTagPosts(tagName: string) {
@@ -819,7 +820,7 @@ onShareAppMessage(() => ({
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   background: var(--c-gradient-page);
   overflow: hidden;
 }

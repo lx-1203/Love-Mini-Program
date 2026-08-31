@@ -152,6 +152,7 @@ public class MockHomeService implements HomeService {
         List.of(
                         new CommunityPostSummaryView(
                 1L,
+                1001L,
                 "林晓",
                 "/static/assets/images/people/person-01.png",
                 "摄影圈",
@@ -163,6 +164,7 @@ public class MockHomeService implements HomeService {
             ),
             new CommunityPostSummaryView(
                 2L,
+                1003L,
                 "阿辰",
                 "/static/assets/images/people/person-02.png",
                 "旅行圈",
@@ -174,6 +176,7 @@ public class MockHomeService implements HomeService {
             ),
             new CommunityPostSummaryView(
                 3L,
+                1005L,
                 "草莓奶酪",
                 "/static/assets/images/people/person-03.png",
                 "美食圈",

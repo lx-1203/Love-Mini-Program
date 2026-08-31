@@ -12,6 +12,8 @@ defineProps<{
 defineEmits<{
   (e: "more"): void;
   (e: "select", id: number): void;
+  /** 2026-08-31：帖子作者头像/昵称点击 → 跳他人主页（payload 为整条 post，含 authorId） */
+  (e: "openAuthor", post: { authorId?: number | null; authorName?: string }): void;
   /** 2026-08-26 R1：错误态重试 */
   (e: "retry"): void;
 }>();
@@ -49,8 +51,10 @@ defineEmits<{
       <view class="community-feed__list">
         <view v-for="post in items" :key="post.id" class="post-card" @tap="$emit('select', post.id)">
           <view class="post-card__head">
-            <image class="post-card__avatar" :src="post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
-            <view class="post-card__author">
+            <view class="post-card__author-tap" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
+              <image class="post-card__avatar" :src="post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+            </view>
+            <view class="post-card__author" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
               <view class="post-card__name-row">
                 <text class="post-card__name">{{ post.authorName }}</text>
                 <text class="post-card__school">· {{ post.circleName }}</text>
@@ -234,6 +238,15 @@ defineEmits<{
   border-radius: 50%;
   background: #F0F2F5;
   flex-shrink: 0;
+}
+
+/* 2026-08-31：作者头像点击热区（跳他人主页） */
+.post-card__author-tap {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin: -8rpx;
+  padding: 8rpx;
+  border-radius: 50%;
 }
 
 .post-card__author {

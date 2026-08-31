@@ -113,11 +113,12 @@ $text-vip: #C9A36A;
 $text-primary: #1A1E1C;
 $text-secondary: #4A524E;
 // Phase 0: 中性色体系修正 — 对齐设计规范
+// 2026-08-31 主题底色统一浅绿（用户验收：整体底色=浅绿，页面间不得出现白/灰断层）
 $text-tertiary: #6B7571;
 $text-quaternary: #9AA39F;
-$bg-page: #F7FAF9;
+$bg-page: #EEF7F2;
 $bg-container: #FFFFFF;
-$bg-surface: #F7FAF9;
+$bg-surface: #F3FAF6;
 $bg-overlay: rgba(15, 23, 42, 0.45);
 $bg-brand: #E8FBF2;
 
@@ -168,9 +169,10 @@ $gradient-pink: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
 // VIP 暖金棕渐变：12deg 角度对齐青藤参考
 $gradient-vip: linear-gradient(12deg, #C9A36A 0%, #E8C98A 100%);
 $gradient-match: linear-gradient(135deg, #E8FAF3 0%, #FDF2F8 100%);
-$gradient-page: linear-gradient(180deg, #FFECEF 0%, #F7FAF9 100%);
-// 浪漫粉绿页面渐变（青藤参考 · 寻觅页氛围背景）：粉→薄荷绿→中性灰三段过渡
-$gradient-page-romance: linear-gradient(180deg, #FFECEF 0%, #E8FAF3 50%, #F7FAF9 100%);
+// 2026-08-31 主题底色统一浅绿：页面级渐变改为青藤绿浅色系（原粉头渐变与浅绿主题冲突）
+$gradient-page: linear-gradient(180deg, #DFF3EA 0%, #EEF7F2 100%);
+// 浪漫粉绿页面渐变（青藤参考 · 寻觅页氛围背景）：粉→薄荷绿→中性绿三段过渡
+$gradient-page-romance: linear-gradient(180deg, #FFECEF 0%, #E8FAF3 50%, #EEF7F2 100%);
 $gradient-card-atmosphere: linear-gradient(135deg, rgba(54, 201, 154, 0.04) 0%, rgba(255, 107, 129, 0.02) 100%);
 $gradient-brand-overlay: linear-gradient(180deg, rgba(54, 201, 154, 0.08) 0%, transparent 100%);
 $gradient-float-btn: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
@@ -567,17 +569,18 @@ page {
   --c-bubble-other: #{$bubble-other};
 
   /* ===== 2026-08-26 R3：聊天气泡尺寸规范（统一双方，仅颜色/方向差异） ===== */
-  // PRD R3 口径：最大宽度 84%、padding 上下16rpx 左右24rpx、主圆角 20rpx、
-  // 尾巴 4rpx（self 右上 / peer 左上）、阴影统一禁用、头像 64rpx/白边2rpx、
-  // 正文 30rpx 行高1.6、emoji 56rpx、送达状态图标 20rpx
-  --bubble-max-width: 84%;
+  // 2026-08-31 对齐微信真机观感（用户验收：气泡不可过大、字号统一）：
+  // 最大宽度 70%、padding 上下16rpx 左右24rpx（≈微信 8px/12px）、主圆角 16rpx、
+  // 正文 32rpx（=16pt 微信标准字号）行高 1.45、行内 emoji 与正文同字号、
+  // 纯 emoji 消息 56rpx、送达状态图标 20rpx
+  --bubble-max-width: 70%;
   --bubble-padding-y: 16rpx;
   --bubble-padding-x: 24rpx;
-  --bubble-radius-main: 20rpx;
+  --bubble-radius-main: 16rpx;
   --bubble-radius-tail: 4rpx;
   --bubble-shadow: none;                // 决策①：统一禁用
-  --bubble-font-size: 30rpx;
-  --bubble-line-height: 1.6;
+  --bubble-font-size: 32rpx;
+  --bubble-line-height: 1.45;
   --bubble-emoji-font-size: 56rpx;
   --bubble-avatar-size: 64rpx;
   --bubble-avatar-border: 2rpx solid var(--c-bg-container);

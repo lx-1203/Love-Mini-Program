@@ -594,7 +594,7 @@ defineExpose({ goToAuthorProfile });
   flex-direction: column;
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  height: 100%;
+  min-height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
   overflow: hidden;
 }

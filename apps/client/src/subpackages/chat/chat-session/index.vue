@@ -38,7 +38,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { ROUTES } from "../../../constants/routes";
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { lightHaptic } from "../../../utils/haptic";
-import { openAppPath } from "../../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../../utils/navigation";
 // 2026-08-09 微信 1:1 重构：正在输入头像 / 转发会话头像的媒体 URL 解析
 import { resolveMediaUrl, chooseImages } from "../../../utils/media";
 import { wsClient } from "../../../services/websocket";
@@ -229,7 +229,7 @@ function goSignalProfile() {
   // P0-1 修复（2026-08-08）：profile 是 tabBar 页，navigateTo 会 fail（can not navigateTo
   // a tabbar page）→ 改用 openAppPath（switchTab + pending-tab-query 桥接传 userId）
   // R4-00076：路径走 ROUTES 常量，避免硬编码
-  openAppPath(`${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(resolvedPeerId)}`);
+  openUserProfile(resolvedPeerId);
 }
 
 /**
@@ -834,7 +834,7 @@ onShareAppMessage(() => {
       : t("chat.privateMessageTitle");
   return {
     title: t("profile.shareProfileTitle", { name }),
-    path: `${ROUTES.PROFILE.INDEX}?userId=${encodeURIComponent(String(peerId))}`,
+    path: `/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(String(peerId))}`,
   };
 });
 

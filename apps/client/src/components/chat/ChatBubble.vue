@@ -185,7 +185,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
                兼容历史消息 / 后端字符串 / 跨端一致的 emoji 渲染 -->
           <EmojiText
             :text="body"
-            :emoji-size="kind === 'emoji' ? '56rpx' : '36rpx'"
+            :emoji-size="kind === 'emoji' ? '56rpx' : '32rpx'"
             text-class="bubble__body"
             :class="kind === 'emoji' ? 'bubble__body bubble__body--emoji' : 'bubble__body'"
           />
@@ -278,8 +278,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 .bubble--assistant {
   background: #E8F8F1;
   color: #222222;
-  border-radius: 20rpx 20rpx 20rpx 4rpx;
-  max-width: 560rpx;
+  border-radius: 16rpx 16rpx 16rpx 4rpx;
+  max-width: var(--bubble-max-width, 70%);
 }
 
 /* 对方气泡：白/浅灰底 + 深字、无阴影（微信白气泡无投影），左上小圆角贴近头像 */

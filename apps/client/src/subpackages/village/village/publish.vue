@@ -36,7 +36,8 @@ const content = ref("");
 const images = ref<string[]>([]);
 const topics = ref<string[]>([]);
 const location = ref("");
-const visibility = ref("circle_members");
+// 2026-08-31：默认目标为公开广场 → 默认所有人可见；选择圈子目标时联动为圈内成员可见
+const visibility = ref("public");
 const tipVisible = ref(true);
 const submitting = ref(false);
 
@@ -112,6 +113,8 @@ function selectTarget(circle: CircleItem) {
   targetType.value = "circle";
   targetId.value = Number(circle.id);
   targetCircle.value = circle;
+  // 圈子目标 → 圈内成员可见（与目标语义联动）
+  visibility.value = "circle_members";
   targetOpen.value = false;
 }
 
@@ -119,6 +122,8 @@ function chooseGeneral() {
   targetType.value = "general";
   targetId.value = null;
   targetCircle.value = null;
+  // 公开广场 → 所有人可见
+  visibility.value = "public";
   targetOpen.value = false;
 }
 
@@ -126,6 +131,8 @@ function chooseCampus() {
   targetType.value = "campus";
   targetId.value = null;
   targetCircle.value = null;
+  // 校园圈 → 校园成员可见（公开语义，校内公开）
+  visibility.value = "public";
   targetOpen.value = false;
 }
 
@@ -347,8 +354,12 @@ async function submitPublish() {
         uni.reLaunch({ url: "/subpackages/village/village/index" });
       }
     }, 400);
-  } catch (_e) {
-    uni.showToast({ title: villageStore.errorMessage || t("village.post.publishFailed"), icon: "none" });
+  } catch (e) {
+    // 2026-08-31：优先展示后端具体原因（如「请先加入该圈子，再在圈内发帖」）
+    const msg = e instanceof Error && e.message
+      ? e.message
+      : circleStore.errorMessage || villageStore.errorMessage || t("village.post.publishFailed");
+    uni.showToast({ title: msg, icon: "none" });
   } finally {
     submitting.value = false;
   }

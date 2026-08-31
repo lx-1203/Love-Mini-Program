@@ -702,7 +702,10 @@ public class RealAuthService implements AuthService {
             newUser.setOpenid("guest:" + UUID.randomUUID().toString().replace("-", ""));
             newUser.setPhone(null);
             newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            newUser.setNickname("星野");
+            // 2026-08-31 推荐去重根因修复：昵称不再硬编码「星野」，
+            // 插入时用临时昵称（此时 id 未生成），provisionGuestProfile
+            // 拿到真实 id 后按人格池分配最终昵称/资料/头像
+            newUser.setNickname("体验用户");
             newUser.setRole("USER");
             newUser.setStatus("active");
             newUser.setProfileCompletion(0);
@@ -749,21 +752,31 @@ public class RealAuthService implements AuthService {
      */
     private void provisionGuestProfile(User user) {
         Long userId = user.getId();
+        // 2026-08-31 推荐去重根因修复：按 userId 从人格池取稳定人格，
+        // 不同体验账号获得不同昵称/头像/兴趣/院系，列表不再「千人一面星野」
+        GuestPersona persona = GuestPersona.forId(userId);
+        user.setNickname(persona.nickname());
+        user.setUpdatedAt(java.time.LocalDateTime.now(TimeZones.BUSINESS));
+        try {
+            userRepository.save(user);
+        } catch (Exception ex) {
+            log.warn("体验账号人格昵称回写失败（不影响登录）: {}", ex.getMessage());
+        }
         try {
             // 1. 基本资料（昵称/简介/年级/代词/兴趣标签/身高/学历/婚况/籍贯/未来城市）
             if (userBasicProfileRepository.findByUserId(userId).isEmpty()) {
                 UserBasicProfile basic = new UserBasicProfile();
                 basic.setUserId(userId);
-                basic.setNickname("星野");
-                basic.setBio("喜欢慢跑和散步，期待遇见有趣的人");
+                basic.setNickname(persona.nickname());
+                basic.setBio(persona.bio());
                 basic.setGradeLabel("大三");
                 basic.setPronouns("TA");
                 // 第五轮（2026-08-30）R1：补齐性别/出生年份——推荐卡片依赖
                 // user_basic_profile.gender 与 birth_year 渲染「年龄+性别」小标，
                 // 此前缺失导致寻觅/附近卡片与理想图不一致（age/gender 为 null）
-                basic.setGender("female");
-                basic.setBirthYear(2003);
-                basic.setInterestTags("[\"旅行\",\"摄影\",\"音乐\",\"电影\"]");
+                basic.setGender(persona.gender());
+                basic.setBirthYear(persona.birthYear());
+                basic.setInterestTags(persona.interestTagsJson());
                 basic.setHeight(170);
                 basic.setEducationLevel("bachelor");
                 basic.setRelationshipStatus("never");
@@ -771,10 +784,10 @@ public class RealAuthService implements AuthService {
                 basic.setHometownCity("北京");
                 basic.setFutureCity("北京");
                 basic.setFuturePlanTags("[\"旅行\",\"读书\",\"事业\",\"健康\"]");
-                // v3 冻结：体验账号使用真人素材（person-01：头像/相册/半身/背景）
-                basic.setPhotoGallery("[\"/static/assets/images/people/person-01.png\"]");
-                basic.setHalfBodyPhotoUrl("/static/assets/images/people/person-01.png");
-                basic.setProfileBackgroundUrl("/static/assets/images/people/person-01.png");
+                // v3 冻结：体验账号使用真人素材（按人格分配 person-0N：头像/相册/半身/背景）
+                basic.setPhotoGallery("[\"" + persona.avatarPath() + "\"]");
+                basic.setHalfBodyPhotoUrl(persona.avatarPath());
+                basic.setProfileBackgroundUrl(persona.avatarPath());
                 userBasicProfileRepository.save(basic);
             }
             // 2. 校园资料（直接置为已认证通过）
@@ -782,8 +795,8 @@ public class RealAuthService implements AuthService {
                 UserCampusProfile campus = new UserCampusProfile();
                 campus.setUserId(userId);
                 campus.setCityName("北京");
-                campus.setCampusName("北京大学");
-                campus.setDepartmentName("设计学院");
+                campus.setCampusName(persona.campusName());
+                campus.setDepartmentName(persona.departmentName());
                 campus.setVerificationStatus("verified");
                 userCampusProfileRepository.save(campus);
             }
@@ -792,7 +805,7 @@ public class RealAuthService implements AuthService {
                     && realNameCertificationRepository.findByUserId(userId).isEmpty()) {
                 RealNameCertification rn = new RealNameCertification();
                 rn.setUserId(userId);
-                rn.setUserName("星野");
+                rn.setUserName(persona.nickname());
                 // 2026-08-15 修复：id_card_no 为 NOT NULL 且需 AES-GCM 密文落库
                 // （禁止明文），此前未设置导致体验账号预填插入失败（Column 'id_card_no' cannot be null）
                 rn.setIdCardNo(aesEncryptor.encrypt("DEMO-GUEST-000000000000000000"));

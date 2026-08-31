@@ -10,7 +10,7 @@ import { ref, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
-import { openAppPath } from "../../../utils/navigation";
+import { openAppPath, openUserProfile } from "../../../utils/navigation";
 import { resolveMediaUrl } from "../../../utils/media";
 // 2026-08-09：返回键图标需要 IMAGE_PATHS
 import { IMAGE_PATHS } from "../../../config/images";
@@ -118,7 +118,7 @@ function goToDetail(item: PostHistoryItem): void {
 /** 点击头像进入用户主页 */
 function goToUserProfile(userId: string | undefined): void {
   if (!userId) return;
-  openAppPath(`/pages/profile/index?userId=${userId}`);
+  openUserProfile(userId);
 }
 
 onLoad(() => {

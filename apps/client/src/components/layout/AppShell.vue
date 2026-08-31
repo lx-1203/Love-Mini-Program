@@ -243,11 +243,13 @@ function focusMainContent(): void {
 
 <style scoped lang="scss">
 .shell {
+  /* 2026-08-31 滚动断层修复：禁止锁死 height:100%——
+     根元素被钉在一屏高后，超屏内容既撑不开页面滚动高度（页面无法上下滚动），
+     又会露出系统默认底色（与主题浅绿断层）。仅保留 min-height 让内容自然撑高。 */
   min-height: 100%;
-  height: 100%;
   box-sizing: border-box;
   // 默认页面背景
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 // 背景变体

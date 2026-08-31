@@ -1144,7 +1144,10 @@ export const useVillageStore = defineStore("village", {
         // 调用后端 API: GET /api/posts/{postId}/similar-authors（P2-13：userId 由后端 JWT 获取）
         const data = await fetchSimilarAuthorsApi(postId);
 
-        this.similarAuthors = (data.authors ?? []).map((a: SimilarAuthor) => ({
+        // 2026-08-31 推荐去重（用户验收红线：同一个人在列表里不允许出现两次）：
+        // ①按 userId 去重；②按「昵称+头像」视觉去重——种子期多个账号同名同头像时
+        // 对用户而言就是同一个人，必须只展示一次。
+        const mapped = (data.authors ?? []).map((a: SimilarAuthor) => ({
           userId: String(a.userId ?? ""),
           name: String(a.nickname ?? a.name ?? ""),
           avatar: String(a.avatarUrl ?? a.avatar ?? ""),
@@ -1154,6 +1157,16 @@ export const useVillageStore = defineStore("village", {
           commonInterests: Array.isArray(a.commonInterests) ? a.commonInterests : [],
           isFollowed: Boolean(a.isFollowed ?? false),
         }));
+        const seenIds = new Set<string>();
+        const seenVisual = new Set<string>();
+        this.similarAuthors = mapped.filter((u) => {
+          if (!u.userId || seenIds.has(u.userId)) return false;
+          const visualKey = `${u.name}|${u.avatar}`;
+          if (seenVisual.has(visualKey)) return false;
+          seenIds.add(u.userId);
+          seenVisual.add(visualKey);
+          return true;
+        });
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.loadSimilarAuthorsFailed"); // infra R2-00038
       } finally {

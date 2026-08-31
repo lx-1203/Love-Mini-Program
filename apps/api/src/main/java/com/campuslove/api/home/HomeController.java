@@ -181,6 +181,7 @@ record NearbyPersonSummaryView(
 
 record CommunityPostSummaryView(
     Long id,
+    Long authorId,
     String authorName,
     String authorAvatar,
     String circleName,

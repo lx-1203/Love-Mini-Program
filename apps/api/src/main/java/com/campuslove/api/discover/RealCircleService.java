@@ -1,6 +1,7 @@
 package com.campuslove.api.discover;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
@@ -404,6 +405,16 @@ public class RealCircleService implements CircleService {
 
         // 验证圈子是否存在
         InterestCircle circle = findCircleOrThrow(circleId);
+
+        // 2026-08-31 成员权限校验（用户验收：只有加入了圈子才能在圈子里发帖）。
+        // 此前端只过滤了 UI 选项，后端不校验——任意圈 id 都可发帖，属越权漏洞。
+        // OperationForbiddenException → 403 + 用户可读 message（全局异常处理器透传）。
+        boolean isMember = circle.getId() != null
+                && !circleMembershipRepository
+                        .findByUserIdAndCircleId(authorId, circle.getId()).isEmpty();
+        if (!isMember) {
+            throw new OperationForbiddenException(ErrorMessages.CIRCLE_JOIN_REQUIRED);
+        }
 
         // FIN-00039 修复：标题与内容做敏感词过滤（与 VillagePostService 用法一致），
         // 过滤策略为替换为 *** 而非拒绝发布，保证用户体验
