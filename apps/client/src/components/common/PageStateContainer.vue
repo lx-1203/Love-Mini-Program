@@ -35,10 +35,13 @@
     <!-- 空态 -->
     <view v-else-if="state === 'empty'" class="state-slot state-empty">
       <slot name="empty">
+        <view @tap.capture="onEmptyAreaTap">
         <EmptyState
           :description="emptyText"
+          :action-text="emptyActionText"
           :image="emptyImage"
         />
+        </view>
       </slot>
     </view>
 
@@ -82,6 +85,8 @@ interface Props {
   emptyImage?: string;
   /** 是否显示重试按钮 */
   retryable?: boolean;
+  /** 2026-08-31 Phase 1：空态 CTA 按钮文案（竞品规范：空态必须带去路） */
+  emptyActionText?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -112,11 +117,20 @@ defineExpose({ regionAriaLabel });
 
 const emit = defineEmits<{
   (e: "retry"): void;
+  /** 2026-08-31 Phase 1：空态 CTA 点击（配合 emptyActionText 使用，给空态去路） */
+  (e: "emptyAction"): void;
 }>();
 
 /** 处理重试事件 */
 function handleRetry(): void {
   emit("retry");
+}
+
+/** 空态区域点击（仅当配置了 CTA 文案时转发，给空态去路） */
+function onEmptyAreaTap(): void {
+  if (props.emptyActionText) {
+    emit("emptyAction");
+  }
 }
 </script>
 
