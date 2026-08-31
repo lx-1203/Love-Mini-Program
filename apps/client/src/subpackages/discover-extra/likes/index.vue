@@ -620,6 +620,7 @@ onShareAppMessage(() => {
         <view class="likes-search__box">
           <image class="likes-search__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
           <input
+  cursor-spacing="20"
             class="likes-search__input"
             type="text"
             :value="searchInput"

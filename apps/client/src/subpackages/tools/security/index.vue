@@ -678,6 +678,7 @@ async function submitDeleteAccount(): Promise<void> {
       <view class="sec-modal" @tap.stop>
         <text class="sec-modal__title">{{ t('security.phone') }}</text>
         <input
+  cursor-spacing="20"
           v-model="newPhone"
           class="sec-modal__input"
           type="number"
@@ -686,6 +687,7 @@ async function submitDeleteAccount(): Promise<void> {
           placeholder-class="sec-modal__placeholder"
         />
         <input
+  cursor-spacing="20"
           v-model="changePhonePassword"
           class="sec-modal__input"
           type="password"
@@ -721,6 +723,7 @@ async function submitDeleteAccount(): Promise<void> {
       <view class="sec-modal" @tap.stop>
         <text class="sec-modal__title">{{ t('security.changePassword') }}</text>
         <input
+  cursor-spacing="20"
           v-model="oldPassword"
           class="sec-modal__input"
           type="password"
@@ -728,6 +731,7 @@ async function submitDeleteAccount(): Promise<void> {
           placeholder-class="sec-modal__placeholder"
         />
         <input
+  cursor-spacing="20"
           v-model="newPassword"
           class="sec-modal__input"
           type="password"
@@ -735,6 +739,7 @@ async function submitDeleteAccount(): Promise<void> {
           placeholder-class="sec-modal__placeholder"
         />
         <input
+  cursor-spacing="20"
           v-model="confirmPassword"
           class="sec-modal__input"
           type="password"
@@ -799,12 +804,14 @@ async function submitDeleteAccount(): Promise<void> {
         <text class="sec-modal__title">{{ t('security.deleteAccount') }}</text>
         <text class="sec-modal__body">{{ t('security.deleteTypeHint') }}</text>
         <input
+  cursor-spacing="20"
           v-model="deleteConfirmText"
           class="sec-modal__input"
           :placeholder="t('security.deleteTypePlaceholder')"
           placeholder-class="sec-modal__placeholder"
         />
         <input
+  cursor-spacing="20"
           v-model="deletePassword"
           class="sec-modal__input"
           type="password"

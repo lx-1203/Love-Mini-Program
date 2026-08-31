@@ -176,6 +176,7 @@ function goBack() {
         <image class="campus-search__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
       </view>
       <input
+  cursor-spacing="20"
         v-model="searchKeyword"
         class="campus-search__input"
         :placeholder="t('campusHub.searchPlaceholder')"

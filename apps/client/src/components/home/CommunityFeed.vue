@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
 
@@ -17,6 +18,26 @@ defineEmits<{
   /** 2026-08-26 R1：错误态重试 */
   (e: "retry"): void;
 }>();
+
+/**
+ * 2026-08-31 修复「社区动态大图 24s 灰占位无终态」：
+ * 图片加载失败（URL 失效/网络异常）时原生 image 会永久停在灰占位。
+ * 这里记录失败的 key，失败后切换为默认占位图/纯色块，保证有终态。
+ */
+const failedKeys = ref<Set<string>>(new Set());
+function onImageError(key: string) {
+  if (!key || failedKeys.value.has(key)) return;
+  failedKeys.value = new Set(failedKeys.value).add(key);
+}
+function isFailed(key: string): boolean {
+  return failedKeys.value.has(key);
+}
+function avatarSrc(post: CommunityPostViewModel): string {
+  return isFailed(`avatar-${post.id}`) ? IMAGE_PATHS.DEFAULT_AVATAR : (post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR);
+}
+function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): string {
+  return isFailed(`img-${post.id}-${idx}`) ? "" : img;
+}
 </script>
 
 <template>
@@ -52,7 +73,7 @@ defineEmits<{
         <view v-for="post in items" :key="post.id" class="post-card" @tap="$emit('select', post.id)">
           <view class="post-card__head">
             <view class="post-card__author-tap" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
-              <image class="post-card__avatar" :src="post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+              <image class="post-card__avatar" :src="avatarSrc(post)" mode="aspectFill" alt="" @error="onImageError(`avatar-${post.id}`)" />
             </view>
             <view class="post-card__author" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
               <view class="post-card__name-row">
@@ -67,7 +88,17 @@ defineEmits<{
           </view>
           <text class="post-card__content">{{ post.content }}</text>
           <view v-if="post.images.length" class="post-card__images">
-            <image v-for="img in post.images.slice(0, 3)" :key="img" class="post-card__img" :src="img" mode="aspectFill" alt="" />
+            <view v-for="(img, idx) in post.images.slice(0, 3)" :key="img" class="post-card__img-wrap">
+              <image
+                v-if="postImgSrc(post, img, idx)"
+                class="post-card__img"
+                :src="postImgSrc(post, img, idx)"
+                mode="aspectFill"
+                alt=""
+                @error="onImageError(`img-${post.id}-${idx}`)"
+              />
+              <view v-else class="post-card__img post-card__img--placeholder" />
+            </view>
           </view>
           <view class="post-card__meta">
             <view class="post-card__stat-item">
@@ -320,6 +351,23 @@ defineEmits<{
   border-radius: 10rpx;
   object-fit: cover;
   background: #F0F2F5;
+}
+
+.post-card__img-wrap {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 10rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 图片加载失败占位：纯色块（与灰占位区分，标识为已降级终态） */
+.post-card__img--placeholder {
+  display: block;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 10rpx;
+  background: #EAF6F1;
 }
 
 .post-card__meta {

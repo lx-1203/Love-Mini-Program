@@ -408,6 +408,8 @@ public class RealMatchService implements MatchService {
     public List<LikedUserView> getLikedMe(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Like> likes = likeRepository.findByTargetUserIdAndStatus(userId, LikeStatus.active);
+        // 2026-08-31 待办：稳定排序（喜欢时间倒序 + id 倒序兜底），避免「喜欢我的」两次进入顺序不一致
+        likes = sortLikesNewestFirst(likes);
         return mapToLikedUserViews(likes, Like::getUserId, Like::getTargetUserId,
                 WalletUnlock.TARGET_TYPE_LIKED_ME, userId);
     }
@@ -417,8 +419,23 @@ public class RealMatchService implements MatchService {
     public List<LikedUserView> getMyLikes(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Like> likes = likeRepository.findByUserIdAndStatus(userId, LikeStatus.active);
+        // 2026-08-31 待办：稳定排序（与 getLikedMe 同口径）
+        likes = sortLikesNewestFirst(likes);
         // 我的喜欢列表（我发出的）不涉及解锁查看，unlocked 恒为 true（unlockTargetType 传 null）
         return mapToLikedUserViews(likes, Like::getTargetUserId, Like::getUserId, null, userId);
+    }
+
+    /**
+     * 2026-08-31 待办：喜欢记录稳定排序（createdAt 倒序，id 倒序兜底）。
+     * 数据库返回顺序不稳定时，保证两次进入「喜欢我的/我的喜欢」列表顺序一致。
+     */
+    private List<Like> sortLikesNewestFirst(List<Like> likes) {
+        return likes.stream()
+                .sorted(java.util.Comparator
+                        .comparing(Like::getCreatedAt, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                        .reversed()
+                        .thenComparing(java.util.Comparator.comparing(Like::getId).reversed()))
+                .toList();
     }
 
     /** 将 Like 列表转换为 LikedUserView 列表，复用批量预加载避免 N+1。 */
@@ -464,6 +481,13 @@ public class RealMatchService implements MatchService {
     public List<VisitorView> getVisitors(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Visitor> visitors = matchRecorder.findVisitors(userId);
+        // 2026-08-31 待办：稳定排序（访问时间倒序 + id 倒序兜底），避免访客列表两次进入顺序不一致
+        visitors = visitors.stream()
+                .sorted(java.util.Comparator
+                        .comparing(Visitor::getCreatedAt, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                        .reversed()
+                        .thenComparing(java.util.Comparator.comparing(Visitor::getId).reversed()))
+                .toList();
         List<Long> visitorIds = visitors.stream().map(Visitor::getVisitorId).distinct().toList();
         Map<Long, User> userMap = matchRecorder.batchLoadUsers(visitorIds);
         Map<Long, UserCampusProfile> campusMap = matchRecorder.batchLoadCampusProfiles(visitorIds);

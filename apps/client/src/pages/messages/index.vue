@@ -163,7 +163,10 @@ function onSessionLongpress(session: MessageSession) {
 
 function loadPage() {
   if (!isUnlocked.value) return;
-  void Promise.all([messagesStore.bootstrap(), likesStore.fetchLikes().catch(() => {})]);
+  void Promise.all([messagesStore.bootstrap(), likesStore.fetchLikes().catch(() => {})]).then(() => {
+    // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
+    void messagesStore.markAllSessionsRead();
+  });
 }
 
 watch(isUnlocked, (unlocked) => {
@@ -176,7 +179,11 @@ onLoad((query) => {
   applyDevUserFromQuery(query);
   void loadPage();
 });
-onShow(() => { void loadPage(); });
+onShow(() => {
+  void loadPage();
+  // 2026-08-31 待办：进入消息页标记全部会话已读（红点闭环：badge→进入→清除）
+  void messagesStore.markAllSessionsRead();
+});
 onPullDownRefresh(async () => {
   await loadPage();
   uni.stopPullDownRefresh();
@@ -239,7 +246,8 @@ function formatTime(dateStr?: string): string {
 
       <!-- ========== Search Bar ========== -->
       <view v-if="searchActive" class="search-bar">
-        <input v-model="searchKeyword" class="search-bar__input" placeholder="搜索聊天记录..." />
+        <input
+  cursor-spacing="20" v-model="searchKeyword" class="search-bar__input" placeholder="搜索聊天记录..." />
         <text class="search-bar__clear" @tap="clearSearch">×</text>
       </view>
 
@@ -273,7 +281,7 @@ function formatTime(dateStr?: string): string {
                 <text class="quick-card__btn-text">去看看</text>
               </view>
             </view>
-            <view class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
+            <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
                 <image class="quick-card__icon-img" src="/static/assets/images/mascot/chat_hi.png" mode="aspectFit" />
               </view>

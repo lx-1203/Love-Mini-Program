@@ -643,7 +643,8 @@ function requireLogin(): boolean {
 .circle-scroll__list {
   display: flex;
   gap: 12rpx;
-  padding-right: 16rpx;
+  /* 2026-08-31 待办：右内边距 16→32rpx，避免最后一张兴趣圈卡右缘被截断 */
+  padding: 0 32rpx 8rpx 8rpx;
 }
 
 .circle-mini {

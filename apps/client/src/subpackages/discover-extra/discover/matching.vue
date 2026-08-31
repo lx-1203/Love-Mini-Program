@@ -168,6 +168,19 @@ function onAnimationFinished() {
   matchStore.markAnimationDone();
 }
 
+/**
+ * 2026-08-31 待办：匹配动画阶段可点击跳过。
+ * 动画未播完时点「跳过」= 快进动画（立即触发 finish，由 watch 按匹配结果跳转）；
+ * 动画已播完再点「跳过」= 返回上一页（保留原语义）。
+ */
+function handleSkip() {
+  if (!animationDone.value) {
+    onAnimationFinished();
+    return;
+  }
+  goBack();
+}
+
 onUnload(() => {
   if (matchStore.status === "idle" || matchStore.status === "failed") {
     matchStore.reset();
@@ -186,7 +199,7 @@ onUnload(() => {
       :partner-avatar="partnerAvatar"
       :partner-name="partner?.name ?? ''"
       @finished="onAnimationFinished"
-      @skip="goBack"
+      @skip="handleSkip"
     />
   </view>
 </template>

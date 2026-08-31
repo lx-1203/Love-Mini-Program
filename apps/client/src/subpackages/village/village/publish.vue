@@ -308,6 +308,8 @@ async function submitPublish() {
   const titleFromContent = content.value.trim().slice(0, 30);
   if (submitting.value) return;
   submitting.value = true;
+  // 2026-08-31 待办：发布提交 loading（消除「点发布后长时间无反馈」）
+  uni.showLoading({ title: t("village.post.publishing"), mask: true });
   try {
     // real 模式上传本地图片
     let finalImages = images.value;
@@ -361,6 +363,7 @@ async function submitPublish() {
       : circleStore.errorMessage || villageStore.errorMessage || t("village.post.publishFailed");
     uni.showToast({ title: msg, icon: "none" });
   } finally {
+    uni.hideLoading();
     submitting.value = false;
   }
 }
@@ -438,6 +441,7 @@ onUnmounted(() => {
       <!-- 内容输入 -->
       <view class="publish-content">
         <textarea
+  cursor-spacing="20"
           v-model="content"
           class="publish-content__input"
           placeholder="分享一点最近发生的事…"

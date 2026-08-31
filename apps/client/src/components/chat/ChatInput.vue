@@ -38,6 +38,7 @@ function onInput(e: Event & { detail?: { value?: string } }) {
         <image class="chat-input__icon-img" :src="smileSrc" mode="aspectFit" />
       </view>
       <input
+  cursor-spacing="20"
         class="chat-input__field"
         :value="draft"
         :disabled="disabled"

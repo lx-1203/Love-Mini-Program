@@ -214,6 +214,7 @@ defineExpose({ showResult, resetToPaywall });
         </view>
         <view class="whisper-reply">
           <input
+  cursor-spacing="20"
             class="whisper-reply__input"
             v-model="replyDraft"
             :placeholder="t('discover.whisperReplyPlaceholder')"

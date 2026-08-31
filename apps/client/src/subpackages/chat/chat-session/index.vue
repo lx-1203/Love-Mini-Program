@@ -112,6 +112,45 @@ const sessionId = ref<string | null>(null);
 const targetUserId = ref<string | null>(null);
 const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
+
+/* ========== 2026-08-31 待办：草稿保持（更多面板开合/重进页面不清空草稿） ==========
+ *
+ * 草稿实时写入本地存储（key 按会话隔离），页面重新进入/面板开合/异常重载时恢复。
+ * 发送成功/离开时清理，避免历史草稿残留到其他会话。
+ */
+const CHAT_DRAFT_PREFIX = "chat-session-draft:";
+function draftStorageKey(): string {
+  return sessionId.value ? `${CHAT_DRAFT_PREFIX}${sessionId.value}` : "";
+}
+function persistDraft(): void {
+  const k = draftStorageKey();
+  if (!k) return;
+  try {
+    uni.setStorageSync(k, draft.value);
+  } catch (_e) {
+    // 存储失败静默，草稿仅保留在内存
+  }
+}
+function restoreDraft(): void {
+  const k = draftStorageKey();
+  if (!k || draft.value) return;
+  try {
+    const saved = uni.getStorageSync(k);
+    if (typeof saved === "string" && saved) draft.value = saved;
+  } catch (_e) {
+    // 读取失败静默
+  }
+}
+function clearPersistedDraft(): void {
+  const k = draftStorageKey();
+  if (!k) return;
+  try {
+    uni.removeStorageSync(k);
+  } catch (_e) {
+    // 忽略
+  }
+}
+watch(draft, () => persistDraft());
 /** Phase Feedback3 P2.4：是否缘分速配信号会话（?fromSignal=1，触发渐进解锁面板） */
 const fromSignal = ref(false);
 
@@ -634,6 +673,9 @@ onShow(() => {
     return;
   }
 
+  // 2026-08-31 待办：会话就绪后恢复本地草稿（不覆盖 query 预填消息）
+  restoreDraft();
+
   // 红点修复（2026-08-08）：标记当前正在查看的会话。
   // onShow/onHide 配对覆盖「压栈/切后台」场景：
   // 会话打开期间收到的新消息不累加未读数，退出后恢复累加。
@@ -1024,6 +1066,8 @@ async function sendText() {
     // 发送成功后清空输入与引用状态；失败时保留草稿以便重试
     draft.value = "";
     quoteReply.value = null;
+    // 2026-08-31 待办：发送成功后清除持久化草稿，避免残留到下次进入
+    clearPersistedDraft();
     // 2026-08-09 微信化重构：mock 模式模拟对方「正在输入」（1.5~3s 后出现）
     scheduleTypingSimulation();
   } catch (error) {
@@ -1834,6 +1878,7 @@ defineExpose({ noop });
 
           <!-- 输入框（单行 input，微信视觉一致；多行能力二期 textarea 再议） -->
           <input
+  cursor-spacing="20"
             v-model="draft"
             class="wechat-input-bar__input"
             :disabled="isSessionClosed"

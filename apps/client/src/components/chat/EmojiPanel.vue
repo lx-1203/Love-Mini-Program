@@ -99,6 +99,9 @@ function emojiAria(emoji: string): string {
   width: 56rpx;
   height: 56rpx;
   display: block;
+  /* 2026-08-31 待办：首次打开渲染不全——SVG 未加载完成前给浅色底占位，避免空洞 */
+  background: var(--c-bg-surface, #F7FAF9);
+  border-radius: var(--r-sm, 8rpx);
 }
 
 .emoji-panel__emoji-fallback {

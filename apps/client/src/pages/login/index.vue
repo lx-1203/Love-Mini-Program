@@ -556,6 +556,7 @@ function openPrivacyPolicy() {
               <!-- P6 a11y：label 关联输入框（sr-only 视觉隐藏，屏幕阅读器可读） -->
               <label class="sr-only" for="login-phone">{{ t('login.phonePlaceholder') }}</label>
               <input
+  cursor-spacing="20"
                 id="login-phone"
                 class="input-field"
                 type="number"
@@ -577,6 +578,7 @@ function openPrivacyPolicy() {
               </view>
               <label class="sr-only" for="login-password">{{ t('login.passwordPlaceholder') }}</label>
               <input
+  cursor-spacing="20"
                 id="login-password"
                 class="input-field"
                 type="password"
@@ -596,6 +598,7 @@ function openPrivacyPolicy() {
               </view>
               <label class="sr-only" for="login-nickname">{{ t('login.nicknamePlaceholder') }}</label>
               <input
+  cursor-spacing="20"
                 id="login-nickname"
                 class="input-field"
                 type="text"
@@ -636,6 +639,7 @@ function openPrivacyPolicy() {
               </view>
               <label class="sr-only" for="login-sms-code">{{ t('login.smsCodePlaceholder') }}</label>
               <input
+  cursor-spacing="20"
                 id="login-sms-code"
                 class="input-field"
                 type="number"

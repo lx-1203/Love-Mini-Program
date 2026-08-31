@@ -533,6 +533,7 @@ async function submitPublish() {
       <!-- 正文输入 -->
       <view class="post-content">
         <textarea
+  cursor-spacing="20"
           v-model="content"
           class="post-content__input"
           :placeholder="t('village.post.contentPlaceholder')"

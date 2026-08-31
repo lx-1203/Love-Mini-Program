@@ -286,6 +286,7 @@ function goBack() {
       <view class="title-section">
         <text class="section-label">{{ t('campus.postTopic.labelTitle') }}</text>
         <input
+  cursor-spacing="20"
           v-model="title"
           class="title-input"
           :placeholder="t('campus.postTopic.placeholderTitle')"
@@ -297,6 +298,7 @@ function goBack() {
       <view class="content-section">
         <text class="section-label">{{ t('campus.postTopic.labelContent') }}</text>
         <textarea
+  cursor-spacing="20"
           v-model="content"
           class="content-input"
           :placeholder="t('campus.postTopic.placeholderContent')"

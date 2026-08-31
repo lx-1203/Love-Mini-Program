@@ -416,8 +416,10 @@ async function save() {
     </SectionCard>
 
     <SectionCard :title="t('setup.profile.sectionDraft')" compact>
-      <input v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
-      <textarea v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
+      <input
+  cursor-spacing="20" v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
+      <textarea
+  cursor-spacing="20" v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
       <!-- 2026-08-07 重构：年级改滚轮选择（替代自由输入，标准化信息用选择器） -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelGrade') }}</text>
@@ -434,7 +436,8 @@ async function save() {
           </view>
         </picker>
       </view>
-      <input v-model="form.pronouns" class="field" :placeholder="t('setup.profile.placeholderPronouns')" :aria-label="t('setup.profile.labelPronouns')" />
+      <input
+  cursor-spacing="20" v-model="form.pronouns" class="field" :placeholder="t('setup.profile.placeholderPronouns')" :aria-label="t('setup.profile.labelPronouns')" />
     </SectionCard>
 
     <!-- Phase E4 / M-07：扩展资料字段 -->
@@ -495,25 +498,29 @@ async function save() {
       <!-- 籍贯省 -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelHometownProvince') }}</text>
-        <input v-model="form.hometownProvince" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownProvince')" :aria-label="t('setup.profile.placeholderHometownProvince')" />
+        <input
+  cursor-spacing="20" v-model="form.hometownProvince" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownProvince')" :aria-label="t('setup.profile.placeholderHometownProvince')" />
       </view>
 
       <!-- 籍贯市 -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelHometownCity') }}</text>
-        <input v-model="form.hometownCity" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownCity')" :aria-label="t('setup.profile.placeholderHometownCity')" />
+        <input
+  cursor-spacing="20" v-model="form.hometownCity" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownCity')" :aria-label="t('setup.profile.placeholderHometownCity')" />
       </view>
 
       <!-- 未来城市 -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelFutureCity') }}</text>
-        <input v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
+        <input
+  cursor-spacing="20" v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
       </view>
 
       <!-- 2026-08-11 匹配精细化：理想型画像（关键词描述，参与匹配加分） -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelExpectedPartner') }}</text>
         <textarea
+  cursor-spacing="20"
           v-model="form.expectedPartner"
           class="field field--textarea"
           :maxlength="200"

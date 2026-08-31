@@ -374,6 +374,7 @@ onLoad((query) => {
         </view>
         <view class="input-bar__field">
           <input
+  cursor-spacing="20"
             class="input-bar__input"
             v-model="inputValue"
             placeholder="对我说点什么吧～"

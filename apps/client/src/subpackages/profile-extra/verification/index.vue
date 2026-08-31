@@ -549,6 +549,7 @@ function onBlur() {
           <view class="form-item">
             <label class="form-item__label" for="verification-student-name">{{ t('verification.labelStudentName') }}</label>
             <input
+  cursor-spacing="20"
               id="verification-student-name"
               v-model="studentName"
               class="form-item__input"
@@ -564,6 +565,7 @@ function onBlur() {
           <view class="form-item">
             <label class="form-item__label" for="verification-student-id">{{ t('verification.labelStudentId') }}</label>
             <input
+  cursor-spacing="20"
               id="verification-student-id"
               v-model="studentId"
               class="form-item__input"
@@ -579,6 +581,7 @@ function onBlur() {
           <view class="form-item form-item--no-border">
             <label class="form-item__label" for="verification-school-name">{{ t('verification.labelSchool') }}</label>
             <input
+  cursor-spacing="20"
               id="verification-school-name"
               v-model="schoolName"
               class="form-item__input"

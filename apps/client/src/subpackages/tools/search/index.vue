@@ -198,6 +198,7 @@ function goToActivity(activityId: number) {
       <view class="search-box" role="search" :aria-label="t('search.placeholder')">
         <image class="search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
         <input
+  cursor-spacing="20"
           v-model="searchStore.keyword"
           class="search-input"
           :placeholder="t('search.placeholder')"

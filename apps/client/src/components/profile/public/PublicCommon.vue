@@ -1,10 +1,24 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(defineProps<{ commonInterests: string[] }>(), {
   commonInterests: () => [],
 });
+
+/**
+ * 2026-08-31 修复「我们有 N 个共同点」中间图标缺失渲染空圆：
+ * 部分主题图标（如 cat.svg）素材缺失时，image 加载失败会留下空圆。
+ * 这里记录加载失败的 key，失败时降级为品牌心形图标，避免空白圆。
+ */
+const failedIcons = ref<Set<string>>(new Set());
+function onIconError(key: string) {
+  if (!key || failedIcons.value.has(key)) return;
+  failedIcons.value = new Set(failedIcons.value).add(key);
+}
+function resolveIconSrc(item: { key: string; iconSrc: string }): string {
+  return failedIcons.value.has(item.key) ? IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE : item.iconSrc;
+}
 
 const COLORS = [
   { bg: "#E8FBF3", fg: "#36C99A", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE },
@@ -53,7 +67,7 @@ const items = computed(() =>
     <view class="public-common__items">
       <view v-for="item in items" :key="item.key" class="public-common__item">
         <view class="public-common__icon" :style="{ background: item.bg }">
-          <image class="public-common__icon-img" :src="item.iconSrc" mode="aspectFit" alt="" />
+          <image class="public-common__icon-img" :src="resolveIconSrc(item)" mode="aspectFit" alt="" @error="onIconError(item.key)" />
         </view>
         <text class="public-common__item-title">{{ item.title }}</text>
         <text v-if="item.subtitle" class="public-common__item-sub">{{ item.subtitle }}</text>

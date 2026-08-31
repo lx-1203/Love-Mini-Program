@@ -411,6 +411,7 @@ if (options.activityId) {
       <!-- 标题输入 -->
       <view class="title-section">
         <input
+  cursor-spacing="20"
           v-model="title"
           class="title-input"
           :placeholder="t('circle.postTopicTitlePlaceholder')"
@@ -421,6 +422,7 @@ if (options.activityId) {
       <!-- 内容输入区 -->
       <view class="content-section">
         <textarea
+  cursor-spacing="20"
           v-model="content"
           class="content-input"
           :placeholder="t('circle.postTopicContentPlaceholder')"

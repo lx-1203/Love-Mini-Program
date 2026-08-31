@@ -456,6 +456,7 @@ function onBlur() {
           <view class="form-item">
             <label class="form-item__label" for="real-name-user-name">{{ t('realName.labelUserName') }}</label>
             <input
+  cursor-spacing="20"
               id="real-name-user-name"
               v-model="userName"
               class="form-item__input"
@@ -472,6 +473,7 @@ function onBlur() {
           <view class="form-item form-item--no-border">
             <label class="form-item__label" for="real-name-id-card-no">{{ t('realName.labelIdCardNo') }}</label>
             <input
+  cursor-spacing="20"
               id="real-name-id-card-no"
               v-model="idCardNo"
               class="form-item__input"

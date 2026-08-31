@@ -1953,6 +1953,7 @@ export default {
       titlePlaceholder: "Enter a title (5-30 characters)",
       titleInvalid: "Title must be {min}-{max} characters",
       imageUploadFailed: "Failed to upload images, please retry",
+      publishing: "Publishing...",
       /* R4-00096: Preset topic tags (shared mock/real fallback; real success uses backend /post-tags) */
       presetTags: ["Campus daily", "Interest sharing", "Find a buddy", "Help", "Confession wall", "Alumni updates", "Life journal", "Tech talk"],
     },

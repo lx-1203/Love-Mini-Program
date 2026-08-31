@@ -5,6 +5,8 @@ import { isDev } from "../config/env";
 import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
 import { getToken, clearTokens } from "../services/http";
+// 2026-08-31 待办：IM 实时推送接线——登录态建立后连接 WebSocket，登出时断开
+import { wsClient } from "../services/websocket";
 // 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
 import { clearAllCaches } from "../utils/cache-ttl";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
@@ -283,6 +285,29 @@ function syncSentryUser(session: UserSession | null): void {
   }
 }
 
+/**
+ * 2026-08-31 待办：IM 实时推送接线——登录态建立时连接 WebSocket，登出时断开。
+ *
+ * 原实现全仓无 wsClient.connect() 调用点，聊天纯 HTTP 拉取（无实时推送）。
+ * 现于登录态变化处统一同步连接状态：
+ * - 已登录 + 真实模式 + 存在 token：连接 WS（连接失败由 wsClient 内部重连兜底）；
+ * - 未登录 / mock 模式（无后端 WS）：断开，避免重连噪音。
+ *
+ * @param loggedIn 是否已登录（真实或 mock 会话均可）
+ */
+function syncRealtimeConnection(loggedIn: boolean): void {
+  if (!loggedIn || useMock()) {
+    wsClient.disconnect();
+    return;
+  }
+  const token = getToken();
+  if (token) {
+    wsClient.connect(token);
+  } else {
+    wsClient.disconnect();
+  }
+}
+
 export const useSessionStore = defineStore("session", {
   state: () => ({
     loading: false,
@@ -556,6 +581,9 @@ export const useSessionStore = defineStore("session", {
           // Sentry 调用失败不影响登出主流程
         }
 
+        // 2026-08-31 待办：IM 实时推送——登出时断开 WebSocket，避免残留推送
+        syncRealtimeConnection(false);
+
         // 4. 清除持久化的 profileBackgroundUrl，避免下次登录残留
         try {
           savePersistedFields({ profileBackgroundUrl: "" });
@@ -627,6 +655,9 @@ export const useSessionStore = defineStore("session", {
         // 应用启动时同步 Sentry 用户身份：H5 冷启动后用户身份不丢失
         syncSentryUser(this.userSession);
 
+        // 2026-08-31 待办：IM 实时推送——登录态建立后连接 WebSocket（冷启动已登录场景）
+        syncRealtimeConnection(Boolean(this.userSession?.loggedIn));
+
         // B6：启动期非阻塞拉取客户端配置（维护模式/功能开关），
         // 失败仅记录日志不阻塞启动——开关判定默认开放，App.vue onShow 会按 TTL 重试
         useAppConfigStore()
@@ -683,6 +714,8 @@ export const useSessionStore = defineStore("session", {
         clearAllCaches();
         // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
         syncSentryUser(this.userSession);
+        // 2026-08-31 待办：IM 实时推送——登录成功后建立 WebSocket 连接
+        syncRealtimeConnection(true);
 
         return this.userSession;
       } catch (error) {

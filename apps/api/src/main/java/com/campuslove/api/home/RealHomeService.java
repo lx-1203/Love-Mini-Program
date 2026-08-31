@@ -602,7 +602,10 @@ public class RealHomeService implements HomeService {
 
     private java.util.List<NearbyPersonSummaryView> buildNearbyPeople() {
         try {
+            // 2026-08-31 待办：同名/同头像去重（视觉去重半径），避免「同城的人」整列表同名同人按距离重复出现
+            java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
             return homeCandidates().stream()
+                .filter(view -> seen.add(view.name() + "|" + String.valueOf(view.avatarUrl())))
                 .limit(5)
                 .map(view -> new NearbyPersonSummaryView(
                     view.id(),

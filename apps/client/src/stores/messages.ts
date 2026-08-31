@@ -1182,6 +1182,20 @@ export const useMessagesStore = defineStore("messages", {
       return true;
     },
 
+    /**
+     * 2026-08-31 待办：进入消息首页标记全部会话已读（消除「消息 tab 红点全程不清除」）。
+     *
+     * 进入消息列表页时调用，对所有带未读计数的会话发送显式已读回执并本地清零，
+     * 实现「badge → 进入 → 清除」的红点闭环（官方号/临时会话 ID 非数字，早退）。
+     * 逐个用 Promise.allSettled：部分失败不影响其余，失败的会话保持未读以便下次重试。
+     */
+    async markAllSessionsRead(): Promise<void> {
+      const targets = this.sessions.filter((s) => s.unreadCount > 0);
+      if (targets.length === 0) return;
+      await Promise.allSettled(targets.map((s) => this.markConversationRead(s.id, true)));
+      targets.forEach((s) => { s.unreadCount = 0; });
+    },
+
     async deleteSession(sessionId: string) {
       this.errorMessage = null;
       try {

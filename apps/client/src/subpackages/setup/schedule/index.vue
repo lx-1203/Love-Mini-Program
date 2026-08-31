@@ -75,7 +75,8 @@ async function save() {
 <template>
   <AppShell :title="t('setup.schedule.pageTitle')" :subtitle="t('setup.schedule.pageSubtitle')" :show-tab-bar="false" show-back>
     <SectionCard :title="t('setup.schedule.prefTitle')" compact>
-      <input v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
+      <input
+  cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
       <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
            现按数组渲染全部时段输入框，提交时完整保留。
            2026-08-10 功能补齐：新增「+ 添加时段」按钮与删除按钮，初始为空也可新增。 -->
@@ -86,6 +87,7 @@ async function save() {
       >
         <view class="time-window-row">
           <input
+  cursor-spacing="20"
             v-model="form.preferredTimeWindows[idx]"
             class="field time-window-input"
             maxlength="60"

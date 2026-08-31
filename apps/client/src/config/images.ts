@@ -522,7 +522,7 @@ export const IMAGE_PATHS = {
     CIRCLE_CAMERA:  ICONS_BASE + '/common/camera.svg',   // 📷 摄影
     CIRCLE_TRAVEL:  ICONS_BASE + '/common/travel.svg',   // 🧳 / ✈️ 旅行
     CIRCLE_MUSIC:   ICONS_BASE + '/common/music.svg',    // 🎵 音乐
-    CIRCLE_SPORT:   ICONS_BASE + '/common/sport.svg',    // ⚽ / 🏀 运动 / 篮球
+    CIRCLE_SPORT:   STATIC_BASE + '/profile/svg/v2/interest/sport.svg', // ⚽ / 🏀 运动 / 篮球（2026-08-31 修正：指向实际存在的 sport.svg）
     CIRCLE_FOOD:    ICONS_BASE + '/common/food.svg',     // 🍜 美食
     CIRCLE_GAME:    ICONS_BASE + '/common/gamepad.svg',  // 🎮 游戏
     CIRCLE_BOOK:    ICONS_BASE + '/common/book.svg',     // 📚 阅读 / 考研

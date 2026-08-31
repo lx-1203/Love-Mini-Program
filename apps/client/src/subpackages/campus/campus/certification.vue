@@ -306,6 +306,7 @@ onMounted(() => {
           <view class="form-group">
             <text class="form-label">{{ t("campus.certification.labelSchool") }}</text>
             <input
+  cursor-spacing="20"
               v-model="schoolName"
               class="form-input"
               :placeholder="t('campus.certification.placeholderSchool')" :aria-label="t('campus.certification.placeholderSchool')"
@@ -316,6 +317,7 @@ onMounted(() => {
           <view class="form-group">
             <text class="form-label">{{ t("campus.certification.labelMajor") }}</text>
             <input
+  cursor-spacing="20"
               v-model="major"
               class="form-input"
               :placeholder="t('campus.certification.placeholderMajor')" :aria-label="t('campus.certification.placeholderMajor')"
@@ -359,6 +361,7 @@ onMounted(() => {
               {{ t("campus.certification.chsiHint") }}
             </text>
             <input
+  cursor-spacing="20"
               v-model="chsiCode"
               class="form-input"
               :placeholder="t('campus.certification.placeholderChsiCode')" :aria-label="t('campus.certification.placeholderChsiCode')"

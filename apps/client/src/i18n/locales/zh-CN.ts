@@ -1965,6 +1965,7 @@ export default {
       "titleInvalid": "标题需为 {min}-{max} 个字",
       "uploadingImages": "图片上传中...",
       "imageUploadFailed": "图片上传失败，请重试",
+      "publishing": "发布中...",
       "presetTags": [
         "校园日常",
         "兴趣分享",

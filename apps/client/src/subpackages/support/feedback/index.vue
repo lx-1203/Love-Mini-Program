@@ -421,6 +421,7 @@ function goDetail(id: number): void {
       </view>
       <label class="sr-only" for="feedback-title">{{ t('feedback.labelTitle') }}</label>
       <input
+  cursor-spacing="20"
         id="feedback-title"
         v-model="form.title"
         class="field"
@@ -432,6 +433,7 @@ function goDetail(id: number): void {
       />
       <label class="sr-only" for="feedback-content">{{ t('feedback.labelContent') }}</label>
       <textarea
+  cursor-spacing="20"
         id="feedback-content"
         v-model="form.content"
         class="field field--textarea"
@@ -443,6 +445,7 @@ function goDetail(id: number): void {
       />
       <label class="sr-only" for="feedback-wechat">{{ t('feedback.labelContactWechat') }}</label>
       <input
+  cursor-spacing="20"
         id="feedback-wechat"
         v-model="form.contactWechat"
         class="field"

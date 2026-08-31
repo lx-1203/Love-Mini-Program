@@ -984,6 +984,7 @@ onShareTimeline(() => {
       <view class="input-bar">
         <view class="input-bar__field">
           <input
+  cursor-spacing="20"
             v-model="commentContent"
             class="input-bar__input"
             :placeholder="replyPlaceholder"
@@ -1043,6 +1044,7 @@ onShareTimeline(() => {
         <!-- 附加评论输入 -->
         <view class="share-modal__body">
           <textarea
+  cursor-spacing="20"
             v-model="shareComment"
             class="share-modal__textarea"
             :placeholder="t('village.detail.shareCommentPlaceholder')"

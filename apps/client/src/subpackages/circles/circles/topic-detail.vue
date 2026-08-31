@@ -381,6 +381,7 @@ onShareAppMessage(() => {
     <view v-if="currentTopic" class="detail-footer">
       <view class="reply-input-wrap">
         <input
+  cursor-spacing="20"
           v-model="replyContent"
           class="reply-input"
           :placeholder="t('circle.topicDetailReplyPlaceholder')"

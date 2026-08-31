@@ -153,6 +153,7 @@ function onAnswersScrollLower(): void {
         <view v-if="!hasAnswered && todayQuestion" class="answer-section">
           <text class="answer-section__title">{{ t("dailyQuestion.answerSectionTitle") }}</text>
           <textarea
+  cursor-spacing="20"
             v-model="answerContent"
             class="answer-input"
             :placeholder="t('dailyQuestion.inputPlaceholder')"

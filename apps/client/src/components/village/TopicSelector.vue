@@ -230,6 +230,7 @@ function clearAll(): void {
     <!-- 搜索框 -->
     <view class="topic-selector__search">
       <input
+  cursor-spacing="20"
         v-model="searchKeyword"
         class="topic-selector__search-input"
         :placeholder="t('topicSelector.searchPlaceholder')"
@@ -266,6 +267,7 @@ function clearAll(): void {
       <text class="topic-selector__create-label">{{ t('topicSelector.createTopic') }}</text>
       <view class="topic-selector__create-input-wrap">
         <input
+  cursor-spacing="20"
           v-model="customTopicInput"
           class="topic-selector__create-input"
           :placeholder="t('topicSelector.createTopicPlaceholder')"

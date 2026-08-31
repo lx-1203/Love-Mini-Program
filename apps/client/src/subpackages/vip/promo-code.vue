@@ -208,6 +208,7 @@ function goBack() {
       </view>
       <view class="code-input-wrap">
         <input
+  cursor-spacing="20"
           class="code-input"
           :placeholder="t('vip.promoCodeInputPlaceholder')"
           :value="codeInput"
@@ -225,6 +226,7 @@ function goBack() {
       <view class="amount-input-wrap">
         <text class="amount-input__currency">¥</text>
         <input
+  cursor-spacing="20"
           class="amount-input"
           type="digit"
           :value="orderAmountInput"

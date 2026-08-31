@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * CardDetailOverlay — 卡片详情全屏展示层
  *
@@ -37,6 +37,7 @@ import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { isDev } from "../../config/env";
+import { MATCH_SCORE_BASE, MATCH_SCORE_STEP, MATCH_SCORE_MAX } from "../../constants/match";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 
@@ -257,10 +258,10 @@ const ageText = computed(() => {
   return m ? m[1] : "--";
 });
 
-/** 匹配度分数 */
+/** 匹配度分数（2026-08-31 待办：与卡片 CardSwiper 同口径，避免「卡片 80% vs 详情 100%」） */
 const matchScore = computed(() => {
-  const count = props.card?.commonCircleCount ?? 0;
-  return Math.min(98, 80 + count * 5);
+  const count = props.card?.commonCircleCount ?? 1;
+  return Math.min(MATCH_SCORE_MAX, MATCH_SCORE_BASE + count * MATCH_SCORE_STEP);
 });
 
 /** 匹配度文案 */

@@ -81,6 +81,7 @@ async function handleSend() {
       </text>
 
       <textarea
+  cursor-spacing="20"
         class="whisper-sheet__input"
         :value="content"
         :maxlength="60"

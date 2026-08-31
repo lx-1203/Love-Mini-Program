@@ -794,6 +794,7 @@ defineExpose({ onContentTap });
             <view class="keyword-input">
               <image class="keyword-input__icon" :src="icons.search" mode="aspectFit" alt="" />
               <input
+  cursor-spacing="20"
                 class="keyword-input__field"
                 :placeholder="t('filterDrawer.keywordPlaceholder')"
                 placeholder-class="keyword-input__placeholder"
