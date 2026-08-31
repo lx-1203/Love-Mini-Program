@@ -64,7 +64,7 @@ public class RealPostSearchService implements PostSearchService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<PostSearchView> searchPosts(Long currentUserId, String keyword, Pageable pageable) {
         String trimmed = keyword == null ? "" : keyword.trim();
         if (trimmed.isEmpty()) {

@@ -18,7 +18,7 @@ import { ensureCertified } from "../../guards/campus-gate";
 import { getToken } from "../../services/http";
 // 修复#7（第五轮 QA）：mock 模式无网络请求，dev-user 会话（已登录但无真实 token）也允许拉取本地匹配卡
 import { useMock } from "../../stores/helpers/use-mock";
-import { openAppPath, openUserProfile } from "../../utils/navigation";
+import { openAppPath, openUserProfile, setTabBarHidden } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { toMatchCardUser } from "../../view-models/match";
 import MatchCard from "../../components/match/MatchCard.vue";

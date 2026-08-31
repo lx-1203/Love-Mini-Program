@@ -210,10 +210,12 @@ export function spreadIdenticalNeighbors(cards: DiscoverCard[]): DiscoverCard[] 
   const rest = [...cards];
   const out: DiscoverCard[] = [rest.shift() as DiscoverCard];
   while (rest.length > 0) {
-    const tailKey = visualKey(out[out.length - 1]);
+    const tail = out[out.length - 1];
+    const tailKey = tail ? visualKey(tail) : "";
     let pickIdx = rest.findIndex((c) => visualKey(c) !== tailKey);
     if (pickIdx < 0) pickIdx = 0; // 剩余全部同形象，只能顺序输出
-    out.push(rest.splice(pickIdx, 1)[0]);
+    const picked = rest.splice(pickIdx, 1)[0];
+    if (picked) out.push(picked);
   }
   return out;
 }
