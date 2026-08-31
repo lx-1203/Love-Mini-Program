@@ -134,3 +134,9 @@
   color: #36C99A;
   font-weight: 600;
 }
+
+/* 2026-08-31：全屏弹层期间隐藏（配合 getTabBar().setData({hidden:true})） */
+.tab-bar--hidden {
+  transform: translateY(110%);
+  pointer-events: none;
+}

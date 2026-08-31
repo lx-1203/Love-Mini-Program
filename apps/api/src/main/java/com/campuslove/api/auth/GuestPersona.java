@@ -3,15 +3,15 @@ package com.campuslove.api.auth;
 import java.util.List;
 
 /**
- * 体验账号演示人格池（2026-08-31 推荐去重根因修复）。
+ * 体验账号演示人格池（2026-08-31 推荐去重根因修复；同日扩充至 9 套）。
  *
  * <p>此前所有体验账号硬编码昵称「星野」+ 同一套头像/兴趣/学校，导致
  * 推荐流、相似作者、附近的人等列表出现「上下同一个人」的观感
- * （不同 userId、完全相同的视觉形象）。现在按 {@code userId % 6}
- * 稳定分配 6 套人格，同一账号永远取同一人格，不同账号视觉可区分。</p>
+ * （不同 userId、完全相同的视觉形象）。现在按 {@code userId % 9}
+ * 稳定分配 9 套人格，同一账号永远取同一人格，不同账号视觉可区分。</p>
  *
- * <p>头像对应 src/static/assets/images/people/person-0N.png（已同步后端
- * app-assets 托管）。</p>
+ * <p>头像对应 src/static/assets/images/people/person-0N.png（real 模式经
+ * resolveMediaUrl 由后端 app-assets 托管）。</p>
  */
 public enum GuestPersona {
     XINGYE(0, "星野", "female", 2003, "北京大学", "设计学院",
@@ -31,7 +31,16 @@ public enum GuestPersona {
             List.of("摄影", "健身", "科技", "电影")),
     ZHOUYU(5, "周雨", "male", 2004, "上海交通大学", "船舶海洋学院",
             "person-08", "周末常去逛书店和看展，偶尔夜骑",
-            List.of("音乐", "游戏", "骑行", "阅读"));
+            List.of("音乐", "游戏", "骑行", "阅读")),
+    XIAOMAN(6, "小满", "female", 2005, "复旦大学", "中文系",
+            "person-02", "在图书馆修中文，也在操场修心情",
+            List.of("读书", "跑步", "美食", "音乐")),
+    MURAN(7, "暮然", "male", 2002, "北京理工大学", "机械工程",
+            "person-06", "机车与吉他各占一半生活，剩下的一半在打球",
+            List.of("机车", "吉他", "篮球", "旅行")),
+    QIUWEI(8, "秋薇", "female", 2003, "北京师范大学", "心理学部",
+            "person-09", "爱观察生活的细节，也爱记录四季的光",
+            List.of("插画", "心理学", "旅行", "摄影"));
 
     private final int slot;
     private final String nickname;
@@ -62,8 +71,10 @@ public enum GuestPersona {
         if (userId == null || userId <= 0) {
             return XINGYE;
         }
-        for (GuestPersona p : values()) {
-            if (p.slot == (int) Math.floorMod(userId, values().length)) {
+        GuestPersona[] all = values();
+        int slot = (int) Math.floorMod(userId, all.length);
+        for (GuestPersona p : all) {
+            if (p.slot == slot) {
                 return p;
             }
         }

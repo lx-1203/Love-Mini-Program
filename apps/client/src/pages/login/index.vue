@@ -82,6 +82,12 @@ onShow(() => {
   if (!isRegisterOpen.value) {
     phoneRegisterMode.value = false;
   }
+  // 2026-08-31 修复（录屏 06:42-06:51）：应用重启/崩溃恢复后 storage 里的 token
+  // 仍有效并被 bootstrap 静默登录（toast「登录成功」），但登录页不自动前进，
+  // 用户必须再手动点一次「稍后再看」。此处检测已登录即自动进入主界面。
+  if (sessionStore.isLoggedIn) {
+    uni.switchTab({ url: "/pages/discover/index" });
+  }
 });
 
 // 表单校验计算属性
@@ -306,7 +312,8 @@ async function onGuestLogin() {
   addBreadcrumb("ui", "button_click", { id: "login.guest" });
   try {
     await loginAsGuest();
-    uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
+    // 2026-08-31：游客进入语义与「登录成功」不符（录屏反馈），改为体验模式文案
+    uni.showToast({ title: t("login.guestEnterToast"), icon: "none" });
     // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
     // 消除"登录成功但页面仍认为未登录"的间隙（失败不影响登录，仅记录）

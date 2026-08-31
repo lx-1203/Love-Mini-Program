@@ -23,6 +23,7 @@ import {
   filterNearby,
   mapToDiscoverCard,
   sortCards,
+  spreadIdenticalNeighbors,
   useMock,
   withRetry,
 } from "../utils";
@@ -177,6 +178,11 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
 
         // 排序规则（设计需求）：匹配度优先/最新注册/最活跃
         availableCards = sortCards(availableCards, this.sortBy);
+
+        // 2026-08-31 相邻同形象打散（用户验收红线：上下相邻不允许同名同人观感）：
+        // 排序后同校/同分的人格孪生账号（不同 userId、同昵称同头像）会相邻，
+        // 这里做一遍贪心交错，把相邻「昵称+头像」相同的卡推远。
+        availableCards = spreadIdenticalNeighbors(availableCards);
 
         // 修复：写入前再次检查是否已取消
         if (controller.signal.aborted) {

@@ -252,6 +252,23 @@ export function replaceAppPath(url: string) {
  * v3 Nearby 统一恋爱 CTA：认识 TA / 查看作者 → 他人主页。
  * 禁止在任何帖子/圈子/活动场景直接 like 或创建聊天。
  */
+/**
+ * 2026-08-31：全屏弹层期间隐藏/恢复自定义 tabbar。
+ * 原生 custom-tab-bar 恒在页面内容之上（z-index 无法穿透），
+ * 筛选抽屉等全屏弹层必须在弹出时隐藏 tabbar，否则底部被遮挡（录屏实证）。
+ */
+export function setTabBarHidden(hidden: boolean): void {
+  try {
+    const pages = getCurrentPages();
+    const page = pages[pages.length - 1] as unknown as {
+      getTabBar?: () => { setData: (d: Record<string, unknown>) => void } | undefined;
+    };
+    page?.getTabBar?.()?.setData({ hidden });
+  } catch (e) {
+    // 非 tab 页/低版本基础库无 getTabBar：忽略
+  }
+}
+
 export function openUserProfile(userId: string | number | null | undefined): void {
   if (userId === null || userId === undefined || String(userId).trim() === '') return;
   openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(String(userId))}`);

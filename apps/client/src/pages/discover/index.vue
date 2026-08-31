@@ -131,6 +131,12 @@ function enterMatching(action: "like" | "superLike") {
   openAppPath(`${ROUTES.DISCOVER.MATCHING}?${query}`);
 }
 
+// 2026-08-31：筛选抽屉为全屏弹层——打开时隐藏自定义 tabbar，避免遮挡底部操作（录屏实证）
+watch(
+  () => discoverStore.isFilterDrawerOpen,
+  (open) => setTabBarHidden(open)
+);
+
 async function handleLike() {
   if (!requireLogin()) return;
   if (!ensureCertified("realname")) return;

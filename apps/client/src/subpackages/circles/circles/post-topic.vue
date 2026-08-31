@@ -934,8 +934,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .tag-chip--active {
-  background: $green-light;
-  border-color: $green-primary;
+  /* 2026-08-31：原浅绿底+绿字对比不足，真机录屏用户感知不到选中态 → 品牌绿实底白字 */
+  background: var(--c-brand, #36C99A);
+  border-color: var(--c-brand, #36C99A);
 }
 
 .tag-chip__text {
@@ -945,7 +946,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .tag-chip--active .tag-chip__text {
-  color: $green-primary;
+  color: #ffffff;
   font-weight: 700;
 }
 

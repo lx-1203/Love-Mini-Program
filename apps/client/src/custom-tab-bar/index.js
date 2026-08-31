@@ -35,6 +35,9 @@ Component({
     },
   },
   data: {
+    // 2026-08-31：全屏弹层（筛选抽屉等）打开时由页面经 getTabBar().setData({hidden:true})
+    // 隐藏 tabbar——原生 custom-tab-bar 恒在页面内容之上，z-index 无法穿透
+    hidden: false,
     tabs: [
       {
         id: "home",

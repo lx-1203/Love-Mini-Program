@@ -185,11 +185,24 @@ async function handleUnlock() {
     });
     uni.showToast({ title: t("likesVisitors.unlockSuccess"), icon: "success" });
   } catch (error) {
-    // 余额不足或扣费失败：展示后端错误信息（不解锁）
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("likesVisitors.unlockFail"),
-      icon: "none",
-    });
+    const msg = error instanceof Error ? error.message : t("likesVisitors.unlockFail");
+    // 2026-08-31 修复付费死路（录屏 05:52：余额不足 toast 后无任何去路）：
+    // 余额类失败 → 弹窗引导跳转钱包充值页
+    if (msg.includes("余额不足") || /balance/i.test(msg)) {
+      uni.showModal({
+        title: t("likesVisitors.unlockFailBalanceTitle"),
+        content: t("likesVisitors.unlockFailBalanceContent"),
+        confirmText: t("likesVisitors.goRecharge"),
+        cancelText: t("common.cancel"),
+        success: (res) => {
+          if (res.confirm) {
+            openAppPath(ROUTES.WALLET);
+          }
+        },
+      });
+      return;
+    }
+    uni.showToast({ title: msg, icon: "none" });
   }
 }
 

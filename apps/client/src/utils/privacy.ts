@@ -235,13 +235,32 @@ export function requirePrivacyAuthorize(): Promise<void> {
       return;
     }
 
+    // 2026-08-31 真机挂起兜底（录屏 07:09 两次点「发送图片」选择器永不弹出）：
+    // 部分场景（后台未配置隐私保护指引 / onNeedPrivacyAuthorization 回调未触发）下
+    // requirePrivacyAuthorize 既不 success 也不 fail，导致选图流程永久静默。
+    // 8 秒超时后放行——由微信侧在真正越权时报错、调用方 toast 给用户反馈。
+    let settled = false;
+    const settleOnce = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      fn();
+    };
+    setTimeout(() => {
+      settleOnce(() => {
+        if (isDev) {
+          console.warn("[privacy] requirePrivacyAuthorize timeout(8s), allowing pass-through");
+        }
+        resolve();
+      });
+    }, 8000);
+
     const requireAuth = wxApi.requirePrivacyAuthorize as (
       opts: WxRequirePrivacyAuthorizeOpts
     ) => void;
     try {
       requireAuth({
         success: () => {
-          resolve();
+          settleOnce(resolve);
         },
         fail: (err: { errMsg?: string }) => {
           const errMsg = typeof err?.errMsg === "string" ? err.errMsg : "";
@@ -250,7 +269,7 @@ export function requirePrivacyAuthorize(): Promise<void> {
             if (isDev) {
               console.warn("[privacy] requirePrivacyAuthorize: scope not declared, allowing pass-through:", errMsg);
             }
-            resolve();
+            settleOnce(resolve);
             return;
           }
           const reason = errMsg.includes("deny")
@@ -258,7 +277,7 @@ export function requirePrivacyAuthorize(): Promise<void> {
             : errMsg.includes("unsupported")
               ? "unsupported"
               : "unknown";
-          reject({ reason, errMsg });
+          settleOnce(() => reject({ reason, errMsg }));
         },
       });
     } catch (e) {
@@ -266,7 +285,7 @@ export function requirePrivacyAuthorize(): Promise<void> {
       if (isDev) {
         console.warn("[privacy] requirePrivacyAuthorize exception, allowing pass-through:", e);
       }
-      resolve();
+      settleOnce(resolve);
     }
   });
 }

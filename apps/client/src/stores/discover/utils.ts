@@ -197,6 +197,28 @@ export function sortCards(cards: DiscoverCard[], sortBy: SortBy): DiscoverCard[]
 }
 
 /**
+ * 2026-08-31 相邻同形象打散（用户验收红线：上下相邻不允许出现同名同人观感）。
+ *
+ * 背景：人格池孪生账号（不同 userId、相同昵称+头像）在「同校加权 + 同分排序」后
+ * 会相邻出现。本函数贪心交错：遍历时若下一张与当前输出尾部视觉相同，
+ * 则向后找第一张视觉不同的卡插入，尽量拉开同形象距离。
+ * 视觉键 = 昵称 + 头像（与用户感知一致，userId 不同但视觉相同仍视为「同一个人」）。
+ */
+export function spreadIdenticalNeighbors(cards: DiscoverCard[]): DiscoverCard[] {
+  if (cards.length < 3) return cards;
+  const visualKey = (c: DiscoverCard) => `${c.name}|${c.avatar}`;
+  const rest = [...cards];
+  const out: DiscoverCard[] = [rest.shift() as DiscoverCard];
+  while (rest.length > 0) {
+    const tailKey = visualKey(out[out.length - 1]);
+    let pickIdx = rest.findIndex((c) => visualKey(c) !== tailKey);
+    if (pickIdx < 0) pickIdx = 0; // 剩余全部同形象，只能顺序输出
+    out.push(rest.splice(pickIdx, 1)[0]);
+  }
+  return out;
+}
+
+/**
  * 带重试机制的异步执行器
  *
  * 在请求失败时自动重试，最多重试 maxRetries 次，每次重试之间延迟 delayMs。

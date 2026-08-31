@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useMatchStore } from "../../../stores/match";
+import { useDiscoverStore } from "../../../stores/discover";
 import { clientApi } from "../../../services/api";
 import { mapToDiscoverCard } from "../../../stores/discover/utils";
 import { toMatchCardUser } from "../../../view-models/match";
@@ -24,6 +25,8 @@ const profileStore = useProfileStore();
 const animationDone = ref(false);
 const checked = ref(false);
 const previewMode = ref(false);
+/** 2026-08-31 修复「喜欢/超赞后返回仍停留原卡」：记录本次匹配消费的卡片，成功后从卡组移除 */
+const consumedCardId = ref("");
 
 const partner = computed(() => matchStore.matchedUser);
 const myAvatar = computed(() => profileStore.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR);
@@ -50,8 +53,11 @@ watch(
   ([status, animated]) => {
     if (!checked.value || !animated || previewMode.value) return;
     if (status === "matched") {
+      consumeCardFromDeck();
       redirectToSuccess();
     } else if (status === "idle") {
+      // 发送成功：先消费卡组（返回后自动切到下一张），再提示并返回
+      consumeCardFromDeck();
       uni.showToast({ title: t("discover.likeSent"), icon: "success" });
       setTimeout(() => goBack(), 400);
     } else if (status === "failed") {
@@ -107,6 +113,7 @@ onLoad((query) => {
     // 2026-08-18：支持 URL query 直达（自动化验收/分享恢复）——
     // 由 userId/cardId/action 初始化匹配上下文，并异步拉取对方资料。
     if (cardId && action && userId) {
+      consumedCardId.value = cardId;
       matchStore.beginCheck(
         { userId, id: cardId, name: "TA", photo: "", avatar: "" } as MatchCardUser,
         cardId,
@@ -123,6 +130,7 @@ onLoad((query) => {
       return;
     }
   }
+  consumedCardId.value = consumedCardId.value || matchStore.pendingCardId || cardId;
 
   if (!profileStore.avatarUrl) {
     void profileStore.load().catch(() => {});
@@ -132,6 +140,17 @@ onLoad((query) => {
     checked.value = true;
   });
 });
+
+/** 2026-08-31：喜欢/超赞成功后从寻觅卡组移除该卡，返回后即看到下一张（修复「喜欢完不切卡」） */
+function consumeCardFromDeck() {
+  const id = consumedCardId.value;
+  if (!id) return;
+  try {
+    void useDiscoverStore().swipeRight(id);
+  } catch (err) {
+    // 卡组不存在该卡时忽略（重复消费/预览模式）
+  }
+}
 
 /** 通过 userId 拉取推荐人资料（URL 直达时兜底填充匹配卡） */
 async function loadPartnerProfile(userId: string): Promise<MatchCardUser | null> {

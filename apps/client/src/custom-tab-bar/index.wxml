@@ -1,6 +1,6 @@
 <!-- P6 a11y：TabBar 添加 role=tablist / role=tab / aria-selected / aria-label
      微信小程序原生 wxml 支持 role 与 aria-* 属性，可直接渲染到 DOM -->
-<view class="tab-bar" role="tablist" aria-label="主导航">
+<view class="tab-bar {{hidden ? 'tab-bar--hidden' : ''}}" role="tablist" aria-label="主导航">
   <view
     wx:for="{{tabs}}"
     wx:key="id"
