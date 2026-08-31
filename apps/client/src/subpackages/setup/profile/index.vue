@@ -728,4 +728,10 @@ async function save() {
   color: var(--c-text-tertiary);
   line-height: 1;
 }
-</style>
+
+/* 2026-08-31 Phase 1：向导步骤切换渐入（消除整屏空白转场观感） */
+@keyframes wizard-enter {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
