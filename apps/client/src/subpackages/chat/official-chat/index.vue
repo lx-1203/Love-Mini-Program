@@ -38,10 +38,13 @@ const accountDesc = ref("你的恋爱小管家");
 const loading = ref(false);
 const errorMessage = ref("");
 const messages = ref<OfficialMessageView[]>([]);
+// 2026-08-31 Phase 1：进入过渡骨架（录屏实证助手聊天进入有 1~1.5s 纯空白）
+const ready = ref(false);
 
 /* -------- 输入 -------- */
 const inputValue = ref("");
 const inputFocus = ref(false);
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 const userAvatar = resolveMediaUrl("/static/assets/images/avatars/avatar-1.jpg");
 
 /* -------- 本地发送 -------- */
@@ -209,6 +212,8 @@ function formatTime(iso?: string | null): string {
 }
 
 onLoad((query) => {
+  // 2026-08-31：进入即渲染骨架，数据/兜底计时后放开（消除纯白过渡）
+  setTimeout(() => { ready.value = true; }, 500);
   if (!isUnlocked.value) return;
   const raw = query?.accountId;
   if (typeof raw === "string" && raw) accountId.value = raw;
@@ -220,6 +225,8 @@ onLoad((query) => {
   <view class="assistant-chat">
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
+      <!-- 2026-08-31 Phase 1：进入骨架（消除 1~1.5s 纯白过渡） -->
+      <SkeletonBlock v-if="!ready" variant="chat" :rows="4" label="加载中" />
       <!-- ===== 顶部导航栏 ===== -->
       <view class="nav-bar">
         <view class="nav-left" @tap="goBack">

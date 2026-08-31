@@ -14,10 +14,9 @@
     <!-- 加载态 -->
     <view v-if="state === 'loading'" class="state-slot state-loading">
       <slot name="loading">
-        <view class="loading-default">
-          <view class="loading-spinner" role="status" aria-live="polite" :aria-label="t('common.loadingAria')" />
-          <text class="loading-text">{{ loadingText }}</text>
-        </view>
+        <!-- 2026-08-31 Phase 1 体验基建：默认 loading 从 spinner+文字升级为列表骨架屏
+             （真机录屏实证「加载中...」长挂与纯白转场是「点了没反应」感知的主来源） -->
+        <SkeletonBlock variant="list" :rows="3" :label="loadingText" />
       </slot>
     </view>
 
@@ -66,6 +65,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import ErrorState from "./ErrorState.vue";
 import EmptyState from "./EmptyState.vue";
+import SkeletonBlock from "./SkeletonBlock.vue";
 
 interface Props {
   /** 当前状态 */
