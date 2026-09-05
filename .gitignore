@@ -29,6 +29,7 @@ Thumbs.db
 *.local
 # 本地开发启动脚本（含本地凭据，禁止提交）
 start-local.bat
+scripts-start-backend.cmd
 verification_logs/
 
 # 真实凭据环境文件（禁止提交；*.example 模板文件保留）
