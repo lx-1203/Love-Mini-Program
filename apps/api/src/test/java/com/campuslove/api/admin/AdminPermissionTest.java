@@ -560,6 +560,7 @@ class AdminPermissionTest {
         @Mock private com.campuslove.api.auth.OnlineUserService onlineUserService;
         @Mock private com.campuslove.api.repository.UserBasicProfileRepository userBasicProfileRepository;
         @Mock private SchoolRepository schoolRepository;
+        @Mock private com.campuslove.api.auth.SmsCodeService smsCodeService;
 
         private PasswordEncoder passwordEncoder;
         private RealAuthService realAuthService;
@@ -584,7 +585,8 @@ class AdminPermissionTest {
                     schoolRepository,
                     "",
                     true,
-                    "13900000000"
+                    "13900000000",
+                    smsCodeService
             );
             when(userCampusProfileRepository.findByUserId(any())).thenReturn(Optional.empty());
             when(userScheduleProfileRepository.findByUserId(any())).thenReturn(Optional.empty());

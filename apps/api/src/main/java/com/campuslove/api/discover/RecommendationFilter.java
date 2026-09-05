@@ -17,6 +17,7 @@ import java.util.Set;
  *   <li>{@code futureCity} —— 未来定居城市</li>
  *   <li>{@code keyword} —— 模糊匹配 nickname/bio/interestTags</li>
  *   <li>{@code ageMin} / {@code ageMax} —— 年龄范围（闭区间，由出生年份推导）</li>
+ *   <li>{@code excludeIds} —— 已曝光用户 ID 集合（B5 去重，排序前过滤）</li>
  * </ul>
  */
 public record RecommendationFilter(
@@ -29,7 +30,8 @@ public record RecommendationFilter(
         String futureCity,
         String keyword,
         Integer ageMin,
-        Integer ageMax
+        Integer ageMax,
+        Set<Long> excludeIds
 ) {
     /**
      * 紧凑构造器：将 null 与空字符串规整为 null，将 List 规整为不可变 Set。
@@ -41,6 +43,25 @@ public record RecommendationFilter(
         hometownCity = (hometownCity == null || hometownCity.isBlank()) ? null : hometownCity;
         futureCity = (futureCity == null || futureCity.isBlank()) ? null : futureCity;
         keyword = (keyword == null || keyword.isBlank()) ? null : keyword;
+        excludeIds = excludeIds == null ? Set.of() : Set.copyOf(excludeIds);
+    }
+
+    /**
+     * 向后兼容构造器（无 excludeIds）。
+     */
+    public RecommendationFilter(
+            Integer heightMin,
+            Integer heightMax,
+            Set<String> educationLevels,
+            Set<String> relationshipStatuses,
+            String hometownProvince,
+            String hometownCity,
+            String futureCity,
+            String keyword,
+            Integer ageMin,
+            Integer ageMax) {
+        this(heightMin, heightMax, educationLevels, relationshipStatuses,
+                hometownProvince, hometownCity, futureCity, keyword, ageMin, ageMax, null);
     }
 
     /**
@@ -59,6 +80,7 @@ public record RecommendationFilter(
                 && futureCity == null
                 && keyword == null
                 && ageMin == null
-                && ageMax == null;
+                && ageMax == null
+                && excludeIds.isEmpty();
     }
 }

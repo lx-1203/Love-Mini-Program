@@ -1484,6 +1484,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 /* 头像外层：固定布局尺寸（头像本体约 150rpx + AvatarFrame 白内边/渐变环），无对应 token。
    白边 + 渐变环 + 外发光由 AvatarFrame 自带，在深色背景图上天然过渡；整体可点击预览大图 */
 .detail-hero__avatar-hero {
+  border-radius: var(--r-full);
+
   width: 190rpx;
   height: 190rpx;
   flex-shrink: 0;

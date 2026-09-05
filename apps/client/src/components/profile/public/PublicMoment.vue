@@ -16,6 +16,9 @@ withDefaults(
   },
 );
 
+// 2026-09-05 R18：帖子卡可点击进详情（修复"看不了 TA 的帖子"）
+const emit = defineEmits<{ (e: "openPost", postId: string): void }>();
+
 /** 将 ISO 时间转成 "3天前" 这种相对文案（理想图：最近动态 3天前·北京） */
 function relativeTime(iso?: string): string {
   if (!iso) return "";
@@ -40,7 +43,16 @@ function relativeTime(iso?: string): string {
       <text class="public-moment__title">最近动态</text>
       <text class="public-moment__more">···</text>
     </view>
-    <view v-for="post in posts" :key="post.id" class="public-moment__card">
+    <view
+      v-for="post in posts"
+      :key="post.id"
+      class="public-moment__card press-feedback"
+      hover-class="press-feedback--active"
+      hover-stay-time="40"
+      role="button"
+      :aria-label="`查看${authorName || 'TA'}的动态`"
+      @tap="emit('openPost', String(post.id))"
+    >
       <view class="public-moment__author">
         <image
           v-if="authorAvatar"

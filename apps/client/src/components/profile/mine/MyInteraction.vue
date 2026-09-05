@@ -81,7 +81,7 @@ const DEFAULT_ICONS: Record<string, { iconSrc: string; color: string }> = {
 }
 
 .my-interaction__row--pressed {
-  background: #F7FAF9;
+  background: #EEF7F2;
 }
 
 .my-interaction__icon {

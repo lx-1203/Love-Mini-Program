@@ -17,10 +17,13 @@ const props = withDefaults(defineProps<{
   loading?: boolean;
   errorMessage?: string;
   posts?: UserProfilePost[];
+  /** 2026-09-05 R18：他人主页关注状态 */
+  following?: boolean;
 }>(), {
   loading: false,
   errorMessage: "",
   posts: () => [],
+  following: false,
 });
 
 const emit = defineEmits<{
@@ -35,6 +38,8 @@ const emit = defineEmits<{
   (e: "unmatch"): void;
   (e: "tapAvatar"): void;
   (e: "tapPhoto", index: number): void;
+  /** 2026-09-05 R18：最近动态帖子卡点击（转发 PublicMoment.openPost） */
+  (e: "openPost", postId: string): void;
 }>();
 
 const governanceVisible = ref(false);
@@ -68,12 +73,14 @@ function closeGovernance() {
         :posts="props.posts"
         :author-name="profile.basic.name"
         :author-avatar="profile.basic.avatar"
+        @open-post="emit('openPost', $event)"
       />
       <view class="public-profile__spacer" />
 
       <RelationshipCTA
         :liked="profile.relation.liked"
         :matched="profile.relation.matched"
+        :following="props.following"
         @like="emit('like')"
         @message="emit('message')"
         @follow="emit('follow')"
@@ -93,7 +100,7 @@ function closeGovernance() {
 <style scoped lang="scss">
 .public-profile {
   min-height: 100vh;
-  background: #F7FAF9;
+  background: #EEF7F2;
   /* 2026-08-26 P0-2：底内边距覆盖固定底栏 RelationshipCTA + 安全区 + 流内 spacer(220rpx)，保证可完整下滑 */
   padding-bottom: calc(220rpx + env(safe-area-inset-bottom) + 60rpx);
 }

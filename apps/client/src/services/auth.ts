@@ -402,3 +402,30 @@ export async function loginAsGuest(): Promise<UserSession> {
   }
   return response;
 }
+
+/**
+ * 微信手机号绑定：通过 getPhoneNumber 回调 code 换取手机号并绑定到当前用户。
+ *
+ * <p>前置条件：用户已登录（JWT 有效），即必须先通过微信/手机号/体验账号登录。
+ * 若用户未登录，后端将返回 401。</p>
+ *
+ * <p>错误处理：</p>
+ * <ul>
+ *   <li>后端 404（mock 模式端点不存在）→ 抛出错误，调用方提示"开发模式请使用验证码登录"</li>
+ *   <li>后端 400/401 → 抛出错误，调用方提示具体错误</li>
+ *   <li>其他错误 → 抛出错误，调用方提示"手机号绑定失败"</li>
+ * </ul>
+ *
+ * @param code 微信 getPhoneNumber 回调 code
+ * @returns 包含脱敏手机号的响应
+ * @throws Error 网络错误/业务错误时抛出
+ */
+export async function bindPhoneViaWechat(code: string): Promise<{ phone: string }> {
+  const response = await request<{ phone: string }, { code: string }>({
+    url: "/v1/auth/phone/bind",
+    method: "POST",
+    data: { code },
+    noRetry: true,
+  });
+  return response;
+}

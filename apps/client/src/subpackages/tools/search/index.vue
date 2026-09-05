@@ -23,8 +23,11 @@ import EmptyState from "../../../components/common/EmptyState.vue";
 import ErrorState from "../../../components/common/ErrorState.vue";
 import Skeleton from "../../../components/common/Skeleton.vue";
 import { showErrorToast } from "../../../utils/error-toast";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const searchStore = useSearchStore();
 const villageStore = useVillageStore();
 
@@ -193,8 +196,8 @@ function goToActivity(activityId: number) {
 
 <template>
   <view class="search-page">
-    <!-- 顶部搜索栏 -->
-    <view class="search-header">
+    <!-- 顶部搜索栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
+    <view class="search-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 16rpx)` }">
       <view class="search-box" role="search" :aria-label="t('search.placeholder')">
         <image class="search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
         <input
@@ -400,7 +403,7 @@ function goToActivity(activityId: number) {
 <style scoped lang="scss">
 .search-page {
   min-height: 100vh;
-  background: var(--bg-page, #f7f7f9);
+  background: var(--c-bg-page);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -663,7 +666,7 @@ function goToActivity(activityId: number) {
 .campus-preview {
   margin: 0 0 24rpx;
   padding: 20rpx 24rpx;
-  background: #F7FAF9;
+  background: #EEF7F2;
   border-radius: 18rpx;
 }
 

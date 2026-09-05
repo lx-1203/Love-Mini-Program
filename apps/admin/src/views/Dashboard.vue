@@ -13,7 +13,7 @@
  * 降级：任一子接口失败展示 ErrorState + 重试，失败卡片显示「数据不可用」，
  * 不以真实 0 误导运营。
  */
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   getStats,
   type UserStats,
@@ -24,6 +24,7 @@ import { listUsers, type AdminUserSummary } from "@/api/users";
 import { listReports } from "@/api/reports";
 import { useI18n } from "vue-i18n";
 import ErrorState from "@/components/ErrorState.vue";
+import TrendChart from "@/components/TrendChart.vue";
 import { logger } from "@/utils/logger";
 import { getLocale } from "@/i18n";
 import { TREND_DAYS } from "@/utils/constants";
@@ -46,7 +47,7 @@ const kpiCards = ref<KpiCard[]>([
 
 const failedStats = ref<boolean[]>([false, false, false, false]);
 
-/** 每日匹配趋势（近 30 日，柱状图数据源） */
+/** 每日匹配趋势（近 30 日，ECharts 柱状图数据源） */
 const trend = ref<{ date: string; count: number }[]>([]);
 /** 近期注册用户（前 5） */
 const recentUsers = ref<AdminUserSummary[]>([]);
@@ -59,20 +60,6 @@ const lastUpdated = ref("");
 /** 手动刷新成功提示 */
 const refreshTip = ref("");
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
-/** 柱状图几何：归一化高度（%）+ 首/中/尾坐标轴标签 */
-const trendMax = computed(() => Math.max(...trend.value.map((d) => d.count), 1));
-const axisLabels = computed(() => {
-  if (trend.value.length === 0) return [];
-  const mid = Math.floor((trend.value.length - 1) / 2);
-  return [0, mid, trend.value.length - 1]
-    .filter((idx, pos, arr) => arr.indexOf(idx) === pos)
-    .map((idx) => ({ idx, date: trend.value[idx]!.date.slice(5) }));
-});
-
-function barHeight(count: number): string {
-  return `${Math.max((count / trendMax.value) * 100, 2)}%`;
-}
 
 /** 用户状态徽章类（status → 浅底同色字 pill） */
 function userStatusClass(status: AdminUserSummary["status"]): string {
@@ -228,7 +215,7 @@ onBeforeUnmount(() => {
       </view>
     </view>
 
-    <!-- 核心指标趋势（近 30 天）：CSS 柱状图 -->
+    <!-- 核心指标趋势（近 30 天）：ECharts 柱状图（W2 图表库决策） -->
     <view class="chart-card">
       <view class="chart-header">
         <text class="chart-title">{{ t("dashboard.chartTitle") }}</text>
@@ -238,23 +225,11 @@ onBeforeUnmount(() => {
         </view>
       </view>
       <view v-if="trend.length === 0" class="chart-empty">{{ t("common.noData") }}</view>
-      <view v-else class="chart-plot">
-        <view class="chart-grid">
-          <span v-for="i in 4" :key="i" class="chart-grid-line" />
-        </view>
-        <view class="chart-bars">
-          <view
-            v-for="item in trend"
-            :key="item.date"
-            class="chart-bar"
-            :style="{ height: barHeight(item.count) }"
-            :title="`${item.date} · ${item.count}`"
-          />
-        </view>
-      </view>
-      <view v-if="trend.length > 0" class="chart-axis">
-        <text v-for="label in axisLabels" :key="label.idx" class="chart-axis-text">{{ label.date }}</text>
-      </view>
+      <TrendChart
+        v-else
+        :data="trend"
+        :aria-label="t('dashboard.chartTitle')"
+      />
     </view>
 
     <!-- 近期注册用户 -->
@@ -416,56 +391,6 @@ onBeforeUnmount(() => {
   text-align: center;
   color: var(--admin-color-text-tertiary);
   font-size: var(--admin-font-lg);
-}
-
-.chart-plot {
-  position: relative;
-  height: 260px;
-}
-
-.chart-grid {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-.chart-grid-line {
-  display: block;
-  height: 1px;
-  background: var(--admin-color-bg-page);
-}
-
-.chart-bars {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  gap: 14px;
-  padding: 0 var(--admin-space-sm);
-}
-
-.chart-bar {
-  flex: 1;
-  min-width: 16px;
-  max-width: 28px;
-  border-radius: 2px 2px 0 0;
-  background: var(--admin-color-primary);
-  transition: height 0.3s;
-}
-
-.chart-axis {
-  display: flex;
-  justify-content: space-between;
-  padding: var(--admin-space-sm) var(--admin-space-sm) 0;
-}
-
-.chart-axis-text {
-  font-size: var(--admin-font-sm);
-  color: var(--admin-color-text-tertiary);
 }
 
 /* ===== 近期注册用户表卡 ===== */

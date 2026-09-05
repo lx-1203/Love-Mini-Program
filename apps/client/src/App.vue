@@ -4,6 +4,7 @@ import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "./stores/session";
+import { useProfileStore } from "./stores/profile";
 // 启动期预加载头像框注册表：AvatarFrame 为懒加载组件，运行时 require(config/avatar-frames)
 // 若不在此处注册，mp-weixin 会报 module 'config/avatar-frames.js' is not defined
 import { AVATAR_FRAMES } from "./config/avatar-frames";
@@ -204,7 +205,18 @@ onLaunch(() => {
       // 第五轮 QA 验收入口：冷启动携带 dev-user=1 时，在 bootstrap 前注入 mock 会话；
       // bootstrap 感知 devUserRequested 后不再用真实空会话覆盖。
       applyDevUserFromLaunch();
-      sessionStore.bootstrap().catch((err: unknown) => {
+      sessionStore.bootstrap().then(() => {
+        // 2026-09-03（统一角色展示）：登录后立即拉取本人资料一次，
+        // 使首页头部/聊天会话等全局头像统一为本人真实头像（profile.avatarUrl 单一数据源）
+        if (sessionStore.isLoggedIn) {
+          const profileStore = useProfileStore();
+          if (!profileStore.avatarUrl) {
+            profileStore.load().catch(() => {
+              /* 资料拉取失败不阻塞启动，头像回落本地默认 */
+            });
+          }
+        }
+      }).catch((err: unknown) => {
         // 修复：bootstrap 异常上报到 main.ts 全局错误处理器，统一出口便于排查
         reportGlobalError("App.onLaunch.bootstrap", err);
       });
@@ -300,9 +312,15 @@ onMounted(markAppReady);
 @import "./styles/_components.scss";
 // R4-00241：全局动画关键帧与工具类（自 uni.scss 迁移，全局引入一次，避免组件 wxss 注入）
 @import "./theme/animations.scss";
+// 2026-09-03：mp-weixin <image> 渲染基线（.base-img-fill / .base-img-block + 三大铁律注释），全局注入一次
+@import "./styles/_image-base.scss";
 
 page {
-  background: var(--c-gradient-page);
+  /* 2026-09-03 背景统一（用户反馈"背景不同调/断层"）：
+     全局页面底色改用平面浅绿 --c-bg-page（#EEF7F2），不再用渐变。
+     渐变顶部色（#DFF3EA）与页面内各区块平面色不一致，滚动时露出色差缝；
+     平面统一后页面滚动时背景与内容同动、无色差。暗色模式走 token 自动适配。 */
+  background: var(--c-bg-page);
   color: var(--c-text-primary);
   font-family:
     -apple-system,
@@ -787,14 +805,14 @@ textarea:focus {
    ================================================================ */
 /* #ifdef H5 */
 body {
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 #app {
   max-width: 750px;
   margin: 0 auto;
   min-height: 100vh;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   /* H5 限宽容器阴影：对齐 --c-elevation-2 token（ui-ux-review #5：消除裸阴影值） */
   box-shadow: var(--c-elevation-2, 0 4rpx 16rpx rgba(15, 23, 42, 0.08));
 }

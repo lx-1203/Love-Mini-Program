@@ -412,6 +412,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .author-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }
@@ -580,6 +582,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .reply-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

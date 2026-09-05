@@ -418,15 +418,16 @@ defineExpose({ reset });
         <text class="filter-section__value">{{ ageRangeDisplayText }}</text>
       </view>
       <view class="filter-section__sliders">
+        <!-- 原生 slider 属性不支持 CSS var，须传具体色值 -->
         <slider
           class="age-slider"
           :min="AGE_MIN_BOUND"
           :max="AGE_MAX_BOUND"
           :step="AGE_STEP"
           :value="ageMinDraft"
-          activeColor="var(--c-brand-500)"
-          backgroundColor="var(--c-neutral-200)"
-          block-color="var(--c-brand-600)"
+          activeColor="#36C99A"
+          backgroundColor="#DDE3E0"
+          block-color="#2AAE83"
           block-size="22"
           @change="onAgeMinChange"
         />
@@ -436,9 +437,9 @@ defineExpose({ reset });
           :max="AGE_MAX_BOUND"
           :step="AGE_STEP"
           :value="ageMaxDraft"
-          activeColor="var(--c-romance-500)"
-          backgroundColor="var(--c-neutral-200)"
-          block-color="var(--c-romance-500)"
+          activeColor="#FF6B81"
+          backgroundColor="#DDE3E0"
+          block-color="#FF6B81"
           block-size="22"
           @change="onAgeMaxChange"
         />
@@ -478,9 +479,9 @@ defineExpose({ reset });
         :max="DISTANCE_MAX_BOUND"
         :step="DISTANCE_STEP"
         :value="distanceMaxDraft"
-        activeColor="var(--c-brand-500)"
-        backgroundColor="var(--c-neutral-200)"
-        block-color="var(--c-brand-600)"
+        activeColor="#36C99A"
+        backgroundColor="#DDE3E0"
+        block-color="#2AAE83"
         block-size="22"
         @change="onDistanceChange"
       />

@@ -95,7 +95,7 @@ class RealProfileServiceTest {
      */
     @Test
     void getProfileStats_delegatesToQueryService() {
-        ProfileStatsView expected = new ProfileStatsView(10, 20, 30);
+        ProfileStatsView expected = new ProfileStatsView(10, 20, 30, 40, 50, 60);
         when(queryService.getProfileStats()).thenReturn(expected);
 
         ProfileStatsView result = realService.getProfileStats();

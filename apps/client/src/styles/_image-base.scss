@@ -1,0 +1,46 @@
+// ============================================================
+// 校园恋爱小程序 — mp-weixin <image> 渲染基线（_image-base.scss）
+// 版本: 1.0.0
+// 说明:
+//   1. 集中定义跨页面/跨组件复用的 <image> 布局基线，避免多端差异造成的
+//      图片不显示 / 变形 / 锯齿 / 占位异常（2026-09-03 多起 UI 缺陷真因）;
+//   2. 与 styles/_components.scss 互补：本文件只服务 <image> 渲染，不涉其它组件;
+//   3. 引入方式：在 App.vue 中 @import "@/styles/_image-base.scss";（全局注入一次）
+// ============================================================
+
+// ---------- mp-weixin <image> 三大铁律（编码时必须遵守） ----------
+// 1) mp-weixin 的 <image> 是原生组件，CSS object-fit 不生效
+//    —— 缩放与裁切一律用原生属性 mode="aspectFit"（等比完整显示）/
+//       mode="aspectFill"（等比填满裁剪），不要写 object-fit: cover/contain。
+// 2) image-rendering: crisp-edges 会强制关闭抗锯齿，放大后边缘出现明显锯齿/杂边
+//    —— 禁用。如确需锐化小图标，用 -webkit-optimize-contrast（iOS/Safari 系）
+//       并紧跟一条 image-rendering: auto 作为其它内核兜底。
+// 3) <image> 默认 inline 且无显式宽高时会按 0×0 或默认尺寸解析
+//    —— 一律 display: block；容器给显式 width/height（rpx）；需要比例约束时
+//       用 styles/_mixins.scss 的 aspect-ratio mixin（padding-top 法，mp 不支持 aspect-ratio）。
+//
+// 检查脚本：cd apps/client && npx -y pnpm@11.17.0 run check:mp-image
+//   —— 全局扫描 src 下 crisp-edges / 裸 object-fit 并给出修复指引（豁免标记 /* mp-audit:ignore */）。
+
+// ---------- 图片填满容器基线类 ----------
+// 用途：<image class="base-img-fill" mode="aspectFill" /> 填满「具有显式尺寸」的父容器。
+// 注意：本类只负责布局（block + 100% 铺满 + 抗锯齿渲染）；等比裁切语义由原生 mode 承担，
+//       两者必须成对出现。SafeImage 内部已有等价实现（.safe-image__img），组件自绘 image 时复用本类。
+.base-img-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  // 小图锐化基线：iOS WebView 生效；其余内核回退 auto（默认抗锯齿，禁用 crisp-edges）
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+}
+
+// ---------- 头像 / 小图标铺满基线（含 flex 收缩保护） ----------
+// 用途：头像、cell 图标等 88rpx 级小图，防 SafeImage/父容器塌缩与 flex 挤压成 0×0。
+// 组件内请保持 scoped 显式宽高（如 width:88rpx; height:88rpx;）+ 本基线的 display/flex-shrink。
+.base-img-block {
+  display: block;
+  flex-shrink: 0;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+}

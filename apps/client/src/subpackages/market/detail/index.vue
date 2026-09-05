@@ -15,10 +15,18 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { useMock } from "../../../stores/helpers/use-mock";
+import { useAppConfigStore } from "../../../stores/app-config";
 import { request } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
 
 const { t } = useI18n();
+
+/**
+ * 商业化封存（批次 A / ADR-2）：商品购买属付费项目，由 commerce.enabled
+ * 总闸管辖。缺省封存（=== true 才放行），封存态不发商品请求、隐藏购买栏。
+ */
+const appConfig = useAppConfigStore();
+const commerceSealed = computed(() => !appConfig.isCommerceOn());
 
 /**
  * 后端商品视图（GET /products/{id} 响应载荷，3-H）。
@@ -238,10 +246,17 @@ function goBack(): void {
 
 /** 立即购买（占位：支付功能暂未开放） */
 function handleBuyNow(): void {
+  // 封存守卫（ADR-2）：封存态禁止购买交互
+  if (commerceSealed.value) {
+    uni.showToast({ title: t("commerce.sealedToast"), icon: "none" });
+    return;
+  }
   uni.showToast({ title: t("shop.buyUnavailable"), icon: "none" });
 }
 
 onLoad((query) => {
+  // 批次 A / ADR-2：封存态不发商品请求，直接展示封存卡
+  if (commerceSealed.value) return;
   const rawId = query?.id;
   if (typeof rawId === "string" && rawId.length > 0) {
     productId.value = rawId;
@@ -273,8 +288,25 @@ onLoad((query) => {
     <!-- 顶部安全区占位 -->
     <view class="safe-top" />
 
+    <!-- 批次 A / ADR-2：商业化封存态（优先级最高，SVG 锁图标，禁 emoji） -->
+    <view v-if="commerceSealed" class="product-state product-state--sealed" aria-live="polite">
+      <image class="product-state__sealed-icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
+      <text class="product-state__sealed-title">{{ t('commerce.sealedTitle') }}</text>
+      <text class="product-state__sealed-desc">{{ t('commerce.sealedDesc') }}</text>
+      <view
+        class="product-state__btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <text class="product-state__btn-text">{{ t('common.back') }}</text>
+      </view>
+    </view>
+
     <!-- 加载态 -->
-    <view v-if="loading" class="product-state" role="status" aria-live="polite">
+    <view v-else-if="loading" class="product-state" role="status" aria-live="polite">
       <view class="product-state__spinner" />
       <text class="product-state__text">{{ t("shop.loading") }}</text>
     </view>
@@ -463,6 +495,31 @@ onLoad((query) => {
   font-size: var(--fs-md);
   font-weight: 600;
   color: var(--c-text-inverse);
+}
+
+/* ==================== 批次 A / ADR-2：商业化封存态 ==================== */
+.product-state--sealed {
+  gap: var(--sp-3);
+  padding: 160rpx 48rpx;
+}
+
+.product-state__sealed-icon {
+  width: 96rpx;
+  height: 96rpx;
+  opacity: 0.55;
+}
+
+.product-state__sealed-title {
+  font-size: var(--fs-xl, 34rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1a2332);
+}
+
+.product-state__sealed-desc {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-text-tertiary, #94a3b8);
+  text-align: center;
+  line-height: 1.6;
 }
 
 /* ==================== 滚动区域 ==================== */

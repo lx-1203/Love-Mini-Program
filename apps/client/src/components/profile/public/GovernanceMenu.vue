@@ -23,12 +23,12 @@ const emit = defineEmits<{
   <view v-if="visible" class="governance-mask" @tap="emit('close')">
     <view class="governance-sheet" @tap.stop>
       <view class="governance-sheet__title">更多操作</view>
-      <view class="governance-sheet__item" @tap="emit('report')">举报</view>
-      <view class="governance-sheet__item" @tap="emit('block')">拉黑</view>
+      <view class="governance-sheet__item press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('report')">举报</view>
+      <view class="governance-sheet__item press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('block')">拉黑</view>
       <view v-if="matched" class="governance-sheet__item governance-sheet__item--danger" @tap="emit('unmatch')">
         取消匹配
       </view>
-      <view class="governance-sheet__cancel" @tap="emit('close')">取消</view>
+      <view class="governance-sheet__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('close')">取消</view>
     </view>
   </view>
 </template>
@@ -79,6 +79,6 @@ const emit = defineEmits<{
   font-size: 30rpx;
   font-weight: 700;
   color: #333A37;
-  border-top: 12rpx solid #F7FAF9;
+  border-top: 12rpx solid #EEF7F2;
 }
 </style>

@@ -139,7 +139,17 @@ const displayPosts = computed<PostItem[]>(() => {
   if (!channel || channel.dataSource === "interest-hub") return [];
   // 2026-08-11 热度榜：数据已按热度分排序，直接展示不重复过滤
   if (channel.dataSource === "hot-board") return villageStore.posts;
-  return villageStore.filteredPosts(currentFilters.value);
+  // 2026-09-05 R17：自己待审核的新帖置顶展示（审核中徽标）；审核通过后服务端列表
+  // 含同 id 帖，按 id 去重避免双份
+  const pending = villageStore.selfPendingPosts.filter(
+    (p) => !villageStore.posts.some((q) => q.id === p.id && q.auditStatus !== "pending")
+  );
+  const seen = new Set<string>();
+  return [...pending, ...villageStore.filteredPosts(currentFilters.value)].filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
 });
 
 /** 置顶帖（今日广场折叠条） */

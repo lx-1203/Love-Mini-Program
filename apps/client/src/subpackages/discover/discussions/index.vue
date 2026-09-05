@@ -6,6 +6,7 @@ import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 import StatusState from "../../../components/common/StatusState.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { discoverPageRequirements } from "../../../config/page-access";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { clientApi } from "../../../services/api";
@@ -74,7 +75,9 @@ function openDiscussion(item: Awaited<ReturnType<typeof clientApi.getDiscussionR
     show-back
   >
     <SectionCard :title="t('discussions.hotSectionTitle')" :subtitle="t('discussions.hotSectionSubtitle')">
-      <view v-if="loading" class="empty-state">{{ t('discussions.loadingContent') }}</view>
+      <view v-if="loading" class="empty-state">
+        <SkeletonBlock variant="list" :rows="3" :label="t('discussions.loadingContent')" />
+      </view>
       <view v-else-if="error" class="empty-state">
         {{ error }}
         <text class="retry-link" @tap="loadDiscussions">{{ t('discussions.retry') }}</text>

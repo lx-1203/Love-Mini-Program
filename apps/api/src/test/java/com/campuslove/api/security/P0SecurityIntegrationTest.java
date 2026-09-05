@@ -150,7 +150,8 @@ class P0SecurityIntegrationTest {
         @Mock private JwtTokenProvider jwtTokenProvider;
         @Mock private UserRepository userRepository;
         @Mock private UserBasicProfileRepository userBasicProfileRepository;
-        @Mock private SchoolRepository schoolRepository;
+        @Mock private com.campuslove.api.repository.SchoolRepository schoolRepository;
+        @Mock private com.campuslove.api.auth.SmsCodeService smsCodeService;
         @Mock private UserCampusProfileRepository userCampusProfileRepository;
         @Mock private UserScheduleProfileRepository userScheduleProfileRepository;
         @Mock private AesEncryptor aesEncryptor;
@@ -219,7 +220,8 @@ class P0SecurityIntegrationTest {
                     schoolRepository,
                     "",
                     true,
-                    "13900000000"
+                    "13900000000",
+                    smsCodeService
             );
 
             jwtAuthenticationFilter = new JwtAuthenticationFilter(

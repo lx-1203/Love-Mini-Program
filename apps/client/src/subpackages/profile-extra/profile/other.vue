@@ -12,6 +12,7 @@ import { useLikesStore } from "../../../stores/likes";
 import { useMock } from "../../../stores/helpers/use-mock";
 import type { HeartSignalView } from "../../../stores/discover/api";
 import { openAppPath } from "../../../utils/navigation";
+import { resolveMediaUrl } from "../../../utils/media";
 import { clientApi } from "../../../services/api";
 import { ROUTES } from "../../../constants/routes";
 import { useSessionStore } from "../../../stores/session";
@@ -19,6 +20,7 @@ import { useReportStore } from "../../../stores/report";
 import { ensureCertified } from "../../../guards/campus-gate";
 import WhisperComposeSheet from "../../../components/discover/WhisperComposeSheet.vue";
 import ProfileShell from "../../../components/profile/ProfileShell.vue";
+import BottomSheet from "../../../components/common/BottomSheet.vue";
 import { fetchPublicProfile } from "../../../api/profile";
 import type { UserProfileDTO } from "../../../types/profile";
 import { lightHaptic, successHaptic, errorHaptic } from "../../../utils/haptic";
@@ -32,8 +34,27 @@ const targetUserId = ref("");
 const profile = ref<UserProfileDTO | null>(null);
 const loading = ref(false);
 const errorMessage = ref("");
+/** 深链缺 userId 参数：错误不可重试（2026-09-03 参数校验加固） */
+const missingParam = ref(false);
 const liking = ref(false);
 const whisperVisible = ref(false);
+/** 2026-09-02 R5：底部「更多操作」弹窗（通用 BottomSheet 演示：举报 / 拉黑 / 分享） */
+const moreSheetVisible = ref(false);
+
+function handleMoreShare() {
+  moreSheetVisible.value = false;
+  uni.showToast({ title: "分享入口待接入", icon: "none" });
+}
+function handleMoreReport() {
+  moreSheetVisible.value = false;
+  // 复用既有 handleReportUser（已实现举报流）
+  handleReportUser();
+}
+function handleMoreBlock() {
+  moreSheetVisible.value = false;
+  // 复用既有 handleBlockUser（拉黑二次确认 → store action）
+  handleBlockUser();
+}
 
 const alreadyLiked = computed(() =>
   likesStore.likes.some((item) => item.userId === targetUserId.value),
@@ -42,6 +63,36 @@ const alreadyLiked = computed(() =>
 const isMatched = computed(() =>
   likesStore.mutualLikes.some((item) => item.userId === targetUserId.value),
 );
+
+/** 2026-09-05 R18：关注状态（后端暂无"是否已关注"查询字段，本地维护 + follow/unfollow 真实写入） */
+const following = ref(false);
+const followBusy = ref(false);
+
+/** 2026-09-05 R18：最近动态帖子卡 → 村口帖子详情 */
+function goPostDetail(postId: string) {
+  if (!postId) return;
+  lightHaptic();
+  openAppPath(`${ROUTES.VILLAGE.DETAIL}?id=${encodeURIComponent(postId)}`);
+}
+
+/** 2026-09-05 R18：生活瞬间照片点击 → 自定义全屏查看层。
+ *  不用 uni.previewImage：微信预览器不支持包内 /static 路径（永久加载转圈），
+ *  生活瞬间多为包内装饰图，自定义层用 <image> 渲染与页面同源可靠。 */
+const photoViewerVisible = ref(false);
+const photoViewerSrc = ref("");
+
+function previewPhoto(index: number) {
+  const photos = profileForRender.value?.media.photos ?? [];
+  const src = photos[Math.min(Math.max(index, 0), photos.length - 1)];
+  if (!src) return;
+  photoViewerSrc.value = resolveMediaUrl(src);
+  photoViewerVisible.value = true;
+}
+
+function closePhotoViewer() {
+  photoViewerVisible.value = false;
+  photoViewerSrc.value = "";
+}
 
 /** 渲染视图：把本地喜欢/匹配状态同步到统一 DTO 的 relation 字段 */
 const profileForRender = computed<UserProfileDTO | null>(() => {
@@ -170,13 +221,27 @@ function openWhisperSheet() {
   whisperVisible.value = true;
 }
 
-function handleFollow() {
-  if (!targetUserId.value) return;
-  void clientApi.followUser(targetUserId.value).then(() => {
-    uni.showToast({ title: t("profile.otherFollowed"), icon: "success" });
-  }).catch(() => {
+/** 2026-09-05 R18：关注/取消关注切换（真实 API 写入 + 本地状态即时反馈） */
+async function handleFollowToggle() {
+  if (!targetUserId.value || followBusy.value) return;
+  lightHaptic();
+  followBusy.value = true;
+  try {
+    if (following.value) {
+      await clientApi.unfollowUser(targetUserId.value);
+      following.value = false;
+      uni.showToast({ title: "已取消关注", icon: "none" });
+    } else {
+      await clientApi.followUser(targetUserId.value);
+      following.value = true;
+      successHaptic();
+      uni.showToast({ title: "已关注", icon: "success" });
+    }
+  } catch (_e) {
     uni.showToast({ title: t("profile.otherFollowFailed"), icon: "none" });
-  });
+  } finally {
+    followBusy.value = false;
+  }
 }
 
 function handleUnmatch() {
@@ -202,18 +267,14 @@ function handleUnmatch() {
 function openGovernanceMenu() {
   if (!targetUserId.value) return;
   uni.showActionSheet({
-    itemList: [t("chat.nav.report"), t("chat.nav.block"), t("profile.otherFollow")],
+    itemList: [t("chat.nav.report"), t("chat.nav.block"), following.value ? "取消关注" : t("profile.otherFollow")],
     success: (res) => {
       if (res.tapIndex === 0) {
         handleReportUser();
       } else if (res.tapIndex === 1) {
         handleBlockUser();
       } else if (res.tapIndex === 2 && targetUserId.value) {
-        void clientApi.followUser(targetUserId.value).then(() => {
-          uni.showToast({ title: t("profile.otherFollowed"), icon: "success" });
-        }).catch(() => {
-          uni.showToast({ title: t("profile.otherFollowFailed"), icon: "none" });
-        });
+        void handleFollowToggle();
       }
     },
   });
@@ -275,7 +336,9 @@ onLoad((query) => {
     recordVisit();
     void loadProfile();
   } else {
-    errorMessage.value = t("common.noData");
+    // 2026-09-03 参数校验加固：深链缺 userId 时给出明确指引（此前为笼统「暂无数据」+无效重试）
+    errorMessage.value = t("profile.missingUserParam");
+    missingParam.value = true;
   }
 });
 </script>
@@ -312,7 +375,9 @@ onLoad((query) => {
       :profile="profileForRender"
       :loading="loading"
       :error-message="errorMessage"
+      :retryable="!missingParam"
       :posts="profileForRender?.posts ?? []"
+      :following="following"
       @retry="loadProfile"
       @like="handleLike"
       @message="handleMessage"
@@ -320,7 +385,9 @@ onLoad((query) => {
       @report="handleReportUser"
       @block="handleBlockUser"
       @unmatch="handleUnmatch"
-      @follow="handleFollow"
+      @follow="handleFollowToggle"
+      @open-post="goPostDetail"
+      @tap-photo="previewPhoto"
     />
 
     <WhisperComposeSheet
@@ -330,13 +397,47 @@ onLoad((query) => {
       @close="whisperVisible = false"
       @sent="whisperVisible = false"
     />
+
+    <!-- 2026-09-02 R5：底部固定「更多操作」触发按钮 + BottomSheet 弹窗（演示通用组件） -->
+    <view class="other-more-fab press-feedback" hover-class="press-feedback--active" role="button" aria-label="更多操作" @tap="moreSheetVisible = true">
+      <text class="other-more-fab-icon">⋯</text>
+    </view>
+
+    <!-- 2026-09-05 R18：生活瞬间全屏查看层（点击遮罩关闭） -->
+    <view
+      v-if="photoViewerVisible"
+      class="photo-viewer"
+      role="button"
+      aria-label="关闭大图"
+      @tap="closePhotoViewer"
+    >
+      <image class="photo-viewer__img" :src="photoViewerSrc" mode="aspectFit" alt="" />
+    </view>
+
+    <BottomSheet
+      :visible="moreSheetVisible"
+      title="更多操作"
+      @close="moreSheetVisible = false"
+    >
+      <view class="other-more-list">
+        <view class="other-more-item press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreShare">
+          <text class="other-more-item-text">分享给好友</text>
+        </view>
+        <view class="other-more-item press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreReport">
+          <text class="other-more-item-text">举报用户</text>
+        </view>
+        <view class="other-more-item other-more-item--danger press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreBlock">
+          <text class="other-more-item-text other-more-item-text--danger">拉黑用户</text>
+        </view>
+      </view>
+    </BottomSheet>
   </view>
 </template>
 
 <style scoped lang="scss">
 .other-page {
   min-height: 100vh;
-  background: #F7FAF9;
+  background: #EEF7F2;
 }
 
 .other-header {
@@ -383,6 +484,71 @@ onLoad((query) => {
 .other-header__placeholder {
   width: 64rpx;
   height: 64rpx;
+}
+
+/* ========== 2026-09-02 R5：底部「更多操作」触发按钮 + BottomSheet 菜单 ========== */
+.other-more-fab {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 200rpx);
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #36C99A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 32rpx rgba(54, 201, 154, 0.32);
+  z-index: 100;
+}
+
+.other-more-fab-icon {
+  color: #ffffff;
+  font-size: 48rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.other-more-list {
+  padding: 8rpx 32rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.other-more-item {
+  padding: 32rpx 16rpx;
+  border-bottom: 1rpx solid #F2F5F3;
+  display: flex;
+  align-items: center;
+}
+
+.other-more-item:last-child {
+  border-bottom: none;
+}
+
+.other-more-item-text {
+  font-size: 30rpx;
+  color: #1A1E1C;
+}
+
+.other-more-item-text--danger {
+  color: #FF6B81;
+}
+
+/* ========== 2026-09-05 R18：生活瞬间全屏查看层 ========== */
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-viewer__img {
+  width: 100%;
+  height: 80vh;
 }
 </style>
 

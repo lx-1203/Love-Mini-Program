@@ -10,7 +10,10 @@ import com.campuslove.api.auth.InvalidTokenException;
 import com.campuslove.api.auth.TokenRevokedException;
 import com.campuslove.api.auth.WechatLoginException;
 import com.campuslove.api.common.BusinessException;
+import com.campuslove.api.common.CommerceDisabledException;
+import com.campuslove.api.common.ContentSecurityException;
 import com.campuslove.api.common.DailyLimitExceededException;
+import com.campuslove.api.common.VideoUploadDisabledException;
 import com.campuslove.api.media.MediaSizeLimitExceededException;
 import com.campuslove.api.ratelimit.RateLimitExceededException;
 import com.campuslove.api.wallet.InsufficientBalanceException;
@@ -169,6 +172,88 @@ public class GlobalExceptionHandler {
         log.warn("媒体文件大小超限: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Payload Too Large",
                 ex.getMessage());
+    }
+
+    /**
+     * 处理商业化功能已封存异常（批次 A / ADR-5）。
+     *
+     * <p>触发场景：付费写端点标注 {@code @FeatureSwitch} 且对应开关处于封存态
+     * （缺省 false），由 CommerceGuardAspect 抛出 {@link CommerceDisabledException}。</p>
+     *
+     * <p>响应体格式（error 与 code 均为业务错误码，前端 {@code AppApiError.error}
+     * 可直接按码静默处理、不弹错误提示）：
+     * <pre>{@code
+     * {
+     *   "error": "COMMERCE_DISABLED",
+     *   "message": "功能未开放",
+     *   "status": 403,
+     *   "code": "COMMERCE_DISABLED"
+     * }
+     * }</pre>
+     *
+     * @param ex 商业化封存异常
+     * @return 标准化的 403 错误响应（含 COMMERCE_DISABLED 错误码）
+     */
+    @ExceptionHandler(CommerceDisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleCommerceDisabled(
+            CommerceDisabledException ex) {
+        log.warn("商业化功能已封存: {}", ex.getMessage());
+        return buildFeatureDisabledResponse(ex.getHttpStatus(), ex.getErrorCode(), "功能未开放");
+    }
+
+    /**
+     * 处理视频上传已封存异常（批次 A / A9）。
+     *
+     * <p>触发场景：{@code upload.video.enabled=false}（封存态）时，媒体上传
+     * {@code type=video} 在落盘前被拒绝（先校验后落盘，无文件写入）。</p>
+     *
+     * <p>响应体格式：
+     * <pre>{@code
+     * {
+     *   "error": "VIDEO_UPLOAD_DISABLED",
+     *   "message": "暂不支持视频上传",
+     *   "status": 403,
+     *   "code": "VIDEO_UPLOAD_DISABLED"
+     * }
+     * }</pre>
+     *
+     * @param ex 视频上传封存异常
+     * @return 标准化的 403 错误响应（含 VIDEO_UPLOAD_DISABLED 错误码）
+     */
+    @ExceptionHandler(VideoUploadDisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleVideoUploadDisabled(
+            VideoUploadDisabledException ex) {
+        log.warn("视频上传已封存: {}", ex.getMessage());
+        return buildFeatureDisabledResponse(ex.getHttpStatus(), ex.getErrorCode(), "暂不支持视频上传");
+    }
+
+    /**
+     * 处理图片内容安全检测异常（imgSecCheck）。
+     *
+     * <p>触发场景：微信 imgSecCheck 检测到上传图片包含违规内容（errcode=87014）时，
+     * 由 {@code WeChatImgSecCheckService} 判定为 risky，{@code LocalMediaStorageService}
+     * 在图片落盘前抛出 {@link ContentSecurityException}，拒绝存储。</p>
+     *
+     * <p>响应体格式：
+     * <pre>{@code
+     * {
+     *   "error": "Bad Request",
+     *   "message": "图片内容不合规，拒绝上传",
+     *   "status": 400,
+     *   "code": "CONTENT_SECURITY"
+     * }
+     * }</pre>
+     *
+     * @param ex 图片内容安全异常
+     * @return 标准化的 400 错误响应（含 CONTENT_SECURITY 错误码）
+     */
+    @ExceptionHandler(ContentSecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleContentSecurity(
+            ContentSecurityException ex) {
+        log.warn("图片内容安全检测未通过: {}", ex.getMessage());
+        return buildErrorResponseWithCode(
+                HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(),
+                ContentSecurityException.ERROR_CODE);
     }
 
     /**
@@ -663,6 +748,29 @@ public class GlobalExceptionHandler {
                 "Bad Gateway",
                 ex.getMessage(),
                 AiApiException.ERROR_CODE);
+    }
+
+    /**
+     * 构建功能封存类错误响应体（批次 A）。
+     *
+     * <p>与 {@link #buildErrorResponseWithCode} 的差异：{@code error} 字段直接填
+     * 业务错误码（而非 HTTP reason phrase），前端 {@code toAppApiError} 读取
+     * {@code error} 字段后可按 {@code COMMERCE_DISABLED} /
+     * {@code VIDEO_UPLOAD_DISABLED} 直接分支静默处理。</p>
+     *
+     * @param status    HTTP 状态码（403）
+     * @param errorCode 标准化业务错误码
+     * @param message   用户可读文案
+     * @return 包含 error=errorCode 与 code=errorCode 的错误响应
+     */
+    private ResponseEntity<Map<String, Object>> buildFeatureDisabledResponse(
+            HttpStatus status, String errorCode, String message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", errorCode);
+        body.put("message", message);
+        body.put("status", status.value());
+        body.put("code", errorCode);
+        return ResponseEntity.status(status).body(body);
     }
 
     /**

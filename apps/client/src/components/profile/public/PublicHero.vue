@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { UserProfileDTO } from "../../../types/profile";
+import SafeImage from "../../common/SafeImage.vue";
+import { IMAGE_PATHS } from "../../../config/images";
 
 defineProps<{ profile: UserProfileDTO }>();
 const emit = defineEmits<{ (e: "tapAvatar"): void }>();
@@ -7,10 +9,12 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 
 <template>
   <view class="public-hero">
-    <image
+    <!-- 2026-09-02 R8：封面 SafeImage 兜底（图片失效不整块灰屏） -->
+    <SafeImage
       v-if="profile.media.cover"
       class="public-hero__bg"
       :src="profile.media.cover"
+      custom-class="public-hero__bg"
       mode="aspectFill"
       alt=""
     />
@@ -20,12 +24,15 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
     <!-- 底部浅色渐变：衔接白色卡片 -->
     <view class="public-hero__bottom-gradient" />
 
-    <view class="public-hero__avatar" @tap="emit('tapAvatar')">
-      <image
+    <view class="public-hero__avatar press-feedback" hover-class="press-feedback--active" @tap="emit('tapAvatar')">
+      <!-- 2026-09-02 R8：头像 SafeImage 兜底（失效回退默认头像，不消失） -->
+      <SafeImage
         v-if="profile.basic.avatar"
         class="public-hero__avatar-img"
         :src="profile.basic.avatar"
+        custom-class="public-hero__avatar-img"
         mode="aspectFill"
+        :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
         alt=""
       />
       <text v-else class="public-hero__avatar-initial">{{ (profile.basic.name || "?").charAt(0) }}</text>
@@ -90,6 +97,8 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 }
 
 .public-hero__avatar-img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

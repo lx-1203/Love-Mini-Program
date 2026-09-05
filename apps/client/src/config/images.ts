@@ -161,6 +161,10 @@ export const IMAGE_PATHS = {
     CAMPUS_CAFETERIA: GENERATED_BASE + '/images/campus/campus-cafeteria.jpg',
     CAMPUS_CLASSROOM: GENERATED_BASE + '/images/campus/campus-classroom.jpg',
     CAMPUS_RAIN: GENERATED_BASE + '/images/campus/campus-rain.jpg',
+    /* 2026-09-03 可选缺口清零：校园圈专属地标封面插画（AI 生成实景风格，无水印） */
+    CAMPUS_GATE_LANDMARK: GENERATED_BASE + '/images/campus/campus-gate-landmark.jpg',
+    CAMPUS_ARCH_LANDMARK: GENERATED_BASE + '/images/campus/campus-arch-landmark.jpg',
+    CAMPUS_LAKE_PAVILION: GENERATED_BASE + '/images/campus/campus-lake-pavilion.jpg',
     HOME_POSTER: GENERATED_BASE + '/images/posters/home-poster.jpg',
   },
 
@@ -324,6 +328,29 @@ export const IMAGE_PATHS = {
     TB_LIKE: ICONS_BASE + '/home/toolbar/toolbar_row7_01.png',
     TB_COMMENT: ICONS_BASE + '/home/toolbar/toolbar_row7_02.png',
     TB_SHARE: ICONS_BASE + '/home/toolbar/toolbar_row7_03.png',
+  },
+
+  /**
+   * 寻觅吉祥物 xunmi_mascot_design_system_v2（2026-09-02 R5：关系动态图标替换素材）
+   * 路径指向本地 static 资源（base lib 3.16.2 强制 https，开发模式走本地避免 HTTP 警告）
+   */
+  MASCOT: {
+    HEART: '/static/assets/images/mascot/mascot_heart.png',         // 心动/喜欢
+    CRUSH: '/static/assets/images/mascot/mascot_crush.png',         // 暗恋/心动
+    LIKE: '/static/assets/images/mascot/mascot_like.png',           // 喜欢
+    WAVE: '/static/assets/images/mascot/mascot_wave.png',           // 挥手/打招呼
+    GREETING: '/static/assets/images/mascot/mascot_greeting.png',   // 问候/到访
+    CHEER: '/static/assets/images/mascot/mascot_cheer.png',         // 欢呼/新匹配
+    SHY: '/static/assets/images/mascot/mascot_shy.png',             // 害羞（悄悄话）
+    CLAP: '/static/assets/images/mascot/mascot_clap.png',           // 鼓掌
+    HUG: '/static/assets/images/mascot/mascot_hug.png',             // 拥抱
+    SMILE: '/static/assets/images/mascot/mascot_smile.png',         // 微笑
+    CHAT_HI: '/static/assets/images/mascot/chat_hi.png',            // 问候气泡
+    CHAT_RECEIVED: '/static/assets/images/mascot/chat_received.png', // 收到消息气泡
+    CHAT_GOOD: '/static/assets/images/mascot/chat_good.png',         // 好的气泡
+    STATUS_ONLINE: '/static/assets/images/mascot/status_online.png', // 在线状态
+    STATUS_BUSY: '/static/assets/images/mascot/status_busy.png',     // 忙碌状态
+    STATUS_CRUSH: '/static/assets/images/mascot/status_crush.png',   // 心动状态
   },
 
   /** TabBar 图标（tabbar 目录） */

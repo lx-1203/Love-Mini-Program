@@ -412,7 +412,7 @@ $green-primary: var(--c-brand, #36C99A);
 $green-light: var(--c-tint-green-50, #E8F9F4);
 $pink-primary: var(--c-romance-500, #FF6B81);
 $pink-light: var(--c-tint-pink-soft, #FFF0F5);
-$bg-page: var(--c-bg-page, #F7FAF9);
+$bg-page: var(--c-bg-page, #EEF7F2);
 /* ui-ux 修复：$text-primary 统一为文本次要色 token（原 --c-neutral-800 语义漂移） */
 $text-primary: var(--c-text-primary, #222222);
 /* ui-ux 修复：$text-secondary 语义应为文本次要色（原映射到 tertiary） */
@@ -592,6 +592,8 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 .user-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

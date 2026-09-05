@@ -153,6 +153,8 @@ const genderIconSrc = computed(() => {
 }
 
 .my-header__avatar-img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

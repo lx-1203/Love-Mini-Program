@@ -118,6 +118,10 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
   if (filter.keyword && filter.keyword.trim().length > 0) {
     parts.push(`keyword=${encodeURIComponent(filter.keyword.trim())}`);
   }
+  // 批次 B6：已展示用户 ID 去重（后端据此排除已推荐用户，≤200 个）
+  if (filter.excludeIds && filter.excludeIds.length > 0) {
+    parts.push(`excludeIds=${encodeURIComponent(filter.excludeIds)}`);
+  }
   return parts.length > 0 ? `?${parts.join("&")}` : "";
 }
 

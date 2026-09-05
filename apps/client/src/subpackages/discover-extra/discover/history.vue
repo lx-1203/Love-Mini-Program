@@ -10,6 +10,7 @@ import { useDiscoverStore } from "../../../stores/discover";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 // infra R2-00069: 统一错误分类 toast
 import { showErrorToast } from "../../../utils/error-toast";
 
@@ -156,7 +157,7 @@ onUnload(() => {
     <view class="history-list" role="list">
       <!-- 加载状态：discover store 正在拉取推荐时展示骨架屏 -->
       <view v-if="discoverStore.loading && historyCards.length === 0" class="history-loading" role="status" aria-live="polite">
-        <text class="history-loading__text">{{ t("discoverHistory.loadingText") }}</text>
+        <SkeletonBlock variant="list" :rows="3" :label="t('discoverHistory.loadingText')" />
       </view>
 
       <!-- 错误状态：拉取失败时展示错误提示与重试按钮 -->

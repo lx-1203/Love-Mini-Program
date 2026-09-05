@@ -19,6 +19,8 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 // R4-00056: 学生证图片先上传换取 URL 再提交（real 模式后端无法访问本地临时路径）
 import { clientApi } from "../../../services/api";
 import { useMock } from "../../../stores/helpers/use-mock";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // infra R2-00131：统一图片选择封装（隐私授权守卫 + 大小校验）
@@ -29,6 +31,7 @@ const campusStore = useCampusStore();
 const { certificationStatus, certificationInfo } = storeToRefs(campusStore);
 // Task 28：i18n 文案
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 
 
 /**
@@ -248,7 +251,7 @@ onMounted(() => {
 <template>
   <view class="cert-page">
     <!-- 顶部导航栏 -->
-    <view class="cert-header">
+    <view class="cert-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
       <view class="cert-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">{{ t("campus.certification.back") }}</text>
       </view>
@@ -263,7 +266,8 @@ onMounted(() => {
         class="status-card"
         :class="statusCardClass(certificationStatus)"
       >
-        <text class="status-card__icon">{{ statusIcon(certificationStatus) }}</text>
+        <!-- 2026-09-04 QA 修复：statusIcon() 返回的是图片路径，原 <text> 会把 URL 当文字渲染；改为 <image> -->
+        <image class="status-card__icon-img" :src="statusIcon(certificationStatus)" mode="aspectFit" />
         <view class="status-card__body">
           <text class="status-card__title">{{ CERT_STATUS_MAP[certificationStatus] }}</text>
           <text v-if="certificationStatus === 'pending'" class="status-card__desc">
@@ -533,6 +537,12 @@ onMounted(() => {
 
 .status-card__icon {
   font-size: var(--fs-4xl);
+  flex-shrink: 0;
+}
+
+.status-card__icon-img {
+  width: 64rpx;
+  height: 64rpx;
   flex-shrink: 0;
 }
 

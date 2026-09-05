@@ -22,11 +22,13 @@
     "build:h5:real": "node scripts/prepare-static.mjs --h5 && node ../../scripts/verify-env-release.mjs && uni build --platform h5 --mode real",
     "dev:mp-weixin": "node scripts/prepare-static.mjs --dev && uni --platform mp-weixin",
     "build:mp-weixin": "node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin && node ../../scripts/verify-package-size.mjs --allow-mock",
-    "build:mp-weixin:mock": "node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-mock && node ../../scripts/verify-package-size.mjs --allow-mock && node scripts/verify-build-features.mjs",
-    "build:mp-weixin:showcase": "node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-showcase",
-    "build:mp-weixin:real": "node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --real && node scripts/profile-svg-to-png.mjs && node ../../scripts/verify-env-release.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\" && node scripts/prune-unreferenced-static.mjs && node ../../scripts/verify-package-size.mjs",
+    "build:mp-weixin:mock": "node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-mock && node ../../scripts/verify-package-size.mjs --allow-mock && node scripts/verify-build-features.mjs",
+    "build:mp-weixin:showcase": "node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-showcase",
+    "build:mp-weixin:real": "node scripts/check-mp-image-styles.mjs --strict && node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --real && node scripts/profile-svg-to-png.mjs && node ../../scripts/verify-env-release.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\" && node scripts/prune-unreferenced-static.mjs && node ../../scripts/verify-package-size.mjs",
     "typecheck": "vue-tsc --noEmit",
     "check:tabbar": "node scripts/check-tabbar-consistency.mjs",
+    "check:mp-image": "node scripts/check-mp-image-styles.mjs",
+    "check:mp-image:strict": "node scripts/check-mp-image-styles.mjs --strict",
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
@@ -37,7 +39,8 @@
     "generate:openapi": "openapi-typescript ../../docs/openapi/feedback-growth-and-auth.yaml -o src/services/generated/api-types.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "chromatic --exit-zero-on-changes"
+    "chromatic": "chromatic --exit-zero-on-changes",
+    "verify:contract": "node scripts/verify-contract.mjs"
   },
   "uni-app": {
     "scripts": {
@@ -88,7 +91,7 @@
     "vue-tsc": "~2.0.0"
   },
   "engines": {
-    "node": ">=18.0.0 <21.0.0",
+    "node": ">=18.0.0 <23.0.0",
     "npm": ">=9.0.0"
   }
 }

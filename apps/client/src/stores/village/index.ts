@@ -161,6 +161,9 @@ export const useVillageStore = defineStore("village", {
     nearbyPosts: [],
     loadingNearbyPosts: false,
     nearbyError: null,
+    // 2026-09-05 R17：自己刚发布、仍在审核流中的帖子——feed 顶部可见（带「审核中」徽标），
+    // 修复"发布成功后帖子消失像没发出去"的体感缺陷；审核通过后服务端列表自然接管（按 id 去重）
+    selfPendingPosts: [] as PostItem[],
   }),
 
   getters: {
@@ -412,6 +415,12 @@ export const useVillageStore = defineStore("village", {
       tags?: string[];
       /** 2026-08-08 频道化重构：关联活动 ID（可选，帖子活动卡） */
       activityId?: string;
+      /** 批次 B4：可见范围（public/school/interest，对齐后端 visibility 枚举） */
+      visibility?: string;
+      /** 批次 B4：目标类型（general/circle/campus，对齐后端 targetType） */
+      targetType?: string;
+      /** 批次 B4：目标 ID（圈子 ID 等） */
+      targetId?: number | null;
     }) {
       this.errorMessage = null;
 
@@ -486,9 +495,16 @@ export const useVillageStore = defineStore("village", {
           images: data.images ?? [],
           tags: data.tags ?? [],
           activityId: data.activityId,
+          visibility: data.visibility,
+          targetType: data.targetType,
+          targetId: data.targetId,
         });
         // 将后端 PostDetailView 映射为前端 PostItem
         const newPost = mapDetailToPostItem(result);
+        // 2026-09-05 R17：新帖进入审核流（audit_status=pending）——本地置待审核标记并
+        // 插入 selfPendingPosts，feed 顶部立即可见（带「审核中」徽标），不再"发完就消失"
+        newPost.auditStatus = "pending";
+        this.selfPendingPosts.unshift(newPost);
         this.posts.unshift(newPost);
         return newPost;
       } catch (error) {
@@ -1137,7 +1153,11 @@ export const useVillageStore = defineStore("village", {
         if (useMock()) {
           // Mock 数据：返回 2 个相似作者（infra R2-00039: 仅 mock 演示用，real 分支由后端下发；
           // R4-batch2: 数据移入 stores/village/mock-data.ts 的 mockSimilarAuthors）
-          this.similarAuthors = mockSimilarAuthors;
+          // 2026-09-03 遗留差异清零：排除帖子作者本人——同屏同人违反推荐去重红线
+          const authorId = this.currentPost?.author?.userId;
+          this.similarAuthors = authorId
+            ? mockSimilarAuthors.filter((a) => a.userId !== authorId)
+            : mockSimilarAuthors;
           return;
         }
 

@@ -121,7 +121,9 @@ defineExpose({ handleConfirm, noop });
       <view class="unlock-modal__actions">
         <!-- 主按钮：去完善资料 -->
         <button
-          class="unlock-modal__btn unlock-modal__btn--primary"
+          class="unlock-modal__btn unlock-modal__btn--primary press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
           @tap.stop="handleConfirm"
           :aria-label="t('lock.confirm')"
         >
@@ -130,7 +132,9 @@ defineExpose({ handleConfirm, noop });
 
         <!-- 次按钮：暂不完善 -->
         <button
-          class="unlock-modal__btn unlock-modal__btn--secondary"
+          class="unlock-modal__btn unlock-modal__btn--secondary press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
           @tap.stop="handleCancel"
           :aria-label="t('lock.cancelAria')"
         >
@@ -282,7 +286,7 @@ defineExpose({ handleConfirm, noop });
 
 /* 次按钮（白底品牌字） */
 .unlock-modal__btn--secondary {
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   border: 2rpx solid var(--c-border-light, #EEF2F0);
 }
 

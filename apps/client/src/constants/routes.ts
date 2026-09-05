@@ -114,6 +114,8 @@ export const ROUTES = {
     TASKS: "/subpackages/profile-extra/profile/tasks",
     /** 2026-08-09：他人主页详情页（喜欢/访客/通知闭环专用） */
     OTHER: "/subpackages/profile-extra/profile/other",
+    /** 2026-09-02 R5：我的位置·定位设置页（用户需求 9：顶部定位可点击跳转） */
+    LOCATION: "/subpackages/profile-extra/profile/location",
     /** 2026-08-31：收藏/稍后看页（第六轮全面审查：补登记，替代裸字符串跳转） */
     FAVORITES: "/subpackages/profile-extra/profile/favorites",
     /** 2026-08-31：兴趣标签设置页（第六轮全面审查：补登记） */
@@ -124,6 +126,8 @@ export const ROUTES = {
   CIRCLES: {
     /** 圈子首页 */
     INDEX: "/subpackages/circles/circles/index",
+    /** 圈子主页（2026-09-02 W2 骨架补齐：对照「圈子详情，摄影圈参考.png」） */
+    HOME: "/subpackages/circles/circles/circle-home",
     /** 话题列表 */
     TOPICS: "/subpackages/circles/circles/topics",
     /** 话题详情 */

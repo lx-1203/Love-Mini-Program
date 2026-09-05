@@ -13,11 +13,20 @@ import { clientApi } from "../../../services/api";
 import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../../stores/discover/utils";
 import type { DiscoverCard } from "../../../stores/discover/types";
 import { openUserProfile } from "../../../utils/navigation";
+import SafeImage from "../../../components/common/SafeImage.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// 2026-09-04 视觉验收：env(safe-area-inset-top) 在模拟器/部分机型为 0，tabs 行上移进胶囊区被遮挡
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { IMAGE_PATHS } from "../../../config/images";
 
 const { t } = useI18n();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+const statusBarHeightPx = useStatusBarHeight();
+const rootStyle = computed(() => ({
+  ...menuStyleVars.value,
+  paddingTop: `calc(${statusBarHeightPx.value}px + 20rpx)`,
+}));
 
 const scope = ref<"nearby" | "city">("nearby");
 const list = ref<DiscoverCard[]>([]);
@@ -63,7 +72,17 @@ async function load() {
     );
     // 丢弃被新请求取代的旧响应
     if (token !== loadToken) return;
-    const cards = people.map((p) => mapToDiscoverCard(p));
+    // 2026-09-02 R12（需求⑥）：列表去重兜底——后端已按名字+头像做视觉去重，
+    // 这里按 userId（缺失时退化为 name）再挡一层，杜绝同一账号重复出现
+    const seenKeys = new Set<string>();
+    const cards: DiscoverCard[] = [];
+    for (const p of people) {
+      const card = mapToDiscoverCard(p);
+      const key = card.userId ? String(card.userId) : `name:${card.name}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      cards.push(card);
+    }
     // nearby：距离 → 活跃度；city：活跃度 → 推荐度
     if (scope.value === "nearby") {
       cards.sort((a, b) => {
@@ -129,7 +148,7 @@ function switchScope(next: "nearby" | "city") {
 </script>
 
 <template>
-  <view class="people-page" :style="menuStyleVars">
+  <view class="people-page" :style="rootStyle">
     <view class="people-header">
       <view class="people-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
         <text class="people-header__back-text">‹</text>
@@ -162,7 +181,7 @@ function switchScope(next: "nearby" | "city") {
 
     <!-- 状态区 -->
     <view v-if="loading" class="people-state">
-      <text class="people-state__text">{{ t('nearby.loading') }}</text>
+      <SkeletonBlock variant="list" :rows="4" :label="t('nearby.loading')" />
     </view>
     <view v-else-if="errorMessage" class="people-state">
       <text class="people-state__text">{{ errorMessage }}</text>
@@ -187,7 +206,8 @@ function switchScope(next: "nearby" | "city") {
         :aria-label="item.name"
         @tap="openProfile(item.userId)"
       >
-        <image class="people-row__avatar" :src="item.avatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" lazy-load alt="" />
+        <!-- 2026-09-02 R5：SafeImage 兜底（图片失败 fallback 默认头像） -->
+        <SafeImage :src="item.avatar" custom-class="people-row__avatar" mode="aspectFill" :lazy-load="false" alt="" />
         <view class="people-row__info">
           <view class="people-row__name-row">
             <text class="people-row__name">{{ item.name }}</text>
@@ -213,7 +233,7 @@ function switchScope(next: "nearby" | "city") {
 <style scoped lang="scss">
 .people-page {
   min-height: 100%;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;

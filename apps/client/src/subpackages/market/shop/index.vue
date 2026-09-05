@@ -6,6 +6,7 @@ import { ref, computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCheckInStore } from "../../../stores/checkin";
+import { useAppConfigStore } from "../../../stores/app-config";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 // 3-H 商品 real 链路：GET /products（mock 分支保留本地商品源）
@@ -17,7 +18,18 @@ const { t } = useI18n();
 
 // Task D：签到积分余额展示（进入页面时拉取最新余额）
 const checkInStore = useCheckInStore();
+
+/**
+ * 商业化封存（批次 A / ADR-2）：商品/票务销售属付费项目，由 commerce.enabled
+ * 总闸管辖（无独立子闸）。缺省封存（=== true 才放行），mock 后端未下发
+ * commerce.* 时恒为封存态。
+ */
+const appConfig = useAppConfigStore();
+const commerceSealed = computed(() => !appConfig.isCommerceOn());
+
 onShow(() => {
+  // 批次 A / ADR-2：封存态不发任何请求（签到状态/商品列表均不拉取）
+  if (commerceSealed.value) return;
   void checkInStore.fetchStatus();
   void fetchShopItems();
 });
@@ -257,8 +269,10 @@ function goToDetail(itemId: string) {
       </view>
     </view>
 
-    <!-- Task D：当前积分余额展示条 -->
-    <view class="shop-points-bar">
+    <!-- 批次 A / ADR-2：商业化封存态（commerce.enabled=false）展示封存卡，隐藏商品/积分条 -->
+    <template v-if="!commerceSealed">
+      <!-- Task D：当前积分余额展示条 -->
+      <view class="shop-points-bar">
       <view class="shop-points-bar__left">
         <image class="shop-points-bar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" lazy-load />
         <text class="shop-points-bar__label">{{ t('shop.pointsBarTitle') }}</text>
@@ -345,6 +359,14 @@ function goToDetail(itemId: string) {
       <!-- 底部留白 -->
       <view class="shop-footer" />
     </scroll-view>
+    </template>
+
+    <!-- 封存态卡（SVG 锁图标，禁 emoji） -->
+    <view v-else class="shop-sealed" aria-live="polite">
+      <image class="shop-sealed__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
+      <text class="shop-sealed__title">{{ t('commerce.sealedTitle') }}</text>
+      <text class="shop-sealed__desc">{{ t('commerce.sealedDesc') }}</text>
+    </view>
   </view>
 </template>
 
@@ -673,5 +695,37 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 底部留白 ========== */
 .shop-footer {
   height: 60rpx;
+}
+
+/* ========== 批次 A / ADR-2：商业化封存态 ========== */
+.shop-sealed {
+  margin: 60rpx 24rpx;
+  padding: 80rpx 48rpx;
+  border-radius: var(--r-xl, 24rpx);
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.shop-sealed__icon {
+  width: 96rpx;
+  height: 96rpx;
+  opacity: 0.55;
+}
+
+.shop-sealed__title {
+  font-size: var(--fs-xl, 34rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1a2332);
+}
+
+.shop-sealed__desc {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-text-tertiary, #94a3b8);
+  text-align: center;
+  line-height: 1.6;
 }
 </style>

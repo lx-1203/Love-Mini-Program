@@ -170,7 +170,7 @@ onMounted(() => {
     <SectionCard v-else-if="error" :title="t('recommendPref.errorTitle')" compact>
       <view class="error-container">
         <text class="error-text">{{ t('recommendPref.errorText') }}</text>
-        <button class="retry-btn" @tap="retry">{{ t('recommendPref.retryBtn') }}</button>
+        <button class="retry-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="retry">{{ t('recommendPref.retryBtn') }}</button>
       </view>
     </SectionCard>
 
@@ -182,8 +182,10 @@ onMounted(() => {
           <view
             v-for="opt in timeOptions"
             :key="opt.value"
-            class="option-item"
+            class="option-item press-feedback"
             :class="{ 'option-item--active': dailyNotifyTime === opt.value }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             @tap="dailyNotifyTime = opt.value"
           >
             <text class="option-label">{{ opt.label }}</text>
@@ -197,8 +199,10 @@ onMounted(() => {
           <view
             v-for="opt in scopeOptions"
             :key="opt.value"
-            class="option-item"
+            class="option-item press-feedback"
             :class="{ 'option-item--active': scope === opt.value }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             @tap="scope = opt.value"
           >
             <text class="option-label">{{ opt.label }}</text>
@@ -208,7 +212,7 @@ onMounted(() => {
 
       <!-- 校园优先 -->
       <SectionCard :title="t('recommendPref.campusPriorityTitle')" :subtitle="t('recommendPref.campusPrioritySubtitle')" compact>
-        <view class="toggle-row" @tap="campusPriority = !campusPriority">
+        <view class="toggle-row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="campusPriority = !campusPriority">
           <text class="toggle-label">{{ t('recommendPref.campusPriorityLabel') }}</text>
           <view class="toggle-switch" :class="{ 'toggle-switch--on': campusPriority }">
             <view class="toggle-knob" />

@@ -13,6 +13,7 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
 import SafeImage from "../../../components/common/SafeImage.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { TOAST_DURATION } from "../../../constants/limits";
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -49,6 +50,8 @@ interface RealNameCertificationView {
 
 /** 当前认证状态（mock 模式默认 unverified） */
 const status = ref<RealNameStatus>("unverified");
+/** real 实名状态首拉中（2026-09-03：避免状态跳变；失败回退表单态） */
+const statusLoading = ref(false);
 
 /** 真实姓名 */
 const userName = ref("");
@@ -298,6 +301,7 @@ function applyRealNameView(view: RealNameCertificationView): void {
  */
 async function loadRealNameStatus(): Promise<void> {
   if (useMock()) return;
+  statusLoading.value = true;
   try {
     const view = await request<RealNameCertificationView>({
       url: "/real-name-certification",
@@ -306,6 +310,8 @@ async function loadRealNameStatus(): Promise<void> {
     applyRealNameView(view);
   } catch (_e) {
     // 拉取失败保持当前状态（不阻塞页面展示）
+  } finally {
+    statusLoading.value = false;
   }
 }
 
@@ -404,7 +410,10 @@ function onBlur() {
     <view class="safe-top" />
 
     <!-- 认证状态卡片 -->
-    <view class="status-card" :style="{ background: statusInfo.bgColor }">
+    <view v-if="statusLoading" class="status-card" role="status" aria-live="polite">
+      <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
+    </view>
+    <view v-else class="status-card" :style="{ background: statusInfo.bgColor }">
       <view class="status-card__emoji-wrap">
         <SafeImage :src="statusInfo.icon" custom-class="status-card__emoji-img" mode="aspectFit" />
       </view>

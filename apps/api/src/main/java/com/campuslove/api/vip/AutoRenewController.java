@@ -1,5 +1,7 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.vip.AutoRenewService.AutoRenewStatusView;
 import jakarta.validation.Valid;
@@ -61,6 +63,7 @@ public class AutoRenewController {
      * @return 更新后的状态视图
      */
     @PostMapping
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
     @PreAuthorize("hasRole('USER')")
     public AutoRenewStatusView enableAutoRenew(@Valid @RequestBody EnableAutoRenewRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();

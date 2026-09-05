@@ -136,7 +136,13 @@ public class MockRecommendationService implements RecommendationService {
     if (filter == null || filter.isEmpty()) {
       return getRecommendations(userId);
     }
+    // B5 去重：excludeIds 过滤（mock 链路在视图转换后内存过滤）
+    java.util.Set<Long> excludeIds = filter.excludeIds();
     return runtimeState.recommendedPeople().stream()
+        .filter(person -> {
+          Long id = tryParseLong(person.id());
+          return id == null || !excludeIds.contains(id);
+        })
         .filter(person -> matchesFilter(person, filter))
         .map(this::toView)
         .toList();

@@ -6,7 +6,7 @@ import { resolveMediaUrl } from "../../utils/media";
  * pexels 外链本地化兜底（2026-08-16）：
  * - toLocalImage：按 URL 尺寸规则确定性映射到本地包内素材；
  * - resolveMediaUrl：统一出口对 pexels 外链直接返回本地路径，不再暴露外链
- *   （此前 PostCard/WallPostCard 等裸 <image> 场景绕过 SafeImage 导致渲染层网络错误）。
+ *   （此前 PostCard 等裸 <image> 场景绕过 SafeImage 导致渲染层网络错误）。
  */
 describe("pexels 外链本地化兜底", () => {
   it("toLocalImage: w=600 动态配图映射为本地 posts 素材", () => {

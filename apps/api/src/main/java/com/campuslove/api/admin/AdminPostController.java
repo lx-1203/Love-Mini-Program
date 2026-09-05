@@ -259,6 +259,8 @@ public class AdminPostController {
                 post.getCategory() != null ? post.getCategory().name() : null,
                 post.getStatus() != null ? post.getStatus().name() : null,
                 post.getAuditStatus() != null ? post.getAuditStatus().name() : null,
+                post.getVisibility() != null ? post.getVisibility().name() : null,
+                post.getCircleId(),
                 post.getLikesCount(),
                 post.getCommentsCount(),
                 post.getShareCount(),

@@ -549,6 +549,15 @@ export default {
     loveStepDiscover: "Meet someone new",
     loveStepWhisper: "Reply whispers",
     loveStepInterest: "Join an interest circle",
+    // 2026-09-02 R5: Step descriptions (state-aware)
+    loveStepProfileDesc: "Add avatar & bio to boost match rate",
+    loveStepDiscoverDesc: "Check today's picks in Match",
+    loveStepWhisperDesc: "Reply a whisper to start a conversation",
+    loveStepInterestDesc: "Join an interest circle to meet like-minds",
+    loveStepProfileDone: "Profile complete — go meet someone new",
+    loveStepDiscoverDone: "Today's picks done — keep the momentum",
+    loveStepWhisperDone: "Whisper replied — waiting for their reply",
+    loveStepInterestDone: "Joined a circle — start interacting",
   },
 
   /* 2026-08-25 P0: NotLoggedWaiting copy (aligned to spec 12) */
@@ -671,6 +680,13 @@ export default {
     nextSubtitle: "Once you find a topic you like, go match or share your feedback.",
     goExplore: "Go Explore",
     feedbackSuggestion: "Share discussion feedback",
+  },
+
+  /* ========== Commerce Sealed (ADR-2: commerce.* switches default to false) ========== */
+  commerce: {
+    sealedTitle: "Feature Sealed",
+    sealedDesc: "This feature is not available yet. Stay tuned.",
+    sealedToast: "This feature is currently sealed",
   },
 
   /* ========== Wallet (Coins) ========== */
@@ -1489,6 +1505,7 @@ export default {
     titleTip: "Tip",
     /* Feature 3: Visitors page */
     visitorsTitle: "Who viewed me",
+    missingUserParam: "Link is missing user parameter, please re-enter from the list page",
     visitorsEmpty: "No visitor records",
     visitorsEmptyDesc: "Complete your profile to be discovered",
     visitorToday: "Today",
@@ -3488,6 +3505,14 @@ export default {
     joinedBtn: "Joined",
     friendsJoined: "{count} friends joined",
     joinBtn: "+ Join",
+    /* 2026-09-02 W2 skeleton: circle home (circle-home.vue) */
+    home: {
+      joinCta: "Join Circle",
+      pinnedBadge: "Pinned",
+      viewAllTopics: "View all topics",
+      postInCircle: "Post in circle",
+      emptyTab: "Nothing here yet, stay tuned",
+    },
     detailTabsAria: "Circle detail tabs",
     detailFeed: "Feed",
     detailHot: "Featured",

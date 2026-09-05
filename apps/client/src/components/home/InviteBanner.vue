@@ -5,6 +5,7 @@
  */
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 
 const { t } = useI18n();
 defineEmits<{ (e: "invite"): void }>();
@@ -13,7 +14,7 @@ defineEmits<{ (e: "invite"): void }>();
 <template>
   <view class="invite-banner" @tap="$emit('invite')">
     <view class="invite-banner__icon">
-      <image class="invite-banner__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" />
+      <image class="invite-banner__icon-text" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GIFT)" mode="aspectFit" alt="" />
     </view>
     <view class="invite-banner__body">
       <text class="invite-banner__title">{{ t('home.inviteTitle') }}</text>
@@ -22,14 +23,16 @@ defineEmits<{ (e: "invite"): void }>();
     <view class="invite-banner__btn">
       <text class="invite-banner__btn-text">去邀请</text>
     </view>
-    <image class="invite-banner__wing" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+    <image class="invite-banner__wing" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED)" mode="aspectFit" alt="" />
   </view>
 </template>
 
 <style scoped lang="scss">
 .invite-banner {
   position: relative;
-  margin: 0 40rpx 16rpx;
+  /* 2026-09-04 问题5修复：banner 下方由首页 .home-section-gap（tabBar 净空区）兜底，
+     上方与 CommunityFeed 之间留 16rpx 间距即可，去掉原 16rpx 下 margin */
+  margin: 16rpx 40rpx 0;
   padding: 24rpx 28rpx;
   border-radius: 40rpx;
   background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);

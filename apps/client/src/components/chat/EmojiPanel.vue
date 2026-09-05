@@ -100,7 +100,7 @@ function emojiAria(emoji: string): string {
   height: 56rpx;
   display: block;
   /* 2026-08-31 待办：首次打开渲染不全——SVG 未加载完成前给浅色底占位，避免空洞 */
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   border-radius: var(--r-sm, 8rpx);
 }
 

@@ -196,11 +196,19 @@ function enabledLabel(enabled: boolean): string {
   return enabled ? t("config.enabledLabel") : t("config.disabledLabel");
 }
 
-/** 开关友好标签（寻觅 v3：match_open / recommend_open 展示中文/英文名，其余回退裸 key） */
+/** 开关友好标签（match_open/recommend_open 展示中文；批次 A7：商业化/视频上传开关） */
 function switchLabel(row: AdminSwitch): string {
-  const labelKey = row.key === "match_open" ? "config.switchMatchOpen"
-    : row.key === "recommend_open" ? "config.switchRecommendOpen" : "";
-  return labelKey ? t(labelKey) : row.key;
+  const labels: Record<string, string> = {
+    match_open: "匹配功能",
+    recommend_open: "推荐功能",
+    "commerce.enabled": "商业化总闸",
+    "commerce.vip": "会员/VIP",
+    "commerce.coin": "虚拟货币",
+    "commerce.course": "付费课程",
+    "commerce.consult": "付费咨询",
+    "upload.video.enabled": "视频上传",
+  };
+  return labels[row.key] ?? row.key;
 }
 
 onMounted(() => {

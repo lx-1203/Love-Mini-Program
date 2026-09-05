@@ -176,6 +176,18 @@ public class User {
     @Column(name = "auto_renew_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean autoRenewEnabled = false;
 
+    /** 纬度（gcj02 坐标系，精度 6 位小数，LBS Phase 2） */
+    @Column(name = "latitude", precision = 10, scale = 6)
+    private java.math.BigDecimal latitude;
+
+    /** 经度（gcj02 坐标系，精度 6 位小数，LBS Phase 2） */
+    @Column(name = "longitude", precision = 10, scale = 6)
+    private java.math.BigDecimal longitude;
+
+    /** 最近一次坐标上报时间（前端节流 ≥5 分钟，LBS Phase 2） */
+    @Column(name = "geo_updated_at")
+    private LocalDateTime geoUpdatedAt;
+
     /** 记录创建时间（用户注册时间，用于注册时长统计） */
 
     @CreatedDate
@@ -212,6 +224,30 @@ public class User {
 
     public void setAutoRenewEnabled(Boolean autoRenewEnabled) {
         this.autoRenewEnabled = autoRenewEnabled;
+    }
+
+    public java.math.BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(java.math.BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public java.math.BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(java.math.BigDecimal longitude) {
+        this.longitude = longitude;
+    }
+
+    public LocalDateTime getGeoUpdatedAt() {
+        return geoUpdatedAt;
+    }
+
+    public void setGeoUpdatedAt(LocalDateTime geoUpdatedAt) {
+        this.geoUpdatedAt = geoUpdatedAt;
     }
 
     public Long getId() {

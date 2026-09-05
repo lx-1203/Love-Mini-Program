@@ -224,9 +224,18 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
         // 校验 /user/ 路径：只允许订阅自己的队列
         if (destination.startsWith("/user/")) {
+            // 2026-09-02 修复：兼容 Spring 标准用户目的地简写 /user/queue/**。
+            // 客户端按 STOMP 规范订阅 /user/queue/messages，服务端（UserDestinationMessageHandler）
+            // 会把它解析为当前会话用户自己的队列，安全语义等价于"只订自己的 queue"。
+            // 旧实现把第二段字面当作 userId（得到 "queue"），与真实 userId 恒不等，
+            // 导致所有用户私有队列订阅被误判越权、实时推送全链路失效。
+            String pathAfterUserPrefix = destination.substring("/user/".length());
+            if (pathAfterUserPrefix.equals("queue") || pathAfterUserPrefix.startsWith("queue/")) {
+                log.debug("WebSocket SUBSCRIBE 允许(简写自队列): userId={}, destination={}", userId, destination);
+                return;
+            }
             // 预期格式: /user/{userId}/queue/**
             // 去掉前缀 "/user/" 后，取第一段作为路径中的 userId
-            String pathAfterUserPrefix = destination.substring("/user/".length());
             int slashIndex = pathAfterUserPrefix.indexOf('/');
             String targetUserId = (slashIndex > 0)
                     ? pathAfterUserPrefix.substring(0, slashIndex)

@@ -1,3 +1,5 @@
+// 2026-09-03：强制 vite 收集全 9 张 person-0N.png（运行时头像路径由后端派发，dist 必须含全集合）
+import "./utils/person-avatars";
 import { createSSRApp, type App as VueApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";

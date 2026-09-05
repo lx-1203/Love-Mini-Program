@@ -489,6 +489,8 @@ onShareAppMessage(() => {
 }
 
 .author-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }
@@ -663,6 +665,8 @@ onShareAppMessage(() => {
 }
 
 .reply-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

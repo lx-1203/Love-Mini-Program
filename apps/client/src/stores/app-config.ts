@@ -45,6 +45,34 @@ export const useAppConfigStore = defineStore("app-config", {
     isPostPublishOpen: (state): boolean => state.switches["post_publish_open"] !== false,
     /** 反馈功能是否开放；未加载默认开放 */
     isFeedbackOpen: (state): boolean => state.switches["feedback_open"] !== false,
+
+    /**
+     * 商业化模块是否开放（批次 A / ADR-2：缺省一律 false 封存态）。
+     *
+     * <p>总闸（commerce.enabled）+ 子闸与运算：总闸 false 时无视子闸全部封存；
+     * 总闸 true 时按子闸各自生效。开关 key 缺失时按封存处理（=== true 才放行），
+     * 与既有通用开关（缺失默认开放）语义相反。</p>
+     *
+     * <p>用法：{@code appConfig.isCommerceOn("vip")} / isCommerceOn("coin") /
+     * isCommerceOn("course") / isCommerceOn("consult")；不传 module 仅判断总闸。</p>
+     */
+    isCommerceOn:
+      (state) =>
+      (module?: string): boolean => {
+        if (state.switches["commerce.enabled"] !== true) {
+          return false;
+        }
+        if (!module || module === "commerce.enabled") {
+          return true;
+        }
+        return state.switches[module] === true;
+      },
+
+    /**
+     * 视频上传是否开放（批次 A / ADR-2：独立闸，与商业化总闸解耦，缺省 false）。
+     * 上传选项据此收敛为仅图片；开关 key 缺失时同样封存。
+     */
+    isVideoUploadOn: (state): boolean => state.switches["upload.video.enabled"] === true,
   },
   actions: {
     /**

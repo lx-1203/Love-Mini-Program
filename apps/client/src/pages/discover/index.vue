@@ -207,8 +207,10 @@ onUnload(() => {
       </view>
       <view class="discover-header__tabs">
         <view
-          class="discover-header__tab"
+          class="discover-header__tab press-feedback"
           :class="{ 'discover-header__tab--active': activeMode === 'recommend' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
           role="tab"
           :aria-selected="activeMode === 'recommend' ? 'true' : 'false'"
           :aria-label="'推荐'"
@@ -218,8 +220,10 @@ onUnload(() => {
           <view v-if="activeMode === 'recommend'" class="discover-header__tab-line" />
         </view>
         <view
-          class="discover-header__tab"
+          class="discover-header__tab press-feedback"
           :class="{ 'discover-header__tab--active': activeMode === 'nearby' }"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
           role="tab"
           :aria-selected="activeMode === 'nearby' ? 'true' : 'false'"
           :aria-label="'附近'"
@@ -234,7 +238,7 @@ onUnload(() => {
     <scroll-view scroll-y class="match-scroll" :show-scrollbar="false" :scroll-top="scrollTop">
       <view v-if="errorMessage" class="match-error">
         <text class="match-error__text">{{ errorMessage }}</text>
-        <text class="match-error__retry" role="button" :aria-label="t('common.retry')" @tap="loadDiscoverData">
+        <text class="match-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('common.retry')" @tap="loadDiscoverData">
           {{ t('discover.errorRetry') }}
         </text>
       </view>
@@ -278,7 +282,7 @@ onUnload(() => {
     </scroll-view>
 
     <!-- 未登录时：底部登录提示（不拦截全屏，卡片可预览） -->
-    <view v-if="!sessionStore.isLoggedIn" class="discover-login-hint" @tap="goLogin">
+    <view v-if="!sessionStore.isLoggedIn" class="discover-login-hint press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goLogin">
       <text class="discover-login-hint__text">登录后可与 TA 互动</text>
     </view>
 
@@ -296,7 +300,7 @@ onUnload(() => {
   flex-direction: column;
   display: flex;
   height: 100vh;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;

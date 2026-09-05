@@ -43,8 +43,8 @@ public class HomeFeedFallbackProvider {
     }
 
     public List<NearbyPersonSummaryView> fallbackNearbyPeople() {
+        // 2026-09-02 推荐去重红线：10001 林晓已是兜底今日推荐，附近的人不再重复出现
         return List.of(
-            new NearbyPersonSummaryView(10001L, "林晓", "1.2km", "/static/assets/images/people/person-01.png", true, List.of("摄影")),
             new NearbyPersonSummaryView(10002L, "夏言", "1.5km", "/static/assets/images/people/person-02.png", true, List.of("建筑")),
             new NearbyPersonSummaryView(10003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.png", false, List.of("日语")),
             new NearbyPersonSummaryView(10004L, "小满", "2.1km", "/static/assets/images/people/person-04.png", false, List.of("编程")),

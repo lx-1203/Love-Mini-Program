@@ -9,6 +9,8 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../../stores/session";
 import { usePageAccess } from "../../../composables/usePageAccess";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { chatPageRequirements } from "../../../config/page-access";
 import LockScreen from "../../../components/common/LockScreen.vue";
 import { request } from "../../../services/http";
@@ -24,6 +26,7 @@ import type {
 } from "../../../services/generated/api-types-supplement";
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
 const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 const completionPercent = computed(() => sessionStore.profileCompletion);
@@ -227,9 +230,9 @@ onLoad((query) => {
     <template v-else>
       <!-- 2026-08-31 Phase 1：进入骨架（消除 1~1.5s 纯白过渡） -->
       <SkeletonBlock v-if="!ready" variant="chat" :rows="4" label="加载中" />
-      <!-- ===== 顶部导航栏 ===== -->
-      <view class="nav-bar">
-        <view class="nav-left" @tap="goBack">
+      <!-- ===== 顶部导航栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） ===== -->
+      <view class="nav-bar" :style="{ paddingTop: statusBarHeightPx + 'px' }">
+        <view class="nav-left press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goBack">
           <!-- 2026-08-25 P0：返回箭头改为 ‹（规格书 9.1） -->
           <text class="nav-back-icon">‹</text>
         </view>
@@ -253,7 +256,7 @@ onLoad((query) => {
       <view v-if="loading" class="state-view"><text>加载中...</text></view>
       <view v-else-if="errorMessage" class="state-view">
         <text class="error-text">{{ errorMessage }}</text>
-        <view class="retry-btn" @tap="loadOfficialChat"><text>重试</text></view>
+        <view class="retry-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="loadOfficialChat"><text>重试</text></view>
       </view>
 
       <!-- ===== 聊天主体 ===== -->
@@ -330,10 +333,10 @@ onLoad((query) => {
 
                   <!-- 按钮消息 -->
                   <view v-else-if="isButtonMsg(msg)" class="msg-buttons">
-                    <view class="action-btn action-btn--primary" @tap="onActionBtnTap('去看看')">
+                    <view class="action-btn action-btn--primary press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="onActionBtnTap('去看看')">
                       <text class="action-btn__text action-btn__text--primary">去看看</text>
                     </view>
-                    <view class="action-btn action-btn--default" @tap="onActionBtnTap('稍后再说')">
+                    <view class="action-btn action-btn--default press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="onActionBtnTap('稍后再说')">
                       <text class="action-btn__text">稍后再说</text>
                     </view>
                   </view>
@@ -407,7 +410,7 @@ onLoad((query) => {
 
 .assistant-chat {
   /* P0#4: 覆盖全局粉→灰页面渐变，使用浅薄荷底色，避免“上绿下粉” */
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .nav-bar {

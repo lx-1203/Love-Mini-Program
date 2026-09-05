@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { InterestCircleViewModel } from "../../view-models/home-dashboard";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 
 /** 兴趣圈名称 -> 封面图路径映射（摄影大图，统一 CIRCLE_COVERS） */
 const CIRCLE_COVER = {
@@ -40,7 +42,7 @@ function formatMemberCount(count: number): string {
   return String(count);
 }
 
-defineProps<{ items: InterestCircleViewModel[] }>();
+withDefaults(defineProps<{ items: InterestCircleViewModel[]; loading?: boolean }>(), { loading: false });
 defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id: number): void }>();
 </script>
 
@@ -50,7 +52,11 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
       <text class="section-head__title">兴趣推荐</text>
       <text class="section-head__more" @tap="$emit('more')">查看更多 &#8250;</text>
     </view>
-    <scroll-view scroll-x class="interest-scroll" :show-scrollbar="false">
+    <!-- 2026-09-03 骨架屏：homeFeed 首拉期间占位 -->
+    <view v-if="loading" role="status" aria-live="polite">
+      <SkeletonBlock variant="list" :rows="2" label="加载中" />
+    </view>
+    <scroll-view v-else scroll-x class="interest-scroll" :show-scrollbar="false">
       <view class="interest-list">
         <view
           v-for="item in items"
@@ -60,12 +66,22 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
         >
           <!-- 封面图（顶部，固定高度，不加黑色浮层） -->
           <view class="interest-card__cover-wrap">
+            <!-- #ifdef MP-WEIXIN -->
             <image
               class="interest-card__cover"
-              :src="circleCover(item.name)"
+              :src="resolveMediaUrl(item.coverUrl ?? circleCover(item.name))"
               mode="aspectFill"
               alt=""
             />
+            <!-- #endif -->
+            <!-- #ifndef MP-WEIXIN -->
+            <image
+              class="interest-card__cover"
+              :src="resolveMediaUrl(item.coverUrl ?? circleCover(item.name))"
+              mode="cover"
+              alt=""
+            />
+            <!-- #endif -->
           </view>
           <!-- 文案区：名称/人数在图下方（参考图：不上图覆盖） -->
           <view class="interest-card__body">
@@ -139,9 +155,16 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 }
 
 .interest-card__cover {
-  width: 100%;
-  height: 100%;
+  /* 2026-09-04 问题3修复：mp-weixin <image> 对 position:absolute + 四边约束 +
+     width/height:100% 多重约束的尺寸计算异常（部分场景 fallback 原始尺寸 → 错位）。
+     去掉 absolute 与四边约束，改为与容器（216rpx）一致的显式宽高 + display:block，
+     mp 分支 mode="aspectFill" 保持不变，H5 分支不受影响。 */
   display: block;
+  width: 216rpx;
+  height: 216rpx;
+  /* 移除 crisp-edges（强制非抗锯齿反而加重锯齿），保留高对比优化 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
 }
 
 .interest-card__body {

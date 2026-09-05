@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# pre-commit hook — mp-weixin 图片样式 strict lint 闸（2026-09-03 落地 7）
+#
+# 设计要点：
+# 1. 轻量零依赖——不装 husky/lint-staged，靠 git core.hooksPath 指向本目录
+# 2. 作用域过滤——只有 staged 文件落在 apps/client/ 下才跑 lint（避免 admin/api 提交被拖累）
+# 3. 失败拦截——任何 lint 命中 exit 1 → git commit 中断
+# 4. 兜底友好——前置 mp-image lint 只 1s 跑完，可在 commit 时频繁触发
+# 5. 沙箱兼容——本脚本走系统命令 + node 子进程，不受 NODE_OPTIONS shim 拦截
+
+set -euo pipefail
+
+# 1) 作用域过滤
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR || true)
+SCOPED=""
+for f in $STAGED; do
+  case "$f" in
+    apps/client/*) SCOPED="$SCOPED $f" ;;
+  esac
+done
+
+if [ -z "$SCOPED" ]; then
+  exit 0  # 本次提交不涉及 apps/client，跳过
+fi
+
+# 2) 定位 apps/client 目录并跑 strict lint
+ROOT="$(git rev-parse --show-toplevel)"
+CLIENT_DIR="$ROOT/apps/client"
+
+if [ ! -d "$CLIENT_DIR" ]; then
+  echo "[pre-commit] WARN: apps/client 不存在，跳过 mp-image lint"
+  exit 0
+fi
+
+echo "[pre-commit] mp-weixin <image> 样式 strict lint（apps/client）..."
+cd "$CLIENT_DIR"
+
+# 子进程走系统 node，沙箱内 NODE_OPTIONS shim 仅拦截 fs API 不会阻断子进程 node 启动
+node scripts/check-mp-image-styles.mjs --strict
+RC=$?
+
+if [ $RC -ne 0 ]; then
+  echo ""
+  echo "[pre-commit] FAIL: mp-weixin <image> 失效样式命中。修复后再提交："
+  echo "[pre-commit]   cd apps/client && npx -y pnpm@11.17.0 run check:mp-image:strict"
+  echo "[pre-commit]   或在 src/**/*.vue|scss|css 加豁免 /* mp-audit:ignore */（本行或上一非空代码行）"
+fi
+
+exit $RC

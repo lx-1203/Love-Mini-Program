@@ -10,7 +10,9 @@ import { ref, computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCoinsStore } from "../../../stores/coins";
+import { useAppConfigStore } from "../../../stores/app-config";
 import { request } from "../../../services/http";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 // R4-00067: 演示充值仅限 mock/开发环境（真实模式禁止无限刷余额）
@@ -19,6 +21,13 @@ import { isDev } from "../../../config/env";
 
 const { t } = useI18n();
 const coinsStore = useCoinsStore();
+const appConfig = useAppConfigStore();
+
+/**
+ * 商业化封存（批次 A / ADR-2）：交友币属 commerce.coin 子闸管辖。
+ * 缺省封存（=== true 才放行），mock 后端未下发 commerce.* 时恒为封存态。
+ */
+const commerceSealed = computed(() => !appConfig.isCommerceOn("coin"));
 
 /** 余额（元） */
 const balanceYuan = computed<number>(() => coinsStore.balanceYuan);
@@ -30,6 +39,8 @@ const transactions = computed(() => coinsStore.transactions);
 const loading = ref(false);
 
 onShow(async () => {
+  // 批次 A / ADR-2：封存态不发任何钱包请求（余额/流水均不拉取）
+  if (commerceSealed.value) return;
   loading.value = true;
   try {
     await Promise.all([
@@ -45,6 +56,11 @@ onShow(async () => {
 
 /** 演示充值：+100 元（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
 async function handleRecharge() {
+  // 封存守卫（ADR-2）：封存态禁止充值请求
+  if (commerceSealed.value) {
+    uni.showToast({ title: t("commerce.sealedToast"), icon: "none" });
+    return;
+  }
   lightHaptic();
   try {
     const orderId = `RECHARGE-DEMO-${Date.now()}`;
@@ -110,40 +126,54 @@ function amountText(item: { type?: string; amount: number }): string {
       <view class="wallet__header-spacer" />
     </view>
 
-    <!-- 余额卡 -->
-    <view class="wallet__balance-card">
-      <image class="wallet__balance-icon" :src="IMAGE_PATHS.ICONS_EMOJI.MONEY" mode="aspectFit" alt="" />
-      <text class="wallet__balance-label">{{ t('wallet.balanceLabel') }}</text>
-      <view class="wallet__balance-value-row">
-        <text class="wallet__balance-currency">¥</text>
-        <text class="wallet__balance-value">{{ loading ? '--' : balanceYuan.toFixed(0) }}</text>
-      </view>
-      <text class="wallet__balance-hint">{{ t('wallet.balanceHint') }}</text>
-      <!-- R4-00067：演示充值无支付流程（直接 POST /wallet/recharge 入账），
-           仅 mock/开发环境展示；真实模式隐藏，避免用户无限刷余额 -->
-      <view
-        v-if="useMock() || isDev"
-        class="wallet__recharge press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('wallet.recharge')" @tap="handleRecharge"
-      >
-        <text class="wallet__recharge-text">{{ t('wallet.recharge') }}</text>
-      </view>
-    </view>
-
-    <!-- 收支明细 -->
-    <view class="wallet__section">
-      <text class="wallet__section-title">{{ t('wallet.transactions') }}</text>
-      <view v-if="transactions.length > 0" class="wallet__tx-list">
-        <view v-for="tx in transactions" :key="tx.id" class="wallet__tx-item">
-          <view class="wallet__tx-info">
-            <text class="wallet__tx-type">{{ typeLabel(tx.type) }}</text>
-            <text class="wallet__tx-remark">{{ tx.remark || tx.relatedType || '' }}</text>
-          </view>
-          <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': isIncome(tx.type) }">
-            {{ amountText(tx) }}
-          </text>
+    <!-- 批次 A / ADR-2：商业化封存态（commerce.coin=false）展示封存卡，隐藏余额/充值/明细 -->
+    <template v-if="!commerceSealed">
+      <!-- 余额卡 -->
+      <view class="wallet__balance-card">
+        <image class="wallet__balance-icon" :src="IMAGE_PATHS.ICONS_EMOJI.MONEY" mode="aspectFit" alt="" />
+        <text class="wallet__balance-label">{{ t('wallet.balanceLabel') }}</text>
+        <view class="wallet__balance-value-row">
+          <text class="wallet__balance-currency">¥</text>
+          <text class="wallet__balance-value">{{ loading ? '--' : balanceYuan.toFixed(0) }}</text>
+        </view>
+        <text class="wallet__balance-hint">{{ t('wallet.balanceHint') }}</text>
+        <!-- R4-00067：演示充值无支付流程（直接 POST /wallet/recharge 入账），
+             仅 mock/开发环境展示；真实模式隐藏，避免用户无限刷余额 -->
+        <view
+          v-if="useMock() || isDev"
+          class="wallet__recharge press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('wallet.recharge')" @tap="handleRecharge"
+        >
+          <text class="wallet__recharge-text">{{ t('wallet.recharge') }}</text>
         </view>
       </view>
-      <text v-else class="wallet__empty">{{ t('wallet.empty') }}</text>
+
+      <!-- 收支明细 -->
+      <view class="wallet__section">
+        <text class="wallet__section-title">{{ t('wallet.transactions') }}</text>
+        <view v-if="transactions.length > 0" class="wallet__tx-list">
+          <view v-for="tx in transactions" :key="tx.id" class="wallet__tx-item">
+            <view class="wallet__tx-info">
+              <text class="wallet__tx-type">{{ typeLabel(tx.type) }}</text>
+              <text class="wallet__tx-remark">{{ tx.remark || tx.relatedType || '' }}</text>
+            </view>
+            <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': isIncome(tx.type) }">
+              {{ amountText(tx) }}
+            </text>
+          </view>
+        </view>
+        <!-- 2026-09-03 骨架屏：明细首拉中占位 -->
+        <view v-else-if="loading" role="status" aria-live="polite">
+          <SkeletonBlock variant="list" :rows="3" :label="t('common.loading')" />
+        </view>
+        <text v-else class="wallet__empty">{{ t('wallet.empty') }}</text>
+      </view>
+    </template>
+
+    <!-- 封存态卡（SVG 锁图标，禁 emoji） -->
+    <view v-else class="wallet__sealed" aria-live="polite">
+      <image class="wallet__sealed-icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
+      <text class="wallet__sealed-title">{{ t('commerce.sealedTitle') }}</text>
+      <text class="wallet__sealed-desc">{{ t('commerce.sealedDesc') }}</text>
     </view>
 
     <!-- 底部留白 -->
@@ -248,6 +278,38 @@ function amountText(item: { type?: string; amount: number }): string {
   font-size: var(--fs-base, 26rpx);
   font-weight: 700;
   color: var(--c-brand-600, #22a35f);
+}
+
+/* ========== 批次 A / ADR-2：商业化封存态 ========== */
+.wallet__sealed {
+  margin: var(--sp-10) var(--sp-4);
+  padding: var(--sp-8) var(--sp-6);
+  border-radius: var(--r-2xl, 32rpx);
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-divider-light, #f1f5f9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.wallet__sealed-icon {
+  width: 96rpx;
+  height: 96rpx;
+  opacity: 0.55;
+}
+
+.wallet__sealed-title {
+  font-size: var(--fs-xl, 34rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1a2332);
+}
+
+.wallet__sealed-desc {
+  font-size: var(--fs-sm, 24rpx);
+  color: var(--c-text-tertiary, #94a3b8);
+  text-align: center;
+  line-height: 1.6;
 }
 
 .wallet__section {

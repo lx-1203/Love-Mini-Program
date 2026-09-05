@@ -654,16 +654,16 @@ defineExpose({ onContentTap });
               <text class="filter-section__value">{{ heightDisplayText }}</text>
             </view>
             <view class="filter-section__sliders">
-              <!-- 下限滑块 -->
+              <!-- 下限滑块（原生 slider 属性不支持 CSS var，须传具体色值） -->
               <slider
                 class="height-slider"
                 :min="HEIGHT_MIN_BOUND"
                 :max="HEIGHT_MAX_BOUND"
                 :step="HEIGHT_STEP"
                 :value="heightMinDraft"
-                activeColor="var(--c-brand-500)"
-                backgroundColor="var(--c-neutral-200)"
-                block-color="var(--c-brand-600)"
+                activeColor="#36C99A"
+                backgroundColor="#DDE3E0"
+                block-color="#2AAE83"
                 block-size="22"
                 @change="onHeightMinChange"
               />
@@ -674,9 +674,9 @@ defineExpose({ onContentTap });
                 :max="HEIGHT_MAX_BOUND"
                 :step="HEIGHT_STEP"
                 :value="heightMaxDraft"
-                activeColor="var(--c-romance-500)"
-                backgroundColor="var(--c-neutral-200)"
-                block-color="var(--c-romance-500)"
+                activeColor="#FF6B81"
+                backgroundColor="#DDE3E0"
+                block-color="#FF6B81"
                 block-size="22"
                 @change="onHeightMaxChange"
               />

@@ -444,10 +444,40 @@ public class RealRecommendationService implements RecommendationService {
         return recommendations;
     }
 
+    /**
+     * B5 去重：携带 excludeIds 的推荐（绕过缓存，在排序前过滤已曝光用户）。
+     */
+    private List<RecommendedPersonView> getRecommendationsWithExclude(Long userId, Set<Long> excludeIds) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (isRecommendationClosed()) {
+            return List.of();
+        }
+        List<RecommendedPersonView> recommendations =
+                cacheManager.getRecommendationsWithExclude(userId, excludeIds);
+        // 拉黑过滤（与 getRecommendations 一致）
+        if (blockRepository != null) {
+            Set<Long> blockedRelationUserIds = new HashSet<>(blockRepository.findBlockedRelationUserIds(userId));
+            if (!blockedRelationUserIds.isEmpty()) {
+                return recommendations.stream()
+                        .filter(view -> view.id() == null || !blockedRelationUserIds.contains(view.id()))
+                        .toList();
+            }
+        }
+        return recommendations;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<RecommendedPersonView> getRecommendations(Long userId, RecommendationFilter filter) {
-        List<RecommendedPersonView> recommendations = getRecommendations(userId);
+        List<RecommendedPersonView> recommendations;
+        // B5 去重：excludeIds 非空时绕过缓存，直接计算并在排序前过滤已曝光用户
+        if (filter != null && filter.excludeIds() != null && !filter.excludeIds().isEmpty()) {
+            recommendations = getRecommendationsWithExclude(userId, filter.excludeIds());
+        } else {
+            recommendations = getRecommendations(userId);
+        }
         if (filter == null || filter.isEmpty()) {
             return recommendations;
         }
@@ -480,7 +510,9 @@ public class RealRecommendationService implements RecommendationService {
         // infra R2-00238: 批量预加载候选用户基本资料，避免筛选逐条查库（N+1）
         Map<Long, UserBasicProfile> basicProfileMap = loadBasicProfileMap(
                 views.stream().map(RecommendedPersonView::id).toList());
+        java.util.Set<Long> guestExcludeIds = filter != null ? filter.excludeIds() : Set.of();
         return views.stream()
+                .filter(view -> guestExcludeIds.isEmpty() || view.id() == null || !guestExcludeIds.contains(view.id()))
                 .filter(view -> matchesFilter(view, filter, basicProfileMap))
                 .toList();
     }

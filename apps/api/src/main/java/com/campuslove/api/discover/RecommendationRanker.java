@@ -120,6 +120,10 @@ public class RecommendationRanker {
      */
     private final MediaAssetService mediaAssetService;
 
+    /** LBS Phase 2：可选注入，无 GPS 数据时 deriveDistanceText 回退 null */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.location.GeoService geoService;
+
     @org.springframework.beans.factory.annotation.Autowired
     public RecommendationRanker(
             RecommendationConfig recommendationConfig,
@@ -268,6 +272,31 @@ public class RecommendationRanker {
             java.util.Map<Long, UserBasicProfile> basicProfileMap,
             java.util.Map<Long, List<CircleMembership>> membershipMap,
             Long currentUserId) {
+        return rankAndConvert(scoredUsers, myCampusName, myDepartmentName, myCircleIds,
+                campusProfileMap, basicProfileMap, membershipMap, currentUserId, null);
+    }
+
+    /**
+     * B5 去重扩展：携带 excludeIds，在排序前过滤已曝光用户，保证截断后的新用户数充足。
+     *
+     * @param excludeIds 已曝光用户 ID 集合（可为 null，null 表示不去重）
+     */
+    public List<RecommendedPersonView> rankAndConvert(
+            List<RecommendationStrategy.ScoredUser> scoredUsers,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            java.util.Map<Long, UserCampusProfile> campusProfileMap,
+            java.util.Map<Long, UserBasicProfile> basicProfileMap,
+            java.util.Map<Long, List<CircleMembership>> membershipMap,
+            Long currentUserId,
+            Set<Long> excludeIds) {
+        // B5 去重：在排序前过滤已曝光用户（BEFORE truncation），
+        // 避免 dailyLimit 截断后新用户数不足
+        if (excludeIds != null && !excludeIds.isEmpty()) {
+            scoredUsers = scoredUsers.stream()
+                    .filter(su -> su.user().getId() == null || !excludeIds.contains(su.user().getId()))
+                    .toList();
+        }
+        scoredUsers = new java.util.ArrayList<>(scoredUsers);
         scoredUsers.sort(Comparator.comparingInt(RecommendationStrategy.ScoredUser::score).reversed());
 
         List<RecommendationStrategy.ScoredUser> topResults = scoredUsers.stream()
@@ -577,7 +606,7 @@ public class RecommendationRanker {
         // ---- Phase Feedback1：卡片重设计扩展字段（可空，前端按缺省兜底） ----
         // 展示 ID：User 无独立字段，稳定推导为 CL-{id}（同 mock 口径）
         String displayId = user.getId() != null ? "CL-" + user.getId() : null;
-        // 距离文案：同校为空；异地按稳定 hash 给 km（真实距离由推荐服务计算）
+        // 距离文案：LBS Phase 2——有坐标时计算真实距离，无坐标返回 null
         String distanceText = deriveDistanceText(user);
         // 活跃状态：离线为默认，在线用户由前端二次查询回填
         String activeStatusText = "online";
@@ -821,17 +850,21 @@ public class RecommendationRanker {
     }
 
     /**
-     * 异地用户距离文案：按 userId 稳定推导（无实时定位数据时使用确定性近似值，
-     * 避免每次刷新距离抖动）。同校用户不会走到此方法（上游已置 null）。
+     * LBS Phase 2：距离文案——有坐标时计算真实 haversine 距离，无坐标返回 null。
+     * 自动从 SecurityUtils 获取当前用户坐标。
      */
-    private String deriveDistanceText(User user) {
-        Long id = user.getId();
-        if (id == null) {
-            return null;
-        }
-        // R4-00351：Math.floorMod 替代 Math.abs(hashCode()) % n（Integer.MIN_VALUE 时仍为负）
-        double km = 3.2 + Math.floorMod(id.hashCode(), 120) / 10.0;
-        return String.format(java.util.Locale.ROOT, "%.1fkm", km);
+    private String deriveDistanceText(User candidate) {
+        if (geoService == null) return null;
+        Long currentUserId = com.campuslove.api.config.SecurityUtils.getCurrentUserIdOrNull();
+        if (currentUserId == null) return null;
+        User currentUser = userRepository.findById(currentUserId).orElse(null);
+        if (currentUser == null || currentUser.getLatitude() == null || currentUser.getLongitude() == null) return null;
+        if (candidate.getLatitude() == null || candidate.getLongitude() == null) return null;
+        // 同校用户不显示距离（上游已置 null，此处兜底）
+        double km = geoService.haversineKm(
+                currentUser.getLatitude().doubleValue(), currentUser.getLongitude().doubleValue(),
+                candidate.getLatitude().doubleValue(), candidate.getLongitude().doubleValue());
+        return geoService.formatDistance(km);
     }
 
     /**

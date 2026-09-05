@@ -152,7 +152,7 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 <style scoped lang="scss">
 .not-logged-profile {
   min-height: 100vh;
-  background: linear-gradient(180deg, #E8FBF3 0%, #F7FAF9 40%);
+  background: linear-gradient(180deg, #E8FBF3 0%, #EEF7F2 40%);
   padding: 32rpx 24rpx 140rpx;
 }
 

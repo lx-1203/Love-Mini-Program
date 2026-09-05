@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
   liveDot?: boolean | 'green' | 'red';
   /** v3 头像分层 · 认证徽章（绿色 ✓，按需出现，不压主体脸部） */
   verified?: boolean;
+  /** 用户 ID，点击头像时跳转到该用户的个人主页 */
+  userId?: string | number;
 }>(), {
   size: 'md',
   online: false,
@@ -91,6 +93,17 @@ const ringBg = computed(() => {
   if (props.ring) return t.color.brand[400];
   return 'transparent';
 });
+
+/** 点击头像跳转到用户个人主页（userId 非空时生效） */
+function handleTap() {
+  const uid = props.userId;
+  if (uid !== undefined && uid !== null && String(uid).length > 0) {
+    uni.navigateTo({
+      url: `/subpackages/profile-extra/profile/other?userId=${uid}`,
+      fail: () => {},
+    });
+  }
+}
 </script>
 
 <template>
@@ -100,10 +113,12 @@ const ringBg = computed(() => {
       'avatar--ring': ring || vipRing || vip,
       'avatar--vip-ring': vipRing || vip,
       'avatar--green-ring': ring && !vipRing && !vip,
+      'avatar--tappable': !!userId,
     }"
     :style="{ ...sizeStyle, background: ringBg }"
     role="img"
     :aria-label="avatarAriaLabel"
+    @tap="handleTap"
   >
     <SafeImage
       v-if="!showFallback"
@@ -149,6 +164,9 @@ const ringBg = computed(() => {
   border-radius: var(--r-full);
   overflow: visible;
   flex-shrink: 0;
+}
+.avatar--tappable {
+  cursor: pointer;
 }
 .avatar-img {
   border-radius: var(--r-full);

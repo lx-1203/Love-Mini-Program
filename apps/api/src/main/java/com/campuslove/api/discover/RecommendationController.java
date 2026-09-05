@@ -221,7 +221,8 @@ public class RecommendationController {
           @RequestParam(value = "keyword", required = false) String keyword,
           @RequestParam(value = "ageMin", required = false) Integer ageMin,
           @RequestParam(value = "ageMax", required = false) Integer ageMax,
-          @RequestParam(value = "onlineOnly", required = false) Boolean onlineOnly) {
+          @RequestParam(value = "onlineOnly", required = false) Boolean onlineOnly,
+          @RequestParam(value = "excludeIds", required = false) String excludeIds) {
     // B6：后台关闭匹配/推荐功能（app_switch.match_open / recommend_open=false）→ 返回空列表，
     // 客户端按 app-config 开关显示「匹配暂时关闭」空态，前后端行为一致
     if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_MATCH_OPEN)) {
@@ -256,6 +257,9 @@ public class RecommendationController {
     validateEnumFilter("educationLevel", educationLevel, VALID_EDUCATION_LEVELS);
     validateEnumFilter("relationshipStatus", relationshipStatus, VALID_RELATIONSHIP_STATUS);
 
+    // B5 去重：解析 excludeIds（逗号分隔的 Long 列表，最多 200 个）
+    java.util.Set<Long> parsedExcludeIds = parseExcludeIds(excludeIds);
+
     RecommendationFilter filter = new RecommendationFilter(
             heightMin,
             heightMax,
@@ -266,7 +270,8 @@ public class RecommendationController {
             futureCity,
             keyword,
             ageMin,
-            ageMax
+            ageMax,
+            parsedExcludeIds
     );
     // 2026-08-09 免登录可逛：匿名用户返回中性排序的通用推荐（无个性化上下文），
     // 不调用 SecurityUtils.getCurrentUserId（匿名会抛 401）
@@ -307,6 +312,27 @@ public class RecommendationController {
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  /** B5 去重：解析 excludeIds（逗号分隔 Long 列表，最多 200 个，超限截断）。 */
+  private static final int MAX_EXCLUDE_IDS = 200;
+
+  private java.util.Set<Long> parseExcludeIds(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return java.util.Collections.emptySet();
+    }
+    java.util.Set<Long> result = new LinkedHashSet<>();
+    for (String s : csv.split(",")) {
+      if (result.size() >= MAX_EXCLUDE_IDS) break;
+      String trimmed = s.trim();
+      if (trimmed.isEmpty()) continue;
+      try {
+        result.add(Long.parseLong(trimmed));
+      } catch (NumberFormatException ignore) {
+        // 跳过非法值
+      }
+    }
+    return result;
   }
 
   /**

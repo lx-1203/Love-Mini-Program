@@ -76,7 +76,8 @@ public class MediaUploadController {
     @PreAuthorize("hasRole('USER')")
     @Operation(
             summary = "上传媒体文件",
-            description = "接收 multipart 文件 + 类型，校验 MIME 与 magic bytes，按 uploads/{userId}/{yyyyMM}/{uuid}.{ext} 分片存储。速率限制：桶容量 30，每秒补充 1 个令牌（按 IP 限流）。支持幂等性。",
+            description = "接收 multipart 文件 + 类型，校验 MIME 与 magic bytes，按 uploads/{userId}/{yyyyMM}/{uuid}.{ext} 分片存储。速率限制：桶容量 30，每秒补充 1 个令牌（按 IP 限流）。支持幂等性。"
+                    + "视频上传封存（批次 A）：upload.video.enabled=false 时 type=video 直接拒绝（HTTP 403 + VIDEO_UPLOAD_DISABLED），先校验后落盘；图片/语音/背景图不受影响。",
             operationId = "uploadMedia"
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
@@ -84,6 +85,7 @@ public class MediaUploadController {
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "BAD_REQUEST：格式不支持或文件损坏", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED：未登录", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "VIDEO_UPLOAD_DISABLED：视频上传处于封存态", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "PAYLOAD_TOO_LARGE：文件超过大小限制", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发限流", content = @Content)
     })

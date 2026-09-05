@@ -342,7 +342,7 @@ defineExpose({ toggleEnroll });
       class="status-box"
     >
       <text class="status-text status-text--error">{{ activityStore.errorMessage }}</text>
-      <button class="retry-btn" @tap="activityStore.fetchActivities()">{{ t("common.retry") }}</button>
+      <button class="retry-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="activityStore.fetchActivities()">{{ t("common.retry") }}</button>
     </view>
 
     <!-- 暂无活动 -->
@@ -357,15 +357,19 @@ defineExpose({ toggleEnroll });
       <view class="view-toggle-bar">
         <view class="view-toggle">
           <view
-            class="view-toggle__btn"
+            class="view-toggle__btn press-feedback"
             :class="{ 'view-toggle__btn--active': viewMode === 'list' }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             @tap="switchView('list')"
           >
             <text class="view-toggle__text">{{ t("activities.listTab") }}</text>
           </view>
           <view
-            class="view-toggle__btn"
+            class="view-toggle__btn press-feedback"
             :class="{ 'view-toggle__btn--active': viewMode === 'calendar' }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             @tap="switchView('calendar')"
           >
             <text class="view-toggle__text">{{ t("activities.calendarTab") }}</text>
@@ -385,8 +389,10 @@ defineExpose({ toggleEnroll });
       >
         <view class="quick-filters" role="tablist" :aria-label="t('activities.quickFilterAria')">
           <view v-for="f in ([{key:'all',label:t('activities.quickAll')},{key:'today',label:t('activities.quickToday')},{key:'weekend',label:t('activities.quickWeekend')}] as const)" :key="f.key"
-            class="quick-filter"
+            class="quick-filter press-feedback"
             :class="{ 'quick-filter--active': quickFilter === f.key }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="tab"
             :aria-selected="quickFilter === f.key ? 'true' : 'false'"
             @tap="switchQuickFilter(f.key)"
@@ -399,7 +405,9 @@ defineExpose({ toggleEnroll });
           <view
             v-for="item in filteredActivities"
             :key="item.id"
-            class="activity-row"
+            class="activity-row press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('activities.cardAria', { title: item.title })"
             @tap="goToActivityDetail(item.id)"
@@ -477,11 +485,11 @@ defineExpose({ toggleEnroll });
         <!-- 月份切换 -->
         <view class="calendar-header">
           <view class="month-nav">
-            <view class="month-nav__btn" @tap="goToPrevMonth">
+            <view class="month-nav__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goToPrevMonth">
               <text class="month-nav__arrow">‹</text>
             </view>
             <text class="month-nav__title">{{ monthTitle }}</text>
-            <view class="month-nav__btn" @tap="goToNextMonth">
+            <view class="month-nav__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goToNextMonth">
               <text class="month-nav__arrow">›</text>
             </view>
           </view>
@@ -554,7 +562,9 @@ defineExpose({ toggleEnroll });
           <view
             v-for="item in selectedDateActivities"
             :key="item.id"
-            class="activity-row"
+            class="activity-row press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('activities.cardAria', { title: item.title })"
             @tap="goToActivityDetail(item.id)"

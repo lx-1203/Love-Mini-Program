@@ -8,8 +8,10 @@ const props = withDefaults(
     matched?: boolean;
     blocked?: boolean;
     loading?: boolean;
+    /** 2026-09-05 R18：关注状态（点击切换 已关注/关注） */
+    following?: boolean;
   }>(),
-  { liked: false, matched: false, blocked: false, loading: false }
+  { liked: false, matched: false, blocked: false, loading: false, following: false }
 );
 
 const emit = defineEmits<{
@@ -23,6 +25,8 @@ const likeLabel = computed(() => {
   if (props.liked) return "已喜欢";
   return "喜欢";
 });
+
+const followLabel = computed(() => (props.following ? "已关注" : "关注"));
 </script>
 
 <template>
@@ -43,9 +47,14 @@ const likeLabel = computed(() => {
         <text class="relationship-cta__text">打招呼</text>
       </view>
 
-      <view class="relationship-cta__btn relationship-cta__btn--follow" hover-class="relationship-cta__btn--pressed" @tap="emit('follow')">
+      <view
+        class="relationship-cta__btn relationship-cta__btn--follow"
+        :class="{ 'relationship-cta__btn--following': following }"
+        hover-class="relationship-cta__btn--pressed"
+        @tap="emit('follow')"
+      >
         <image class="relationship-cta__star" :src="IMAGE_PATHS.ICONS_EMOJI.STAR" mode="aspectFit" alt="" />
-        <text class="relationship-cta__text relationship-cta__text--follow">关注</text>
+        <text class="relationship-cta__text relationship-cta__text--follow">{{ followLabel }}</text>
       </view>
     </view>
   </view>
@@ -99,6 +108,12 @@ const likeLabel = computed(() => {
   flex: 1.1;
   background: #ffffff;
   border: 2rpx solid #36C99A;
+}
+
+/* 2026-09-05 R18：已关注态（灰绿弱化，与白描边"关注"区分） */
+.relationship-cta__btn--following {
+  background: #E8FBF3;
+  border-color: #A9E5CE;
 }
 
 .relationship-cta__btn--disabled {

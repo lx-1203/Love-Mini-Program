@@ -839,7 +839,15 @@ export const useMessagesStore = defineStore("messages", {
           }
           // 修复（P0-12）：后端 SendMessageRequest 不含 senderId（从 JWT 取当前用户），
           // 请求体仅发送内容与类型，删除多余字段避免后端契约不匹配
-          const result = await request<BackendMessageView, { content: string; kind: string }>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`, method: "POST", data: { content, kind } });
+          // 2026-09-03 修复（发送撞幂等锁）：http 拦截器默认按「URL+body」生成稳定幂等键，
+          // 相同文案二次发送/失败重发会被后端幂等去重并整页报「重复请求已被拦截」。
+          // 消息发送是"每次独立意图"，改由前端 sending 锁防重，幂等键每次随机。
+          const result = await request<BackendMessageView, { content: string; kind: string }>({
+            url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
+            method: "POST",
+            data: { content, kind },
+            header: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
+          });
           const mr = mapToMessageItem(result);
           this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);

@@ -98,6 +98,8 @@ defineProps<{
 }
 
 .feed-card__avatar {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

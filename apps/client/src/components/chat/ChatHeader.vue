@@ -77,9 +77,9 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
   gap: 16rpx;
   padding: 20rpx 24rpx;
   padding-top: calc(env(safe-area-inset-top) + 20rpx);
-  /* 2026-08-26：背景统一为页面底（--c-bg-page #F7FAF9），
+  /* 2026-08-26：背景统一为页面底（--c-bg-page #EEF7F2），
      避免顶部纯白与下方内容浅灰绿拼接成"上下背景不一致" */
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   border-bottom: 1rpx solid #EEF2F0;
 }
 .chat-header__back {

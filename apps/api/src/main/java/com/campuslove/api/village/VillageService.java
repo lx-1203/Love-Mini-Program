@@ -130,6 +130,27 @@ public interface VillageService {
     PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId);
 
     /**
+     * 创建新帖子（Batch B：支持可见范围与圈子发帖）。
+     *
+     * @param userId     作者用户 ID
+     * @param title      帖子标题（必填 5-30 字）
+     * @param content    帖子内容
+     * @param images     图片 URL 列表
+     * @param tags       标签列表
+     * @param category   分类
+     * @param activityId 关联活动 ID（可选）
+     * @param targetType 统一发布目标类型：general | circle | campus（可为 null，默认 general）
+     * @param targetId   统一发布目标 ID：circle/campus 时必填
+     * @return 帖子详情视图
+     */
+    default PostDetailView createPost(Long userId, String title, String content, List<String> images,
+                                      List<String> tags, String category, Long activityId,
+                                      String targetType, Long targetId) {
+        // 默认实现委托旧签名（忽略 targetType/targetId），供 mock 实现编译兼容
+        return createPost(userId, title, content, images, tags, category, activityId);
+    }
+
+    /**
      * 点赞帖子（切换点赞状态）。
      *
      * @param userId 当前用户 ID

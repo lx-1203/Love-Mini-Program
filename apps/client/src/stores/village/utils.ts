@@ -180,6 +180,8 @@ export function mapDetailToPostItem(data: PostDetailView): PostItem {
     // 2026-08-08 频道化重构：活动关联透传（详情页活动卡）
     activityId: data.activityId != null ? String(data.activityId) : undefined,
     activity: data.activity ?? null,
+    // 2026-09-05 R17：审核状态透传（PostDetailView 暂无该字段时为 undefined）
+    auditStatus: (data as { auditStatus?: PostItem["auditStatus"] }).auditStatus,
     createdAt: data.createdAt,
   };
 }

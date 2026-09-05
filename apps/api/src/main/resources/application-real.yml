@@ -123,6 +123,9 @@ spring:
     # 监听器（消费者）重试配置：消费失败时自动重试，避免瞬时故障导致消息丢失
     listener:
       simple:
+        # R4-00430：监听器自动启动开关（报告 P1-3）。缺省 false——未部署 RabbitMQ 时
+        # 避免每秒重试刷日志噪音；生产环境部署 RabbitMQ 后通过 .env 设为 true 即可激活。
+        auto-startup: ${APP_EVENTS_ENABLED:false}
         retry:
           # 是否启用消费者重试（默认 true，显式声明便于维护）
           enabled: true

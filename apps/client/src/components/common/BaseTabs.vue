@@ -242,7 +242,7 @@ function formatBadge(badge: number | string): string {
 .base-tabs--pill .base-tab-item {
   padding: var(--sp-3) var(--sp-7);
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .base-tabs--pill .base-tab-label {
@@ -267,7 +267,7 @@ function formatBadge(badge: number | string): string {
 .base-tabs--block .base-tab-item {
   padding: var(--sp-4) var(--sp-6);
   border-radius: var(--r-md, 12rpx);
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .base-tabs--block .base-tab-label {

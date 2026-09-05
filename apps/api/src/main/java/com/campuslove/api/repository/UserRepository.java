@@ -275,4 +275,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             + "WHEN COALESCE(u.followersCount, 0) > 0 THEN u.followersCount - 1 ELSE 0 END, "
             + "u.updatedAt = :now WHERE u.id = :id")
     int decrementFollowersCount(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /** LBS Phase 2：bounding box 预筛，查询经纬度范围内的用户 */
+    @Query("SELECT u FROM User u WHERE u.latitude BETWEEN :minLat AND :maxLat "
+            + "AND u.longitude BETWEEN :minLng AND :maxLng "
+            + "AND u.latitude IS NOT NULL AND u.longitude IS NOT NULL "
+            + "AND u.status = 'active'")
+    java.util.List<User> findByLatitudeBetweenAndLongitudeBetween(
+            @Param("minLat") java.math.BigDecimal minLat,
+            @Param("maxLat") java.math.BigDecimal maxLat,
+            @Param("minLng") java.math.BigDecimal minLng,
+            @Param("maxLng") java.math.BigDecimal maxLng);
 }

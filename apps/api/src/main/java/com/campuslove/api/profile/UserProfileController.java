@@ -138,7 +138,10 @@ public class UserProfileController {
             relation = new UserProfileDTO.Relation(false, false, false, false, 0, List.of(), List.of());
         }
 
-        List<UserProfileDTO.Post> posts = buildPosts(user.getId());
+        // 2026-09-05 R18：他人视角只展示已审核通过的帖子——pending 帖详情对非作者 404
+        // （VillageQueryService.getPost 审核语义），泄漏到他人主页会出现"点了 404"；
+        // 自己主页保留全部（作者可见自己的待审帖）
+        List<UserProfileDTO.Post> posts = buildPosts(user.getId(), !isPublic);
         String state = computeState(user, basic, campus);
 
         return new UserProfileDTO(
@@ -199,7 +202,18 @@ public class UserProfileController {
     }
 
     private List<UserProfileDTO.Post> buildPosts(Long userId) {
+        return buildPosts(userId, true);
+    }
+
+    /**
+     * 2026-09-05 R18：isSelf=false（他人视角）仅返回审核通过且未下架/删除的帖子，
+     * 与 VillageQueryService.getPost 的"非作者不可见待审帖"语义对齐，避免点击 404。
+     */
+    private List<UserProfileDTO.Post> buildPosts(Long userId, boolean isSelf) {
         return postRepository.findByAuthorId(userId).stream()
+                .filter(post -> isSelf
+                        || (post.getAuditStatus() == Post.AuditStatus.approved
+                                && post.getStatus() == Post.PostStatus.active))
                 .sorted((a, b) -> {
                     if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
                     return b.getCreatedAt().compareTo(a.getCreatedAt());

@@ -143,7 +143,7 @@ public class MockHomeService implements HomeService {
             new InterestCircleSummaryView(4L, "美食圈", "🍜", 9210, false)
         ),
         List.of(
-            new NearbyPersonSummaryView(1001L, "林晓", "1.2km", "/static/assets/images/people/person-01.png", true, List.of("摄影")),
+            // 2026-09-02 推荐去重红线：1001 林晓已是今日推荐首位，附近的人不再重复出现
             new NearbyPersonSummaryView(1002L, "夏言", "1.5km", "/static/assets/images/people/person-02.png", true, List.of("建筑")),
             new NearbyPersonSummaryView(1003L, "阿辰", "1.8km", "/static/assets/images/people/person-03.png", false, List.of("日语")),
             new NearbyPersonSummaryView(1004L, "小满", "2.1km", "/static/assets/images/people/person-04.png", false, List.of("编程")),

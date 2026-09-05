@@ -15,7 +15,7 @@
     </view>
 
     <view v-if="loading" class="favorites-state">
-      <text class="favorites-state__text">{{ t('common.loading') }}</text>
+      <SkeletonBlock variant="list" :rows="3" :label="t('common.loading')" />
     </view>
 
     <view v-else-if="favorites.length === 0" class="favorites-empty card-base">
@@ -64,6 +64,7 @@ import { useVillageStore } from "../../../stores/village";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import { resolveMediaUrl } from "../../../utils/media";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 
 const { t } = useI18n();
 const villageStore = useVillageStore();
@@ -96,7 +97,7 @@ onShow(() => {
 <style scoped lang="scss">
 .favorites-page {
   min-height: 100vh;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: 0 var(--sp-6, 24rpx);
 }
 

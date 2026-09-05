@@ -59,6 +59,7 @@ class RealAuthServiceTest {
     @Mock private AesEncryptor aesEncryptor;
     @Mock private TokenBlacklistService tokenBlacklistService;
     @Mock private OnlineUserService onlineUserService;
+    @Mock private SmsCodeService smsCodeService;
 
     private PasswordEncoder passwordEncoder;
     private RealAuthService realAuthService;
@@ -97,7 +98,8 @@ class RealAuthServiceTest {
                 schoolRepository,
                 "",
                 true,
-                "13900000000"
+                "13900000000",
+                smsCodeService
         );
 
         // 默认 mock 返回空 Optional，避免 buildSessionView 中 NPE
@@ -176,7 +178,8 @@ class RealAuthServiceTest {
                 schoolRepository,
                 correctHash,
                 true,
-                "13900000000"
+                "13900000000",
+                smsCodeService
         );
 
         // Act & Assert：应通过环境变量哈希校验成功
@@ -271,7 +274,8 @@ class RealAuthServiceTest {
                 schoolRepository,
                 plaintextEnvPassword,
                 true,
-                "13900000000"
+                "13900000000",
+                smsCodeService
         );
 
         // Act：使用明文密码登录，应成功（环境变量兜底 + 明文比较）
@@ -439,16 +443,20 @@ class RealAuthServiceTest {
         UserSessionView session = realAuthService.loginAsGuest(null);
 
         // Assert：创建了独立体验账号（openid 约定 guest: 前缀 + 随机密码 BCrypt）并签发 token
-        // 创建后 provisionGuestProfile 会再次 save（完善度 100），故共 2 次
+        // 创建后 provisionGuestProfile 会再 save 两次（昵称 + 完善度100），故共 3 次
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
-        verify(userRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(userRepository, org.mockito.Mockito.times(3)).save(captor.capture());
         User saved = captor.getAllValues().get(0);
         assertNull(saved.getPhone(), "R4-00251：体验账号不占用手机号段");
         assertNotNull(saved.getOpenid(), "体验账号 openid 应非空");
         assertTrue(saved.getOpenid().startsWith("guest:"), "openid 应为 guest: 前缀");
         assertNotEquals("guest:13900000000", saved.getOpenid(), "R4-00251：不再复用固定体验账号");
-        assertEquals("体验用户", saved.getNickname());
-        assertEquals("USER", saved.getRole());
+        // 2026-08-31 人格池化（GuestPersona 6 套身份按 userId%6 分配昵称）：
+        // 昵称动态化（如 阿辰/星野/夏言 等），此处只断言非空且非默认占位
+        assertNotNull(saved.getNickname(), "体验账号昵称应非空");
+        assertFalse(saved.getNickname().isBlank(), "体验账号昵称不应为空白");
+        // 2026-09-02 R6 方向 C：体验账号角色为 GUEST（非正式注册 USER）
+        assertEquals("GUEST", saved.getRole());
         assertEquals("active", saved.getStatus());
         assertNotNull(saved.getPassword(), "体验账号应设置随机密码");
         assertFalse(saved.getPassword().isBlank(), "随机密码不应为空");
@@ -472,10 +480,11 @@ class RealAuthServiceTest {
 
         // Assert：每次调用都创建新账号，且 openid 互不相同（会话身份隔离）
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
-        verify(userRepository, org.mockito.Mockito.times(4)).save(captor.capture());
+        // 每次 loginAsGuest 产生 3 次 save（首次 + provision 昵称 + 完善度100），两次共 6 次
+        verify(userRepository, org.mockito.Mockito.times(6)).save(captor.capture());
         List<User> created = captor.getAllValues();
-        User first = created.get(0);
-        User second = created.get(2);
+        User first = created.get(0);   // 第一次登录的首次 save
+        User second = created.get(3);  // 第二次登录的首次 save（索引 3，非 2）
         assertNotEquals(first.getOpenid(), second.getOpenid(),
                 "R4-00251：两次体验登录必须创建不同会话账号");
     }
@@ -500,7 +509,8 @@ class RealAuthServiceTest {
                 schoolRepository,
                 "",
                 false,
-                "13900000000"
+                "13900000000",
+                smsCodeService
         );
 
         // Act & Assert

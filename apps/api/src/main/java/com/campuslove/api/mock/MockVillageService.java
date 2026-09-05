@@ -414,6 +414,9 @@ public class MockVillageService implements VillageService {
             throw new IllegalArgumentException("postId and userId are required");
         }
 
+        // 2026-09-03 遗留差异清零：推荐人必须排除帖子作者本人与当前用户（与 RealVillageService 口径一致）
+        Long postAuthorId = findPost(postId).authorId;
+
         // Mock 数据：返回 2 个不同的相似作者
         List<SimilarAuthorView> authors = List.of(
             new SimilarAuthorView(
@@ -428,7 +431,12 @@ public class MockVillageService implements VillageService {
             )
         );
 
-        return new SimilarAuthorsResponse(authors);
+        List<SimilarAuthorView> filtered = authors.stream()
+            .filter(a -> postAuthorId != null && !postAuthorId.equals(a.userId())
+                && !userId.equals(a.userId()))
+            .toList();
+
+        return new SimilarAuthorsResponse(filtered);
     }
 
   /**

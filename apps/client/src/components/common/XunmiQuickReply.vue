@@ -47,7 +47,7 @@ const emit = defineEmits<{ (e: 'select', text: string): void }>();
 }
 
 .quick-reply__btn--default {
-  background: #F7FAF9;
+  background: #EEF7F2;
   border: 2rpx solid #DDE3E0;
 }
 

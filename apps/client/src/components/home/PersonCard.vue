@@ -45,7 +45,7 @@ defineExpose({ ariaLabel });
     :aria-label="ariaLabel"
   >
     <view class="person-avatar" :class="{ 'person-avatar--halo': isSameSchool }">
-      <Avatar :name="initials || name?.charAt(0)" :src="avatarUrl" size="md" />
+      <Avatar :name="initials || name?.charAt(0)" :src="avatarUrl" size="md" :user-id="id" />
     </view>
     <view class="person-info">
       <text class="person-name">{{ name }}</text>
@@ -91,6 +91,8 @@ defineExpose({ ariaLabel });
 }
 
 .person-avatar--halo {
+  border-radius: var(--r-full);
+
   box-shadow: 0 0 0 4rpx var(--c-secondary-blue-border-tint, rgba(91, 127, 255, 0.2)), 0 0 16rpx var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15));
 }
 

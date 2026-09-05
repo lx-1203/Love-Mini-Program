@@ -1500,7 +1500,13 @@ defineExpose({ onTouchMove });
   left: 0 !important;
   width: auto !important;
   height: auto !important;
-  object-fit: cover;
+  /* ⚠️ 受控豁免登记（2026-09-03，仅限 H5）：
+   * object-fit 对 mp-weixin 原生 <image> 不生效（被忽略，无副作用、不产生锯齿），
+   * mp 端拉伸/裁切由 SafeImage 原生 mode="aspectFill"（本组件 1068 行显式传入）承担；
+   * 本声明仅 H5（<image> 编译为 <uni-image>/<img>）全屏背景 cover 生效。
+   * 复核触发：① 重构 CardSwiper 背景渲染逻辑；② SafeImage 默认 mode 变更；
+   * ③ 新增 mp 端独立背景渲染分支。全局守卫：pnpm check:mp-image --strict（发布链前置）。 */
+  object-fit: cover; /* mp-audit:ignore */
   /* 2026-08-11 改版：背景朦胧化——模糊 + 压暗 + 轻微降饱和，背景只作氛围衬托，
    * 头像框与底部信息成为视觉焦点（点进详情才正式查看大图）。
    * 2026-08-12 朦胧增强：blur 10rpx → 14rpx、brightness 0.9 → 0.82，
@@ -1646,6 +1652,8 @@ defineExpose({ onTouchMove });
 
 /* ========== 卡片中上部悬浮头像框（2026-08-11 新增：第一视觉锚点） ========== */
 .card__avatar-hero {
+  border-radius: var(--r-full);
+
   position: absolute;
   /* 固定布局尺寸（外框 220rpx / 顶部偏移 220rpx），无对应 token；
      AvatarFrame 环 + 内白圈自带 padding，头像本体约 180rpx；

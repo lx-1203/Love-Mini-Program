@@ -1,0 +1,129 @@
+/* ============================================================
+ * Element Plus 主题变量覆盖（design-tokens-admin → --el-* 映射）
+ * ------------------------------------------------------------
+ * ⚠ 必须在 element-plus/dist/index.css 之后引入（main.ts 控制顺序），
+ *   否则默认蓝 (#409eff) 会覆盖我们的 cobalt 主色。
+ *
+ * 映射原则（W2 任务卡 §4 + admin-tokens.css 单一来源）：
+ *   --el-* 变量一律引用 --admin-* 令牌，不出现裸 HEX（派生阶除外）；
+ *   主色纪律：#0064e0 仅主操作 / 激活态 / 链接 / 聚焦环。
+ * ============================================================ */
+
+:root {
+  /* ===== 主色阶（cobalt #0064e0） ===== */
+  --el-color-primary: var(--admin-color-primary);
+  /* hover/active 深阶 = primary-hover（任务卡：dark-2 对应） */
+  --el-color-primary-dark-2: var(--admin-color-primary-hover);
+  /* 浅阶按 admin 三级圈层色阶派生：#5b99ef → #c7def7 → soft 系 */
+  --el-color-primary-light-3: #5b99ef;
+  --el-color-primary-light-5: #a8c6f6;
+  --el-color-primary-light-7: #c7def7;
+  --el-color-primary-light-8: var(--admin-color-primary-softer);
+  --el-color-primary-light-9: var(--admin-color-primary-soft);
+
+  /* ===== 语义色阶（浅阶取 admin soft 底色，保证徽章「浅底同色字」） ===== */
+  --el-color-success: var(--admin-color-success);
+  --el-color-success-dark-2: #27843d;
+  --el-color-success-light-3: #6cc084;
+  --el-color-success-light-5: #98d6aa;
+  --el-color-success-light-7: #c0e6cc;
+  --el-color-success-light-8: var(--admin-color-success-softer);
+  --el-color-success-light-9: var(--admin-color-success-soft);
+
+  --el-color-warning: var(--admin-color-warning);
+  --el-color-warning-dark-2: var(--admin-color-warning-text);
+  --el-color-warning-light-3: #f6c35d;
+  --el-color-warning-light-5: #f8d58e;
+  --el-color-warning-light-7: #fae5b8;
+  --el-color-warning-light-8: var(--admin-color-warning-softer);
+  --el-color-warning-light-9: var(--admin-color-warning-soft);
+
+  --el-color-danger: var(--admin-color-danger);
+  --el-color-error: var(--admin-color-danger);
+  --el-color-danger-dark-2: var(--admin-color-danger-hover);
+  --el-color-error-dark-2: var(--admin-color-danger-hover);
+  --el-color-danger-light-3: #ec5f77;
+  --el-color-error-light-3: #ec5f77;
+  --el-color-danger-light-5: #f293a4;
+  --el-color-error-light-5: #f293a4;
+  --el-color-danger-light-7: #f7c1ca;
+  --el-color-error-light-7: #f7c1ca;
+  --el-color-danger-light-8: var(--admin-color-danger-softer);
+  --el-color-error-light-8: var(--admin-color-danger-softer);
+  --el-color-danger-light-9: var(--admin-color-danger-soft);
+  --el-color-error-light-9: var(--admin-color-danger-soft);
+
+  --el-color-info: var(--admin-color-info);
+  --el-color-info-dark-2: var(--admin-color-primary-hover);
+  --el-color-info-light-3: #5b99ef;
+  --el-color-info-light-5: #a8c6f6;
+  --el-color-info-light-7: #c7def7;
+  --el-color-info-light-8: var(--admin-color-primary-softer);
+  --el-color-info-light-9: var(--admin-color-primary-soft);
+
+  /* ===== 中性色（灰底托白卡 + 三级文本层次） ===== */
+  --el-bg-color-page: var(--admin-color-bg-page);
+  --el-bg-color: var(--admin-color-bg-container);
+  --el-bg-color-overlay: var(--admin-color-bg-container);
+
+  --el-border-color: var(--admin-color-border);
+  --el-border-color-light: var(--admin-color-border-light);
+  --el-border-color-lighter: var(--admin-color-border-light);
+  --el-border-color-extra-light: var(--admin-color-bg-subtle);
+
+  --el-text-color-primary: var(--admin-color-text-primary);
+  --el-text-color-regular: var(--admin-color-text-secondary);
+  --el-text-color-secondary: var(--admin-color-text-tertiary);
+  --el-text-color-placeholder: var(--admin-color-text-placeholder);
+  --el-text-color-disabled: var(--admin-color-disabled-text);
+
+  --el-fill-color: var(--admin-color-bg-subtle);
+  --el-fill-color-light: var(--admin-color-bg-subtle);
+  --el-fill-color-lighter: var(--admin-color-bg-hover);
+  --el-fill-color-blank: var(--admin-color-bg-container);
+
+  /* ===== 字体 / 圆角（后台紧凑基准 14px，控件 6px） ===== */
+  --el-font-family: var(--admin-font-family);
+  --el-font-size-base: var(--admin-font-lg);
+  --el-font-size-small: var(--admin-font-md);
+  --el-font-size-extra-small: var(--admin-font-xs);
+
+  --el-border-radius-base: var(--admin-radius-md);
+  --el-border-radius-small: var(--admin-radius-sm);
+  --el-border-radius-round: var(--admin-radius-full);
+
+  /* ===== 阴影纪律（后台禁用大投影，仅弹层保留轻阴影） ===== */
+  --el-box-shadow-light: 0 2px 8px rgba(10, 19, 23, 0.08);
+  --el-box-shadow: 0 4px 16px rgba(10, 19, 23, 0.12);
+  --el-box-shadow-dark: var(--admin-color-overlay);
+}
+
+/* ===== 组件级修正 ===== */
+
+/* 卡片圆角 8px（Element 默认 4px，对齐 --admin-radius-lg） */
+.el-card {
+  --el-card-border-radius: var(--admin-radius-lg);
+  --el-card-border-color: var(--admin-color-border-light);
+}
+
+/* 表格：表头浅灰底 + 行高紧凑（对齐 admin-common 数据表纪律） */
+.el-table {
+  --el-table-header-bg-color: var(--admin-color-bg-subtle);
+  --el-table-header-text-color: var(--admin-color-text-secondary);
+  --el-table-border-color: var(--admin-color-border-light);
+  --el-table-row-hover-bg-color: var(--admin-color-bg-hover);
+}
+
+/* 弹层圆角与边框 */
+.el-dialog,
+.el-drawer,
+.el-message-box,
+.el-popover.el-popped {
+  border-radius: var(--admin-radius-xl);
+}
+
+/* 主按钮聚焦环遵循主色纪律 */
+.el-button--primary:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: var(--admin-focus-ring-offset, 2px);
+}

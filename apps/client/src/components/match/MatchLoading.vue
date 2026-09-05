@@ -136,7 +136,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   padding: 80rpx 48rpx 60rpx;
   box-sizing: border-box;
   overflow: hidden;
-  background: linear-gradient(180deg, #E8FAF3 0%, #F7FAF9 70%);
+  background: linear-gradient(180deg, #E8FAF3 0%, #EEF7F2 70%);
 }
 
 /* ========== 装饰爱心 ========== */
@@ -249,6 +249,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   position: relative;
 }
 .match-loading__avatar--blur {
+  border-radius: var(--r-full);
+
   filter: blur(6rpx);
 }
 .match-loading__avatar-mask {

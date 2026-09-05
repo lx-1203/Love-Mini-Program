@@ -344,11 +344,17 @@ public class VillageViewMapper {
 
     /**
      * 最终组装版评论项视图。
+     *
+     * 2026-09-05 QA（R16）：authorMap 未预载或缺失该作者时（如 createComment 单条返回、
+     * 拉黑/注销等边缘场景）回退单查，避免评论作者昵称恒为「未知用户」。
      */
     private CommentItemView toCommentItemView(Comment comment, Map<Long, User> authorMap,
                                               String replyTo, java.util.List<CommentItemView> replies,
                                               int likeCount, boolean isLiked) {
         User author = authorMap != null ? authorMap.get(comment.getAuthorId()) : null;
+        if (author == null) {
+            author = userRepository.findById(comment.getAuthorId()).orElse(null);
+        }
         CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null);

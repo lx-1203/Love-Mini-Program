@@ -35,9 +35,10 @@ const searchKeyword = ref("");
  * 让每个校园圈卡片都有真实封面图，不再只有浅绿背景 + 学校名）。
  */
 const CAMPUS_COVER: Record<string, string> = {
-  pku: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
-  thu: IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
-  ruc: IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
+  // 2026-09-03 可选缺口清零：头部三校换专属地标封面（AI 生成实景风格，对齐理想效果图）
+  pku: IMAGE_PATHS.GENERATED.CAMPUS_GATE_LANDMARK,
+  thu: IMAGE_PATHS.GENERATED.CAMPUS_ARCH_LANDMARK,
+  ruc: IMAGE_PATHS.GENERATED.CAMPUS_LAKE_PAVILION,
   fudan: IMAGE_PATHS.GENERATED.CAMPUS_PLAYGROUND,
   sjtu: IMAGE_PATHS.GENERATED.CAMPUS_NIGHT,
   tongji: IMAGE_PATHS.GENERATED.CAMPUS_CLASSROOM,
@@ -279,7 +280,7 @@ function goBack() {
 <style scoped lang="scss">
 .campus-hub {
   min-height: 100%;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: calc(calc(env(safe-area-inset-top) + 20px) + 20rpx) 32rpx 0;
   box-sizing: border-box;
 }
@@ -618,10 +619,14 @@ function goBack() {
 }
 
 .campus-school-card__avatar--2 {
+  border-radius: var(--r-full);
+
   margin-left: -10rpx;
 }
 
 .campus-school-card__avatar--3 {
+  border-radius: var(--r-full);
+
   margin-left: -10rpx;
 }
 

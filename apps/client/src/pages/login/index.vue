@@ -16,7 +16,7 @@ import { createButtonGuard } from "../../utils/debounce";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import { loginWithPhone, registerUser, loginAsGuest, sendSmsCode } from "../../services/auth";
+import { loginWithPhone, registerUser, loginAsGuest, sendSmsCode, bindPhoneViaWechat } from "../../services/auth";
 // 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
 import { AppApiError } from "../../services/api-error";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
@@ -223,6 +223,85 @@ async function onWechatLogin() {
  * 防抖窗口 1500ms 覆盖微信登录拉起 + 网络请求的典型耗时。
  */
 const onWechatLoginGuarded = createButtonGuard(onWechatLogin, 1500);
+
+/**
+ * 微信手机号快捷登录（getPhoneNumber 回调）。
+ *
+ * <p>流程：</p>
+ * <ol>
+ *   <li>用户点击「手机号快捷登录」按钮，微信弹出手机号授权弹窗</li>
+ *   <li>用户同意后，回调携带 code（临时凭证）</li>
+ *   <li>将 code 发送到后端 POST /v1/auth/phone/bind，后端调用微信接口换取手机号并绑定</li>
+ *   <li>绑定成功后刷新会话，跳转到首页</li>
+ * </ol>
+ *
+ * <p>Mock 模式处理：后端 @Profile("real") 限制，mock 模式下端点返回 404，
+ * 此时提示"开发模式请使用验证码登录"并展开手机号登录表单作为 fallback。</p>
+ *
+ * <p>用户拒绝授权时静默处理（不弹错误），仅记录日志。</p>
+ */
+async function handleGetPhoneNumber(e: any) {
+  // 用户拒绝授权或系统错误
+  if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+    // 2026-09-04 QA 修复：R11 后表单唯一入口是"快捷登录 404 自动展开"，但真实后端 +
+    // 开发者工具场景 errMsg 为环境类失败（非 404），表单永远打不开成死路。
+    // 现行为：用户主动取消仍静默；其余失败自动展开手机号登录表单兜底。
+    const cancelled = /cancel|deny|reject|auth_denied/i.test(e.detail.errMsg || '');
+    addBreadcrumb("ui", "phone_auth_cancelled", { errMsg: e.detail.errMsg, cancelled });
+    if (!cancelled) {
+      showPhoneLogin.value = true;
+    }
+    return;
+  }
+  if (!agreed.value) {
+    uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
+    return;
+  }
+  if (!isLoginOpen.value) {
+    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
+    return;
+  }
+  const code = e.detail.code;
+  if (!code) {
+    uni.showToast({ title: t("login.phoneAuthFailed"), icon: "none" });
+    return;
+  }
+  addBreadcrumb("ui", "button_click", { id: "login.phoneQuick" });
+  try {
+    await bindPhoneViaWechat(code);
+    uni.showToast({ title: t("login.phoneBoundSuccess"), icon: "success" });
+    // 刷新会话以同步手机号绑定状态
+    sessionStore.refreshSession().catch((err: unknown) => {
+      if (isDev) {
+        console.warn("[Login] 手机号绑定后会话同步失败:", err);
+      }
+    });
+    if (loginNavTimer) clearTimeout(loginNavTimer);
+    loginNavTimer = setTimeout(() => {
+      navigateAfterLogin();
+      loginNavTimer = null;
+    }, 1500);
+  } catch (error) {
+    // Mock 模式：后端无此端点返回 404，提示使用验证码登录
+    const status = error !== null && typeof error === "object" && "status" in error
+      ? (error as { status: number }).status
+      : 0;
+    if (status === 404) {
+      uni.showToast({ title: t("login.useSmsInDevMode"), icon: "none" });
+      // 自动展开手机号登录表单
+      showPhoneLogin.value = true;
+      return;
+    }
+    captureException(error, { source: "login.phoneQuick" });
+    const message = error instanceof Error ? error.message : t("login.phoneAuthFailed");
+    uni.showToast({ title: message, icon: "none" });
+  }
+}
+
+/**
+ * 按钮防抖包装：手机号快捷登录防抖窗口 2000ms，覆盖微信授权弹窗 + 网络请求。
+ */
+const handleGetPhoneNumberGuarded = createButtonGuard(handleGetPhoneNumber, 2000);
 
 async function onPhoneLogin() {
   if (!agreed.value) {
@@ -522,16 +601,23 @@ function openPrivacyPolicy() {
             <text class="btn-primary-text">{{ t('login.wechatLogin') }}</text>
           </view>
 
-          <view
-            class="btn-secondary press-feedback"
+          <!-- 微信手机号快捷登录（getPhoneNumber）：dev 模式 404 时自动展开验证码表单（L283-287 fallback） -->
+          <!-- #ifdef MP-WEIXIN -->
+          <button
+            open-type="getPhoneNumber"
+            @getphonenumber="handleGetPhoneNumberGuarded"
+            class="btn-phone-quick press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="40"
             role="button"
-            :aria-label="t('login.phoneLogin')"
-            @tap="togglePhoneLogin"
+            :aria-label="t('login.phoneQuickLogin')"
           >
-            <text class="btn-secondary-text">{{ t('login.phoneLogin') }}</text>
-          </view>
+            <text class="btn-phone-quick-text">{{ t('login.phoneQuickLogin') }}</text>
+          </button>
+          <!-- #endif -->
+
+          <!-- 2026-09-02 R11 用户要求：手机登录有两个入口，删除下方冗余的「手机号登录」按钮
+               （快捷登录失败会自动展开表单，不再需要手动入口） -->
 
           <view
             class="btn-guest press-feedback"
@@ -744,27 +830,50 @@ function openPrivacyPolicy() {
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--c-bg-page);
 }
 
-/* 中部实景插画区 —— 理想图：品牌区之下、slogan 之上的纯插画，吃掉剩余高度 */
+/* 中部实景插画区 —— 理想图：品牌区之下、slogan 之上的纯插画 */
 .login-page__hero {
   position: relative;
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
+  /* 2026-09-03 修复插画不显示：容器只有 min-height 无确定高度时，
+     内部 height:100% 的 image 解析为 0（空屏）。改为确定高度。 */
+  height: 520rpx;
   overflow: hidden;
 }
 
-.hero-image {
+/* 2026-09-03 背景不同调修复：插画上下缘做软过渡（渐隐到页面浅绿底色），
+   消除插画硬边与页面底色的色差缝（用户反馈"背景不同调/断层"） */
+.login-page__hero::before,
+.login-page__hero::after {
+  content: "";
   position: absolute;
   left: 0;
+  right: 0;
+  height: 100rpx;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.login-page__hero::before {
   top: 0;
+  background: linear-gradient(180deg, var(--c-bg-page) 0%, rgba(238, 247, 242, 0) 100%);
+}
+
+.login-page__hero::after {
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(238, 247, 242, 0) 0%, var(--c-bg-page) 100%);
+}
+
+.hero-image {
   width: 100%;
-  height: 100%;
+  /* 2026-09-03：mp-weixin 原生 image 的 height:100% 在该上下文解析为 0，
+     必须给显式高度（与容器 520rpx 一致）；display:block 消除 inline 基线空隙 */
+  height: 520rpx;
+  display: block;
   /* 理想图：插画全幅无边（不留两侧白边） */
 }
 
@@ -847,9 +956,9 @@ function openPrivacyPolicy() {
 }
 
 
-/* 底部按钮区 —— 占 30% 高度 */
+/* 底部按钮区 —— 自然高度，不再用 flex:1 占满剩余空间 */
 .login-page__bottom {
-  flex: 1;
+  flex: 0 0 auto;
   position: relative;
   z-index: 1;
   padding-left: var(--sp-8);
@@ -957,6 +1066,38 @@ function openPrivacyPolicy() {
   font-size: var(--fs-lg);
   font-weight: 600;
   color: var(--c-text-inverse);
+  letter-spacing: 2rpx;
+}
+
+/* 手机号快捷登录按钮（getPhoneNumber）：与次按钮同风格 */
+.btn-phone-quick {
+  width: 100%;
+  height: var(--btn-height-md);
+  border-radius: var(--r-xl);
+  background: var(--c-bg-container);
+  border: 2rpx solid var(--c-border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 重置微信 button 默认样式 */
+  margin: 0;
+  padding: 0;
+  line-height: var(--btn-height-md);
+  font-size: var(--fs-lg);
+  box-sizing: border-box;
+}
+
+/* #ifdef H5 */
+.btn-phone-quick:active {
+  transform: scale(0.96);
+  background: var(--c-neutral-50);
+}
+/* #endif */
+
+.btn-phone-quick-text {
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--c-text-primary);
   letter-spacing: 2rpx;
 }
 

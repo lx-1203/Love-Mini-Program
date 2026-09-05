@@ -47,7 +47,7 @@ defineExpose({ ariaLabel });
     :aria-label="ariaLabel"
   >
     <view class="chat-item-avatar">
-      <Avatar :src="avatarUrl" :name="initials || nameInitial" size="sm" :online="online" />
+      <Avatar :src="avatarUrl" :name="initials || nameInitial" size="sm" :online="online" :user-id="id" />
     </view>
     <view class="chat-item-content">
       <view class="chat-item-top">
@@ -87,6 +87,8 @@ defineExpose({ ariaLabel });
 .chat-item:active { background: var(--c-neutral-50); }
 
 .chat-item-avatar {
+  border-radius: var(--r-full);
+
   flex-shrink: 0;
 }
 .chat-item-avatar :deep(.avatar) {

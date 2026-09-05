@@ -167,7 +167,7 @@ async function save() {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full);
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
 }
 
 .time-window-remove__text {

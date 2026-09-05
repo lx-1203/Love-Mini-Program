@@ -1,6 +1,8 @@
 package com.campuslove.api.vip;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.vip.BillingService.BillListResponse;
 import jakarta.validation.Valid;
@@ -161,6 +163,7 @@ public class BillingController {
      * @return 购买结果视图（订单号 / 原价 / 折扣 / 实付 / 余额 / 新到期时间）
      */
     @PostMapping("/purchase")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
     @PreAuthorize("hasRole('USER')")
     public BillingService.PurchaseResultView purchase(
             @Valid @RequestBody VipPurchaseRequest request) {

@@ -61,8 +61,8 @@ import VerificationBadge from "../../components/common/VerificationBadge.vue";
 // Task F：全局发帖悬浮按钮组件
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { IMAGE_PATHS } from "../../config/images";
-// Phase Feedback6：会员功能开关（false 时隐藏所有 VIP 入口）
-import { featureFlags } from "../../config/feature-flags";
+// 批次 A5：商业化封存开关（commerce.enabled 总闸 + 子闸）
+import { useAppConfigStore } from "../../stores/app-config";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
 // P2.6：语音播放 URL 解析（mock:// 演示态 / /api/v1/media/ 鉴权代理真实 URL）
@@ -126,6 +126,7 @@ const checkInStore = useCheckInStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
 const villageStore = useVillageStore();
+const appConfig = useAppConfigStore();
 
 /** 2026-08-08：当前用户佩戴的头像框主题（QQ 头像框机制，按身份自动判定） */
 const { frameId: myFrameId } = useAvatarFrame();
@@ -739,10 +740,12 @@ const mineSocialProof = computed(() => ({
   likesCount: profileStore.profileStats?.likesCount ?? profileStore.profileStats?.likes ?? 0,
   matchCount: profileStore.profileStats?.matchCount ?? likesStore.mutualLikes.length,
   // 理想图口径：我喜欢 / 喜欢我的 / 我赞 / 访客（MyStats 4 列消费）
+  // 2026-09-04 QA 修复：likedMe/visitor 优先取 likes store 实时列表——后端 profileStats
+  // 该两字段恒 0，`??` 不触发回退，导致顶栏「喜欢我的 0」与下方「我的互动 24」同页矛盾
   iLikeCount: likesStore.likes.length,
-  likedMeCount: profileStore.profileStats?.likedMeCount ?? likesStore.likedBy.length,
+  likedMeCount: likesStore.likedBy.length || profileStore.profileStats?.likedMeCount || 0,
   praisedCount: profileStore.profileStats?.likesCount ?? profileStore.profileStats?.likes ?? 0,
-  visitorCount: profileStore.profileStats?.visitorsCount ?? profileStore.profileStats?.visitors ?? 0,
+  visitorCount: likesStore.visitors.length || profileStore.profileStats?.visitorsCount || 0,
 }));
 
 const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | null>(() => {
@@ -1986,8 +1989,8 @@ onUnload(() => {
         </view>
       </view>
 
-        <!-- VIP 卡片：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
+        <!-- VIP 卡片：仅商业化 VIP 开关开启时展示（批次 A5：commerce.enabled + commerce.vip 双闸） -->
+      <view v-if="appConfig.isCommerceOn('vip') && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -2251,8 +2254,8 @@ onUnload(() => {
                   :show-cta-when-none="showVerificationCta"
                   @tap="handleVerificationClick"
                 />
-                <!-- VIP 徽章：仅会员功能开启时展示（Phase Feedback6：默认隐藏）；他人态无 VIP 语义 -->
-                <view v-if="isOwnProfile && featureFlags.membershipEnabled && isVip" class="user-info__vip-badge">
+                <!-- VIP 徽章：仅商业化 VIP 开关开启时展示（批次 A5）；他人态无 VIP 语义 -->
+                <view v-if="isOwnProfile && appConfig.isCommerceOn('vip') && isVip" class="user-info__vip-badge">
                   <image class="user-info__vip-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
                   <text class="user-info__vip-badge-text">VIP{{ vipPlanName ? " · " + vipPlanName : "" }}</text>
                 </view>
@@ -2566,8 +2569,8 @@ onUnload(() => {
         </view>
       </view>
 
-        <!-- VIP 卡片：仅会员功能开启时展示（Phase Feedback6：默认隐藏） -->
-      <view v-if="false && featureFlags.membershipEnabled && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
+        <!-- VIP 卡片：仅商业化 VIP 开关开启时展示（批次 A5：commerce.enabled + commerce.vip 双闸） -->
+      <view v-if="appConfig.isCommerceOn('vip') && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
         <view class="vip-card__left">
           <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
           <view class="vip-card__text-wrap">
@@ -3309,6 +3312,8 @@ onUnload(() => {
 }
 
 .avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

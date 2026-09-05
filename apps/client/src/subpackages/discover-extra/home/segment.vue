@@ -9,6 +9,7 @@ import { useI18n } from "vue-i18n";
 import { clientApi } from "../../../services/api";
 import { mapToDiscoverCard } from "../../../stores/discover/utils";
 import type { DiscoverCard } from "../../../stores/discover/types";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import { showErrorToast } from "../../../utils/error-toast";
@@ -106,7 +107,7 @@ function openProfile(userId: string) {
     </view>
 
     <view v-if="loading" class="segment-state">
-      <text class="segment-state__text">{{ t('common.loading') }}</text>
+      <SkeletonBlock variant="list" :rows="4" :label="t('common.loading')" />
     </view>
     <view v-else-if="errorMessage" class="segment-state">
       <text class="segment-state__text">{{ errorMessage }}</text>
@@ -148,7 +149,7 @@ function openProfile(userId: string) {
 <style scoped lang="scss">
 .segment-page {
   min-height: 100%;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: 24rpx 32rpx 64rpx;
   box-sizing: border-box;
 }

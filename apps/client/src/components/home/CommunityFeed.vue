@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
+import SafeImage from "../common/SafeImage.vue";
 
 defineProps<{
   items: CommunityPostViewModel[];
@@ -10,7 +12,10 @@ defineProps<{
   /** 2026-08-26 R1：帖子区错误信息（非空展示错误态 + 重试） */
   error?: string | null;
 }>();
-defineEmits<{
+/**
+ * 2026-09-02 R5：emit 改 const 形式以便在 handleRefresh 中引用
+ */
+const emit = defineEmits<{
   (e: "more"): void;
   (e: "select", id: number): void;
   /** 2026-08-31：帖子作者头像/昵称点击 → 跳他人主页（payload 为整条 post，含 authorId） */
@@ -35,8 +40,12 @@ function isFailed(key: string): boolean {
 function avatarSrc(post: CommunityPostViewModel): string {
   return isFailed(`avatar-${post.id}`) ? IMAGE_PATHS.DEFAULT_AVATAR : (post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR);
 }
-function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): string {
-  return isFailed(`img-${post.id}-${idx}`) ? "" : img;
+/**
+ * 2026-09-02 R5：刷新触发——清失败记录（让已失败图片重新尝试加载）+ 触发父组件重拉
+ */
+function handleRefresh() {
+  failedKeys.value = new Set();
+  emit("retry");
 }
 </script>
 
@@ -44,7 +53,8 @@ function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): str
   <view class="community-feed">
     <view class="section-head">
       <text class="section-head__title">社区动态</text>
-      <text class="section-head__more" @tap="$emit('more')">查看更多 ›</text>
+      <!-- 2026-09-02 R5：点击触发图片重新加载（清失败记录 + 重拉） -->
+      <text class="section-head__more press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="handleRefresh">刷新 ›</text>
     </view>
 
     <!-- 2026-08-26 R1：加载中骨架行 -->
@@ -73,7 +83,8 @@ function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): str
         <view v-for="post in items" :key="post.id" class="post-card" @tap="$emit('select', post.id)">
           <view class="post-card__head">
             <view class="post-card__author-tap" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
-              <image class="post-card__avatar" :src="avatarSrc(post)" mode="aspectFill" alt="" @error="onImageError(`avatar-${post.id}`)" />
+              <!-- 2026-09-02 R10：作者头像换 SafeImage 兜底（破图不再显示灰山形） -->
+              <SafeImage :src="avatarSrc(post)" custom-class="post-card__avatar" mode="aspectFill" :fallback="IMAGE_PATHS.DEFAULT_AVATAR" :lazy-load="false" alt="" />
             </view>
             <view class="post-card__author" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
               <view class="post-card__name-row">
@@ -89,28 +100,37 @@ function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): str
           <text class="post-card__content">{{ post.content }}</text>
           <view v-if="post.images.length" class="post-card__images">
             <view v-for="(img, idx) in post.images.slice(0, 3)" :key="img" class="post-card__img-wrap">
+              <!-- 2026-09-03（用户反馈①"论坛图片"）：原生 image 直接渲染。
+                   原SafeImage 内层 image 因 scoped 类名失配未继承 88rpx 约束，
+                   加载中按 320x240 默认尺寸渲染出大灰占位；改为父模板直写
+                   image（scoped 类命中）+ error 换本地 placeholder。 -->
               <image
-                v-if="postImgSrc(post, img, idx)"
+                v-if="!isFailed(`img-${post.id}-${idx}`)"
                 class="post-card__img"
-                :src="postImgSrc(post, img, idx)"
+                :src="img"
                 mode="aspectFill"
-                alt=""
+                lazy-load
                 @error="onImageError(`img-${post.id}-${idx}`)"
               />
-              <view v-else class="post-card__img post-card__img--placeholder" />
+              <image
+                v-else
+                class="post-card__img"
+                :src="resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER)"
+                mode="aspectFill"
+              />
             </view>
           </view>
           <view class="post-card__meta">
             <view class="post-card__stat-item">
-              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_LIKE" mode="aspectFit" />
+              <image class="post-card__stat-icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.TB_LIKE)" mode="aspectFit" />
               <text class="post-card__stat post-card__stat--like">{{ post.likeCount }}</text>
             </view>
             <view class="post-card__stat-item">
-              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_COMMENT" mode="aspectFit" />
+              <image class="post-card__stat-icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.TB_COMMENT)" mode="aspectFit" />
               <text class="post-card__stat">{{ post.commentCount }}</text>
             </view>
             <view class="post-card__stat-item">
-              <image class="post-card__stat-icon" :src="IMAGE_PATHS.HOME_ICONS.TB_SHARE" mode="aspectFit" />
+              <image class="post-card__stat-icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.TB_SHARE)" mode="aspectFit" />
             </view>
           </view>
         </view>
@@ -349,7 +369,6 @@ function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): str
   width: 88rpx;
   height: 88rpx;
   border-radius: 10rpx;
-  object-fit: cover;
   background: #F0F2F5;
 }
 
@@ -374,6 +393,14 @@ function postImgSrc(post: CommunityPostViewModel, img: string, idx: number): str
   display: flex;
   gap: 20rpx;
   margin-top: 14rpx;
+}
+
+/* 2026-09-03 修复：stat 图标缺尺寸规则 → 原生 image 默认 320x240
+   把 meta 行撑到 265px（卡片下方"大灰块"的元凶） */
+.post-card__stat-icon {
+  display: block;
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .post-card__stat {

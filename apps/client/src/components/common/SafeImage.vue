@@ -224,7 +224,7 @@ function onLoad() {
 .safe-image__placeholder {
   width: 100%;
   height: 100%;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   display: block;
 }
 

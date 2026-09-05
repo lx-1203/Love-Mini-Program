@@ -62,7 +62,7 @@ const emit = defineEmits<{
 <style scoped lang="scss">
 .my-profile {
   min-height: 100vh;
-  background: #F7FAF9;
+  background: #EEF7F2;
   padding-bottom: 120rpx;
 }
 </style>

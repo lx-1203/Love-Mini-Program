@@ -251,32 +251,35 @@ const durationDisplay = computed(() => {
   align-items: center;
   /* 14rpx 无对应 token 档位，保留 */
   gap: 14rpx;
-  /* 18rpx 无对应 token 档位，保留 */
-  padding: 18rpx var(--sp-6);
-  border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
+  /* 批次 C2：padding 收敛到 --bubble-padding-* token（16/24rpx） */
+  padding: var(--bubble-padding-y) var(--bubble-padding-x);
+  /* 批次 C2：peer 左上尾巴（头像在左），主圆角/尾巴走 --bubble-radius-* token */
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
   background: var(--c-bg-brand, rgba(61, 201, 148, 0.08));
   color: var(--c-brand-700, #2AAE83);
-  box-shadow: var(--s-sm, 0 2rpx 8rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  /* 批次 C2：阴影统一走 --bubble-shadow（双方禁用） */
+  box-shadow: var(--bubble-shadow);
   transition: all var(--d-normal, 200ms) ease;
   /* 气泡固定最小宽度（时长布局值），无对应 token */
   min-width: 140rpx;
 }
 
-/* self 发送：右侧圆角反向 */
+/* self 发送：右上尾巴（头像在右） */
 .voice-bubble--self {
-  border-radius: var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
+  border-radius: var(--bubble-radius-main) var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main);
   background: var(--c-brand, #36C99A);
   color: var(--c-text-inverse, #ffffff);
 }
 
 .voice-bubble--peer {
-  border-radius: var(--r-xl, 24rpx) var(--r-xs, 4rpx) var(--r-xl, 24rpx) var(--r-xl, 24rpx);
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
   background: var(--c-bubble-other, #F0F2F5);
   color: var(--c-text-primary, #1a1a2e);
 }
 
 .voice-bubble--playing {
-  box-shadow: var(--s-brand-md, 0 4rpx 16rpx var(--c-brand-shadow-tint-mid, rgba(61, 201, 148, 0.20)));
+  /* 批次 C2：播放中高亮不再加阴影（PRD E4 双方气泡禁用阴影），波形动画已提供反馈 */
+  box-shadow: var(--bubble-shadow);
 }
 
 .voice-bubble--expired {

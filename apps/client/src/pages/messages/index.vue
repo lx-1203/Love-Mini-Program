@@ -63,16 +63,12 @@ const activityRecommendations = computed(() =>
       targetUrl: a.targetUrl || "",
     }))
 );
-const warmPeople = computed(() => {
-  const api = dashboard.value?.warmPeople ?? [];
-  if (api.length > 0) return api;
-  return [
-    { userId: 101, name: "小林", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-1.jpg"), relationship: { score: 60, status: "chatting" as const, suggestedAction: { type: "chat" as const } } },
-    { userId: 102, name: "小雨", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-2.jpg"), relationship: { score: 45, status: "just_met" as const, suggestedAction: { type: "chat" as const } } },
-    { userId: 103, name: "小周", avatarUrl: "/static/assets/images/avatars/avatar-3.jpg", relationship: { score: 72, status: "ambiguous" as const, suggestedAction: { type: "chat" as const } } },
-    { userId: 104, name: "阿杰", avatarUrl: resolveMediaUrl("/static/assets/images/avatars/avatar-4.jpg"), relationship: { score: 55, status: "mutual_follow" as const, suggestedAction: { type: "chat" as const } } },
-  ] as any[];
-});
+/**
+ * 2026-09-03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）——
+ * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏
+ * （模板 v-if="warmPeople.length > 0"），不再出现凭空捏造的用户。
+ */
+const warmPeople = computed(() => dashboard.value?.warmPeople ?? []);
 
 const privateSessions = computed(() => messagesStore.sessions.filter((s) => !s.isOfficial));
 
@@ -128,6 +124,17 @@ function openAssistant() {
 function goLikes() {
   void messagesStore.markTypeRead(["like", "visitor", "interaction_match"]);
   openAppPath(ROUTES.LIKES.VISITORS_LIKES);
+}
+
+// 2026-09-04 视觉验收修复：「去回复」原先误绑 goLikes，跳到喜欢与访客页与文案不符；
+// 语义应为打开最近一个进行中的会话（waitingReplyCount>0 时卡片才展示），无会话时回退喜欢页
+function goReply() {
+  const [first] = privateSessions.value;
+  if (first) {
+    openSession(first);
+    return;
+  }
+  goLikes();
 }
 
 function openWarmPerson(item: RelationshipPersonView) {
@@ -281,7 +288,7 @@ function formatTime(dateStr?: string): string {
                 <text class="quick-card__btn-text">去看看</text>
               </view>
             </view>
-            <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
+            <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goReply">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
                 <image class="quick-card__icon-img" src="/static/assets/images/mascot/chat_hi.png" mode="aspectFit" />
               </view>
@@ -475,7 +482,7 @@ function formatTime(dateStr?: string): string {
 <style scoped lang="scss">
 .messages-page {
   min-height: 100vh;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   display: flex;
   flex-direction: column;
 }
@@ -528,7 +535,7 @@ function formatTime(dateStr?: string): string {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -550,7 +557,7 @@ function formatTime(dateStr?: string): string {
   padding: 0 20rpx;
   height: 72rpx;
   border-radius: 18rpx;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   border: 1rpx solid var(--c-border-light, #EEF2F0);
 }
 .search-bar__input {
@@ -912,7 +919,7 @@ function formatTime(dateStr?: string): string {
   border-bottom: 1rpx solid var(--c-border-light, #F2F5F3);
 }
 .chat-item--hover {
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
 }
 .chat-item__avatar-wrap {
   position: relative;

@@ -12,6 +12,7 @@ import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import PostCard from "../../components/village/PostCard.vue";
+import SkeletonBlock from "../../components/common/SkeletonBlock.vue";
 import NearbySection from "../../components/nearby/NearbySection.vue";
 import { useVillageStore, type PostItem } from "../../stores/village";
 import { useCircleStore } from "../../stores/circle";
@@ -453,7 +454,10 @@ function requireLogin(): boolean {
           </view>
           <text class="activity-entry__arrow">›</text>
         </view>
-        <view v-if="activityStore.activities.length === 0 && !activityStore.loading" class="nearby-home__empty">
+        <view v-if="activityStore.loading && activityStore.activities.length === 0" class="nearby-home__empty">
+          <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
+        </view>
+        <view v-else-if="activityStore.activities.length === 0 && !activityStore.loading" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.activitiesEmpty') }}</text>
         </view>
       </NearbySection>
@@ -475,7 +479,7 @@ function requireLogin(): boolean {
           </view>
         </view>
         <view v-else-if="circlePosts.length === 0 && villageStore.loadingNearbyPosts" class="nearby-home__empty">
-          <text class="nearby-home__empty-text">{{ t('common.loading') }}</text>
+          <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
         </view>
         <view v-else-if="circlePosts.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
@@ -510,7 +514,7 @@ function requireLogin(): boolean {
 <style scoped lang="scss">
 .nearby-home {
   min-height: 100%;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;

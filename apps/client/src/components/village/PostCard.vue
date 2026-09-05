@@ -152,8 +152,10 @@ function openActivity(activityId: number | string) {
         </view>
       </view>
       <view
-        class="follow-chip"
+        class="follow-chip press-feedback"
         :class="{ 'follow-chip--active': post.isFollowed }"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
         @catchtap="emit('follow', post.author.userId)"
       >
         <text class="follow-chip__text">
@@ -214,8 +216,10 @@ function openActivity(activityId: number | string) {
       <text
         v-for="(tag, tagIdx) in post.tags"
         :key="tag"
-        class="post-card__tag"
+        class="post-card__tag press-feedback"
         :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
         @catchtap="emit('open-tag', tag)"
       >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
     </view>
@@ -245,6 +249,8 @@ function openActivity(activityId: number | string) {
     <!-- 底部互动栏 -->
     <view class="post-card__footer">
       <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
+      <!-- 2026-09-05 R17：审核中徽标——自己刚发的帖在审核流期间 feed 内可见 -->
+      <text v-if="post.auditStatus === 'pending'" class="post-card__audit">审核中</text>
       <view class="post-card__actions">
         <!-- 评论 -->
         <view class="action-btn" @catchtap="emit('open-detail', post.id)">
@@ -596,6 +602,16 @@ function openActivity(activityId: number | string) {
 .post-card__time {
   font-size: 22rpx;
   color: var(--c-text-tertiary);
+}
+
+/* 2026-09-05 R17：审核中徽标（自己待审核帖在 feed 内可见） */
+.post-card__audit {
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: var(--r-full, 999rpx);
+  background: rgba(255, 159, 67, 0.12);
+  color: #FF9F43;
+  flex-shrink: 0;
 }
 
 .post-card__actions {

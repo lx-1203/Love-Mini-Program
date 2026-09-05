@@ -1,6 +1,7 @@
 package com.campuslove.api.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -30,8 +31,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  *   <li>idx_posts_status_created_at：(status, created_at) 复合索引，按状态+时间查询</li>
  * </ul>
  *
- * <p>注：任务规格提到 circle_id 索引，但 posts 表实际无该字段（圈子功能由
- * circle_topics / circle_memberships 表承担），故跳过。详见 V2026.07.25.0001 迁移脚本说明。</p>
+ * <p>注：V2026.09.01.0003 迁移新增 visibility（可见范围）与 circle_id（所属圈子）列，
+ * 支持圈子内发帖与可见范围控制。</p>
  */
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -51,7 +52,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         // (状态, 创建时间) 复合索引：按状态筛选并按时间排序
         @Index(name = "idx_posts_status_created_at", columnList = "status, created_at"),
         // 活动关联索引：按活动查帖子（V2026.08.09.0004 迁移新增）
-        @Index(name = "idx_posts_activity", columnList = "activity_id")
+        @Index(name = "idx_posts_activity", columnList = "activity_id"),
+        // 圈子索引：按圈子查帖子（V2026.09.01.0003 迁移新增，Batch B 圈子发帖）
+        @Index(name = "idx_posts_circle_id", columnList = "circle_id")
     }
 )
 public class Post {
@@ -77,6 +80,19 @@ public class Post {
      */
     public enum AuditStatus {
         pending, approved, rejected
+    }
+
+    /**
+     * 帖子可见范围枚举（Batch B：Post Visibility + Circle-based posting）。
+     *
+     * <ul>
+     *   <li>public_：公开，所有人可见（默认）</li>
+     *   <li>school：仅同校认证用户可见</li>
+     *   <li>interest：仅所在圈子成员可见（需携带 circle_id）</li>
+     * </ul>
+     */
+    public enum Visibility {
+        public_, school, interest
     }
 
     @Id
@@ -190,6 +206,30 @@ public class Post {
     /** 审核时间 */
     @Column(name = "audited_at")
     private LocalDateTime auditedAt;
+
+    /**
+     * 帖子可见范围（Batch B：Post Visibility）。
+     * <ul>
+     *   <li>public_：公开，所有人可见（默认；对应数据库枚举值 "public"）</li>
+     *   <li>school：仅同校认证用户可见</li>
+     *   <li>interest：仅所在圈子成员可见（需同时设置 circleId）</li>
+     * </ul>
+     * <p>对应 posts.visibility 列（V2026.09.01.0003 迁移新增），存量数据默认 "public"。</p>
+     * <p>使用 {@link VisibilityConverter} 映射 Java 枚举名 {@code public_} 到数据库值 {@code public}
+     * （因 {@code public} 是 Java 保留关键字）。</p>
+     */
+    @Convert(converter = VisibilityConverter.class)
+    @Column(name = "visibility", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'public'")
+    private Visibility visibility = Visibility.public_;
+
+    /**
+     * 所属圈子 ID（Batch B：Circle-based posting）。
+     * <p>当 visibility=interest 时必填，表示帖子所属圈子；
+     * 其他可见范围下为 null。</p>
+     * <p>对应 posts.circle_id 列（V2026.09.01.0003 迁移新增）。</p>
+     */
+    @Column(name = "circle_id")
+    private Long circleId;
 
     /** 记录创建时间（帖子发布时间，用于排序与展示） */
 
@@ -387,6 +427,22 @@ public class Post {
 
     public void setAuditedAt(LocalDateTime auditedAt) {
         this.auditedAt = auditedAt;
+    }
+
+    public Visibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(Visibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public Long getCircleId() {
+        return circleId;
+    }
+
+    public void setCircleId(Long circleId) {
+        this.circleId = circleId;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -96,7 +96,11 @@ export function toHomeViewModel(feed: HomeFeedView | null): HomeViewModel {
       matchAvatars: [],
     },
     interestRecommendations: feed?.interestRecommendations ?? [],
-    nearbyPeople: feed?.nearbyPeople ?? [],
+    /**
+     * 2026-09-02 R5：附近的人去重（推荐去重红线）。后端 mock 早期会硬编码 5 个「星野」，
+     * 这里按 userId 去重后再返回，防止同一人重复出现。前端双层去重的视觉层。
+     */
+    nearbyPeople: dedupeByUserId(feed?.nearbyPeople ?? []),
     communityPosts: (feed?.communityPosts ?? []).map((p) => ({
       ...p,
       // 2026-08-26 R4：timeText 统一相对时间（ISO 解析失败原样透传）；
@@ -105,4 +109,20 @@ export function toHomeViewModel(feed: HomeFeedView | null): HomeViewModel {
       authorAvatar: p.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR,
     })),
   };
+}
+
+/**
+ * 2026-09-02 R5：按 userId 去重（保留首次出现顺序）。
+ * 用于 nearby-people 推荐去重，根除后端硬编码导致的「5 个星野」重复问题。
+ */
+function dedupeByUserId<T extends { userId: number }>(items: T[]): T[] {
+  const seen = new Set<number>();
+  const result: T[] = [];
+  for (const item of items) {
+    if (!seen.has(item.userId)) {
+      seen.add(item.userId);
+      result.push(item);
+    }
+  }
+  return result;
 }

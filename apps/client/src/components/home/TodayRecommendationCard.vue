@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 
 defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
@@ -18,8 +19,9 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
     <view v-if="loading" class="today-card__skeleton">正在为你挑选心动的人…</view>
     <view v-else-if="!item" class="today-card__empty">今天暂时没有合适的推荐，晚一点再来看看</view>
     <view v-else class="today-card__body">
-      <view class="today-card__photo-wrap">
-        <image class="today-card__photo" :src="item.photoUrl || ''" mode="aspectFill" alt="" />
+      <!-- 2026-09-02 R5/R8：整张 body 可点击 + hover 视觉反馈 + photo 懒加载降首屏卡顿 -->
+      <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || '查看推荐人主页'">
+        <image class="today-card__photo" :src="item.photoUrl || ''" mode="aspectFill" lazy-load alt="" />
         <view v-if="item.online" class="today-card__online">
           <text class="today-card__online-dot"></text>
           <text class="today-card__online-text">在线</text>
@@ -30,7 +32,7 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
         </view>
       </view>
 
-      <view class="today-card__info">
+      <view class="today-card__info press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="`查看${item.name}主页`">
         <text class="today-card__name">{{ item.name }}</text>
         <text class="today-card__meta">{{ item.age }}岁 · {{ item.campusName }}{{ item.gradeLabel ? ' · ' + item.gradeLabel : '' }}</text>
         <view v-if="item.tags.length" class="today-card__tags">
@@ -42,9 +44,9 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
           {{ item.distanceText || '' }}<text v-if="item.distanceText && item.certified"> · </text><text v-if="item.certified">已认证</text><text v-if="item.constellation"> · {{ item.constellation }}</text>
         </text>
         <view class="today-card__actions">
-          <view class="today-card__btn today-card__btn--outline" @tap="$emit('view')">看看TA</view>
-          <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap="$emit('like')">
-            <image class="today-card__btn-icon" :src="IMAGE_PATHS.HOME_ICONS.BTN_LIKE" mode="aspectFit" />
+          <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
+          <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
+            <image class="today-card__btn-icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.BTN_LIKE)" mode="aspectFit" />
             <text>喜欢</text>
           </view>
         </view>

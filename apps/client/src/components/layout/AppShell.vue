@@ -254,7 +254,7 @@ function focusMainContent(): void {
 
 // 背景变体
 .shell-bg--default {
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .shell-bg--gradient {
@@ -262,13 +262,13 @@ function focusMainContent(): void {
   background: linear-gradient(
     180deg,
     var(--c-bg-brand, #E8FAF3) 0%,
-    var(--c-bg-page, #F7FAF9) 280rpx
+    var(--c-bg-page, #EEF7F2) 280rpx
   );
 }
 
 .shell-bg--image {
   // 背景图通过 inline style 注入
-  background-color: var(--c-bg-page, #F7FAF9);
+  background-color: var(--c-bg-page, #EEF7F2);
 }
 
 // 变体内边距

@@ -12,6 +12,7 @@ import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime, type TopicAuthor, type CircleItem } from "../../../stores/circle";
 import { useActivityStore } from "../../../stores/activity";
 import { openAppPath, openUserProfile } from "../../../utils/navigation";
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { IMAGE_PATHS } from "../../../config/images";
 // 2026-08-26：圈子图标 emoji→SVG 解析（业务组件图标禁用 emoji 字符）
 import { resolveCircleIcon } from "../../../config/circle-icons";
@@ -28,6 +29,7 @@ import { useImageFallback } from "../../../composables/useImageFallback";
 const chatIcon = IMAGE_PATHS.ICONS_EMOJI.CHAT;
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const circleStore = useCircleStore();
 const { currentTopics, loading, errorMessage, topicHasMore } = storeToRefs(circleStore);
 
@@ -327,8 +329,8 @@ defineExpose({ goToAuthorProfile });
 
 <template>
   <view class="topics-page">
-    <!-- 顶部导航栏 -->
-    <view class="topics-header">
+    <!-- 顶部导航栏（2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海） -->
+    <view class="topics-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 20px + var(--sp-6))` }">
       <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">‹</text>
       </view>
@@ -397,8 +399,10 @@ defineExpose({ goToAuthorProfile });
         </view>
       </view>
       <view
-        class="circle-hero__join"
+        class="circle-hero__join press-feedback"
         :class="{ 'circle-hero__join--joined': circle.isJoined }"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
         role="button"
         :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
         @tap.stop="toggleJoin"
@@ -410,8 +414,10 @@ defineExpose({ goToAuthorProfile });
     <!-- 详情 Tab：动态 / 精华 / 活动 / 作品墙 / 成员（2026-08-25 P0 补作品墙，规格书 15.10） -->
     <view class="circle-tabs" role="tablist" :aria-label="t('circle.detailTabsAria')">
       <view v-for="tab in detailTabs" :key="tab.key"
-        class="circle-tab"
+        class="circle-tab press-feedback"
         :class="{ 'circle-tab--active': detailTab === tab.key }"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
         role="tab"
         :aria-selected="detailTab === tab.key ? 'true' : 'false'"
         @tap="switchTab(tab.key as 'feed' | 'hot' | 'works' | 'members' | 'activities')"
@@ -448,7 +454,7 @@ defineExpose({ goToAuthorProfile });
       @scrolltolower="onLoadMore"
     >
       <!-- 2026-08-21：置顶规则条（参考图对齐） -->
-      <view v-if="detailTab === 'feed' || detailTab === 'hot'" class="topic-rule" @tap="goCircleDetail(circleId)">
+      <view v-if="detailTab === 'feed' || detailTab === 'hot'" class="topic-rule press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goCircleDetail(circleId)">
         <text class="topic-rule__pin">置顶</text>
         <text class="topic-rule__text">【圈规】文明发言，友善交流，共同维护圈子氛围</text>
         <text class="topic-rule__arrow">›</text>
@@ -468,7 +474,9 @@ defineExpose({ goToAuthorProfile });
       <!-- 话题卡片 -->
       <view
         v-for="topic in listForTab" :key="topic.id"
-        class="topic-card list-item"
+        class="topic-card list-item press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
         @tap="goToDetail(topic.id)"
       >
         <!-- 话题标题 -->
@@ -868,6 +876,8 @@ defineExpose({ goToAuthorProfile });
 }
 
 .topic-card__avatar-img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }
@@ -1211,6 +1221,8 @@ defineExpose({ goToAuthorProfile });
 }
 
 .detail-members__avatar {
+  border-radius: var(--r-full);
+
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -14,8 +14,11 @@ import { useProfileStore } from "../../../stores/profile";
 import { designTokens } from "../../../theme/tokens";
 // infra R2-00084: 路由路径常量化
 import { ROUTES } from "../../../constants/routes";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const profileStore = useProfileStore();
 
 /** 是否允许推荐给本校学生 */
@@ -61,8 +64,8 @@ function goBack() {
 
 <template>
   <view class="privacy-page">
-    <!-- 顶部栏 -->
-    <view class="privacy-page__header">
+    <!-- 顶部栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
+    <view class="privacy-page__header" :style="{ paddingTop: `calc(var(--sp-4) + ${statusBarHeightPx}px)` }">
       <view class="privacy-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="privacy-page__back-text">‹</text>
       </view>

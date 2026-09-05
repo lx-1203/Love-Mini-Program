@@ -5,6 +5,7 @@ import { IMAGE_PATHS } from "../../config/images";
 import VoicePill from "./VoicePill.vue";
 import { resolveMediaUrl } from "../../utils/media";
 import EmojiText from "../common/EmojiText.vue";
+import { containsEmoji } from "../../config/emoji-map";
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +25,8 @@ const props = withDefaults(
     peerAvatar?: string;
     /** 自己头像（默认使用配置中的 AVATAR_2） */
     selfAvatar?: string;
+    /** 对方用户 ID，点击对方头像时跳转到个人主页 */
+    peerUserId?: string | number;
   }>(),
   {
     // 2026-08-26 P1-2：peer 默认头像由 AVATAR_1 改为 AVATAR_3——
@@ -82,6 +85,15 @@ function handleLongpress() {
   }
 }
 
+/**
+ * 2026-09-03 修复：点击对方头像只 emit 一次 avatarTap，导航职责统一交给宿主页
+ * （此前组件内 navigateTo + 宿主页菜单同时触发，两动作叠加导致跳转被菜单遮罩干扰）。
+ * chat-session 页 onBubbleAvatarTap 负责跳 /profile-extra/profile/other?userId=。
+ */
+function handlePeerAvatarTap() {
+  emit("avatarTap");
+}
+
 /** 2026-08-10：点击图片消息全屏预览 */
 function previewImage() {
   if (!props.body) return;
@@ -100,6 +112,13 @@ function handleTapQuote() {
 // 同时暴露无障碍标签供父组件/测试访问。
 // handleTapQuote 通过 catchtap 绑定到模板，vue-tsc 无法识别 catchtap 语法，需显式暴露。
 defineExpose({ bubbleAriaLabel, handleTapQuote });
+/**
+ * 2026-09-03（统一气泡字号）：emoji 大号仅用于"消息体为纯 emoji 字形"场景。
+ * 历史/演示消息存在 kind=emoji 但正文为普通文字（如「嗯嗯」），
+ * 此前一律渲染 56rpx 大号导致与文本消息字号不一致；现改为命中 emoji 字形才用大号。
+ */
+const emojiDisplay = computed(() => props.kind === "emoji" && containsEmoji(props.body || ""));
+
 
 /**
  * 送达状态勾（SVG，白色——2026-08-08 微信化重构：时间移出气泡由时间条承载，
@@ -135,7 +154,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
         lazy-load
         role="img"
         :aria-label="t('chat.quotePeer')"
-        @tap="emit('avatarTap')"
+        @tap="handlePeerAvatarTap"
       />
       <!-- 自己头像（右侧） -->
       <image
@@ -185,9 +204,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
                兼容历史消息 / 后端字符串 / 跨端一致的 emoji 渲染 -->
           <EmojiText
             :text="body"
-            :emoji-size="kind === 'emoji' ? '56rpx' : '32rpx'"
+            :emoji-size="emojiDisplay ? 'var(--bubble-emoji-font-size)' : 'var(--bubble-font-size)'"
             text-class="bubble__body"
-            :class="kind === 'emoji' ? 'bubble__body bubble__body--emoji' : 'bubble__body'"
+            :class="emojiDisplay ? 'bubble__body bubble__body--emoji' : 'bubble__body'"
           />
         </template>
 
@@ -211,8 +230,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 .bubble-wrap {
   display: flex;
   flex-direction: column;
-  /* 微信聊天规范：气泡最大宽度 ≤ 容器 70%（避免框太长太宽横向撑爆） */
-  max-width: 70%;
+  /* 批次 C2：气泡最大宽度收敛到 --bubble-max-width token（84%） */
+  max-width: var(--bubble-max-width);
 }
 .bubble-wrap--self {
   align-self: flex-end;
@@ -264,29 +283,27 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   min-width: 0;
 }
 
-/* 2026-08-26 R3：self/peer 圆角统一 token 档位（主圆角 20rpx、尾巴 4rpx 保留方向性），
-   阴影统一禁用（box-shadow: none）。
-   P3 规范收敛：self「上左大、下右小」16rpx/6rpx；peer「上左小（贴头像）、其余大」6rpx/16rpx。
-   （备注：__tail 指贴近头像的小圆角，self 头像在右侧故右下为尾、peer 头像在左侧故左上为尾） */
+/* 批次 C2：self/peer/assistant 圆角全部走 --bubble-radius-* token，
+   尾巴方向按 PRD E4 验收：self 消息右上尾巴（头像在右）、peer 左上尾巴（头像在左），
+   assistant 头像同在左侧 → 与 peer 一致左上尾巴；阴影统一 var(--bubble-shadow)（禁用）。 */
 .bubble--self {
-  background: #36C99A;
-  color: #FFFFFF;
-  border-radius: 16rpx 16rpx 6rpx 16rpx;
+  background: var(--c-brand);
+  color: var(--c-text-inverse);
+  border-radius: var(--bubble-radius-main) var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main);
   box-shadow: var(--bubble-shadow);
 }
 
 .bubble--assistant {
   background: #E8F8F1;
   color: #222222;
-  border-radius: 16rpx 16rpx 16rpx 4rpx;
-  max-width: var(--bubble-max-width, 70%);
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
 }
 
 /* 对方气泡：白/浅灰底 + 深字、无阴影（微信白气泡无投影），左上小圆角贴近头像 */
 .bubble--peer {
   background: var(--c-bubble-other);
   color: var(--c-text-primary);
-  border-radius: 6rpx 16rpx 16rpx 16rpx;
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
   box-shadow: var(--bubble-shadow);
 }
 

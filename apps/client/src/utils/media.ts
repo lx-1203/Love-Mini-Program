@@ -145,12 +145,32 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     path.startsWith("blob:") ||
     path.startsWith("wxfile://")
   ) {
+    // 2026-09-03 修复（首页头像/图标无法显示）：mp base lib 3.16.2 拒绝 http 图片。
+    // real 构建下 IMAGE_PATHS 常量直出后端 app-assets（http://host/api/v1/media/app-assets/...），
+    // 开发态 http 后端会被微信拒载 → 统一本地化为 /static/{rel}（dev 构建产物含全量 static）；
+    // https（生产合法域名）原样返回，不影响真机。
+    if (path.startsWith("http://") && path.includes(APP_ASSET_PREFIX)) {
+      const idx = path.indexOf(APP_ASSET_PREFIX) + APP_ASSET_PREFIX.length;
+      const rel = path.substring(idx).split("?")[0] ?? "";
+      if (rel.length > 0) {
+        return `/static/${rel}`;
+      }
+    }
     return path;
   }
 
-  // 已经是鉴权代理 URL → 仅补全 token（防止父组件重复 resolve 时双重重写）
-  if (path.includes("/api/v1/media/")) {
-    return appendTokenIfMissing(path);
+  // 已经是鉴权代理 URL → 统一本地化为 /static/ 资源（mp 端强制 https，开发场景不走 8080 HTTP）
+  if (path.includes(APP_ASSET_PREFIX)) {
+    // 2026-09-02 R5：基础库 3.16.2 强制 https，无论 mock 还是 real 模式，
+    // /api/v1/media/app-assets/{rel} 一律本地化为 /static/{rel}（避免 HTTP 警告 + 加载失败）。
+    // 后端仍可保留该端点给其他用途（如后台管理端），小程序端完全不依赖。
+    const idx = path.indexOf(APP_ASSET_PREFIX) + APP_ASSET_PREFIX.length;
+    const rel = path.substring(idx).split("?")[0] ?? "";
+    if (rel.length > 0) {
+      return `/static/${rel}`;
+    }
+    // rel 为空（仅前缀无内容）→ 返回原路径（仍走 8080 HTTP，但避免空本地路径）
+    return path;
   }
 
   // 上传文件路径 /uploads/{userId}/{yyyyMM}/{uuid}.{ext} → 重写为鉴权代理 URL
@@ -168,18 +188,9 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
   }
 
   // 2026-08-10 包体积优化：/static/ 装饰资产（banner/poster/campus/avatars 等）
-  // → 改引后端 app-assets 公开端点（真实模式）；本地必需资源（icons/logo/audio/
-  // default-avatar）与 mock 模式保留本地路径。
-  if (path.startsWith("/static/") && !LOCAL_ASSET_PREFIXES.some((p) => path.startsWith(p))) {
-    if (useMock()) {
-      return path;
-    }
-    const apiRoot = clientEnv.apiBaseUrl.replace(/\/api\/?$/, "");
-    const rel = path.substring("/static/".length);
-    const appAssetUrl = `${apiRoot}${APP_ASSET_PREFIX}${rel}`;
-    // 复用鉴权代理补 token 逻辑（app-assets 端点 permitAll，带 token 也无害；
-    // 后续改签名 URL 策略时同一出口生效）
-    return appendTokenIfMissing(appAssetUrl);
+  // 2026-09-02 R5：mp base lib 3.16.2 强制 https，无论 mock/real 模式，/static/ 全部走本地（不走 8080）
+  if (path.startsWith("/static/")) {
+    return path;
   }
 
   // 其他相对路径（如 /static/assets/icons/...、/static/audio/...）→ 原样返回，由 uni-app 解析为本地资源
@@ -189,7 +200,7 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
 /**
  * 模块级 token 缓存：避免列表模板每项每图每次渲染都同步读 storage。
  * 2026-08-10 切换提速：getToken() 底层是 uni.getStorageSync（原生桥接），
- * 长列表（PostCard/WallPostCard 九宫格）重渲染时会触发 N×M 次同步读，
+ * 长列表（PostCard 九宫格）重渲染时会触发 N×M 次同步读，
  * 此处以 30s TTL 缓存，登录/登出或 401 时调用 invalidateMediaTokenCache() 主动失效。
  */
 const TOKEN_CACHE_TTL_MS = 30_000;

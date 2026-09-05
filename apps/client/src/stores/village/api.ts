@@ -207,6 +207,12 @@ export async function createPostApi(data: {
   images: string[];
   tags: string[];
   activityId?: string;
+  /** 批次 B4：可见范围 */
+  visibility?: string;
+  /** 批次 B4：目标类型 */
+  targetType?: string;
+  /** 批次 B4：目标 ID */
+  targetId?: number | null;
 }): Promise<PostDetailView> {
   return request<PostDetailView, {
     title: string;
@@ -215,6 +221,9 @@ export async function createPostApi(data: {
     tags: string[];
     images: string[];
     activityId?: number | null;
+    visibility?: string;
+    targetType?: string;
+    targetId?: number | null;
   }>({
     url: "/posts",
     method: "POST",
@@ -225,6 +234,9 @@ export async function createPostApi(data: {
       tags: data.tags,
       images: data.images,
       activityId: data.activityId ? Number(data.activityId) : null,
+      visibility: data.visibility,
+      targetType: data.targetType,
+      targetId: data.targetId,
     },
   });
 }

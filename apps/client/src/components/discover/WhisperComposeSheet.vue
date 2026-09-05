@@ -160,7 +160,7 @@ async function handleSend() {
   padding: 20rpx;
   box-sizing: border-box;
   border-radius: 18rpx;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   border: 1rpx solid var(--c-line, #EEF2F0);
   font-size: 26rpx;
   color: var(--c-text-primary, #222222);

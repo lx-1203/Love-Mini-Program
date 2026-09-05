@@ -48,6 +48,12 @@ public class RealHomeService implements HomeService {
     private static final int MAX_ACTIVITY_COUNT = 3;
     /** 村口热门帖子最大条数 */
     private static final int MAX_HOT_POST_COUNT = 3;
+    /** 首页社区动态条数（审查报告 4.2：原魔数 2 抽常量） */
+    private static final int MAX_COMMUNITY_POST_COUNT = 2;
+    /** 今日推荐合拍度下限（审查报告 4.2：原魔数 50 抽常量） */
+    private static final int MATCH_SCORE_FLOOR = 50;
+    /** 今日推荐合拍度上限 */
+    private static final int MATCH_SCORE_CEIL = 99;
 
     private final RecommendationService recommendationService;
     private final CheckInService checkInService;
@@ -402,17 +408,19 @@ public class RealHomeService implements HomeService {
      */
     @Override
     public HomeFeedView getHomeFeed(Long userId) {
-        TodayRecommendationView recommendation = getTodayRecommendation(userId);
-        if (recommendation == null) {
-            recommendation = homeFeedFallbackProvider.fallbackTodayRecommendation();
-        }
+        // 2026-09-02 推荐去重红线：候选只取一次，今日推荐取首位，
+        // 附近的人从剩余候选生成——同一人不得同屏出现在两个板块
+        java.util.List<RecommendedPersonView> candidates = homeCandidates();
+        TodayRecommendationView recommendation = candidates.isEmpty()
+            ? homeFeedFallbackProvider.fallbackTodayRecommendation()
+            : toTodayRecommendation(candidates.get(0));
         LoveProgressView loveProgress = buildLoveProgress(userId);
         RelationActivityView relationActivity = buildRelationActivity(userId);
         java.util.List<InterestCircleSummaryView> interests = buildInterestRecommendations(userId);
         if (interests.isEmpty()) {
             interests = homeFeedFallbackProvider.fallbackInterestRecommendations();
         }
-        java.util.List<NearbyPersonSummaryView> nearby = buildNearbyPeople();
+        java.util.List<NearbyPersonSummaryView> nearby = buildNearbyPeople(candidates);
         if (nearby.isEmpty()) {
             nearby = homeFeedFallbackProvider.fallbackNearbyPeople();
         }
@@ -439,13 +447,6 @@ public class RealHomeService implements HomeService {
      * 首页今日推荐候选：当前使用 guest 推荐池，避免首页展示消耗用户寻觅额度；
      * TODO 后续接入独立的首页推荐策略。
      */
-    private TodayRecommendationView getTodayRecommendation(Long userId) {
-        return homeCandidates().stream()
-            .findFirst()
-            .map(this::toTodayRecommendation)
-            .orElse(null);
-    }
-
     private java.util.List<RecommendedPersonView> homeCandidates() {
         try {
             RecommendationFilter empty = new RecommendationFilter(null, null, null, null, null, null, null, null, null, null);
@@ -460,7 +461,7 @@ public class RealHomeService implements HomeService {
         boolean certified = view.verificationBadgeLevel() != null
             && !"none".equalsIgnoreCase(view.verificationBadgeLevel());
         boolean online = "online".equals(view.activeStatusText()) || "just_now".equals(view.activeStatusText());
-        int matchScore = Math.min(99, Math.max(50,
+        int matchScore = Math.min(MATCH_SCORE_CEIL, Math.max(MATCH_SCORE_FLOOR,
             60 + view.commonCircleCount() * 10 + (view.isSameSchool() ? 10 : 0) + (online ? 5 : 0)));
         String photoUrl = firstNonBlank(view.halfBodyPhotoUrl(),
             view.photoGallery().stream().filter(java.util.Objects::nonNull).findFirst().orElse(null),
@@ -600,11 +601,13 @@ public class RealHomeService implements HomeService {
         }
     }
 
-    private java.util.List<NearbyPersonSummaryView> buildNearbyPeople() {
+    private java.util.List<NearbyPersonSummaryView> buildNearbyPeople(java.util.List<RecommendedPersonView> candidates) {
         try {
             // 2026-08-31 待办：同名/同头像去重（视觉去重半径），避免「同城的人」整列表同名同人按距离重复出现
+            // 2026-09-02 推荐去重红线：跳过今日推荐已展示的首位候选，同一人不在首页两个板块重复出现
             java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
-            return homeCandidates().stream()
+            return candidates.stream()
+                .skip(1)
                 .filter(view -> seen.add(view.name() + "|" + String.valueOf(view.avatarUrl())))
                 .limit(5)
                 .map(view -> new NearbyPersonSummaryView(
@@ -626,9 +629,12 @@ public class RealHomeService implements HomeService {
             // 2026-08-26 R4 契约：timeText 保持 ISO 字符串下发（LocalDateTime.toString()），
             // 相对时间由前端统一 formatRelativeTime 格式化（解析失败原样透传）；
             // 列表 images 最多 3 张，与 mock fixtures 的展示字符串兼容。
-            Page<Post> posts = postRepository.findByStatusOrderByLikesCountDesc(
+            // 2026-09-03 发帖审核制：首页社区动态只展示审核通过（approved）的帖子，
+            // 待审核帖子由管理后台审核通过后自动进入本 feed。
+            Page<Post> posts = postRepository.findByStatusAndAuditStatusOrderByLikesCountDesc(
                 PostStatus.active,
-                PageRequest.of(0, 2)
+                Post.AuditStatus.approved,
+                PageRequest.of(0, MAX_COMMUNITY_POST_COUNT)
             );
             java.util.List<Post> items = posts.getContent();
             java.util.List<Long> authorIds = items.stream().map(Post::getAuthorId).filter(java.util.Objects::nonNull).toList();

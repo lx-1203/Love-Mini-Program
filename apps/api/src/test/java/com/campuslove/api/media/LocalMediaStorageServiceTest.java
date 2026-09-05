@@ -52,11 +52,16 @@ class LocalMediaStorageServiceTest {
 
     private Path tempRoot;
     private LocalMediaStorageService service;
+    private com.campuslove.api.config.FeatureSwitchService featureSwitchService;
 
     @BeforeEach
     void setUp() throws IOException {
         tempRoot = Files.createTempDirectory("media-storage-test");
-        service = new LocalMediaStorageService(tempRoot.toString());
+        // 2026-09-01：视频上传独立闸（upload.video.enabled）缺省 false；测试视频用例需放行，
+        // 故 mock FeatureSwitchService 并返回 true（避免 ObjectProvider(null) NPE 与封存拦截）。
+        featureSwitchService = org.mockito.Mockito.mock(com.campuslove.api.config.FeatureSwitchService.class);
+        org.mockito.Mockito.when(featureSwitchService.isVideoUploadEnabled()).thenReturn(true);
+        service = new LocalMediaStorageService(tempRoot.toString(), featureSwitchService, null);
     }
 
     @AfterEach
@@ -408,7 +413,7 @@ class LocalMediaStorageServiceTest {
     void uploadWebp_shouldBeSupported() {
         // WebP 文件头：RIFF (4字节) + size (4字节) + WEBP (4字节)
         MockMultipartFile file = new MockMultipartFile(
-                "file", "anim.png", "image/webp",
+                "file", "anim.webp", "image/webp",
                 new byte[]{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
                         0x57, 0x45, 0x42, 0x50});
 
@@ -418,7 +423,7 @@ class LocalMediaStorageServiceTest {
         // 如果 ImageIO 抛 IOException，service 会捕获并设 width/height=null
         MediaStorageService.UploadResult result = service.store(700L, file, "image");
         assertNotNull(result.getUrl(), "webp 上传应返回 URL");
-        assertTrue(result.getUrl().endsWith(".png"));
+        assertTrue(result.getUrl().endsWith(".webp"));
     }
 
     /**

@@ -142,7 +142,12 @@ function handleRetry() {
  * 点击兴趣圈，跳转到话题列表
  * @param circleId - 兴趣圈 ID
  */
-function goToTopics(circle: { id: string; campusVerified?: boolean }) {
+/**
+ * 点击兴趣圈，进入圈子主页（2026-09-02 W2 骨架补齐：对照「圈子详情，摄影圈参考.png」，
+ * 主页内保留「查看全部话题」链接跳转原话题列表页，旧链路不断）
+ * @param circle - 兴趣圈对象
+ */
+function goToCircleHome(circle: { id: string; campusVerified?: boolean }) {
   // 校园认证圈：未完成校园认证时拦截并引导认证（收尾轮）
   if (circle.campusVerified) {
     const sessionStore = useSessionStore();
@@ -151,7 +156,7 @@ function goToTopics(circle: { id: string; campusVerified?: boolean }) {
       return;
     }
   }
-  openAppPath(`${ROUTES.CIRCLES.TOPICS}?circleId=${circle.id}`); // infra R2-00102
+  openAppPath(`${ROUTES.CIRCLES.HOME}?circleId=${circle.id}`); // infra R2-00102
 }
 
 /**
@@ -377,7 +382,7 @@ defineExpose({ toggleJoin });
               v-for="(circle, index) in tabFilteredCircles" :key="circle.id"
               class="circle-card"
               :style="{ animationDelay: index * 60 + 'ms' }"
-              @tap="goToTopics(circle)"
+              @tap="goToCircleHome(circle)"
             >
               <view class="circle-card__cover-wrap">
                 <image class="circle-card__cover" :src="circleCover(circle.name)" mode="aspectFill" lazy-load alt="" />
@@ -648,7 +653,7 @@ defineExpose({ toggleJoin });
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  /* mp-audit: R2 2026-09-03 —— object-fit 已删除（mp <image> 不响应），等比裁切由模板 mode="aspectFill" 承担 */
 }
 
 .circle-card__hot-badge {
@@ -848,7 +853,7 @@ defineExpose({ toggleJoin });
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -879,7 +884,7 @@ defineExpose({ toggleJoin });
   padding: 12rpx 28rpx;
   border-radius: 999rpx;
   /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面） */
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   border: 1rpx solid var(--c-line, #EEF2F0);
   display: flex;
   align-items: center;

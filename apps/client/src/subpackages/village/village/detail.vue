@@ -7,7 +7,7 @@
  * 展示完整帖子内容、评论列表和互动功能
  * 包含作者交互卡片（关注/私信/校友标签）、相似作者推荐和转发功能
  */
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -21,6 +21,7 @@ import { useMessagesStore } from "../../../stores/messages";
 import { useReportStore } from "../../../stores/report";
 // 修复（严格模式 noUnusedLocals）：useSessionStore 导入后未使用，已移除。
 import { openAppPath, openUserProfile } from "../../../utils/navigation";
+import { lightHaptic } from "../../../utils/haptic";
 // R4-00088：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../../constants/routes";
 import SafeImage from "../../../components/common/SafeImage.vue";
@@ -50,6 +51,51 @@ function initialOf(name?: string | null): string {
 
 /** 评论输入内容 */
 const commentContent = ref("");
+// 2026-09-05 R19：评论排序（最热=点赞降序 / 最新=时间降序，作用于已加载评论）
+const commentSort = ref<"hot" | "latest">("hot");
+
+const sortedComments = computed(() => {
+  const list = [...comments.value];
+  if (commentSort.value === "hot") {
+    list.sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+  } else {
+    list.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  }
+  return list;
+});
+
+function toggleCommentSort() {
+  lightHaptic();
+  commentSort.value = commentSort.value === "hot" ? "latest" : "hot";
+}
+
+/* ---------- 2026-09-05 R19：帖子图片全屏查看层 ---------- */
+const imageViewerVisible = ref(false);
+const imageViewerSrc = ref("");
+
+function openImageViewer(index: number) {
+  const images = currentPost.value?.images ?? [];
+  const raw = images[Math.min(Math.max(index, 0), images.length - 1)];
+  if (!raw) return;
+  imageViewerSrc.value = resolveMediaUrl(raw);
+  imageViewerVisible.value = true;
+}
+
+function closeImageViewer() {
+  imageViewerVisible.value = false;
+  imageViewerSrc.value = "";
+}
+// 2026-09-05 QA（R16）：评论数按钮原为无响应死按钮，新增聚焦输入框能力
+const commentInputFocused = ref(false);
+
+function focusCommentInput() {
+  lightHaptic();
+  commentInputFocused.value = false;
+  // 下一 tick 置 true 触发 input focus 属性变化，弹起键盘
+  nextTick(() => {
+    commentInputFocused.value = true;
+  });
+}
 /** 是否正在提交评论 */
 const isSubmitting = ref(false);
 /**
@@ -590,7 +636,7 @@ onShareTimeline(() => {
       <!-- 理想图：扁平行内作者行（头像 + 名字 + 校徽 + 关注按钮） -->
       <view class="author-inline">
         <!-- 作者头像（点击进主页） -->
-        <view class="author-inline__avatar" @tap="goToUserProfile(currentPost.author.userId)">
+        <view class="author-inline__avatar press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goToUserProfile(currentPost.author.userId)">
           <image
             v-if="currentPost.author.avatar && !isImageFailed('author')"
             class="author-inline__avatar-img"
@@ -645,8 +691,13 @@ onShareTimeline(() => {
             <view
               v-for="(img, idx) in currentPost.images"
               :key="img || idx"
-              class="post-image-wrap"
+              class="post-image-wrap press-feedback"
               :class="{ 'post-image-wrap--first': idx === 0 }"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
+              role="button"
+              :aria-label="`查看第${idx + 1}张图片`"
+              @tap="openImageViewer(idx)"
             >
               <SafeImage
                 :src="img"
@@ -672,7 +723,9 @@ onShareTimeline(() => {
           <view v-if="currentPost.tags.length > 0" class="post-tags">
             <text
               v-for="(tag, idx) in currentPost.tags" :key="idx"
-              class="post-tag"
+              class="post-tag press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
               @tap="goToTagPosts(tag)"
             >{{ tag }}</text>
           </view>
@@ -688,8 +741,10 @@ onShareTimeline(() => {
         <!-- 2026-08-26 P0：理想图行内互动栏（点赞数 | 评论数 | 分享） -->
         <view class="post-actions-inline">
           <view
-            class="post-actions-inline__item"
+            class="post-actions-inline__item press-feedback"
             :class="{ 'post-actions-inline__item--active': currentPost.isLiked }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('village.likePostAria')"
             @tap="handleLike"
@@ -698,15 +753,20 @@ onShareTimeline(() => {
             <text class="post-actions-inline__count">{{ currentPost.likes }}</text>
           </view>
           <view
-            class="post-actions-inline__item"
+            class="post-actions-inline__item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('village.detail.statsComment')"
+            @tap="focusCommentInput"
           >
             <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
             <text class="post-actions-inline__count">{{ currentPost.comments }}</text>
           </view>
           <view
-            class="post-actions-inline__item post-actions-inline__item--share"
+            class="post-actions-inline__item post-actions-inline__item--share press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('village.sharePostAria')"
             @tap="openShareModal"
@@ -717,14 +777,24 @@ onShareTimeline(() => {
         </view>
       </view>
 
-      <!-- 评论区 -->
+      <!-- 评论区（2026-09-05 R19：排序「最热/最新」可点击切换，前端对已加载评论排序） -->
       <view class="comments-section">
         <view class="comments-header">
           <text class="comments-title">{{ t("village.detail.commentsTitle") }}</text>
           <!-- P1-02：计数改用服务端总数（currentPost.comments 来自详情 commentCount），
                替代本地 comments.length（树形结构下根评论数 ≠ 总评论数） -->
           <text class="comments-count">({{ currentPost.comments }})</text>
-          <view class="comments-sort"><text class="comments-sort__text">最热</text></view>
+          <view
+            class="comments-sort press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="commentSort === 'hot' ? '切换为最新排序' : '切换为最热排序'"
+            @tap="toggleCommentSort"
+          >
+            <text class="comments-sort__text">{{ commentSort === 'hot' ? '最热' : '最新' }}</text>
+            <text class="comments-sort__arrow">∨</text>
+          </view>
         </view>
 
         <!-- 加载状态 -->
@@ -733,16 +803,18 @@ onShareTimeline(() => {
           <text class="loading-text">{{ t("village.detail.loadingComments") }}</text>
         </view>
 
-        <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论） -->
-        <view v-else-if="comments.length > 0" class="comments-list" role="list">
+        <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论；R19：按排序展示） -->
+        <view v-else-if="sortedComments.length > 0" class="comments-list" role="list">
           <view
-            v-for="(comment, _idx) in comments" :key="comment.id"
+            v-for="(comment, _idx) in sortedComments" :key="comment.id"
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >
             <!-- 2026-08-08 头像点击进主页：根评论作者头像 -->
             <view
-              class="comment-avatar"
+              class="comment-avatar press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
               @tap="goToUserProfile(comment.author.userId)"
             >
               <image
@@ -783,8 +855,10 @@ onShareTimeline(() => {
                <!-- 右侧爱心 -->
                <view class="comment-heart-wrap">
                  <view
-                   class="comment-heart"
+                   class="comment-heart press-feedback"
                    :class="{ 'comment-heart--active': comment.isLiked }"
+                   hover-class="press-feedback--active"
+                   hover-stay-time="40"
                    @tap.stop="handleCommentLike(comment.id)"
                  >
                    <image class="comment-heart__icon" :src="comment.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
@@ -800,7 +874,9 @@ onShareTimeline(() => {
                  @longpress="handleReportComment(reply)"
                >
                  <view
-                   class="comment-reply__avatar"
+                   class="comment-reply__avatar press-feedback"
+                   hover-class="press-feedback--active"
+                   hover-stay-time="40"
                    @tap.stop="goToUserProfile(reply.author.userId)"
                  >
                    <image
@@ -834,8 +910,10 @@ onShareTimeline(() => {
                  </view>
                  <view class="comment-heart-wrap">
                    <view
-                     class="comment-heart"
+                     class="comment-heart press-feedback"
                      :class="{ 'comment-heart--active': reply.isLiked }"
+                     hover-class="press-feedback--active"
+                     hover-stay-time="40"
                      @tap.stop="handleCommentLike(reply.id)"
                    >
                      <image class="comment-heart__icon" :src="reply.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
@@ -883,7 +961,9 @@ onShareTimeline(() => {
             <view class="similar-author-main">
               <!-- 2026-08-08 头像点击进主页：相似作者头像 -->
               <view
-                class="similar-author-avatar"
+                class="similar-author-avatar press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
                 @tap="goToUserProfile(author.userId)"
               >
                 <image
@@ -922,8 +1002,10 @@ onShareTimeline(() => {
             <!-- 操作按钮 -->
             <view class="similar-author-actions">
               <view
-                class="action-btn action-btn--follow"
+                class="action-btn action-btn--follow press-feedback"
                 :class="{ 'action-btn--follow-active': author.isFollowed }"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
                 role="button"
                 :aria-label="t('village.followSimilarAria')"
                 @tap="handleFollowSimilarAuthor(author.userId)"
@@ -932,7 +1014,14 @@ onShareTimeline(() => {
                   {{ author.isFollowed ? t("village.followed") : t("village.follow") }}
                 </text>
               </view>
-              <view class="action-btn action-btn--message" role="button" :aria-label="t('village.sendMessageSimilarAria')" @tap="sendMessageToSimilarAuthor(author.userId)">
+              <view
+                class="action-btn action-btn--message press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="t('village.sendMessageSimilarAria')"
+                @tap="sendMessageToSimilarAuthor(author.userId)"
+              >
                 <text class="action-btn__text">{{ t("village.detail.message") }}</text>
               </view>
             </view>
@@ -989,6 +1078,8 @@ onShareTimeline(() => {
             class="input-bar__input"
             :placeholder="replyPlaceholder"
             confirm-type="send"
+            :focus="commentInputFocused"
+            @blur="commentInputFocused = false"
             @confirm="submitComment"
             :aria-label="replyPlaceholder"
           />
@@ -1008,6 +1099,17 @@ onShareTimeline(() => {
           </view>
         </view>
       </view>
+    </view>
+
+    <!-- 2026-09-05 R19：帖子图片全屏查看层（点击遮罩关闭） -->
+    <view
+      v-if="imageViewerVisible"
+      class="image-viewer"
+      role="button"
+      aria-label="关闭大图"
+      @tap="closeImageViewer"
+    >
+      <image class="image-viewer__img" :src="imageViewerSrc" mode="aspectFit" alt="" />
     </view>
 
     <!-- ===== 转发确认弹窗 ===== -->
@@ -1122,14 +1224,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
      页面默认跟随系统/设置深色模式（page[data-theme=dark] 覆盖 --c-* token），
      导致详情页渲染为深绿底浅字、与理想图浅色风格不一致。
      在 .detail-page 根节点按浅色值重声明受影响的设计 token，使整页（含评论区、
-     底部输入栏、弹窗及子组件）始终为浅色，仅本页生效、不影响全局深浅色切换。 */
-  --c-bg-page: #F7FAF9;
+     底部输入栏、弹窗及子组件）始终为浅色，仅本页生效、不影响全局深浅色切换。
+     2026-09-05 R19：对齐理想图「帖子.png」——帖子详情整体白底，页面背景由浅绿改白 */
+  --c-bg-page: #FFFFFF;
   --c-bg-container: #FFFFFF;
   --c-bg-surface: #F7FAF9;
   --c-bg-brand: #E8FBF2;
   --c-bg-secondary: #D1F5E7;
   --c-bg-romance: #FFF1F6;
-  --c-bg-hover: #F7FAF9;
+  --c-bg-hover: #EEF7F2;
   --c-text-primary: #1A1E1C;
   --c-text-secondary: #4A524E;
   --c-text-tertiary: #6B7571;
@@ -1269,6 +1372,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 帖子内容容器 ========== */
 .detail-body {
   flex: 1;
+  /* 2026-09-05 R17：输入栏改 fixed 吸底后，滚动内容底部预留输入栏高度，避免最后一条评论被遮挡 */
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 /* 2026-08-26 R4：详情加载骨架屏 */
@@ -2047,6 +2152,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .comment-avatar__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }
@@ -2152,6 +2259,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .comment-reply__avatar-img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }
@@ -2542,6 +2651,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
    理想图：底部输入栏
    ================================================================ */
 .detail-input-bar {
+  /* 2026-09-05 R17：页面为 min-height:100% 自然撑高滚动，输入栏随内容滚走（往下翻只剩背景）。
+     改 fixed 吸底，滚动时始终可见 */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
   background: var(--c-bg-container);
   border-top: 1rpx solid $border-light;
   padding-bottom: calc(env(safe-area-inset-bottom) + 12rpx);
@@ -2740,3 +2856,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: var(--c-text-inverse, #FFFFFF);
 }
 </style>
+
+/* ========== 2026-09-05 R19：帖子图片全屏查看层 ========== */
+.image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-viewer__img {
+  width: 100%;
+  height: 80vh;
+}

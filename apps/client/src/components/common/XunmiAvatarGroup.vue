@@ -65,6 +65,8 @@ withDefaults(defineProps<{
 }
 
 .avatar-group__img {
+  border-radius: var(--r-full);
+
   width: 100%;
   height: 100%;
 }

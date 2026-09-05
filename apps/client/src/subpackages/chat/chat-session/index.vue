@@ -17,6 +17,7 @@ import ChatBubble from "../../../components/chat/ChatBubble.vue";
 import ChatHeader from "../../../components/chat/ChatHeader.vue";
 import ActivityCard, { type ActivityCardData } from "../../../components/chat/ActivityCard.vue";
 import MatchGreetingTip from "../../../components/chat/MatchGreetingTip.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import BreakQuestion from "../../../components/chat/BreakQuestion.vue";
 import { toBreakQuestionItems } from "../../../view-models/chat";
 import EmojiPanel from "../../../components/chat/EmojiPanel.vue";
@@ -568,8 +569,15 @@ async function loadSessionData(): Promise<void> {
 
   // 会话类型判定：临时匿名会话不存在于私信会话列表（messagesStore.sessions），
   // 或虽存在但标记为 temp_anonymous——两者均走 temp-chat 链路。
+  // 2026-09-03 修复：深链直达会话页时 messagesStore 尚未加载 → session 为 undefined
+  // → 私聊被误判为临时会话，GET /temp-chat/sessions/{id} 返回 400（console 报错源）。
+  // 私信会话 ID 恒为数字主键、临时会话 ID 恒为 "session-{a}-{b}-{hex}" 字符串，
+  // 据此兜底判定，消除误判。
   const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
-  const isTemp = !session || session.sessionType === "temp_anonymous";
+  const looksPrivateNumeric = /^\d+$/.test(String(sessionId.value));
+  const isTemp = looksPrivateNumeric
+    ? false
+    : !session || session.sessionType === "temp_anonymous";
 
   if (isTemp) {
     // 临时匿名会话：temp-chat 接口加载会话（返回会话含全部消息），
@@ -587,6 +595,11 @@ onLoad(async (query) => {
   // 第五轮 QA 验收入口：dev-user=1 页面级兜底（导航拦截器之外的直开/自动化场景）。
   // 必须在登录锁判断之前注入 mock 会话，保证 isUnlocked 放行、onLoad 正常加载会话。
   applyDevUserFromQuery(query);
+  // 2026-09-03（统一角色展示）：进入会话即确保本人资料已加载（头像/昵称单一数据源），
+  // 幂等（profileStore.load 内部 60s 缓存 + in-flight 守卫），失败静默回落默认头像
+  if (isUnlocked.value && !profileStore.avatarUrl) {
+    profileStore.load().catch(() => { /* 静默 */ });
+  }
   // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不创建会话、不发鉴权请求
   if (!isUnlocked.value) return;
 
@@ -1317,7 +1330,7 @@ const peerAvatarSrc = computed(() => {
  * 优先使用当前用户真实头像（profileStore.avatarUrl），缺失时回退 AVATAR_2，
  * 与对方默认 AVATAR_1 区分，避免"自己跟自己聊天"的观感。 */
 const selfAvatarSrc = computed(() => {
-
+  // 2026-09-03（统一角色展示）：本人头像单一数据源 = profile.avatarUrl（App 启动登录后已拉取）
   if (profileStore.avatarUrl) return profileStore.avatarUrl;
   const user = (sessionStore as any).user || (sessionStore as any).currentUser;
   const ua = user && typeof user.avatar === "string" ? user.avatar : "";
@@ -1628,6 +1641,16 @@ const avatarMenuVisible = ref(false);
 function openAvatarMenu() {
   avatarMenuVisible.value = true;
 }
+/** 2026-09-03：气泡内头像点击 → 直接跳对方主页（不再弹菜单） */
+function onBubbleAvatarTap() {
+  const uid = resolvePeerUserId();
+  if (uid != null) {
+    uni.navigateTo({
+      url: `/subpackages/profile-extra/profile/other?userId=${uid}`,
+      fail: () => {},
+    });
+  }
+}
 function closeAvatarMenu() {
   avatarMenuVisible.value = false;
 }
@@ -1734,7 +1757,10 @@ defineExpose({ noop });
       @scrolltoupper="onScrollToUpper"
     >
       <view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>
-      <view v-else-if="messagesStore.loading" class="meta-copy meta-copy--padded">{{ t('chat.loadingSessionDetail') }}</view>
+      <!-- 2026-09-03 骨架屏升级：聊天气泡交替骨架替代文字 loading -->
+      <view v-else-if="messagesStore.loading" class="meta-copy meta-copy--padded">
+        <SkeletonBlock variant="chat" :rows="4" :label="t('chat.loadingSessionDetail')" />
+      </view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy meta-copy--padded">{{ friendlyPageError }}</view>
       <view v-else class="chat-list" role="list">
         <!-- 2026-08-09 微信化重构：聊天首条固定破冰提示（会话无任何用户消息时展示，点击直发） -->
@@ -1756,7 +1782,10 @@ defineExpose({ noop });
             />
             <!-- 文本/表情/系统消息：使用 ChatBubble 渲染
               （语音功能已移除：历史 voice 消息由 ChatBubble 按语音类型兜底展示；
-               activity 消息解析失败时也走此兜底） -->
+               activity 消息解析失败时也走此兜底）
+              2026-09-03：气泡内头像点击只跳对方主页（onBubbleAvatarTap），
+              不再弹拍一拍菜单（原菜单遮罩叠在导航上=感知"头像点不动"）；
+              拍一拍菜单保留在顶部 ChatHeader 头像上 -->
             <ChatBubble
               v-else
               :id="MESSAGE_ROW_ID_PREFIX + row.message.id"
@@ -1773,7 +1802,8 @@ defineExpose({ noop });
               :can-interact="true"
               :peer-avatar="peerAvatarSrc"
               :self-avatar="selfAvatarSrc"
-              @avatar-tap="openAvatarMenu"
+              :peer-user-id="resolvePeerUserId() ?? undefined"
+              @avatar-tap="onBubbleAvatarTap"
               @longpress="handleMessageLongpress(row.message.id)"
               @tap-quote="handleTapQuote"
             />
@@ -3013,7 +3043,8 @@ defineExpose({ noop });
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-5);
-  border-radius: 0 24rpx 24rpx 24rpx;
+  /* 批次 C2：气泡类 UI 统一走 --bubble-radius-* token（peer 左上尾巴） */
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
   background: var(--c-bubble-other, #FFFFFF);
   box-shadow: none;
 }
@@ -3167,7 +3198,7 @@ defineExpose({ noop });
   flex: 1;
   padding: 28rpx 0;
   border-radius: 20rpx;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   text-align: center;
 }
 .avatar-menu-item-text {

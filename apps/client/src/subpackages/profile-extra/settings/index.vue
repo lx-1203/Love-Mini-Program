@@ -24,12 +24,15 @@ import { useThemeStore } from "../../../stores/theme";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { switchTabWithQuery } from "../../../utils/navigation";
+// 批次 A5：商业化封存开关
+import { useAppConfigStore } from "../../../stores/app-config";
 
 /** 操作定时器集合，用于卸载时统一清理 */
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const { t } = useI18n();
 const themeStore = useThemeStore();
+const appConfig = useAppConfigStore();
 
 /** Switch 开关切换深色/浅色模式 */
 function handleThemeSwitch(): void {
@@ -317,70 +320,44 @@ const accountMenus = computed<MenuItem[]>(() => [
   },
 ]);
 
-/** 社交资产分组菜单项（2026-08-14：从主页收敛到设置页） */
-const socialMenus = computed<MenuItem[]>(() => [
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.taskCenter"),
-    path: ROUTES.PROFILE.TASKS,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.coinBalance"),
-    path: ROUTES.WALLET,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
-    label: t("profile.myCircles"),
-    path: ROUTES.CIRCLES.INDEX,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
-    label: t("profile.loveLab"),
-    path: ROUTES.LOVE_CENTER.INDEX,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
-    label: t("profile.myPosts"),
-    path: "/subpackages/village/village/index",
-    tabQuery: { tab: "mine" } as Record<string, string> | undefined,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "var(--c-bg-brand, #E8FAF3)",
-    label: t("profile.visitors"),
-    path: "/subpackages/profile-extra/profile/visitors",
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
-    label: t("profile.browseHistory"),
-    path: ROUTES.VILLAGE.HISTORY,
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
-    bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
-    label: t("profile.albumTitle"),
-    path: "/subpackages/profile-extra/profile/album",
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION,
-    bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
-    label: t("profile.verification"),
-    path: "/subpackages/profile-extra/verification/index",
-  },
-  {
-    icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS,
-    bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-    label: t("profile.scheduleSetting"),
-    path: "/subpackages/setup/schedule/index",
-  },
-]);
+/** 社交资产分组菜单项（2026-08-14：从主页收敛到设置页；批次 A5：钱包入口受商业化开关控制） */
+const socialMenus = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    {
+      icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+      bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+      label: t("profile.taskCenter"),
+      path: ROUTES.PROFILE.TASKS,
+    },
+  ];
+  // 批次 A5：虚拟货币钱包仅在 commerce.coin 开关开启时展示
+  if (appConfig.isCommerceOn("coin")) {
+    items.push({
+      icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL,
+      bgColor: "var(--c-tint-cream-50, #FFF8E7)",
+      label: t("profile.coinBalance"),
+      path: ROUTES.WALLET,
+    });
+  }
+  items.push(
+    {
+      icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
+      bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+      label: t("profile.myCircles"),
+      path: ROUTES.CIRCLES.INDEX,
+    },
+  );
+  items.push(
+    { icon: IMAGE_PATHS.ICONS_PROFILE.LAB, bgColor: "var(--c-tint-pink-50, #F3E8FF)", label: t("profile.loveLab"), path: ROUTES.LOVE_CENTER.INDEX },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index", tabQuery: { tab: "mine" } as Record<string, string> | undefined },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.verification"), path: "/subpackages/profile-extra/verification/index" },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS, bgColor: "var(--c-tint-cream-50, #FFF8E7)", label: t("profile.scheduleSetting"), path: "/subpackages/setup/schedule/index" },
+  );
+  return items;
+});
 
 /** 隐私安全分组菜单项（2026-08-14：从主页收敛到设置页） */
 const privacyMenus = computed<MenuItem[]>(() => [
@@ -411,25 +388,25 @@ function shareFriend(): void {
 const aboutMenus = computed<MenuItem[]>(() => [
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
-    bgColor: "var(--c-bg-page, #F7FAF9)",
+    bgColor: "var(--c-bg-page, #EEF7F2)",
     label: t("settings.userAgreement"),
     action: viewUserAgreement,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS,
-    bgColor: "var(--c-bg-page, #F7FAF9)",
+    bgColor: "var(--c-bg-page, #EEF7F2)",
     label: t("settings.privacyPolicy"),
     action: viewPrivacyPolicy,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-bg-page, #F7FAF9)",
+    bgColor: "var(--c-bg-page, #EEF7F2)",
     label: t("settings.checkUpdate"),
     action: checkUpdate,
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.INFO,
-    bgColor: "var(--c-bg-page, #F7FAF9)",
+    bgColor: "var(--c-bg-page, #EEF7F2)",
     label: t("settings.aboutUs"),
     action: aboutUs,
   },
@@ -755,7 +732,7 @@ function handleMenuTap(item: MenuItem) {
   border-radius: var(--r-circle, 50%);
 
   &--hover {
-    background: var(--c-bg-page, #F7FAF9);
+    background: var(--c-bg-page, #EEF7F2);
     transform: scale(0.94);
   }
 }
@@ -856,7 +833,7 @@ function handleMenuTap(item: MenuItem) {
 }
 
 .settings-card--page {
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .settings-card--lavender {

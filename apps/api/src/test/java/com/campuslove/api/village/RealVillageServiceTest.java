@@ -48,13 +48,13 @@ class RealVillageServiceTest {
     void createPost_fullArgsVersion_delegatesToPostService() {
         Long userId = 100L;
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null))
+        when(postService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null, "general", null))
                 .thenReturn(expected);
 
-        PostDetailView result = realService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null);
+        PostDetailView result = realService.createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null, "general", null);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null);
+        verify(postService, times(1)).createPost(userId, "标题", "content", List.of("img"), List.of("tag"), "all", null, "general", null);
     }
 
     /**
@@ -63,17 +63,17 @@ class RealVillageServiceTest {
     @Test
     void createPost_requestVersion_unwrapsAndDelegates() {
         Long userId = 100L;
-        // CreatePostRequest(title, content, category, tags, images, activityId)
+        // CreatePostRequest(title, content, category, tags, images, activityId, targetType, targetId)
         CreatePostRequest request = new CreatePostRequest(
-                "标题", "hello", "all", List.of("tag"), List.of("img"), null, null, null);
+                "标题", "hello", "all", List.of("tag"), List.of("img"), null, "general", null);
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null))
+        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null))
                 .thenReturn(expected);
 
         PostDetailView result = realService.createPost(userId, request);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null);
+        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null);
     }
 
     /**
@@ -235,7 +235,7 @@ class RealVillageServiceTest {
 
         assertSame(expected, result);
         verify(queryService, times(1)).getPosts("all", null, "new", 0, 10, 100L);
-        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any(), any(), any());
+        verify(postService, times(0)).createPost(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     // ---- 工具方法 ----

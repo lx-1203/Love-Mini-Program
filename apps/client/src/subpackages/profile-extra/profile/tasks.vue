@@ -22,8 +22,11 @@ import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../../utils/navigation";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import SafeImage from "../../../components/common/SafeImage.vue";
 // R4-00058: 签到任务接入真实 GET/POST /check-in 链路
 import { clientApi } from "../../../services/api";
@@ -90,6 +93,7 @@ function taskPathForCode(code: string): string | undefined {
 }
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
 
 /**
@@ -142,6 +146,8 @@ const localTasks = computed<TaskItem[]>(() => [
  * real 模式任务列表（GET /tasks 数据，null 表示未加载/不可用，回退本地列表）。
  */
 const realTasks = ref<TaskItem[] | null>(null);
+/** real 任务首拉中（骨架屏占位，避免本地兜底→后端数据的内容跳变） */
+const loadingRealTasks = ref(false);
 
 /** 正在领取的任务 code（防重复点击） */
 const claimingCode = ref<string | null>(null);
@@ -171,11 +177,15 @@ function toRealTask(view: TaskView): TaskItem {
  * real 模式拉取任务列表（3-J）。
  */
 async function loadRealTasks(): Promise<void> {
+  if (realTasks.value !== null) return;
+  loadingRealTasks.value = true;
   try {
     const list = await request<TaskView[]>({ url: "/tasks", method: "GET" });
     realTasks.value = (list ?? []).map(toRealTask);
   } catch (_e) {
     // 拉取失败保留当前列表（不阻塞页面展示）
+  } finally {
+    loadingRealTasks.value = false;
   }
 }
 
@@ -342,7 +352,8 @@ onShow(async () => {
 </script>
 
 <template>
-  <view class="tasks-page">
+  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海 -->
+  <view class="tasks-page" :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="tasks-header">
       <view
@@ -372,6 +383,11 @@ onShow(async () => {
 
     <!-- 任务列表 -->
     <view class="tasks-list" role="list">
+      <!-- 2026-09-03 骨架屏：real 任务首拉中占位（失败回退本地列表） -->
+      <view v-if="loadingRealTasks && realTasks === null" role="status" aria-live="polite">
+        <SkeletonBlock variant="list" :rows="3" :label="t('common.loading')" />
+      </view>
+      <template v-else>
       <view
         v-for="task in tasks"
         :key="task.id"
@@ -407,6 +423,7 @@ onShow(async () => {
           <text class="task-item__status-text">{{ taskStatusText(task) }}</text>
         </view>
       </view>
+      </template>
     </view>
   </view>
 </template>
@@ -428,6 +445,8 @@ onShow(async () => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  /* 2026-09-04 视觉验收：右侧为完成度文案，预留胶囊按钮宽度避免遮挡 */
+  padding-right: 180rpx;
   margin-bottom: var(--section-gap);
 }
 

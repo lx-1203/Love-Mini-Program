@@ -164,8 +164,9 @@ class ProfileServiceTest {
 
         BasicProfileView view = profileService.getBasicProfile();
         assertEquals("新昵称", view.nickname());
-        // photoGallery 应保留 uploadPhoto 写入的 1 张
-        assertEquals(1, view.photoGallery().size(), "photoGallery 应被保留");
+        // photoGallery 保留既有 3 张（mock 初始 photo-1/2/3 三卡故事），
+        // uploadPhoto(index=0) 覆盖第 0 位为上传图，其余保留
+        assertEquals(3, view.photoGallery().size(), "photoGallery 应保留既有 3 张");
         assertEquals("/uploads/1/photo.jpg", view.photoGallery().get(0));
     }
 

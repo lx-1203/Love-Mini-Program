@@ -1052,7 +1052,8 @@ export interface components {
             online: boolean;
             matchScore: number;
             photoUrl: string;
-            constellation?: string;
+            /** @description 星座（由出生日期推导，可空） */
+            constellation?: string | null;
         };
         LoveProgress: {
             completed: number;

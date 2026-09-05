@@ -66,7 +66,7 @@ async function handleSave() {
 <style scoped lang="scss">
 .interest-page {
   min-height: 100%;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
   padding: 24rpx 32rpx 64rpx;
   box-sizing: border-box;
   display: flex;

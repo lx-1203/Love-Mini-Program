@@ -5,6 +5,7 @@ import com.campuslove.api.growth.RecommendQuotaService;
 import com.campuslove.api.growth.SocialProgressService;
 import com.campuslove.api.monitor.MatchMetrics;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -200,5 +201,48 @@ public class RecommendationCacheManager {
      */
     public List<RecommendedPersonView> buildHistory(Long userId) {
         return recommendationRanker.buildHistory(userId);
+    }
+
+    /**
+     * B5 去重：携带 excludeIds 的推荐计算（不走缓存，因 excludeIds 每次请求不同）。
+     *
+     * <p>当 excludeIds 非空时调用本方法，绕过缓存直接计算，
+     * 在 rankAndConvert 中排序前过滤已曝光用户，保证截断后新用户数充足。</p>
+     *
+     * @param userId     当前用户 ID
+     * @param excludeIds 已曝光用户 ID 集合（非空）
+     * @return 推荐人物视图列表
+     */
+    public List<RecommendedPersonView> getRecommendationsWithExclude(Long userId, Set<Long> excludeIds) {
+        long startNanos = System.nanoTime();
+        try {
+            RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommend(userId);
+            List<RecommendedPersonView> views =
+                    new java.util.ArrayList<>(recommendationRanker.rankAndConvert(
+                            result.scoredUsers(),
+                            result.myCampusName(),
+                            result.myDepartmentName(),
+                            result.myCircleIds(),
+                            result.campusProfileMap(),
+                            result.basicProfileMap(),
+                            result.membershipMap(),
+                            userId,
+                            excludeIds));
+            if (socialProgressService != null && !views.isEmpty()) {
+                try {
+                    socialProgressService.recordExposure(userId);
+                } catch (RuntimeException e) {
+                    // 埋点失败仅记录日志，不阻断推荐返回
+                }
+            }
+            return views;
+        } finally {
+            try {
+                long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
+                matchMetrics.recordRecommendLatency(durationMs);
+            } catch (RuntimeException ignore) {
+                // 监控逻辑失败忽略，不影响主流程
+            }
+        }
     }
 }

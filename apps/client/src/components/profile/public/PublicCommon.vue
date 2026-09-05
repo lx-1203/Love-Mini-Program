@@ -20,11 +20,12 @@ function resolveIconSrc(item: { key: string; iconSrc: string }): string {
   return failedIcons.value.has(item.key) ? IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE : item.iconSrc;
 }
 
+/* 2026-09-05 R18：配色对齐理想图——绿心 / 灰心 / 粉星 / 蓝心 */
 const COLORS = [
   { bg: "#E8FBF3", fg: "#36C99A", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE },
+  { bg: "#F2F5F3", fg: "#9AA39F", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE },
+  { bg: "#FFF0F6", fg: "#FF6B81", iconSrc: IMAGE_PATHS.ICONS_EMOJI.STAR },
   { bg: "#EEF3FF", fg: "#4D8DFF", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED },
-  { bg: "#FFF1E8", fg: "#FF9F43", iconSrc: IMAGE_PATHS.ICONS_EMOJI.STAR },
-  { bg: "#FFF0F6", fg: "#FF6B81", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED },
 ];
 
 /** 共同点图标按主题映射（理想图：旅行→飞机 / 音乐→音符 / 猫猫→猫咪） */

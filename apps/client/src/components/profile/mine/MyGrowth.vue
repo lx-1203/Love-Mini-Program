@@ -52,7 +52,7 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 }
 
 .my-growth__row--pressed {
-  background: #F7FAF9;
+  background: #EEF7F2;
 }
 
 .my-growth__label {

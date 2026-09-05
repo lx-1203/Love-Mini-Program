@@ -268,6 +268,19 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+// ---------- 自定义 tabBar 底部避让工具类（统一封装） ----------
+// 用途：占位元素，给「需要完整越过 custom-tabBar 露出的底部内容」让出净高
+//   （中央浮岛圆形 FAB + 安全冗余 + tabBar 高度，token：--tab-bar-clear-zone）。
+// 用法：<view class="base-tabbar-clear-zone" />（页面滚动流末尾，如首页 InviteBanner 之后）。
+// 注意：仅用于内容需与 tabBar 重叠仍保持完整可见的场景；普通页面底部避让用
+//   padding-bottom + --tab-bar-h-with-safe 即可，勿滥用本类撑高。
+.base-tabbar-clear-zone {
+  display: block;
+  width: 100%;
+  height: var(--tab-bar-clear-zone, calc(360rpx + env(safe-area-inset-bottom)));
+  flex-shrink: 0;
+}
+
 // ---------- 按压反馈工具类（统一封装） ----------
 // 修复 P3 重复样式问题：原 .btn-press / .press-scale / .press-feedback 在 App.vue 与 global.scss 中重复定义
 .base-press {

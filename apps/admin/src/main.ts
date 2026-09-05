@@ -1,6 +1,11 @@
 import { createApp } from "vue";
 // 全局设计令牌（:root 变量）——必须全局引入，scoped 内 :root 会失效（见 admin-tokens.css 头注释）
 import "./styles/admin-tokens.css";
+// Element Plus 全量注册（W2 决策：管理后台 bundle 优先级低于稳定性，采用全量而非按需插件）
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
+// EP 主题覆盖：--admin-* → --el-* 映射，必须在 EP css 之后引入（见 element-override.css 头注释）
+import "./styles/element-override.css";
 import { createPinia } from "pinia";
 import router from "./router";
 import App from "./App.vue";
@@ -25,6 +30,7 @@ import { setupRouterGuards } from "./router/guards";
 const app = createApp(App);
 const pinia = createPinia();
 
+app.use(ElementPlus);
 app.use(pinia);
 app.use(i18n);
 

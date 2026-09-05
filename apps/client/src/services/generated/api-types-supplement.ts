@@ -387,6 +387,8 @@ export interface RecommendationFilter {
   interests?: string[];
   /** 是否仅显示在线用户（功能6 高级筛选） */
   onlineOnly?: boolean;
+  /** 批次 B6：已展示的用户 ID 列表（逗号分隔），后端据此去重（≤200 个） */
+  excludeIds?: string;
 }
 
 /**

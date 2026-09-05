@@ -4,6 +4,8 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.DailyLimitExceededException;
 import com.campuslove.api.common.Idempotent;
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -193,6 +195,7 @@ public class WalletController {
      * @return 充值结果视图（充值后余额 balanceAfterCents / 充值金额 amountCents / orderId）
      */
     @PostMapping("/recharge")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public WalletRechargeView recharge(@Valid @RequestBody RechargeRequest request) {
@@ -310,6 +313,7 @@ public class WalletController {
      * @return 解锁结果视图（{@code {unlocked:true, balance}}）
      */
     @PostMapping("/unlock")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public WalletUnlockView unlock(@Valid @RequestBody UnlockRequest request) {
@@ -332,6 +336,7 @@ public class WalletController {
      * @return 扣费结果视图（扣减后余额）
      */
     @PostMapping("/deduct")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public WalletDeductView deduct(@Valid @RequestBody DeductRequest request) {

@@ -37,6 +37,28 @@ function stepTitle(step: { id: string; title?: string }): string {
   return step.title || "任务";
 }
 
+/**
+ * 2026-09-02 R5/R7：步骤文字说明（描述随状态动态变化）
+ * 优先级：
+ *   1. 已完成 → i18n Done 文案（鼓励性），即使后端 desc 非空也覆盖（避免后端静态文案与状态不一致）
+ *   2. 未完成 → 优先用 view-model 后端 desc（个性化），否则 i18n Desc 文案
+ * 这样确保「未完成→待做说明」「已完成→鼓励文案」状态联动真正可见。
+ */
+function stepDescription(step: LoveProgressStepViewModel): string {
+  if (step.completed) {
+    return t(`home.loveStep${capitalize(step.id)}Done`);
+  }
+  if (step.description && step.description.trim().length > 0) {
+    return step.description;
+  }
+  return t(`home.loveStep${capitalize(step.id)}Desc`);
+}
+
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 </script>
 
 <template>
@@ -54,19 +76,16 @@ function stepTitle(step: { id: string; title?: string }): string {
       <view class="love-progress__bar-fill" :style="{ width: total > 0 ? ((completed / total) * 100) + '%' : '0%' }"></view>
     </view>
     <view class="love-progress__steps">
-      <view v-for="step in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
-        <view class="love-step__icon" :style="{ background: stepMeta(step.id).bg }">
-          <image
-            v-if="stepMeta(step.id).iconSrc"
-            class="love-step__icon-img"
-            :src="stepMeta(step.id).iconSrc"
-            mode="aspectFit"
-          />
-          <image v-else class="love-step__icon-img" :src="stepMeta(step.id).icon" mode="aspectFit" />
-        </view>
+      <view v-for="(step, idx) in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
+        <!-- 2026-09-02 R8 用户要求：中间圆被序号完全覆盖（不保留图标），序号直接 1/2/3/4 -->
+        <view class="love-step__index" :style="{ background: stepMeta(step.id).bg }">{{ idx + 1 }}</view>
         <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ stepTitle(step) }}</text>
         <text class="love-step__meta" :style="{ color: stepMeta(step.id).bg }">
           {{ step.completed ? '已完成' : stepMeta(step.id).todo }}
+        </text>
+        <!-- 2026-09-02 R5/R7：每个步骤补充文字说明（描述随状态动态变化） -->
+        <text class="love-step__desc">
+          {{ stepDescription(step) }}
         </text>
       </view>
     </view>
@@ -148,16 +167,19 @@ function stepTitle(step: { id: string; title?: string }): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  height: 112rpx;
+  gap: 6rpx;
+  /* 2026-09-02 R5：去掉固定 height（112rpx 把 desc 裁掉），完全自适应 */
   padding: 16rpx 8rpx;
   border-radius: 24rpx;
   box-sizing: border-box;
+  /* 2026-09-02 R5 用户反馈「表签1234看不清」：加内部弹性布局，让 title/meta/desc 都清晰 */
+  overflow: visible;
 }
 
 .love-step__icon {
-  width: 40rpx;
-  height: 40rpx;
+  position: relative;  /* 2026-09-02 R5：序号徽章绝对定位 */
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -190,5 +212,36 @@ function stepTitle(step: { id: string; title?: string }): string {
   font-size: 20rpx;
   font-weight: 400;
   text-align: center;
+}
+
+/* 2026-09-02 R5：步骤文字说明（描述每步具体含义 + 随状态变化） */
+.love-step__desc {
+  font-size: 18rpx;
+  font-weight: 400;
+  color: var(--c-text-tertiary, #94a3b8);
+  text-align: center;
+  line-height: 1.4;
+  padding: 0 6rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+/* 2026-09-02 R8：序号作为圆形主体（背景色=步骤色，白色大号数字，完全覆盖圆区，不叠加图标） */
+.love-step__index {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.12);
 }
 </style>

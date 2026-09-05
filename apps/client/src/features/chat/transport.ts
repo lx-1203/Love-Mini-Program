@@ -84,6 +84,8 @@ class RealChatTransport implements ChatTransport {
       url: `/temp-chat/sessions/${sessionId}/messages`,
       method: "POST",
       data: payload,
+      // 2026-09-03：消息发送每次独立意图，幂等键随机（避免同文案重发撞后端幂等锁）
+      header: { "Idempotency-Key": `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
     });
   }
 

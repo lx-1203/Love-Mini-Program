@@ -1,19 +1,26 @@
 package com.campuslove.api.village;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SensitiveWordFilter;
+import com.campuslove.api.entity.CampusCertification;
+import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.Post.Visibility;
 import com.campuslove.api.entity.PostTag;
 import com.campuslove.api.repository.ActivityRepository;
+import com.campuslove.api.repository.CampusCertificationRepository;
+import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.PostTagRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +67,18 @@ public class VillagePostService {
     private final PostTagRepository postTagRepository;
 
     /**
+     * 圈子成员 Repository（Batch B：圈子发帖成员校验）。
+     * 可为 null（兼容旧测试构造器）：为 null 时跳过圈子成员校验。
+     */
+    private final CircleMembershipRepository circleMembershipRepository;
+
+    /**
+     * 校园认证 Repository（Batch B：校园可见帖子发帖校验）。
+     * 可为 null（兼容旧测试构造器）：为 null 时跳过校园认证校验。
+     */
+    private final CampusCertificationRepository campusCertificationRepository;
+
+    /**
      * Spring 注入构造器（多个构造器时必须显式 @Autowired 指定，
      * 否则 Spring 报 "No default constructor found"）。
      */
@@ -68,12 +87,16 @@ public class VillagePostService {
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService,
                               ActivityRepository activityRepository,
-                              PostTagRepository postTagRepository) {
+                              PostTagRepository postTagRepository,
+                              CircleMembershipRepository circleMembershipRepository,
+                              CampusCertificationRepository campusCertificationRepository) {
         this.postRepository = postRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.queryService = queryService;
         this.activityRepository = activityRepository;
         this.postTagRepository = postTagRepository;
+        this.circleMembershipRepository = circleMembershipRepository;
+        this.campusCertificationRepository = campusCertificationRepository;
     }
 
     /**
@@ -85,7 +108,7 @@ public class VillagePostService {
     public VillagePostService(PostRepository postRepository,
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService) {
-        this(postRepository, sensitiveWordFilter, queryService, null, null);
+        this(postRepository, sensitiveWordFilter, queryService, null, null, null, null);
     }
 
     /**
@@ -98,7 +121,7 @@ public class VillagePostService {
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService,
                               ActivityRepository activityRepository) {
-        this(postRepository, sensitiveWordFilter, queryService, activityRepository, null);
+        this(postRepository, sensitiveWordFilter, queryService, activityRepository, null, null, null);
     }
 
     /**
@@ -108,24 +131,29 @@ public class VillagePostService {
      * <ol>
      *   <li>校验 userId 与 content（必填）</li>
      *   <li>敏感词过滤：对 content 与 tags 调用 {@link SensitiveWordFilter#filterWithLog} 过滤并记录日志</li>
+     *   <li>可见范围推导：targetType general→public, campus→school, circle→interest</li>
+     *   <li>可见范围校验：interest 需圈子成员身份，school 需校园认证</li>
      *   <li>初始化帖子实体：likesCount/commentsCount/shareCount 均置为 0，status=active</li>
      *   <li>持久化并通过 {@link VillageQueryService#toPostDetailView} 转换为视图（isAuthor=true）</li>
      *   <li>失效 VILLAGE_HOT_POSTS 缓存（allEntries=true）</li>
      * </ol>
      *
-     * @param userId   作者用户 ID
-     * @param title    帖子标题（2026-08-08 走查 P1：必填 5-30 字）
-     * @param content  帖子正文
-     * @param images   图片 URL 列表（可为 null）
-     * @param tags     标签列表（可为 null，将进行敏感词过滤）
-     * @param category 分类（可为 null，默认 PostCategory.all）
+     * @param userId     作者用户 ID
+     * @param title      帖子标题（2026-08-08 走查 P1：必填 5-30 字）
+     * @param content    帖子正文
+     * @param images     图片 URL 列表（可为 null）
+     * @param tags       标签列表（可为 null，将进行敏感词过滤）
+     * @param category   分类（可为 null，默认 PostCategory.all）
      * @param activityId 关联活动 ID（2026-08-09 可选；活动不存在时宽松置 null 不抛错）
+     * @param targetType 统一发布目标类型：general | circle | campus（可为 null，默认 general）
+     * @param targetId   统一发布目标 ID：circle/campus 时必填
      * @return 帖子详情视图（isAuthor=true）
      * @throws IllegalArgumentException 当 userId/content/title 为空或 title 长度不合法时
+     * @throws OperationForbiddenException 当可见范围校验不通过时（非圈子成员发圈子帖/未认证发校园帖）
      */
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
-    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId) {
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId, String targetType, Long targetId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -136,6 +164,23 @@ public class VillagePostService {
         }
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("content is required");
+        }
+
+        // Batch B：可见范围推导——从 targetType 映射为 Visibility 枚举
+        Visibility visibility = deriveVisibility(targetType);
+        Long circleId = null;
+
+        // Batch B：可见范围校验
+        if (visibility == Visibility.interest) {
+            // 圈子发帖：targetId 必填 + 必须是该圈子成员
+            if (targetId == null) {
+                throw new IllegalArgumentException("圈子发帖时 targetId（圈子 ID）不能为空");
+            }
+            validateCircleMembership(userId, targetId);
+            circleId = targetId;
+        } else if (visibility == Visibility.school) {
+            // 校园可见：发帖人必须通过校园认证
+            validateSchoolCertification(userId);
         }
 
         String filteredTitle = sensitiveWordFilter.filterWithLog(title.trim(), userId, "POST");
@@ -158,6 +203,9 @@ public class VillagePostService {
                     + ", 仅支持: " + java.util.Arrays.toString(PostCategory.values()));
         }
         post.setCategory(postCategory);
+        // Batch B：设置可见范围与圈子 ID
+        post.setVisibility(visibility);
+        post.setCircleId(circleId);
         // 2026-08-09 帖子关联活动：activityId 无效（活动不存在）时宽松置 null，不抛错
         if (activityId != null && activityRepository != null && activityRepository.existsById(activityId)) {
             post.setActivityId(activityId);
@@ -166,6 +214,10 @@ public class VillagePostService {
         post.setCommentsCount(0);
         post.setShareCount(0);
         post.setStatus(PostStatus.active);
+        // 2026-09-03 发帖审核制：新帖一律进入待审核（pending），由管理后台
+        // （AdminVillagePostController POST /{id}/audit）审核通过后才在各 feed 可见；
+        // 详情页对非作者隐藏待审帖（VillageQueryService.getPost）。
+        post.setAuditStatus(Post.AuditStatus.pending);
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
 
@@ -215,5 +267,65 @@ public class VillagePostService {
             }
         }
         return filtered;
+    }
+
+    /**
+     * 从 targetType 推导可见范围枚举。
+     * <ul>
+     *   <li>general (或 null/空) → public_</li>
+     *   <li>campus → school</li>
+     *   <li>circle → interest</li>
+     * </ul>
+     *
+     * @param targetType 目标类型字符串
+     * @return 对应的 Visibility 枚举值
+     * @throws IllegalArgumentException 当 targetType 为非空但不合法时
+     */
+    private Visibility deriveVisibility(String targetType) {
+        if (targetType == null || targetType.isBlank() || "general".equals(targetType)) {
+            return Visibility.public_;
+        }
+        return switch (targetType) {
+            case "campus" -> Visibility.school;
+            case "circle" -> Visibility.interest;
+            default -> throw new IllegalArgumentException(
+                    "不支持的 targetType: " + targetType + "，仅支持: general/circle/campus");
+        };
+    }
+
+    /**
+     * 校验用户是否为目标圈子的成员（Batch B：圈子发帖校验）。
+     *
+     * @param userId   用户 ID
+     * @param circleId 圈子 ID
+     * @throws OperationForbiddenException 用户未加入该圈子时（403）
+     */
+    private void validateCircleMembership(Long userId, Long circleId) {
+        if (circleMembershipRepository == null) {
+            // 兼容旧测试构造器（Repository 为 null 时跳过校验）
+            return;
+        }
+        List<CircleMembership> memberships =
+                circleMembershipRepository.findByUserIdAndCircleId(userId, circleId);
+        if (memberships.isEmpty()) {
+            throw new OperationForbiddenException(ErrorMessages.CIRCLE_JOIN_REQUIRED);
+        }
+    }
+
+    /**
+     * 校验用户是否通过校园认证（Batch B：校园可见帖子发帖校验）。
+     *
+     * @param userId 用户 ID
+     * @throws OperationForbiddenException 用户未通过校园认证时（403）
+     */
+    private void validateSchoolCertification(Long userId) {
+        if (campusCertificationRepository == null) {
+            // 兼容旧测试构造器（Repository 为 null 时跳过校验）
+            return;
+        }
+        Optional<CampusCertification> cert = campusCertificationRepository.findByUserId(userId);
+        if (cert.isEmpty() || !"APPROVED".equals(cert.get().getStatus())) {
+            throw new OperationForbiddenException(ErrorMessages.SCHOOL_CERT_REQUIRED_FOR_CAMPUS_POST);
+        }
     }
 }

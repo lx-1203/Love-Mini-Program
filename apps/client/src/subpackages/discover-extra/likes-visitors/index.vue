@@ -28,6 +28,11 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { resolveMediaUrl } from "../../../utils/media";
 // 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
 import { useSessionStore } from "../../../stores/session";
+// 批次 A / ADR-2：解锁属商业化能力（commerce.coin 子闸），封存态禁用解锁入口
+import { useAppConfigStore } from "../../../stores/app-config";
+// 2026-09-04 视觉验收：env(safe-area-inset-top) 在模拟器/部分机型为 0，标题与状态栏叠印，
+// 与 AppShell 2026-08-29 修复同源——改用 statusBarHeight 注入
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import LockScreen from "../../../components/common/LockScreen.vue";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
@@ -35,11 +40,20 @@ import Skeleton from "../../../components/common/Skeleton.vue";
 import ErrorState from "../../../components/common/ErrorState.vue";
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const likesStore = useLikesStore();
 const profileStore = useProfileStore();
 const coinsStore = useCoinsStore();
 const vipStore = useVipStore();
 const sessionStore = useSessionStore();
+const appConfig = useAppConfigStore();
+
+/**
+ * 商业化封存（批次 A / ADR-2）：coin 子闸关闭（缺省即关）时，
+ * 「解锁全部」入口隐藏、单条打码项点击仅提示封存、金币解锁标签隐藏，
+ * 列表浏览与已解锁条目展示不受影响。
+ */
+const commerceCoinOn = computed(() => appConfig.isCommerceOn("coin"));
 
 usePageAccess(likesPageRequirements);
 
@@ -136,6 +150,11 @@ function isItemUnlocked(item: LikeRecord | VisitorRecord): boolean {
  * P1-08：会员功能启用且当前用户为 VIP 时免费放行（不发起扣费请求）。
  */
 async function handleUnlock() {
+  // 批次 A / ADR-2：封存态（commerce.coin=false，缺省即封存）禁止解锁，toast 提示
+  if (!commerceCoinOn.value) {
+    uni.showToast({ title: t("commerce.sealedToast"), icon: "none" });
+    return;
+  }
   const lockedItems = currentList.value.filter((item) => item.unlocked !== true);
   if (lockedItems.length === 0) return;
 
@@ -282,7 +301,10 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 </script>
 
 <template>
-  <view class="likes-visitors-page">
+  <view
+    class="likes-visitors-page"
+    :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }"
+  >
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
@@ -387,7 +409,8 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
           <view v-else class="list__tags">
             <text class="list__tag">{{ t('likesVisitors.tagAge') }}</text>
             <text class="list__tag">{{ t('likesVisitors.tagSameCity') }}</text>
-            <text class="list__tag list__tag--coin">{{ t('likesVisitors.tagUnlockHint', { coins: unlockCost }) }}</text>
+            <!-- 批次 A / ADR-2：商业化封存态（commerce.coin=false）隐藏金币解锁标签 -->
+            <text v-if="commerceCoinOn" class="list__tag list__tag--coin">{{ t('likesVisitors.tagUnlockHint', { coins: unlockCost }) }}</text>
           </view>
         </view>
 
@@ -396,8 +419,9 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
       </view>
     </view>
 
-    <!-- 底部固定「解锁全部」按钮（当前 Tab 存在未解锁项时显示） -->
-    <view v-if="hasLockedItems" class="unlock-bar">
+    <!-- 底部固定「解锁全部」按钮（当前 Tab 存在未解锁项时显示）；
+         批次 A / ADR-2：商业化封存态（commerce.coin=false）一并隐藏 -->
+    <view v-if="hasLockedItems && commerceCoinOn" class="unlock-bar">
       <button class="unlock-bar__btn" :aria-label="t('likesVisitors.unlockBtn', { coins: unlockCost })" @tap="handleUnlock">
         <text class="unlock-bar__btn-text">{{ t('likesVisitors.unlockBtn', { coins: unlockCost }) }}</text>
       </button>
@@ -405,7 +429,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
     </view>
 
     <!-- 底部安全区占位（避免内容被固定按钮遮挡） -->
-    <view v-if="hasLockedItems" class="unlock-bar-spacer" />
+    <view v-if="hasLockedItems && commerceCoinOn" class="unlock-bar-spacer" />
     </template>
   </view>
 </template>
@@ -608,6 +632,8 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 }
 
 .list__avatar--blur {
+  border-radius: var(--r-full);
+
   filter: blur(14rpx);
 }
 

@@ -794,6 +794,9 @@ public final class ErrorMessages {
     /** 2026-08-31 圈子发帖成员校验：未加入圈子不允许在圈内发帖（前端选项过滤之外的越权兜底） */
     public static final String CIRCLE_JOIN_REQUIRED = "请先加入该圈子，再在圈内发帖";
 
+    /** Batch B：未通过校园认证不允许发布校园可见帖子 */
+    public static final String SCHOOL_CERT_REQUIRED_FOR_CAMPUS_POST = "请先完成校园认证，再发布校园可见帖子";
+
     /** 校区名长度不能超过 128 字 */
     public static final String CAMPUS_NAME_MAX_LENGTH = "校区名长度不能超过 128 字";
 

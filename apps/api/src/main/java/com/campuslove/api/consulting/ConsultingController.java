@@ -2,6 +2,8 @@ package com.campuslove.api.consulting;
 
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
@@ -57,6 +59,7 @@ public class ConsultingController {
      * @return 报名记录视图（重复报名返回已有记录）
      */
     @PostMapping("/courses/{id}/signup")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COURSE)
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<ConsultingService.SignupView> signup(@PathVariable("id") @Positive Long id) {

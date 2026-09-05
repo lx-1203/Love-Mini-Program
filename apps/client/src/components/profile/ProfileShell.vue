@@ -1,17 +1,25 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { UserProfileDTO, UserProfilePost, UserProfileSocialProof } from "../../types/profile";
 import PublicProfile from "./public/PublicProfile.vue";
 import { useProfileTracker } from "../../composables/useProfileTracker";
 import MyProfile from "./mine/MyProfile.vue";
 import type { InteractionItem } from "./mine/MyInteraction.vue";
 import type { MoreItem } from "./mine/MyMore.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
+
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<{
   mode: "mine" | "public";
   profile: UserProfileDTO | null;
   loading?: boolean;
   errorMessage?: string;
+  /** 错误态是否提供重试按钮（无 userId 等参数缺失场景不可重试） */
+  retryable?: boolean;
   posts?: UserProfilePost[];
+  /** 2026-09-05 R18：他人主页关注状态（CTA 按钮态切换） */
+  following?: boolean;
   socialProof?: UserProfileSocialProof;
   percent?: number;
   interactionItems?: InteractionItem[];
@@ -19,7 +27,9 @@ const props = withDefaults(defineProps<{
 }>(), {
   loading: false,
   errorMessage: "",
+  retryable: true,
   posts: () => [],
+  following: false,
   socialProof: () => ({ followingCount: 0, followersCount: 0, likesCount: 0, matchCount: 0 }),
   percent: 0,
   interactionItems: () => [],
@@ -41,6 +51,8 @@ const emit = defineEmits<{
   (e: "follow"): void;
   (e: "tapAvatar"): void;
   (e: "tapPhoto", index: number): void;
+  /** 2026-09-05 R18：他人主页帖子卡点击进详情 */
+  (e: "openPost", postId: string): void;
   (e: "edit"): void;
   (e: "complete"): void;
   (e: "statTap", key: string): void;
@@ -54,13 +66,14 @@ const emit = defineEmits<{
 
 <template>
   <view class="profile-shell">
+    <!-- 2026-09-03 骨架屏升级：资料态骨架替代纯文字 loading（避免白屏/跳动） -->
     <view v-if="loading && !profile" class="profile-shell__state">
-      <text class="profile-shell__text">加载中...</text>
+      <SkeletonBlock variant="profile" :label="t('common.loading')" />
     </view>
     <view v-else-if="errorMessage && !profile" class="profile-shell__state">
       <text class="profile-shell__text">{{ errorMessage }}</text>
-      <view class="profile-shell__retry" @tap="emit('retry')">
-        <text class="profile-shell__retry-text">重试</text>
+      <view v-if="props.retryable" class="profile-shell__retry" @tap="emit('retry')">
+        <text class="profile-shell__retry-text">{{ t("common.retry") }}</text>
       </view>
     </view>
 
@@ -70,6 +83,7 @@ const emit = defineEmits<{
       :loading="loading"
       :error-message="errorMessage"
       :posts="props.posts"
+      :following="props.following"
       @retry="emit('retry')"
       @like="emit('like')"
       @message="emit('message')"
@@ -81,6 +95,7 @@ const emit = defineEmits<{
       @follow="emit('follow')"
       @tap-avatar="emit('tapAvatar')"
       @tap-photo="emit('tapPhoto', $event)"
+      @open-post="emit('openPost', $event)"
     />
 
     <MyProfile
@@ -111,7 +126,7 @@ const emit = defineEmits<{
 <style scoped lang="scss">
 .profile-shell {
   min-height: 100vh;
-  background: #F7FAF9;
+  background: #EEF7F2;
 }
 
 .profile-shell__state {

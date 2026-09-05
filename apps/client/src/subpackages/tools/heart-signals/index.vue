@@ -15,6 +15,7 @@ import { openAppPath, openUserProfile } from "../../../utils/navigation";
 import { resolveMediaUrl } from "../../../utils/media";
 import LockScreen from "../../../components/common/LockScreen.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { likesPageRequirements } from "../../../config/page-access";
 import { showErrorToast } from "../../../utils/error-toast";
@@ -254,8 +255,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
 
       <!-- 加载 -->
       <view v-if="loading" class="loading-state" role="status" aria-live="polite">
-        <view class="loading-state__spinner" />
-        <text class="loading-state__text">{{ t("heartSignals.loadingText") }}</text>
+        <SkeletonBlock variant="list" :rows="3" :label="t('heartSignals.loadingText')" />
       </view>
 
       <!-- 空状态 -->
@@ -551,6 +551,8 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
 }
 
 .signal-card__avatar--small {
+  border-radius: var(--r-full);
+
   width: 72rpx;
   height: 72rpx;
 }

@@ -120,11 +120,17 @@ export async function fetchCards(this: DiscoverStoreThis): Promise<void> {
 
         // 统一通过 clientApi.getRecommendations 获取推荐数据
         // clientApi 内部根据 appEnv.apiMode 自动分发 mock / real 模式
+        // 批次 B6：将已查看的用户 ID 作为 excludeIds 传给后端去重
+        const viewedCardIds = this.viewedCards
+          .map((v) => v.userId)
+          .filter(Boolean)
+          .slice(0, 200);
         const filter: RecommendationFilter = {
           ...this.recommendationFilter,
           // keyword 优先使用 searchKeyword（用户在搜索框输入的实时值），
           // 兜底使用 recommendationFilter.keyword（drawer 中预设的关键字）
           keyword: this.searchKeyword || this.recommendationFilter.keyword,
+          excludeIds: viewedCardIds.length > 0 ? viewedCardIds.join(",") : undefined,
         };
         const rawData = await fetchRecommendationsApi(filter);
 

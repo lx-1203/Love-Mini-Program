@@ -773,7 +773,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin: 0 32rpx 20rpx;
   padding: 24rpx;
   border-radius: 18rpx;
-  background: var(--c-bg-surface, #F7FAF9);
+  background: var(--c-bg-surface, #EEF7F2);
   border: 1rpx solid var(--c-line, #EEF2F0);
 }
 

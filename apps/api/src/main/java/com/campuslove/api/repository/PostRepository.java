@@ -4,6 +4,7 @@ import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
 import com.campuslove.api.entity.Post.AuditStatus;
+import com.campuslove.api.entity.Post.Visibility;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -115,6 +116,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return 分页帖子列表（按点赞数从高到低）
      */
     Page<Post> findByStatusOrderByLikesCountDesc(PostStatus status, Pageable pageable);
+
+    /**
+     * 根据状态 + 审核状态查询帖子，按点赞数倒序分页。
+     * 2026-09-03 发帖审核制：首页社区动态等聚合只展示审核通过（approved）的帖子，
+     * 待审核（pending）/已拒绝（rejected）帖子不出现在任何 feed。
+     */
+    Page<Post> findByStatusAndAuditStatusOrderByLikesCountDesc(
+            PostStatus status, AuditStatus auditStatus, Pageable pageable);
 
     /**
      * 根据 ID 列表和状态查询帖子，按创建时间倒序分页。
@@ -297,4 +306,117 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("status") PostStatus status,
             @Param("since") LocalDateTime since,
             Pageable pageable);
+
+    // ============ Batch B：可见范围查询 ============
+
+    /**
+     * 可见帖子分页查询（Batch B：按可见范围过滤）。
+     *
+     * <p>过滤规则：</p>
+     * <ul>
+     *   <li>public_ 帖子：所有人可见</li>
+     *   <li>school 帖子：仅同校认证用户可见（通过 userCampusName 匹配帖子作者的校区）</li>
+     *   <li>interest 帖子：仅指定圈子成员可见（通过 memberCircleIds 过滤 circleId）</li>
+     * </ul>
+     *
+     * @param status          帖子状态
+     * @param auditStatus     审核状态
+     * @param userCampusName  当前用户校区名（null 表示未认证，不看 school 帖子）
+     * @param memberCircleIds 当前用户加入的圈子 ID 集合（空集合表示未加入任何圈子）
+     * @param pageable        分页参数
+     * @return 可见帖子分页列表
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND p.auditStatus = :auditStatus
+              AND (
+                  p.visibility = :publicVis
+                  OR (p.visibility = :schoolVis AND :userCampusName IS NOT NULL AND :userCampusName <> ''
+                      AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
+                                  WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
+                  OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+              )
+            ORDER BY p.isPinned DESC, p.createdAt DESC
+            """)
+    Page<Post> findVisiblePosts(
+            @Param("status") PostStatus status,
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("publicVis") Visibility publicVis,
+            @Param("schoolVis") Visibility schoolVis,
+            @Param("interestVis") Visibility interestVis,
+            @Param("userCampusName") String userCampusName,
+            @Param("memberCircleIds") List<Long> memberCircleIds,
+            Pageable pageable);
+
+    /**
+     * 可见帖子分页查询（含分类过滤，Batch B：村口列表主查询）。
+     *
+     * @param status          帖子状态
+     * @param auditStatus     审核状态
+     * @param category        帖子分类（null 表示不限分类）
+     * @param userCampusName  当前用户校区名
+     * @param memberCircleIds 当前用户加入的圈子 ID 集合
+     * @param pageable        分页参数
+     * @return 可见帖子分页列表
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.status = :status
+              AND p.auditStatus = :auditStatus
+              AND (:category IS NULL OR p.category = :category)
+              AND (
+                  p.visibility = :publicVis
+                  OR (p.visibility = :schoolVis AND :userCampusName IS NOT NULL AND :userCampusName <> ''
+                      AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
+                                  WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
+                  OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+              )
+            ORDER BY p.isPinned DESC, p.createdAt DESC
+            """)
+    Page<Post> findVisiblePostsByCategory(
+            @Param("status") PostStatus status,
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("category") PostCategory category,
+            @Param("publicVis") Visibility publicVis,
+            @Param("schoolVis") Visibility schoolVis,
+            @Param("interestVis") Visibility interestVis,
+            @Param("userCampusName") String userCampusName,
+            @Param("memberCircleIds") List<Long> memberCircleIds,
+            Pageable pageable);
+
+    /**
+     * 可见帖子详情查询（Batch B：单帖可见性校验）。
+     *
+     * <p>用于帖子详情接口：验证当前用户是否有权查看该帖子。</p>
+     *
+     * @param postId          帖子 ID
+     * @param status          帖子状态
+     * @param auditStatus     审核状态
+     * @param userCampusName  当前用户校区名
+     * @param memberCircleIds 当前用户加入的圈子 ID 集合
+     * @return 可见帖子（Optional.empty 表示无权查看或帖子不存在）
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.id = :postId
+              AND p.status = :status
+              AND p.auditStatus = :auditStatus
+              AND (
+                  p.visibility = :publicVis
+                  OR (p.visibility = :schoolVis AND :userCampusName IS NOT NULL AND :userCampusName <> ''
+                      AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
+                                  WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
+                  OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+              )
+            """)
+    java.util.Optional<Post> findVisiblePostById(
+            @Param("postId") Long postId,
+            @Param("status") PostStatus status,
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("publicVis") Visibility publicVis,
+            @Param("schoolVis") Visibility schoolVis,
+            @Param("interestVis") Visibility interestVis,
+            @Param("userCampusName") String userCampusName,
+            @Param("memberCircleIds") List<Long> memberCircleIds);
 }

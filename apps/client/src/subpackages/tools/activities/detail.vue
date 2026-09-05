@@ -12,6 +12,7 @@ import { onLoad, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { useActivityStore, type ActivityItem } from "../../../stores/activity";
 import { ROUTES } from "../../../constants/routes";
 import { TOAST_DURATION } from "../../../constants/limits";
@@ -377,9 +378,9 @@ onShareTimeline(() => ({
       </view>
     </view>
 
-    <!-- 加载/兜底状态 -->
+    <!-- 加载/兜底状态：骨架占位（2026-09-03） -->
     <view v-else class="detail-loading">
-      <text class="detail-loading__text">{{ t('common.loading') }}</text>
+      <SkeletonBlock variant="profile" :label="t('common.loading')" />
     </view>
 
     <!-- 底部报名/退出栏（已报名可退出；左侧「分享」复制小程序内链接，接收方点开即直达详情） -->

@@ -85,7 +85,7 @@ function formatTime(iso: string | null): string {
   border-bottom: 1rpx solid #F1F1F1;
 }
 .conversation-item--hover {
-  background: #F7FAF9;
+  background: #EEF7F2;
 }
 .conversation-item__avatar-wrap {
   position: relative;
@@ -99,6 +99,8 @@ function formatTime(iso: string | null): string {
   border-radius: 50%;
 }
 .conversation-item__avatar {
+  border-radius: var(--r-full);
+
   background: #F0F2F5;
 }
 .conversation-item__fallback {

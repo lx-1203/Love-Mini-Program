@@ -648,7 +648,16 @@ export default {
     "loveStepProfile": "完善资料",
     "loveStepDiscover": "认识新人",
     "loveStepWhisper": "回复悄悄话",
-    "loveStepInterest": "参与兴趣互动"
+    "loveStepInterest": "参与兴趣互动",
+    // 2026-09-02 R5：步骤描述（随状态动态变化）
+    "loveStepProfileDesc": "完善头像与简介，提升匹配率",
+    "loveStepDiscoverDesc": "去寻觅看看今天的心动推荐",
+    "loveStepWhisperDesc": "回复一条悄悄话开启对话",
+    "loveStepInterestDesc": "加入一个兴趣圈认识同好",
+    "loveStepProfileDone": "资料已完善，去认识新人吧",
+    "loveStepDiscoverDone": "今日寻觅完成，关系更进一步",
+    "loveStepWhisperDone": "悄悄话已回复，等待对方回应",
+    "loveStepInterestDone": "已加入兴趣圈，开始互动吧"
   },
   "notLoggedWaiting": {
     "title": "正在为你寻找 同频的那个人",
@@ -759,6 +768,12 @@ export default {
     "nextSubtitle": "看到合适的话题后，可以直接去匹配或反馈新的讨论建议。",
     "goExplore": "去寻觅",
     "feedbackSuggestion": "反馈讨论建议"
+  },
+  /* ========== 商业化封存（批次 A / ADR-2：commerce.* 开关缺省 false，客户端封存态文案） ========== */
+  "commerce": {
+    "sealedTitle": "功能封存中",
+    "sealedDesc": "该功能暂未开放，开放时间将另行通知",
+    "sealedToast": "功能封存中，暂不可用"
   },
   "wallet": {
     "title": "我的钱包",
@@ -981,7 +996,7 @@ export default {
     "circleDance": "街舞社",
     "cardSkeletonHint": "正在为你挑选推荐...",
     "card": {
-      "emptyTitle": "附近暂时没有新的人，稍后再来看看",
+      "emptyTitle": "推荐暂时没有新的人，去「附近」看看吧",
       "nearbyEmptyTitle": "附近暂时没有可匹配的人，去看看推荐吧",
       "refresh": "刷新推荐",
       "quotaExhaustedTitle": "今日推荐次数已用完，明天再来吧",
@@ -1553,6 +1568,7 @@ export default {
     "pageName": "我的",
     "titleTip": "提示",
     "visitorsTitle": "谁看过我",
+    "missingUserParam": "链接缺少用户参数，请从列表页重新进入",
     "visitorsEmpty": "暂无访客记录",
     "visitorsEmptyDesc": "完善资料，让更多人发现你",
     "visitorToday": "今日",
@@ -1815,7 +1831,7 @@ export default {
     "titlePlaceholder": "请输入标题",
     "contentPlaceholder": "分享你的想法...",
     "selectTag": "选择标签",
-    "postSuccess": "发布成功",
+    "postSuccess": "已提交，审核通过后展示",
     "postFailed": "发布失败",
     "commentSuccess": "评论成功",
     "deletePost": "删除帖子",
@@ -2145,6 +2161,10 @@ export default {
     "wechatCodeFailed": "获取微信授权码失败，请重试",
     "wechatFailed": "微信登录失败，请重试",
     "loginFailed": "登录失败，请稍后重试",
+    "phoneQuickLogin": "手机号登录",
+    "phoneBoundSuccess": "手机号绑定成功",
+    "phoneAuthFailed": "手机号授权失败，请重试",
+    "useSmsInDevMode": "开发模式请使用验证码登录",
     "userAgreementTitle": "用户协议",
     "privacyPolicyTitle": "隐私政策",
     "phoneField": "手机号",
@@ -3572,6 +3592,14 @@ export default {
     "detailActivitiesEmpty": "该圈子暂时没有关联活动",
     "meetAuthor": "认识 TA",
     "joinBtn": "+ 加入",
+    /* 2026-09-02 W2 骨架补齐：圈子主页（circle-home.vue） */
+    "home": {
+      "joinCta": "加入圈子",
+      "pinnedBadge": "置顶",
+      "viewAllTopics": "查看全部话题",
+      "postInCircle": "在圈内发帖",
+      "emptyTab": "该板块暂无内容，敬请期待"
+    },
     "loadFailedRetry": "加载失败，请稍后重试",
     "circlesNavTitle": "兴趣圈",
     "circlesSubtitle": "找到与你志趣相投的人",

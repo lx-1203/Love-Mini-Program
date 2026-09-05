@@ -45,7 +45,8 @@
           "path": "pages/discover/index"
         },
     {
-          "path": "pages/home/index"
+          "path": "pages/home/index",
+          "style": { "enablePullDownRefresh": true }
         },
     {
           "path": "pages/nearby/index",
@@ -99,6 +100,9 @@
           },
       {
             "path": "circles/post-topic"
+          },
+      {
+            "path": "circles/circle-home"
           }
       ]
     },
@@ -205,6 +209,9 @@
           },
       {
             "path": "profile/other"
+          },
+      {
+            "path": "profile/location"
           },
       {
             "path": "profile/privacy"

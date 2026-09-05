@@ -9,6 +9,7 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
 import SafeImage from "../../../components/common/SafeImage.vue";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { TOAST_DURATION } from "../../../constants/limits";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -47,6 +48,8 @@ interface LoveVerificationView {
 
 /** 当前认证状态（mock 模式默认 verified） */
 const status = ref<VerifyStatus>("unverified");
+/** real 认证状态首拉中（2026-09-03：骨架占位，避免「未认证→审核中」状态跳变；失败回退表单态） */
+const statusLoading = ref(false);
 
 /** 学生姓名 */
 const studentName = ref("");
@@ -293,11 +296,14 @@ function applyVerificationView(view: LoveVerificationView): void {
  */
 async function loadVerification(): Promise<void> {
   if (useMock()) return;
+  statusLoading.value = true;
   try {
     const view = await request<LoveVerificationView>({ url: "/verification", method: "GET" });
     applyVerificationView(view);
   } catch (_e) {
     // 拉取失败保持当前状态（不阻塞页面展示）
+  } finally {
+    statusLoading.value = false;
   }
 }
 
@@ -437,8 +443,11 @@ function onBlur() {
     <!-- 顶部安全区占位 -->
     <view class="safe-top" />
 
-    <!-- 认证状态卡片 -->
-    <view class="status-card" :style="{ background: statusInfo.bgColor }">
+    <!-- 认证状态卡片（real 首拉中显示骨架，避免状态跳变） -->
+    <view v-if="statusLoading" class="status-card" role="status" aria-live="polite">
+      <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
+    </view>
+    <view v-else class="status-card" :style="{ background: statusInfo.bgColor }">
       <view class="status-card__emoji-wrap">
         <SafeImage :src="statusInfo.icon" custom-class="status-card__emoji-img" mode="aspectFit" />
       </view>

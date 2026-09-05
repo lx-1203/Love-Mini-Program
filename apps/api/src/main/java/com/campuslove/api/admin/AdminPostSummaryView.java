@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
  * @param category       分类：all/interest/sincere/hometown/anonymous/latest/campus
  * @param status         帖子状态：active/deleted/hidden
  * @param auditStatus    审核状态：pending/approved/rejected
+ * @param visibility     可见范围：public_/school/interest（Batch B）
+ * @param circleId       所属圈子 ID（Batch B，visibility=interest 时非 null）
  * @param likesCount     点赞数
  * @param commentsCount  评论数
  * @param shareCount     转发数
@@ -28,6 +30,8 @@ public record AdminPostSummaryView(
         String category,
         String status,
         String auditStatus,
+        String visibility,
+        Long circleId,
         Integer likesCount,
         Integer commentsCount,
         Integer shareCount,

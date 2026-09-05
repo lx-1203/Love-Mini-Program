@@ -11,13 +11,17 @@ import com.campuslove.api.entity.Comment;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
+import com.campuslove.api.entity.Post.AuditStatus;
+import com.campuslove.api.entity.Post.Visibility;
 import com.campuslove.api.entity.PostCategoryEntity;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserFollow;
+import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.PostViewHistory;
 import com.campuslove.api.repository.ActivityRepository;
+import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.CommentRepository;
 import com.campuslove.api.repository.PostCategoryRepository;
@@ -92,6 +96,11 @@ public class VillageQueryService {
      */
     private final PostViewHistoryRepository postViewHistoryRepository;
 
+    /**
+     * 圈子成员 Repository（Batch B：可见范围过滤——加载用户加入的圈子 ID 集合）。
+     */
+    private final CircleMembershipRepository circleMembershipRepository;
+
     /** 相似作者候选池大小（FIN-00024 修复：原 50 过小，扩大至与推荐算法对齐的 200） */
     private static final int SIMILAR_AUTHOR_CANDIDATE_LIMIT = 200;
 
@@ -120,6 +129,7 @@ public class VillageQueryService {
             CircleTopicRepository circleTopicRepository,
             VillageViewMapper viewMapper,
             PostViewHistoryRepository postViewHistoryRepository,
+            CircleMembershipRepository circleMembershipRepository,
             EntityManager entityManager) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
@@ -135,6 +145,7 @@ public class VillageQueryService {
         this.circleTopicRepository = circleTopicRepository;
         this.viewMapper = viewMapper;
         this.postViewHistoryRepository = postViewHistoryRepository;
+        this.circleMembershipRepository = circleMembershipRepository;
         this.entityManager = entityManager;
     }
 
@@ -160,7 +171,7 @@ public class VillageQueryService {
         this(postRepository, commentRepository, postLikeRepository, null, postCategoryRepository,
                 userRepository, userCampusProfileRepository, userFollowRepository,
                 userBasicProfileRepository, objectMapper, activityRepository,
-                circleTopicRepository, viewMapper, null, null);
+                circleTopicRepository, viewMapper, null, null, null);
     }
 
     // ---- 帖子列表 ----
@@ -213,11 +224,20 @@ public class VillageQueryService {
             return new PostListResponse(followedItems, (int) followedPage.getTotalElements(), page, pageSize);
         }
         Page<Post> postPage;
+        // Batch B：加载当前用户可见范围上下文（校区名 + 圈子 ID 集合）
+        String userCampusName = loadUserCampusName(userId);
+        List<Long> memberCircleIds = loadMemberCircleIds(userId);
         if (category != null && !"all".equals(category)) {
             PostCategory postCategory = parseCategory(category);
-            postPage = postRepository.findByCategoryAndStatusOrderByCreatedAtDesc(postCategory, PostStatus.active, pageable);
+            postPage = postRepository.findVisiblePostsByCategory(
+                    PostStatus.active, AuditStatus.approved, postCategory,
+                    Visibility.public_, Visibility.school, Visibility.interest,
+                    userCampusName, memberCircleIds, pageable);
         } else {
-            postPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+            postPage = postRepository.findVisiblePosts(
+                    PostStatus.active, AuditStatus.approved,
+                    Visibility.public_, Visibility.school, Visibility.interest,
+                    userCampusName, memberCircleIds, pageable);
         }
         // Phase Feedback3 P2.5：主列表透传关注集合，isFollowed 随帖下发（关注 Tab 打通）
         List<PostSummaryView> items = toPostSummaryViews(postPage.getContent(), "", loadFollowedUserIds(userId));
@@ -264,7 +284,13 @@ public class VillageQueryService {
                         : "";
             }
             if (effectiveCity.isBlank()) {
-                Page<Post> fallbackPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+                // Batch B：同城兜底也按可见范围过滤
+                String visCampusName = loadUserCampusName(userId);
+                List<Long> visCircleIds = loadMemberCircleIds(userId);
+                Page<Post> fallbackPage = postRepository.findVisiblePosts(
+                        PostStatus.active, AuditStatus.approved,
+                        Visibility.public_, Visibility.school, Visibility.interest,
+                        visCampusName, visCircleIds, pageable);
                 return new PostListResponse(
                         toPostSummaryViews(fallbackPage.getContent(), "", loadFollowedUserIds(userId)),
                         (int) fallbackPage.getTotalElements(), page, pageSize);
@@ -322,8 +348,13 @@ public class VillageQueryService {
                             (int) buddyPage.getTotalElements(), page, pageSize);
                 }
                 default -> {
-                    // all / 未知子标签：全量 active 帖子
-                    Page<Post> discoverPage = postRepository.findByStatusOrderByCreatedAtDesc(PostStatus.active, pageable);
+                    // all / 未知子标签：Batch B 按可见范围过滤
+                    String visCampusName2 = loadUserCampusName(userId);
+                    List<Long> visCircleIds2 = loadMemberCircleIds(userId);
+                    Page<Post> discoverPage = postRepository.findVisiblePosts(
+                            PostStatus.active, AuditStatus.approved,
+                            Visibility.public_, Visibility.school, Visibility.interest,
+                            visCampusName2, visCircleIds2, pageable);
                     return new PostListResponse(
                             toPostSummaryViews(discoverPage.getContent(), myCampusName, loadFollowedUserIds(userId)),
                             (int) discoverPage.getTotalElements(), page, pageSize);
@@ -385,6 +416,12 @@ public class VillageQueryService {
             // 按设计意图允许未认证用户匿名查看帖子（isLiked/isAuthor 均为 false），
             // 按 spec SubTask 10.6 提示"若是只读查询则评估是否真的需要事务"——本方法为只读查询，
             // 无需 setRollbackOnly 或重新抛出。
+        }
+        // 2026-09-03 发帖审核制：待审核（pending）帖子仅作者本人可见，
+        // 其他用户（含匿名）通过直链访问一律 404——审核通过前内容不对外
+        if (post.getAuditStatus() == Post.AuditStatus.pending
+                && (currentUserId == null || !currentUserId.equals(post.getAuthorId()))) {
+            throw new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + postId);
         }
         // 2026-08-08 论坛互动真实化：本地 +1 保证本次响应 viewCount 即时。
         // 数据库侧原子 +1 与浏览历史写入由调用方（RealVillageService.getPostDetail）
@@ -1054,6 +1091,34 @@ public class VillageQueryService {
         return userFollowRepository.findByFollowerId(userId).stream()
                 .map(UserFollow::getFollowingId)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * 加载当前用户的校区名（Batch B：可见范围过滤）。
+     * <p>无用户上下文或无校区资料时返回 null（school 可见帖子不可见）。</p>
+     */
+    private String loadUserCampusName(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return userCampusProfileRepository.findByUserId(userId)
+                .map(UserCampusProfile::getCampusName)
+                .filter(name -> name != null && !name.isBlank())
+                .map(String::trim)
+                .orElse(null);
+    }
+
+    /**
+     * 加载当前用户加入的圈子 ID 集合（Batch B：可见范围过滤）。
+     * <p>无用户上下文时返回空列表（interest 可见帖子不可见）。</p>
+     */
+    private List<Long> loadMemberCircleIds(Long userId) {
+        if (userId == null || circleMembershipRepository == null) {
+            return List.of();
+        }
+        return circleMembershipRepository.findByUserId(userId).stream()
+                .map(m -> m.getCircle().getId())
+                .toList();
     }
 
     Post findPostOrThrow(Long postId) {

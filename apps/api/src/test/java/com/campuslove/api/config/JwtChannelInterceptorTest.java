@@ -280,6 +280,22 @@ class JwtChannelInterceptorTest {
                 "订阅其他用户的队列应被拒绝");
     }
 
+    @Test
+    void subscribe_shorthandUserQueue_shouldAllow() {
+        // 2026-09-02 回归：客户端按 STOMP 标准订阅 /user/queue/**（服务端解析为会话本人），
+        // 旧实现把第二段 "queue" 当 userId 误判越权，导致实时推送全链路失效
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setSessionId("session-13b");
+        accessor.setDestination("/user/queue/messages");
+        setUserOnAccessor(accessor);
+        accessor.setLeaveMutable(true);
+        Message<byte[]> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        Message<?> result = assertDoesNotThrow(() -> interceptor.preSend(message, messageChannel),
+                "认证用户订阅标准简写 /user/queue/** 应被允许");
+        assertNotNull(result);
+    }
+
     /* ========== 其他命令: 直接放行 ========== */
 
     @Test

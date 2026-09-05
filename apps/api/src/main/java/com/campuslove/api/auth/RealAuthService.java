@@ -706,7 +706,10 @@ public class RealAuthService implements AuthService {
             // 插入时用临时昵称（此时 id 未生成），provisionGuestProfile
             // 拿到真实 id 后按人格池分配最终昵称/资料/头像
             newUser.setNickname("体验用户");
-            newUser.setRole("USER");
+            // 2026-09-02 R6 方向 C：体验账号角色改 GUEST（非 USER）——
+            // 不再进入推荐/匹配候选池（findByStatusAndRole active+USER），
+            // 首页/寻觅展示的真实校友不再混入「星野/夏言」等虚拟体验号
+            newUser.setRole("GUEST");
             newUser.setStatus("active");
             newUser.setProfileCompletion(0);
             newUser.setFollowingCount(0);
@@ -826,8 +829,10 @@ public class RealAuthService implements AuthService {
             }
             // 4. 完善度 100
             user.setProfileCompletion(100);
-            // v3 冻结：体验账号头像使用真人素材 person-01
-            user.setAvatarUrl("/static/assets/images/avatars/person-01-avatar.png");
+            // 2026-09-03 修复（统一角色展示）：体验账号头像不再写死 person-01-avatar，
+            // 改用与人格池一致的本人真人素材（persona.avatarPath() → person-0N.png），
+            // 与相册/半身照/背景同源，users.avatar_url 在全站展示统一
+            user.setAvatarUrl(persona.avatarPath());
             // 第五轮 R1：出生日期（星座推导依赖 users.birth_date；与 birth_year=2003 对齐）
             user.setBirthDate(java.time.LocalDate.of(2003, 6, 15));
             userRepository.save(user);

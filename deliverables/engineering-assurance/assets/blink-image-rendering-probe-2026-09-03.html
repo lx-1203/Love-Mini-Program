@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blink 近似验证 · mp-weixin image-rendering 基线（2026-09-03）</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", system-ui, sans-serif;
+    background: #f5f6f8; color: #1f2329; padding: 20px;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #666; margin-bottom: 14px; line-height: 1.7; }
+  .note {
+    background: #fff7e6; border: 1px solid #ffd591; border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; color: #874d00; line-height: 1.8; margin-bottom: 16px;
+  }
+  section { margin-bottom: 22px; }
+  .sec-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .sec-desc { font-size: 12px; color: #555; margin-bottom: 10px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; }
+  th, td { border: 1px solid #e5e6eb; padding: 8px 10px; text-align: center; vertical-align: middle; }
+  th { background: #f2f3f5; font-size: 12px; }
+  .cell-label { font-size: 11px; color: #4e5969; line-height: 1.6; margin-top: 6px; }
+  .badge { display:inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px; }
+  .b-ship { background:#e8f3ff; color:#165dff; }
+  .b-ban  { background:#ffece8; color:#f53f3f; }
+  .b-ctl  { background:#e8ffea; color:#00b42a; }
+  img { display: block; margin: 0 auto; background: #fff; }
+  .row { font-size: 12px; color: #666; margin-top: 6px; }
+  .rule-tag { font-family: Consolas, monospace; font-size: 11px; background:#f2f3f5; padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+  <h1>mp-weixin 图片渲染基线 · Blink 内核近似验证探针</h1>
+  <div class="sub">
+    目的：近似验证 <span class="rule-tag">src/styles/_image-base.scss</span> 基线决策——放大/缩小缩放时，
+    基线 <b>auto</b>（含 -webkit-optimize-contrast 渐进增强）应保持平滑，而被禁用的 <b>crisp-edges</b>（=nearest-neighbor）
+    会呈现明显块状/锯齿。渲染内核：Chromium/Blink（headless，DPR=1）。<br>
+    真机自检：Android 微信（XWeb，Chromium 内核系）或 Chrome 打开本文件，肉眼对照三列差异即可；iOS/Safari 内核为 WebKit，表现以实测为准。
+  </div>
+  <div class="note">
+    <b>判读要点：</b>B 列（crisp-edges，已禁用值）应能看到明显硬像素块 / 阶梯锯齿；A 列（基线）与 C 列（默认）应平滑、
+    无明显块状。若 A 与 C 观感一致且 B 明显更糙 → 基线选型在 Blink 下成立；若 A 反而比 C 糙 → 需回炉评审
+    <span class="rule-tag">-webkit-optimize-contrast</span> 前缀取舍。
+  </div>
+
+  <section>
+    <div class="sec-title">场景 1 · 放大 3x（72×72 吉祥物 → 216×216，最易暴露 nearest-neighbor 块状）</div>
+    <table>
+      <tr>
+        <th style="width:33%">A · 基线 <span class="badge b-ship">已发布</span></th>
+        <th style="width:33%">B · crisp-edges <span class="badge b-ban">已禁用</span></th>
+        <th style="width:33%">C · 无声明（默认）<span class="badge b-ctl">对照</span></th>
+      </tr>
+      <tr>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/mascot/mascot_heart.png" width="216" height="216" style="image-rendering:-webkit-optimize-contrast;image-rendering:auto;">
+          <div class="cell-label">image-rendering: -webkit-optimize-contrast;<br>image-rendering: auto;</div></td>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/mascot/mascot_heart.png" width="216" height="216" style="image-rendering:crisp-edges;">
+          <div class="cell-label">image-rendering: crisp-edges;<br>（lint R1 禁用值）</div></td>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/mascot/mascot_heart.png" width="216" height="216">
+          <div class="cell-label">（未声明，浏览器默认 auto）</div></td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <div class="sec-title">场景 2 · 缩小 ≈4.3x（1280×720 banner → 300×169，观察缩小时的高频混叠/锯齿）</div>
+    <table>
+      <tr>
+        <th style="width:33%">A · 基线 <span class="badge b-ship">已发布</span></th>
+        <th style="width:33%">B · crisp-edges <span class="badge b-ban">已禁用</span></th>
+        <th style="width:33%">C · 无声明（默认）<span class="badge b-ctl">对照</span></th>
+      </tr>
+      <tr>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/banners/home-banner.jpg" width="300" height="169" style="image-rendering:-webkit-optimize-contrast;image-rendering:auto;">
+          <div class="cell-label">image-rendering: -webkit-optimize-contrast;<br>image-rendering: auto;</div></td>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/banners/home-banner.jpg" width="300" height="169" style="image-rendering:crisp-edges;">
+          <div class="cell-label">image-rendering: crisp-edges;<br>（lint R1 禁用值）</div></td>
+        <td><img src="file:///D:/6/恋爱小程序/apps/client/src/static/assets/images/banners/home-banner.jpg" width="300" height="169">
+          <div class="cell-label">（未声明，浏览器默认 auto）</div></td>
+      </tr>
+    </table>
+  </section>
+
+  <div class="sub">生成：2026-09-03 · 工程保障收口 3（Android 真机差异近似验证）。局限：mp-weixin 真机原生 &lt;image&gt; 走微信 XWeb（Chromium 系但版本随微信灰度），与桌面 Blink 存在差异可能；本页仅验证 CSS 语义方向，最终以 Android 真机实测为准。</div>
+</body>
+</html>

@@ -9,15 +9,22 @@
  * 2026-08-07 已落地真实内容源：四板块 → 咨询课程页 / 帮助客服页，测试 → MBTI 页。
  */
 import { useI18n } from "vue-i18n";
+import { computed } from "vue";
 import { onShareAppMessage } from "@dcloudio/uni-app";
 import { lightHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 // 任务 E3：三个内容页（附近的人 / MBTI / 恋爱咨询课程）路由常量
 import { ROUTES } from "../../../constants/routes";
 import { useSessionStore } from "../../../stores/session";
+// 批次 A5：商业化封存开关
+import { useAppConfigStore } from "../../../stores/app-config";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
+const appConfig = useAppConfigStore();
 
 /** 恋爱咨询四板块 */
 const consultingBoards = [
@@ -32,12 +39,17 @@ const testEntries = [
   { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "home.mbtiTest" },
 ] as const;
 
-/** 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程） */
-const quickEntries = [
-  { id: "nearby", icon: IMAGE_PATHS.ICONS_EMOJI.LOCATION, titleKey: "contentPages.entries.nearby", url: ROUTES.LOVE_CENTER.NEARBY },
-  { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "contentPages.entries.mbti", url: ROUTES.LOVE_CENTER.MBTI },
-  { id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING },
-] as const;
+/** 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程）；批次 A5：consulting 受商业化开关控制 */
+const quickEntries = computed(() => {
+  const entries: Array<{ id: string; icon: string; titleKey: string; url: string }> = [
+    { id: "nearby", icon: IMAGE_PATHS.ICONS_EMOJI.LOCATION, titleKey: "contentPages.entries.nearby", url: ROUTES.LOVE_CENTER.NEARBY },
+    { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "contentPages.entries.mbti", url: ROUTES.LOVE_CENTER.MBTI },
+  ];
+  if (appConfig.isCommerceOn("course")) {
+    entries.push({ id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING as string });
+  }
+  return entries;
+});
 
 /** 返回上一页 */
 function goBack() {
@@ -87,8 +99,8 @@ onShareAppMessage(() => {
 
 <template>
   <view class="love-center">
-    <!-- 顶部栏 -->
-    <view class="love-center__header">
+    <!-- 顶部栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
+    <view class="love-center__header" :style="{ paddingTop: `calc(var(--sp-4) + ${statusBarHeightPx}px)` }">
       <view class="love-center__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="love-center__back-text">‹</text>
       </view>
@@ -117,8 +129,8 @@ onShareAppMessage(() => {
       </view>
     </view>
 
-    <!-- 恋爱咨询 4 板块 -->
-    <view class="love-center__section">
+    <!-- 恋爱咨询 4 板块（批次 A5：仅商业化课程/咨询开关开启时展示） -->
+    <view v-if="appConfig.isCommerceOn('course') || appConfig.isCommerceOn('consult')" class="love-center__section">
       <text class="love-center__section-title">{{ t('home.loveConsulting') }}</text>
       <view class="love-center__board-grid">
         <view

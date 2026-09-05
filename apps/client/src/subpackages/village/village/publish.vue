@@ -71,10 +71,12 @@ const targetSubtitle = computed(() => {
 });
 
 /** 圈内成员可见（谁可以看） */
+/** 批次 B4：可见范围文案对齐后端 visibility 三态 */
 const visibilityText = computed(() => {
   if (visibility.value === "public") return t("village.post.visibilityPublic");
-  if (visibility.value === "private") return t("village.post.visibilityPrivate");
-  return t("village.post.visibilityCircleMembers");
+  if (visibility.value === "school") return "学校圈";
+  if (visibility.value === "interest") return "兴趣圈";
+  return t("village.post.visibilityPublic");
 });
 
 /* ---------- 进入：解析目标 + 恢复草稿 ---------- */
@@ -113,8 +115,8 @@ function selectTarget(circle: CircleItem) {
   targetType.value = "circle";
   targetId.value = Number(circle.id);
   targetCircle.value = circle;
-  // 圈子目标 → 圈内成员可见（与目标语义联动）
-  visibility.value = "circle_members";
+  // 圈子目标 → 仅圈内成员可见（批次 B4：对齐后端 visibility interest）
+  visibility.value = "interest";
   targetOpen.value = false;
 }
 
@@ -131,8 +133,8 @@ function chooseCampus() {
   targetType.value = "campus";
   targetId.value = null;
   targetCircle.value = null;
-  // 校园圈 → 校园成员可见（公开语义，校内公开）
-  visibility.value = "public";
+  // 校园圈 → 仅同校认证成员可见（批次 B4：对齐后端 visibility school）
+  visibility.value = "school";
   targetOpen.value = false;
 }
 
@@ -185,9 +187,24 @@ function openLocationPicker() {
 function openMentionPicker() {
   uni.showToast({ title: t("village.post.mentionHint"), icon: "none" });
 }
+/**
+ * 2026-09-03（审查报告 P3-7）：可见范围轮换与后端 visibility 枚举强联动。
+ * 原实现轮换 legacy 值 circle_members/private（后端 Post.Visibility 仅
+ * public_/school/interest），payload 携带非法值有 400 风险。
+ * 按发布目标约束合法集合：公开广场→公开/学校圈；学校圈→学校圈；兴趣圈→圈内。
+ */
 function cycleVisibility() {
-  const order: string[] = ["circle_members", "public", "private"];
-  const next = order[(order.indexOf(visibility.value) + 1) % order.length] ?? "circle_members";
+  const order: string[] =
+    targetType.value === "general"
+      ? ["public", "school"]
+      : targetType.value === "campus"
+        ? ["school"]
+        : ["interest"];
+  if (!order.includes(visibility.value)) {
+    visibility.value = order[0];
+    return;
+  }
+  const next = order[(order.indexOf(visibility.value) + 1) % order.length];
   visibility.value = next;
 }
 
@@ -344,6 +361,9 @@ async function submitPublish() {
         content: content.value.trim(),
         images: finalImages,
         tags: topics.value,
+        visibility: visibility.value,
+        targetType: targetType.value,
+        targetId: targetId.value,
       });
       uni.showToast({ title: t("village.postSuccess"), icon: "success" });
     }
@@ -540,7 +560,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--c-bg-page, #F7FAF9);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .publish-header {
@@ -566,7 +586,9 @@ onUnmounted(() => {
 .publish-to__label { font-size: 26rpx; color: #6B7571; margin-bottom: 16rpx; }
 .publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
 .publish-to__avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-.publish-to__avatar-img { width: 100%; height: 100%; }
+.publish-to__avatar-img {
+  border-radius: var(--r-full);
+ width: 100%; height: 100%; }
 .publish-to__avatar-emoji { width: 44rpx; height: 44rpx; }
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }

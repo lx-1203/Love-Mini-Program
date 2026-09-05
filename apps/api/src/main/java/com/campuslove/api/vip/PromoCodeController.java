@@ -1,5 +1,7 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.vip.PromoCodeService.RedeemResultView;
 import com.campuslove.api.vip.PromoCodeService.ValidateResultView;
@@ -59,6 +61,7 @@ public class PromoCodeController {
      * @return 兑换结果视图
      */
     @PostMapping("/redeem")
+    @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
     @PreAuthorize("hasRole('USER')")
     public RedeemResultView redeem(@Valid @RequestBody ValidatePromoCodeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();

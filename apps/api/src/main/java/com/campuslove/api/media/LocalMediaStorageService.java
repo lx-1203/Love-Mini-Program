@@ -1,7 +1,11 @@
 package com.campuslove.api.media;
 
+import com.campuslove.api.common.ContentSecurityException;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
+import com.campuslove.api.common.VideoUploadDisabledException;
+import com.campuslove.api.config.ContentSecurityVerdict;
+import com.campuslove.api.config.FeatureSwitchService;
 import com.campuslove.api.config.Resilience4jConfig;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -24,6 +28,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -199,13 +204,31 @@ public class LocalMediaStorageService implements MediaStorageService {
     private final String storageRoot;
 
     /**
-     * 构造函数，注入存储根目录配置。
+     * 功能开关读取服务（批次 A / A9）。
+     * 用于视频上传独立闸（upload.video.enabled，缺省 false 封存态）。
+     */
+    private final FeatureSwitchService featureSwitchService;
+
+    /**
+     * 微信图片内容安全检测服务（可选注入）。
+     * 仅 real profile + 凭据就绪时存在；mock 模式为 null，跳过检测。
+     */
+    private final WeChatImgSecCheckService imgSecCheckService;
+
+    /**
+     * 构造函数，注入存储根目录配置、功能开关服务与图片安全检测服务。
      *
-     * @param storageRoot 来自 {@code app.media.storage-root} 配置，默认 ./uploads
+     * @param storageRoot        来自 {@code app.media.storage-root} 配置，默认 ./uploads
+     * @param featureSwitchService 功能开关读取服务（视频上传独立闸）
+     * @param imgSecCheckService 微信图片安全检测服务（可选，mock 模式下为 null）
      */
     public LocalMediaStorageService(
-            @Value("${app.media.storage-root:./uploads}") String storageRoot) {
+            @Value("${app.media.storage-root:./uploads}") String storageRoot,
+            FeatureSwitchService featureSwitchService,
+            @Autowired(required = false) WeChatImgSecCheckService imgSecCheckService) {
         this.storageRoot = storageRoot;
+        this.featureSwitchService = featureSwitchService;
+        this.imgSecCheckService = imgSecCheckService;
     }
 
     @Override
@@ -221,6 +244,14 @@ public class LocalMediaStorageService implements MediaStorageService {
             throw new IllegalArgumentException(ErrorMessages.UPLOAD_FILE_REQUIRED);
         }
         String normalizedType = normalizeType(type);
+
+        // 批次 A / A9：视频上传独立闸（upload.video.enabled，缺省 false 封存态）。
+        // 先校验后落盘：在扩展名/MIME/magic bytes 校验与任何文件写入之前拒绝，
+        // 保证磁盘无残留；错误码 VIDEO_UPLOAD_DISABLED 供前端静默提示。
+        if ("video".equals(normalizedType) && !featureSwitchService.isVideoUploadEnabled()) {
+            LOGGER.info("视频上传被拒绝（upload.video.enabled=false 封存态）: userId={}", userId);
+            throw new VideoUploadDisabledException("暂不支持视频上传");
+        }
 
         // 修复：对原始文件名进行安全清洗，移除路径分隔符与 ../ 等危险字符，
         // 防止路径遍历攻击。原始文件名仅用于提取扩展名，不直接用于存储路径。
@@ -249,6 +280,18 @@ public class LocalMediaStorageService implements MediaStorageService {
         // Task 2.6.5：校验文件 magic bytes，防止伪装文件攻击
         // （仅靠扩展名 + MIME 仍可被绕过，magic bytes 是文件内容级校验）
         validateMagicBytes(file, lowerExt, normalizedType);
+
+        // 图片内容安全检测（微信 imgSecCheck，仅 real profile + 凭据就绪时生效）。
+        // 在 magic bytes 校验通过后、文件落盘前执行，违规图片拒绝写入磁盘。
+        // mock 模式下 imgSecCheckService 为 null，自动跳过。
+        if ("image".equals(normalizedType) && imgSecCheckService != null) {
+            ContentSecurityVerdict verdict = imgSecCheckService.checkImage(file);
+            if (!verdict.isPass()) {
+                LOGGER.warn("图片内容安全检测未通过: userId={}, verdict={}, label={}",
+                        userId, verdict.suggest(), verdict.label());
+                throw new ContentSecurityException("图片内容不合规，拒绝上传");
+            }
+        }
 
         // 计算存储路径与 URL
         String monthSegment = LocalDate.now(TimeZones.BUSINESS).format(MONTH_FMT);

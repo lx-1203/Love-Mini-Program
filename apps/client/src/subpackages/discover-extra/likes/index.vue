@@ -38,6 +38,8 @@ import { resolveMediaUrl } from "../../../utils/media";
 // 2026-08-08 走查 P1：喜欢页「前 2 条免费 + 其余打码 + 解锁全部」（与喜欢与访客独立页规则统一）
 import { useVipStore } from "../../../stores/vip";
 import { useCoinsStore, UNLOCK_COST_YUAN } from "../../../stores/coins";
+// 批次 A / ADR-2：解锁属商业化能力（commerce.coin 子闸），封存态禁用解锁入口
+import { useAppConfigStore } from "../../../stores/app-config";
 import { featureFlags } from "../../../config/feature-flags";
 
 type TabType = "likedBy" | "myLikes" | "visitors";
@@ -47,6 +49,13 @@ const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
 const vipStore = useVipStore();
 const coinsStore = useCoinsStore();
+const appConfig = useAppConfigStore();
+
+/**
+ * 商业化封存（批次 A / ADR-2）：coin 子闸关闭（缺省即关）时，
+ * 「解锁全部」入口隐藏、单条打码项点击仅提示封存，列表浏览不受影响。
+ */
+const commerceCoinOn = computed(() => appConfig.isCommerceOn("coin"));
 
 // Phase 4 任务 20：接入页面访问守卫，触发 UnlockGuideModal 引导（替代静默重定向）
 usePageAccess(likesPageRequirements);
@@ -175,6 +184,11 @@ const unlockCost = computed(() =>
  * POST /api/v1/wallet/unlock（服务端幂等），成功后更新 unlocked 并刷新余额。
  */
 async function handleUnlock() {
+  // 批次 A / ADR-2：封存态（commerce.coin=false，缺省即封存）禁止解锁，toast 提示
+  if (!commerceCoinOn.value) {
+    uni.showToast({ title: t("commerce.sealedToast"), icon: "none" });
+    return;
+  }
   const lockedItems = activeTab.value === "likedBy"
     ? displayLikedBy.value.filter((item) => item.unlocked !== true)
     : displayVisitors.value.filter((item) => item.unlocked !== true);
@@ -903,8 +917,10 @@ onShareAppMessage(() => {
           <!-- 批量喜欢（仅 likedBy Tab 显示） -->
           <view
             v-if="activeTab === 'likedBy'"
-            class="likes-batch-bar__btn likes-batch-bar__btn--like"
+            class="likes-batch-bar__btn likes-batch-bar__btn--like press-feedback"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('likes.batchLike')"
             @tap="handleBatchAction('like')"
@@ -916,8 +932,10 @@ onShareAppMessage(() => {
           <!-- 批量跳过（仅 likedBy Tab 显示） -->
           <view
             v-if="activeTab === 'likedBy'"
-            class="likes-batch-bar__btn likes-batch-bar__btn--skip"
+            class="likes-batch-bar__btn likes-batch-bar__btn--skip press-feedback"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('likes.batchSkip')"
             @tap="handleBatchAction('skip')"
@@ -929,8 +947,10 @@ onShareAppMessage(() => {
           <!-- 批量取消喜欢（仅 myLikes Tab 显示） -->
           <view
             v-if="activeTab === 'myLikes'"
-            class="likes-batch-bar__btn likes-batch-bar__btn--cancel"
+            class="likes-batch-bar__btn likes-batch-bar__btn--cancel press-feedback"
             :class="{ 'likes-batch-bar__btn--disabled': batchProcessing }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
             role="button"
             :aria-label="t('likes.batchCancel')"
             @tap="handleBatchAction('cancel')"
@@ -949,8 +969,9 @@ onShareAppMessage(() => {
         </text>
       </view>
 
-      <!-- 2026-08-08 走查 P1：底部固定「解锁全部」按钮（非批量模式 + 存在未解锁项时显示） -->
-      <view v-if="hasLockedItems && !batchMode" class="likes-unlock-bar">
+      <!-- 2026-08-08 走查 P1：底部固定「解锁全部」按钮（非批量模式 + 存在未解锁项时显示）；
+           批次 A / ADR-2：商业化封存态（commerce.coin=false）一并隐藏 -->
+      <view v-if="hasLockedItems && !batchMode && commerceCoinOn" class="likes-unlock-bar">
         <button
           class="likes-unlock-bar__btn"
           :aria-label="t('likesVisitors.unlockBtn', { coins: unlockCost })"
@@ -961,7 +982,7 @@ onShareAppMessage(() => {
         <text class="likes-unlock-bar__hint">{{ t('likesVisitors.unlockHint') }}</text>
       </view>
       <!-- 底部安全区占位（避免内容被固定按钮遮挡） -->
-      <view v-if="hasLockedItems && !batchMode" class="likes-unlock-bar-spacer" />
+      <view v-if="hasLockedItems && !batchMode && commerceCoinOn" class="likes-unlock-bar-spacer" />
     </template>
   </view>
 </template>
@@ -1186,6 +1207,8 @@ onShareAppMessage(() => {
 
 /* 2026-08-08 走查 P1：未解锁 → 头像模糊 + 昵称隐藏 */
 .likes-card__avatar--blur {
+  border-radius: var(--r-full);
+
   filter: blur(14rpx);
 }
 

@@ -70,6 +70,8 @@ export interface PostItem {
   buddyTags?: string[];
   /** 2026-08-08 频道化重构：是否置顶（今日广场折叠条抽离用） */
   isPinned?: boolean;
+  /** 2026-09-05 R17：审核状态——自己刚发布的帖 pending 时在 feed 顶部可见 */
+  auditStatus?: "pending" | "approved" | "rejected";
   /** 2026-08-08 频道化重构：最新 2 条评论预览（QQ 频道风格） */
   recentComments?: CommentItem[];
   /** 2026-08-08 频道化重构：关联活动 ID */

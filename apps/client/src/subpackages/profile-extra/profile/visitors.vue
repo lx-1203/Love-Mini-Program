@@ -26,6 +26,9 @@ import { useLikesStore } from "../../../stores/likes";
 import { openAppPath } from "../../../utils/navigation";
 // 2026-08-09：他人主页路由常量化（访客点击 → 他人主页页）
 import { ROUTES } from "../../../constants/routes";
+// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic } from "../../../utils/haptic";
@@ -42,6 +45,7 @@ interface VisitorItem {
 }
 
 const { t } = useI18n();
+const statusBarHeightPx = useStatusBarHeight();
 const likesStore = useLikesStore();
 
 /** 是否正在加载 */
@@ -224,7 +228,8 @@ onPullDownRefresh(async () => {
 </script>
 
 <template>
-  <view class="visitors-page">
+  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海 -->
+  <view class="visitors-page" :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="visitors-header">
       <view
@@ -243,10 +248,9 @@ onPullDownRefresh(async () => {
       </text>
     </view>
 
-    <!-- 加载状态 -->
+    <!-- 加载状态：骨架屏（2026-09-03 全页骨架覆盖，替代 spinner） -->
     <view v-if="loading && visitors.length === 0" class="visitors-loading">
-      <view class="visitors-loading__spinner" />
-      <text class="visitors-loading__text">{{ t("common.loading") }}</text>
+      <SkeletonBlock variant="list" :rows="4" :label="t('common.loading')" />
     </view>
 
     <!-- 错误状态 -->

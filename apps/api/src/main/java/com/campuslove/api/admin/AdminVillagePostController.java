@@ -658,6 +658,8 @@ public class AdminVillagePostController {
                 post.getCategory() != null ? post.getCategory().name() : null,
                 post.getStatus() != null ? post.getStatus().name() : null,
                 post.getAuditStatus() != null ? post.getAuditStatus().name() : null,
+                post.getVisibility() != null ? post.getVisibility().name() : null,
+                post.getCircleId(),
                 post.getIsPinned(),
                 post.getLikesCount(),
                 post.getCommentsCount(),
@@ -687,6 +689,8 @@ public class AdminVillagePostController {
                 post.getCategory() != null ? post.getCategory().name() : null,
                 post.getStatus() != null ? post.getStatus().name() : null,
                 post.getAuditStatus() != null ? post.getAuditStatus().name() : null,
+                post.getVisibility() != null ? post.getVisibility().name() : null,
+                post.getCircleId(),
                 post.getAuditRemark(),
                 post.getAuditorId(),
                 post.getAuditedAt(),
@@ -762,6 +766,8 @@ public class AdminVillagePostController {
  * @param category       分类：all/interest/sincere/hometown/anonymous/latest/campus
  * @param status         帖子状态：active/deleted/hidden
  * @param auditStatus    审核状态：pending/approved/rejected
+ * @param visibility     可见范围：public_/school/interest（Batch B）
+ * @param circleId       所属圈子 ID（Batch B，visibility=interest 时非 null）
  * @param isPinned       是否置顶
  * @param likesCount     点赞数
  * @param commentsCount  评论数
@@ -783,6 +789,8 @@ record AdminVillagePostSummaryView(
         String category,
         String status,
         String auditStatus,
+        String visibility,
+        Long circleId,
         Boolean isPinned,
         Integer likesCount,
         Integer commentsCount,
@@ -822,6 +830,8 @@ record AdminVillagePostSummaryView(
  * @param category       分类
  * @param status         帖子状态
  * @param auditStatus    审核状态
+ * @param visibility     可见范围：public_/school/interest（Batch B）
+ * @param circleId       所属圈子 ID（Batch B，visibility=interest 时非 null）
  * @param auditRemark    审核备注（拒绝原因等）
  * @param auditorId      审核人用户 ID
  * @param auditedAt      审核时间
@@ -848,6 +858,8 @@ record AdminVillagePostDetailView(
         String category,
         String status,
         String auditStatus,
+        String visibility,
+        Long circleId,
         String auditRemark,
         Long auditorId,
         LocalDateTime auditedAt,

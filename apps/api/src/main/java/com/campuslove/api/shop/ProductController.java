@@ -1,6 +1,8 @@
 package com.campuslove.api.shop;
 
 import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.config.FeatureSwitch;
+import com.campuslove.api.config.FeatureSwitchKeys;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/products")
 @Validated
+@FeatureSwitch(FeatureSwitchKeys.COMMERCE_ENABLED)
 public class ProductController {
 
     private final ProductService productService;

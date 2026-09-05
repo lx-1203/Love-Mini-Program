@@ -431,6 +431,19 @@ page {
   --r-xxl: #{$radius-xxl};
   --r-full: #{$radius-full};
 
+  /* 2026-09-03 自定义 TabBar 高度（与 custom-tab-bar/index.wxss 一致）：
+     原生 custom-tabBar 恒在页面内容之上、z-index 无法穿透（注释明确）。
+     弹窗/页面底部预留统一高度，确保按钮不被遮。 */
+  --tab-bar-h: 160rpx;
+  --tab-bar-h-with-safe: calc(160rpx + env(safe-area-inset-bottom));
+  /* 2026-09-03 R11 收尾：内容「完整越过 custom-tabBar 露出」的净留白区。
+     语义：页面上若存在需要完整可见/可点的底部内容（banner / CTA / 浮层），
+     且该内容与 tabBar 垂直重叠会被原生层遮挡，则用本高度兜底——
+     中央浮岛圆形按钮(~180rpx) + 安全冗余(80rpx) + tabBar(160rpx) - 底部重叠 ≈ 360rpx。
+     用法：占位 <view class="base-tabbar-clear-zone" /> 或 padding-bottom: var(--tab-bar-clear-zone)。
+     注意：普通页面内容仅需避让 tabBar 时用 --tab-bar-h-with-safe(160rpx)，勿滥用本值。 */
+  --tab-bar-clear-zone: calc(360rpx + env(safe-area-inset-bottom));
+
   --s-xs: #{$shadow-xs};
   --s-sm: #{$shadow-sm};
   --s-md: #{$shadow-md};
@@ -569,18 +582,18 @@ page {
   --c-bubble-other: #{$bubble-other};
 
   /* ===== 2026-08-26 R3：聊天气泡尺寸规范（统一双方，仅颜色/方向差异） ===== */
-  // 2026-08-31 对齐微信真机观感（用户验收：气泡不可过大、字号统一）：
-  // 最大宽度 70%、padding 上下16rpx 左右24rpx（≈微信 8px/12px）、主圆角 16rpx、
-  // 正文 32rpx（=16pt 微信标准字号）行高 1.45、行内 emoji 与正文同字号、
-  // 纯 emoji 消息 56rpx、送达状态图标 20rpx
-  --bubble-max-width: 70%;
+  // 2026-09-01 批次 C1 对齐 PRD E4 验收值（用户实测反馈：气泡过窄、字号偏大）：
+  // 最大宽度 84%、padding 上下16rpx 左右24rpx、主圆角 20rpx + 尾巴 4rpx、
+  // 正文 30rpx 行高 1.6、行内 emoji 与正文同字号、
+  // 纯 emoji 消息 56rpx、头像 64rpx、送达状态图标 20rpx、双方阴影统一禁用
+  --bubble-max-width: 84%;
   --bubble-padding-y: 16rpx;
   --bubble-padding-x: 24rpx;
-  --bubble-radius-main: 16rpx;
+  --bubble-radius-main: 20rpx;
   --bubble-radius-tail: 4rpx;
   --bubble-shadow: none;                // 决策①：统一禁用
-  --bubble-font-size: 32rpx;
-  --bubble-line-height: 1.45;
+  --bubble-font-size: 30rpx;
+  --bubble-line-height: 1.6;
   --bubble-emoji-font-size: 56rpx;
   --bubble-avatar-size: 64rpx;
   --bubble-avatar-border: 2rpx solid var(--c-bg-container);
