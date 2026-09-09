@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { request, withTimeout as withHttpTimeout, EnhancedApiError } from "../services/http";
+import { request, withTimeout as withHttpTimeout, EnhancedApiError, getToken } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 2026-08-10 切换提速：消息页 TTL 缓存（30s 新鲜度，官方号消息流 60s）
@@ -272,9 +272,56 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
   };
 }
 
+/**
+ * R16：从 JWT 的 sub 解析当前用户 ID（userSession 未就绪时兜底）。
+ * token 无 payload / 解析失败返回 null，调用方按 "" 处理走 peer 分支（原行为）。
+ */
+function resolveCurrentUserIdFromToken(): string | null {
+  try {
+    const token = getToken();
+    if (!token) return null;
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    // 手写 base64url 解码（mp-weixin 运行时不保证 atob 可用）
+    const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    let bits = 0;
+    let acc = 0;
+    let out = "";
+    for (let i = 0; i < normalized.length; i++) {
+      const ch = normalized[i];
+      if (ch === "=") break;
+      const idx = B64.indexOf(ch);
+      if (idx < 0) return null;
+      acc = (acc << 6) | idx;
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        out += String.fromCharCode((acc >> bits) & 0xff);
+      }
+    }
+    // JWT payload 是 UTF-8，需按 UTF-8 还原字符串
+    try {
+      out = decodeURIComponent(escape(out));
+    } catch (_e2) {
+      // escape 在极端字符下可能失败；sub 为数字串时无需 UTF-8 还原
+    }
+    const parsed = JSON.parse(out) as { sub?: string | number };
+    return parsed.sub == null ? null : String(parsed.sub);
+  } catch (_e) {
+    return null;
+  }
+}
+
 function mapToMessageItem(raw: BackendMessageView): MessageItem {
   const sessionStore = useSessionStore();
-  const currentUserId = sessionStore.userSession?.userId ?? "";
+  // R16：userSession 未就绪（深链直达/getSession 未完成）时 currentUserId 为空串，
+  // 所有消息含自己刚发的都会被判成 peer（发送当下在左、刷新后翻到右）。
+  // 兜底：从 JWT sub 解析当前用户 ID（与后端签发 userId=sub 的口径一致）。
+  let currentUserId = sessionStore.userSession?.userId ?? "";
+  if (!currentUserId) {
+    currentUserId = resolveCurrentUserIdFromToken() ?? "";
+  }
   return {
     id: String(raw.id),
     sessionId: String(raw.conversationId),
@@ -833,6 +880,10 @@ export const useMessagesStore = defineStore("messages", {
           if (useMock()) {
             const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind, body: content, sentAt: new Date().toISOString() };
             this.currentMessages.push(nm);
+            // R16：同步写 mockMessages——fetchSessionMessages 用 mockMessages 整表覆盖，
+            // 此前漏写导致刷新后刚发的消息消失
+            const bucket = this.mockMessages[sessionId] ?? (this.mockMessages[sessionId] = []);
+            if (!bucket.some((m) => m.id === nm.id)) bucket.push(nm);
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = nm.sentAt; }
             return nm;
@@ -849,7 +900,9 @@ export const useMessagesStore = defineStore("messages", {
             header: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
           });
           const mr = mapToMessageItem(result);
-          this.currentMessages.push(mr);
+          // R16：POST 回包与 WS 回推可能同达，按 id 去重（此前重复 push 出现右侧双气泡）
+          const dup = this.currentMessages.find((m) => m.id === mr.id);
+          if (!dup) this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = mr.sentAt; }
           return mr;
@@ -893,7 +946,9 @@ export const useMessagesStore = defineStore("messages", {
             data: { content: voiceUrl, kind: "voice", durationSeconds },
           });
           const mr = mapToMessageItem(result);
-          this.currentMessages.push(mr);
+          // R16：POST 回包与 WS 回推可能同达，按 id 去重（此前重复 push 出现右侧双气泡）
+          const dup = this.currentMessages.find((m) => m.id === mr.id);
+          if (!dup) this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) { s.lastMessagePreview = t("chat.voicePlaceholder"); s.lastMessageSentAt = mr.sentAt; }
           return mr;

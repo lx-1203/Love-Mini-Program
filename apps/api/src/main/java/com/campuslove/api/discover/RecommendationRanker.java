@@ -671,7 +671,7 @@ public class RecommendationRanker {
                 commonGround,
                 availability,
                 campusName,
-                resolveAvatarUrl(user),
+                resolveAvatarUrl(user, basicProfile, photoGallery),
                 tags,
                 bio,
                 images,
@@ -850,20 +850,83 @@ public class RecommendationRanker {
     }
 
     /**
+     * R16（2026-09-07）：校区锚点坐标（gcj02）。校园恋爱场景下种子/演示用户聚集于高校区，
+     * 而 GPS 可能被开发工具默认定位（深圳/广州）或客户端未上报污染，导致「1893km」级荒谬距离。
+     * 距离优先按双方 campusName 的校区锚点计算；任一缺失时回退 GPS；
+     * 结果超过 300km 视为区域异常（定位漂移），返回 null 不显示距离。
+     */
+    private static final java.util.Map<String, double[]> CAMPUS_ANCHORS = java.util.Map.ofEntries(
+            java.util.Map.entry("北京大学", new double[]{39.9927, 116.3103}),
+            java.util.Map.entry("清华大学", new double[]{40.0030, 116.3264}),
+            java.util.Map.entry("北京师范大学", new double[]{39.9614, 116.3707}),
+            java.util.Map.entry("中国人民大学", new double[]{39.9704, 116.3145}),
+            java.util.Map.entry("北京航空航天大学", new double[]{39.9808, 116.3517}),
+            java.util.Map.entry("北京邮电大学", new double[]{39.9636, 116.3571}),
+            java.util.Map.entry("北京电影学院", new double[]{39.9667, 116.3547}),
+            java.util.Map.entry("中央民族大学", new double[]{39.9495, 116.3269}),
+            java.util.Map.entry("南开大学", new double[]{39.1067, 117.1650}),
+            java.util.Map.entry("天津大学", new double[]{39.1089, 117.1626}),
+            java.util.Map.entry("复旦大学", new double[]{31.2989, 121.5037}),
+            java.util.Map.entry("上海交通大学", new double[]{31.0251, 121.4352}),
+            java.util.Map.entry("同济大学", new double[]{31.2824, 121.5046}),
+            java.util.Map.entry("浙江大学", new double[]{30.3080, 120.0853}),
+            java.util.Map.entry("南京大学", new double[]{32.0575, 118.7800}),
+            java.util.Map.entry("武汉大学", new double[]{30.5381, 114.3646}),
+            java.util.Map.entry("华中科技大学", new double[]{30.5116, 114.4130}),
+            java.util.Map.entry("中山大学", new double[]{23.0970, 113.3016}),
+            java.util.Map.entry("华南理工大学", new double[]{23.1570, 113.3450}),
+            java.util.Map.entry("四川大学", new double[]{30.6313, 104.0845}),
+            java.util.Map.entry("电子科技大学", new double[]{30.7485, 104.0697}),
+            java.util.Map.entry("西安交通大学", new double[]{34.2649, 108.9861}),
+            java.util.Map.entry("哈尔滨工业大学", new double[]{45.7461, 126.6280}),
+            java.util.Map.entry("重庆大学", new double[]{29.5617, 106.4660}));
+
+    /** 解析用户位置锚点：优先校区坐标，其次本人 GPS；都无则 null。 */
+    private double[] resolveUserAnchor(Long userId) {
+        UserCampusProfile campus = userCampusProfileRepository.findByUserId(userId).orElse(null);
+        if (campus != null && campus.getCampusName() != null) {
+            double[] anchor = CAMPUS_ANCHORS.get(campus.getCampusName());
+            if (anchor != null) {
+                return anchor;
+            }
+        }
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null && user.getLatitude() != null && user.getLongitude() != null) {
+            return new double[]{user.getLatitude().doubleValue(), user.getLongitude().doubleValue()};
+        }
+        return null;
+    }
+
+    /**
      * LBS Phase 2：距离文案——有坐标时计算真实 haversine 距离，无坐标返回 null。
-     * 自动从 SecurityUtils 获取当前用户坐标。
+     * R16：距离以校区锚点计算（见 CAMPUS_ANCHORS），GPS 漂移 >300km 时不显示。
      */
     private String deriveDistanceText(User candidate) {
         if (geoService == null) return null;
         Long currentUserId = com.campuslove.api.config.SecurityUtils.getCurrentUserIdOrNull();
         if (currentUserId == null) return null;
-        User currentUser = userRepository.findById(currentUserId).orElse(null);
-        if (currentUser == null || currentUser.getLatitude() == null || currentUser.getLongitude() == null) return null;
-        if (candidate.getLatitude() == null || candidate.getLongitude() == null) return null;
-        // 同校用户不显示距离（上游已置 null，此处兜底）
-        double km = geoService.haversineKm(
-                currentUser.getLatitude().doubleValue(), currentUser.getLongitude().doubleValue(),
-                candidate.getLatitude().doubleValue(), candidate.getLongitude().doubleValue());
+        double[] myAnchor = resolveUserAnchor(currentUserId);
+        double[] candAnchor = resolveUserAnchor(candidate.getId());
+        Double km = null;
+        if (myAnchor != null && candAnchor != null) {
+            km = geoService.haversineKm(myAnchor[0], myAnchor[1], candAnchor[0], candAnchor[1]);
+        } else {
+            // 锚点缺失：回退双方 GPS
+            User currentUser = userRepository.findById(currentUserId).orElse(null);
+            if (currentUser == null || currentUser.getLatitude() == null || currentUser.getLongitude() == null) {
+                return null;
+            }
+            if (candidate.getLatitude() == null || candidate.getLongitude() == null) {
+                return null;
+            }
+            km = geoService.haversineKm(
+                    currentUser.getLatitude().doubleValue(), currentUser.getLongitude().doubleValue(),
+                    candidate.getLatitude().doubleValue(), candidate.getLongitude().doubleValue());
+        }
+        // 同校用户不显示距离（上游已置 null，此处兜底）；区域异常（漂移）不显示
+        if (km == null || km > 300) {
+            return null;
+        }
         return geoService.formatDistance(km);
     }
 
@@ -872,10 +935,27 @@ public class RecommendationRanker {
      * 本地素材路径（62 张按 userId 稳定映射）。mp 端外链（pexels 等）加载不可靠，
      * 本地包路径保证卡片大图 100% 可显示。
      */
-    private String resolveAvatarUrl(User user) {
+    private String resolveAvatarUrl(User user, UserBasicProfile basicProfile, List<String> photoGallery) {
         String avatarUrl = user.getAvatarUrl();
         if (avatarUrl != null && (avatarUrl.startsWith("/static") || avatarUrl.startsWith("http"))) {
             return avatarUrl;
+        }
+        // 2026-09-06 人设一致性：users.avatar_url 缺失时优先取本人资料库照片
+        // （相册首图/半身照/主页背景），此前按 userId 哈希映射 62 张兜底头像，
+        // 会命中与本人相册/背景完全无关的图，造成寻觅卡「头像-背景-图库」割裂
+        if (photoGallery != null && !photoGallery.isEmpty()
+                && photoGallery.get(0) != null && !photoGallery.get(0).isBlank()) {
+            return photoGallery.get(0);
+        }
+        if (basicProfile != null) {
+            String halfBody = basicProfile.getHalfBodyPhotoUrl();
+            if (halfBody != null && !halfBody.isBlank()) {
+                return halfBody;
+            }
+            String background = basicProfile.getProfileBackgroundUrl();
+            if (background != null && !background.isBlank()) {
+                return background;
+            }
         }
         Long id = user.getId();
         if (id == null) {

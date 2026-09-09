@@ -637,6 +637,12 @@ public class RealHomeService implements HomeService {
                 PageRequest.of(0, MAX_COMMUNITY_POST_COUNT)
             );
             java.util.List<Post> items = posts.getContent();
+            // R21（2026-09-09）：同一作者只保留首帖——此前按点赞排序会出现相邻两张卡同作者，
+            // 观感如同占位数据（理想图为三位不同用户）
+            java.util.Set<Long> seenAuthors = new java.util.HashSet<>();
+            items = items.stream()
+                .filter(p -> p.getAuthorId() == null || seenAuthors.add(p.getAuthorId()))
+                .toList();
             java.util.List<Long> authorIds = items.stream().map(Post::getAuthorId).filter(java.util.Objects::nonNull).toList();
             java.util.Map<Long, User> authorMap = profileQueryService.batchLoadUsers(authorIds);
             return items.stream().map(post -> {
@@ -646,7 +652,7 @@ public class RealHomeService implements HomeService {
                     post.getAuthorId(),
                     author != null ? author.getNickname() : String.valueOf(post.getAuthorId()),
                     author != null ? author.getAvatarUrl() : null,
-                    post.getCategory() == null ? "" : post.getCategory().name(),
+                    categoryLabel(post.getCategory()),
                     post.getCreatedAt() == null ? "" : post.getCreatedAt().toString(),
                     truncateContent(post.getContent(), 80),
                     profileQueryService.parseStringList(post.getImages()).stream().limit(3).toList(),
@@ -658,6 +664,25 @@ public class RealHomeService implements HomeService {
             log.warn("聚合社区动态失败: {}", e.getMessage());
             return List.of();
         }
+    }
+
+    /**
+     * R20（2026-09-08）：帖子分类枚举名（activity/interest…）原样下发导致
+     * 首页社区动态作者旁出现英文原始值；统一映射为中文短标签。
+     */
+    private String categoryLabel(Post.PostCategory category) {
+        if (category == null) {
+            return "校园日常";
+        }
+        return switch (category) {
+            case activity -> "活动";
+            case interest -> "兴趣圈";
+            case sincere -> "真诚交友";
+            case hometown -> "老乡会";
+            case anonymous -> "匿名区";
+            case campus -> "校园";
+            default -> "校园日常";
+        };
     }
 
     private String firstNonBlank(String... values) {

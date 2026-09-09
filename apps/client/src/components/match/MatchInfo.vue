@@ -58,6 +58,8 @@ const verified = computed(
       </view>
       <view v-if="school" class="match-info__school-row">
         <text class="match-info__school">{{ school }}</text>
+        <!-- R21：补「·」分隔（对齐理想图 北京大学 · 设计学院） -->
+        <text v-if="secondary" class="match-info__school-dot">·</text>
         <text v-if="secondary" class="match-info__college">{{ secondary }}</text>
       </view>
       <text v-if="distanceLine" class="match-info__distance">{{ distanceLine }}</text>
@@ -170,6 +172,11 @@ const verified = computed(
 .match-info__college {
   font-size: 28rpx;
   font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.match-info__school-dot {
+  font-size: 28rpx;
   color: rgba(255, 255, 255, 0.7);
 }
 

@@ -198,6 +198,8 @@ export function mapToCommentItem(raw: CommentItemView): CommentItem {
     postId: String(raw.postId),
     author: mapCommentAuthorView(raw.author),
     content: raw.content,
+    // 2026-09-06 评论图片上传：透传评论附图
+    images: Array.isArray(raw.images) ? raw.images : [],
     likes: raw.likeCount,
     // 2026-08-08 论坛互动真实化：后端 CommentItemView 新增 isLiked 字段，透传
     isLiked: raw.isLiked ?? false,

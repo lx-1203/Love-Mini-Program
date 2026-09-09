@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -215,4 +214,3 @@ function relativeTime(iso?: string): string {
   color: #FF6B81;
 }
 </style>
-```

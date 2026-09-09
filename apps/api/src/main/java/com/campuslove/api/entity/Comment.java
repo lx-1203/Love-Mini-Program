@@ -54,6 +54,14 @@ public class Comment {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /**
+     * 评论图片（2026-09-06 评论图片上传功能）：JSON 字符串数组（已上传的可访问 URL）。
+     * 与 posts.images 同口径（JSON 列，"[]" 为无图）。
+     */
+    @Column(name = "images", columnDefinition = "JSON")
+    private String images = "[]";
+
     /**
      * 乐观锁版本号（Task 2.1.1 数据一致性基础设施）。
      *
@@ -69,6 +77,14 @@ public class Comment {
 
 
     public Comment() {
+    }
+
+    public String getImages() {
+        return images;
+    }
+
+    public void setImages(String images) {
+        this.images = images;
     }
 
     public Long getId() {

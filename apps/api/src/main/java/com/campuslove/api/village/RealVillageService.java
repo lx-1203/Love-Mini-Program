@@ -190,6 +190,18 @@ public class RealVillageService implements VillageService {
         return interactionService.commentPost(userId, postId, content, parentId);
     }
 
+    /**
+     * 2026-09-06 评论图片上传：透传图片列表到互动服务（服务端限 3 张，超限截断）。
+     */
+    @Override
+    @Transactional
+    public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId,
+                                       java.util.List<String> images) {
+        java.util.List<String> safeImages = images == null ? java.util.List.of()
+                : images.stream().filter(java.util.Objects::nonNull).limit(3).toList();
+        return interactionService.commentPost(userId, postId, content, parentId, safeImages);
+    }
+
     @Override
     @Transactional
     public ShareView sharePost(Long userId, Long postId, String comment) {

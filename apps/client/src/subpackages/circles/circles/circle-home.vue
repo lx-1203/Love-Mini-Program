@@ -191,8 +191,9 @@ function formatMemberCount(count: number): string {
   if (count >= 10000) {
     return `${(count / 10000).toFixed(1)}w`;
   }
+  // R21：对齐理想图（8,932 精确千分位），不用英文 k 单位
   if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`;
+    return count.toLocaleString("en-US");
   }
   return String(count);
 }

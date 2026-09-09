@@ -288,8 +288,10 @@ public class VillagePostService {
         return switch (targetType) {
             case "campus" -> Visibility.school;
             case "circle" -> Visibility.interest;
+            // R16（2026-09-07）：日常内容——仅互相喜欢（匹配）/关注作者的人可见
+            case "friends", "daily" -> Visibility.friends;
             default -> throw new IllegalArgumentException(
-                    "不支持的 targetType: " + targetType + "，仅支持: general/circle/campus");
+                    "不支持的 targetType: " + targetType + "，仅支持: general/circle/campus/friends");
         };
     }
 

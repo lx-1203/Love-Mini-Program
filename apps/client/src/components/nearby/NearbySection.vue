@@ -60,12 +60,16 @@ defineEmits<{ (e: "more"): void }>();
 }
 
 .nearby-section__more-text {
-  font-size: 22rpx;
-  color: var(--c-text-tertiary, #666666);
+  /* R20（2026-09-08）：「全部」入口视觉权重提升——原 22rpx 浅灰与板块标题层级差距过大，
+     用户难以发现「查看更多」入口；对齐理想图改为品牌绿 + 加粗 + 更大字号 */
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-brand, #36C99A);
 }
 
 .nearby-section__more-arrow {
-  font-size: 26rpx;
-  color: var(--c-text-quaternary, #C8CFCD);
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--c-brand, #36C99A);
 }
 </style>

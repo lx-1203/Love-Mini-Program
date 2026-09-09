@@ -245,8 +245,8 @@ function onCommunityAuthorTap(post: { authorId?: number | null }) {
 }
 
 function openCommunity() {
-  // 统一发帖入口（P12）：首页底部「发帖」栏跳转标准发帖页
-  openAppPath(ROUTES.VILLAGE.POST);
+  // R21（2026-09-09）：社区动态「查看更多」→ 村口动态流列表页（原误跳发帖页）
+  openAppPath("/subpackages/village/village/index");
 }
 
 function openInvite() {

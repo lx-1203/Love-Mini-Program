@@ -23,6 +23,11 @@ public interface ProfileVisitorRepository extends JpaRepository<ProfileVisitor, 
      */
     List<ProfileVisitor> findByHostIdOrderByVisitedAtDesc(Long hostId);
 
+    /** R16（2026-09-07）：去重访客数单条 COUNT（替代全表拉取后内存去重）。 */
+    @org.springframework.data.jpa.repository.Query(
+            "select count(distinct v.visitorId) from ProfileVisitor v where v.hostId = :hostId")
+    long countDistinctVisitorsByHostId(@org.springframework.data.repository.query.Param("hostId") Long hostId);
+
     /**
      * R4-00292：查询指定访客对该主页最近一次访问记录。
      * 唯一约束冲突后回查落库视图用（visitedAt 以 DB 值为准）。

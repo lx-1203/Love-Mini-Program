@@ -66,6 +66,17 @@ export interface MyPostSummary {
   coverImage?: string;
 }
 
+/** R16（2026-09-07）：我的「日常」（朋友圈式，visibility=friends 的帖子） */
+export interface MyDailySummary {
+  id: string;
+  summary: string;
+  images: string[];
+  likes: number;
+  comments: number;
+  createdAt: string;
+  auditStatus: string;
+}
+
 /* ========== Mock 数据 ========== */
 
 /**
@@ -235,6 +246,8 @@ export interface ProfileState {
   vipStatus: VipStatus | null;
   /** 我的动态预览列表（用于个人主页展示） */
   myPosts: MyPostSummary[];
+  /** R16：我的「日常」列表（visibility=friends，供「我的故事」区块） */
+  myDailies: MyDailySummary[];
   /** 照片墙 URL 数组（最多 6 张，Phase E3） */
   photoGallery: string[];
   /** 60 秒语音状态 URL（Phase Feedback5：移除视频，改为语音状态） */
@@ -267,6 +280,7 @@ export const useProfileStore = defineStore("profile", {
     profileStats: null,
     vipStatus: null,
     myPosts: [],
+    myDailies: [],
     photoGallery: [],
     voiceStatusUrl: "",
     voiceStatusDuration: 0,
@@ -491,6 +505,56 @@ export const useProfileStore = defineStore("profile", {
       } catch (error) {
         // 失败时清空 myPosts，避免展示陈旧数据；记录 errorMessage 便于 UI 提示
         this.myPosts = [];
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadMyPostsFailed");
+      }
+    },
+
+    /**
+     * R16（2026-09-07）：加载我的「日常」（visibility=friends 的帖子）。
+     * 失败时清空 myDailies 不抛出，避免阻塞个人主页渲染。
+     */
+    async loadMyDailies() {
+      try {
+        if (useMock()) {
+          this.myDailies = [];
+          return;
+        }
+        const sessionStore = useSessionStore();
+        const userId = sessionStore.userSession?.userId;
+        if (!userId) {
+          this.myDailies = [];
+          return;
+        }
+        type DailyItem = {
+          id: number | string;
+          title?: string;
+          summary?: string;
+          images?: string[];
+          likeCount?: number;
+          commentCount?: number;
+          createdAt?: string;
+          auditStatus?: string;
+        };
+        const resp = await request<DailyItem[] | { items?: DailyItem[] }>({
+          url: "/posts/my-dailies",
+          method: "GET",
+        });
+        // R16：端点返回裸数组；兼容 {items} 包装形态
+        const items: DailyItem[] = Array.isArray(resp) ? resp : resp.items ?? [];
+        this.myDailies = items.map((p) => ({
+          id: String(p.id),
+          summary:
+            (p.summary && p.summary.trim()) ||
+            (p.title && p.title.trim()) ||
+            "",
+          images: Array.isArray(p.images) ? p.images : [],
+          likes: p.likeCount ?? 0,
+          comments: p.commentCount ?? 0,
+          createdAt: p.createdAt ?? "",
+          auditStatus: p.auditStatus ?? "pending",
+        }));
+      } catch (error) {
+        this.myDailies = [];
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.loadMyPostsFailed");
       }
     },

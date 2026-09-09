@@ -439,10 +439,12 @@ page {
   /* 2026-09-03 R11 收尾：内容「完整越过 custom-tabBar 露出」的净留白区。
      语义：页面上若存在需要完整可见/可点的底部内容（banner / CTA / 浮层），
      且该内容与 tabBar 垂直重叠会被原生层遮挡，则用本高度兜底——
-     中央浮岛圆形按钮(~180rpx) + 安全冗余(80rpx) + tabBar(160rpx) - 底部重叠 ≈ 360rpx。
+     中央浮岛圆形按钮(~180rpx) + 安全冗余(40rpx) + tabBar(160rpx) - 底部重叠 ≈ 320rpx。
+     R21（2026-09-09）：对抗验收指出 360rpx 在首页 banner 后留下约 1/3 屏空白，
+     收敛到 300rpx（浮岛顶端距 banner 底缘仍保有 ~40rpx 呼吸位）。
      用法：占位 <view class="base-tabbar-clear-zone" /> 或 padding-bottom: var(--tab-bar-clear-zone)。
      注意：普通页面内容仅需避让 tabBar 时用 --tab-bar-h-with-safe(160rpx)，勿滥用本值。 */
-  --tab-bar-clear-zone: calc(360rpx + env(safe-area-inset-bottom));
+  --tab-bar-clear-zone: calc(300rpx + env(safe-area-inset-bottom));
 
   --s-xs: #{$shadow-xs};
   --s-sm: #{$shadow-sm};
@@ -586,13 +588,15 @@ page {
   // 最大宽度 84%、padding 上下16rpx 左右24rpx、主圆角 20rpx + 尾巴 4rpx、
   // 正文 30rpx 行高 1.6、行内 emoji 与正文同字号、
   // 纯 emoji 消息 56rpx、头像 64rpx、送达状态图标 20rpx、双方阴影统一禁用
-  --bubble-max-width: 84%;
-  --bubble-padding-y: 16rpx;
-  --bubble-padding-x: 24rpx;
+  // R20（2026-09-08）：用户反馈「气泡太大、未对准头像」——
+  // 最大宽度 68%→58%、正文 30→28rpx、头像底对齐改顶对齐（ChatBubble），适量缩小气泡
+  --bubble-max-width: 58%;
+  --bubble-padding-y: 14rpx;
+  --bubble-padding-x: 22rpx;
   --bubble-radius-main: 20rpx;
   --bubble-radius-tail: 4rpx;
   --bubble-shadow: none;                // 决策①：统一禁用
-  --bubble-font-size: 30rpx;
+  --bubble-font-size: 28rpx;
   --bubble-line-height: 1.6;
   --bubble-emoji-font-size: 56rpx;
   --bubble-avatar-size: 64rpx;

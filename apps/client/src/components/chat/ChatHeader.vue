@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
+// R20（2026-09-08）：env(safe-area-inset-top) 在模拟器/无刘海机型为 0，
+// 头部会顶进状态栏与系统时间叠印 → 改用 JS 注入的 statusBarHeight
+import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
+
+const statusBarHeightPx = useStatusBarHeight();
 
 const props = withDefaults(
   defineProps<{
@@ -44,7 +49,7 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
 </script>
 
 <template>
-  <view class="chat-header" role="banner">
+  <view class="chat-header" role="banner" :style="{ paddingTop: Math.max(statusBarHeightPx, 20) + 'px' }">
     <view class="chat-header__back" hover-class="chat-header__hover" @tap="emit('back')">
       <text class="chat-header__back-text">‹</text>
     </view>
@@ -93,6 +98,9 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
 .chat-header__back-text {
   font-size: 56rpx;
   color: #36C99A;
+  /* R21：‹ 字形默认行高导致视觉重心偏下，与头像中心不对齐 → 收紧行高并上移微调 */
+  line-height: 1;
+  margin-top: -8rpx;
 }
 .chat-header__avatar-wrap {
   position: relative;

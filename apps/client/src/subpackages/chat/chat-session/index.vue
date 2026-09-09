@@ -1052,25 +1052,10 @@ async function sendText() {
       await chatStore.sendText(messageToSend);
       // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
       syncChatStoreMessagesToMessagesStore();
-      // 防御性兜底：确保刚发出的消息以 self 身份显示在右侧。
-      // （后端已存 sender=self；若同步/回显异常导致 sender 丢失被误判为 peer，这里补一条 self 消息）
-      const _now = Date.now();
-      const _recentSelf = messagesStore.currentMessages.some(
-        (m) => m.sender === "self" && m.body === messageToSend && (_now - Date.parse(m.sentAt || "")) < 8000
-      );
-      if (!_recentSelf) {
-        messagesStore.setCurrentMessages([
-          ...messagesStore.currentMessages,
-          {
-            id: `local-${Date.now()}`,
-            sessionId: currentSessionId,
-            sender: "self" as const,
-            kind: "text" as const,
-            body: messageToSend,
-            sentAt: new Date().toISOString(),
-          },
-        ]);
-      }
+      // R16（2026-09-07）：删除「补一条 local self 消息」的兜底——后端已修复
+      // TempChatViewMapper 按查看者视角重映射 sender（R16），此处再补偿会在
+      // 后端消息正常上屏后追加第二条重复气泡，且 onShow 刷新后补偿消息消失，
+      // 表现为「发送时在右侧、刷新后跑到左侧」。位置不一致的根因在服务端视角。
     } else {
       // 私信会话使用 messagesStore 的标准私信链路
       await messagesStore.sendMessage(currentSessionId, messageToSend, quoteRef?.messageId);
@@ -2335,12 +2320,17 @@ defineExpose({ noop });
   padding: var(--sp-3) 0;
 }
 
-/* 微信式时间分隔条：居中灰字，无底色 */
+/* 微信式时间分隔条：居中胶囊样式（R20：浅灰胶囊底提升与消息的归属可读性，
+   时间条永远紧贴其所属消息组上方，语义为「以下是该时刻的消息」） */
 .chat-time-bar {
+  align-self: center;
   text-align: center;
   font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-  padding: var(--sp-3) 0;
+  color: var(--c-text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 999rpx;
+  padding: 6rpx 24rpx;
+  margin: var(--sp-3) 0;
   flex-shrink: 0;
 }
 

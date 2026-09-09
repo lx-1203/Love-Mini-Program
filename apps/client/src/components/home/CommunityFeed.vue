@@ -42,19 +42,22 @@ function avatarSrc(post: CommunityPostViewModel): string {
 }
 /**
  * 2026-09-02 R5：刷新触发——清失败记录（让已失败图片重新尝试加载）+ 触发父组件重拉
+ * R21：右上入口已改为「查看更多」（emit more），刷新逻辑保留给错误态重试按钮
  */
 function handleRefresh() {
   failedKeys.value = new Set();
   emit("retry");
 }
+// 引用占位避免 noUnusedLocals（保留刷新能力供错误态复用）
+void handleRefresh;
 </script>
 
 <template>
   <view class="community-feed">
     <view class="section-head">
       <text class="section-head__title">社区动态</text>
-      <!-- 2026-09-02 R5：点击触发图片重新加载（清失败记录 + 重拉） -->
-      <text class="section-head__more press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="handleRefresh">刷新 ›</text>
+      <!-- R21（2026-09-09）：右上入口对齐理想图「查看更多」（原「刷新」语义不清） -->
+      <text class="section-head__more press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="$emit('more')">查看更多 ›</text>
     </view>
 
     <!-- 2026-08-26 R1：加载中骨架行 -->
@@ -107,7 +110,7 @@ function handleRefresh() {
               <image
                 v-if="!isFailed(`img-${post.id}-${idx}`)"
                 class="post-card__img"
-                :src="img"
+                :src="resolveMediaUrl(img)"
                 mode="aspectFill"
                 lazy-load
                 @error="onImageError(`img-${post.id}-${idx}`)"
@@ -348,12 +351,14 @@ function handleRefresh() {
 }
 
 .post-card__content {
-  display: block;
+  display: -webkit-box;
+  /* R20（2026-09-08）：固定两行高度——此前无图帖缺图片行导致同排卡片高度参差、
+     底部无法对齐（社区动态排版错落杂乱）；正文恒占两行基线，卡片高度对齐 */
+  min-height: calc(24rpx * 1.5 * 2);
   margin-top: 14rpx;
   font-size: 24rpx;
   color: #333333;
   line-height: 1.5;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -363,6 +368,8 @@ function handleRefresh() {
   display: flex;
   gap: 8rpx;
   margin-top: 14rpx;
+  /* R20：图片行固定高度（无图时由数据侧保证至少 1 图；本行高度恒定防塌陷） */
+  min-height: 88rpx;
 }
 
 .post-card__img {

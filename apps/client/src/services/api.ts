@@ -122,6 +122,12 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
   if (filter.excludeIds && filter.excludeIds.length > 0) {
     parts.push(`excludeIds=${encodeURIComponent(filter.excludeIds)}`);
   }
+  // R16（2026-09-07）：寻觅「附近」Tab 服务端距离过滤——
+  // 此前 distanceMax 根本不进 query，后端从不按距离过滤，「附近」与「推荐」同内容
+  const distanceMax = (filter as unknown as { distanceMax?: number }).distanceMax;
+  if (distanceMax !== undefined && distanceMax !== null) {
+    parts.push(`distanceMaxKm=${encodeURIComponent(String(distanceMax))}`);
+  }
   return parts.length > 0 ? `?${parts.join("&")}` : "";
 }
 

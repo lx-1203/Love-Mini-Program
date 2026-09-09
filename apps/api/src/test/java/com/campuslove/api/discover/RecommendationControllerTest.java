@@ -132,7 +132,7 @@ class RecommendationControllerTest {
             when(recommendationService.getRecommendationsForGuest(emptyFilter)).thenReturn(expected);
 
             // Act：全部筛选参数为 null
-            List<RecommendedPersonView> result = controller.getRecommendations(null, null, null, null, null, null, null, null, null, null, null, null);
+            List<RecommendedPersonView> result = controller.getRecommendations(null, null, null, null, null, null, null, null, null, null, null, null, null);
 
             // Assert
             assertSame(expected, result);
@@ -156,7 +156,7 @@ class RecommendationControllerTest {
             when(recommendationService.getRecommendations(42L, emptyFilter)).thenReturn(expected);
 
             // Act
-            List<RecommendedPersonView> result = controller.getRecommendations(null, null, null, null, null, null, null, null, null, null, null, null);
+            List<RecommendedPersonView> result = controller.getRecommendations(null, null, null, null, null, null, null, null, null, null, null, null, null);
 
             // Assert
             assertSame(expected, result);

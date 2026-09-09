@@ -8,6 +8,8 @@ import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.growth.AppConfigService;
 import com.campuslove.api.monitor.VillageMetrics;
 import com.campuslove.api.ratelimit.RateLimit;
+import com.campuslove.api.entity.Post;
+import com.campuslove.api.repository.PostRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -36,6 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class VillageController {
 
   private final VillageService villageService;
+  /** R16：我的日常查询用（posts 表直查） */
+  private final PostRepository postRepository;
   /**
    * 村口业务监控指标。用于记录帖子创建/点赞/评论、当前帖子总数等。
    * 通过 Micrometer 暴露到 /actuator/prometheus 供 Prometheus 抓取。
@@ -49,10 +53,12 @@ public class VillageController {
 
   public VillageController(VillageService villageService,
                            VillageMetrics villageMetrics,
-                           AppConfigService appConfigService) {
+                           AppConfigService appConfigService,
+                           PostRepository postRepository) {
     this.villageService = villageService;
     this.villageMetrics = villageMetrics;
     this.appConfigService = appConfigService;
+    this.postRepository = postRepository;
   }
 
   // ---------- 帖子 ----------
@@ -95,6 +101,46 @@ public class VillageController {
       }
     }
     return villageService.getPosts(category, tag, sortBy, page, pageSize, userId, city, discoverSub);
+  }
+
+  /**
+   * 我的「日常」列表（R16 2026-09-07）。
+   * GET /api/v1/posts/my-dailies
+   *
+   * <p>日常 = 当前用户 visibility=friends 的帖子（朋友圈式内容，仅互相喜欢/
+   * 关注作者的人及作者本人可见），承载个人主页「我的故事」区块，与普通帖子区分。</p>
+   */
+  @GetMapping("/my-dailies")
+  @PreAuthorize("hasRole('USER')")
+  public List<MyDailyItemView> getMyDailies() {
+    Long userId = SecurityUtils.getCurrentUserId();
+    return postRepository
+        .findTop12ByAuthorIdAndVisibilityAndStatusOrderByCreatedAtDesc(
+            userId, Post.Visibility.friends, Post.PostStatus.active)
+        .stream()
+        .map(p -> new MyDailyItemView(
+            p.getId(),
+            p.getTitle() == null ? "" : p.getTitle(),
+            p.getContent() == null ? "" : p.getContent(),
+            p.getImages() == null || p.getImages().isBlank()
+                ? List.of()
+                : parseImagesArray(p.getImages()),
+            p.getLikesCount() == null ? 0 : p.getLikesCount(),
+            p.getCommentsCount() == null ? 0 : p.getCommentsCount(),
+            p.getCreatedAt() == null ? "" : p.getCreatedAt().toString(),
+            p.getAuditStatus() == null ? "pending" : p.getAuditStatus().name()))
+        .toList();
+  }
+
+  /** images JSON 数组 → List<String>（失败时回退空列表）。 */
+  private static List<String> parseImagesArray(String json) {
+    try {
+      List<String> parsed = new com.fasterxml.jackson.databind.ObjectMapper()
+          .readValue(json, new com.fasterxml.jackson.core.type.TypeReference<List<String>>() { });
+      return parsed == null ? List.of() : parsed;
+    } catch (Exception ex) {
+      return List.of();
+    }
   }
 
   /**
@@ -188,7 +234,7 @@ public class VillageController {
    */
   @PostMapping("/{id}/like")
   @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
-  @Idempotent
+  // 2026-09-07 R16：点赞为 toggle 语义，移除 @Idempotent——稳定幂等键会拦截第二次点击（409），导致无法取消点赞
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostLikeResponse> likePost(@PathVariable("id") @Positive Long id) {
     Long userId = SecurityUtils.getCurrentUserId();
@@ -231,7 +277,9 @@ public class VillageController {
       @PathVariable("id") @Positive Long id,
       @Valid @RequestBody CreateCommentRequest request) {
     Long userId = SecurityUtils.getCurrentUserId();
-    CommentItemView view = villageService.commentPost(userId, id, request.content(), request.parentId());
+    // 2026-09-06 评论图片上传：透传已上传图片 URL 列表（服务端限 3 张）
+    CommentItemView view = villageService.commentPost(userId, id, request.content(), request.parentId(),
+            request.images());
     // 监控：记录评论创建事件
     try {
       villageMetrics.recordCommentCreated();
@@ -253,7 +301,7 @@ public class VillageController {
    */
   @PostMapping("/comments/{commentId}/like")
   @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
-  @Idempotent
+  // 2026-09-07 R16：点赞为 toggle 语义，移除 @Idempotent——稳定幂等键会拦截第二次点击（409），导致无法取消点赞
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostLikeResponse> likeComment(@PathVariable("commentId") @Positive Long commentId) {
     Long userId = SecurityUtils.getCurrentUserId();

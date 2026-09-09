@@ -45,9 +45,6 @@ const distanceText = computed(() => {
 
 const isOnline = computed(() => props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now");
 
-/** 匹配度圆环角度（0-360） */
-const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScore)) * 3.6);
-
 </script>
 
 <template>
@@ -87,18 +84,16 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
         </view>
       </slot>
 
-      <!-- 匹配度徽章：右下角绿色圆环进度 + 文字 -->
+      <!-- 匹配度徽章：右下角实心粉圆（R21：mp-weixin 对内联 conic-gradient 支持不稳，
+           曾致样式串被当文本渲染；理想图本就是实心圆环徽章，percent+label 全部收进圆内） -->
       <slot name="match-score">
         <view class="match-card__score">
-          <view
-            class="match-card__score-ring"
-            :style="{ background: `conic-gradient(#36C99A 0deg, #55D5A7 ${scoreAngle}deg, rgba(255,255,255,0.45) ${scoreAngle}deg 360deg)` }"
-          >
+          <view class="match-card__score-ring">
             <view class="match-card__score-ring-inner">
               <text class="match-card__score-value">{{ user.matchScore }}%</text>
+              <text class="match-card__score-label">{{ t('matchV1.matchScore') }}</text>
             </view>
           </view>
-          <text class="match-card__score-label">{{ t('matchV1.matchScore') }}</text>
         </view>
       </slot>
 
@@ -207,6 +202,7 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   color: #ffffff;
 }
 
+/* 匹配度徽章：右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用） */
 .match-card__score {
   position: absolute;
   right: 28rpx;
@@ -225,31 +221,32 @@ const scoreAngle = computed(() => Math.max(0, Math.min(100, props.user.matchScor
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
+  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.3);
 }
 
 .match-card__score-ring-inner {
   position: absolute;
-  width: 112rpx;
-  height: 112rpx;
+  width: 104rpx;
+  height: 104rpx;
   border-radius: 50%;
-  background: rgba(10, 20, 16, 0.55);
+  background: rgba(0, 0, 0, 0.12);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  background: rgba(0, 0, 0, 0.2);
   justify-content: center;
 }
 
 .match-card__score-value {
-  font-size: 40rpx;
+  font-size: 32rpx;
   font-weight: 700;
   color: #ffffff;
-  background: rgba(0, 0, 0, 0.15);
 }
 
 .match-card__score-label {
-  font-size: 20rpx;
+  font-size: 18rpx;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .match-card__info {

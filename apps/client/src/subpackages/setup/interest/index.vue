@@ -104,4 +104,11 @@ async function handleSave() {
   font-weight: 800;
   color: #ffffff;
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>

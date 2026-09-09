@@ -64,4 +64,16 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
      * @return 被喜欢的目标用户 ID 列表
      */
     List<Like> findByUserIdAndStatusIn(Long userId, List<LikeStatus> statuses);
+
+    /**
+     * R16（2026-09-07）：统计互赞数——我喜欢的目标用户里，有多少也 active 喜欢我。
+     * 单条 COUNT 查询替代逐条 isMutualLike 的 N+1（他人主页 socialProof 性能修复）。
+     *
+     * @param targetUserId 我自己的用户 ID（作为对方的被喜欢方向）
+     * @param userIds      我喜欢的目标用户 ID 集合
+     * @param status       对方对我的喜欢状态（active）
+     * @return 互赞数量
+     */
+    long countByTargetUserIdAndUserIdInAndStatus(Long targetUserId, java.util.Collection<Long> userIds,
+                                                 LikeStatus status);
 }

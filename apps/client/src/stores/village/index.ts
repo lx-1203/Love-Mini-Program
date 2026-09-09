@@ -717,7 +717,7 @@ export const useVillageStore = defineStore("village", {
      * @param content - 评论内容
      * @param parentId - 父评论 ID（P1-02 楼中楼回复，缺省为根评论）
      */
-    async commentPost(postId: string, content: string, parentId?: string) {
+    async commentPost(postId: string, content: string, parentId?: string, images?: string[]) {
       this.errorMessage = null;
 
       // 内容非空检查（在防抖前执行，确保用户立即收到错误反馈）
@@ -753,7 +753,7 @@ export const useVillageStore = defineStore("village", {
         }
         const timer = setTimeout(() => {
           commentDebounceTimers.delete(postId);
-          this._doCommentPost(postId, content, parentId).then(resolve).catch(reject);
+          this._doCommentPost(postId, content, parentId, images).then(resolve).catch(reject);
         }, COMMENT_DEBOUNCE_MS);
         commentDebounceTimers.set(postId, { timer, resolve });
       });
@@ -766,7 +766,7 @@ export const useVillageStore = defineStore("village", {
      * @param content - 评论内容
      * @param parentId - 父评论 ID（P1-02 楼中楼回复）
      */
-    async _doCommentPost(postId: string, content: string, parentId?: string) {
+    async _doCommentPost(postId: string, content: string, parentId?: string, images?: string[]) {
       this.errorMessage = null;
 
       // infra R2-00036: 防抖回调内二次校验（防御防抖窗口期间内容被清空/变更）
@@ -807,6 +807,7 @@ export const useVillageStore = defineStore("village", {
               headline: "",
             },
             content,
+            images: images && images.length > 0 ? [...images] : [],
             likes: 0,
             isLiked: false,
             createdAt: new Date().toISOString(),
@@ -826,8 +827,9 @@ export const useVillageStore = defineStore("village", {
           return newComment;
         }
 
-        // 调用后端 API: POST /api/posts/{postId}/comments（P1-02：带 parentId 创建楼中楼回复）
-        const result = await createCommentApi(postId, content, parentId);
+        // 调用后端 API: POST /api/posts/{postId}/comments（P1-02：带 parentId 创建楼中楼回复；
+        // 2026-09-06：带 images 创建带图评论）
+        const result = await createCommentApi(postId, content, parentId, images);
         const mappedComment = mapToCommentItem(result);
         appendComment(mappedComment);
 
@@ -880,12 +882,19 @@ export const useVillageStore = defineStore("village", {
         }
 
         // 调用后端 API: POST /api/posts/comments/{commentId}/like
-        await likeCommentApi(commentId);
+        // R16：用后端权威结果校正本地状态（此前仅本地翻转，与服务器漂移后
+        // 再点会判定反相，出现"点赞失败"或红心不亮）
+        const server = await likeCommentApi(commentId);
 
         const comment = this.comments.find((c) => c.id === commentId);
         if (comment) {
-          comment.isLiked = !comment.isLiked;
-          comment.likes += comment.isLiked ? 1 : -1;
+          if (server && typeof server.liked === "boolean") {
+            comment.isLiked = server.liked;
+            comment.likes = typeof server.likeCount === "number" ? server.likeCount : comment.likes;
+          } else {
+            comment.isLiked = !comment.isLiked;
+            comment.likes += comment.isLiked ? 1 : -1;
+          }
         }
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.likeCommentFailed"); // infra R2-00038

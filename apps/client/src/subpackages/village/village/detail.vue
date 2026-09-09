@@ -16,6 +16,8 @@ import { useVillageStore, formatRelativeTime, type CommentItem } from "../../../
 import { mapToCommentItem } from "../../../stores/village/utils";
 import type { CommentListResponse } from "../../../stores/village/types";
 import { request } from "../../../services/http";
+// 2026-09-06 评论图片上传：复用 clientApi.uploadPostImage（/media/upload）
+import { clientApi } from "../../../services/api";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { useMessagesStore } from "../../../stores/messages";
 import { useReportStore } from "../../../stores/report";
@@ -151,9 +153,13 @@ const commentPage = ref(1);
 const COMMENT_PAGE_SIZE = 20;
 /** 是否正在加载更多评论 */
 const loadingMoreComments = ref(false);
+/** 2026-09-06 自愈：服务端总数（含楼中楼）> 根评论数时会出现"幻影更多"，
+ * 拉到空页后置位隐藏按钮，避免按钮常在但点了没反应 */
+const noMoreComments = ref(false);
 /** 是否还有更多评论（服务端总数 > 已加载根评论数；mock 模式一次性返回全部，无分页） */
 const commentHasMore = computed(() => {
   if (useMock()) return false;
+  if (noMoreComments.value) return false;
   return comments.value.length < (currentPost.value?.comments ?? 0);
 });
 
@@ -172,6 +178,15 @@ async function loadMoreComments(): Promise<void> {
       data: { page: commentPage.value + 1, pageSize: COMMENT_PAGE_SIZE },
     });
     commentPage.value = data.page;
+    // 2026-09-06 自愈：空页说明已无更多根评论（总数含楼中楼导致的幻影"更多"），隐藏按钮
+    if (!data.items || data.items.length === 0) {
+      noMoreComments.value = true;
+      return;
+    }
+    // R16：短页（< pageSize）说明已是最后一页，直接隐藏"加载更多"
+    if (data.items.length < COMMENT_PAGE_SIZE) {
+      noMoreComments.value = true;
+    }
     villageStore.comments = [
       ...villageStore.comments,
       ...data.items.map(mapToCommentItem),
@@ -407,20 +422,29 @@ async function handleFollow() {
 }
 
 /**
- * 提交评论（P1-02：回复模式下携带 parentId 创建楼中楼回复）
+ * 提交评论（P1-02：回复模式下携带 parentId 创建楼中楼回复；
+ * 2026-09-06：携带已上传评论图片）
+ * R16：加重入守卫；回复楼中楼的回复时 parentId 统一挂到根评论（后端仅装一层楼中楼）。
  */
 async function submitComment() {
   if (!currentPost.value || !commentContent.value.trim()) return;
+  if (isSubmitting.value) return; // R16：重入守卫，防抖窗口内二次提交静默丢弃
 
   isSubmitting.value = true;
   try {
+    // 回复「楼中楼的回复」时 parentId 指向其根评论，避免「回复的回复」落库后不可见
+    const rootParentId = replyingTo.value?.parentId ?? replyingTo.value?.id ?? undefined;
     await villageStore.commentPost(
       currentPost.value.id,
       commentContent.value.trim(),
-      replyingTo.value?.id ?? undefined,
+      rootParentId,
+      commentImages.value.length > 0 ? [...commentImages.value] : undefined,
     );
     commentContent.value = "";
+    commentImages.value = [];
     replyingTo.value = null;
+    emojiPanelVisible.value = false;
+    noMoreComments.value = false; // R16：新评论入列后重置自愈标记，幻影更多不复活
     uni.showToast({ title: t("village.commentSuccess"), icon: "success" });
   } catch (_error) {
     uni.showToast({
@@ -432,12 +456,104 @@ async function submitComment() {
   }
 }
 
+/* ========== 2026-09-06 评论输入增强：@ 提及 / 表情面板 / 图片上传 ========== */
+
+/** 待提交的评论图片（已上传换取 URL，最多 3 张） */
+const commentImages = ref<string[]>([]);
+/** 评论图片上传中 */
+const commentImageUploading = ref(false);
+/** 表情面板开关 */
+const emojiPanelVisible = ref(false);
+/** 常用表情（uni-app 文本 emoji，跨端可渲染；2026-09-06 去重——wx:key 重复会告警） */
+const COMMON_EMOJIS = [
+  "😀", "😂", "🥰", "😍", "😊", "🙂", "😉", "🤩", "😘", "😜",
+  "😭", "😅", "😎", "🤔", "🙄", "😮", "😴", "🤗", "🙌", "👏",
+  "👍", "👎", "💪", "🙏", "💚", "❤️", "💔", "✨", "🔥", "🌸",
+];
+
+/** 输入框聚焦控制（@/表情点击后聚焦弹出键盘） */
+const commentInputFocus = ref(false);
+
+/** @ 提及：在评论末尾插入 "@" 并聚焦输入框 */
+function insertMention() {
+  commentContent.value = `${commentContent.value}@`;
+  commentInputFocus.value = true;
+  emojiPanelVisible.value = false;
+}
+
+/** 切换表情面板 */
+function toggleEmojiPanel() {
+  emojiPanelVisible.value = !emojiPanelVisible.value;
+  if (emojiPanelVisible.value) {
+    commentInputFocus.value = false;
+  }
+}
+
+/** 点选表情：追加到评论末尾 */
+function appendEmoji(emoji: string) {
+  commentContent.value = `${commentContent.value}${emoji}`;
+}
+
+/** 选择并上传评论图片（uni.chooseImage → /media/upload 换 URL，限 3 张） */
+function chooseCommentImage() {
+  if (commentImages.value.length >= 3) {
+    uni.showToast({ title: "最多 3 张图片", icon: "none" });
+    return;
+  }
+  const remaining = 3 - commentImages.value.length;
+  uni.chooseImage({
+    count: remaining,
+    sizeType: ["compressed"],
+    success: async (res) => {
+      const paths = res.tempFilePaths ?? [];
+      if (paths.length === 0) return;
+      commentImageUploading.value = true;
+      uni.showLoading({ title: "上传中...", mask: true });
+      try {
+        for (const path of paths) {
+          if (commentImages.value.length >= 3) break;
+          const { url } = await clientApi.uploadPostImage({ path });
+          commentImages.value = [...commentImages.value, url];
+        }
+      } catch (_e) {
+        uni.showToast({ title: "图片上传失败，请重试", icon: "none" });
+      } finally {
+        uni.hideLoading();
+        commentImageUploading.value = false;
+      }
+    },
+  });
+}
+
+/** 移除待发送图片 */
+function removeCommentImage(index: number) {
+  commentImages.value = commentImages.value.filter((_, i) => i !== index);
+}
+
+/** 评论图片点击预览（全屏查看） */
+function previewCommentImage(images: string[], current: number) {
+  uni.previewImage({ urls: images, current });
+}
+
 /**
  * P1-02 楼中楼：点击根评论「回复」按钮，进入回复模式。
  * 输入框聚焦后提交将携带 parentId。
+ * R16：补输入框聚焦 + 键盘弹起（此前只有提示条变化，用户感知「无法回复」）。
  */
 function startReply(comment: CommentItem) {
   replyingTo.value = comment;
+  focusCommentInput();
+}
+
+/** R16：展开/收起楼中楼（>3 条回复默认收起，此前的收起没有展开按钮） */
+function toggleReplies(comment: CommentItem) {
+  const next = new Set(expandedReplies.value);
+  if (next.has(comment.id)) {
+    next.delete(comment.id);
+  } else {
+    next.add(comment.id);
+  }
+  expandedReplies.value = next;
 }
 
 /** 取消回复模式（不提交） */
@@ -448,12 +564,14 @@ function cancelReply() {
 
 /**
  * 点赞/取消点赞评论
+ * R16：失败补用户可见 toast（此前仅 console.error，用户侧表现为"点了没反应"）
  */
 async function handleCommentLike(commentId: string) {
   try {
     await villageStore.likeComment(commentId);
   } catch (error) {
     console.error("评论点赞失败:", error);
+    uni.showToast({ title: t("village.likeFailed"), icon: "none" });
   }
 }
 
@@ -572,6 +690,7 @@ onLoad((query) => {
   if (currentPost.value) {
     // R4-00087：进入新帖子时重置评论分页游标
     commentPage.value = 1;
+    noMoreComments.value = false;
     void villageStore.fetchComments(currentPost.value.id);
     void villageStore.fetchSimilarAuthors(currentPost.value.id);
   }
@@ -749,7 +868,13 @@ onShareTimeline(() => {
             :aria-label="t('village.likePostAria')"
             @tap="handleLike"
           >
-            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+            <!-- R16：红心按点赞态切换实心/空心（此前无条件实心且 <image> 不吃 currentColor，状态不可见） -->
+            <image
+              class="post-actions-inline__icon"
+              :src="currentPost.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE"
+              mode="aspectFit"
+              alt=""
+            />
             <text class="post-actions-inline__count">{{ currentPost.likes }}</text>
           </view>
           <view
@@ -837,6 +962,17 @@ onShareTimeline(() => {
                 </view>
               </view>
               <text class="comment-text">{{ comment.content }}</text>
+              <!-- 2026-09-06：评论附图（点击全屏预览） -->
+              <view v-if="comment.images && comment.images.length > 0" class="comment-images">
+                <image
+                  v-for="(img, imgIdx) in comment.images"
+                  :key="img + imgIdx"
+                  class="comment-images__item"
+                  :src="resolveMediaUrl(img)"
+                  mode="aspectFill"
+                  @tap.stop="previewCommentImage(comment.images!, imgIdx)"
+                />
+              </view>
               <view class="comment-actions">
                 <text class="comment-time">{{ formatRelativeTime(comment.createdAt) }}</text>
                 <text class="comment-dot">·</text>
@@ -865,8 +1001,9 @@ onShareTimeline(() => {
                  </view>
                  <text v-if="comment.likes > 0" class="comment-heart__count">{{ comment.likes }}</text>
                </view>
-             </view>
-             <!-- P1-02 楼中楼：缩进子评论 -->
+               <!-- P1-02 楼中楼：缩进子评论（2026-09-06 移入 comment-content：
+                    原先作为 comment-item flex 行的直接子级会变成第三"列"，
+                    把正文挤成一字一行竖排，且回复区与右侧爱心相互挤压导致不可点） -->
              <view v-if="comment.replies && comment.replies.length > 0" class="comment-replies">
                <view
                  v-for="reply in visibleReplies(comment)" :key="reply.id"
@@ -894,6 +1031,17 @@ onShareTimeline(() => {
                      <text v-if="reply.replyTo" class="comment-reply__text-ref">（{{ t("village.replyToPrefix", { name: reply.replyTo }) }}）</text>
                    </view>
                    <text class="comment-reply__text">{{ reply.content }}</text>
+                   <!-- 2026-09-06：楼中楼回复附图 -->
+                   <view v-if="reply.images && reply.images.length > 0" class="comment-images comment-images--reply">
+                     <image
+                       v-for="(img, imgIdx) in reply.images"
+                       :key="img + imgIdx"
+                       class="comment-images__item"
+                       :src="resolveMediaUrl(img)"
+                       mode="aspectFill"
+                       @tap.stop="previewCommentImage(reply.images!, imgIdx)"
+                     />
+                   </view>
                    <view class="comment-reply__meta">
                      <text class="comment-reply__time">{{ formatRelativeTime(reply.createdAt) }}</text>
                      <text class="comment-dot">·</text>
@@ -920,6 +1068,22 @@ onShareTimeline(() => {
                    </view>
                    <text v-if="reply.likes > 0" class="comment-heart__count">{{ reply.likes }}</text>
                  </view>
+             </view>
+             <!-- R16：>3 条回复时展示「展开 X 条回复 / 收起」按钮（此前收起态无入口） -->
+             <view
+               v-if="(comment.replies?.length ?? 0) > 3"
+               class="comment-replies__toggle press-feedback"
+               hover-class="press-feedback--active"
+               hover-stay-time="120"
+               role="button"
+               @tap.stop="toggleReplies(comment)"
+             >
+               <text class="comment-replies__toggle-text">
+                 {{ isRepliesCollapsed(comment)
+                   ? t("village.detail.expandReplies", { count: (comment.replies?.length ?? 0) - 3 })
+                   : t("village.detail.collapseReplies") }}
+               </text>
+             </view>
              </view>
            </view>
          </view>
@@ -1070,6 +1234,15 @@ onShareTimeline(() => {
           <image class="reply-mode-bar__cancel-text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
         </view>
       </view>
+      <!-- 2026-09-06：待发送图片缩略图（可移除） -->
+      <view v-if="commentImages.length > 0" class="input-bar__thumbs">
+        <view v-for="(img, idx) in commentImages" :key="img + idx" class="input-bar__thumb">
+          <image class="input-bar__thumb-img" :src="resolveMediaUrl(img)" mode="aspectFill" @tap="previewCommentImage(commentImages, idx)" />
+          <view class="input-bar__thumb-remove press-feedback" role="button" aria-label="移除图片" @tap="removeCommentImage(idx)">
+            <text class="input-bar__thumb-remove-text">×</text>
+          </view>
+        </view>
+      </view>
       <view class="input-bar">
         <view class="input-bar__field">
           <input
@@ -1078,24 +1251,44 @@ onShareTimeline(() => {
             class="input-bar__input"
             :placeholder="replyPlaceholder"
             confirm-type="send"
-            :focus="commentInputFocused"
-            @blur="commentInputFocused = false"
+            :focus="commentInputFocused || commentInputFocus"
+            @blur="commentInputFocused = false; commentInputFocus = false"
             @confirm="submitComment"
             :aria-label="replyPlaceholder"
           />
         </view>
         <view class="input-bar__actions">
-          <!-- @ 提及 -->
-          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+          <!-- @ 提及（2026-09-06 落地：插入 @ 并聚焦） -->
+          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="提及某人" @tap="insertMention">
             <text class="input-bar__icon-text">@</text>
           </view>
-          <!-- 表情 -->
-          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+          <!-- 表情（2026-09-06 落地：表情面板） -->
+          <view class="input-bar__icon press-feedback" :class="{ 'input-bar__icon--active': emojiPanelVisible }" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="表情" @tap="toggleEmojiPanel">
             <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
           </view>
-          <!-- 图片 -->
-          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button">
+          <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张） -->
+          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="添加图片" @tap="chooseCommentImage">
             <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
+          </view>
+          <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言 -->
+          <view
+            class="input-bar__send press-feedback"
+            :class="{ 'input-bar__send--disabled': !commentContent.trim() || isSubmitting }"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            aria-label="发送评论"
+            @tap="submitComment"
+          >
+            <text class="input-bar__send-text">发送</text>
+          </view>
+        </view>
+      </view>
+      <!-- 2026-09-06：表情面板（常用表情，点选追加） -->
+      <view v-if="emojiPanelVisible" class="emoji-panel">
+        <view class="emoji-panel__grid">
+          <view v-for="emoji in COMMON_EMOJIS" :key="emoji" class="emoji-panel__item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="'表情 ' + emoji" @tap="appendEmoji(emoji)">
+            <text class="emoji-panel__emoji">{{ emoji }}</text>
           </view>
         </view>
       </view>
@@ -1339,6 +1532,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex-shrink: 0;
   margin-left: auto;
   padding-left: 16rpx;
+}
+
+/* 2026-09-06 布局修复：根评论的爱心原先以 flex 兄弟身份写在 comment-content（块级）
+   内，margin-left:auto 失效、把正文挤压；现改为锚定 comment-item 右上角（与理想图一致）。
+   楼中楼回复（.comment-reply）内的爱心仍走 flex 右侧布局，不受影响。 */
+.comment-content > .comment-heart-wrap {
+  position: absolute;
+  right: 20rpx;
+  top: 24rpx;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .comment-heart {
@@ -2131,6 +2335,27 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   background: $bg-page;
   border-radius: var(--r-lg, 20rpx);
   transition: transform var(--d-fast, 120ms) ease;
+  /* 2026-09-06 布局修复：作为根评论内绝对定位爱心的定位锚点 */
+  position: relative;
+}
+
+/* 2026-09-06 评论附图（根评论 + 楼中楼回复共用） */
+.comment-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 4rpx 0 12rpx;
+}
+
+.comment-images--reply {
+  margin: 4rpx 0 8rpx;
+}
+
+.comment-images__item {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: var(--r-md, 12rpx);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 /* #ifdef H5 */
@@ -2302,9 +2527,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin-bottom: 8rpx;
 }
 
-/* "回复 @昵称"前缀高亮 */
+/* "回复 @昵称"前缀高亮（2026-09-06：显式字号，此前未设置继承默认值偏大） */
 .comment-reply__text-ref {
   color: $green-primary;
+  font-size: var(--fs-md, 26rpx);
 }
 
 /* P1-02 楼中楼：底部回复模式提示栏 */
@@ -2704,6 +2930,107 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: $text-secondary;
 }
 
+/* R16：可见发送按钮 */
+.input-bar__send {
+  height: 64rpx;
+  padding: 0 28rpx;
+  border-radius: var(--r-circle, 50%);
+  background: #2fbf8f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-bar__send--disabled {
+  opacity: 0.4;
+}
+
+.input-bar__send-text {
+  font-size: var(--fs-lg, 28rpx);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* R16：楼中楼展开/收起 */
+.comment-replies__toggle {
+  margin-top: 12rpx;
+  display: inline-flex;
+  align-items: center;
+}
+
+.comment-replies__toggle-text {
+  font-size: var(--fs-sm, 26rpx);
+  color: #2fbf8f;
+}
+
+/* ==== 2026-09-06 评论输入增强：待发送图片 / 表情面板 ==== */
+.input-bar__thumbs {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 24rpx 0;
+}
+
+.input-bar__thumb {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.input-bar__thumb-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-md, 12rpx);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.input-bar__thumb-remove {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: var(--r-circle, 50%);
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-bar__thumb-remove-text {
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.input-bar__icon--active {
+  background: var(--c-brand-50, #e8fbf3);
+}
+
+.emoji-panel {
+  border-top: 1rpx solid $border-light;
+  padding: 16rpx 20rpx 8rpx;
+  max-height: 360rpx;
+  overflow-y: auto;
+}
+
+.emoji-panel__grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.emoji-panel__item {
+  width: 12.5%;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-panel__emoji {
+  font-size: 40rpx;
+  line-height: 1;
+}
+
 /* ================================================================
    转发弹窗
    ================================================================ */
@@ -2855,6 +3182,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>
 
 /* ========== 2026-09-05 R19：帖子图片全屏查看层 ========== */

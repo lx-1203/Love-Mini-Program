@@ -77,7 +77,10 @@ public class TempChatViewMapper {
             messages = List.of();
         } else {
             List<TempChatMessage> messageList = messageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId());
-            messages = messageList.stream().map(this::toMessageView).toList();
+            // 2026-09-07 R16：消息 sender 落库为 userA 视角（self=userA/peer=userB），
+            // userB 查看时必须翻转，否则 userB 看到自己发的人在左、对方在右（位置全反）
+            boolean viewerIsUserB = !session.getUserAId().equals(currentUserId);
+            messages = messageList.stream().map(m -> toMessageView(m, viewerIsUserB)).toList();
         }
 
         ContactExchangeStateView contactExchange = getContactExchangeView(session);
@@ -127,11 +130,23 @@ public class TempChatViewMapper {
         );
     }
 
-    /** 将消息实体转换为视图。 */
+    /** 将消息实体转换为视图（保持落库的 userA 视角，仅内部/兼容调用使用）。 */
     public ChatMessageView toMessageView(TempChatMessage message) {
+        return toMessageView(message, false);
+    }
+
+    /**
+     * 将消息实体转换为指定查看者视角的视图。
+     * 2026-09-07 R16：sender 落库为 userA 视角，userB 查看时翻转 self↔peer。
+     */
+    public ChatMessageView toMessageView(TempChatMessage message, boolean viewerIsUserB) {
+        String sender = message.getSender();
+        if (viewerIsUserB) {
+            sender = "self".equals(sender) ? "peer" : "self";
+        }
         return new ChatMessageView(
                 String.valueOf(message.getId()),
-                message.getSender(),
+                sender,
                 message.getKind(),
                 message.getBody(),
                 message.getCreatedAt().toString(),

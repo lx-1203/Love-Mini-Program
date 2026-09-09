@@ -167,9 +167,10 @@ public class TempChatMessageService {
 
         sessionService.saveSession(session);
 
-        // WebSocket 推送给对方
+        // WebSocket 推送给对方（R16：推送视图按接收方视角翻转 sender）
         Long recipientId = isPeerMessage ? session.getUserAId() : session.getUserBId();
-        ChatMessageView messageView = sessionService.toMessageView(message);
+        boolean recipientIsUserB = session.getUserBId().equals(recipientId);
+        ChatMessageView messageView = sessionService.toMessageView(message, recipientIsUserB);
         sessionService.getMessagingTemplate().convertAndSendToUser(
                 String.valueOf(recipientId),
                 "/queue/temp-chat/messages",

@@ -202,6 +202,24 @@ public interface VillageService {
     }
 
     /**
+     * 评论帖子（2026-09-06 评论图片上传：支持携带已上传图片 URL 列表）。
+     *
+     * <p>默认实现：忽略 images 委托 {@link #commentPost(Long, Long, String, Long)}，
+     * 供未升级的 mock 实现编译兼容；real 实现（RealVillageService）覆写为完整实现。</p>
+     *
+     * @param userId   评论者用户 ID
+     * @param postId   帖子 ID
+     * @param content  评论内容
+     * @param parentId 父评论 ID（楼中楼回复；null 为根评论）
+     * @param images   已上传图片 URL 列表（可为 null / 空）
+     * @return 评论项视图
+     */
+    default CommentItemView commentPost(Long userId, Long postId, String content, Long parentId,
+                                        java.util.List<String> images) {
+        return commentPost(userId, postId, content, parentId);
+    }
+
+    /**
      * 转发帖子。
      *
      * @param userId  转发者用户 ID

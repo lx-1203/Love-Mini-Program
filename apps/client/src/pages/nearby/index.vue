@@ -28,14 +28,17 @@ import { SCHOOLS } from "../../config/schools";
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
-// 2026-08-26：圈子图标 emoji→SVG 解析（业务组件图标禁用 emoji 字符）
-import { resolveCircleIcon } from "../../config/circle-icons";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
 
 import { fetchCurrentLocation, buildLocationText } from "../../utils/location";
+// R20（2026-09-08）：env(safe-area-inset-top) 在模拟器为 0，标题行顶进状态栏
+// （「发动态」与系统时间/胶囊同排叠压）→ JS 注入 statusBarHeight
+import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/附近1/匹配2/消息3/我的4）
 useTabBar(1);
+
+const statusBarHeightPx = useStatusBarHeight();
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -65,6 +68,9 @@ const circlePosts = computed<PostItem[]>(() => villageStore.nearbyPosts.slice(0,
 /** 当前城市（fetchNearbyPosts 城市过滤用；来自定位，定位失败则空） */
 const currentCity = ref("");
 
+/** R16（2026-09-07）：附近页搜索关键词——此前未声明导致输入无法绑定（搜索失效根因） */
+const searchKeyword = ref("");
+
 /** 首页子标题：北京大学 · 3km */
 
 const homeSubtitle = ref(buildLocationText("", sessionStore.userSession?.campusName));
@@ -73,6 +79,10 @@ async function initLocation() {
   const loc = await fetchCurrentLocation();
   if (loc) {
     homeSubtitle.value = buildLocationText(loc.city, sessionStore.userSession?.campusName);
+    // R16（2026-09-07）：定位成功立即上报坐标（force 跳过节流）——
+    // 此前 nearby 页只取城市不上报，后端推荐距离仍按旧坐标/默认点计算，
+    // 出现「1893km」级异常距离与区域错乱
+    void reportLocation(loc.latitude, loc.longitude, true).catch(() => {});
     // 2026-08-27 修复：定位成功后用真实城市刷新附近动态（不再仅登录态）
     if (loc.city && loc.city !== currentCity.value) {
       currentCity.value = loc.city;
@@ -175,9 +185,10 @@ function goLogin() {
   openAppPath(ROUTES.LOGIN);
 }
 
-/** 搜索（附近内容） */
+/** 搜索（附近内容）：R16 带关键词跳搜索页（搜索页 onLoad 支持 keyword 自动搜索） */
 function goSearch() {
-  openAppPath(ROUTES.SEARCH);
+  const kw = searchKeyword.value.trim();
+  openAppPath(kw ? `${ROUTES.SEARCH}?keyword=${encodeURIComponent(kw)}` : ROUTES.SEARCH);
 }
 
 /** 附近的人 / 同城的人 */
@@ -214,11 +225,7 @@ function onPostAuthor(userId: string) {
   openUserProfile(userId);
 }
 
-/** v3 冻结：认识 TA → 他人主页（不直接 like/建聊天） */
-function meetAuthor(userId: string) {
-  if (!requireLogin()) return;
-  openUserProfile(userId);
-}
+/** v3 冻结：认识 TA 入口已并入 PostCard 作者行「关注」芯片（R20 移除独立按钮） */
 
 /** 帖子标签/关联活动 */
 function onPostTag(tagName: string) {
@@ -276,13 +283,16 @@ function circleCover(circle: { name: string }): string {
   if (n.includes("桌游")) return CIRCLE_COVER.boardgame;
   if (n.includes("考研")) return CIRCLE_COVER.postgraduate;
   if (n.includes("学习搭子") || n.includes("学习")) return CIRCLE_COVER.studybuddy;
-  return "";
+  // R20（2026-09-08）：兜底返回默认封面而非空串——此前未命中关键词的圈子
+  // 走 SVG 图标位（aspectFit 居中），卡片四周出现大块空白（用户反馈「圈子图片排版错误」）
+  return CIRCLE_COVER.photo;
 }
 
 /** 成员数格式化 */
 function formatMemberCount(count: number): string {
   if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  // R21：对齐理想图（1.2w / 8,932）——千位以下展示精确人数（千分位），不再用英文 k 单位
+  if (count >= 1000) return count.toLocaleString("en-US");
   return String(count);
 }
 
@@ -295,16 +305,31 @@ function requireLogin(): boolean {
 </script>
 
 <template>
-  <view class="nearby-home page-bottom-safe" :style="menuStyleVars">
+  <view
+    class="nearby-home page-bottom-safe"
+    :style="[{ paddingTop: statusBarHeightPx + 12 + 'px' }, menuStyleVars]"
+  >
     <scroll-view scroll-y class="nearby-home__scroll" :show-scrollbar="false">
       <!-- 顶部：附近 + 子标题 + 发帖 -->
       <view class="nearby-home__header">
         <view class="nearby-home__title-row">
           <text class="nearby-home__title">{{ t('nearby.title') }}</text>
-          <image class="nearby-home__search" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" role="button" :aria-label="t('nearby.searchPlaceholder')" @tap="goSearch" alt="" />
           <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
             <text class="nearby-home__publish-text">{{ t('nearby.publishToday') }}</text>
           </view>
+        </view>
+        <!-- 2026-09-06：搜索由图标改为真实输入框（确认后带关键词进搜索页） -->
+        <view class="nearby-home__search-box">
+          <image class="nearby-home__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+          <input
+            v-model="searchKeyword"
+            class="nearby-home__search-input"
+            :placeholder="t('nearby.searchPlaceholder')"
+            placeholder-class="nearby-home__search-placeholder"
+            confirm-type="search"
+            :aria-label="t('nearby.searchPlaceholder')"
+            @confirm="goSearch"
+          />
         </view>
         <text class="nearby-home__subtitle">{{ homeSubtitle }}</text>
       </view>
@@ -384,16 +409,9 @@ function requireLogin(): boolean {
               :aria-label="circle.name"
               @tap="goCircleDetail(circle.id)"
             >
-              <image v-if="circleCover(circle)" class="circle-mini__cover" :src="circleCover(circle)" mode="aspectFill" alt="" />
-              <!-- 2026-08-26：图标优先 SVG（封面缺失时也不再用 emoji 字符） -->
-              <image
-                v-else-if="resolveCircleIcon(circle.icon)"
-                class="circle-mini__icon"
-                :src="resolveCircleIcon(circle.icon)"
-                mode="aspectFit"
-                alt=""
-              />
-              <text v-else class="circle-mini__emoji">{{ circle.name.slice(0, 1) }}</text>
+              <!-- R20（2026-09-08）：封面恒满铺（circleCover 已兜底默认封面），
+                   不再回退 SVG 图标位，消除卡片周围空白 -->
+              <image class="circle-mini__cover" :src="circleCover(circle)" mode="aspectFill" alt="" />
               <view class="circle-mini__overlay" />
               <view class="circle-mini__info">
                 <text class="circle-mini__name">{{ circle.name }}</text>
@@ -484,7 +502,7 @@ function requireLogin(): boolean {
         <view v-else-if="circlePosts.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
         </view>
-        <view v-for="(post, idx) in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
+        <view v-for="post in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
           <PostCard
             :post="post"
             @open-detail="onPostDetail"
@@ -492,17 +510,9 @@ function requireLogin(): boolean {
             @open-tag="onPostTag"
             @open-activity="onPostActivity"
           />
-          <view
-            v-if="idx === 0"
-            class="nearby-meet press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="t('nearby.meetAuthor')"
-            @tap.stop="meetAuthor(post.author.userId)"
-          >
-            <text class="nearby-meet__text">{{ t('nearby.meetAuthor') }}</text>
-          </view>
+          <!-- R20（2026-09-08）：移除仅首帖出现的粉色「认识 TA」按钮——
+               规则不可感知（为何只有第一条？）导致功能感知混乱；
+               作者互动统一由 PostCard 作者行的「关注」芯片承接（与理想图一致） -->
         </view>
       </NearbySection>
 
@@ -515,7 +525,8 @@ function requireLogin(): boolean {
 .nearby-home {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 0;
+  /* R20：padding-top 注入状态栏高度（env() 在模拟器为 0 会顶进状态栏） */
+  padding: calc(var(--statusbar-height, calc(env(safe-area-inset-top) + 20px)) + 24rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -534,8 +545,9 @@ function requireLogin(): boolean {
 
 .nearby-home__header {
   margin-bottom: 8rpx;
-  /* 右侧避让微信胶囊（--capsule-right 由 useMenuButtonRect 注入） */
-  padding-right: calc(var(--capsule-right, 96px) + 8px);
+  /* 右侧避让微信胶囊（--capsule-right≈7px 间隙 + 胶囊 87px + 120px 缓冲），
+     「发动态」胶囊与系统胶囊保持充足间距 */
+  padding-right: calc(var(--capsule-right, 7px) + 120px);
 }
 
 .nearby-home__title-row {
@@ -568,6 +580,34 @@ function requireLogin(): boolean {
   font-size: 24rpx;
   font-weight: 700;
   color: var(--c-text-inverse, #FFFFFF);
+}
+
+.nearby-home__search-box {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  padding: 16rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid #E3EDE8;
+}
+
+.nearby-home__search-icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+
+.nearby-home__search-input {
+  flex: 1;
+  height: 40rpx;
+  font-size: 26rpx;
+  color: var(--c-text-primary, #222222);
+}
+
+.nearby-home__search-placeholder {
+  color: var(--c-text-tertiary, #999999);
 }
 
 .nearby-home__subtitle {
@@ -646,19 +686,19 @@ function requireLogin(): boolean {
 
 .circle-scroll__list {
   display: flex;
-  gap: 12rpx;
-  /* 2026-08-31 待办：右内边距 16→32rpx，避免最后一张兴趣圈卡右缘被截断 */
-  padding: 0 32rpx 8rpx 8rpx;
+  gap: 10rpx;
+  /* R21：卡片收窄后右内边距同步收敛，避免末卡之后留白突兀 */
+  padding: 0 20rpx 8rpx 8rpx;
 }
 
 .circle-mini {
   /* 第五轮 R5：对齐理想图《附近的首页》——竖版 3:4 小海报卡
-   * （750rpx 屏宽下 4 张可见：4×166 + 3×12 gap ≈ 满宽），圆角 16px 级 */
+   * R21：166→150rpx 收窄，保证 4 张卡完整落在视口内（此前第 4 张被右缘裁切约 1/3） */
   position: relative;
-  width: 166rpx;
-  height: 222rpx;
+  width: 150rpx;
+  height: 200rpx;
   flex-shrink: 0;
-  border-radius: 32rpx;
+  border-radius: 28rpx;
   overflow: hidden;
   background: var(--c-line, #EEF2F0);
 }
@@ -878,20 +918,6 @@ function requireLogin(): boolean {
 /* 附近动态 */
 .nearby-post-item {
   margin-bottom: 16rpx;
-}
-
-.nearby-meet {
-  margin-top: 12rpx;
-  display: inline-flex;
-  padding: 12rpx 32rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #FF8DB7 0%, #FF6B81 100%);
-}
-
-.nearby-meet__text {
-  font-size: 24rpx;
-  font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .nearby-home__empty {

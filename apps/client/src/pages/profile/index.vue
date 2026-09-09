@@ -748,9 +748,34 @@ const mineSocialProof = computed(() => ({
   visitorCount: likesStore.visitors.length || profileStore.profileStats?.visitorsCount || 0,
 }));
 
+/**
+ * R16（2026-09-07）：我的「日常」故事卡（朋友圈式内容）。
+ * 封面取日常首图（无图回退本人头像），标题取内容摘要，角标为点赞/评论数。
+ */
+const myDailyStories = computed(() => {
+  if (!isOwnProfile.value) return [];
+  const ownAvatar = profileView.value.avatarUrl || "/static/assets/images/people/person-09.png";
+  return profileStore.myDailies.slice(0, 6).map((d) => ({
+    id: d.id,
+    cover: d.images.length > 0 ? resolveMediaUrl(d.images[0]) : resolveMediaUrl(ownAvatar),
+    title: d.summary ? (d.summary.length > 12 ? d.summary.slice(0, 12) + "…" : d.summary) : "日常",
+    location: "",
+    dateText: d.auditStatus === "pending" ? "审核中" : d.createdAt ? formatDailyDate(d.createdAt) : "",
+  }));
+});
+
+function formatDailyDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | null>(() => {
   if (!isOwnProfile.value) return null;
   const pv = profileView.value;
+  // 2026-09-06：我的故事封面与页头头像同源（pv.avatarUrl = users.avatar_url），
+  // 替代与本号人设割裂的静态人像 p5~p7；会话视图无头像字段，禁止用固定兜底图
+  const ownAvatar = pv.avatarUrl || "/static/assets/images/people/person-09.png";
   return {
     id: Number(sessionStore.userSession?.userId ?? 0),
     basic: {
@@ -769,13 +794,10 @@ const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | n
     socialProof: mineSocialProof.value,
     relation: { liked: false, matched: false, commonInterests: [] },
     posts: minePosts.value,
-    // D-03：我的故事 3 卡（生活日常/旅行足迹/我的心愿），封面复用本地人物配图
-    // （第五轮 QA：原 CARD_1/2/3 为静态插画，改 portraits/p5~p7.jpg 增强真实感）
-    stories: [
-      { id: "story-1", cover: resolveMediaUrl("/static/assets/images/portraits/p5.jpg"), title: "生活日常", location: "", dateText: "3 篇" },
-      { id: "story-2", cover: resolveMediaUrl("/static/assets/images/portraits/p6.jpg"), title: "旅行足迹", location: "", dateText: "2 篇" },
-      { id: "story-3", cover: resolveMediaUrl("/static/assets/images/portraits/p7.jpg"), title: "我的心愿", location: "", dateText: "1 篇" },
-    ],
+    // R16（2026-09-07）：我的故事 = 我的「日常」（朋友圈式，visibility=friends 的帖子）。
+    // 此前为硬编码 3 卡（封面用头像、dateText 写死），点击进帖子历史——即用户反馈的
+    // 「我的故事/我的相册误显示帖子访问记录」。现由 /posts/my-dailies 真实数据驱动。
+    stories: myDailyStories.value,
   };
 });
 
@@ -814,16 +836,25 @@ function onProfileShellEdit() {
 function onProfileShellComplete() {
   goCompleteProfile();
 }
-/** P0-3：我的故事照片/视频卡点击 → 相册页 */
-function onProfileShellStoryPhoto() {
-  openAppPath(ROUTES.PROFILE.ALBUM);
+/** R16：我的故事卡点击 → 对应「日常」帖子详情（index 来自 MyStory 的 stories 序号） */
+function onProfileShellStoryPhoto(index: number) {
+  const daily = profileStore.myDailies[index];
+  if (!daily) {
+    openAppPath(ROUTES.VILLAGE.HISTORY);
+    return;
+  }
+  openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(daily.id)}`);
+}
+/** R16：相册缩略图点击 → 恋爱相册页（原误入帖子访问历史） */
+function onProfileShellTapAlbum(_index: number) {
+  openAppPath(ROUTES.ALBUM);
 }
 function onProfileShellStoryVideo() {
-  openAppPath(ROUTES.PROFILE.ALBUM);
+  openAppPath(ROUTES.VILLAGE.HISTORY);
 }
-/** P0-3：添加故事 → 相册页（上传新故事/相册照片） */
+/** R16：添加故事 → 发布页日常模式（target=friends，仅喜欢/关注的人可见） */
 function onProfileShellAddStory() {
-  openAppPath(ROUTES.PROFILE.ALBUM);
+  openAppPath(`${ROUTES.VILLAGE.PUBLISH}?target=friends`);
 }
 function onProfileShellStatTap(key: string) {
   const map: Record<string, string> = {
@@ -1698,6 +1729,19 @@ onShareAppMessage(() => {
  * onShow 在 onMounted 之前触发，首次 onShow 即覆盖首屏数据加载。
  */
 let profileRequestedOnce = false;
+/**
+ * R16：拉取「我的日常」；冷启动时 onShow 可能早于会话恢复（token/userSession
+ * 未就绪 → action 静默早退），用带退避的重试兜底。只在仍无数据时重试。
+ */
+function refreshMyDailiesWithRetry(retries: number): void {
+  void profileStore.loadMyDailies();
+  if (retries > 0 && !profileStore.myDailies.length) {
+    setTimeout(() => {
+      if (profileStore.myDailies.length === 0) refreshMyDailiesWithRetry(retries - 1);
+    }, 2000);
+  }
+}
+
 onShow(() => {
   loadPageUserIdParam();
   // 2026-08-12 V3：他人主页按对方背景显示（每次进入他人态都拉取，避免切换目标后残留）
@@ -1709,7 +1753,11 @@ onShow(() => {
     otherProfile.value = null;
     otherBgUrl.value = "";
   }
-  if (profileRequestedOnce) return;
+  if (profileRequestedOnce) {
+    // R16：日常可能刚在发布页新增，每次 onShow 轻量刷新「我的故事」数据源
+    refreshMyDailiesWithRetry(1);
+    return;
+  }
   // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
   // 冷启动无 token 时 onShow 会并发拉 basic/campus/schedule/stats/social-progress
   // → 全部 401 雪崩 + 每条上报 Sentry「登录已过期」）。
@@ -1718,6 +1766,7 @@ onShow(() => {
   // 无网络请求，放行以注入 关注128/粉丝96/获赞356/匹配42（否则 dev-user 会话无 token 被拦截 → 4 列恒 0）。
   if (!getToken() && !useMock()) return;
   profileRequestedOnce = true;
+  refreshMyDailiesWithRetry(3);
   profileStore.fetchProfile().then(() => {
     // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
     maybeShowAvatarHint();
@@ -1792,6 +1841,7 @@ onUnload(() => {
         @complete="onProfileShellComplete"
         @stat-tap="onProfileShellStatTap"
         @story-photo="onProfileShellStoryPhoto"
+        @tap-album="onProfileShellTapAlbum"
         @story-video="onProfileShellStoryVideo"
         @add-story="onProfileShellAddStory"
         @interaction-tap="onProfileShellInteractionTap"

@@ -743,8 +743,8 @@ onShareAppMessage(() => ({
                 @open="goToDetail"
               />
 
-              <!-- 空状态 -->
-              <view v-if="displayPosts.length === 0" class="village-empty">
+              <!-- 空状态（loading 中不显示，避免与骨架屏同时渲染造成"空态闪现"） -->
+              <view v-if="!loading && displayPosts.length === 0" class="village-empty">
                 <!-- B6：后台关闭发帖功能 → 提示「发帖暂未开放」，隐藏发帖动作 -->
                 <EmptyState
                   type="no-data"
@@ -831,7 +831,7 @@ onShareAppMessage(() => ({
   flex-direction: column;
   width: 100%;
   min-height: 100%;
-  background: var(--c-gradient-page);
+  background: #ffffff; /* R16：纯白背景 */
   overflow: hidden;
 }
 
@@ -853,6 +853,8 @@ onShareAppMessage(() => ({
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--sp-7) var(--sp-5);
+  /* R21：右侧避让微信胶囊——搜索框此前延伸到胶囊正下方被遮挡 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .village-header__title-wrap {
@@ -1313,4 +1315,11 @@ onShareAppMessage(() => ({
   font-size: 36rpx;
   color: var(--c-text-secondary);
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>

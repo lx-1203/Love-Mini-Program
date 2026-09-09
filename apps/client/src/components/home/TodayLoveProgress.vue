@@ -77,13 +77,21 @@ function capitalize(s: string): string {
     </view>
     <view class="love-progress__steps">
       <view v-for="(step, idx) in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
-        <!-- 2026-09-02 R8 用户要求：中间圆被序号完全覆盖（不保留图标），序号直接 1/2/3/4 -->
-        <view class="love-step__index" :style="{ background: stepMeta(step.id).bg }">{{ idx + 1 }}</view>
+        <!-- R21（2026-09-09）：序号圆点改回理想图的语义图标（对勾/爱心/对话/星星），
+             完成态显示对勾，未完成显示该步骤的类别图标 -->
+        <view class="love-step__index" :style="{ background: stepMeta(step.id).bg }">
+          <image
+            class="love-step__index-icon"
+            :src="step.completed ? IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG : stepMeta(step.id).iconSrc || stepMeta(step.id).icon"
+            mode="aspectFit"
+          />
+        </view>
         <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ stepTitle(step) }}</text>
         <text class="love-step__meta" :style="{ color: stepMeta(step.id).bg }">
           {{ step.completed ? '已完成' : stepMeta(step.id).todo }}
         </text>
-        <!-- 2026-09-02 R5/R7：每个步骤补充文字说明（描述随状态动态变化） -->
+        <!-- 2026-09-02 R5/R7：每个步骤补充文字说明（描述随状态动态变化）；
+             R21：限两行防溢出（此前第 4 卡「参与兴趣互动」被截断成「参与兴趣…」） -->
         <text class="love-step__desc">
           {{ stepDescription(step) }}
         </text>
@@ -199,12 +207,12 @@ function capitalize(s: string): string {
 }
 
 .love-step__title {
-  font-size: 24rpx;
-  font-weight: 500;
+  font-size: 22rpx;
+  font-weight: 600;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* R21：允许换行——「参与兴趣互动」5 字标题此前单行截断成「参与兴趣…」 */
+  white-space: normal;
+  line-height: 1.25;
   max-width: 100%;
 }
 
@@ -242,6 +250,11 @@ function capitalize(s: string): string {
   font-weight: 800;
   line-height: 1;
   flex-shrink: 0;
+}
+
+.love-step__index-icon {
+  width: 30rpx;
+  height: 30rpx;
   box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.12);
 }
 </style>

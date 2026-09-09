@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * 统一发布动态页（village/publish）
@@ -24,6 +23,11 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { chooseImages } from "../../../utils/media";
 import { compressImages } from "../../../utils/compress-image";
+// R20（2026-09-08）：publish-header 原用 env(safe-area-inset-top)（模拟器/无刘海机型=0），
+// 系统时间与「发布动态」标题叠印 → 改 JS 注入 statusBarHeight
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+
+const statusBarHeightPx = useStatusBarHeight();
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -36,13 +40,21 @@ const content = ref("");
 const images = ref<string[]>([]);
 const topics = ref<string[]>([]);
 const location = ref("");
+// 2026-09-06 位置固定为当前城市（默认定位，不可更改）：读缓存城市，缺省北京
+const currentCity = (() => {
+  try {
+    return uni.getStorageSync("nearby:city") || "北京市";
+  } catch (_e) {
+    return "北京市";
+  }
+})();
 // 2026-08-31：默认目标为公开广场 → 默认所有人可见；选择圈子目标时联动为圈内成员可见
 const visibility = ref("public");
 const tipVisible = ref(true);
 const submitting = ref(false);
 
-/** 发布目标：general | circle | campus */
-const targetType = ref<"general" | "circle" | "campus">("general");
+/** 发布目标：general | circle | campus | friends（R16：日常，仅喜欢/关注可见） */
+const targetType = ref<"general" | "circle" | "campus" | "friends">("general");
 const targetId = ref<number | null>(null);
 const targetCircle = ref<CircleItem | null>(null);
 const targetOpen = ref(false);
@@ -58,7 +70,10 @@ const joinedCircles = computed(() => circleStore.circles.filter((c) => c.isJoine
 const targetTitle = computed(() => {
   if (isCircleTarget.value && targetCircle.value) return targetCircle.value.name;
   if (targetType.value === "campus") return t("circle.postTopicTargetCampus");
-  return t("village.post.publishToGeneral");
+  // R16：日常目标
+  if (targetType.value === "friends") return "个人日常";
+  // R21（2026-09-09）：与 post 版发布页/渠道弹层统一命名为「个人动态」（原「公开广场」两处叫法不一致）
+  return "个人动态";
 });
 
 const targetSubtitle = computed(() => {
@@ -67,6 +82,8 @@ const targetSubtitle = computed(() => {
     return `${n >= 10000 ? (n / 10000).toFixed(1) + "w" : n} 成员`;
   }
   if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
+  // R16：日常目标文案
+  if (targetType.value === "friends") return "日常 · 仅互相喜欢或关注我的人可见";
   return "默认公开 · 所有人可见";
 });
 
@@ -76,6 +93,8 @@ const visibilityText = computed(() => {
   if (visibility.value === "public") return t("village.post.visibilityPublic");
   if (visibility.value === "school") return "学校圈";
   if (visibility.value === "interest") return "兴趣圈";
+  // R16：日常可见范围
+  if (visibility.value === "friends") return "仅喜欢/关注的人可见";
   return t("village.post.visibilityPublic");
 });
 
@@ -83,6 +102,11 @@ const visibilityText = computed(() => {
 onLoad((query) => {
   const cid = query?.circleId ? Number(query.circleId) : null;
   if (query?.target === "campus") targetType.value = "campus";
+  // R16：日常模式入口（我的故事「添加日常」）
+  if (query?.target === "friends") {
+    targetType.value = "friends";
+    visibility.value = "friends";
+  }
   if (cid && !Number.isNaN(cid)) {
     targetType.value = "circle";
     targetId.value = cid;
@@ -219,7 +243,7 @@ function snapshotDraft() {
     title: "",
     content: content.value,
     images: images.value,
-    tags: topics.value,
+    tags: mergedTopics,
     topics: topics.value,
     location: location.value,
     visibility: visibility.value,
@@ -325,7 +349,12 @@ async function submitPublish() {
   const titleFromContent = content.value.trim().slice(0, 30);
   if (submitting.value) return;
   submitting.value = true;
-  // 2026-08-31 待办：发布提交 loading（消除「点发布后长时间无反馈」）
+  // 2026-09-06：正文中直接输入的 #话题 自动并入话题列表（与行入口等效）
+  const inlineTopics = Array.from(content.value.matchAll(/#([^\s#··]+)/g))
+    .map((m) => `#${m[1]}`)
+    .filter((tag) => !topics.value.includes(tag))
+    .slice(0, 5 - topics.value.length);
+  const mergedTopics = [...topics.value, ...inlineTopics];
   uni.showLoading({ title: t("village.post.publishing"), mask: true });
   try {
     // real 模式上传本地图片
@@ -351,7 +380,7 @@ async function submitPublish() {
         title: titleFromContent,
         content: content.value.trim(),
         images: finalImages,
-        tags: topics.value,
+        tags: mergedTopics,
       });
       uni.showToast({ title: t("village.postSuccess"), icon: "success" });
     } else {
@@ -360,7 +389,7 @@ async function submitPublish() {
         title: titleFromContent,
         content: content.value.trim(),
         images: finalImages,
-        tags: topics.value,
+        tags: mergedTopics,
         visibility: visibility.value,
         targetType: targetType.value,
         targetId: targetId.value,
@@ -396,8 +425,8 @@ onUnmounted(() => {
 
 <template>
   <view class="publish-page">
-    <!-- 顶部导航 -->
-    <view class="publish-header">
+    <!-- 顶部导航（R20：padding-top 注入状态栏高度，标题不再与系统时间叠印） -->
+    <view class="publish-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
         <image class="publish-header__x" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
       </view>
@@ -426,34 +455,40 @@ onUnmounted(() => {
           </view>
           <text class="publish-to__arrow">›</text>
         </view>
-        <!-- 目标选择弹层 -->
+        <!-- 目标选择弹层（R20：公域 → 校园私域 → 兴趣圈子 三级分组） -->
         <view v-if="targetOpen" class="publish-target-sheet" @tap="targetOpen = false">
           <view class="publish-target-sheet__panel" @tap.stop>
             <view class="publish-target-sheet__head">
               <text class="publish-target-sheet__title">选择发布到</text>
             </view>
+            <text class="publish-target-sheet__group">公域 · 所有人可见</text>
             <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseGeneral">
               <text class="publish-target-sheet__name">个人动态</text>
               <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
               <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
+            <text class="publish-target-sheet__group">校园私域 · 同校可见</text>
             <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseCampus">
               <text class="publish-target-sheet__name">校园圈</text>
+              <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
               <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
-            <view
-              v-for="circle in joinedCircles"
-              :key="circle.id"
-              class="publish-target-sheet__option press-feedback"
-              role="button"
-              @tap="selectTarget(circle)"
-            >
-              <view class="publish-target-sheet__circle-opt">
-                <text class="publish-target-sheet__name">{{ circle.name }}</text>
-                <text class="publish-target-sheet__joined">已加入</text>
+            <template v-if="joinedCircles.length > 0">
+              <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+              <view
+                v-for="circle in joinedCircles"
+                :key="circle.id"
+                class="publish-target-sheet__option press-feedback"
+                role="button"
+                @tap="selectTarget(circle)"
+              >
+                <view class="publish-target-sheet__circle-opt">
+                  <text class="publish-target-sheet__name">{{ circle.name }}</text>
+                  <text class="publish-target-sheet__joined">已加入</text>
+                </view>
+                <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
               </view>
-              <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
-            </view>
+            </template>
           </view>
         </view>
       </view>
@@ -493,11 +528,11 @@ onUnmounted(() => {
           <text class="publish-row__meta">已选 {{ topics.length }}/5</text>
           <text class="publish-row__arrow">›</text>
         </view>
-        <view class="publish-row press-feedback" role="button" @tap="openLocationPicker">
+        <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
+        <view class="publish-row">
           <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
-          <text class="publish-row__meta">{{ location || '北京大学 · 未名湖校区' }}</text>
-          <text class="publish-row__arrow">›</text>
+          <text class="publish-row__meta">{{ currentCity }} · 当前位置</text>
         </view>
         <view class="publish-row press-feedback" role="button" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
@@ -529,29 +564,7 @@ onUnmounted(() => {
       <view class="publish-body__bottom-space" />
     </scroll-view>
 
-    <!-- 底部工具栏 -->
-    <view class="publish-toolbar">
-      <view class="publish-tool press-feedback" role="button" @tap="chooseImage">
-        <image class="publish-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
-        <text class="publish-tool__label">图片/视频</text>
-      </view>
-      <view class="publish-tool press-feedback" role="button" @tap="toggleTopic('#校园日常')">
-        <text class="publish-tool__icon">#</text>
-        <text class="publish-tool__label">话题</text>
-      </view>
-      <view class="publish-tool press-feedback" role="button" @tap="openLocationPicker">
-        <image class="publish-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
-        <text class="publish-tool__label">位置</text>
-      </view>
-      <view class="publish-tool press-feedback" role="button" @tap="openMentionPicker">
-        <text class="publish-tool__icon">@</text>
-        <text class="publish-tool__label">提及</text>
-      </view>
-      <view class="publish-tool press-feedback" role="button" @tap="openMentionPicker">
-        <text class="publish-tool__icon">⋯</text>
-        <text class="publish-tool__label">更多</text>
-      </view>
-    </view>
+    <!-- 2026-09-06：底部工具栏已按需求移除（与上方行项重复，且无实际作用） -->
   </view>
 </template>
 
@@ -560,15 +573,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--c-bg-page, #EEF7F2);
+  background: #ffffff; /* R16：纯白背景 */
 }
 
 .publish-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 状态栏高度（--statusbar 由 page-meta 注入）+ 右侧预留微信胶囊宽度，避免「发布」被胶囊遮挡 */
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + 16rpx) 200rpx 16rpx 32rpx;
+  /* R20：状态栏高度改由 JS 注入（:style paddingTop），env() 在模拟器为 0 会与系统时间叠印；
+     右侧仍预留微信胶囊宽度，避免「发布」被胶囊遮挡 */
+  padding: 16rpx 200rpx 16rpx 32rpx;
   background: #fff;
   border-bottom: 1rpx solid #EEF2F0;
   flex-shrink: 0;
@@ -598,9 +612,12 @@ onUnmounted(() => {
 .publish-to__arrow { font-size: 36rpx; color: #C2CAC6; }
 
 .publish-target-sheet { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.45); display:flex; align-items:flex-end; }
-.publish-target-sheet__panel { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 24rpx 32rpx 48rpx; max-height: 70vh; }
+/* R21：弹层加高到 78vh（兴趣圈子分组此前在 70vh 下不可见）+ 底部安全区，末行不再贴屏裁切 */
+.publish-target-sheet__panel { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
 .publish-target-sheet__head { padding: 16rpx 0 24rpx; }
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
+/* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
+.publish-target-sheet__group { display: block; padding: 20rpx 8rpx 8rpx; font-size: 22rpx; font-weight: 600; color: #36C99A; }
 .publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
 .publish-target-sheet__name { font-size: 28rpx; color: #1A1E1C; }
 .publish-target-sheet__circle-opt { display: flex; align-items: center; }
@@ -617,7 +634,8 @@ onUnmounted(() => {
 .publish-image__img { width: 100%; height: 100%; }
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
-.publish-image--add { display: flex; align-items: center; justify-content: center; border: 1rpx dashed #C7D8D2; }
+/* R21：添加图片块对齐 post 版虚线白底样式（原继承浅绿实心底，与理想图不符） */
+.publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed #C7D8D2; box-sizing: border-box; }
 .publish-image__plus { font-size: 56rpx; color: #9AA39F; }
 
 .publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
@@ -640,5 +658,11 @@ onUnmounted(() => {
 .publish-tool { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
 .publish-tool__icon { width: 40rpx; height: 40rpx; color: #6B7571; }
 .publish-tool__label { font-size: 20rpx; color: #9AA39F; }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>
-```

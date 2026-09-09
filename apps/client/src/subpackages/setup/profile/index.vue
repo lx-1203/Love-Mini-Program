@@ -548,7 +548,7 @@ async function save() {
   padding: 18rpx;
   box-sizing: border-box;
   border-radius: var(--r-lg, 18rpx);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
 }
 
 .field--textarea {
@@ -612,7 +612,7 @@ async function save() {
   gap: var(--sp-3);
   padding: var(--sp-4);
   border-radius: var(--r-lg);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
   border: 2rpx solid var(--c-border-light);
   transition: all var(--d-normal, 200ms) ease;
 
@@ -677,7 +677,7 @@ async function save() {
 .tag-chip {
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-full);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
   border: 1rpx solid var(--c-border-default);
 
   &--selected {
@@ -708,7 +708,7 @@ async function save() {
   justify-content: space-between;
   padding: var(--sp-4) var(--sp-3);
   border-radius: var(--r-lg);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
   transition: transform var(--d-fast, 120ms) ease;
 
   &--hover {
@@ -733,6 +733,13 @@ async function save() {
 @keyframes wizard-enter {
   from { opacity: 0; transform: translateY(12rpx); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
 }
 
 </style>

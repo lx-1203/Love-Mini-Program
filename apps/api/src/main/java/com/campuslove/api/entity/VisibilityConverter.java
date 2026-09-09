@@ -24,6 +24,7 @@ public class VisibilityConverter implements AttributeConverter<Visibility, Strin
             case public_ -> "public";
             case school -> "school";
             case interest -> "interest";
+            case friends -> "friends";
         };
     }
 
@@ -36,6 +37,7 @@ public class VisibilityConverter implements AttributeConverter<Visibility, Strin
             case "public" -> Visibility.public_;
             case "school" -> Visibility.school;
             case "interest" -> Visibility.interest;
+            case "friends" -> Visibility.friends;
             default -> throw new IllegalArgumentException(
                     "未知的帖子可见范围值: " + dbData);
         };

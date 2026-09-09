@@ -17,6 +17,8 @@ import org.mockito.MockitoAnnotations;
 class VillageControllerTest {
 
     @Mock private VillageService villageService;
+
+    @Mock private com.campuslove.api.repository.PostRepository postRepository;
     @Mock private VillageMetrics villageMetrics;
     // B6：发帖开关强制点依赖的应用配置服务
     @Mock private AppConfigService appConfigService;
@@ -27,13 +29,13 @@ class VillageControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         // infra R2-00308:废弃 GET /posts/dto 端点与 4 参构造器已移除
-        controller = new VillageController(villageService, villageMetrics, appConfigService);
+        controller = new VillageController(villageService, villageMetrics, appConfigService, postRepository);
     }
 
     @Test
     void constructor_shouldAcceptService() {
         // Arrange & Act & Assert
-        assertNotNull(new VillageController(villageService, villageMetrics, appConfigService));
+        assertNotNull(new VillageController(villageService, villageMetrics, appConfigService, postRepository));
     }
 
     @Test

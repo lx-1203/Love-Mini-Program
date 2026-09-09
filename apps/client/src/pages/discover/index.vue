@@ -97,11 +97,14 @@ function switchDiscoverMode(mode: DiscoverMode) {
   activeMode.value = mode;
   discoverStore.activeFilter = mode === "nearby" ? "nearby" : "all";
   discoverStore.matchScope = mode === "nearby" ? "nearby" : "all";
-  // 同步透传参数：附近限定 distanceMax=20，真实接口下轮拉取同样按距离过滤
+  // 同步透传参数：附近限定 distanceMax=20，服务端 R16 已支持 distanceMaxKm 过滤
   discoverStore.recommendationFilter = {
     ...discoverStore.recommendationFilter,
     distanceMax: mode === "nearby" ? NEARBY_MAX_DISTANCE_KM : undefined,
   };
+  // R16（2026-09-07）：切 Tab 强制重拉——此前仅本地过滤同一份列表（30s TTL 缓存），
+  // 两个 Tab 内容完全重复；现在附近走服务端 distanceMaxKm 过滤，必须重新 fetch
+  void discoverStore.fetchCards();
 }
 
 function handleCardTap() {
@@ -146,6 +149,18 @@ async function handleLike() {
 async function handleSuperLike() {
   if (!requireLogin()) return;
   if (!ensureCertified("realname")) return;
+  // 2026-09-06 打招呼频控：同一目标最多 3 次（本地计数），超出后提示等待对方回应；
+  // 与实名认证门控配合，构成「合法身份 + 有限次数」的打招呼判定
+  const targetId = currentCard.value?.id;
+  if (targetId) {
+    const key = `greet:count:${targetId}`;
+    const count = Number(uni.getStorageSync(key) || 0);
+    if (count >= 3) {
+      uni.showToast({ title: "已向TA打过3次招呼，等待对方回应后再试", icon: "none" });
+      return;
+    }
+    uni.setStorageSync(key, count + 1);
+  }
   enterMatching("superLike");
 }
 
@@ -300,7 +315,8 @@ onUnload(() => {
   flex-direction: column;
   display: flex;
   height: 100vh;
-  background: var(--c-bg-page, #EEF7F2);
+  /* 2026-09-06 背景统一：寻觅页改纯白，与理想图（寻觅匹配卡片页面）及他人主页一致 */
+  background: #ffffff;
   padding-top: calc(env(safe-area-inset-top) + 20px);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;
@@ -417,7 +433,8 @@ onUnload(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: calc(var(--capsule-right, 0px) + 24px);
+  /* R20：--capsule-right 仅≈7px，需加胶囊本体宽度避免筛选按钮被胶囊叠压 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .discover-header__titles {

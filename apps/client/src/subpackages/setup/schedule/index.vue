@@ -192,5 +192,12 @@ async function save() {
   font-size: var(--fs-lg);
   font-weight: 500;
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>
 

@@ -8,6 +8,7 @@ import { resolveMediaUrl } from "@/utils/media";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../../stores/session";
+import { useProfileStore } from "../../../stores/profile";
 import { usePageAccess } from "../../../composables/usePageAccess";
 // 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
@@ -28,6 +29,7 @@ import type {
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 const completionPercent = computed(() => sessionStore.profileCompletion);
 
@@ -47,15 +49,29 @@ const ready = ref(false);
 /* -------- 输入 -------- */
 const inputValue = ref("");
 const inputFocus = ref(false);
+/** R21：与私聊页一致的发送键可用态（空输入禁用） */
+const canSend = computed(() => inputValue.value.trim().length > 0 && !sending.value);
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
-const userAvatar = resolveMediaUrl("/static/assets/images/avatars/avatar-1.jpg");
+/* 2026-09-06 修复：本人头像单一数据源 = profileStore.avatarUrl（与会话页一致），
+ * 原写死 avatar-1.jpg 与当前用户身份割裂 */
+const userAvatar = computed(() =>
+  profileStore.avatarUrl ? resolveMediaUrl(profileStore.avatarUrl) : resolveMediaUrl("/static/assets/images/avatars/avatar-2.jpg"),
+);
 
-/* -------- 本地发送 -------- */
-const sendMessage = () => {
+/* -------- 发送（R16 2026-09-07：接真实后端 POST /official-accounts/{code}/messages）-------- *
+ * 此前为纯本地 echo 桩：消息不落库、刷新即消失，且 Date.now() 作 id 同毫秒碰撞。
+ * 现改为 async：本地先插 pending 消息 → POST → 用后端返回（[用户消息, 助手回复]，direction 区分）替换 →
+ * 失败 toast 并恢复草稿。后端同时做了规则化助手回复与刷新后的会话合并。 */
+const sending = ref(false);
+let localIdSeq = 1;
+const nextLocalId = (): number => Date.now() * 100 + (localIdSeq++ % 100);
+
+const sendMessage = async () => {
   const text = inputValue.value.trim();
-  if (!text) return;
+  if (!text || sending.value) return;
+  const localId = nextLocalId();
   messages.value.push({
-    id: Date.now(),
+    id: localId,
     messageType: "user-text",
     content: text,
     cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
@@ -63,17 +79,47 @@ const sendMessage = () => {
   } as any);
   inputValue.value = "";
   scrollToBottom();
-  // 模拟助手回复
-  setTimeout(() => {
-    messages.value.push({
-      id: Date.now() + 1,
-      messageType: "text",
-      content: "收到啦～我会帮你留意合适的活动和人哦 😊",
-      cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
-      publishedAt: new Date().toISOString(), cardActivity: null,
+
+  if (useMock()) {
+    // mock 模式：保留本地模拟回复
+    sending.value = true;
+    setTimeout(() => {
+      messages.value.push({
+        id: nextLocalId(),
+        messageType: "text",
+        content: "收到啦～我会帮你留意合适的活动和人哦 😊",
+        cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
+        publishedAt: new Date().toISOString(), cardActivity: null,
+      });
+      sending.value = false;
+      scrollToBottom();
+    }, 1200);
+    return;
+  }
+
+  sending.value = true;
+  try {
+    const replies = await request<OfficialMessageView[]>({
+      url: `/official-accounts/${encodeURIComponent(accountId.value)}/messages`,
+      method: "POST",
+      data: { content: text },
+      header: { "Idempotency-Key": `official-${localId}` },
     });
+    // 用后端权威结果替换本地 pending 消息
+    const list = Array.isArray(replies) ? replies : [];
+    const pendingIdx = messages.value.findIndex((m) => m.id === localId);
+    if (pendingIdx >= 0) messages.value.splice(pendingIdx, 1, ...list);
+    else messages.value.push(...list);
     scrollToBottom();
-  }, 1200);
+  } catch (_error) {
+    // 失败：移除本地 pending、恢复草稿，提示用户
+    const pendingIdx = messages.value.findIndex((m) => m.id === localId);
+    if (pendingIdx >= 0) messages.value.splice(pendingIdx, 1);
+    inputValue.value = text;
+    uni.showToast({ title: t("messages.officialChatSendFailed"), icon: "none" });
+  } finally {
+    sending.value = false;
+  }
 };
 
 /* -------- 按钮点击 -------- */
@@ -94,22 +140,27 @@ const onActionBtnTap = (label: string) => {
 
 /* -------- 滚动到底部 -------- */
 const scrollContainerId = "chat-scroll-" + Date.now();
+/** 2026-09-06 滚动修复：scroll-view 必须用其自身 scroll-top 属性定位，
+ * 此前用 uni.pageScrollTo 滚的是页面而非 scroll-view，发送后视窗不动，
+ * 用户感知为「消息发不出去」；交替赋值强制触发属性变更 */
+const scrollTopValue = ref(0);
 const scrollToBottom = () => {
   nextTick(() => {
-    uni.createSelectorQuery()
-      .select("#" + scrollContainerId)
-      .boundingClientRect((rect: any) => {
-        if (rect) {
-          uni.pageScrollTo({ scrollTop: 99999, duration: 200 });
-        }
-      })
-      .exec();
+    scrollTopValue.value = scrollTopValue.value >= 99999 ? 100000 : 99999;
   });
 };
 
 /* -------- 判断消息类型 -------- */
-const isUserMsg = (msg: OfficialMessageView) =>
-  (msg as any).messageType === "user-text" || (msg as any).role === "user";
+/* R16：后端 OfficialMessageView 新增 direction（user/assistant），优先用它判别左右；
+ * R20：direction 判别大小写容错 + 收紧兜底（本地理想插入恒 user-text），
+ * 防止用户消息被误判为助手渲染到左侧（方向不区分缺陷） */
+const isUserMsg = (msg: OfficialMessageView) => {
+  const m = msg as any;
+  if (typeof m.direction === "string" && m.direction) {
+    return m.direction.toLowerCase() === "user";
+  }
+  return m.messageType === "user-text" || m.role === "user";
+};
 const isActivityMsg = (msg: OfficialMessageView) =>
   msg.messageType === "card" && msg.cardActivity;
 const isButtonMsg = (msg: OfficialMessageView) =>
@@ -175,6 +226,10 @@ async function loadOfficialChat(): Promise<void> {
       url: `/official-accounts/${encodeURIComponent(accountId.value)}/messages`,
       method: "GET",
     });
+    // R21（2026-09-09）：加载历史后滚到底部——此前仅发送时滚底，
+    // 消息多于视口时最后一条永远被输入栏遮挡
+    await nextTick();
+    setTimeout(() => scrollToBottom(), 120);
   } catch (_error) {
     errorMessage.value = t("messages.officialChatLoadFailed");
     messages.value = [];
@@ -204,7 +259,12 @@ function goBack() {
 }
 
 function shouldShowTime(idx: number): boolean {
-  return idx > 0 && idx % 3 === 0;
+  if (idx === 0) return true;
+  // R21：时间条去重——与上一条同一分钟（HH:mm 相同）不再重复展示
+  const prev = messages.value[idx - 1];
+  const cur = messages.value[idx];
+  if (!prev || !cur) return idx % 3 === 0;
+  return formatTime(prev.publishedAt) !== formatTime(cur.publishedAt) && idx % 3 === 0;
 }
 
 /* -------- 时间格式化 -------- */
@@ -230,8 +290,9 @@ onLoad((query) => {
     <template v-else>
       <!-- 2026-08-31 Phase 1：进入骨架（消除 1~1.5s 纯白过渡） -->
       <SkeletonBlock v-if="!ready" variant="chat" :rows="4" label="加载中" />
-      <!-- ===== 顶部导航栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） ===== -->
-      <view class="nav-bar" :style="{ paddingTop: statusBarHeightPx + 'px' }">
+      <!-- ===== 顶部导航栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海；
+           R20：Math.max 兜底 24px，标题不再贴刘海/压状态栏） ===== -->
+      <view class="nav-bar" :style="{ paddingTop: Math.max(statusBarHeightPx, 24) + 'px' }">
         <view class="nav-left press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goBack">
           <!-- 2026-08-25 P0：返回箭头改为 ‹（规格书 9.1） -->
           <text class="nav-back-icon">‹</text>
@@ -284,6 +345,7 @@ onLoad((query) => {
           :id="scrollContainerId"
           class="chat-scroll"
           scroll-y
+          :scroll-top="scrollTopValue"
           scroll-with-animation
         >
           <view class="chat-list">
@@ -368,11 +430,15 @@ onLoad((query) => {
         </scroll-view>
       </view>
 
-      <!-- ===== 底部输入栏 ===== -->
+      <!-- ===== 底部输入栏（R20：与私聊页 wechat-input-bar 统一——[表情][+] [输入框] [发送]，
+           移除私聊页没有的麦克风按钮，消除同组件跨场景布局不一致） ===== -->
       <view class="input-bar">
         <view class="input-bar__icon">
-          <view class="voice-btn">
-            <image class="voice-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
+          <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
+        </view>
+        <view class="input-bar__icon input-bar__icon--plus">
+          <view class="plus-btn">
+            <text class="plus-btn__icon">+</text>
           </view>
         </view>
         <view class="input-bar__field">
@@ -388,16 +454,13 @@ onLoad((query) => {
             @blur="inputFocus = false"
           />
         </view>
-        <view class="input-bar__icon">
-          <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
-        </view>
-        <view class="input-bar__icon input-bar__icon--plus">
-          <view class="plus-btn">
-            <text class="plus-btn__icon">+</text>
-          </view>
-        </view>
-        <!-- P2 修复：输入栏增加常显「发送」按钮（原先仅依赖键盘 confirm，mp-weixin 软键盘 send 不可靠/无按钮时无法上屏） -->
-        <view class="input-bar__send" @tap="sendMessage">
+        <!-- P2 修复：输入栏增加常显「发送」按钮（原先仅依赖键盘 confirm，mp-weixin 软键盘 send 不可靠/无按钮时无法上屏）；
+             R21：空输入时禁用态，与私聊页发送键状态逻辑一致 -->
+        <view
+          class="input-bar__send"
+          :class="{ 'input-bar__send--disabled': !canSend }"
+          @tap="sendMessage"
+        >
           <text class="input-bar__send-text">发送</text>
         </view>
       </view>
@@ -411,6 +474,14 @@ onLoad((query) => {
 .assistant-chat {
   /* P0#4: 覆盖全局粉→灰页面渐变，使用浅薄荷底色，避免“上绿下粉” */
   background: var(--c-bg-page, #EEF7F2);
+  /* 2026-09-06 布局修复：页面改为 100vh 弹性列布局（导航/消息区/输入栏），
+   * 消息区内部滚动。此前整页自然流滚动 + scroll-view 叠加，
+   * 下拉时整页错位、发送后 pageScrollTo 无法定位到 scroll-view 内部 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .nav-bar {
@@ -418,7 +489,8 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding: 0 24rpx;
-  height: 88rpx;
+  /* R20：去掉固定 height:88rpx（与内联 paddingTop 叠加计算不稳），改最小高度自适应 */
+  min-height: 88rpx;
   padding-top: env(safe-area-inset-top);
   background: #fff;
   border-bottom: 1rpx solid #f0f0f0;
@@ -477,7 +549,8 @@ onLoad((query) => {
 }
 .nav-subtitle {
   font-size: 22rpx;
-  color: #999;
+  /* R21：#999 压浅绿底对比度不足，几乎不可读 */
+  color: #667870;
   margin-top: 2rpx;
 }
 
@@ -606,6 +679,8 @@ onLoad((query) => {
   align-items: flex-start;
   gap: 16rpx;
 }
+/* R20（2026-09-08）：方向判别（左右行）保持，但 isUserMsg 判定收紧见 script；
+   助手=左（头像左）、用户=右（头像右），两侧在视觉上必须镜像可区分 */
 .msg-row--left {
   flex-direction: row;
 }
@@ -642,7 +717,9 @@ onLoad((query) => {
   padding-bottom: 12rpx;
 }
 .bubble--user {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  /* R20（2026-09-08）：青绿渐变（#43e97b→#38f9d7）与私聊页品牌绿气泡不统一，
+     对齐 ChatBubble --c-brand 品牌绿实色 */
+  background: var(--c-brand, #36C99A);
 }
 .bubble__text {
   font-size: 28rpx;
@@ -727,7 +804,8 @@ onLoad((query) => {
   border-radius: 40rpx;
 }
 .action-btn--primary {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  /* R20：青绿渐变统一收敛为品牌绿 */
+  background: var(--c-brand, #36C99A);
 }
 .action-btn--default {
   background: #fff;
@@ -743,13 +821,15 @@ onLoad((query) => {
 
 /* ===== 已读 ===== */
 .read-receipt {
-  font-size: 22rpx;
-  color: #bbb;
+  /* R20（2026-09-08）：原 #bbb 22rpx 对比度不足、辨识度差 → 提升字号并加深颜色 */
+  font-size: 24rpx;
+  color: #667870;
   margin-top: 6rpx;
 }
 
 /* ===== 底部输入栏 ===== */
 .input-bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 16rpx 20rpx;
@@ -793,7 +873,8 @@ onLoad((query) => {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  /* R20：青绿渐变统一收敛为品牌绿（与私聊页「+」附件按钮一致语义） */
+  background: var(--c-brand, #36C99A);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -828,6 +909,10 @@ onLoad((query) => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+/* R21：空输入禁用态（与私聊页一致） */
+.input-bar__send--disabled {
+  background: #C7E9DC;
 }
 .input-bar__send-text {
   font-size: 28rpx;

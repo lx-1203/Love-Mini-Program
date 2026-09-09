@@ -1,0 +1,11 @@
+[wechatide] skill-call: client=CodeBuddy tool=simulator_refresh
+[wechatide] Failed to connect to WechatIDE. Please run `wechatide auth -c <clientName>` to auth and start WechatIDE server.
+[wechatide] toolCall:simulator_refresh requires toolCall:auth,now running toolCall:auth for client=CodeBuddy
+{
+  "ok": true,
+  "tool": "simulator_refresh",
+  "clientName": "CodeBuddy",
+  "result": {
+    "success": true
+  }
+}

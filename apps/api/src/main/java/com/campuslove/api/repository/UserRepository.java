@@ -77,6 +77,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     java.util.List<User> findByIdIn(java.util.List<Long> ids);
 
     /**
+     * 取最近创建的一个体验号（2026-09-06 稳定体验账号）：
+     * 体验登录优先复用同一账号，保证体验者数据（帖子/会话/资料）跨会话累积。
+     *
+     * @param openidPrefix openid 前缀（"guest:"）
+     * @param role 角色（GUEST）
+     * @param status 状态（active）
+     * @return 最近创建的体验号；不存在时返回 null
+     */
+    User findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc(String openidPrefix, String role, String status);
+
+    /**
      * 统计指定时间之后注册的用户数（用于新增用户统计）。
      *
      * @param since 起始时间

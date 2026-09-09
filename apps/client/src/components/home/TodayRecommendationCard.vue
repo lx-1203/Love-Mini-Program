@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 
-defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
+const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
 defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
+
+/** R21：meta 行用数组拼接——此前模板插值在 gradeLabel/campusName 缺失时会残留「25岁 ·」尾点 */
+const metaLine = computed(() => {
+  const item = props.item;
+  if (!item) return "";
+  const parts: string[] = [];
+  if (item.age > 0) parts.push(`${item.age}岁`);
+  if (item.campusName) parts.push(item.campusName);
+  if (item.gradeLabel) parts.push(item.gradeLabel);
+  return parts.join(" · ");
+});
 </script>
 
 <template>
@@ -26,15 +38,19 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
           <text class="today-card__online-dot"></text>
           <text class="today-card__online-text">在线</text>
         </view>
+        <!-- R21：合拍度对齐理想图——实心粉圆徽章（mp-weixin 对内联 conic-gradient 支持不稳，
+             样式串曾被当文本渲染；理想图本就是实心圆徽章），定位右下 -->
         <view class="today-card__match-badge">
-          <text class="today-card__match-score">{{ item.matchScore }}%</text>
-          <text class="today-card__match-label">合拍度</text>
+          <view class="today-card__match-inner">
+            <text class="today-card__match-score">{{ item.matchScore }}%</text>
+            <text class="today-card__match-label">合拍度</text>
+          </view>
         </view>
       </view>
 
       <view class="today-card__info press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="`查看${item.name}主页`">
         <text class="today-card__name">{{ item.name }}</text>
-        <text class="today-card__meta">{{ item.age }}岁 · {{ item.campusName }}{{ item.gradeLabel ? ' · ' + item.gradeLabel : '' }}</text>
+        <text class="today-card__meta">{{ metaLine }}</text>
         <view v-if="item.tags.length" class="today-card__tags">
           <text v-for="tag in item.tags.slice(0, 4)" :key="tag" class="today-card__tag">{{ tag }}</text>
         </view>
@@ -157,19 +173,30 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
   font-weight: 700;
 }
 
+/* R21：合拍度实心粉圆徽章（理想图样式），定位右下 */
 .today-card__match-badge {
   position: absolute;
-  left: 12rpx;
+  right: 12rpx;
   bottom: 12rpx;
-  width: 104rpx;
-  height: 104rpx;
+  width: 112rpx;
+  height: 112rpx;
   border-radius: 50%;
+  background: #FF6B81;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.25);
+}
+
+.today-card__match-inner {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: #FF6B81;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #FF6B81;
-  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.25);
 }
 
 .today-card__match-score {
@@ -209,11 +236,12 @@ defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 }
 
 .today-card__tag {
-  padding: 8rpx 16rpx;
+  /* R21：收紧内边距与字号，4 个标签单行排布（理想图样式） */
+  padding: 4rpx 14rpx;
   border-radius: 999rpx;
   background: #E8FAF3;
   color: #36C99A;
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 500;
 }
 

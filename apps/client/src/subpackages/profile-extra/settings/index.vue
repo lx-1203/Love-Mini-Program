@@ -322,14 +322,8 @@ const accountMenus = computed<MenuItem[]>(() => [
 
 /** 社交资产分组菜单项（2026-08-14：从主页收敛到设置页；批次 A5：钱包入口受商业化开关控制） */
 const socialMenus = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
-    {
-      icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-      bgColor: "var(--c-tint-cream-50, #FFF8E7)",
-      label: t("profile.taskCenter"),
-      path: ROUTES.PROFILE.TASKS,
-    },
-  ];
+  // 2026-09-06 产品收敛：任务中心 / 我的圈子 / 情感实验室 暂不对外展示（需求方要求隐藏）
+  const items: MenuItem[] = [];
   // 批次 A5：虚拟货币钱包仅在 commerce.coin 开关开启时展示
   if (appConfig.isCommerceOn("coin")) {
     items.push({
@@ -340,15 +334,6 @@ const socialMenus = computed<MenuItem[]>(() => {
     });
   }
   items.push(
-    {
-      icon: IMAGE_PATHS.ICONS_PROFILE.MATCHES,
-      bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
-      label: t("profile.myCircles"),
-      path: ROUTES.CIRCLES.INDEX,
-    },
-  );
-  items.push(
-    { icon: IMAGE_PATHS.ICONS_PROFILE.LAB, bgColor: "var(--c-tint-pink-50, #F3E8FF)", label: t("profile.loveLab"), path: ROUTES.LOVE_CENTER.INDEX },
     { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index", tabQuery: { tab: "mine" } as Record<string, string> | undefined },
     { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },

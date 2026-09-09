@@ -1,0 +1,13 @@
+$ node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-mock && node ../../scripts/verify-package-size.mjs --allow-mock && node scripts/verify-build-features.mjs
+[mp-image] ✅ 未发现 mp-weixin <image> 失效样式（crisp-edges / 裸 object-fit）
+DONE  Build complete.
+[verify-size] ===== mp-weixin 包体积验收 =====
+[verify-size] --allow-mock：跳过 mock 数据桩化检查（dev 构建合法携带 mock 数据）
+[verify-size] ✓ 验收通过：主包/总包体积合规，无 mp4，mock/en-US 已剔除
+[verify] 扫描产物目录: D:\6\恋爱小程序\apps\client\dist\build\mp-weixin
+[verify] 共 319 个 js 文件
+[verify] OK   寻觅-附近卡片（距离排序工具）
+[verify] OK   寻觅-附近空态文案键
+[verify] OK   安全中心-第三方账号绑定标题键
+[verify] OK   登录页-请先登录提示
+[verify] PASS：全部 4 项功能特征已包含在构建产物中。

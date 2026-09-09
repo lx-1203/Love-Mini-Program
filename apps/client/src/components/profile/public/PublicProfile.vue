@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { ref } from "vue";
 import type { UserProfileDTO, UserProfilePost } from "../../../types/profile";
@@ -11,6 +10,7 @@ import PublicGallery from "./PublicGallery.vue";
 import PublicMoment from "./PublicMoment.vue";
 import RelationshipCTA from "./RelationshipCTA.vue";
 import GovernanceMenu from "./GovernanceMenu.vue";
+import LoadingSpinner from "../../common/LoadingSpinner.vue";
 
 const props = withDefaults(defineProps<{
   profile: UserProfileDTO | null;
@@ -52,7 +52,7 @@ function closeGovernance() {
 <template>
   <view class="public-profile">
     <view v-if="loading && !profile" class="public-profile__state">
-      <text class="public-profile__state-text">加载中...</text>
+      <LoadingSpinner text="加载中..." />
     </view>
 
     <view v-else-if="errorMessage && !profile" class="public-profile__state">
@@ -100,7 +100,7 @@ function closeGovernance() {
 <style scoped lang="scss">
 .public-profile {
   min-height: 100vh;
-  background: #EEF7F2;
+  background: #ffffff;
   /* 2026-08-26 P0-2：底内边距覆盖固定底栏 RelationshipCTA + 安全区 + 流内 spacer(220rpx)，保证可完整下滑 */
   padding-bottom: calc(220rpx + env(safe-area-inset-bottom) + 60rpx);
 }
@@ -135,4 +135,3 @@ function closeGovernance() {
   height: 220rpx;
 }
 </style>
-```

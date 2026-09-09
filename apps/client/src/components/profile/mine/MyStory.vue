@@ -34,7 +34,10 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
+  /** R16：故事卡点击（日常详情，index = stories 序号） */
   (e: "tapPhoto", index: number): void;
+  /** R16：相册缩略图点击（打开恋爱相册页），与故事卡分离，避免误入帖子历史 */
+  (e: "tapAlbum", index: number): void;
   (e: "tapVideo"): void;
   (e: "addStory"): void;
 }>();
@@ -53,19 +56,19 @@ function openPost(postId: string): void {
   <view class="my-story">
     <text class="my-story__title">我的故事</text>
 
-    <!-- ===== 我的故事卡（理想图：生活日常/旅行足迹/我的心愿 + 添加故事） ===== -->
-    <view v-if="props.stories.length > 0" class="story-cards">
+    <!-- ===== 我的故事卡（R16：真实「日常」内容 + 添加日常虚线卡常驻） ===== -->
+    <view class="story-cards">
       <scroll-view scroll-x class="story-cards__scroll" :show-scrollbar="false">
         <view class="story-cards__row">
           <view
-            v-for="story in props.stories"
+            v-for="(story, storyIdx) in props.stories"
             :key="story.id"
             class="story-card press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
             :aria-label="story.title"
-            @tap="emit('tapPhoto', 0)"
+            @tap="emit('tapPhoto', storyIdx)"
           >
             <image class="story-card__img" :src="story.cover" mode="aspectFill" lazy-load alt="" />
             <view class="story-card__mask" />
@@ -79,14 +82,15 @@ function openPost(postId: string): void {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="添加故事"
+            aria-label="添加日常"
             @tap="emit('addStory')"
           >
             <image class="story-add__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
-            <text class="story-add__text">添加故事</text>
+            <text class="story-add__text">添加日常</text>
           </view>
         </view>
       </scroll-view>
+      <text class="story-cards__hint">日常仅互相喜欢或你关注的人可见</text>
     </view>
 
     <!-- ===== 我的相册：横排 3 张缩略图 ===== -->
@@ -104,7 +108,7 @@ function openPost(postId: string): void {
           hover-stay-time="120"
           role="button"
           :aria-label="'查看相册'"
-          @tap="emit('tapPhoto', index)"
+          @tap="emit('tapAlbum', index)"
         >
           <image class="album-thumb__img" :src="photo" mode="aspectFill" lazy-load alt="" />
         </view>
@@ -179,6 +183,14 @@ function openPost(postId: string): void {
 /* ===== 我的故事卡：横向滚动（理想图 3 卡 + 添加故事虚线卡） ===== */
 .story-cards {
   margin-bottom: var(--sp-5);
+}
+
+/* R16：日常可见范围说明 */
+.story-cards__hint {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-text-tertiary);
 }
 
 .story-cards__scroll {

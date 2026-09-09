@@ -437,7 +437,7 @@ onLoad((query) => {
 <style scoped lang="scss">
 .other-page {
   min-height: 100vh;
-  background: #EEF7F2;
+  background: #ffffff;
 }
 
 .other-header {

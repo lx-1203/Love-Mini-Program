@@ -358,8 +358,13 @@ public class VillageViewMapper {
         CommentAuthorView authorView = new CommentAuthorView(comment.getAuthorId(),
                 author != null ? author.getNickname() : DisplayConstants.UNKNOWN_USER,
                 author != null ? author.getAvatarUrl() : null);
+        // 2026-09-06 评论图片：实体 JSON 字符串解析为列表（空/坏 JSON 兜底空列表）
+        java.util.List<String> images = parseJsonToList(comment.getImages());
+        if (images == null) {
+            images = java.util.List.of();
+        }
         return new CommentItemView(comment.getId(), comment.getPost().getId(), comment.getParentId(), authorView,
-                comment.getContent(), likeCount, comment.getCreatedAt().toString(), false, isLiked,
+                comment.getContent(), images, likeCount, comment.getCreatedAt().toString(), false, isLiked,
                 replyTo, replies != null ? replies : java.util.List.of());
     }
 

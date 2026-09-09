@@ -190,8 +190,9 @@ function formatMemberCount(count: number): string {
     /* Task 28: 万单位中文化保留（中文特有数字单位，无需 i18n） */
     return `${(count / 10000).toFixed(1)}w`;
   }
+  // R21：对齐理想图（8,932 精确千分位），不用英文 k 单位
   if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`;
+    return count.toLocaleString("en-US");
   }
   return String(count);
 }
@@ -739,10 +740,13 @@ defineExpose({ toggleJoin });
   display: flex;
   align-items: center;
   gap: 10rpx;
-  /* 统计行恒单行（修复「2 条动/态」逐字断行，2026-08-29 视觉验收） */
+  /* 统计行恒单行（修复「2 条动/态」逐字断行，2026-08-29 视觉验收）
+     R20：超宽时优雅省略，不再被「加入」按钮区硬裁切 */
   flex-wrap: nowrap;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .circle-card__meta-icon {
@@ -755,6 +759,13 @@ defineExpose({ toggleJoin });
 .circle-card__count {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+  /* R21：省略号必须落在文本节点自身（meta 容器上的 text-overflow 对 flex 子项无效），
+     否则统计行在「加入」按钮列被硬裁成半字 */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .circle-card__divider {
@@ -922,6 +933,8 @@ defineExpose({ toggleJoin });
   align-items: center;
   gap: 10rpx;
   margin-top: 6rpx;
+  /* R20：行内文本省略生效前提（行自身宽度约束） */
+  min-width: 0;
 }
 
 .circle-card__friends-avatars {
@@ -946,5 +959,11 @@ defineExpose({ toggleJoin });
 .circle-card__friends-text {
   font-size: 22rpx;
   color: var(--c-text-tertiary, #9AA39F);
+  /* R20：好友行单行省略，防止「等 N 位朋友已加入」被硬裁切 */
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

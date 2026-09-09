@@ -118,6 +118,8 @@ export interface CommentItem {
   postId: string;
   author: PostAuthor;
   content: string;
+  /** 2026-09-06 评论图片上传：评论附图 URL 列表（无图空数组） */
+  images?: string[];
   likes: number;
   isLiked: boolean;
   createdAt: string;
@@ -321,6 +323,8 @@ export interface CommentItemView {
   parentId: number | null;
   author: CommentAuthorView;
   content: string;
+  /** 2026-09-06 评论图片上传：后端新增 images 列表 */
+  images?: string[];
   likeCount: number;
   createdAt: string;
   isAuthor: boolean;

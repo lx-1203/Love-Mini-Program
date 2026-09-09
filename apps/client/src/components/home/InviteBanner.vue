@@ -35,8 +35,11 @@ defineEmits<{ (e: "invite"): void }>();
   margin: 16rpx 40rpx 0;
   padding: 24rpx 28rpx;
   border-radius: 40rpx;
-  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
-  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.25);
+  /* R20（2026-09-08）：高饱和粉渐变（#FF6B81→#FF8DA1 满铺）与页面浅绿主色冲突突兀，
+     对齐理想图改为浅粉云底 + 深粉点缀：背景降饱和，强调色只保留在图标/按钮上 */
+  background: linear-gradient(135deg, #FFEDF0 0%, #FFE4E9 100%);
+  border: 1rpx solid #FFD9DF;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.12);
   display: flex;
   align-items: center;
   gap: 20rpx;
@@ -46,8 +49,8 @@ defineEmits<{ (e: "invite"): void }>();
 .invite-banner__icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,25 +71,26 @@ defineEmits<{ (e: "invite"): void }>();
 }
 
 .invite-banner__title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #47393C;
 }
 
 .invite-banner__desc {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 22rpx;
+  color: #A98F94;
 }
 
 .invite-banner__btn {
-  padding: 14rpx 30rpx;
+  padding: 14rpx 28rpx;
   border-radius: 999rpx;
-  background: #ffffff;
+  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 129, 0.3);
 }
 
 .invite-banner__btn-text {
   font-size: 26rpx;
-  color: #FF6B81;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -96,7 +100,7 @@ defineEmits<{ (e: "invite"): void }>();
   bottom: -16rpx;
   width: 80rpx;
   height: 80rpx;
-  color: #ffffff;
-  opacity: 0.5;
+  color: #FFC9D2;
+  opacity: 0.6;
 }
 </style>

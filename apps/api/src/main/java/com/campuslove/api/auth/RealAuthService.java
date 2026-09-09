@@ -693,7 +693,21 @@ public class RealAuthService implements AuthService {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
             throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.TRIAL_LOGIN_DISABLED);
         }
-        // R4-00251：每次登录创建独立临时账号（openid 全局唯一，phone 为空）
+        // 2026-09-06 稳定体验账号：优先复用最近创建的体验号（体验者每次进入
+        // 都是同一身份，帖子/会话/资料可持续累积，符合「稳定体验账号」需求）；
+        // 仅当无可复用体验号时才走新建流程。
+        User reused = userRepository.findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc(
+                "guest:", "GUEST", "active");
+        if (reused != null) {
+            log.info("体验会话复用既有体验号: userId={}", reused.getId());
+            // provisionGuestProfile 幂等：已有完整资料的账号不会被覆盖
+            provisionGuestProfile(reused);
+            String reusedToken = jwtTokenProvider.generateToken(String.valueOf(reused.getId()));
+            recordOnlineSession(reused.getId(), reusedToken, "guest");
+            recordLoginDevice(reused.getId(), deviceId, "guest", reusedToken);
+            return buildSessionView(reused, reusedToken, "guest");
+        }
+        // R4-00251：体验号缺省时创建新临时账号（openid 全局唯一，phone 为空）
         // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
         // 更换新 UUID 重试一次（对齐 registerUser 的 A-34 兜底），避免返回 500。
         User user = null;
@@ -835,6 +849,13 @@ public class RealAuthService implements AuthService {
             user.setAvatarUrl(persona.avatarPath());
             // 第五轮 R1：出生日期（星座推导依赖 users.birth_date；与 birth_year=2003 对齐）
             user.setBirthDate(java.time.LocalDate.of(2003, 6, 15));
+            // 2026-09-06 寻觅「附近」差异化：体验号预填北京高校区演示坐标（与种子用户
+            // 坐标同区域），推荐卡 distanceText 由此可计算；此前体验号无坐标 →
+            // 所有候选距离为 null → 前端「附近」过滤/排序退化为与「推荐」完全一致。
+            if (user.getLatitude() == null || user.getLongitude() == null) {
+                user.setLatitude(new java.math.BigDecimal("39.956539"));
+                user.setLongitude(new java.math.BigDecimal("116.312742"));
+            }
             userRepository.save(user);
             log.info("体验账号资料预填完成: userId={}", userId);
             // 5. 流程演示数据播种（R4-00251 会话隔离后新账号无私信/喜欢/访客/通知，

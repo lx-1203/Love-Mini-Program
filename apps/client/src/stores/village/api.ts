@@ -359,12 +359,21 @@ export async function fetchCommentsApi(
 export async function createCommentApi(
   postId: string,
   content: string,
-  parentId?: string
+  parentId?: string,
+  images?: string[]
 ): Promise<CommentItemView> {
-  return request<CommentItemView, { content: string; parentId?: number }>({
+  // 2026-09-06 评论图片上传：images 随评论体提交（后端限 3 张）
+  const data: Record<string, unknown> = { content };
+  if (parentId) {
+    data.parentId = Number(parentId);
+  }
+  if (images && images.length > 0) {
+    data.images = images;
+  }
+  return request<CommentItemView, Record<string, unknown>>({
     url: `/posts/${postId}/comments`,
     method: "POST",
-    data: parentId ? { content, parentId: Number(parentId) } : { content },
+    data,
   });
 }
 
@@ -375,8 +384,8 @@ export async function createCommentApi(
  */
 export async function likeCommentApi(
   commentId: string
-): Promise<void> {
-  await request<void>({
+): Promise<PostLikeResponse> {
+  return request<PostLikeResponse>({
     url: `/posts/comments/${commentId}/like`,
     method: "POST",
   });

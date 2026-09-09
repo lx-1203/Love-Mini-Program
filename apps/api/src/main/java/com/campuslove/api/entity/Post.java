@@ -89,10 +89,11 @@ public class Post {
      *   <li>public_：公开，所有人可见（默认）</li>
      *   <li>school：仅同校认证用户可见</li>
      *   <li>interest：仅所在圈子成员可见（需携带 circle_id）</li>
+     *   <li>friends：日常内容，仅互相喜欢（匹配）或关注作者的人及作者本人可见（R16 2026-09-07）</li>
      * </ul>
      */
     public enum Visibility {
-        public_, school, interest
+        public_, school, interest, friends
     }
 
     @Id

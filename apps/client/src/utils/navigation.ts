@@ -86,7 +86,27 @@ export function openAppPath(url: string, options: OpenPathOptions = {}) {
     return;
   }
 
-  uni.navigateTo({ url: normalizedUrl, fail: options.fail });
+  // 2026-09-06 页面栈溢出兜底：微信页面栈上限 10 层。深层链路（帖子→详情→他人主页→…）
+  // 继续 navigateTo 会静默失败（errMsg 含 "webview count limit exceed"），
+  // 用户感知为「点击无响应 / 页面卡死」。此处两层防御：
+  // ① 栈已满（>=10 层）时直接 redirectTo 替换栈顶；② fail 回调里按 errMsg 再兜底。
+  const pages = getCurrentPages();
+  if (pages.length >= 10) {
+    uni.redirectTo({ url: normalizedUrl, fail: options.fail });
+    return;
+  }
+
+  uni.navigateTo({
+    url: normalizedUrl,
+    fail: (err) => {
+      const msg = (err as { errMsg?: string } | undefined)?.errMsg ?? "";
+      if (/webview count limit|limit exceed|page depth/i.test(msg)) {
+        uni.redirectTo({ url: normalizedUrl, fail: options.fail });
+        return;
+      }
+      options.fail?.(err);
+    },
+  });
 }
 
 /**
@@ -270,6 +290,9 @@ export function setTabBarHidden(hidden: boolean): void {
 }
 
 export function openUserProfile(userId: string | number | null | undefined): void {
-  if (userId === null || userId === undefined || String(userId).trim() === '') return;
-  openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(String(userId))}`);
+  // R16：拦截 null/空串/字面量 "undefined"/"null"（后端字段缺失时 String(undefined)
+  // 会穿透旧守卫，跳到 other?userId=undefined 触发加载错误态）
+  const raw = userId == null ? "" : String(userId).trim();
+  if (raw === "" || raw === "undefined" || raw === "null") return;
+  openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(raw)}`);
 }

@@ -7,6 +7,16 @@ import { resolveMediaUrl } from "../../utils/media";
 import EmojiText from "../common/EmojiText.vue";
 import { containsEmoji } from "../../config/emoji-map";
 
+// R17（2026-09-08）：开启 virtualHost——mp-weixin 下组件宿主节点会破坏
+// `.bubble-wrap--self { align-self: flex-end }` 的右对齐（宿主非 flex 容器，
+// 气泡整体左置，自己发的消息不贴右边）。开启后组件根节点直接成为
+// chat-list 的 flex 子项，左右对齐恢复微信行为。
+defineOptions({
+  options: {
+    virtualHost: true,
+  },
+});
+
 const props = withDefaults(
   defineProps<{
     sender: "self" | "peer" | "assistant" | "system";
@@ -185,7 +195,8 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 
         <!-- 消息正文 -->
         <template v-if="kind === 'voice'">
-          <VoicePill :duration-seconds="durationSeconds || 0" />
+          <!-- 2026-09-06 修复：语音气泡未传 audioUrl，历史语音永远无法播放；现透传 body 中的音频地址 -->
+          <VoicePill :duration-seconds="durationSeconds || 0" :audio-url="body || undefined" />
         </template>
         <!-- 2026-08-10 功能补齐：图片消息渲染（微信风格，宽度自适应气泡内） -->
         <image
@@ -246,7 +257,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
 /* 头像 + 气泡行布局 */
 .bubble-row {
   display: flex;
-  align-items: flex-end;
+  /* R20（2026-09-08）：flex-end→flex-start，头像与气泡顶边对齐（微信规范，
+     也是理想图《消息》页的排布）；此前底对齐时短气泡与头像错位感明显 */
+  align-items: flex-start;
   /* 2026-08-09 微信 1:1 重构：头像与气泡间距 8px = 16rpx（原 --sp-2 = 8rpx ≈ 4px） */
   gap: 16rpx;
 }
@@ -326,6 +339,9 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   /* P3：文本自动换行，长串/URL 不横向撑爆气泡（mp-weixin 支持 word-break/overflow-wrap） */
   word-break: break-word;
   overflow-wrap: break-word;
+  /* R20（2026-09-08）：显式左对齐——短文本（如「111」）在窄气泡内不得呈现居中效果，
+     全部气泡统一左对齐规范 */
+  text-align: left;
 }
 
 .bubble__body--recalled {

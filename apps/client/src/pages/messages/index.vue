@@ -64,6 +64,14 @@ const activityRecommendations = computed(() =>
     }))
 );
 /**
+ * 2026-09-06 修复渲染层图片 404：后端 assistant.icon 可能下发的是 emoji 文本
+ * （❤️/🌿/💬）而非图片 URL，直接塞进 <image src> 会按相对路径请求页面域
+ * （pages/messages/❤️ → net::ERR）。非 URL 图标改走 <text> 渲染。
+ */
+function isIconUrl(value: string): boolean {
+  return /^(https?:\/\/|\/|\.\.?\/|wxfile:|data:)/.test(value);
+}
+/**
  * 2026-09-03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）——
  * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏
  * （模板 v-if="warmPeople.length > 0"），不再出现凭空捏造的用户。
@@ -374,7 +382,8 @@ function formatTime(dateStr?: string): string {
                 hover-class="activity-rec-card--hover"
                 @tap="openActivity(act.targetUrl)"
               >
-                <image v-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
+                <text v-if="act.icon && !isIconUrl(act.icon)" class="activity-rec-card__icon activity-rec-card__icon--emoji">{{ act.icon }}</text>
+                <image v-else-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
                 <view v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder" />
                 <view class="activity-rec-card__body">
                   <text class="activity-rec-card__title">{{ act.title }}</text>
@@ -492,8 +501,10 @@ function formatTime(dateStr?: string): string {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  /* --statusbar 由 page-meta 注入（px），修复自定义导航与状态栏叠印 */
+  /* --statusbar 由 page-meta 注入（px），修复自定义导航与状态栏叠印；
+     R20：右侧加胶囊避让（--capsule-right≈7px 间隙 + 胶囊本体 87px） */
   padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 16rpx;
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-bg-container, #FFFFFF);
 }
 .header__left {
@@ -869,6 +880,14 @@ function formatTime(dateStr?: string): string {
 }
 .activity-rec-card__icon--placeholder {
   background: var(--c-brand-bg-tint, rgba(61, 201, 148, 0.08));
+}
+/* 2026-09-06：emoji 文本图标（后端 icon 字段下发 emoji 时渲染为文字，不再当图片加载） */
+.activity-rec-card__icon--emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  line-height: 1;
 }
 .activity-rec-card__body {
   flex: 1;

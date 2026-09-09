@@ -136,12 +136,19 @@ defineEmits<{
   justify-content: center;
 }
 
-/* 2026-09-02 R9 用户要求"背景统一"：4 cell 用同一种背景色（动作区分保留，背景不再 4 色） */
-.relation-cell__icon--pink,
-.relation-cell__icon--green,
-.relation-cell__icon--purple,
+/* 2026-09-02 R9 曾统一为同绿底；R21（2026-09-09）对抗验收指出 4 格同色同形象
+   无法一眼区分类别 → 恢复理想图四色体系（粉/绿/紫/橙），色度加深保证可辨识 */
+.relation-cell__icon--pink {
+  background: #FFD9E0;
+}
+.relation-cell__icon--green {
+  background: #BCEFDD;
+}
+.relation-cell__icon--purple {
+  background: #E0D9FF;
+}
 .relation-cell__icon--orange {
-  background: #E8FBF2;
+  background: #FFE4C2;
 }
 
 .relation-cell__icon-text {

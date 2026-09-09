@@ -32,6 +32,11 @@ import {
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
 // 调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// R20（2026-09-08）：post-header 此前无状态栏留白（padding: 24rpx 32rpx 起步），
+// 全局自定义导航下系统时间与「发布动态」标题叠印（P0 显示 Bug）→ JS 注入 statusBarHeight
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+
+const statusBarHeightPx = useStatusBarHeight();
 
 const villageStore = useVillageStore();
 const circleStore = useCircleStore();
@@ -489,8 +494,8 @@ async function submitPublish() {
 
 <template>
   <view class="post-page">
-    <!-- 顶部导航 -->
-    <view class="post-header">
+    <!-- 顶部导航（R20：padding-top 动态注入状态栏高度，标题不再与系统时间叠印） -->
+    <view class="post-header" :style="{ paddingTop: statusBarHeightPx + 'px' }">
       <view
         class="post-header__close press-feedback"
         hover-class="press-feedback--active"
@@ -551,12 +556,14 @@ async function submitPublish() {
           <text class="post-to__arrow">›</text>
         </view>
 
-        <!-- 目标选择弹层 -->
+        <!-- 目标选择弹层（R20：按 公域 → 校园私域 → 兴趣圈子 三级分组，消除平铺混排） -->
         <view v-if="targetOpen" class="post-target-sheet" @tap="targetOpen = false">
           <view class="post-target-sheet__panel" @tap.stop>
             <view class="post-target-sheet__head">
               <text class="post-target-sheet__title">选择发布到</text>
             </view>
+
+            <text class="post-target-sheet__group">公域 · 所有人可见</text>
             <view
               class="post-target-sheet__option press-feedback"
               hover-class="press-feedback--active"
@@ -574,6 +581,8 @@ async function submitPublish() {
                 alt=""
               />
             </view>
+
+            <text class="post-target-sheet__group">校园私域 · 同校可见</text>
             <view
               class="post-target-sheet__option press-feedback"
               hover-class="press-feedback--active"
@@ -582,6 +591,7 @@ async function submitPublish() {
               @tap="chooseCampus"
             >
               <text class="post-target-sheet__name">校园圈</text>
+              <text class="post-target-sheet__desc">仅认证同校同学可见</text>
               <image
                 v-if="targetType === 'campus'"
                 class="post-target-sheet__check"
@@ -590,24 +600,29 @@ async function submitPublish() {
                 alt=""
               />
             </view>
-            <view
-              v-for="circle in circleStore.circles.slice(0, 8)"
-              :key="circle.id"
-              class="post-target-sheet__option press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="120"
-              role="button"
-              @tap="selectTarget(circle)"
-            >
-              <text class="post-target-sheet__name">{{ circle.name }}</text>
-              <image
-                v-if="isCircleTarget && targetId === Number(circle.id)"
-                class="post-target-sheet__check"
-                :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
-                mode="aspectFit"
-                alt=""
-              />
-            </view>
+
+            <template v-if="circleStore.circles.length > 0">
+              <text class="post-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+              <view
+                v-for="circle in circleStore.circles.slice(0, 8)"
+                :key="circle.id"
+                class="post-target-sheet__option press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                role="button"
+                @tap="selectTarget(circle)"
+              >
+                <text class="post-target-sheet__name">{{ circle.name }}</text>
+                <text class="post-target-sheet__desc">{{ circle.isJoined ? '已加入' : '' }}</text>
+                <image
+                  v-if="isCircleTarget && targetId === Number(circle.id)"
+                  class="post-target-sheet__check"
+                  :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
+                  mode="aspectFit"
+                  alt=""
+                />
+              </view>
+            </template>
           </view>
         </view>
       </view>
@@ -948,6 +963,9 @@ async function submitPublish() {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
+  /* R21：右侧避让微信胶囊（--capsule-right≈7px 间隙 + 胶囊本体 87px），
+     「发布」按钮此前与胶囊碰撞（•••发布◎ 挤在一起） */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-bg-container, #FFFFFF);
   border-bottom: 1rpx solid var(--c-line, #EEF2F0);
   flex-shrink: 0;
@@ -1083,9 +1101,11 @@ async function submitPublish() {
   width: 100%;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: 32rpx 32rpx 0 0;
-  padding: 24rpx 32rpx 48rpx;
-  max-height: 70vh;
+  /* R21：底部安全区——末行「宠物」此前贴屏幕底缘被裁切 */
+  padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 78vh;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 .post-target-sheet__head {
   padding: 16rpx 0 24rpx;
@@ -1094,6 +1114,14 @@ async function submitPublish() {
   font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1A1E1C);
+}
+/* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
+.post-target-sheet__group {
+  display: block;
+  padding: 20rpx 8rpx 8rpx;
+  font-size: var(--fs-xs, 22rpx);
+  font-weight: 600;
+  color: var(--c-brand, #36C99A);
 }
 .post-target-sheet__option {
   display: flex;
@@ -1488,4 +1516,11 @@ async function submitPublish() {
   color: var(--c-brand, #36C99A);
   flex-shrink: 0;
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>

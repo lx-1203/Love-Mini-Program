@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -85,10 +85,35 @@ onShow(() => {
   // 2026-08-31 修复（录屏 06:42-06:51）：应用重启/崩溃恢复后 storage 里的 token
   // 仍有效并被 bootstrap 静默登录（toast「登录成功」），但登录页不自动前进，
   // 用户必须再手动点一次「稍后再看」。此处检测已登录即自动进入主界面。
-  if (sessionStore.isLoggedIn) {
+  // 2026-09-06：与下方 watch 共用 autoForwardedToMain 一次性标记——
+  // 此前两条路径（onShow + watch immediate）在同一启动中各触发一次 switchTab，
+  // 双导航竞争导致开发者工具报「Page route 错误(system error)/routeDone with a
+  // webviewId that is not the current page」。
+  if (sessionStore.isLoggedIn && !autoForwardedToMain) {
+    autoForwardedToMain = true;
     uni.switchTab({ url: "/pages/discover/index" });
   }
 });
+
+// 2026-09-06 修复（冷启动会话恢复竞态）：bootstrap 的 /auth/me 为异步请求，
+// onShow 检查时可能尚未完成 → 已登录用户冷启动仍停在登录页且无人再补偿跳转。
+// watch「bootstrap 完成 + 已登录」组合态：完成即自动进入主界面（仅触发一次）。
+let autoForwardedToMain = false;
+const stopSessionForwardWatch = watch(
+  () => !sessionStore.loading && sessionStore.isLoggedIn,
+  (sessionReady) => {
+    if (sessionReady) {
+      stopSessionForwardWatch();
+      // 页面自身登录流程已接管跳转（loginNavTimer 已挂起）时不重复跳转，
+      // 保留其 pending 跳转（如资料完善向导）的语义
+      if (!loginNavTimer && !autoForwardedToMain) {
+        autoForwardedToMain = true;
+        uni.switchTab({ url: "/pages/discover/index" });
+      }
+    }
+  },
+  { immediate: true },
+);
 
 // 表单校验计算属性
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
@@ -120,6 +145,7 @@ onUnmounted(() => {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
   }
+  stopSessionForwardWatch();
 });
 
 

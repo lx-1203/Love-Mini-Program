@@ -38,8 +38,21 @@ function circleCover(name: string): string {
 /** 格式化成员数量（万/千单位） */
 function formatMemberCount(count: number): string {
   if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  // R21：对齐理想图（1.2w / 8,932）——千位以下展示精确人数（千分位），不再用英文 k 单位
+  if (count >= 1000) return count.toLocaleString("en-US");
   return String(count);
+}
+
+/**
+ * R20（2026-09-08）：封面单一来源收敛。
+ * real 后端 icon 字段是 emoji（如 📷），此前被当图片 URL 直传 <image> 导致破图空缺；
+ * mock fixtures 的 icon 是 svg 路径。这里只接受「以 / 或 http 开头」的真路径，
+ * 其余（emoji/空）一律回退按名称关键词映射的本地封面，保证卡片恒有图。
+ */
+function coverSrc(icon: string | null | undefined, name: string): string {
+  const raw = (icon || "").trim();
+  if (raw.startsWith("/") || raw.startsWith("http")) return raw;
+  return circleCover(name);
 }
 
 withDefaults(defineProps<{ items: InterestCircleViewModel[]; loading?: boolean }>(), { loading: false });
@@ -64,24 +77,15 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
           class="interest-card"
           @tap="$emit('select', item.id)"
         >
-          <!-- 封面图（顶部，固定高度，不加黑色浮层） -->
+          <!-- 封面图（顶部，固定高度，不加黑色浮层）
+               R20（2026-09-08）：icon 为 emoji 时回退本地封面映射（修复「兴趣推荐无图空缺」） -->
           <view class="interest-card__cover-wrap">
-            <!-- #ifdef MP-WEIXIN -->
             <image
               class="interest-card__cover"
-              :src="resolveMediaUrl(item.coverUrl ?? circleCover(item.name))"
+              :src="resolveMediaUrl(coverSrc(item.icon, item.name))"
               mode="aspectFill"
               alt=""
             />
-            <!-- #endif -->
-            <!-- #ifndef MP-WEIXIN -->
-            <image
-              class="interest-card__cover"
-              :src="resolveMediaUrl(item.coverUrl ?? circleCover(item.name))"
-              mode="cover"
-              alt=""
-            />
-            <!-- #endif -->
           </view>
           <!-- 文案区：名称/人数在图下方（参考图：不上图覆盖） -->
           <view class="interest-card__body">

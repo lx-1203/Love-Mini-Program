@@ -77,8 +77,9 @@ function goMyProfile() {
 
 <style scoped lang="scss">
 .home-header {
-  /* 右侧避让微信胶囊：通知铃铛不再被胶囊叠压/裁切（--capsule-right 由父级注入） */
-  padding: calc(env(safe-area-inset-top) + 20rpx) calc(var(--capsule-right, 96px) + 20px) 16rpx 40rpx;
+  /* 右侧避让微信胶囊：--capsule-right 仅是胶囊右缘到屏幕右缘的间隙（≈7px），
+     预留量必须再加胶囊本体宽度（标准 87px），否则头像/定位/铃铛被胶囊叠压 */
+  padding: calc(env(safe-area-inset-top) + 20rpx) calc(var(--capsule-right, 7px) + 104px) 16rpx 40rpx;
 }
 
 .home-header__top {
@@ -98,6 +99,9 @@ function goMyProfile() {
   font-weight: 700;
   color: #333A37;
   line-height: 1.1;
+  /* R20：标题恒单行（右侧元素挤压时不得竖排折行） */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .home-header__heart {
@@ -134,6 +138,11 @@ function goMyProfile() {
   font-size: 24rpx;
   color: #6B7571;
   font-weight: 500;
+  /* R20：定位文案超长时省略，避免把标题区挤到折行 */
+  max-width: 220rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .header-icon {

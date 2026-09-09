@@ -224,7 +224,8 @@ async function toggleJoin() {
  */
 function formatMemberCount(count: number): string {
   if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  // R21：对齐理想图（1.2w / 8,932）——千位以下展示精确人数（千分位），不再用英文 k 单位
+  if (count >= 1000) return count.toLocaleString("en-US");
   return String(count);
 }
 
@@ -365,9 +366,17 @@ defineExpose({ goToAuthorProfile });
       <image v-if="circleCover(circle)" class="circle-hero__bg" :src="circleCover(circle)" mode="aspectFill" alt="" />
       <view class="circle-hero__bg-mask" />
       <view class="circle-hero__icon">
-        <!-- 2026-08-26：图标优先 SVG（不再直接渲染 emoji 字符） -->
+        <!-- R21（2026-09-09）：优先真实封面图（此前 📷 emoji 命中相机 SVG，hero 呈灰色相机占位），
+             无封面命中再回退分类 SVG 图标 -->
         <image
-          v-if="resolveCircleIcon(circle.icon)"
+          v-if="circleCover(circle)"
+          class="circle-hero__icon-img circle-hero__icon-img--cover"
+          :src="circleCover(circle)"
+          mode="aspectFill"
+          alt=""
+        />
+        <image
+          v-else-if="resolveCircleIcon(circle.icon)"
           class="circle-hero__icon-img"
           :src="resolveCircleIcon(circle.icon)"
           mode="aspectFit"
@@ -613,6 +622,8 @@ defineExpose({ goToAuthorProfile });
   align-items: center;
   justify-content: space-between;
   padding: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  /* R21：右侧避让微信胶囊——「写话题/更多」按钮此前被胶囊压住并被右缘裁切 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-gradient-brand);
   z-index: 10;
 }
@@ -1104,6 +1115,12 @@ defineExpose({ goToAuthorProfile });
   height: 48rpx;
 }
 
+/* R21：封面图版本撑满整个圆形头像位 */
+.circle-hero__icon-img--cover {
+  width: 100%;
+  height: 100%;
+}
+
 .circle-hero__body {
   flex: 1;
   display: flex;
@@ -1193,13 +1210,16 @@ defineExpose({ goToAuthorProfile });
   margin-top: 14rpx;
   padding: 10rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #FF8DB7 0%, #FF6B81 100%);
+  /* R21（2026-09-09）：粉色渐变与全站绿色主题冲突 → 改品牌绿描边胶囊（加入按钮同款语言） */
+  background: #ffffff;
+  border: 2rpx solid var(--c-brand-500, #2DB98A);
 }
 
 .topic-card__meet-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-text-inverse, #FFFFFF);
+  /* R21：描边胶囊 → 深绿文字 */
+  color: #2DB98A;
 }
 
 .detail-members {

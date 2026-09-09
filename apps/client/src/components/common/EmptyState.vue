@@ -11,6 +11,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IMAGE_PATHS } from '../../config/images';
+import { resolveMediaUrl } from '../../utils/media';
 import XunmiMascot from './XunmiMascot.vue';
 
 const props = withDefaults(defineProps<{
@@ -61,7 +62,11 @@ const presetSubMap: Record<string, string> = {
   'network': t('empty.networkSub'),
 };
 
-const iconSrc = computed(() => props.image || presetIconMap[props.type] || IMAGE_PATHS.ICONS_COMMON.SEARCH);
+// R16（2026-09-07）：iconSrc 统一过 resolveMediaUrl——此前原样渲染 IMAGE_PATHS，
+// real 模式下 app-assets 托管地址/相对路径未重写会导致空态图标 404 加载异常
+const iconSrc = computed(() =>
+  resolveMediaUrl(props.image || presetIconMap[props.type] || IMAGE_PATHS.ICONS_COMMON.SEARCH),
+);
 
 const titleText = computed(() => {
   if (props.title) return props.title;

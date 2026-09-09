@@ -449,7 +449,7 @@ onMounted(() => {
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
-  background: var(--c-gradient-page);
+  background: #ffffff; /* R16：纯白背景 */
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -671,7 +671,7 @@ onMounted(() => {
   font-size: var(--fs-lg);
   color: var(--c-text-primary);
   border-radius: var(--r-md);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
   border: 2rpx solid transparent;
 }
 
@@ -685,7 +685,7 @@ onMounted(() => {
   padding: 60rpx var(--sp-5);
   border-radius: var(--r-lg);
   border: 2rpx dashed var(--c-border-default);
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
 }
 
 /* #ifdef H5 */
@@ -716,7 +716,7 @@ onMounted(() => {
 .upload-preview {
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--c-bg-page);
+  background: #ffffff; /* R16：纯白背景 */
 }
 
 .upload-preview__img {
@@ -857,4 +857,11 @@ onMounted(() => {
   height: 1rpx;
   background: var(--c-border-light);
 }
+
+
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+page {
+  background: #ffffff;
+}
+
 </style>

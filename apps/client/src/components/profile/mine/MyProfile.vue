@@ -26,6 +26,7 @@ const emit = defineEmits<{
   (e: "complete"): void;
   (e: "statTap", key: string): void;
   (e: "storyPhoto", index: number): void;
+  (e: "tapAlbum", index: number): void;
   (e: "storyVideo"): void;
   (e: "addStory"): void;
   (e: "postTap", id: string): void;
@@ -50,6 +51,7 @@ const emit = defineEmits<{
       :stories="props.profile.stories ?? []"
       :posts="props.posts"
       @tap-photo="emit('storyPhoto', $event)"
+      @tap-album="emit('tapAlbum', $event)"
       @tap-video="emit('storyVideo')"
       @add-story="emit('addStory')"
     />

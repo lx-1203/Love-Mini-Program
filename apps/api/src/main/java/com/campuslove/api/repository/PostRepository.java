@@ -1,5 +1,6 @@
 package com.campuslove.api.repository;
 
+import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
@@ -97,6 +98,27 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return 该作者的所有帖子列表
      */
     List<Post> findByAuthorId(Long authorId);
+
+    /**
+     * R16（2026-09-07）：我的「日常」（visibility=friends）最近 12 条，
+     * 供个人主页「我的故事」区块使用。
+     */
+    List<Post> findTop12ByAuthorIdAndVisibilityAndStatusOrderByCreatedAtDesc(
+            Long authorId, Visibility visibility, PostStatus status);
+
+    /**
+     * R16（2026-09-07）：作者帖子总获赞数聚合查询（他人主页 socialProof 性能修复，
+     * 替代全量拉取后内存求和）。
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "select coalesce(sum(coalesce(p.likesCount, 0)), 0) from Post p where p.authorId = :authorId")
+    long sumLikesByAuthorId(@org.springframework.data.repository.query.Param("authorId") Long authorId);
+
+    /**
+     * R16（2026-09-07）：他人视角的作者最近帖子（仅审核通过且 active），替代全量拉取后内存过滤。
+     */
+    List<Post> findTop12ByAuthorIdAndAuditStatusAndStatusOrderByCreatedAtDesc(
+            Long authorId, Post.AuditStatus auditStatus, PostStatus status);
 
     /**
      * 3-J 任务与积分：统计用户指定状态的帖子数（「发布首条动态」任务进度）。
@@ -336,6 +358,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
                                   WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
                   OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+                  OR (p.visibility = :friendsVis AND p.authorId = :currentUserId)
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM Like l
+                                  WHERE l.targetUserId = p.authorId AND l.userId = :currentUserId
+                                  AND l.status = :activeLikeStatus))
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM UserFollow f
+                                  WHERE f.followingId = p.authorId AND f.followerId = :currentUserId))
               )
             ORDER BY p.isPinned DESC, p.createdAt DESC
             """)
@@ -345,6 +373,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("publicVis") Visibility publicVis,
             @Param("schoolVis") Visibility schoolVis,
             @Param("interestVis") Visibility interestVis,
+            @Param("friendsVis") Visibility friendsVis,
+            @Param("activeLikeStatus") Like.LikeStatus activeLikeStatus,
+            @Param("currentUserId") Long currentUserId,
             @Param("userCampusName") String userCampusName,
             @Param("memberCircleIds") List<Long> memberCircleIds,
             Pageable pageable);
@@ -371,6 +402,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
                                   WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
                   OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+                  OR (p.visibility = :friendsVis AND p.authorId = :currentUserId)
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM Like l
+                                  WHERE l.targetUserId = p.authorId AND l.userId = :currentUserId
+                                  AND l.status = :activeLikeStatus))
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM UserFollow f
+                                  WHERE f.followingId = p.authorId AND f.followerId = :currentUserId))
               )
             ORDER BY p.isPinned DESC, p.createdAt DESC
             """)
@@ -381,6 +418,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("publicVis") Visibility publicVis,
             @Param("schoolVis") Visibility schoolVis,
             @Param("interestVis") Visibility interestVis,
+            @Param("friendsVis") Visibility friendsVis,
+            @Param("activeLikeStatus") Like.LikeStatus activeLikeStatus,
+            @Param("currentUserId") Long currentUserId,
             @Param("userCampusName") String userCampusName,
             @Param("memberCircleIds") List<Long> memberCircleIds,
             Pageable pageable);
@@ -408,6 +448,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       AND EXISTS (SELECT 1 FROM UserCampusProfile ucp
                                   WHERE ucp.userId = p.authorId AND ucp.campusName = :userCampusName))
                   OR (p.visibility = :interestVis AND p.circleId IN :memberCircleIds)
+                  OR (p.visibility = :friendsVis AND p.authorId = :currentUserId)
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM Like l
+                                  WHERE l.targetUserId = p.authorId AND l.userId = :currentUserId
+                                  AND l.status = :activeLikeStatus))
+                  OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM UserFollow f
+                                  WHERE f.followingId = p.authorId AND f.followerId = :currentUserId))
               )
             """)
     java.util.Optional<Post> findVisiblePostById(
@@ -417,6 +463,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("publicVis") Visibility publicVis,
             @Param("schoolVis") Visibility schoolVis,
             @Param("interestVis") Visibility interestVis,
+            @Param("friendsVis") Visibility friendsVis,
+            @Param("activeLikeStatus") Like.LikeStatus activeLikeStatus,
+            @Param("currentUserId") Long currentUserId,
             @Param("userCampusName") String userCampusName,
             @Param("memberCircleIds") List<Long> memberCircleIds);
 }

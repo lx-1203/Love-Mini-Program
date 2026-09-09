@@ -35,7 +35,8 @@
   "globalStyle": {
     "navigationStyle": "custom",
     "backgroundColor": "#EEF7F2",
-    "backgroundTextStyle": "dark"
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "black"
   },
   "pages": [
     {

@@ -10,6 +10,7 @@ import com.campuslove.api.entity.PrivateConversation;
 import com.campuslove.api.entity.PrivateMessage;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.entity.Visitor;
+import com.campuslove.api.entity.WhisperMessage;
 import com.campuslove.api.repository.ActivityEnrollmentRepository;
 import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.LikeRepository;
@@ -18,6 +19,7 @@ import com.campuslove.api.repository.PrivateConversationRepository;
 import com.campuslove.api.repository.PrivateMessageRepository;
 import com.campuslove.api.repository.UserFollowRepository;
 import com.campuslove.api.repository.VisitorRepository;
+import com.campuslove.api.repository.WhisperMessageRepository;
 import org.springframework.data.domain.PageRequest;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -66,6 +68,7 @@ public class GuestDemoDataProvisioner {
     private final UserFollowRepository followRepository;
     private final ActivityRepository activityRepository;
     private final ActivityEnrollmentRepository enrollmentRepository;
+    private final WhisperMessageRepository whisperMessageRepository;
 
     public GuestDemoDataProvisioner(
             PrivateConversationRepository conversationRepository,
@@ -75,7 +78,8 @@ public class GuestDemoDataProvisioner {
             NotificationRepository notificationRepository,
             UserFollowRepository followRepository,
             ActivityRepository activityRepository,
-            ActivityEnrollmentRepository enrollmentRepository) {
+            ActivityEnrollmentRepository enrollmentRepository,
+            WhisperMessageRepository whisperMessageRepository) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.likeRepository = likeRepository;
@@ -84,6 +88,7 @@ public class GuestDemoDataProvisioner {
         this.followRepository = followRepository;
         this.activityRepository = activityRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.whisperMessageRepository = whisperMessageRepository;
     }
 
     /**
@@ -107,6 +112,7 @@ public class GuestDemoDataProvisioner {
             provisionVisitors(guestUserId);
             provisionNotifications(guestUserId);
             provisionRelationshipSignals(guestUserId);
+            provisionWhispers(guestUserId);
             log.info("体验账号演示数据播种完成: userId={}", guestUserId);
         } catch (RuntimeException ex) {
             log.warn("体验账号演示数据播种失败, userId={}: {}", guestUserId, ex.getMessage());
@@ -310,6 +316,31 @@ public class GuestDemoDataProvisioner {
         notification.setCreatedAt(at);
         notification.setVersion(0L);
         notificationRepository.save(notification);
+    }
+
+    // ---- 悄悄话：虚拟用户 → 体验账号（R20 2026-09-08：首页「条悄悄话」格此前恒 0 且
+    //      无头像，空状态占据固定格位无引导；补种 2 条让关系动态 4 格均有内容） ----
+
+    private void provisionWhispers(Long guestUserId) {
+        saveWhisper(PEER_LINWAN, guestUserId,
+                "悄悄说：你主页那张胶片照拍得真好看，下次教教我呀～", "delivered");
+        saveWhisper(10003L, guestUserId,
+                "社团招新我在摊位呀，路过的话来找我玩～", "sent");
+    }
+
+    private void saveWhisper(Long senderId, Long receiverId, String content, String status) {
+        String requestId = "guest-demo-whisper-" + receiverId + "-" + senderId;
+        if (whisperMessageRepository.findByClientRequestId(requestId).isPresent()) {
+            return;
+        }
+        WhisperMessage whisper = new WhisperMessage();
+        whisper.setSenderId(senderId);
+        whisper.setReceiverId(receiverId);
+        whisper.setContent(content);
+        whisper.setStatus(status);
+        whisper.setClientRequestId(requestId);
+        whisper.setPriceCents(200L);
+        whisperMessageRepository.save(whisper);
     }
 }
 

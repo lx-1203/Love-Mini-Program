@@ -324,6 +324,11 @@ public class TempChatSessionService {
         return viewMapper.toMessageView(message);
     }
 
+    /** 将消息实体转换为指定查看者视角的视图（R16：WS 推送按接收方翻转 sender）。 */
+    public ChatMessageView toMessageView(TempChatMessage message, boolean viewerIsUserB) {
+        return viewMapper.toMessageView(message, viewerIsUserB);
+    }
+
     // ---- 共享辅助方法（被 MessageService / CleanupService 复用） ----
 
     /** 解析当前用户 ID。 */

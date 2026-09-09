@@ -178,19 +178,24 @@ public class UserProfileController {
         return "NORMAL";
     }
 
+    /**
+     * R16（2026-09-07）性能修复：三项统计全部改为聚合 COUNT/SUM 查询，
+     * 消除「全量拉取帖子/访客 + 逐条 isMutualLike N+1」导致他人主页 4~6s 假死。
+     */
     private ProfileSocialProofView buildSocialProof(Long userId) {
         long likedMe = likeRepository.countByTargetUserIdAndStatus(userId, Like.LikeStatus.active);
-        long likes = postRepository.findByAuthorId(userId).stream()
-                .mapToLong(post -> post.getLikesCount() == null ? 0L : post.getLikesCount().longValue())
-                .sum();
-        long visitors = profileVisitorRepository.findByHostIdOrderByVisitedAtDesc(userId).stream()
-                .map(ProfileVisitor::getVisitorId)
+        long likes = postRepository.sumLikesByAuthorId(userId);
+        long visitors = profileVisitorRepository.countDistinctVisitorsByHostId(userId);
+        // 互赞数：我 active 喜欢的目标里，对方也 active 喜欢我的数量（单条 COUNT）
+        List<Long> myLikedTargets = likeRepository.findByUserIdAndStatus(userId, Like.LikeStatus.active)
+                .stream()
+                .map(Like::getTargetUserId)
                 .filter(java.util.Objects::nonNull)
-                .distinct()
-                .count();
-        long matches = likeRepository.findByUserIdAndStatus(userId, Like.LikeStatus.active).stream()
-                .filter(like -> isMutualLike(userId, like.getTargetUserId()))
-                .count();
+                .toList();
+        long matches = myLikedTargets.isEmpty()
+                ? 0L
+                : likeRepository.countByTargetUserIdAndUserIdInAndStatus(
+                        userId, myLikedTargets, Like.LikeStatus.active);
         return new ProfileSocialProofView(likedMe, likes, visitors, matches);
     }
 
@@ -210,14 +215,21 @@ public class UserProfileController {
      * 与 VillageQueryService.getPost 的"非作者不可见待审帖"语义对齐，避免点击 404。
      */
     private List<UserProfileDTO.Post> buildPosts(Long userId, boolean isSelf) {
-        return postRepository.findByAuthorId(userId).stream()
-                .filter(post -> isSelf
-                        || (post.getAuditStatus() == Post.AuditStatus.approved
-                                && post.getStatus() == Post.PostStatus.active))
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt());
-                })
+        // R16（2026-09-07）性能修复：他人视角用 top-N 索引查询，不再全量拉取后内存过滤
+        List<Post> candidates;
+        if (isSelf) {
+            candidates = postRepository.findByAuthorId(userId).stream()
+                    .sorted((a, b) -> {
+                        if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                        return b.getCreatedAt().compareTo(a.getCreatedAt());
+                    })
+                    .limit(3)
+                    .toList();
+        } else {
+            candidates = postRepository.findTop12ByAuthorIdAndAuditStatusAndStatusOrderByCreatedAtDesc(
+                    userId, Post.AuditStatus.approved, Post.PostStatus.active);
+        }
+        return candidates.stream()
                 .limit(3)
                 .map(post -> new UserProfileDTO.Post(
                         String.valueOf(post.getId()),

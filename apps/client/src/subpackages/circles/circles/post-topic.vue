@@ -279,10 +279,26 @@ async function submitTopic() {
     return;
   }
 
+  // 兴趣圈目标需先选择兴趣分类（无入口 circleId 时，分类 ID 即目标圈 ID）
+  if (
+    !isPostMode.value &&
+    publishTarget.value === "interest" &&
+    !circleId.value.trim() &&
+    !interestCategory.value
+  ) {
+    uni.showToast({ title: t("circle.postTopicCategoryHint"), icon: "none" });
+    return;
+  }
+
   isSubmitting.value = true;
   try {
+    // 校园圈无显式 circleId 时走 posts 流（与学校圈频道一致）：
+    // 圈子话题后端仅支持数字兴趣圈 ID（@PathVariable Long），
+    // slug "campus-circle" 会触发 MissingPathVariableException → 500
+    const campusPostFallback =
+      !isPostMode.value && publishTarget.value === "campus" && !circleId.value.trim();
     // 2026-08-08 频道化重构：帖子模式（今日广场/学校圈/活动）→ 走 posts 流，发布后圈子页可见
-    if (isPostMode.value) {
+    if (isPostMode.value || campusPostFallback) {
       // 帖子标题需满足后端 5-30 字校验
       if (title.value.trim().length < 5) {
         uni.showToast({ title: t("circle.postTopicErrTitleTooShort"), icon: "none" });
@@ -290,7 +306,7 @@ async function submitTopic() {
         return;
       }
       await villageStore.createPost({
-        categoryId: `cat-${postCategory.value}`,
+        categoryId: `cat-${campusPostFallback ? "campus" : postCategory.value}`,
         title: title.value.trim(),
         content: content.value.trim(),
         images: images.value,
@@ -298,7 +314,7 @@ async function submitTopic() {
         activityId: selectedActivity.value ? String(selectedActivity.value.id) : undefined,
       });
       // 通知圈子页刷新当前频道（post-topic 发布成功）
-      postedChannel.value = sourceChannel.value;
+      postedChannel.value = campusPostFallback ? "school" : sourceChannel.value;
       uni.$emit("village:post-created");
       uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "success" });
       if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
@@ -310,12 +326,10 @@ async function submitTopic() {
     }
 
     // Task B5：解析目标圈子 ID —— 优先使用入口参数 circleId；
-    // 否则按发布目标推导（兴趣圈 → 兴趣分类 ID；校园圈 → 兜底 "campus-circle"）
+    // 否则按发布目标推导（兴趣圈 → 兴趣分类 ID）
     const resolvedCircleId =
       circleId.value ||
-      (publishTarget.value === "interest" && interestCategory.value
-        ? interestCategory.value
-        : "campus-circle");
+      (publishTarget.value === "interest" && interestCategory.value ? interestCategory.value : "");
 
     // 修复（review #22）：提交翻译后的标签文本，而不是 i18n key
     const tagTexts = selectedTags.value.map((key) => t(key));

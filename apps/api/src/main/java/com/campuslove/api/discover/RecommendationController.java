@@ -222,7 +222,8 @@ public class RecommendationController {
           @RequestParam(value = "ageMin", required = false) Integer ageMin,
           @RequestParam(value = "ageMax", required = false) Integer ageMax,
           @RequestParam(value = "onlineOnly", required = false) Boolean onlineOnly,
-          @RequestParam(value = "excludeIds", required = false) String excludeIds) {
+          @RequestParam(value = "excludeIds", required = false) String excludeIds,
+          @RequestParam(value = "distanceMaxKm", required = false) Double distanceMaxKm) {
     // B6：后台关闭匹配/推荐功能（app_switch.match_open / recommend_open=false）→ 返回空列表，
     // 客户端按 app-config 开关显示「匹配暂时关闭」空态，前后端行为一致
     if (appConfigService != null && !appConfigService.isSwitchEnabled(AppConfigService.SWITCH_MATCH_OPEN)) {
@@ -276,14 +277,49 @@ public class RecommendationController {
     // 2026-08-09 免登录可逛：匿名用户返回中性排序的通用推荐（无个性化上下文），
     // 不调用 SecurityUtils.getCurrentUserId（匿名会抛 401）
     if (!SecurityUtils.isAuthenticated()) {
-      return PrivacyFieldFilter.sanitize(filterOnlineOnly(recommendationService.getRecommendationsForGuest(filter), onlineOnly));
+      return filterByDistanceMax(PrivacyFieldFilter.sanitize(
+              filterOnlineOnly(recommendationService.getRecommendationsForGuest(filter), onlineOnly)),
+              distanceMaxKm);
     }
     Long userId = SecurityUtils.getCurrentUserId();
     // Task 15.2：隐私字段过滤白名单校验，确保推荐列表不返回手机号/身份证/真实姓名
     // RecommendedPersonView 为 record，字段在编译期固定，本调用为防御性校验：
     // 若未来有人向 record 误添加敏感字段，sanitize 会抛 IllegalStateException，
     // 由 GlobalExceptionHandler 转 500，强制运维修复
-    return PrivacyFieldFilter.sanitize(filterOnlineOnly(recommendationService.getRecommendations(userId, filter), onlineOnly));
+    return filterByDistanceMax(PrivacyFieldFilter.sanitize(
+            filterOnlineOnly(recommendationService.getRecommendations(userId, filter), onlineOnly)),
+            distanceMaxKm);
+  }
+
+  /**
+   * R16（2026-09-07）：寻觅「附近」Tab 服务端距离过滤。
+   * distanceText 形如 "2.3km"/"800m"；解析失败或无距离的条目在附近语义下剔除。
+   */
+  private List<RecommendedPersonView> filterByDistanceMax(List<RecommendedPersonView> views,
+                                                          Double distanceMaxKm) {
+    if (distanceMaxKm == null || distanceMaxKm <= 0 || views == null || views.isEmpty()) {
+      return views;
+    }
+    return views.stream()
+            .filter(v -> {
+              String text = v.distanceText();
+              if (text == null || text.isBlank()) {
+                return false;
+              }
+              text = text.trim().toLowerCase();
+              try {
+                if (text.endsWith("km")) {
+                  return Double.parseDouble(text.substring(0, text.length() - 2)) <= distanceMaxKm;
+                }
+                if (text.endsWith("m")) {
+                  return Double.parseDouble(text.substring(0, text.length() - 1)) / 1000.0 <= distanceMaxKm;
+                }
+                return Double.parseDouble(text) <= distanceMaxKm;
+              } catch (NumberFormatException ex) {
+                return false;
+              }
+            })
+            .toList();
   }
 
   /**

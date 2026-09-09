@@ -2752,6 +2752,7 @@ export default {
     "officialChatTitle": "官方号会话",
     "officialChatEmpty": "暂无官方消息",
     "officialChatLoadFailed": "官方消息加载失败，请重试",
+    "officialChatSendFailed": "发送失败，请重试",
     "officialActivityTitle": "近期活动",
     "officialActivityCta": "查看详情",
     "officialAssistantMsg1": "你好，我是恋爱助手 有任何恋爱困惑都可以问我～",

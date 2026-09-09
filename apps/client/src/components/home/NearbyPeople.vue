@@ -113,7 +113,8 @@ function onNearbyAvatarError(event: { target?: { dataset?: Record<string, string
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4rpx;
+  /* R20（2026-09-08）：行距放宽（4→8rpx），缓解距离/标签两行文字拥挤 */
+  gap: 8rpx;
 }
 
 .nearby-item__avatar-wrap {
@@ -174,19 +175,24 @@ function onNearbyAvatarError(event: { target?: { dataset?: Record<string, string
 }
 
 .nearby-item__name {
-  font-size: 20rpx;
+  /* R20（2026-09-08）：辨识度提升——名字/距离/标签原 20/18/18rpx 过小过挤 */
+  font-size: 24rpx;
+  font-weight: 600;
   color: var(--c-text-primary, #1E1E1E);
+  line-height: 1.3;
 }
 
 .nearby-item__distance {
-  font-size: 18rpx;
+  font-size: 20rpx;
   color: var(--c-text-secondary, #666666);
+  line-height: 1.3;
 }
 
 .nearby-item__common {
-  font-size: 18rpx;
+  font-size: 20rpx;
   color: var(--c-text-tertiary, #999999);
   text-align: center;
+  line-height: 1.4;
 }
 
 .nearby-people__bar {

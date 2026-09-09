@@ -7,6 +7,7 @@ import MyProfile from "./mine/MyProfile.vue";
 import type { InteractionItem } from "./mine/MyInteraction.vue";
 import type { MoreItem } from "./mine/MyMore.vue";
 import SkeletonBlock from "../common/SkeletonBlock.vue";
+import LoadingSpinner from "../common/LoadingSpinner.vue";
 
 const { t } = useI18n();
 
@@ -57,6 +58,7 @@ const emit = defineEmits<{
   (e: "complete"): void;
   (e: "statTap", key: string): void;
   (e: "storyPhoto", index: number): void;
+  (e: "tapAlbum", index: number): void;
   (e: "storyVideo"): void;
   (e: "addStory"): void;
   (e: "interactionTap", key: string): void;
@@ -68,7 +70,7 @@ const emit = defineEmits<{
   <view class="profile-shell">
     <!-- 2026-09-03 骨架屏升级：资料态骨架替代纯文字 loading（避免白屏/跳动） -->
     <view v-if="loading && !profile" class="profile-shell__state">
-      <SkeletonBlock variant="profile" :label="t('common.loading')" />
+      <LoadingSpinner :text="t('common.loading')" />
     </view>
     <view v-else-if="errorMessage && !profile" class="profile-shell__state">
       <text class="profile-shell__text">{{ errorMessage }}</text>
@@ -111,6 +113,7 @@ const emit = defineEmits<{
       @complete="emit('complete')"
       @stat-tap="emit('statTap', $event)"
       @story-photo="emit('storyPhoto', $event)"
+      @tap-album="emit('tapAlbum', $event)"
       @story-video="emit('storyVideo')"
       @add-story="emit('addStory')"
       @interaction-tap="emit('interactionTap', $event)"
@@ -126,7 +129,7 @@ const emit = defineEmits<{
 <style scoped lang="scss">
 .profile-shell {
   min-height: 100vh;
-  background: #EEF7F2;
+  background: #ffffff;
 }
 
 .profile-shell__state {

@@ -34,7 +34,7 @@ class OfficialAccountControllerTest extends ControllerTestBase {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new OfficialAccountController(officialAccountService);
+        controller = new OfficialAccountController(officialAccountService, null);
     }
 
     @Test

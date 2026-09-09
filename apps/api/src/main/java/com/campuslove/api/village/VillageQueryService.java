@@ -8,6 +8,7 @@ import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Activity.ActivityStatus;
 import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.Comment;
+import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.Post.PostCategory;
 import com.campuslove.api.entity.Post.PostStatus;
@@ -231,12 +232,14 @@ public class VillageQueryService {
             PostCategory postCategory = parseCategory(category);
             postPage = postRepository.findVisiblePostsByCategory(
                     PostStatus.active, AuditStatus.approved, postCategory,
-                    Visibility.public_, Visibility.school, Visibility.interest,
+                    Visibility.public_, Visibility.school, Visibility.interest, Visibility.friends,
+                    Like.LikeStatus.active, userId,
                     userCampusName, memberCircleIds, pageable);
         } else {
             postPage = postRepository.findVisiblePosts(
                     PostStatus.active, AuditStatus.approved,
-                    Visibility.public_, Visibility.school, Visibility.interest,
+                    Visibility.public_, Visibility.school, Visibility.interest, Visibility.friends,
+                    Like.LikeStatus.active, userId,
                     userCampusName, memberCircleIds, pageable);
         }
         // Phase Feedback3 P2.5：主列表透传关注集合，isFollowed 随帖下发（关注 Tab 打通）
@@ -289,7 +292,8 @@ public class VillageQueryService {
                 List<Long> visCircleIds = loadMemberCircleIds(userId);
                 Page<Post> fallbackPage = postRepository.findVisiblePosts(
                         PostStatus.active, AuditStatus.approved,
-                        Visibility.public_, Visibility.school, Visibility.interest,
+                        Visibility.public_, Visibility.school, Visibility.interest, Visibility.friends,
+                        Like.LikeStatus.active, userId,
                         visCampusName, visCircleIds, pageable);
                 return new PostListResponse(
                         toPostSummaryViews(fallbackPage.getContent(), "", loadFollowedUserIds(userId)),
@@ -353,7 +357,8 @@ public class VillageQueryService {
                     List<Long> visCircleIds2 = loadMemberCircleIds(userId);
                     Page<Post> discoverPage = postRepository.findVisiblePosts(
                             PostStatus.active, AuditStatus.approved,
-                            Visibility.public_, Visibility.school, Visibility.interest,
+                            Visibility.public_, Visibility.school, Visibility.interest, Visibility.friends,
+                            Like.LikeStatus.active, userId,
                             visCampusName2, visCircleIds2, pageable);
                     return new PostListResponse(
                             toPostSummaryViews(discoverPage.getContent(), myCampusName, loadFollowedUserIds(userId)),

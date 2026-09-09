@@ -3,11 +3,14 @@ package com.campuslove.api.chat;
 import org.springframework.context.annotation.Profile;
 import com.campuslove.api.discover.RecommendationService;
 import com.campuslove.api.discover.RecommendedPersonView;
+import com.campuslove.api.entity.Activity;
 import com.campuslove.api.entity.Like;
+import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.LikeRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,14 +23,17 @@ public class MessageDashboardService {
     private final PrivateMessageService privateMessageService;
     private final LikeRepository likeRepository;
     private final RecommendationService recommendationService;
+    private final ActivityRepository activityRepository;
 
     public MessageDashboardService(
             PrivateMessageService privateMessageService,
             LikeRepository likeRepository,
-            RecommendationService recommendationService) {
+            RecommendationService recommendationService,
+            ActivityRepository activityRepository) {
         this.privateMessageService = privateMessageService;
         this.likeRepository = likeRepository;
         this.recommendationService = recommendationService;
+        this.activityRepository = activityRepository;
     }
 
     public MessageDashboardView getDashboard(Long userId) {
@@ -78,17 +84,37 @@ public class MessageDashboardService {
 
     private List<AssistantSuggestionView> buildAssistantSuggestions(
             int likedMeCount, List<RelationshipPersonView> warmPeople) {
+        // 2026-09-06 修复"建议卡片无法点击"：targetUrl 此前为不存在的页面路径
+        // （/pages/likes-visitors/index、/pages/chat-session/index），openAppPath 静默失败；
+        // 已改为 app.json 中的真实分包路由
+        // R20（2026-09-08）：「活动推荐」接真实 upcoming 活动——原静态「周末附近有约会活动」
+        // 占位卡与真实活动并存时内容重复/失真；无真实活动时才回退推广卡
         List<AssistantSuggestionView> suggestions = new ArrayList<>();
-        if (likedMeCount > 0) {
-            suggestions.add(new AssistantSuggestionView("❤️", "有人喜欢你",
-                    likedMeCount + " 个人想认识你", "/pages/likes-visitors/index"));
+        List<Activity> upcoming = activityRepository
+                .findByStatusOrderByActivityDateAsc(Activity.ActivityStatus.upcoming, PageRequest.of(0, 2))
+                .getContent()
+                .stream()
+                .filter(a -> Boolean.TRUE.equals(a.getPublished()))
+                .toList();
+        for (Activity activity : upcoming) {
+            String when = activity.getScheduleText() != null && !activity.getScheduleText().isBlank()
+                    ? activity.getScheduleText()
+                    : String.valueOf(activity.getActivityDate());
+            suggestions.add(new AssistantSuggestionView("🌿", activity.getTitle(),
+                    when + " · " + activity.getLocation(),
+                    "/subpackages/tools/activities/detail?id=" + activity.getId()));
         }
-        suggestions.add(new AssistantSuggestionView("🌿", "周末附近有约会活动",
-                "去发现适合你的线下活动", "/subpackages/discover/activities/index"));
+        if (upcoming.isEmpty()) {
+            suggestions.add(new AssistantSuggestionView("🌿", "周末附近有约会活动",
+                    "去发现适合你的线下活动", "/subpackages/discover/activities/index"));
+        } else if (likedMeCount > 0 && suggestions.size() < 3) {
+            suggestions.add(new AssistantSuggestionView("❤️", "有人喜欢你",
+                    likedMeCount + " 个人想认识你", "/subpackages/discover-extra/likes-visitors/index"));
+        }
         if (!warmPeople.isEmpty()) {
             String name = warmPeople.get(0).name();
             suggestions.add(new AssistantSuggestionView("💬", "建议回复" + name,
-                    "你们最近正在升温，主动聊一句", "/pages/chat-session/index?userId="
+                    "你们最近正在升温，主动聊一句", "/subpackages/chat/chat-session/index?userId="
                             + warmPeople.get(0).userId()));
         }
         return suggestions.stream().limit(3).toList();

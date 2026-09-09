@@ -29,24 +29,12 @@ const isExpanded = ref(false);
 let expandTimer: ReturnType<typeof setTimeout> | undefined;
 let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** 触觉反馈（轻震动，模拟轻松轻快的交互手感） */
-function vibrate() {
-  try {
-    // #ifdef MP-WEIXIN
-    uni.vibrateShort({ type: "light" });
-    // #endif
-    // #ifndef MP-WEIXIN
-    uni.vibrateShort();
-    // #endif
-  } catch (_e) {
-    /* 触觉反馈失败静默忽略 */
-  }
-}
+// 2026-09-07 R16：产品要求移除「发动态」点击震动反馈（项目已统一禁用震动，
+// 此处此前绕过 utils/haptic 直接调 uni.vibrateShort，一并移除）
 
-/** 手指按下：缩放 + 震动 */
+/** 手指按下：缩放 */
 function onTouchStart() {
   isPressed.value = true;
-  vibrate();
 }
 
 /** 手指抬起：从圆形拉长为圆角矩形，完成后跳转 */
@@ -65,7 +53,6 @@ function onTouchCancel() {
 function triggerExpandAndNavigate() {
   if (isExpanded.value) return; // 防止重复触发
   isExpanded.value = true;
-  vibrate();
   clearTimeout(expandTimer);
   // 动画周期 300ms（ease），完成后跳转
   expandTimer = setTimeout(() => {

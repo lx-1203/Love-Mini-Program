@@ -16,9 +16,11 @@ withDefaults(defineProps<{ items: InteractionItem[] }>(), {
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
 const DEFAULT_ICONS: Record<string, { iconSrc: string; color: string }> = {
+  // 2026-09-06 图标区分（用户反馈"全是爱心"）：喜欢我的人=实心心形 /
+  // 我的匹配=双人(GROUP) / 我喜欢的人=星星(SPARKLES) / 最近访客=眼睛(EYE)
   likedMe: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
-  match: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, color: "#FF9F43" },
-  likes: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#A29BFE" },
+  match: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#FF9F43" },
+  likes: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.SPARKLES, color: "#A29BFE" },
   visitors: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
 };
 </script>

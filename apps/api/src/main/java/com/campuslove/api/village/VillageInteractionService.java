@@ -360,6 +360,29 @@ public class VillageInteractionService {
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId) {
+        return commentPost(userId, postId, content, parentId, java.util.List.of());
+    }
+
+    /**
+     * 评论帖子（2026-09-06 评论图片上传：images 为已上传图片 URL 列表，可为 null/空）。
+     *
+     * <p>创建 Comment 记录（parentId 非空时为楼中楼回复），递增 commentsCount，
+     * 记录 POST_COMMENTED 互动事件。M-14：评论内容经 {@link SensitiveWordFilter} 过滤
+     * （与发帖口径一致，场景标记 POST_COMMENT）。</p>
+     *
+     * @param userId   评论者用户 ID
+     * @param postId   帖子 ID
+     * @param content  评论内容
+     * @param parentId 父评论 ID（楼中楼回复；null 为根评论）
+     * @param images   已上传图片 URL 列表（null/空 表示无图）
+     * @return 评论项视图
+     * @throws IllegalArgumentException 当 userId/content 为空，或 parentId 对应父评论不存在
+     *                                  /不属于该帖子时抛出
+     */
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId,
+                                       java.util.List<String> images) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -390,6 +413,8 @@ public class VillageInteractionService {
         comment.setContent(filteredContent);
         comment.setParentId(parentId);
         comment.setCreatedAt(now);
+        // 2026-09-06 评论图片：URL 列表序列化为 JSON 落库（空列表 → "[]"）
+        comment.setImages(imagesToJson(images));
 
         // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证 toCommentItemView 中评论 id 非空
         // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
@@ -416,6 +441,27 @@ public class VillageInteractionService {
         }
 
         return queryService.toCommentItemView(comment);
+    }
+
+    /**
+     * 图片 URL 列表 → JSON 字符串（2026-09-06 评论图片）。
+     * 仅做最小转义（URL 来自本服务 /media/upload，不含特殊字符）。
+     */
+    private static String imagesToJson(java.util.List<String> images) {
+        if (images == null || images.isEmpty()) {
+            return "[]";
+        }
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < images.size(); i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            String url = images.get(i);
+            sb.append('"')
+                    .append(url == null ? "" : url.replace("\\", "\\\\").replace("\"", "\\\""))
+                    .append('"');
+        }
+        return sb.append(']').toString();
     }
 
     /**
