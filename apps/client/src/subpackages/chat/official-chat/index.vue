@@ -267,11 +267,21 @@ function shouldShowTime(idx: number): boolean {
   return formatTime(prev.publishedAt) !== formatTime(cur.publishedAt) && idx % 3 === 0;
 }
 
-/* -------- 时间格式化 -------- */
+/* -------- 时间格式化 --------
+ * R21：历史消息只显示 HH:mm 会造成「时间在未来」的错觉（昨天 01:42 显示为 01:42）。
+ * 今天→HH:mm；昨天→昨天 HH:mm；更早→M月D日 HH:mm */
 function formatTime(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  if (Number.isNaN(d.getTime())) return "";
+  const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 86400000;
+  const ts = d.getTime();
+  if (ts >= startOfToday) return hm;
+  if (ts >= startOfYesterday) return `昨天 ${hm}`;
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`;
 }
 
 onLoad((query) => {

@@ -29,6 +29,5 @@
       </view>
     </view>
     <text class="tab-bar__label">{{item.label}}</text>
-    <view wx:if="{{index === selected}}" class="tab-bar__indicator" aria-hidden="true"></view>
   </view>
 </view>

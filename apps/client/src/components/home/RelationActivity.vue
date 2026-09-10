@@ -90,6 +90,8 @@ defineEmits<{
   justify-content: space-between;
   align-items: center;
   padding: 8rpx 0 16rpx;
+  /* R21：右侧避让微信胶囊，「全部 ›」此前被裁成「全」 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .relation-activity__title {

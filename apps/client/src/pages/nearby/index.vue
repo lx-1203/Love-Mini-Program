@@ -789,9 +789,10 @@ function requireLogin(): boolean {
   flex-shrink: 0;
 }
 
-/* 浅绿底圆角方块展示学校名字（替代原首字徽标） */
+/* 浅绿底圆角方块展示学校名字（替代原首字徽标）
+   R21：4 字校名一行完整显示（此前硬换行成「北京大/学」半裁切观感） */
 .campus-entry__badge {
-  width: 72rpx;
+  width: 84rpx;
   height: 72rpx;
   border-radius: 20rpx;
   display: flex;
@@ -803,16 +804,13 @@ function requireLogin(): boolean {
 }
 
 .campus-entry__badge-text {
-  font-size: 18rpx;
+  font-size: 16rpx;
   font-weight: 700;
   color: #1F9A75;
   line-height: 1.3;
   text-align: center;
-  padding: 0 4rpx;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: -0.5rpx;
 }
 
 .campus-entry__body {

@@ -634,14 +634,16 @@ public class RealHomeService implements HomeService {
             Page<Post> posts = postRepository.findByStatusAndAuditStatusOrderByLikesCountDesc(
                 PostStatus.active,
                 Post.AuditStatus.approved,
-                PageRequest.of(0, MAX_COMMUNITY_POST_COUNT)
+                PageRequest.of(0, MAX_COMMUNITY_POST_COUNT * 6)
             );
             java.util.List<Post> items = posts.getContent();
             // R21（2026-09-09）：同一作者只保留首帖——此前按点赞排序会出现相邻两张卡同作者，
-            // 观感如同占位数据（理想图为三位不同用户）
+            // 观感如同占位数据（理想图为三位不同用户）。
+            // R21-2：查询上限放大 6 倍后再去重截取，避免去重后卡片数不足
             java.util.Set<Long> seenAuthors = new java.util.HashSet<>();
             items = items.stream()
                 .filter(p -> p.getAuthorId() == null || seenAuthors.add(p.getAuthorId()))
+                .limit(MAX_COMMUNITY_POST_COUNT)
                 .toList();
             java.util.List<Long> authorIds = items.stream().map(Post::getAuthorId).filter(java.util.Objects::nonNull).toList();
             java.util.Map<Long, User> authorMap = profileQueryService.batchLoadUsers(authorIds);

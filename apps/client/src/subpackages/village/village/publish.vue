@@ -78,14 +78,20 @@ const targetTitle = computed(() => {
 
 const targetSubtitle = computed(() => {
   if (isCircleTarget.value && targetCircle.value) {
-    const n = targetCircle.value.memberCount ?? 0;
-    return `${n >= 10000 ? (n / 10000).toFixed(1) + "w" : n} 成员`;
+    return `${formatMemberShort(targetCircle.value.memberCount)} 成员`;
   }
   if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
   // R16：日常目标文案
   if (targetType.value === "friends") return "日常 · 仅互相喜欢或关注我的人可见";
   return "默认公开 · 所有人可见";
 });
+
+/** R21：成员数短格式（1.2w / 8,932） */
+function formatMemberShort(count: number): string {
+  const n = count ?? 0;
+  if (n >= 10000) return `${(n / 10000).toFixed(1)}w`;
+  return n.toLocaleString("en-US");
+}
 
 /** 圈内成员可见（谁可以看） */
 /** 批次 B4：可见范围文案对齐后端 visibility 三态 */
@@ -482,10 +488,9 @@ onUnmounted(() => {
                 role="button"
                 @tap="selectTarget(circle)"
               >
-                <view class="publish-target-sheet__circle-opt">
-                  <text class="publish-target-sheet__name">{{ circle.name }}</text>
-                  <text class="publish-target-sheet__joined">已加入</text>
-                </view>
+                <text class="publish-target-sheet__name">{{ circle.name }}</text>
+                <text class="publish-target-sheet__joined">已加入</text>
+                <text class="publish-target-sheet__desc">{{ formatMemberShort(circle.memberCount) }} 成员</text>
                 <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
               </view>
             </template>
@@ -622,7 +627,7 @@ onUnmounted(() => {
 .publish-target-sheet__name { font-size: 28rpx; color: #1A1E1C; }
 .publish-target-sheet__circle-opt { display: flex; align-items: center; }
 .publish-target-sheet__joined { font-size: 20rpx; color: #2FA366; background: #E8F6EE; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
-.publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; }
+.publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; /* R21：desc 弹性占位（与 post 版一致），选项行结构跨版统一 */ flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .publish-target-sheet__check { width: 32rpx; height: 32rpx; color: #36C99A; }
 
 .publish-content { padding: 24rpx 32rpx; }

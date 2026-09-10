@@ -316,8 +316,10 @@ function formatTime(dateStr?: string): string {
               <view class="assistant-card__avatar-wrap">
                 <!-- 2026-08-29：换用品牌吉祥物「寻觅芽」（素材库 V2 mascot_smile，与等待页/空态同一 IP 形象） -->
                 <XunmiMascot mood="mascot_smile" size="md" mini class="assistant-card__avatar" />
-                <view v-if="messagesStore.totalUnreadCount > 0" class="assistant-card__badge">
-                  <text class="assistant-card__badge-text">{{ messagesStore.totalUnreadCount > 99 ? '99+' : messagesStore.totalUnreadCount }}</text>
+                <!-- R21：角标数据源改为 会话未读+通知未读 合计（原 totalUnreadCount 不含通知，
+                     补种未读通知后仍不显示） -->
+                <view v-if="messagesStore.totalUnreadCount + messagesStore.unreadNotificationCount > 0" class="assistant-card__badge">
+                  <text class="assistant-card__badge-text">{{ Math.min(messagesStore.totalUnreadCount + messagesStore.unreadNotificationCount, 99) }}+</text>
                 </view>
               </view>
               <view class="assistant-card__info">
