@@ -203,6 +203,18 @@ class WebSocketClient {
     this.stompSessionReady = false;
     this.stateMachine.setState("connecting");
 
+    // R5(INDEP-003)：微信小程序并发 socket 任务有上限（默认 5）。
+    // 重连路径若不关闭旧 task，失败任务累积触发 "exceed max task count"，
+    // 此后所有实时通道建立失败。创建新连接前显式关闭并清空旧 task。
+    if (this.socketTask) {
+      try {
+        this.socketTask.close({ code: 4000, reason: "reconnect-replace" });
+      } catch (_e) {
+        // 旧 task 可能已关闭，忽略
+      }
+      this.socketTask = null;
+    }
+
     // 构建 WebSocket URL（不再附带 token 查询参数，避免 token 泄漏到日志/Referer/历史）
     const wsUrl = buildWsUrl();
     const protocols = buildProtocols(token);

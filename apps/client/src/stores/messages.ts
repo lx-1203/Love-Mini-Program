@@ -59,6 +59,8 @@ export type NotificationFilterType = "all" | "social" | "content";
  */
 export interface MessageSession {
   id: string;
+  /** 后端业务会话键（conversation_uid，形如 conv-{a}-{b}-{hex}）；深链解析用，real 会话必有 */
+  conversationUid?: string;
   partnerId: string;
   partnerName: string;
   partnerAvatar: string;
@@ -254,6 +256,7 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
   const partnerId = isSelfUserA ? String(raw.userBId) : String(raw.userAId);
   return {
     id: String(raw.id),
+    conversationUid: (raw as { conversationUid?: string }).conversationUid || "",
     partnerId,
     // 修复（P2-06）：otherUserName 可能为空，统一兜底为空串，
     // 避免下游（如消息页搜索 partnerName.toLowerCase()）空值崩溃

@@ -593,6 +593,13 @@ async function loadSessionData(): Promise<void> {
   const isTemp = looksPrivateNumeric || looksConversationUid
     ? false
     : !session || session.sessionType === "temp_anonymous";
+  // R5(INDEP-002)：conv- 业务键深链 → 解析为数字会话 id（后端消息接口只认数字主键）
+  if (looksConversationUid && !looksPrivateNumeric) {
+    const byUid = messagesStore.sessions.find((s) => s.conversationUid === sessionId.value);
+    if (byUid && byUid.id !== sessionId.value) {
+      sessionId.value = byUid.id;
+    }
+  }
 
   if (isTemp) {
     // 临时匿名会话：temp-chat 接口加载会话（返回会话含全部消息），

@@ -185,6 +185,9 @@ onLoad(() => {
 
 onShow(() => {
   discoverStore.resetDailyLimit();
+  // R5(INDEP-005)：清除上一会话残留的陈旧错误横幅（如「卡片不存在或已被处理」），
+  // 避免用户重新进入页面即看到与当前操作无关的历史错误
+  discoverStore.errorMessage = null;
   if (!isCacheFresh("discover:data", DISCOVER_TTL_MS)) {
     loadDiscoverData();
   }

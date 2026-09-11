@@ -242,6 +242,16 @@ function cycleVisibility() {
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
 let draftSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** R5(INDEP-001)：正文 #话题 与已选话题合并——原逻辑只在 submit 作用域内，
+ *  snapshotDraft 越界引用导致每次编辑草稿都抛 ReferenceError，草稿保存完全不生效 */
+function buildMergedTopics(): string[] {
+  const inlineTopics = Array.from(content.value.matchAll(/#([^\s#··]+)/g))
+    .map((m) => `#${m[1]}`)
+    .filter((tag) => !topics.value.includes(tag))
+    .slice(0, 5 - topics.value.length);
+  return [...topics.value, ...inlineTopics];
+}
+
 function snapshotDraft() {
   return {
     targetType: targetType.value,
@@ -249,7 +259,7 @@ function snapshotDraft() {
     title: "",
     content: content.value,
     images: images.value,
-    tags: mergedTopics,
+    tags: buildMergedTopics(),
     topics: topics.value,
     location: location.value,
     visibility: visibility.value,
@@ -356,11 +366,8 @@ async function submitPublish() {
   if (submitting.value) return;
   submitting.value = true;
   // 2026-09-06：正文中直接输入的 #话题 自动并入话题列表（与行入口等效）
-  const inlineTopics = Array.from(content.value.matchAll(/#([^\s#··]+)/g))
-    .map((m) => `#${m[1]}`)
-    .filter((tag) => !topics.value.includes(tag))
-    .slice(0, 5 - topics.value.length);
-  const mergedTopics = [...topics.value, ...inlineTopics];
+  // R5(INDEP-001)：合并逻辑提取为 buildMergedTopics()（草稿快照共用），消除越界引用
+  const mergedTopics = buildMergedTopics();
   uni.showLoading({ title: t("village.post.publishing"), mask: true });
   try {
     // real 模式上传本地图片

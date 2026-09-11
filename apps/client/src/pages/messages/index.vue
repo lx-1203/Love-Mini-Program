@@ -7,7 +7,7 @@
  */
 import { computed, ref, watch } from "vue";
 import { resolveMediaUrl } from "@/utils/media";
-import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
+import { onLoad, onShow, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 import { useLikesStore } from "../../stores/likes";
@@ -34,6 +34,18 @@ usePageAccess({ ...messagesPageRequirements, requiresProfile: false });
 
 // 2026-08-25 P0：i18n（标题/副标接入 chat.headerTitle / chat.headerSubtitle）
 const { t } = useI18n();
+
+// R5(INDEP-004)：滚动后内容滑入状态栏与系统时间叠印——与首页同款滚动遮罩
+const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0);
+const pageScrolled = ref(false);
+const topScrimStyle = computed(() => ({
+  height: `${statusBarPx + 28}px`,
+  opacity: pageScrolled.value ? "1" : "0",
+}));
+onPageScroll((e) => {
+  const next = (e.scrollTop ?? 0) > 10;
+  if (next !== pageScrolled.value) pageScrolled.value = next;
+});
 
 const sessionStore = useSessionStore();
 const messagesStore = useMessagesStore();
@@ -237,6 +249,8 @@ function formatTime(dateStr?: string): string {
 
 <template>
   <view class="messages-page">
+    <!-- R5(INDEP-004)：滚动状态栏遮罩（与首页同款） -->
+    <view class="messages-page__top-scrim" :style="topScrimStyle" />
     <NotLoggedWaiting v-if="!sessionStore.isLoggedIn && !useMock()" @go-login="goLogin" />
     <template v-else>
       <!-- ========== Header ========== -->
@@ -496,6 +510,17 @@ function formatTime(dateStr?: string): string {
   background: var(--c-bg-page, #EEF7F2);
   display: flex;
   flex-direction: column;
+}
+
+.messages-page__top-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  background: linear-gradient(180deg, var(--c-bg-page, #EEF7F2) 82%, rgba(238, 247, 242, 0));
+  pointer-events: none;
+  transition: opacity 160ms ease-out;
 }
 
 /* ========== Header ========== */
