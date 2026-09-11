@@ -1744,6 +1744,20 @@ function refreshMyDailiesWithRetry(retries: number): void {
   }
 }
 
+/**
+ * 「我的帖子」数据源拉取（带退避重试，同 refreshMyDailiesWithRetry 惯用法）。
+ * loadMyPosts 依赖会话中的 userId，冷启动 onShow 可能早于会话恢复（静默早退返回空），
+ * 需要重试兜底；另外发帖返回本页时依赖每次 onShow 轻量刷新，否则新帖不出现。
+ */
+function refreshMyPostsWithRetry(retries: number): void {
+  void profileStore.loadMyPosts();
+  if (retries > 0 && !profileStore.myPosts.length) {
+    setTimeout(() => {
+      if (profileStore.myPosts.length === 0) refreshMyPostsWithRetry(retries - 1);
+    }, 2000);
+  }
+}
+
 onShow(() => {
   loadPageUserIdParam();
   // 2026-08-12 V3：他人主页按对方背景显示（每次进入他人态都拉取，避免切换目标后残留）
@@ -1758,6 +1772,8 @@ onShow(() => {
   if (profileRequestedOnce) {
     // R16：日常可能刚在发布页新增，每次 onShow 轻量刷新「我的故事」数据源
     refreshMyDailiesWithRetry(1);
+    // 我的帖子同理：发帖返回后需看到新帖，每次 onShow 轻量刷新
+    refreshMyPostsWithRetry(1);
     return;
   }
   // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
@@ -1769,6 +1785,8 @@ onShow(() => {
   if (!getToken() && !useMock()) return;
   profileRequestedOnce = true;
   refreshMyDailiesWithRetry(3);
+  // 「我的帖子」首屏拉取（原缺陷：loadMyPosts 全仓无调用点，模块永远渲染空态）
+  refreshMyPostsWithRetry(3);
   profileStore.fetchProfile().then(() => {
     // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
     maybeShowAvatarHint();
