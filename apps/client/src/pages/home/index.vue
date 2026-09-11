@@ -48,11 +48,11 @@ const viewModel = computed<HomeViewModel>(() => toHomeViewModel(homeFeed.value))
 const likeLoading = ref(false);
 
 // R3（MP-R3-HOME-006）：滚动时统计区会滑入状态栏/刘海与系统时间叠印——
-// 滚过阈值后在顶部显示状态栏同高渐变遮罩，保证扫过的内容不与系统 UI 直接叠印
+// 滚过阈值后在顶部显示遮罩（R4：加高至状态栏+28px 渐变，让数字随滚动淡出而非硬裁切）
 const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0);
 const pageScrolled = ref(false);
 const topScrimStyle = computed(() => ({
-  height: `${statusBarPx}px`,
+  height: `${statusBarPx + 28}px`,
   opacity: pageScrolled.value ? "1" : "0",
 }));
 onPageScroll((e) => {

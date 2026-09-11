@@ -2942,7 +2942,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .input-bar__send--disabled {
-  opacity: 0.4;
+  /* R4：白字+opacity0.4 落在浅底上对比度仅约 1.4:1，改降饱和绿底保持文字可辨认 */
+  opacity: 1;
+  background: #9ed9c4;
+}
+
+.input-bar__send--disabled .input-bar__send-text {
+  color: #2a7a5e;
 }
 
 .input-bar__send-text {

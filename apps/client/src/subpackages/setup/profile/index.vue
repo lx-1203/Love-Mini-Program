@@ -559,7 +559,9 @@ async function save() {
 }
 
 .field--textarea {
-  min-height: 180rpx;
+  /* R4：180rpx 预留多行高度导致单行内容下出现死空间，收紧为两行 */
+  min-height: 120rpx;
+  height: 120rpx;
 }
 
 .field--inline {

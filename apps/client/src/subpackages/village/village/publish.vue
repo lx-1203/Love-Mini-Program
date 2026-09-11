@@ -586,17 +586,25 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
   /* R20：状态栏高度改由 JS 注入（:style paddingTop），env() 在模拟器为 0 会与系统时间叠印；
-     右侧仍预留微信胶囊宽度，避免「发布」被胶囊遮挡 */
-  padding: 16rpx 200rpx 16rpx 32rpx;
+     右侧仍预留微信胶囊宽度，避免「发布」被胶囊遮挡。R4：200→210rpx，与胶囊保持 ≥10px 间距 */
+  padding: 16rpx 210rpx 16rpx 32rpx;
   background: #fff;
   border-bottom: 1rpx solid #EEF2F0;
   flex-shrink: 0;
 }
-.publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; }
+.publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
 .publish-header__x { width: 36rpx; height: 36rpx; color: #1A1E1C; }
-.publish-header__title { font-size: 32rpx; font-weight: 700; color: #1A1E1C; }
-.publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: #36C99A; }
+.publish-header__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1A1E1C;
+  /* R4：三栏弹性布局——标题在 [X] 与 [发布] 之间的剩余空间内居中（绝对居中会与发布按钮贴挤） */
+  flex: 1;
+  text-align: center;
+}
+.publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: #36C99A; flex-shrink: 0; }
 /* R3：禁用态白字对浅绿底对比度仅 1.36:1（judged 证据），文字改深绿保证可辨认 */
 .publish-header__submit--disabled { background: #C7E9DC; }
 .publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }

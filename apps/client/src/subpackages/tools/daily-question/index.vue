@@ -385,7 +385,9 @@ function onAnswersScrollLower(): void {
   align-items: center;
   justify-content: center;
   gap: var(--sp-5);
-  margin: 80rpx var(--sp-8);
+  /* R4：锁定态垂直居中填充视口（原上贴头部、下方 60% 空白） */
+  margin: 12rpx var(--sp-8);
+  min-height: 70vh;
   padding: 60rpx var(--sp-10);
   background: var(--c-bg-container);
   border-radius: var(--r-xxl);

@@ -3582,7 +3582,7 @@ export default {
     "topicUnit": "条动态",
     "hotBadge": "热门",
     "joinedBtn": "已加入",
-    "friendsJoined": "等{count}位朋友已加入",
+    "friendsJoined": "等 {count} 位朋友已加入",
     "detailTabsAria": "兴趣圈详情 Tab",
     "detailFeed": "动态",
     "detailHot": "精华",

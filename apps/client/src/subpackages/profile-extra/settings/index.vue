@@ -339,8 +339,8 @@ const socialMenus = computed<MenuItem[]>(() => {
   items.push(
     { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index", tabQuery: { tab: "mine" } as Record<string, string> | undefined },
     { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
-    { icon: IMAGE_PATHS.ICONS_PROFILE.EYE, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
-    { icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.CLOCK, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.ALBUM, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS, bgColor: "var(--c-tint-cream-50, #FFF8E7)", label: t("profile.scheduleSetting"), path: "/subpackages/setup/schedule/index" },
   );
   return items;

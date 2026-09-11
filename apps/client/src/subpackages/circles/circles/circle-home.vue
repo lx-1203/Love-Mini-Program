@@ -122,9 +122,9 @@ const feedItems = ref<FeedItem[]>([
     tag: "校园风光",
     content: "周末去爬山拍到了云海，太震撼了！",
     images: [
-      // R3（MP-R3-CIRCLEHOME-002）：原三图（房车/摄影师/暗色天文）与「云海」文案不符，换云雾山景素材
+      // R4：post-5 海岸悬崖山感不足，换 post-2 暗色云雾海岸（更贴近「爬山云海」语义）
       "/static/assets/images/posts/post-placeholder.jpg",
-      "/static/assets/images/posts/post-5.jpg",
+      "/static/assets/images/posts/post-2.jpg",
       "/static/assets/images/posts/post-8.jpg",
     ],
     likes: 256,

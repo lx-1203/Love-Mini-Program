@@ -292,9 +292,11 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24rpx;
-  /* 状态栏高度 + 右侧避让微信胶囊（--capsule-right 由 useMenuButtonRect 注入） */
-  margin-top: calc(env(safe-area-inset-top) + 8px);
-  padding-right: calc(var(--capsule-right, 96px) + 8px);
+  /* 状态栏高度 + 右侧避让微信胶囊（--capsule-right/--statusbar 由 useMenuButtonRect 注入）
+     R4：原 padding-right = capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%；
+     且 env(safe-area-inset-top) 在开发者工具恒 0，margin-top 改用 --statusbar */
+  margin-top: calc(var(--statusbar, env(safe-area-inset-top)) + 8px);
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .campus-hub__back {

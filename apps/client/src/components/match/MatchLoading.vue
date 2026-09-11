@@ -41,7 +41,8 @@ onUnmounted(() => {
 /** 匹配度进度（参考图：旅行/音乐/电影/生活方式 四项 + 总进度） */
 const PROGRESS = [
   { label: "旅行爱好", percent: 90, icon: "/static/assets/images/mascot/star.png", color: "#FF6B9D" },
-  { label: "音乐品味", percent: 85, icon: "/static/assets/images/mascot/heart_pink.png", color: "#6C5CE7" },
+  // R4：heart_pink.png 为全透明空文件（行图标渲染空白圆），换 lucide music 图标
+  { label: "音乐品味", percent: 85, icon: "/static/assets/icons/common/music.svg", color: "#6C5CE7" },
   { label: "电影偏好", percent: 80, icon: "/static/assets/images/mascot/sparkle.png", color: "#00B894" },
   { label: "生活方式", percent: 79, icon: "/static/assets/images/mascot/sprout.png", color: "#FDCB6E" },
 ];
@@ -165,9 +166,10 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 /* ========== 跳过按钮 ========== */
 .match-loading__skip {
   position: absolute;
-  /* 避开微信胶囊安全区（右上角）：下移至胶囊下方，right 预留胶囊宽度 */
-  top: calc(calc(env(safe-area-inset-top) + 20px) + 200rpx);
-  right: 220rpx;
+  /* 避开微信胶囊安全区（右上角）：下移至胶囊下方，right 预留胶囊宽度
+     R4：右移+下移，避免叠压右侧头像下缘（judged 碰撞证据） */
+  top: calc(calc(env(safe-area-inset-top) + 20px) + 240rpx);
+  right: 140rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
   background: rgba(54, 201, 154, 0.85);

@@ -111,6 +111,8 @@ const iconSrc = {
 const draft = ref("");
 const sessionId = ref<string | null>(null);
 const targetUserId = ref<string | null>(null);
+/** R4：userId 深链进入时的对方昵称兜底（避免标题回退为通用「聊天」） */
+const deepLinkPartnerName = ref("");
 const pageErrorMessage = ref<string | null>(null);
 const tempCountdown = ref("");
 
@@ -658,6 +660,14 @@ onLoad(async (query) => {
       if (session) {
         sessionId.value = session.id;
         pageErrorMessage.value = null;
+        // R4：会话视图携带对方昵称时记录之；缺失则拉取对方资料兜底，保证标题显示真实昵称
+        deepLinkPartnerName.value = (session as { partnerName?: string }).partnerName?.trim() || "";
+        if (!deepLinkPartnerName.value) {
+          void clientApi.getPersonProfile(rawUserId).then((person) => {
+            const name = person?.nickname || person?.name;
+            if (name) deepLinkPartnerName.value = name;
+          }).catch(() => {});
+        }
         // 创建会话后立即加载消息（onShow 可能在 createSession 完成前已触发并 return）
         await loadSessionData();
       } else {
@@ -798,12 +808,12 @@ const canSend = computed(() => draft.value.trim().length > 0 && !isSessionClosed
 const pageTitle = computed(() => {
   if (isTempSession.value) return t("chat.tempSessionTitle");
   if (isPrivateSession.value) return currentSession.value?.partnerName || t("chat.privateMessageTitle");
-  // 通过 userId 导航但无现有会话时，标明目标用户
+  // 通过 userId 导航但无现有会话时，标明目标用户（R4：优先深链拉取到的真实昵称）
   if (targetUserId.value) {
     const partnerName = messagesStore.sessions.find(
       (s) => s.partnerId === targetUserId.value && s.sessionType === "private"
     )?.partnerName;
-    return partnerName || t("chat.conversationTitle");
+    return partnerName || deepLinkPartnerName.value || t("chat.conversationTitle");
   }
   return chatStore.activeSession?.partnerName || t("chat.chatTitle");
 });

@@ -12,6 +12,7 @@ import { useLikesStore } from "../../../stores/likes";
 import { useMock } from "../../../stores/helpers/use-mock";
 import type { HeartSignalView } from "../../../stores/discover/api";
 import { openAppPath } from "../../../utils/navigation";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { resolveMediaUrl } from "../../../utils/media";
 import { clientApi } from "../../../services/api";
 import { ROUTES } from "../../../constants/routes";
@@ -26,6 +27,8 @@ import type { UserProfileDTO } from "../../../types/profile";
 import { lightHaptic, successHaptic, errorHaptic } from "../../../utils/haptic";
 
 const { t } = useI18n();
+// R4：注入 --statusbar/--capsule-right（顶部返回钮避让状态栏）
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
 const reportStore = useReportStore();
@@ -344,7 +347,7 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="other-page">
+  <view class="other-page" :style="menuStyleVars">
     <view class="other-header">
       <view
         class="other-header__back"
@@ -449,7 +452,8 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 28rpx;
+  /* R4：返回钮原 24rpx 起排侵入状态栏与系统文字叠印，接入 --statusbar 下移 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 28rpx 24rpx;
   background: transparent;
 }
 

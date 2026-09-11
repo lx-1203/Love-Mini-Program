@@ -150,7 +150,8 @@ function getScoreIcon(index: number): string {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 110rpx 48rpx 80rpx;
+  /* R4：110rpx 起排使标题行与微信胶囊（状态栏下 47-83px real 带）叠压，下移至胶囊带以下 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx 80rpx;
   box-sizing: border-box;
   background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
 }
