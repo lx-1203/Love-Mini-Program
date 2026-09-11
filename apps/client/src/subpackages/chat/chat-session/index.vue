@@ -575,9 +575,22 @@ async function loadSessionData(): Promise<void> {
   // → 私聊被误判为临时会话，GET /temp-chat/sessions/{id} 返回 400（console 报错源）。
   // 私信会话 ID 恒为数字主键、临时会话 ID 恒为 "session-{a}-{b}-{hex}" 字符串，
   // 据此兜底判定，消除误判。
-  const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
+  // R5 修复：conversation_uid 形如 "conv-{a}-{b}-{hex}" 的真实私聊同样非数字——
+  // 深链（推送/分享）直达且会话列表未加载时会被误判 temp。先拉一次会话列表再判定，
+  // 仅「确认不在列表且非 conv- 前缀」时才走临时链路。
+  let session = messagesStore.sessions.find((s) => s.id === sessionId.value);
   const looksPrivateNumeric = /^\d+$/.test(String(sessionId.value));
-  const isTemp = looksPrivateNumeric
+  const looksConversationUid = /^conv-/.test(String(sessionId.value));
+  if (!session && !looksPrivateNumeric && !looksConversationUid && messagesStore.sessions.length === 0) {
+    // 会话列表未加载过：先引导加载（bootstrap 私信列表），再复查一次
+    try {
+      await messagesStore.bootstrap();
+    } catch (_e) {
+      // bootstrap 失败保持原判定路径（走临时链路由其接口报错兜底）
+    }
+    session = messagesStore.sessions.find((s) => s.id === sessionId.value);
+  }
+  const isTemp = looksPrivateNumeric || looksConversationUid
     ? false
     : !session || session.sessionType === "temp_anonymous";
 
