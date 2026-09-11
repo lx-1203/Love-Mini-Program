@@ -537,7 +537,8 @@ onUnmounted(() => {
         <view class="publish-row">
           <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
-          <text class="publish-row__meta">{{ currentCity }} · 当前位置</text>
+          <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
+          <text class="publish-row__meta">{{ currentCity ? currentCity + ' · 自动定位' : '选择位置' }}</text>
         </view>
         <view class="publish-row press-feedback" role="button" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
@@ -596,7 +597,9 @@ onUnmounted(() => {
 .publish-header__x { width: 36rpx; height: 36rpx; color: #1A1E1C; }
 .publish-header__title { font-size: 32rpx; font-weight: 700; color: #1A1E1C; }
 .publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: #36C99A; }
+/* R3：禁用态白字对浅绿底对比度仅 1.36:1（judged 证据），文字改深绿保证可辨认 */
 .publish-header__submit--disabled { background: #C7E9DC; }
+.publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }
 .publish-header__submit-text { font-size: 28rpx; font-weight: 700; color: #fff; }
 
 .publish-body { flex: 1; min-height: 0; }

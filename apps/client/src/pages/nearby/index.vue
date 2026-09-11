@@ -23,7 +23,7 @@ import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover
 import type { DiscoverCard } from "../../stores/discover/types";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
-import { SCHOOLS } from "../../config/schools";
+import { SCHOOLS, type School } from "../../config/schools";
 // 第五轮：校园圈卡片统一浅绿背景 + 名字（coverUrl 上传后显示图片），不再使用渐变底色
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
@@ -52,8 +52,15 @@ const peoplePreview = ref<DiscoverCard[]>([]);
 const peopleLoading = ref(false);
 const peopleError = ref("");
 
-/** 校园入口（前 4 所） */
-const schoolEntries = SCHOOLS.slice(0, 4);
+/** 校园入口（前 4 所）。R3：用户本校置顶（原固定取前 4 所，本校不在首屏，与定位文案自相矛盾） */
+const schoolEntries = computed(() => {
+  const myCampus = sessionStore.userSession?.campusName?.trim();
+  if (!myCampus) return SCHOOLS.slice(0, 4);
+  const mine = SCHOOLS.find((s) => s.name === myCampus);
+  const rest = SCHOOLS.filter((s) => s.name !== myCampus);
+  const mineEntry: School = mine ?? { id: `session-${myCampus}`, name: myCampus };
+  return [mineEntry, ...rest].slice(0, 4);
+});
 
 // 第五轮 QA（补做）：校园圈入口卡片统一浅绿背景 + 学校名字（移除 school-main.png 封面插图、
 // 渐变底色与首字徽标）。coverUrl 数据模型保留：非空 → 显示图片；空 → 浅绿背景 + 名字。
@@ -361,9 +368,10 @@ function requireLogin(): boolean {
           <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
         </view>
         <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.myConnections')" @tap="goAllPosts">
-          <!-- 2026-08-25 P0：第 5 项改为"我的人脉"，icon 用素材库 r10_c02（人物+加号），规格书 4.4 -->
+          <!-- 2026-08-25 P0：第 5 项改为"我的人脉"。
+               R3 修正：原 LOGIN_SPLIT['r10_c02'] 素材实为 WiFi 图标（切图错位），改用 social/follow（人物+加号） -->
           <view class="nearby-entry__icon nearby-entry__icon--dynamic">
-            <image class="nearby-entry__img" :src="IMAGE_PATHS.LOGIN_SPLIT['r10_c02']" mode="aspectFit" alt="" />
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.ICONS_PROFILE.NETWORK" mode="aspectFit" alt="" />
           </view>
           <text class="nearby-entry__label">{{ t('nearby.myConnections') }}</text>
         </view>

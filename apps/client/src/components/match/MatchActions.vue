@@ -56,7 +56,7 @@ const icons = {
     </view>
 
     <view
-      class="match-actions__item"
+      class="match-actions__item match-actions__item--like"
       hover-class="match-actions__item--pressed"
       hover-stay-time="40"
       role="button"
@@ -66,7 +66,7 @@ const icons = {
       <view class="match-actions__btn match-actions__btn--like">
         <image class="match-actions__icon" :src="icons.like" mode="aspectFit" alt="" />
       </view>
-      <text class="match-actions__label">{{ t('discover.like') }}</text>
+      <text class="match-actions__label match-actions__label--like">{{ t('discover.like') }}</text>
     </view>
   </view>
 </template>
@@ -130,5 +130,11 @@ const icons = {
 .match-actions__label {
   font-size: 22rpx;
   color: #6B7571;
+}
+
+/* R3：主 CTA「喜欢」标签用品牌粉高亮，形成三键视觉层级（理想图同为粉色标识） */
+.match-actions__label--like {
+  color: #FF6B81;
+  font-weight: 600;
 }
 </style>

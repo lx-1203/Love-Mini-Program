@@ -559,8 +559,8 @@ onLoad((query) => {
 }
 .nav-subtitle {
   font-size: 22rpx;
-  /* R21：#999 压浅绿底对比度不足，几乎不可读 */
-  color: #667870;
+  /* R21：#999 压浅绿底对比度不足；R3 再加深一档（22rpx 浅色可读性 borderline） */
+  color: #5A6B64;
   margin-top: 2rpx;
 }
 
@@ -883,15 +883,16 @@ onLoad((query) => {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  /* R20：青绿渐变统一收敛为品牌绿（与私聊页「+」附件按钮一致语义） */
-  background: var(--c-brand, #36C99A);
+  /* R3（OFFCHAT-002）：与私聊页「+」按钮样式统一（灰底深字）——
+     原绿底白字与私聊灰底样式漂移，同一组件两套观感 */
+  background: var(--c-neutral-50, #F5F6F8);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .plus-btn__icon {
   font-size: 36rpx;
-  color: #fff;
+  color: var(--c-text-primary, #333);
   font-weight: 700;
 }
 .input-bar__field {

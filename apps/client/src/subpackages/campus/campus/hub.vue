@@ -52,23 +52,24 @@ const CAMPUS_COVER: Record<string, string> = {
 /** 2026-08-27 校园圈修复：展示全部学校圈（不再只取前 6 个），并附加校园封面图 */
 const schools = SCHOOLS.map((s) => ({ ...s, coverUrl: CAMPUS_COVER[s.id] ?? s.coverUrl }));
 
-/** 校园圈展示数据（参考图视觉对齐；后续可由后端 campuses 接口扩展提供） */
+/** 校园圈展示数据（参考图视觉对齐；后续可由后端 campuses 接口扩展提供）
+ *  R3：文案精简（位同学→同学、条动态→动态），统计行单行后不再出现「态」字孤行 */
 const schoolStats: Record<string, { members: string; posts: string; peers: string }> = {
-  pku: { members: "3.2k 位同学", posts: "2.8w 条动态", peers: "等 342 位同学" },
-  thu: { members: "2.6k 位同学", posts: "2.1w 条动态", peers: "等 256 位同学" },
-  ruc: { members: "2.1k 位同学", posts: "9,823 条动态", peers: "等 301 位同学" },
-  fudan: { members: "1.8k 位同学", posts: "1.5w 条动态", peers: "等 210 位同学" },
-  sjtu: { members: "2.4k 位同学", posts: "1.9w 条动态", peers: "等 278 位同学" },
-  tongji: { members: "1.7k 位同学", posts: "1.3w 条动态", peers: "等 194 位同学" },
-  zju: { members: "1.4k 位同学", posts: "1.1w 条动态", peers: "等 163 位同学" },
-  nju: { members: "1.6k 位同学", posts: "1.2w 条动态", peers: "等 187 位同学" },
-  whu: { members: "1.9k 位同学", posts: "1.4w 条动态", peers: "等 225 位同学" },
-  sysu: { members: "1.3k 位同学", posts: "9,500 条动态", peers: "等 152 位同学" },
-  szu: { members: "1.2k 位同学", posts: "8,600 条动态", peers: "等 138 位同学" },
+  pku: { members: "3.2k 同学", posts: "2.8w 动态", peers: "等 342 位同学" },
+  thu: { members: "2.6k 同学", posts: "2.1w 动态", peers: "等 256 位同学" },
+  ruc: { members: "2.1k 同学", posts: "9,823 动态", peers: "等 301 位同学" },
+  fudan: { members: "1.8k 同学", posts: "1.5w 动态", peers: "等 210 位同学" },
+  sjtu: { members: "2.4k 同学", posts: "1.9w 动态", peers: "等 278 位同学" },
+  tongji: { members: "1.7k 同学", posts: "1.3w 动态", peers: "等 194 位同学" },
+  zju: { members: "1.4k 同学", posts: "1.1w 动态", peers: "等 163 位同学" },
+  nju: { members: "1.6k 同学", posts: "1.2w 动态", peers: "等 187 位同学" },
+  whu: { members: "1.9k 同学", posts: "1.4w 动态", peers: "等 225 位同学" },
+  sysu: { members: "1.3k 同学", posts: "9,500 动态", peers: "等 152 位同学" },
+  szu: { members: "1.2k 同学", posts: "8,600 动态", peers: "等 138 位同学" },
 };
 
 function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
-  return schoolStats[school.id] || { members: "1.0k 位同学", posts: "8,000 条动态", peers: "等 120 位同学" };
+  return schoolStats[school.id] || { members: "1.0k 同学", posts: "8,000 动态", peers: "等 120 位同学" };
 }
 
 /** 我加入的（本校已认证） */
@@ -593,8 +594,12 @@ function goBack() {
   display: block;
   margin-top: 8rpx;
   font-size: 24rpx;
-  /* 2026-08-27：白卡上数据行用次要文字色 */
+  /* 2026-08-27：白卡上数据行用次要文字色
+     R3：单行省略——原文案换行把「态」字折成孤字（judged 证据） */
   color: var(--c-text-secondary, #666666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .campus-school-card__members {

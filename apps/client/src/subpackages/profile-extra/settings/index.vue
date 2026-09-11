@@ -21,6 +21,7 @@ import { TOAST_DURATION } from "../../../constants/limits";
 import { isDev } from "../../../config/env";
 // 收尾轮：深色模式三态切换（auto/dark/light）
 import { useThemeStore } from "../../../stores/theme";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { switchTabWithQuery } from "../../../utils/navigation";
@@ -31,6 +32,8 @@ import { useAppConfigStore } from "../../../stores/app-config";
 const operationTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const { t } = useI18n();
+// R3 补正：模板绑定了 menuStyleVars 但此前漏了实例化，--statusbar 恒未定义导致 nav-bar 顶进状态栏
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const themeStore = useThemeStore();
 const appConfig = useAppConfigStore();
 
@@ -336,9 +339,8 @@ const socialMenus = computed<MenuItem[]>(() => {
   items.push(
     { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index", tabQuery: { tab: "mine" } as Record<string, string> | undefined },
     { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
-    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
+    { icon: IMAGE_PATHS.ICONS_PROFILE.EYE, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
     { icon: IMAGE_PATHS.ICONS_PROFILE.PHOTO_WALL, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },
-    { icon: IMAGE_PATHS.ICONS_PROFILE.VERIFICATION, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.verification"), path: "/subpackages/profile-extra/verification/index" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.SETTINGS, bgColor: "var(--c-tint-cream-50, #FFF8E7)", label: t("profile.scheduleSetting"), path: "/subpackages/setup/schedule/index" },
   );
   return items;
@@ -414,7 +416,11 @@ function handleMenuTap(item: MenuItem) {
 </script>
 
 <template>
-  <view class="settings-page">
+  <view class="settings-page" :style="menuStyleVars">
+    <!-- 顶部安全区占位（必须先于 nav-bar：navigationStyle=custom 下导航栏若顶到 y=0
+         会与系统时间/刘海叠印，返回键看似"消失"） -->
+    <view class="safe-top" />
+
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="40">
@@ -423,9 +429,6 @@ function handleMenuTap(item: MenuItem) {
       <text class="nav-bar__title">{{ t('settings.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
 
     <!-- 任务 E4：反馈与帮助（一级菜单顶部入口） -->
     <view class="section">
@@ -742,8 +745,8 @@ function handleMenuTap(item: MenuItem) {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  
-  height: calc(env(safe-area-inset-top) + 0rpx);
+  /* --statusbar 兜底：开发者工具 env(safe-area-inset-top) 恒 0，仅 env 会叠印状态栏 */
+  height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
 

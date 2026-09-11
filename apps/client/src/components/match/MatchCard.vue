@@ -215,8 +215,9 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 
 .match-card__score-ring {
   position: relative;
-  width: 128rpx;
-  height: 128rpx;
+  /* R3：128→160rpx，label 18→22rpx —— 原尺寸下「匹配度」糊化不可读（judged 截图证据） */
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -227,8 +228,9 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 
 .match-card__score-ring-inner {
   position: absolute;
-  width: 104rpx;
-  height: 104rpx;
+  /* R3：内圈 104→132rpx（文字实际容器），value/label 同步放大后「匹配度」不再糊化 */
+  width: 132rpx;
+  height: 132rpx;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.12);
   display: flex;
@@ -238,15 +240,16 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 }
 
 .match-card__score-value {
-  font-size: 32rpx;
+  font-size: 40rpx;
   font-weight: 700;
   color: #ffffff;
+  line-height: 1.1;
 }
 
 .match-card__score-label {
-  font-size: 18rpx;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 22rpx;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .match-card__info {

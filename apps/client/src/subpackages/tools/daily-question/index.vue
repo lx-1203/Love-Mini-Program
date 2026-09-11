@@ -9,6 +9,7 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useDailyQuestionStore, formatAnswerTime } from "../../../stores/daily-question";
 import { useCheckInStore } from "../../../stores/checkin";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
@@ -16,7 +17,28 @@ import EmptyState from "../../../components/common/EmptyState.vue";
 const { t } = useI18n();
 const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
+// 注入 --statusbar/--capsule-right：开发者工具 env(safe-area-inset-top) 恒 0，头部需按真实状态栏高度避让
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { todayQuestion, answers, hasAnswered, loading, answerPage, answerHasMore } = storeToRefs(dailyQuestionStore);
+
+/** 锁定卡「去签到」：就地完成签到解锁每日一问（原锁定卡无任何出口形成死胡同） */
+const isCheckingIn = ref(false);
+async function handleCheckIn() {
+  if (isCheckingIn.value || checkInStore.checkedIn) return;
+  isCheckingIn.value = true;
+  try {
+    await checkInStore.checkIn();
+    if (checkInStore.checkedIn) {
+      uni.showToast({ title: t("dailyQuestion.unlockSuccess"), icon: "success" });
+    } else {
+      uni.showToast({ title: checkInStore.errorMessage || "签到未完成，请稍后再试", icon: "none" });
+    }
+  } catch (_e) {
+    uni.showToast({ title: "签到失败，请稍后再试", icon: "none" });
+  } finally {
+    isCheckingIn.value = false;
+  }
+}
 
 /** 回答内容 */
 const answerContent = ref("");
@@ -99,7 +121,7 @@ function onAnswersScrollLower(): void {
 </script>
 
 <template>
-  <view class="daily-question-page">
+  <view class="daily-question-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="dq-header">
       <view class="dq-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
@@ -115,6 +137,16 @@ function onAnswersScrollLower(): void {
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
         <text class="lock-card__title">{{ t("dailyQuestion.lockTitle") }}</text>
         <text class="lock-card__desc">{{ t("dailyQuestion.lockDesc") }}</text>
+        <view
+          class="lock-card__cta press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
+          role="button"
+          :class="{ 'lock-card__cta--loading': isCheckingIn }"
+          @tap="handleCheckIn"
+        >
+          <text class="lock-card__cta-text">{{ isCheckingIn ? "签到中…" : "去签到" }}</text>
+        </view>
       </view>
 
       <!-- 已签到：显示问题内容 -->
@@ -266,8 +298,9 @@ function onAnswersScrollLower(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
+  /* --statusbar 由 useMenuButtonRect 注入（开发者工具 env 恒 0），避免标题与系统时间叠印 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-4)) var(--sp-8) var(--sp-6);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
   z-index: var(--z-header);
 }
 
@@ -378,6 +411,26 @@ function onAnswersScrollLower(): void {
   color: var(--c-text-tertiary);
   text-align: center;
   line-height: 1.6;
+}
+
+/* 锁定卡「去签到」CTA：就地签到解锁，消除纯文字死胡同 */
+.lock-card__cta {
+  margin-top: var(--sp-4);
+  min-width: 320rpx;
+  padding: 20rpx 48rpx;
+  background: var(--c-brand);
+  border-radius: var(--r-pill, 999rpx);
+  text-align: center;
+}
+
+.lock-card__cta--loading {
+  opacity: 0.7;
+}
+
+.lock-card__cta-text {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: #ffffff;
 }
 
 /* ========== 问题卡片 ========== */

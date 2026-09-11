@@ -3122,6 +3122,8 @@ export default {
       /* P1-05: Nickname input label / placeholder */
       labelNickname: "Nickname",
       placeholderNickname: "Enter your nickname",
+      labelBio: "Bio",
+      placeholderBio: "Introduce yourself in one line",
       labelGrade: "Grade",
       placeholderGrade: "Select grade",
       gradeFreshman: "Freshman",

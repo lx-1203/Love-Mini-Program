@@ -15,6 +15,7 @@
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { getMenuButtonRect, getWindowWidth } from "../compat";
+import { useStatusBarHeight } from "./useStatusBarHeight";
 
 /** 兜底胶囊间隙（标准小程序胶囊 87×32px，距右缘 7px；测量失败时使用） */
 const FALLBACK_GAP = 7;
@@ -43,9 +44,11 @@ export function useMenuButtonRect() {
     capsuleRightGap.value = measureCapsuleGap();
   }
 
-  /** 页面根节点 style 绑定：--capsule-right（px） */
+  /** 页面根节点 style 绑定：--capsule-right（px）+ --statusbar（px，开发者工具 safe-area 为 0 时兜底） */
+  const statusBarHeight = useStatusBarHeight();
   const styleVars = computed(() => ({
     "--capsule-right": `${capsuleRightGap.value}px`,
+    "--statusbar": `${statusBarHeight.value}px`,
   }));
 
   onMounted(() => {

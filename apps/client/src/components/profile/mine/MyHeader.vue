@@ -93,15 +93,18 @@ const genderIconSrc = computed(() => {
 <style scoped lang="scss">
 .my-header {
   position: relative;
-  padding: 48rpx 32rpx 56rpx;
+  /* R3：顶部加状态栏高度（--statusbar 由 useMenuButtonRect 注入）——
+     头部为页面首元素，原 48rpx 起排使「编辑资料」胶囊与微信胶囊叠压 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 64rpx) 32rpx 56rpx;
   background: linear-gradient(160deg, #E8F5E9 0%, #F0FFF0 100%);
   border-radius: 0 0 40rpx 40rpx;
 }
 
 .my-header__icons {
   position: absolute;
-  top: 28rpx;
-  right: calc(var(--capsule-right, 96px) + 20rpx);
+  /* 状态栏下方起排，且与胶囊同带时横向再避让胶囊本体（87px） */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx);
+  right: calc(var(--capsule-right, 7px) + 104px);
   display: flex;
   gap: 16rpx;
   z-index: 2;

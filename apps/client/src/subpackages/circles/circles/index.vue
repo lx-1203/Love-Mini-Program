@@ -399,7 +399,8 @@ defineExpose({ toggleJoin });
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
-                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 人加入 · {{ circle.topicCount }} 条动态</text>
+                  <!-- R3：文案精简（人加入→人），避免被「加入」按钮列省略号吃掉动态数（judged：统计行不可读） -->
+                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 人 · {{ circle.topicCount }} 条动态</text>
                 </view>
                 <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6） -->
                 <view class="circle-card__friends">
@@ -413,7 +414,7 @@ defineExpose({ toggleJoin });
                       alt=""
                     />
                   </view>
-                  <text class="circle-card__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友已加入</text>
+                  <text class="circle-card__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友加入</text>
                 </view>
               </view>
 
@@ -774,7 +775,8 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__action {
-  padding: var(--sp-3) var(--sp-7);
+  /* R3：水平内边距 sp-7→sp-5，让出统计行宽度（省略号不再吃掉「N 条动态」） */
+  padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
   /* 理想图：浅绿描边胶囊按钮（背景透明、绿字），简洁清爽 */
   background: var(--c-neutral-0, #FFFFFF);

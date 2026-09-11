@@ -31,11 +31,14 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
 const { circles, loading } = storeToRefs(circleStore);
+// 注入 --statusbar：hero 上的返回/分享按钮需避开状态栏（开发者工具 env 恒 0，原按钮被顶进刘海区不可见）
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /** 圈子 ID（onLoad 带入） */
 const circleId = ref("");
@@ -119,9 +122,10 @@ const feedItems = ref<FeedItem[]>([
     tag: "校园风光",
     content: "周末去爬山拍到了云海，太震撼了！",
     images: [
-      IMAGE_PATHS.CIRCLE_COVERS.TRAVEL,
-      IMAGE_PATHS.CIRCLE_COVERS.PHOTO,
-      IMAGE_PATHS.CIRCLE_COVERS.ASTRONOMY,
+      // R3（MP-R3-CIRCLEHOME-002）：原三图（房车/摄影师/暗色天文）与「云海」文案不符，换云雾山景素材
+      "/static/assets/images/posts/post-placeholder.jpg",
+      "/static/assets/images/posts/post-5.jpg",
+      "/static/assets/images/posts/post-8.jpg",
     ],
     likes: 256,
     comments: 32,
@@ -265,13 +269,14 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 </script>
 
 <template>
-  <view class="circle-home">
+  <view class="circle-home" :style="menuStyleVars">
     <!-- 1. Hero 头图 -->
     <view class="hero">
       <image class="hero-img" :src="coverImage" mode="aspectFill" />
       <view class="hero-actions">
         <view class="hero-btn" hover-class="hero-btn--active" @tap="goBack">
-          <image class="hero-btn-icon" src="/static/assets/icons/common/back.svg" mode="aspectFit" />
+          <!-- R3：灰 chevron 在深色封面上不可见，改白色粗 chevron 文字 -->
+          <text class="hero-btn-chevron">‹</text>
         </view>
         <view class="hero-actions-right">
           <view class="hero-btn" hover-class="hero-btn--active">
@@ -466,7 +471,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .hero-actions {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 16rpx);
+  /* R3：env 兜底改 --statusbar（开发者工具 env 恒 0，按钮被顶进状态栏/刘海） */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx);
   left: 24rpx;
   right: 24rpx;
   display: flex;
@@ -498,6 +504,16 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .hero-btn-icon {
   width: 36rpx;
   height: 36rpx;
+}
+
+/* R3：返回按钮白色 chevron（原灰色 back.svg 在深色封面上对比度不足） */
+.hero-btn-chevron {
+  font-size: 44rpx;
+  line-height: 1;
+  color: #ffffff;
+  font-weight: 600;
+  /* 视觉居中：chevron 字形偏上 */
+  transform: translateY(-2rpx);
 }
 
 /* ===== 2. 信息卡 ===== */

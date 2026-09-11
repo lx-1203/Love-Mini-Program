@@ -213,13 +213,14 @@ function getScoreIcon(index: number): string {
 
 .match-success__avatar-wrap {
   position: relative;
-  width: 160rpx;
-  height: 160rpx;
+  /* R3（MSUCCESS-004）：160→192rpx，主视觉加权对齐理想图（庆祝时刻头像过弱） */
+  width: 192rpx;
+  height: 192rpx;
 }
 
 .match-success__avatar {
-  width: 160rpx;
-  height: 160rpx;
+  width: 192rpx;
+  height: 192rpx;
   border-radius: 50%;
   border: 6rpx solid #ffffff;
   box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.12);
@@ -252,8 +253,9 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__heart {
-  width: 100rpx;
-  height: 100rpx;
+  /* R3（MSUCCESS-004）：100→136rpx，连接心形与头像比例对齐理想图 */
+  width: 136rpx;
+  height: 136rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,8 +264,8 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__heart-circle {
-  width: 88rpx;
-  height: 88rpx;
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 50%;
   background: linear-gradient(135deg, #FF6B81 0%, #FF4D6D 100%);
   display: flex;

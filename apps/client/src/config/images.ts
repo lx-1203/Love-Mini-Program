@@ -438,6 +438,8 @@ export const IMAGE_PATHS = {
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
     MATCHES:      ICONS_BASE + '/social/match.svg',         // 我的匹配 → 复用 social.match
     VISITORS:     ICONS_BASE + '/social/visitor.svg',       // 访客记录 → 复用 social.visitor
+    EYE:          ICONS_BASE + '/common/eye.svg',           // 浏览记录 → eye（与访客/动态图标区分）
+    NETWORK:      ICONS_BASE + '/social/follow.svg',        // 我的人脉 → 人物+加号（R3 修正：原 LOGIN_SPLIT r10_c02 实为 WiFi 图）
     PHOTO_WALL:   ICONS_BASE + '/social/heart-signal.svg',  // 相册 → 复用 heart-signal（暂用占位）
     VERIFICATION: ICONS_BASE + '/common/check.png',         // 恋爱认证 → 复用 check
     LAB:          ICONS_BASE + '/common/ai.png',            // 情感实验室 → 复用 ai

@@ -62,7 +62,8 @@ const metaLine = computed(() => {
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
-            <image class="today-card__btn-icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.BTN_LIKE)" mode="aspectFit" />
+            <!-- R3：原 BTN_LIKE 资源实为「看看TA」按钮图（渲染成白条），改用白色心形字符 -->
+            <text class="today-card__btn-heart">♥</text>
             <text>喜欢</text>
           </view>
         </view>
@@ -296,6 +297,13 @@ const metaLine = computed(() => {
 .today-card__btn-icon {
   width: 28rpx;
   height: 28rpx;
+  margin-right: 6rpx;
+}
+
+.today-card__btn-heart {
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 1;
   margin-right: 6rpx;
 }
 

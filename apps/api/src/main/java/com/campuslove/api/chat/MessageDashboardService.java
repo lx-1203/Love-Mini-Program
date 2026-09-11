@@ -100,7 +100,7 @@ public class MessageDashboardService {
             String when = activity.getScheduleText() != null && !activity.getScheduleText().isBlank()
                     ? activity.getScheduleText()
                     : String.valueOf(activity.getActivityDate());
-            suggestions.add(new AssistantSuggestionView("🌿", activity.getTitle(),
+            suggestions.add(new AssistantSuggestionView(activityIcon(activity.getTitle()), activity.getTitle(),
                     when + " · " + activity.getLocation(),
                     "/subpackages/tools/activities/detail?id=" + activity.getId()));
         }
@@ -109,7 +109,7 @@ public class MessageDashboardService {
                     "去发现适合你的线下活动", "/subpackages/discover/activities/index"));
         } else if (likedMeCount > 0 && suggestions.size() < 3) {
             suggestions.add(new AssistantSuggestionView("❤️", "有人喜欢你",
-                    likedMeCount + " 个人想认识你", "/subpackages/discover-extra/likes-visitors/index"));
+                    likedMeCount + " 人喜欢了你", "/subpackages/discover-extra/likes-visitors/index"));
         }
         if (!warmPeople.isEmpty()) {
             String name = warmPeople.get(0).name();
@@ -118,6 +118,33 @@ public class MessageDashboardService {
                             + warmPeople.get(0).userId()));
         }
         return suggestions.stream().limit(3).toList();
+    }
+
+    /**
+     * R3（MP-R3-MSG-003）：按活动标题关键词映射图标——
+     * 原实现所有活动统一 🌿，篮球赛/骑行与绿叶图标语义不符（judged 截图证据）。
+     */
+    private String activityIcon(String title) {
+        if (title == null || title.isBlank()) {
+            return "🌿";
+        }
+        if (title.contains("篮球") || title.contains("足球") || title.contains("排球")
+                || title.contains("羽毛球") || title.contains("乒乓") || title.contains("球")) {
+            return "🏀";
+        }
+        if (title.contains("骑行") || title.contains("骑车") || title.contains("踏青") || title.contains("单车")) {
+            return "🚴";
+        }
+        if (title.contains("跑") || title.contains("徒步") || title.contains("爬山") || title.contains("登山")) {
+            return "🏃";
+        }
+        if (title.contains("读书") || title.contains("阅读") || title.contains("分享会")) {
+            return "📚";
+        }
+        if (title.contains("电影") || title.contains("观影")) {
+            return "🎬";
+        }
+        return "🌿";
     }
 
     private int countMutualLikes(Long userId) {

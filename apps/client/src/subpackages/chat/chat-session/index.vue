@@ -1794,7 +1794,8 @@ defineExpose({ noop });
             />
           </template>
         </template>
-        <text v-if="!messagesStore.currentMessages.length" class="meta-copy meta-copy--padded">
+        <!-- R3（CHAT-002）：空会话提示改为居中浅灰小字（原 meta-copy 左对齐深色裸文本，与快捷开场白引导完成度断层） -->
+        <text v-if="!messagesStore.currentMessages.length" class="chat-empty-hint">
           {{ t('chat.emptySessionCreated') }}
         </text>
         <text v-if="isSessionClosed" class="meta-copy meta-copy--warning">
@@ -2401,6 +2402,15 @@ defineExpose({ noop });
   color: var(--c-text-secondary);
   font-size: var(--fs-base);
   line-height: 1.6;
+}
+
+/* R3（CHAT-002）：会话空态提示——居中、弱化，符合页面既有空态规范 */
+.chat-empty-hint {
+  display: block;
+  text-align: center;
+  color: var(--c-text-tertiary, #9AA5A0);
+  font-size: var(--fs-sm, 26rpx);
+  padding: 48rpx 32rpx;
 }
 
 .meta-copy--warning {

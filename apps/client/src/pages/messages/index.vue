@@ -3,7 +3,7 @@
 
 /**
  * 消息首页 — 理想设计还原版
- * 顺序：Header → QuickActionCards → 寻觅助手 → 正在升温 → 最近聊天
+ * 顺序：Header → QuickActionCards → 寻觅助手 → 正在升温 → 最近聊天 → 活动推荐
  */
 import { computed, ref, watch } from "vue";
 import { resolveMediaUrl } from "@/utils/media";
@@ -290,7 +290,7 @@ function formatTime(dateStr?: string): string {
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">有人喜欢你</text>
-                <text class="quick-card__desc">{{ likedMeCount }} 个人想认识你</text>
+                <text class="quick-card__desc">{{ likedMeCount }} 人喜欢了你</text>
               </view>
               <view class="quick-card__btn">
                 <text class="quick-card__btn-text">去看看</text>
@@ -371,35 +371,7 @@ function formatTime(dateStr?: string): string {
             </view>
           </view>
 
-          <!-- ========== 活动推荐 ========== -->
-          <view v-if="activityRecommendations.length > 0" class="section">
-            <view class="section__head">
-              <text class="section__title">活动推荐</text>
-            </view>
-            <view class="activity-list">
-              <view
-                v-for="(act, idx) in activityRecommendations"
-                :key="idx"
-                class="activity-rec-card"
-                hover-class="activity-rec-card--hover"
-                @tap="openActivity(act.targetUrl)"
-              >
-                <text v-if="act.icon && !isIconUrl(act.icon)" class="activity-rec-card__icon activity-rec-card__icon--emoji">{{ act.icon }}</text>
-                <image v-else-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
-                <view v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder" />
-                <view class="activity-rec-card__body">
-                  <text class="activity-rec-card__title">{{ act.title }}</text>
-                  <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
-                  <view class="activity-rec-card__cta">
-                    <text class="activity-rec-card__cta-text">查看详情</text>
-                    <text class="activity-rec-card__cta-arrow">›</text>
-                  </view>
-                </view>
-              </view>
-            </view>
-          </view>
-
-          <!-- ========== 最近聊天 ========== -->
+          <!-- ========== 最近聊天（R3：核心模块前移至活动推荐之前，对齐理想图信息层级） ========== -->
           <view class="section">
             <view class="section__head">
               <text class="section__title">最近聊天</text>
@@ -483,6 +455,34 @@ function formatTime(dateStr?: string): string {
                 </view>
               </view>
             </template>
+          </view>
+
+          <!-- ========== 活动推荐（R3：后移，核心会话列表优先） ========== -->
+          <view v-if="activityRecommendations.length > 0" class="section">
+            <view class="section__head">
+              <text class="section__title">活动推荐</text>
+            </view>
+            <view class="activity-list">
+              <view
+                v-for="(act, idx) in activityRecommendations"
+                :key="idx"
+                class="activity-rec-card"
+                hover-class="activity-rec-card--hover"
+                @tap="openActivity(act.targetUrl)"
+              >
+                <text v-if="act.icon && !isIconUrl(act.icon)" class="activity-rec-card__icon activity-rec-card__icon--emoji">{{ act.icon }}</text>
+                <image v-else-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
+                <view v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder" />
+                <view class="activity-rec-card__body">
+                  <text class="activity-rec-card__title">{{ act.title }}</text>
+                  <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
+                  <view class="activity-rec-card__cta">
+                    <text class="activity-rec-card__cta-text">查看详情</text>
+                    <text class="activity-rec-card__cta-arrow">›</text>
+                  </view>
+                </view>
+              </view>
+            </view>
           </view>
         </template>
       </PageStateContainer>

@@ -25,6 +25,7 @@ import { useCircleStore } from "../../../stores/circle";
 import { useActivityStore } from "../../../stores/activity";
 import { useDailyQuestionStore } from "../../../stores/daily-question";
 import { openAppPath, consumeTabQuery, openUserProfile } from "../../../utils/navigation";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 2026-08-10 切换提速：村子页频道数据 30s TTL（onShow 免重复全量重拉）
 import { isCacheFresh, setCachedValue } from "../../../utils/cache-ttl";
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -56,6 +57,8 @@ import {
 
 /* ========== Stores ========== */
 const { t } = useI18n();
+// 注入 --statusbar/--capsule-right：头部状态栏避让 + 搜索框胶囊避让
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const villageStore = useVillageStore();
 const sessionStore = useSessionStore();
 const circleStore = useCircleStore();
@@ -531,7 +534,7 @@ onShareAppMessage(() => ({
 </script>
 
 <template>
-  <view class="village-page page-bottom-safe">
+  <view class="village-page page-bottom-safe" :style="menuStyleVars">
     <!-- 未完善资料：显示锁定页面 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -840,8 +843,8 @@ onShareAppMessage(() => ({
    ================================================================ */
 .village-header {
   background: var(--c-bg-container);
-  padding-top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-4));
-  padding-top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-4));
+  /* R3：env 兜底改 --statusbar（开发者工具 env 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px + var(--sp-4));
   position: sticky;
   top: 0;
   z-index: 100;
@@ -853,14 +856,16 @@ onShareAppMessage(() => ({
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--sp-7) var(--sp-5);
-  /* R21：右侧避让微信胶囊——搜索框此前延伸到胶囊正下方被遮挡 */
-  padding-right: calc(var(--capsule-right, 7px) + 104px);
+  /* R21：右侧避让微信胶囊——搜索框此前延伸到胶囊正下方被遮挡
+     R3：104→112px，与胶囊再保持 ≥10px 呼吸间距（judged：搜索框贴住胶囊） */
+  padding-right: calc(var(--capsule-right, 7px) + 112px);
 }
 
 .village-header__title-wrap {
   display: flex;
   align-items: baseline;
   gap: var(--sp-3);
+  flex-shrink: 0;
 }
 
 .village-header__title {
@@ -873,6 +878,8 @@ onShareAppMessage(() => ({
 .village-header__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+  /* R3：副标题禁断行——原容器过窄把「匿名」拆成两行（judged 证据） */
+  white-space: nowrap;
 }
 
 /* 2026-08-11 搜索栏入口（点击进独立帖子搜索页） */

@@ -262,10 +262,9 @@ const currentStepLabel = computed(() => {
   min-width: 0;
 }
 
-.setup-progress__step-wrap:first-child {
-  flex: 0 0 auto;
-}
-
+/* R3 修复（SETUP-001）：原 :first-child 也被设为 flex:0 0 auto，
+   导致首段连接线塌缩到 min-width、圆点 1-2 挤在一起而 2-3/3-4 均分剩余空间；
+   现仅最后一步收口（无连接线），其余等分 → 圆点间距均匀 */
 .setup-progress__step-wrap:last-child {
   flex: 0 0 auto;
 }
@@ -345,23 +344,22 @@ const currentStepLabel = computed(() => {
 }
 
 /* ========== 步骤名称行 ========== */
+/* R3：标签行与圆点行同构（前 N-1 项 flex:1 左对齐、末项收口右对齐），
+   标签起点与对应圆点对齐（原 flex:1 + 中间居中导致「校园认证」漂到 2/3 圆之间） */
 .setup-progress__labels {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   padding: 0 var(--sp-1);
 }
 
 .setup-progress__label-item {
   flex: 1;
-  text-align: center;
+  text-align: left;
   min-width: 0;
 }
 
-.setup-progress__label-item:first-child {
-  text-align: left;
-}
-
 .setup-progress__label-item:last-child {
+  flex: 0 0 auto;
   text-align: right;
 }
 

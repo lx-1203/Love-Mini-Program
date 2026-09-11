@@ -10,12 +10,15 @@ import { buildMatchReasons, toMatchCardUser } from "../../../view-models/match";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import type { MatchCardUser } from "../../../types/match";
 import MatchSuccess from "../../../components/match/MatchSuccess.vue";
 
 const { t } = useI18n();
 const matchStore = useMatchStore();
 const profileStore = useProfileStore();
+// 注入 --statusbar/--capsule-right：顶部 nav 返回钮/分享钮需避让状态栏与胶囊
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const fallbackPartner = ref<MatchCardUser | null>(null);
 const loading = ref(false);
@@ -97,7 +100,7 @@ function handleScreenshot() {
 </script>
 
 <template>
-  <view class="success-page">
+  <view class="success-page" :style="menuStyleVars">
     <!-- 2026-08-25 P0：顶部 nav（左返回 + 右相机/分享） -->
     <view class="success-nav">
       <view
@@ -153,7 +156,9 @@ function handleScreenshot() {
   background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
 }
 
-/* 2026-08-25 P0：顶部 nav（规格书 7.1 / 7.2） */
+/* 2026-08-25 P0：顶部 nav（规格书 7.1 / 7.2）
+   2026-09-10 R3：--statusbar 由 useMenuButtonRect 注入（开发者工具 env 恒 0），
+   返回钮/换一换原 env 兜底失败会与系统时间、状态栏图标叠印 */
 .success-nav {
   position: fixed;
   top: 0;
@@ -162,7 +167,7 @@ function handleScreenshot() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 24rpx 0;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
   z-index: 20;
   pointer-events: none;
 }

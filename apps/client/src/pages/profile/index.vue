@@ -565,7 +565,9 @@ const locationLabel = computed(() => {
         : homeParts.join(" · "));
   const future = b?.futureCity?.trim();
   const prefix = t("discover.futureCityPrefix");
-  if (future) {
+  // R3：未来城市与家乡相同时不再重复展示「北京 · 未来: 北京」，仅保留家乡
+  const futureMeaningful = future && future !== home;
+  if (futureMeaningful) {
     return home ? `${home} · ${prefix}${future}` : `${prefix}${future}`;
   }
   return home || (isOwnProfile.value ? profileStore.campusProfile?.city : "") || "";
@@ -2855,8 +2857,8 @@ onUnload(() => {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  height: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
-  height: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
+  /* --statusbar 由 useMenuButtonRect 注入根节点（开发者工具 env 恒 0，仅 env 会叠印状态栏） */
+  height: calc(var(--statusbar, env(safe-area-inset-top)) + 20px + var(--sp-5));
   flex-shrink: 0;
   position: relative;
   z-index: 1;

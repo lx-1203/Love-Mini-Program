@@ -7,7 +7,7 @@
  * 禁止使用 CardSwiper；连续人物浏览属于「寻觅」Tab。
  */
 import { computed, ref, watch } from "vue";
-import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
+import { onShow, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useHomeStore } from "../../stores/home";
@@ -46,6 +46,19 @@ const { homeFeed, loading } = storeToRefs(homeStore);
 
 const viewModel = computed<HomeViewModel>(() => toHomeViewModel(homeFeed.value));
 const likeLoading = ref(false);
+
+// R3（MP-R3-HOME-006）：滚动时统计区会滑入状态栏/刘海与系统时间叠印——
+// 滚过阈值后在顶部显示状态栏同高渐变遮罩，保证扫过的内容不与系统 UI 直接叠印
+const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0);
+const pageScrolled = ref(false);
+const topScrimStyle = computed(() => ({
+  height: `${statusBarPx}px`,
+  opacity: pageScrolled.value ? "1" : "0",
+}));
+onPageScroll((e) => {
+  const next = (e.scrollTop ?? 0) > 10;
+  if (next !== pageScrolled.value) pageScrolled.value = next;
+});
 
 // 地理位置：尝试获取真实定位，失败时使用默认值
 const locationText = ref(buildLocationText("", sessionStore.userSession?.campusName));
@@ -256,6 +269,8 @@ function openInvite() {
 
 <template>
   <view class="home-page page-bottom-safe" :style="menuStyleVars">
+    <!-- R3：滚动状态栏遮罩（渐变过渡，滚过阈值淡入） -->
+    <view class="home-page__top-scrim" :style="topScrimStyle" />
     <!-- 2026-09-03 背景随页面滚动（用户反馈①）：scroll-view 改整页自然滚动，
          背景与内容同动、无固定底图；下拉刷新走页面级 onPullDownRefresh -->
       <HomeHeader
@@ -438,9 +453,21 @@ page {
   flex: none;
   min-height: 100vh;
   background: var(--c-bg-page, #EEF7F2);
-  padding-top: calc(env(safe-area-inset-top) + 20px);
+  /* R3：env 兜底改为 --statusbar（开发者工具 env 恒 0，头部会叠印系统时间） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
   /* 底部避开自定义 tabbar（--tabbar-height = 112rpx + 安全区） */
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
+}
+
+.home-page__top-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  background: linear-gradient(180deg, var(--c-bg-page, #EEF7F2) 82%, rgba(238, 247, 242, 0));
+  pointer-events: none;
+  transition: opacity 160ms ease-out;
 }
 
 .home-section-gap {

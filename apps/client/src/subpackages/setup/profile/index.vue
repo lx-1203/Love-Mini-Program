@@ -416,10 +416,17 @@ async function save() {
     </SectionCard>
 
     <SectionCard :title="t('setup.profile.sectionDraft')" compact>
+      <!-- R3（SETUP-002）：补字段标签与占位符——原昵称/签名渲染为无标签裸文本，无可编辑线索 -->
+      <view class="form-row">
+        <text class="form-row__label">{{ t('setup.profile.labelNickname') }}</text>
+      </view>
       <input
   cursor-spacing="20" v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
+      <view class="form-row">
+        <text class="form-row__label">{{ t('setup.profile.labelBio') }}</text>
+      </view>
       <textarea
-  cursor-spacing="20" v-model="form.bio" class="field field--textarea" :maxlength="BIO_MAX_LENGTH" />
+  cursor-spacing="20" v-model="form.bio" class="field field--textarea" :placeholder="t('setup.profile.placeholderBio')" :maxlength="BIO_MAX_LENGTH" />
       <!-- 2026-08-07 重构：年级改滚轮选择（替代自由输入，标准化信息用选择器） -->
       <view class="form-row">
         <text class="form-row__label">{{ t('setup.profile.labelGrade') }}</text>
