@@ -1774,6 +1774,8 @@ onShow(() => {
     refreshMyDailiesWithRetry(1);
     // 我的帖子同理：发帖返回后需看到新帖，每次 onShow 轻量刷新
     refreshMyPostsWithRetry(1);
+    // MP-R3-PROFILE-001：顶栏四格同节奏轻量刷新（取消喜欢/新增互赞后回页即时反映）
+    void likesStore.fetchLikes().catch(() => {});
     return;
   }
   // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
@@ -1787,6 +1789,11 @@ onShow(() => {
   refreshMyDailiesWithRetry(3);
   // 「我的帖子」首屏拉取（原缺陷：loadMyPosts 全仓无调用点，模块永远渲染空态）
   refreshMyPostsWithRetry(3);
+  // MP-R3-PROFILE-001（2026-09-13）：顶栏四格（我喜欢/喜欢我的/访客）消费
+  // likesStore 实时列表，但本页此前从不触发 fetchLikes（只有消息页/喜欢页触发），
+  // 冷启动直达「我的」时四格恒显假 0。与下方拉取同节奏补齐；失败静默（列表页
+  // 进入时会再次拉取），并在后续每次 onShow 轻量刷新保证互赞/取消喜欢即时反映。
+  void likesStore.fetchLikes().catch(() => {});
   profileStore.fetchProfile().then(() => {
     // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
     maybeShowAvatarHint();
