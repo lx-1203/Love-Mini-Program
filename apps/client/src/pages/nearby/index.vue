@@ -7,7 +7,6 @@
  * 附近 = Explore：不出现速配入口、不使用滑动卡片核心交互。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
-import { resolveMediaUrl } from "@/utils/media";
 import { onLoad, onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
@@ -16,6 +15,7 @@ import SkeletonBlock from "../../components/common/SkeletonBlock.vue";
 import NearbySection from "../../components/nearby/NearbySection.vue";
 import { useVillageStore, type PostItem } from "../../stores/village";
 import { useCircleStore } from "../../stores/circle";
+import { circleCoverFor } from "../../config/circle-covers";
 import { useSessionStore } from "../../stores/session";
 import { useActivityStore } from "../../stores/activity";
 import { clientApi } from "../../services/api";
@@ -252,48 +252,12 @@ function goAllPosts() {
   openAppPath("/subpackages/village/village/index");
 }
 
-/** 2026-08-21：兴趣圈封面照片（复用兴趣圈页素材，按名称匹配）
- * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈原 Style B 宽幅场景大图（与 ideal 方形缩略风格不一致）
- * 改为本地 AI 生成 Style A 方形居中场景图，与 config/images.ts CIRCLE_COVERS 同步 */
-const CIRCLE_COVER = {
-  photo: resolveMediaUrl("/static/assets/images/covers/circle-photo.png"),
-  travel: resolveMediaUrl("/static/assets/images/covers/circle-travel.png"),
-  music: resolveMediaUrl("/static/assets/images/covers/circle-music.png"),
-  sports: resolveMediaUrl("/static/assets/images/covers/circle-sports.png"),
-  food: resolveMediaUrl("/static/assets/images/covers/circle-food.png"),
-  sky: resolveMediaUrl("/static/assets/images/covers/circle-sky.png"),
-  // 第五轮 QA：游戏/阅读/宠物改用 Style A AI 生成图（与理想图风格一致）
-  game: resolveMediaUrl("/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png"),
-  reading: resolveMediaUrl("/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png"),
-  pet: resolveMediaUrl("/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png"),
-  // 非标准 8 圈（仅真实模式可能存在）：保留 Style B 原图，渲染后由真实圈名触发
-  cutepets: resolveMediaUrl("/static/assets/images/covers/circle-cutepets.png"),
-  basketball: resolveMediaUrl("/static/assets/images/covers/circle-basketball.png"),
-  boardgame: resolveMediaUrl("/static/assets/images/covers/circle-boardgame.png"),
-  postgraduate: resolveMediaUrl("/static/assets/images/covers/circle-postgraduate.png"),
-  studybuddy: resolveMediaUrl("/static/assets/images/covers/circle-studybuddy.png"),
-} as const;
-
-function circleCover(circle: { name: string }): string {
-  const n = circle.name || "";
-  if (n.includes("摄影")) return CIRCLE_COVER.photo;
-  if (n.includes("旅行")) return CIRCLE_COVER.travel;
-  if (n.includes("音乐")) return CIRCLE_COVER.music;
-  if (n.includes("运动") || n.includes("篮球") || n.includes("健身")) return CIRCLE_COVER.sports;
-  if (n.includes("美食") || n.includes("食")) return CIRCLE_COVER.food;
-  if (n.includes("天文") || n.includes("星空")) return CIRCLE_COVER.sky;
-  if (n.includes("游戏")) return CIRCLE_COVER.game;
-  if (n.includes("阅读")) return CIRCLE_COVER.reading;
-  if (n.includes("宠物")) return CIRCLE_COVER.pet;
-  if (n.includes("萌宠")) return CIRCLE_COVER.cutepets;
-  if (n.includes("篮球")) return CIRCLE_COVER.basketball;
-  if (n.includes("桌游")) return CIRCLE_COVER.boardgame;
-  if (n.includes("考研")) return CIRCLE_COVER.postgraduate;
-  if (n.includes("学习搭子") || n.includes("学习")) return CIRCLE_COVER.studybuddy;
-  // R20（2026-09-08）：兜底返回默认封面而非空串——此前未命中关键词的圈子
-  // 走 SVG 图标位（aspectFit 居中），卡片四周出现大块空白（用户反馈「圈子图片排版错误」）
-  return CIRCLE_COVER.photo;
-}
+/** 2026-09-12 全站验收 Round-1（MP-R1-NEARBY-001）：本页曾保留一份本地
+ * 「圈名 → 封面」副本（旧插画 circle-photo.png 等），导致同一圈子在附近页与
+ * 圈子列表页/圈子主页显示不同封面（上轮 single-source 收编的漏网页面）。
+ * 现收编进 config/circle-covers 单一真相源 circleCoverFor，与列表页/
+ * 圈子主页/首页兴趣推荐共用；其关键词覆盖（篮球/萌宠/桌游/考研/学习搭子/
+ * 天文星空）为本地副本的超集，兜底同为摄影封面。 */
 
 /** 成员数格式化 */
 function formatMemberCount(count: number): string {
@@ -417,9 +381,9 @@ function requireLogin(): boolean {
               :aria-label="circle.name"
               @tap="goCircleDetail(circle.id)"
             >
-              <!-- R20（2026-09-08）：封面恒满铺（circleCover 已兜底默认封面），
+              <!-- R20（2026-09-08）：封面恒满铺（circleCoverFor 已兜底默认封面），
                    不再回退 SVG 图标位，消除卡片周围空白 -->
-              <image class="circle-mini__cover" :src="circleCover(circle)" mode="aspectFill" alt="" />
+              <image class="circle-mini__cover" :src="circleCoverFor(circle.name)" mode="aspectFill" alt="" />
               <view class="circle-mini__overlay" />
               <view class="circle-mini__info">
                 <text class="circle-mini__name">{{ circle.name }}</text>

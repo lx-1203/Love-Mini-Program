@@ -22,6 +22,8 @@
  * 视觉纪律：
  *  - 品牌绿 var(--c-brand-500, #36C99A)（#36C99A 系）与 tabBar selectedColor 同源；
  *  - 图标全部使用 static SVG/PNG 资产（红线：禁用 emoji）。
+ *
+ * 2026-09-12 封面修复：圈名→封面统一走 config/circle-covers（circleCoverFor）。
  */
 import { computed, ref } from "vue";
 import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
@@ -31,6 +33,7 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { circleCoverFor } from "../../../config/circle-covers";
 import { resolveMediaUrl } from "../../../utils/media";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
@@ -73,23 +76,10 @@ const circle = computed<CircleItem>(() => {
   return circles.value.find((c) => c.id === circleId.value) || FALLBACK_CIRCLE;
 });
 
-/** 圈封面：按圈名关键词映射 CIRCLE_COVERS，兜底摄影圈封面 */
-const coverImage = computed<string>(() => {
-  const name = circle.value.name;
-  const map: Array<[string, string]> = [
-    ["摄影", IMAGE_PATHS.CIRCLE_COVERS.PHOTO],
-    ["旅行", IMAGE_PATHS.CIRCLE_COVERS.TRAVEL],
-    ["音乐", IMAGE_PATHS.CIRCLE_COVERS.MUSIC],
-    ["美食", IMAGE_PATHS.CIRCLE_COVERS.FOOD],
-    ["运动", IMAGE_PATHS.CIRCLE_COVERS.SPORTS],
-    ["读书", IMAGE_PATHS.CIRCLE_COVERS.READING],
-    ["游戏", IMAGE_PATHS.CIRCLE_COVERS.GAME],
-  ];
-  for (const [keyword, cover] of map) {
-    if (name.includes(keyword)) return cover;
-  }
-  return IMAGE_PATHS.CIRCLE_COVERS.DEFAULT;
-});
+/** 圈封面：统一走 config/circle-covers 单一映射（2026-09-12 修复图文不一致：
+ *  本页原副本缺 阅读/宠物/考研/天文/篮球 等关键词，列表页显示专属封面、
+ *  进主页却回退默认摄影图；现与列表页/首页兴趣推荐共用 circleCoverFor） */
+const coverImage = computed<string>(() => circleCoverFor(circle.value.name));
 
 /** 是否已加入（控制底部栏按钮态） */
 const joined = computed(() => circle.value.isJoined);
@@ -104,6 +94,8 @@ const pinnedNotice = "【规约】友善交流，尊重原创，分享美好瞬�
 interface FeedItem {
   id: string;
   nickname: string;
+  /** 作者头像（MP-R1-CIRCLE-001：后端透传 users.avatar_url，空则回退默认头像） */
+  avatar?: string;
   /** 后端话题无学校字段，真实数据为空则不渲染校徽 pill */
   school?: string;
   timeText: string;
@@ -202,6 +194,7 @@ const realFeed = computed<FeedItem[]>(() =>
     .map((tp) => ({
       id: tp.id,
       nickname: tp.author?.name || "圈友",
+      avatar: resolveMediaUrl(tp.author?.avatar || ""),
       timeText: relativeTime(tp.createdAt),
       title: tp.title,
       content: tp.content,
@@ -424,7 +417,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       </view>
       <view v-for="item in displayFeed" :key="item.id" class="feed-card" hover-class="feed-card--hover" @tap="openFeedDetail(item)">
         <view class="feed-author">
-          <image class="feed-avatar" :src="IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
+          <image class="feed-avatar" :src="item.avatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
           <view class="feed-author-body">
             <view class="feed-author-row">
               <text class="feed-nickname">{{ item.nickname }}</text>

@@ -15,6 +15,7 @@ import { openAppPath } from "../../../utils/navigation";
 // infra R2-00102: 路由路径常量化
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { circleCoverFor } from "../../../config/circle-covers";
 import AppShell from "../../../components/layout/AppShell.vue";
 import PageStateContainer from "../../../components/common/PageStateContainer.vue";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
@@ -197,20 +198,8 @@ function formatMemberCount(count: number): string {
   return String(count);
 }
 
-/** 兴趣圈名称 -> 封面图路径映射（摄影大图，统一 CIRCLE_COVERS） */
-const CIRCLE_COVER = {
-  photo: IMAGE_PATHS.CIRCLE_COVERS.PHOTO,
-  travel: IMAGE_PATHS.CIRCLE_COVERS.TRAVEL,
-  music: IMAGE_PATHS.CIRCLE_COVERS.MUSIC,
-  food: IMAGE_PATHS.CIRCLE_COVERS.FOOD,
-  sports: IMAGE_PATHS.CIRCLE_COVERS.SPORTS,
-  reading: IMAGE_PATHS.CIRCLE_COVERS.READING,
-  game: IMAGE_PATHS.CIRCLE_COVERS.GAME,
-  pet: IMAGE_PATHS.CIRCLE_COVERS.PET,
-  study: IMAGE_PATHS.CIRCLE_COVERS.STUDY,
-  postgrad: IMAGE_PATHS.CIRCLE_COVERS.POSTGRAD,
-  astronomy: IMAGE_PATHS.CIRCLE_COVERS.ASTRONOMY,
-} as const;
+/** 兴趣圈封面映射统一走 config/circle-covers（2026-09-12 收编本页副本为
+ *  单一真相源 circleCoverFor，与圈子主页/首页兴趣推荐共用，杜绝图文不一致） */
 
 /** 热门徽标阈值（成员数达到即显示「热门」） */
 const HOT_THRESHOLD = 8000;
@@ -272,21 +261,7 @@ function goSearch() {
   uni.showToast({ title: "搜索功能即将上线", icon: "none" });
 }
 
-function circleCover(name: string): string {
-  const n = name || "";
-  if (n.includes("摄影")) return CIRCLE_COVER.photo;
-  if (n.includes("旅行")) return CIRCLE_COVER.travel;
-  if (n.includes("音乐")) return CIRCLE_COVER.music;
-  if (n.includes("美食") || n.includes("食")) return CIRCLE_COVER.food;
-  if (n.includes("运动") || n.includes("篮球") || n.includes("健身") || n.includes("体育")) return CIRCLE_COVER.sports;
-  if (n.includes("阅读") || n.includes("读书")) return CIRCLE_COVER.reading;
-  if (n.includes("游戏") || n.includes("桌游")) return CIRCLE_COVER.game;
-  if (n.includes("宠物") || n.includes("萌宠")) return CIRCLE_COVER.pet;
-  if (n.includes("学习") || n.includes("搭子")) return CIRCLE_COVER.study;
-  if (n.includes("考研") || n.includes("深造") || n.includes("学业")) return CIRCLE_COVER.postgrad;
-  if (n.includes("天文") || n.includes("星空")) return CIRCLE_COVER.astronomy;
-  return IMAGE_PATHS.CIRCLE_COVERS.DEFAULT;
-}
+const circleCover = circleCoverFor;
 
 // 修复#3（第五轮 QA）：拉取逻辑已移入 onLoad（含 mock 放行），
 // 原 onMounted 的 token 守卫在 mock 会话下会拦截导致空态，已移除避免重复请求。

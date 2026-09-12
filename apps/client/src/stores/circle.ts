@@ -30,7 +30,7 @@ export interface BackendCircleView {
 
 /**
  * 后端 CircleTopicView 类型
- * 对应后端 record CircleTopicView(Long id, Long circleId, String circleName, Long authorId, String authorName, String title, String contentPreview, List<String> images, int replyCount, boolean isPinned, LocalDateTime createdAt)
+ * 对应后端 record CircleTopicView(Long id, Long circleId, String circleName, Long authorId, String authorName, String authorAvatarUrl, String title, String contentPreview, List<String> images, int replyCount, boolean isPinned, LocalDateTime createdAt)
  */
 export interface BackendCircleTopicView {
   id: number;
@@ -38,6 +38,8 @@ export interface BackendCircleTopicView {
   circleName: string;
   authorId: number;
   authorName: string;
+  /** 作者头像（users.avatar_url 原值；MP-R1-CIRCLE-001 起新增，可能为空串） */
+  authorAvatarUrl?: string;
   title: string;
   contentPreview: string;
   images: string[];
@@ -97,7 +99,8 @@ function mapToTopicItem(raw: BackendCircleTopicView): TopicItem {
     author: {
       userId: String(raw.authorId),
       name: raw.authorName,
-      avatar: "",
+      // MP-R1-CIRCLE-001（2026-09-12）：透传后端作者头像，feed 不再全体默认头像
+      avatar: raw.authorAvatarUrl ?? "",
       headline: "",
     },
     replyCount: raw.replyCount,
@@ -118,7 +121,7 @@ function mapToTopicDetail(raw: BackendCircleTopicView): TopicDetail {
     author: {
       userId: String(raw.authorId),
       name: raw.authorName,
-      avatar: "",
+      avatar: raw.authorAvatarUrl ?? "",
       headline: "",
     },
     replyCount: raw.replyCount,

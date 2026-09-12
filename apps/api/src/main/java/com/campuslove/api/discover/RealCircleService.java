@@ -674,6 +674,38 @@ public class RealCircleService implements CircleService {
     }
 
     /**
+     * 从作者 Map 中解析用户头像（users.avatar_url 原值，客户端负责媒体解析）。
+     * MP-R1-CIRCLE-001（2026-09-12）：话题 feed 作者头像此前无法到达前端，
+     * 页面只能绑死默认头像。
+     *
+     * @param userId    用户 ID
+     * @param authorMap 批量预加载的作者 Map
+     * @return 头像 URL；无则空串（前端回退默认头像）
+     */
+    private String resolveAuthorAvatar(Long userId, Map<Long, User> authorMap) {
+        if (userId == null) {
+            return "";
+        }
+        User author = authorMap.get(userId);
+        return author != null && author.getAvatarUrl() != null ? author.getAvatarUrl() : "";
+    }
+
+    /**
+     * 单条版本：根据用户 ID 获取用户头像。
+     *
+     * @param userId 用户 ID
+     * @return 头像 URL；无则空串
+     */
+    private String getAuthorAvatar(Long userId) {
+        if (userId == null) {
+            return "";
+        }
+        return userRepository.findById(userId)
+                .map(User::getAvatarUrl)
+                .orElse("");
+    }
+
+    /**
      * 将 CircleTopic 实体转换为 CircleTopicView（内容做截断，用于列表展示，批量版本）。
      *
      * @param topic     话题实体
@@ -687,6 +719,7 @@ public class RealCircleService implements CircleService {
                 topic.getCircle().getName(),
                 topic.getAuthorId(),
                 resolveAuthorName(topic.getAuthorId(), authorMap),
+                resolveAuthorAvatar(topic.getAuthorId(), authorMap),
                 topic.getTitle(),
                 truncate(topic.getContent(), CONTENT_PREVIEW_MAX_LENGTH),
                 parseJsonToList(topic.getImages()),
@@ -710,6 +743,7 @@ public class RealCircleService implements CircleService {
                 topic.getCircle().getName(),
                 topic.getAuthorId(),
                 resolveAuthorName(topic.getAuthorId(), authorMap),
+                resolveAuthorAvatar(topic.getAuthorId(), authorMap),
                 topic.getTitle(),
                 topic.getContent(),
                 parseJsonToList(topic.getImages()),
@@ -750,6 +784,7 @@ public class RealCircleService implements CircleService {
                 topic.getCircle().getName(),
                 topic.getAuthorId(),
                 getAuthorName(topic.getAuthorId()),
+                getAuthorAvatar(topic.getAuthorId()),
                 topic.getTitle(),
                 truncate(topic.getContent(), CONTENT_PREVIEW_MAX_LENGTH),
                 parseJsonToList(topic.getImages()),
@@ -772,6 +807,7 @@ public class RealCircleService implements CircleService {
                 topic.getCircle().getName(),
                 topic.getAuthorId(),
                 getAuthorName(topic.getAuthorId()),
+                getAuthorAvatar(topic.getAuthorId()),
                 topic.getTitle(),
                 topic.getContent(),
                 parseJsonToList(topic.getImages()),

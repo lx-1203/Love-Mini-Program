@@ -214,6 +214,8 @@ record CircleTopicView(
     String circleName,
     Long authorId,
     String authorName,
+    /** 作者头像（users.avatar_url 原值，客户端 resolveMediaUrl 解析；2026-09-12 MP-R1-CIRCLE-001） */
+    String authorAvatarUrl,
     String title,
     String contentPreview,
     List<String> images,
