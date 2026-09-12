@@ -49,8 +49,13 @@ const CAMPUS_COVER: Record<string, string> = {
   szu: IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
 };
 
-/** 2026-08-27 校园圈修复：展示全部学校圈（不再只取前 6 个），并附加校园封面图 */
-const schools = SCHOOLS.map((s) => ({ ...s, coverUrl: CAMPUS_COVER[s.id] ?? s.coverUrl }));
+/** 2026-08-27 校园圈修复：展示全部学校圈（不再只取前 6 个），并附加校园封面图
+ *  2026-09-12 素材补齐：无地标专属封面的学校兜底改用 campus-circle-cover（摄影级校园场景），
+ *  不再回落到「浅绿背景 + 学校名」 */
+const schools = SCHOOLS.map((s) => ({
+  ...s,
+  coverUrl: CAMPUS_COVER[s.id] || s.coverUrl || IMAGE_PATHS.CIRCLE_COVERS.CAMPUS,
+}));
 
 /** 校园圈展示数据（参考图视觉对齐；后续可由后端 campuses 接口扩展提供）
  *  R3：文案精简（位同学→同学、条动态→动态），统计行单行后不再出现「态」字孤行 */

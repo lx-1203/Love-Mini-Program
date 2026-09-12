@@ -51,6 +51,10 @@ export const ROUTES = {
   /** 登录 */
   LOGIN: "/pages/login/index",
 
+  /** 注册（2026-09-12 注册页落地：独立注册页 + 注册成功页） */
+  REGISTER: "/pages/register/index",
+  REGISTER_SUCCESS: "/pages/register/success",
+
   /** 搜索（2026-08-11 帖子搜索页） */
   SEARCH: "/subpackages/tools/search/index",
 

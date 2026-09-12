@@ -169,6 +169,15 @@ function toggleRegisterMode() {
 }
 
 /**
+ * 2026-09-12 注册页落地：「去注册」入口改跳独立注册页（pages/register/index，
+ * 设计包 deliverables/注册页）；内联注册模式保留为降级路径（仅当残留 register
+ * 模式时显示「返回登录」），新用户一律进新注册页。
+ */
+function goRegisterPage() {
+  uni.navigateTo({ url: ROUTES.REGISTER });
+}
+
+/**
  * 发送短信验证码（模拟短信：默认发送成功，返回 mockCode 供联调输入）。
  * 注册模式：校验手机号 → POST /v1/sms/send-code → 60s 倒计时。
  */
@@ -271,12 +280,13 @@ async function handleGetPhoneNumber(e: any) {
   if (e.detail.errMsg !== 'getPhoneNumber:ok') {
     // 2026-09-04 QA 修复：R11 后表单唯一入口是"快捷登录 404 自动展开"，但真实后端 +
     // 开发者工具场景 errMsg 为环境类失败（非 404），表单永远打不开成死路。
-    // 现行为：用户主动取消仍静默；其余失败自动展开手机号登录表单兜底。
+    // 2026-09-12 全站验收 Round-1 修复（MP-R1-LOGIN-001）：用户拒绝授权也展开表单。
+    // 此前"取消静默"导致拒绝后页面既无注册入口也无验证码/密码登录入口
+    // （「去注册」链接在展开后的表单内），新用户无路可走。用户点了登录按钮
+    // 即为登录意图，展开表单不算打扰；breadcrumb 保留 cancelled 供漏斗分析。
     const cancelled = /cancel|deny|reject|auth_denied/i.test(e.detail.errMsg || '');
     addBreadcrumb("ui", "phone_auth_cancelled", { errMsg: e.detail.errMsg, cancelled });
-    if (!cancelled) {
-      showPhoneLogin.value = true;
-    }
+    showPhoneLogin.value = true;
     return;
   }
   if (!agreed.value) {
@@ -782,9 +792,25 @@ function openPrivacyPolicy() {
               <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
             </view>
 
-            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口 -->
-            <view v-if="isRegisterOpen" class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="toggleRegisterMode">
-              <text class="btn-text-link">{{ phoneRegisterMode ? t('login.backToLogin') : t('login.goRegister') }}</text>
+            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口。
+                 2026-09-12：入口改跳独立注册页；内联注册模式残留时仍可返回登录 -->
+            <view
+              v-if="isRegisterOpen && !phoneRegisterMode"
+              class="btn-text press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
+              @tap="goRegisterPage"
+            >
+              <text class="btn-text-link">{{ t('login.goRegister') }}</text>
+            </view>
+            <view
+              v-if="isRegisterOpen && phoneRegisterMode"
+              class="btn-text press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
+              @tap="toggleRegisterMode"
+            >
+              <text class="btn-text-link">{{ t('login.backToLogin') }}</text>
             </view>
 
             <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="togglePhoneLogin">

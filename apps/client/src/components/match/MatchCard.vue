@@ -23,7 +23,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const photo = computed(() => props.user.photo || props.user.avatar || IMAGE_PATHS.DEFAULT_AVATAR);
+/* 2026-09-12：无照片用户的卡片兜底从默认头像升级为匹配卡主视觉
+   （match-card-hero，含底部文字预留层；有照片用户不受影响） */
+const photo = computed(() => props.user.photo || props.user.avatar || IMAGE_PATHS.MATCH_CARD.HERO);
 
 const onlineText = computed(() => {
   if (props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now") return "在线";
@@ -60,7 +62,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
         <SafeImage
           class="match-card__photo"
           :src="photo"
-          :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
+          :fallback="IMAGE_PATHS.MATCH_CARD.HERO"
           mode="aspectFill"
           root-class="match-card__photo-root"
           custom-class="match-card__photo-img"

@@ -4,6 +4,7 @@ import com.campuslove.api.common.AgePolicy;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.MinorNotAllowedException;
 import com.campuslove.api.common.OperationForbiddenException;
+import com.campuslove.api.common.RegisterValidationException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.verification.RealNameCertification;
 import com.campuslove.api.verification.RealNameCertificationRepository;
@@ -541,26 +542,29 @@ public class RealAuthService implements AuthService {
             throw new OperationForbiddenException(ErrorMessages.REGISTER_CLOSED);
         }
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
-            throw new IllegalArgumentException(ErrorMessages.PHONE_FORMAT_INVALID);
+            // 2026-09-12：IllegalArgumentException 生产 profile 被脱敏为「请求参数错误」，
+            // 客户端注册页无法按错误码定位字段——注册链路业务拒绝统一改抛
+            // RegisterValidationException（errorCode = ErrorMessages 用户面文案）
+            throw new RegisterValidationException(ErrorMessages.PHONE_FORMAT_INVALID);
         }
         // 短信验证码校验（模拟短信：send-code 发送后校验；verificationCode 为空则视为未验证）
         if (verificationCode == null || verificationCode.isBlank()) {
-            throw new IllegalArgumentException(ErrorMessages.SMS_CODE_REQUIRED);
+            throw new RegisterValidationException(ErrorMessages.SMS_CODE_REQUIRED);
         }
         if (smsCodeService != null && !smsCodeService.verify(phone, verificationCode)) {
             log.warn("注册验证码校验失败: phone={}", SensitiveDataMasker.mask(phone));
-            throw new IllegalArgumentException(ErrorMessages.SMS_CODE_INVALID);
+            throw new RegisterValidationException(ErrorMessages.SMS_CODE_INVALID);
         }
         // P0-14：体验账号黑名单——黑名单手机号为体验入口专用，禁止注册新账号
         if (guestBlacklistPhone.equals(phone)) {
             log.warn("黑名单手机号注册被拒绝：phone={}", SensitiveDataMasker.mask(phone));
-            throw new IllegalArgumentException(ErrorMessages.PHONE_CANNOT_REGISTER);
+            throw new RegisterValidationException(ErrorMessages.PHONE_CANNOT_REGISTER);
         }
         if (password == null || password.length() < 6 || password.length() > 64) {
-            throw new IllegalArgumentException(ErrorMessages.PASSWORD_LENGTH_INVALID);
+            throw new RegisterValidationException(ErrorMessages.PASSWORD_LENGTH_INVALID);
         }
         if (nickname == null || nickname.isBlank() || nickname.trim().length() > 20) {
-            throw new IllegalArgumentException(ErrorMessages.NICKNAME_LENGTH_INVALID);
+            throw new RegisterValidationException(ErrorMessages.NICKNAME_LENGTH_INVALID);
         }
         // 3-N 未成年人保护：出生日期必填（@NotNull 由 Bean Validation 兜底）且须已满 18 周岁
         if (!AgePolicy.isAdult(birthDate)) {
@@ -580,7 +584,7 @@ public class RealAuthService implements AuthService {
                 .or(() -> userRepository.findByPhone(phone))
                 .isPresent();
         if (phoneExists) {
-            throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
+            throw new RegisterValidationException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
         User user = new User();
         user.setOpenid(phoneDerivedOpenid);
@@ -602,7 +606,7 @@ public class RealAuthService implements AuthService {
             // A-34：手机号唯一约束冲突兜底（uk_users_phone / uk_users_openid）
             // 并发注册同一手机号或 openid 派生冲突时，返回友好业务错误而非 500
             log.warn("注册唯一约束冲突：phone={}, error={}", SensitiveDataMasker.mask(phone), ex.getMessage());
-            throw new IllegalArgumentException(ErrorMessages.PHONE_REGISTERED_PLEASE_LOGIN);
+            throw new RegisterValidationException(ErrorMessages.PHONE_REGISTERED_PLEASE_LOGIN);
         }
         log.info("新用户注册成功: userId={}, phone={}", saved.getId(), SensitiveDataMasker.mask(phone));
         String token = jwtTokenProvider.generateToken(String.valueOf(saved.getId()));

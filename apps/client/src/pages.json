@@ -43,6 +43,12 @@
           "path": "pages/login/index"
         },
     {
+          "path": "pages/register/index"
+        },
+    {
+          "path": "pages/register/success"
+        },
+    {
           "path": "pages/discover/index"
         },
     {

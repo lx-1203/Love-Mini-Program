@@ -82,6 +82,10 @@ const NEVER_DELETE = [
   /\/audio\//, // 本地音频
   /default-avatar\.(jpg|png)/, // 头像兜底（SafeImage 同步路径）
   /app\.json|project\./, // 误配兜底
+  // 注册页表单图标（2026-09-12）：IMAGE_PATHS.REGISTER_ICONS 为完整 /static 字面量
+  // （path 字面量含 static/ 前缀，raw 后缀匹配不上），且设计上固定本地路径——
+  // 表单关键图标不随 real 模式切后端基址，避免弱网下表单图标空白
+  /icons\/register\//,
 ];
 
 let removedBytes = 0;

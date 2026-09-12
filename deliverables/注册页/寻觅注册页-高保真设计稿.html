@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 注册页 高保真设计稿 & 设计规范</title>
+<style>
+/* ============================================================
+   寻觅 · 注册页 设计稿画板
+   设计令牌全部对齐 apps/client/src/theme/design-variables.scss
+   rpx→px 换算基准：750rpx = 375px（即 ÷2）
+   ============================================================ */
+:root{
+  --brand:#36C99A; --brand-50:#E8FAF3; --brand-100:#D1F5E7; --brand-200:#A3EBCF;
+  --brand-400:#55D5A7; --brand-600:#2AAE83; --brand-700:#1F8D6A;
+  --romance:#FF6B81; --romance-50:#FFECEF;
+  --blue:#4D8DFF; --purple:#A29BFE; --gold:#C9A36A;
+  --success:#10B981; --warning:#F59E0B; --error:#E5454D;
+  --t1:#1A1E1C; --t2:#4A524E; --t3:#6B7571; --t4:#9AA39F;
+  --bg-page:#EEF7F2; --surface:#F7FAF9; --white:#FFFFFF;
+  --bd-l:#EEF2F0; --bd-d:#DDE3E0; --bd-s:#C2CAC6;
+  --disabled:#DCE5E2; --pressed:#EAF2EF;
+  --r-sm:4px; --r-md:6px; --r-lg:10px; --r-xl:12px; --r-2xl:16px; --r-card:20px; --r-full:999px;
+  --sh-card:0 8px 24px rgba(15,23,42,.06), 0 2px 8px rgba(15,23,42,.04);
+  --sh-brand:0 4px 16px rgba(54,201,154,.28);
+  --sh-float:0 4px 16px rgba(54,201,154,.32);
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Source Han Sans SC",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);color:var(--t1);background:#F1F5F3;font-size:14px;line-height:1.6}
+img{display:block}
+
+/* ---------- 画板外壳 ---------- */
+.wrap{max-width:1760px;margin:0 auto;padding:40px 40px 90px}
+.cover{background:linear-gradient(135deg,#E8FAF3 0%,#FFFFFF 46%,#FFECEF 100%);
+  border-radius:26px;padding:38px 42px;border:1px solid rgba(15,23,42,.05);box-shadow:var(--sh-card);margin-bottom:40px}
+.cover__brand{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--brand-700);letter-spacing:.4px}
+.cover__brand .logo{width:26px;height:26px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex:none}
+.cover__brand .logo svg{width:16px;height:16px;color:#fff}
+.cover h1{font-size:34px;font-weight:800;letter-spacing:-.4px;margin:14px 0 8px;line-height:1.25}
+.cover h1 em{font-style:normal;color:var(--brand)}
+.cover p{font-size:13.5px;color:var(--t3);max-width:760px;line-height:1.7}
+.cover__meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.cover__meta span{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.8);
+  border:1px solid var(--bd-l);color:var(--t2)}
+.cover__meta span b{color:var(--brand)}
+
+.sec{margin-top:46px}
+.sec__head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.sec__head h2{font-size:22px;font-weight:800;letter-spacing:-.2px}
+.sec__head .no{font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-50);
+  padding:3px 9px;border-radius:999px;letter-spacing:.5px}
+.sec__head p{font-size:12.5px;color:var(--t3);margin-left:auto;text-align:right}
+.sec__sub{font-size:13px;color:var(--t3);margin-bottom:24px;max-width:940px;line-height:1.7}
+
+/* ---------- 手机画框 ---------- */
+.frames{display:flex;flex-wrap:wrap;gap:30px}
+.frame{width:375px}
+.frame>figcaption{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;padding:0 2px}
+.frame>figcaption b{font-size:11px;font-weight:800;color:var(--brand);background:var(--brand-50);
+  padding:3px 8px;border-radius:6px;letter-spacing:.5px}
+.frame>figcaption .t{font-size:14px;font-weight:700}
+.frame>figcaption .d{font-size:11.5px;color:var(--t4);margin-left:auto}
+.phone{position:relative;width:375px;height:812px;background:var(--bg-page);border-radius:36px;overflow:hidden;
+  border:1px solid rgba(15,23,42,.08);box-shadow:0 18px 44px rgba(15,23,42,.10), 0 2px 8px rgba(15,23,42,.05)}
+.phone--bgimg{background:var(--bg-page) url("assets/reg-bg-atmosphere@3x.jpg") center/cover no-repeat}
+.sb{position:absolute;top:0;left:0;width:100%;height:44px;display:flex;justify-content:space-between;
+  align-items:flex-end;padding:0 24px 7px;font-size:12px;font-weight:700;color:var(--t1);z-index:6}
+.sb__r{display:flex;gap:5px;align-items:center}
+.sb__r svg{width:15px;height:15px}
+
+/* ---------- 页头插图 ---------- */
+.hero{position:absolute;top:0;left:0;width:375px;height:240px;z-index:1}
+.hero img{width:375px;height:240px;object-fit:cover;object-position:center}
+.hero__fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(238,247,242,0) 48%,rgba(238,247,242,.55) 78%,#EEF7F2 100%)}
+.nav{position:absolute;top:44px;left:0;width:100%;height:46px;display:flex;align-items:center;padding:0 16px;z-index:4}
+.back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.78);display:flex;align-items:center;
+  justify-content:center;backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(15,23,42,.07);flex:none}
+.back svg{width:17px;height:17px;color:var(--t1)}
+.hero__txt{position:absolute;left:24px;top:104px;z-index:3}
+.eyebrow{display:block;font-size:9.5px;font-weight:800;letter-spacing:2.6px;color:var(--brand-700);text-transform:uppercase}
+.hero__txt h3{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:7px 0 8px;line-height:1.2}
+.hero__txt p{font-size:12.5px;color:var(--t2);line-height:1.55}
+
+/* ---------- 表单卡 ---------- */
+.form{position:absolute;top:208px;left:0;width:375px;padding:0 20px;z-index:3}
+.card{background:var(--white);border-radius:var(--r-card);padding:20px;box-shadow:var(--sh-card)}
+.card>*+*{margin-top:12px}
+.card__cap{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.4px;display:flex;align-items:center;gap:6px}
+.card__cap i{flex:1;height:1px;background:var(--bd-l)}
+
+.field{display:flex;align-items:center;height:48px;background:var(--surface);border:1px solid var(--bd-l);
+  border-radius:var(--r-xl);padding:0 14px;gap:10px}
+.field .ic{width:18px;height:18px;color:var(--t4);flex:none}
+.field__ph{font-size:15px;color:var(--t4)}
+.field__val{font-size:15px;color:var(--t1);font-weight:500;letter-spacing:.2px}
+.field__val.dots{letter-spacing:2.5px;font-weight:700}
+.field--focus{background:var(--white);border:1.5px solid var(--brand);box-shadow:0 0 0 3px rgba(54,201,154,.12)}
+.field--focus .ic{color:var(--brand)}
+.field--error{background:#FEF5F6;border:1.5px solid var(--error);box-shadow:0 0 0 3px rgba(229,69,77,.10)}
+.field--error .ic{color:var(--error)}
+.field--off{opacity:.55}
+.spacer{flex:1}
+.sms{flex:none;height:32px;padding:0 12px;border-radius:var(--r-full);background:var(--brand);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;letter-spacing:.2px;box-shadow:0 2px 8px rgba(54,201,154,.24)}
+.sms--cd{background:var(--bd-l);color:var(--t4);box-shadow:none}
+.sms--ld{background:var(--brand-100);color:var(--brand-700);box-shadow:none}
+.eye{flex:none;width:20px;height:20px;color:var(--bd-s)}
+
+.err{display:flex;gap:5px;align-items:flex-start;margin-top:7px;font-size:12px;color:var(--error);line-height:1.35;font-weight:500}
+.err .ic{width:13px;height:13px;flex:none;margin-top:2px}
+.err--ok{color:var(--brand)}
+.err--ok .ic{color:var(--brand)}
+
+.strength{display:flex;align-items:center;gap:9px;margin-top:11px}
+.strength__bars{display:flex;gap:4px;flex:1}
+.strength__bars i{height:4px;border-radius:2px;background:var(--bd-l);flex:1}
+.s1 .strength__bars i:nth-child(1){background:var(--error)}
+.s2 .strength__bars i:nth-child(-n+2){background:var(--warning)}
+.s3 .strength__bars i:nth-child(-n+3){background:var(--brand)}
+.strength__t{font-size:11px;font-weight:700;flex:none}
+.s1 .strength__t{color:var(--error)} .s2 .strength__t{color:#B87400} .s3 .strength__t{color:var(--brand-700)}
+.strength__h{font-size:10.5px;color:var(--t4);flex:none}
+
+.btn{height:48px;border-radius:var(--r-xl);background:linear-gradient(135deg,var(--brand) 0%,var(--brand-400) 100%);
+  color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;
+  letter-spacing:.4px;box-shadow:var(--sh-brand)}
+.btn svg{width:17px;height:17px}
+.btn--dis{background:var(--disabled);box-shadow:none}
+.btn--load{opacity:.72}
+.btn--ghost{background:var(--white);border:1.5px solid var(--bd-d);color:var(--t2);box-shadow:none}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+  animation:sp .7s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.agree{display:flex;gap:8px;align-items:flex-start;margin-top:15px;font-size:11.5px;color:var(--t4);line-height:1.55}
+.chk{width:16px;height:16px;border-radius:var(--r-sm);border:1.5px solid var(--bd-d);background:var(--white);
+  flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center}
+.chk--on{background:var(--brand);border-color:var(--brand)}
+.chk--on svg{width:10px;height:10px;color:#fff}
+.chk--err{border-color:var(--error);box-shadow:0 0 0 3px rgba(229,69,77,.12)}
+.agree a{color:var(--brand);font-weight:600}
+.agree--err{color:var(--error)}
+.agree--err a{color:var(--error)}
+
+.safe{margin-top:14px;font-size:10.5px;color:var(--t4);display:flex;gap:5px;align-items:center;justify-content:center}
+.safe svg{width:12px;height:12px}
+.alt{margin-top:15px;text-align:center;font-size:13px;color:var(--t2)}
+.alt a{color:var(--brand);font-weight:700}
+
+/* ---------- Toast ---------- */
+.toast{position:absolute;top:64px;left:50%;transform:translateX(-50%);background:rgba(26,31,28,.92);color:#fff;
+  font-size:12.5px;font-weight:500;padding:10px 16px;border-radius:var(--r-xl);display:flex;gap:8px;align-items:center;
+  box-shadow:0 10px 28px rgba(0,0,0,.24);white-space:nowrap;z-index:30}
+.toast svg{width:15px;height:15px;flex:none}
+.toast--err svg{color:#FF9A9F}
+.toast--ok svg{color:#7CF0C4}
+
+/* ---------- 变体：紧凑页头 ---------- */
+.vhead{position:absolute;top:44px;left:0;width:100%;height:54px;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:4}
+.vhead .back{background:rgba(255,255,255,.9)}
+.vhead__t{font-size:19px;font-weight:800;letter-spacing:-.2px}
+.vhead__t em{font-style:normal;font-size:10px;font-weight:700;color:var(--brand-700);background:var(--brand-50);
+  padding:3px 7px;border-radius:6px;margin-left:8px;letter-spacing:.3px}
+.form--v{top:110px}
+
+/* ---------- 成功页 ---------- */
+.ok-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:0 34px;z-index:3}
+.ok-wrap img{width:236px;height:236px;object-fit:contain;margin-top:96px;filter:drop-shadow(0 12px 28px rgba(54,201,154,.18))}
+.ok-wrap h3{font-size:24px;font-weight:800;margin-top:22px;letter-spacing:-.3px}
+.ok-wrap>p{font-size:13px;color:var(--t3);margin-top:8px;text-align:center;line-height:1.6}
+.ok-list{width:100%;background:var(--white);border-radius:var(--r-card);padding:18px 20px;margin-top:26px;box-shadow:var(--sh-card)}
+.ok-list li{list-style:none;display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--t1);font-weight:500}
+.ok-list li+li{margin-top:13px}
+.ok-list .ic{width:17px;height:17px;color:var(--brand);flex:none}
+.ok-list li span{color:var(--t4);font-size:12px;margin-left:auto;font-weight:400}
+.ok-foot{margin-top:auto;width:100%;padding-bottom:34px}
+.ok-foot .btn{width:100%}
+.ok-foot .alt{margin-top:14px}
+
+/* ---------- 组件规范 ---------- */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:22px}
+.panel{background:var(--white);border:1px solid rgba(15,23,42,.05);border-radius:18px;padding:22px 24px;box-shadow:var(--sh-card)}
+.panel h3{font-size:14.5px;font-weight:800;margin-bottom:4px}
+.panel .hint{font-size:11.5px;color:var(--t4);margin-bottom:18px;line-height:1.6}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.cell{display:flex;flex-direction:column;gap:7px}
+.cell .lab{font-size:10.5px;color:var(--t4);font-weight:600;text-align:center;letter-spacing:.3px}
+.cell .field{width:186px}
+.cell .btn{width:186px}
+.demo-chip{display:flex;flex-direction:column;gap:7px;align-items:center}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.tbl th{background:var(--surface);font-weight:700;color:var(--t2);text-align:left;padding:9px 11px;font-size:11.5px;letter-spacing:.3px}
+.tbl th:first-child{border-radius:8px 0 0 8px} .tbl th:last-child{border-radius:0 8px 8px 0}
+.tbl td{padding:9px 11px;border-bottom:1px solid var(--bd-l);vertical-align:top;color:var(--t2);line-height:1.55}
+.tbl td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+.tbl code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--brand-50);
+  color:var(--brand-700);padding:1.5px 6px;border-radius:5px}
+.tbl td code.plain{background:var(--surface);color:var(--t2)}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+.tag--e{background:#FEF0F1;color:var(--error)} .tag--w{background:#FFF6E5;color:#B87400}
+.tag--b{background:var(--brand-50);color:var(--brand-700)} .tag--g{background:var(--surface);color:var(--t3)}
+
+/* ---------- 令牌 ---------- */
+.tokens{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
+.sw{display:flex;flex-direction:column;gap:14px}
+.sw__i{display:flex;align-items:center;gap:12px}
+.sw__c{width:44px;height:44px;border-radius:12px;flex:none;border:1px solid rgba(15,23,42,.08)}
+.sw__n{font-size:12.5px;font-weight:700}
+.sw__n code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--t3);font-weight:500;margin-left:6px}
+.sw__u{font-size:11px;color:var(--t4);margin-top:1px}
+.type{display:flex;flex-direction:column;gap:15px}
+.type__i{display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px dashed var(--bd-l)}
+.type__i:last-child{border:none;padding-bottom:0}
+.type__m{font-size:10.5px;color:var(--t4);width:120px;flex:none;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.6}
+.type__p{font-weight:700;color:var(--t1);letter-spacing:-.2px;line-height:1.3}
+.space{display:flex;flex-direction:column;gap:11px}
+.space__i{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--t3)}
+.space__i b{width:78px;flex:none;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--t1);font-weight:600}
+.space__i i{height:10px;border-radius:3px;background:linear-gradient(90deg,var(--brand),var(--brand-400));flex:none}
+.rad{display:flex;gap:14px;flex-wrap:wrap}
+.rad__i{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:10.5px;color:var(--t3);text-align:center;line-height:1.5}
+.rad__i b{width:64px;height:64px;background:var(--white);border:1.5px solid var(--bd-d);flex:none}
+
+/* ---------- 素材 ---------- */
+.assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+.asset{background:var(--white);border-radius:18px;overflow:hidden;border:1px solid rgba(15,23,42,.05);box-shadow:var(--sh-card)}
+.asset img{width:100%;height:190px;object-fit:cover;background:var(--surface)}
+.asset--tall img{height:300px;object-fit:cover;object-position:center}
+.asset--checker{background-image:linear-gradient(45deg,#F1F5F3 25%,transparent 25%,transparent 75%,#F1F5F3 75%),
+  linear-gradient(45deg,#F1F5F3 25%,transparent 25%,transparent 75%,#F1F5F3 75%);background-size:16px 16px;
+  background-position:0 0,8px 8px}
+.asset__b{padding:15px 17px 17px}
+.asset__b b{font-size:12.5px;font-weight:800;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--brand-700)}
+.asset__b p{font-size:11.5px;color:var(--t3);margin-top:5px;line-height:1.6}
+.asset__b .m{font-size:10.5px;color:var(--t4);margin-top:7px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.asset__b .use{display:inline-block;font-size:10px;font-weight:700;color:var(--brand-700);background:var(--brand-50);
+  padding:2px 8px;border-radius:999px;margin-top:9px}
+
+.note{background:linear-gradient(135deg,#FFF9E8 0%,#FFFDF5 100%);border:1px solid #F5E3AE;border-radius:14px;
+  padding:16px 19px;font-size:12.5px;color:#7A5C00;line-height:1.75;margin-top:22px}
+.note b{color:#5C4500}
+.note ul{margin:8px 0 0 17px}
+.note li{margin-top:4px}
+.note code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
+
+footer{margin-top:56px;text-align:center;font-size:11.5px;color:var(--t4);line-height:2}
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程现有 SVG 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.6"/><path d="M10.5 18.5h3"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 14.5a2.5 2.5 0 0 1-2.5 2.5H8l-4.5 4V5.5A2.5 2.5 0 0 1 6 3h12.5A2.5 2.5 0 0 1 21 5.5z"/><path d="M8 8.5h8M8 12h5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8l7.2 2.9v5.6c0 4.4-3 7.9-7.2 9.4-4.2-1.5-7.2-5-7.2-9.4V5.7z"/><path d="M9.2 12.2l2.1 2.1 3.6-4.2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.2 12S5.8 5.2 12 5.2 21.8 12 21.8 12 18.2 18.8 12 18.8 2.2 12 2.2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3.5 3.5l17 17"/><path d="M10.3 6.4A10 10 0 0 1 12 6.2c6.2 0 9.8 5.8 9.8 5.8a17.6 17.6 0 0 1-3.3 3.9"/><path d="M6.4 8C3.9 9.7 2.2 12 2.2 12s3.6 5.8 9.8 5.8c1.5 0 2.9-.3 4.1-.9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.6l4.8 4.8L19.5 6.8"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.8 20.2c0-3.6 3.2-6.2 7.2-6.2s7.2 2.6 7.2 6.2"/></symbol>
+    <symbol id="i-cake" viewBox="0 0 24 24"><path d="M4 20.5h16v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M4 16.5c1.3 1.2 2.7 1.2 4 0s2.7-1.2 4 0 2.7 1.2 4 0 2.7-1.2 4 0"/><path d="M12 10.5V8"/><path d="M12 5.2h.01"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-sig" viewBox="0 0 24 24"><path d="M2.5 15.5h2v4h-2zM7 12.5h2v7H7zM11.5 9h2v10.5h-2zM16 5.5h2v14h-2z"/></symbol>
+    <symbol id="i-bat" viewBox="0 0 24 24"><rect x="2" y="8" width="17" height="8" rx="2.2"/><path d="M21.5 11v2"/><rect x="4" y="10" width="11" height="4" rx="1" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ======== 封面 ======== -->
+  <header class="cover">
+    <div class="cover__brand">
+      <span class="logo"><svg class="ic"><use href="#i-logo"/></svg></span>
+      寻觅 · 校园恋爱小程序　｜　Register · 注册页
+    </div>
+    <h1>注册页 <em>高保真设计稿</em> &amp; 设计规范</h1>
+    <p>手机号注册主链路：手机号 → 短信验证码（倒计时重发）→ 密码设置与确认 → 协议勾选 → 提交注册。
+      全部令牌对齐工程 <code style="font-size:12px">apps/client/src/theme/design-variables.scss</code>，与登录页、理想效果图同源同调。</p>
+    <div class="cover__meta">
+      <span>画布 <b>375 × 812</b></span>
+      <span>主色 <b>#36C99A</b> 青藤绿</span>
+      <span>心动粉 <b>#FF6B81</b></span>
+      <span>状态稿 <b>7 屏</b></span>
+      <span>素材 <b>4 件 AI 生成</b></span>
+      <span>版本 <b>v1.0 · 2026-09-12</b></span>
+    </div>
+  </header>
+
+  <!-- ======== 一、页面状态稿 ======== -->
+  <section class="sec">
+    <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏全流程</h2>
+      <p>默认 → 填写中 → 校验错误 → 提交中 → 成功 / 失败 → 契约对齐变体</p></div>
+    <p class="sec__sub">主链路六态 + 一屏「后端契约对齐变体」。表单卡上提 32px 骑压插图下缘形成层次；插图左上留白区正好承载标题组。</p>
+
+    <div class="frames">
+
+      <!-- 01 默认态 -->
+      <figure class="frame">
+        <figcaption><b>01</b><span class="t">默认态 · 空表单</span><span class="d">主按钮置灰不可点</span></figcaption>
+        <div class="phone">
+          <div class="hero"><img src="assets/reg-hero-illustration@3x.jpg" alt=""><div class="hero__fade"></div></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="nav"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span></div>
+          <div class="hero__txt">
+            <span class="eyebrow">Xunmi · Campus</span>
+            <h3>创建账号</h3>
+            <p>用手机号注册，开始遇见同频的人</p>
+          </div>
+          <div class="form">
+            <div class="card">
+              <div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__ph">请输入手机号</span></div>
+              <div class="field"><svg class="ic"><use href="#i-msg"/></svg><span class="field__ph">短信验证码</span><span class="spacer"></span><span class="sms">获取验证码</span></div>
+              <div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__ph">设置密码（8–20 位）</span><svg class="eye"><use href="#i-eyeoff"/></svg></div>
+              <div class="field"><svg class="ic"><use href="#i-shield"/></svg><span class="field__ph">再次输入密码</span><svg class="eye"><use href="#i-eyeoff"/></svg></div>
+              <div class="btn btn--dis">注 册</div>
+            </div>
+            <div class="agree">
+              <span class="chk"></span>
+              <span>我已阅读并同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a>，<br>并知悉平台实名认证与未成年人保护规则</span>
+            </div>
+            <div class="safe"><svg class="ic"><use href="#i-lock"/></svg>密码加密传输 · 验证码 5 分钟内有效 · 不向他人展示</div>
+            <div class="alt">已有账号？<a>去登录</a></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 02 填写中 -->
+      <figure class="frame">
+        <figcaption><b>02</b><span class="t">填写中 · 验证码已发送</span><span class="d">倒计时 58s · 密码强度「强」</span></figcaption>
+        <div class="phone">
+          <div class="hero"><img src="assets/reg-hero-illustration@3x.jpg" alt=""><div class="hero__fade"></div></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="nav"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span></div>
+          <div class="hero__txt">
+            <span class="eyebrow">Xunmi · Campus</span>
+            <h3>创建账号</h3>
+            <p>用手机号注册，开始遇见同频的人</p>
+          </div>
+          <div class="form">
+            <div class="card">
+              <div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span><span class="spacer"></span><svg class="eye" style="width:15px;height:15px"><use href="#i-x"/></svg></div>
+              <div>
+                <div class="field field--focus"><svg class="ic"><use href="#i-msg"/></svg><span class="field__val">|</span><span class="spacer"></span><span class="sms sms--cd">重新发送 58s</span></div>
+                <div class="err err--ok"><svg class="ic"><use href="#i-ok"/></svg>验证码已发送至 138****8888，请注意查收</div>
+              </div>
+              <div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+              <div>
+                <div class="field"><svg class="ic"><use href="#i-shield"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+                <div class="strength s3"><span class="strength__bars"><i></i><i></i><i></i></span><span class="strength__t">密码强度 强</span><span class="strength__h">字母 + 数字</span></div>
+              </div>
+              <div class="btn">注 册</div>
+            </div>
+            <div class="agree">
+              <span class="chk chk--on"><svg class="ic"><use href="#i-check"/></svg></span>
+              <span>我已阅读并同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a>，<br>并知悉平台实名认证与未成年人保护规则</span>
+            </div>
+            <div class="safe"><svg class="ic"><use href="#i-lock"/></svg>密码加密传输 · 验证码 5 分钟内有效 · 不向他人展示</div>
+            <div class="alt">已有账号？<a>去登录</a></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 03 校验错误 -->
+      <figure class="frame">
+        <figcaption><b>03</b><span class="t">校验错误态</span><span class="d">字段红框 + 行内文案 + 协议警示</span></figcaption>
+        <div class="phone">
+          <div class="hero"><img src="assets/reg-hero-illustration@3x.jpg" alt=""><div class="hero__fade"></div></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="nav"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span></div>
+          <div class="hero__txt">
+            <span class="eyebrow">Xunmi · Campus</span>
+            <h3>创建账号</h3>
+            <p>用手机号注册，开始遇见同频的人</p>
+          </div>
+          <div class="form">
+            <div class="card">
+              <div>
+                <div class="field field--error"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888</span></div>
+                <div class="err"><svg class="ic"><use href="#i-alert"/></svg>手机号格式不正确，请输入 11 位手机号</div>
+              </div>
+              <div class="field"><svg class="ic"><use href="#i-msg"/></svg><span class="field__val">582914</span><span class="spacer"></span><span class="sms sms--cd">重新发送 23s</span></div>
+              <div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+              <div>
+                <div class="field field--error"><svg class="ic"><use href="#i-shield"/></svg><span class="field__val dots">••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+                <div class="strength s1"><span class="strength__bars"><i></i><i></i><i></i></span><span class="strength__t">密码强度 弱</span></div>
+                <div class="err"><svg class="ic"><use href="#i-alert"/></svg>两次输入的密码不一致</div>
+              </div>
+              <div class="btn btn--dis">注 册</div>
+            </div>
+            <div class="agree agree--err">
+              <span class="chk chk--err"></span>
+              <span>请先阅读并勾选同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a></span>
+            </div>
+            <div class="safe"><svg class="ic"><use href="#i-lock"/></svg>密码加密传输 · 验证码 5 分钟内有效 · 不向他人展示</div>
+            <div class="alt">已有账号？<a>去登录</a></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 04 提交中 -->
+      <figure class="frame">
+        <figcaption><b>04</b><span class="t">提交中 · Loading</span><span class="d">按钮旋转指示 · 全表单锁定</span></figcaption>
+        <div class="phone">
+          <div class="hero"><img src="assets/reg-hero-illustration@3x.jpg" alt=""><div class="hero__fade"></div></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="nav"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span></div>
+          <div class="hero__txt">
+            <span class="eyebrow">Xunmi · Campus</span>
+            <h3>创建账号</h3>
+            <p>用手机号注册，开始遇见同频的人</p>
+          </div>
+          <div class="form">
+            <div class="card" style="opacity:.86">
+              <div class="field field--off"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span></div>
+              <div class="field field--off"><svg class="ic"><use href="#i-msg"/></svg><span class="field__val">582914</span><span class="spacer"></span><span class="sms sms--cd">不可用</span></div>
+              <div class="field field--off"><svg class="ic"><use href="#i-lock"/></svg><span class="field__val dots">••••••••</span></div>
+              <div class="field field--off"><svg class="ic"><use href="#i-shield"/></svg><span class="field__val dots">••••••••</span></div>
+              <div class="btn btn--load"><span class="spin"></span>注册中…</div>
+            </div>
+            <div class="agree">
+              <span class="chk chk--on"><svg class="ic"><use href="#i-check"/></svg></span>
+              <span>我已阅读并同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a>，<br>并知悉平台实名认证与未成年人保护规则</span>
+            </div>
+            <div class="safe"><svg class="ic"><use href="#i-lock"/></svg>密码加密传输 · 验证码 5 分钟内有效 · 不向他人展示</div>
+            <div class="alt">已有账号？<a>去登录</a></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 05 成功页 -->
+      <figure class="frame">
+        <figcaption><b>05</b><span class="t">注册成功</span><span class="d">用 reg-success-illustration</span></figcaption>
+        <div class="phone phone--bgimg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="ok-wrap">
+            <img src="assets/reg-success-illustration@3x.jpg" alt="">
+            <h3>注册成功</h3>
+            <p>欢迎加入寻觅，接下来用 1 分钟<br>把资料填成一张「恋爱名片」</p>
+            <ul class="ok-list">
+              <li><svg class="ic"><use href="#i-ok"/></svg>账号已创建并自动登录<span>138****8888</span></li>
+              <li><svg class="ic"><use href="#i-ok"/></svg>可开始匹配、加兴趣圈、发消息<span>已解锁</span></li>
+              <li><svg class="ic"><use href="#i-ok"/></svg>下一步：完善资料，遇见更准的同频<span>建议</span></li>
+            </ul>
+            <div class="ok-foot">
+              <div class="btn">完善我的资料<svg class="ic"><use href="#i-arrow"/></svg></div>
+              <div class="alt">稍后再说，先随便逛逛</div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 06 失败 -->
+      <figure class="frame">
+        <figcaption><b>06</b><span class="t">注册失败 · 业务拒绝</span><span class="d">Toast + 字段定位 + 出口引导</span></figcaption>
+        <div class="phone">
+          <div class="hero"><img src="assets/reg-hero-illustration@3x.jpg" alt=""><div class="hero__fade"></div></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="toast toast--err"><svg class="ic"><use href="#i-alert"/></svg>该手机号已注册，可直接登录</div>
+          <div class="nav"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span></div>
+          <div class="hero__txt">
+            <span class="eyebrow">Xunmi · Campus</span>
+            <h3>创建账号</h3>
+            <p>用手机号注册，开始遇见同频的人</p>
+          </div>
+          <div class="form">
+            <div class="card">
+              <div>
+                <div class="field field--error"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span></div>
+                <div class="err"><svg class="ic"><use href="#i-alert"/></svg>该手机号已注册，试试直接登录</div>
+              </div>
+              <div class="field"><svg class="ic"><use href="#i-msg"/></svg><span class="field__val">582914</span><span class="spacer"></span><span class="sms sms--cd">重新发送 23s</span></div>
+              <div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+              <div class="field"><svg class="ic"><use href="#i-shield"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div>
+              <div class="btn btn--dis">注 册</div>
+              <div class="btn btn--ghost">用这个手机号登录</div>
+            </div>
+            <div class="agree">
+              <span class="chk chk--on"><svg class="ic"><use href="#i-check"/></svg></span>
+              <span>我已阅读并同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a>，<br>并知悉平台实名认证与未成年人保护规则</span>
+            </div>
+            <div class="alt">遇到问题？<a>联系客服</a></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- 07 变体 -->
+      <figure class="frame">
+        <figcaption><b>07</b><span class="t">变体 · 后端契约对齐版</span><span class="d">补昵称 + 出生日期</span></figcaption>
+        <div class="phone phone--bgimg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ic"><use href="#i-sig"/></svg><svg class="ic"><use href="#i-bat"/></svg></span></div>
+          <div class="vhead"><span class="back"><svg class="ic"><use href="#i-back"/></svg></span>
+            <span class="vhead__t">创建账号<em>对齐 POST /v1/auth/register</em></span></div>
+          <div class="form form--v">
+            <div class="card">
+              <div class="card__cap">账号信息<i></i></div>
+              <div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__ph">请输入手机号</span></div>
+              <div class="field"><svg class="ic"><use href="#i-msg"/></svg><span class="field__ph">短信验证码</span><span class="spacer"></span><span class="sms">获取验证码</span></div>
+              <div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__ph">设置密码（8–20 位）</span><svg class="eye"><use href="#i-eyeoff"/></svg></div>
+              <div class="field"><svg class="ic"><use href="#i-shield"/></svg><span class="field__ph">再次输入密码</span><svg class="eye"><use href="#i-eyeoff"/></svg></div>
+              <div class="card__cap" style="margin-top:20px">基础身份<i></i></div>
+              <div class="field"><svg class="ic"><use href="#i-user"/></svg><span class="field__ph">昵称（1–20 字）</span></div>
+              <div class="field"><svg class="ic"><use href="#i-cake"/></svg><span class="field__ph">出生日期</span><span class="spacer"></span><span class="field__ph" style="font-size:12px">需满 18 周岁</span></div>
+              <div class="btn">注 册</div>
+            </div>
+            <div class="agree">
+              <span class="chk"></span>
+              <span>我已阅读并同意 <a>《用户协议》</a> 和 <a>《隐私政策》</a></span>
+            </div>
+            <div class="alt">已有账号？<a>去登录</a></div>
+          </div>
+        </div>
+      </figure>
+
+    </div>
+
+    <div class="note">
+      <b>⚠ 与现有后端契约的一处硬冲突，落地前必须拍板：</b>
+      现有 <code>POST /v1/auth/register</code>（services/auth.ts · registerUser）要求
+      <b>nickname 与 birthDate 必填</b>，且出生日期用于 3-N 未成年人保护（后端校验未满 18 周岁返回 403 MINOR_NOT_ALLOWED）。
+      本稿主链路（01–06）按需求只保留手机号 / 验证码 / 密码 / 协议四要素，直连现后端会被 400 拒绝。
+      <ul>
+        <li><b>方案 A（推荐）</b>：注册页只收账号四要素，昵称与出生日期后移到「完善资料」第一步（即流程图的 02 基础资料），后端把这两项改为可选或拆两段式接口。</li>
+        <li><b>方案 B（零后端改动）</b>：直接采用 07 变体，注册页内补昵称与出生日期，一次注册到位。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ======== 二、组件状态规范 ======== -->
+  <section class="sec">
+    <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>输入框 Field · 6 态</h3>
+        <p class="hint">高 48px · 圆角 12px · 底 #F7FAF9 · 图标 18px 左置 · 文本 15px。聚焦与错误态改 1.5px 边框 + 3px 同色 12% 光环，其余态 1px。</p>
+        <div class="row">
+          <div class="cell"><div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__ph">请输入手机号</span></div><span class="lab">默认 default</span></div>
+          <div class="cell"><div class="field field--focus"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138|</span></div><span class="lab">聚焦 focus</span></div>
+          <div class="cell"><div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span></div><span class="lab">已填 filled</span></div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="cell"><div class="field field--error"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888</span></div><span class="lab">错误 error</span></div>
+          <div class="cell"><div class="field field--off"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span></div><span class="lab">禁用 disabled</span></div>
+          <div class="cell"><div class="field"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888 8888</span><span class="spacer"></span><svg class="eye" style="width:15px;height:15px"><use href="#i-x"/></svg></div><span class="lab">可清空 clearable</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>状态</th><th>底色</th><th>边框</th><th>图标 / 文本</th></tr>
+          <tr><td>default</td><td><code>#F7FAF9</code></td><td><code>1px #EEF2F0</code></td><td>占位 <code class="plain">#9AA39F</code></td></tr>
+          <tr><td>focus</td><td><code>#FFFFFF</code></td><td><code>1.5px #36C99A</code> + 光环</td><td>图标与文本转 <code class="plain">#36C99A</code></td></tr>
+          <tr><td>filled</td><td><code>#F7FAF9</code></td><td><code>1px #EEF2F0</code></td><td>文本 <code class="plain">#1A1E1C</code> 500</td></tr>
+          <tr><td>error</td><td><code>#FEF5F6</code></td><td><code>1.5px #E5454D</code> + 光环</td><td>图标转红，下挂行内错误</td></tr>
+          <tr><td>disabled</td><td>原色 55% 透明</td><td>不变</td><td>禁止输入、禁止聚焦</td></tr>
+          <tr><td>clearable</td><td>—</td><td>—</td><td>有内容且聚焦时显示 15px 清空按钮</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>验证码按钮 SmsButton · 4 态</h3>
+        <p class="hint">高 32px · 圆角 999px · 内边距 0 12px · 字号 12px/700。与输入框右侧间距 10px。</p>
+        <div class="row">
+          <div class="cell"><span class="sms">获取验证码</span><span class="lab">可发送 idle</span></div>
+          <div class="cell"><span class="sms sms--ld"><span class="spin" style="border-color:rgba(54,201,154,.3);border-top-color:#1F8D6A;width:12px;height:12px"></span></span><span class="lab">发送中 sending</span></div>
+          <div class="cell"><span class="sms sms--cd">重新发送 58s</span><span class="lab">倒计时 countdown</span></div>
+          <div class="cell"><span class="sms sms--cd">获取验证码</span><span class="lab">不可用 disabled</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>状态</th><th>样式</th><th>规则</th></tr>
+          <tr><td>idle</td><td><code>#36C99A</code> / 白字</td><td>手机号通过格式校验才可点，否则点按抖动 + Toast「请先输入正确的手机号」</td></tr>
+          <tr><td>sending</td><td><code>#D1F5E7</code> / 深绿字 + 转圈</td><td>请求期间禁止重复点击</td></tr>
+          <tr><td>countdown</td><td><code>#EEF2F0</code> / <code>#9AA39F</code></td><td>60s 递减；以时间戳为基准，页面隐藏仍计时，回前台刷新显示</td></tr>
+          <tr><td>disabled</td><td><code>#EEF2F0</code> / <code>#9AA39F</code></td><td>提交中 / 表单锁定时整体禁用</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>密码可见性 + 强度 PasswordStrength · 3 档</h3>
+        <p class="hint">眼睛图标 20px，色 #C2CAC6，聚焦转 #6B7571。强度条 3 格，高 4px，间距 4px，随输入实时刷新。</p>
+        <div class="row">
+          <div class="cell"><div class="field"><svg class="ic"><use href="#i-lock"/></svg><span class="field__val dots">••••••••</span><span class="spacer"></span><svg class="eye"><use href="#i-eye"/></svg></div><span class="lab">明文切换 toggle</span></div>
+          <div class="demo-chip"><span class="strength s1" style="width:186px"><span class="strength__bars"><i></i><i></i><i></i></span><span class="strength__t">弱</span></span><span class="lab">&lt;8 位 或 纯数字/纯字母</span></div>
+          <div class="demo-chip"><span class="strength s2" style="width:186px"><span class="strength__bars"><i></i><i></i><i></i></span><span class="strength__t">中</span></span><span class="lab">≥8 位 含字母+数字</span></div>
+          <div class="demo-chip"><span class="strength s3" style="width:186px"><span class="strength__bars"><i></i><i></i><i></i></span><span class="strength__t">强</span></span><span class="lab">≥10 位 且含大小写或符号</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>档位</th><th>判定</th><th>条色</th><th>文案色</th></tr>
+          <tr><td>弱</td><td><code>len&lt;8</code> 或单字符类型</td><td><code>#E5454D</code></td><td><code>#E5454D</code></td></tr>
+          <tr><td>中</td><td><code>len≥8</code> 且字母+数字</td><td><code>#F59E0B</code></td><td><code>#B87400</code></td></tr>
+          <tr><td>强</td><td><code>len≥10</code> 且含大小写或符号</td><td><code>#36C99A</code></td><td><code>#1F8D6A</code></td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>勾选框 + 协议 Checkbox &amp; Agreement</h3>
+        <p class="hint">框 16×16px · 圆角 4px · 边框 1.5px #DDE3E0；选中 #36C99A + 白色对勾。协议文案 11.5px，行高 1.55。</p>
+        <div class="row">
+          <div class="demo-chip"><span class="chk"></span><span class="lab">未勾选</span></div>
+          <div class="demo-chip"><span class="chk chk--on"><svg class="ic"><use href="#i-check"/></svg></span><span class="lab">已勾选</span></div>
+          <div class="demo-chip"><span class="chk chk--err"></span><span class="lab">错误提醒</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>场景</th><th>表现</th><th>规则</th></tr>
+          <tr><td>默认</td><td><span class="tag tag--g">未勾选</span></td><td>进入页面一律未勾选，<b>不预选</b>（应用商店与合规要求）</td></tr>
+          <tr><td>未勾选点注册</td><td><span class="tag tag--e">阻断</span></td><td>勾选框红框 + 光环，协议行转红，勾选框 4px 左右抖动 2 次，Toast 提示</td></tr>
+          <tr><td>链接点击</td><td><span class="tag tag--b">独立页</span></td><td>《用户协议》《隐私政策》各自跳内嵌 webview，点击<b>不得</b>改变勾选状态</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>主按钮 PrimaryButton · 4 态</h3>
+        <p class="hint">高 48px · 圆角 12px · 字号 15px/700 · 字距 0.4px。</p>
+        <div class="row">
+          <div class="cell"><div class="btn btn--dis">注 册</div><span class="lab">禁用 disabled</span></div>
+          <div class="cell"><div class="btn">注 册</div><span class="lab">可用 enabled</span></div>
+          <div class="cell"><div class="btn btn--load"><span class="spin"></span>注册中…</div><span class="lab">加载 loading</span></div>
+          <div class="cell"><div class="btn btn--ghost">用这个手机号登录</div><span class="lab">次级 secondary</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>状态</th><th>样式</th><th>说明</th></tr>
+          <tr><td>disabled</td><td><code>#DCE5E2</code> 纯色 / 白字 / 无阴影</td><td>表单不完整时；仍可点按但给出「哪里没填对」Toast</td></tr>
+          <tr><td>enabled</td><td>135° 渐变 <code>#36C99A→#55D5A7</code> + 品牌阴影</td><td>按下 <code>scale .98</code> + 透明度 .92，100ms</td></tr>
+          <tr><td>loading</td><td>透明度 .72 + 白色转圈</td><td>全表单锁定、验证码按钮禁用；<b>最短展示 400ms</b> 防闪烁</td></tr>
+          <tr><td>防重复</td><td>—</td><td>loading 期间忽略一切点击；同一手机号 60s 内仅允许一次注册请求</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>反馈 Feedback · 行内错误 / Toast</h3>
+        <p class="hint">行内错误管「哪个字段错了」；Toast 管「整次操作的结果」。两层同时存在时，行内优先。</p>
+        <div class="row" style="align-items:flex-start">
+          <div class="cell" style="width:200px">
+            <div class="field field--error"><svg class="ic"><use href="#i-mobile"/></svg><span class="field__val">138 8888</span></div>
+            <div class="err"><svg class="ic"><use href="#i-alert"/></svg>手机号格式不正确，请输入 11 位手机号</div>
+            <span class="lab">行内错误 · 12px #E5454D</span>
+          </div>
+          <div class="cell"><div class="toast toast--ok" style="position:static;transform:none"><svg class="ic"><use href="#i-ok"/></svg>验证码已发送</div><span class="lab">成功 Toast</span></div>
+          <div class="cell"><div class="toast toast--err" style="position:static;transform:none"><svg class="ic"><use href="#i-alert"/></svg>网络异常，请稍后重试</div><span class="lab">失败 Toast</span></div>
+        </div>
+        <table class="tbl" style="margin-top:20px">
+          <tr><th>类型</th><th>样式</th><th>时长</th></tr>
+          <tr><td>成功 Toast</td><td>黑底 92% / <code>#7CF0C4</code> 图标 / 12.5px</td><td>1500ms（--d-toast-short）</td></tr>
+          <tr><td>失败 Toast</td><td>黑底 92% / <code>#FF9A9F</code> 图标</td><td>2000ms（--d-toast-normal）</td></tr>
+          <tr><td>行内错误</td><td><code>#E5454D</code> 12px + 13px 警示图标</td><td>常驻，直至该字段重新输入才清除</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>页面结构尺寸 · RegisterLayout</h3>
+        <p class="hint">总高 812px。插图区与表单卡骑压重叠 32px，是整页层次的来源。</p>
+        <table class="tbl">
+          <tr><th>区块</th><th>尺寸 / 位置</th><th>说明</th></tr>
+          <tr><td>状态栏</td><td>375 × 44</td><td>系统区域，留白不遮挡</td></tr>
+          <tr><td>返回按钮</td><td>34 × 34 · 左 16 · 上 44</td><td>白底 78% 圆形 + 6px 模糊</td></tr>
+          <tr><td>标题组</td><td>左 24 · 上 104</td><td>眉题 9.5px / 主标 26px / 副标 12.5px</td></tr>
+          <tr><td>顶部插图</td><td>375 × 240 · 顶部全出血</td><td>底部 52px 渐隐过渡到页面底色</td></tr>
+          <tr><td>表单卡</td><td>335 宽 · 上 208（重叠 32px）</td><td>白底 · 圆角 20px · 内边距 20px · 卡片阴影</td></tr>
+          <tr><td>字段间距</td><td>12px</td><td>卡内统一 12px 节奏</td></tr>
+          <tr><td>协议行</td><td>卡下 15px</td><td>必须完整可见，不得被键盘完全遮住</td></tr>
+          <tr><td>页边距</td><td>左右 20px</td><td>对齐 --page-padding 32rpx</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== 三、设计令牌 ======== -->
+  <section class="sec">
+    <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+
+    <div class="tokens">
+      <div class="panel">
+        <h3>配色方案</h3>
+        <p class="hint">令牌已在工程 page{} 全量注册为 CSS 变量，可直接 <code style="font-family:ui-monospace">var(--c-*)</code>。</p>
+        <div class="sw">
+          <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">青藤绿 主色<code>--c-brand / brand-500</code></div><div class="sw__u">#36C99A　主按钮 · 聚焦边框 · 链接 · 强度强</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">浅青藤<code>brand-400</code></div><div class="sw__u">#55D5A7　按钮渐变终点色</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">青藤浅底<code>brand-100</code></div><div class="sw__u">#D1F5E7　发送中按钮底 · 提示浅底</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">青藤雾<code>brand-50</code></div><div class="sw__u">#E8FAF3　页头渐变起点 · 标签底</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底色<code>--c-bg-page</code></div><div class="sw__u">#EEF7F2　整页背景（主题统一浅绿，不得出现白灰断层）</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">心动粉<code>--c-romance-500</code></div><div class="sw__u">#FF6B81　仅品牌点缀与插图，不用于表单状态</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误红<code>--c-error</code></div><div class="sw__u">#E5454D　错误边框 · 行内文案 · 弱强度条</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警示黄<code>--c-warning</code></div><div class="sw__u">#F59E0B　中强度条（文字用 #B87400 保对比度）</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文本<code>--c-text-primary</code></div><div class="sw__u">#1A1E1C　标题 · 已填入内容</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次文本<code>--c-text-secondary</code></div><div class="sw__u">#4A524E　副标题 · 说明</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">占位文本<code>--c-text-placeholder</code></div><div class="sw__u">#9AA39F　placeholder · 倒计时文字 · 弱提示</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用<code>--c-status-disabled</code></div><div class="sw__u">#DCE5E2　置灰按钮底</div></div></div>
+          <div class="sw__i"><span class="sw__c" style="background:#F7FAF9"></span><div><div class="sw__n">输入框底<code>--c-bg-surface</code></div><div class="sw__u">#F7FAF9　字段默认底色</div></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>字体层级</h3>
+        <p class="hint">对齐工程 --fs-* 档位（rpx ÷ 2 = px）。字重 400/500/600/700/800；行高标题 1.2、正文 1.55、说明 1.75。</p>
+        <div class="type">
+          <div class="type__i"><span class="type__m">--fs-5xl · 44rpx<br>800 · 1.2</span><span class="type__p" style="font-size:22px">注册成功</span></div>
+          <div class="type__i"><span class="type__m">— 页面主标题<br>800 · 1.2</span><span class="type__p" style="font-size:26px">创建账号</span></div>
+          <div class="type__i"><span class="type__m">--fs-4xl · 40rpx<br>800 · 1.3</span><span class="type__p" style="font-size:20px">页头主标题（降级用）</span></div>
+          <div class="type__i"><span class="type__m">--fs-xl · 30rpx<br>500 / 700</span><span style="font-size:15px;font-weight:500">输入框内容 / 主按钮文字　15px</span></div>
+          <div class="type__i"><span class="type__m">--fs-lg · 28rpx<br>400 · 1.55</span><span style="font-size:14px">辅助正文 · 成功页清单　14px</span></div>
+          <div class="type__i"><span class="type__m">--fs-md · 26rpx<br>400 · 1.55</span><span style="font-size:13px">副标题 · 次级链接　13px</span></div>
+          <div class="type__i"><span class="type__m">--fs-base · 24rpx<br>500 · 1.35</span><span style="font-size:12px;font-weight:500">行内错误 · Toast　12px</span></div>
+          <div class="type__i"><span class="type__m">--fs-sm · 22rpx<br>700 · 1</span><span style="font-size:11px;font-weight:700">验证码按钮 · 强度文案　11px</span></div>
+          <div class="type__i"><span class="type__m">--fs-xs · 20rpx<br>400 · 1.75</span><span style="font-size:10.5px">底部安全说明 · 眉题　10.5px</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>间距与圆角</h3>
+        <p class="hint">4px 基准网格，对齐 --sp-*。所有间距从档位取值，页面内不出现自由值。</p>
+        <div class="space">
+          <div class="space__i"><b>sp-2 · 4px</b><i style="width:8px"></i>图标与文字微间距</div>
+          <div class="space__i"><b>sp-6 · 12px</b><i style="width:24px"></i>卡内字段间距 / 强度条上间距</div>
+          <div class="space__i"><b>sp-7 · 16px</b><i style="width:32px"></i>卡内边距、区块间隔的基础单位</div>
+          <div class="space__i"><b>sp-8 · 20px</b><i style="width:40px"></i>页边距 / 表单卡内边距 / 协议行上间距</div>
+          <div class="space__i"><b>sp-9 · 24px</b><i style="width:48px"></i>插图与标题组的呼吸位</div>
+          <div class="space__i"><b>32px</b><i style="width:64px"></i>表单卡骑压插图的重叠量</div>
+        </div>
+        <div class="rad" style="margin-top:22px">
+          <div class="rad__i"><b style="border-radius:4px"></b>4px<br>--r-sm · 勾选框</div>
+          <div class="rad__i"><b style="border-radius:12px"></b>12px<br>--r-xl · 输入框 / 按钮</div>
+          <div class="rad__i"><b style="border-radius:20px"></b>20px<br>--card-radius · 表单卡</div>
+          <div class="rad__i"><b style="border-radius:999px"></b>999px<br>--r-full · 验证码按钮</div>
+          <div class="rad__i"><b style="border-radius:36px"></b>36px<br>设备圆角（仅画板）</div>
+        </div>
+        <table class="tbl" style="margin-top:22px">
+          <tr><th>阴影</th><th>值</th><th>用途</th></tr>
+          <tr><td>卡片</td><td><code>0 8px 24px rgba(15,23,42,.06)</code> + <code>0 2px 8px rgba(15,23,42,.04)</code></td><td>表单卡 / 成功清单卡</td></tr>
+          <tr><td>品牌</td><td><code>0 4px 16px rgba(54,201,154,.28)</code></td><td>可用态主按钮</td></tr>
+          <tr><td>聚焦光环</td><td><code>0 0 0 3px rgba(54,201,154,.12)</code></td><td>字段聚焦 / 错误（错误为红色 10%）</td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>交互动效与校验规则</h3>
+        <p class="hint">动效时长全部取自 --d-* 令牌。</p>
+        <table class="tbl">
+          <tr><th>交互</th><th>规格</th></tr>
+          <tr><td>按钮按压</td><td><code>scale .98</code> + 透明度 .92 · <code>--d-press 100ms</code></td></tr>
+          <tr><td>字段聚焦</td><td>边框色 + 光环过渡 <code>--d-normal 200ms</code></td></tr>
+          <tr><td>错误出现</td><td>行内文案淡入 + 字段抖动 4px × 2 次 · <code>--d-fast 120ms</code></td></tr>
+          <tr><td>页头插图</td><td>进入页面 <code>--d-slowest 600ms</code> 轻微上浮 + 淡入</td></tr>
+          <tr><td>键盘避让</td><td>聚焦字段自动滚动至可视区，协议行不得被完全遮挡</td></tr>
+        </table>
+        <table class="tbl" style="margin-top:16px">
+          <tr><th>校验项</th><th>规则</th><th>触发时机</th></tr>
+          <tr><td>手机号</td><td><code>/^1[3-9]\d{9}$/</code> · 自动格式化 <code>138 8888 8888</code></td><td>失焦 + 提交前；输入中只清错误不报错</td></tr>
+          <tr><td>验证码</td><td>6 位纯数字，仅数字键盘，自动跳下一位</td><td>提交前</td></tr>
+          <tr><td>密码</td><td>8–20 位，须含字母 + 数字，禁空格与全角</td><td>实时（强度条）+ 提交前</td></tr>
+          <tr><td>确认密码</td><td>与密码全等</td><td>密码框失焦后实时比对</td></tr>
+          <tr><td>协议</td><td>必须勾选</td><td>仅提交时校验（不在输入中打扰）</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>⚠ 密码规则与后端需对齐：</b>现有后端 <code>/v1/auth/register</code> 接受 6–64 位密码，
+      本稿客户端收紧为 <b>8–20 位且必须同时包含字母与数字</b>（实名交友产品的合理下限）。
+      客户端更严、后端更松在安全上是兼容的，但建议后端同步收紧到 8 位下限，避免存量弱口令。
+    </div>
+  </section>
+
+  <!-- ======== 四、素材清单 ======== -->
+  <section class="sec">
+    <div class="sec__head"><span class="no">04</span><h2>AI 生成素材 · 4 件</h2><p>吉祥物以工程官方资产为参考图锚定，保证角色一致性</p></div>
+    <p class="sec__sub">生成时带入 <code style="font-size:12px">素材/吉祥物/xunmi_mascot_assets</code> 的官方吉祥物作为参考图，
+      角色（薄荷绿小芽 + 双叶嫩芽 + 粉腮红）与现有登录页完全同源。命名遵循「页面-用途-状态@倍率」。</p>
+
+    <div class="assets">
+      <div class="asset"><img src="assets/reg-hero-illustration@3x.jpg" alt="">
+        <div class="asset__b"><b>reg-hero-illustration@3x.jpg</b>
+          <p>注册页顶部主插图。吉祥物捧心 + 校园剪影，左上留白承载标题组。</p>
+          <div class="m">1250 × 800 · JPEG · 约 3.3x</div>
+          <span class="use">用在哪：页头 375 × 240 全出血</span></div></div>
+      <div class="asset"><img src="assets/reg-success-illustration@3x.jpg" alt="">
+        <div class="asset__b"><b>reg-success-illustration@3x.jpg</b>
+          <p>注册成功插图。吉祥物欢呼跳跃 + 爱心彩屑，径向柔光背景。</p>
+          <div class="m">1024 × 1024 · JPEG · 约 2.7x</div>
+          <span class="use">用在哪：成功页 236 × 236 居中</span></div></div>
+      <div class="asset asset--tall"><img src="assets/reg-bg-atmosphere@3x.jpg" alt="">
+        <div class="asset__b"><b>reg-bg-atmosphere@3x.jpg</b>
+          <p>页面背景氛围图。浅薄荷绿纵向渐变 + 5–10% 透明度线稿爱心/嫩芽，80% 区域留白。</p>
+          <div class="m">768 × 1664 · JPEG · 约 2x</div>
+          <span class="use">用在哪：成功页 / 变体页整页背景 cover</span></div></div>
+      <div class="asset asset--checker"><img src="assets/reg-decor-elements@3x.jpg" alt="">
+        <div class="asset__b"><b>reg-decor-elements@3x.jpg</b>
+          <p>装饰元素总览：粉/绿/金爱心、嫩芽、小藤蔓、四角星光斑、小花。粘土质感与主插图同调。</p>
+          <div class="m">1024 × 1024 · JPEG · 白底素材总览</div>
+          <span class="use">用在哪：切图参考 / 浅底装饰点缀</span></div></div>
+    </div>
+
+    <div class="note">
+      <b>⚠ 图标不用 AI 生图，走工程现有 SVG 体系。</b>
+      输入框图标（手机 mobile、短信 message、锁 lock、盾牌对勾 shield-check、眼睛 eye/eye-off、对勾 check、警示 alert、
+      成功 check-circle、返回 chevron-left、昵称 user、生日 cake）全部为 lucide 风格 24×24 · 1.8 描边内联 SVG，
+      与工程 <code>IMAGE_PATHS.ICONS_EMOJI</code> 既有图标同源。AI 生成的小图标在 36rpx 尺寸下必然发虚、多张之间风格会漂，这里刻意不生成。
+      本稿内所有图标即此套 SVG 的真实渲染效果，可直接摘用（本画板源码 &lt;symbol&gt; 区块）。
+    </div>
+  </section>
+
+  <footer>
+    寻觅 · 注册页 高保真设计稿 v1.0　｜　令牌来源 apps/client/src/theme/design-variables.scss（v4.0.0 青藤绿 + 浪漫粉）　｜　
+    素材画布 寻觅注册页-素材.miora　｜　2026-09-12
+  </footer>
+</div>
+</body>
+</html>

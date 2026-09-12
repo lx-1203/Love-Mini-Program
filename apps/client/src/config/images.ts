@@ -583,11 +583,15 @@ export const IMAGE_PATHS = {
 
   /** 兴趣圈大封面摄影图（static/assets/images/covers/，参考图风格） */
   CIRCLE_COVERS: {
-    PHOTO:     IMAGES + '/covers/circle-photo.png',
-    TRAVEL:    IMAGES + '/covers/circle-travel.png',
-    MUSIC:     IMAGES + '/covers/circle-music.png',
+    /* 2026-09-12 素材补齐：摄影/旅行/音乐/运动换 AI 摄影级新封面（750x562 JPEG，
+       与理想图 兴趣圈列表.png 的摄影感风格对齐）；FOOD 沿用旧素材 */
+    PHOTO:     IMAGES + '/covers/circle-cover-photography.jpg',
+    TRAVEL:    IMAGES + '/covers/circle-cover-travel.jpg',
+    MUSIC:     IMAGES + '/covers/circle-cover-music.jpg',
     FOOD:      IMAGES + '/covers/circle-food.png',
-    SPORTS:    IMAGES + '/covers/circle-sports.png',
+    SPORTS:    IMAGES + '/covers/circle-cover-sports.jpg',
+    /* 校园圈兜底封面（campus/hub.vue：无地标专属封面的学校使用） */
+    CAMPUS:    IMAGES + '/covers/campus-circle-cover.jpg',
     // 第五轮 QA 一致性收敛：原 GAME/READING/PET 是宽幅场景大图（600KB+ AI 摄影），
     // 与理想图 素材/理想效果图/兴趣圈列表.png 的方形场景缩略风格（Style A）不同，
     // 改用本地 AI 生成的方形居中场景图（与 ideal style 一致：摄影感/场景图优先）。
@@ -598,6 +602,39 @@ export const IMAGE_PATHS = {
     POSTGRAD:  IMAGES + '/covers/circle-postgraduate.png',
     ASTRONOMY: IMAGES + '/covers/circle-sky.png',
     DEFAULT:   IMAGES + '/covers/circle-photo.png',
+  },
+
+  /** 注册页素材（2026-09-12 注册页设计包落地，750x480 / 600x600 JPEG @2x） */
+  REGISTER: {
+    HERO:      IMAGES + '/register/reg-hero-illustration.jpg',
+    SUCCESS:   IMAGES + '/register/reg-success-illustration.jpg',
+  },
+
+  /**
+   * 注册页 lucide 风格 SVG 图标（36rpx 下 AI 图标必虚，走 SVG 体系；
+   * 表单关键图标固定本地 /static 路径——不随 real 模式切后端基址，
+   * 避免弱网下表单图标空白，体积仅数 KB）
+   */
+  REGISTER_ICONS: {
+    MOBILE:    '/static/assets/icons/register/mobile.svg',
+    MESSAGE:   '/static/assets/icons/register/message.svg',
+    LOCK:      '/static/assets/icons/register/lock.svg',
+    SHIELD:    '/static/assets/icons/register/shield.svg',
+    USER:      '/static/assets/icons/register/user.svg',
+    CAKE:      '/static/assets/icons/register/cake.svg',
+    EYE:       '/static/assets/icons/register/eye.svg',
+    EYE_OFF:   '/static/assets/icons/register/eye-off.svg',
+    ALERT:     '/static/assets/icons/register/alert.svg',
+    CHECK:     '/static/assets/icons/register/check-white.svg',
+    CHECK_GREEN: '/static/assets/icons/register/check-green.svg',
+    BACK:      '/static/assets/icons/register/back.svg',
+    CLEAR:     '/static/assets/icons/register/clear.svg',
+    ARROW_RIGHT: '/static/assets/icons/register/arrow-right.svg',
+  },
+
+  /** 匹配卡素材（2026-09-12：无照片用户的卡片兜底主视觉，640x1024 JPEG） */
+  MATCH_CARD: {
+    HERO:      IMAGES + '/match/match-card-hero.jpg',
   },
 
   /** 登录页拆分素材（素材/登录页/拆分图标_登录页；文件前缀 登录页_） */

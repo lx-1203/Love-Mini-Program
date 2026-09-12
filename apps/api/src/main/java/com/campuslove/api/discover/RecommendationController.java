@@ -307,6 +307,13 @@ public class RecommendationController {
                 return false;
               }
               text = text.trim().toLowerCase();
+              // 2026-09-12 修复：Ranker 对不足 1km 的距离格式化为 "<1km"，
+              // 原实现 Double.parseDouble("<1") 抛 NumberFormatException 导致
+              // 这些条目在附近语义下被整体剔除（附近列表只剩恰好 ≥1km 的用户）。
+              // 去掉 "<" 前缀后按数值比较（"<1km" 视作 1km 参与上限比较）。
+              if (text.startsWith("<")) {
+                text = text.substring(1);
+              }
               try {
                 if (text.endsWith("km")) {
                   return Double.parseDouble(text.substring(0, text.length() - 2)) <= distanceMaxKm;
