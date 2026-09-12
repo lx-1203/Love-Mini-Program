@@ -31,6 +31,7 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 
@@ -99,13 +100,17 @@ const circleTags = ["摄影技巧", "风景拍摄", "人像写真", "城市漫�
 /** 置顶公告（本地 mock —— TODO(后端): 圈公告接口） */
 const pinnedNotice = "【规约】友善交流，尊重原创，分享美好瞬间";
 
-/** 动态 feed mock（TODO(后端): 圈内动态分页接口；图片复用封面资产） */
+/** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */
 interface FeedItem {
   id: string;
   nickname: string;
-  school: string;
+  /** 后端话题无学校字段，真实数据为空则不渲染校徽 pill */
+  school?: string;
   timeText: string;
-  tag: string;
+  /** 话题标签（mock 专属；真实数据无该字段） */
+  tag?: string;
+  /** 话题标题（真实数据） */
+  title?: string;
   content: string;
   images: string[];
   likes: number;
@@ -172,6 +177,46 @@ const friendAvatars = [
   IMAGE_PATHS.DEFAULT_AVATAR,
 ];
 
+/**
+ * ISO 时间 → 相对时间文案（x 分钟前 / x 小时前 / x 天前 / 日期）。
+ * 后端 createdAt 为 "yyyy-MM-ddTHH:mm:ss"，无时区后缀按本地时区解析。
+ */
+function relativeTime(iso: string): string {
+  const ts = Date.parse(iso);
+  if (Number.isNaN(ts)) return "";
+  const diff = Date.now() - ts;
+  const MIN = 60_000, HOUR = 3_600_000, DAY = 86_400_000;
+  if (diff < MIN) return "刚刚";
+  if (diff < HOUR) return `${Math.floor(diff / MIN)} 分钟前`;
+  if (diff < DAY) return `${Math.floor(diff / HOUR)} 小时前`;
+  if (diff < 7 * DAY) return `${Math.floor(diff / DAY)} 天前`;
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 圈内真实话题 → 动态 feed（2026-09-12：对齐理想图信息结构，替换原纯 mock） */
+const { currentTopics } = storeToRefs(circleStore);
+const realFeed = computed<FeedItem[]>(() =>
+  currentTopics.value
+    .filter((tp) => !circleId.value || tp.circleId === circleId.value)
+    .map((tp) => ({
+      id: tp.id,
+      nickname: tp.author?.name || "圈友",
+      timeText: relativeTime(tp.createdAt),
+      title: tp.title,
+      content: tp.content,
+      images: (tp.images ?? []).slice(0, 3).map((img) => resolveMediaUrl(img)),
+      likes: 0,
+      comments: tp.replyCount ?? 0,
+      liked: false,
+    }))
+);
+
+/** 展示列表：真实话题优先，空/失败回退本地演示数据（骨架不空屏） */
+const displayFeed = computed<FeedItem[]>(() =>
+  realFeed.value.length > 0 ? realFeed.value : feedItems.value
+);
+
 onLoad((query) => {
   if (query?.circleId) {
     circleId.value = String(query.circleId);
@@ -179,6 +224,13 @@ onLoad((query) => {
   // store 为空时补拉（复用列表页韧性逻辑：登录态/mock 判定由 store 内部处理）
   if (circles.value.length === 0 && !circleStore.loading) {
     void circleStore.fetchCircles();
+  }
+  // 动态 feed：真实圈内话题（失败/空回退本地演示数据，不阻塞渲染）
+  // 分享直达时 circleId 可能为空——仅在有真实圈 id 时拉取，避免 mock 圈 id 打到后端 404
+  if (circleId.value) {
+    circleStore.fetchTopics(circleId.value, 1).catch(() => {
+      // store 内部已置 errorMessage；本页静默回退 mock feed
+    });
   }
 });
 
@@ -252,6 +304,15 @@ function goToPostTopic(): void {
 function toggleLike(item: FeedItem): void {
   item.liked = !item.liked;
   item.likes += item.liked ? 1 : -1;
+}
+
+/**
+ * 动态卡点击 → 话题详情（2026-09-12：真实话题可进入详情互动；mock 兜底数据无后端 id，不跳转）
+ */
+function openFeedDetail(item: FeedItem): void {
+  // 真实话题 id 为纯数字；mock 兜底数据 id 为 "f1"/"f2" 等，直接忽略
+  if (!/^\d+$/.test(item.id)) return;
+  openAppPath(`${ROUTES.CIRCLES.TOPIC_DETAIL}?topicId=${encodeURIComponent(item.id)}`);
 }
 
 /**
@@ -358,13 +419,16 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
     <!-- 6. 动态 feed（仅动态 tab；其余 tab 骨架空态） -->
     <template v-if="activeTab === 'posts'">
-      <view v-for="item in feedItems" :key="item.id" class="feed-card">
+      <view v-if="displayFeed.length === 0" class="tab-empty">
+        <text class="tab-empty-text">{{ t("circle.home.emptyTab") }}</text>
+      </view>
+      <view v-for="item in displayFeed" :key="item.id" class="feed-card" hover-class="feed-card--hover" @tap="openFeedDetail(item)">
         <view class="feed-author">
           <image class="feed-avatar" :src="IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
           <view class="feed-author-body">
             <view class="feed-author-row">
               <text class="feed-nickname">{{ item.nickname }}</text>
-              <view class="feed-school">
+              <view v-if="item.school" class="feed-school">
                 <image class="feed-school-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" />
                 <text class="feed-school-text">{{ item.school }}</text>
               </view>
@@ -375,11 +439,12 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         </view>
 
         <view class="feed-content">
-          <text class="feed-tag"># {{ item.tag }}</text>
+          <text v-if="item.tag" class="feed-tag"># {{ item.tag }}</text>
+          <text v-if="item.title" class="feed-title">{{ item.title }}</text>
           <text class="feed-text">{{ item.content }}</text>
         </view>
 
-        <view class="feed-images">
+        <view v-if="item.images.length > 0" class="feed-images">
           <image
             v-for="(img, idx) in item.images"
             :key="idx"
@@ -730,6 +795,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   padding: 28rpx;
 }
 
+.feed-card--hover {
+  background: #f9fbfa;
+}
+
 .feed-author {
   display: flex;
   align-items: flex-start;
@@ -801,6 +870,14 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   font-size: 26rpx;
   color: var(--c-brand-500, #36C99A);
   font-weight: 600;
+}
+
+/* 2026-09-12：真实话题标题行（加粗深色，对齐理想图 feed 信息层级） */
+.feed-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2a25;
 }
 
 .feed-text {

@@ -162,9 +162,9 @@ const heightOptions = computed(() => {
 /** 身高 picker 回显 */
 const heightLabel = ref<string>("");
 
-/** 年级 picker change 事件 */
+/** 年级 picker change 事件（索引强制 Number，与身高同口径） */
 function onGradeChange(e: { detail: { value: number } }): void {
-  const idx = e.detail.value;
+  const idx = Number(e.detail.value);
   const opt = gradeOptions.value[idx];
   if (opt) {
     form.grade = opt;
@@ -173,9 +173,9 @@ function onGradeChange(e: { detail: { value: number } }): void {
   }
 }
 
-/** 身高 picker change 事件（140-200，存储数字） */
+/** 身高 picker change 事件（140-200，存储数字；索引强制 Number 防字符串拼接越界） */
 function onHeightChange(e: { detail: { value: number } }): void {
-  const idx = e.detail.value;
+  const idx = Number(e.detail.value);
   const opt = heightOptions.value[idx];
   if (opt) {
     form.height = 140 + idx;
@@ -283,7 +283,7 @@ onMounted(async () => {
     await profileStore.load();
   } catch (_e) {
     // 2026-08-12：资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
-    // （后端 diff 只提交变更字段，空值不覆盖既有资料）
+    // （2026-09-12 起必填字段全量提交，其余字段仅提交变更项）
   }
   const basic = profileStore.basicProfile;
   if (basic) {
@@ -291,13 +291,26 @@ onMounted(async () => {
     form.bio = basic.bio ?? "";
     form.grade = basic.grade ?? "";
     form.pronouns = basic.pronouns ?? "";
+    // 2026-09-12 修复（PUT /profile/basic 400）：后端为全量替换语义，
+    // 必填 4 字段每次都要随请求携带；height/学历/感情状态同样从既有资料回填，
+    // 避免用户只改昵称时因 grade/bio/pronouns 为空被后端 @NotBlank 拒绝。
+    if (typeof basic.height === "number") {
+      form.height = basic.height;
+    }
+    if (basic.educationLevel) {
+      form.educationLevel = basic.educationLevel;
+    }
+    if (basic.relationshipStatus) {
+      form.relationshipStatus = basic.relationshipStatus;
+    }
   }
   // R4-00043：移除籍贯/未来城市的校区自动填充（籍贯为出生地，与校区无关；
   // 自动填充会导致用户不修改即提交错误籍贯，污染同乡匹配与推荐）。
-  // 仅保留显式选择，默认值为空。
-  form.hometownProvince = "";
-  form.hometownCity = "";
-  form.futureCity = "";
+  // 2026-09-12：改为回填用户既有籍贯（编辑语义，而非校区推导），
+  // 保证全量提交时不把已保存的籍贯清空。
+  form.hometownProvince = basic?.hometownProvince ?? "";
+  form.hometownCity = basic?.hometownCity ?? "";
+  form.futureCity = basic?.futureCity ?? "";
   // 同步初始 picker 回显文案
   if (form.educationLevel) {
     const found = educationLevelOptions.value.find((o) => o.value === form.educationLevel);
@@ -327,7 +340,8 @@ async function save() {
   // 提交锁：锁定期间忽略新的保存调用，防止重复提交
   if (isSubmitting.value) return;
 
-  // 输入验证
+  // 输入验证（2026-09-12：bio/grade/pronouns/height 为后端 @NotBlank/@Min 契约必填，
+  // 前端先行校验给出友好提示，避免直接收到 400）
   if (!form.nickname || !form.nickname.trim()) {
     uni.showToast({ title: t("setup.profile.errNicknameRequired"), icon: "none" });
     return;
@@ -336,14 +350,30 @@ async function save() {
     uni.showToast({ title: t("setup.profile.errNicknameTooLong", { n: NICKNAME_MAX_LENGTH }), icon: "none" });
     return;
   }
+  if (!form.bio || !form.bio.trim()) {
+    uni.showToast({ title: t("setup.profile.errBioRequired"), icon: "none" });
+    return;
+  }
   if (form.bio && form.bio.length > BIO_MAX_LENGTH) {
     uni.showToast({ title: t("setup.profile.errBioTooLong", { n: BIO_MAX_LENGTH }), icon: "none" });
+    return;
+  }
+  if (!form.grade) {
+    uni.showToast({ title: t("setup.profile.errGradeRequired"), icon: "none" });
+    return;
+  }
+  if (!form.pronouns || !form.pronouns.trim()) {
+    uni.showToast({ title: t("setup.profile.errPronounsRequired"), icon: "none" });
+    return;
+  }
+  if (form.height === undefined || form.height === null) {
+    uni.showToast({ title: t("setup.profile.errHeightRequired"), icon: "none" });
     return;
   }
   // 加锁，进入提交流程
   isSubmitting.value = true;
   try {
-    // 构建 diff：仅提交变更字段，避免无谓的网络请求与后端覆盖
+    // 构建 diff：可选字段仅提交变更项（后端未传字段保留既有值，防止误清空）
     const diff = buildDiffPayload();
 
     // 无变更时直接跳转下一步，不调用 API
@@ -359,10 +389,27 @@ async function save() {
       return;
     }
 
-    // 调用 updateBasicProfile（仅提交变更字段）
-    if (Object.keys(diff).length > 0) {
-      await clientApi.updateBasicProfile(diff);
-    }
+    // 2026-09-12 修复（PUT /profile/basic 400）：后端 BasicProfileRequest 的
+    // nickname/bio/grade/pronouns 为 @NotBlank 必填（每次请求都必须携带），
+    // 原纯 diff 提交只改身高时会因其余字段缺失被 400 拒绝。
+    // 现改为：必填 4 字段全量携带 + 可选字段保持 diff 语义。
+    const payload: UpdateBasicProfileRequest = {
+      nickname: form.nickname.trim(),
+      bio: form.bio.trim(),
+      grade: form.grade,
+      pronouns: form.pronouns.trim(),
+      height: form.height,
+    };
+    // 可选字段保持 diff 语义：仅在用户修改过时携带（未传字段后端保留既有值）
+    if (diff.educationLevel !== undefined) payload.educationLevel = diff.educationLevel;
+    if (diff.relationshipStatus !== undefined) payload.relationshipStatus = diff.relationshipStatus;
+    if (diff.hometownProvince !== undefined) payload.hometownProvince = diff.hometownProvince;
+    if (diff.hometownCity !== undefined) payload.hometownCity = diff.hometownCity;
+    if (diff.futureCity !== undefined) payload.futureCity = diff.futureCity;
+    if (diff.expectedPartner !== undefined) payload.expectedPartner = diff.expectedPartner;
+
+    // 调用 updateBasicProfile
+    await clientApi.updateBasicProfile(payload);
     // 同步刷新 session，更新 profileCompleted 状态
     await sessionStore.refreshSession();
     successHaptic();

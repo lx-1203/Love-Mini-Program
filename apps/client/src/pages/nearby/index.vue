@@ -203,9 +203,9 @@ function goPeople(scope: "nearby" | "city") {
   openAppPath(`${ROUTES.NEARBY.PEOPLE}?scope=${scope}`);
 }
 
-/** 兴趣圈 */
+/** 兴趣圈（2026-09-12：入口改跳理想图版圈子主页 circle-home，旧 topics 列表由其「查看全部话题」承接） */
 function goCircleDetail(circleId: string) {
-  openAppPath(`${ROUTES.CIRCLES.TOPICS}?circleId=${encodeURIComponent(circleId)}`);
+  openAppPath(`${ROUTES.CIRCLES.HOME}?circleId=${encodeURIComponent(circleId)}`);
 }
 function goCircleList() {
   openAppPath(ROUTES.CIRCLES.INDEX);

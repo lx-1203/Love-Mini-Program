@@ -51,6 +51,13 @@ export interface OpenPathOptions {
  * @param options - 跳转选项（fail 回调等）
  */
 export function openAppPath(url: string, options: OpenPathOptions = {}) {
+  // 崩溃防御：上游传 undefined/空串时 url.startsWith 会抛 TypeError（实机日志
+  // 「Cannot read properties of undefined (reading 'startsWith')」实证）。
+  // 数据缺失应静默失败并回调 fail，不允许打断页面。
+  if (typeof url !== "string" || url.trim() === "") {
+    options.fail?.(new Error("openAppPath: empty url"));
+    return;
+  }
   const normalizedUrl = normalizeUrl(url);
 
   if (isTabPath(normalizedUrl)) {
@@ -258,6 +265,10 @@ export function consumeTabQuery(): Record<string, string> {
  * @param url - 目标页面 URL，可携带 query string（仅非 TabBar 页面有效）
  */
 export function replaceAppPath(url: string) {
+  if (typeof url !== "string" || url.trim() === "") {
+    // 与 openAppPath 同口径：空路径静默失败（见 openAppPath 内注释）
+    return;
+  }
   const normalizedUrl = normalizeUrl(url);
 
   if (isTabPath(normalizedUrl)) {

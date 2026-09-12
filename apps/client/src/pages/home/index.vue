@@ -170,7 +170,8 @@ function handleLoveStep(action: string) {
 }
 
 function openCircle(circleId: number) {
-  openAppPath(`${ROUTES.CIRCLES.TOPICS}?circleId=${encodeURIComponent(circleId)}`);
+  // 2026-09-12：入口改跳理想图版圈子主页 circle-home（与附近页热门兴趣圈同口径）
+  openAppPath(`${ROUTES.CIRCLES.HOME}?circleId=${encodeURIComponent(String(circleId))}`);
 }
 
 async function joinCircle(circleId: number) {
