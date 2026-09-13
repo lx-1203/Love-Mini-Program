@@ -36,6 +36,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { circleCoverFor } from "../../../config/circle-covers";
 import { resolveMediaUrl } from "../../../utils/media";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+import { useMock } from "../../../stores/helpers/use-mock";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 
 const { t } = useI18n();
@@ -71,10 +72,24 @@ const FALLBACK_CIRCLE: CircleItem = {
   friendJoinedCount: 8,
 };
 
-/** 传入 ID 的圈优先，未命中回退演示圈（骨架不空屏） */
+/** 传入 ID 的圈优先，未命中回退演示圈（mock 模式骨架不空屏）。
+ *  MP-R4-CIRCLEHOME-01（2026-09-13 独立审查 IA-CIRCLEHOME-01）：real 模式下
+ *  缺参/无效圈 id 不再静默套用演示圈——isUnknownCircle 标记后走真实空态，
+ *  避免用户在 real 包看到成套虚构统计与演示动态且无任何异常标识。 */
 const circle = computed<CircleItem>(() => {
   return circles.value.find((c) => c.id === circleId.value) || FALLBACK_CIRCLE;
 });
+
+/** real 模式且圈子未被 store 命中（缺参 / 无效 id / 列表拉取失败）。
+ *  mock 模式保持原兜底（演示场景骨架不空屏）。 */
+const isUnknownCircle = computed<boolean>(() => {
+  if (useMock()) return false;
+  if (!circleId.value) return true;
+  return !circles.value.some((c) => c.id === circleId.value);
+});
+
+/** 未命中圈空态吉祥物（mascot_cry.png，与 XunmiMascot sad 态同源） */
+const NOT_FOUND_MASCOT = "/static/assets/images/mascot/mascot_cry.png";
 
 /** 圈封面：统一走 config/circle-covers 单一映射（2026-09-12 修复图文不一致：
  *  本页原副本缺 阅读/宠物/考研/天文/篮球 等关键词，列表页显示专属封面、
@@ -205,10 +220,12 @@ const realFeed = computed<FeedItem[]>(() =>
     }))
 );
 
-/** 展示列表：真实话题优先，空/失败回退本地演示数据（骨架不空屏） */
-const displayFeed = computed<FeedItem[]>(() =>
-  realFeed.value.length > 0 ? realFeed.value : feedItems.value
-);
+/** 展示列表：真实话题优先，空/失败回退本地演示数据（骨架不空屏）。
+ *  MP-R4-CIRCLEHOME-01：real 模式未知圈不回退演示动态（见 isUnknownCircle）。 */
+const displayFeed = computed<FeedItem[]>(() => {
+  if (isUnknownCircle.value) return [];
+  return realFeed.value.length > 0 ? realFeed.value : feedItems.value;
+});
 
 onLoad((query) => {
   if (query?.circleId) {
@@ -323,7 +340,18 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 </script>
 
 <template>
-  <view class="circle-home" :style="menuStyleVars">
+  <!-- MP-R4-CIRCLEHOME-01：real 模式缺参/无效圈 id → 真实空态（不再静默渲染演示圈+演示动态） -->
+  <view v-if="isUnknownCircle" class="circle-home" :style="menuStyleVars">
+    <view class="circle-notfound">
+      <image class="circle-notfound__mascot" :src="NOT_FOUND_MASCOT" mode="aspectFit" />
+      <text class="circle-notfound__title">圈子不存在或已解散</text>
+      <text class="circle-notfound__desc">去看看别的圈子吧</text>
+      <view class="circle-notfound__btn press-feedback" hover-class="press-feedback--active" @tap="goBack">
+        <text class="circle-notfound__btn-text">返回</text>
+      </view>
+    </view>
+  </view>
+  <view v-else class="circle-home" :style="menuStyleVars">
     <!-- 1. Hero 头图 -->
     <view class="hero">
       <image class="hero-img" :src="coverImage" mode="aspectFill" />
@@ -504,6 +532,48 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .circle-home {
   min-height: 100vh;
   background-color: #f4f6f5;
+}
+
+/* ===== MP-R4-CIRCLEHOME-01：未知圈空态 ===== */
+.circle-notfound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 96rpx;
+  background: var(--c-bg-page, #eef7f2);
+}
+
+.circle-notfound__mascot {
+  width: 220rpx;
+  height: 220rpx;
+  margin-bottom: 32rpx;
+}
+
+.circle-notfound__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1a1e1c);
+  margin-bottom: 12rpx;
+}
+
+.circle-notfound__desc {
+  font-size: 26rpx;
+  color: var(--c-text-tertiary, #6b7571);
+  margin-bottom: 40rpx;
+}
+
+.circle-notfound__btn {
+  padding: 18rpx 64rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand, #36c99a);
+}
+
+.circle-notfound__btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 /* ===== 1. Hero ===== */

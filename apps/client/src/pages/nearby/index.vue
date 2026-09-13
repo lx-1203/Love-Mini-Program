@@ -31,7 +31,9 @@ import { IMAGE_PATHS } from "../../config/images";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../services/http";
 
-import { fetchCurrentLocation, buildLocationText } from "../../utils/location";
+// MP-R4-CONSOLE-02（2026-09-13 独立审查 IA-CONSOLE-02）：92 行调用 reportLocation
+// 但本 import 漏了它 → 运行时 ReferenceError（用户授权定位后必现，定位上报链路断裂）
+import { fetchCurrentLocation, buildLocationText, reportLocation } from "../../utils/location";
 // R20（2026-09-08）：env(safe-area-inset-top) 在模拟器为 0，标题行顶进状态栏
 // （「发动态」与系统时间/胶囊同排叠压）→ JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";

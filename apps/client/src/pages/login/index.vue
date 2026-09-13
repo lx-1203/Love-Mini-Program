@@ -98,12 +98,18 @@ onShow(() => {
 // 2026-09-06 修复（冷启动会话恢复竞态）：bootstrap 的 /auth/me 为异步请求，
 // onShow 检查时可能尚未完成 → 已登录用户冷启动仍停在登录页且无人再补偿跳转。
 // watch「bootstrap 完成 + 已登录」组合态：完成即自动进入主界面（仅触发一次）。
+// MP-R4-CONSOLE-01（2026-09-13 独立审查 IA-CONSOLE-01）：immediate 回调在 watch()
+// 执行期间同步触发，彼时 const stopSessionForwardWatch 尚未完成赋值；已登录冷启/
+// 会话恢复场景下首个同步回调即调用它 → minify 后报「k is not a function」全局
+// 错误（Sentry 双通道上报）。改为可空句柄 + 可选调用，首帧跳过自停（onUnmounted
+// 与 autoForwardedToMain 单次标记兜底防重复跳转）。
+let stopSessionForwardWatch: (() => void) | null = null;
 let autoForwardedToMain = false;
-const stopSessionForwardWatch = watch(
+stopSessionForwardWatch = watch(
   () => !sessionStore.loading && sessionStore.isLoggedIn,
   (sessionReady) => {
     if (sessionReady) {
-      stopSessionForwardWatch();
+      stopSessionForwardWatch?.();
       // 页面自身登录流程已接管跳转（loginNavTimer 已挂起）时不重复跳转，
       // 保留其 pending 跳转（如资料完善向导）的语义
       if (!loginNavTimer && !autoForwardedToMain) {

@@ -13,6 +13,7 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { getChannelConfig } from "../../../config/channels";
 import { IMAGE_PATHS } from "../../../config/images";
 import ActivityCard from "../../../components/village/ActivityCard.vue";
@@ -24,6 +25,8 @@ const { t } = useI18n();
 const circleStore = useCircleStore();
 const villageStore = useVillageStore();
 const activityStore = useActivityStore();
+// MP-R4-POSTTOPIC-01：JS 测量状态栏高度，导航栏 padding-top 动态注入
+const statusBarHeightPx = useStatusBarHeight();
 
 /**
  * 模板 catchtap="noop" 阻止冒泡的空处理器（原生小程序属性写法，
@@ -404,8 +407,9 @@ if (options.activityId) {
 
 <template>
   <view class="post-page">
-    <!-- 顶部导航栏 -->
-    <view class="post-header">
+    <!-- 顶部导航栏（MP-R4-POSTTOPIC-01：env(safe-area-inset-top) 在 mp 模拟器为 0，
+         导航返回/标题叠进系统状态栏 → 与 nearby 同款 JS 注入 statusBarHeight） -->
+    <view class="post-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("circle.postTopicBack") }}</text>
       </view>
@@ -678,7 +682,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 24rpx;
+  /* MP-R4-POSTTOPIC-01：padding-top 由模板内联注入 statusBarHeight + 10px（模拟器 env 为 0 不可依赖） */
+  padding: 20rpx 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 

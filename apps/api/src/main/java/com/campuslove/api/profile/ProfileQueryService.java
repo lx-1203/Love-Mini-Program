@@ -5,6 +5,8 @@ import com.campuslove.api.campus.CampusCertificationService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.media.MediaAssetService;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.HeartSignal;
+import com.campuslove.api.entity.Like;
 import com.campuslove.api.entity.MediaAsset;
 import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.User;
@@ -12,8 +14,11 @@ import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.entity.UserScheduleProfile;
+import com.campuslove.api.repository.HeartSignalRepository;
+import com.campuslove.api.repository.LikeRepository;
 import com.campuslove.api.repository.PostLikeRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.ProfileVisitorRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserFollowRepository;
@@ -72,6 +77,24 @@ public class ProfileQueryService {
     private final MediaAssetService mediaAssetService;
     /** JPA 实体管理器（FIN-00029 修复：批量点赞统计） */
     private final EntityManager entityManager;
+
+    /* ==== MP-R4-STATS-01（2026-09-13 独立审查 IA-STATS-01）：stats 真实数据源 ====
+     * likedMe/visitor/match 此前为字面量 0 占位（前端被迫用 likesStore 兜底）。
+     * setter 注入而非构造参数：避免破坏 ProfileQueryServiceTest 的既有构造调用；
+     * 单测未调 setter 时保持 null，getProfileStats 回退 0（与旧行为一致）。 */
+    private LikeRepository likeRepository;
+    private com.campuslove.api.repository.ProfileVisitorRepository profileVisitorRepository;
+    private HeartSignalRepository heartSignalRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setSocialRepositories(
+            LikeRepository likeRepository,
+            ProfileVisitorRepository profileVisitorRepository,
+            HeartSignalRepository heartSignalRepository) {
+        this.likeRepository = likeRepository;
+        this.profileVisitorRepository = profileVisitorRepository;
+        this.heartSignalRepository = heartSignalRepository;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProfileQueryService(
@@ -197,13 +220,32 @@ public class ProfileQueryService {
 
         int likesCount = calculateTotalLikesCount(currentUserId);
 
+        // MP-R4-STATS-01（2026-09-13 独立审查 IA-STATS-01）：likedMe/visitor/match
+        // 此前为字面量 0 占位，与 likes/profile_visitors/heart_signals 真实业务表脱节。
+        // 现改为真实聚合；仓储未注入（旧单测路径）时回退 0 保持旧行为。
+        int likedMeCount = likeRepository != null
+                ? (int) likeRepository.countByTargetUserIdAndStatus(currentUserId, Like.LikeStatus.active)
+                : 0;
+        int visitorCount = profileVisitorRepository != null
+                ? (int) profileVisitorRepository.countDistinctVisitorsByHostId(currentUserId)
+                : 0;
+        int matchCount = 0;
+        if (heartSignalRepository != null) {
+            matchCount = (int) heartSignalRepository
+                    .findByUserAIdOrUserBIdAndStatusNotExpired(currentUserId, currentUserId,
+                            HeartSignal.SignalStatus.pending, java.time.LocalDateTime.now())
+                    .stream()
+                    .filter(signal -> "mutual_like".equals(signal.getMatchType()))
+                    .count();
+        }
+
         return new ProfileStatsView(
                 user.getFollowingCount(),
                 user.getFollowersCount(),
                 likesCount,
-                0,
-                0,
-                0);
+                likedMeCount,
+                visitorCount,
+                matchCount);
     }
 
     // ---- 关注关系查询 ----
