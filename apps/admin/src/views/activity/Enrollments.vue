@@ -19,6 +19,7 @@ import {
   type ActivityEnrollment,
 } from "../../api/activities";
 import { ApiError } from "../../api/http";
+import { withMediaToken } from "../../api/media";
 import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
@@ -193,7 +194,7 @@ watch(
             <td>{{ e.userId }}</td>
             <td>{{ authorLabel(e) }}</td>
             <td>
-              <img v-if="e.avatarUrl" :src="e.avatarUrl" class="avatar" :alt="t('enrollments.avatarAlt')" />
+              <img v-if="e.avatarUrl" :src="withMediaToken(e.avatarUrl)" class="avatar" :alt="t('enrollments.avatarAlt')" />
               <text v-else class="avatar-placeholder">—</text>
             </td>
             <td class="time-cell">{{ formatDateTime(e.enrolledAt) }}</td>

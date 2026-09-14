@@ -24,6 +24,7 @@ import {
 } from "@/api/users";
 import { changePassword } from "@/api/account";
 import { ApiError } from "@/api/http";
+import { withMediaToken } from "@/api/media";
 import Pagination from "@/components/Pagination.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
@@ -755,7 +756,7 @@ onMounted(() => {
               <view class="user-cell">
                 <img
                   v-if="user.avatarUrl"
-                  :src="user.avatarUrl"
+                  :src="withMediaToken(user.avatarUrl)"
                   class="user-avatar"
                   alt=""
                   @error="onAvatarError"
@@ -939,7 +940,7 @@ onMounted(() => {
           <view class="detail-row">
             <text class="detail-label">{{ t("users.photoGalleryLabel") }}:</text>
             <view class="detail-thumbs">
-              <img v-for="url in detailUser.photoGallery" :key="url" class="detail-thumb" :src="url" alt="" @error="onAvatarError" />
+              <img v-for="url in detailUser.photoGallery" :key="url" class="detail-thumb" :src="withMediaToken(url)" alt="" @error="onAvatarError" />
               <text v-if="!detailUser.photoGallery.length">{{ t("common.emptyPlaceholder") }}</text>
             </view>
           </view>

@@ -16,6 +16,7 @@ import { useI18n } from "vue-i18n";
 import {
   listMediaAssets,
   auditMediaAsset,
+  withMediaToken,
   type MediaAssetSummary,
 } from "../../api/media";
 import { ApiError } from "../../api/http";
@@ -105,7 +106,7 @@ const previewAsset = ref<MediaAssetSummary | null>(null);
 /** 打开大图预览（缩略图点击触发） */
 function openPreview(item: MediaAssetSummary): void {
   previewAsset.value = item;
-  previewUrl.value = item.url;
+  previewUrl.value = withMediaToken(item.url);
   previewVisible.value = true;
 }
 
@@ -299,7 +300,7 @@ onMounted(() => {
             <td>
               <view class="thumb-cell">
                 <img
-                  :src="item.url"
+                  :src="withMediaToken(item.url)"
                   class="thumb"
                   alt=""
                   loading="lazy"
@@ -312,7 +313,7 @@ onMounted(() => {
             <td class="user-cell">
               <img
                 v-if="item.userAvatar"
-                :src="item.userAvatar"
+                :src="withMediaToken(item.userAvatar)"
                 class="user-avatar"
                 alt=""
                 @error="onImageError"
@@ -406,7 +407,7 @@ onMounted(() => {
         <text class="modal-title">{{ t("mediaAssets.auditTitle", { id: auditingAsset.id }) }}</text>
         <view class="audit-preview-row">
           <img
-            :src="auditingAsset.url"
+            :src="withMediaToken(auditingAsset.url)"
             class="audit-preview-img"
             alt=""
             @error="onImageError"

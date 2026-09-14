@@ -2272,7 +2272,7 @@ onUnload(() => {
                 <view class="avatar">
                   <SafeImage
                     v-if="profileView.avatarUrl"
-                    :src="profileView.avatarUrl"
+                    :src="resolveMediaUrl(profileView.avatarUrl)"
                     custom-class="avatar__img"
                     mode="aspectFill"
                     :lazy-load="true"

@@ -106,9 +106,101 @@ function resolveOnce(raw: string): string {
   if (resolvedUrlCache.size >= URL_CACHE_MAX) {
     resolvedUrlCache.clear();
   }
-  const resolved = toLocalImage(resolveMediaUrl(raw));
+  const resolved = localizeHttpIfNeeded(toLocalImage(resolveMediaUrl(raw)));
   resolvedUrlCache.set(raw, resolved);
   return resolved;
+}
+
+/* ===== MP-R5-HTTPIMG（2026-09-13）：http 图片源运行时本地化 =====
+ * 基础库 3.16.2 对 <image> 的 http:// 源拒绝渲染（2026-09-03 已有 app-assets
+ * 同类问题记录）。开发态 real 后端即 http://127.0.0.1:8080，用户上传的
+ * 头像/照片墙媒体 URL 全部命中 → 页面只显示占位图。
+ * 方案：检测到 http 源时改走 uni.downloadFile 下载到本地临时文件渲染
+ * （wx.getImageInfo 同源实测可加载，仅 <image> 渲染层受限）。
+ * 生产 https 环境不进入该分支；下载结果按 URL 缓存避免重复下载。 */
+const httpLocalCache = new Map<string, string>();
+const httpInFlight = new Set<string>();
+
+/** 稳定字符串哈希（djb2）：用于本地化文件命名，避免路径特殊字符 */
+function hashString(input: string): number {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) {
+    h = ((h << 5) + h + input.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+/** http 源本地化进行中（抑制 onError 降级竞态：DevTools/基础库会立刻
+ * 对 http 源报 error，若不抑制会在 base64 就绪前就切到 fallback） */
+const localizingHttp = ref(false);
+
+function localizeHttpIfNeeded(resolved: string): string {
+  if (!resolved.startsWith("http://")) {
+    return resolved;
+  }
+  const cached = httpLocalCache.get(resolved);
+  if (cached) {
+    return cached;
+  }
+  if (!httpInFlight.has(resolved)) {
+    httpInFlight.add(resolved);
+    // MP-R5-HTTPIMG-RACE：本地化在途时置位，onError 据此抑制降级竞态
+    localizingHttp.value = true;
+    // 两段式本地化：downloadFile → copyFile 到 USER_DATA_PATH 常驻本地文件。
+    // 原因：基础库 3.16.2+ 的 <image> 渲染层拒绝 http:// 图片源（含 DevTools
+    // 的 http://tmp 临时路径）；本地用户文件路径全环境可渲染。仅 http 源
+    // 进入此分支，生产 https 媒体不受影响。
+    uni.downloadFile({
+      url: resolved,
+      success: (res) => {
+        if (res.statusCode !== 200 || !res.tempFilePath) {
+          localizingHttp.value = false;
+          return;
+        }
+        const destPath = `${wx.env.USER_DATA_PATH}/safeimg-${hashString(resolved)}.jpg`;
+        uni.getFileSystemManager().copyFile({
+          srcPath: res.tempFilePath,
+          destPath,
+          success: () => {
+            httpLocalCache.set(resolved, destPath);
+            // 同步改写 URL 缓存：resolveOnce 在下载完成前已缓存 http 原串
+            for (const [key, value] of resolvedUrlCache) {
+              if (value === resolved) {
+                resolvedUrlCache.set(key, destPath);
+              }
+            }
+            // 仅当当前展示的仍是同一 http 源时替换，避免覆盖用户已切换的图
+            if (displaySrc.value === resolved || displaySrc.value === "") {
+              displaySrc.value = destPath;
+              hasError.value = false;
+              allFailed.value = false;
+              isLoading.value = false;
+            }
+            localizingHttp.value = false;
+          },
+          fail: (copyErr) => {
+            if (isDev) {
+              console.warn("[SafeImage] 本地文件拷贝失败:", copyErr);
+            }
+            localizingHttp.value = false;
+          },
+        });
+      },
+      fail: () => {
+        localizingHttp.value = false;
+        if (isDev) {
+          console.warn("[SafeImage] http 源本地化下载失败");
+        }
+      },
+      complete: () => {
+        httpInFlight.delete(resolved);
+      },
+    });
+  } else {
+    // 下载已在途（并发渲染）：维持本地化标记，抑制 onError 降级竞态
+    localizingHttp.value = true;
+  }
+  // 本地化在途：返回空 src（骨架态），base64/本地文件就绪后由回调热替换
+  return "";
 }
 
 const hasError = ref(false);
@@ -150,6 +242,11 @@ watch(() => props.src, (newSrc) => {
 
 /** 原 src 加载失败：未达重试上限时重试，达到上限才降级到 fallback */
 function onError() {
+  // MP-R5-HTTPIMG：http 源本地化在途时不计错误、不降级——基础库会对 http 源
+  // 立刻报 error，base64 就绪后 displaySrc 热替换即恢复正常渲染
+  if (localizingHttp.value) {
+    return;
+  }
   if (retryCount.value < MAX_RETRY) {
     // 重试：通过修改 displaySrc 触发 image 重新加载
     retryCount.value += 1;

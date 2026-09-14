@@ -134,6 +134,9 @@ public class MediaAccessService {
 
         // 文件存在性校验
         if (!Files.exists(target) || !Files.isRegularFile(target)) {
+            // MP-R5-DIAG（2026-09-13）：404 分支此前无任何日志，磁盘路径漂移类问题无法排查
+            LOGGER.warn("媒体文件未命中: targetUserId={}, subPath={}, root={}, target={}",
+                    targetUserId, subPath, root, target);
             throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,
                     "文件不存在");
         }

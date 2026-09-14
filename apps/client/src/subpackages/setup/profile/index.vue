@@ -26,6 +26,13 @@ import { clientApi } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
+// MP-R5-EDITPAGE（2026-09-13）：编辑页补齐头像 + 照片墙（复用我的页同款链路：
+// ensurePrivacyAuthorized → chooseImage → profileStore.uploadAvatar/uploadPhotoAtIndex，
+// 后端落 users.avatar_url / photoGallery 并 recordUpload 进 media_asset → 后台可审核管理）
+import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+import { resolveMediaUrl } from "../../../utils/media";
+import { IMAGE_PATHS } from "../../../config/images";
+import type { UniUploadFileLike } from "../../../services/api";
 // 2026-08-07 流程重构：注册第 1 步身份选择（学生/非学生），决定后续分支
 import {
   loadIdentity,
@@ -196,6 +203,167 @@ const BIO_MAX_LENGTH = 160;
  * 锁定期间忽略新的 save 调用，直到当前提交流程结束（成功或失败）。
  */
 const isSubmitting = ref(false);
+
+/* ================= MP-R5-EDITPAGE：头像与照片墙（2026-09-13） ================= */
+/** 头像/照片上传进行中（防重复触发与并发上传） */
+const isMediaUploading = ref(false);
+/** 正在上传的照片墙槽位（-1 = 无；用于宫格按钮 loading 态） */
+const photoUploadingIndex = ref(-1);
+
+/** 我的页同款：从 uni.chooseImage 返回路径构造类 File（兼容 H5 / mp-weixin 双端） */
+function buildFileLike(filePath: string): UniUploadFileLike {
+  const name = filePath.split("/").pop() || "upload";
+  return { name, path: filePath };
+}
+
+/** 点击头像：相册 / 相机二选一（actionSheet），随后走隐私授权 → 选图 → 上传 */
+function onAvatarTap(): void {
+  if (isMediaUploading.value) return;
+  uni.showActionSheet({
+    itemList: [t("setup.profile.avatarAlbum"), t("setup.profile.avatarCamera")],
+    success: (res) => {
+      void chooseAvatarFrom(res.tapIndex === 1 ? "camera" : "album");
+    },
+    fail: () => {},
+  });
+}
+
+/** 隐私授权 → uni.chooseImage → 上传头像（与我的页 chooseAvatarImage 同语义） */
+async function chooseAvatarFrom(sourceType: "album" | "camera"): Promise<void> {
+  if (isMediaUploading.value) return;
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({ title: t("setup.profile.privacyRequiredImage"), icon: "none" });
+    return;
+  }
+  uni.chooseImage({
+    count: 1,
+    sizeType: ["compressed"],
+    sourceType: [sourceType],
+    success: (res) => {
+      const tempPath = res.tempFilePaths?.[0] ?? "";
+      if (!tempPath) {
+        uni.showToast({ title: t("setup.profile.noPhotoSelected"), icon: "none" });
+        return;
+      }
+      void uploadAvatarFile(buildFileLike(tempPath));
+    },
+    fail: (err) => {
+      if (!String(err?.errMsg || "").includes("cancel")) {
+        uni.showToast({ title: t("setup.profile.choosePhotoFailed"), icon: "none" });
+      }
+    },
+  });
+}
+
+/** 实际执行头像上传（profileStore.uploadAvatar 成功后 store 即时回写 avatarUrl） */
+async function uploadAvatarFile(file: UniUploadFileLike): Promise<void> {
+  isMediaUploading.value = true;
+  try {
+    await profileStore.uploadAvatar(file);
+    successHaptic();
+    uni.showToast({ title: t("setup.profile.avatarUpdated"), icon: "success" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("setup.profile.uploadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isMediaUploading.value = false;
+  }
+}
+
+/** 点击照片墙槽位：空位 → 选图上传到该槽；已占用 → 确认删除 */
+function onPhotoSlotTap(index: number): void {
+  if (isMediaUploading.value) return;
+  if (index < profileStore.photoGallery.length) {
+    uni.showModal({
+      title: t("setup.profile.photoWallLabel"),
+      content: t("setup.profile.deletePhotoConfirm"),
+      confirmColor: "#E5454D",
+      success: (res) => {
+        if (res.confirm) void deletePhotoAt(index);
+      },
+    });
+    return;
+  }
+  // 仅允许下一个空位按顺序上传（与后端 photoGallery 数组语义一致：index = 当前长度）
+  if (index > profileStore.photoGallery.length) {
+    onPhotoSlotTap(profileStore.photoGallery.length);
+    return;
+  }
+  void choosePhotoForSlot(index);
+}
+
+/** 隐私授权 → 选图 → 上传到照片墙指定索引 */
+async function choosePhotoForSlot(index: number): Promise<void> {
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({ title: t("setup.profile.privacyRequiredImage"), icon: "none" });
+    return;
+  }
+  uni.chooseImage({
+    count: 1,
+    sizeType: ["compressed"],
+    sourceType: ["album", "camera"],
+    success: (res) => {
+      const tempPath = res.tempFilePaths?.[0] ?? "";
+      if (!tempPath) {
+        uni.showToast({ title: t("setup.profile.noPhotoSelected"), icon: "none" });
+        return;
+      }
+      void uploadPhotoFile(buildFileLike(tempPath), index);
+    },
+    fail: (err) => {
+      if (!String(err?.errMsg || "").includes("cancel")) {
+        uni.showToast({ title: t("setup.profile.choosePhotoFailed"), icon: "none" });
+      }
+    },
+  });
+}
+
+/** 上传照片到指定索引（成功后 store 同步 photoGallery + 审核项 pending） */
+async function uploadPhotoFile(file: UniUploadFileLike, index: number): Promise<void> {
+  isMediaUploading.value = true;
+  photoUploadingIndex.value = index;
+  try {
+    await profileStore.uploadPhotoAtIndex(file, index);
+    successHaptic();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("setup.profile.uploadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isMediaUploading.value = false;
+    photoUploadingIndex.value = -1;
+  }
+}
+
+/** 删除照片墙指定索引（store 内部调用 DELETE /profile/photos/{index}） */
+async function deletePhotoAt(index: number): Promise<void> {
+  isMediaUploading.value = true;
+  try {
+    await profileStore.removePhotoAtIndex(index);
+    uni.showToast({ title: t("setup.profile.photoDeleted"), icon: "none" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t("setup.profile.uploadFailed");
+    uni.showToast({ title: message, icon: "none" });
+  } finally {
+    isMediaUploading.value = false;
+  }
+}
+
+/** 头像展示地址（store 原值为后端返回 URL，real 模式经 resolveMediaUrl 解析） */
+const avatarDisplayUrl = computed<string>(() => resolveMediaUrl(profileStore.avatarUrl));
+/** 头像上传中（照片墙上传时头像不显示遮罩） */
+const isAvatarUploading = computed<boolean>(() => isMediaUploading.value && photoUploadingIndex.value === -1);
+/** 照片墙展示地址（6 槽，未占位为空串） */
+const photoDisplayUrls = computed<string[]>(() => {
+  const list: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    list.push(i < profileStore.photoGallery.length ? resolveMediaUrl(profileStore.photoGallery[i]) : "");
+  }
+  return list;
+});
 
 /**
  * 初始表单快照（onMounted 加载完成后保存）。
@@ -437,6 +605,55 @@ async function save() {
          2026-08-07 流程重构：按身份分支展示步骤（学生 4 步 / 非学生 3 步） -->
     <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />
 
+    <!-- MP-R5-EDITPAGE：头像与照片墙（上传即落 media_asset → 管理后台 MediaAssets 可见可审核） -->
+    <SectionCard :title="t('setup.profile.sectionMedia')" :subtitle="t('setup.profile.mediaHint')" compact>
+      <view class="media-avatar-row">
+        <view class="media-avatar" role="button" :aria-label="t('setup.profile.avatarActionSheet')" @tap="onAvatarTap">
+          <image
+            class="media-avatar__img"
+            :src="avatarDisplayUrl || IMAGE_PATHS.DEFAULT_AVATAR"
+            mode="aspectFill"
+          />
+          <view class="media-avatar__edit-badge">
+            <text class="media-avatar__edit-text">{{ t("setup.profile.avatarActionSheet") }}</text>
+          </view>
+          <view v-if="isAvatarUploading" class="media-avatar__mask">
+            <text class="media-avatar__mask-text">{{ t("setup.profile.uploadingMedia") }}</text>
+          </view>
+        </view>
+        <view class="media-avatar-side">
+          <text class="media-avatar-side__label">{{ t("setup.profile.avatarLabel") }}</text>
+          <text class="media-avatar-side__hint">{{ t("setup.profile.mediaHint") }}</text>
+        </view>
+      </view>
+
+      <view class="form-row media-photo-head">
+        <text class="form-row__label">{{ t("setup.profile.photoWallLabel") }}</text>
+        <text class="media-photo-head__hint">{{ t("setup.profile.photoWallHint") }}</text>
+      </view>
+      <view class="photo-grid">
+        <view
+          v-for="(url, idx) in photoDisplayUrls"
+          :key="idx"
+          class="photo-grid__slot"
+          role="button"
+          :aria-label="url ? t('setup.profile.photoWallLabel') + ' ' + (idx + 1) : t('setup.profile.photoWallLabel')"
+          @tap="onPhotoSlotTap(idx)"
+        >
+          <image v-if="url" class="photo-grid__img" :src="url" mode="aspectFill" />
+          <view v-else class="photo-grid__add">
+            <text class="photo-grid__plus">+</text>
+          </view>
+          <view v-if="photoUploadingIndex === idx" class="photo-grid__mask">
+            <text class="photo-grid__mask-text">{{ t("setup.profile.uploadingMedia") }}</text>
+          </view>
+          <view v-else-if="url" class="photo-grid__del">
+            <text class="photo-grid__del-text">×</text>
+          </view>
+        </view>
+      </view>
+    </SectionCard>
+
     <!-- 2026-08-07 流程重构：身份选择（注册第 1 步）——
          学生走校园认证分支，非学生直接跳过校园认证进入推荐偏好 -->
     <SectionCard :title="t('setup.profile.identityTitle')" :subtitle="t('setup.profile.identityHint')" compact>
@@ -596,6 +813,155 @@ async function save() {
 </template>
 
 <style scoped lang="scss">
+/* ===== MP-R5-EDITPAGE：头像与照片墙 ===== */
+.media-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  margin-bottom: 28rpx;
+}
+
+.media-avatar {
+  position: relative;
+  width: 144rpx;
+  height: 144rpx;
+  flex-shrink: 0;
+}
+
+.media-avatar__img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--c-bg-surface, #f7faf9);
+  border: 4rpx solid #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
+}
+
+.media-avatar__edit-badge {
+  position: absolute;
+  left: 50%;
+  bottom: -14rpx;
+  transform: translateX(-50%);
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand, #36c99a);
+  white-space: nowrap;
+}
+
+.media-avatar__edit-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.media-avatar__mask,
+.photo-grid__mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: 50%;
+}
+
+.photo-grid__mask {
+  border-radius: var(--r-lg, 18rpx);
+}
+
+.media-avatar__mask-text,
+.photo-grid__mask-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.media-avatar-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-avatar-side__label {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1a1e1c);
+}
+
+.media-avatar-side__hint {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--c-text-tertiary, #6b7571);
+}
+
+.media-photo-head {
+  margin-top: 8rpx;
+  align-items: baseline;
+}
+
+.media-photo-head__hint {
+  font-size: 22rpx;
+  color: var(--c-text-placeholder, #9aa39f);
+}
+
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.photo-grid__slot {
+  position: relative;
+  width: calc((100% - 32rpx) / 3);
+  height: 200rpx;
+  border-radius: var(--r-lg, 18rpx);
+  overflow: hidden;
+}
+
+.photo-grid__img {
+  width: 100%;
+  height: 100%;
+}
+
+.photo-grid__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2rpx dashed var(--c-border-default, #dde3e0);
+  border-radius: var(--r-lg, 18rpx);
+  background: var(--c-bg-surface, #f7faf9);
+}
+
+.photo-grid__plus {
+  font-size: 56rpx;
+  font-weight: 300;
+  color: var(--c-text-placeholder, #9aa39f);
+}
+
+.photo-grid__del {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.photo-grid__del-text {
+  font-size: 28rpx;
+  line-height: 1;
+  color: #ffffff;
+}
+
 .field {
   width: 100%;
   min-height: 88rpx;

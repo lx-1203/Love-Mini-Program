@@ -161,7 +161,7 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
 
   // 已经是鉴权代理 URL → 统一本地化为 /static/ 资源（mp 端强制 https，开发场景不走 8080 HTTP）
   if (path.includes(APP_ASSET_PREFIX)) {
-    // 2026-09-02 R5：基础库 3.16.2 强制 https，无论 mock 还是 real 模式，
+    // 2026-09-02 R5：基础库 3.16.2 强制 https，无论 mock/real 模式，
     // /api/v1/media/app-assets/{rel} 一律本地化为 /static/{rel}（避免 HTTP 警告 + 加载失败）。
     // 后端仍可保留该端点给其他用途（如后台管理端），小程序端完全不依赖。
     const idx = path.indexOf(APP_ASSET_PREFIX) + APP_ASSET_PREFIX.length;
@@ -171,6 +171,16 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     }
     // rel 为空（仅前缀无内容）→ 返回原路径（仍走 8080 HTTP，但避免空本地路径）
     return path;
+  }
+
+  // MP-R5-MEDIAAUTH（2026-09-13）：用户上传媒体（头像/照片墙）现为
+  // /api/v1/media/{userId}/... 鉴权代理 URL。`<image>` 标签无法携带
+  // Authorization 头 → 必须拼 ?token=；且相对路径会被 mp 当作包内文件
+  // （实测 getImageInfo: file not found）→ 需拼 apiRoot 为绝对 URL。
+  // 与旧 /uploads/ 前缀同待遇。app-assets 分支已在上方先行处理。
+  if (path.startsWith(MEDIA_PROXY_PREFIX)) {
+    const apiRoot = clientEnv.apiBaseUrl.replace(/\/api\/?$/, "");
+    return appendTokenIfMissing(`${apiRoot}${path}`);
   }
 
   // 上传文件路径 /uploads/{userId}/{yyyyMM}/{uuid}.{ext} → 重写为鉴权代理 URL

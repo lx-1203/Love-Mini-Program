@@ -426,7 +426,9 @@ public class LocalMediaStorageService implements MediaStorageService {
 
     /**
      * 归一化媒体类型。
-     * 背景图按图片规则校验。
+     * 背景图/头像均按图片规则校验。
+     * MP-R5-AVATAR-500（2026-09-13）：ProfileUpdateService.uploadAvatar 传 "avatar"，
+     * 本方法此前不识别 → 主链与降级链双双 IllegalArgumentException → 头像上传 500。
      *
      * @param type 原始类型字符串
      * @return image / video / audio
@@ -437,7 +439,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             throw new IllegalArgumentException(ErrorMessages.MEDIA_TYPE_REQUIRED);
         }
         String lower = type.toLowerCase(Locale.ROOT);
-        if ("image".equals(lower) || "background".equals(lower)) {
+        if ("image".equals(lower) || "background".equals(lower) || "avatar".equals(lower)) {
             return "image";
         }
         if ("video".equals(lower)) {

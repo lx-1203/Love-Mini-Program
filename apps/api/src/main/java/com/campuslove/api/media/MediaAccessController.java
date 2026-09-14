@@ -551,32 +551,29 @@ public class MediaAccessController {
      * @return 子路径字符串（如 {@code 202607/uuid.jpg}）
      */
     private String extractSubPath(HttpServletRequest request, Long userId) {
-        // 优先使用 Spring MVC 提供的 pathWithin
-        Object pathAttr = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        if (pathAttr instanceof String pathWithin) {
-            // pathWithin 形如 "{userId}/{yyyyMM}/{uuid}.jpg"，可能含前导 "/"
-            String stripped = pathWithin;
-            // 移除前导斜杠（不同 Spring 版本行为差异）
-            if (stripped.startsWith("/")) {
-                stripped = stripped.substring(1);
-            }
-            String prefix = userId + "/";
-            if (stripped.startsWith(prefix)) {
-                return stripped.substring(prefix.length());
-            }
-            // 兜底：pathWithin 不含 userId 前缀时直接返回（Service 会做安全校验）
-            if (!stripped.isEmpty()) {
-                return stripped;
-            }
-        }
-        // 极端兜底：从 requestURI 中切割
-        String uri = request.getRequestURI();
         String marker = "/api/v1/media/" + userId + "/";
-        int idx = uri.indexOf(marker);
-        if (idx < 0) {
-            // 路径不匹配预期格式，交给 Service 抛 400
-            return "";
+        // MP-R5-MEDIA404（2026-09-13）：实测 PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE
+        // 返回的是去除前导斜杠的完整 URI（"api/v1/media/{userId}/..."）而非 `**` 段，
+        // 旧"不含 userId 前缀则原样返回"的兜底把整串当 subPath → 磁盘路径多出
+        // api/v1/media 层级 → 所有用户上传图片读取 404。统一改为 marker 切割：
+        // 从 pathWithin / requestURI 中定位 "/api/v1/media/{userId}/" 之后的部分。
+        for (String candidate : new String[] {
+                pathWithinOrNull(request), request.getRequestURI()}) {
+            if (candidate == null) {
+                continue;
+            }
+            int idx = candidate.indexOf(marker);
+            if (idx >= 0 && idx + marker.length() < candidate.length()) {
+                return candidate.substring(idx + marker.length());
+            }
         }
-        return uri.substring(idx + marker.length());
+        // 路径不匹配预期格式，交给 Service 抛 400
+        return "";
+    }
+
+    /** pathWithin 属性的空安全读取（可能为 null 或非 String）。 */
+    private String pathWithinOrNull(HttpServletRequest request) {
+        Object pathAttr = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        return pathAttr instanceof String s ? s : null;
     }
 }

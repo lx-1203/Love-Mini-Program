@@ -5,7 +5,7 @@
  * 列表端点返回 AdminPageView<T>（{ items, total, page, pageSize, totalPages }）。
  */
 
-import { AdminPageView, get, post } from "./http";
+import { AdminPageView, get, getToken, post } from "./http";
 import type { AuditRequest } from "./forum";
 
 // ============================================================
@@ -84,6 +84,26 @@ export interface AuditResponse {
 // ============================================================
 // API
 // ============================================================
+
+/**
+ * MP-R5-ADMINTHUMB（2026-09-13）：为用户上传媒体 URL 拼接 ?token= 查询参数。
+ *
+ * 背景：`<img>` 标签无法携带 Authorization 头，后端
+ * GET /api/v1/media/{userId}/** 端点支持 ?token= 查询参数鉴权
+ * （JwtAuthenticationFilter TOKEN_QUERY_PARAM）。管理后台缩略图/大图预览
+ * 此前用裸 URL → 401 → 图片全部裂图。app-assets 为公开资产，无需 token。
+ *
+ * @param url 媒体 URL（相对路径或完整 URL）
+ * @returns 拼接了短期可用的管理员 token 的 URL；空值原样返回
+ */
+export function withMediaToken(url: string | null | undefined): string {
+  if (!url) return "";
+  // 应用资产为公开端点，无需 token；已带 token 的不重复拼
+  if (url.includes("app-assets/") || url.includes("token=")) return url;
+  const token = getToken();
+  if (!token) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
+}
 
 /**
  * 分页查询媒体图片（默认按 pending 筛选）。

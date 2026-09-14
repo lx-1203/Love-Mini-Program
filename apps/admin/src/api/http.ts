@@ -135,7 +135,7 @@ export const LONG_REQUEST_TIMEOUT_MS = 120000;
  * 获取当前管理员 token。
  * @returns JWT token 字符串，未登录时返回空字符串
  */
-function getToken(): string {
+export function getToken(): string {
   return localStorage.getItem("admin_v2_token") || "";
 }
 
