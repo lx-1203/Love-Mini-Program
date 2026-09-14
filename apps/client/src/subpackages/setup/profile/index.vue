@@ -1,37 +1,40 @@
 <script setup lang="ts">
 /**
- * 基础资料编辑页（Phase E4 / M-07）
+ * 基础资料编辑页（MP-R6-EDITPAGE，2026-09-14 全量重写）
  *
- * 在原有 nickname/bio/grade/pronouns 基础上扩展：
- * - 身高（cm，120-250）
- * - 学历（high_school/bachelor/master/phd）
- * - 感情状态（never/married_before/divorced/widowed）
- * - 籍贯省/市
- * - 未来城市
- * - 未来规划标签（多选 chip）
+ * 设计对齐：注册页设计包（deliverables/注册页/寻觅注册页-高保真设计稿.html + 设计规范 v1.0）。
+ * 用户要求：编辑资料页与注册时所见页面保持同一设计语言——
+ * hero 插图全出血 + 渐隐 + 白色表单卡骑压 + 图标字段（96rpx · 圆角 24rpx ·
+ * 聚焦品牌色光环）+ 行内错误（红框 + 抖动）+ 渐变主按钮。
  *
- * 提交时调用 clientApi.updateBasicProfile（含 Phase A 扩展字段），
- * 后端会重新计算 profileCompletion 并更新会话状态。
+ * 功能保持（不因重构丢失）：
+ * - 头像 + 照片墙（MP-R5-EDITPAGE 链路：ensurePrivacyAuthorized → chooseImage →
+ *   profileStore.uploadAvatar/uploadPhotoAtIndex，后端落 users.avatar_url /
+ *   photoGallery 并 recordUpload 进 media_asset → 管理后台可审核管理）
+ * - 全部字段：nickname/bio/grade/pronouns/height/educationLevel/relationshipStatus/
+ *   hometownProvince/hometownCity/futureCity/expectedPartner
+ * - 身份分流（student → 校园认证；non_student → 时间安排）
+ * - 提交锁 + 必填 4 字段全量携带 + 可选字段 diff 语义（PUT /profile/basic 契约）
+ *
+ * 双模式（2026-09-14 流程修复）：
+ * - wizard（默认，注册向导）：显示 SetupProgress，保存后 redirectTo 下一步
+ * - edit（?entry=edit，从「我的」进入）：隐藏进度条，保存后 navigateBack 返回
+ *   ——修复原实现编辑保存后被误投递到注册向导下一身份步骤的流程断裂。
  */
 import { computed, onMounted, reactive, ref, onUnmounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import AppShell from "../../../components/layout/AppShell.vue";
-import SectionCard from "../../../components/common/SectionCard.vue";
-import BottomActionBar from "../../../components/common/BottomActionBar.vue";
-// 功能5：引导流程进度条（当前步骤 = 1：基本信息）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
+import { IMAGE_PATHS } from "../../../config/images";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
-import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
-// MP-R5-EDITPAGE（2026-09-13）：编辑页补齐头像 + 照片墙（复用我的页同款链路：
-// ensurePrivacyAuthorized → chooseImage → profileStore.uploadAvatar/uploadPhotoAtIndex，
-// 后端落 users.avatar_url / photoGallery 并 recordUpload 进 media_asset → 后台可审核管理）
+// MP-R5-EDITPAGE：头像 + 照片墙（复用我的页同款链路，上传落 media_asset → 后台可审）
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { resolveMediaUrl } from "../../../utils/media";
-import { IMAGE_PATHS } from "../../../config/images";
 import type { UniUploadFileLike } from "../../../services/api";
 // 2026-08-07 流程重构：注册第 1 步身份选择（学生/非学生），决定后续分支
 import {
@@ -40,15 +43,74 @@ import {
   type UserIdentity,
 } from "../../../config/identity";
 
+const ICONS = IMAGE_PATHS.REGISTER_ICONS;
+
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
 const { t } = useI18n();
 
-/**
- * 2026-08-07 流程重构：用户身份（注册第 1 步选择）。
- * - student（在校学生/毕业生）：基本信息 → 校园认证 → 推荐偏好 → 完成
- * - non_student（非学生职场人士）：基本信息 → 推荐偏好 → 完成（跳过校园认证）
- */
+/* ---------------- 页面模式（wizard=注册向导 / edit=编辑资料） ---------------- */
+const entryMode = ref<"wizard" | "edit">("wizard");
+onLoad((options: Record<string, string> | undefined) => {
+  if (options && options.entry === "edit") {
+    entryMode.value = "edit";
+  }
+});
+
+/** 返回：有页面栈则 back（向导→注册成功页；编辑→我的页），无栈兜底回首页 */
+function goBack(): void {
+  lightHaptic();
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: ROUTES.TAB.HOME });
+  }
+}
+
+/* ---------------- 输入处理与校验（对齐注册页：行内错误 + 抖动 + Toast） ---------------- */
+type FieldKey = "nickname" | "bio" | "grade" | "pronouns" | "height";
+/** 行内错误（管「哪个字段错了」，Toast 管「整次结果」） */
+const errors = ref<Record<FieldKey, string>>({
+  nickname: "",
+  bio: "",
+  grade: "",
+  pronouns: "",
+  height: "",
+});
+/** 抖动中的字段（红框 + 抖动 4px × 2） */
+const shakeField = ref<FieldKey | "">("");
+let shakeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function shake(field: FieldKey): void {
+  shakeField.value = "";
+  if (shakeTimer) clearTimeout(shakeTimer);
+  // 强制重启动画：先摘掉类，下一帧再挂上
+  shakeTimer = setTimeout(() => {
+    shakeField.value = field;
+    shakeTimer = setTimeout(() => {
+      shakeField.value = "";
+    }, 400);
+  }, 30);
+}
+
+function clearError(field: FieldKey): void {
+  if (errors.value[field]) errors.value[field] = "";
+}
+
+/** 输入框焦点态（品牌色边框 + 光环，对齐注册页） */
+const focusField = ref("");
+const focusHandlers = {
+  nickname: { focus: () => (focusField.value = "nickname"), blur: () => (focusField.value = "") },
+  bio: { focus: () => (focusField.value = "bio"), blur: () => (focusField.value = "") },
+  pronouns: { focus: () => (focusField.value = "pronouns"), blur: () => (focusField.value = "") },
+  hometownProvince: { focus: () => (focusField.value = "hometownProvince"), blur: () => (focusField.value = "") },
+  hometownCity: { focus: () => (focusField.value = "hometownCity"), blur: () => (focusField.value = "") },
+  futureCity: { focus: () => (focusField.value = "futureCity"), blur: () => (focusField.value = "") },
+  expectedPartner: { focus: () => (focusField.value = "expectedPartner"), blur: () => (focusField.value = "") },
+};
+
+/* ---------------- 身份（注册第 1 步选择，决定向导分支） ---------------- */
 const identity = ref<UserIdentity>(loadIdentity());
 
 /** 身份选项（i18n 化） */
@@ -65,42 +127,36 @@ function onIdentityChange(value: UserIdentity): void {
   lightHaptic();
 }
 
-/** 按身份分流：学生 → 校园认证（步骤 2/4）；非学生 → 推荐偏好（步骤 2/3，跳过校园认证） */
+/** 按身份分流：学生 → 校园认证（步骤 2/4）；非学生 → 时间安排（跳过校园认证） */
 function getNextSetupPath(): string {
-  // P0-35 修复：非学生跳过校园认证，进入时间安排（完成度 30+20=50，配合日程后
-  // 注册流程可解锁；学生流程 基本资料→校园→日程 完成度 80 → profileCompleted=true）
+  // P0-35：非学生跳过校园认证进入时间安排（完成度 30+20=50）；学生流程 30+30+20=80
   return identity.value === "non_student"
     ? SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE
     : SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS;
 }
 
-// 修复（严格模式 noUnusedLocals）：SUBPACKAGE_ROUTES 在第 340 行 setTimeout 回调内使用，
-// vue-tsc 对该闭包位置识别失败（疑似模板指令解析干扰），通过 defineExpose 标记为已使用。
+// 修复（严格模式 noUnusedLocals）：vue-tsc 对 setTimeout 闭包内经
+// getNextSetupPath 间接使用 SUBPACKAGE_ROUTES 识别失败（模板指令解析干扰），
+// 通过 defineExpose 标记为已使用。
 defineExpose({ SUBPACKAGE_ROUTES });
 
 /**
- * SubTask 1.5.2：保存成功/无变更后跳转下一页的定时器引用，用于卸载时清理。
- *
- * <p>原实现 2 处 {@code setTimeout(..., 600)} 未保存返回值，
- * 用户在 600ms 延迟内快速返回上一页时，定时器仍会触发 uni.redirectTo，
- * 可能导致意外的页面跳转或 Vue 警告。</p>
+ * SubTask 1.5.2：保存成功/无变更后跳转的定时器引用，卸载时清理。
  */
 let saveSuccessNavTimer: ReturnType<typeof setTimeout> | null = null;
 
-/**
- * SubTask 1.5.2：页面卸载时清理未触发的跳转定时器。
- */
 onUnmounted(() => {
   if (saveSuccessNavTimer) {
     clearTimeout(saveSuccessNavTimer);
     saveSuccessNavTimer = null;
   }
+  if (shakeTimer) {
+    clearTimeout(shakeTimer);
+    shakeTimer = null;
+  }
 });
 
-/**
- * 表单数据（含 Phase A 扩展字段）。
- * 2026-08-07 链路调整：移除 futurePlanTags（与个性标签重复，属进阶内容后置）。
- */
+/* ---------------- 表单数据（含 Phase A 扩展字段） ---------------- */
 const form = reactive<UpdateBasicProfileRequest>({
   nickname: "",
   bio: "",
@@ -115,7 +171,7 @@ const form = reactive<UpdateBasicProfileRequest>({
   expectedPartner: "",
 });
 
-/** 学历选项（i18n 化，随 locale 切换响应） */
+/** 学历选项（i18n 化） */
 const educationLevelOptions = computed(() => [
   { label: t("setup.profile.educationHighSchool"), value: "high_school" },
   { label: t("setup.profile.educationBachelor"), value: "bachelor" },
@@ -131,16 +187,10 @@ const relationshipStatusOptions = computed(() => [
   { label: t("setup.profile.relationshipWidowed"), value: "widowed" },
 ]);
 
-/** 当前选中的学历（用于 picker 回显） */
+/** 当前选中的学历（picker 回显） */
 const educationLevelLabel = ref<string>("");
-/** 当前选中的感情状态（用于 picker 回显） */
+/** 当前选中的感情状态（picker 回显） */
 const relationshipStatusLabel = ref<string>("");
-
-/**
- * 2026-08-07 重构：标准化信息改用选择器（审查意见）。
- * - 身高：滚轮选择 140-200（原 120-250 输入框既低效又不符合常识）
- * - 年级：滚轮选择（大一~大四/研一~研三/已毕业），替代自由输入
- */
 
 /** 年级选项（i18n 化） */
 const gradeOptions = computed(() => [
@@ -176,6 +226,7 @@ function onGradeChange(e: { detail: { value: number } }): void {
   if (opt) {
     form.grade = opt;
     gradeLabel.value = opt;
+    clearError("grade");
     lightHaptic();
   }
 }
@@ -187,30 +238,36 @@ function onHeightChange(e: { detail: { value: number } }): void {
   if (opt) {
     form.height = 140 + idx;
     heightLabel.value = opt;
+    clearError("height");
     lightHaptic();
   }
 }
 
-/**
- * 字符长度限制常量（提取硬编码值，便于统一维护）。
- * 修复：原 save 校验与模板 maxlength 中重复硬编码 30/160，调整需要多处修改。
- */
+/** 字符长度限制常量（与后端 @Size 契约一致） */
 const NICKNAME_MAX_LENGTH = 30;
 const BIO_MAX_LENGTH = 160;
 
-/**
- * 提交锁：防止用户连续点击保存按钮触发重复提交。
- * 锁定期间忽略新的 save 调用，直到当前提交流程结束（成功或失败）。
- */
+/** 提交锁：防止连续点击保存按钮触发重复提交 */
 const isSubmitting = ref(false);
 
-/* ================= MP-R5-EDITPAGE：头像与照片墙（2026-09-13） ================= */
+/** 必填 5 项齐备 → 主按钮可用态（置灰仍可点，给「哪里没填对」定位提示，对齐注册页） */
+const formComplete = computed(
+  () =>
+    !!(form.nickname ?? "").trim() &&
+    !!(form.bio ?? "").trim() &&
+    !!form.grade &&
+    !!(form.pronouns ?? "").trim() &&
+    form.height !== undefined &&
+    form.height !== null,
+);
+
+/* ================= MP-R5-EDITPAGE：头像与照片墙 ================= */
 /** 头像/照片上传进行中（防重复触发与并发上传） */
 const isMediaUploading = ref(false);
 /** 正在上传的照片墙槽位（-1 = 无；用于宫格按钮 loading 态） */
 const photoUploadingIndex = ref(-1);
 
-/** 我的页同款：从 uni.chooseImage 返回路径构造类 File（兼容 H5 / mp-weixin 双端） */
+/** 从 uni.chooseImage 返回路径构造类 File（兼容 H5 / mp-weixin 双端） */
 function buildFileLike(filePath: string): UniUploadFileLike {
   const name = filePath.split("/").pop() || "upload";
   return { name, path: filePath };
@@ -365,61 +422,25 @@ const photoDisplayUrls = computed<string[]>(() => {
   return list;
 });
 
-/**
- * 初始表单快照（onMounted 加载完成后保存）。
- * 提交时与当前表单值做 diff，仅提交变更字段，避免无谓的网络请求与后端覆盖。
- */
+/* ---------------- 初始快照 + diff 提交（防无谓请求与误清空） ---------------- */
 let initialFormSnapshot: UpdateBasicProfileRequest = {};
 
 /**
- * 构建仅包含变更字段的提交数据。
- *
- * 修复（P1 BUG）：原实现直接提交整个 form，未做 diff，
- * 用户仅修改昵称时也会把所有字段重发后端，既浪费带宽，
- * 又可能在初始数据加载不全时把空值覆盖到后端。
- * 现逐字段比对，仅发送发生变化的字段。
- *
- * @returns 仅包含变更字段的 UpdateBasicProfileRequest
+ * 构建仅包含变更字段的提交数据（可选字段 diff 语义）。
  */
 function buildDiffPayload(): UpdateBasicProfileRequest {
   const diff: UpdateBasicProfileRequest = {};
-
-  // 字符串/数字/枚举字段：直接比较值
-  if (form.nickname !== initialFormSnapshot.nickname) {
-    diff.nickname = form.nickname;
-  }
-  if (form.bio !== initialFormSnapshot.bio) {
-    diff.bio = form.bio;
-  }
-  if (form.grade !== initialFormSnapshot.grade) {
-    diff.grade = form.grade;
-  }
-  if (form.pronouns !== initialFormSnapshot.pronouns) {
-    diff.pronouns = form.pronouns;
-  }
-  if (form.height !== initialFormSnapshot.height) {
-    diff.height = form.height;
-  }
-  if (form.educationLevel !== initialFormSnapshot.educationLevel) {
-    diff.educationLevel = form.educationLevel;
-  }
-  if (form.relationshipStatus !== initialFormSnapshot.relationshipStatus) {
-    diff.relationshipStatus = form.relationshipStatus;
-  }
-  if (form.hometownProvince !== initialFormSnapshot.hometownProvince) {
-    diff.hometownProvince = form.hometownProvince;
-  }
-  if (form.hometownCity !== initialFormSnapshot.hometownCity) {
-    diff.hometownCity = form.hometownCity;
-  }
-  if (form.futureCity !== initialFormSnapshot.futureCity) {
-    diff.futureCity = form.futureCity;
-  }
-  // 2026-08-11 匹配精细化：理想型画像
-  if (form.expectedPartner !== initialFormSnapshot.expectedPartner) {
-    diff.expectedPartner = form.expectedPartner;
-  }
-
+  if (form.nickname !== initialFormSnapshot.nickname) diff.nickname = form.nickname;
+  if (form.bio !== initialFormSnapshot.bio) diff.bio = form.bio;
+  if (form.grade !== initialFormSnapshot.grade) diff.grade = form.grade;
+  if (form.pronouns !== initialFormSnapshot.pronouns) diff.pronouns = form.pronouns;
+  if (form.height !== initialFormSnapshot.height) diff.height = form.height;
+  if (form.educationLevel !== initialFormSnapshot.educationLevel) diff.educationLevel = form.educationLevel;
+  if (form.relationshipStatus !== initialFormSnapshot.relationshipStatus) diff.relationshipStatus = form.relationshipStatus;
+  if (form.hometownProvince !== initialFormSnapshot.hometownProvince) diff.hometownProvince = form.hometownProvince;
+  if (form.hometownCity !== initialFormSnapshot.hometownCity) diff.hometownCity = form.hometownCity;
+  if (form.futureCity !== initialFormSnapshot.futureCity) diff.futureCity = form.futureCity;
+  if (form.expectedPartner !== initialFormSnapshot.expectedPartner) diff.expectedPartner = form.expectedPartner;
   return diff;
 }
 
@@ -445,13 +466,11 @@ function onRelationshipStatusChange(e: { detail: { value: number } }): void {
   }
 }
 
-
 onMounted(async () => {
   try {
     await profileStore.load();
   } catch (_e) {
-    // 2026-08-12：资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
-    // （2026-09-12 起必填字段全量提交，其余字段仅提交变更项）
+    // 资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
   }
   const basic = profileStore.basicProfile;
   if (basic) {
@@ -460,8 +479,7 @@ onMounted(async () => {
     form.grade = basic.grade ?? "";
     form.pronouns = basic.pronouns ?? "";
     // 2026-09-12 修复（PUT /profile/basic 400）：后端为全量替换语义，
-    // 必填 4 字段每次都要随请求携带；height/学历/感情状态同样从既有资料回填，
-    // 避免用户只改昵称时因 grade/bio/pronouns 为空被后端 @NotBlank 拒绝。
+    // 必填 4 字段每次都要随请求携带；height/学历/感情状态同样从既有资料回填
     if (typeof basic.height === "number") {
       form.height = basic.height;
     }
@@ -472,10 +490,7 @@ onMounted(async () => {
       form.relationshipStatus = basic.relationshipStatus;
     }
   }
-  // R4-00043：移除籍贯/未来城市的校区自动填充（籍贯为出生地，与校区无关；
-  // 自动填充会导致用户不修改即提交错误籍贯，污染同乡匹配与推荐）。
-  // 2026-09-12：改为回填用户既有籍贯（编辑语义，而非校区推导），
-  // 保证全量提交时不把已保存的籍贯清空。
+  // R4-00043：籍贯/未来城市回填用户既有值（编辑语义，而非校区推导）
   form.hometownProvince = basic?.hometownProvince ?? "";
   form.hometownCity = basic?.hometownCity ?? "";
   form.futureCity = basic?.futureCity ?? "";
@@ -488,79 +503,98 @@ onMounted(async () => {
     const found = relationshipStatusOptions.value.find((o) => o.value === form.relationshipStatus);
     if (found) relationshipStatusLabel.value = found.label;
   }
-  // 身高/年级初始回显（picker）
   if (form.height !== undefined) {
     heightLabel.value = `${form.height}cm`;
   }
   if (form.grade) {
     gradeLabel.value = form.grade;
   }
-  // 2026-08-11 匹配精细化：理想型画像回显
   form.expectedPartner = basic?.expectedPartner ?? "";
 
-  // 保存初始表单快照，用于提交时 diff 比对
   initialFormSnapshot = {
     ...form,
   };
 });
 
+/** 保存成功/无变更后的统一导航：wizard → 下一步；edit → 返回我的页 */
+function navigateAfterSave(): void {
+  if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
+  saveSuccessNavTimer = setTimeout(() => {
+    saveSuccessNavTimer = null;
+    if (entryMode.value === "edit") {
+      const pages = getCurrentPages();
+      if (pages.length > 1) {
+        uni.navigateBack();
+      } else {
+        uni.switchTab({ url: ROUTES.TAB.PROFILE });
+      }
+      return;
+    }
+    uni.redirectTo({ url: getNextSetupPath() });
+  }, 600);
+}
+
 async function save() {
-  // 提交锁：锁定期间忽略新的保存调用，防止重复提交
+  // 提交锁：锁定期间忽略新的保存调用
   if (isSubmitting.value) return;
 
-  // 输入验证（2026-09-12：bio/grade/pronouns/height 为后端 @NotBlank/@Min 契约必填，
-  // 前端先行校验给出友好提示，避免直接收到 400）
+  // 输入验证（bio/grade/pronouns/height 为后端 @NotBlank/@Min 契约必填；
+  // 对齐注册页：行内错误 + 抖动 + Toast 三通道反馈）
   if (!form.nickname || !form.nickname.trim()) {
+    errors.value.nickname = t("setup.profile.errNicknameRequired");
+    shake("nickname");
     uni.showToast({ title: t("setup.profile.errNicknameRequired"), icon: "none" });
     return;
   }
   if (form.nickname.length > NICKNAME_MAX_LENGTH) {
+    errors.value.nickname = t("setup.profile.errNicknameTooLong", { n: NICKNAME_MAX_LENGTH });
+    shake("nickname");
     uni.showToast({ title: t("setup.profile.errNicknameTooLong", { n: NICKNAME_MAX_LENGTH }), icon: "none" });
     return;
   }
   if (!form.bio || !form.bio.trim()) {
+    errors.value.bio = t("setup.profile.errBioRequired");
+    shake("bio");
     uni.showToast({ title: t("setup.profile.errBioRequired"), icon: "none" });
     return;
   }
-  if (form.bio && form.bio.length > BIO_MAX_LENGTH) {
+  if (form.bio.length > BIO_MAX_LENGTH) {
+    errors.value.bio = t("setup.profile.errBioTooLong", { n: BIO_MAX_LENGTH });
+    shake("bio");
     uni.showToast({ title: t("setup.profile.errBioTooLong", { n: BIO_MAX_LENGTH }), icon: "none" });
     return;
   }
   if (!form.grade) {
+    errors.value.grade = t("setup.profile.errGradeRequired");
+    shake("grade");
     uni.showToast({ title: t("setup.profile.errGradeRequired"), icon: "none" });
     return;
   }
   if (!form.pronouns || !form.pronouns.trim()) {
+    errors.value.pronouns = t("setup.profile.errPronounsRequired");
+    shake("pronouns");
     uni.showToast({ title: t("setup.profile.errPronounsRequired"), icon: "none" });
     return;
   }
   if (form.height === undefined || form.height === null) {
+    errors.value.height = t("setup.profile.errHeightRequired");
+    shake("height");
     uni.showToast({ title: t("setup.profile.errHeightRequired"), icon: "none" });
     return;
   }
-  // 加锁，进入提交流程
   isSubmitting.value = true;
   try {
-    // 构建 diff：可选字段仅提交变更项（后端未传字段保留既有值，防止误清空）
+    // 可选字段 diff：仅提交变更项（未传字段后端保留既有值）
     const diff = buildDiffPayload();
 
-    // 无变更时直接跳转下一步，不调用 API
     if (Object.keys(diff).length === 0) {
       uni.showToast({ title: t("setup.profile.noChange"), icon: "none" });
-      // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
-      // 2026-08-07 流程重构：按身份分流（学生 → 校园认证；非学生 → 推荐偏好）
-      if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
-      saveSuccessNavTimer = setTimeout(() => {
-        saveSuccessNavTimer = null;
-        uni.redirectTo({ url: getNextSetupPath() });
-      }, 600);
+      navigateAfterSave();
       return;
     }
 
-    // 2026-09-12 修复（PUT /profile/basic 400）：后端 BasicProfileRequest 的
-    // nickname/bio/grade/pronouns 为 @NotBlank 必填（每次请求都必须携带），
-    // 原纯 diff 提交只改身高时会因其余字段缺失被 400 拒绝。
-    // 现改为：必填 4 字段全量携带 + 可选字段保持 diff 语义。
+    // 2026-09-12 修复（PUT /profile/basic 400）：nickname/bio/grade/pronouns
+    // 为 @NotBlank 必填，每次请求全量携带；可选字段保持 diff 语义
     const payload: UpdateBasicProfileRequest = {
       nickname: form.nickname.trim(),
       bio: form.bio.trim(),
@@ -568,7 +602,6 @@ async function save() {
       pronouns: form.pronouns.trim(),
       height: form.height,
     };
-    // 可选字段保持 diff 语义：仅在用户修改过时携带（未传字段后端保留既有值）
     if (diff.educationLevel !== undefined) payload.educationLevel = diff.educationLevel;
     if (diff.relationshipStatus !== undefined) payload.relationshipStatus = diff.relationshipStatus;
     if (diff.hometownProvince !== undefined) payload.hometownProvince = diff.hometownProvince;
@@ -576,39 +609,66 @@ async function save() {
     if (diff.futureCity !== undefined) payload.futureCity = diff.futureCity;
     if (diff.expectedPartner !== undefined) payload.expectedPartner = diff.expectedPartner;
 
-    // 调用 updateBasicProfile
     await clientApi.updateBasicProfile(payload);
     // 同步刷新 session，更新 profileCompleted 状态
     await sessionStore.refreshSession();
     successHaptic();
     uni.showToast({ title: t("setup.profile.saveSuccess"), icon: "success" });
-    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
-    // 2026-08-07 流程重构：按身份分流（学生 → 校园认证；非学生 → 推荐偏好）
-    if (saveSuccessNavTimer) clearTimeout(saveSuccessNavTimer);
-    saveSuccessNavTimer = setTimeout(() => {
-      saveSuccessNavTimer = null;
-      uni.redirectTo({ url: getNextSetupPath() });
-    }, 600);
+    navigateAfterSave();
   } catch (error) {
     const message = error instanceof Error ? error.message : t("setup.profile.saveFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
-    // 释放提交锁，允许下次提交
     isSubmitting.value = false;
   }
 }
 </script>
 
 <template>
-  <AppShell :title="t('setup.profile.pageTitle')" :subtitle="t('setup.profile.pageSubtitle')" :show-tab-bar="false" show-back>
-    <!-- 功能5：引导流程进度条（当前步骤 = 1：基本信息）
-         2026-08-07 流程重构：按身份分支展示步骤（学生 4 步 / 非学生 3 步） -->
-    <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />
+  <view class="edit-page">
+    <!-- 页头：注册页同款插图全出血 + 底部渐隐 -->
+    <view class="hero">
+      <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
+      <view class="hero__fade" />
+      <!-- 返回：白底 78% 圆形 + 背景模糊 -->
+      <view
+        class="hero__back press-feedback"
+        role="button"
+        :aria-label="t('setup.profile.backAria')"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
+        @tap="goBack"
+      >
+        <image class="hero__back-icon" :src="ICONS.BACK" mode="aspectFit" alt="" />
+      </view>
+      <!-- 标题组：插图左上留白区 -->
+      <view class="hero__txt">
+        <text class="hero__eyebrow">XUNMI · CAMPUS</text>
+        <text class="hero__title">{{ t("setup.profile.pageTitle") }}</text>
+        <text class="hero__sub">{{ t("setup.profile.pageSubtitle") }}</text>
+      </view>
+    </view>
 
-    <!-- MP-R5-EDITPAGE：头像与照片墙（上传即落 media_asset → 管理后台 MediaAssets 可见可审核） -->
-    <SectionCard :title="t('setup.profile.sectionMedia')" :subtitle="t('setup.profile.mediaHint')" compact>
+    <!-- 表单卡：骑压插图 64rpx（32px），卡片阴影 -->
+    <view class="card">
+      <!-- 注册向导进度（仅 wizard 模式；edit 模式下「第 n 步」无意义） -->
+      <view v-if="entryMode === 'wizard'" class="card__progress">
+        <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />
+      </view>
+
+      <!-- 头像与照片（上传落 media_asset → 管理后台 MediaAssets 可见可审核） -->
+      <view class="card__cap" :class="{ 'card__cap--first': entryMode !== 'wizard' }">
+        <text>{{ t("setup.profile.sectionMedia") }}</text>
+        <view class="card__cap-line" />
+      </view>
+
       <view class="media-avatar-row">
-        <view class="media-avatar" role="button" :aria-label="t('setup.profile.avatarActionSheet')" @tap="onAvatarTap">
+        <view
+          class="media-avatar"
+          role="button"
+          :aria-label="t('setup.profile.avatarActionSheet')"
+          @tap="onAvatarTap"
+        >
           <image
             class="media-avatar__img"
             :src="avatarDisplayUrl || IMAGE_PATHS.DEFAULT_AVATAR"
@@ -627,8 +687,8 @@ async function save() {
         </view>
       </view>
 
-      <view class="form-row media-photo-head">
-        <text class="form-row__label">{{ t("setup.profile.photoWallLabel") }}</text>
+      <view class="media-photo-head">
+        <text class="media-photo-head__label">{{ t("setup.profile.photoWallLabel") }}</text>
         <text class="media-photo-head__hint">{{ t("setup.profile.photoWallHint") }}</text>
       </view>
       <view class="photo-grid">
@@ -637,7 +697,7 @@ async function save() {
           :key="idx"
           class="photo-grid__slot"
           role="button"
-          :aria-label="url ? t('setup.profile.photoWallLabel') + ' ' + (idx + 1) : t('setup.profile.photoWallLabel')"
+          :aria-label="t('setup.profile.photoWallLabel') + ' ' + (idx + 1)"
           @tap="onPhotoSlotTap(idx)"
         >
           <image v-if="url" class="photo-grid__img" :src="url" mode="aspectFill" />
@@ -652,11 +712,265 @@ async function save() {
           </view>
         </view>
       </view>
-    </SectionCard>
 
-    <!-- 2026-08-07 流程重构：身份选择（注册第 1 步）——
-         学生走校园认证分支，非学生直接跳过校园认证进入推荐偏好 -->
-    <SectionCard :title="t('setup.profile.identityTitle')" :subtitle="t('setup.profile.identityHint')" compact>
+      <!-- 基础信息 -->
+      <view class="card__cap">
+        <text>{{ t("setup.profile.sectionDraft") }}</text>
+        <view class="card__cap-line" />
+      </view>
+
+      <!-- 昵称 -->
+      <view
+        class="field"
+        :class="{
+          'field--focus': focusField === 'nickname' && !errors.nickname,
+          'field--error': !!errors.nickname,
+          shake: shakeField === 'nickname',
+        }"
+      >
+        <image class="field__icon" :src="ICONS.USER" mode="aspectFit" alt="" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.nickname"
+          :placeholder="t('setup.profile.placeholderNickname')"
+          placeholder-class="field__ph"
+          :maxlength="NICKNAME_MAX_LENGTH"
+          :aria-label="t('setup.profile.labelNickname')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @input="clearError('nickname')"
+          @focus="focusHandlers.nickname.focus()"
+          @blur="focusHandlers.nickname.blur()"
+        />
+      </view>
+      <view v-if="errors.nickname" class="field-error">
+        <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
+        <text class="field-error__text">{{ errors.nickname }}</text>
+      </view>
+
+      <!-- 个性签名 -->
+      <view
+        class="field field--area"
+        :class="{
+          'field--focus': focusField === 'bio' && !errors.bio,
+          'field--error': !!errors.bio,
+          shake: shakeField === 'bio',
+        }"
+      >
+        <image class="field__icon field__icon--area" :src="ICONS.MESSAGE" mode="aspectFit" alt="" />
+        <textarea
+          class="field__textarea"
+          v-model="form.bio"
+          :placeholder="t('setup.profile.placeholderBio')"
+          placeholder-class="field__ph"
+          :maxlength="BIO_MAX_LENGTH"
+          :aria-label="t('setup.profile.labelBio')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @input="clearError('bio')"
+          @focus="focusHandlers.bio.focus()"
+          @blur="focusHandlers.bio.blur()"
+        />
+      </view>
+      <view v-if="errors.bio" class="field-error">
+        <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
+        <text class="field-error__text">{{ errors.bio }}</text>
+      </view>
+
+      <!-- 年级（滚轮选择） -->
+      <view class="field" :class="{ 'field--error': !!errors.grade, shake: shakeField === 'grade' }">
+        <picker class="field__picker" mode="selector" :range="gradeOptions" @change="onGradeChange">
+          <view class="field__picker-inner">
+            <image class="field__icon" :src="ICONS.BOOK" mode="aspectFit" alt="" />
+            <text class="field__pick-text" :class="{ 'field__pick-text--filled': gradeLabel }">
+              {{ gradeLabel || t("setup.profile.pleaseSelect") }}
+            </text>
+          </view>
+        </picker>
+        <image class="field__chevron" :src="ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
+      </view>
+      <view v-if="errors.grade" class="field-error">
+        <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
+        <text class="field-error__text">{{ errors.grade }}</text>
+      </view>
+
+      <!-- 称呼偏好 -->
+      <view
+        class="field"
+        :class="{
+          'field--focus': focusField === 'pronouns' && !errors.pronouns,
+          'field--error': !!errors.pronouns,
+          shake: shakeField === 'pronouns',
+        }"
+      >
+        <image class="field__icon" :src="ICONS.SMILE" mode="aspectFit" alt="" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.pronouns"
+          :placeholder="t('setup.profile.placeholderPronouns')"
+          placeholder-class="field__ph"
+          :maxlength="20"
+          :aria-label="t('setup.profile.labelPronouns')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @input="clearError('pronouns')"
+          @focus="focusHandlers.pronouns.focus()"
+          @blur="focusHandlers.pronouns.blur()"
+        />
+      </view>
+      <view v-if="errors.pronouns" class="field-error">
+        <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
+        <text class="field-error__text">{{ errors.pronouns }}</text>
+      </view>
+
+      <!-- 基本资料（Phase E4 / M-07 扩展字段） -->
+      <view class="card__cap">
+        <text>{{ t("setup.profile.sectionBasic") }}</text>
+        <view class="card__cap-line" />
+      </view>
+
+      <!-- 身高（滚轮 140-200） -->
+      <view class="field" :class="{ 'field--error': !!errors.height, shake: shakeField === 'height' }">
+        <picker class="field__picker" mode="selector" :range="heightOptions" @change="onHeightChange">
+          <view class="field__picker-inner">
+            <image class="field__icon" :src="ICONS.RULER" mode="aspectFit" alt="" />
+            <text class="field__pick-text" :class="{ 'field__pick-text--filled': heightLabel }">
+              {{ heightLabel || t("setup.profile.pleaseSelect") }}
+            </text>
+          </view>
+        </picker>
+        <image class="field__chevron" :src="ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
+      </view>
+      <view v-if="errors.height" class="field-error">
+        <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
+        <text class="field-error__text">{{ errors.height }}</text>
+      </view>
+
+      <!-- 学历 -->
+      <view class="field">
+        <picker
+          class="field__picker"
+          mode="selector"
+          :range="educationLevelOptions"
+          range-key="label"
+          @change="onEducationLevelChange"
+        >
+          <view class="field__picker-inner">
+            <image class="field__icon" :src="ICONS.GRADUATION" mode="aspectFit" alt="" />
+            <text class="field__pick-text" :class="{ 'field__pick-text--filled': educationLevelLabel }">
+              {{ educationLevelLabel || t("setup.profile.pleaseSelect") }}
+            </text>
+          </view>
+        </picker>
+        <image class="field__chevron" :src="ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
+      </view>
+
+      <!-- 感情状态 -->
+      <view class="field">
+        <picker
+          class="field__picker"
+          mode="selector"
+          :range="relationshipStatusOptions"
+          range-key="label"
+          @change="onRelationshipStatusChange"
+        >
+          <view class="field__picker-inner">
+            <image class="field__icon" :src="ICONS.HEART" mode="aspectFit" alt="" />
+            <text class="field__pick-text" :class="{ 'field__pick-text--filled': relationshipStatusLabel }">
+              {{ relationshipStatusLabel || t("setup.profile.pleaseSelect") }}
+            </text>
+          </view>
+        </picker>
+        <image class="field__chevron" :src="ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
+      </view>
+
+      <!-- 籍贯省 -->
+      <view
+        class="field"
+        :class="{ 'field--focus': focusField === 'hometownProvince' }"
+      >
+        <image class="field__icon" :src="ICONS.MAP_PIN" mode="aspectFit" alt="" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.hometownProvince"
+          :placeholder="t('setup.profile.placeholderHometownProvince')"
+          placeholder-class="field__ph"
+          :maxlength="30"
+          :aria-label="t('setup.profile.labelHometownProvince')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @focus="focusHandlers.hometownProvince.focus()"
+          @blur="focusHandlers.hometownProvince.blur()"
+        />
+      </view>
+
+      <!-- 籍贯市 -->
+      <view
+        class="field"
+        :class="{ 'field--focus': focusField === 'hometownCity' }"
+      >
+        <image class="field__icon" :src="ICONS.MAP_PIN" mode="aspectFit" alt="" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.hometownCity"
+          :placeholder="t('setup.profile.placeholderHometownCity')"
+          placeholder-class="field__ph"
+          :maxlength="30"
+          :aria-label="t('setup.profile.labelHometownCity')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @focus="focusHandlers.hometownCity.focus()"
+          @blur="focusHandlers.hometownCity.blur()"
+        />
+      </view>
+
+      <!-- 未来城市 -->
+      <view class="field" :class="{ 'field--focus': focusField === 'futureCity' }">
+        <image class="field__icon" :src="ICONS.BUILDING" mode="aspectFit" alt="" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.futureCity"
+          :placeholder="t('setup.profile.placeholderFutureCity')"
+          placeholder-class="field__ph"
+          :maxlength="30"
+          :aria-label="t('setup.profile.labelFutureCity')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @focus="focusHandlers.futureCity.focus()"
+          @blur="focusHandlers.futureCity.blur()"
+        />
+      </view>
+
+      <!-- 理想型画像（参与匹配加分） -->
+      <view
+        class="field field--area"
+        :class="{ 'field--focus': focusField === 'expectedPartner' }"
+      >
+        <image class="field__icon field__icon--area" :src="ICONS.SPARKLES" mode="aspectFit" alt="" />
+        <textarea
+          class="field__textarea"
+          v-model="form.expectedPartner"
+          :placeholder="t('setup.profile.placeholderExpectedPartner')"
+          placeholder-class="field__ph"
+          :maxlength="200"
+          :aria-label="t('setup.profile.labelExpectedPartner')"
+          :disabled="isSubmitting"
+          cursor-spacing="120"
+          @focus="focusHandlers.expectedPartner.focus()"
+          @blur="focusHandlers.expectedPartner.blur()"
+        />
+      </view>
+
+      <!-- 你的身份（注册第 1 步；学生走校园认证分支，非学生跳过） -->
+      <view class="card__cap">
+        <text>{{ t("setup.profile.identityTitle") }}</text>
+        <view class="card__cap-line" />
+      </view>
       <view class="identity-group">
         <view
           v-for="opt in identityOptions"
@@ -677,143 +991,367 @@ async function save() {
           </view>
         </view>
       </view>
-    </SectionCard>
 
-    <SectionCard :title="t('setup.profile.sectionDraft')" compact>
-      <!-- R3（SETUP-002）：补字段标签与占位符——原昵称/签名渲染为无标签裸文本，无可编辑线索 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelNickname') }}</text>
+      <!-- 主按钮：置灰仍可点，给「哪里没填对」定位提示（对齐注册页） -->
+      <view
+        class="submit-btn"
+        :class="{ 'submit-btn--disabled': !formComplete, 'submit-btn--loading': isSubmitting }"
+        role="button"
+        :aria-label="isSubmitting ? t('setup.profile.submitSaving') : entryMode === 'edit' ? t('setup.profile.submitSaveEdit') : t('setup.profile.submitSave')"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
+        @tap="save"
+      >
+        <view v-if="isSubmitting" class="submit-btn__spinner" />
+        <text class="submit-btn__text">
+          {{
+            isSubmitting
+              ? t("setup.profile.submitSaving")
+              : entryMode === "edit"
+                ? t("setup.profile.submitSaveEdit")
+                : t("setup.profile.submitSave")
+          }}
+        </text>
       </view>
-      <input
-  cursor-spacing="20" v-model="form.nickname" class="field" :placeholder="t('setup.profile.placeholderNickname')" :maxlength="NICKNAME_MAX_LENGTH" :aria-label="t('setup.profile.labelNickname')" />
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelBio') }}</text>
-      </view>
-      <textarea
-  cursor-spacing="20" v-model="form.bio" class="field field--textarea" :placeholder="t('setup.profile.placeholderBio')" :maxlength="BIO_MAX_LENGTH" />
-      <!-- 2026-08-07 重构：年级改滚轮选择（替代自由输入，标准化信息用选择器） -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelGrade') }}</text>
-        <picker
-          mode="selector"
-          :range="gradeOptions"
-          @change="onGradeChange"
-        >
-          <view class="field field--inline field--picker">
-            <text :class="['field__text', !gradeLabel && 'field__text--placeholder']">
-              {{ gradeLabel || t('setup.profile.pleaseSelect') }}
-            </text>
-            <text class="field__arrow">›</text>
-          </view>
-        </picker>
-      </view>
-      <input
-  cursor-spacing="20" v-model="form.pronouns" class="field" :placeholder="t('setup.profile.placeholderPronouns')" :aria-label="t('setup.profile.labelPronouns')" />
-    </SectionCard>
+    </view>
 
-    <!-- Phase E4 / M-07：扩展资料字段 -->
-    <SectionCard :title="t('setup.profile.sectionBasic')" compact>
-      <!-- 身高（2026-08-07 重构：滚轮选择 140-200，替代输入框） -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelHeight') }}</text>
-        <picker
-          mode="selector"
-          :range="heightOptions"
-          @change="onHeightChange"
-        >
-          <view class="field field--inline field--picker">
-            <text :class="['field__text', !heightLabel && 'field__text--placeholder']">
-              {{ heightLabel || t('setup.profile.pleaseSelect') }}
-            </text>
-            <text class="field__arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <!-- 学历 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelEducation') }}</text>
-        <picker
-          mode="selector"
-          :range="educationLevelOptions"
-          range-key="label"
-          @change="onEducationLevelChange"
-        >
-          <view class="field field--inline field--picker">
-            <text :class="['field__text', !educationLevelLabel && 'field__text--placeholder']">
-              {{ educationLevelLabel || t('setup.profile.pleaseSelect') }}
-            </text>
-            <text class="field__arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <!-- 感情状态 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelRelationship') }}</text>
-        <picker
-          mode="selector"
-          :range="relationshipStatusOptions"
-          range-key="label"
-          @change="onRelationshipStatusChange"
-        >
-          <view class="field field--inline field--picker">
-            <text :class="['field__text', !relationshipStatusLabel && 'field__text--placeholder']">
-              {{ relationshipStatusLabel || t('setup.profile.pleaseSelect') }}
-            </text>
-            <text class="field__arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <!-- 籍贯省 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelHometownProvince') }}</text>
-        <input
-  cursor-spacing="20" v-model="form.hometownProvince" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownProvince')" :aria-label="t('setup.profile.placeholderHometownProvince')" />
-      </view>
-
-      <!-- 籍贯市 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelHometownCity') }}</text>
-        <input
-  cursor-spacing="20" v-model="form.hometownCity" class="field field--inline" :placeholder="t('setup.profile.placeholderHometownCity')" :aria-label="t('setup.profile.placeholderHometownCity')" />
-      </view>
-
-      <!-- 未来城市 -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelFutureCity') }}</text>
-        <input
-  cursor-spacing="20" v-model="form.futureCity" class="field field--inline" :placeholder="t('setup.profile.placeholderFutureCity')" :aria-label="t('setup.profile.placeholderFutureCity')" />
-      </view>
-
-      <!-- 2026-08-11 匹配精细化：理想型画像（关键词描述，参与匹配加分） -->
-      <view class="form-row">
-        <text class="form-row__label">{{ t('setup.profile.labelExpectedPartner') }}</text>
-        <textarea
-  cursor-spacing="20"
-          v-model="form.expectedPartner"
-          class="field field--textarea"
-          :maxlength="200"
-          :placeholder="t('setup.profile.placeholderExpectedPartner')"
-          :aria-label="t('setup.profile.labelExpectedPartner')"
-        />
-      </view>
-    </SectionCard>
-
-    <!-- 2026-08-07 重构：移除「未来规划」「个性标签」「更换背景」模块——
-         标签与规划属进阶个性化内容（注册后可在「我的」完善），
-         背景属装扮设置；基础资料回归「少而精、快速完成」原则。 -->
-
-    <BottomActionBar
-      :primary-label="isSubmitting ? t('setup.profile.submitSaving') : t('setup.profile.submitSave')"
-      @primary="save"
-    />
-  </AppShell>
+    <!-- 底部安全说明：降低填表焦虑（对齐注册页） -->
+    <text class="safety-note">{{ t("setup.profile.bottomNote") }}</text>
+  </view>
 </template>
 
 <style scoped lang="scss">
-/* ===== MP-R5-EDITPAGE：头像与照片墙 ===== */
+/* ============================================================
+ * MP-R6-EDITPAGE：样式对齐注册页设计规范 v1.0
+ * 令牌来源 theme/design-variables.scss v4.0.0；375×812（rpx = px × 2）
+ * ============================================================ */
+.edit-page {
+  min-height: 100vh;
+  background: var(--c-bg-page, #eef7f2);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx);
+}
+
+/* ---------------- 页头（与注册页同构） ---------------- */
+.hero {
+  position: relative;
+  width: 750rpx;
+  height: 480rpx;
+}
+
+.hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 底部 104rpx 渐隐到页面底色，消除图片与底色硬接缝 */
+.hero__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 104rpx;
+  background: linear-gradient(180deg, rgba(238, 247, 242, 0) 0%, var(--c-bg-page, #eef7f2) 100%);
+  pointer-events: none;
+}
+
+.hero__back {
+  position: absolute;
+  left: 32rpx;
+  top: 88rpx;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
+  z-index: 3;
+}
+
+.hero__back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.hero__txt {
+  position: absolute;
+  left: 48rpx;
+  top: 208rpx;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.hero__eyebrow {
+  font-size: 19rpx;
+  font-weight: 800;
+  letter-spacing: 4rpx;
+  color: #1f8d6a;
+  margin-bottom: 10rpx;
+}
+
+.hero__title {
+  font-size: 52rpx;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--c-text-primary, #1a1e1c);
+}
+
+.hero__sub {
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  line-height: 1.55;
+  color: var(--c-text-secondary, #4a524e);
+}
+
+/* ---------------- 表单卡（与注册页同构） ---------------- */
+.card {
+  position: relative;
+  z-index: 2;
+  margin: -64rpx 40rpx 0;
+  background: var(--c-bg-container, #ffffff);
+  border-radius: 40rpx;
+  padding: 40rpx;
+  box-shadow:
+    0 16rpx 48rpx rgba(15, 23, 42, 0.06),
+    0 4rpx 16rpx rgba(15, 23, 42, 0.04);
+}
+
+.card__progress {
+  margin-bottom: 32rpx;
+}
+
+.card__cap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 40rpx 0 24rpx;
+
+  text {
+    font-size: 24rpx;
+    font-weight: 700;
+    color: var(--c-text-primary, #1a1e1c);
+  }
+}
+
+/* 卡内首个 cap（无进度条时）收紧上边距 */
+.card__cap--first {
+  margin-top: 8rpx;
+}
+
+.card__cap-line {
+  flex: 1;
+  height: 2rpx;
+  background: var(--c-border-light, #eef2f0);
+}
+
+/* ---------------- 字段（高 96rpx · 圆角 24rpx，与注册页同构） ---------------- */
+.field {
+  display: flex;
+  align-items: center;
+  min-height: 96rpx;
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  margin-bottom: 24rpx;
+  background: var(--c-bg-surface, #f7faf9);
+  border: 2rpx solid var(--c-border-light, #eef2f0);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field--focus {
+  background: #ffffff;
+  border-color: var(--c-brand, #36c99a);
+  border-width: 3rpx;
+  /* 边框加粗 1rpx 视觉补偿，避免内容抖动 */
+  padding-left: 27rpx;
+  box-shadow: 0 0 0 6rpx rgba(54, 201, 154, 0.12);
+}
+
+.field--error {
+  background: #fef5f6;
+  border-color: var(--c-error, #e5454d);
+  border-width: 3rpx;
+  padding-left: 27rpx;
+  box-shadow: 0 0 0 6rpx rgba(229, 69, 77, 0.1);
+}
+
+.field__icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.field__input {
+  flex: 1;
+  height: 96rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--c-text-primary, #1a1e1c);
+}
+
+.field__ph {
+  color: var(--c-text-placeholder, #9aa39f);
+  font-weight: 400;
+}
+
+/* 多行字段：图标顶置，textarea 自适应 */
+.field--area {
+  align-items: flex-start;
+  padding-top: 20rpx;
+  padding-bottom: 20rpx;
+}
+
+.field__icon--area {
+  margin-top: 10rpx;
+}
+
+.field__textarea {
+  flex: 1;
+  min-height: 120rpx;
+  height: auto;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--c-text-primary, #1a1e1c);
+}
+
+/* picker 字段：flex-1 撑满，右侧 chevron 指示可选 */
+.field__picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.field__picker-inner {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+}
+
+.field__pick-text {
+  font-size: 30rpx;
+  color: var(--c-text-placeholder, #9aa39f);
+}
+
+.field__pick-text--filled {
+  color: var(--c-text-primary, #1a1e1c);
+  font-weight: 500;
+}
+
+.field__chevron {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* 行内错误：管「哪个字段错了」，常驻至重新输入清除 */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: -12rpx 0 20rpx 8rpx;
+}
+
+.field-error__icon {
+  width: 26rpx;
+  height: 26rpx;
+}
+
+.field-error__text {
+  font-size: 24rpx;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--c-error, #e5454d);
+}
+
+/* ---------------- 主按钮（高 96rpx · 圆角 24rpx，与注册页同构） ---------------- */
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  height: 96rpx;
+  margin-top: 40rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);
+  box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.submit-btn__text {
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 0.8rpx;
+  color: #ffffff;
+}
+
+.submit-btn--disabled {
+  background: var(--c-status-disabled, #dce5e2);
+  box-shadow: none;
+}
+
+.submit-btn--loading {
+  opacity: 0.72;
+}
+
+.submit-btn__spinner {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ---------------- 底部说明 ---------------- */
+.safety-note {
+  display: block;
+  margin: 28rpx 48rpx 0;
+  font-size: 21rpx;
+  line-height: 1.75;
+  color: var(--c-text-placeholder, #9aa39f);
+  text-align: center;
+}
+
+/* ---------------- 动效 ---------------- */
+.press-feedback {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.press-feedback--active {
+  transform: scale(0.98);
+  opacity: 0.92;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8rpx);
+  }
+  75% {
+    transform: translateX(8rpx);
+  }
+}
+
+.shake {
+  animation: shake-x 0.28s ease 2;
+}
+
+/* ===== MP-R5-EDITPAGE：头像与照片墙（配色对齐注册页设计令牌） ===== */
 .media-avatar-row {
   display: flex;
   align-items: center;
@@ -866,7 +1404,7 @@ async function save() {
 }
 
 .photo-grid__mask {
-  border-radius: var(--r-lg, 18rpx);
+  border-radius: 24rpx;
 }
 
 .media-avatar__mask-text,
@@ -897,8 +1435,17 @@ async function save() {
 }
 
 .media-photo-head {
-  margin-top: 8rpx;
+  display: flex;
   align-items: baseline;
+  gap: 16rpx;
+  margin-top: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.media-photo-head__label {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1a1e1c);
 }
 
 .media-photo-head__hint {
@@ -910,14 +1457,13 @@ async function save() {
   display: flex;
   flex-wrap: wrap;
   gap: 16rpx;
-  margin-top: 16rpx;
 }
 
 .photo-grid__slot {
   position: relative;
   width: calc((100% - 32rpx) / 3);
   height: 200rpx;
-  border-radius: var(--r-lg, 18rpx);
+  border-radius: 24rpx;
   overflow: hidden;
 }
 
@@ -933,7 +1479,7 @@ async function save() {
   width: 100%;
   height: 100%;
   border: 2rpx dashed var(--c-border-default, #dde3e0);
-  border-radius: var(--r-lg, 18rpx);
+  border-radius: 24rpx;
   background: var(--c-bg-surface, #f7faf9);
 }
 
@@ -962,206 +1508,81 @@ async function save() {
   color: #ffffff;
 }
 
-.field {
-  width: 100%;
-  min-height: 88rpx;
-  padding: 18rpx;
-  box-sizing: border-box;
-  border-radius: var(--r-lg, 18rpx);
-  background: #ffffff; /* R16：纯白背景 */
-}
-
-.field--textarea {
-  /* R4：180rpx 预留多行高度导致单行内容下出现死空间，收紧为两行 */
-  min-height: 120rpx;
-  height: 120rpx;
-}
-
-.field--inline {
-  display: flex;
-  align-items: center;
-  min-height: 72rpx;
-  padding: 12rpx 18rpx;
-}
-
-.field--picker {
-  justify-content: space-between;
-}
-
-.field__text {
-  font-size: var(--fs-md);
-  color: var(--c-text-primary);
-
-  &--placeholder {
-    color: var(--c-text-placeholder);
-  }
-}
-
-.field__arrow {
-  font-size: var(--fs-2xl);
-  color: var(--c-text-tertiary);
-  line-height: 1;
-}
-
-/* Phase E4 / M-07：表单行 */
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-4);
-
-  &--block {
-    flex-direction: column;
-  }
-}
-
-.form-row__label {
-  font-size: var(--fs-sm);
-  color: var(--c-text-secondary);
-  font-weight: 500;
-}
-
-/* 2026-08-07 流程重构：身份选择（单选卡片） */
+/* ---------------- 你的身份（注册页字段语言的单选卡） ---------------- */
 .identity-group {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: 16rpx;
 }
 
 .identity-option {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  background: #ffffff; /* R16：纯白背景 */
-  border: 2rpx solid var(--c-border-light);
-  transition: all var(--d-normal, 200ms) ease;
+  gap: 20rpx;
+  min-height: 96rpx;
+  padding: 20rpx 28rpx;
+  border-radius: 24rpx;
+  background: var(--c-bg-surface, #f7faf9);
+  border: 2rpx solid var(--c-border-light, #eef2f0);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 
   &--selected {
-    border-color: var(--c-brand-700);
-    background: var(--c-bg-brand);
+    background: #ffffff;
+    border-color: var(--c-brand, #36c99a);
+    border-width: 3rpx;
+    padding-left: 27rpx;
+    box-shadow: 0 0 0 6rpx rgba(54, 201, 154, 0.12);
   }
 }
 
 .identity-option__radio {
-  width: 44rpx;
-  height: 44rpx;
+  width: 40rpx;
+  height: 40rpx;
   border-radius: var(--r-circle, 50%);
-  border: 3rpx solid var(--c-border-default);
+  border: 3rpx solid var(--c-border-default, #dde3e0);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 
   &--checked {
-    border-color: var(--c-brand-700);
+    border-color: var(--c-brand, #36c99a);
   }
 }
 
 .identity-option__dot {
-  width: 26rpx;
-  height: 26rpx;
+  width: 22rpx;
+  height: 22rpx;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-brand-700);
+  background: var(--c-brand, #36c99a);
 }
 
 .identity-option__main {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: 4rpx;
   min-width: 0;
 }
 
 .identity-option__label {
-  font-size: var(--fs-lg);
-  color: var(--c-text-primary);
+  font-size: 28rpx;
+  color: var(--c-text-primary, #1a1e1c);
   font-weight: 600;
 }
 
 .identity-option__desc {
-  font-size: var(--fs-sm);
-  color: var(--c-text-secondary);
+  font-size: 22rpx;
+  color: var(--c-text-tertiary, #6b7571);
   line-height: 1.5;
 }
 
 .identity-option--selected .identity-option__label {
-  color: var(--c-brand-700);
+  color: #1f8d6a;
 }
 
-/* Phase E4 / M-07：标签 chip 组 */
-.tag-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-
-.tag-chip {
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--r-full);
-  background: #ffffff; /* R16：纯白背景 */
-  border: 1rpx solid var(--c-border-default);
-
-  &--selected {
-    background: var(--c-bg-brand);
-    border-color: var(--c-brand-200);
-  }
-
-  &--hover {
-    transform: scale(0.96);
-    opacity: 0.85;
-  }
-}
-
-.tag-chip__text {
-  font-size: var(--fs-sm);
-  color: var(--c-text-primary);
-}
-
-.tag-chip--selected .tag-chip__text {
-  color: var(--c-brand-700);
-  font-weight: 600;
-}
-
-/* Phase D4 · 更换背景入口 */
-.bg-entry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-4) var(--sp-3);
-  border-radius: var(--r-lg);
-  background: #ffffff; /* R16：纯白背景 */
-  transition: transform var(--d-fast, 120ms) ease;
-
-  &--hover {
-    transform: scale(0.98);
-    background: var(--c-bg-secondary);
-  }
-}
-
-.bg-entry__text {
-  font-size: var(--fs-md);
-  color: var(--c-text-primary);
-  font-weight: 500;
-}
-
-.bg-entry__arrow {
-  font-size: var(--fs-2xl);
-  color: var(--c-text-tertiary);
-  line-height: 1;
-}
-
-/* 2026-08-31 Phase 1：向导步骤切换渐入（消除整屏空白转场观感） */
-@keyframes wizard-enter {
-  from { opacity: 0; transform: translateY(12rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-
-
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+/* 页面背景与注册页统一浅绿（设计规范 §2.2：不得出现白/灰断层） */
 page {
-  background: #ffffff;
+  background: var(--c-bg-page, #eef7f2);
 }
-
 </style>

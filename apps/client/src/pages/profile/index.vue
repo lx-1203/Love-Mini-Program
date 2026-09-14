@@ -891,7 +891,8 @@ function onProfileShellMoreTap(key: string) {
     return;
   }
   const map: Record<string, string> = {
-    profile: "/subpackages/setup/profile/index",
+    // MP-R6-EDITPAGE：编辑模式入口（保存后返回，不进注册向导分流）
+    profile: "/subpackages/setup/profile/index?entry=edit",
     interest: "/subpackages/setup/interest/index",
     checkin: "/subpackages/profile-extra/profile/tasks",
     privacy: "/subpackages/profile-extra/settings/index",
@@ -1183,7 +1184,8 @@ function copyInviteCode(): void {
  */
 function goToProfileSetup() {
   lightHaptic();
-  openAppPath("/subpackages/setup/profile/index");
+  // MP-R6-EDITPAGE：entry=edit → 编辑模式（保存后返回本页，不再被投递到注册向导下一步）
+  openAppPath("/subpackages/setup/profile/index?entry=edit");
 }
 
 /**

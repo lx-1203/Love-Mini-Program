@@ -630,6 +630,16 @@ export const IMAGE_PATHS = {
     BACK:      '/static/assets/icons/register/back.svg',
     CLEAR:     '/static/assets/icons/register/clear.svg',
     ARROW_RIGHT: '/static/assets/icons/register/arrow-right.svg',
+    // MP-R6-EDITPAGE（2026-09-14）：编辑资料页对齐注册页设计语言，补齐字段图标（同 stroke #4A524E / 1.8 体系）
+    BOOK:      '/static/assets/icons/register/book.svg',
+    RULER:     '/static/assets/icons/register/ruler.svg',
+    GRADUATION: '/static/assets/icons/register/graduation-cap.svg',
+    HEART:     '/static/assets/icons/register/heart.svg',
+    MAP_PIN:   '/static/assets/icons/register/map-pin.svg',
+    BUILDING:  '/static/assets/icons/register/building.svg',
+    SPARKLES:  '/static/assets/icons/register/sparkles.svg',
+    SMILE:     '/static/assets/icons/register/smile.svg',
+    CHEVRON_RIGHT: '/static/assets/icons/register/chevron-right.svg',
   },
 
   /** 匹配卡素材（2026-09-12：无照片用户的卡片兜底主视觉，640x1024 JPEG） */
