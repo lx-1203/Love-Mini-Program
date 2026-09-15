@@ -66,9 +66,7 @@ import { useAppConfigStore } from "../../stores/app-config";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
 import { designTokens } from "../../theme/tokens";
 // P2.6：语音播放 URL 解析（mock:// 演示态 / /api/v1/media/ 鉴权代理真实 URL）
-import { resolveMediaUrl } from "../../utils/media";
-// 2026-08-08：pexels 外链本地化兜底（mp 端无法加载外链图，见 utils/image-local.ts）
-import { toLocalImage } from "../../utils/image-local";
+import { resolveMediaUrl, resolveMediaUrls } from "../../utils/media";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -422,8 +420,20 @@ watch([profileBackgroundUrl, otherBgUrl], () => {
  */
 const isUnlocked = computed(() => sessionStore.isLoggedIn);
 
-/** 完善度百分比（0-100），用于未完善时的引导横幅 */
-const completionPercent = computed(() => sessionStore.profileCompletion === 100 ? 85 : sessionStore.profileCompletion);
+/**
+ * 完善度百分比（0-100），用于未完善时的引导横幅。
+ * MP-R7-PROFILE-004（2026-09-15）：原实现只读 sessionStore.profileCompletion（登录会话
+ * 字段加权快照，avatarUrl/照片墙/年级等后端字段未下发，永远算不出真实进度，头像照片
+ * 上传后仍显示注册时的 10%）。现优先取 /profile/basic 下发的服务端权威值
+ * profileCompletion（users+user_basic_profile 全字段口径），无值时回退会话快照。
+ */
+const completionPercent = computed(() => {
+  const server = (profileStore.basicProfile as { profileCompletion?: number } | null)?.profileCompletion;
+  if (typeof server === "number" && Number.isFinite(server) && server > 0) {
+    return Math.min(100, Math.round(server));
+  }
+  return sessionStore.profileCompletion === 100 ? 85 : sessionStore.profileCompletion;
+});
 
 /**
  * 认证徽章级别（Phase D3 · 集成 VerificationBadge 到 profile 头部）
@@ -777,12 +787,14 @@ const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | n
   const pv = profileView.value;
   // 2026-09-06：我的故事封面与页头头像同源（pv.avatarUrl = users.avatar_url），
   // 替代与本号人设割裂的静态人像 p5~p7；会话视图无头像字段，禁止用固定兜底图
-  const ownAvatar = pv.avatarUrl || "/static/assets/images/people/person-09.png";
   return {
     id: Number(sessionStore.userSession?.userId ?? 0),
     basic: {
       name: pv.displayName,
-      avatar: pv.avatarUrl,
+      // MP-R7-PROFILE-001（2026-09-15）：avatarUrl 为 /api/v1/media/** 相对路径，
+      // 直连 <image> 会被当包内文件加载失败（头像白圈）。渲染边界统一经
+      // resolveMediaUrl 拼 apiRoot+token；store 内保持原始路径（审核映射以原始 URL 为键）。
+      avatar: pv.avatarUrl ? resolveMediaUrl(pv.avatarUrl) : "",
       age: null,
       location: locationLabel.value,
     },
@@ -792,7 +804,9 @@ const mineProfileDTO = computed<import("../../types/profile").UserProfileDTO | n
     },
     intro: { bio: pv.bio, tags: profileTagChips.value },
     relationship: { goal: "认真恋爱", expectation: [] },
-    media: { cover: profileBackgroundUrl.value, photos: photoGallery.value, videos: [] },
+    // MP-R7-PROFILE-002（2026-09-15）：photoGallery 原始 /api/v1/media/** 相对路径直连
+    // MyStory 相册 <image> 加载失败（缩略图白板）。同 MP-R7-PROFILE-001 在 DTO 边界解析。
+    media: { cover: profileBackgroundUrl.value, photos: resolveMediaUrls(photoGallery.value), videos: [] },
     socialProof: mineSocialProof.value,
     relation: { liked: false, matched: false, commonInterests: [] },
     posts: minePosts.value,
@@ -847,9 +861,11 @@ function onProfileShellStoryPhoto(index: number) {
   }
   openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(daily.id)}`);
 }
-/** R16：相册缩略图点击 → 恋爱相册页（原误入帖子访问历史） */
+/** R16：相册缩略图点击 → 恋爱相册页（原误入帖子访问历史）。
+ *  MP-R7-PROFILE-005（2026-09-15）：ROUTES.ALBUM 不存在（运行时 undefined → 点击无效），
+ *  修正为 ROUTES.PROFILE.ALBUM（constants/routes.ts PROFILE 模块）。 */
 function onProfileShellTapAlbum(_index: number) {
-  openAppPath(ROUTES.ALBUM);
+  openAppPath(ROUTES.PROFILE.ALBUM);
 }
 function onProfileShellStoryVideo() {
   openAppPath(ROUTES.VILLAGE.HISTORY);
@@ -948,8 +964,10 @@ function handleAvatarTap() {
   if (!isOwnProfile.value) {
     const url = profileView.value.avatarUrl;
     if (!url) return;
+    // MP-R7-PROFILE-001：previewImage 与 <image> 同理需绝对 URL+token，原始相对路径加载失败
+    const previewUrl = resolveMediaUrl(url);
     try {
-      uni.previewImage({ urls: [url], current: url });
+      uni.previewImage({ urls: [previewUrl], current: previewUrl });
     } catch (_e) {
       // 预览失败静默
     }
@@ -966,8 +984,9 @@ function handleAvatarTap() {
       if (idx === 0) {
         const url = profileView.value.avatarUrl;
         if (!url) return;
+        const previewUrl = resolveMediaUrl(url);
         try {
-          uni.previewImage({ urls: [url], current: url });
+          uni.previewImage({ urls: [previewUrl], current: previewUrl });
         } catch (_e) {
           // 预览失败静默
         }
@@ -2036,7 +2055,9 @@ onUnload(() => {
               class="photo-grid__img-wrap"
               @longpress="handleRemovePhoto(cell.index)"
             >
-              <SafeImage class="photo-grid__img" :src="toLocalImage(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
+              <!-- MP-R7-PROFILE-003（2026-09-15）：toLocalImage 仅兜底 pexels/mock 外链，
+                   用户上传的 /api/v1/media/** 相对路径会原样直连 <image> 加载失败，统一走 resolveMediaUrl -->
+              <SafeImage class="photo-grid__img" :src="resolveMediaUrl(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
               <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
               <view
                 v-if="cell.auditStatus === 'pending'"
@@ -2253,7 +2274,7 @@ onUnload(() => {
             v-if="headerBgUrl"
             class="profile-bg__img"
             :class="{ 'profile-bg__img--loaded': bgLoaded }"
-            :src="toLocalImage(headerBgUrl)"
+            :src="resolveMediaUrl(headerBgUrl)"
             mode="widthFix" lazy-load alt=""
             @load="bgLoaded = true"
           />
@@ -2616,7 +2637,9 @@ onUnload(() => {
               class="photo-grid__img-wrap"
               @longpress="handleRemovePhoto(cell.index)"
             >
-              <SafeImage class="photo-grid__img" :src="toLocalImage(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
+              <!-- MP-R7-PROFILE-003（2026-09-15）：toLocalImage 仅兜底 pexels/mock 外链，
+                   用户上传的 /api/v1/media/** 相对路径会原样直连 <image> 加载失败，统一走 resolveMediaUrl -->
+              <SafeImage class="photo-grid__img" :src="resolveMediaUrl(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
               <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
               <view
                 v-if="cell.auditStatus === 'pending'"

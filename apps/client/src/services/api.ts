@@ -19,7 +19,7 @@ import type {
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
 import { appEnv, isDev, isMockMode } from "./env";
-import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath } from "./http";
+import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath, hashString } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
 // B3 恋爱小纸条：悄悄话解锁视图类型（后端 WhisperUnlockView 镜像）
@@ -175,6 +175,11 @@ function uploadFileViaUni<TResponse>(
       formData: extraFields,
       header: {
         Authorization: `Bearer ${getToken()}`,
+        // MP-R7-UPLOAD-001（2026-09-15）：后端 @Idempotent 对写端点（含 /media/upload）
+        // 强制要求 Idempotency-Key 头，缺失返回 422「缺少 Idempotency-Key」。uni.uploadFile
+        // 不经过 http.ts 请求拦截器（写请求在那里自动补幂等键），须在此手动补齐；
+        // 与拦截器同口径按 endpoint+文件名稳定生成，同操作重试命中同一 key 被后端去重。
+        "Idempotency-Key": `idem-UPLOAD-${hashString(`${endpoint}|${file.name ?? file.path ?? ""}`)}`,
       },
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {

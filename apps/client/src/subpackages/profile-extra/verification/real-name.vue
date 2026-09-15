@@ -20,7 +20,7 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { request } from "../../../services/http";
 import { clientApi } from "../../../services/api";
 // infra R2-00131：统一图片选择封装（含隐私授权守卫 + 大小校验）
-import { chooseImages } from "../../../utils/media";
+import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
 
 const { t } = useI18n();
 
@@ -224,8 +224,10 @@ function submitRealName() {
  */
 async function submitRealNameReal(): Promise<void> {
   try {
+    // MP-R7-REALNAME-001（2026-09-15）：本地临时路径（DevTools http://tmp/、真机 wxfile://）
+    // 不能以 `/^https?:\/\//` 与服务器 URL 区分，须用 isUploadedMediaUrl 判定后上传。
     const upload = async (path: string, name: string): Promise<string> => {
-      if (/^https?:\/\//.test(path)) return path;
+      if (isUploadedMediaUrl(path)) return path;
       const uploaded = await clientApi.uploadPostImage({ name, path });
       return uploaded?.url ?? path;
     };

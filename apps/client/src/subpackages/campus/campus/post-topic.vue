@@ -24,6 +24,8 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
+import { isUploadedMediaUrl } from "../../../utils/media";
 import { UI_LIMITS } from "../../../constants/limits";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../../components/village/TopicSelector.vue";
@@ -170,10 +172,10 @@ async function submitTopic() {
     // 2026-08-26 P7：配图本地临时路径（tempFilePath）在 real 模式先经
     // clientApi.uploadPostImage 逐张上传换取可访问 URL，mock 模式保留原始路径。
     let submitImages = images.value;
-    if (images.value.some((img) => !/^https?:\/\//.test(img)) && !useMock()) {
+    if (images.value.some((img) => !isUploadedMediaUrl(img)) && !useMock()) {
       const uploaded: string[] = [];
       for (const img of images.value) {
-        if (/^https?:\/\//.test(img)) {
+        if (isUploadedMediaUrl(img)) {
           uploaded.push(img);
           continue;
         }

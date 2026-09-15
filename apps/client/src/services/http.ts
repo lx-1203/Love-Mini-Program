@@ -241,7 +241,7 @@ addRequestInterceptor((config) => {
  * method + 归一化 URL + body 内容哈希。相同操作（同 URL 同 body）的重试
  * 命中同一 key，被后端幂等去重；不同操作（body 不同）key 不同，互不影响。
  */
-function hashString(input: string): string {
+export function hashString(input: string): string {
   // FNV-1a 32 位哈希（非加密用途：仅用于幂等键稳定性，无需强哈希）
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {

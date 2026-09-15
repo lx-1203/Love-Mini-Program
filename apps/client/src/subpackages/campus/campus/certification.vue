@@ -24,7 +24,7 @@ import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // infra R2-00131：统一图片选择封装（隐私授权守卫 + 大小校验）
-import { chooseImages } from "../../../utils/media";
+import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
 
 const campusStore = useCampusStore();
 // 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。
@@ -160,7 +160,7 @@ async function submitCert() {
     // /media/upload 上传换取可访问 URL 再提交，否则审核人员无法查看学生证。
     // mock 模式下保持本地路径（clientApi.uploadPostImage 内部 mock 分支返回原路径）。
     let uploadUrl = studentCardUrl.value;
-    if (!useMock() && !/^https?:\/\//.test(uploadUrl)) {
+    if (!useMock() && !isUploadedMediaUrl(uploadUrl)) {
       const uploaded = await clientApi.uploadPostImage({
         name: "studentCard.jpg",
         path: uploadUrl,
@@ -169,7 +169,7 @@ async function submitCert() {
     }
     // B1-3：学信网截图同样先上传换取可访问 URL（real 模式）
     let chsiUploadUrl = chsiScreenshotUrl.value;
-    if (!useMock() && chsiUploadUrl && !/^https?:\/\//.test(chsiUploadUrl)) {
+    if (!useMock() && chsiUploadUrl && !isUploadedMediaUrl(chsiUploadUrl)) {
       const uploaded = await clientApi.uploadPostImage({
         name: "chsi-screenshot.jpg",
         path: chsiUploadUrl,

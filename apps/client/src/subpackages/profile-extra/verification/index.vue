@@ -8,6 +8,8 @@ import { ref, computed, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
+// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
+import { isUploadedMediaUrl } from "../../../utils/media";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -222,7 +224,7 @@ async function submitVerificationReal(): Promise<void> {
   try {
     let cardUrl = uploadedImagePath.value;
     // 非 http(s) 开头视为本地临时路径：上传换取可访问 URL，否则审核人员无法查看学生证
-    if (!/^https?:\/\//.test(cardUrl)) {
+    if (!isUploadedMediaUrl(cardUrl)) {
       const uploaded = await clientApi.uploadPostImage({
         name: "love-verification-id-card",
         path: cardUrl,

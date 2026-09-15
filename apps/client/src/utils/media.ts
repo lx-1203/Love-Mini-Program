@@ -86,6 +86,37 @@ const LOCAL_ASSET_PREFIXES: string[] = [
 ];
 
 /**
+ * 判断路径是否为「已上传到服务器」的远程媒体 URL。
+ *
+ * <p>MP-R7-REALNAME-001（2026-09-15）：本地临时路径在 DevTools 模拟器中形如
+ * {@code http://tmp/xxx}（真机为 {@code wxfile://tmp/xxx}、iOS 模拟器 {@code http://usr/xxx}），
+ * 同样以 {@code http://} 开头。此前各上传点用 {@code /^https?:\/\//} 区分「服务器 URL vs 本地临时路径」，
+ * 会把模拟器临时路径误判为已上传而跳过 {@code /media/upload}，导致后端落库
+ * {@code http://tmp/*}、管理后台无法查看图片、且临时路径随时失效。</p>
+ *
+ * <p>规则：以 http(s) 开头，且不属于 wxfile:// / file:// / http://tmp/ / http://usr/ 本地协议。</p>
+ *
+ * @param path 待判定路径
+ * @returns true 表示已是服务器可访问 URL，无需再上传
+ */
+export function isUploadedMediaUrl(path: string | null | undefined): boolean {
+  if (!path) {
+    return false;
+  }
+  const p = path.trim();
+  if (p.length === 0) {
+    return false;
+  }
+  if (p.startsWith("wxfile://") || p.startsWith("file://")) {
+    return false;
+  }
+  if (/^http:\/\/(tmp|usr)\//.test(p)) {
+    return false;
+  }
+  return /^https?:\/\//.test(p);
+}
+
+/**
  * 查询参数 token 的参数名。
  *
  * <p>与后端 {@code JwtAuthenticationFilter.TOKEN_QUERY_PARAM} 保持一致。

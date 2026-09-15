@@ -16,12 +16,33 @@ import {
   reviewRealNameCertification,
   type RealNameCertificationView,
 } from "@/api/real-name-certifications";
-import { ApiError } from "@/api/http";
+import { ApiError, getToken } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { formatDateTime } from "@/utils/format";
 
 const { t } = useI18n();
+
+/**
+ * MP-R7-ADMIN-IMG（2026-09-15）：媒体鉴权代理端点要求 Authorization 头，
+ * 原直链 <a href target=_blank> 新开页不带 token → 401 JSON，管理员看不到
+ * 身份证照片。改为 fetch（带 token）→ blob → objectURL 新窗口展示。
+ */
+async function viewImage(url: string): Promise<void> {
+  try {
+    const token = getToken();
+    const resp = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    window.open(objectUrl, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  } catch (e) {
+    alert(`${t("realNameCertifications.viewImage")}: ${(e as Error).message}`);
+  }
+}
 
 type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
 type ReviewAction = "APPROVED" | "REJECTED";
@@ -256,10 +277,9 @@ onMounted(() => {
             <text class="detail-label">{{ t("realNameCertifications.detailIdCardFront") }}:</text>
             <a
               v-if="detailCert.idCardFrontUrl"
-              :href="detailCert.idCardFrontUrl"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#"
               class="detail-link"
+              @click.prevent="viewImage(detailCert.idCardFrontUrl!)"
             >{{ t("realNameCertifications.viewImage") }}</a>
             <text v-else>{{ t("common.emptyPlaceholder") }}</text>
           </view>
@@ -267,10 +287,9 @@ onMounted(() => {
             <text class="detail-label">{{ t("realNameCertifications.detailIdCardBack") }}:</text>
             <a
               v-if="detailCert.idCardBackUrl"
-              :href="detailCert.idCardBackUrl"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#"
               class="detail-link"
+              @click.prevent="viewImage(detailCert.idCardBackUrl!)"
             >{{ t("realNameCertifications.viewImage") }}</a>
             <text v-else>{{ t("common.emptyPlaceholder") }}</text>
           </view>

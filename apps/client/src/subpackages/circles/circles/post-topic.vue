@@ -13,6 +13,8 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
+import { isUploadedMediaUrl } from "../../../utils/media";
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { getChannelConfig } from "../../../config/channels";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -341,12 +343,12 @@ async function submitTopic() {
     // 先经 clientApi.uploadPostImage（/media/upload）逐张上传换取可访问 URL，
     // 再随 createTopic 提交，避免话题配图在 real 模式全部裂图。
     // mock 模式下 clientApi.uploadPostImage 内部返回原路径，行为不变。
-    const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
     let submitImages = images.value;
     if (localImages.length > 0 && !useMock()) {
       const uploaded: string[] = [];
       for (const img of images.value) {
-        if (/^https?:\/\//.test(img)) {
+        if (isUploadedMediaUrl(img)) {
           uploaded.push(img);
           continue;
         }
