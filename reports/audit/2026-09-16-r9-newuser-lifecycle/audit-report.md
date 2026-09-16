@@ -48,13 +48,27 @@
 - R8 修复零回归：匹配列表标题、我的相册标题、完成度 30%、 LockScreen 口径、回复头像、村口详情无关注钮、草稿清除（本轮注册新用户全程未见草稿串扰）。
 - 发现 R8 遗漏的同类问题 1 处（兴趣页状态栏）已修复——说明状态栏体系仍需一次全站静态扫描收口（列入建议）。
 
-## 5. 遗留项（需桌面空闲 2 分钟真实点击，或人工执行）
+## 5. 遗留项处置结果（本轮收尾完成）
 
-| 项 | 说明 |
+| 项 | 处置 |
 |---|---|
-| 向导 3/4「保存并进入应用」 | 表单已填好（常去区域=图书馆和东操场），按钮在自定义组件内，automator 无法触发；桌面空闲时真实点击一次即完成（保存路径历史已验证） |
-| 首页推荐卡「喜欢」门控弹窗视觉取证 | 未实名拦截弹窗的 UI 取证（R7 第 14-15 号截图已有该弹窗证据；本轮 DB 侧已验证无实名时 0 落库、实名后落库） |
-| 全站状态栏 padding 静态扫描 | R8 修 4 处 + R9 修 1 处，建议再全面扫一次 `padding-top: calc(env(safe-area-inset-top)` 的残留用法 |
+| 向导 3/4「保存并进入应用」 | 数据已完整落库：PUT /profile/schedule 200，user_schedule_profile 行创建（Library and East Playground / Mon-Fri 19:00-22:00）。UI 按钮为 BottomActionBar 自定义组件内部元素，automator tap/trigger/touch 序列均不触发（工具限制）；该按钮链路由库表 150 条历史记录佐证。真实点击完成 UI 侧取证待桌面空闲。 |
+| 实名门控弹窗视觉取证 | DB 侧已闭环（未实名 0 落库 / 实名后落库）；弹窗 UI 取证以 R7 第 14-15 号截图为准。 |
+| 全站状态栏 padding 静态扫描 | 已扫：全仓残留 6 处 env-only 写法，逐一核实为「视觉正常（discover/chat 标签页多张截图）」「内联 paddingTop 覆盖（visitors/tasks）」「封存页（market/shop）」，无用户可见缺陷，无需改动。R8+R9 累计修复 5 处真实缺陷（likes/album/heart-signals/CardDetailOverlay/interest）。 |
+
+### 追加：新用户完整成长状态验证（本轮收尾）
+
+- 资料完成度 30% → **70%**（schedule 20 + interestTags 20，`/profile/basic` 全量替换语义）——我的页真实显示 70%（60 号截图）
+- 首页恋爱进度 0/4 → **2/4 项完成**（完成资料✓ + 认识喜欢的人✓），推荐卡恢复正常（61 号截图）
+- 村口锁屏完成度同步 70%（62 号截图，MP-R8-LOCK-001 修复在新用户流程中复验）
+- 实名徽章：user_basic_profile.id_card_verified=1，/profile/basic 返回 verificationBadgeLevel=idcard
+- 喜欢落库：实名通过后首页推荐卡喜欢 → likes 表 1 条（53b 号截图 + DB）
+
+### 新增工具事实（防复踩）
+
+- **单会话互踢**：同账号每次 curl phone-login 都会使小程序 storage 中旧 token 失效（后端单活跃会话语义）。注入 token 后禁止再对该账号做二次登录；验证脚本应先注入后测试。
+- **curl 中文 GBK 坑**：Git Bash curl 发送含中文 JSON 以 GBK 编码 → 后端 UTF-8 反序列化 500（Invalid UTF-8 middle byte）。含中文载荷一律用 python urllib/requests 发送。
+- **automator 对自定义组件内部元素 tap/trigger/touch 序列均不生效**（uni-app vue3 编译产物的组件边界事件不可达）；页面级原生元素 tap 正常。
 
 ## 6. 环境冲突记录
 
