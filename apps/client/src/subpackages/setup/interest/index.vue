@@ -4,12 +4,15 @@
  */
 import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
+// MP-R9-STATUS-005：注入 --statusbar（DevTools env 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { useI18n } from "vue-i18n";
 import { clientApi } from "../../../services/api";
 import TagSelector from "../../../components/profile/TagSelector.vue";
 import type { ProfileTagGroupKey } from "../../../config/profile-tags";
 
 const { t } = useI18n();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const selected = ref<Partial<Record<ProfileTagGroupKey, string[]>>>({ interest: [] });
 const saving = ref(false);
@@ -49,7 +52,7 @@ async function handleSave() {
 </script>
 
 <template>
-  <view class="interest-page">
+  <view class="interest-page" :style="menuStyleVars">
     <view class="interest-header">
       <text class="interest-header__title">{{ t('interestSelect.title') }}</text>
       <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
@@ -67,7 +70,11 @@ async function handleSave() {
 .interest-page {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  padding: 24rpx 32rpx 64rpx;
+  /* MP-R9-STATUS-005：--statusbar 兜底（DevTools env(safe-area-inset-top) 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx);
+  padding-right: 32rpx;
+  padding-bottom: 64rpx;
+  padding-left: 32rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

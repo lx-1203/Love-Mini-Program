@@ -780,7 +780,7 @@ async function save() {
 
       <!-- 年级（滚轮选择） -->
       <view class="field" :class="{ 'field--error': !!errors.grade, shake: shakeField === 'grade' }">
-        <picker class="field__picker" mode="selector" :range="gradeOptions" @change="onGradeChange">
+        <picker class="field__picker field__picker--grade" mode="selector" :range="gradeOptions" @change="onGradeChange">
           <view class="field__picker-inner">
             <image class="field__icon" :src="ICONS.BOOK" mode="aspectFit" alt="" />
             <text class="field__pick-text" :class="{ 'field__pick-text--filled': gradeLabel }">
@@ -833,7 +833,7 @@ async function save() {
 
       <!-- 身高（滚轮 140-200） -->
       <view class="field" :class="{ 'field--error': !!errors.height, shake: shakeField === 'height' }">
-        <picker class="field__picker" mode="selector" :range="heightOptions" @change="onHeightChange">
+        <picker class="field__picker field__picker--height" mode="selector" :range="heightOptions" @change="onHeightChange">
           <view class="field__picker-inner">
             <image class="field__icon" :src="ICONS.RULER" mode="aspectFit" alt="" />
             <text class="field__pick-text" :class="{ 'field__pick-text--filled': heightLabel }">
