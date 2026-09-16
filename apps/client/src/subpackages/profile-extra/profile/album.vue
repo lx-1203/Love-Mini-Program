@@ -24,6 +24,8 @@ import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { resolveMediaUrl } from "../../../utils/media";
+// MP-R8-STATUS-002：注入 --statusbar（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
@@ -37,6 +39,7 @@ const PHOTO_SIZE_LIMIT = 10 * 1024 * 1024;
 
 const { t } = useI18n();
 const profileStore = useProfileStore();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 // 修复（严格模式 noUnusedLocals）：sessionStore 仅在注释中提及，实际未使用，已移除。
 
 /** 照片墙 URL 数组（响应式） */
@@ -377,7 +380,7 @@ onShow(() => {
 </script>
 
 <template>
-  <view class="album-page">
+  <view class="album-page" :style="menuStyleVars">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="album-header">
       <view
@@ -484,7 +487,8 @@ onShow(() => {
   min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
+  /* MP-R8-STATUS-002：--statusbar 兜底（DevTools env 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
   box-sizing: border-box;
 }
 

@@ -556,12 +556,21 @@ function goBack() {
   font-weight: 700;
   /* 2026-08-27：白卡上名称用正文主色 */
   color: var(--c-text-primary, #222222);
+  /* MP-R8-CAMPUS-001（2026-09-16）：「中国人民大学/上海交通大学」被 badge 挤压折行（人民大/学）。
+     名称占满剩余宽度 + 禁止折行（超长省略），badge 不参与收缩。 */
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== Badge ===== */
 .campus-school-card__badge {
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
+  /* MP-R8-CAMPUS-001：badge 固定不收缩，宽度让给校名 */
+  flex-shrink: 0;
   flex-shrink: 0;
 }
 

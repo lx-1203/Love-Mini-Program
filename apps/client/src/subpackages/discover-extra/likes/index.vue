@@ -22,6 +22,8 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 import VerificationBadge from "../../../components/common/VerificationBadge.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../../composables/usePageAccess";
+// MP-R8-STATUS-001：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { likesPageRequirements } from "../../../config/page-access";
 import { IMAGE_PATHS } from "../../../config/images";
 
@@ -46,6 +48,7 @@ type TabType = "likedBy" | "myLikes" | "visitors";
 
 const { t } = useI18n();
 const likesStore = useLikesStore();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const sessionStore = useSessionStore();
 const vipStore = useVipStore();
 const coinsStore = useCoinsStore();
@@ -361,7 +364,11 @@ onUnmounted(() => {
 });
 
 /** 资料是否已完善 */
-const isUnlocked = computed(() => sessionStore.isProfileComplete);
+// MP-R8-LIKES-001（2026-09-16）：原门槛是 isProfileComplete，未完善资料的用户
+// onShow 守卫永不满足 → fetchLikes 永不执行 → 页面呈现「正常 UI + 永远空态」
+// （DB 有真实喜欢记录也不显示，且与 likes-visitors 页行为矛盾）。
+// 列表查看门槛降为登录态；喜欢/解锁等交互仍由服务端 per-item unlocked 校验把关。
+const isUnlocked = computed(() => sessionStore.isLoggedIn);
 
 /** 是否有心动信号 */
 const hasHeartSignal = computed(() => heartSignals.value.length > 0);
@@ -573,7 +580,7 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <view class="likes-page">
+  <view class="likes-page" :style="menuStyleVars">
     <!-- 未完善资料：显示锁定页面 -->
     <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" />
 
@@ -995,7 +1002,8 @@ onShareAppMessage(() => {
   min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
+  /* MP-R8-STATUS-001：--statusbar 兜底（DevTools env 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
   padding-bottom: calc(env(safe-area-inset-bottom) + 160rpx);
   box-sizing: border-box;
   position: relative;
@@ -1051,6 +1059,9 @@ onShareAppMessage(() => {
   font-size: var(--fs-5xl);
   font-weight: 700;
   color: var(--c-text-primary);
+  /* MP-R8-CAPSULE-001：标题不参与收缩，避免「匹配列表」被胶囊避让挤压折行 */
+  flex-shrink: 0;
+  white-space: nowrap;
   // #ifdef H5
   background: linear-gradient(135deg, var(--c-brand), var(--c-romance-500));
   -webkit-background-clip: text;
@@ -1070,7 +1081,10 @@ onShareAppMessage(() => {
   background: linear-gradient(135deg, var(--c-romance-50), var(--c-romance-100));
   border-radius: var(--r-full);
   transition: all var(--d-fast, 120ms) ease;
-  box-shadow: var(--s-romance);
+  box-shadow: var(--s-romance);;
+  /* MP-R8-CAPSULE-001：不折行不收缩 */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* #ifdef H5 */
@@ -1589,13 +1603,20 @@ onShareAppMessage(() => {
 
 /* 头部操作区（管理按钮 + 心动信号） */
 .likes-header__actions {
+  /* MP-R8-CAPSULE-001：右侧「管理/心动信号」需避开胶囊按钮。
+     --capsule-right 仅为胶囊右缘间隙（≈7px），此处按标准胶囊全宽 87px + 间隙预留 96px。 */
+  padding-right: calc(var(--capsule-right, 7px) + 96px);
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
 }
 
 .likes-header__manage {
-  padding: var(--sp-3) var(--sp-5);
+  /* MP-R8-CAPSULE-001：胶囊钮不折行、不收缩 */
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: var(--sp-3) var(--sp-4);
   background: var(--c-bg-container);
   border-radius: var(--r-full);
   box-shadow: var(--s-card-soft);

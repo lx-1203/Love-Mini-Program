@@ -766,6 +766,7 @@ public class RealCircleService implements CircleService {
                 reply.getTopic().getId(),
                 reply.getAuthorId(),
                 resolveAuthorName(reply.getAuthorId(), authorMap),
+                resolveAuthorAvatar(reply.getAuthorId(), authorMap),
                 reply.getContent(),
                 reply.getCreatedAt()
         );
@@ -829,6 +830,7 @@ public class RealCircleService implements CircleService {
                 reply.getTopic().getId(),
                 reply.getAuthorId(),
                 getAuthorName(reply.getAuthorId()),
+                getAuthorAvatar(reply.getAuthorId()),
                 reply.getContent(),
                 reply.getCreatedAt()
         );

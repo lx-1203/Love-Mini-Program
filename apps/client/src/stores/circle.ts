@@ -57,6 +57,8 @@ export interface BackendCircleReplyView {
   topicId: number;
   authorId: number;
   authorName: string;
+  /** MP-R8-CIRCLE-001（2026-09-16）：后端补齐的作者头像（users.avatar_url 原值，前端经 resolveMediaUrl 解析） */
+  authorAvatarUrl?: string;
   content: string;
   createdAt: string;
 }
@@ -139,7 +141,8 @@ function mapToReplyItem(raw: BackendCircleReplyView): ReplyItem {
     author: {
       userId: String(raw.authorId),
       name: raw.authorName,
-      avatar: "",
+      // MP-R8-CIRCLE-001（2026-09-16）：原硬编码空串导致回复永远渲染字母占位头像
+      avatar: raw.authorAvatarUrl ?? "",
       headline: "",
     },
     content: raw.content,

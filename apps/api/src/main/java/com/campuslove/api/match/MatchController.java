@@ -235,9 +235,11 @@ public class MatchController {
    * GET /api/matches/liked-me
    */
   @GetMapping("/liked-me")
-  public List<LikedUserView> getLikedMe() {
+  public ApiResponse<List<LikedUserView>> getLikedMe() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return matchService.getLikedMe(userId);
+    // MP-R8-CONTRACT-001（2026-09-16）：与 my-likes 等端点统一 ApiResponse 信封
+    // （原为裸 List，违反 Task 2.4.2 全端点信封约定；前端 http.ts 两种形态虽兼容，契约必须一致）
+    return ApiResponse.ok(matchService.getLikedMe(userId));
   }
 
   /**
@@ -245,9 +247,10 @@ public class MatchController {
    * GET /api/matches/visitors
    */
   @GetMapping("/visitors")
-  public List<VisitorView> getVisitors() {
+  public ApiResponse<List<VisitorView>> getVisitors() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return matchService.getVisitors(userId);
+    // MP-R8-CONTRACT-001：信封统一（同 liked-me）
+    return ApiResponse.ok(matchService.getVisitors(userId));
   }
 
   /**

@@ -201,6 +201,7 @@ public class MockCircleService implements CircleService {
         topicId,
         reply.authorId,
         reply.authorName,
+        "",
         reply.content,
         reply.createdAt
     );
@@ -215,6 +216,7 @@ public class MockCircleService implements CircleService {
             topicId,
             r.authorId,
             r.authorName,
+            "",
             r.content,
             r.createdAt
         ))

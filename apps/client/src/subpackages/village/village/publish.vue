@@ -409,6 +409,9 @@ async function submitPublish() {
       });
       uni.showToast({ title: t("village.postSuccess"), icon: "success" });
     }
+    // MP-R8-DRAFT-001（2026-09-16）：后端 /drafts 草稿也要删除——restoreDraft 优先后端草稿，
+    // 只清本地会导致下次进入恢复已发布内容（重复发布风险）
+    void clientApi.deleteDraft().catch(() => {});
     clearDraft();
     allowLeave.value = true;
     setTimeout(() => {

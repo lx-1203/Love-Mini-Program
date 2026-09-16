@@ -28,6 +28,8 @@ import { featureFlags } from "../../config/feature-flags";
 import WhisperUnlockSheet from "./WhisperUnlockSheet.vue";
 import { clientApi } from "../../services/api";
 import { useMock } from "../../stores/helpers/use-mock";
+// MP-R8-STATUS-004：注入 --statusbar（DevTools env 恒 0，顶栏返回/关闭钮叠印状态栏）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import VerificationBadge from "../common/VerificationBadge.vue";
 import SafeImage from "../common/SafeImage.vue";
 // 2026-08-11 新增：hero 放大头像（探探 Profile 范式）
@@ -57,6 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /** 交友币 Store（解锁私信扣费） */
 const coinsStore = useCoinsStore();
@@ -817,6 +820,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   <view
     v-if="visible"
     class="card-detail-overlay"
+    :style="menuStyleVars"
     :class="{ 'card-detail-overlay--active': animating }"
     role="dialog"
     aria-modal="true"
@@ -1285,7 +1289,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   left: 0;
   right: 0;
   z-index: var(--z-header);
-  padding-top: calc(env(safe-area-inset-top) + 12rpx);
+  /* MP-R8-STATUS-004：--statusbar 兜底（DevTools env 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx);
   padding-bottom: 12rpx;
   /* 2026-08-11 参考探探透明导航栏：顶部透明到轻微黑色渐隐，让背景图从顶部透出；
      按钮/文字可读性由半透明圆底按钮（--c-overlay-bg-solid）+ 白字（--c-overlay-text-primary）保证 */

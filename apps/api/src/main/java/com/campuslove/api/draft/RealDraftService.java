@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +55,9 @@ public class RealDraftService implements DraftService {
     }
 
     @Override
+    // MP-R8-DRAFT-002（2026-09-16）：deleteByUserId 为派生删除查询，必须在事务内执行，
+    // 否则抛 TransactionRequiredException → DELETE /drafts/current 恒 500（发布后后端草稿永不清理）
+    @Transactional
     public void delete(Long userId) {
         repository.deleteByUserId(userId);
     }

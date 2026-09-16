@@ -10,6 +10,8 @@
 import { ref, computed, nextTick } from "vue";
 import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+// MP-R8-OWNPOST-001：判断作者是否为当前用户（自己的帖子不再显示「+关注」）
+import { useSessionStore } from "../../../stores/session";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime, type CommentItem } from "../../../stores/village";
 // R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
@@ -410,6 +412,14 @@ async function handleLike() {
 /**
  * 处理关注
  */
+// MP-R8-OWNPOST-001（2026-09-16）：自己的帖子不渲染关注按钮
+const sessionStore = useSessionStore();
+const isOwnPost = computed(() => {
+  const uid = sessionStore.userSession?.userId;
+  const aid = currentPost.value?.author?.userId;
+  return uid != null && aid != null && String(uid) === String(aid);
+});
+
 async function handleFollow() {
   if (!currentPost.value) return;
   try {
@@ -782,8 +792,9 @@ onShareTimeline(() => {
             <text>{{ formatRelativeTime(currentPost.createdAt) }}</text>
           </text>
         </view>
-        <!-- 关注按钮（右侧） -->
+        <!-- 关注按钮（右侧；MP-R8-OWNPOST-001：自己的帖子不显示） -->
         <view
+          v-if="!isOwnPost"
           class="author-inline__follow press-feedback"
           :class="{ 'author-inline__follow--active': currentPost.isFollowed }"
           hover-class="press-feedback--active"

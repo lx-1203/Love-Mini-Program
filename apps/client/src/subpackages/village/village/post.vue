@@ -466,6 +466,8 @@ async function submitPublish() {
     }
 
     // 发布成功后清除草稿，避免下次进入恢复已发布内容
+    // MP-R8-DRAFT-001（2026-09-16）：后端 /drafts 草稿同步删除（restoreDraft 优先后端草稿）
+    void clientApi.deleteDraft().catch(() => {});
     clearDraft();
     // 2026-09-05 R17：清空本地表单（返回 feed 后重新进入应为全新表单）
     title.value = "";

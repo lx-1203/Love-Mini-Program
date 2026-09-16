@@ -17,6 +17,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, type PostItem, type PostFilters } from "../../../stores/village";
 import { useSessionStore } from "../../../stores/session";
+// MP-R8-LOCK-001：取 /profile/basic 服务端权威完成度（session 快照算不出真实进度，恒 10%）
+import { useProfileStore } from "../../../stores/profile";
 // B6：后台配置即时生效——发帖功能开关（post_publish_open）
 import { useAppConfigStore } from "../../../stores/app-config";
 // 登录态守卫：未登录时 LockScreen 锁定中，不发受保护请求（冷启动避免 401 雪崩）
@@ -61,6 +63,7 @@ const { t } = useI18n();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 const villageStore = useVillageStore();
 const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 const circleStore = useCircleStore();
 const activityStore = useActivityStore();
 const dailyQuestionStore = useDailyQuestionStore();
@@ -78,7 +81,15 @@ const { activities } = storeToRefs(activityStore);
 
 /* ========== 锁定状态 ========== */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
-const completionPercent = computed(() => sessionStore.profileCompletion);
+// MP-R8-LOCK-001（2026-09-16）：优先 /profile/basic 服务端权威值（与我的页 MP-R7-PROFILE-004 同口径），
+// 无值时回退会话快照；并在挂载时懒加载一次（store 内 60s TTL 缓存，不产生重复请求）
+const completionPercent = computed(() => {
+  const server = (profileStore.basicProfile as { profileCompletion?: number } | null)?.profileCompletion;
+  if (typeof server === "number" && Number.isFinite(server) && server > 0) {
+    return Math.min(100, Math.round(server));
+  }
+  return sessionStore.profileCompletion;
+});
 
 /* ========== 频道状态 ========== */
 
@@ -456,6 +467,8 @@ onLoad((query) => {
 let scrollTopRestoreTimer: ReturnType<typeof setTimeout> | null = null;
 
 onShow(() => {
+  // MP-R8-LOCK-001：懒加载服务端权威资料完成度（store 内 60s TTL + 并发守卫，不会重复请求）
+  void profileStore.load().catch(() => {});
   // 消费 Tab 桥接参数（hot/mine 已随频道化移除，映射到今日广场防残留）
   const bridged = consumeTabQuery();
   if (bridged.tab === "hot" || bridged.tab === "mine") {

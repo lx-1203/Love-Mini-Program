@@ -233,6 +233,7 @@ record CircleReplyView(
     Long topicId,
     Long authorId,
     String authorName,
+    String authorAvatarUrl,
     String content,
     LocalDateTime createdAt
 ) {

@@ -9,6 +9,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../../stores/likes";
 import { useSessionStore } from "../../../stores/session";
+// MP-R8-LOCK-001：取 /profile/basic 服务端权威完成度（session 快照恒 10%）
+import { useProfileStore } from "../../../stores/profile";
 import { useChatStore } from "../../../stores/chat";
 import { openAppPath, openUserProfile } from "../../../utils/navigation";
 // R4-00023：用户上传头像 URL 需经 resolveMediaUrl 重写鉴权代理路径（否则真实模式 403/404）
@@ -21,17 +23,28 @@ import { likesPageRequirements } from "../../../config/page-access";
 import { showErrorToast } from "../../../utils/error-toast";
 // 2026-08-09：返回键图标需要 IMAGE_PATHS
 import { IMAGE_PATHS } from "../../../config/images";
+// MP-R8-STATUS-003：注入 --statusbar（DevTools env(safe-area-inset-top) 恒 0，关闭钮叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 
 const { t } = useI18n();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const likesStore = useLikesStore();
 const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 const chatStore = useChatStore();
 
 usePageAccess(likesPageRequirements);
 const { heartSignals, loading } = storeToRefs(likesStore);
 
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
-const completionPercent = computed(() => sessionStore.profileCompletion);
+// MP-R8-LOCK-001（2026-09-16）：优先服务端权威值（与我的页同口径），无值回退会话快照
+const completionPercent = computed(() => {
+  const server = (profileStore.basicProfile as { profileCompletion?: number } | null)?.profileCompletion;
+  if (typeof server === "number" && Number.isFinite(server) && server > 0) {
+    return Math.min(100, Math.round(server));
+  }
+  return sessionStore.profileCompletion;
+});
 
 /**
  * R4-00024：按状态分组（对齐契约 likes.yaml status enum=[pending,accepted,declined]）。
@@ -93,6 +106,8 @@ function updateCountdowns() {
 }
 
 onMounted(() => {
+  // MP-R8-LOCK-001：懒加载服务端权威完成度（TTL 缓存）
+  void profileStore.load().catch(() => {});
   if (isUnlocked.value) {
     void likesStore.fetchHeartSignals();
   }
@@ -196,7 +211,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
 </script>
 
 <template>
-  <view class="heart-signals-page">
+  <view class="heart-signals-page" :style="menuStyleVars">
     <!-- 未完善资料：锁定页 -->
     <LockScreen
       v-if="!isUnlocked"
@@ -373,7 +388,8 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
   min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
+  /* MP-R8-STATUS-003：--statusbar 兜底（DevTools env 恒 0） */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
   box-sizing: border-box;
   position: relative;
 }
