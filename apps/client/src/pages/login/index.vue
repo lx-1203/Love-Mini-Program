@@ -937,7 +937,8 @@ function openPrivacyPolicy() {
 
 /* 品牌区 —— 理想图《登录页面》：品牌名+小苗+副标，深色文字，左对齐 */
 .login-page__brand {
-  padding: calc(var(--status-bar-height, 0px) + 88rpx) var(--sp-8) 0;
+  /* R10-P1-003：统一走 var(--statusbar, …) 兜底链，uni-app 平台变量作内层兜底 */
+  padding: calc(var(--statusbar, var(--status-bar-height, 0px)) + 88rpx) var(--sp-8) 0;
   background: var(--c-bg-page);
 }
 

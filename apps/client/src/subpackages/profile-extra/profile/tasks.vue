@@ -22,7 +22,7 @@ import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../../utils/navigation";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+// 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -352,7 +352,7 @@ onShow(async () => {
 </script>
 
 <template>
-  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海 -->
+  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海 -->
   <view class="tasks-page" :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="tasks-header">
@@ -436,7 +436,7 @@ onShow(async () => {
   min-height: 100%;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-6));
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
   box-sizing: border-box;
 }
 

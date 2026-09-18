@@ -13,6 +13,10 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { contentPageUrls } from "../../../config/content-pages";
 import { IMAGE_PATHS } from "../../../config/images";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -121,7 +125,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="content-page">
+  <view class="content-page" :style="menuStyleVars">
     <!-- 后台配置 H5 URL：web-view 加载 -->
     <web-view v-if="webUrl" :src="webUrl" class="content-webview" />
 
@@ -274,7 +278,7 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
+  padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
   background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 
@@ -286,7 +290,7 @@ function goBack() {
 
 .content-header__back {
   position: absolute;
-  top: calc(var(--sp-4) + env(safe-area-inset-top));
+  top: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top)));
   right: var(--sp-4);
   width: 64rpx;
   height: 64rpx;

@@ -77,7 +77,7 @@ function goMyProfile() {
 
 <style scoped lang="scss">
 .home-header {
-  /* 状态栏避让：--statusbar 由 useMenuButtonRect 注入（开发者工具 env(safe-area-inset-top) 恒为 0，
+  /* 状态栏避让：--statusbar 由 useMenuButtonRect 注入（开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒为 0，
      仅靠 env 会与系统时间/刘海叠印）；右侧避让微信胶囊：--capsule-right 仅是胶囊右缘到屏幕右缘的间隙（≈7px），
      预留量必须再加胶囊本体宽度（标准 87px），否则头像/定位/铃铛被胶囊叠压 */
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) calc(var(--capsule-right, 7px) + 104px) 16rpx 40rpx;

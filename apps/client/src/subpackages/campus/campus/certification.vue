@@ -19,7 +19,7 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 // R4-00056: 学生证图片先上传换取 URL 再提交（real 模式后端无法访问本地临时路径）
 import { clientApi } from "../../../services/api";
 import { useMock } from "../../../stores/helpers/use-mock";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+// 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
@@ -457,7 +457,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6)) var(--sp-8) var(--sp-6);
   background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   z-index: var(--z-header);
 }

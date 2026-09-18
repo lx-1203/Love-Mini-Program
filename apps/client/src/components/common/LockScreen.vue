@@ -340,7 +340,7 @@ function browsePublic() {
 /* ========== 顶部操作区：× 关闭按钮 ========== */
 .lock-screen__close {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + var(--sp-3));
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-3));
   left: var(--sp-5);
   z-index: 2;
   width: 72rpx;
@@ -377,7 +377,7 @@ function browsePublic() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: calc(env(safe-area-inset-top) + var(--sp-8)) var(--sp-8) var(--sp-6);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-8)) var(--sp-8) var(--sp-6);
 }
 
 /* ========== 主题插画：解锁徽章 + 同校头像 + 漂浮爱心 ========== */

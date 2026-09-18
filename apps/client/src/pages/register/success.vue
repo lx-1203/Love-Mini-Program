@@ -78,7 +78,7 @@ function goBrowse() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(env(safe-area-inset-top) + 96rpx) 48rpx calc(env(safe-area-inset-bottom) + 48rpx);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 96rpx) 48rpx calc(env(safe-area-inset-bottom) + 48rpx);
   box-sizing: border-box;
 }
 

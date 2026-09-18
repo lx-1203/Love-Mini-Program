@@ -3249,7 +3249,7 @@ onUnload(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5)) var(--sp-5) 0;
+  margin: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-5)) var(--sp-5) 0;
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--c-brand-50);
@@ -3277,8 +3277,8 @@ onUnload(() => {
 /* 顶部右上角 chip 容器（Phase C1） */
 .profile-top-bar {
   position: absolute;
-  top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
-  top: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-5));
+  top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-5));
+  top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-5));
   right: 0;
   z-index: 10;
   display: flex;

@@ -18,6 +18,10 @@ import { ROUTES } from "../../../constants/routes";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
 import EmptyState from "../../../components/common/EmptyState.vue";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const campusStore = useCampusStore();
 const { t } = useI18n();
@@ -131,7 +135,7 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
@@ -324,7 +328,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   z-index: 10;
 }

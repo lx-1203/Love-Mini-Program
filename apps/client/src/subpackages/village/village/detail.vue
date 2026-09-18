@@ -1456,7 +1456,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 24rpx;
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 24rpx) 32rpx 24rpx;
   background: var(--c-bg-container, #FFFFFF);
   border-bottom: 1rpx solid #F1F1F1;
   z-index: 10;

@@ -105,7 +105,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: calc(env(safe-area-inset-top) + 16rpx) 0 24rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) 0 24rpx;
 }
 
 .favorites-header__back {

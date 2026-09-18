@@ -253,7 +253,7 @@ export default {
 .toast-notification {
   position: fixed;
   top: calc(constant(safe-area-inset-top) + 24rpx);
-  top: calc(env(safe-area-inset-top) + 24rpx);
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;

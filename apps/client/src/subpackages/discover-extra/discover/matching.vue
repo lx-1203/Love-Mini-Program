@@ -213,7 +213,7 @@ onUnload(() => {
 
 .matching-page__back {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 24rpx);
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx);
   left: 24rpx;
   width: 72rpx;
   height: 72rpx;

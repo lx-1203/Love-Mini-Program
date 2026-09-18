@@ -10,7 +10,7 @@ import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../../stores/session";
 import { useProfileStore } from "../../../stores/profile";
 import { usePageAccess } from "../../../composables/usePageAccess";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+// 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { chatPageRequirements } from "../../../config/page-access";
 import LockScreen from "../../../components/common/LockScreen.vue";
@@ -501,7 +501,7 @@ onLoad((query) => {
   padding: 0 24rpx;
   /* R20：去掉固定 height:88rpx（与内联 paddingTop 叠加计算不稳），改最小高度自适应 */
   min-height: 88rpx;
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--statusbar, env(safe-area-inset-top));
   background: #fff;
   border-bottom: 1rpx solid #f0f0f0;
   flex-shrink: 0;

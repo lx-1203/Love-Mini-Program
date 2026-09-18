@@ -70,7 +70,7 @@ async function handleSave() {
 .interest-page {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  /* MP-R9-STATUS-005：--statusbar 兜底（DevTools env(safe-area-inset-top) 恒 0） */
+  /* MP-R9-STATUS-005：--statusbar 兜底（DevTools var(--statusbar, env(safe-area-inset-top)) 恒 0） */
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx);
   padding-right: 32rpx;
   padding-bottom: 64rpx;

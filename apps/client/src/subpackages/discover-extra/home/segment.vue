@@ -13,6 +13,9 @@ import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import { showErrorToast } from "../../../utils/error-toast";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const { t } = useI18n();
 
@@ -43,6 +46,16 @@ onLoad((query) => {
 onPullDownRefresh(() => {
   void load().finally(() => uni.stopPullDownRefresh());
 });
+
+function goBack() {
+  // R10：细分发现为二级页，补显式返回（此前仅靠手势返回）
+  uni.navigateBack({
+    delta: 1,
+    fail: () => {
+      uni.switchTab({ url: "/pages/home/index" });
+    },
+  });
+}
 
 async function load() {
   loading.value = true;
@@ -101,8 +114,11 @@ function openProfile(userId: string) {
 </script>
 
 <template>
-  <view class="segment-page">
+  <view class="segment-page" :style="menuStyleVars">
     <view class="segment-header">
+      <view class="segment-header__back press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.back')" @tap="goBack">
+        <text class="segment-header__back-icon">‹</text>
+      </view>
       <text class="segment-header__title">{{ title }}</text>
     </view>
 
@@ -155,7 +171,30 @@ function openProfile(userId: string) {
 }
 
 .segment-header {
-  padding: 16rpx 0 24rpx;
+  /* R10-P1-003：--statusbar 兜底（DevTools env 恒 0）；返回键与标题同行 */
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 24rpx);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) 24rpx 24rpx;
+}
+
+.segment-header__back {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+  flex-shrink: 0;
+}
+
+.segment-header__back-icon {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #222222);
+  line-height: 1;
 }
 
 .segment-header__title {

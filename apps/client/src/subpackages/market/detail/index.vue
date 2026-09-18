@@ -18,6 +18,10 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { useAppConfigStore } from "../../../stores/app-config";
 import { request } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -268,7 +272,7 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="product-page">
+  <view class="product-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view
@@ -448,7 +452,7 @@ onLoad((query) => {
 /* ==================== 安全区占位 ==================== */
 .safe-top {
   height: calc(constant(safe-area-inset-top) + 0rpx);
-  height: calc(env(safe-area-inset-top) + 0rpx);
+  height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
 

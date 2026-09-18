@@ -56,7 +56,7 @@
 // 用途：固定在顶部的 Header / 状态栏占位
 @mixin safe-area-top {
   padding-top: constant(safe-area-inset-top);
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--statusbar, env(safe-area-inset-top));
 }
 
 // ---------- 1px 物理像素边框（hairline） ----------

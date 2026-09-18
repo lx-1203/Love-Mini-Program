@@ -1437,7 +1437,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
 /* ========== 分页指示器 ========== */
 .detail-hero__pagination {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 108rpx);
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 108rpx);
   left: 50%;
   transform: translateX(-50%);
   display: flex;

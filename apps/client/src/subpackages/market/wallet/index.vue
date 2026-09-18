@@ -18,6 +18,10 @@ import { IMAGE_PATHS } from "../../../config/images";
 // R4-00067: 演示充值仅限 mock/开发环境（真实模式禁止无限刷余额）
 import { useMock } from "../../../stores/helpers/use-mock";
 import { isDev } from "../../../config/env";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const coinsStore = useCoinsStore();
@@ -116,7 +120,7 @@ function amountText(item: { type?: string; amount: number }): string {
 </script>
 
 <template>
-  <view class="wallet">
+  <view class="wallet" :style="menuStyleVars">
     <!-- 顶部栏 -->
     <view class="wallet__header">
       <view class="wallet__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
@@ -192,7 +196,7 @@ function amountText(item: { type?: string; amount: number }): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
+  padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
   background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 

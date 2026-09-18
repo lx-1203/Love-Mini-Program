@@ -409,7 +409,7 @@ if (options.activityId) {
 
 <template>
   <view class="post-page">
-    <!-- 顶部导航栏（MP-R4-POSTTOPIC-01：env(safe-area-inset-top) 在 mp 模拟器为 0，
+    <!-- 顶部导航栏（MP-R4-POSTTOPIC-01：var(--statusbar, env(safe-area-inset-top)) 在 mp 模拟器为 0，
          导航返回/标题叠进系统状态栏 → 与 nearby 同款 JS 注入 statusBarHeight） -->
     <view class="post-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

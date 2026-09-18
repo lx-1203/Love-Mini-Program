@@ -417,7 +417,7 @@ onShareAppMessage(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-6)) var(--sp-8) var(--sp-6);
   background: var(--c-gradient-brand);
   z-index: 10;
 }

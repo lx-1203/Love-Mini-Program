@@ -21,6 +21,10 @@ import { useSessionStore } from "../../../stores/session";
 import { openAppPath } from "../../../utils/navigation";
 import { showErrorToast } from "../../../utils/error-toast";
 import { IMAGE_PATHS } from "../../../config/images";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const discoverStore = useDiscoverStore();
@@ -136,7 +140,7 @@ function handleMessage(userId: string) {
 </script>
 
 <template>
-  <view class="content-page">
+  <view class="content-page" :style="menuStyleVars">
     <view class="content-header">
       <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
       <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
@@ -190,7 +194,7 @@ function handleMessage(userId: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-5) var(--sp-3);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-4)) var(--sp-5) var(--sp-3);
   flex-shrink: 0;
 }
 

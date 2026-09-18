@@ -17,7 +17,7 @@ import EmptyState from "../../../components/common/EmptyState.vue";
 const { t } = useI18n();
 const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
-// 注入 --statusbar/--capsule-right：开发者工具 env(safe-area-inset-top) 恒 0，头部需按真实状态栏高度避让
+// 注入 --statusbar/--capsule-right：开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒 0，头部需按真实状态栏高度避让
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { todayQuestion, answers, hasAnswered, loading, answerPage, answerHasMore } = storeToRefs(dailyQuestionStore);
 

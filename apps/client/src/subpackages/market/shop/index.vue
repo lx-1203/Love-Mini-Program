@@ -13,6 +13,10 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { request } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -251,7 +255,7 @@ function goToDetail(itemId: string) {
 </script>
 
 <template>
-  <view class="shop-page">
+  <view class="shop-page" :style="menuStyleVars">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="shop-header">
       <view class="shop-header__top">
@@ -396,7 +400,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 页面标题 ========== */
 .shop-header {
   padding: 24rpx 32rpx;
-  padding-top: calc(env(safe-area-inset-top) + 24rpx);
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx);
   background: transparent;
   z-index: 10;
 }

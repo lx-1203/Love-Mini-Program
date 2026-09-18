@@ -350,7 +350,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .campus-header {
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 28rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 50%, var(--c-romance-300) 100%);
 }
 

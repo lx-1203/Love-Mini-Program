@@ -547,7 +547,7 @@ onMounted(() => {
 /* ==================== 安全区占位 ==================== */
 .safe-top {
   
-  height: calc(env(safe-area-inset-top) + 0rpx);
+  height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
 

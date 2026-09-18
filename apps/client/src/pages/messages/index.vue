@@ -530,7 +530,7 @@ function formatTime(dateStr?: string): string {
   justify-content: space-between;
   /* --statusbar 由 page-meta 注入（px），修复自定义导航与状态栏叠印；
      R20：右侧加胶囊避让（--capsule-right≈7px 间隙 + 胶囊本体 87px） */
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + 24rpx) 32rpx 16rpx;
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 24rpx) 32rpx 16rpx;
   padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-bg-container, #FFFFFF);
 }

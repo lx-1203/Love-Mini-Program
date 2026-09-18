@@ -2259,7 +2259,7 @@ defineExpose({ noop });
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 12rpx) var(--sp-4) var(--sp-2);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) var(--sp-4) var(--sp-2);
   background: var(--c-bg-page);
   flex-shrink: 0;
 }
@@ -3005,7 +3005,7 @@ defineExpose({ noop });
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-8);
-  padding-top: calc(env(safe-area-inset-top) + var(--sp-5));
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-5));
 }
 
 .chat-session-back__arrow {

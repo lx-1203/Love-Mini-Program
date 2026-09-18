@@ -745,7 +745,7 @@ function handleMenuTap(item: MenuItem) {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  /* --statusbar 兜底：开发者工具 env(safe-area-inset-top) 恒 0，仅 env 会叠印状态栏 */
+  /* --statusbar 兜底：开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒 0，仅 env 会叠印状态栏 */
   height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }

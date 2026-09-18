@@ -320,7 +320,7 @@ onUnload(() => {
   height: 100vh;
   /* 2026-09-06 背景统一：寻觅页改纯白，与理想图（寻觅匹配卡片页面）及他人主页一致 */
   background: #ffffff;
-  padding-top: calc(env(safe-area-inset-top) + 20px);
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
   box-sizing: border-box;
 }

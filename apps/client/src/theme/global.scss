@@ -3,7 +3,7 @@ view, text, image {
 }
 
 .safe-area-top {
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--statusbar, env(safe-area-inset-top));
 }
 
 .safe-area-bottom {
@@ -11,7 +11,7 @@ view, text, image {
 }
 
 .safe-area-inset-top {
-  height: env(safe-area-inset-top);
+  height: var(--statusbar, env(safe-area-inset-top));
 }
 
 .safe-area-inset-bottom {

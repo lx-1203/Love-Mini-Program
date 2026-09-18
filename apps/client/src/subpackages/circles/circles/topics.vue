@@ -330,7 +330,7 @@ defineExpose({ goToAuthorProfile });
 
 <template>
   <view class="topics-page">
-    <!-- 顶部导航栏（2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海） -->
+    <!-- 顶部导航栏（2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海） -->
     <view class="topics-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 20px + var(--sp-6))` }">
       <view class="topics-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
         <text class="back-icon">‹</text>
@@ -621,7 +621,7 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + var(--sp-6)) var(--sp-8) var(--sp-6);
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-6)) var(--sp-8) var(--sp-6);
   /* R21：右侧避让微信胶囊——「写话题/更多」按钮此前被胶囊压住并被右缘裁切 */
   padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-gradient-brand);

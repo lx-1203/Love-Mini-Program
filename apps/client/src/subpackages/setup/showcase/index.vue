@@ -274,7 +274,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   gap: 20rpx;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 28rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 28rpx;
   /* R4 审计：品牌蓝渐变 #3B9DE5/#5BC0DE/#7C6CF0 无对应 design token，保留原值 */
   background: linear-gradient(135deg, #3B9DE5 0%, #5BC0DE 55%, #7C6CF0 115%);
   border-radius: 0 0 36rpx 36rpx;

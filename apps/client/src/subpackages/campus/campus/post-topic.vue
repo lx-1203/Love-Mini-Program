@@ -30,6 +30,10 @@ import { UI_LIMITS } from "../../../constants/limits";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../../components/village/TopicSelector.vue";
 import { designTokens } from "../../../theme/tokens";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const campusStore = useCampusStore();
 const { t } = useI18n();
@@ -238,7 +242,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="post-page">
+  <view class="post-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
@@ -406,7 +410,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 24rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 

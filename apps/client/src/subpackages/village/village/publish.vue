@@ -23,7 +23,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { chooseImages } from "../../../utils/media";
 import { compressImages } from "../../../utils/compress-image";
-// R20（2026-09-08）：publish-header 原用 env(safe-area-inset-top)（模拟器/无刘海机型=0），
+// R20（2026-09-08）：publish-header 原用 var(--statusbar, env(safe-area-inset-top))（模拟器/无刘海机型=0），
 // 系统时间与「发布动态」标题叠印 → 改 JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 

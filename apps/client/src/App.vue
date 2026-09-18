@@ -333,7 +333,7 @@ page {
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
   width: 100%;
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--statusbar, env(safe-area-inset-top));
   padding-bottom: env(safe-area-inset-bottom);
 }
 

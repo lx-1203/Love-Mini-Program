@@ -63,6 +63,10 @@ function handleSharePost(post: PostItem): void {
 }
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const villageStore = useVillageStore();
 const { t } = useI18n();
@@ -268,7 +272,7 @@ onShareTimeline(() => ({
 </script>
 
 <template>
-  <view class="tag-posts-page">
+  <view class="tag-posts-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="tag-header">
       <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
@@ -437,7 +441,7 @@ $red-badge: var(--c-error, #FF4757);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 24rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #75E1B7) 50%, var(--c-romance-300, #FF8DA1) 100%);
 }
 

@@ -389,7 +389,7 @@ function goBack() {
   height: 64rpx;
 }
 .safe-top, .safe-bottom {
-  height: env(safe-area-inset-top);
+  height: var(--statusbar, env(safe-area-inset-top));
   flex-shrink: 0;
 }
 .safe-bottom {

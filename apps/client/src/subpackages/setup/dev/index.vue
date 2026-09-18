@@ -340,7 +340,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .dev-header {
   display: flex;
   align-items: center;
-  padding: calc(env(safe-area-inset-top) + 16rpx) 32rpx 24rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
   gap: 16rpx;
 }

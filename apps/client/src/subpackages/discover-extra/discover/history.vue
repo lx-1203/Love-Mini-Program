@@ -13,6 +13,10 @@ import EmptyState from "../../../components/common/EmptyState.vue";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 // infra R2-00069: 统一错误分类 toast
 import { showErrorToast } from "../../../utils/error-toast";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const discoverStore = useDiscoverStore();
@@ -127,7 +131,7 @@ onUnload(() => {
 </script>
 
 <template>
-  <view class="history-page">
+  <view class="history-page" :style="menuStyleVars">
     <!-- 顶部导航 -->
     <view class="header">
       <view class="back-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
@@ -258,7 +262,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 24rpx) 32rpx 28rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 32rpx 28rpx;
   background: transparent;
 }
 

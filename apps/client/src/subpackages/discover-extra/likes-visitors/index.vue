@@ -30,7 +30,7 @@ import { resolveMediaUrl } from "../../../utils/media";
 import { useSessionStore } from "../../../stores/session";
 // 批次 A / ADR-2：解锁属商业化能力（commerce.coin 子闸），封存态禁用解锁入口
 import { useAppConfigStore } from "../../../stores/app-config";
-// 2026-09-04 视觉验收：env(safe-area-inset-top) 在模拟器/部分机型为 0，标题与状态栏叠印，
+// 2026-09-04 视觉验收：var(--statusbar, env(safe-area-inset-top)) 在模拟器/部分机型为 0，标题与状态栏叠印，
 // 与 AppShell 2026-08-29 修复同源——改用 statusBarHeight 注入
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import LockScreen from "../../../components/common/LockScreen.vue";
@@ -438,7 +438,7 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 .likes-visitors-page {
   min-height: 100vh;
   background: var(--c-gradient-page);
-  padding: calc(env(safe-area-inset-top) + var(--sp-6)) var(--sp-7) calc(env(safe-area-inset-bottom) + var(--sp-8));
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6)) var(--sp-7) calc(env(safe-area-inset-bottom) + var(--sp-8));
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);

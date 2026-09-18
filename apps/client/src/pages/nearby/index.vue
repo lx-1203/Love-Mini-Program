@@ -34,7 +34,7 @@ import { getToken } from "../../services/http";
 // MP-R4-CONSOLE-02（2026-09-13 独立审查 IA-CONSOLE-02）：92 行调用 reportLocation
 // 但本 import 漏了它 → 运行时 ReferenceError（用户授权定位后必现，定位上报链路断裂）
 import { fetchCurrentLocation, buildLocationText, reportLocation } from "../../utils/location";
-// R20（2026-09-08）：env(safe-area-inset-top) 在模拟器为 0，标题行顶进状态栏
+// R20（2026-09-08）：var(--statusbar, env(safe-area-inset-top)) 在模拟器为 0，标题行顶进状态栏
 // （「发动态」与系统时间/胶囊同排叠压）→ JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/附近1/匹配2/消息3/我的4）
@@ -499,8 +499,9 @@ function requireLogin(): boolean {
 .nearby-home {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  /* R20：padding-top 注入状态栏高度（env() 在模拟器为 0 会顶进状态栏） */
-  padding: calc(var(--statusbar-height, calc(env(safe-area-inset-top) + 20px)) + 24rpx) 32rpx 0;
+  /* R20：padding-top 注入状态栏高度（env() 在模拟器为 0 会顶进状态栏）；
+     R10-P1-003：收敛自造变量 --statusbar-height → 统一 var(--statusbar, env(...)) 兜底链 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20px + 24rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

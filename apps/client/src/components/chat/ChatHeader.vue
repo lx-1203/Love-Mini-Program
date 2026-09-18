@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
-// R20（2026-09-08）：env(safe-area-inset-top) 在模拟器/无刘海机型为 0，
+// R20（2026-09-08）：var(--statusbar, env(safe-area-inset-top)) 在模拟器/无刘海机型为 0，
 // 头部会顶进状态栏与系统时间叠印 → 改用 JS 注入的 statusBarHeight
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
 
@@ -81,7 +81,7 @@ const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
   align-items: center;
   gap: 16rpx;
   padding: 20rpx 24rpx;
-  padding-top: calc(env(safe-area-inset-top) + 20rpx);
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx);
   /* 2026-08-26：背景统一为页面底（--c-bg-page #EEF7F2），
      避免顶部纯白与下方内容浅灰绿拼接成"上下背景不一致" */
   background: var(--c-bg-page, #EEF7F2);

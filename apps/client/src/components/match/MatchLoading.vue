@@ -168,7 +168,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   position: absolute;
   /* 避开微信胶囊安全区（右上角）：下移至胶囊下方，right 预留胶囊宽度
      R4：右移+下移，避免叠压右侧头像下缘（judged 碰撞证据） */
-  top: calc(calc(env(safe-area-inset-top) + 20px) + 240rpx);
+  top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 240rpx);
   right: 140rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;

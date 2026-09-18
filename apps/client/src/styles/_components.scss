@@ -260,7 +260,7 @@
 // 现统一使用 _components.scss 中的版本，并配合 _mixins.scss 的 mixin 使用
 .base-safe-top {
   padding-top: constant(safe-area-inset-top);
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--statusbar, env(safe-area-inset-top));
 }
 
 .base-safe-bottom {

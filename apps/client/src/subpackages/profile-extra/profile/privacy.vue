@@ -14,7 +14,7 @@ import { useProfileStore } from "../../../stores/profile";
 import { designTokens } from "../../../theme/tokens";
 // infra R2-00084: 路由路径常量化
 import { ROUTES } from "../../../constants/routes";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+// 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
@@ -115,7 +115,7 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
+  padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
   background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 

@@ -18,6 +18,10 @@ import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
 import { resolveMediaUrl } from "../../../utils/media";
+// R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -116,7 +120,7 @@ onLoad(() => {
 </script>
 
 <template>
-  <view class="location-page">
+  <view class="location-page" :style="menuStyleVars">
     <view class="location-header">
       <view class="location-header__back press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <image class="location-header__back-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
@@ -198,7 +202,7 @@ onLoad(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 16rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 16rpx;
   background: #ffffff;
   border-bottom: 1rpx solid #EEF2F0;
 }

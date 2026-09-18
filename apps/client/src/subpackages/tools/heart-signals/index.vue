@@ -23,7 +23,7 @@ import { likesPageRequirements } from "../../../config/page-access";
 import { showErrorToast } from "../../../utils/error-toast";
 // 2026-08-09：返回键图标需要 IMAGE_PATHS
 import { IMAGE_PATHS } from "../../../config/images";
-// MP-R8-STATUS-003：注入 --statusbar（DevTools env(safe-area-inset-top) 恒 0，关闭钮叠印状态栏）
+// MP-R8-STATUS-003：注入 --statusbar（DevTools var(--statusbar, env(safe-area-inset-top)) 恒 0，关闭钮叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 
 const { t } = useI18n();
