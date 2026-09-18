@@ -1,0 +1,4 @@
+﻿# R10: re-run session bootstrap in-app (token already in storage)
+$js = 'function(){ try { var app=getApp(); var vm=app[''$vm'']; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm[''$pinia'']||gp[''$pinia'']; var s=p._s.get(''session''); if(!s){return ''no-session-store'';} var r=s.bootstrap(); if(r&&r.then){ r.then(function(){ console.log(''R10BOOT done''); }).catch(function(e){ console.log(''R10BOOT err ''+e); }); return ''bootstrap-async''; } return ''bootstrap-sync''; } catch(e){ return ''ERR ''+e.message; } }'
+& "D:\微信开发者\微信web开发者工具\wechatide.cmd" -c ZCode automation_evaluate --project "D:\6\恋爱小程序" --fn-source $js *> "$env:TEMP\eval4.txt"
+Get-Content "$env:TEMP\eval4.txt" -Encoding UTF8 | Select-String -Pattern '"result"|ERR|bootstrap|no-' | ForEach-Object { $_.Line }

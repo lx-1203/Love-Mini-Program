@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Round-10 全站审查 · 问题清单（2026-09-17）</title>
+<style>
+  :root{
+    --c-primary:#36C99A; --c-primary-dk:#22A87C; --c-pink:#F35C7D;
+    --c-bg:#EEF7F2; --c-card:#FFFFFF; --c-border:#DCEAE3;
+    --c-text:#1F2D28; --c-text-2:#5B6E67; --c-text-3:#8B9C95;
+    --p1:#E5484D; --p1-bg:#FDECEC; --p2:#E08A00; --p2-bg:#FFF6E5; --p3:#5B6E67; --p3-bg:#F1F5F3;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--c-bg);color:var(--c-text);
+    font-family:-apple-system,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px;}
+  header{background:linear-gradient(135deg,#36C99A,#22A87C);color:#fff;border-radius:20px;
+    padding:32px 34px;box-shadow:0 8px 28px rgba(54,201,154,.22);}
+  header .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.85;font-weight:600;}
+  header h1{margin:8px 0 6px;font-size:26px;font-weight:800;letter-spacing:-.2px;}
+  header p{margin:0;opacity:.94;font-size:14px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px;}
+  .stat{background:var(--c-card);border:1px solid var(--c-border);border-radius:14px;padding:16px 18px;}
+  .stat b{display:block;font-size:24px;font-weight:800;line-height:1.2;}
+  .stat span{font-size:12.5px;color:var(--c-text-2);}
+  .stat.p1 b{color:var(--p1);} .stat.p2 b{color:var(--p2);} .stat.p3 b{color:var(--p3);}
+  h2{font-size:19px;margin:44px 0 14px;padding-left:13px;border-left:4px solid var(--c-primary);
+    font-weight:800;letter-spacing:-.2px;}
+  h3{font-size:16px;margin:26px 0 10px;font-weight:700;}
+  .card{background:var(--c-card);border:1px solid var(--c-border);border-radius:16px;padding:22px 24px;}
+  table{width:100%;border-collapse:collapse;background:var(--c-card);border-radius:14px;overflow:hidden;
+    font-size:13.5px;}
+  th{background:#F5FAF7;text-align:left;padding:11px 12px;font-weight:700;color:var(--c-text-2);
+    font-size:12.5px;border-bottom:1px solid var(--c-border);white-space:nowrap;}
+  td{padding:11px 12px;border-bottom:1px solid #EFF5F2;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .lv{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:800;
+    letter-spacing:.02em;}
+  .lv.p1{background:var(--p1-bg);color:var(--p1);} .lv.p2{background:var(--p2-bg);color:var(--p2);}
+  .lv.p3{background:var(--p3-bg);color:var(--p3);}
+  code{background:#F1F6F3;border:1px solid #E2EDE7;border-radius:6px;padding:1px 6px;
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#1F6B52;}
+  pre{background:#16211D;color:#DFF3EA;border-radius:12px;padding:16px 18px;overflow:auto;
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.65;margin:12px 0;}
+  pre .cmt{color:#7FA898;} pre .bad{color:#FF9B9B;} pre .good{color:#7EE7B8;}
+  .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px;margin:16px 0 4px;}
+  figure{margin:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:12px;
+    overflow:hidden;}
+  figure img{display:block;width:100%;height:auto;background:#fff;}
+  figcaption{padding:7px 9px;font-size:11.5px;color:var(--c-text-2);line-height:1.45;
+    border-top:1px solid #EFF5F2;}
+  figcaption b{color:var(--c-text);}
+  .note{background:#F4FBF8;border-left:4px solid var(--c-primary);border-radius:0 12px 12px 0;
+    padding:14px 18px;margin:14px 0;font-size:13.5px;color:#28453C;}
+  .warn{background:#FFFBF0;border-left:4px solid var(--p2);border-radius:0 12px 12px 0;
+    padding:14px 18px;margin:14px 0;font-size:13.5px;color:#5A4718;}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  ul{margin:8px 0;padding-left:22px;} li{margin:5px 0;}
+  .path{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1F6B52;
+    background:#F1F6F3;border-radius:6px;padding:1px 6px;}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--c-border);
+    font-size:12.5px;color:var(--c-text-3);}
+  @media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr);}.kv{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Round-10 · Full-site Visual Audit</div>
+  <h1>全站审查问题清单</h1>
+  <p>81 张巡检截图逐张读图 + 代码/接口双向溯源 · 2026-09-16 23:44 → 09-17 00:14 取证</p>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>81</b><span>巡检截图（78 路由 + 3 校验）</span></div>
+  <div class="stat p1"><b>4</b><span>P1 用户可见功能性错误</span></div>
+  <div class="stat p2"><b>10</b><span>P2 视觉 / 交互一致性</span></div>
+  <div class="stat p3"><b>8</b><span>P3 数据 / 文案 / 素材</span></div>
+</div>
+
+<h2>先看这条：三条系统性根因</h2>
+<div class="card">
+  <p style="margin-top:0"><b>22 项问题里，一大半不是"各修各的"，而是三条系统性根因的不同表现。</b>先修这三条，其余大半自动消失。</p>
+  <table>
+    <tr><th style="width:74px">根因</th><th>一句话</th><th style="width:210px">量级</th><th style="width:180px">直接命中</th></tr>
+    <tr>
+      <td><b>A</b></td>
+      <td>状态栏避让：统一写法是 <code>var(--statusbar, env(…))</code>，但全站 <b>~50 处仍是 env-only</b>，在小程序中恒等于 0</td>
+      <td>103 处写法 / 约 50 个文件<br>已合规仅 <b>14 页</b></td>
+      <td>P1-003 + 33 / 45 / 47 / 69 / 70</td>
+    </tr>
+    <tr>
+      <td><b>B</b></td>
+      <td>空态判定没区分「未开始拉取 / 拉取中 / 确实不存在」→ 冷启动直连误报"不存在"</td>
+      <td>1 处判定逻辑<br>影响所有深链入口</td>
+      <td>P1-001</td>
+    </tr>
+    <tr>
+      <td><b>C</b></td>
+      <td>商业化封存开关没接进页面 → 同一策略在同一 App 里有三种表现</td>
+      <td>封存闸覆盖面未审计</td>
+      <td>P1-002</td>
+    </tr>
+  </table>
+</div>
+
+<h3>根因 A · 状态栏避让链路断点</h3>
+<div class="note">
+  R8 报 4×P1 状态栏、R9 又发现 1 处、R10 再撞见 5 处 —— <b>不是修得不够勤，是缺一次语法级收口。</b>
+  全仓语法扫描结果如下（含一个反直觉发现）：
+</div>
+<table>
+  <tr><th>扫描项</th><th style="width:110px">数量</th><th>说明</th></tr>
+  <tr><td>出现 <code>env(safe-area-inset-top)</code></td><td><b>103</b></td><td>覆盖约 50 个页面 / 组件</td></tr>
+  <tr><td>用 <code>var(--statusbar</code> 且已接注入源</td><td><b>14 页</b></td><td>R8/R9 等轮次逐个修过的（home / nearby / profile / hub / circle-home / likes / album / interest …）</td></tr>
+  <tr><td>用 <code>var(--statusbar</code> 但没接注入源</td><td><b>0</b></td><td>好消息：已修的都接对了</td></tr>
+  <tr><td>仍是 env-only（无兜底）</td><td><b>~50</b></td><td>模拟器 / 多数机型 <code>env(safe-area-inset-top)=0</code> → 顶部避让 = 0</td></tr>
+  <tr><td>注入 <code>usePageMetaStyle</code> 的文件</td><td><b>0</b></td><td>那条 <code>page-meta</code> 注入路径<b>从未被任何页面使用</b>（死代码，且造成"有两条注入路径"的认知歧义）</td></tr>
+</table>
+<div class="shots">
+  <figure><img src="../../screenshots/r10-audit/33-home-segment.png" alt="细分发现"><figcaption><b>33</b> 标题「细分发现·在线」被 22:59 压住</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/70-discover-activities.png" alt="线下活动"><figcaption><b>70</b> 首行文案被 0:11 压住</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/69-discover-discussions.png" alt="讨论圈"><figcaption><b>69</b> 副标题被状态栏叠印</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/45-love-center-nearby.png" alt="附近的人"><figcaption><b>45</b> 标题顶到屏幕最上沿</figcaption></figure>
+</div>
+<p style="font-size:13.5px;color:var(--c-text-2)">
+  注：<code>45</code> 的写法是 <code>padding: calc(env(safe-area-inset-top) + var(--sp-4))</code>，env 为 0 时实际只剩 8px。
+  另存在<b>第三套变量命名</b> <span class="path">--statusbar-height</span>（<span class="path">pages/nearby/index.vue:503</span>）。
+</p>
+
+<h3>根因 B · 空态判定竞态</h3>
+<p style="font-size:13.5px;margin-bottom:4px"><span class="path">subpackages/circles/circles/circle-home.vue:85-89</span></p>
+<pre><span class="cmt">// 现状：store 冷启动时必定返回 true（不等接口回来）</span>
+const isUnknownCircle = computed(() =&gt; {
+  if (useMock()) return false;
+  if (!circleId.value) return true;
+  return !circles.value.some((c) =&gt; c.id === circleId.value);  <span class="bad">// ← 竞态源</span>
+});
+
+<span class="cmt">// 建议：区分「未就绪」与「确实不存在」</span>
+if (loading.value || circles.value.length === 0) return false;  <span class="good">// 未就绪 → 骨架态</span>
+return !circles.value.some((c) =&gt; c.id === circleId.value);      <span class="good">// 已就绪未命中 → 真不存在</span></pre>
+<div class="kv">
+  <div class="card">
+    <b>已排除的假设</b>
+    <ul>
+      <li>不是 id 类型不匹配 —— store 内 <code>id: String(raw.id)</code> 已归一化</li>
+      <li>不是数据缺失 —— 实测 <code>GET /api/v1/circles</code> 返回 <b>id=8「摄影」圈存在</b>（12001 成员 / 5 话题）</li>
+      <li>不是后端缺接口误导（<code>/circles/{id}</code> 详情本就不存在，前端走 store 匹配）</li>
+    </ul>
+  </div>
+  <div class="card">
+    <b>为什么 R9 没抓到</b>
+    <ul>
+      <li>R9 是<b>从兴趣圈列表页点进去</b>的 → store 已热 → 判定命中，通过</li>
+      <li>R10 用 <code>wx.reLaunch</code> <b>直连</b> → store 冷 → 复现</li>
+      <li>结论：<b>深链 / 冷启动必须作为独立测试维度</b></li>
+    </ul>
+  </div>
+</div>
+<div class="shots">
+  <figure><img src="../../screenshots/r10-audit/25-circles-circle-home.png" alt="圈子不存在"><figcaption><b>25</b> 有效圈子被判「圈子不存在或已解散」</figcaption></figure>
+</div>
+
+<h3>根因 C · 封存开关未接线</h3>
+<div class="warn">
+  后端 <code>app-config</code> 实测 <code>commerce.enabled / vip / coin / course / consult 全部 = false</code>，但同一 App 内封存有三种表现：
+  <b>① 恋爱咨询页照常展示 ¥99/¥129/¥159 课程 +「报名」按钮</b>（未接线）｜
+  ② market 三页正确渲染「功能封存中」卡（接线正常）｜
+  ③ VIP 三页走 onLoad 守卫跳回「我的」（守卫正常）。
+</div>
+<div class="shots">
+  <figure><img src="../../screenshots/r10-audit/47-love-center-consulting.png" alt="恋爱咨询"><figcaption><b>47</b> 封存态下仍可「报名」付费课程</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/73-market-detail.png" alt="商品详情"><figcaption><b>73</b> 封存卡 —— 正确表现</figcaption></figure>
+</div>
+
+<h2>P1 · 用户可见的功能性错误（4 项）</h2>
+<table>
+  <tr><th style="width:96px">编号</th><th style="width:120px">页面</th><th>问题</th><th style="width:130px">证据截图</th></tr>
+  <tr><td><span class="lv p1">P1-001</span></td><td>圈子主页</td><td>冷启动/深链进入<b>有效</b>圈子被判「圈子不存在或已解散」（见根因 B）</td><td><code>25</code></td></tr>
+  <tr><td><span class="lv p1">P1-002</span></td><td>恋爱咨询</td><td>封存态下仍展示付费课程与报名按钮（见根因 C）</td><td><code>47</code></td></tr>
+  <tr><td><span class="lv p1">P1-003</span></td><td>全站</td><td>状态栏叠印仍存于 ≥5 页（见根因 A）</td><td><code>33 45 47 69 70</code></td></tr>
+  <tr><td><span class="lv p1">P1-004</span></td><td>匹配成功 / 实名</td><td><b>头像渲染为空白白圆</b>（无兜底图），同账号在其他页正常 → 出在这两页的图片源 / 兜底路径</td><td><code>32 50</code></td></tr>
+</table>
+<div class="shots">
+  <figure><img src="../../screenshots/r10-audit/32-match-success.png" alt="匹配成功"><figcaption><b>32</b> 左侧本人头像空白（右侧正常）</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/50-real-name.png" alt="实名"><figcaption><b>50</b> 状态卡内头像空白白圆</figcaption></figure>
+</div>
+<p style="font-size:13.5px;color:var(--c-text-2)">
+  代码线索：<span class="path">match-success.vue:27</span> <code>myAvatar = profileStore.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR</code>，
+  而 <span class="path">src/static</span> 下<b>同时存在两份同名资源</b>（<code>default-avatar.jpg</code> 与 <code>assets/default-avatar.jpg</code>）→ 路径歧义；
+  叠加"mp base lib 拒 http 图"已确认结论，两个方向都要验。
+</p>
+
+<h2>P2 · 视觉 / 交互一致性（10 项）</h2>
+<table>
+  <tr><th style="width:96px">编号</th><th style="width:140px">页面</th><th>现象</th><th style="width:78px">截图</th><th style="width:250px">建议</th></tr>
+  <tr><td><span class="lv p2">P2-005</span></td><td>匹配列表</td><td>标题「匹配列表」与左上返回按钮<b>横向重叠</b>，右侧徽标 +「管理」同排挤压</td><td><code>36</code></td><td>返回键绝对定位，标题左内边距预留返回键宽；右侧操作收进「…」</td></tr>
+  <tr><td><span class="lv p2">P2-006</span></td><td>附近的人(卡)</td><td>昵称显示为 <code>? . . .</code>；橙色「亲密度 72%」标签压住简介文字；右上角有绿色残留块</td><td><code>45</code></td><td>先确认 <code>?</code> 是占位还是取数失败；简介容器右侧留出标签宽度</td></tr>
+  <tr><td><span class="lv p2">P2-007</span></td><td>校园圈</td><td>校名被「未认证」标挤到截断（「中国人民…」「上海交通…」）；数字 <code>2.8w</code> 与 <code>9,823</code> 格式混用</td><td><code>26</code></td><td>校名 ellipsis + 标签独立行；统一走 <code>formatCount</code></td></tr>
+  <tr><td><span class="lv p2">P2-008</span></td><td>搜索</td><td>缺返回入口；「输入关键词，搜索校园里的帖子」与「这里空空如也」重复矛盾；tab（用户/标签/学校）与空态文案语义不符</td><td><code>42</code></td><td>补导航栏；空态只留一句；tab 与文案对齐</td></tr>
+  <tr><td><span class="lv p2">P2-009</span></td><td>选择兴趣</td><td>底部「完成选择」按钮<b>遮挡</b>「互相陪伴」标签（内容溢出）</td><td><code>66</code></td><td>内容区底部 padding 用安全区 token 兜住</td></tr>
+  <tr><td><span class="lv p2">P2-010</span></td><td>MBTI</td><td>「提交并查看结果」按钮被裁切；「16 型速览」+「简化测试」两套 IA 挤一页；无返回</td><td><code>46</code></td><td>拆两页或改分段；补导航</td></tr>
+  <tr><td><span class="lv p2">P2-011</span></td><td>寻觅助手</td><td>首条消息被绿色 header 裁切，只剩半个气泡</td><td><code>61</code></td><td>滚动容器改成底部对齐 / 顶部避让 header 高度</td></tr>
+  <tr><td><span class="lv p2">P2-012</span></td><td>封存页 / 实名</td><td>无自定义导航栏、无标题，仅页面内「返回」按钮</td><td><code>73 74 75 50</code></td><td>统一自定义导航组件（返回 + 标题 + 胶囊避让）</td></tr>
+  <tr><td><span class="lv p2">P2-013</span></td><td>发布动态</td><td><b>两个「发布动态」并存</b>：<code>16</code> 无标题/无底栏，<code>17</code> 有标题输入提示 + 底栏（图片/话题/位置/提及/更多）</td><td><code>16 17</code></td><td>二选一收敛（建议留 <code>publish</code>），旧页仅做重定向</td></tr>
+  <tr><td><span class="lv p2">P2-014</span></td><td>恋爱咨询</td><td>模块导航为绿色实心，与全站白底+居中标题不一致；页内「MBTI」入口重复两次；整页仅 3 行</td><td><code>39 47</code></td><td>换全站导航样式；去重入口；补内容</td></tr>
+</table>
+<div class="shots">
+  <figure><img src="../../screenshots/r10-audit/36-likes.png" alt="匹配列表"><figcaption><b>36</b> 标题与返回键重叠</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/26-campus-hub.png" alt="校园圈"><figcaption><b>26</b> 校名截断 / 数字格式混用</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/66-setup-interest.png" alt="选择兴趣"><figcaption><b>66</b> 按钮遮挡「互相陪伴」</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/46-love-center-mbti.png" alt="MBTI"><figcaption><b>46</b> 提交按钮被裁切</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/61-official-chat.png" alt="寻觅助手"><figcaption><b>61</b> 首条消息被 header 裁切</figcaption></figure>
+  <figure><img src="../../screenshots/r10-audit/39-love-center.png" alt="恋爱咨询"><figcaption><b>39</b> 绿色导航 + 入口重复 + 内容空</figcaption></figure>
+</div>
+
+<h2>P3 · 数据 / 文案 / 素材（8 项）</h2>
+<table>
+  <tr><th style="width:96px">编号</th><th style="width:130px">范围</th><th>现象</th><th style="width:96px">截图</th></tr>
+  <tr><td><span class="lv p3">P3-015</span></td><td>多页 · 数据污染</td><td>审计残留进正式数据：聊天 <code>Round-8 audit: chat send verification</code>、帖子「Round-7 验收打卡…」、讨论圈同句重复 3 次、相册同图占 2 格</td><td><code>60 18 69 55</code></td></tr>
+  <tr><td><span class="lv p3">P3-016</span></td><td>多页 · 标签</td><td>新用户标签为英文 <code>running/movies/reading</code>，种子用户为中文「韩剧/写作/探店」</td><td><code>06 34 45</code></td></tr>
+  <tr><td><span class="lv p3">P3-017</span></td><td>附近的人</td><td>同列表内「北校区·5km」「南校区·6km」与「东南大学·6km」混排（校名 / 院区字段混用）</td><td><code>34</code></td></tr>
+  <tr><td><span class="lv p3">P3-018</span></td><td>讨论圈</td><td>顶部副标题与分组副标题几乎同句；讨论条目无作者、无时间、无头像</td><td><code>69</code></td></tr>
+  <tr><td><span class="lv p3">P3-019</span></td><td>寻觅助手</td><td>9 月推送「春季联谊会开始报名啦」；推送「签到赠 2 交友币」与封存策略矛盾</td><td><code>61</code></td></tr>
+  <tr><td><span class="lv p3">P3-020</span></td><td>线下活动</td><td>分类列显示兜底文案「其他」</td><td><code>70</code></td></tr>
+  <tr><td><span class="lv p3">P3-021</span></td><td>细分发现</td><td>「在线」10 条推荐全为女性头像，人格池性别分布单一</td><td><code>33</code></td></tr>
+  <tr><td><span class="lv p3">P3-022</span></td><td>我的相册</td><td>7 个空位边框淡到看不见；「添加照片」按钮白底淡字，弱可点击感</td><td><code>55</code></td></tr>
+</table>
+
+<h2>已核实为「非缺陷」· 防误报</h2>
+<div class="note">这 6 项看截图很像 bug，但核实后是<b>设计如此或数据正确</b>，不必改。列出来是为了避免下一轮重复投入。</div>
+<table>
+  <tr><th style="width:110px">截图</th><th style="width:290px">表象</th><th>核实结论</th></tr>
+  <tr><td><code>76 77</code></td><td>都显示「我的」页，两文件 md5 完全相同</td><td><span class="path">vip/index.vue:53-59</span> onLoad 守卫：无入口上下文 → 回我的页。<b>封存设计如此</b></td></tr>
+  <tr><td><code>12</code></td><td>显示寻觅页而非登录页</td><td><span class="path">login/index.vue:92</span> 已登录 → switchTab 寻觅。<b>守卫正确</b></td></tr>
+  <tr><td><code>31</code></td><td>显示寻觅卡而非「匹配中」动画</td><td><span class="path">matching.vue:45-47</span> 无 target 参数 → 回退寻觅。<b>脚本需带参才能巡检</b></td></tr>
+  <tr><td><code>15 43</code></td><td>显示「完善资料，解锁完整交友功能 30%」</td><td>完成度门槛锁定，非报错</td></tr>
+  <tr><td><code>73 74 75</code></td><td>「功能封存中」</td><td>与 ADR-2 一致</td></tr>
+  <tr><td><code>09 15</code></td><td>疑为「完成度 30%」bug 复发</td><td>巡检账号 100158 实测 <code>profileCompleted=false</code>、<code>scheduleCompleted=false</code>；30% = 仅基础资料（+schedule +interestTags 才 70%）。<b>数据正确</b></td></tr>
+</table>
+
+<h2>比单点修复更值钱：4 条流程改进</h2>
+<div class="card">
+  <h3 style="margin-top:0">6.1 巡检账号换成「满完成度 + 已实名」</h3>
+  <p>本次 81 张截图用的账号完成度仅 <b>30%</b>，直接导致心动信号（渲染的是 LockScreen）、村口锁屏、向导态、各类"资料锁"空态 —— <b>约 1/3 截图看到的是门槛态而不是真实内容态</b>，这轮巡检信息量被大幅浪费。</p>
+  <p><b>规范</b>：R11 起固定两套身份 —— ① <b>满配账号</b>（100% 资料 + 已实名 + 有聊天/帖子/相册）跑主链路；② <b>全新账号</b>跑门槛与空态链路。任一套缺席即视为巡检未完成。</p>
+
+  <h3>6.2 「撞见式修复」升级为「语法级收口」</h3>
+  <p>状态栏问题连修 5 轮仍有残留，根因就是缺守卫脚本。建议新增 <span class="path">apps/client/scripts/check-statusbar-offset.mjs</span>，三条规则：禁止裸 <code>env(safe-area-inset-top)</code>｜凡出现 <code>var(--statusbar</code> 必须同时存在注入源｜禁止自造变量名。挂到 <code>build:mp-weixin:real|mock|showcase</code> 三链前置 + pre-commit。</p>
+  <p>可复用范本：<span class="path">scripts/check-mp-image-styles.mjs</span>、<span class="path">scripts/check-tabbar-consistency.mjs</span>、<span class="path">scripts/git-hooks/pre-commit</span>。</p>
+
+  <h3>6.3 深链 / 冷启动独立成测试维度</h3>
+  <p>P1-001 只在冷启动暴露，热路径永远测不到。建议对每个分包首页与详情页补一次"冷启动直连"（reLaunch + store 冷），断言<b>首屏不得出现错误空态</b>。这类误报（"不存在 / 已解散 / 加载失败"）对产品的伤害远大于任何视觉瑕疵。</p>
+
+  <h3>6.4 双实现与卫生清理</h3>
+  <p><code>publish.vue</code> vs <code>post.vue</code>；<code>useStatusBarHeight</code> + <code>page-meta</code> 注入路径 0 引用（死代码）；<code>--statusbar</code> 与 <code>--statusbar-height</code> 并存；<code>default-avatar</code> 两份同名资源 —— 都属低风险、可静态识别，适合排一个技术债清理批次一次清完。</p>
+</div>
+
+<h2>R11 建议执行顺序</h2>
+<table>
+  <tr><th style="width:44px">#</th><th style="width:190px">动作</th><th>内容</th></tr>
+  <tr><td>1</td><td>P1-001 圈子冷启动空态</td><td>1 行判定 + 冷启动回归</td></tr>
+  <tr><td>2</td><td>P1-002 封存接线</td><td>恋爱咨询接线 + 全站封存覆盖面审计（带交易动作的页面逐个确认）</td></tr>
+  <tr><td>3</td><td>P1-003 状态栏收口</td><td>守卫脚本 → 一次扫掉 ~50 处 → 挂三链 CI + pre-commit</td></tr>
+  <tr><td>4</td><td>P1-004 头像兜底</td><td>统一头像兜底组件 + default-avatar 资源归一</td></tr>
+  <tr><td>5</td><td>P2 批量</td><td>005–014，按"页面组"分批提交，避免巨型 commit</td></tr>
+  <tr><td>6</td><td>P3 批量</td><td>数据/文案批次 + 测试数据清理迁移</td></tr>
+  <tr><td>7</td><td>回归基线</td><td>补齐双身份巡检（6.1），重跑全站截图</td></tr>
+</table>
+
+<footer>
+  证据索引：<span class="path">reports/screenshots/r10-audit/</span>（81 张）｜
+  巡检脚本 <span class="path">scripts/r10-shoot.ps1</span>｜
+  接口证据 <code>GET /api/v1/circles</code>（id=8 摄影圈存在）、<code>GET /api/v1/app-config</code>（commerce 全 false）｜
+  探针 <span class="path">tmp/r10probe2.py</span>、<span class="path">tmp/r10probe3.py</span><br>
+  Markdown 版：<span class="path">reports/audit/2026-09-17-r10-visual/audit-report.md</span>
+</footer>
+
+</div>
+</body>
+</html>
