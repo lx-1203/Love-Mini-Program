@@ -16,7 +16,7 @@ import { openUserProfile } from "../../../utils/navigation";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
-// 2026-09-04 视觉验收：env(safe-area-inset-top) 在模拟器/部分机型为 0，tabs 行上移进胶囊区被遮挡
+// 2026-09-04 视觉验收：var(--statusbar, env(safe-area-inset-top)) 在模拟器/部分机型为 0，tabs 行上移进胶囊区被遮挡
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { IMAGE_PATHS } from "../../../config/images";
 
@@ -29,6 +29,8 @@ const rootStyle = computed(() => ({
 }));
 
 const scope = ref<"nearby" | "city">("nearby");
+// R10-P3-016：标签 value → 展示文案
+const rowTags = (item: { tags?: string[] }) => tagLabelsFor(item.tags ?? [], t);
 const list = ref<DiscoverCard[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -219,7 +221,7 @@ function switchScope(next: "nearby" | "city") {
           </view>
           <text class="people-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
           <view v-if="item.tags && item.tags.length" class="people-row__tags">
-            <text v-for="tag in item.tags.slice(0, 3)" :key="tag" class="people-row__tag">{{ tag }}</text>
+            <text v-for="(tag, idx) in rowTags(item).slice(0, 3)" :key="idx" class="people-row__tag">{{ tag }}</text>
           </view>
         </view>
         <text class="people-row__arrow">›</text>
@@ -234,7 +236,7 @@ function switchScope(next: "nearby" | "city") {
 .people-page {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  padding: calc(env(safe-area-inset-top) + 20rpx) 32rpx 0;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

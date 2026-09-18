@@ -23,6 +23,8 @@ const props = withDefaults(defineProps<{
   image?: string;
   /** 显式主标题（优先级高于 type/message） */
   title?: string;
+  /** R10-P2-008：隐藏副标题（空态只留一句） */
+  hideSub?: boolean;
   /** 显式副标题/描述 */
   description?: string;
   /** 操作按钮文案（传入即渲染按钮，点击触发 action 事件） */
@@ -74,7 +76,11 @@ const titleText = computed(() => {
   return t('empty.noData');
 });
 
-const descriptionText = computed(() => props.description || presetSubMap[props.type] || t('empty.noDataSub'));
+const descriptionText = computed(() => {
+  // R10-P2-008：hideSub 允许「只留一句」——空态主标题与「这里空空如也」语义重复时使用
+  if (props.hideSub) return '';
+  return props.description || presetSubMap[props.type] || t('empty.noDataSub');
+});
 
 const hasAction = computed(() => !!props.actionText);
 
@@ -93,7 +99,7 @@ function handleAction() {
     <XunmiMascot v-if="mascot" :mood="mascot" size="lg" animated />
     <image v-else class="empty-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="empty-msg">{{ titleText }}</text>
-    <text class="empty-sub">{{ descriptionText }}</text>
+    <text v-if="descriptionText" class="empty-sub">{{ descriptionText }}</text>
     <view
       v-if="hasAction"
       class="empty-action press-feedback"

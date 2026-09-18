@@ -62,19 +62,19 @@ const schools = SCHOOLS.map((s) => ({
 const schoolStats: Record<string, { members: string; posts: string; peers: string }> = {
   pku: { members: "3.2k 同学", posts: "2.8w 动态", peers: "等 342 位同学" },
   thu: { members: "2.6k 同学", posts: "2.1w 动态", peers: "等 256 位同学" },
-  ruc: { members: "2.1k 同学", posts: "9,823 动态", peers: "等 301 位同学" },
+  ruc: { members: "2.1k 同学", posts: "9.8k 动态", peers: "等 301 位同学" },
   fudan: { members: "1.8k 同学", posts: "1.5w 动态", peers: "等 210 位同学" },
   sjtu: { members: "2.4k 同学", posts: "1.9w 动态", peers: "等 278 位同学" },
   tongji: { members: "1.7k 同学", posts: "1.3w 动态", peers: "等 194 位同学" },
   zju: { members: "1.4k 同学", posts: "1.1w 动态", peers: "等 163 位同学" },
   nju: { members: "1.6k 同学", posts: "1.2w 动态", peers: "等 187 位同学" },
   whu: { members: "1.9k 同学", posts: "1.4w 动态", peers: "等 225 位同学" },
-  sysu: { members: "1.3k 同学", posts: "9,500 动态", peers: "等 152 位同学" },
-  szu: { members: "1.2k 同学", posts: "8,600 动态", peers: "等 138 位同学" },
+  sysu: { members: "1.3k 同学", posts: "9.5k 动态", peers: "等 152 位同学" },
+  szu: { members: "1.2k 同学", posts: "8.6k 动态", peers: "等 138 位同学" },
 };
 
 function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
-  return schoolStats[school.id] || { members: "1.0k 同学", posts: "8,000 动态", peers: "等 120 位同学" };
+  return schoolStats[school.id] || { members: "1.0k 同学", posts: "8k 动态", peers: "等 120 位同学" };
 }
 
 /** 我加入的（本校已认证） */
@@ -243,6 +243,8 @@ function goBack() {
       <view class="campus-school-card__body">
         <view class="campus-school-card__name-row">
           <text class="campus-school-card__name">{{ school.name }}</text>
+        </view>
+        <view class="campus-school-card__meta-row">
           <view
             class="campus-school-card__badge"
             :class="{
@@ -255,8 +257,8 @@ function goBack() {
               {{ activeTab === 'joined' ? (isVerified ? t('campusHub.certified') : t('campusHub.statusPending')) : t('campusHub.unverified') }}
             </text>
           </view>
+          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
         </view>
-        <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
         <!-- 成员头像预览 -->
         <view class="campus-school-card__members">
           <view class="campus-school-card__avatar-stack">
@@ -287,7 +289,7 @@ function goBack() {
 .campus-hub {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  padding: calc(calc(env(safe-area-inset-top) + 20px) + 20rpx) 32rpx 0;
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 20rpx) 32rpx 0;
   box-sizing: border-box;
 }
 
@@ -299,7 +301,7 @@ function goBack() {
   margin-bottom: 24rpx;
   /* 状态栏高度 + 右侧避让微信胶囊（--capsule-right/--statusbar 由 useMenuButtonRect 注入）
      R4：原 padding-right = capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%；
-     且 env(safe-area-inset-top) 在开发者工具恒 0，margin-top 改用 --statusbar */
+     且 var(--statusbar, env(safe-area-inset-top)) 在开发者工具恒 0，margin-top 改用 --statusbar */
   margin-top: calc(var(--statusbar, env(safe-area-inset-top)) + 8px);
   padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
@@ -549,6 +551,23 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: 12rpx;
+}
+
+/* R10-P2-007：badge 下沉到统计行，校名独占整行——「中国人民大学/上海交通大学」不再被挤成省略号 */
+.campus-school-card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 8rpx;
+  min-width: 0;
+}
+
+.campus-school-card__meta-row .campus-school-card__badge {
+  flex-shrink: 0;
+}
+
+.campus-school-card__meta-row .campus-school-card__stats {
+  margin-top: 0;
 }
 
 .campus-school-card__name {

@@ -9,6 +9,7 @@
  * 2026-08-07 已落地真实内容源：四板块 → 咨询课程页 / 帮助客服页，测试 → MBTI 页。
  */
 import { useI18n } from "vue-i18n";
+import AppShell from "../../../components/layout/AppShell.vue";
 import { computed } from "vue";
 import { onShareAppMessage } from "@dcloudio/uni-app";
 import { lightHaptic } from "../../../utils/haptic";
@@ -18,11 +19,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useSessionStore } from "../../../stores/session";
 // 批次 A5：商业化封存开关
 import { useAppConfigStore } from "../../../stores/app-config";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
-import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
-
 const { t } = useI18n();
-const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
 const appConfig = useAppConfigStore();
 
@@ -43,23 +40,13 @@ const testEntries = [
 const quickEntries = computed(() => {
   const entries: Array<{ id: string; icon: string; titleKey: string; url: string }> = [
     { id: "nearby", icon: IMAGE_PATHS.ICONS_EMOJI.LOCATION, titleKey: "contentPages.entries.nearby", url: ROUTES.LOVE_CENTER.NEARBY },
-    { id: "mbti", icon: IMAGE_PATHS.ICONS_EMOJI.PUZZLE, titleKey: "contentPages.entries.mbti", url: ROUTES.LOVE_CENTER.MBTI },
+    // R10-P2-014：MBTI 与下方「恋爱测试」区重复，仅保留后者
   ];
   if (appConfig.isCommerceOn("course")) {
     entries.push({ id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING as string });
   }
   return entries;
 });
-
-/** 返回上一页 */
-function goBack() {
-  const pages = getCurrentPages();
-  if (pages.length > 1) {
-    uni.navigateBack();
-  } else {
-    uni.switchTab({ url: "/pages/home/index" });
-  }
-}
 
 /** 任务 E3：跳转快捷入口对应内容页 */
 function goToQuickEntry(entry: { url: string }) {
@@ -98,16 +85,8 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <view class="love-center">
-    <!-- 顶部栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
-    <view class="love-center__header" :style="{ paddingTop: `calc(var(--sp-4) + ${statusBarHeightPx}px)` }">
-      <view class="love-center__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-        <text class="love-center__back-text">‹</text>
-      </view>
-      <text class="love-center__title">{{ t('home.loveConsulting') }}</text>
-      <view class="love-center__header-spacer" />
-    </view>
-
+  <AppShell :title="t('home.loveConsulting')" show-back>
+    <view class="love-center">
     <!-- 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程） -->
     <view class="love-center__section">
       <text class="love-center__section-title">{{ t('contentPages.entries.sectionTitle') }}</text>
@@ -173,7 +152,8 @@ onShareAppMessage(() => {
 
     <!-- 底部留白 -->
     <view class="love-center__footer-space" />
-  </view>
+    </view>
+  </AppShell>
 </template>
 
 <style scoped lang="scss">
@@ -181,40 +161,6 @@ onShareAppMessage(() => {
   min-height: 100vh;
   background: var(--c-bg-page, #f4f6fa);
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-.love-center__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
-}
-
-.love-center__back {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.2));
-}
-
-.love-center__back-text {
-  font-size: var(--fs-3xl, 40rpx);
-  color: var(--c-text-inverse, #ffffff);
-  line-height: 1;
-}
-
-.love-center__title {
-  font-size: var(--fs-xl, 34rpx);
-  font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
-}
-
-.love-center__header-spacer {
-  width: 64rpx;
 }
 
 .love-center__section {

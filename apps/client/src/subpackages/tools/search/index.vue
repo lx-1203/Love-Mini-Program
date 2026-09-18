@@ -23,7 +23,7 @@ import EmptyState from "../../../components/common/EmptyState.vue";
 import ErrorState from "../../../components/common/ErrorState.vue";
 import Skeleton from "../../../components/common/Skeleton.vue";
 import { showErrorToast } from "../../../utils/error-toast";
-// 2026-09-04 视觉验收：statusBarHeight 注入，env(safe-area-inset-top) 模拟器为 0 会压刘海
+// 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
@@ -198,6 +198,10 @@ function goToActivity(activityId: number) {
   <view class="search-page">
     <!-- 顶部搜索栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
     <view class="search-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 16rpx)` }">
+      <!-- R10-P2-008：补返回入口（此前仅靠手势返回） -->
+      <view class="search-back press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.back')" @tap="goBack">
+        <image class="search-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
       <view class="search-box" role="search" :aria-label="t('search.placeholder')">
         <image class="search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
         <input
@@ -286,7 +290,7 @@ function goToActivity(activityId: number) {
         </view>
       </view>
 
-      <EmptyState v-if="searchStore.hotSearches.length === 0 && searchStore.history.length === 0" type="no-data" :message="t('search.emptyHint')" />
+      <EmptyState v-if="searchStore.hotSearches.length === 0 && searchStore.history.length === 0" type="no-data" :message="t('search.emptyHint')" hide-sub />
     </view>
 
     <!-- 搜索结果 -->
@@ -405,6 +409,23 @@ function goToActivity(activityId: number) {
   min-height: 100vh;
   background: var(--c-bg-page);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.search-back {
+  /* R10-P2-008：返回按钮（与全站圆角返回键一致） */
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full, 999rpx);
+  background: var(--c-bg-page, #EEF7F2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-back__icon {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .search-header {

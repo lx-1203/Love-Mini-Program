@@ -712,7 +712,7 @@ export default {
       "volunteer": "志愿",
       "food": "美食",
       "music": "音乐",
-      "other": "其他"
+      "other": "综合"
     },
     "timeLabel": "时间",
     "locationLabel": "地点",
@@ -2791,9 +2791,9 @@ export default {
     "hotSearches": "热搜",
     "history": "搜索历史",
     "clearHistory": "清除",
-    "emptyHint": "输入关键词，搜索校园里的帖子",
+    "emptyHint": "输入关键词，搜索感兴趣的人、标签和学校",
     "resultCount": "共 {n} 条结果",
-    "noResult": "没有找到相关帖子，换个词试试吧",
+    "noResult": "没有找到相关结果，换个词试试吧",
     "noMore": "已经到底啦",
     "matchTitle": "标题命中"
   },

@@ -24,7 +24,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { resolveMediaUrl } from "../../../utils/media";
-// MP-R8-STATUS-002：注入 --statusbar（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+// MP-R8-STATUS-002：注入 --statusbar（DevTools var(--statusbar, env(safe-area-inset-top)) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../../services/api";
@@ -434,6 +434,7 @@ onShow(() => {
         class="album-cell press-feedback"
         :class="{
           'album-cell--filled': cell.filled,
+          'album-cell--empty': !cell.filled,
           'album-cell--uploading': uploadingIndex === cell.index,
         }"
         hover-class="press-feedback--active"
@@ -627,6 +628,12 @@ onShow(() => {
   background: var(--c-bg-page);
 }
 
+/* R10-P3-022：空位近不可见 → 虚线描边 + 浅绿底，明确“可上传” */
+.album-cell--empty {
+  border: 2rpx dashed var(--c-brand-300, #7DDBC0);
+  background: var(--c-brand-50, #E8FAF3);
+}
+
 .album-cell__img {
   position: absolute;
   top: 0;
@@ -649,8 +656,9 @@ onShow(() => {
 
 .album-cell__plus {
   font-size: 56rpx;
-  color: var(--c-text-tertiary);
-  font-weight: 300;
+  /* R10-P3-022：浅灰加号在白底上看不见 → 品牌绿 */
+  color: var(--c-brand, #36C99A);
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -692,8 +700,9 @@ onShow(() => {
 .album-add-btn {
   margin-top: var(--sp-6);
   padding: var(--sp-4) var(--sp-8);
-  background: var(--c-bg-container);
-  border: var(--c-border-card);
+  /* R10-P3-022：白底淡边弱可点击感 → 品牌描边 + 浅绿底 */
+  background: var(--c-brand-50, #E8FAF3);
+  border: 2rpx solid var(--c-brand, #36C99A);
   border-radius: var(--r-full);
   display: flex;
   align-items: center;

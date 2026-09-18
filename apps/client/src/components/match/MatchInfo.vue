@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+// R10-P3-016：标签 value → 展示文案统一映射（英文 key 与中文种子标签不再混排）
+const { t } = useI18n();
+import { tagLabelsFor } from "../../utils/tag-label";
 import type { MatchCardUser } from "../../types/match";
 import { IMAGE_PATHS } from "../../config/images";
 
@@ -34,7 +38,7 @@ const distanceLine = computed(() => {
 
 const intro = computed(() => props.user.headline || "");
 
-const visibleTags = computed(() => props.user.tags.slice(0, 4));
+const visibleTags = computed(() => tagLabelsFor(props.user.tags, t).slice(0, 4));
 
 const verified = computed(
   () =>

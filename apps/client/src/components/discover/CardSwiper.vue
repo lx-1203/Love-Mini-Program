@@ -31,6 +31,7 @@
  */
 import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { tagLabelsFor } from "../../utils/tag-label";
 import type { DiscoverCard, SwipeDirection } from "../../stores/discover";
 // 2026-08-11 新增：悬浮头像框第一视觉锚点（卡片中上部头像框主题注册表类型）
 import type { AvatarFrameId } from "../../config/avatar-frames";
@@ -326,6 +327,9 @@ const extractAge = (card?: DiscoverCard): string => {
   return match?.[1] ?? DEFAULT_AGE_FALLBACK;
 };
 
+// R10-P3-016：标签 value → 展示文案统一映射（utils/tag-label）
+const displayTags = computed(() => tagLabelsFor(currentCard.value?.tags, t));
+
 /** 匹配度分数（基于共同兴趣圈数量计算） */
 const matchScore = computed(() => {
   const card = currentCard.value;
@@ -359,8 +363,9 @@ const schoolLabel = computed(() => {
   const card = currentCard.value;
   if (!card) return "";
   if (card.campusName) return card.campusName;
-  const fromHeadline = card.headline?.split("·")[0]?.trim();
-  if (fromHeadline) return fromHeadline;
+  // R10-P2-006：headline 已是自由简介文案（如「刚入学的新生，喜欢摄影和夜跑。」），
+  // 再拆「·」塞进学校槽会把简介渲染成长胶囊并与认证徽章叠压——移除该兜底，
+  // 学校槽只认 campusName / 学历层级。
   return educationLabel.value;
 });
 
@@ -1208,8 +1213,9 @@ defineExpose({ onTouchMove });
 
           <!-- ④ 喜好兴趣标签（上移，紧跟身份行） -->
           <view v-if="currentCard.tags && currentCard.tags.length > 0" class="card__tags">
+            <!-- R10-P3-016：标签 value 统一映射为展示文案（英文 key 与中文种子标签不再混排） -->
             <text
-              v-for="(tag, idx) in currentCard.tags.slice(0, 4)" :key="idx"
+              v-for="(tag, idx) in displayTags.slice(0, 4)" :key="idx"
               class="tag-pill"
             >{{ tag }}</text>
           </view>

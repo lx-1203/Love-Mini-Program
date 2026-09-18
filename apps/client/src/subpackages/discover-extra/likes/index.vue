@@ -22,7 +22,7 @@ import SafeImage from "../../../components/common/SafeImage.vue";
 import VerificationBadge from "../../../components/common/VerificationBadge.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import { usePageAccess } from "../../../composables/usePageAccess";
-// MP-R8-STATUS-001：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
+// MP-R8-STATUS-001：注入 --statusbar/--capsule-right（DevTools var(--statusbar, env(safe-area-inset-top)) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { likesPageRequirements } from "../../../config/page-access";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -1028,6 +1028,9 @@ onShareAppMessage(() => {
   margin-bottom: var(--section-gap);
   position: relative;
   z-index: 1;
+  /* R10-P2-005：胶囊避让从 .likes-header__actions 上移到整行——
+     此前 actions 独占 96px 预留，空间不足时把「心动信号」顶进标题（双侧 shrink:0 相撞） */
+  padding-right: calc(var(--capsule-right, 7px) + 96px);
 }
 
 /* 2026-08-09：返回键 + 标题（左组合） */
@@ -1036,6 +1039,8 @@ onShareAppMessage(() => {
   align-items: center;
   gap: var(--sp-3);
   min-width: 0;
+  /* R10-P2-005：极端窄屏下允许标题省略，禁止与右侧按钮叠字 */
+  overflow: hidden;
 }
 
 .likes-header__back {
@@ -1059,8 +1064,11 @@ onShareAppMessage(() => {
   font-size: var(--fs-5xl);
   font-weight: 700;
   color: var(--c-text-primary);
-  /* MP-R8-CAPSULE-001：标题不参与收缩，避免「匹配列表」被胶囊避让挤压折行 */
-  flex-shrink: 0;
+  /* MP-R8-CAPSULE-001：不折行；R10-P2-005：超宽时省略号截断而非与按钮叠字 */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   // #ifdef H5
   background: linear-gradient(135deg, var(--c-brand), var(--c-romance-500));
@@ -1603,10 +1611,9 @@ onShareAppMessage(() => {
 
 /* 头部操作区（管理按钮 + 心动信号） */
 .likes-header__actions {
-  /* MP-R8-CAPSULE-001：右侧「管理/心动信号」需避开胶囊按钮。
-     --capsule-right 仅为胶囊右缘间隙（≈7px），此处按标准胶囊全宽 87px + 间隙预留 96px。 */
-  padding-right: calc(var(--capsule-right, 7px) + 96px);
+  /* R10-P2-005：胶囊预留已上移到 .likes-header 整行，此处不再重复预留 */
   min-width: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: var(--sp-3);

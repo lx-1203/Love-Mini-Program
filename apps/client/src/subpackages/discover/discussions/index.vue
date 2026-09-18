@@ -74,7 +74,8 @@ function openDiscussion(item: Awaited<ReturnType<typeof clientApi.getDiscussionR
     current-tab="likes"
     show-back
   >
-    <SectionCard :title="t('discussions.hotSectionTitle')" :subtitle="t('discussions.hotSectionSubtitle')">
+    <!-- R10-P3-018：与页头 subtitle 近同句，删除分组副标题只留一句 -->
+    <SectionCard :title="t('discussions.hotSectionTitle')">
       <view v-if="loading" class="empty-state">
         <SkeletonBlock variant="list" :rows="3" :label="t('discussions.loadingContent')" />
       </view>
