@@ -21,6 +21,10 @@ import { request } from "../../../services/http";
 import { clientApi } from "../../../services/api";
 // infra R2-00131：统一图片选择封装（含隐私授权守卫 + 大小校验）
 import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
+// R10-P2-012：注入 --statusbar（safe-top 依赖该变量，DevTools env 恒 0）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -398,7 +402,9 @@ function onBlur() {
 </script>
 
 <template>
-  <view class="real-name-page">
+  <view class="real-name-page" :style="menuStyleVars">
+    <!-- R10-P2-012：安全区占位必须在导航栏之前——此前 nav-bar 顶到 y=0，返回键/标题被状态栏盖住 -->
+    <view class="safe-top" />
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
@@ -408,16 +414,14 @@ function onBlur() {
       <view class="nav-bar__placeholder" />
     </view>
 
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
-
     <!-- 认证状态卡片 -->
     <view v-if="statusLoading" class="status-card" role="status" aria-live="polite">
       <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
     </view>
     <view v-else class="status-card" :style="{ background: statusInfo.bgColor }">
       <view class="status-card__emoji-wrap">
-        <SafeImage :src="statusInfo.icon" custom-class="status-card__emoji-img" mode="aspectFit" />
+        <!-- R10-P4 跟进：SafeImage custom-class 跨组件作用域不生效导致图标零尺寸，改原生 image（本地 SVG，兜底由 SafeImage 语义外的空态兜底承担） -->
+        <image class="status-card__emoji-img" :src="statusInfo.icon" mode="aspectFit" alt="" />
       </view>
       <text class="status-card__title" :style="{ color: statusInfo.color }">{{ statusInfo.title }}</text>
       <text class="status-card__desc">{{ statusInfo.desc }}</text>
@@ -640,7 +644,7 @@ function onBlur() {
 /* ==================== 安全区占位 ==================== */
 .safe-top {
   
-  height: calc(env(safe-area-inset-top) + 0rpx);
+  height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
 
@@ -661,6 +665,13 @@ function onBlur() {
   flex-direction: column;
   align-items: center;
   box-shadow: 0 4rpx 16rpx var(--c-neutral-shadow-md);
+}
+
+
+.status-card__emoji-img {
+  /* R10-P1-004：SafeImage custom-class 此前未定义尺寸 → 图标零尺寸渲染为空白圆 */
+  width: 72rpx;
+  height: 72rpx;
 }
 
 .status-card__emoji-wrap {

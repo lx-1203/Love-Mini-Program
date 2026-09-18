@@ -10,6 +10,7 @@ import { buildMatchReasons, toMatchCardUser } from "../../../view-models/match";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import type { MatchCardUser } from "../../../types/match";
 import MatchSuccess from "../../../components/match/MatchSuccess.vue";
@@ -24,7 +25,12 @@ const fallbackPartner = ref<MatchCardUser | null>(null);
 const loading = ref(false);
 
 const partner = computed(() => matchStore.matchedUser ?? fallbackPartner.value);
-const myAvatar = computed(() => profileStore.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR);
+const myAvatar = computed(
+  () =>
+    // R10-P1-004：avatarUrl 为服务端原始路径（/uploads/...），必须经统一媒体出口解析；
+    // 解析失败/为空时落地本地默认头像，禁止空白圆
+    resolveMediaUrl(profileStore.avatarUrl) || IMAGE_PATHS.DEFAULT_AVATAR,
+);
 const partnerAvatar = computed(() => partner.value?.avatar || partner.value?.photo || IMAGE_PATHS.DEFAULT_AVATAR);
 const reasons = computed(() => (partner.value ? buildMatchReasons(partner.value) : []));
 

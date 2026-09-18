@@ -2,26 +2,38 @@
 /**
  * 恋爱咨询课程（任务 E3）
  *
+ * R10-P1-002（2026-09-17 全站审查）：本页带付费课程与「报名」交易动作，
+ * 必须接商业化封存闸 —— commerce.consult（含总闸）为 false 时渲染封存卡，
+ * 与 market 三页（ADR-2）表现一致；此前封存态下仍展示 ¥ 课程可报名。
+ *
  * 支持后台配置 H5 URL：onLoad 读取 contentPageUrls.consultingUrl，
- * 非空则渲染 <web-view>；为空则展示本地示例课程列表
- * （恋爱沟通课 / 脱单攻略课 / 亲密关系修复课）。
+ * 非空则渲染 <web-view>；为空则展示本地示例课程列表。
+ *
+ * R10-P2-014：导航从绿色实心渐变头改为全站统一 AppShell（白底 + 居中标题 + 返回），
+ * 同时消除该模块的状态栏叠印（R10-P1-003 家族：原 env-only 避让在 DevTools 恒 0）。
  */
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
+import AppShell from "../../../components/layout/AppShell.vue";
 import { lightHaptic } from "../../../utils/haptic";
 import { contentPageUrls } from "../../../config/content-pages";
 import { IMAGE_PATHS } from "../../../config/images";
+import { useAppConfigStore } from "../../../stores/app-config";
 // R4-00976：toast 时长走统一常量（TOAST_DURATION.NORMAL_MS = 2000ms）
 import { TOAST_DURATION } from "../../../constants/limits";
 
 const { t } = useI18n();
+const appConfig = useAppConfigStore();
 
 /** 后台配置的 H5 URL（非空时展示 web-view） */
 const webUrl = ref("");
 
-/** 返回按钮图标 */
-const backIcon = IMAGE_PATHS.ICONS_COMMON.BACK;
+/**
+ * R10-P1-002：咨询/课程属付费项目，commerce.consult 子闸（受总闸管辖）关闭即封存。
+ * 缺省封存（=== true 才放行），mock 后端未下发 commerce.* 时恒为封存态。
+ */
+const commerceSealed = computed(() => !appConfig.isCommerceOn("consult"));
 
 onLoad(() => {
   webUrl.value = contentPageUrls.consultingUrl ?? "";
@@ -54,27 +66,24 @@ function handleSignup() {
   lightHaptic();
   uni.showToast({ title: t("contentPages.consulting.signupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
 }
-
-/** 返回上一页（右上角固定按钮） */
-function goBack() {
-  uni.navigateBack();
-}
 </script>
 
 <template>
   <view class="content-page">
-    <!-- 后台配置 H5 URL：web-view 加载 -->
-    <web-view v-if="webUrl" :src="webUrl" class="content-webview" />
+    <!-- 后台配置 H5 URL：web-view 加载（封存态优先，不下发外部付费内容） -->
+    <web-view v-if="!commerceSealed && webUrl" :src="webUrl" class="content-webview" />
+
+    <!-- R10-P1-002：商业化封存态（commerce.consult=false）→ 封存卡，与 market/ADR-2 一致 -->
+    <AppShell v-else-if="commerceSealed" :title="t('contentPages.consulting.title')" show-back>
+      <view class="consult-sealed" aria-live="polite">
+        <image class="consult-sealed__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
+        <text class="consult-sealed__title">{{ t('commerce.sealedTitle') }}</text>
+        <text class="consult-sealed__desc">{{ t('commerce.sealedDesc') }}</text>
+      </view>
+    </AppShell>
 
     <!-- 本地示例内容 -->
-    <template v-else>
-      <view class="content-header">
-        <text class="content-header__title">{{ t('contentPages.consulting.title') }}</text>
-        <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-          <image class="content-header__back-icon" :src="backIcon" mode="aspectFit" alt="" />
-        </view>
-      </view>
-
+    <AppShell v-else :title="t('contentPages.consulting.title')" show-back>
       <scroll-view scroll-y class="content-scroll" :show-scrollbar="false">
         <view class="content-section">
           <text class="content-section__title">{{ t('contentPages.consulting.subtitle') }}</text>
@@ -96,7 +105,7 @@ function goBack() {
         </view>
         <view class="content-footer-space" />
       </scroll-view>
-    </template>
+    </AppShell>
   </view>
 </template>
 
@@ -110,41 +119,6 @@ function goBack() {
 
 .content-webview {
   flex: 1;
-}
-
-/* ========== 顶部栏（标题 + 右上角固定返回按钮） ========== */
-.content-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
-}
-
-.content-header__title {
-  font-size: var(--fs-xl, 34rpx);
-  font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
-}
-
-.content-header__back {
-  position: absolute;
-  top: calc(var(--sp-4) + env(safe-area-inset-top));
-  right: var(--sp-4);
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.2));
-}
-
-.content-header__back-icon {
-  width: 36rpx;
-  height: 36rpx;
-  color: var(--c-text-inverse, #ffffff);
 }
 
 .content-scroll {
@@ -162,6 +136,40 @@ function goBack() {
   font-weight: 700;
   color: var(--c-text-primary, #1f2937);
   margin-bottom: var(--sp-4);
+}
+
+/* ========== R10-P1-002：商业化封存卡（对齐 market/ADR-2 表现） ========== */
+.consult-sealed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  margin: var(--sp-6) var(--sp-4);
+  padding: calc(var(--sp-8) + var(--sp-4)) var(--sp-5);
+  border-radius: var(--r-xl, 24rpx);
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+}
+
+.consult-sealed__icon {
+  width: 96rpx;
+  height: 96rpx;
+  margin-bottom: var(--sp-2);
+  opacity: 0.85;
+}
+
+.consult-sealed__title {
+  font-size: var(--fs-xl, 34rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1f2937);
+}
+
+.consult-sealed__desc {
+  font-size: var(--fs-sm, 26rpx);
+  color: var(--c-text-secondary, #5b6470);
+  text-align: center;
+  line-height: 1.6;
 }
 
 /* ========== 课程列表 ========== */

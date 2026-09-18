@@ -25,7 +25,7 @@
  *
  * 2026-09-12 封面修复：圈名→封面统一走 config/circle-covers（circleCoverFor）。
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
@@ -81,10 +81,15 @@ const circle = computed<CircleItem>(() => {
 });
 
 /** real 模式且圈子未被 store 命中（缺参 / 无效 id / 列表拉取失败）。
- *  mock 模式保持原兜底（演示场景骨架不空屏）。 */
+ *  mock 模式保持原兜底（演示场景骨架不空屏）。
+ *  R10-P1-001（2026-09-17 冷启动审查）：深链/冷启动直连时 store 尚未拉取完成，
+ *  「未就绪」不能当「不存在」——先走骨架态，拉取落定后才允许判定未知圈，
+ *  否则分享卡片直达有效圈子会先闪「圈子不存在或已解散」。 */
+const circlesFetchSettled = ref(useMock());
 const isUnknownCircle = computed<boolean>(() => {
   if (useMock()) return false;
   if (!circleId.value) return true;
+  if (!circlesFetchSettled.value) return false;
   return !circles.value.some((c) => c.id === circleId.value);
 });
 
@@ -231,9 +236,27 @@ onLoad((query) => {
   if (query?.circleId) {
     circleId.value = String(query.circleId);
   }
-  // store 为空时补拉（复用列表页韧性逻辑：登录态/mock 判定由 store 内部处理）
+  // store 为空时补拉（复用列表页韧性逻辑：登录态/mock 判定由 store 内部处理）。
+  // R10-P1-001：落定前 isUnknownCircle 恒 false（骨架态），防止冷启动误判「圈子不存在」。
   if (circles.value.length === 0 && !circleStore.loading) {
-    void circleStore.fetchCircles();
+    circleStore
+      .fetchCircles()
+      .catch(() => {
+        // 拉取失败：落定后走未知圈空态（与既有失败表现一致），不阻塞渲染
+      })
+      .finally(() => {
+        circlesFetchSettled.value = true;
+      });
+  } else if (circleStore.loading) {
+    // 列表页等前置页已在拉取：等本次拉取落定再判定，避免空列表窗口期误判
+    const stopWatch = watch(loading, (pending) => {
+      if (!pending) {
+        circlesFetchSettled.value = true;
+        stopWatch();
+      }
+    });
+  } else {
+    circlesFetchSettled.value = true;
   }
   // 动态 feed：真实圈内话题（失败/空回退本地演示数据，不阻塞渲染）
   // 分享直达时 circleId 可能为空——仅在有真实圈 id 时拉取，避免 mock 圈 id 打到后端 404
@@ -349,6 +372,12 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       <view class="circle-notfound__btn press-feedback" hover-class="press-feedback--active" @tap="goBack">
         <text class="circle-notfound__btn-text">返回</text>
       </view>
+    </view>
+  </view>
+  <!-- R10-P1-001：冷启动/深链拉取未落定 → 骨架态，禁止提前渲染演示圈或误判未知圈 -->
+  <view v-else-if="!circlesFetchSettled" class="circle-home" :style="menuStyleVars">
+    <view class="circle-home-loading">
+      <SkeletonBlock variant="list" :rows="4" :label="t('common.loading')" />
     </view>
   </view>
   <view v-else class="circle-home" :style="menuStyleVars">
@@ -1101,6 +1130,11 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   padding: 24rpx;
   display: flex;
   justify-content: center;
+}
+
+/* R10-P1-001：冷启动骨架整页容器 */
+.circle-home-loading {
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 24rpx 24rpx;
 }
 
 .loading-tip-text {

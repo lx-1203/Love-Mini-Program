@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import type { MatchReason } from "../../types/match";
+
+// R10-P1-004：头像加载失败时落本地默认头像（纯 <image> 无 SafeImage 兜底链）
+const myAvatarFailed = ref(false);
+const partnerAvatarFailed = ref(false);
+function onMyAvatarError() {
+  myAvatarFailed.value = true;
+}
+function onPartnerAvatarError() {
+  partnerAvatarFailed.value = true;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -81,7 +91,7 @@ function getScoreIcon(index: number): string {
         <view class="match-success__avatar-wrap">
           <view class="match-success__ripple match-success__ripple--1"></view>
           <view class="match-success__ripple match-success__ripple--2"></view>
-          <image class="match-success__avatar" :src="myAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+          <image class="match-success__avatar" :src="myAvatarFailed ? IMAGE_PATHS.DEFAULT_AVATAR : myAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" @error="onMyAvatarError" />
         </view>
         <view class="match-success__heart">
           <view class="match-success__heart-circle">
@@ -91,7 +101,7 @@ function getScoreIcon(index: number): string {
         <view class="match-success__avatar-wrap">
           <view class="match-success__ripple match-success__ripple--1"></view>
           <view class="match-success__ripple match-success__ripple--2"></view>
-          <image class="match-success__avatar" :src="partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+          <image class="match-success__avatar" :src="partnerAvatarFailed ? IMAGE_PATHS.DEFAULT_AVATAR : partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" @error="onPartnerAvatarError" />
         </view>
       </view>
 
