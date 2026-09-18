@@ -163,7 +163,7 @@ export const useVillageStore = defineStore("village", {
     nearbyError: null,
     // 2026-09-05 R17：自己刚发布、仍在审核流中的帖子——feed 顶部可见（带「审核中」徽标），
     // 修复"发布成功后帖子消失像没发出去"的体感缺陷；审核通过后服务端列表自然接管（按 id 去重）
-    selfPendingPosts: [] as PostItem[],
+    selfPendingPosts: [],
   }),
 
   getters: {

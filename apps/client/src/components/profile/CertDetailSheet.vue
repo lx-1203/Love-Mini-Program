@@ -12,6 +12,7 @@
  */
 import { ref, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
 import type { CertBadgeItem } from "./CertBadgeRow.vue";
@@ -206,7 +207,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
         <view class="cert-sheet__privacy">
           <image
             class="cert-sheet__privacy-icon"
-            src="/static/assets/icons/common/lock.svg"
+            :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG"
             mode="aspectFit"
             alt=""
           />

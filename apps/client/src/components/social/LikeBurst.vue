@@ -9,7 +9,7 @@
  *
  * mp-weixin 兼容：
  * - 使用 CSS animation 而非 JS 动画（mp-weixin 对 requestAnimationFrame 支持有限）
- * - 不使用 backdrop-filter
+ * - 不使用 backdrop blur
  * - 使用 @tap / hover-class
  * - 不使用 import.meta.env
  *

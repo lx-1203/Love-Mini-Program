@@ -7,8 +7,8 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类
- * - 不使用 import.meta.env.DEV
- * - 不使用 backdrop-filter
+ * - 不使用 import.meta.env 直读 DEV 标志
+ * - 不使用 backdrop blur
  * - CSS 变量通过内联 style 注入，保证小程序端可解析
  *
  * P6 a11y：

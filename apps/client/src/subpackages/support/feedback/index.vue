@@ -15,9 +15,9 @@
  * mp-weixin 兼容性：
  * - 使用 @tap（不使用 @click）
  * - 使用 hover-class（不使用 :hover 伪类）
- * - 不使用 import.meta.env.DEV
+ * - 不使用 import.meta.env 直读 DEV 标志
  * - 不使用 optional catch binding（catch 必须带参数）
- * - 不使用 backdrop-filter
+ * - 不使用 backdrop blur
  */
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";

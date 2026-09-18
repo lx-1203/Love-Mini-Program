@@ -1,5 +1,5 @@
 <template>
-  <view class="favorites-page">
+  <view class="favorites-page" :style="menuStyleVars">
     <view class="favorites-header">
       <view
         class="favorites-header__back press-feedback"
@@ -65,6 +65,10 @@ import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import { resolveMediaUrl } from "../../../utils/media";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const villageStore = useVillageStore();

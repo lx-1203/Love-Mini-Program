@@ -287,12 +287,15 @@ function resolveCurrentUserIdFromToken(): string | null {
     if (parts.length < 2) return null;
     // 手写 base64url 解码（mp-weixin 运行时不保证 atob 可用）
     const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    // noUncheckedIndexedAccess：split 索引访问为 string|undefined，需显式收敛
+    const payload = parts[1];
+    if (payload === undefined) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     let bits = 0;
     let acc = 0;
     let out = "";
     for (let i = 0; i < normalized.length; i++) {
-      const ch = normalized[i];
+      const ch = normalized.charAt(i);
       if (ch === "=") break;
       const idx = B64.indexOf(ch);
       if (idx < 0) return null;
@@ -884,8 +887,12 @@ export const useMessagesStore = defineStore("messages", {
             const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind, body: content, sentAt: new Date().toISOString() };
             this.currentMessages.push(nm);
             // R16：同步写 mockMessages——fetchSessionMessages 用 mockMessages 整表覆盖，
-            // 此前漏写导致刷新后刚发的消息消失
-            const bucket = this.mockMessages[sessionId] ?? (this.mockMessages[sessionId] = []);
+            // 此前漏写导致刷新后刚发的消息消失。
+            // 2026-09-17 修复 [PRODUCT-FIX]：原实现误写 this.mockMessages（state 未声明该字段，
+            // 运行时为 undefined → mock 模式下发送消息必抛 TypeError，被请求层包装成
+            // EnhancedApiError "Cannot read properties of undefined (reading 'session-private-1')"）。
+            // 改写模块级 mockMessages fixture（fetchSessionMessages L672 读的正是这一份）。
+            const bucket = mockMessages[sessionId] ?? (mockMessages[sessionId] = []);
             if (!bucket.some((m) => m.id === nm.id)) bucket.push(nm);
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = nm.sentAt; }
@@ -900,7 +907,9 @@ export const useMessagesStore = defineStore("messages", {
             url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
             method: "POST",
             data: { content, kind },
-            header: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
+            // [PRODUCT-FIX] 键名修正 `header`→`headers`（RequestOptions 实际字段），
+            // 此前随机幂等键未随请求发出，同文案重发仍会被稳定键幂等去重拦截。
+            headers: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
           });
           const mr = mapToMessageItem(result);
           // R16：POST 回包与 WS 回推可能同达，按 id 去重（此前重复 push 出现右侧双气泡）

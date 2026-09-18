@@ -24,7 +24,9 @@ describe("custom-tab-bar configuration", () => {
     iconPath: string;
     activeIconPath: string;
   }> {
-    const tabsMatch = source.match(/data:\s*\{\s*tabs:\s*\[([\s\S]*?)\],/);
+    // 2026-09-17：data 节点新增 hidden 属性与注释（全屏弹层隐藏 TabBar），
+    // 原 /data:\s*\{\s*tabs:/ 正则不再匹配；放宽为允许 data 与 tabs 之间的其他属性/注释。
+    const tabsMatch = source.match(/data:\s*\{[\s\S]*?tabs:\s*\[([\s\S]*?)\],/);
     if (!tabsMatch) {
       throw new Error("无法从 custom-tab-bar/index.js 中解析 tabs 数组");
     }

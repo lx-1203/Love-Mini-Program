@@ -107,7 +107,10 @@ describe("MatchGuideOverlay component - 匹配成功引导弹窗组件", () => {
     const wrapper = mountOverlay();
     const first = wrapper.findAll(".mgo-circle-chip")[0];
     expect(first.find(".mgo-circle-name").text()).toBe("摄影圈");
-    expect(first.find(".mgo-circle-icon").text()).toBe("📷");
+    // 2026-08-26 起（禁 emoji 图标约束）：icon 字符经 resolveCircleIcon 映射为 SVG
+    // <image class="mgo-circle-icon-img"> 渲染（emoji 字符不再直接出现在 DOM），
+    // 断言由「emoji 文本」改为「SVG 图标图存在」（语义不变：兴趣圈图标渲染）。
+    expect(first.find(".mgo-circle-icon-img").exists()).toBe(true);
   });
 
   // ------------------------------------------------------------------

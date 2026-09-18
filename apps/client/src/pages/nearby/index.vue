@@ -268,13 +268,6 @@ function formatMemberCount(count: number): string {
   if (count >= 1000) return count.toLocaleString("en-US");
   return String(count);
 }
-
-/** 交互登录守卫：未登录仅提示不跳转 */
-function requireLogin(): boolean {
-  if (sessionStore.isLoggedIn) return true;
-  uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
-  return false;
-}
 </script>
 
 <template>

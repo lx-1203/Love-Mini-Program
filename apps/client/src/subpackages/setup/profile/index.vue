@@ -1064,7 +1064,9 @@ async function save() {
   height: 68rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.78);
+  /* #ifdef H5 */
   backdrop-filter: blur(6px);
+  /* #endif */
   display: flex;
   align-items: center;
   justify-content: center;

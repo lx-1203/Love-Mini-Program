@@ -30,6 +30,10 @@ import { ROUTES } from "../../constants/routes";
 import { featureFlags } from "../../config/feature-flags";
 // R4-00116：switch 激活色 / 金色系统一从 designTokens 取色（与 scss --c-gold 双源同步）
 import { designTokens } from "../../theme/tokens";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
@@ -361,7 +365,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="vip-page">
+  <view class="vip-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">

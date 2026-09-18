@@ -15,9 +15,13 @@ const defaultAvatar = resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR);
  * <p>uni-app 编译器对 `@error="func($event)"` 在 setup 中会丢函数引用（实测
  * 编译产物报 `does not have a method "true"`），改为无参写法并通过 dataset
  * 自管 marker 防重复回退循环。</p>
+ *
+ * <p>参数按 Event 声明以匹配模板事件签名（与 HomeBanner.onImageError 同一
+ * 惯例），内部再定向收敛 target 结构——uni <image> error 事件运行时
+ * target 上携带 dataset/src。</p>
  */
-function onNearbyAvatarError(event: { target?: { dataset?: Record<string, string>; src?: string } }) {
-  const target = event?.target;
+function onNearbyAvatarError(event: Event) {
+  const target = event?.target as { dataset?: Record<string, string>; src?: string } | null | undefined;
   if (!target || !target.dataset || target.dataset.fallbackApplied === "1") return;
   target.dataset.fallbackApplied = "1";
   if (target.src !== defaultAvatar) {

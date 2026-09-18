@@ -121,18 +121,26 @@ describe("登录页协议可见性（2026-08-14）", () => {
     expect(wrapper.find(".terms-link").exists()).toBe(true);
   });
 
-  it("勾选协议后 checkbox 进入选中态", async () => {
+  it("协议 checkbox 默认勾选且点击可切换选中态", async () => {
+    // 2026-08-30 登录页改版（commit 3157b7c）：协议默认勾选（agreed=ref(true)），
+    // 原断言「默认未选中」已过时；保留原语义「点击 checkbox 可切换选中态」。
     const wrapper = mountLogin();
     const checkbox = wrapper.find(".checkbox");
-    expect(checkbox.classes()).not.toContain("checkbox--checked");
+    expect(checkbox.classes()).toContain("checkbox--checked");
+    await checkbox.trigger("tap");
+    expect(wrapper.find(".checkbox").classes()).not.toContain("checkbox--checked");
     await checkbox.trigger("tap");
     expect(wrapper.find(".checkbox").classes()).toContain("checkbox--checked");
   });
 
   it("切换到手机号登录后协议区仍然可见", async () => {
     const wrapper = mountLogin();
-    // 手机号登录入口
-    await wrapper.find(".btn-secondary").trigger("tap");
+    // 2026-09-02 R11（用户要求）：「手机号登录」手动入口按钮已删除，
+    // 表单唯一入口 = 手机号快捷登录授权失败/取消时自动展开（handleGetPhoneNumber fallback）。
+    // 模拟用户拒绝授权（errMsg 非 ok）触发展开，验证协议区在表单视图下仍然可见。
+    await wrapper.find(".btn-phone-quick").trigger("getphonenumber", {
+      detail: { errMsg: "getPhoneNumber:fail cancel" },
+    });
     expect(wrapper.find(".login-form").exists()).toBe(true);
     expect(wrapper.find(".terms-wrap").exists()).toBe(true);
   });

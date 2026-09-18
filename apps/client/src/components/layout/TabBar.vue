@@ -164,7 +164,9 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   right: -10rpx;
   min-width: 28rpx;
   background: rgba(255, 255, 255, 0.95);
+  /* #ifdef H5 */
   backdrop-filter: blur(20px);
+  /* #endif */
   background: var(--c-error);
   border-radius: var(--r-full, 9999rpx);
   display: flex;

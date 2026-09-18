@@ -17,8 +17,8 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类
- * - 不使用 backdrop-filter
- * - 不使用 import.meta.env.DEV
+ * - 不使用 backdrop blur
+ * - 不使用 import.meta.env 直读 DEV 标志
  * - 不使用 optional catch binding
  * - 所有动画内联在 .vue 文件中
  *

@@ -907,7 +907,7 @@ defineExpose({ toggleEnroll });
 }
 
 /* --- 星期标题行 --- */
-/* mp-weixin 不支持 display:grid，7 列等宽布局改用 Flexbox + 子元素 width: calc */
+/* mp-weixin 不支持 grid 网格布局，7 列等宽布局改用 Flexbox + 子元素 width: calc */
 .weekday-row {
   display: flex;
   flex-wrap: wrap;
@@ -928,7 +928,7 @@ defineExpose({ toggleEnroll });
 }
 
 /* --- 日历网格 --- */
-/* mp-weixin 不支持 display:grid，7 列等宽布局改用 Flexbox + 子元素 width: calc */
+/* mp-weixin 不支持 grid 网格布局，7 列等宽布局改用 Flexbox + 子元素 width: calc */
 .calendar-grid {
   display: flex;
   flex-wrap: wrap;

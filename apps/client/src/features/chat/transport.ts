@@ -85,7 +85,9 @@ class RealChatTransport implements ChatTransport {
       method: "POST",
       data: payload,
       // 2026-09-03：消息发送每次独立意图，幂等键随机（避免同文案重发撞后端幂等锁）
-      header: { "Idempotency-Key": `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
+      // [PRODUCT-FIX] 原键名 `header` 并非 RequestOptions 字段（http.ts 只消费
+      // `headers`），随机幂等键从未随请求发出，拦截器回退稳定键 → 同文案重发仍撞幂等锁。
+      headers: { "Idempotency-Key": `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
     });
   }
 

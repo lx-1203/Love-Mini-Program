@@ -442,33 +442,34 @@ function openActivity(activityId: number | string) {
   word-break: break-all;
 }
 
-/* ---------- 图片九宫格 ---------- */
+/* ---------- 图片九宫格（mp-weixin 不支持 grid，改 flex-wrap + 按张数等分） ---------- */
 .post-card__images {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8rpx;
   margin-top: var(--sp-4);
-}
-
-.post-card__images--1 {
-  grid-template-columns: repeat(1, 1fr);
 }
 
 .post-card__images--1 .post-card__image-wrap {
   width: 60%;
 }
 
-.post-card__images--2,
-.post-card__images--4 {
-  grid-template-columns: repeat(2, 1fr);
+.post-card__images--2 .post-card__image-wrap,
+.post-card__images--4 .post-card__image-wrap {
+  /* 2 列等宽：扣除行内 1 个间距后二等分 */
+  width: calc((100% - 8rpx) / 2);
+  box-sizing: border-box;
 }
 
-.post-card__images--3,
-.post-card__images--5,
-.post-card__images--6,
-.post-card__images--7,
-.post-card__images--8,
-.post-card__images--9 {
-  grid-template-columns: repeat(3, 1fr);
+.post-card__images--3 .post-card__image-wrap,
+.post-card__images--5 .post-card__image-wrap,
+.post-card__images--6 .post-card__image-wrap,
+.post-card__images--7 .post-card__image-wrap,
+.post-card__images--8 .post-card__image-wrap,
+.post-card__images--9 .post-card__image-wrap {
+  /* 3 列等宽：扣除行内 2 个间距后三等分 */
+  width: calc((100% - 16rpx) / 3);
+  box-sizing: border-box;
 }
 
 .post-card__image-wrap {
@@ -502,11 +503,7 @@ function openActivity(activityId: number | string) {
   color: var(--c-neutral-0);
 }
 
-/* 2026-08-26 R3：无图帖子占位区（POST_PLACEHOLDER） */
-.post-card__images--placeholder {
-  grid-template-columns: repeat(1, 1fr);
-}
-
+/* 2026-08-26 R3：无图帖子占位区（POST_PLACEHOLDER），单图占位 flex 下默认独占一行 */
 .post-card__placeholder-img {
   width: 100%;
   height: 180rpx;

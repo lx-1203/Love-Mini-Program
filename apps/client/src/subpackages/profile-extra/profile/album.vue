@@ -11,9 +11,9 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（mp-weixin 不支持），改用 hover-class
- * - 不使用 import.meta.env.DEV（mp-weixin 运行时会报错）
- * - 不使用 optional catch binding（catch {}），mp-weixin 不兼容
- * - 不使用 backdrop-filter（仅 H5 条件编译）
+ * - 不使用 import.meta.env 直读 DEV 标志（mp-weixin 运行时会报错）
+ * - 不使用 optional catch binding（无绑定 catch），mp-weixin 不兼容
+ * - 不使用 backdrop blur（仅 H5 条件编译）
  */
 import { computed, onMounted, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
@@ -604,7 +604,7 @@ onShow(() => {
 }
 
 /* ========== 照片墙网格 ========== */
-/* mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc 实现三列等宽布局 */
+/* mp-weixin 不支持 grid 网格布局，改用 Flexbox + 子元素 width: calc 实现三列等宽布局 */
 .album-grid {
   display: flex;
   flex-wrap: wrap;

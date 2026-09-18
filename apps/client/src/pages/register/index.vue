@@ -122,6 +122,11 @@ const PWD_STRENGTH_META = [
   { label: "强", color: "#36C99A", text: "#1F8D6A" },
 ];
 
+/** 按强度取样式元数据（noUncheckedIndexedAccess 下索引访问为 T|undefined，越界回退空样式） */
+function pwdStrengthMeta(i: number): { label: string; color: string; text: string } {
+  return PWD_STRENGTH_META[i] ?? { label: "", color: "", text: "" };
+}
+
 /** 表单是否完整（按钮置灰态仍可点，给出「哪里没填对」定位提示） */
 const formComplete = computed(() =>
   phoneValid.value &&
@@ -134,8 +139,10 @@ const formComplete = computed(() =>
 );
 
 /* ---------------- 输入处理 ---------------- */
-function onPhoneInput(e: { detail: { value: string } }) {
-  const digits = String(e.detail.value || "").replace(/\D/g, "").slice(0, 11);
+// 事件参数统一按 `Event & { detail? }` 声明（与 ChatInput.onInput 同一惯例）：
+// uni input 的原生事件基型是 Event，detail 为 uni 扩展字段，运行时由 uni 注入。
+function onPhoneInput(e: Event & { detail?: { value?: string } }) {
+  const digits = String(e.detail?.value ?? "").replace(/\D/g, "").slice(0, 11);
   // 自动格式化 3-4-4：138 8888 8888
   phone.value = digits.replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, (_m, a: string, b?: string, c?: string) =>
     [a, b, c].filter(Boolean).join(" "),
@@ -143,18 +150,18 @@ function onPhoneInput(e: { detail: { value: string } }) {
   if (errors.value.phone) errors.value.phone = "";
 }
 
-function onSmsInput(e: { detail: { value: string } }) {
-  smsCode.value = String(e.detail.value || "").replace(/\D/g, "").slice(0, 6);
+function onSmsInput(e: Event & { detail?: { value?: string } }) {
+  smsCode.value = String(e.detail?.value ?? "").replace(/\D/g, "").slice(0, 6);
   if (errors.value.sms) errors.value.sms = "";
 }
 
-function onPasswordInput(e: { detail: { value: string } }) {
-  password.value = String(e.detail.value || "").replace(/\s/g, "");
+function onPasswordInput(e: Event & { detail?: { value?: string } }) {
+  password.value = String(e.detail?.value ?? "").replace(/\s/g, "");
   if (errors.value.password) errors.value.password = "";
 }
 
-function onConfirmInput(e: { detail: { value: string } }) {
-  confirmPassword.value = String(e.detail.value || "").replace(/\s/g, "");
+function onConfirmInput(e: Event & { detail?: { value?: string } }) {
+  confirmPassword.value = String(e.detail?.value ?? "").replace(/\s/g, "");
   // 密码框失焦后实时比对（设计规范 §6.1）
   if (password.value && confirmPassword.value) {
     errors.value.confirm = confirmPassword.value === password.value ? "" : "两次输入的密码不一致";
@@ -163,8 +170,8 @@ function onConfirmInput(e: { detail: { value: string } }) {
   }
 }
 
-function onNicknameInput(e: { detail: { value: string } }) {
-  nickname.value = String(e.detail.value || "");
+function onNicknameInput(e: Event & { detail?: { value?: string } }) {
+  nickname.value = String(e.detail?.value ?? "");
   if (errors.value.nickname) errors.value.nickname = "";
 }
 
@@ -189,8 +196,8 @@ function validatePassword(v: string): string {
   return "";
 }
 
-/** 逐项校验，返回首个错误（手机号 → 验证码 → 密码 → 确认密码 → 昵称 → 生日 → 协议） */
-function validateFirstError(): { field: FieldKey | "agree"; message: string } {
+/** 逐项校验，返回首个错误（手机号 → 验证码 → 密码 → 确认密码 → 昵称 → 生日 → 协议）；无错误时 field 为 null */
+function validateFirstError(): { field: FieldKey | "agree" | null; message: string } {
   if (!phoneRaw.value) return { field: "phone", message: "请输入手机号" };
   if (!phoneValid.value) return { field: "phone", message: "手机号格式不正确，请输入 11 位手机号" };
   if (!smsCode.value) return { field: "sms", message: "请输入短信验证码" };
@@ -204,7 +211,7 @@ function validateFirstError(): { field: FieldKey | "agree"; message: string } {
   if (!birthDate.value) return { field: "birth", message: "请选择出生日期" };
   if (!isAdult(birthDate.value)) return { field: "birth", message: "未满 18 岁暂无法注册" };
   if (!agreed.value) return { field: "agree", message: "请先阅读并勾选同意《用户协议》和《隐私政策》" };
-  return { field: "", message: "" };
+  return { field: null, message: "" };
 }
 
 function shake(field: FieldKey | "agree") {
@@ -321,7 +328,7 @@ async function handleSubmit() {
       registerUser(phoneRaw.value, password.value, nickname.value.trim(), birthDate.value, smsCode.value),
       delay(400),
     ]);
-    addBreadcrumb("ui", "register_success", { userId: String(session?.id ?? "") });
+    addBreadcrumb("ui", "register_success", { userId: String(session?.userId ?? "") });
     // 链路镜像登录页（P0-32）：主动同步会话，消除空会话窗口（失败不影响注册）
     sessionStore.refreshSession().catch((err: unknown) => {
       if (isDev) console.warn("[Register] 注册后会话同步失败（守卫将自愈）:", err);
@@ -561,11 +568,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
             :key="i"
             class="strength__bar"
             :class="{ 'strength__bar--on': pwdStrength >= i }"
-            :style="pwdStrength >= i ? { background: PWD_STRENGTH_META[pwdStrength].color } : {}"
+            :style="pwdStrength >= i ? { background: pwdStrengthMeta(pwdStrength).color } : {}"
           />
         </view>
-        <text class="strength__label" :style="{ color: PWD_STRENGTH_META[pwdStrength].text }">
-          {{ PWD_STRENGTH_META[pwdStrength].label }}
+        <text class="strength__label" :style="{ color: pwdStrengthMeta(pwdStrength).text }">
+          {{ pwdStrengthMeta(pwdStrength).label }}
         </text>
       </view>
       <view v-if="errors.password" class="field-error">
@@ -766,7 +773,9 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   height: 68rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.78);
+  /* #ifdef H5 */
   backdrop-filter: blur(6px);
+  /* #endif */
   display: flex;
   align-items: center;
   justify-content: center;

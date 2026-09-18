@@ -18,6 +18,10 @@ import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime, type CampusTopic
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const campusStore = useCampusStore();
 
@@ -181,7 +185,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="campus-page">
+  <view class="campus-page" :style="menuStyleVars">
     <!-- 顶部学校信息栏 + 认证状态 -->
     <view class="campus-header">
       <view class="header-top">

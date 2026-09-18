@@ -19,6 +19,10 @@ import { TOAST_DURATION } from "../../../constants/limits";
 import { openAppPath } from "../../../utils/navigation";
 // P8-2.3：报名成功后向本地 mock 会话存储追加一条助手活动消息
 import { appendAssistantActivityNotify } from "../../../utils/assistant-notify";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -311,7 +315,7 @@ onShareTimeline(() => ({
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :style="menuStyleVars">
     <!-- 顶部栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">

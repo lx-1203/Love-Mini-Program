@@ -211,9 +211,6 @@ function toggleTopic(topic: string) {
   else if (topics.value.length < 5) topics.value.push(tag);
 }
 
-function openLocationPicker() {
-  uni.showToast({ title: t("village.post.locationHint"), icon: "none" });
-}
 function openMentionPicker() {
   uni.showToast({ title: t("village.post.mentionHint"), icon: "none" });
 }
@@ -230,12 +227,14 @@ function cycleVisibility() {
       : targetType.value === "campus"
         ? ["school"]
         : ["interest"];
-  if (!order.includes(visibility.value)) {
-    visibility.value = order[0];
+  // noUncheckedIndexedAccess：数组索引访问为 string|undefined，先收敛再赋值
+  const first = order[0];
+  if (first && !order.includes(visibility.value)) {
+    visibility.value = first;
     return;
   }
   const next = order[(order.indexOf(visibility.value) + 1) % order.length];
-  visibility.value = next;
+  if (next) visibility.value = next;
 }
 
 /* ---------- 草稿：本地 + 后端双写 ---------- */

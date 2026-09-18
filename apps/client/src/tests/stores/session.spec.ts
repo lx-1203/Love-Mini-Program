@@ -40,8 +40,7 @@ vi.mock("../../config/env", async (importOriginal) => {
   return {
     ...actual,
     isMockMode: () => false,
-    // R4-00166：失效 token 自动游客重登仅限 mock/开发模式（真实模式静默登出），
-    // 本用例验证重登逻辑，故模拟开发环境。
+    // bootstrap 失效 token 用例需走 real 分支（mock 分支不调 clientApi）
     isDev: true,
     isShowcaseMode: false,
   };
@@ -284,7 +283,9 @@ describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复
     vi.mocked(clientApi.getLoginHero).mockResolvedValue(MOCK_LOGIN_HERO as any);
   });
 
-  it("storage 残留过期 token 且 getSession 返回 loggedIn=false 时，清 token 并自动游客重登", async () => {
+  // 2026-08-23 行为变更（session store R4-00166 收紧）：检测到失效 token 时仅清除
+  // 并落地未登录态，不再自动游客重登（防止真实模式数据串号，用户需手动走体验号入口）。
+  it("storage 残留过期 token 且 getSession 返回 loggedIn=false 时，清 token 并落地未登录态（不自动游客重登）", async () => {
     const getStorageSync = vi.mocked(uni.getStorageSync);
     const removeStorageSync = vi.mocked(uni.removeStorageSync);
 
@@ -302,10 +303,10 @@ describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复
 
     // 过期 token 已被清除
     expect(removeStorageSync).toHaveBeenCalledWith("token");
-    // 已用体验账号重新登录
-    expect(loginAsGuest).toHaveBeenCalledTimes(1);
-    expect(store.userSession?.loggedIn).toBe(true);
-    expect(store.userSession?.userId).toBe("user-1001");
+    // 不再自动切换体验账号（R4-00166：避免 A 用户 token 失效后被当体验账号写入数据）
+    expect(loginAsGuest).not.toHaveBeenCalled();
+    // 落地为未登录态
+    expect(store.userSession?.loggedIn ?? false).toBe(false);
   });
 
   it("无本地 token 且 getSession 返回未登录时，不触发游客重登", async () => {

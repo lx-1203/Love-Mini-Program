@@ -15,6 +15,9 @@ describe("navigation utils", () => {
       navigateTo,
       redirectTo,
     });
+    // 2026-09-06 openAppPath 新增页面栈溢出兜底（getCurrentPages），mp 全局在 node 测试环境不存在，
+    // stub 为空栈以走 navigateTo 主链路（语义不变）。
+    vi.stubGlobal("getCurrentPages", () => []);
   });
 
   it("detects tab bar paths", () => {
@@ -38,7 +41,12 @@ describe("navigation utils", () => {
   it("opens non-tab pages with navigateTo", () => {
     openAppPath("/subpackages/setup/schedule/index");
 
-    expect(navigateTo).toHaveBeenCalledWith({ url: "/subpackages/setup/schedule/index" });
+    // 2026-09-06 openAppPath 新增页面栈溢出兜底：navigateTo 现固定携带 fail 回调
+    //（webview count limit 时降级 redirectTo），断言改为校验 url 与调用次数（语义不变）。
+    expect(navigateTo).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(navigateTo).mock.calls[0]![0]).toMatchObject({
+      url: "/subpackages/setup/schedule/index",
+    });
     expect(switchTab).not.toHaveBeenCalled();
   });
 

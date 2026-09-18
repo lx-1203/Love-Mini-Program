@@ -176,12 +176,16 @@ onShareAppMessage(() => {
 }
 
 .love-center__board-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* 2 列等宽网格（mp-weixin 不支持 grid，改 flex-wrap + 子项等宽） */
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-3);
 }
 
 .love-center__board {
+  /* 2 列等宽：扣除行内 1 个间距后二等分 */
+  width: calc((100% - var(--sp-3)) / 2);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 8rpx;

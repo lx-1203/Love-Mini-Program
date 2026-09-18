@@ -19,6 +19,8 @@ import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 2026-09-04 视觉验收：var(--statusbar, env(safe-area-inset-top)) 在模拟器/部分机型为 0，tabs 行上移进胶囊区被遮挡
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { IMAGE_PATHS } from "../../../config/images";
+// R10-P3-016：标签 value → 展示文案统一映射（utils/tag-label 单一映射源）
+import { tagLabelsFor } from "../../../utils/tag-label";
 
 const { t } = useI18n();
 const { styleVars: menuStyleVars } = useMenuButtonRect();

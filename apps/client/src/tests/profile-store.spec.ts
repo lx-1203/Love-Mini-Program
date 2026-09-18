@@ -111,6 +111,8 @@ describe("profile store", () => {
   it("mock 模式下 load() 提供本地头像 avatarUrl", async () => {
     const store = useProfileStore();
     await store.load();
-    expect(store.avatarUrl).toContain("/static/assets/images/avatars/person-01-avatar.png");
+    // 2026-09-17：D-05（第五轮 QA）本人头像素材更新为 avatars/avatar-1.jpg（原 person-01-avatar.png 下线），
+    // 断言语义不变：mock load() 必须提供本地打包头像，而非空串/首字兜底。
+    expect(store.avatarUrl).toContain("/static/assets/images/avatars/avatar-1.jpg");
   });
 });

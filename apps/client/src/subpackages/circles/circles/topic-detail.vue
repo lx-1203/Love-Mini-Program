@@ -20,6 +20,10 @@ import { ensureCertified } from "../../../guards/campus-gate";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
 import EmptyState from "../../../components/common/EmptyState.vue";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -237,7 +241,7 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <view class="detail-page">
+  <view class="detail-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">

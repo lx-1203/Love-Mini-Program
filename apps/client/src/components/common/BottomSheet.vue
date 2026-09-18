@@ -14,7 +14,7 @@
  *     <view class="...">认证内容...</view>
  *   </BottomSheet>
  */
-import { watch, nextTick, ref, onUnmounted } from "vue";
+import { watch, ref, onUnmounted } from "vue";
 // 2026-09-04 问题1修复：弹层打开时自动隐藏自定义 tabBar（tabBar 恒在页面之上，
 // z-index 无法穿透，中央浮岛圆钮凸出更高会盖住 footer 按钮）。
 // setTabBarHidden 内部 getTabBar 容错，非 tab 页（如 profile/other）为无害 no-op。

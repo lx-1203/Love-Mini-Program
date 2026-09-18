@@ -78,6 +78,10 @@ import { recallTempChatMessageApi } from "./api";
 // RECORDER_MIN_DURATION_SECONDS 仅在已移除的录音功能中使用；
 // IDLE_ICEBREAKER_DELAY_MS 随输入栏上方破冰卡片流一并移除（2026-08-09 微信化重构）。
 import { COUNTDOWN_TICK_MS } from "../../../constants/chat";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const messagesStore = useMessagesStore();
 const chatStore = useChatStore();
@@ -684,7 +688,8 @@ onLoad(async (query) => {
         deepLinkPartnerName.value = (session as { partnerName?: string }).partnerName?.trim() || "";
         if (!deepLinkPartnerName.value) {
           void clientApi.getPersonProfile(rawUserId).then((person) => {
-            const name = person?.nickname || person?.name;
+            // RecommendedPerson 契约的昵称字段是 name（无 nickname 字段）
+            const name = person?.name;
             if (name) deepLinkPartnerName.value = name;
           }).catch(() => {});
         }
@@ -1694,7 +1699,7 @@ defineExpose({ noop });
 </script>
 
 <template>
-  <view class="chat-page">
+  <view class="chat-page" :style="menuStyleVars">
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>

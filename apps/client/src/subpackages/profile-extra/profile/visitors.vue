@@ -14,9 +14,9 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（mp-weixin 不支持）
- * - 不使用 import.meta.env.DEV（mp-weixin 运行时会报错）
- * - 不使用 backdrop-filter（仅 H5 条件编译）
- * - 不使用 optional catch binding（catch {}），mp-weixin 不兼容
+ * - 不使用 import.meta.env 直读 DEV 标志（mp-weixin 运行时会报错）
+ * - 不使用 backdrop blur（仅 H5 条件编译）
+ * - 不使用 optional catch binding（无绑定 catch），mp-weixin 不兼容
  */
 import { ref, computed, onMounted } from "vue";
 import { onPullDownRefresh } from "@dcloudio/uni-app";

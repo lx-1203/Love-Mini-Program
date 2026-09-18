@@ -24,7 +24,8 @@ describe("MatchActions", () => {
     const wrapper = mountActions();
     expect(wrapper.findAll(".match-actions__item")).toHaveLength(3);
     expect(wrapper.text()).toContain("跳过");
-    expect(wrapper.text()).toContain("打招呼");
+    // 2026-09-17：discover.greet 文案演变为「打个招呼」（i18n L904），断言同步更新
+    expect(wrapper.text()).toContain("打个招呼");
     expect(wrapper.text()).toContain("喜欢");
   });
 

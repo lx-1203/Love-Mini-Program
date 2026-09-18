@@ -14,6 +14,10 @@ import { loginWithPhone } from "../../../services/auth";
 import { useSessionStore } from "../../../stores/session";
 import { replaceAppPath } from "../../../utils/navigation";
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const sessionStore = useSessionStore();
 
@@ -238,7 +242,7 @@ function goBack() {
 
 <template>
   <!-- #ifdef DEV -->
-  <view class="dev-page">
+  <view class="dev-page" :style="menuStyleVars">
     <!-- 顶部栏 -->
     <view class="dev-header">
       <view class="dev-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">

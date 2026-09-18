@@ -69,10 +69,10 @@ function emojiAria(emoji: string): string {
 </template>
 
 <style scoped lang="scss">
-/* 8 列网格：4 列布局在窄屏也保持等宽（grid 支持，参考页面既有 grid 用法） */
+/* 8 列网格：4 行布局在窄屏也保持等宽（mp-weixin 不支持 grid，改 flex-wrap + 子项等宽） */
 .emoji-panel {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-4);
   background: var(--c-bg-container, #FFFFFF);
@@ -82,6 +82,9 @@ function emojiAria(emoji: string): string {
 }
 
 .emoji-panel__item {
+  /* 8 列等宽：扣除每行 7 个间距后八等分 */
+  width: calc((100% - var(--sp-2) * 7) / 8);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;

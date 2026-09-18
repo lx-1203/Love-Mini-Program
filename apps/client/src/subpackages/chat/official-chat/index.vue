@@ -103,7 +103,9 @@ const sendMessage = async () => {
       url: `/official-accounts/${encodeURIComponent(accountId.value)}/messages`,
       method: "POST",
       data: { content: text },
-      header: { "Idempotency-Key": `official-${localId}` },
+      // [PRODUCT-FIX] 键名修正 `header`→`headers`（RequestOptions 实际字段），
+      // 此前按 localId 生成的幂等键未随请求发出，重试可能被稳定键幂等去重拦截。
+      headers: { "Idempotency-Key": `official-${localId}` },
     });
     // 用后端权威结果替换本地 pending 消息
     const list = Array.isArray(replies) ? replies : [];
@@ -338,7 +340,7 @@ onLoad((query) => {
           <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
           <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
           <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-          <image class="hero-mascot" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
+          <image class="hero-mascot" :src="IMAGE_PATHS.MASCOT.SMILE" mode="aspectFill" />
           <view class="hero-greeting">
             <text>Hi~ 我是寻觅助手</text>
             <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
@@ -367,7 +369,7 @@ onLoad((query) => {
 
               <!-- ===== 助手消息（左对齐） ===== -->
               <view v-if="!isUserMsg(msg)" class="msg-row msg-row--left">
-                <image class="msg-avatar" src="/static/assets/images/mascot/mascot_smile.png" mode="aspectFill" />
+                <image class="msg-avatar" :src="IMAGE_PATHS.MASCOT.SMILE" mode="aspectFill" />
                 <view class="msg-content">
                   <!-- 纯文本消息：body 中可能含 emoji（mock/后端），由 EmojiText 自动转 SVG -->
                   <view v-if="msg.messageType === 'text'" class="bubble bubble--assistant">

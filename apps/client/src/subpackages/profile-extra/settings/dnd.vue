@@ -12,9 +12,9 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（mp-weixin 不支持），改用 hover-class
- * - 不使用 import.meta.env.DEV（mp-weixin 运行时会报错）
- * - 不使用 optional catch binding（catch {}），mp-weixin 不兼容
- * - 不使用 backdrop-filter（仅 H5 条件编译）
+ * - 不使用 import.meta.env 直读 DEV 标志（mp-weixin 运行时会报错）
+ * - 不使用 optional catch binding（无绑定 catch），mp-weixin 不兼容
+ * - 不使用 backdrop blur（仅 H5 条件编译）
  * - 时间选择使用 uni 模式 picker，兼容双端
  */
 import { onMounted, ref, computed } from "vue";
@@ -28,6 +28,10 @@ import { lightHaptic, successHaptic, errorHaptic } from "../../../utils/haptic";
 // R4-00115：switch 为原生属性不支持 CSS 变量，激活色从 designTokens 取色
 // （与 scss --c-brand(#36C99A) 双源同步，改品牌色只需改 token 一处）
 import { designTokens } from "../../../theme/tokens";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -297,7 +301,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="dnd-page">
+  <view class="dnd-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view
@@ -780,7 +784,7 @@ onMounted(() => {
 }
 
 /* ==================== 星期网格 ==================== */
-/* mp-weixin 不支持 display:grid，4 列等宽布局改用 Flexbox + 子元素 width: calc */
+/* mp-weixin 不支持 grid 网格布局，4 列等宽布局改用 Flexbox + 子元素 width: calc */
 .weekday-grid {
   display: flex;
   flex-wrap: wrap;

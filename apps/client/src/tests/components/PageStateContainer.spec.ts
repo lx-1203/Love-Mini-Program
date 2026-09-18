@@ -63,7 +63,10 @@ describe("PageStateContainer component - 页面状态容器组件", () => {
   it("state=loading 时渲染加载态", () => {
     const wrapper = mountContainer({ state: "loading" });
     expect(wrapper.find(".state-loading").exists()).toBe(true);
-    expect(wrapper.find(".loading-spinner").exists()).toBe(true);
+    // 2026-09-06 加载态统一：内联骨架屏改为复用 LoadingSpinner 组件（圆圈转圈），
+    // 断言由 .loading-spinner 改为 LoadingSpinner 的圆环节点（语义不变：加载动效渲染）。
+    expect(wrapper.find(".loading-spinner-wrap").exists()).toBe(true);
+    expect(wrapper.find(".loading-spinner-ring").exists()).toBe(true);
   });
 
   it("state=loading 时 aria-busy=true", () => {
@@ -73,7 +76,8 @@ describe("PageStateContainer component - 页面状态容器组件", () => {
 
   it("state=loading 时显示 loadingText", () => {
     const wrapper = mountContainer({ state: "loading", loadingText: "正在加载..." });
-    expect(wrapper.find(".loading-text").text()).toBe("正在加载...");
+    // 2026-09-06 加载态文案节点随 LoadingSpinner 组件化迁移：.loading-text → .loading-spinner-text
+    expect(wrapper.find(".loading-spinner-text").text()).toBe("正在加载...");
   });
 
   // ------------------------------------------------------------------

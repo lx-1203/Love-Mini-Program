@@ -728,6 +728,7 @@ export default {
     "share": "分享",
     "shareTitle": "快来参加「{title}」",
     "linkCopied": "链接已复制，发到微信即可直达活动详情",
+    "copyLinkFailed": "复制失败，请重试",
     "enrollTag": "报名成功",
     "enrollMsg": "{title} 报名成功，快叫上朋友一起去吧～",
     "statusOpen": "报名中",
@@ -2001,6 +2002,7 @@ export default {
       "phd": "博士"
     },
     "tagPosts": {
+      "tagFallbackTitle": "标签",
       "loadingPosts": "正在加载帖子...",
       "emptyDesc": "该标签下还没有内容",
       "loadMore": "加载中...",
@@ -2782,7 +2784,7 @@ export default {
     "markedRead": "已标为已读"
   },
   "search": {
-    "placeholder": "搜索帖子标题、内容或话题",
+    "placeholder": "搜索感兴趣的人、标签和学校",
     "tabUsers": "用户",
     "tabTags": "标签",
     "tabSchools": "学校",

@@ -46,12 +46,16 @@ const cells = computed(() => {
 }
 
 .my-gallery__grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 4 列等宽网格（mp-weixin 不支持 grid，改 flex-wrap + 子项等宽） */
+  display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
 }
 
 .my-gallery__cell {
+  /* 4 列等宽：扣除每行 3 个间距后四等分 */
+  width: calc((100% - 48rpx) / 4);
+  box-sizing: border-box;
   aspect-ratio: 1;
   border-radius: 24rpx;
   overflow: hidden;

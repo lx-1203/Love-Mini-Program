@@ -6,7 +6,6 @@ import { useProfileTracker } from "../../composables/useProfileTracker";
 import MyProfile from "./mine/MyProfile.vue";
 import type { InteractionItem } from "./mine/MyInteraction.vue";
 import type { MoreItem } from "./mine/MyMore.vue";
-import SkeletonBlock from "../common/SkeletonBlock.vue";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
 
 const { t } = useI18n();

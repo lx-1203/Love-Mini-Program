@@ -1,22 +1,46 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { i18n } from "../../i18n";
 
 // Stub global uni to avoid mp-weixin runtime references in tests
 (globalThis as any).uni = {};
 
 import HomeHeader from "../../components/home/HomeHeader.vue";
+import { useMessagesStore } from "../../stores/messages";
 
 describe("HomeHeader component - 首页头部组件", () => {
+  let pinia: ReturnType<typeof createPinia>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // 2026-09-03 组件演进：通知角标改为真实未读通知数驱动（useMessagesStore），
+    // 挂载前必须提供激活的 Pinia 实例（原静态演示值 "6" 已移除）。
+    pinia = createPinia();
+    setActivePinia(pinia);
   });
 
   function mountHeader(props?: { subtitle?: string; school?: string; locationText?: string }) {
+    // 预置 6 条未读通知：保持「通知铃铛带未读角标」断言语义不变
+    // （2026-09-03 起角标数值 = messages store 真实未读通知数，0 时隐藏）。
+    const messagesStore = useMessagesStore();
+    messagesStore.notifications = Array.from({ length: 6 }, (_, i) => ({
+      id: `notification-${i + 1}`,
+      type: "system",
+      title: `通知 ${i + 1}`,
+      content: `通知内容 ${i + 1}`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      actionUrl: null,
+      triggerUserId: null,
+      resourceId: null,
+      signalType: "SOCIAL",
+    })) as any;
+
     return mount(HomeHeader, {
       props: props ?? {},
       global: {
-        plugins: [i18n],
+        plugins: [i18n, pinia],
         stubs: {
           view: { template: '<div class="mock-view"><slot /></div>', name: "uni-view" },
           text: { template: '<span class="mock-text"><slot /></span>', name: "uni-text" },

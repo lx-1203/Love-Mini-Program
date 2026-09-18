@@ -2082,7 +2082,7 @@ onUnload(() => {
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
             >
-              <image class="photo-grid__add-icon-img" src="/static/assets/message/svg/icon/add.svg" mode="aspectFit" />
+              <image class="photo-grid__add-icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
               <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
             </view>
           </view>
@@ -2664,7 +2664,7 @@ onUnload(() => {
               :aria-label="t('profile.uploadPhotoAria')"
               @tap="handleUploadPhoto(cell.index)"
             >
-              <image class="photo-grid__add-icon-img" src="/static/assets/message/svg/icon/add.svg" mode="aspectFit" />
+              <image class="photo-grid__add-icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
               <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
             </view>
           </view>
@@ -3146,7 +3146,7 @@ onUnload(() => {
   font-size: var(--fs-7xl);
   font-weight: 800;
   color: var(--c-text-inverse);
-  /* 与卡片昵称同款阴影 token，mp-weixin 无 backdrop-filter 下的可读性保障 */
+  /* 与卡片昵称同款阴影 token，mp-weixin 无 backdrop blur 下的可读性保障 */
   text-shadow: var(--c-card-name-shadow);
   letter-spacing: 0.02em;
   max-width: 320rpx;
@@ -3961,7 +3961,7 @@ onUnload(() => {
   color: var(--c-brand-600, #0d9488);
 }
 
-/* 照片墙 3x2 网格 - mp-weixin 不支持 display:grid，改用 Flexbox + 子元素 width: calc */
+/* 照片墙 3x2 网格 - mp-weixin 不支持 grid 网格布局，改用 Flexbox + 子元素 width: calc */
 .photo-grid {
   display: flex;
   flex-wrap: wrap;

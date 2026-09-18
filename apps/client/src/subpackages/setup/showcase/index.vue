@@ -8,6 +8,10 @@
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { isShowcaseMode } from "../../../config/showcase";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 // R4-00039：展示页文案全部收敛到 i18n 资源（showcase.*），标题随语言切换
 const { t } = useI18n();
@@ -178,7 +182,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="sc-page">
+  <view class="sc-page" :style="menuStyleVars">
     <!-- 顶部品牌栏 -->
     <view class="sc-header">
       <view

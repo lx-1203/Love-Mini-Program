@@ -12,7 +12,6 @@ import { ref, computed, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
-import SafeImage from "../../../components/common/SafeImage.vue";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { TOAST_DURATION } from "../../../constants/limits";

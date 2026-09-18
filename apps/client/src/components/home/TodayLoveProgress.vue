@@ -76,7 +76,7 @@ function capitalize(s: string): string {
       <view class="love-progress__bar-fill" :style="{ width: total > 0 ? ((completed / total) * 100) + '%' : '0%' }"></view>
     </view>
     <view class="love-progress__steps">
-      <view v-for="(step, idx) in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
+      <view v-for="step in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
         <!-- R21（2026-09-09）：序号圆点改回理想图的语义图标（对勾/爱心/对话/星星），
              完成态显示对勾，未完成显示该步骤的类别图标 -->
         <view class="love-step__index" :style="{ background: stepMeta(step.id).bg }">

@@ -34,7 +34,9 @@ describe("MatchSuccess", () => {
   it("渲染双头像、关系建立理由与两个 CTA", () => {
     const wrapper = mountSuccess();
     expect(wrapper.findAll(".match-success__avatar")).toHaveLength(2);
-    expect(wrapper.findAll(".match-success__reason-chip")).toHaveLength(2);
+    // 2026-08-25 P1 契约演进（规格书 7.8）：理由 chips 改为匹配度评分卡，
+    // 且始终补全为 4 行（.match-success__score-item），传入的 reasons 渲染在前排。
+    expect(wrapper.findAll(".match-success__score-item")).toHaveLength(4);
     expect(wrapper.text()).toContain("摄影");
     expect(wrapper.text()).toContain("同校");
     expect(wrapper.find(".match-success__primary").exists()).toBe(true);

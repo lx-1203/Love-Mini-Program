@@ -99,7 +99,9 @@ describe("匹配卡片纯匹配版 DOM 契约（2026-08-14）", () => {
     const wrapper = mountSwiper([makeCard({ commonCircleCount: 3 })]);
     const badge = wrapper.find(".card__match-badge");
     expect(badge.exists()).toBe(true);
-    expect(badge.text()).toContain("♥");
+    // 2026-09-17：mp-weixin 禁 emoji 图标约束落地后，胶囊内 ♥ 字符已改为
+    // SVG 爱心图标（IMAGE_PATHS.ICONS_MATCH.HEART）渲染，断言改为校验图标存在（语义不变）。
+    expect(badge.find(".card__match-badge__heart").exists()).toBe(true);
     expect(badge.text()).toContain("95%"); // 80 + 3*5 = 95
     expect(badge.text()).toContain("高匹配");
 

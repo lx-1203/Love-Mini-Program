@@ -22,6 +22,10 @@ import { IMAGE_PATHS } from "../../config/images";
 import { VIP_PLANS } from "../../config/vip-plans";
 // P1-08：会员功能开关（false 时子页拦截返回）
 import { featureFlags } from "../../config/feature-flags";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 
@@ -180,7 +184,7 @@ function goBack() {
 </script>
 
 <template>
-  <view class="promo-page">
+  <view class="promo-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">

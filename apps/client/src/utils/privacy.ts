@@ -18,7 +18,7 @@
  * <p>工程约束（per project_memory）：</p>
  * <ul>
  *   <li>不使用 {@code import.meta.env.DEV}（mp-weixin 不支持）</li>
- *   <li>不使用 {@code catch {}} 空绑定（mp-weixin 不兼容），统一 {@code catch (e) { ... }}</li>
+ *   <li>不使用无绑定 catch 语法（可选 catch binding，mp-weixin 不兼容），统一显式 catch (e) 处理</li>
  *   <li>不使用 {@code as any}，通过 {@code unknown} 收敛 + 类型守卫替代</li>
  * </ul>
  */

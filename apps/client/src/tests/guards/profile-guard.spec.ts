@@ -50,7 +50,9 @@ describe("profile-guard", () => {
   });
 
   it("isPageLocked handles paths without leading slash", () => {
-    expect(isPageLocked("pages/likes/index")).toBe(true);
+    // 2026-09-17：likes 页已迁移至 discover-extra 分包（原 pages/likes/index 已不存在），
+    // 无前导斜杠用例改用当前真实锁定路径验证 normalize 逻辑（语义不变）。
+    expect(isPageLocked("subpackages/discover-extra/likes/index")).toBe(true);
   });
 
   it("getFeatureName returns correct name for likes page", () => {
@@ -71,7 +73,7 @@ describe("profile-guard", () => {
   });
 
   it("getFeatureName handles paths without leading slash", () => {
-    expect(getFeatureName("pages/likes/index")).toBe("喜欢列表");
+    expect(getFeatureName("subpackages/discover-extra/likes/index")).toBe("喜欢列表");
   });
 
   it("getProfileSetupPath returns the setup profile path", () => {

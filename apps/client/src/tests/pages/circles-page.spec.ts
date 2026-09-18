@@ -16,14 +16,24 @@ describe("Circles 页面 smoke", () => {
   );
 
   it("兴趣圈页已注册", () => {
+    // 2026-09-17：兴趣圈页已迁入分包 subpackages/circles（主包体积优化），
+    // 原断言「pages/circles/index 注册于主包 pages」已过时，改为校验分包注册。
+    const subPackages = (pagesJson as { subPackages?: Array<{ root: string; pages: Array<{ path: string }> }> })
+      .subPackages ?? [];
     expect(
-      pagesJson.pages.some((p: { path: string }) => p.path === "pages/circles/index")
+      subPackages.some(
+        (sp) =>
+          sp.root === "subpackages/circles" &&
+          sp.pages.some((p) => p.path === "circles/index")
+      )
     ).toBe(true);
   });
 
   it("未登录时不发受保护请求（getToken 守卫 + 登录后 watch 补拉）", () => {
     expect(circlesSource).toContain("getToken");
-    expect(circlesSource).toContain("if (!getToken()) return");
+    // 2026-09-17：守卫演进为 getToken() || useMock()（mock 模式无网络请求，本地直载 8 圈），
+    // onShow 自愈补拉 + 登录 watch 兜底；语义不变：未登录且非 mock 不发受保护请求。
+    expect(circlesSource).toContain("if (getToken() || useMock())");
     expect(circlesSource).toContain("fetchCircles");
     expect(circlesSource).toContain("sessionStore.isLoggedIn");
   });

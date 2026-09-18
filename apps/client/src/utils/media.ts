@@ -43,8 +43,6 @@ import { getToken } from "../services/http";
 import { getMediaTokenCacheVersion } from "./media-token-cache";
 // infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
 import { ensurePrivacyAuthorized } from "./privacy";
-// 2026-08-10 包体积优化：mock 模式判断（纯 env 读取，无 pinia 依赖）
-import { useMock } from "../stores/helpers/use-mock";
 // 2026-08-16：pexels 外链本地化兜底（mp 端无法加载外链图，见 image-local.ts），
 // 与 SafeImage 的 toLocalImage(resolveMediaUrl(raw)) 语义一致
 import { toLocalImage, toLocalMockMedia } from "./image-local";
@@ -72,18 +70,6 @@ const MEDIA_PROXY_PREFIX = "/api/v1/media/";
  * （免登录、免 token，静态装饰图经种子脚本入库，后台可审核下线）。</p>
  */
 const APP_ASSET_PREFIX = "/api/v1/media/app-assets/";
-
-/**
- * 本地必需资源前缀（构建后保留在包内，不迁移后端）：
- * - icons / logo / TabBar 图标等组件必需资源；
- * - audio（本地音效）；
- * - default-avatar（加载兜底用，本地更稳）。
- */
-const LOCAL_ASSET_PREFIXES: string[] = [
-  // 2026-08-29 主包瘦身（真机 2MB 门禁）：static 全部资产迁至后端 app-assets 托管，
-  // real 模式下 /static/** 统一改写为 {apiRoot}/api/v1/media/app-assets/**（免登录端点）。
-  // mock/dev 形态仍携带本地 static（useMock 分支原样返回，不受影响）。
-];
 
 /**
  * 判断路径是否为「已上传到服务器」的远程媒体 URL。

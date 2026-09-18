@@ -106,12 +106,13 @@ function goBack() {
   if (pages.length > 1) {
     uni.navigateBack({ delta: 1 });
   } else {
-    uni.reLaunch({ url: ROUTES.HOME });
+    // 首页路径在 ROUTES.TAB.HOME（顶层无 ROUTES.HOME 字段）
+    uni.reLaunch({ url: ROUTES.TAB.HOME });
   }
 }
 
 function goHome() {
-  openAppPath(ROUTES.HOME);
+  openAppPath(ROUTES.TAB.HOME);
 }
 
 onLoad(() => {

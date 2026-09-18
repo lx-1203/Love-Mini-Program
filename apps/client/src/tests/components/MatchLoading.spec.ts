@@ -31,7 +31,9 @@ describe("MatchLoading", () => {
   it("渲染双方头像与匹配提示", () => {
     const wrapper = mountLoading();
     expect(wrapper.findAll(".match-loading__avatar")).toHaveLength(2);
-    expect(wrapper.text()).toContain("林晓");
+    // 2026-09-17：匹配中界面重构后不再显示对方昵称（隐私考虑，头像打码 + 「匹配中」提示），
+    // 断言改为校验匹配提示文案（语义不变：双方头像 + 匹配提示渲染）。
+    expect(wrapper.text()).toContain("匹配中");
   });
 
   it("animationend 后触发 finished", async () => {

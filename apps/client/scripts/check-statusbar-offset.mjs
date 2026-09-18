@@ -33,6 +33,23 @@ const SKIP = /node_modules|dist|uni_modules/;
 //  - 其余发现即改写法
 const CUSTOM_NAME_ALLOW = new Set(["--status-bar-height"]);
 
+// 规则二白名单（R11-G2 收口）：共享组件 / 全局样式自身不挂页面根节点，
+// 其 --statusbar 由宿主页面注入（宿主均已通过 useMenuButtonRect 注入并被本守卫覆盖）。
+const HOST_INJECTED_ALLOW = new Set(
+  [
+    "App.vue", // 应用根，页面级注入
+    "components/common/LockScreen.vue", // 宿主：village/index、heart-signals、nearby（均已注入）
+    "components/common/Toast.vue", // 全局浮层，随宿主页面变量继承
+    "components/home/HomeHeader.vue", // 宿主：pages/home（已注入）
+    "components/match/MatchLoading.vue", // 宿主：discover/matching（已注入）
+    "components/match/MatchSuccess.vue", // 宿主：discover/match-success（已注入）
+    "components/profile/mine/MyHeader.vue", // 宿主：profile 相关页（已注入）
+    "styles/_components.scss", // mixin/占位类，消费方为已注入页面
+    "styles/_mixins.scss",
+    "theme/global.scss", // 全局 token 定义（:root/page 级）
+  ].map((p) => p.replaceAll("/", path.sep))
+);
+
 /** 剥除注释内容后再匹配，避免文档/说明文字里的字面量误报 */
 function stripComments(src) {
   return src
@@ -92,9 +109,12 @@ for (const file of files) {
     errors.push(`${rel}: 自造状态栏变量 "${name}"（统一使用 --statusbar）`);
   }
 
-  // 规则二（warn）：var(--statusbar 有使用但无注入源
+  // 规则二：var(--statusbar 有使用但无注入源——白名单（宿主注入的共享组件/全局样式）之外一律 error
   if (VAR_USE.test(code) && !INJECT_HINT.test(code)) {
-    warns.push(`${rel}: 使用 var(--statusbar 但无 JS 注入源（useMenuButtonRect/statusBarHeight）`);
+    if (HOST_INJECTED_ALLOW.has(rel)) {
+      continue; // 白名单：由宿主页面注入
+    }
+    errors.push(`${rel}: 使用 var(--statusbar 但无 JS 注入源（useMenuButtonRect/statusBarHeight）`);
   }
 }
 

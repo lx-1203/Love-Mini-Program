@@ -22,6 +22,10 @@ import { AppApiError } from "../../services/api-error";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
 import { isShowcaseMode } from "../../config/showcase";
 import { isDev, isMockMode } from "../../config/env";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 // 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
 const { t } = useI18n();
@@ -588,7 +592,7 @@ function openPrivacyPolicy() {
 </script>
 
 <template>
-  <view class="login-page">
+  <view class="login-page" :style="menuStyleVars">
     <!-- 品牌区（理想图《登录页面》：品牌名+小苗+副标，深色文字于浅色背景） -->
     <view class="login-page__brand">
       <view class="hero-title-row">

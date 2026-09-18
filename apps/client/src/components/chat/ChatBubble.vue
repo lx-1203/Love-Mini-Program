@@ -284,7 +284,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   cursor: pointer;
 }
 
-/* mp-weixin 不支持 display:grid，单列纵向堆叠改用 flex-direction: column
+/* mp-weixin 不支持 grid 网格布局，单列纵向堆叠改用 flex-direction: column
    2026-08-26 R3：padding / 阴影 / 主圆角收敛到 --bubble-* token（双方一致） */
 .bubble {
   display: flex;

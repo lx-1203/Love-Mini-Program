@@ -54,14 +54,14 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 <template>
   <view class="match-loading">
     <!-- 粉色爱心装饰 - 用图片替换emoji -->
-    <image class="match-loading__deco match-loading__deco--1" src="/static/assets/images/mascot/heart_pink_large.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--2" src="/static/assets/images/mascot/heart_pink.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--3" src="/static/assets/images/mascot/heart_pink_large.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--4" src="/static/assets/images/mascot/heart_green.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--5" src="/static/assets/images/mascot/heart_pink.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--6" src="/static/assets/images/mascot/heart_pink_large.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--7" src="/static/assets/images/mascot/heart_green.png" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--8" src="/static/assets/images/mascot/heart_pink.png" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--1" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--2" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--3" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--4" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--5" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--6" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--7" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--8" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
 
     <!-- 右上角跳过 -->
     <view class="match-loading__skip" hover-class="match-loading__skip--pressed" @tap="emit('skip')">
@@ -89,7 +89,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
       <view class="match-loading__avatars">
         <image class="match-loading__avatar" :src="myAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
         <view class="match-loading__heart" @animationend="onHeartAnimationEnd">
-          <image class="match-loading__heart-img" src="/static/assets/images/heart-gradient.svg" mode="aspectFit" alt="" />
+          <image class="match-loading__heart-img" :src="IMAGE_PATHS.MASCOT.HEART_GRADIENT" mode="aspectFit" alt="" />
         </view>
         <view class="match-loading__avatar-wrap">
           <image class="match-loading__avatar match-loading__avatar--blur" :src="partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />

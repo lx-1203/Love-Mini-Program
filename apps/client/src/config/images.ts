@@ -351,6 +351,12 @@ export const IMAGE_PATHS = {
     STATUS_ONLINE: '/static/assets/images/mascot/status_online.png', // 在线状态
     STATUS_BUSY: '/static/assets/images/mascot/status_busy.png',     // 忙碌状态
     STATUS_CRUSH: '/static/assets/images/mascot/status_crush.png',   // 心动状态
+    // 匹配/加载装饰爱心素材（2026-09-17 R7：模板禁止硬编码 /static/，收敛到常量；
+    // 与本组一致固定本地 /static 路径，不随 real 模式切后端基址）
+    HEART_PINK: '/static/assets/images/mascot/heart_pink.png',             // 粉色小爱心
+    HEART_PINK_LARGE: '/static/assets/images/mascot/heart_pink_large.png', // 粉色大爱心
+    HEART_GREEN: '/static/assets/images/mascot/heart_green.png',           // 绿色小爱心
+    HEART_GRADIENT: '/static/assets/images/heart-gradient.svg',            // 渐变爱心装饰（MatchLoading 背景板）
   },
 
   /** TabBar 图标（tabbar 目录） */
@@ -408,6 +414,8 @@ export const IMAGE_PATHS = {
     X: ICONS_BASE + '/v2/x.png',
     SEARCH: ICONS_BASE + '/v2/search.png',
     MORE: ICONS_BASE + '/v2/more.png',
+    // SVG 变体（2026-09-17 R7：circle-home「更多」按钮，固定本地 /static 路径）
+    MORE_SVG: '/static/assets/icons/v2/more.svg',
     BACK: ICONS_BASE + '/v2/back.png',
     PLUS: ICONS_BASE + '/v2/plus.png',
     EDIT: ICONS_BASE + '/v2/edit.png',

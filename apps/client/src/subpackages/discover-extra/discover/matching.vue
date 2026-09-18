@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { useStatusBarHeight } from "@/composables/useStatusBarHeight";
-
-/** 状态栏高度：注入根节点 CSS 变量，供 MatchLoading 跳过按钮避让胶囊 */
-const statusBarHeight = useStatusBarHeight();
 import { computed, ref, watch } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
@@ -17,6 +13,10 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { ROUTES } from "../../../constants/routes";
 
 import MatchLoading from "../../../components/match/MatchLoading.vue";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const matchStore = useMatchStore();
@@ -189,7 +189,7 @@ onUnload(() => {
 </script>
 
 <template>
-  <view class="matching-page" :style="{ '--statusbar': statusBarHeight + 'px' }">
+  <view class="matching-page" :style="menuStyleVars">
     <!-- 2026-08-25 P0：顶部左上返回箭头（规格书 06.1） -->
     <view class="matching-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
       <text class="matching-page__back-icon">‹</text>

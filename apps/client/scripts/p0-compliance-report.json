@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-07-26T14:59:10.919Z",
+  "generatedAt": "2026-09-18T05:03:48.205Z",
   "project": "campus-love",
   "phase": "P0",
   "summary": {
     "total": 24,
-    "passed": 16,
+    "passed": 15,
     "failed": 0,
-    "manual": 3,
+    "manual": 4,
     "todo": 5,
     "overall": "PASS"
   },
@@ -15,8 +15,8 @@
       "id": "2",
       "name": "__usePrivacyCheck__: true",
       "level": "P0-必选",
-      "status": "pass",
-      "detail": "manifest.json: mp-weixin.__usePrivacyCheck__ = true"
+      "status": "manual",
+      "detail": "manifest.json: mp-weixin.__usePrivacyCheck__ = false（书面豁免：真机隐私由微信平台处理，开启会阻塞自动化回归，见 manifest 内 2026-08-29 注释）"
     },
     {
       "id": "3",
@@ -30,21 +30,21 @@
       "name": "ensurePrivacyAuthorized 调用点",
       "level": "P0-必选",
       "status": "pass",
-      "detail": "找到 9 个文件调用 ensurePrivacyAuthorized：\\src\\pages\\campus\\certification.vue, \\src\\pages\\circles\\post-topic.vue, \\src\\pages\\profile\\album.vue, \\src\\pages\\profile\\index.vue, \\src\\pages\\verification\\index.vue, \\src\\pages\\village\\post.vue, \\src\\subpackages\\support\\feedback\\index.vue, \\src\\tests\\utils\\privacy.spec.ts, \\src\\utils\\privacy.ts"
+      "detail": "找到 14 个文件调用 ensurePrivacyAuthorized：\\src\\pages\\profile\\index.vue, \\src\\subpackages\\campus\\campus\\certification.vue, \\src\\subpackages\\campus\\campus\\post-topic.vue, \\src\\subpackages\\circles\\circles\\post-topic.vue, \\src\\subpackages\\profile-extra\\profile\\album.vue, \\src\\subpackages\\profile-extra\\verification\\index.vue, \\src\\subpackages\\setup\\profile\\index.vue, \\src\\subpackages\\support\\feedback\\index.vue, \\src\\subpackages\\village\\village\\post.vue, \\src\\subpackages\\village\\village\\publish.vue, \\src\\tests\\utils\\privacy.spec.ts, \\src\\utils\\audio-recorder.ts, \\src\\utils\\media.ts, \\src\\utils\\privacy.ts"
     },
     {
       "id": "5",
       "name": "requiredPrivateInfos 与实际使用一致",
       "level": "P0-必选",
       "status": "pass",
-      "detail": "manifest 声明 3 个接口：[chooseAddress, chooseLocation, getLocation]；源码中调用隐私接口的文件数：9（需人工核对接口级一致性）"
+      "detail": "manifest 声明 1 个接口：[getLocation]；源码中调用隐私接口的文件数：16（需人工核对接口级一致性）"
     },
     {
       "id": "16",
       "name": "@JsonIgnore 凭据脱敏",
       "level": "P0-必选",
       "status": "pass",
-      "detail": "User.java 中 @JsonIgnore 出现 1 次（期望 >= 1，password 字段必须脱敏；openid 通过 DtoMapper 在 DTO 层脱敏）"
+      "detail": "User.java 中 @JsonIgnore 出现 2 次（期望 >= 1，password 字段必须脱敏；openid 通过 DtoMapper 在 DTO 层脱敏）"
     },
     {
       "id": "17",
@@ -58,7 +58,7 @@
       "name": "@PreAuthorize Admin 权限注解",
       "level": "P0-必选",
       "status": "pass",
-      "detail": "11/11 个 Admin Controller 标注 @PreAuthorize(\"hasRole('ADMIN')\")（期望 >= 11）"
+      "detail": "33/36 个 Admin Controller 标注 @PreAuthorize(\"hasRole('ADMIN')\")（期望 >= 11）"
     },
     {
       "id": "20",

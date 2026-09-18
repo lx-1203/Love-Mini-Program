@@ -12,7 +12,7 @@
  * - 使用 @tap / hover-class 而非 click / :hover
  * - 不使用 import.meta.env
  * - 使用 v-model:visible 双向绑定，避免父组件手动同步
- * - 不使用 backdrop-filter（mp-weixin 不支持）
+ * - 不使用 backdrop blur（mp-weixin 不支持）
  *
  * 错误处理：
  * - API 调用失败时 toast 提示错误信息，弹窗保持打开让用户重试

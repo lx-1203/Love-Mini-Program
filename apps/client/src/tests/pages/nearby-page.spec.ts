@@ -69,9 +69,12 @@ describe("Nearby v3 页面 smoke", () => {
 
   it("校园圈 Hub 包含四态权限文案", () => {
     expect(campusHubSource).toContain("campus-hub");
-    expect(campusHubSource).toContain("statusVerified");
+    // 2026-09-17：四态文案 key 演进（isVerified→campusHub.certified / statusPending / 未认证公开态→campusHub.unverified），
+    // 原 statusVerified / statusPublic 命名已下线，断言改为校验现有四态判定与文案 key（语义不变）。
+    expect(campusHubSource).toContain("isVerified");
+    expect(campusHubSource).toContain("isPending");
     expect(campusHubSource).toContain("statusPending");
-    expect(campusHubSource).toContain("statusPublic");
+    expect(campusHubSource).toContain("unverified");
   });
 
   it("认识 TA 统一进入他人主页（不直接 like/建聊天）", () => {
@@ -88,10 +91,14 @@ describe("Nearby v3 页面 smoke", () => {
     expect(nearbySource).not.toContain("chat-session");
   });
 
-  it("未登录时不发受保护请求（getToken 守卫 + LockScreen 登录引导）", () => {
+  it("未登录时不发受保护请求（getToken 守卫 + 登录引导卡片）", () => {
+    // 2026-08-26 R2：附近页改为「未登录可逛」，受保护数据源在 loadNearbyData 内
+    // 以 if (getToken()) 门控（不再使用 early-return 写法）；
+    // LockScreen 整页锁替换为页内 nearby-login-guide 登录引导卡片。
+    // 语义不变：未登录不发受保护请求 + 提供登录引导。
     expect(nearbySource).toContain("getToken");
-    expect(nearbySource).toContain("if (!getToken()) return");
-    expect(nearbySource).toContain("LockScreen");
+    expect(nearbySource).toContain("if (getToken()) {");
+    expect(nearbySource).toContain("nearby-login-guide");
     expect(nearbySource).toContain("watch(");
   });
 

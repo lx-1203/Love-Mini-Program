@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { IMAGE_PATHS } from "../../config/images";
-import { resolveMediaUrl } from "../../utils/media";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 
 const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();

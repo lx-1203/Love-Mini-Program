@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { InterestCircleViewModel } from "../../view-models/home-dashboard";
-import { IMAGE_PATHS } from "../../config/images";
 import { circleCoverFor } from "../../config/circle-covers";
 import { resolveMediaUrl } from "../../utils/media";
 import SkeletonBlock from "../common/SkeletonBlock.vue";

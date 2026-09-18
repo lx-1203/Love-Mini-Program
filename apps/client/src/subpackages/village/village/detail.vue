@@ -36,6 +36,10 @@ import ActivityCard from "../../../components/village/ActivityCard.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const villageStore = useVillageStore();
 const messagesStore = useMessagesStore();
@@ -522,7 +526,12 @@ function chooseCommentImage() {
       try {
         for (const path of paths) {
           if (commentImages.value.length >= 3) break;
-          const { url } = await clientApi.uploadPostImage({ path });
+          const { url } = await clientApi.uploadPostImage({
+            // UniUploadFileLike 契约要求 name（H5 File.name 回退 + FormData filename），
+            // 与 circles/campus post-topic 调用方同一包装惯例
+            name: "comment.jpg",
+            path,
+          });
           commentImages.value = [...commentImages.value, url];
         }
       } catch (_e) {
@@ -739,7 +748,7 @@ onShareTimeline(() => {
   <!-- 2026-08-27：详情页浅色背景由 pages.json 的 backgroundColor 统一固定，
        避免深色模式下顶部/底部安全区留白处露出深色、与浅色内容不一致
        （注：不可使用 <page-meta> 组件，会导致微信开发者工具 WXML 编译报错） -->
-  <view class="detail-page">
+  <view class="detail-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.backAria')" @tap="goBack">

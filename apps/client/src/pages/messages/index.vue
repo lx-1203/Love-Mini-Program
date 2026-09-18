@@ -265,10 +265,10 @@ function formatTime(dateStr?: string): string {
         </view>
         <view class="header__right">
           <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
-            <image class="header__icon-img" src="/static/assets/icons/search.svg" mode="aspectFit" />
+            <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
           </view>
           <view class="header__icon-btn" hover-class="header__icon-btn--hover">
-            <image class="header__icon-img" src="/static/assets/message/svg/icon/add.svg" mode="aspectFit" />
+            <image class="header__icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
           </view>
         </view>
       </view>
@@ -300,7 +300,7 @@ function formatTime(dateStr?: string): string {
           <view class="quick-cards">
             <view class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
-                <image class="quick-card__icon-img" src="/static/assets/images/mascot/heart_green.png" mode="aspectFit" />
+                <image class="quick-card__icon-img" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">有人喜欢你</text>
@@ -312,7 +312,7 @@ function formatTime(dateStr?: string): string {
             </view>
             <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goReply">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
-                <image class="quick-card__icon-img" src="/static/assets/images/mascot/chat_hi.png" mode="aspectFit" />
+                <image class="quick-card__icon-img" :src="IMAGE_PATHS.MASCOT.CHAT_HI" mode="aspectFit" />
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">正在等待回复</text>
@@ -377,7 +377,7 @@ function formatTime(dateStr?: string): string {
                 <view class="warm-item__avatar-wrap">
                   <image class="warm-item__avatar" :src="person.avatarUrl || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
                   <view class="warm-item__heart-icon">
-                    <image class="warm-item__heart-img" src="/static/assets/images/mascot/sprout.png" mode="aspectFit" />
+                    <image class="warm-item__heart-img" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" />
                   </view>
                 </view>
                 <text class="warm-item__name">{{ person.name }}</text>

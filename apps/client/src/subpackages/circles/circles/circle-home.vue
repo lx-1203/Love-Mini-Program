@@ -394,7 +394,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             <image class="hero-btn-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SHARE" mode="aspectFit" />
           </view>
           <view class="hero-btn" hover-class="hero-btn--active">
-            <image class="hero-btn-icon" src="/static/assets/icons/v2/more.svg" mode="aspectFit" />
+            <image class="hero-btn-icon" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" />
           </view>
         </view>
       </view>
@@ -485,7 +485,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             </view>
             <text class="feed-time">{{ item.timeText }}</text>
           </view>
-          <image class="feed-more" src="/static/assets/icons/v2/more.svg" mode="aspectFit" />
+          <image class="feed-more" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" />
         </view>
 
         <view class="feed-content">

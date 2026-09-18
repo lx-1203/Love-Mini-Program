@@ -278,7 +278,8 @@ onShareTimeline(() => ({
       <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("common.back") }}</text>
       </view>
-      <text class="tag-header__title">#{{ tagName }}</text>
+      <!-- R11-N4：缺参时 tagName 为空会渲染裸「#」，改为占位标题 -->
+      <text class="tag-header__title">{{ tagName ? "#" + tagName : t("village.tagFallbackTitle") }}</text>
       <view class="tag-header__spacer" />
     </view>
 

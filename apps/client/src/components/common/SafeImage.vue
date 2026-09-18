@@ -137,6 +137,15 @@ function localizeHttpIfNeeded(resolved: string): string {
   if (!resolved.startsWith("http://")) {
     return resolved;
   }
+  // 项目规范：mp-weixin 专有 API 统一走 uni.*（运行时 uni.env 自 wx 透传，
+  // 见 @dcloudio/uni-mp-weixin uni.api.esm 的 objectKeys；类型层未声明，
+  // 按 compat 层惯例以结构化类型收敛读取）。H5 等无 USER_DATA_PATH 的平台
+  // 无 http 渲染限制，直接回原 URL，不再触碰 wx 全局（原写法在 H5 会 ReferenceError）。
+  const uniEnv = (uni as unknown as { env?: { USER_DATA_PATH?: string } }).env;
+  const userDataPath = uniEnv?.USER_DATA_PATH;
+  if (!userDataPath) {
+    return resolved;
+  }
   const cached = httpLocalCache.get(resolved);
   if (cached) {
     return cached;
@@ -156,7 +165,7 @@ function localizeHttpIfNeeded(resolved: string): string {
           localizingHttp.value = false;
           return;
         }
-        const destPath = `${wx.env.USER_DATA_PATH}/safeimg-${hashString(resolved)}.jpg`;
+        const destPath = `${userDataPath}/safeimg-${hashString(resolved)}.jpg`;
         uni.getFileSystemManager().copyFile({
           srcPath: res.tempFilePath,
           destPath,

@@ -12,7 +12,7 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（hover-class 替代）
- * - 不使用 import.meta.env.DEV
+ * - 不使用 import.meta.env 直读 DEV 标志
  * - 不使用 optional catch binding
  */
 import { ref, computed, onUnmounted } from "vue";

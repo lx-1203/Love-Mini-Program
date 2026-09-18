@@ -52,8 +52,14 @@ describe("设置页分组收敛（2026-08-14）", () => {
     const titles = wrapper.findAll(".section__title-text").map((n) => n.text());
     expect(titles.some((t) => t.includes("社交资产"))).toBe(true);
     const labels = wrapper.findAll(".menu-item__label").map((n) => n.text());
-    for (const expected of ["任务中心", "交友币", "我的圈子", "我的动态", "访客记录", "我的相册", "恋爱认证"]) {
+    // 2026-09-06 产品收敛（需求方要求）：任务中心 / 我的圈子 / 情感实验室 从设置页隐藏；
+    // 交友币入口受 commerce.coin 商业化开关控制（默认关闭不渲染）。
+    // 恋爱认证移入账号资料分组，仍在页面菜单内。
+    for (const expected of ["我的动态", "访客记录", "浏览记录", "我的相册", "恋爱认证"]) {
       expect(labels, `应包含入口 ${expected}`).toContain(expected);
+    }
+    for (const hidden of ["任务中心", "我的圈子"]) {
+      expect(labels, `不应再展示入口 ${hidden}`).not.toContain(hidden);
     }
   });
 

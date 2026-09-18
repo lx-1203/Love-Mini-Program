@@ -10,6 +10,10 @@ import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
+// R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const ICONS = IMAGE_PATHS.REGISTER_ICONS;
 
@@ -44,7 +48,7 @@ function goBrowse() {
 </script>
 
 <template>
-  <view class="reg-success">
+  <view class="reg-success" :style="menuStyleVars">
     <image class="reg-success__img" :src="IMAGE_PATHS.REGISTER.SUCCESS" mode="aspectFit" alt="" />
     <text class="reg-success__title">注册成功</text>
     <view class="reg-success__sub">

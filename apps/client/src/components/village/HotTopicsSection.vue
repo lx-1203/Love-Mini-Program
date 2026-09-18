@@ -10,7 +10,7 @@
  * - real 模式：GET /api/v1/post-tags/popular?limit=5（后端标签聚合）
  *   无封面图的话题使用品牌色渐变占位。
  *
- * mp-weixin 兼容：不使用 :hover 伪类、不使用 backdrop-filter。
+ * mp-weixin 兼容：不使用 :hover 伪类、不使用 backdrop blur。
  */
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -217,15 +217,18 @@ defineExpose({ loadTopics });
   color: var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85));
 }
 
-/* 右侧 2×2 四宫格 */
+/* 右侧 2×2 四宫格（mp-weixin 不支持 grid，改 flex-wrap + 子项等宽） */
 .hot-topics__side {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-3);
 }
 
 .hot-topics__small {
+  /* 2 列等宽：扣除行内 1 个间距后二等分（gridTopics 固定 4 条，两行两列） */
+  width: calc((100% - var(--sp-3)) / 2);
+  box-sizing: border-box;
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--c-bg-container);

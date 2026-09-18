@@ -88,7 +88,7 @@ const rippleColor = computed(() => {
 .card--interactive {
   /* mp-weixin 不支持 cursor:pointer，已通过 :active 伪类提供按下反馈 */
 }
-/* active 态：缩放 + 阴影提升至 elevation-2 + 品牌描边（mp-weixin 不支持 :hover，仅 :active） */
+/* active 态：缩放 + 阴影提升至 elevation-2 + 品牌描边（mp-weixin 不支持 hover 伪类，仅 :active） */
 .card--interactive:active {
   transform: scale(var(--card-press-scale));
   box-shadow: var(--c-elevation-2);

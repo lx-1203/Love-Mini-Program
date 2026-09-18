@@ -14,7 +14,7 @@
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类（改用 hover-class）
- * - 不使用 import.meta.env.DEV / backdrop-filter / display:grid / catch{}
+ * - 不使用直读 DEV 环境标志 / backdrop blur / grid 网格布局 / 无绑定 catch 语法
  */
 import { computed } from "vue";
 import type { UserProfilePost, UserProfileStory } from "../../../types/profile";
@@ -306,7 +306,7 @@ function openPost(postId: string): void {
   margin-bottom: var(--sp-5);
 }
 
-/* mp-weixin 不支持 display:grid，3 列等宽改用 Flexbox + width: calc */
+/* mp-weixin 不支持 grid 网格布局，3 列等宽改用 Flexbox + width: calc */
 .album-thumbs {
   display: flex;
   gap: var(--sp-3);

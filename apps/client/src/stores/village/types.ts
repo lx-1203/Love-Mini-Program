@@ -204,6 +204,10 @@ export interface VillageState {
   loadingNearbyPosts: boolean;
   /** 2026-08-26 R2：附近动态错误信息 */
   nearbyError: string | null;
+  /** 2026-09-05 R17：自己刚发布、仍在审核流中的帖子——feed 顶部可见（带「审核中」徽标）；
+   *  审核通过后服务端列表自然接管（按 id 去重）。此前仅存在于 state 初始化器，
+   * 未声明在本接口，导致 store 实例类型上不可见（vue-tsc TS2339）。 */
+  selfPendingPosts: PostItem[];
 }
 
 /**

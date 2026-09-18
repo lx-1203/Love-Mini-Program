@@ -8,7 +8,7 @@
  * - 通过 :style 切换 transform 触发 transition（替代原 CSS animation forwards 方案）
  * - start(clientX, clientY) 接收页面坐标，使用 uni.createSelectorQuery 异步查询容器位置后计算容器相对坐标
  * - 若获取容器位置失败或未传坐标，退化为容器中心扩散（保持向后兼容）
- * - mp-weixin 兼容：不使用 :hover / backdrop-filter / import.meta.env.DEV / 裸 catch 语法
+ * - mp-weixin 兼容：不使用 hover 伪类 / backdrop blur / import.meta.env 直读 DEV 标志 / 无绑定 catch 语法
  *
  * 用法：
  *   <Ripple color="rgba(91,127,255,0.2)" :duration="200" />

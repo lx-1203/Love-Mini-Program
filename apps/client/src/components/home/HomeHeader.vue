@@ -28,17 +28,19 @@ const sessionStore = useSessionStore();
 // 2026-09-03（统一角色展示）：本人头像单一数据源 = profile.avatarUrl（App 启动登录后已拉取），
 // 缺失时回落 session 头像 → 本地默认头像
 const profileStore = useProfileStore();
-// R9：全员真人头像后不再特判 person-01（它是正常真人头像）——直接取本人真实头像
+// R9：全员真人头像后不再特判 person-01（它是正常真人头像）——直接取本人真实头像。
+// 头像单一数据源 = profile.avatarUrl（UserSession 类型不含头像字段，session 回退分支
+// 已随统一角色展示收敛移除；缺失时回落本地默认头像）。
 const myAvatar = computed<string>(() => {
   if (profileStore.avatarUrl) return profileStore.avatarUrl;
-  const u = sessionStore.userSession;
-  if (u?.avatarUrl) return u.avatarUrl;
   return IMAGE_PATHS.DEFAULT_AVATAR;
 });
 const myNickname = (): string => {
-  const u = sessionStore.userSession;
-  if (u?.nickname && u.nickname !== '星野') return u.nickname;
-  return u?.username || '我的';
+  // UserSession 提供的昵称字段是 displayName（nickname/username 不在该类型上）
+  const name = sessionStore.userSession?.displayName?.trim();
+  // 「星野」是旧 mock 推荐人硬编码名，不应作为本人昵称展示（历史遗留守卫）
+  if (name && name !== "星野") return name;
+  return "我的";
 };
 function goMyProfile() {
   openAppPath(ROUTES.PROFILE.INDEX);

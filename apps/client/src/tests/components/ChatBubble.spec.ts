@@ -123,9 +123,11 @@ describe("ChatBubble component - 聊天气泡组件", () => {
     expect(wrapper.find(".bubble-avatar--peer").exists()).toBe(true);
   });
 
-  it("sender=self 时不渲染自己头像（微信惯例：自己消息无头像）", () => {
+  it("sender=self 时在右侧渲染自己头像（2026-08-26 起双向头像布局，对齐微信真实行为）", () => {
     const wrapper = mountBubble({ sender: "self" });
-    expect(wrapper.find(".bubble-avatar").exists()).toBe(false);
+    // 2026-08-26 头像布局演进：对方头像在左、自己头像在右（微信真实惯例），
+    // 原断言「自己消息无头像」已过时，改为断言右侧 self 头像渲染。
+    expect(wrapper.find(".bubble-avatar--self").exists()).toBe(true);
   });
 
   it("气泡内不再渲染时间（时间由父页面微信式时间条承载）", () => {
@@ -181,15 +183,18 @@ describe("ChatBubble component - 聊天气泡组件", () => {
   // ------------------------------------------------------------------
   // 2026-08-09 表情包机制：emoji 消息渲染
   // ------------------------------------------------------------------
-  it("kind=emoji 时渲染表情字符并添加大号渲染 class", () => {
+  it("kind=emoji 时渲染表情 SVG 并添加大号渲染 class", () => {
     const wrapper = mountBubble({
       sender: "peer",
       kind: "emoji" as "text",
       body: "😊",
     });
-    const body = wrapper.find(".bubble__body");
-    expect(body.text()).toBe("😊");
-    expect(body.classes()).toContain("bubble__body--emoji");
+    // 2026-08-26 第三轮：emoji 消息统一走 EmojiText，命中的 emoji 字符渲染为
+    // SVG <image>（mp-weixin 禁 emoji 字符直接渲染），断言由「文本 = 😊」改为
+    // 「表情 SVG 图标存在」（语义不变：表情消息正确渲染为大号表情）。
+    expect(wrapper.find(".emoji-text__img").exists()).toBe(true);
+    // 大号渲染 class 经 fallthrough 落在 EmojiText 根节点上
+    expect(wrapper.find(".bubble__body--emoji").exists()).toBe(true);
   });
 
   it("kind=text 时不添加 emoji 大号渲染 class", () => {

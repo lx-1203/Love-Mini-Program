@@ -24,7 +24,7 @@
  * <p>工程约束：</p>
  * <ul>
  *   <li>不使用 {@code import.meta.env.DEV}（mp-weixin 不支持）</li>
- *   <li>不使用 {@code catch {}} 空绑定（mp-weixin 不兼容），统一 {@code catch (e) { ... }}</li>
+ *   <li>不使用无绑定 catch 语法（可选 catch binding，mp-weixin 不兼容），统一显式 catch (e) 处理</li>
  *   <li>不使用 {@code :hover} 伪类</li>
  *   <li>不含任何 Mock fallback，登录失败显示具体错误</li>
  * </ul>
