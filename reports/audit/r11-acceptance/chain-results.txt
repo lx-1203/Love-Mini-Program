@@ -1,0 +1,5 @@
+chain0 login	PASS	A=100158 B=100159
+chainB like	FAIL	404 {'error': 'Not Found', 'message': '请求的路径不存在', 'status': 404}
+chainC comment	FAIL	422 pid=None
+chainE publish	FAIL	422 pid=None
+chainF conversation	FAIL	404 conv=None

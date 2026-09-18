@@ -1,0 +1,19 @@
+[verify-size] ===== mp-weixin 包体积验收 =====
+  主包: 27.68MB  (上限 2.00MB)
+  总包: 28.68MB  (上限 10.00MB)
+  分包 subpackages/village: 0.17MB
+  分包 subpackages/circles: 0.11MB
+  分包 subpackages/campus: 0.09MB
+  分包 subpackages/discover-extra: 0.09MB
+  分包 subpackages/tools: 0.13MB
+  分包 subpackages/profile-extra: 0.15MB
+  分包 subpackages/chat: 0.08MB
+  分包 subpackages/setup: 0.07MB
+  分包 subpackages/support: 0.01MB
+  分包 subpackages/discover: 0.03MB
+  分包 subpackages/legal: 0.00MB
+  分包 subpackages/market: 0.03MB
+  分包 subpackages/vip: 0.05MB
+[verify-size] ✗ 验收失败:
+  - 主包 27.68MB 超过微信主包上限 2.00MB
+  - 总包 28.68MB 超过 10.00MB

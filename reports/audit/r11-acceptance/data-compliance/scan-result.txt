@@ -1,0 +1,13 @@
+item	hits
+audit_posts	3
+item	hits
+audit_pms	0
+item	hits
+audit_tempchat	0
+item	hits
+audit_whisper	0
+item	hits
+audit_official	0
+item	dup_groups
+audit_discussion_dup	10
+ERROR 1054 (42S22) at line 17: Unknown column 'status' in 'where clause'
