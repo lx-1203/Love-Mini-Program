@@ -3,11 +3,9 @@
  * Uses miniprogram-automator to connect to WeChat DevTools and take page screenshots
  */
 import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const globalRoot = 'D:\\codex-tools\\node-v22.17.0-win-x64\\node_modules';
 const require2 = createRequire(path.join(globalRoot, 'package.json'));
 const automator = require2('miniprogram-automator');
@@ -68,7 +66,7 @@ async function main() {
     }
   }
 
-  try { await miniProgram.navigateTo('/pages/home/index'); } catch (_) {}
+  try { await miniProgram.navigateTo('/pages/home/index'); } catch (_) { /* best-effort return to home; ignore errors */ }
 
   console.log('\n========== Summary ==========');
   for (const r of results) {
