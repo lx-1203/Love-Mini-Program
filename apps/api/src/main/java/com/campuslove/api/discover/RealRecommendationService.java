@@ -202,7 +202,18 @@ public class RealRecommendationService implements RecommendationService {
         // 3. 按热度降序排序
         scoredDiscussions.sort(Comparator.comparingInt(ScoredDiscussion::heatScore).reversed());
 
-        return scoredDiscussions.stream()
+        // 4. R11-G5（2026-09-18）：同文案去重——种子模板使同句帖子多份存在，
+        //    热度排序后讨论圈首屏会出现同句霸榜；按内容前 20 字去重，只保留热度最高的一条。
+        java.util.Set<String> seenContentPrefixes = new java.util.HashSet<>();
+        List<ScoredDiscussion> deduped = new ArrayList<>();
+        for (ScoredDiscussion sd : scoredDiscussions) {
+            String fingerprint = sd.title() == null ? "" : sd.title().substring(0, Math.min(20, sd.title().length()));
+            if (seenContentPrefixes.add(fingerprint)) {
+                deduped.add(sd);
+            }
+        }
+
+        return deduped.stream()
                 .limit(recommendationConfigDiscussionLimit())
                 .map(sd -> new DiscussionRecommendationView(sd.id(), sd.title(), sd.summary(), sd.heatLabel()))
                 .toList();

@@ -47,6 +47,16 @@ export async function fetchCurrentLocation(): Promise<LocationResult | null> {
   }
 }
 
+/** 腾讯地图逆地理编码响应体（仅声明本文件消费的字段，apis.map.qq.com/ws/geocoder/v1）。 */
+interface GeocoderResponse {
+  result?: {
+    address_component?: {
+      city?: string;
+      district?: string;
+    };
+  };
+}
+
 /**
  * 逆地理编码：将经纬度解析为城市/区域名。
  * 优先使用微信内置逆解析（wx.request + 腾讯地图 API），
@@ -59,10 +69,15 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
     // #ifdef MP-WEIXIN
     uni.request({
       url: `https://apis.map.qq.com/ws/geocoder/v1/?location=${lat},${lng}&key=YOUR_KEY`,
-      success: (res: any) => {
-        const result = res?.data?.result;
-        const city = result?.address_component?.city || result?.address_component?.district || "";
-        resolve(city);
+      success: (res: UniApp.RequestSuccessCallbackResult) => {
+        // data 为 string | AnyObject | ArrayBuffer，先收敛到对象再按契约读取
+        const payload: unknown = res.data;
+        if (typeof payload !== "object" || payload === null) {
+          resolve("");
+          return;
+        }
+        const component = (payload as GeocoderResponse).result?.address_component;
+        resolve(component?.city || component?.district || "");
       },
       fail: () => resolve(""),
     });

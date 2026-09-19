@@ -52,6 +52,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * 但 SecurityConfig 的鉴权规则先生效，普通用户访问 → 403，ADMIN 访问 → 非 401/403（404 视为安全通过）。</p>
  */
 class AdminPermissionTest {
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialChatMessageRepository officialChatMessageRepository; // R11-G1: R16 官方号链路依赖
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialAccountRepository officialAccountRepository; // R11-G1
 
     /**
      * 8 个 Admin Controller 的权限测试（@SpringBootTest + MockMvc）。

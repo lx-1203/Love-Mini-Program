@@ -40,7 +40,7 @@ async function viewImage(url: string): Promise<void> {
     window.open(objectUrl, "_blank", "noopener");
     setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
   } catch (e) {
-    alert(`${t("realNameCertifications.viewImage")}: ${(e as Error).message}`);
+    console.error(`${t("realNameCertifications.viewImage")}: ${(e as Error).message}`);
   }
 }
 

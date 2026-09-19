@@ -26,6 +26,17 @@ import type {
   OfficialMessageView,
 } from "../../../services/generated/api-types-supplement";
 
+/**
+ * 本页消息视图：在 OfficialMessageView 契约上扩展实际出现的形态——
+ * 本地 pending 插入为 "user-text"、后端按钮卡片为 "action-buttons"、
+ * R16 后端 direction/role 方向字段（generated 契约暂未声明）。
+ */
+type ChatMessageView = Omit<OfficialMessageView, "messageType"> & {
+  messageType: OfficialMessageView["messageType"] | "user-text" | "action-buttons";
+  direction?: string;
+  role?: string;
+};
+
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
 const sessionStore = useSessionStore();
@@ -42,7 +53,7 @@ const accountName = ref("寻觅助手");
 const accountDesc = ref("你的恋爱小管家");
 const loading = ref(false);
 const errorMessage = ref("");
-const messages = ref<OfficialMessageView[]>([]);
+const messages = ref<ChatMessageView[]>([]);
 // 2026-08-31 Phase 1：进入过渡骨架（录屏实证助手聊天进入有 1~1.5s 纯空白）
 const ready = ref(false);
 
@@ -76,7 +87,7 @@ const sendMessage = async () => {
     content: text,
     cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
     publishedAt: new Date().toISOString(), cardActivity: null,
-  } as any);
+  });
   inputValue.value = "";
   scrollToBottom();
 
@@ -135,7 +146,7 @@ const onActionBtnTap = (label: string) => {
       content: "好的，稍后再说～",
       cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
       publishedAt: new Date().toISOString(), cardActivity: null,
-    } as any);
+    });
     scrollToBottom();
   }
 };
@@ -156,17 +167,16 @@ const scrollToBottom = () => {
 /* R16：后端 OfficialMessageView 新增 direction（user/assistant），优先用它判别左右；
  * R20：direction 判别大小写容错 + 收紧兜底（本地理想插入恒 user-text），
  * 防止用户消息被误判为助手渲染到左侧（方向不区分缺陷） */
-const isUserMsg = (msg: OfficialMessageView) => {
-  const m = msg as any;
-  if (typeof m.direction === "string" && m.direction) {
-    return m.direction.toLowerCase() === "user";
+const isUserMsg = (msg: ChatMessageView) => {
+  if (typeof msg.direction === "string" && msg.direction) {
+    return msg.direction.toLowerCase() === "user";
   }
-  return m.messageType === "user-text" || m.role === "user";
+  return msg.messageType === "user-text" || msg.role === "user";
 };
-const isActivityMsg = (msg: OfficialMessageView) =>
+const isActivityMsg = (msg: ChatMessageView) =>
   msg.messageType === "card" && msg.cardActivity;
-const isButtonMsg = (msg: OfficialMessageView) =>
-  (msg as any).messageType === "action-buttons";
+const isButtonMsg = (msg: ChatMessageView) =>
+  msg.messageType === "action-buttons";
 
 async function loadOfficialChat(): Promise<void> {
   if (loading.value) return;
@@ -249,7 +259,7 @@ function handleActivityTap(targetUrl: string) {
  * 卡片自带 targetUrl 时用之；否则回退到 cardActivity.activityId 拼详情页；
  * 最后兜底到活动列表页，保证一定有点击响应、不静默无动作。
  */
-function buildActivityDetailUrl(msg: OfficialMessageView): string {
+function buildActivityDetailUrl(msg: ChatMessageView): string {
   if (msg.cardTargetUrl) return msg.cardTargetUrl;
   const id = msg.cardActivity?.activityId;
   if (id) return `/subpackages/tools/activities/detail?id=${id}`;

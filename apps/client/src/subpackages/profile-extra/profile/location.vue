@@ -78,7 +78,7 @@ async function loadLocation() {
 async function pickFromMap() {
   // #ifdef MP-WEIXIN
   try {
-    const res: any = await new Promise((resolve, reject) => {
+    const res = await new Promise<UniApp.ChooseLocationSuccess>((resolve, reject) => {
       uni.chooseLocation({
         latitude: mapCenter.value.latitude,
         longitude: mapCenter.value.longitude,

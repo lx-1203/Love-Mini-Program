@@ -29,13 +29,12 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
 import { useProfileStore } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
-import { clientApi } from "../../../services/api";
+import { clientApi, type UniUploadFileLike } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
 // MP-R5-EDITPAGE：头像 + 照片墙（复用我的页同款链路，上传落 media_asset → 后台可审）
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { resolveMediaUrl } from "../../../utils/media";
-import type { UniUploadFileLike } from "../../../services/api";
 // 2026-08-07 流程重构：注册第 1 步身份选择（学生/非学生），决定后续分支
 import {
   loadIdentity,

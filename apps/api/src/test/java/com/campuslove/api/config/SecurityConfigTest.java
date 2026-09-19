@@ -43,6 +43,8 @@ import com.campuslove.api.testdata.MockAllRepositoriesConfig;
 @AutoConfigureMockMvc
 @Import(MockAllRepositoriesConfig.class)
 class SecurityConfigTest {
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialChatMessageRepository officialChatMessageRepository; // R11-G1: R16 官方号链路依赖
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialAccountRepository officialAccountRepository; // R11-G1
 
     @org.springframework.boot.test.mock.mockito.MockBean
     private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;

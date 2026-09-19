@@ -951,7 +951,7 @@ onShareTimeline(() => {
         <!-- 评论列表（P1-02 楼中楼：根评论 + 缩进子评论；R19：按排序展示） -->
         <view v-else-if="sortedComments.length > 0" class="comments-list" role="list">
           <view
-            v-for="(comment, _idx) in sortedComments" :key="comment.id"
+            v-for="comment in sortedComments" :key="comment.id"
             class="comment-item list-item"
             @longpress="handleReportComment(comment)"
           >

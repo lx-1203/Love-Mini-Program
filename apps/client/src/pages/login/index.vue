@@ -285,17 +285,17 @@ const onWechatLoginGuarded = createButtonGuard(onWechatLogin, 1500);
  *
  * <p>用户拒绝授权时静默处理（不弹错误），仅记录日志。</p>
  */
-async function handleGetPhoneNumber(e: any) {
+async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: string } }) {
   // 用户拒绝授权或系统错误
-  if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+  if (e.detail?.errMsg !== 'getPhoneNumber:ok') {
     // 2026-09-04 QA 修复：R11 后表单唯一入口是"快捷登录 404 自动展开"，但真实后端 +
     // 开发者工具场景 errMsg 为环境类失败（非 404），表单永远打不开成死路。
     // 2026-09-12 全站验收 Round-1 修复（MP-R1-LOGIN-001）：用户拒绝授权也展开表单。
     // 此前"取消静默"导致拒绝后页面既无注册入口也无验证码/密码登录入口
     // （「去注册」链接在展开后的表单内），新用户无路可走。用户点了登录按钮
     // 即为登录意图，展开表单不算打扰；breadcrumb 保留 cancelled 供漏斗分析。
-    const cancelled = /cancel|deny|reject|auth_denied/i.test(e.detail.errMsg || '');
-    addBreadcrumb("ui", "phone_auth_cancelled", { errMsg: e.detail.errMsg, cancelled });
+    const cancelled = /cancel|deny|reject|auth_denied/i.test(e.detail?.errMsg || '');
+    addBreadcrumb("ui", "phone_auth_cancelled", { errMsg: e.detail?.errMsg, cancelled });
     showPhoneLogin.value = true;
     return;
   }
@@ -307,7 +307,7 @@ async function handleGetPhoneNumber(e: any) {
     uni.showToast({ title: t("login.closedTitle"), icon: "none" });
     return;
   }
-  const code = e.detail.code;
+  const code = e.detail?.code;
   if (!code) {
     uni.showToast({ title: t("login.phoneAuthFailed"), icon: "none" });
     return;

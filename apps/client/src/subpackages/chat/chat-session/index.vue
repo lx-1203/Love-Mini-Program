@@ -1352,7 +1352,13 @@ const peerAvatarSrc = computed(() => {
 const selfAvatarSrc = computed(() => {
   // 2026-09-03（统一角色展示）：本人头像单一数据源 = profile.avatarUrl（App 启动登录后已拉取）
   if (profileStore.avatarUrl) return profileStore.avatarUrl;
-  const user = (sessionStore as any).user || (sessionStore as any).currentUser;
+  // 兼容读取：sessionStore 未显式声明 user/currentUser 时为 undefined，结构化窄化后仅在
+  // avatar 为 string 时采用（替代 `as any` 探测）
+  const storeCandidate = sessionStore as unknown as {
+    user?: { avatar?: unknown };
+    currentUser?: { avatar?: unknown };
+  };
+  const user = storeCandidate.user ?? storeCandidate.currentUser;
   const ua = user && typeof user.avatar === "string" ? user.avatar : "";
   if (ua) return ua;
   return IMAGE_PATHS.AVATARS.AVATAR_2;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import type { MessageSession } from "../../stores/messages";
 import RelationshipTag from "../relationship/RelationshipTag.vue";
 import UnreadBadge from "../common/UnreadBadge.vue";
@@ -18,10 +18,15 @@ const emit = defineEmits<{
 }>();
 
 const avatarLoadError = ref(false);
-const partnerAvatar = computed(() => {
-  avatarLoadError.value = false;
-  return resolveMediaUrl(props.session.partnerAvatar);
-});
+const partnerAvatar = computed(() => resolveMediaUrl(props.session.partnerAvatar));
+// R11-G1：会话切换时重置头像错误态（vue/no-side-effects-in-computed-properties：
+// 副作用移出 computed，改由 watch 承担）
+watch(
+  () => props.session.partnerAvatar,
+  () => {
+    avatarLoadError.value = false;
+  }
+);
 const hasRelationship = computed(() => props.session.relationship != null && !props.session.isOfficial);
 const fallbackInitial = computed(() => (props.session.partnerName || "?").charAt(0));
 

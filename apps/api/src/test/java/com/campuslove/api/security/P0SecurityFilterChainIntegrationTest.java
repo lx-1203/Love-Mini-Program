@@ -73,6 +73,9 @@ class P0SecurityFilterChainIntegrationTest {
     @MockBean private com.campuslove.api.repository.UserOnlineStatusRepository userOnlineStatusRepository;
     @MockBean private com.campuslove.api.repository.NotificationRepository notificationRepository;
     @MockBean private com.campuslove.api.repository.PostRepository postRepository;
+    // R11-G1（2026-09-18）：R16 新增的寻觅助手官方号链路（OfficialAccountController →
+    // OfficialChatService）依赖 OfficialChatMessageRepository，补 mock 避免上下文加载失败
+    @MockBean private com.campuslove.api.repository.OfficialChatMessageRepository officialChatMessageRepository;
     @MockBean private com.campuslove.api.repository.CommentRepository commentRepository;
     @MockBean private com.campuslove.api.repository.LikeRepository likeRepository;
     @MockBean private com.campuslove.api.repository.PostLikeRepository postLikeRepository;
@@ -115,6 +118,7 @@ class P0SecurityFilterChainIntegrationTest {
     // VIP 红包已下线（2026-08-09 remove_red_packet）：两个 Repository 已删除，不再 mock
     @MockBean private com.campuslove.api.repository.VipBillRepository vipBillRepository;
     @MockBean private com.campuslove.api.repository.VideoCallRepository videoCallRepository;
+    @MockBean private com.campuslove.api.repository.OfficialAccountRepository officialAccountRepository; // R11-G1
 
     // ==================== 认证（Authentication）场景 ====================
 

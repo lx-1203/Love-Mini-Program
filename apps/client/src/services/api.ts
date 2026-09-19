@@ -36,6 +36,25 @@ function useMock() {
 }
 
 /**
+ * 判断捕获到的异常是否为 401 未授权。
+ *
+ * 正常路径下 request() 抛出 AppApiError（携带 status 字段，见 services/api-error.ts），
+ * http_status 为遗留兼容字段，一并检查。入参保持 unknown 并结构化窄化，
+ * 替代 `catch (e: any)`。
+ */
+function isUnauthorizedError(e: unknown): boolean {
+  if (typeof e !== "object" || e === null) return false;
+  const candidate = e as { status?: unknown; http_status?: unknown };
+  return candidate.status === 401 || candidate.http_status === 401;
+}
+
+/** 草稿相关 mock fixture（mockFixtures 未显式声明，按可选方法安全读取）。 */
+type DraftMockFixtures = {
+  getDraft?: () => PostDraftView | null;
+  saveDraft?: (data: SaveDraftRequest) => PostDraftView;
+};
+
+/**
  * 生成本地日期字符串（yyyy-MM-dd），用于签到/补签的幂等键。
  *
  * 说明：不使用 toISOString()（UTC 时区在凌晨会得到错误的日期），
@@ -302,8 +321,8 @@ export const clientApi = {
     }
     try {
       return await request<Schemas["BasicProfile"]>({ url: "/profile/basic" });
-    } catch (e: any) {
-      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getBasicProfile();
+    } catch (e) {
+      if (isUnauthorizedError(e)) return mockFixtures.getBasicProfile();
       throw e;
     }
   },
@@ -313,8 +332,8 @@ export const clientApi = {
     }
     try {
       return await request<ProfileStats>({ url: "/profile/stats" });
-    } catch (e: any) {
-      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getProfileStats();
+    } catch (e) {
+      if (isUnauthorizedError(e)) return mockFixtures.getProfileStats();
       throw e;
     }
   },
@@ -334,8 +353,8 @@ export const clientApi = {
     }
     try {
       return await request<Schemas["CampusProfile"]>({ url: "/profile/campus" });
-    } catch (e: any) {
-      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getCampusProfile();
+    } catch (e) {
+      if (isUnauthorizedError(e)) return mockFixtures.getCampusProfile();
       throw e;
     }
   },
@@ -355,8 +374,8 @@ export const clientApi = {
     }
     try {
       return await request<Schemas["ScheduleProfile"]>({ url: "/profile/schedule" });
-    } catch (e: any) {
-      if (e?.status === 401 || e?.http_status === 401) return mockFixtures.getScheduleProfile();
+    } catch (e) {
+      if (isUnauthorizedError(e)) return mockFixtures.getScheduleProfile();
       throw e;
     }
   },
@@ -1184,14 +1203,14 @@ async getWhisper(userId: string): Promise<WhisperUnlockView> {
   /** 获取当前用户发布草稿（统一发布页），无则 null。 */
   async getDraft(): Promise<PostDraftView | null> {
     if (useMock()) {
-      return ((mockFixtures as any).getDraft?.()) ?? null;
+      return (mockFixtures as unknown as DraftMockFixtures).getDraft?.() ?? null;
     }
     return request<PostDraftView | null>({ url: "/drafts/current", method: "GET" });
   },
   /** 保存当前用户发布草稿（前后端双写）。 */
   async saveDraft(data: SaveDraftRequest): Promise<PostDraftView> {
     if (useMock()) {
-      return ((mockFixtures as any).saveDraft?.(data)) ?? (data as PostDraftView);
+      return (mockFixtures as unknown as DraftMockFixtures).saveDraft?.(data) ?? (data as PostDraftView);
     }
     return request<PostDraftView, SaveDraftRequest>({ url: "/drafts", method: "POST", data });
   },

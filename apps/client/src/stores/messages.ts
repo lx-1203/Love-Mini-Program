@@ -209,7 +209,11 @@ export interface ConversationView {
   pinned: boolean;
   phase: string;
   sessionType: string;
-  relationship?: string | null;
+  /**
+   * 后端关系快照：/messages/recent-chats（dashboard）携带完整 RelationshipInfoView，
+   * /messages/conversations 不下发该字段（undefined → 映射为 null）。
+   */
+  relationship?: RelationshipInfoView | null;
 }
 
 export interface BackendMessageView {
@@ -271,7 +275,7 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
     sessionType: (raw.sessionType || "private") as SessionType,
     closesAt: null,
     closedReason: null,
-    relationship: (raw.relationship ?? null) as any,
+    relationship: raw.relationship ?? null,
   };
 }
 

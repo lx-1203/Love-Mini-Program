@@ -36,6 +36,8 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Import(MockAllRepositoriesConfig.class)
 class PhaseOneFlowApiTest {
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialChatMessageRepository officialChatMessageRepository; // R11-G1: R16 官方号链路依赖
+    @org.springframework.boot.test.mock.mockito.MockBean private com.campuslove.api.repository.OfficialAccountRepository officialAccountRepository; // R11-G1
 
     @org.springframework.boot.test.mock.mockito.MockBean
     private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
