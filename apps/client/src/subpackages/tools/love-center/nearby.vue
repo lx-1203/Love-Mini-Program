@@ -50,12 +50,19 @@ onLoad(() => {
  * 不再裸调全量推荐接口导致"附近"名不副实）。
  */
 async function loadNearbyCards() {
+  await loadCards({ distanceMax: NEARBY_MAX_DISTANCE_KM });
+}
+
+/** R12-IND-NEARBY-LC-001：空态降级——不带距离过滤拉全量推荐 */
+async function loadAllRecommendations() {
+  await loadCards({});
+}
+
+async function loadCards(filter: { distanceMax?: number }) {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const people = await clientApi.getRecommendations({
-      distanceMax: NEARBY_MAX_DISTANCE_KM,
-    });
+    const people = await clientApi.getRecommendations(filter);
     cards.value = people.map((person) => mapToDiscoverCard(person));
   } catch (error) {
     errorMessage.value =
@@ -142,10 +149,11 @@ function handleMessage(userId: string) {
 <template>
   <view class="content-page" :style="menuStyleVars">
     <view class="content-header">
-      <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
+      <!-- R12-IND-NEARBY-LC-002：返回键移到标题左侧（此前 space-between 把它推到胶囊下方被遮挡） -->
       <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <image class="content-header__back-icon" :src="backIcon" mode="aspectFit" alt="" />
       </view>
+      <text class="content-header__title">{{ t('contentPages.nearby.title') }}</text>
     </view>
 
     <!-- 加载中 -->
@@ -161,9 +169,14 @@ function handleMessage(userId: string) {
       </view>
     </view>
 
-    <!-- 空态 -->
+    <!-- 空态（R12-IND-NEARBY-LC-001：补插画说明 + 「看全部推荐」降级 CTA，
+         距离数据缺失时不再是无出口的空屏） -->
     <view v-else-if="!loading && cards.length === 0" class="nearby-empty">
+      <image class="nearby-empty__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
       <text class="nearby-empty__text">{{ t('contentPages.nearby.empty') }}</text>
+      <view class="nearby-empty__cta press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('contentPages.nearby.seeAll')" @tap="loadAllRecommendations">
+        <text class="nearby-empty__cta-text">{{ t('contentPages.nearby.seeAll') }}</text>
+      </view>
     </view>
 
     <!-- 寻觅卡片（与寻觅页同一组件/交互：滑动、喜欢、点击进主页） -->
@@ -241,6 +254,7 @@ function handleMessage(userId: string) {
 .nearby-loading,
 .nearby-error,
 .nearby-empty {
+  /* R12-IND-NEARBY-LC-001：空态升级为插画+CTA */
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -254,6 +268,26 @@ function handleMessage(userId: string) {
 .nearby-empty__text {
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
+}
+
+/* R12-IND-NEARBY-LC-001：空态插画与降级 CTA */
+.nearby-empty__icon {
+  width: 120rpx;
+  height: 120rpx;
+  opacity: 0.6;
+}
+
+.nearby-empty__cta {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-8);
+  border-radius: var(--r-full);
+  background: var(--c-gradient-brand);
+}
+
+.nearby-empty__cta-text {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .nearby-error__retry {

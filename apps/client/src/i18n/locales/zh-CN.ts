@@ -661,7 +661,7 @@ export default {
   },
   "notLoggedWaiting": {
     "title": "正在为你寻找 同频的那个人",
-    "subtitle": "附近有 12 位同频的你",
+    "subtitle": "发现更多同频的人",
     "unlockHint": "登录后即可解锁全部功能",
     "feature1": "精确匹配",
     "feature2": "聊天互动",
@@ -802,6 +802,7 @@ export default {
       "loading": "正在加载附近的同学…",
       "loadFailed": "加载失败，请重试",
       "empty": "暂时没有附近的同学",
+    "seeAll": "看看全部推荐",
       "likeHint": "匹配成功，去打个招呼吧",
       "matched": "匹配成功",
       "messageHint": "点击卡片查看主页后可发起聊天",

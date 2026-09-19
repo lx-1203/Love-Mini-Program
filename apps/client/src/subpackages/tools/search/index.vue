@@ -25,6 +25,10 @@ import Skeleton from "../../../components/common/Skeleton.vue";
 import { showErrorToast } from "../../../utils/error-toast";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// R12-IND-SEARCH-001：注入 --capsule-right（输入条胶囊避让依赖该变量）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
+
 
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
@@ -195,7 +199,7 @@ function goToActivity(activityId: number) {
 </script>
 
 <template>
-  <view class="search-page">
+  <view class="search-page" :style="menuStyleVars">
     <!-- 顶部搜索栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
     <view class="search-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 16rpx)` }">
       <!-- R10-P2-008：补返回入口（此前仅靠手势返回） -->
@@ -440,6 +444,8 @@ function goToActivity(activityId: number) {
 }
 
 .search-box {
+  /* R12-IND-SEARCH-001：输入条右端延伸进胶囊下方，预留胶囊宽度 */
+  margin-right: calc(var(--capsule-right, 7px) + 96px);
   flex: 1;
   display: flex;
   align-items: center;

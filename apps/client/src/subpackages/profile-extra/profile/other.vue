@@ -130,7 +130,18 @@ async function loadProfile(): Promise<void> {
       void likesStore.fetchLikes().catch(() => {});
     }
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t("common.networkError");
+    // R12-IND-PROFILE-OTHER-001：区分鉴权失败与加载失败，避免深链 401 被笼统渲染
+    const errStatus =
+      error !== null && typeof error === "object"
+        ? (error as { status?: unknown; http_status?: unknown }).status ??
+          (error as { http_status?: unknown }).http_status
+        : undefined;
+    errorMessage.value =
+      errStatus === 401
+        ? t("apiErrors.loginRequired")
+        : error instanceof Error
+          ? error.message
+          : t("common.networkError");
   } finally {
     loading.value = false;
   }
@@ -402,7 +413,7 @@ onLoad((query) => {
     />
 
     <!-- 2026-09-02 R5：底部固定「更多操作」触发按钮 + BottomSheet 弹窗（演示通用组件） -->
-    <view class="other-more-fab press-feedback" hover-class="press-feedback--active" role="button" aria-label="更多操作" @tap="moreSheetVisible = true">
+    <view v-if="!errorMessage && !loading" class="other-more-fab press-feedback" hover-class="press-feedback--active" role="button" aria-label="更多操作" @tap="moreSheetVisible = true">
       <text class="other-more-fab-icon">⋯</text>
     </view>
 

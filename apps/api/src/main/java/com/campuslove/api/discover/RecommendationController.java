@@ -304,7 +304,11 @@ public class RecommendationController {
             .filter(v -> {
               String text = v.distanceText();
               if (text == null || text.isBlank()) {
-                return false;
+                // R12-IND-NEARBY-LC-001（2026-09-19 独立审计）：距离数据缺失
+                // （LBS Phase 2 未实施，全库 distanceText 为空）时一律剔除会导致
+                // 「附近的人」对任何用户恒为空。过滤语义应为「已知距离且超上限才剔除」，
+                // 距离未知条目保留参与推荐。
+                return true;
               }
               text = text.trim().toLowerCase();
               // 2026-09-12 修复：Ranker 对不足 1km 的距离格式化为 "<1km"，

@@ -20,7 +20,20 @@ Start-Sleep -Seconds 10
 $token = (Get-Content $tokfile -Raw | ConvertFrom-Json).token
 $jsBoot = 'function(){ try { wx.setStorageSync(''token'', '''' + $token + ''''); var app=getApp(); var vm=app[''$vm'']; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm[''$pinia'']||gp[''$pinia'']; var s=p._s.get(''session''); if(s&&s.bootstrap){ s.bootstrap(); } return ''boot-ok''; } catch(e){ return ''ERR ''+e.message; } }'
 $null = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-source",$jsBoot)
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 6
+# R12-IND-GLOBAL-001: boot must be verified (retry once if session not established)
+$jsVerify = 'function(){ try { var app=getApp(); var vm=app[''$vm'']; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm[''$pinia'']||gp[''$pinia'']; var s=p._s.get(''session''); return s && s.isLoggedIn ? ''logged-in'' : ''not-logged-in''; } catch(e){ return ''ERR''; } }'
+$vraw = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-source",$jsVerify)
+if ($vraw -notmatch 'logged-in') {
+  Write-Host "  [boot] session NOT established - retrying" -ForegroundColor Yellow
+  Start-Sleep -Seconds 4
+  $null = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-source",$jsBoot)
+  Start-Sleep -Seconds 6
+  $vraw = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-source",$jsVerify)
+}
+$bootLine = "boot[{0}]: {1}" -f $ident, $(if ($vraw -match 'logged-in') {"ok"} else {"FAILED"})
+Add-Content -Path (Join-Path $shots ("boot-verify-{0}.log" -f $ident)) -Value $bootLine -Encoding UTF8
+Write-Host $bootLine
 
 $rows = @(
   "1|/pages/login/index|pages_login_index"
@@ -112,11 +125,14 @@ foreach ($row in $rows) {
   $file2 = Join-Path $shots ("{0}-{1}-{2}.b.png" -f $ident, $stamp, $name)
   $null = WiRaw @("-c","ZCode","simulator_screenshot","--project",$proj,"--path",$file2)
   $cerr = WiRaw @("-c","ZCode","get_simulator_console","--project",$proj,"--command","grep -iE 'NAV_FAIL|TypeError|is not defined' | tail -4")
+  $status = "clean"
   if ($cerr -match 'NAV_FAIL|TypeError|is not defined') {
+    $status = "ISSUE"
     Add-Content -Path (Join-Path $shots ("console-issues-{0}.log" -f $ident)) -Value ("### [{0}] {1}" -f $name, $cerr) -Encoding UTF8
     Write-Host ("  [console] {0}" -f $name) -ForegroundColor Yellow
-  } else {
-    Write-Host ("  ok {0}" -f $name)
   }
+  # R12-IND-EVIDENCE-001: console evidence per page always recorded
+  Add-Content -Path (Join-Path $shots ("console-evidence-{0}.log" -f $ident)) -Value ("{0}`t{1}" -f $name, $status) -Encoding UTF8
+  Write-Host ("  ok {0} ({1})" -f $name, $status)
 }
 Write-Host ("TOUR DONE identity={0} segment={1}" -f $ident, $segment)

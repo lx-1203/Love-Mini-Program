@@ -529,7 +529,19 @@ export const useCampusStore = defineStore("campus", {
         });
         this.currentTopic = mapToCampusTopicDetail(data);
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicDetailFailed");
+        // R12-IND-TOPICS-001：鉴权失败（401）不得静默成空 errorMessage——
+        // 否则页面「话题不存在」分支误渲染，用户被误导为内容已删除。
+        const errStatus =
+          error !== null && typeof error === "object"
+            ? (error as { status?: unknown; http_status?: unknown }).status ??
+              (error as { http_status?: unknown }).http_status
+            : undefined;
+        this.errorMessage =
+          errStatus === 401
+            ? t("apiErrors.loginRequired")
+            : error instanceof Error
+              ? error.message
+              : t("storeErrors.campus.loadTopicDetailFailed");
       } finally {
         this.loading = false;
       }

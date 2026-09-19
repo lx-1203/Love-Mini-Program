@@ -253,7 +253,7 @@ onShareAppMessage(() => {
     <EmptyState
       v-else-if="!loading && errorMessage"
       type="network"
-      :title="t('storeErrors.campus.loadTopicDetailFailed')"
+      :title="errorMessage || t('storeErrors.campus.loadTopicDetailFailed')"
       :action-text="t('common.retry')"
       @action="retryLoad"
     />
