@@ -1,0 +1,10 @@
+admin users total: 275 (http 200)
+db users count: 275
+users sync: OK
+admin posts http: 200
+admin posts sample: [43, 163, 103, 86, 26]
+db active posts: 183
+db audit residue posts: 0
+client circles: http 401, count 0, circle8=False members=-
+db circle8 members: 12001
+admin certifications http: 200client relogin ok; client circle8 members=12001 db=12001 sync=OK

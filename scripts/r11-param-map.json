@@ -78,8 +78,8 @@
   ],
   "params": {
     "subpackages/circles/circles/circle-home": "?circleId=8",
-    "subpackages/village/village/detail": "?id=225",
-    "subpackages/village/village/post": "?id=225",
+    "subpackages/village/village/detail": "?id=1",
+    "subpackages/village/village/post": "?id=1",
     "subpackages/campus/campus/topic-detail": "?id=153",
     "subpackages/circles/circles/topic-detail": "?id=37",
     "subpackages/circles/circles/post-topic": "?circleId=8",

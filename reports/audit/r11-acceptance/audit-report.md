@@ -69,6 +69,25 @@
 4. **lint warnings 14432**：0 error 达标；warnings 为格式类（vue/max-attributes 等），`--fix` 可批量消除但会产生全仓 diff，建议单独批次
 5. **巡检稳定性**：DevTools 自动化在 >150 次导航后偶发 runtimeid 丢失（本轮 3 次，全量重启恢复）；巡检脚本已内置段间 refresh，长跑建议按段分批
 
+## 6A. 管理后台联通与数据同步（2026-09-19 补充验收）
+
+| 项 | 结果 |
+|---|---|
+| 管理员登录 | ✅ POST /api/v1/auth/admin/login 200（SUPER_ADMIN local-dev-admin-openid-123456；写接口统一强制 Idempotency-Key，admin 前端 http.ts 已自动携带） |
+| 用户数据同步 | ✅ admin /admin/users total=275 = DB users 275 |
+| 内容数据同步 | ✅ admin /admin/posts 200 实时列表；DB active posts=183、审计残留 0 |
+| 圈子数据同步 | ✅ client /circles circle#8 memberCount=12001 = DB interest_circles 12001 |
+| 认证审核 | ✅ admin /admin/certifications 200 |
+| 证据 | data-compliance/admin-sync-result.txt |
+
+## 6B. 理想图一致性对照（2026-09-19 补充验收）
+
+**12 组核心页 Level1-4 结构比对全部通过**（ideal-comparison.md），无结构性偏差。过程发现并修复 2 项：
+1. 会话 preview 审计残留（R10 清理只删消息行未清会话预览）→ 迁移 V2026.09.19.0001 + 消息页实拍验证通过
+2. 巡检参数表 `?id=225` 已失效（R10 删除的审计帖）→ 参数表更新 `?id=1`，帖子详情完整渲染验证通过
+
+终版构建（lint/typecheck 修复后重编译）：BUILD_EXIT=0，9 步守卫链全 PASS（tmp/r11-verified-build.log）。
+
 ## 7. 本轮新增/修改交付物
 
 - 守卫：`check-statusbar-offset.mjs`（+白名单+fail-fast）、`check-project-rules.mjs`（新增）、`check-tabbar-consistency`/`check-project-rules` 接入构建链、p0-compliance 修复
