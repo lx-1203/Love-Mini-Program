@@ -1,0 +1,959 @@
+{
+  "checks": [
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "进入心动信号页（home→navigateTo 建栈）",
+      "expected": "页面渲染：返回键+标题「心动信号」+3 状态 Tab+待处理列表（mock：苏晴/叶知秋 2 条 pending）+红色徽标 2",
+      "actual": "渲染完整：3 Tab、徽标 2、2 张信号卡（苏晴/叶知秋）含头像与倒计时；探针 tabs=3 cards=2 badge=2",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-01-after.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击左上返回键",
+      "expected": "goBack（index.vue:73-80）：栈深>1 → navigateBack 回宿主 Tab",
+      "actual": "回到页面栈根（本轮 reLaunch 首页后实际落点 pages/discover/index，寻觅 Tab），无卡死无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-03-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "重复进出页面",
+      "expected": "再次 navigateTo 后正常渲染不卡死",
+      "actual": "正常渲染 2 张卡片",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-03-after.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击「已接受」Tab",
+      "expected": "Tab 高亮 + 已接受空态 EmptyState（mock 无 accepted 数据）",
+      "actual": "「已接受」高亮；空态文案「暂无已接受的心动信号/接受心动信号后，双方可以开始聊天」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-05R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-05R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击「已拒绝」Tab",
+      "expected": "Tab 高亮 + 已拒绝空态（mock 无 declined 数据）",
+      "actual": "「已拒绝」高亮；空态文案「暂无已拒绝的心动信号/拒绝的心动信号会保留在这里」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-06R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-06R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点回「待处理」Tab",
+      "expected": "Tab 高亮+徽标 2+2 张卡（倒计时文案因 mock 过期时间显示过期态）",
+      "actual": "徽标 2，卡片苏晴/叶知秋；倒计时显示「已过期后过期」（文案拼接缺陷，见 MP-R1-HEARTSIGNALS-001）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-07-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击第一张信号卡头部（goToUserProfile）",
+      "expected": "跳转个人主页 profile/other?userId=user-2003",
+      "actual": "进入个人主页（夏言 mock 主页完整渲染：头像/资料/兴趣标签/喜欢·打招呼·关注操作栏）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-08-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "从个人主页返回",
+      "expected": "回到心动信号页且列表恢复",
+      "actual": "截图证实回到心动信号页、待处理列表完整（徽标 2+2 卡）；注意 mp.currentPage() 自动化探针此时误报旧路径，以截图为准",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-09R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-09R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击第二张卡「拒绝」",
+      "expected": "toast「已拒绝」；列表刷新后叶知秋从待处理移除（徽标 2→1）",
+      "actual": "store signal-2→expired；截图显示徽标 1、列表仅剩苏晴；toast 因截图延迟未定格（devtools 截图延迟>2s，toast 时长 1500ms）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-09R-after.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-10R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "点击第一张卡「接受」",
+      "expected": "toast「已接受心动信号，去聊天吧」(success)；苏晴移出待处理",
+      "actual": "store signal-1→accepted；截图显示待处理列表清空（暂无心动信号空态）；toast 未定格（截图延迟）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-11R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-11R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "接受/拒绝后再次 fetchHeartSignals（mock 固件复用性）",
+      "expected": "重新拉取应恢复 mock 固件初始数据（2 条 pending）供后续演示",
+      "actual": "mock accept/decline 直接改写共享固件对象（likes.ts:813/852 signal.status='accepted'/'expired'），fetch 的 [...mockHeartSignals] 浅拷贝（likes.ts:776）拿到的是被改写的同批对象→本会话内待处理列表永久无法恢复；跨页面 onShow 重拉同样无效",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-11R-after.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-13R-after.png",
+      "issueId": "MP-R1-HEARTSIGNALS-002"
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "快速连点「接受」5 次",
+      "expected": "不崩溃、无 JS 错误，重复点击幂等",
+      "actual": "连点期间列表已被前序操作消费为空（固件污染），点击空列表无异常；console 无 TypeError/is not defined/NAV_FAIL 标记",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-12R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-12R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "页面打开立即返回（navigateTo 400ms 后点返回）",
+      "expected": "正常返回上一页，无白屏卡死",
+      "actual": "返回动作生效（回到栈中上一实例心动信号页），无卡死",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-13R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-13R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "已接受 Tab「开聊」按钮",
+      "expected": "点击后经 chatStore.startFromSignal 进入聊天会话页（fromSignal=1）",
+      "actual": "本轮会话内已接受 Tab 无卡片可触达（会话重启后 mock 固件对象重置、无 accepted 数据）；代码路径已静态核对（index.vue:372-376、handleChat:160-173）",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-14R-before.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-14R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "operation": "过期倒计时文案检查",
+      "expected": "过期信号显示「已过期」（zh-CN.ts:3542 expiredLabel）",
+      "actual": "显示「已过期后过期」——index.vue:319 将 getCountdown() 结果与 cardExpireSuffix「后过期」（zh-CN.ts:3563）无条件拼接，过期分支多出「后过期」",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/HEARTSIGNALS-01-after.png",
+      "after": "reports/screenshots/round-1-interact/HEARTSIGNALS-02-after.png",
+      "issueId": "MP-R1-HEARTSIGNALS-001"
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "进入活动详情 ?id=a-1",
+      "expected": "标题「图书馆南门咖啡散步」+状态「报名中」+时间地点+介绍+「分享」「立即报名」",
+      "actual": "全部按预期渲染（探针 title/status/signupText/shareText 全命中）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-01-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "点击「分享」",
+      "expected": "剪贴板写入 /subpackages/tools/activities/detail?id=a-1 + toast「链接已复制，发到微信即可直达活动详情」（2000ms）",
+      "actual": "点击执行无 JS 错误、页面无异常；toast 因共享 DevTools 截图延迟（>2s）未能在截图中定格，复制成功 toast 未能取得视觉证据",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-02X-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-02X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "点击「立即报名」",
+      "expected": "toast「报名成功，请留意通知」；按钮变「退出报名」；enrollCount 12→13；助手会话追加报名卡片消息（P8-2.3）",
+      "actual": "isEnrolled=true、enrollCount=13、按钮已变「退出报名」（截图证实）；toast 未定格（截图延迟）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-03-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "点击「退出报名」",
+      "expected": "toast「已取消报名」；按钮回「立即报名」；enrollCount 回 12",
+      "actual": "isEnrolled=false、enrollCount=12、按钮已回「立即报名」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-04-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "快速连点「立即报名」3 次（重复提交）",
+      "expected": "并发守卫 enrollingActivityIds 拦截：仅一次报名生效",
+      "actual": "isEnrolled=true 且 enrollCount 仅 12→13（只 +1），按钮「退出报名」，无状态错乱",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-05-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "连点「退出报名」复原",
+      "expected": "回到未报名态",
+      "actual": "isEnrolled=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-06-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "scroll-view 滚动到底（touch 上滑）",
+      "expected": "介绍完整可见，底部报名栏不遮挡内容",
+      "actual": "滑动执行成功，介绍区块完整，底部操作栏有 detail-footer-space 预留不遮挡",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-07-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "点击返回键",
+      "expected": "navigateBack 回上一页",
+      "actual": "回到 pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-08-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "未知 id 兜底（?id=unknown-xyz）",
+      "expected": "store 未匹配→回退内置示例「新人礼遇」+「示例活动」角标+报名按钮",
+      "actual": "title=新人礼遇、badge=示例活动、报名按钮在",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-09-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "示例活动「立即报名」（本地闭环）",
+      "expected": "toast 报名成功+按钮变「退出报名」（无 store 资源走本地 isSignedUp）",
+      "actual": "按钮已变「退出报名」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-10-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "示例活动「退出报名」",
+      "expected": "toast「已退出报名」+按钮回「立即报名」",
+      "actual": "按钮已回「立即报名」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-11-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "operation": "示例活动页返回键",
+      "expected": "回上一页",
+      "actual": "回到 pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-12-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "进入附近缘分页",
+      "expected": "返回键在标题左侧（R12-IND-NEARBY-LC-002 回归）+蒙面寻觅卡+跳过/超级喜欢/喜欢三操作钮",
+      "actual": "返回键位于左上不被胶囊遮挡；蒙面卡（模糊头像+「互发喜欢解锁头像」提示+????名）+三操作钮；discover store 9 张卡",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/NEARBY-01-before.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击卡片本体",
+      "expected": "CardDetailOverlay 全屏详情展开",
+      "actual": "资料详情展开（165cm/本科/8k-15k/产品经理、MBTI、兴趣爱好、相册预览、跳过/发消息/喜欢操作栏）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/NEARBY-01-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "蒙面模式下查看详情（隐私一致性）",
+      "expected": "卡片承诺「互发喜欢解锁头像」+名字蒙面????，详情层应维持蒙面直到互相喜欢",
+      "actual": "详情弹层直接展示真实姓名「林晓」、ID CL-4001 与未模糊照片——CardSwiper 未向 CardDetailOverlay 透传 masked（CardSwiper.vue:1249-1257 无该 prop），弹层直读原始 card（CardDetailOverlay.vue:939/:895-897）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-01-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-02-after.png",
+      "issueId": "MP-R1-NEARBY-002"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击详情右上关闭钮",
+      "expected": "详情收起回卡片堆",
+      "actual": "详情关闭（探针 detailClosed=true）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/NEARBY-02-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击「跳过」",
+      "expected": "当前卡飞出显示下一张（视觉推进），store 移除该卡",
+      "actual": "store 侧 9→8、first 4001→4002 正确；但视觉卡片仍停留在同一张（currentCard=props.cards[0]，nearby 本地 cards 从未被移除）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-01-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-04-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击「喜欢」",
+      "expected": "toast 已喜欢/匹配提示；卡片推进",
+      "actual": "操作目标卡已被 store 移除→store 记录错误「卡片不存在或已被处理」；视觉卡不推进（同 MP-R1-NEARBY-001）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-04-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-06-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击「超级喜欢」",
+      "expected": "swipeRight(isSuper)：未匹配无成功 toast、卡片推进",
+      "actual": "before/after store first 均 4002（该卡早已被移除）；视觉卡无变化；无 JS 错误",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-04-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-06-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "快速连点「喜欢」3 次",
+      "expected": "防抖窗口（R4-00177）内不崩溃、无状态错乱",
+      "actual": "无崩溃、无 JS 错误；但同样受卡片不推进缺陷影响",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-04-after.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-07-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "点击标题左侧返回键",
+      "expected": "navigateBack 回上一页",
+      "actual": "回到 pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/NEARBY-04-after.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITYDETAIL-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "对已被 store 移除的卡片再次「跳过」",
+      "expected": "（缺陷复核）预期暴露错误提示或无反应",
+      "actual": "store errorMessage=「卡片不存在或已被处理」；截图 NEARBY-09R-after 视觉卡与操作前完全相同",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-09R-before.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-09R-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "重进页面后首次「喜欢」（新鲜数据复核）",
+      "expected": "首次喜欢成功：toast+卡片推进",
+      "actual": "store 成功（9→8、first 4001→4002、err=null），但视觉卡仍是 4001（before/after 截图同一张）——首刷即复现「不推进」",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/NEARBY-12R-before.png",
+      "after": "reports/screenshots/round-1-interact/NEARBY-12R-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "operation": "空态降级 CTA「看全部推荐」（R12-IND-NEARBY-LC-001）",
+      "expected": "距离过滤为空时展示插画+CTA，点击拉全量",
+      "actual": "mock fixtures 恒返回 9 人，空态分支无法自然触达",
+      "verdict": "无法验证",
+      "before": "",
+      "after": "",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "进入 MBTI 页",
+      "expected": "本地内容（mbtiUrl 空）：渐变头+16 型网格+4 道单选+提交按钮",
+      "actual": "webview=false、quizOptions=8、typeCells=16、submit 存在",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-01-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "未作答点「提交并查看结果」（空内容提交）",
+      "expected": "toast「请完成所有题目」；不弹结果层",
+      "actual": "结果层未弹出（resultMaskShown=false）；toast 因截图延迟未定格",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-02X-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-02X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "依次选择 4 题选项 A",
+      "expected": "4 个选项呈选中高亮",
+      "actual": "selectedCount=4",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-03-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "答案齐备点提交（全 A）",
+      "expected": "结果弹层：类型码 ESTJ+类型名+恋爱建议 4 条+双按钮",
+      "actual": "弹层显示 ESTJ/总经理/4 条建议（外向型/务实型/理性型/计划型）+重新测试/知道了",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-04-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "点弹层「关闭」",
+      "expected": "弹层关闭、答案保留",
+      "actual": "maskGone=true、selectedKept=4",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-05-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "改第 4 题为 B 再提交",
+      "expected": "E/S/T/P → 类型码 ESTP（预期先行记录时笔误为 ESFP，按选项映射 EI→E SN→S TF→T(A) JP→P(B) 正确预期为 ESTP）",
+      "actual": "弹层显示 ESTP",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-06-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "点「重新测试」",
+      "expected": "弹层关闭且 4 题清空",
+      "actual": "maskGone=true、selectedAfterReset=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-07-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "全选 B 提交",
+      "expected": "I/N/F/P → INFP",
+      "actual": "弹层显示 INFP",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-08-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "点击弹层遮罩关闭",
+      "expected": "closeResult 触发弹层关闭",
+      "actual": "maskGone=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-09-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "scroll-view 滚动到底",
+      "expected": "提交按钮与页脚完整可见",
+      "actual": "滑动成功、submit 仍可命中、页脚完整",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-10-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "operation": "点击右上返回键",
+      "expected": "navigateBack 回上一页",
+      "actual": "回到 pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/MBTI-11-before.png",
+      "after": "reports/screenshots/round-1-interact/MBTI-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "进入恋爱咨询页（mock 缺省封存）",
+      "expected": "封存卡（锁图标+「功能封存中」+「该功能暂未开放…」），无课程/¥价/报名钮（R10-P1-002 回归）",
+      "actual": "封存卡完整渲染，courseCards=0，commerce 开关均为 false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-01-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "点 AppShell「返回」",
+      "expected": "回上一页",
+      "actual": "回到 pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-02-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "开闸分支（合成前置：store 注入 commerce.enabled+consult）",
+      "expected": "渲染课程 ×3：恋爱沟通课 ¥99/脱单攻略课 ¥129/亲密关系修复课 ¥159，各带「报名」钮",
+      "actual": "sealedShown=false，3 张课卡、3 个价格、3 个报名钮与预期完全一致（isCommerceOn('consult')=true）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-03R-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-03R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "点第一门课「报名」",
+      "expected": "toast「报名成功，请留意课程通知」",
+      "actual": "点击成功执行、无 JS 错误；toast 未定格（截图延迟）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-04R-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-04X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "快速连点「报名」3 次",
+      "expected": "toast 反复弹出、无崩溃",
+      "actual": "无崩溃、无 JS 错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-05-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "还原 commerce 开关后重进",
+      "expected": "封存卡恢复（合成注入不残留）",
+      "actual": "sealedShown=true、courseCards=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-06R-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-06R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "封存态返回键",
+      "expected": "回上一页",
+      "actual": "回到栈根 Tab",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CONSULTING-07R-before.png",
+      "after": "reports/screenshots/round-1-interact/CONSULTING-07R-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "operation": "商业化子闸 key 契约核对（commerce.consult vs consult）",
+      "expected": "按 consulting.vue:33 注释「commerce.consult 子闸」，后台应以下发 commerce.consult 控制开闸",
+      "actual": "实现读取 switches['consult']（app-config.ts isCommerceOn 返回 switches[module]===true，module='consult'）；注入 commerce.consult=true 不生效、注入 consult=true 才生效。若后端/管理后台按注释命名下发 commerce.consult，该闸将永不放行；后端真实 key 无法在本 mock 环境取证",
+      "verdict": "无法验证",
+      "before": "",
+      "after": "",
+      "issueId": "MP-R1-CONSULTING-001"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "进入设置页",
+      "expected": "导航「设置」+分组菜单+真实缓存大小+退出登录",
+      "actual": "20 个菜单项全渲染（标签清单见探针）、缓存大小 4 KB（真实 getStorageInfo）、退出登录在",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「反馈与帮助」",
+      "expected": "跳转 feedback/history",
+      "actual": "path=subpackages/profile-extra/feedback/history，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「推荐给好友」（uni.showShareMenu）",
+      "expected": "调起微信分享菜单（真机）",
+      "actual": "点击无 JS 错误、无崩溃；DevTools 无真机分享面板，无可见反馈可取证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「编辑资料」",
+      "expected": "跳转资料编辑页",
+      "actual": "path=subpackages/setup/profile/index，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「恋爱认证」",
+      "expected": "跳转认证页",
+      "actual": "path=subpackages/profile-extra/verification/index，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-06-after.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「我的动态」",
+      "expected": "进入村庄页「我的」tab（switchTabWithQuery）",
+      "actual": "两次独立复核均停留设置页无任何反应——village/index 不在 tabBar（pages.json tabBar 仅 home/nearby/discover/messages/profile），uni.switchTab 必然 fail 且静默清理桥接 query，入口死链",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-09X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-09X-after.png",
+      "issueId": "MP-R1-SETTINGS-001"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「访客记录」",
+      "expected": "跳转访问者页",
+      "actual": "「谁看过我」页正常渲染（访客列表）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「浏览记录」",
+      "expected": "跳转 village/history",
+      "actual": "村庄浏览记录页正常渲染（共 6 条记录）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-13X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-13X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「我的相册」",
+      "expected": "跳转 profile/album（MP-R7-PROFILE-005 回归：路由必须有效）",
+      "actual": "path=subpackages/profile-extra/profile/album，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「时间安排」",
+      "expected": "跳转 setup/schedule",
+      "actual": "path=subpackages/setup/schedule/index，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-17X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-17X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「免打扰」",
+      "expected": "跳转 settings/dnd",
+      "actual": "path=subpackages/profile-extra/settings/dnd，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-19-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "拨「本周安排」switch（含快速连拨 3 次）",
+      "expected": "开关翻转+toast+持久化 storage=campus-love:weekly-schedule-enabled",
+      "actual": "开启后 storage=\"1\"（正确 key 证实），连拨 3 次后最终=\"0\"，无崩溃；toast 未定格（截图延迟）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-21X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-21X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "拨「深色模式」switch（开→关）",
+      "expected": "状态翻转+持久化；mp 端视觉按设计文档降级为跟随系统",
+      "actual": "isDark/mode 随之翻转（dark↔light），页面视觉保持浅色——与 theme.ts:1-9 文档披露的 mp-weixin 降级一致，非缺陷",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-23X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-23X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「隐私权限设置」",
+      "expected": "跳转 profile/privacy",
+      "actual": "隐私权限设置页正常渲染（两个开关项）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-25-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-25-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「安全中心」",
+      "expected": "跳转 tools/security",
+      "actual": "安全中心页正常渲染（账号安全/第三方绑定/登录设备）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-26-after.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-27-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「隐私政策」（隐私分组/关于分组两处）",
+      "expected": "两处均跳转 legal/privacy",
+      "actual": "两处独立验证均到达隐私政策页（更新日期 2026-07-26~2026-09-21 正文完整）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-28-after.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-29-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "页面滚动到底（mp.pageScrollTo）",
+      "expected": "关于分组+退出登录+版本信息完整可见",
+      "actual": "深色模式/隐私安全/存储管理(清除缓存 4KB)/关于四项/退出登录/「校园恋爱 v1.0.0」全部可见无裁切",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-31X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-31X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「用户协议」",
+      "expected": "跳转 legal/agreement",
+      "actual": "path=subpackages/legal/agreement/index，往返正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-31X-after.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-32-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「检查更新」",
+      "expected": "DevTools 下 onCheckForUpdate hasUpdate=false → modal「当前为最新版本」",
+      "actual": "modal「版本更新/当前已是最新版本 当前版本: v1.0.0/知道了」弹出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-36-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-36-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「关于我们」",
+      "expected": "modal 关于信息+我知道了",
+      "actual": "modal「关于校园恋爱」+版本介绍+知道了弹出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-37-after.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-38-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点「清除缓存」真实弹窗",
+      "expected": "确认框含当前缓存大小+取消/立即清除",
+      "actual": "modal「清除缓存/当前缓存大小：4 KB…/取消·立即清除」弹出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-40-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-40-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "「清除缓存」取消分支（mockWxMethod confirm=false）",
+      "expected": "不清缓存、无异常",
+      "actual": "停留设置页、缓存大小不变、无 JS 错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-42-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-42-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "「清除缓存」确认分支（mockWxMethod confirm=true）",
+      "expected": "loading→清除 user_cache→toast 清除成功+大小刷新",
+      "actual": "分支执行无异常、页面正常（toast 未定格于截图）；不使用 uni.clearStorage 全量清空的约束未被破坏（后续操作仍正常）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-44X-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-44X-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "「退出登录」取消分支",
+      "expected": "弹窗取消→留在设置页不登出",
+      "actual": "停留设置页，会话保持",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-45-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-45-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "「退出登录」确认分支",
+      "expected": "sessionStore.logout()→清登录态并 reLaunch 登录页",
+      "actual": "到达登录页（pages/login/index），session.isLoggedIn=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-46-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-46-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "退出后恢复现场（重复进出）",
+      "expected": "重新进入设置页正常",
+      "actual": "mock 会话恢复（isLoggedIn=true），页面正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-47-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-47-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "operation": "点导航栏返回键（reLaunch 直达、栈深=1）",
+      "expected": "对比 heart-signals goBack（index.vue:73-80 有 getCurrentPages 栈守卫），此处预期无效停留原页",
+      "actual": "无守卫，navigateBack 在单页栈上被运行时处理后落到发现 Tab（截图证实）——直达进入时行为未定义；正常路径（我的 Tab 进入）不受影响",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SETTINGS-48-before.png",
+      "after": "reports/screenshots/round-1-interact/SETTINGS-48-after.png",
+      "issueId": "MP-R1-SETTINGS-002"
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-NEARBY-001",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/nearby",
+      "screenshot": "reports/screenshots/round-1-interact/NEARBY-12R-before.png 与 NEARBY-12R-after.png（同一张卡）；NEARBY-09R-after.png（二次操作后视觉不变）；store 探针 first 4001→4002 与视觉不一致",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "附近缘分页跳过/喜欢/超级喜欢后卡片永不推进：页面把本地 cards 数组交给 CardSwiper，而滑动动作只改 discover store，本地数组从未同步移除，视觉恒停第一张；自第二次操作起 store 报「卡片不存在或已被处理」，核心浏览流在首刷后即不可用",
+      "evidence": "nearby.vue:37 cards 本地 ref、:61-73 loadCards 仅赋值一次、:90-135 handleSwipe/handleSuperLike 只调 discoverStore.swipeLeft/swipeRight 从不移除本地项；CardSwiper.vue:215 currentCard=computed(()=>props.cards[0])；store 探针 {n:9→8, first:4001→4002, err:\"卡片不存在或已被处理\"}；NEARBY-12R before/after 截图同一张卡（距离1.2km/80%匹配完全一致）",
+      "ideal": "跳过/喜欢/超级喜欢后当前卡飞出并显示下一张（与寻觅页一致——寻觅页绑定 store.cards，store 动作移除后自然推进）；重复操作不应报卡片不存在",
+      "fix": "在 nearby 页滑动回调中同步移除本地 cards 中对应项（如 this.cards.value = cards.value.filter(c=>c.id!==cardId)），或直接将 discoverStore.cards 绑定给 CardSwiper 复用寻觅页数据流",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-NEARBY-002",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/nearby",
+      "screenshot": "reports/screenshots/round-1-interact/NEARBY-01-after.png（蒙面卡）对比 NEARBY-02-after.png（详情显示林晓+未模糊照片）",
+      "category": "Consistency",
+      "severity": "P2",
+      "description": "蒙面匿名模式在卡片详情弹层失效：卡片承诺「互发喜欢解锁头像」且头像模糊、名字蒙面????，但点击卡片即打开的资料详情直接展示真实姓名与未模糊照片，蒙面规则被应用内一步绕过",
+      "evidence": "nearby.vue:189 以 masked=true 传入 CardSwiper；CardSwiper.vue:1249-1257 <CardDetailOverlay> 未透传 masked；CardDetailOverlay.vue:939 detail-hero__name 直读 card.name、:895-897 直出未模糊图片；对比截图 NEARBY-01-after（模糊+????）与 NEARBY-02-after（林晓+清晰照）",
+      "ideal": "微信小程序匿名匹配场景规范+本页自示规则：互相喜欢前详情层应与卡片同口径蒙面（名字掩码、头像/照片模糊）",
+      "fix": "给 CardDetailOverlay 增加 masked prop 并由 CardSwiper 透传，蒙面态下名字用掩码、图片走模糊/占位，互发喜欢后再解锁",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "reports/screenshots/round-1-interact/SETTINGS-09X-before.png 与 SETTINGS-09X-after.png（点击前后均停留设置页）",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "设置页「我的动态」入口为死链：走 switchTabWithQuery→uni.switchTab 跳转 village/index，但该页不在 tabBar（pages.json:390-416 仅 home/nearby/discover/messages/profile），switchTab 必然 fail 且失败回调静默清理，点击无任何反应",
+      "evidence": "settings/index.vue:340 {label:我的动态, path:/subpackages/village/village/index, tabQuery:{tab:'mine'}}；utils/navigation.ts switchTabWithQuery 直接 uni.switchTab 且 fail 分支仅清理 storage；pages.json tabBar 列表无 village；两次独立点击复核（SETTINGS-09/09X）before/after 均停留设置页",
+      "ideal": "非 tab 页应使用 uni.navigateTo 跳转（village 页自身可按 query 定位「我的」tab），点击必须产生可见跳转",
+      "fix": "「我的动态」改为 uni.navigateTo('/subpackages/village/village/index?tab=mine')（或经 storage 桥接的 navigateTo 等价路径），删除对该页的 switchTab 语义",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HEARTSIGNALS-001",
+      "round": "R1",
+      "page": "subpackages/tools/heart-signals/index",
+      "screenshot": "reports/screenshots/round-1-interact/HEARTSIGNALS-02-after.png（两张卡倒计时处均显示「已过期后过期」）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "过期信号倒计时文案拼接错误：显示「已过期后过期」，语义重复",
+      "evidence": "heart-signals/index.vue:319 {{ getCountdown(signal.id) }}{{ t(\"heartSignals.cardExpireSuffix\") }} 无条件拼接后缀；zh-CN.ts:3542 expiredLabel=「已过期」、:3563 cardExpireSuffix=「后过期」；截图 HEARTSIGNALS-02-after 卡片时间行清晰可见「已过期后过期」",
+      "ideal": "过期分支只显示「已过期」；「X小时X分钟后过期」的「后过期」后缀仅应配合 countdownHM 文案使用",
+      "fix": "index.vue:319 改为按剩余时间分支：过期时仅输出 expiredLabel，或将后缀并入 countdownHM 文案（\"{hours}小时{minutes}分钟后过期\"）并删除模板拼接",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HEARTSIGNALS-002",
+      "round": "R1",
+      "page": "subpackages/tools/heart-signals/index",
+      "screenshot": "reports/screenshots/round-1-interact/HEARTSIGNALS-11R-after2.png（接受并刷新后待处理列表仍为空，固件无法复原）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "mock 模式接受/拒绝直接改写共享固件对象且 fetch 浅拷贝无法复原：一次接受/拒绝后，待处理列表在本会话内永久清空（含 onShow 重拉、重进页面），演示包观感受损；且拒绝写入 status='expired'，已拒绝 Tab 展示文案为「已过期」",
+      "evidence": "stores/likes.ts:813（accept mock：signal.status='accepted' 直接改固件对象）、:852（decline mock：status='expired'）、:776（fetchHeartSignals mock：this.heartSignals=[...mockHeartSignals] 浅拷贝同批对象）；运行时探针 11R 后 signal-1=accepted/signal-2=expired，13R 重进后待处理仍空",
+      "ideal": "mock 数据层应保证每次拉取返回未污染的初始数据（深拷贝或工厂函数），拒绝态应写 'declined' 以对齐契约 enum",
+      "fix": "mockHeartSignals 改为工厂函数 makeMockHeartSignals()，fetch 时 [...工厂()] 深拷贝；decline mock 分支 status 置 'declined'",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CONSULTING-001",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/consulting",
+      "screenshot": "",
+      "category": "Consistency",
+      "severity": "P2",
+      "description": "咨询商业化子闸 key 命名不一致：页面/注释口径为 commerce.consult 子闸，实现实际读取 switches['consult']；若后端/管理后台按注释命名下发 commerce.consult，开闸配置将永不生效（本环境实测注入 commerce.consult=true 不放行、注入 consult=true 才放行）",
+      "evidence": "consulting.vue:32-36（注释 commerce.consult 子闸，调用 isCommerceOn(\"consult\")）；stores/app-config.ts isCommerceOn 返回 switches[module]===true（module='consult'，即读 switches['consult']）；运行时注入对照实验：{enabled:true, consult:true}→on=true，{enabled:true, 'commerce.consult':true}→on=false",
+      "ideal": "子闸 key 全链路（管理后台/后端下发/客户端判断）统一为同一命名（建议 commerce.consult），或文档与实现改口一致",
+      "fix": "与后端确认下发 key 后二选一：客户端 isCommerceOn 调用改传 'commerce.consult'（app-config 注释口径），或后台配置项改名为 consult；补充契约测试",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "reports/screenshots/round-1-interact/SETTINGS-48-after.png（直达进入点返回后落到寻觅发现页）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "设置页导航返回键无页面栈守卫：goBack 直接 uni.navigateBack({delta:1})，直达进入（栈深=1）时行为交由运行时兜底，实测被抛到寻觅发现页；对比 heart-signals/index.vue:73-80 的 getCurrentPages()>1 守卫模式",
+      "evidence": "settings/index.vue:264-267 goBack 无栈深判断；SETTINGS-48-after 截显示落在发现 Tab；正常入口（我的 Tab navigateTo）栈深>1 不受影响",
+      "ideal": "栈深>1 才 navigateBack，否则 switchTab 回首页/我的 Tab（与 heart-signals goBack 同款守卫）",
+      "fix": "settings goBack 增加 getCurrentPages().length>1 守卫，else 走 uni.switchTab 首页",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-次要17.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/次要17.json",
+  "unverifiable": [
+    "heart-signals 已接受 Tab「开聊」按钮：本轮会话内已接受列表无数据可触达（mock 固件会话内重置），代码路径已静态核对（index.vue:160-173、372-376）；HEARTSIGNALS-14R-after 显示已接受 Tab 空",
+    "nearby 空态降级 CTA「看全部推荐」（R12-IND-NEARBY-LC-001 配套）：mock fixtures 恒返回 9 人，空态分支无法自然触达",
+    "settings「推荐给好友」（uni.showShareMenu）：DevTools 无真机微信分享面板，无可见反馈可取证；点击本身无 JS 错误（SETTINGS-04-after）",
+    "consulting 开闸的真实后台下发链路：mock 包无后台 commerce 配置，本次以 store 注入合成验证了前端两分支渲染与报名动作；后端真实子闸 key 命名无法在 mock 环境取证（风险已记 MP-R1-CONSULTING-001）",
+    "各操作的成功/失败 Toast 文案定格：共享 DevTools 在多任务负载下截图响应普遍 >2s，toast（1500-2000ms）未能在截图中定格；相关操作（AD-02 报名/分享、HS-10R/11R、CO-04R、ST-21X/44X）均以状态变化、store 探针、页面跳转与 console 无错判定",
+    "heart-signals LockScreen 锁定分支（资料未完善身份）：mock 包会话恒 profileComplete=true，无法构造未完善身份"
+  ],
+  "notes": "环境：mp-weixin-mock 构建（apps/client && pnpm build:mp-weixin:mock 产物新鲜度核对通过 + verify-build-features 4/4 PASS），miniprogram-automator 连 ws://127.0.0.1:9420，身份=mock 游客 100151（guest-login 现签 token，profileCompleted=true）。交互执行方式：元素级 tap（el.tap()）+ mp.reLaunch/navigateTo + 操作前后 screenshot，store 状态经 mp.evaluate 以 JSON 字符串回传。已知工具侧干扰（不计入页面问题）：1) 共享 DevTools 多验证员并发导致 screenshot 偶发 20s 超时（已 6 次重试兜底，个别帧缺失已在 checks 标注）；2) mp.currentPage() 在部分跳转后返回陈旧路径（如 SETTINGS-11/25/27 探针误报停留、截图证实已跳转），所有判定以截图为最高证据；3) navigateBack 自动化 API 一次误报（HEARTSIGNALS-09R 截图证实返回成功）。回归点核对：MP-R7-PROFILE-005（我的相册路由）通过；R10-P1-002（consulting 封存闸缺省封存）通过；R12-IND-NEARBY-LC-002（nearby 返回键位置）通过；R10-P2-014（consulting 统一 AppShell）通过。脚本与逐操作原始证据（probe/console JSONL）：tmp/interact-R1-次要17.evidence.jsonl；补拍脚本 tmp/resume-hs-r1b17.mjs、tmp/resume-nb-r1b17.mjs、tmp/resume-co-r1b17.mjs、tmp/resume-final-r1b17.mjs、tmp/resume-hs-chat-r1b17.mjs。 截图引用说明：个别操作的前帧因共享 DevTools 截图超时缺失，已以同状态邻近帧（前一操作的 after 或同页等状态帧）替代并在文件名可辨识。 截图引用说明：个别操作前帧因共享 DevTools 截图超时缺失，已以同状态邻近帧替代（引用路径可辨识）。"
+}

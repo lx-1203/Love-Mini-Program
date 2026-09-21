@@ -379,6 +379,9 @@ export default {
     "segmentSameInterest": "Same Interest",
     "segmentNearby": "Nearby",
     "segmentNewcomer": "Newcomer",
+    // MP-R1-SEGMENT-001（2026-09-20）：补齐细分发现页缺失词条（与 zh-CN 同步）
+    segmentHighMatch: "High match",
+    segmentEmpty: "No more people in this group yet",
     welcome: "Campus Love",
     noMoreRecommendation: "No more recommendations right now",
     welcomeSubtitle: "Meet your crush",

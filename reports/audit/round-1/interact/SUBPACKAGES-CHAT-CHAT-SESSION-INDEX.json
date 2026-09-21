@@ -1,0 +1,536 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/chat-session/index",
+  "generatedAt": "2026-09-20T22:10:00+08:00",
+  "buildVerify": "verify-build-features 4/4 PASS（mock 构建，app.js 2026-09-20 16:54，无更新的源文件）",
+  "checks": [
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "标准深链打开会话页 ?userId=10003（param-map 固化参数）",
+      "expected": "页面正常打开：无「缺少会话标识」错误；标题显示 mock createSession 的 partnerName「对方」；无任何用户消息时显示破冰提示（MatchGreetingTip）；输入框为空、发送按钮置灰（canSend=false，class 含 --disabled）；console 无 TypeError/未定义错误",
+      "actual": "path=subpackages/chat/chat-session/index；标题=\"对方\"；错误文案=无；破冰提示存在=true；输入框值=\"\"；发送按钮class=\"wechat-input-bar__send wechat-input-bar__send press-feedback press-feedback data-v-fe628c5a data-v-fe628c5a wechat-input-bar__send--disabled wechat-input-bar__send--disabled\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-01-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "无参数深链打开会话页（回归 MP-R2-CHAT-001：深链参数区分）",
+      "expected": "不崩溃；消息区展示错误文案「缺少会话标识，请从聊天列表或匹配结果进入。」（index.vue:707 pageErrorMessage=chat.missingSessionId，模板 1785 行渲染）；输入区同样渲染该文案且不渲染输入栏（模板 1880 v-if / v-else 分支）",
+      "actual": "meta-copy 文案=[\"缺少会话标识，请从聊天列表或匹配结果进入。\",\"缺少会话标识，请从聊天列表或匹配结果进入。\"]；输入栏存在=false；path=subpackages/chat/chat-session/index",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-02-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "存量会话深链 ?sessionId=session-private-1（夏言）",
+      "expected": "标题「夏言」；消息气泡渲染（mock 会话 ≥1 条）；无错误横幅；自动滚到底部（onShow scrollToBottom）；无 console 错误",
+      "actual": "标题=\"夏言\"；气泡数=3；store.currentMessages=3；错误横幅=false",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-03-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "conv- 业务键深链 ?sessionId=conv-a1b2c3d4-e5f6-0123456789abcdef（回归 INDEP-002）",
+      "expected": "修复后行为：识别为 conv- 前缀（index.vue:587）→ 不走临时链路 → 走私信消息接口（mock 环境返回空列表）；页面不崩溃、无 400/500 级 console 报错；显示空会话提示与破冰提示兜底。真实后端的 uid→数字 id 解析（index.vue:600-606）需 real 环境，此处仅验 mock 链路与守卫逻辑不抛错",
+      "actual": "标题=\"聊天\"；气泡数=0；空态文案=\"会话刚建立，还没有消息。\"；错误横幅=无；store.currentMessages=0",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-04-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "长按对方消息（「明天下午有空吗？」）弹出长按菜单",
+      "expected": "弹出长按菜单（longpress-overlay + longpress-menu），含 复制/转发/引用/删除/取消；私信会话对方消息【不显示】撤回项（模板 2039 行 v-if=\"longPressMenu.isSelf && isTempSession\"）",
+      "actual": "菜单项=[\"复制\",\"转发\",\"引用\",\"删除\",\"取消\"]",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-05-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "长按菜单点击「复制」",
+      "expected": "菜单关闭（longpress-overlay 消失）；消息正文「明天下午有空吗？」写入剪贴板（uni.setClipboardData，模板 2005-2015）；无报错",
+      "actual": "点击复制=true；菜单残留=false；剪贴板={\"errMsg\":\"getClipboardData:ok\",\"data\":\"明天下午有空吗？\"}",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-06-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "长按自己消息（「哈哈，我也觉得」）选择「引用」",
+      "expected": "输入栏上方出现引用回复条（quote-reply-bar，文案「引用 我：」+ 原文）；输入框 placeholder 变为引用态；菜单关闭（index.vue:1443-1456）",
+      "actual": "点击引用=true；引用条存在=true；引用条文案=\"引用 我：\\n哈哈，我也觉得\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-07-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击引用回复条取消引用",
+      "expected": "引用条消失（cancelQuoteReply，模板 1892 行 @tap）；可重新输入普通消息",
+      "actual": "点击后引用条残留=false",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-08-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "长按自己消息选择「转发」打开转发选择弹层",
+      "expected": "弹出转发层（more-menu-overlay + forward-list），列出除当前会话外的私信会话（陈默/寻觅助手/叶知秋/顾言，以 store 会话表为准）；text 消息可转发（index.vue:1499-1514）",
+      "actual": "点击转发=true；转发目标列表=[\"陈默\",\"寻觅助手\",\"叶知秋\",\"顾言\"]",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-09-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "转发层点击第一个目标会话完成转发",
+      "expected": "弹层关闭；向目标会话发送同文消息（复用 sendMessage，index.vue:1526-1536）；toast「已转发」；目标会话 lastMessagePreview 更新为所转发文案（相对校验）",
+      "actual": "目标=\"陈默\"；弹层残留=false；目标会话preview before={\"preview\":\"[语音] 30″\",\"at\":\"2026-09-20T11:32:58.697Z\"} after={\"preview\":\"哈哈，我也觉得\",\"at\":\"2026-09-20T13:29:45.046Z\"}",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-10-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-10-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-001"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "长按自己消息选择「删除」",
+      "expected": "该消息从消息流消失（deletedMessageIds 本地持久隐藏，模板 347-352 行过滤）；toast「已删除（仅当前设备生效）」；菜单关闭；写入 storage key chat-session:deleted-message-ids",
+      "actual": "点击删除=true；气泡残留=true；storage.deleted=[\"msg-2\"] ｜ 注：删除后残留的同文气泡（21:29）是 001 号偏差（转发误上屏当前会话）产生的重复消息，非删除失效——16:37 的原 msg-2 气泡已被移除、storage chat-session:deleted-message-ids=[\"msg-2\"]。「已删除（仅当前设备生效）」toast 因截图时序（>1.5s）未捕获。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-11-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击顶部「···」打开更多菜单",
+      "expected": "弹出底部弹层（more-menu-overlay），含 查看主页/消息免打扰/拉黑/举报/取消 五项（模板 2119-2184）",
+      "actual": "菜单项=[\"查看对方主页\",\"关闭免打扰\",\"拉黑\",\"举报\"]",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-12-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "「···」菜单点击「消息免打扰」切换",
+      "expected": "菜单关闭；mock 分支 setSessionMuted 仅改本地（messages.ts:1187-1202）；重开菜单后该项文案变为「取消免打扰」；store 中该会话 muted 翻转（相对校验）",
+      "actual": "切换前文案=\"关闭免打扰\"；切换后 muted=false；重开菜单文案=\"消息免打扰\" ｜ 注：切换前菜单即显示「关闭免打扰」（muted=true）为本轮之前一次中止运行遗留的内存态，非本轮操作结果；本轮完成 关闭免打扰→muted=false→「消息免打扰」的完整切换闭环。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-13-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "「···」菜单点击「拉黑」并在确认弹窗点确认（mockWxMethod showModal confirm=true）",
+      "expected": "弹确认 modal（chat.nav.blockConfirmTitle）；确认后 mock 分支 blockedPeerIds.add + toast「已拉黑（本次会话生效）」（index.vue:964-967）；mock 下不发生页面跳转",
+      "actual": "点击拉黑=true；确认后仍在本页=true（path=subpackages/chat/chat-session/index） ｜ 注：mock 分支行为已验证（确认后留在本页、菜单关闭、无跳转）；「已拉黑（本次会话生效）」toast 因截图时序（>1.5s）未捕获。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-14-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "「···」菜单点击「举报」并选择第一个原因（mockWxMethod showActionSheet tapIndex=0）",
+      "expected": "弹 ActionSheet（骚扰/辱骂/欺诈/其他 4 项，模板 997-1015）；选择后 report store 上报（mock 本地完成）→ toast「举报已提交」；失败兜底 toast「操作失败」",
+      "actual": "点击举报=true；菜单残留=false（toast 见 after 截图） ｜ 注：ActionSheet 为 mockWxMethod 注入（tapIndex=0）；点击后菜单关闭、无报错；「举报已提交」toast 因截图时序未捕获。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-15-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "单击顶部头像（300ms 单击判定）弹出头像菜单",
+      "expected": "约 300ms 后弹出头像操作弹层（avatar-menu-mask）：头像+昵称+「看主页」「拍一拍」「取消」（ChatHeader.vue:30-44 单击延迟 emit avatar-tap；模板 2228-2253）",
+      "actual": "菜单存在=true；菜单项=[\"看主页\",\"拍一拍\"]",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-16-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "头像菜单点击「拍一拍」",
+      "expected": "菜单关闭；发送一条文本消息「你拍了拍夏言」上屏（index.vue:1683-1697 handleAvatarPat）；消息气泡数 +1",
+      "actual": "气泡数 3→4；最后气泡文案=\"你拍了拍夏言\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-17-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "头像菜单点击「看主页」",
+      "expected": "关闭菜单并跳转对方主页 /subpackages/profile-extra/profile/other（goSignalProfile→openUserProfile；partnerId user-2001 解析失败时取 sessionId 数字部分 → userId=1）；currentPage.path 变为 other",
+      "actual": "跳转后 path=subpackages/chat/chat-session/index；query={\"sessionId\":\"session-private-1\"} ｜ 补测48：重新执行头像菜单→看主页，4s 轮询内 path=subpackages/profile-extra/profile/other、query={\"userId\":\"user-2001\"}（构建 app.json subPackages 含 profile/other）——跳转功能正常；首轮未跳转系自动化点击竞态，以补测为准。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-48-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "草稿持久化：输入草稿→返回→重新进入同一会话",
+      "expected": "返回 home 后重进 session-private-1，输入框自动恢复草稿「草稿测试2026」（persistDraft/restoreDraft，index.vue:128-160；发送/清空前保留）；会话隔离 key=chat-session-draft:session-private-1",
+      "actual": "重进后输入框值=\"草稿测试2026\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-19-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "输入框输入「你好呀，今晚一起去看展？」（session-private-2）",
+      "expected": "输入框回显文本；发送按钮高亮（class 移除 --disabled；canSend=draft非空 && 未结束，index.vue:830）",
+      "actual": "输入值=\"你好呀，今晚一起去看展？\"；发送按钮class=\"wechat-input-bar__send wechat-input-bar__send press-feedback press-feedback data-v-fe628c5a data-v-fe628c5a\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-20-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击发送按钮发送文本消息",
+      "expected": "消息作为 self 气泡上屏；输入框清空；发送按钮回置灰；会话消息数 +1；无失败 toast（index.vue:1064-1115 sendText 成功分支）",
+      "actual": "气泡数 2→3；输入框=\"\"；发送按钮class=\"wechat-input-bar__send wechat-input-bar__send press-feedback press-feedback data-v-fe628c5a data-v-fe628c5a wechat-input-bar__send--disabled wechat-input-bar__send--disabled\"；store.currentMessages=3",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-21-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "观察 mock「对方正在输入」提示（发送成功后 1.5~3s 出现，持续 2~4s）",
+      "expected": "发送后约 2~3 秒消息流底部出现 typing-row（「对方正在输入…」+头像+三点动画；index.vue:1248-1258 scheduleTypingSimulation，仅私信会话）",
+      "actual": "typing-row 出现=false（发送后 0.8~4s 内轮询） ｜ 补测45：发送后紧密轮询（300ms 步进）在 1619ms 捕获 .typing-row 出现，与代码窗口（1.5~3s）一致，console 0 错误；首轮未命中系轮询起播晚于窗口。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-22-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-45-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "空内容直接点发送",
+      "expected": "无任何反应：sendText 首行守卫 !draft.trim() 直接 return（index.vue:1065），无新消息、无 toast、无报错",
+      "actual": "气泡数 3→3",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-23-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "输入纯空格后点发送",
+      "expected": "同空内容：trim 后为空被守卫拦截，不发送（index.vue:1065）",
+      "actual": "气泡数 3→3；输入框=\"    \"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-24-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-24-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "输入超长文本（约 180 字）后发送",
+      "expected": "完整上屏为 self 气泡（长文本换行渲染）；发送后草稿清空",
+      "actual": "气泡数 3→4；输入框已清空=true",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-25-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-25-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "输入特殊字符（HTML/引号/emoji）后发送",
+      "expected": "按纯文本渲染：`<script>alert(1)</script>` 不被执行（mp text 节点无 XSS 面），引号/emoji 正常显示；无崩溃无报错",
+      "actual": "气泡数 4→5；console 错误记录见 console 字段 ｜ 32-after 截图可见该消息按纯文本渲染（<script>/<img> 原样显示、无脚本执行、emoji 正常），console 全程 0 错误。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-26-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-26-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "快速连续点击发送按钮 ×3（重复提交压力）",
+      "expected": "理想：仅发出 1 条「连点测试」——草稿在 await sendMessage 完成后才清空（index.vue:1100），若后续点击在清空前进入会重复发送；若出现 ≥2 条重复消息则记偏差（重复提交无防护）",
+      "actual": "气泡数 5→6（新增 1）；store.currentMessages=6",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-27-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-27-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击表情按钮展开表情面板",
+      "expected": "输入栏上方展开 EmojiPanel（emoji-panel__item 网格）；表情面板与键盘互斥（toggleEmojiPanel，index.vue:1197-1202）",
+      "actual": "EmojiPanel 存在=true；表情项数=32",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-28-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-28-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击表情面板第一个表情",
+      "expected": "表情追加进输入框草稿（不直接发送，index.vue:1210-1215 handleEmojiSelect），气泡数不变",
+      "actual": "输入框值=\"😀\"；气泡数（应不变）=6",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-29-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-29-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "再次点击表情按钮收起面板，并发送含表情的草稿",
+      "expected": "面板收起（toggle）；点发送后表情文本作为消息上屏、草稿清空",
+      "actual": "面板收起=true；气泡数 6→7；输入框=\"\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-30-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-30-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「+」打开更多操作菜单",
+      "expected": "弹出底部弹层（more-menu-sheet）：标题+「图片」入口（camera 图标）+「取消」（模板 2074-2116）",
+      "actual": "弹层存在=true；菜单项文案=\"发送图片\"",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-31-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-31-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "「+」菜单点击「图片」，mockWxMethod chooseImage 返回 1 张本地图",
+      "expected": "菜单先关闭；chooseImages 走隐私守卫（mock getPrivacySetting 已授权）→ mock 上传直接返回本地路径（api.ts:872-876）→ 发送 kind=image 消息 → loading 收起 → toast「图片已发送」；气泡为图片类型（bubble__image）",
+      "actual": "气泡总数=8；图片气泡存在=true（toast 见 after 截图） ｜ 注：图片消息气泡已上屏（.bubble__image 存在，见 after 截图底部大图块）；mock 本地路径 wxfile://tmp_interact_test_1.jpg 在开发者工具中无真实文件故显示为空图块（mock 产物限制，非链路缺陷）；「图片已发送」toast 因截图时序未捕获。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-32-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-32-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "消息区上拉（手指下滑）滚动到顶触发 scrolltoupper（mock 会话 messageHasMore=false）",
+      "expected": "onScrollToUpper 守卫直接 return（messageHasMore=false，index.vue:392-403）：无加载动画、无请求、无报错；不崩溃",
+      "actual": "滑动手势已执行；callMethod(onScrollToUpper)=\"callMethod失败:page.onScrollToUpper not exists\"（守卫应静默返回） ｜ 注：合成触摸手势不驱动 scroll-view 滚动（自动化限制）；page.callMethod 不可达（uni-app 运行时不暴露页面方法）。补测46：以 setData({R:0}) 驱动 scroll-top 到顶（scrolltoupper 路径），console 错误 0→0、无 loading 态、无请求报错——守卫无副作用验证通过。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-33-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-33-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "浏览历史（未贴底）时注入新消息 → 「有新消息」提示条出现",
+      "expected": "向上滚动离开底部后 nearBottom=false；store.currentMessages 追加新消息触发 watch（index.vue:468-486）→ 底部出现「有新消息 ↓」提示条（后续点击跳底=jumpToLatest）。（新消息经 store 注入模拟推送）",
+      "actual": "注入后消息数=8；提示条出现=false；文案=null ｜ 两次尝试（合成触摸下滑 op34、两段式 setData({R:99999})→({R:0}) 47b）均无法建立「未贴底」状态：注入新消息后走的是 nearBottom=true 自动滚底分支（47b-after 截图：注入消息上屏且视图在底部）。原因：自动化触摸不产生 scroll-view 滚动、scroll-top 绑定值恒 0 无变化；且高度缓存在 onShow 时（消息渲染前）测量，nearBottom 计算的分母可能恒 0 → 提示条机制在自动化环境不可达。需真机手势复核。",
+      "verdict": "无法验证",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-34-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-34-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "打开临时匿名会话 ?sessionId=session-temp-1",
+      "expected": "标题为固定「24小时临时聊天」（isTempSession 优先，index.vue:834，不显示 partnerName）；顶部临时会话横幅「24小时临时聊天，双方身份匿名」+可用时段提示；底部「同意交换联系方式」「结束会话」双按钮（模板 1966-1983）；消息正常渲染",
+      "actual": "标题=\"24小时临时聊天\"；横幅=\"24小时临时聊天，双方身份匿名\"；交换按钮=true；结束按钮=true；气泡数=0",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-35-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-35-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-002"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "临时会话长按自己的消息（「你好！」）",
+      "expected": "长按菜单包含「撤回」项（isSelf && isTempSession，模板 2039）；同含 复制/转发/引用/删除/取消",
+      "actual": "未找到「你好！」气泡",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-36-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-36-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-002"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「撤回」撤回自己的临时会话消息",
+      "expected": "toast「消息已撤回」；走 temp-chat recall（mock 本体）后重载会话（index.vue:1459-1481）；气泡变为「已撤回」灰字态",
+      "actual": "未找到「你好！」气泡",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-37-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-37-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-002"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「同意交换联系方式」",
+      "expected": "toast「已同意交换联系方式」（chat.exchangeAccepted，index.vue:1117-1126）；mock 状态机 contactExchange→accepted-by-self；无跳转",
+      "actual": "contactExchange=\"no-session\"（toast 见 after 截图）",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-38-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-38-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-002"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「结束会话」并在确认弹窗点「取消」（mockWxMethod showModal confirm=false）",
+      "expected": "先弹确认 modal（review #50，index.vue:1129-1141）；取消后会话不结束：输入框仍可用、无「会话已结束」提示",
+      "actual": "取消后输入框仍存在=true；「会话已结束」提示存在=false",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-39-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-39-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「结束会话」并在确认弹窗点「确认」（mockWxMethod showModal confirm=true）",
+      "expected": "确认后 chatStore.endSession() → phase=closed；toast「会话已结束」；输入框 disabled 且 placeholder 变为结束态（模板 1941-1942）；消息区底部出现「会话已结束，无法继续发送消息。」提示（1842-1844）；再点发送应被拦截",
+      "actual": "输入框disabled=null；结束提示存在=false；气泡数 0→0（应不变）",
+      "verdict": "偏差",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-40-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-40-after.png",
+      "issueId": "MP-R1-CHAT-CHAT-SESSION-INDEX-002"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "页面打开后立即返回（~250ms 内 navigateBack）",
+      "expected": "返回 home 成功，无崩溃、无未捕获异常（onLoad/onShow 异步加载与 onUnload 竞态不致错；loadSessionData 有 sessionId 守卫）",
+      "actual": "返回后 path=pages/home/index",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-41-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-41-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "重复进出会话 ×3（session-private-3）",
+      "expected": "每次进入消息气泡数一致（相对基线，无重复渲染/消息翻倍）；无崩溃；console 无新增错误",
+      "actual": "三次进入气泡数=[5,5,5]",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-42-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-42-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击破冰话题 chip（BreakQuestion，fresh ?userId=10005）",
+      "expected": "chip 文案作为第一条消息直接上屏（handleBreakQuestionSend：填草稿+立即发送，index.vue:1176-1181）；发送后破冰提示与 chip 区消失（userMessageCount=1 → showMatchGreeting=false）",
+      "actual": "chip文案=\"兴趣爱好\"；气泡数=0；greeting残留=true；chip区残留=true；store.currentMessages=0 ｜ 核实代码：.break-question__chip 无任何 tap 绑定（BreakQuestion.vue:31-40，chips 为共同兴趣纯展示标签），点击无反应系设计使然，本操作预期写错。真正的发送交互是「推荐开场」卡片（.break-question__opener，BreakQuestion.vue:42-47 @tap emit send）——补测49：点击 opener 后文案直发上屏（气泡 0→1）、greeting 与 opener 区消失，符合设计。",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-43-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-49-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击首条破冰提示快捷按钮（MatchGreetingTip，fresh ?userId=10006）",
+      "expected": "按钮文案作为第一条消息直接发送上屏（handleGreetingSend→sendText，index.vue:1220-1224）；发送后破冰提示消失；气泡数 0→≥1",
+      "actual": "按钮文案=\"看到你也喜欢看电影，最近有什么好片推荐吗？\"；气泡数=1；greeting残留=false；store.currentMessages=1",
+      "verdict": "符合",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-44-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CHAT-CHAT-SESSION-INDEX-44-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "头像菜单「看主页」→ 跳转对方主页（重测，跳转后 4s 轮询）",
+      "expected": "goSignalProfile → openUserProfile(partnerId) → navigateTo /subpackages/profile-extra/profile/other?userId=user-2001；currentPage.path 变为 subpackages/profile-extra/profile/other",
+      "actual": "跳转后 path=subpackages/profile-extra/profile/other；query={\"userId\":\"user-2001\"}（构建内路由存在：app.json subPackages profile-extra 含 profile/other）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-48-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-48-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "发送后 1.2~3.5s 内紧密轮询「对方正在输入」提示（private-2）",
+      "expected": "发送成功后 1.5~3s 出现 typing-row（scheduleTypingSimulation，index.vue:1248-1258），持续 2~4s；本轮在发送后 1.2s 起每 300ms 轮询元素存在性",
+      "actual": "tap→发现typing-row 耗时=1619ms；console 错误=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-45-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-45-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "scroll-view 滚到顶触发 onScrollToUpper（messageHasMore=false 守卫）",
+      "expected": "滚动到顶后 scrolltoupper 触发 → onScrollToUpper 因 messageHasMore=false 直接 return（index.vue:392-403）：无加载动画、无请求、无报错（setData 驱动 scroll-top 属性到 0）",
+      "actual": "setData({R:0}) 已执行；触发前后 console 错误数=0→0；消息区无 loading 态（见 after 截图） ｜ 本条仅验证守卫无副作用（「有新消息」提示条见 34/47b 的无法验证说明）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-46-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-46-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "点击「推荐开场」卡片（BreakQuestion opener，fresh ?userId=10007）",
+      "expected": "opener 是唯一带 @tap 发送的目标（BreakQuestion.vue:47 @tap=emit(send,opener)）；点击后 opener 文案作为第一条消息上屏，破冰区消失（showMatchGreeting=false）",
+      "actual": "opener文案=\"看到你也喜欢看电影，最近有什么好片推荐吗？\"；气泡数=1；greeting残留=false；opener残留=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-49-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-49-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "operation": "47b 重试：两段式 setData 滚动制造未贴底状态后注入新消息（「有新消息」提示条）",
+      "expected": "未贴底时注入新消息 → 底部「有新消息 ↓」提示条出现，点击跳底（index.vue:468-493）",
+      "actual": "注入后消息数=8；提示条出现=False；注入后观察行为=自动滚底（nearBottom=true 分支），47b-after 截图注入消息已上屏且视图在底部；console 错误=0。自动化环境无法建立未贴底状态，提示条交互无法验证。",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-47b-before.png",
+      "after": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-47b-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-CHAT-CHAT-SESSION-INDEX-001",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-10-after.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "长按消息「转发」到其他会话成功的同时，被转发消息被错误追加进当前打开会话的消息流，用户会误以为把消息发给了错误对象",
+      "evidence": "截图 10-before（转发弹层开启，夏言会话 3 条消息）→ 10-after（点击目标「陈默」后，夏言会话出现第 4 条同文 self 气泡「哈哈，我也觉得」，时间条 21:29）；目标会话 private-2 的 lastMessagePreview 同时更新为同文（转发本身成功）。代码根因：apps/client/src/stores/messages.ts:892 mock 分支 this.currentMessages.push(nm) 不校验 nm.sessionId 是否为当前会话；real 分支同模式 messages.ts:921（if (!dup) this.currentMessages.push(mr)，POST 目标为其他会话时回包仍被 push 进当前会话视图）。该重复气泡在重进会话后因 fetchSessionMessages 整表覆盖而消失（易误导）。",
+      "ideal": "转发到目标会话只影响目标会话；当前会话消息流不出现该消息（微信语义），仅 toast「已转发」反馈。",
+      "fix": "messages.ts sendMessage：mock 分支（:892）与 real 分支（:921）在 push 进 currentMessages 前判断 sessionId 是否为当前激活会话 id（或转发场景跳过 currentMessages 写入），目标会话仅更新 sessions 元数据与 mockMessages bucket。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CHAT-CHAT-SESSION-INDEX-002",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-35-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "临时匿名会话（消息列表「匿名匹配 · 星河」）打开后消息区空白，且「同意交换联系方式」「结束会话」两个按钮点击后无任何反馈（静默无效）",
+      "evidence": "截图 35-after：标题「24小时临时聊天」、横幅与双按钮正常，但消息区仅显示空态文案「会话刚建立，还没有消息。」+破冰提示（列表侧该会话明明有 3 条消息预览）；38-after：点击「同意交换」后无 toast、无状态变化；40-after：确认「结束会话」后无 toast、无「会话已结束」提示、输入框未禁用。根因链：messages 会话 fixture stores/messages/mock-data.ts:63 定义 id=session-temp-1（含消息 mock-data.ts:116-119），消息页经 pages/messages/index.vue:165 以 ?sessionId=session-temp-1 深链；而 chat store 临时会话表 stores/chat/mock-data.ts:203-207 仅含 mock-session-1/2 → loadSession（stores/chat/actions/session.ts:201 mockSessionMap[sessionId] ?? null）得 null → activeSession 置空并报「会话不存在或已失效」→ 页面 currentMessages 被清空（index.vue:611-613）；acceptExchange（stores/chat/actions/exchange.ts:31）/endSession（stores/chat/actions/session.ts:281）首行 if (!this.activeSession) return 静默返回。36/37（长按撤回）因消息气泡不存在无法执行，同属本条。",
+      "ideal": "从消息列表点进临时会话应显示会话消息；「同意交换联系方式」点击后 toast「已同意交换联系方式」；「结束会话」确认后 toast「会话已结束」、输入框禁用并显示结束提示（index.vue:1842-1844、1941-1942）。",
+      "fix": "①对齐 mock 双源：chat store mockSessionMap 补充 session-temp-1（或 messages fixture 不再把临时会话放进 sessions 列表）；②页面级兜底：isTempSession 且 chatStore.activeSession 为空时禁用「同意交换/结束会话」并提示，避免按钮静默无效；③real 链路（真实 temp id）需后端环境复验。",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+  "unverifiable": [
+    "「有新消息 ↓」提示条交互链（check 34/47b）：自动化环境无法建立「未贴底」状态——合成触摸手势不驱动 scroll-view 滚动、scroll-top 绑定值恒 0 使 setData 无变化；注入新消息后观察到的是自动滚底分支。另怀疑 onShow 时（消息渲染前）测量的滚动高度缓存导致 nearBottom 恒 true（index.vue:733-744），提示条机制可能不可达——需真机手势复核。",
+    "check 04 的 real 后端部分：conv- 业务键→数字会话 id 的解析（index.vue:600-606）在 mock 环境仅能验证守卫不抛错与空态兜底，真实接口行为需 real 后端。",
+    "临时会话 real 链路（真实 temp id 的 loadSession / 撤回 POST /temp-chat/... / 交换与结束的后端生效）：mock 沙盒内该链路因 002 号偏差不可达，需 real 后端环境复验。",
+    "拉黑 / 举报 / 图片上传的 real 后端效果：本轮验证的是 mock 前端交互分支（本地集合、本地上报、本地路径回显），后端写入需 real 环境。"
+  ],
+  "notes": "环境与取证：apps/client mock 构建（dist/build/mp-weixin，VITE_API_MODE=mock，2026-09-20 16:54 构建、无更新的源文件；verify-build-features 4/4 PASS）。连接：miniprogram-automator via ws://127.0.0.1:9420（D:/codex-tools/node-v22.17.0-win-x64/node_modules）；截图走 wechatide CLI「simulator_screenshot -c ZCode」（SDK 截图 RPC 长跑超时，CLI 为 r11/r12 已验证通道）；交互（tap/input/longpress/evaluate/setData/mockWxMethod）走 automator SDK。主脚本 tmp/interact-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.mjs（44 操作）+ 补充 tmp/interact-R1-CHAT-SESSION-SUPPLEMENT.mjs（45/46/48/49）+ tmp/interact-R1-CHAT-SESSION-SUPP2.mjs（47b）。全程 console error/exception=0（含脚本注入语法、特殊字符消息、深链边界）。回归核对：MP-R2-CHAT-001（深链参数名）通过——?userId=10003 正常建会话（check01）、无参数时按设计渲染「缺少会话标识」且不崩溃（check02）；INDEP-002 mock 侧通过——conv- 深链不走临时链路、无 400/崩溃、空态兜底（check04），uid→数字 id 解析需 real 后端（见 unverifiable）。结果文件：tmp/interact-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-results.json（主轮）、tmp/interact-R1-CHAT-SESSION-SUPPLEMENT-results.json、tmp/interact-R1-CHAT-SESSION-47b-result.json。偏差汇总：001 P1 转发消息误上屏当前会话（messages.ts:892/921）；002 P2 临时会话消息空白+交换/结束按钮静默无效（mock 双源 id 不一致+activeSession 空时静默 return）。"
+}

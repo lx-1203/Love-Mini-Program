@@ -275,11 +275,16 @@ async function handleSave(): Promise<void> {
 }
 
 /**
- * 返回上一页。
+ * 返回上一页（MP-R1-DND-001：深链直达栈=1 时 navigateBack 无反应，
+ * 兜底 switchTab 回「我的」Tab——免打扰入口链路为 设置→我的）。
  */
 function goBack(): void {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 
 /**

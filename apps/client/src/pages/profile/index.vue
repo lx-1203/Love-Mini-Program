@@ -48,6 +48,9 @@ import {
 // B5 认证成就名牌（2026-08-13）：三级认证名牌行 + 半屏专业详情面板
 import CertBadgeRow, { type CertBadgeItem } from "../../components/profile/CertBadgeRow.vue";
 import CertDetailSheet from "../../components/profile/CertDetailSheet.vue";
+// MP-R1-PROFILE-002：头像操作菜单改用项目统一半屏弹层（原生 uni.showActionSheet
+// 在部分机型只渲染遮罩、菜单面板不可见，三路取证一致），复用全局 BottomSheet 组件
+import BottomSheet from "../../components/common/BottomSheet.vue";
 import NotLoggedProfile from "../../components/profile/NotLoggedProfile.vue";
 import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
@@ -958,7 +961,11 @@ async function handleProfileCheckin() {
  * 点击头像（2026-08-09 头像上传接线）：
  * - 查看他人主页：保持预览大图
  * - 自己主页：弹出底部操作菜单「查看大图 / 从相册选择 / 拍照 / 取消」
+ * MP-R1-PROFILE-002：原生 uni.showActionSheet 在 mp-weixin 部分环境只渲染遮罩、
+ * 菜单面板不可见，改用项目统一 BottomSheet 半屏弹层，四项行为与原逻辑一一对应。
  */
+const avatarMenuVisible = ref(false);
+
 function handleAvatarTap() {
   lightHaptic();
   if (!isOwnProfile.value) {
@@ -973,34 +980,42 @@ function handleAvatarTap() {
     }
     return;
   }
-  uni.showActionSheet({
-    itemList: [
-      t("profile.avatarMenuView"),
-      t("profile.avatarMenuAlbum"),
-      t("profile.avatarMenuCamera"),
-    ],
-    success: (res) => {
-      const idx = res.tapIndex;
-      if (idx === 0) {
-        const url = profileView.value.avatarUrl;
-        if (!url) return;
-        const previewUrl = resolveMediaUrl(url);
-        try {
-          uni.previewImage({ urls: [previewUrl], current: previewUrl });
-        } catch (_e) {
-          // 预览失败静默
-        }
-      } else if (idx === 1) {
-        void chooseAvatarImage("album");
-      } else if (idx === 2) {
-        void chooseAvatarImage("camera");
-      }
-    },
-    fail: () => {
-      // 用户取消，静默
-    },
-  });
+  avatarMenuVisible.value = true;
 }
+
+/**
+ * MP-R1-PROFILE-002：半屏头像菜单选项点击（索引对应 BottomSheet 渲染顺序）：
+ * 0=查看大图 1=从相册选择 2=拍照 3=取消。
+ */
+function handleAvatarMenuSelect(index: number) {
+  if (index === 0) {
+    avatarMenuVisible.value = false;
+    const url = profileView.value.avatarUrl;
+    if (!url) return;
+    const previewUrl = resolveMediaUrl(url);
+    try {
+      uni.previewImage({ urls: [previewUrl], current: previewUrl });
+    } catch (_e) {
+      // 预览失败静默
+    }
+  } else if (index === 1) {
+    avatarMenuVisible.value = false;
+    void chooseAvatarImage("album");
+  } else if (index === 2) {
+    avatarMenuVisible.value = false;
+    void chooseAvatarImage("camera");
+  } else {
+    avatarMenuVisible.value = false;
+  }
+}
+
+/** MP-R1-PROFILE-002：头像菜单项（复用既有 i18n 键，不新增语言文件条目） */
+const avatarMenuItems = computed(() => [
+  { key: "view", label: t("profile.avatarMenuView") },
+  { key: "album", label: t("profile.avatarMenuAlbum") },
+  { key: "camera", label: t("profile.avatarMenuCamera") },
+  { key: "cancel", label: t("common.cancel") },
+]);
 
 /**
  * 选择头像图片（与上传解耦，便于测试）。
@@ -2793,6 +2808,29 @@ onUnload(() => {
         :own-profile="isOwnProfile"
         @close="certSheetVisible = false"
       />
+      <!-- MP-R1-PROFILE-002：头像操作半屏菜单（替代原生 showActionSheet，修复面板不可见） -->
+      <BottomSheet
+        :visible="avatarMenuVisible"
+        :show-handle="true"
+        :show-close="false"
+        @close="avatarMenuVisible = false"
+      >
+        <view class="avatar-menu">
+          <view
+            v-for="(item, idx) in avatarMenuItems"
+            :key="item.key"
+            class="avatar-menu__item press-feedback"
+            :class="{ 'avatar-menu__item--cancel': item.key === 'cancel' }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="item.label"
+            @tap="handleAvatarMenuSelect(idx)"
+          >
+            <text class="avatar-menu__text">{{ item.label }}</text>
+          </view>
+        </view>
+      </BottomSheet>
     </template>
     <view v-if="showInviteModal" class="invite-mask" @tap="showInviteModal = false">
       <view class="invite-modal" @tap.stop>
@@ -4605,6 +4643,34 @@ onUnload(() => {
 .profile-menu__arrow {
   font-size: 30rpx;
   color: var(--c-text-quaternary, #C8CFCD);
+}
+
+/* MP-R1-PROFILE-002：头像操作半屏菜单（BottomSheet 内容区） */
+.avatar-menu {
+  padding: 8rpx 32rpx 16rpx;
+}
+
+.avatar-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28rpx 24rpx;
+  border-radius: var(--r-lg, 16rpx);
+}
+
+.avatar-menu__item + .avatar-menu__item {
+  margin-top: 8rpx;
+}
+
+.avatar-menu__text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--c-text-primary, #222222);
+}
+
+.avatar-menu__item--cancel .avatar-menu__text {
+  font-weight: 400;
+  color: var(--c-text-tertiary, #666666);
 }
 
 </style>

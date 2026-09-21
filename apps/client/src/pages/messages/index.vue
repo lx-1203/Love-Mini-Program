@@ -92,9 +92,18 @@ const warmPeople = computed(() => dashboard.value?.warmPeople ?? []);
 
 const privateSessions = computed(() => messagesStore.sessions.filter((s) => !s.isOfficial));
 
+/**
+ * 2026-09-20 修复（MP-R1-PAGES-MESSAGES-INDEX-002）：列表排序纳入置顶态。
+ * 优先级明确为：置顶会话全局最前（微信语义，组内保持 store 的最近消息时间排序），
+ * 其后才是 highIntent 分组与普通会话——原实现按 highIntent/normal 分组渲染，
+ * 完全覆盖 store 层的 pinned 排序，置顶成功后列表不重排、亦无置顶标识。
+ */
+const pinnedTopSessions = computed(() => privateSessions.value.filter((s) => s.pinned));
+
 const highIntentSessions = computed(() =>
   privateSessions.value.filter(
     (s) =>
+      !s.pinned &&
       s.relationship != null &&
       (s.relationship.score >= 51 ||
         s.relationship.status === "ambiguous" ||
@@ -102,8 +111,15 @@ const highIntentSessions = computed(() =>
   )
 );
 const normalSessions = computed(() =>
-  privateSessions.value.filter((s) => !highIntentSessions.value.includes(s))
+  privateSessions.value.filter((s) => !s.pinned && !highIntentSessions.value.includes(s))
 );
+
+/** 最近聊天全量渲染列表：置顶组优先（2026-09-20 pinned 修复） */
+const orderedSessions = computed(() => [
+  ...pinnedTopSessions.value,
+  ...highIntentSessions.value,
+  ...normalSessions.value,
+]);
 
 const filteredSessions = computed(() => {
   const q = searchKeyword.value.trim().toLowerCase();
@@ -267,9 +283,6 @@ function formatTime(dateStr?: string): string {
           <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
             <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
           </view>
-          <view class="header__icon-btn" hover-class="header__icon-btn--hover">
-            <image class="header__icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
-          </view>
         </view>
       </view>
 
@@ -392,11 +405,11 @@ function formatTime(dateStr?: string): string {
             </view>
 
             <template v-if="!searchKeyword">
-              <view v-if="highIntentSessions.length === 0 && normalSessions.length === 0" class="section__empty">
+              <view v-if="orderedSessions.length === 0" class="section__empty">
                 <text class="section__empty-text">暂无聊天记录</text>
               </view>
               <view
-                v-for="session in [...highIntentSessions, ...normalSessions]"
+                v-for="session in orderedSessions"
                 :key="session.id"
                 class="chat-item"
                 hover-class="chat-item--hover"
@@ -410,6 +423,13 @@ function formatTime(dateStr?: string): string {
                 <view class="chat-item__content">
                   <view class="chat-item__top-row">
                     <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
+                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-002）：置顶会话角标 -->
+                    <image
+                      v-if="session.pinned"
+                      class="chat-item__pin-icon"
+                      :src="IMAGE_PATHS.ICONS_EMOJI.PIN"
+                      mode="aspectFit"
+                    />
                     <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
                       <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
                     </view>
@@ -423,7 +443,16 @@ function formatTime(dateStr?: string): string {
                   <text v-else class="chat-item__preview">暂无消息</text>
                 </view>
                 <view class="chat-item__right">
-                  <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                  <view class="chat-item__time-row">
+                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：免打扰会话行内图标 -->
+                    <image
+                      v-if="session.muted"
+                      class="chat-item__muted-icon"
+                      :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
+                      mode="aspectFit"
+                    />
+                    <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                  </view>
                   <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
                     <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
                   </view>
@@ -449,6 +478,13 @@ function formatTime(dateStr?: string): string {
                 <view class="chat-item__content">
                   <view class="chat-item__top-row">
                     <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
+                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-002）：置顶会话角标（搜索结果同款） -->
+                    <image
+                      v-if="session.pinned"
+                      class="chat-item__pin-icon"
+                      :src="IMAGE_PATHS.ICONS_EMOJI.PIN"
+                      mode="aspectFit"
+                    />
                     <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
                       <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
                     </view>
@@ -462,7 +498,16 @@ function formatTime(dateStr?: string): string {
                   <text v-else class="chat-item__preview">暂无消息</text>
                 </view>
                 <view class="chat-item__right">
-                  <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                  <view class="chat-item__time-row">
+                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：免打扰会话行内图标（搜索结果同款） -->
+                    <image
+                      v-if="session.muted"
+                      class="chat-item__muted-icon"
+                      :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
+                      mode="aspectFit"
+                    />
+                    <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                  </view>
                   <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
                     <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
                   </view>
@@ -1000,6 +1045,12 @@ function formatTime(dateStr?: string): string {
   align-items: center;
   gap: 12rpx;
 }
+/* 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-002）：置顶角标 */
+.chat-item__pin-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+}
 .chat-item__name {
   font-size: 30rpx;
   font-weight: 600;
@@ -1053,6 +1104,18 @@ function formatTime(dateStr?: string): string {
   gap: 10rpx;
   flex-shrink: 0;
   min-width: 80rpx;
+}
+/* 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：时间行容纳免打扰图标 */
+.chat-item__time-row {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+.chat-item__muted-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 .chat-item__time {
   font-size: 22rpx;

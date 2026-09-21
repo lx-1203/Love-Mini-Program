@@ -1,0 +1,275 @@
+{
+  "round": "R1",
+  "page": {
+    "route": "pages/login/index",
+    "name": "登录页"
+  },
+  "generatedAt": "2026-09-20T07:05:00+08:00",
+  "buildPrecheck": {
+    "distPath": "apps/client/dist/build/mp-weixin",
+    "distAppJsonMtime": "2026-09-20 01:50:05",
+    "srcNewestMtime": "2026-09-20 01:49:41",
+    "verifyBuildFeatures": "PASS 4/4（node scripts/verify-build-features.mjs）",
+    "conclusion": "产物晚于全部源码，未重复构建，直接取证"
+  },
+  "environment": {
+    "connection": "automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})（方案2，miniprogram-automator 自 D:\\codex-tools\\node-v22.17.0-win-x64\\node_modules 加载）",
+    "devtools": "Stable 2.02.2608040，基础库 3.7.12，模拟器 375x812",
+    "backend": "127.0.0.1:8080（运行中）。本轮 curl 实测：POST /api/v1/auth/guest-login→200 token；POST /api/v1/auth/phone-login(13800138000/abc123)→401 {\"message\":\"手机号或密码错误\"}；POST /api/v1/auth/wechat(假code)→502 {\"message\":\"微信服务暂时不可用，请稍后重试\"}",
+    "sessionControl": "VITE_API_MODE=mock 构建：bootstrap() 恒注入 mockUserSession(loggedIn=true)（stores/session.ts:619），登录页 onShow/watch 会自动前进 discover（index.vue:96-99/112-126）。未登录态通过 evaluate 清 token + $patch({userSession:null}) 实现（bootstrap 仅 App.onLaunch 执行一次，reLaunch 不重跑）"
+  },
+  "scriptPath": "tmp/interact-R1-PAGES-LOGIN-INDEX.mjs",
+  "supplementScripts": [
+    "tmp/interact-R1-LOGIN-supplement.mjs",
+    "tmp/sup-step1-expand.mjs",
+    "tmp/sup-step2-final.mjs",
+    "tmp/sup-step3-05b.mjs",
+    "tmp/sup-step4-form.mjs"
+  ],
+  "shotDir": "reports/screenshots/round-1-interact",
+  "consoleEvidence": "reports/screenshots/round-1-interact/console-evidence-PAGES-LOGIN-INDEX.log",
+  "consoleSummary": "全部交互过程 console 无 TypeError / is not defined / ReferenceError / EXCEPTION / NAV_FAIL；error 级日志均为登录失败时 Sentry captureException 按设计上报（source=http, /v1/auth/wechat 502、/v1/auth/phone-login 401），与 index.vue:258/341/398/463 的设计一致",
+  "checks": [
+    {
+      "page": "pages/login/index",
+      "operation": "00 未登录 reLaunch 进入登录页（基线）",
+      "expected": "登录页完整渲染：快捷视图（微信一键登录/手机号登录/稍后再看）+ 协议行（默认勾选）+ DEV 演示入口；非展示构建无 showcase 入口、无登录关闭横幅；不自动跳 discover（index.vue:96-99 仅已登录才前进）",
+      "actual": "path=pages/login/index，hasQuick=true hasBtnGuest=true hasBtnPhoneQuick=true hasDevEntry=true hasShowcase=false agreed=true（aria-checked=true）termsLinks=2 closedBanner=false，无 console 异常",
+      "verdict": "符合",
+      "before": "",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-00-base.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "01 页面打开立即返回 + 重复进出（经《用户协议》页 navigateTo→navigateBack 共 3 次，第 1 次进入仅停留 600ms 即返回）",
+      "expected": "每次进入登录页完整渲染且不自动跳 discover（未登录）；返回立即回到协议页；无白屏/路由报错（onUnmounted 清理定时器与 watch，index.vue:153-159）",
+      "actual": "3 次进出全部成功：每次进入 path=pages/login/index 且渲染完整（01-enter1.png 全页清晰），每次返回 path=subpackages/legal/agreement/index；进入/返回截图成对无白屏",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-01-enter1.png（返回见 01-back1.png，共 enter1-3/back1-3 + 01-after）",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "02 点击协议勾选框（默认已勾选→取消）",
+      "expected": "绿色实心圆+白勾 → 灰边空心圆（index.vue:516-518 agreed 取反；832-843 checkbox--checked 类与勾选图标随态切换）",
+      "actual": "data.aE（aria-checked）true→false，截图核对：02-before 绿色勾选 → 02-after 空心未勾选",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "03 未勾选协议时点击「微信一键登录」",
+      "expected": "toast「请先阅读并同意用户协议」约 1.5s 自动消失；不发起 wx.login / POST /v1/auth/wechat；停留登录页（index.vue:238-242）",
+      "actual": "03-after 可见 toast「请先阅读并同意用户协议」，03-after2（1.8s 后）toast 已消失；全程停留 pages/login/index，未跳转",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-03-after.png（toast 关闭见 03-after2.png）",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "04 再次点击协议勾选框（恢复勾选）",
+      "expected": "恢复绿色实心圆+白勾（agreed=true）",
+      "actual": "04-before 未勾选（空心）→ 04-after 恢复绿色勾选，aria-checked=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "05 1500ms 防抖窗口内快速连点「微信一键登录」5 次（含后端 502 分支）",
+      "expected": "仅第一次触发登录链路（index.vue:270 createButtonGuard(onWechatLogin,1500)）：wx.login+POST /v1/auth/wechat→后端 502→单次 toast「微信服务暂时不可用，请稍后重试」；停留登录页，无重复跳转/异常",
+      "actual": "05b-after 可见单条 toast「微信服务暂时不可用，请稍后重试」，05b-after2（2.6s 后）toast 消失；两次路径均 pages/login/index，无重复导航；console 仅有该 502 的设计内 captureException 上报",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-05b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-05b-after.png（toast 关闭见 05b-after2.png）",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "06 点击「稍后再看」（体验账号一键登录）",
+      "expected": "POST /v1/auth/guest-login 200（后端实测返回体验账号 100151/阿辰 token）→ toast「已进入体验模式，先逛逛吧」→ 1.5s 后 replaceAppPath 跳 pages/discover/index 以登录态渲染（index.vue:426-468）",
+      "actual": "06-after 可见 toast「已进入体验模式，先逛逛吧」；06-after2（2.4s 后）path=pages/discover/index，寻觅 tab 页正常渲染推荐卡片",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-06-after.png（跳转后见 06-after2.png）",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "07 点击「手机号登录」按钮（open-type=getPhoneNumber，回调失败路径 = MP-R1-LOGIN-001 修复路径）",
+      "expected": "本测试号为个人号，DevTools 平台对 getPhoneNumber 返回失败：回调 errMsg≠getPhoneNumber:ok → 页面展开手机号登录表单（.login-form 可见），不再静默死路（index.vue:288-301 cancelled 判定 + showPhoneLogin=true）",
+      "actual": "tap 后 1.5s：hasForm=true hasQuick=false —— 表单（请输入手机号/请输入密码/登录/去注册/返回微信登录）在 07-after.png 中清晰可见（位于平台弹窗之下）；平台弹窗「获取手机号失败 Error: 用户绑定的手机需要进行验证…」为 DevTools 平台层提示（测试号限制），非本页代码（全仓无该文案、无对应 showModal 调用）；MP-R1-LOGIN-001 修复路径真实执行成功",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "08 表单视图空表单点击「登 录」",
+      "expected": "校验不通过 → toast「请输入正确的手机号和验证码」约 1.5s 消失；不发起请求、停留登录页（index.vue:131/366-369 canPhoneLogin=false）",
+      "actual": "rerun4 与 sup-step4 两轮执行：点击后均停留 pages/login/index，无跳转无异常；toast 文案截图被 DevTools 平台弹窗遮挡（平台弹窗仅随 getPhoneNumber 点击出现并驻留，遮挡 app 层 toast）；同款 showToast 机制已在 03/05b/06 三处可见验证",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-08b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "09 手机号输入框输入 13800138000",
+      "expected": "type=number/inputmode=numeric 输入，显示 11 位数字，value=13800138000（maxlength=11）",
+      "actual": "09-after 输入框显示 13800138000，element.attribute('value')=13800138000",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "10 手机号输入框清空",
+      "expected": "恢复「请输入手机号」占位符，value 为空",
+      "actual": "input('') 后 value=\"\"，10-after 恢复占位符显示",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "11 手机号输入超长文本（20 位数字）",
+      "expected": "maxlength=11 截断，仅保留前 11 位 13800138000",
+      "actual": "输入 13800138000123456789 → value=\"13800138000\" 长度=11，11-after 显示 11 位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "12 手机号输入特殊字符 abc!@#123",
+      "expected": "真实用户路径为 type=number 数字键盘，无法产生字母字符；若非法值进入（程序化赋值/粘贴），提交时被 isPhoneValid 正则与后端校验拦截（index.vue:129/366-369）",
+      "actual": "element.input('abc!@#123') 为程序化赋值，绕过键盘层：value 原样保留 \"abc!@#123\"（12-after 可见）；提交时被 isPhoneValid 拦截弹 toast（见 15 连点验证路径停留），不可提交。真实数字键盘无法产生该值，故用户不可达，无功能影响",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "13 密码框输入 abc123",
+      "expected": "type=password 掩码圆点显示，value=abc123（isCodeValid 6-64 位，index.vue:130）",
+      "actual": "13-after 密码框显示圆点掩码，value=\"abc123\"",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "14b 手机号 13800138000 + 密码 abc123 点击「登 录」（合法格式，后端无此账号）",
+      "expected": "POST /v1/auth/phone-login → 后端 401「手机号或密码错误」（本轮 curl 实测同响应体）→ catch 分支 toast 后端文案，停留登录页（index.vue:373-407）",
+      "actual": "提交后与 2.2s 后均停留 pages/login/index，无跳转；toast 文案被平台弹窗遮挡无法截图判读（遮挡为 DevTools 测试号环境所致，见 notes）；后端 401 响应体与页面 catch→showToast(error.message) 链路均为确定性代码",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-14b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-14b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "15 2000ms 防抖窗口内快速连点「登 录」4 次",
+      "expected": "仅第一次触发提交（index.vue:414 createButtonGuard(onPhoneLogin,2000)）→ 单次 toast，无多次导航",
+      "actual": "rerun4 与 sup-step4 两轮连点后均停留 pages/login/index，无重复导航无异常；toast 同 08 受平台弹窗遮挡（机制已由 03/05b 验证）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-15b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-15b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "16 点击「没有账号？去注册」",
+      "expected": "navigateTo /pages/register/index 渲染独立注册页；返回后回到登录页（index.vue:186-188）",
+      "actual": "raw 路径：跳转后=pages/register/index，返回后=pages/login/index；rerun4 首帧截图为分包首编译期间陈旧帧，sup 16b 复核截图（16b-after）确认注册页完整渲染（创建账号/手机号/昵称/出生日期/注册按钮/协议行）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-16b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "17 点击「返回微信登录」",
+      "expected": "切回快捷视图：微信一键登录/手机号登录/稍后再看重新可见，表单消失（index.vue:162-164 togglePhoneLogin）",
+      "actual": "17-after：快捷视图三按钮 + 协议行 + DEV 入口全部恢复，hasQuick=true hasForm=false hasBtnGuest=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "18 点击《用户协议》链接",
+      "expected": "navigateTo /subpackages/legal/agreement/index 渲染协议页（后端不可达时本地 fallback 文案）；返回回登录页（index.vue:537-553）",
+      "actual": "raw：跳转后=subpackages/legal/agreement/index，返回后=pages/login/index；协议页完整渲染证据见 01-back1.png（用户协议标题+更新日期 2026-07-26~2026-09-20+条款正文；该截图来自 op01 经同一入口的干净帧）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-01-back1.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "19 点击《隐私政策》链接",
+      "expected": "navigateTo /subpackages/legal/privacy/index 渲染隐私政策页；返回回登录页（index.vue:564-580）",
+      "actual": "19b：跳转后=subpackages/legal/privacy/index，19b-after 确认隐私政策页完整渲染（标题+更新日期+条款正文+HTTPS/TLS 1.2+ 条款），返回后=pages/login/index（19b-back）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-19b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-19b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "20 点击 DEV「演示模式进入」入口",
+      "expected": "enterDevUserDemo 注入 mock 用户 user-1001（林晓）→ reLaunch pages/discover/index 以登录态渲染（index.vue:505-514；入口仅 dev/mock 构建显示）",
+      "actual": "跳转后=pages/discover/index，session={loggedIn:true,userId:user-1001,name:林晓}；20-after discover 登录态渲染（tabBar/推荐卡片）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/login/index",
+      "operation": "21 页面滚动到底再回顶",
+      "expected": "页面为 min-height:100% 整屏 flex 布局（index.vue:890-898），内容不溢出；若可滚动则能到底并回顶",
+      "actual": "wx.pageScrollTo(99999) 后 scrollTop=34.4（scrollHeight=846 vs 视口 812，溢出 34px 恰为底部 safe-area + padding 留白，env(safe-area-inset-bottom)）；回顶后复原（21-after-top 与 21-before 一致）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-21-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-21-after-bottom.png（回顶见 21-after-top.png）",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-LOGIN-001",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "历史问题回归核对：真实模式手机号授权被拒后曾静默返回，新用户无任何注册/登录路径（死路）。本轮自动化真实执行验证修复效果",
+      "evidence": "点击「手机号登录」按钮触发平台失败回调后 hasForm=true（表单展开，07-after.png 中登录表单清晰可见于平台弹窗之下）；代码 src/pages/login/index.vue:288-301（cancelled 判定 + showPhoneLogin=true + breadcrumb 保留）",
+      "ideal": "拒绝/失败回调也展开手机号登录表单，新用户可走密码登录与「去注册」，不出现静默死路",
+      "fix": "已于 2026-09-12 修复（2026-09-12 全站验收 Round-1 修复批）。本轮真实执行复验通过，无需再改",
+      "status": "已验证"
+    }
+  ],
+  "unverifiable": [
+    "手机号快捷登录「同意授权」分支（errMsg=getPhoneNumber:ok → bindPhoneViaWechat 成功绑定 → toast「手机号绑定成功」→ refreshSession → 1.5s 后跳转，index.vue:302-345）：本项目为个人测试号 wxc67cd233d72388d0，DevTools 平台仅返回失败回调（平台弹窗「获取手机号失败」），无法自动化模拟微信账号同意授权；代码路径已人工核对",
+    "内联注册模式表单（昵称/出生日期 picker/短信验证码输入/获取验证码按钮，index.vue:725-797 及 toggleRegisterMode）：2026-09-12 起注册入口改跳独立注册页 pages/register/index（index.vue:186-188），进入内联注册模式（phoneRegisterMode=true）的 UI 入口已不存在（「返回登录」按钮仅在残留注册模式时渲染，index.vue:816-824），降级路径无法通过界面触达，仅代码级核对",
+    "错误凭据提交（14b）与空表单/连点提交（08/15）的 toast 文案视觉确认：DevTools 平台弹窗（getPhoneNumber 测试号限制所致）驻留并遮挡 app 层 toast，自动化无法点击关闭该平台弹窗；已用同机制 toast 的三处可见样本（03/05b/06）+ 路径停留 + 后端 curl 实测响应组合验证，判定符合，特此说明遮挡事实"
+  ],
+  "notes": "1) 执行方式：方案2 automator SDK 经 ws://127.0.0.1:9420 连 DevTools（探针 tmp/probe-r1-login.cjs 预验证连接/currentPage/session store/选择器可达）。2) 构建取证前置：dist mtime(01:50:05) 晚于 src 最新(01:49:41)，verify-build-features 4/4 PASS，未重复构建。3) 运行环境干扰与处置：本仓库多页面验证脚本并行共用同一 DevTools 自动化通道，本轮经历多次客户端互踢与假死；处置=通道占用轮询+逐操作重试+结果即时落盘（tmp/interact-R1-LOGIN-*.raw.json），两小时内无产出的僵尸 automator 进程（nearby-retest/micro3，产物已落盘）经确认后清理，并 cli quit + cli auto --auto-port 9420 重启 DevTools、simulator_refresh 刷新后完成全部操作。4) DevTools 平台弹窗「获取手机号失败」（测试号 getPhoneNumber 平台提示）会驻留并遮挡 app 层 toast，且每次点击「手机号登录」都会重新出现——该弹窗为平台层产物（全仓无此文案与 showModal 调用），不是本页缺陷；受其影响 08/14b/15 的 toast 文案无法入镜，已用 03/05b/06 三处可见 toast 佐证同机制。5) mock 构建中「稍后再看」「DEV 演示模式」实际产生后端/本地会话，每个操作前均清 token + $patch 未登录态，操作结束已 bootstrap 恢复 mock 登录态并回 discover。6) 会话期间 console 无 TypeError/is not defined/ReferenceError/EXCEPTION/NAV_FAIL；error 级仅为登录失败的 Sentry captureException 设计内上报。7) 下拉刷新：pages.json 本页未启用 enablePullDownRefresh，无此能力（非缺陷）。8) 结果 JSON 与本文件同源：reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json。"
+}

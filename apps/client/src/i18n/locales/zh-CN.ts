@@ -491,6 +491,9 @@ export default {
     "segmentSameInterest": "同兴趣",
     "segmentNearby": "附近",
     "segmentNewcomer": "新人",
+    // MP-R1-SEGMENT-001（2026-09-20）：补齐细分发现页缺失词条（此前渲染原始 key）
+    "segmentHighMatch": "高匹配",
+    "segmentEmpty": "这个分组暂时没有更多人",
     "welcome": "校园恋爱",
     "noMoreRecommendation": "暂无更多推荐，稍后再来看看",
     "welcomeSubtitle": "遇见你的心动",

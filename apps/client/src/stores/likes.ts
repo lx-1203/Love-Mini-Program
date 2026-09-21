@@ -773,7 +773,9 @@ export const useLikesStore = defineStore("likes", {
         if (useMock()) {
           // 修复：被取消的请求不修改状态
           if (controller.signal.aborted) return;
-          this.heartSignals = [...mockHeartSignals];
+          // MP-R1-HEARTSIGNALS-002：mock 必须返回深拷贝——原 [...mockHeartSignals] 为浅拷贝，
+          // 接受/拒绝直接改写共享 mock 固件对象，且浅拷贝无法复原，会话内永久清空
+          this.heartSignals = JSON.parse(JSON.stringify(mockHeartSignals)) as HeartSignal[];
           return;
         }
 

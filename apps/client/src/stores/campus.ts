@@ -566,7 +566,15 @@ export const useCampusStore = defineStore("campus", {
           if (page === 1) {
             this.replies = [...replies];
           } else {
-            this.replies.push(...replies);
+            // MP-R1-TOPIC-DETAIL-001：mock 分页语义修正——原实现 page>1 时把全量
+            // 列表重复 push，触底加载不断追加同一批回复（重复 id 作 key）。
+            // 按每页 10 条切片模拟分页，切片为空时不再追加（页面据此终止加载）。
+            const MOCK_REPLY_PAGE_SIZE = 10;
+            const start = (page - 1) * MOCK_REPLY_PAGE_SIZE;
+            const pageSlice = replies.slice(start, start + MOCK_REPLY_PAGE_SIZE);
+            if (pageSlice.length > 0) {
+              this.replies.push(...pageSlice);
+            }
           }
           return;
         }

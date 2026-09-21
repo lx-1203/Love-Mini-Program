@@ -22,6 +22,8 @@ import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
 import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
+// MP-R1-NEARBY-002：互发喜欢解锁判定（复用 likes store mutualLikes 既有标记）
+import { useLikesStore } from "../../stores/likes";
 // 2026-08-08 走查 P1：VIP 免费放行点统一受 membershipEnabled 门控
 import { featureFlags } from "../../config/feature-flags";
 // B3 恋爱小纸条（2026-08-13）：悄悄话解锁底部弹层 + real 模式解锁请求
@@ -48,6 +50,11 @@ const props = defineProps<{
   card: DiscoverCard | null;
   /** [AUTOSHOT] 仅测试钩子：打开后自动滚动到指定面板（如 panel-quick），正常使用不传 */
   initialAnchor?: string;
+  /**
+   * MP-R1-NEARBY-002：蒙面匿名模式（附近的人）。开启时详情弹层掩码真实姓名、
+   * 模糊照片/头像，防止卡片详情弹层绕过蒙面规则；与对方互发喜欢后自动解锁。
+   */
+  masked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -72,6 +79,22 @@ const sessionStore = useSessionStore();
 
 /** 超级测试账号（2026-08-08 走查 P1：悄悄话/私信免费旁路） */
 const isSuperTest = computed(() => sessionStore.isSuperTestAccount);
+
+/* ========== MP-R1-NEARBY-002：蒙面匿名模式（附近的人详情弹层） ========== */
+/** 互发喜欢解锁判定：likes store mutualLikes 含对方 userId 即视为已解锁 */
+const likesStore = useLikesStore();
+
+const isMutualLiked = computed(() => {
+  const userId = props.card?.userId;
+  if (!userId) return false;
+  return likesStore.mutualLikes.some((m) => String(m.userId) === String(userId));
+});
+
+/** 蒙面生效态：宿主页面开启 masked 且尚未互发喜欢 */
+const maskedEffective = computed(() => Boolean(props.masked) && !isMutualLiked.value);
+
+/** 蒙面态展示名（与卡片端 ???? 规则一致） */
+const maskedDisplayName = computed(() => (maskedEffective.value ? "????" : props.card?.name ?? ""));
 
 /** 入场动画状态 */
 const animating = ref(false);
@@ -670,6 +693,8 @@ const detailAvatarFrameId = computed<AvatarFrameId>(() =>
 
 /** 点击 hero 头像 → 全屏预览头像大图（card 无 avatar 时静默忽略） */
 function onAvatarPreview(): void {
+  // MP-R1-NEARBY-002：蒙面态禁止原图像预览（大图预览会绕过模糊）
+  if (maskedEffective.value) return;
   const avatar = props.card?.avatar;
   if (!avatar) return;
   uni.previewImage({ urls: [avatar], current: avatar });
@@ -881,7 +906,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
       <!-- [AUTOSHOT] scroll-into-view 由测试钩子 initialAnchor 驱动，正常使用为空 -->
       <scroll-view scroll-y class="detail-scroll" enhanced :show-scrollbar="false" :scroll-into-view="anchorId">
         <!-- 大图轮播区 -->
-        <view class="detail-hero">
+        <!-- MP-R1-NEARBY-002：蒙面态整块加 blur，照片不外泄真实样貌 -->
+        <view class="detail-hero" :class="{ 'detail-hero--masked': maskedEffective }">
           <swiper
             v-if="displayImages.length > 0"
             class="detail-hero__gallery"
@@ -899,7 +925,13 @@ function onSwipeDownEnd(e: UniTouchEvent) {
           </swiper>
           <!-- 无图兜底 -->
           <view v-else class="detail-hero__gallery detail-hero__gallery--placeholder">
-            <text class="detail-hero__placeholder-text">{{ card?.name?.[0] ?? '?' }}</text>
+            <text class="detail-hero__placeholder-text">{{ maskedEffective ? '?' : (card?.name?.[0] ?? '?') }}</text>
+          </view>
+
+          <!-- MP-R1-NEARBY-002：蒙面解锁规则提示（复用卡片端既有文案键） -->
+          <view v-if="maskedEffective" class="detail-hero__masked-hint">
+            <image class="detail-hero__masked-hint-icon" :src="icons.heart" mode="aspectFit" alt="" />
+            <text class="detail-hero__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
           </view>
 
           <!-- 底部渐变遮罩 -->
@@ -930,13 +962,13 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                     :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
                   />
                   <view v-else class="detail-hero__avatar-fallback">
-                    <text class="detail-hero__avatar-fallback-text">{{ card?.name?.[0] ?? '?' }}</text>
+                    <text class="detail-hero__avatar-fallback-text">{{ maskedEffective ? '?' : (card?.name?.[0] ?? '?') }}</text>
                   </view>
                 </AvatarFrame>
               </view>
               <view class="detail-hero__avatar-info">
                 <view class="detail-hero__name-row">
-                  <text class="detail-hero__name">{{ card?.name }}</text>
+                  <text class="detail-hero__name">{{ maskedDisplayName }}</text>
                   <view class="detail-hero__age-badge">
                     <text class="detail-hero__age">{{ ageText }}</text>
                     <text class="detail-hero__age-unit">{{ t('cardDetail.ageUnit') }}</text>
@@ -1414,6 +1446,46 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   font-size: var(--fs-display);
   font-weight: 800;
   color: var(--c-overlay-bg-mid);
+}
+
+/* ===== MP-R1-NEARBY-002：蒙面匿名态（照片/头像模糊，防详情弹层绕过蒙面规则） ===== */
+.detail-hero--masked .detail-hero__img {
+  filter: blur(36rpx);
+  /* 放大补偿模糊边缘透明 */
+  transform: scale(1.12);
+}
+
+.detail-hero--masked .detail-hero__avatar-img {
+  filter: blur(20rpx);
+  transform: scale(1.1);
+}
+
+.detail-hero--masked .detail-hero__avatar-hero {
+  pointer-events: none;
+}
+
+.detail-hero__masked-hint {
+  position: absolute;
+  top: 24rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 10rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-overlay-bg-mid, rgba(0, 0, 0, 0.45));
+  z-index: 3;
+}
+
+.detail-hero__masked-hint-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.detail-hero__masked-hint-text {
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .detail-hero__gradient {

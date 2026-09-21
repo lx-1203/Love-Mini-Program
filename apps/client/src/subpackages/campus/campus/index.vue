@@ -167,7 +167,18 @@ onLoad((query) => {
   // 2026-08-25 P0：无 ?school= 时，校园圈入口应落到 hub（规格书 16 的结构在 hub.vue）
   const q = (query || {}) as Record<string, string>;
   if (typeof q.school === "string" && q.school.trim()) {
-    viewSchool.value = q.school.trim();
+    // MP-R1-CAMPUSINDEX-001：hub→index 传参为 encodeURIComponent 后的校名，
+    // 小程序 onLoad query 不自动解码，直接使用会显示 URL 编码串且话题列表恒空；
+    // 此处统一解码（异常时回退原值），比较与展示与 fetchCampusTopics 均消费解码值。
+    const raw = q.school.trim();
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch (_e) {
+      // 含非法 % 序列时回退原始值
+      decoded = raw;
+    }
+    viewSchool.value = decoded;
     return;
   }
   redirectedToHub.value = true;

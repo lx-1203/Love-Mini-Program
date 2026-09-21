@@ -826,6 +826,16 @@ const isSessionClosed = computed(() => {
   return chatStore.activeSession?.phase === "closed";
 });
 
+/**
+ * 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-002）：临时会话未成功加载
+ * （chatStore.activeSession 为空，如深链 id 已失效）时，「同意交换联系方式」
+ * 「结束会话」按钮应禁用并提示，而非点击后静默无效（acceptExchange/endSession
+ * 在 activeSession 为空时直接 return）。
+ */
+const tempSessionUnavailable = computed(
+  () => isTempSession.value && !chatStore.activeSession
+);
+
 /** 发送按钮是否可高亮（输入框非空且会话未结束） */
 const canSend = computed(() => draft.value.trim().length > 0 && !isSessionClosed.value);
 
@@ -1117,6 +1127,15 @@ async function sendText() {
 /** 同意交换联系方式（仅临时匿名会话） */
 async function handleAcceptExchange() {
   if (!sessionId.value) return;
+  // 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-002）：会话未加载时不再静默返回，
+  // 给出明确提示（store 层 activeSession 为空会直接 return，按钮点击等于无效）
+  if (tempSessionUnavailable.value) {
+    uni.showToast({
+      title: chatStore.errorMessage || t("chat.operationFailed"),
+      icon: "none",
+    });
+    return;
+  }
   try {
     await chatStore.acceptExchange("self");
     uni.showToast({ title: t("chat.exchangeAccepted"), icon: "success" });
@@ -1128,6 +1147,15 @@ async function handleAcceptExchange() {
 /** 结束会话（仅临时匿名会话） */
 async function handleEndSession() {
   if (!sessionId.value) return;
+  // 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-002）：会话未加载时不再弹确认框
+  // 后静默无效，直接提示（同 handleAcceptExchange）
+  if (tempSessionUnavailable.value) {
+    uni.showToast({
+      title: chatStore.errorMessage || t("chat.operationFailed"),
+      icon: "none",
+    });
+    return;
+  }
   // review #50：原实现直接结束无确认，误触会销毁整个临时会话；先弹确认框。
   const confirmed = await new Promise<boolean>((resolve) => {
     uni.showModal({
@@ -1962,10 +1990,11 @@ defineExpose({ noop });
         <!-- 表情面板：点击表情追加到输入框草稿（2026-08-09 微信 1:1 新增） -->
         <EmojiPanel v-if="emojiPanelVisible" @select="handleEmojiSelect" />
 
-        <!-- 临时会话操作按钮（保留同意交换/结束会话入口） -->
+        <!-- 临时会话操作按钮（保留同意交换/结束会话入口；会话未加载时禁用并提示） -->
         <view v-if="isTempSession" class="temp-action-row">
           <view
             class="temp-action-btn temp-action-btn--secondary press-feedback"
+            :class="{ 'temp-action-btn--disabled': tempSessionUnavailable }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="handleAcceptExchange"
@@ -1974,6 +2003,7 @@ defineExpose({ noop });
           </view>
           <view
             class="temp-action-btn temp-action-btn--danger press-feedback"
+            :class="{ 'temp-action-btn--disabled': tempSessionUnavailable }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="handleEndSession"
@@ -2742,6 +2772,11 @@ defineExpose({ noop });
 .temp-action-btn--danger {
   background: var(--c-romance-50);
   border-color: var(--c-romance-200);
+}
+
+/* 2026-09-20：会话未加载时禁用态（对齐输入栏发送按钮禁用样式） */
+.temp-action-btn--disabled {
+  opacity: 0.5;
 }
 
 .temp-action-btn__text {

@@ -1,0 +1,613 @@
+{
+  "generatedAt": "2026-09-19T23:33:20.297Z",
+  "phone": "15976960542",
+  "password": "Abcdef123!",
+  "nickname": "验证7696",
+  "results": [
+    {
+      "no": "01",
+      "page": "pages/register/index",
+      "operation": "reLaunch 进入注册页（初始加载：空表单、协议未勾选、注册按钮置灰）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-01-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-01-after.png",
+      "mechanical": "path=pages/register/index dom={\"inputCount\":5,\"clearIcon\":0,\"submitClass\":\"submit-btn submit-btn data-v-8ba19634 data-v-8ba19634 submit-btn--disabled submit-btn--disabled\",\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634\",\"state\":{\"phone\":\"__undef__\",\"smsCode\":\"__undef__\",\"password\":\"__undef__\",\"confirmPassword\":\"__undef__\",\"nickname\":\"__undef__\",\"birthDate\":\"__undef__\",\"agreed\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "inputCount": 5,
+        "clearIcon": 0,
+        "submitClass": "submit-btn submit-btn data-v-8ba19634 data-v-8ba19634 submit-btn--disabled submit-btn--disabled",
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634",
+        "state": {
+          "phone": "__undef__",
+          "smsCode": "__undef__",
+          "password": "__undef__",
+          "confirmPassword": "__undef__",
+          "nickname": "__undef__",
+          "birthDate": "__undef__",
+          "agreed": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "02",
+      "page": "pages/register/index",
+      "operation": "空表单点击「注册」按钮（空内容提交）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-02-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-02-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[\"请输入手机号\"],\"state\":{\"errors\":\"__undef__\",\"phoneRegistered\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [
+          "请输入手机号"
+        ],
+        "state": {
+          "errors": "__undef__",
+          "phoneRegistered": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "03",
+      "page": "pages/register/index",
+      "operation": "手机号输入 13812345678（正常输入）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-03-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-03-after.png",
+      "mechanical": "path=pages/register/index dom={\"phoneState\":{\"phone\":\"__undef__\"},\"clearIcon\":1,\"fieldErrors\":[]}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "phoneState": {
+          "phone": "__undef__"
+        },
+        "clearIcon": 1,
+        "fieldErrors": []
+      }
+    },
+    {
+      "no": "04",
+      "page": "pages/register/index",
+      "operation": "手机号输入超长 13812345678999123（超长输入）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-04-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-04-after.png",
+      "mechanical": "path=pages/register/index dom={\"phoneState\":{\"phone\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "phoneState": {
+          "phone": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "05",
+      "page": "pages/register/index",
+      "operation": "点击手机号清除图标",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-05-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-05-after.png",
+      "mechanical": "path=pages/register/index dom={\"phoneState\":{\"phone\":\"__undef__\"},\"clearIconGone\":0}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "phoneState": {
+          "phone": "__undef__"
+        },
+        "clearIconGone": 0
+      }
+    },
+    {
+      "no": "06",
+      "page": "pages/register/index",
+      "operation": "手机号为空时点击「获取验证码」",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-06-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-06-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[\"手机号格式不正确，请输入 11 位手机号\"],\"smsBtnText\":\"获取验证码\",\"state\":{\"errors\":\"__undef__\",\"smsSending\":\"__undef__\",\"smsCountdown\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [
+          "手机号格式不正确，请输入 11 位手机号"
+        ],
+        "smsBtnText": "获取验证码",
+        "state": {
+          "errors": "__undef__",
+          "smsSending": "__undef__",
+          "smsCountdown": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "07",
+      "page": "pages/register/index",
+      "operation": "手机号输入字母/特殊字符 abc138wxy（特殊字符过滤）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-07-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-07-after.png",
+      "mechanical": "path=pages/register/index dom={\"phoneState\":{\"phone\":\"__undef__\"},\"clearIcon\":1}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "phoneState": {
+          "phone": "__undef__"
+        },
+        "clearIcon": 1
+      }
+    },
+    {
+      "no": "08",
+      "page": "pages/register/index",
+      "operation": "输入合法手机号后点击「获取验证码」",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-08-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-08-after.png",
+      "mechanical": "path=pages/register/index dom={\"smsBtnText\":\"重新发送 58s\",\"smsBtnClass\":\"sms-btn sms-btn data-v-8ba19634 data-v-8ba19634 sms-btn--cd sms-btn--cd\",\"state\":{\"smsCountdown\":\"__undef__\",\"smsSending\":\"__undef__\",\"phone\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "smsBtnText": "重新发送 58s",
+        "smsBtnClass": "sms-btn sms-btn data-v-8ba19634 data-v-8ba19634 sms-btn--cd sms-btn--cd",
+        "state": {
+          "smsCountdown": "__undef__",
+          "smsSending": "__undef__",
+          "phone": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "09",
+      "page": "pages/register/index",
+      "operation": "倒计时期间再次点击「获取验证码」（重复触发防护）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-09-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-09-after.png",
+      "mechanical": "path=pages/register/index dom={\"smsBtnText\":\"重新发送 55s\",\"state\":{\"smsCountdown\":\"__undef__\",\"smsSending\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "smsBtnText": "重新发送 55s",
+        "state": {
+          "smsCountdown": "__undef__",
+          "smsSending": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "10",
+      "page": "pages/register/index",
+      "operation": "验证码输入含字母杂字符 12ab34cd（特殊字符）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-10-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-10-after.png",
+      "mechanical": "path=pages/register/index dom={\"smsState\":{\"smsCode\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "smsState": {
+          "smsCode": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "11",
+      "page": "pages/register/index",
+      "operation": "验证码输入 123456（mock 短信码回填）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-11-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-11-after.png",
+      "mechanical": "path=pages/register/index dom={\"smsState\":{\"smsCode\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "smsState": {
+          "smsCode": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "12",
+      "page": "pages/register/index",
+      "operation": "仅填手机号+验证码时点击「注册」（校验顺序推进）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-12-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-12-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[\"请设置登录密码\"],\"state\":{\"errors\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [
+          "请设置登录密码"
+        ],
+        "state": {
+          "errors": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "13",
+      "page": "pages/register/index",
+      "operation": "密码输入 abc12345（强度条出现）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-13-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-13-after.png",
+      "mechanical": "path=pages/register/index dom={\"strengthLabel\":\"中\",\"strengthVisible\":1,\"state\":{\"pwdStrength\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "strengthLabel": "中",
+        "strengthVisible": 1,
+        "state": {
+          "pwdStrength": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "14",
+      "page": "pages/register/index",
+      "operation": "密码改为 Abcdef123!（强度升级）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-14-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-14-after.png",
+      "mechanical": "path=pages/register/index dom={\"strengthLabel\":\"强\",\"state\":{\"pwdStrength\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "strengthLabel": "强",
+        "state": {
+          "pwdStrength": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "15",
+      "page": "pages/register/index",
+      "operation": "点击密码眼睛图标（密文→明文）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-15-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-15-after.png",
+      "mechanical": "path=pages/register/index dom={\"state\":{\"showPassword\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "state": {
+          "showPassword": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "16",
+      "page": "pages/register/index",
+      "operation": "确认密码输入 Abc99999（两次不一致）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-16-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-16-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[\"两次输入的密码不一致\"],\"state\":{\"confirmPassword\":\"__undef__\",\"errors\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [
+          "两次输入的密码不一致"
+        ],
+        "state": {
+          "confirmPassword": "__undef__",
+          "errors": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "17",
+      "page": "pages/register/index",
+      "operation": "点击确认密码眼睛图标（密文→明文）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-17-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-17-after.png",
+      "mechanical": "path=pages/register/index dom={\"state\":{\"showConfirmPassword\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "state": {
+          "showConfirmPassword": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "18",
+      "page": "pages/register/index",
+      "operation": "确认密码改回一致 Abcdef123!",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-18-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-18-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[],\"state\":{\"errors\":\"__undef__\",\"confirmPassword\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [],
+        "state": {
+          "errors": "__undef__",
+          "confirmPassword": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "19",
+      "page": "pages/register/index",
+      "operation": "昵称输入 25 字超长文本（超长输入）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-19-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-19-after.png",
+      "mechanical": "path=pages/register/index dom={\"state\":{\"nickname\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "state": {
+          "nickname": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "20",
+      "page": "pages/register/index",
+      "operation": "昵称输入特殊字符 <script>&\"（特殊字符/XSS 探测）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-20-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-20-after.png",
+      "mechanical": "path=pages/register/index dom={\"state\":{\"nickname\":\"__undef__\"},\"inputCountStill\":5}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "state": {
+          "nickname": "__undef__"
+        },
+        "inputCountStill": 5
+      }
+    },
+    {
+      "no": "21",
+      "page": "pages/register/index",
+      "operation": "密码输入全角字符 １２３ａｂｃｄｅ 后点击「注册」（全角校验）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-21-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-21-after.png",
+      "mechanical": "path=pages/register/index dom={\"fieldErrors\":[\"密码不能包含空格或全角字符\"],\"state\":{\"errors\":\"__undef__\",\"password\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "fieldErrors": [
+          "密码不能包含空格或全角字符"
+        ],
+        "state": {
+          "errors": "__undef__",
+          "password": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "22",
+      "page": "pages/register/index",
+      "operation": "点击出生日期字段（打开原生日期 picker 弹层）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-22-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-22-after.png",
+      "mechanical": "path=pages/register/index dom={\"state\":{\"birthDate\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "state": {
+          "birthDate": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "23",
+      "page": "pages/register/index",
+      "operation": "重填全部字段、回填出生日期 2000-01-01、勾选协议（准备成功提交）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-23-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-23-after.png",
+      "mechanical": "path=pages/register/index dom={\"pickText\":\"2000-01-01\",\"submitClass\":\"submit-btn submit-btn data-v-8ba19634 data-v-8ba19634\",\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on\",\"smsBtnText\":\"重新发送 54s\",\"state\":{\"birthDate\":\"__undef__\",\"agreed\":\"__undef__\",\"phone\":\"__undef__\",\"smsCode\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "pickText": "2000-01-01",
+        "submitClass": "submit-btn submit-btn data-v-8ba19634 data-v-8ba19634",
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on",
+        "smsBtnText": "重新发送 54s",
+        "state": {
+          "birthDate": "__undef__",
+          "agreed": "__undef__",
+          "phone": "__undef__",
+          "smsCode": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "24",
+      "page": "pages/register/index",
+      "operation": "快速连续点击「注册」3 次（防重复提交）→ 期望单次提交并跳转注册成功页",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-24-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-24-after.png",
+      "mechanical": "path=pages/register/success dom={\"finalPath\":\"pages/register/success\"}",
+      "ok": true,
+      "pathAfter": "pages/register/success",
+      "dom": {
+        "finalPath": "pages/register/success"
+      }
+    },
+    {
+      "no": "25",
+      "page": "pages/register/index",
+      "operation": "页面打开立即返回（navigateTo 进入后立即 navigateBack）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-25-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-25-after.png",
+      "mechanical": "from=pages/login/index inRegister=pages/register/index afterBack=pages/login/index",
+      "ok": true
+    },
+    {
+      "no": "26",
+      "page": "pages/register/index",
+      "operation": "已注册手机号 15976960542 完整填表后点击「注册」（重复提交已存在账号）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-26-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-26-after.png",
+      "mechanical": "path=pages/register/index dom={\"ghostBtn\":1,\"ghostText\":\"用这个手机号登录\",\"fieldErrors\":[\"该手机号已注册，试试直接登录\"],\"state\":{\"phoneRegistered\":\"__undef__\",\"errors\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "ghostBtn": 1,
+        "ghostText": "用这个手机号登录",
+        "fieldErrors": [
+          "该手机号已注册，试试直接登录"
+        ],
+        "state": {
+          "phoneRegistered": "__undef__",
+          "errors": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "27",
+      "page": "pages/register/index",
+      "operation": "点击「用这个手机号登录」次级出口",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-27-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-27-after.png",
+      "mechanical": "pathAfterTap=pages/login/index",
+      "ok": true,
+      "pathAfter": "pages/login/index"
+    },
+    {
+      "no": "28",
+      "page": "pages/register/index",
+      "operation": "点击协议勾选框（勾选）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-28-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-28-after.png",
+      "mechanical": "path=pages/register/index dom={\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on\",\"state\":{\"agreed\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on",
+        "state": {
+          "agreed": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "29",
+      "page": "pages/register/index",
+      "operation": "点击《用户协议》链接",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-29-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-29-after.png",
+      "mechanical": "path=subpackages/legal/agreement/index dom={\"path\":\"subpackages/legal/agreement/index\"}",
+      "ok": true,
+      "pathAfter": "subpackages/legal/agreement/index",
+      "dom": {
+        "path": "subpackages/legal/agreement/index"
+      }
+    },
+    {
+      "no": "30",
+      "page": "pages/register/index",
+      "operation": "从用户协议页返回注册页（返回）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-30-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-30-after.png",
+      "mechanical": "path=pages/register/index dom={\"path\":\"pages/register/index\",\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on\",\"state\":{\"agreed\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "path": "pages/register/index",
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on",
+        "state": {
+          "agreed": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "31",
+      "page": "pages/register/index",
+      "operation": "点击《隐私政策》链接",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-31-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-31-after.png",
+      "mechanical": "path=subpackages/legal/privacy/index dom={\"path\":\"subpackages/legal/privacy/index\"}",
+      "ok": true,
+      "pathAfter": "subpackages/legal/privacy/index",
+      "dom": {
+        "path": "subpackages/legal/privacy/index"
+      }
+    },
+    {
+      "no": "32",
+      "page": "pages/register/index",
+      "operation": "从隐私政策页返回注册页（返回）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-32-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-32-after.png",
+      "mechanical": "path=pages/register/index dom={\"path\":\"pages/register/index\",\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on\",\"state\":{\"agreed\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "path": "pages/register/index",
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634 agree__chk--on agree__chk--on",
+        "state": {
+          "agreed": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "33",
+      "page": "pages/register/index",
+      "operation": "再次点击协议勾选框（取消勾选）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-33-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-33-after.png",
+      "mechanical": "path=pages/register/index dom={\"agreeClass\":\"agree__chk agree__chk data-v-8ba19634 data-v-8ba19634\",\"state\":{\"agreed\":\"__undef__\"}}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {
+        "agreeClass": "agree__chk agree__chk data-v-8ba19634 data-v-8ba19634",
+        "state": {
+          "agreed": "__undef__"
+        }
+      }
+    },
+    {
+      "no": "34",
+      "page": "pages/register/index",
+      "operation": "点击底部「去登录」链接",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-34-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-34-after.png",
+      "mechanical": "path=pages/login/index dom={\"path\":\"pages/login/index\"}",
+      "ok": true,
+      "pathAfter": "pages/login/index",
+      "dom": {
+        "path": "pages/login/index"
+      }
+    },
+    {
+      "no": "35",
+      "page": "pages/register/index",
+      "operation": "点击左上角返回按钮（单页栈 reLaunch 回登录）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-35-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-35-after.png",
+      "mechanical": "path=pages/login/index dom={\"path\":\"pages/login/index\"}",
+      "ok": true,
+      "pathAfter": "pages/login/index",
+      "dom": {
+        "path": "pages/login/index"
+      }
+    },
+    {
+      "no": "36",
+      "page": "pages/register/index",
+      "operation": "重复进出注册页 ×3（navigateTo/navigateBack 循环）",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-36-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-36-after.png",
+      "mechanical": "paths=[\"pages/register/index\",\"pages/login/index\",\"pages/register/index\",\"pages/login/index\",\"pages/register/index\",\"pages/login/index\"]",
+      "ok": true
+    },
+    {
+      "no": "37",
+      "page": "pages/register/index",
+      "operation": "滚动到页面底部",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-37-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-37-after.png",
+      "mechanical": "path=pages/register/index dom={}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {}
+    },
+    {
+      "no": "38",
+      "page": "pages/register/index",
+      "operation": "滚动回页面顶部",
+      "before": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-38-before.png",
+      "after": "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-38-after.png",
+      "mechanical": "path=pages/register/index dom={}",
+      "ok": true,
+      "pathAfter": "pages/register/index",
+      "dom": {}
+    }
+  ],
+  "consoleErrorLike": [
+    "2026-09-19T23:31:13.218Z [error] [captureException] [object Object] [object Object]",
+    "2026-09-19T23:31:13.218Z [error] [captureException] [object Object] [object Object]"
+  ]
+}

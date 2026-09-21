@@ -260,10 +260,14 @@ function logout() {
   });
 }
 
-/** 返回上一页 */
+/** 返回上一页（MP-R1-SETTINGS-002：深链直达栈=1 时 navigateBack 无反应，兜底回「我的」Tab） */
 function goBack() {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 
 /**
@@ -337,7 +341,9 @@ const socialMenus = computed<MenuItem[]>(() => {
     });
   }
   items.push(
-    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index", tabQuery: { tab: "mine" } as Record<string, string> | undefined },
+    // MP-R1-SETTINGS-001：village/index 非 tabBar 页，switchTab 跳转静默失败（死链）。
+    // 改为 navigateTo 携带 ?tab=mine（与村口「我的」分区入口一致）。
+    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index?tab=mine" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.CLOCK, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
     { icon: IMAGE_PATHS.ICONS_PROFILE.ALBUM, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },

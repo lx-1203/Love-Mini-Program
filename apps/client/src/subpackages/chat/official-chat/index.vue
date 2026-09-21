@@ -18,6 +18,7 @@ import { request } from "../../../services/http";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { IMAGE_PATHS } from "../../../config/images";
 import { openAppPath } from "../../../utils/navigation";
+import { ROUTES } from "../../../constants/routes";
 import EmojiText from "../../../components/common/EmojiText.vue";
 // P8-2.3：报名成功后消费本地 mock 会话存储中的「报名成功」助手活动消息
 import { consumeAssistantActivityNotifies } from "../../../utils/assistant-notify";
@@ -153,13 +154,29 @@ const onActionBtnTap = (label: string) => {
 
 /* -------- 滚动到底部 -------- */
 const scrollContainerId = "chat-scroll-" + Date.now();
+/** 底部锚点 id（2026-09-20 滚底修复：与私聊页 chat-session 同款锚定方案） */
+const BOTTOM_ANCHOR_ID = "official-chat-bottom-anchor";
+/** scroll-into-view 目标（滚底锚定用；与 scroll-top 互斥） */
+const scrollIntoViewId = ref("");
 /** 2026-09-06 滚动修复：scroll-view 必须用其自身 scroll-top 属性定位，
  * 此前用 uni.pageScrollTo 滚的是页面而非 scroll-view，发送后视窗不动，
  * 用户感知为「消息发不出去」；交替赋值强制触发属性变更 */
 const scrollTopValue = ref(0);
+/**
+ * 2026-09-20 修复（MP-R1-OFFICIALCHAT-001）：原实现交替赋值 99999/100000 大数
+ * scroll-top——首次滚动后内容继续增高（如发送 300 字长消息）时，目标值不再产生
+ * 有效滚动，最后一条消息被输入栏截断甚至视窗完全不动。
+ * 改为 scroll-into-view 锚定底部锚点（先清空 scroll-top 与旧锚点，下一帧再赋值，
+ * 与私聊页 chat-session 的 scrollToBottom 同款），发送 / mock 回复 / real 加载
+ * 三条路径统一经此函数滚底。
+ */
 const scrollToBottom = () => {
   nextTick(() => {
-    scrollTopValue.value = scrollTopValue.value >= 99999 ? 100000 : 99999;
+    scrollTopValue.value = 0;
+    scrollIntoViewId.value = "";
+    setTimeout(() => {
+      scrollIntoViewId.value = BOTTOM_ANCHOR_ID;
+    }, 0);
   });
 };
 
@@ -266,8 +283,20 @@ function buildActivityDetailUrl(msg: ChatMessageView): string {
   return "/subpackages/discover/activities/index";
 }
 
+/**
+ * 返回上一页（自定义导航栏返回键）。
+ * 2026-09-20 修复（MP-R1-OFFICIALCHAT-003）：页面栈仅剩本页（直达/分享进入）时
+ * navigateBack 必然失败且产生未处理 rejection（触发全局错误上报）。现按栈深判断：
+ * 有上一页时 navigateBack，无上一页时 switchTab 回消息 tab（本页从消息页助手卡
+ * 进入的合理回退入口，对齐 album.vue 等页面的兜底模式）。
+ */
 function goBack() {
-  uni.navigateBack();
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: ROUTES.TAB.CHAT });
+  }
 }
 
 function shouldShowTime(idx: number): boolean {
@@ -368,6 +397,7 @@ onLoad((query) => {
           class="chat-scroll"
           scroll-y
           :scroll-top="scrollTopValue"
+          :scroll-into-view="scrollIntoViewId"
           scroll-with-animation
         >
           <view class="chat-list">
@@ -448,7 +478,8 @@ onLoad((query) => {
               </view>
             </template>
           </view>
-          <view style="height: 20rpx" />
+          <!-- 底部锚点：发送 / mock 回复 / real 加载后滚底至此（2026-09-20 滚底修复） -->
+          <view :id="BOTTOM_ANCHOR_ID" style="height: 20rpx" />
         </scroll-view>
       </view>
 

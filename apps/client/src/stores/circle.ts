@@ -339,7 +339,14 @@ export const useCircleStore = defineStore("circle", {
         }
 
         if (useMock()) {
-          const circle = this.circles.find((c) => c.id === circleId);
+          // MP-R1-HOME-016（2026-09-20）：首页等入口传数字 ID（1=摄影圈…），
+          // 此前按原始 id 在 circles 中 find 恒不命中 → 加入零反馈。
+          // 先经 resolveMockCircleId 归一为标准圈子 ID（circle-photo 等）再更新；
+          // circles 尚未拉取时回退 mockCircles 种子（fetchCircles 为浅拷贝，同一对象引用，状态不丢）。
+          const resolvedId = resolveMockCircleId(circleId) ?? circleId;
+          const circle =
+            this.circles.find((c) => c.id === resolvedId) ??
+            mockCircles.find((c) => c.id === resolvedId);
           if (circle) {
             circle.isJoined = true;
             circle.memberCount += 1;

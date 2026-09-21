@@ -37,6 +37,8 @@ import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// MP-R1-FEEDBACK-001：提交记录时间本地化格式化（复用项目统一时间工具，替代原始 ISO 串）
+import { formatDateTime, getCurrentLocale } from "../../../utils/time";
 
 const { t } = useI18n();
 
@@ -400,6 +402,18 @@ function goDetail(id: number): void {
   });
   // #endif
 }
+
+/**
+ * MP-R1-FEEDBACK-001：提交记录时间本地化展示（原直接渲染原始 ISO 字符串）。
+ * 复用 utils/time 的 formatDateTime（'full' 预设：YYYY-MM-DD HH:mm），
+ * 解析失败时由工具统一兜底返回 '-'。
+ *
+ * @param iso - ISO 时间字符串
+ * @returns 本地化时间文本
+ */
+function formatSubmissionTime(iso: string): string {
+  return formatDateTime(iso, "full", getCurrentLocale());
+}
 </script>
 
 <template>
@@ -563,7 +577,7 @@ function goDetail(id: number): void {
           />
         </view>
         <text class="submission__summary">{{ item.latestReplySummary }}</text>
-        <text class="submission__time">{{ item.submittedAt }}</text>
+        <text class="submission__time">{{ formatSubmissionTime(item.submittedAt) }}</text>
       </view>
     </SectionCard>
   </AppShell>

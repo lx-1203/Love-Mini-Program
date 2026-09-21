@@ -1,0 +1,994 @@
+{
+  "checks": [
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "页面加载（reLaunch 直进，资料完整身份）",
+      "expected": "reLaunch 直进后显示完整社区：5 个频道Tab（今日广场激活）、搜索框、置顶折叠条、帖子卡片流、底部发帖输入条；资料完整不出现 LockScreen",
+      "actual": "lockScreen=false；post-card 19 张；搜索框/发帖条在位；01-after 截图显示完整 feed（小鹿 520 帖、置顶1条、128 赞/42 藏）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "点击顶部搜索框 → 帖子搜索页",
+      "expected": "点击搜索框跳转独立帖子搜索页 /subpackages/tools/search/index",
+      "actual": "obs path=subpackages/tools/search/index，栈内跳转正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "频道Tab切换「兴趣圈」→ 宫格+话题",
+      "expected": "切「兴趣圈」Tab：Tab 高亮切换，显示 8 项兴趣宫格 + 热门话题区，发帖条占位变为兴趣圈文案",
+      "actual": "activeTabText=兴趣圈；gridItems=8；composerPlaceholder=在兴趣圈发帖...；hotTopics 区块在；topic 条目 32",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "兴趣宫格第1项「学习」→ circles?category=study",
+      "expected": "点宫格第1项「学习」跳 /subpackages/circles/circles/index?category=study",
+      "actual": "obs path=subpackages/circles/circles/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "兴趣频道：热门话题主位点击 → 标签聚合页（HotTopicsSection goTagPosts）",
+      "expected": "点热门话题主位：按 HotTopicsSection goTagPosts 语义跳标签聚合页（携带话题 tagName）",
+      "actual": "obs path=subpackages/village/village/tag-posts；05-after 截图显示 #女生请回答 聚合页空态",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "学校圈频道（已认证）→ 无认证门+每日一问+附近的人",
+      "expected": "已认证身份进学校圈：不出现认证门，显示每日一问入口 + 附近的人 banner + 校园帖流",
+      "actual": "gate=false；dailyEntry=true；discoverBanner=true；post-card 8 张",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "点击「附近的人」banner → discover",
+      "expected": "点「附近的人」banner 跳寻觅 discover Tab",
+      "actual": "obs path=pages/discover/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "活动频道 → 活动卡片列表",
+      "expected": "活动频道显示活动卡片列表（mock 5 场活动）",
+      "actual": "cards=5，title=图书馆南门咖啡散步；08-after 补拍在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "活动卡片「报名」→ toast + 按钮态翻转（trigger 命中 enroll）",
+      "expected": "点活动卡「报名」：handleEnrollActivity 成功后 toast 提示且按钮翻转已报名态、不跳转",
+      "actual": "enroll--done class=1（翻转生效）；pathAfter 仍在村口；console 0 错误。toast 文案未被截图捕获（瞬态）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "帖子卡片点赞（catchtap）→ 心形实心/计数+1",
+      "expected": "点帖子卡片「点赞」：isLiked 翻转、计数+1、心形实心",
+      "actual": "自动化 element.tap 对 PostCard 内层 catchtap 目标不按真实事件语义派发（冒泡到卡片根 open-detail），store.posts[0] 前后无变化，无法区分派发失真与应用缺陷；详情页同逻辑另见 MP-R1-DETAIL-001",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "帖子卡片收藏（catchtap）→ 书签高亮/计数变化",
+      "expected": "点帖子卡片「收藏」：isFavorite 翻转、书签高亮",
+      "actual": "同上：catchtap 派发失真，无法取证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "帖子卡片作者行（catchtap open-author）→ 他人主页",
+      "expected": "点作者行（catchtap open-author）跳他人主页",
+      "actual": "同上：首轮 tap 冒泡为 open-detail 进了详情页，trigger 亦不触发 catchtap；需真机/手工复核",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "帖子卡片标签 chip（catchtap open-tag）→ tag-posts",
+      "expected": "点标签 chip（catchtap open-tag）跳 tag-posts",
+      "actual": "同上；标签聚合页可达性由 #5/#6 热榜入口另行验证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-13-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "点击帖子卡片正文 → detail（栈入）",
+      "expected": "点卡片正文区进帖子详情（栈入）",
+      "actual": "obs path=subpackages/village/village/detail，stack 2",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-14-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "底部发帖输入条 → village/post",
+      "expected": "点底部发帖输入条进 /subpackages/village/village/post",
+      "actual": "obs path=post，stack 2",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "快速连点发帖输入条 3 次（防抖验证）",
+      "expected": "120ms 间隔连点发帖条 3 次：只入栈一次发帖页，无重复压栈",
+      "actual": "最终 stack=2（村口+post 一层），path=post",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "滚动到底 → 触发加载更多",
+      "expected": "滚动到底触发 scrolltolower→加载更多提示",
+      "actual": "程序化 scrollTo 不稳定触发 scrolltolower（首轮曾显示「— 没有更多了 —」复拍未复现）；需真机复核",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "滚动>600 → 回到顶部按钮出现 → 点击回顶",
+      "expected": "滚动>600 出现回到顶部按钮，点击回顶",
+      "actual": "程序化滚动与 trigger(\"scroll\") 均未使按钮出现；handleScroll 未能被自动化命中；需真机复核",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "下拉刷新（refresherrefresh 事件）",
+      "expected": "下拉刷新（refresherrefresh）后列表正常、无报错",
+      "actual": "刷新后 post-card 19 张，console 0 错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-19-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "频道Tab「热度榜」→ 热度榜数据流",
+      "expected": "切「热度榜」频道加载 hot-board 数据流",
+      "actual": "activeTabText=热度榜；post-card 19 张；console 0 错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "operation": "打开详情后立即返回（快速进出）",
+      "expected": "打开详情后立即返回（快速进出）：正常回村口无崩溃",
+      "actual": "result path=subpackages/village/village/index，无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-21-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "发帖页打开（header 布局/胶囊避让/发布禁用态）",
+      "expected": "发帖页打开：X+发布动态+发布按钮（无内容时禁用灰态）；header 右侧避让胶囊不碰撞（MP-R1-POST-001 回归）；底部工具栏 5 项、附加行 4 项、小贴士在位",
+      "actual": "submitDisabled=true；toolbar=5；rows=4；01-before/01-after 截图显示「发布」按钮与胶囊（•••◎）无碰撞、间距清晰",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "空内容点「发布」→ toast 拦截不跳转",
+      "expected": "空标题空内容点「发布」→ toast 拦截，不跳转",
+      "actual": "path 保持 post 页；02-toast/02-after 补拍在位（toast 截图：reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-02-toast.png）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "输入标题 → 计数 n/20 + 发布按钮激活",
+      "expected": "输入标题「自动化验证标题ABC123」：计数 13/20，发布按钮激活变绿",
+      "actual": "titleCount=13/20；submitDisabled=false；inputValue 与输入一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "输入正文（正常文本）→ 字数计数",
+      "expected": "输入正文正常文本：字数计数实时更新",
+      "actual": "contentCount=31/1000",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "超长正文 1050 字（maxlength=1000 应截断）",
+      "expected": "超长正文 1050 字：maxlength=1000 应截断",
+      "actual": "automation el.input() 直写值疑似绕过原生 maxlength：contentCount=1050/1000 且红字计数样式出现（overClass=1）；真机原生截断无法在自动化下区分。超限提交拦截由 #25 验证生效",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "特殊字符正文 + 快速连点发布 3 次（防重复提交）",
+      "expected": "特殊字符正文（含 img 标签注入串、引号、emoji）+ 150ms 间隔连点发布 3 次：防重复提交只发一帖，发布成功返回村口",
+      "actual": "最终 path=index、stack=1（单次返回）；#07 重进为全新表单证实提交成功且草稿清除",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "草稿回显（上轮发布后重进应为全新表单）",
+      "expected": "发布成功后重进发帖页：表单为全新（草稿已清除）",
+      "actual": "titleValue 空；0/20；submitDisabled=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "输入草稿标题 → X 关闭 → 保留草稿弹窗（原生 showModal 取证）",
+      "expected": "输入草稿标题后点 X：弹出「保留草稿/清空」原生确认弹窗",
+      "actual": "path 保持 post（弹窗阻塞）；08-after 截图取证弹窗；弹窗按钮为原生 showModal 无法自动化点选",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "重进后草稿恢复验证（若上轮保留）",
+      "expected": "重进发帖页：草稿自动恢复（标题回显）",
+      "actual": "titleValue=草稿保留验证；6/20 —— 草稿经 debounce 自动保存并恢复",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "「发布到」选择器 → 选校园圈（可见范围联动）",
+      "expected": "「发布到」选择器选「校园圈」：卡片名/副标题切换为校园圈，可见范围联动为学校圈",
+      "actual": "targetName=校园圈；targetSub=校园圈 · 所有校园成员可见；visMeta=学校圈",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "话题弹层：热门 chip 点选「校园日常」（弹层保持开启）",
+      "expected": "话题弹层点「#校园日常」：chip 高亮、已选 1/5、弹层保持开启",
+      "actual": "chipsOn=1；subText=已选 1/5；sheetOpen=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "话题弹层：再次点选同 chip → 取消选择",
+      "expected": "再次点同 chip：取消选择",
+      "actual": "chipsOn=0；subText=已选 0/5",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "话题弹层遮罩关闭",
+      "expected": "点弹层遮罩关闭话题弹层",
+      "actual": "closed=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-13-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "自定义话题「自动化话题」+ 添加 → chips 出现且弹层关闭",
+      "expected": "自定义话题「自动化话题」+ 添加：话题 chip 出现且弹层关闭",
+      "actual": "topicChips=1；chipText=#自动化话题；sheetOpen=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-14-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "重复添加同话题 → toast「该话题已添加」（数量不变）",
+      "expected": "重复添加同话题：toast「该话题已添加」，数量不变、弹层不关",
+      "actual": "topicChips 保持 1；sheetOpen=true；15-toast 截图（弹层态）（弹层截图：reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-15-toast.png）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "话题 chip × 删除",
+      "expected": "点话题 chip ×：话题移除",
+      "actual": "chips=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-16-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "位置弹层：chip「校园·图书馆」选择回显",
+      "expected": "位置弹层点「校园·图书馆」：位置回显、弹层关闭",
+      "actual": "locationMeta=校园·图书馆；closed=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-17-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "位置弹层：自定义「城南咖啡馆」+ 使用 → 覆盖",
+      "expected": "自定义位置「城南咖啡馆」+ 使用：覆盖当前的位置",
+      "actual": "locationMeta=城南咖啡馆；sheetOpen=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-18-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "提及好友 → 正文末尾插入 @ + toast",
+      "expected": "点「提及好友」：正文末尾插入 @ 并 toast 提示",
+      "actual": "contentValue 末尾含追加的 @；19-toast 截图在位（toast 截图：reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-19-toast.png）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-19-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "谁可以看弹层（general → 2 选项）：选「学校圈可见」→ meta 更新（修正重测）",
+      "expected": "谁可以看弹层（general 目标 → 2 选项）：选「学校圈可见」→ meta 更新",
+      "actual": "optionCount=2；visMeta=学校圈；sheetClosed=true（修正重测）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-20-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "关闭发帖小贴士",
+      "expected": "点小贴士 ×：小贴士消失",
+      "actual": "tipGone=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-21-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "图片注入（mock chooseImage）→ 预览格与删除按钮",
+      "expected": "mock 注入 chooseImage：图片预览格与删除按钮出现",
+      "actual": "previews=2（1 图+加号格）；removeBtns=1",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-22-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "删除已注入图片",
+      "expected": "点预览删除按钮：图片移除",
+      "actual": "previews=1（仅加号格）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-23-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "X 关闭（有内容）→ 草稿确认弹窗取证",
+      "expected": "有内容时点 X：草稿确认弹窗拦截",
+      "actual": "path 保持 post；弹窗截图取证",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-24-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-24-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "operation": "超限正文（1050字）点发布 → toast 拦截（isOverLimit 守卫）",
+      "expected": "超限正文（1050 字）点发布：isOverLimit 守卫拦截不提交",
+      "actual": "path 保持 post；contentCount=1050/1000；25-after 在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-25-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-25-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "详情页打开（作者行/正文/互动栏/评论区/输入栏）",
+      "expected": "详情页打开：作者行 + 正文/图 + 互动栏（赞/评/转）+ 评论区 + 底部输入栏 + 返回键 + ···菜单；他人帖显示「+ 关注」",
+      "actual": "followBtn=true（+ 关注）；commentItems=2；inputBar/menuDots/backBtn 在位；store currentPost=post-1 author=user-3001",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "···菜单 → ActionSheet(复制)（mock tapIndex=0）",
+      "expected": "点···菜单弹 ActionSheet（复制/举报），选「复制」执行复制",
+      "actual": "mock showActionSheet 返回 tapIndex=0 后流程走通、console 0 错误、无弹层残留（剪贴板实际内容未直接取证）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "长按正文 → ActionSheet(举报) → 举报弹窗开→关",
+      "expected": "长按正文 → ActionSheet 选「举报」→ 举报弹窗打开；点遮罩关闭",
+      "actual": "dialogOpen=true 后 dialogStillOpen=false（开→关闭环）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "点赞 → 实心/计数+1",
+      "expected": "点互动栏「点赞」：心形变实心、计数 128→129",
+      "actual": "单次点击后渲染层（渲染数据键：heart.svg 仍空心、128 不变）与 store（currentPost.isLiked=false、likes=128）双通道均无变化；3 次干净会话复现（含 simulator_refresh 重置 JS 后）；幂等计数补丁证明 handler 每次点击恰触发 1 次但状态不更新；同页评论点赞单次点击即生效（6→7）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-04-after.png",
+      "issueId": "MP-R1-DETAIL-001"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "评论 icon → 聚焦评论输入框",
+      "expected": "点评论 icon：聚焦评论输入框弹起键盘",
+      "actual": "输入框 focus 状态/键盘弹出无法通过自动化取证（:focus 伪类不可查询、键盘不入截图）",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "输入评论 + 发送 → 列表+1/输入清空",
+      "expected": "输入评论 + 发送：toast 评论成功、列表 2→3、输入框清空、帖子评论数 33→34",
+      "actual": "commentItems=3；inputValue 空；store comments=3、postComments=34",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "空评论点发送 → 拦截",
+      "expected": "空评论点发送：拦截（按钮禁用态、列表不变）",
+      "actual": "sendDisabled=1；commentItems 保持 3",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "评论「回复」→ 提示条 + 楼中楼提交",
+      "expected": "点评论「回复」：出现「回复 @昵称」提示条，提交后成为楼中楼回复、提示条关闭、输入框清空",
+      "actual": "replyBar=true 出现；rootReplies=1；提交后 bar 消失、inputValue 空",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "评论点赞 → 爱心高亮/计数+1",
+      "expected": "点评论爱心：高亮实心、计数 6→7",
+      "actual": "heartActive=1；heartCount=7",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "评论排序切换 最热↔最新",
+      "expected": "点排序切换 最热→最新：文案变化且评论顺序重排",
+      "actual": "sortText=最新；首位评论 阿泽→林晓",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "帖子图片点击 → 全屏查看层 → 点击关闭",
+      "expected": "点帖子图片：全屏查看层打开；点遮罩关闭",
+      "actual": "opened=true；viewerClosed=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "相似作者「关注」→ 文案翻转",
+      "expected": "相似作者「+ 关注」：文案翻转为已关注",
+      "actual": "afterText=已关注；store similarAuthors[0].isFollowed=true（user-3004）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "相似作者「私信」→ chat session",
+      "expected": "相似作者「私信」：跳转 /subpackages/chat/chat-session/index",
+      "actual": "obs path=chat-session，stack 3",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-13-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "转发弹窗：输入附言 + 确认 → toast + 关闭",
+      "expected": "转发弹窗输入附言点确认：弹窗关闭（toast 转发成功）",
+      "actual": "modal=true 后 modalClosed=true；sharePost 流程无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-14-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "转发弹窗：再开 → X 关闭",
+      "expected": "转发弹窗再开点 X：关闭",
+      "actual": "modalClosed=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "作者头像 → 他人主页",
+      "expected": "点作者头像跳他人主页",
+      "actual": "obs path=subpackages/profile-extra/profile/other；16-after 补拍在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-16-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "返回键 → 回村口",
+      "expected": "点返回键回村口",
+      "actual": "obs path=index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-17-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "operation": "own-post 回归（MP-R8-OWNPOST-001）：本人新帖详情无「+关注」",
+      "expected": "own-post 回归（MP-R8-OWNPOST-001）：本人帖详情不显示「+关注」",
+      "actual": "被 MP-R1-VILLAGE-001 阻断：mock 发布的新帖不进今日广场 feed，无法以 UI 打开本人帖详情；isOwnPost 判定代码在位（detail.vue:419-425、模板 v-if）但本轮未能运行时复核",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-18-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "打开 ?tagName=摄影（r11-param-map 固定参数）",
+      "expected": "打开 ?tagName=摄影（参数表固定参数）：header 显示 #摄影；无命中时展示诚实空态「暂无帖子/该标签下还没有内容」",
+      "actual": "title=#摄影；cards=0；emptyState=true；文案与 i18n 一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "返回键 → 村口",
+      "expected": "reLaunch 直开（栈=1）点返回键：应回村口/上一页",
+      "actual": "path 保持 tag-posts 无任何反应——goBack 仅 uni.navigateBack() 无栈底兜底（tag-posts.vue:235-237），直开/分享场景返回键失效",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-02-after.png",
+      "issueId": "MP-R1-TAGPOSTS-002"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "经帖子标签链路进入（校园日常：mockTagPosts 命中 2 条）",
+      "expected": "点帖子卡片标签 chip（校园日常，mockTagPosts 命中 2 条）进标签列表",
+      "actual": "同 index#10-13：catchtap 内层目标自动化无法按真实语义派发（tap 冒泡成了 open-detail 进详情）；未能到达 tag-posts 校验列表内容",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-03-before.png",
+      "after": "",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "缺参直开（无 query）→ toast + 自动返回",
+      "expected": "缺参直开：toast 提示后 600ms 自动返回（P1-36）",
+      "actual": "toast 弹出后 switchTab 到 /subpackages/village/village/index——该页非 tabBar 页，switchTab 静默失败（tag-posts.vue:249-253），3.5s 后仍停留 tag-posts 空页，用户被卡",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-04-after.png",
+      "issueId": "MP-R1-TAGPOSTS-002"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "下拉刷新（refresherrefresh）",
+      "expected": "下拉刷新（refresherrefresh）：无报错",
+      "actual": "刷新后仍为空态（0 命中），console 无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "operation": "返回键（栈>1，经热榜进入）→ 回村口",
+      "expected": "返回键（栈>1，经热榜话题进入）：正常回村口",
+      "actual": "entryPath=tag-posts → path=index（修正重测）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "页面加载（返回键/计数条/清空按钮/列表）",
+      "expected": "页面加载：返回键 + 「共 6 条记录」+ 清空按钮 + 6 条记录列表",
+      "actual": "back/toolbar/clearBtn=true；items=6；store=6",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "点击记录卡片 → detail",
+      "expected": "点记录卡片进帖子详情",
+      "actual": "obs path=detail；02-after 补拍在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "点击头像 → 他人主页",
+      "expected": "点头像跳他人主页",
+      "actual": "obs path=profile-extra/profile/other；03-after 补拍在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "清空 → 弹窗 → 取消（列表不变）",
+      "expected": "点「清空」弹确认弹窗，点取消：列表不变、弹窗关闭",
+      "actual": "dialog=true 后 closed；items 保持 6",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "清空 → 确认 → toast + 空态",
+      "expected": "清空确认：toast「已清空」、列表清空、空态出现",
+      "actual": "items=0；store=0；emptyState=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "空态 action「回到村口」→ village index（.empty-action 修正重测）",
+      "expected": "空态 action「回到村口」点击跳村口",
+      "actual": ".empty-action 存在（EmptyState 组件）；点击后 path=subpackages/village/village/index（修正重测）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "operation": "返回键（栈=1）→ 兜底 switchTab 村口",
+      "expected": "返回键（栈=1，reLaunch 直开）：goBack 兜底应回村口",
+      "actual": "uni.switchTab 到 /subpackages/village/village/index——非 tabBar 页，switchTab 失败无后续兜底（history.vue:40-47），path 保持 history，返回键完全失效",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-07-after.png",
+      "issueId": "MP-R1-HISTORY-001"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "页面加载（header/搜索/7 tabs/圈子卡片/统计行）",
+      "expected": "页面加载：header（返回+标题）+ 搜索 + 7 个快捷分类 tab + 14 张圈子卡；统计行与好友行完整可读",
+      "actual": "结构在位（back/search/tabs=7/cards=14，数据层文本完整「1.2w 人 · 486 条动态」）；但 01-after 截图显示 375px 宽度下统计行被省略号截断（「486 条…」「352 …」）、好友行被截（「等 6 位…」「等 10 位…」），完整语义不可读",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-after.png",
+      "issueId": "MP-R1-CIRCLE-005"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "点击搜索 → toast「搜索功能即将上线」",
+      "expected": "点搜索：toast「搜索功能即将上线」",
+      "actual": "点击无跳转已证（path 不变）；toast 为瞬态未被截图捕获，代码存在该 toast 调用（circles/index.vue:260-262）",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "Tab「摄影」→ 过滤仅摄影圈",
+      "expected": "切「摄影」tab：列表过滤仅剩摄影圈",
+      "actual": "visibleCards=1；firstName=摄影",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "Tab「全部」→ 恢复全量",
+      "expected": "切回「全部」：恢复全量 14 圈",
+      "actual": "visibleCards=14",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "Tab「更多」→ 全量",
+      "expected": "切「更多」图标 tab：显示全量",
+      "actual": "visibleCards=14",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "第1圈「加入」→ 按钮变已加入",
+      "expected": "点第1圈「+ 加入」：按钮变「已加入」灰态",
+      "actual": "actionText=已加入；store circle-photo isJoined=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "第1圈「已加入」→ 退出恢复",
+      "expected": "再点「已加入」：退出恢复「+ 加入」",
+      "actual": "actionText=+ 加入；store isJoined=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "快速连点「加入」3 次（状态一致性）",
+      "expected": "250ms 间隔快速连点 3 次：状态随奇数次翻转一致（最终已加入）、无崩溃无报错",
+      "actual": "actionText=已加入；console 0 错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "点击圈子卡片主体 → circle-home",
+      "expected": "点圈子卡片主体进圈子主页",
+      "actual": "obs path=subpackages/circles/circles/circle-home；09-after 补拍在位",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "header 返回键（栈>1）→ navigateBack",
+      "expected": "header 返回键：栈>1 时 navigateBack；栈=1 时兜底回首页 Tab",
+      "actual": "本轮栈=1 场景兜底生效：switchTab home 成功（result path=pages/home/index）——与 history/tag 失败案例对照，此处兜底目标为 tabBar 页故有效",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "滚动到底（列表末端）",
+      "expected": "滚动到底：列表末端「萌宠」圈可达",
+      "actual": "scrolled=true；lastCard=萌宠（修正重测）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "operation": "快速进出圈子主页 ×2（重复进出）",
+      "expected": "快速进出圈子主页 ×2（重复进出）",
+      "actual": "两次尝试均因自动化导航竞态中断（返回后页面栈与预期不符，元素查询失败）；无应用层错误证据，需真机复核",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-12-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-DETAIL-001",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-04-after.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "详情页互动栏「点赞」按钮单次点击后无任何可感知状态变化（心形不变实心、计数 128 不增），3 次干净会话（含 simulator_refresh 重置 JS 上下文后）稳定复现；同页评论点赞单次点击即生效（6→7），对照鲜明。",
+      "evidence": "渲染层与 store 双通道取证：tap 后页面渲染数据键 O（isLiked 绑定）仍空、N（点赞数）仍 128、心形 src 仍 heart.svg 空心；store currentPost.isLiked=false/likes=128（tmp/probe-like9-r13.mjs）。幂等计数补丁（tmp/probe-like8-r13.mjs）显示每次点击 handler 恰触发 1 次但状态不更新。代码：apps/client/src/subpackages/village/village/detail.vue:881-899（@tap=handleLike 绑定在位）、apps/client/src/stores/village/index.ts:527-551（likePost 幂等守卫+mock toggle）、apps/client/src/stores/village/utils.ts:380-396（toggleMockPostLike 应同时变更 posts 与 currentPost）；构建产物 stores/village/index.js 与源码一致。",
+      "ideal": "单击「点赞」：心形立即变实心（HEART_FILLED）、计数 +1，再次点击取消（-1），与同页评论点赞行为一致（点击即时反馈惯例）。",
+      "fix": "clean 会话单步调试 likePost(\"post-1\")：①排查 likingPostIds 幂等守卫是否被异常置位（index.ts:537）；②重点验证 setCurrentPost mock 分支直接引用 mockPosts 元素，若 posts 列表项与 currentPost 为同一对象引用，toggleMockPostLike 会对同一对象 toggle 两次相互抵消（utils.ts:380-396 先 toggle posts.find 命中对象、再 toggle currentPost）——对照 likeComment（工作正常）差异；修复后以 probe-like6 单击复测双通道翻转。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TAGPOSTS-001",
+      "round": "R1",
+      "page": "subpackages/village/village/tag-posts",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-05-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "mock 模式下标签聚合页恒为空：mock 分页起点错位（1 基页码却按 from=page*20 取片），mockTagPosts 共 6 条（<20），任何标签（含命中 2 条的「校园日常」）第一页即取 items[20..40]=空，标签页在 mock 演示环境完全不可用。",
+      "evidence": "代码 apps/client/src/subpackages/village/village/tag-posts.vue:120（currentPageNum=reset?1:...）、:127-131（from=currentPageNum*PAGE_SIZE；pageItems=mockTagPosts.slice(from,to)，6<20 故恒空）。运行时旁证：tagName=摄影 空态（TAG-POSTS-01 截图）、热榜话题 #女生请回答 进入后空态（INDEX-05-after 截图）。",
+      "ideal": "mock 分页语义与后端一致：from=(page-1)*PAGE_SIZE，首屏返回命中标签的全部（不超过 20）帖子；有数据时展示帖子卡片列表而非空态。",
+      "fix": "tag-posts.vue mock 分支改为 const from = (currentPageNum - 1) * PAGE_SIZE；并以 tagName=校园日常（mockTagPosts 命中 2 条）复测列表渲染与点赞/分享按钮。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TAGPOSTS-002",
+      "round": "R1",
+      "page": "subpackages/village/village/tag-posts",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-TAG-POSTS-01-before.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "栈=1（分享卡/深链直开）时：返回键点击无任何反应；缺参直开 toast 后 switchTab 村口静默失败——village/index 非 tabBar 页（app.json tabBar=home/nearby/discover/messages/profile），两处兜底均死路，用户被卡在空页。",
+      "evidence": "运行时：reLaunch 直开后点 .tag-header__back，3.5s 后 path 仍 tag-posts（obs tag#02）；缺参直开 toast 后 path 仍 tag-posts（obs tag#04）。代码：tag-posts.vue:235-237（goBack 仅 navigateBack 无兜底）、:249-253（缺参兜底误用 uni.switchTab 跳非 tabBar 页）。",
+      "ideal": "栈=1 时返回键应兜底 reLaunch 回村口频道页（参照同目录 post.vue:393-401 leave() 的 getCurrentPages().length>1 时 navigateBack、否则 reLaunch 写法）；缺参自动返回同样使用该兜底。",
+      "fix": "goBack 与缺参兜底统一改为「栈>1 navigateBack，否则 reLaunch /subpackages/village/village/index」；补深链直开回归用例。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HISTORY-001",
+      "round": "R1",
+      "page": "subpackages/village/village/history",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-07-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "栈=1（深链/分享直开）时浏览记录页返回键失效：goBack 兜底用 uni.switchTab 跳村口频道页（非 tabBar 页）失败且无后续兜底，点击后停留原页。",
+      "evidence": "运行时：reLaunch 直开 history 后点 .history-back，2.5s 后 path 仍 history（obs history#07）。代码：history.vue:40-47（pages.length>1 时 navigateBack，否则 switchTab 村口）。",
+      "ideal": "栈=1 时返回键应 reLaunch 回村口频道页（switchTab 仅适用于 tabBar 页；village/index 不在 tabBar 列表）。",
+      "fix": "goBack 兜底改 reLaunch /subpackages/village/village/index（与 post.vue leave() 同模式）；与 MP-R1-TAGPOSTS-002 可抽公共 backOrHome 工具函数一次修复两页。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-001",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-18-after.png",
+      "category": "Data",
+      "severity": "P3",
+      "description": "mock 模式发布新帖成功后，新帖不出现在今日广场 feed：返回村口 onShow 触发 fetchPosts 用固定 fixtures（mockPosts）整体重建列表，冲掉 createPost unshift 的新帖；且 mock createPost 不设 auditStatus=pending，R17 的 selfPendingPosts 置顶展示机制不生效。",
+      "evidence": "运行时：发布「本人帖回归验证帖」成功（toast+返回）后回村口，首卡仍为 520诚友帖（author user-3001，obs detail#18）。代码：stores/village/index.ts:226-249（mock fetchPosts 从 mockPosts 重建）、:466-494（mock createPost 未设 auditStatus）、village/index.vue:156-167（displayPosts 仅置顶 auditStatus=pending 的 selfPendingPosts）。",
+      "ideal": "发布成功返回 feed 应能看到自己的新帖（审核中置顶徽标）；mock 链路对齐 real 语义。",
+      "fix": "mock createPost 增加 auditStatus:\"pending\"（进 selfPendingPosts 置顶、审核中徽标可见），或 mock fetchPosts 重建时保留列表中非 fixtures 的新帖。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CIRCLE-005",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "圈子卡片统计行与好友行在 375px 标准宽度、常规数据量下即被省略号截断：统计行「8,932 人 · 352 条动态」显示为「8,932 人 · 352 …」；好友行「等 10 位朋友加入」显示为「等 10 位…」。MP-R1-CIRCLE-004 的半字硬裁已修复（现为干净省略号），但关键信息（动态数/朋友数语义）仍读不全。",
+      "evidence": "截图 SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-after.png（裁切放大 tmp/crop-circle-meta2.png 清晰可见「8,932 人 · 352 …」）；数据层文本完整（obs circles#01 sampleMeta=1.2w 人 · 486 条动态）。代码：circles/index.vue:378（统计行文案）、:392（好友行文案）、:735-745（统计行 flex:1+ellipsis）、:936-945（好友行 ellipsis）。",
+      "ideal": "常规数据下「N 条动态」「等 N 位朋友加入」完整可读；超长时才优雅省略（对齐理想图 8,932 精确千分位展示意图）。",
+      "fix": "压缩封面列宽（200rpx→170rpx）或精简统计行文案、好友行与统计行合并两段式；改后 375px 宽度截图回归。",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-次要13.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/次要13.json",
+  "unverifiable": [
+    "index#10/11/12/13：PostCard 内层 catchtap 目标（点赞/收藏/作者行/标签 chip）——automator 的 element.tap 会冒泡触发卡片根 open-detail、element.trigger 不触发 catchtap 绑定，无法按真实事件语义派发；需真机或手工点击复核（详情页同款 store 动作另见 MP-R1-DETAIL-001）。",
+    "index#17：滚动到底触发 scrolltolower/加载更多提示——程序化 scrollTo 不稳定触发（首轮曾显示「— 没有更多了 —」，复拍未复现），需真机复核。",
+    "index#18：滚动>600 出现回到顶部按钮——程序化滚动与 trigger(\"scroll\") 均未使按钮出现，handleScroll 未能被自动化命中，需真机复核。",
+    "post#05：maxlength=1000 截断——automation el.input() 直写值疑似绕过原生 maxlength（页面实际持有 1050 字、计数 1050/1000 红字），真机原生截断无法在自动化下区分；超限提交拦截（post#25）已验证生效。",
+    "post#08（部分）：草稿弹窗「保留/清空」二选一——uni.showModal 原生弹窗无法被 automator 点击；弹窗弹出已截图（POST-08-after），草稿自动保存+恢复由 post#09 证实。",
+    "detail#05：评论 icon 聚焦弹起键盘——focus 状态/键盘弹出无法自动化取证。",
+    "detail#18：own-post 回归（MP-R8-OWNPOST-001 本人帖不显示加关注）——被 MP-R1-VILLAGE-001 阻断（mock 新帖不进 feed，无法以 UI 打开本人帖详情）；isOwnPost 代码在位（detail.vue:419-425 + 模板 v-if）但未能运行时复核。",
+    "detail#02（部分）：「复制」已执行、流程无报错，但剪贴板实际内容未直接取证。",
+    "index#09（部分）：报名 toast 文案未被截图捕获（瞬态）；按钮已报名态翻转+不跳转已证。",
+    "circles#02：搜索 toast「搜索功能即将上线」未捕获截图（点击无跳转已证，代码存在该 toast）。",
+    "tag#03：帖子卡片标签 chip 到标签列表链路（同 catchtap 派发限制）；标签页可达性与返回由热榜入口 tag#5/#6 验证。",
+    "circles#12：快速进出圈子主页 ×2——两次尝试均因自动化导航竞态中断（返回后页面栈与预期不符），无应用层错误证据。",
+    "circles pageState 的 error/empty 区分（R12-IND-CIRCLES-001 后续项）：mock 下无法注入 401/网络错误响应，未验证。",
+    "village/index 学校圈未认证锁定态（Tab 锁标 + SchoolCircleGate 认证门）：本轮使用全配置身份（campusVerified=true），锁定态需未认证身份 B；本轮已验证已认证身份下认证门不出现（index#6）。"
+  ],
+  "notes": "执行环境：miniprogram-automator 到 ws://127.0.0.1:9420（DevTools 自动化端口），构建产物 apps/client/dist/build/mp-weixin（mock 模式，2026-09-20 16:54 构建，晚于全部源码 mtime；关键标记 capsule-right 112px/104px、detail-header__menu-dots、comment-replies__toggle 等均在产物命中）。身份：mock 全配置用户（session.bootstrap 后 user-1001 林晓，profileCompleted/campusVerified=true），村口各频道全解锁。共 89 项操作检查（index 21 / post 25 / detail 18 / tag 6 / history 7 / circles 12，含 5 项修正重测），前后截图约 240 张（缺口经 4 轮补拍后全部补齐，含 POST-03-after）。89 项检查中 72 项符合、5 项偏差（verdict 口径）；共出具 6 个 issue（P1×1、P2×3、P3×2，其中 MP-R1-VILLAGE-001 由 obs 证据直接支撑，对应检查项 detail#18 因被阻断记无法验证），14 项无法验证均已写明原因。主脚本 tmp/interact-R1-次要13.mjs，修正与补拍 tmp/interact-R1-次要13-fix 及 fix2/3/4.mjs，辅助探针 tmp/probe-like6/8/9-r13.mjs（详情页点赞双通道取证）。已知自动化局限：一、PostCard 内层 catchtap 目标无法按真实事件语义派发；二、原生 showModal/showActionSheet 无法点选（详情页 ActionSheet 以 mockWxMethod 注入返回值验证流程）；三、程序化滚动对 scroll-view 回调触发不稳定；四、瞬态 toast 截图偶发错过。过程说明：调试期间曾向运行中的 village store 注入 likePost 包装探针，已通过 wechatide simulator_refresh 重置 JS 上下文清除，全部结论性截图与数据取自重置后的干净会话。回归核对：MP-R1-POST-001 胶囊避让 PASS（POST-01 截图）、MP-R1-VILLAGE-002 搜索框避让 PASS（INDEX-01/02 截图）、MP-R1-CIRCLE-004 半字硬裁已消但截断仍在（新 issue MP-R1-CIRCLE-005）、MP-R8-OWNPOST-001 因 MP-R1-VILLAGE-001 阻断未能复核、R12-IND-CIRCLES-001 error/empty 区分无法在 mock 注入错误未验证。"
+}

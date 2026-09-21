@@ -1,0 +1,1243 @@
+{
+  "generatedAt": "2026-09-19T17:28:57.090Z",
+  "smoke": false,
+  "shots": [
+    {
+      "identity": "A",
+      "route": "pages/discover/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_DISCOVER_INDEX-默认.png",
+      "bytes": 220871,
+      "name": "寻觅（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/home/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/A/PAGES_HOME_INDEX-滚动后.png",
+      "bytes": 115841,
+      "name": "首页（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/home/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_HOME_INDEX-默认.png",
+      "bytes": 158478,
+      "name": "首页（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/login/index",
+      "state": "交互后",
+      "file": "reports/screenshots/round-1/A/PAGES_LOGIN_INDEX-交互后.png",
+      "bytes": 105428,
+      "name": "登录页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/login/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_LOGIN_INDEX-默认.png",
+      "bytes": 166791,
+      "name": "登录页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/messages/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_MESSAGES_INDEX-默认.png",
+      "bytes": 111848,
+      "name": "消息（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/nearby/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/A/PAGES_NEARBY_INDEX-滚动后.png",
+      "bytes": 201816,
+      "name": "附近（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/nearby/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_NEARBY_INDEX-默认.png",
+      "bytes": 129262,
+      "name": "附近（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/profile/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/A/PAGES_PROFILE_INDEX-滚动后.png",
+      "bytes": 95964,
+      "name": "我的（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/profile/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_PROFILE_INDEX-默认.png",
+      "bytes": 123357,
+      "name": "我的（tabBar）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/register/success",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/PAGES_REGISTER_SUCCESS-默认.png",
+      "bytes": 76375,
+      "name": "注册成功页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/campus/campus/certification",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_CERTIFICATION-默认.png",
+      "bytes": 78688,
+      "name": "校园认证"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/campus/campus/hub",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_HUB-滚动后.png",
+      "bytes": 221727,
+      "name": "校园圈 hub"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_HUB-默认.png",
+      "bytes": 174667,
+      "name": "校园圈 hub"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/campus/campus/post-topic",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_POST-TOPIC-默认.png",
+      "bytes": 68451,
+      "name": "校圈发帖"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/campus/campus/topic-detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_TOPIC-DETAIL-默认.png",
+      "bytes": 39604,
+      "name": "校圈话题详情"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "bytes": 43047,
+      "name": "聊天会话页（聊天主链路）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/chat/official-chat/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_OFFICIAL-CHAT_INDEX-默认.png",
+      "bytes": 143522,
+      "name": "官方号会话页（寻觅助手）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/circles/circles/circle-home",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_CIRCLE-HOME-默认.png",
+      "bytes": 194651,
+      "name": "圈子主页"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/circles/circles/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_INDEX-默认.png",
+      "bytes": 174784,
+      "name": "兴趣圈列表"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/circles/circles/post-topic",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_POST-TOPIC-默认.png",
+      "bytes": 66339,
+      "name": "圈内发话题"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/circles/circles/topic-detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_TOPIC-DETAIL-默认.png",
+      "bytes": 40143,
+      "name": "话题详情"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/circles/circles/topics",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_TOPICS-默认.png",
+      "bytes": 54691,
+      "name": "圈内话题列表"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/discover/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_HISTORY-默认.png",
+      "bytes": 39703,
+      "name": "寻觅历史"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/discover/match-success",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_MATCH-SUCCESS-默认.png",
+      "bytes": 129188,
+      "name": "匹配成功（寻觅主链路）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/home/segment",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_HOME_SEGMENT-默认.png",
+      "bytes": 92511,
+      "name": "首页分区页"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/likes-visitors/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_LIKES-VISITORS_INDEX-默认.png",
+      "bytes": 121457,
+      "name": "喜欢我的/我的访客"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/likes/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_LIKES_INDEX-默认.png",
+      "bytes": 135129,
+      "name": "喜欢页（互相喜欢列表）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover-extra/nearby/people",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_NEARBY_PEOPLE-默认.png",
+      "bytes": 70692,
+      "name": "附近的人列表"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover/activities/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER_ACTIVITIES_INDEX-默认.png",
+      "bytes": 101071,
+      "name": "活动列表"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/discover/discussions/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER_DISCUSSIONS_INDEX-默认.png",
+      "bytes": 81981,
+      "name": "讨论圈列表"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/legal/agreement/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_LEGAL_AGREEMENT_INDEX-默认.png",
+      "bytes": 183430,
+      "name": "用户协议"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/legal/privacy/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_LEGAL_PRIVACY_INDEX-默认.png",
+      "bytes": 199901,
+      "name": "隐私政策"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/market/detail/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_DETAIL_INDEX-默认.png",
+      "bytes": 23150,
+      "name": "商品详情"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/market/shop/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_SHOP_INDEX-默认.png",
+      "bytes": 29339,
+      "name": "商城"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/market/wallet/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_WALLET_INDEX-默认.png",
+      "bytes": 29927,
+      "name": "钱包"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/feedback/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_FEEDBACK_HISTORY-默认.png",
+      "bytes": 66342,
+      "name": "反馈历史"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/album",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_ALBUM-默认.png",
+      "bytes": 138480,
+      "name": "我的相册"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/favorites",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_FAVORITES-默认.png",
+      "bytes": 82020,
+      "name": "我的收藏"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/location",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_LOCATION-默认.png",
+      "bytes": 110350,
+      "name": "位置设置"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/other",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_OTHER-默认.png",
+      "bytes": 281735,
+      "name": "他人主页"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/privacy",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_PRIVACY-默认.png",
+      "bytes": 40802,
+      "name": "隐私设置"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/tasks",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_TASKS-默认.png",
+      "bytes": 79102,
+      "name": "任务中心"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/profile/visitors",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_VISITORS-默认.png",
+      "bytes": 123590,
+      "name": "主页访客"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/settings/dnd",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_DND-默认.png",
+      "bytes": 75249,
+      "name": "勿扰模式"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/settings/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_INDEX-默认.png",
+      "bytes": 63930,
+      "name": "设置"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/verification/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_INDEX-默认.png",
+      "bytes": 87608,
+      "name": "认证中心"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/profile-extra/verification/real-name",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_REAL-NAME-默认.png",
+      "bytes": 85953,
+      "name": "实名认证"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/setup/campus/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_CAMPUS_INDEX-默认.png",
+      "bytes": 78718,
+      "name": "学校设置"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/setup/interest/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_INTEREST_INDEX-默认.png",
+      "bytes": 101154,
+      "name": "兴趣选择"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/setup/profile/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_PROFILE_INDEX-默认.png",
+      "bytes": 191504,
+      "name": "资料完善"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/setup/recommend-pref/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_RECOMMEND-PREF_INDEX-默认.png",
+      "bytes": 81812,
+      "name": "推荐偏好"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/setup/schedule/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_SCHEDULE_INDEX-默认.png",
+      "bytes": 51990,
+      "name": "作息设置"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/support/feedback/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_SUPPORT_FEEDBACK_INDEX-默认.png",
+      "bytes": 63475,
+      "name": "意见反馈"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/activities/detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_ACTIVITIES_DETAIL-默认.png",
+      "bytes": 213068,
+      "name": "活动详情"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/daily-question/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_DAILY-QUESTION_INDEX-默认.png",
+      "bytes": 42684,
+      "name": "每日一问"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/heart-signals/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_HEART-SIGNALS_INDEX-默认.png",
+      "bytes": 94514,
+      "name": "心动信号"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/help/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_HELP_INDEX-默认.png",
+      "bytes": 95528,
+      "name": "帮助中心"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/love-center/consulting",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_CONSULTING-默认.png",
+      "bytes": 29612,
+      "name": "恋爱咨询"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/love-center/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_INDEX-默认.png",
+      "bytes": 30184,
+      "name": "恋爱中心"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/love-center/mbti",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_MBTI-默认.png",
+      "bytes": 113405,
+      "name": "MBTI 性格"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/love-center/nearby",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_NEARBY-默认.png",
+      "bytes": 214374,
+      "name": "恋爱中心·附近缘分"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/search/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_SEARCH_INDEX-默认.png",
+      "bytes": 33161,
+      "name": "搜索"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/tools/security/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_SECURITY_INDEX-默认.png",
+      "bytes": 79072,
+      "name": "安全中心"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_DETAIL-默认.png",
+      "bytes": 177140,
+      "name": "帖子详情页"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_HISTORY-默认.png",
+      "bytes": 164538,
+      "name": "浏览记录页"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_INDEX-默认.png",
+      "bytes": 160763,
+      "name": "村口社区主页（频道Tab）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/post",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_POST-默认.png",
+      "bytes": 68291,
+      "name": "发帖页（旧，保留兼容）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/publish",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "bytes": 60043,
+      "name": "统一发布动态页（发布主入口）"
+    },
+    {
+      "identity": "A",
+      "route": "subpackages/village/village/tag-posts",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_TAG-POSTS-默认.png",
+      "bytes": 29178,
+      "name": "标签帖子列表页"
+    },
+    {
+      "identity": "B",
+      "route": "pages/discover/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/PAGES_DISCOVER_INDEX-默认.png",
+      "bytes": 220876,
+      "name": "寻觅（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/home/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/B/PAGES_HOME_INDEX-滚动后.png",
+      "bytes": 115878,
+      "name": "首页（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/home/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/PAGES_HOME_INDEX-默认.png",
+      "bytes": 158446,
+      "name": "首页（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/messages/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/PAGES_MESSAGES_INDEX-默认.png",
+      "bytes": 111829,
+      "name": "消息（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/nearby/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/B/PAGES_NEARBY_INDEX-滚动后.png",
+      "bytes": 201782,
+      "name": "附近（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/nearby/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/PAGES_NEARBY_INDEX-默认.png",
+      "bytes": 129249,
+      "name": "附近（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/profile/index",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/B/PAGES_PROFILE_INDEX-滚动后.png",
+      "bytes": 95919,
+      "name": "我的（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/profile/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/PAGES_PROFILE_INDEX-默认.png",
+      "bytes": 123359,
+      "name": "我的（tabBar）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/campus/campus/certification",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_CERTIFICATION-默认.png",
+      "bytes": 78514,
+      "name": "校园认证"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/campus/campus/hub",
+      "state": "滚动后",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_HUB-滚动后.png",
+      "bytes": 221738,
+      "name": "校园圈 hub"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_HUB-默认.png",
+      "bytes": 174614,
+      "name": "校园圈 hub"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/campus/campus/post-topic",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_POST-TOPIC-默认.png",
+      "bytes": 68324,
+      "name": "校圈发帖"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/campus/campus/topic-detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_TOPIC-DETAIL-默认.png",
+      "bytes": 39492,
+      "name": "校圈话题详情"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/circles/circles/circle-home",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_CIRCLE-HOME-默认.png",
+      "bytes": 194651,
+      "name": "圈子主页"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/circles/circles/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_INDEX-默认.png",
+      "bytes": 174723,
+      "name": "兴趣圈列表"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/circles/circles/post-topic",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_POST-TOPIC-默认.png",
+      "bytes": 66262,
+      "name": "圈内发话题"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/circles/circles/topic-detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_TOPIC-DETAIL-默认.png",
+      "bytes": 40007,
+      "name": "话题详情"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/circles/circles/topics",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_TOPICS-默认.png",
+      "bytes": 54632,
+      "name": "圈内话题列表"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/discover/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_HISTORY-默认.png",
+      "bytes": 39534,
+      "name": "寻觅历史"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/discover/match-success",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_MATCH-SUCCESS-默认.png",
+      "bytes": 126629,
+      "name": "匹配成功（寻觅主链路）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/home/segment",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_HOME_SEGMENT-默认.png",
+      "bytes": 92383,
+      "name": "首页分区页"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/likes-visitors/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_LIKES-VISITORS_INDEX-默认.png",
+      "bytes": 121257,
+      "name": "喜欢我的/我的访客"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/likes/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_LIKES_INDEX-默认.png",
+      "bytes": 134951,
+      "name": "喜欢页（互相喜欢列表）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover-extra/nearby/people",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_NEARBY_PEOPLE-默认.png",
+      "bytes": 70575,
+      "name": "附近的人列表"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover/discussions/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER_DISCUSSIONS_INDEX-默认.png",
+      "bytes": 81852,
+      "name": "讨论圈列表"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/legal/agreement/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_LEGAL_AGREEMENT_INDEX-默认.png",
+      "bytes": 183256,
+      "name": "用户协议"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/legal/privacy/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_LEGAL_PRIVACY_INDEX-默认.png",
+      "bytes": 199736,
+      "name": "隐私政策"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/market/detail/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_MARKET_DETAIL_INDEX-默认.png",
+      "bytes": 23189,
+      "name": "商品详情"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/feedback/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_FEEDBACK_HISTORY-默认.png",
+      "bytes": 66100,
+      "name": "反馈历史"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/album",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_ALBUM-默认.png",
+      "bytes": 138347,
+      "name": "我的相册"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/favorites",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_FAVORITES-默认.png",
+      "bytes": 81801,
+      "name": "我的收藏"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/location",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_LOCATION-默认.png",
+      "bytes": 110096,
+      "name": "位置设置"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/other",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_OTHER-默认.png",
+      "bytes": 281661,
+      "name": "他人主页"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/privacy",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_PRIVACY-默认.png",
+      "bytes": 40749,
+      "name": "隐私设置"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/tasks",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_TASKS-默认.png",
+      "bytes": 78960,
+      "name": "任务中心"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/profile/visitors",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_VISITORS-默认.png",
+      "bytes": 123376,
+      "name": "主页访客"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/settings/dnd",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_DND-默认.png",
+      "bytes": 75169,
+      "name": "勿扰模式"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/settings/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_INDEX-默认.png",
+      "bytes": 63809,
+      "name": "设置"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/verification/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_INDEX-默认.png",
+      "bytes": 87523,
+      "name": "认证中心"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/profile-extra/verification/real-name",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_REAL-NAME-默认.png",
+      "bytes": 85774,
+      "name": "实名认证"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/setup/interest/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_INTEREST_INDEX-默认.png",
+      "bytes": 100918,
+      "name": "兴趣选择"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/setup/profile/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_PROFILE_INDEX-默认.png",
+      "bytes": 191444,
+      "name": "资料完善"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/setup/recommend-pref/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_RECOMMEND-PREF_INDEX-默认.png",
+      "bytes": 81332,
+      "name": "推荐偏好"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/setup/schedule/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_SCHEDULE_INDEX-默认.png",
+      "bytes": 51782,
+      "name": "作息设置"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/support/feedback/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_SUPPORT_FEEDBACK_INDEX-默认.png",
+      "bytes": 63368,
+      "name": "意见反馈"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/activities/detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_ACTIVITIES_DETAIL-默认.png",
+      "bytes": 212881,
+      "name": "活动详情"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/daily-question/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_DAILY-QUESTION_INDEX-默认.png",
+      "bytes": 42548,
+      "name": "每日一问"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/heart-signals/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_HEART-SIGNALS_INDEX-默认.png",
+      "bytes": 96697,
+      "name": "心动信号"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/help/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_HELP_INDEX-默认.png",
+      "bytes": 95399,
+      "name": "帮助中心"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/love-center/consulting",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_CONSULTING-默认.png",
+      "bytes": 29498,
+      "name": "恋爱咨询"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/love-center/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_INDEX-默认.png",
+      "bytes": 30126,
+      "name": "恋爱中心"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/love-center/mbti",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_MBTI-默认.png",
+      "bytes": 113253,
+      "name": "MBTI 性格"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/love-center/nearby",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_NEARBY-默认.png",
+      "bytes": 214130,
+      "name": "恋爱中心·附近缘分"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/search/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_SEARCH_INDEX-默认.png",
+      "bytes": 33160,
+      "name": "搜索"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/tools/security/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_SECURITY_INDEX-默认.png",
+      "bytes": 78914,
+      "name": "安全中心"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/detail",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_DETAIL-默认.png",
+      "bytes": 177068,
+      "name": "帖子详情页"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/history",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_HISTORY-默认.png",
+      "bytes": 164517,
+      "name": "浏览记录页"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/index",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_INDEX-默认.png",
+      "bytes": 160697,
+      "name": "村口社区主页（频道Tab）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/post",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_POST-默认.png",
+      "bytes": 68250,
+      "name": "发帖页（旧，保留兼容）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/publish",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "bytes": 59887,
+      "name": "统一发布动态页（发布主入口）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/village/village/tag-posts",
+      "state": "默认",
+      "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_TAG-POSTS-默认.png",
+      "bytes": 29260,
+      "name": "标签帖子列表页"
+    },
+    {
+      "identity": "A",
+      "route": "pages/register/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\A\\PAGES_REGISTER_INDEX-默认.png",
+      "bytes": 118649,
+      "name": "注册页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "A",
+      "route": "pages/register/index",
+      "state": "交互后",
+      "file": "reports\\screenshots\\round-1\\A\\PAGES_REGISTER_INDEX-交互后.png",
+      "bytes": 118649,
+      "name": "注册页",
+      "interaction": ".card",
+      "modalMocked": true
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "bytes": 42985,
+      "name": "聊天会话页（聊天主链路）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/chat/official-chat/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_CHAT_OFFICIAL-CHAT_INDEX-默认.png",
+      "bytes": 143362,
+      "name": "官方号会话页（寻觅助手）"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/setup/campus/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_SETUP_CAMPUS_INDEX-默认.png",
+      "bytes": 78544,
+      "name": "学校设置"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/discover/activities/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_DISCOVER_ACTIVITIES_INDEX-默认.png",
+      "bytes": 101070,
+      "name": "活动列表"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/market/shop/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_MARKET_SHOP_INDEX-默认.png",
+      "bytes": 29229,
+      "name": "商城"
+    },
+    {
+      "identity": "B",
+      "route": "subpackages/market/wallet/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_MARKET_WALLET_INDEX-默认.png",
+      "bytes": 29811,
+      "name": "钱包"
+    },
+    {
+      "identity": "B",
+      "route": "pages/login/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\PAGES_LOGIN_INDEX-默认.png",
+      "bytes": 166717,
+      "name": "登录页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/login/index",
+      "state": "交互后",
+      "file": "reports\\screenshots\\round-1\\B\\PAGES_LOGIN_INDEX-交互后.png",
+      "bytes": 105373,
+      "name": "登录页",
+      "interaction": "button",
+      "modalMocked": true
+    },
+    {
+      "identity": "B",
+      "route": "pages/register/index",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\PAGES_REGISTER_INDEX-默认.png",
+      "bytes": 96166,
+      "name": "注册页",
+      "variant": "未登录态（logout 后直连）"
+    },
+    {
+      "identity": "B",
+      "route": "pages/register/index",
+      "state": "交互后",
+      "file": "reports\\screenshots\\round-1\\B\\PAGES_REGISTER_INDEX-交互后.png",
+      "bytes": 96166,
+      "name": "注册页",
+      "interaction": ".card",
+      "modalMocked": true
+    },
+    {
+      "identity": "B",
+      "route": "pages/register/success",
+      "state": "默认",
+      "file": "reports\\screenshots\\round-1\\B\\PAGES_REGISTER_SUCCESS-默认.png",
+      "bytes": 76335,
+      "name": "注册成功页",
+      "variant": "未登录态（logout 后直连）"
+    }
+  ],
+  "failures": [
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/index",
+      "reason": "落在 subpackages/campus/campus/hub 而非目标页"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/discover-extra/discover/matching",
+      "reason": "落在 pages/discover/index 而非目标页"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/setup/dev/index",
+      "reason": "reLaunch 失败: page \"subpackages/setup/dev/index\" is not found"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/setup/showcase/index",
+      "reason": "落在 pages/discover/index 而非目标页"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/vip/index",
+      "reason": "落在 pages/profile/index 而非目标页"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/vip/promo-code",
+      "reason": "落在 pages/profile/index 而非目标页"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/vip/bills",
+      "reason": "落在 pages/profile/index 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/index",
+      "reason": "落在 subpackages/campus/campus/hub 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/discover-extra/discover/matching",
+      "reason": "落在 pages/discover/index 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/setup/dev/index",
+      "reason": "reLaunch 失败: page \"subpackages/setup/dev/index\" is not found"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/setup/showcase/index",
+      "reason": "落在 pages/discover/index 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/vip/index",
+      "reason": "落在 pages/profile/index 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/vip/promo-code",
+      "reason": "落在 pages/profile/index 而非目标页"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/vip/bills",
+      "reason": "落在 pages/profile/index 而非目标页"
+    }
+  ]
+}

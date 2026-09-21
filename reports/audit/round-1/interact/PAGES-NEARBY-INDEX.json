@@ -1,0 +1,480 @@
+{
+  "page": "pages/nearby/index",
+  "pageName": "附近（tabBar）",
+  "round": "R1",
+  "generatedAt": "2026-09-20T11:30:00+08:00",
+  "method": {
+    "connection": "miniprogram-automator via ws://127.0.0.1:9420（方案2，同 tools/screenshot-all.mjs / scripts/automator-probe.cjs）",
+    "node": "D:\\codex-tools\\node-v22.17.0-win-x64\\node.exe",
+    "buildCheck": "产物新鲜度核实：dist/build/mp-weixin/pages/nearby/index.js mtime 2026-09-20 08:49 > 源码 2026-09-18 13:44；apps/client/scripts/verify-build-features.mjs 输出 PASS 4/4（本会话实跑）",
+    "identities": "A=tmp_r11_login.json（登录态，bootstrap 后 mock 会话 userId=user-1001/林晓）；B=tmp_r11_guest.json（新号 100159）；C=未登录（mock 构建 bootstrap 恒注入登录态，未登录 UI 分支改用状态注入验证，见 37b/38b）",
+    "bootstrap": "evaluate: wx.setStorageSync('token', token) + getApp().$vm.$pinia._s.get('session').bootstrap()（R11/R12 已验证做法，本会话 boot loggedIn=true 实测通过）",
+    "environment": "DevTools 模拟器 iPhone 12/13 mini 375x812；共享模拟器存在并行会话干扰（多次 guard 检测到残留页并 reLaunch 恢复）；中途截图通道假死（R12 §5 已知坑），经 wechatide CLI simulator_refresh 恢复后断点续跑"
+  },
+  "checks": [
+    {
+      "page": "pages/nearby/index",
+      "operation": "A01 基线：注入身份A后 reLaunch 进入附近页",
+      "expected": "当前页=pages/nearby/index；登录态；标题/搜索框/5入口/附近的人2条/兴趣圈8卡/校园圈4条/活动3条/动态3卡渲染；无 TypeError/undefined 级 console 错误",
+      "actual": "path=pages/nearby/index；bootA.loggedIn=true；counts: circleMini=8, campus=4, activity=3, postCard=3, entries=5, peopleEntry=2；consoleBad=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A02 搜索框输入正常关键词「篮球」",
+      "expected": "输入框回显「篮球」，placeholder 消失，无报错",
+      "actual": "02-after 截图：搜索框显示「篮球」，placeholder 消失，页面正常（index.vue:291 v-model 绑定生效）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A03 搜索框 confirm（键盘搜索键）提交「篮球」",
+      "expected": "跳转 subpackages/tools/search/index?keyword=篮球（index.vue:198-201 goSearch 带 encodeURIComponent 关键词）",
+      "actual": "afterPath 仍为 pages/nearby/index，query={}。automator el.trigger('confirm') 未能触发原生 bindconfirm；构建产物 pages/nearby/index.wxml 已含 bindconfirm 绑定（grep 实证），goSearch 源码逻辑正确，同页 openAppPath 其余跳转 12/12 成功",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A04 搜索框输入特殊字符+超长文本（177 字符，含 <script>alert(1)</script>/引号/emoji）",
+      "expected": "作为纯文本回显不崩溃、不触发脚本、无 console 报错、不破版",
+      "actual": "04-after 截图：payload 以纯文本显示于输入框（maxlength 截断至 140 内），无脚本执行、无崩溃、consoleBad=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A05 清空搜索框 + 空关键词 confirm",
+      "expected": "清空后 placeholder 恢复；confirm 空串后进入搜索页且不带 keyword（goSearch 对空串走无参 ROUTES.SEARCH）",
+      "actual": "清空回显正常（05-cleared 截图 placeholder「搜索附近内容」恢复）；confirm 部分同 A03：合成事件未触发 bindconfirm，afterPath 停留 nearby",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-05-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-05-cleared.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A06 点击顶部「发动态」按钮 (.nearby-home__publish)",
+      "expected": "navigateTo subpackages/village/village/post（index.vue:248-250 goToPublishPost）",
+      "actual": "afterPath=subpackages/village/village/post，栈深 1→2。首次点击 2.5s 内未达（分包首载+共享模拟器干扰），重试后到达并成功",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A07 快速连续点击「发动态」×3（间隔约 150ms）",
+      "expected": "不崩溃，页面栈仅入一层发帖页（栈深≤2），可正常返回",
+      "actual": "afterPath=subpackages/village/village/post，stackLen=2（连点未叠层），无崩溃",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A08 点击功能入口①「附近的人」 (.nearby-entry[0])",
+      "expected": "跳转 subpackages/discover-extra/nearby/people?scope=nearby（index.vue:204-206）",
+      "actual": "afterPath=subpackages/discover-extra/nearby/people，query={scope:'nearby'}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A09 点击功能入口②「热门兴趣圈」 (.nearby-entry[1])",
+      "expected": "跳转 subpackages/circles/circles/index（index.vue:212-214）",
+      "actual": "afterPath=subpackages/circles/circles/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A10 点击功能入口③「校园圈」 (.nearby-entry[2])",
+      "expected": "跳转 subpackages/campus/campus/hub 无参（index.vue:217-219）",
+      "actual": "afterPath=subpackages/campus/campus/hub，query={}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A11 点击功能入口④「附近活动」 (.nearby-entry[3])",
+      "expected": "跳转 subpackages/discover/activities/index（SUBPACKAGE_ROUTES.DISCOVER_FEED.ACTIVITIES）",
+      "actual": "afterPath=subpackages/discover/activities/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A12 点击功能入口⑤「我的人脉」 (.nearby-entry[4])",
+      "expected": "跳转 subpackages/village/village/index（index.vue:253-255 goAllPosts）",
+      "actual": "afterPath=subpackages/village/village/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A13 点击「附近的人」分区行入口 (.people-entry[0])",
+      "expected": "跳转 subpackages/discover-extra/nearby/people?scope=nearby",
+      "actual": "主跑 tap 因共享模拟器并行会话干扰落空（guard 检测到 discover 页，元素未渲染）；D 轮受控复测 13b：afterPath=subpackages/discover-extra/nearby/people，query={scope:'nearby'}，复测通过",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-13b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-13b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A14 点击「同城的人」分区行入口 (.people-entry[1])",
+      "expected": "跳转 subpackages/discover-extra/nearby/people?scope=city",
+      "actual": "afterPath=subpackages/discover-extra/nearby/people，query={scope:'city'}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-14-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A15 点击热门兴趣圈第1卡「摄影」 (.circle-mini[0])",
+      "expected": "跳转 subpackages/circles/circles/circle-home?circleId=circle-photo（mock 圈子 id，stores/circle/mock-data.ts:58）",
+      "actual": "afterPath=subpackages/circles/circles/circle-home，query={circleId:'circle-photo'}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-15-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A16 热门兴趣圈横向滑动到底（合成 touch 手势 swipe 8 步）",
+      "expected": "scroll-view (scroll-x) 滚动露出尾部卡（宠物/考研等），scrollLeft 增大",
+      "actual": "el.scrollOffset 在本版 miniprogram-automator 不存在（API 缺失），数值无法取证；16-before/16-after 截图完全一致——合成 touch 未能驱动 scroll-view 原生滚动。横滑行为无法自动化取证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A17 回归核对 MP-R1-NEARBY-005：热门兴趣圈第4卡是否被右缘裁切",
+      "expected": "R21 收窄 166→150rpx 后 4 张卡完整落在 375px 视口内：4×75px + 3×5px(gap) + 左4px + 右10px = 324px ≤ 375px；第4卡右缘 ≤ 375",
+      "actual": "实测 card4={left:260, width:75, rightEdge:335} ≤ 375 ✓；card5 left=340（探出 35px 暗示可横滑）；17-before 截图目测：摄影/旅行/音乐/运动 4 卡完整显示，第4卡「运动」无裁切。历史 issue 修复有效",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A18 点击热门兴趣圈分区「全部」 (.nearby-section__more[0])",
+      "expected": "跳转 subpackages/circles/circles/index（index.vue:212-214 goCircleList）",
+      "actual": "afterPath=subpackages/circles/circles/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A19 点击校园圈第1卡「北京大学」 (.campus-entry[0])",
+      "expected": "跳转 subpackages/campus/campus/hub?school=北京大学（URL 编码）",
+      "actual": "afterPath=subpackages/campus/campus/hub，query={school:'%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6'}（即「北京大学」）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-19-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A20 点击校园圈分区「全部」 (.nearby-section__more[1])",
+      "expected": "跳转 subpackages/campus/campus/hub 无参（index.vue:393 more=goCampusHub()）",
+      "actual": "afterPath=subpackages/campus/campus/hub，query={}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A21 点击活动分区第1条 (.activity-entry[0])",
+      "expected": "跳转 subpackages/tools/activities/detail?id=<首个活动id>（index.vue:225-227）",
+      "actual": "afterPath=subpackages/tools/activities/detail，query={id:'a-1'}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-21-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A22 点击活动分区「全部」 (.nearby-section__more[2])",
+      "expected": "跳转 subpackages/discover/activities/index",
+      "actual": "afterPath=subpackages/discover/activities/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-22-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A23 点击附近动态 PostCard 整卡（open-detail）",
+      "expected": "跳转 subpackages/village/village/detail?id=post-1（nearbyPosts 首帖 id 实时读取核对）",
+      "actual": "afterPath=subpackages/village/village/detail，query={id:'post-1'}，与 store 中 nearbyPosts[0].id=post-1 一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-23-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A24 点击 PostCard 作者行 (.post-card__user，@catchtap open-author)",
+      "expected": "跳转 subpackages/profile-extra/profile/other?userId=<作者id>（PostCard.vue:125 catchtap 应阻止冒泡；index.vue:233-235 onPostAuthor）",
+      "actual": "两次点击（初次+重试）及 D 轮受控复测×2（24b）全部进入 subpackages/village/village/detail?id=post-1（帖子详情），从未到达他人主页。根因：编译产物 PostCard.wxml 中 @catchtap 编译为 bindcatchtap=\"{{m}}\"（10 处，无一处标准 catchtap），微信事件系统不存在 catchtap 事件类型，handler 永不触发，tap 冒泡至卡片根 bindtap(open-detail)",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-24b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-24b-after1.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A25 点击 PostCard 标签芯片 (.post-card__tag，@catchtap open-tag)",
+      "expected": "跳转 subpackages/village/village/tag-posts?tagName=<标签>（PostCard.vue:223）",
+      "actual": "afterPath=subpackages/village/village/detail?id=post-1（冒泡误触 open-detail），tag-posts 页从未到达。同一 bindcatchtap 编译缺陷",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-25-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-25-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A26 点击 PostCard「关注」芯片 (.follow-chip，@catchtap emit follow)",
+      "expected": "关注态变化（文案「+ 关注」→「已关注」，样式切换；R20 注释（index.vue:480-482）明确「作者互动统一由 PostCard 作者行的关注芯片承接」）",
+      "actual": "chipText 前后均为「+ 关注」，无任何变化、无跳转（26-after 截图仍在附近页）。双重原因：①bindcatchtap 编译缺陷（PostCard.wxml 10 处）致 emit('follow') 永不触发；②nearby 页 PostCard 仅监听 4 个 open-* 事件（index.vue:473-479），未监听 follow/like/favorite",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-26-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-26-after.png",
+      "issueId": "MP-R1-NEARBY-002"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A27 点击 PostCard「点赞」按钮 (@catchtap handleLike)",
+      "expected": "红心高亮+计数+1（点赞态持久），不发生页面跳转",
+      "actual": "主跑后代选择器未命中未执行；D 轮受控复测 27b（扁平选择器 $$('.action-btn')[1]）：点击后页面离开附近页进入 village/detail（beforeText='128' 点赞计数原值，未发生点赞），点赞无反馈且误跳详情。根因同 MP-R1-NEARBY-001（bindcatchtap 失效→冒泡 open-detail）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-27b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-27b-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A28 点击 PostCard「收藏」按钮 (@catchtap emit favorite)",
+      "expected": "收藏态切换（高亮/计数+1），不发生页面跳转",
+      "actual": "收藏计数 42→42 无变化；tap 后 A29 开场 guard 检测到页面已被冒泡带至 village/detail——收藏 handler 未触发且误触详情跳转。根因同 MP-R1-NEARBY-001 + 页面未监听 favorite（002）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-28-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-28-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A29 点击附近动态分区「全部」 (.nearby-section__more[3])",
+      "expected": "跳转 subpackages/village/village/index（goAllPosts）",
+      "actual": "重试路径成功：afterPath=subpackages/village/village/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-29-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-29-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A30 页面滚动到底/回顶（合成 touch 纵向 swipe）",
+      "expected": "能滚动到页面底部（footer/最后分区可见）并回顶",
+      "actual": "30-after 与 30-top 截图均为首屏且完全一致——合成 touch 无法驱动 scroll-view(.nearby-home__scroll) 原生滚动；footer 文档坐标 top=2232px 证明下方确有内容但无法自动化滚动取证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-30-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-30-top.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A31 下拉刷新（wx.startPullDownRefresh 原生触发）",
+      "expected": "onPullDownRefresh 触发 loadPeoplePreview 重拉附近的人，随后 uni.stopPullDownRefresh 收起动画（index.vue:124-126），无报错",
+      "actual": "wx.stopPullDownRefresh 插桩计数 nativeTriggeredCount=1（真实 onPullDownRefresh→stopPullDownRefresh 链路触发）；合成手势下拉亦触发 1 次；nativeErr=null，consoleBad=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-31-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-31-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A32 重复进出 tab（home↔nearby switchTab ×2）",
+      "expected": "每次回附近页数据正常渲染（8 卡/3 帖），无崩溃，tab 选中态正确",
+      "actual": "pathSeq=[home,nearby,home,nearby] 全部正确；回附近后 circleMini=8、postCard=3",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-32-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-32-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "A33 页面打开立即离开（reLaunch nearby 后 0.8s 内 switchTab 离开）",
+      "expected": "不崩溃，回 nearby 仍正常",
+      "actual": "0.8s 时已在 pages/home/index，切回 nearby 正常（33-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-33-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-33-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "B34 身份B（tmp_r11_guest.json 新号100159）注入后基线",
+      "expected": "B 登录态正常加载：附近动态显示帖子卡而非登录引导",
+      "actual": "bootB.loggedIn=true；circleMini=8、postCard=3、loginGuide=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-34-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-34-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "B35 身份B 点击兴趣圈第2卡「旅行」",
+      "expected": "跳转 circle-home?circleId=circle-travel",
+      "actual": "afterPath=subpackages/circles/circles/circle-home，query={circleId:'circle-travel'}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-35-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-35-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "B36 身份B 搜索 confirm「图书馆」",
+      "expected": "跳转 search/index?keyword=图书馆",
+      "actual": "同 A03：合成 confirm 事件未触发原生 bindconfirm，afterPath 停留 nearby",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-36-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-36-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "C37 未登录态真实链路基线（removeStorage token + bootstrap）",
+      "expected": "附近动态区显示登录引导卡 +「去登录」按钮（index.vue:453-465 v-if=!sessionStore.isLoggedIn）",
+      "actual": "mock 构建 bootstrap 的 useMock() 分支（stores/session.ts:613-615）恒注入 mockUserSession，bootstrap 后 loggedIn 仍=true，真实未登录态在本构建不可达（登录态页面照常渲染，见 37-after）。UI 分支改由 D 轮状态注入验证（37b/38b 通过）",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-37-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-37-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "C38 未登录「去登录」按钮点击",
+      "expected": "跳转 pages/login/index（goLogin → ROUTES.LOGIN）",
+      "actual": "主跑因未登录态未建立按钮不存在（len=0）；D 轮状态注入（37b 引导卡渲染成功）后 38b 实测：点击后 afterPath=pages/login/index，38b-after 截图确认登录页",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-38b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-38b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "C39 未登录态点击兴趣圈入口（公开内容不拦登录）",
+      "expected": "未登录仍可进 subpackages/circles/circles/index",
+      "actual": "「未登录」前提在本构建不可达（C37），实际为登录态点击且成功跳转——未登录前提未验证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-39-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-39-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "D-37b 未登录 UI 分支渲染（状态注入：userSession=null）",
+      "expected": "附近动态分区渲染 .nearby-login-guide 引导卡与「去登录」按钮，帖子卡不渲染",
+      "actual": "guideRendered=true，btnRendered=true，guideText=「请先登录后再使用该功能 / 去登录」（37b-before/after 截图可见引导卡）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-37b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-37b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "D-24b 作者行点击受控复测×2",
+      "expected": "catchtap 生效时应跳 profile/other?userId=<作者id>，不进详情",
+      "actual": "click1 与 click2 均 100% 复现：afterPath=subpackages/village/village/detail?id=post-1，两次截图均在帖子详情页（小鹿帖子），偏差稳定复现",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-24b-after1.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-24b-after2.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "D-27b 点赞按钮受控复测（扁平选择器 $$('.action-btn')[1]）",
+      "expected": "点赞态切换不跳页",
+      "actual": "点击后页面离开附近页进入 village/detail；点赞计数保持 128 未变（afterText='私信' 为详情页元素文本，佐证已离开本页）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-27b-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-27b-after.png",
+      "issueId": "MP-R1-NEARBY-001"
+    },
+    {
+      "page": "pages/nearby/index",
+      "operation": "D-end 恢复身份A并回附近页（收尾态检查）",
+      "expected": "身份A恢复登录态，页面正常",
+      "actual": "loggedIn=true，reLaunch 落地 pages/nearby/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-01-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-38b-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-NEARBY-001",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-24b-after1.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "PostCard 全部 @catchtap 子元素（作者行/标签/点赞/收藏/评论按钮/关注芯片/关联活动区）编译为非标准 bindcatchtap，handler 永不触发且 tap 冒泡至卡片根——用户点击作者行想看主页、点标签看话题、点赞、收藏，全部被错误带进帖子详情页",
+      "evidence": "①实测：A24/A25/D-24b×2/D-27b 共 5 次独立点击全部落在 subpackages/village/village/detail?id=post-1，从未到达 profile/other 或 tag-posts（截图 PAGES-NEARBY-INDEX-24b-after1/2.png、25-after.png、27b-after.png）；A28 收藏点击后页面同样被带至 detail（A29 开场 guard 记录）；②编译产物：apps/client/dist/build/mp-weixin/components/village/PostCard.wxml 中 grep 'bindcatchtap' 命中 10 处、标准 catchtap 0 处（如作者行 bindcatchtap=\"{{m}}\"，微信 WXML 事件系统无 catchtap 事件类型，bind 前缀使其监听永不存在的自定义事件）；③源码绑定点：apps/client/src/components/village/PostCard.vue:125(@catchtap open-author)、157(关注芯片)、223(标签)、258(评论)、266(点赞 handleLike)、277(收藏)；卡片根 bindtap open-detail 于 PostCard.vue:117；④nearby 页消费端：apps/client/src/pages/nearby/index.vue:472-479",
+      "ideal": "微信 WXML 规范：catchtap 阻止冒泡——点作者行应跳 /subpackages/profile-extra/profile/other?userId=<作者id>（openUserProfile，navigation.ts:303-309），点标签应跳 /subpackages/village/village/tag-posts?tagName=<标签>，点赞/收藏只改变本卡状态不发生页面跳转",
+      "fix": "修复 uni-app Vue3 mp-weixin 编译产物中 @catchtap → bindcatchtap 的错误绑定形式：模板统一改用 @tap.stop（uni-app Vue3 下编译为标准 catchtap）或核查 uni-app 编译器版本/配置；修复后需回归验证作者行/标签/点赞/收藏四条链路的目标页与冒泡行为",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-NEARBY-002",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-26-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "附近页 PostCard 仅监听 open-detail/open-author/open-tag/open-activity 四个事件，未监听 like/favorite/follow——即使修复 MP-R1-NEARBY-001 的冒泡缺陷，关注芯片/点赞/收藏在附近页点击后仍无任何状态反馈，与「作者互动统一由 PostCard 作者行关注芯片承接」的设计注释矛盾",
+      "evidence": "①A26 实测：点击关注芯片后 chipText「+ 关注」→「+ 关注」无变化（26-before/after 截图）；②A28：收藏计数 42→42 无变化；③消费端只绑 4 事件：apps/client/src/pages/nearby/index.vue:472-479（<PostCard :post=\"post\" @open-detail @open-author @open-tag @open-activity/>）；④组件端 PostCard.vue:66-73 handleLike 仅做 300ms 本地动画+emit('like')，不改 post.isLiked；⑤设计意图：index.vue:480-482 R20 注释「作者互动统一由 PostCard 作者行的『关注』芯片承接（与理想图一致）」",
+      "ideal": "点击关注芯片 → 文案/样式切换为「已关注」并同步 store/后端；点赞 → 红心高亮+计数+1；收藏 → 收藏态高亮+计数+1（微信小程序交互惯例：所有可见可点控件必须有可见状态反馈）",
+      "fix": "nearby 页 <PostCard> 补绑 @like/@favorite/@follow 并接入 village store（或复用村口页已有 handler），使关注/点赞/收藏在附近动态卡上产生与其他页面一致的状态反馈",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "A03/A05/B36 搜索框 confirm 跳转（3 项）：automator 合成 confirm 事件无法触发原生 bindconfirm（构建产物 pages/nearby/index.wxml 已含 bindconfirm 绑定、goSearch 源码逻辑正确、同页 openAppPath 其余跳转 12/12 成功，无页面 bug 证据），需真机键盘搜索键验证",
+    "A16 兴趣圈横滑到底 / A30 页面滚动到底/回顶（2 项）：本版 miniprogram-automator 无 el.scrollOffset API，合成 touch 手势无法驱动 scroll-view 原生滚动（前后截图逐帧一致），需真机手势验证",
+    "C37/C39 未登录态真实链路（2 项）：mock 构建 bootstrap 的 useMock() 分支（stores/session.ts:613-615）恒注入登录会话，真实未登录态不可达；UI 分支已用状态注入补验（37b/38b 通过），真实链路需非 mock 构建或真实后端验证"
+  ],
+  "notes": "执行环境与方法：构建产物新鲜（mtime 2026-09-20 08:49 > 源码 2026-09-18，verify-build-features 4/4 PASS 本会话实跑）；身份 A/B 按 tmp_r11_login.json / tmp_r11_guest.json 注入（R11 做法：setStorageSync token + session.bootstrap()），boot loggedIn=true 实测通过；共 44 项检查（主跑 39 + D 轮补测 5），全部在本会话真实执行，历史残留 runlog 已归档不采信（tmp/interact-R1-nearby-runlog.prev-0316.json）。回归项 MP-R1-NEARBY-005（兴趣圈第4卡右缘裁切）本轮复验通过：card4 rightEdge=335px ≤ 375px 视口（150rpx 收窄生效），17-before 截图目测 4 卡完整。环境干扰说明：①共享 DevTools 模拟器存在并行会话，多次 guard 检测到残留导航并自动 reLaunch 恢复（A06/A08-A12/A13/A18-A24/A29 等 retried 记录即此机制，跳转均以最终到达目标页判定）；②中途截图通道假死（11 次 fail to capture screenshot，R12 §5 已知坑），经 wechatide CLI simulator_refresh（本会话实跑 success=true）后断点续跑完成；③全程 console 取证 0 条 error/exception（consoleBad 全 0）。MP-R1-NEARBY-001 波及所有使用 PostCard 的页面（村口/首页动态等），建议全站回归。产物：runlog tmp/interact-R1-nearby-runlog.json + tmp/interact-R1-nearby-dplate.json；console 取证 tmp/interact-R1-nearby-console-{A,B,C}.log；截图 reports/screenshots/round-1-interact/（NEARBY 相关 110+ 张）。"
+}

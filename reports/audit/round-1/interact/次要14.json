@@ -1,0 +1,984 @@
+{
+ "checks": [
+  {
+   "page": "TOPICS",
+   "operation": "OP01 ",
+   "expected": "页面渲染：顶部渐变导航（返回/写话题/···）+ 圈 hero（摄影圈封面/名称/人数/加入按钮）+ 5 tab（动态/精华/活动/作品墙/成员）+ 置顶圈规条 + 3 张话题卡 + 底部「加入圈子+发布」固定栏",
+   "actual": "{\"cards\":3,\"tabs\":5,\"heroJoin\":true,\"bottomJoin\":true,\"rule\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-01-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP02 ",
+   "expected": "精华 tab 高亮（文字变品牌绿+下划线），话题列表按回复数降序重排（46/23/12 顺序，本种子已降序故视觉顺序不变），置顶条仍显示",
+   "actual": "{\"activeTab\":\"精华\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-02-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-02-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP03 ",
+   "expected": "活动 tab 高亮，列表区显示活动条目（≤5 条，点击项可跳活动详情）或「暂无活动」空态文案，不再显示置顶条与话题卡",
+   "actual": "{\"activities\":4,\"emptyText\":null}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-03-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-03-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP04 ",
+   "expected": "作品墙 tab 高亮，显示带图话题卡（photo-topic 1-3 均有配图 → 3 张卡，配图墙渲染）",
+   "actual": "{\"cards\":3}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-04-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-04-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP05 ",
+   "expected": "成员 tab 高亮（tab 文案带人数），显示「共 N 位成员」+ 圈内活跃作者头像（取话题作者去重 = 苏晴/阿泽/橙子 3 枚字母占位头像+昵称）",
+   "actual": "{\"members\":3}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-05-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP06 ",
+   "expected": "跳转话题详情页 subpackages/circles/circles/topic-detail?topicId=photo-topic-1&circleId=circle-photo",
+   "actual": "{\"path\":\"subpackages/circles/circles/topic-detail\",\"query\":{\"topicId\":\"photo-topic-1\",\"circleId\":\"circle-photo\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-06-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP07 ",
+   "expected": "跳转他人主页 subpackages/profile-extra/profile/other?userId=user-3006（头像 catchtap.stop 阻止冒泡，不进话题详情）",
+   "actual": "{\"path\":\"subpackages/profile-extra/profile/other\",\"query\":{\"userId\":\"user-3006\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-07-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP08 ",
+   "expected": "跳转他人主页 other?userId=user-3006（认识 TA 按钮 catchtap.stop）",
+   "actual": "{\"path\":\"subpackages/profile-extra/profile/other\",\"query\":{\"userId\":\"user-3006\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-08-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP09 ",
+   "expected": "原生 ActionSheet 弹出，含三项：「写话题 / 举报圈子 / 分享圈子」",
+   "actual": "{\"screenshotShows\":\"ActionSheet 应在本帧截图中可见\"}；DevTools 截图通道仅拍到遮罩（原生 ActionSheet 面板不渲染入截图）；触发与选项链路由 TOPICS-10 hook 驱动证实",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-09-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-09-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP10 ",
+   "expected": "ActionSheet 选择「写话题」(tapIndex=0) → 跳转 post-topic?circleId=circle-photo",
+   "actual": "{\"path\":\"subpackages/circles/circles/post-topic\",\"query\":{\"circleId\":\"circle-photo\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-10-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-10-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP11 ",
+   "expected": "跳转 post-topic?circleId=circle-photo（顶部编辑图标）",
+   "actual": "{\"path\":\"subpackages/circles/circles/post-topic\",\"query\":{\"circleId\":\"circle-photo\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-11-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-11-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP12 ",
+   "expected": "加入成功：hero 与底部按钮均变「已加入」白底描边态，成员数 12000 → 12001",
+   "actual": "{\"isJoined\":true,\"memberCount\":12001,\"bottomText\":\"已加入\",\"beforeJoin\":{\"isJoined\":false,\"memberCount\":12000}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-12-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-12-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP13 ",
+   "expected": "退出成功：两处按钮恢复「加入圈子」，成员数 -1 恢复",
+   "actual": "{\"isJoined\":false,\"memberCount\":12000}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-13-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-13-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP14 ",
+   "expected": "5 次快速点击后无崩溃无报错，最终加入状态与点击次数奇偶一致（5 次奇数 → 已加入），成员数同步 ±1 交替",
+   "actual": "{\"isJoined\":true,\"memberCount\":12001}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-14-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-14-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP15 ",
+   "expected": "reLaunch 直开无上一页，uni.navigateBack 无栈可退：页面停留不崩溃（代码 topics.vue:295 goBack 未做空栈兜底，属可接受表现——对照 circle-home.vue:296 有兜底）",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/topics\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-15-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-15-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP16 ",
+   "expected": "滚动到底不崩溃；mock 3 条 < 分页大小 → 底部显示「没有更多了」提示，无加载更多 spinner 卡死",
+   "actual": "{\"loadMoreText\":\"— 没有更多了 —\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-16-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-16-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP17 ",
+   "expected": "规则条点击 goCircleDetail→uni.navigateBack()：无栈直开时页面停留不崩溃（与返回键同路径）",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/topics\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-17-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-17-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICS",
+   "operation": "OP18 ",
+   "expected": "重复进出 5 次后每次 3 卡完整渲染，无白屏/数据残留",
+   "actual": "reentryOk=5/5",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-18-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-18-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP01 ",
+   "expected": "渲染话题标题+作者行+正文+评论区：「全部回复 (3)」徽标与 3 行回复明细一致，每条回复（非本人）带「打招呼」胶囊，底部回复输入栏",
+   "actual": "{\"replies\":3,\"helloBtns\":3,\"replyInput\":true,\"sendBtn\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-01-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP02 ",
+   "expected": "发送成功 toast「回复成功」，输入框清空，回复列表 3→4 条，计数徽标 3→4",
+   "actual": "{\"inputValue\":\"\",\"replies\":4,\"replyCount\":13}；「回复成功」toast 由 fix4 T6 hook 实证；输入框清空/3→4 条/计数+1 由数据证实",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-02-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-02-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP03 ",
+   "expected": "按钮置灰（reply-btn--disabled + pointer-events:none），点击无任何提交，回复数不变、无 toast",
+   "actual": "{\"replies\":4,\"btnDisabledCls\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-03-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-03-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP04 ",
+   "expected": "特殊字符提交成功，回复列表文本按纯文本转义显示（无 HTML 执行/无弹窗/无崩溃），计数再 +1",
+   "actual": "{\"replies\":5,\"lastContent\":\"<img src=x onerror=alert(1)> & \\\"引号\\\" 🌹 \\\\反斜杠\"}；特殊字符按纯文本存储渲染（uni-app text 无 HTML 执行），无注入无崩溃",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-04-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-04-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP05 ",
+   "expected": "isSubmitting 防重：3 次连点仅提交 1 条新回复（输入框首次点击后已清空，第 2/3 次点击应为空内容被拦——两种机制任一生效均视为防重成立，无重复提交）",
+   "actual": "{\"replies\":6,\"dupCount\":1}；dupCount=1：isSubmitting+空内容双重防重，3 次连点仅 1 条",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-05-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP06 ",
+   "expected": "mock 实名恒通过（campus-gate isRealNameVerified mock=true）→ 跳转私信会话页 subpackages/chat/chat-session/index?userId=user-3002&prefillMessage=（预填破冰文案）",
+   "actual": "{\"path\":\"subpackages/chat/chat-session/index\",\"queryKeys\":[\"userId\",\"prefillMessage\",\"quoteContext\"]}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-06-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP07 ",
+   "expected": "点击话题作者头像跳他人主页 profile/other?userId=（catchtap.stop 阻断长按举报）",
+   "actual": "{\"path\":\"subpackages/circles/circles/topic-detail\",\"query\":{\"topicId\":\"topic-1\",\"circleId\":\"circle-1\"}}；automator 对 scroll-view 内 catchtap 元素 3 次 tap（含 fix2 A/fix5 P4）均未派发事件；静态绑定正确：topic-detail.vue:258-261 @tap.stop → /pages/profile/index?userId=user-3001（非空）",
+   "verdict": "无法验证",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-07-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP08 ",
+   "expected": "长按正文弹出举报 ActionSheet，含 5 项原因（垃圾广告/辱骂攻击/色情低俗/违法信息/其他）",
+   "actual": "{\"screenshotShows\":\"举报 ActionSheet 应在本帧截图中可见\"}；长按触发（遮罩入图）；DevTools 截图通道不渲染 ActionSheet 面板本体",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-08-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP09 ",
+   "expected": "选第 1 项原因 → 弹补充描述 Modal → 点确定 → 举报提交成功 toast「举报已提交」",
+   "actual": "{\"reports\":null}；fix2 B：hook 自动选第 1 项原因→「补充描述（可选）」Modal 弹出（TOPICDETAIL-09B-modal.png）→confirmModal 确认提交；提交后成功 toast 因截图通道延迟未捕获，report store 无错误（submitting=false）",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-09-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-09-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP10 ",
+   "expected": "回复计数徽标与明细一致：photo-topic-1 seed replyCount=46 但 mockReplies 无该话题回复 → 若同屏出现「46」与「暂无回复」即为计数/明细脱节（历史 IA-TOPIC-01 同类）",
+   "actual": "{\"badgeText\":\"46\",\"emptyText\":\"暂无回复，快来抢沙发吧\",\"repliesInStore\":0}；「回复 46」徽标+「暂无回复，快来抢沙发吧」+「加载更多回复」同屏（TOPICDETAIL-10-after.png）；topic-1 亦 12 vs 3 条（TOPICDETAIL-08-after.png）",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-10-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-10-after.png",
+   "issueId": "MP-R1-TOPICDETAIL-001"
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "OP11 ",
+   "expected": "goBack 清 currentTopic 后 navigateBack：无栈直开页面停留不崩溃",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/topic-detail\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-11-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-11-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP01 ",
+   "expected": "渲染：顶部返回/标题/发布 + 标题输入 + 内容输入（0/500 计数）+ 发布到选择器（校园圈默认选中）+ 7 个话题标签 + 喜爱开关 + 图片上传格（0/9）+ 底部发布按钮",
+   "actual": "{\"titleInput\":true,\"contentInput\":true,\"tagChips\":7,\"targetChips\":2,\"uploadGrid\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-01-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP02 ",
+   "expected": "toast「请输入标题」提示（标题空 → postTopicErrTitle），页面停留，无跳转",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/post-topic\",\"screenshotShows\":\"toast 请输入标题\"}；toast「请输入标题」由 fix4 T1 hook 实证",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-02-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-02-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP03 ",
+   "expected": "toast「请输入内容」提示（内容空 → postTopicErrContent）",
+   "actual": "{\"screenshotShows\":\"toast 请输入内容\"}；页面停留无提交；toast 文本与 02 同函数相邻分支（post-topic.vue:277-280），未单独 hook 取证",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-03-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-03-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP04 ",
+   "expected": "toast「发布成功」，约 0.8s 后 navigateBack 回话题列表页（有栈）",
+   "actual": "{\"landedOn\":\"subpackages/circles/circles/post-topic\"}；toast「发布成功」（fix4 T3）并返回列表，但帖子进入村口 posts 流而非 circle-photo 圈（fix3 实证 villagePosts 5→6 categoryId=cat-campus，circleTopics 恒 3）",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-04-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-04-after.png",
+   "issueId": "MP-R1-POSTTOPIC-001"
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP05 ",
+   "expected": "isSubmitting 防重：3 次连点仅发布 1 条（store topics 新增 1 条），最终返回列表页",
+   "actual": "{\"dupCount\":0,\"total\":3,\"landedOn\":\"subpackages/circles/circles/topics\"}；3 次连点仅发布 1 条（villagePosts 增量 +1），isSubmitting 防重有效；流向错误另记 MP-R1-POSTTOPIC-001",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-05-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP06 ",
+   "expected": "切「兴趣圈」：发布目标 chip 高亮切换，下方出现 8 个兴趣分类胶囊（学习/运动/音乐/影视/旅行/游戏/美食/阅读）；点「学习」后该胶囊高亮，当前目标名显示「学习」",
+   "actual": "{\"categoryChips\":8,\"targetName\":\"发布到：学习\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-06-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP07 ",
+   "expected": "切回「校园圈」：分类宫格收起（v-if 不渲染），目标名显示校园圈",
+   "actual": "{\"categoryChips\":0,\"targetName\":\"发布到：校园圈\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-07-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP08 ",
+   "expected": "前 3 个标签正常选中（品牌绿实底白字），点第 4 个时 toast「最多选择 3 个」且不选中",
+   "actual": "{\"activeTags\":3,\"screenshotShows\":\"toast 最多 3 个\"}；toast「最多选择 3 个标签」由 fix4 T2 实证，activeTags=3",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-08-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP09 ",
+   "expected": "switch 由关变开（checked=true，品牌绿 #36C99A）",
+   "actual": "{\"checked\":\"\"}；automator trigger(\"change\") 对原生 switch 不生效（checked=\"\"）；fix2 D 以原生 tap 复测同组件成功切换为开启态（CAMPUSPOST-05B-switch-tap.png 绿色开启）",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-09-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-09-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP10 ",
+   "expected": "textarea maxlength=500：输入 520 字被截断为 500，计数显示 500/500（不超限红色）",
+   "actual": "{\"counter\":\"520/500\"}；计数器 520/500 红色超限正确；textarea maxlength 截断属原生输入行为，automator setData 旁路无法复现，提交侧另有超限拦截（post-topic.vue:282-285）",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-10-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-10-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP11 ",
+   "expected": "清空标题与内容后底部发布按钮呈 disabled 灰态（bottom-submit__btn--disabled）",
+   "actual": "{\"disabledCls\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-11-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-11-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP12 ",
+   "expected": "选图后新增 1 张缩略图 + 右上 × 删除角标 + 上传计数 1/9；点 × 删除后恢复 0/9",
+   "actual": "{\"imageItems\":1,\"uploadText\":\"1/9\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-12-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-12-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP13 ",
+   "expected": "点缩略图 × 删除：图片移除，恢复上传格与 0/9 计数",
+   "actual": "{\"imageItems\":0,\"uploadText\":\"0/9\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-13-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-13-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "OP14 ",
+   "expected": "navigateBack 返回话题列表页",
+   "actual": "{\"landedOn\":\"subpackages/circles/circles/topics\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-14-before.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-14-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP01 ",
+   "expected": "渲染：hero 封面（返回/分享/更多圆钮）+ 信息卡（摄影圈+热门+简介+1.2w 人加入·N 条动态+朋友头像组+加入按钮）+ 标签 chips×4 + 5 tab + 置顶公告 + 动态 feed（真实话题 photo-topic-1..3 含标题行）+ 查看全部话题 + 底部「加入圈子+FAB」",
+   "actual": "{\"feedCards\":3,\"tabs\":5,\"tagChips\":4,\"bottomJoin\":true,\"topicsLink\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-01-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP02 ",
+   "expected": "点赞后计数 +1 且图标/文字变品牌绿激活态；再点恢复 -1 取消（toggleLike 本地翻转）",
+   "actual": "{\"afterFirstTap\":\"0\",\"afterSecondTap\":\"0\"}；两次 tap 点赞后计数恒 0、图标无激活态（CIRCLEHOME-02-after.png 显示 ♡0）",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-02-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-02-after.png",
+   "issueId": "MP-R1-CIRCLEHOME-001"
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP03 ",
+   "expected": "按产品逻辑点击动态卡应跳话题详情；代码 openFeedDetail 要求 id 纯数字（/^\\d+$/），mock 真实话题 id=photo-topic-1 不匹配 → 实际预期不跳转（若不跳转记偏差：卡片可点但无响应）",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/circle-home\"}；点击动态卡停留原页无任何响应",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-03-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-03-after.png",
+   "issueId": "MP-R1-CIRCLEHOME-002"
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP04 ",
+   "expected": "切「精华」tab：高亮切换，内容区显示空态文案（circle.home.emptyTab），feed 卡隐藏",
+   "actual": "{\"emptyVisible\":true,\"feedCards\":0}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-04-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-04-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP05 ",
+   "expected": "切回「动态」后点「查看全部话题」→ 跳 topics?circleId=circle-photo",
+   "actual": "{\"path\":\"subpackages/circles/circles/topics\",\"query\":{\"circleId\":\"circle-photo\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-05-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP06 ",
+   "expected": "信息卡「加入圈子」点击后变「已加入」，底部固定栏由「加入圈子」切换为「圈内发帖」（joined 翻转）",
+   "actual": "{\"bottomPost\":true,\"bottomJoinGone\":true}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-06-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP07 ",
+   "expected": "点底部编辑 FAB → 跳 post-topic?circleId=circle-photo",
+   "actual": "{\"path\":\"subpackages/circles/circles/post-topic\",\"query\":{\"circleId\":\"circle-photo\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-07-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP08 ",
+   "expected": "无栈直开时 hero 返回键走兜底 openAppPath(ROUTES.CIRCLES.INDEX) → 跳兴趣圈列表页",
+   "actual": "{\"landedOn\":\"subpackages/circles/circles/index\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-08-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP09 ",
+   "expected": "按产品逻辑（理想效果图含可点分享钮）点击应触发分享/转发；代码 hero-btn 分享无 @tap 绑定（circle-home.vue:393）→ 实际预期无反应",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/circle-home\",\"note\":\"无事件绑定则无任何 UI 反馈\"}；点击分享按钮无任何反应",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-09-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-09-after.png",
+   "issueId": "MP-R1-CIRCLEHOME-004"
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP10 ",
+   "expected": "点击「···」更多钮应弹出圈操作（举报/分享等）；代码无 @tap 绑定（circle-home.vue:396）→ 实际预期无反应",
+   "actual": "{\"stillOn\":\"subpackages/circles/circles/circle-home\"}；点击更多按钮无任何反应",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-10-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-10-after.png",
+   "issueId": "MP-R1-CIRCLEHOME-004"
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP11 ",
+   "expected": "5 次连点后无崩溃，加入态与奇偶一致（奇数→已加入），底部栏状态同步",
+   "actual": "{\"isJoined\":false}；5 次连点（起始已加入）后 isJoined=false 与奇偶一致，无崩溃",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-11-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-11-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CIRCLEHOME",
+   "operation": "OP12 信息卡朋友头像组与「等 N 位朋友已加入」文案检查（主套件 CIRCLEHOME-01 截图判读追加）",
+   "expected": "显示合理好友加入数与差异化朋友头像（FALLBACK 演示圈为「等 8 位朋友已加入」）",
+   "actual": "信息卡显示「等 0 位朋友已加入」且三枚头像为同一默认图（circle-photo mock 圈无 friendJoinedCount 字段，circle-home.vue:430 || 0 兜底为 0）",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CIRCLEHOME-01-before.png",
+   "after": "reports/screenshots/round-1-interact/CIRCLEHOME-02-after.png",
+   "issueId": "MP-R1-CIRCLEHOME-003"
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP01 ",
+   "expected": "onLoad 无 ?school= → redirectTo 校园圈 hub 页（规格书 16：无参入口落 hub）",
+   "actual": "{\"landedOn\":\"subpackages/campus/campus/hub\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-01-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP02 ",
+   "expected": "hub.vue:117 以 encodeURIComponent(school) 跳入 → campus/index.vue:170 未 decode → viewSchool=%E5%8C%97... 与 mock 数据「北京大学」不匹配 → 公开浏览空列表（若空列表证实则为偏差：encode 入口列表恒空）",
+   "actual": "{\"cards\":0,\"query\":{\"school\":\"%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6\"}}；校名栏渲染 URL 编码原文「%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6」，列表恒空「该分类下还没有话题」",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-02-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-02-after.png",
+   "issueId": "MP-R1-CAMPUSINDEX-001"
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP03 ",
+   "expected": "raw 中文校名：渲染返回键+校名+认证徽标；认证引导卡（mock 恒 unverified）+ 热门兴趣圈推荐 8 项 + 6 分类 tab + course_exchange 2 张话题卡（campus-topic-1/2）",
+   "actual": "{\"cards\":2,\"tabs\":6,\"certGuide\":true,\"recommendItems\":8,\"fab\":false}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-03-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-03-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP04 ",
+   "expected": "tab 高亮切换，列表刷新为 club_recruitment 2 张卡（campus-topic-3/4）",
+   "actual": "{\"cards\":2,\"firstTitle\":\"摄影社团招新啦！\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-04-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-04-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP05 ",
+   "expected": "跳 campus/topic-detail?topicId=campus-topic-3",
+   "actual": "{\"path\":\"subpackages/campus/campus/topic-detail\",\"query\":{\"topicId\":\"campus-topic-3\"}}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-05-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP06 ",
+   "expected": "点「查看更多 ›」→ 跳兴趣圈列表 subpackages/circles/circles/index",
+   "actual": "{\"landedOn\":\"subpackages/circles/circles/index\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-06-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP07 ",
+   "expected": "点认证引导卡「去认证」按钮 → 跳 campus/certification 学生证认证页",
+   "actual": "{\"landedOn\":\"subpackages/campus/campus/certification\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-07-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP08 ",
+   "expected": "本校已认证视角（verified+校名匹配）：认证引导卡消失，底部 FAB（发布话题）出现，无公开浏览 banner；点 FAB → 跳 campus/post-topic",
+   "actual": "{\"landedOn\":\"subpackages/campus/campus/index\"}；注入本校已认证后：引导卡/公开浏览 banner 消失、FAB 出现；fix2 E 复测点击 FAB 成功跳 campus/post-topic（首轮 assert 采样早于跳转所致误报已排除）",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-08-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP09 ",
+   "expected": "无栈直开返回键走兜底 uni.switchTab(/pages/home/index) → 落首页 tab",
+   "actual": "{\"landedOn\":\"pages/home/index\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-09-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-09-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "OP10 ",
+   "expected": "快速连点 3 个分类后无崩溃，最终列表与最后点击的分类一致（fetchCampusTopicsToken 竞态保护）",
+   "actual": "{\"activeCategory\":\"study_help\",\"topics\":[\"campus-topic-7\",\"campus-topic-8\"]}；快速连点 3 个 tab 后 activeCategory=study_help、列表=campus-topic-7/8，竞态 token 保护正确",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-10-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-10-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP01 ",
+   "expected": "渲染：返回「取消」/标题/发布 + 6 分类两行（课程交流默认选中）+ 标题输入 + 内容输入（0/500）+ 图片上传（0/6）+ 话题选择器 + 匿名开关 + 底部发布按钮",
+   "actual": "{\"categoryOptions\":6,\"titleInput\":true,\"contentInput\":true,\"switchCount\":1}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-01-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-01-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP02 ",
+   "expected": "代码 canSubmit=false 直接 return（campus/post-topic.vue:161）：无 toast 无跳转。对照产品逻辑：点击发布完全无反馈为体验缺陷（circles 版同场景有 toast），若确认无反馈记偏差",
+   "actual": "{\"stillOn\":\"subpackages/campus/campus/post-topic\",\"screenshotShows\":\"应无任何 toast/弹窗\"}；空表单点发布 toasts=[]（fix4 T4 hook 实证静默），页面停留",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-02-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-02-after.png",
+   "issueId": "MP-R1-CAMPUSPOST-001"
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP03 ",
+   "expected": "toast「发布成功」，约 0.8s 后 navigateBack 回校圈列表页（有栈）",
+   "actual": "{\"landedOn\":\"subpackages/campus/campus/post-topic\"}；toast「发布成功」（fix4 T5）；campus store topics 2→3（fix2 G）；返回断言采样早于 0.8s 跳转为工具时机问题",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-03-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-03-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP04 ",
+   "expected": "点「社团招新」：选中态由课程交流切换到社团招新（绿描边高亮）",
+   "actual": "{\"selectedLabel\":\"校园活动\"}",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-04-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-04-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP05 ",
+   "expected": "匿名 switch 点击后由关变开（checked=true）",
+   "actual": "{\"checked\":\"\"}；automator trigger(\"change\") 对原生 switch 不生效且直接 tap 补拍遇自动化通道超时；同款 switch 组件原生 tap 切换已在圈内发话题页验证（CAMPUSPOST-05B-switch-tap.png），campus 匿名开关绑定同构（campus/post-topic.vue:359-363）",
+   "verdict": "无法验证",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-05-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-05-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP06 ",
+   "expected": "搜索框输入关键词 → 热门话题 chips 按关键词过滤（匹配项保留或出现「没有找到」空态）；点击候选 chip → 已选计数变 1/3，chip 变选中态",
+   "actual": "EXCEPTION: 元素不存在: .topic-chip；首轮搜索词「读」无匹配（热门词无该字）；fix2 F 复测：热门 chips 12 枚、tap 首枚→已选 1/3、搜索「校」过滤出 2 枚",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-06-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-06-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP07 ",
+   "expected": "自定义输入「自动化自定义题」点创建按钮 → 已选 chips 增加（计数递增），chip 内容含 #自动化自定义题",
+   "actual": "{\"countText\":\"已选 1/3\",\"selectedChips\":1}；自定义「自动化自定义题」创建成功，已选 1/3",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-07-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-07-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP08 ",
+   "expected": "点击已选 chip 移除该话题：已选 chips 减少，计数回落",
+   "actual": "{\"countText\":\"已选 0/3\",\"selectedChips\":0}；点击已选 chip 移除，0/3",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-08-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-08-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP09 ",
+   "expected": "选图后新增 1 张缩略图（1/6 计数）；点 × 删除恢复 0/6",
+   "actual": "{\"imageItems\":1,\"hint\":\"1/6\"}；mock chooseImage 选图 1/6",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-09-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-09-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP10 ",
+   "expected": "点 × 删除已选配图，恢复上传格与 0/6",
+   "actual": "{\"imageItems\":0,\"hint\":\"0/6\"}；删除恢复 0/6",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-10-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-10-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP11 ",
+   "expected": "标题 maxlength=50：输入 60 字截断为 50；内容输入 520 字截断 500，计数 500/500",
+   "actual": "{\"titleLen\":50,\"counter\":\"520/500\"}；标题输入 60 字实际 50（maxlength=50 生效）；内容 520/500 计数超限正确显示",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-11-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-11-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP12 ",
+   "expected": "canSubmit 含 isSubmitting：3 次连点仅发布 1 条，成功后返回校圈列表页",
+   "actual": "{\"dupCount\":0,\"landedOn\":\"subpackages/campus/campus/post-topic\"}；前序遗留 520 字超限内容→canSubmit=false，3 次连点全部被拦截 0 次发布（超限拦截正确、无重复提交）；合法内容连点防重已在校圈单击发布与圈内发话题连点场景验证",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-12-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-12-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "OP13 ",
+   "expected": "点「取消」返回 → 回校圈列表页",
+   "actual": "{\"landedOn\":\"subpackages/campus/campus/index\"}；返回 campus/index",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-13-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-13-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "fix3 复测：发布流向判定（从 topics 页「写话题」navigateTo 进入，输入标题内容后点发布）",
+   "expected": "发布到 circle-photo 圈：circleStore.currentTopics 新增该帖",
+   "actual": "villagePosts 5→6（新帖 title=VILLAGE路由验证帖FIX3，categoryId=cat-campus），circleTopics 恒 3、circleFirst 仍「颐和园的落日」；页面栈顶 options={circleId:\"circle-photo\"} 存在但未生效",
+   "verdict": "偏差",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-04B-toast.png",
+   "after": "reports/screenshots/round-1-interact/POSTTOPIC-04C-after.png",
+   "issueId": "MP-R1-POSTTOPIC-001"
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "fix2 G 复测：校圈发帖（标题+内容→发布）",
+   "expected": "toast 发布成功，campus topics 新增，0.8s 后返回",
+   "actual": "topics 2→3，first=校圈复测标题FIX2，errorMessage=null；landedOn=post-topic 系 reLaunch 直开无栈 navigateBack 失败（工具路径差异，非缺陷），主套件 CPOST-03/13 已验证有栈返回正常",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-12B-toast.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-12B-after2.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "fix2 E 复测：注入本校已认证后 FAB 出现并可点击",
+   "expected": "认证引导卡与公开浏览 banner 消失，FAB 出现，点击跳 campus/post-topic",
+   "actual": "fabExists=true，banner=false，certGuide=false；点击后 landedOn=subpackages/campus/campus/post-topic",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSINDEX-08B-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSINDEX-08B-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSPOST",
+   "operation": "fix2 F 复测：话题选择器热门候选/选中/搜索过滤",
+   "expected": "热门 chips 可点选（计数 1/3）；关键词搜索过滤候选",
+   "actual": "热门 chips 12 枚（#校园日常 1280 等）；tap 首枚→已选 1/3；搜索「校」候选过滤为 2 枚",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/CAMPUSPOST-06B-search.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-06B-search.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "fix2 B 复测：长按举报 hook 选因→补充描述 Modal→确认提交",
+   "expected": "选第 1 项原因后弹出补充描述 Modal，确认后提交举报",
+   "actual": "「补充描述（可选）」Modal 弹出入图（跳过/提交举报双按钮），confirmModal 确认，report store submitting=false 无错误；成功 toast 因截图通道延迟未捕获",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-09B-modal.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-09B-after-toast.png",
+   "issueId": ""
+  },
+  {
+   "page": "POSTTOPIC",
+   "operation": "fix2 D 复测：喜爱 switch 原生 tap",
+   "expected": "开关切换为开启态",
+   "actual": "switch 变绿色开启态（圆点居右）；attribute(\"checked\") 查询返回空为属性读取方式限制",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/POSTTOPIC-01-before.png",
+   "after": "reports/screenshots/round-1-interact/CAMPUSPOST-05B-switch-tap.png",
+   "issueId": ""
+  },
+  {
+   "page": "TOPICDETAIL",
+   "operation": "fix4 T6 复证：回复成功 toast hook 取证",
+   "expected": "toast「回复成功」",
+   "actual": "toasts=[\"回复成功\"]，replies 3→4",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICDETAIL-02-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICDETAIL-02-after.png",
+   "issueId": ""
+  },
+  {
+   "page": "CAMPUSINDEX",
+   "operation": "fix4 T8 关联取证：topics/topic-detail 缺参直开错误提示",
+   "expected": "circleId/topicId 缺失给出错误态提示",
+   "actual": "topics 缺 circleId：toasts=[\"兴趣圈 ID 无效\"]；topic-detail 缺 topicId：toasts=[\"话题 ID 无效\"]",
+   "verdict": "符合",
+   "before": "reports/screenshots/round-1-interact/TOPICS-15-before.png",
+   "after": "reports/screenshots/round-1-interact/TOPICS-15-after.png",
+   "issueId": ""
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-POSTTOPIC-001",
+   "round": "R1",
+   "page": "subpackages/circles/circles/post-topic",
+   "screenshot": "reports/screenshots/round-1-interact/POSTTOPIC-04C-after.png",
+   "category": "Function",
+   "severity": "P1",
+   "description": "从兴趣圈「写话题」发布的话题被错发到村口 posts 流（cat-campus），圈内话题列表无新帖，而 toast 仍提示「发布成功」",
+   "evidence": "fix3 实证：页面栈顶 options={circleId:\"circle-photo\"} 存在，发布后 villagePosts 5→6（新帖 categoryId=cat-campus）、circleStore.currentTopics 恒 3 条；根因 post-topic.vue:394-397 在 setup 顶层用 getCurrentPages() 读 options，uni-app vue3 下 setup 执行早于 onLoad、options 未注入 → circleId=\"\" → submitTopic 的 campusPostFallback 分支（post-topic.vue:303-306）走 villageStore.createPost",
+   "ideal": "带 circleId 进入时话题发布到对应兴趣圈（circleStore.createTopic），圈内列表可见新帖",
+   "fix": "改用 onLoad(query) 读取 circleId/channel/activityId（同 topic-detail.vue P1-03 修复模式），删除 setup 顶层 getCurrentPages() 读参；或 onLoad 后二次赋值兜底",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CAMPUSINDEX-001",
+   "round": "R1",
+   "page": "subpackages/campus/campus/index",
+   "screenshot": "reports/screenshots/round-1-interact/CAMPUSINDEX-02-after.png",
+   "category": "Interaction",
+   "severity": "P1",
+   "description": "校圈列表页对 ?school= 校名参数不做 decodeURIComponent：hub encode 入口下校名栏显示「%E5%8C%97%E4%BA%AC...」原文、话题列表恒空、isOwnCertifiedView 恒 false（本校认证用户也看不到发帖 FAB）",
+   "evidence": "hub.vue:117 以 encodeURIComponent(schoolName) 跳转；campus/index.vue:170 viewSchool.value=q.school.trim() 无 decode；实测 encoded 入口 topics=0 + 校名乱码（CAMPUSINDEX-02-after.png），raw「北京大学」入口 topics=2 正常（CAMPUSINDEX-03）",
+   "ideal": "hub 点学校进入校圈：校名正常显示、公开浏览/本校内容正常加载、已认证本校显示发帖 FAB",
+   "fix": "onLoad 中对 q.school 先 decodeURIComponent（带 try-catch 兜底，参照 topics.vue:304-308 circleName 的同款处理）；比较与展示统一用 decode 后值",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CIRCLEHOME-001",
+   "round": "R1",
+   "page": "subpackages/circles/circles/circle-home",
+   "screenshot": "reports/screenshots/round-1-interact/CIRCLEHOME-02-after.png",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "动态卡点赞点击无任何 UI 反馈：计数不变、爱心不变色",
+   "evidence": "两次 tap 后文本恒「0」（afterFirstTap=0/afterSecondTap=0），after 截图显示 ♡0；根因 circle-home.vue:211-226 realFeed computed 每次返回非响应式 plain object，toggleLike（circle-home.vue:337-340）直接改 item.likes/liked 不触发视图更新",
+   "ideal": "点击点赞后计数 +1 且图标/文字变品牌绿激活态，再点取消",
+   "fix": "realFeed 映射结果存入 ref 状态（或合并进响应式 feedItems），toggleLike 修改响应式数组项",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CIRCLEHOME-002",
+   "round": "R1",
+   "page": "subpackages/circles/circles/circle-home",
+   "screenshot": "reports/screenshots/round-1-interact/CIRCLEHOME-03-after.png",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "动态卡片点击无响应，无法进入话题详情",
+   "evidence": "tap .feed-card 后停留原页（stillOn=circle-home）；根因 circle-home.vue:347 openFeedDetail 仅放行纯数字 id（/^\\d+$/），mock 种子真实话题 id=photo-topic-1 不匹配；topics 页同数据点击可正常进详情（TOPICS-06）",
+   "ideal": "动态卡点击跳转 topic-detail?topicId=<id>（真实话题均应可点）",
+   "fix": "openFeedDetail 去掉纯数字白名单或放宽为非空 id 即跳（与 topics.vue:97-99 goToDetail 行为对齐）；mock 兜底数据（f1/f2）另行标记",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-TOPICDETAIL-001",
+   "round": "R1",
+   "page": "subpackages/circles/circles/topic-detail",
+   "screenshot": "reports/screenshots/round-1-interact/TOPICDETAIL-10-after.png",
+   "category": "Data",
+   "severity": "P2",
+   "description": "回复计数徽标与回复明细脱节：photo-topic-1「回复 46」+「暂无回复，快来抢沙发吧」+「加载更多回复」同屏；topic-1「回复 12」vs 明细仅 3 条",
+   "evidence": "TOPICDETAIL-10-after.png（badge=46/empty 同屏/明细 0）；TOPICDETAIL-08-after.png（badge=12/明细 3）；数据源 mock-data.ts photo-topic-1 seed replyCount=46 而 mockReplies 仅 topic-1 有 3 条（历史 IA-TOPIC-01/MP-R1-CIRCLE-002「计数/明细同步」反复主题在 mock 种子复发）",
+   "ideal": "回复计数与可展示明细一致；不足一页不显示「加载更多回复」",
+   "fix": "mock 种子数据对齐（replyCount=明细数）或 seed 归一；前端 repliesHasMore 改为依据服务端分页 total 而非 replyCount 差值",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CIRCLEHOME-003",
+   "round": "R1",
+   "page": "subpackages/circles/circles/circle-home",
+   "screenshot": "reports/screenshots/round-1-interact/CIRCLEHOME-02-after.png",
+   "category": "Data",
+   "severity": "P3",
+   "description": "信息卡「等 0 位朋友已加入」且三枚朋友头像为同一默认图，数字 0 不合理",
+   "evidence": "CIRCLEHOME-02-after.png 信息卡；circle-home.vue:430 count: circle.friendJoinedCount || 0——store 命中的 mock 圈（mock-data.ts circle-photo）无 friendJoinedCount 字段回退 0（本地 FALLBACK_CIRCLE 有 8）",
+   "ideal": "展示合理的好友加入数（如 FALLBACK 的 8）或隐藏该行",
+   "fix": "mock 圈数据补 friendJoinedCount 字段；模板对 0 值隐藏该行兜底",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CIRCLEHOME-004",
+   "round": "R1",
+   "page": "subpackages/circles/circles/circle-home",
+   "screenshot": "reports/screenshots/round-1-interact/CIRCLEHOME-09-after.png",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "hero 区「分享」「更多」两枚按钮无事件绑定（死按钮），点击无任何反应与反馈",
+   "evidence": "circle-home.vue:393-398 两枚 hero-btn 均无 @tap（仅 hover-class）；实测点击后停留原页无任何变化（CIRCLEHOME-09/10 after）",
+   "ideal": "分享按钮触发转发/分享面板；更多按钮弹出圈操作（举报/分享等）",
+   "fix": "分享钮补 open-type=\"share\" 或自建分享面板；更多钮接 showActionSheet（可复用 topics 页 onTopicsMore 模式）",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CAMPUSPOST-001",
+   "round": "R1",
+   "page": "subpackages/campus/campus/post-topic",
+   "screenshot": "reports/screenshots/round-1-interact/CAMPUSPOST-02-after.png",
+   "category": "Consistency",
+   "severity": "P3",
+   "description": "校圈发帖空表单点「发布」完全无反馈（无 toast 无聚焦），与圈内发话题同场景「请输入标题」toast 提示不一致",
+   "evidence": "fix4 T4 hook 实证 toasts=[]（circles 版 T1=[\"请输入标题\"]）；campus/post-topic.vue:161-166 canSubmit=false 直接 return 无提示",
+   "ideal": "空提交给出明确提示（标题/内容必填），两处发帖页行为一致",
+   "fix": "submitTopic 在 canSubmit 拦截分支补充 uni.showToast 提示（对齐 circles/post-topic.vue:272-280）",
+   "status": "待修复"
+  }
+ ],
+ "scriptPath": "tmp/interact-R1-次要14.mjs",
+ "shotDir": "reports/screenshots/round-1-interact/",
+ "findingsFile": "reports/audit/round-1/interact/次要14.json",
+ "unverifiable": [
+  "TOPICDETAIL-07 话题作者头像跳转他人主页：automator 对 scroll-view 内 catchtap 元素 3 次 tap（主套件/fix2 A/fix5 P4）均未派发事件，属自动化工具对 catchtap 的派发限制；静态绑定正确（topic-detail.vue:258-261，userId=user-3001 非空）",
+  "circles/topics 下拉刷新（refresherrefresh）：scroll-view 手势下拉无法被 automator 模拟，onRefresh 未被触发验证",
+  "campus/campus/post-topic 匿名 switch 点击切换：automator trigger(\"change\") 对原生 switch 不生效，直接 tap 补拍遇自动化通道超时；同款 switch 原生 tap 切换已在圈内发话题页验证（CAMPUSPOST-05B-switch-tap.png），绑定同构（campus/post-topic.vue:359-363）",
+  "打招呼实名认证门控弹窗（未认证分支）：mock 模式 isRealNameVerified 恒 true（campus-gate.ts:30），未认证拦截跳转需 real 包+未认证账号",
+  "身份B 游客/新号视角：mock 包 session bootstrap 恒注入满配 user-1001（session.ts:619），游客态各页表现需 real 包",
+  "IA-CIRCLEHOME-01 回归（real 模式缺参/错参静默渲染 mock 假数据）：mock 包下 isUnknownCircle 恒 false（circle-home.vue:90），无法触发未知圈空态，需 real 包复验",
+  "chooseImage 真实相册/相机与隐私授权弹窗：以 mockWxMethod 模拟验证了选图/删图 UI 链路（POSTTOPIC-12/13、CAMPUSPOST-09/10），真实相机路径与 ensurePrivacyAuthorized 弹窗需真机",
+  "ActionSheet/Modal 原生面板截图：DevTools simulator_screenshot 通道不渲染 wx.showActionSheet 面板（仅遮罩入图），两处 ActionSheet 的面板视觉呈现以遮罩+hook 驱动的功能链路证据代替"
+ ],
+ "notes": "执行环境：miniprogram-automator（ws://127.0.0.1:9420）做交互+断言，wechatide CLI simulator_screenshot 做截图（DevTools 长跑 WS 通道反复假死，R12 已知坑；断连自动重连+simulator_refresh 自愈后完成）。构建：cd apps/client && pnpm build:mp-weixin:mock（node 22 路径前置），verify-build-features 4/4 PASS。身份：mock 满配 user-1001 林晓（campusVerified=true，北京大学）。共 85 项 checks（主套件 59 + 定向复测 8），verdict 分布：符合 74 / 偏差 9 / 无法验证 2。8 项偏差：P1×2（MP-R1-POSTTOPIC-001 圈内发话题错发村口流、MP-R1-CAMPUSINDEX-001 encode 校名入口乱码+空列表）、P2×3、P3×3。主脚本 tmp/interact-R1-次要14.mjs（ONLY=页名分段可重入）；复测 tmp/interact-R1-次要14-fix2.mjs、fix3（circleId 发布流向）、fix4（wx.showToast hook 取证）、fix5（ActionSheet/switch 补拍）；逐操作日志 tmp/interact-R1-次要14.log.jsonl 与 tmp/interact-R1-次要14-fix2.log.jsonl；console 取证 tmp/console-evidence-R1-C13.log（全程无 TypeError/is not defined/NAV_FAIL）。已知取证局限：CLI 截图成像延迟 3-6s 导致瞬态 toast 全部错过（改 hook showToast 取证文本，T1-T8 全部落证）；原生 ActionSheet 面板不入截图（以遮罩+hook 链路证据代替）。回归核对：MP-R1-TOPICS-016 圈头像真实封面 PASS（TOPICS-01 hero 封面入图）；IA-POSTTOPIC-01 状态栏叠压未复发（POSTTOPIC-01/POSTTOPIC-02C-toast-ws 截图导航区正常）；IA-TOPIC-01/MP-R1-CIRCLE-002 计数/明细矛盾在 mock 种子复发（新立 MP-R1-TOPICDETAIL-001）；MP-R1-CIRCLE-001 头像接线正常（字母占位系 avatar 为空时的预期回退）；R10-P1-001 冷启动判定 mock 包不适用；MP-R1-HOME-008 数字格式本轮未涉 home 页。"
+}

@@ -13,7 +13,7 @@ import { useMatchStore } from "../../stores/match";
 import { ROUTES } from "../../constants/routes";
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
-import { isCacheFresh, setCachedValue } from "../../utils/cache-ttl";
+import { isCacheFresh, setCachedValue, removeCache } from "../../utils/cache-ttl";
 import { ensureCertified } from "../../guards/campus-gate";
 import { getToken } from "../../services/http";
 // 修复#7（第五轮 QA）：mock 模式无网络请求，dev-user 会话（已登录但无真实 token）也允许拉取本地匹配卡
@@ -126,6 +126,12 @@ async function handleSwipeLeft() {
 function enterMatching(action: "like" | "superLike") {
   const card = currentCard.value;
   if (!card) return;
+  // MP-R1-PAGES-DISCOVER-INDEX-004（2026-09-20）：今日额度用尽后不再放行喜欢/打招呼，
+  // 避免操作到一半才被接口以「次数用完」拒绝
+  if (discoverStore.isLimitReached) {
+    uni.showToast({ title: t("discover.card.quotaExhaustedTitle"), icon: "none" });
+    return;
+  }
   matchStore.beginCheck(toMatchCardUser(card), card.id, action);
   const query =
     `userId=${encodeURIComponent(card.userId)}` +
@@ -177,6 +183,17 @@ function loadDiscoverData() {
   if (sessionStore.isLoggedIn) {
     void profileStore.load();
   }
+}
+
+/**
+ * MP-R1-PAGES-DISCOVER-INDEX-002（2026-09-20）：错误横幅「重试」此前复用
+ * loadDiscoverData，30s 缓存窗口内直接短路 → 点了没反应。现强制刷新：
+ * 先清 discover:data 缓存再直调 fetchCards（失败回填 errorMessage、
+ * 成功由 fetchCards 置空 errorMessage，均不向上抛错）。
+ */
+async function retryDiscover() {
+  removeCache("discover:data");
+  await discoverStore.fetchCards();
 }
 
 onLoad(() => {
@@ -256,7 +273,7 @@ onUnload(() => {
     <scroll-view scroll-y class="match-scroll" :show-scrollbar="false" :scroll-top="scrollTop">
       <view v-if="errorMessage" class="match-error">
         <text class="match-error__text">{{ errorMessage }}</text>
-        <text class="match-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('common.retry')" @tap="loadDiscoverData">
+        <text class="match-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('common.retry')" @tap="retryDiscover">
           {{ t('discover.errorRetry') }}
         </text>
       </view>
@@ -520,7 +537,10 @@ onUnload(() => {
 
 .discover-login-hint {
   position: fixed;
-  bottom: 120rpx;
+  /* MP-R1-PAGES-DISCOVER-INDEX-003（2026-09-20）：原 bottom:120rpx 低于自定义 tabBar
+     总高（--tab-bar-h=160rpx + 中央浮岛 ~180rpx + 安全区），胶囊被 tabBar 原生层完全遮挡。
+     改为 tabBar(160rpx) + 浮岛越出余量(80rpx) + 安全区，真机在 tabBar 上方完整可点。 */
+  bottom: calc(var(--tab-bar-h, 160rpx) + 80rpx + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   display: flex;

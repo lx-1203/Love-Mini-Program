@@ -423,10 +423,14 @@ function removeVerification() {
   });
 }
 
-/** 返回上一页 */
+/** 返回上一页（MP-R1-VERIFY-INDEX-001：深链直达栈=1 时 navigateBack 无反应，兜底回「我的」Tab） */
 function goBack() {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 
 /** 输入框失去焦点时轻振动 */

@@ -1,0 +1,439 @@
+{
+  "checks": [
+    {
+      "page": "subpackages/setup/showcase/index",
+      "operation": "直达打开页面（reLaunch 模拟冷直达）",
+      "expected": "mock 构建 VITE_SHOWCASE_MODE 未注入，编译产物 config/showcase.js 中 env.VITE_SHOWCASE_MODE=undefined → isShowcaseMode=false；onShow 应执行 uni.switchTab 回落发现页（apps/client/src/subpackages/setup/showcase/index.vue:156-162），最终路由=pages/discover/index",
+      "actual": "run1/run2 两次 reLaunch 后路由均为 pages/discover/index，console 0 error；SHOWCASE-01-after(18:56) 与 SHOWCASE-02-after(20:00) 截图均为寻觅 tab",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SHOWCASE-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SHOWCASE-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/setup/showcase/index",
+      "operation": "重复直达（第二次 reLaunch 进出）",
+      "expected": "行为与首次一致：回落 pages/discover/index，无残留、无报错",
+      "actual": "第二次 reLaunch 后路由仍为 pages/discover/index（run1/run2 一致），截图 SHOWCASE-02-after 为寻觅 tab",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SHOWCASE-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SHOWCASE-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "打开页面",
+      "expected": "AppShell「反馈中心」标题；3 个类型 chip 且「反馈」默认 chip--active；反馈历史卡含 mock 预置记录；上传图片 + 号占位；AppShell 返回按钮存在（feedback/index.vue:405-570）",
+      "actual": "全部命中：chips=[反馈(active),建议,活动提案]，submissionRows/store.submissions 非空，image-cell--add 与 shell__back 均在；run2 时列表 4 条为 run1 已提交记录在同 IDE 会话 mock 内存中的残留，属环境态非页面缺陷",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-01-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "点击「建议」类型 chip 切换",
+      "expected": "chip--active 选中态移至「建议」，无跳转、无报错（feedback/index.vue:409-420）",
+      "actual": "run1/run2 一致：点击后第二枚 chip class 含 chip--active，第一枚移除，路由不变",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-02-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "标题输入框正常输入+清空",
+      "expected": "输入内容回显（v-model），清空后值为空",
+      "actual": "输入 R1自动化标题ABC123 后 element.value()=原串；清空后 value=\"\"",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-03-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "内容输入超长文本 6000 字",
+      "expected": "textarea maxlength=5000（R4-00118 对齐契约 SubmissionRequest.content 上限，feedback/index.vue:62-67,440），6000 字输入应被截断为 5000",
+      "actual": "input 6000 字后 element.value() 长度=5000，与 maxlength 一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-04-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "内容输入特殊字符（script 标签/引号/反引号/emoji/零宽字符/换行制表）",
+      "expected": "内容原样回显，无脚本执行、无崩溃、无 console error",
+      "actual": "回显串与输入完全一致（<script>alert(1)</script> 等均原样保留），consoleErrors=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-05-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "空内容点击提交",
+      "expected": "标题/内容为空时提交被拦截：toast「提交失败，请稍后重试」（feedback.submitFailed，feedback/index.vue:311-318），不新增记录、不跳转",
+      "actual": "toast「提交失败，请稍后重试」在 FEEDBACK-06-after(18:37) 截图可见；store 记录数 2→2（run1）/4→4（run2），路由保持本页",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-06-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "填写标题/内容/微信号后正常提交",
+      "expected": "toast「提交成功」（feedback.submitSuccess），表单四项清空（feedback/index.vue:329-339），反馈历史列表 +1 且新记录置顶",
+      "actual": "成功 toast 截图在场（FEEDBACK-07-after 18:37「提交成功」✓）；store 2→3（run1）/4→5（run2），新记录置顶且状态「已提交/你的提交已进入处理队列。」；formTitleAfter=\"\"；同时发现新问题：记录行时间渲染为原始 ISO 串（2026-09-21T11:03:29.703Z），见 issue MP-R1-FEEDBACK-001",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-07-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-07-after.png",
+      "issueId": "MP-R1-FEEDBACK-001"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "快速连续点击提交按钮（两次）",
+      "expected": "isSubmitting 防重复锁（feedback/index.vue:307-319）或提交成功清空后的必填校验，保证不产生重复提交记录",
+      "actual": "run1 与 run2 的记录数 delta 均为 +1，无重复记录、无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-08-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "点击「历史记录」入口",
+      "expected": "navigateTo /subpackages/profile-extra/feedback/history（功能10 入口，feedback/index.vue:364-379）",
+      "actual": "run2 该操作第 1 次点击即跳转成功（route=subpackages/profile-extra/feedback/history，FEEDBACK-09-after 19:05 为历史页）；run1 首拍同操作无反应——同期 IDE 连续 40 次截图 timeout（负载窗口丢点击），run2/复测均正常，判定为自动化通道丢点击而非页面缺陷",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-09-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "点击提交记录行",
+      "expected": "跳转历史详情并携带 id：history?id=<记录id>（goDetail，feedback/index.vue:386-402）",
+      "actual": "run2 route=subpackages/profile-extra/feedback/history?{id:1004}；run4 复测 2 次点击内同样命中",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-10-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "operation": "点击 AppShell 顶部返回（页面栈仅 1 页）",
+      "expected": "navigateBack fail 后兜底 switchTab /pages/home/index（components/layout/AppShell.vue:115-127）",
+      "actual": "run2 点击后 route=pages/home/index，与兜底逻辑一致（activities 页同场景亦复现该兜底）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/FEEDBACK-11-before.png",
+      "after": "reports/screenshots/round-1-interact/FEEDBACK-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "打开页面（R10-P3-018 回归点）",
+      "expected": "「正在讨论」卡展示 2 条推荐（heatLabel+标题+摘要，mock d-1/d-2 内容不同）；页头仅一句副标题、分组无重复副标题（R10-P3-018 修复回归）；底部「下一步」卡含 去寻觅/反馈讨论建议 两按钮",
+      "actual": "2 条 feed-row 内容互不相同（412 人收藏/热度上升标签+各自标题摘要）；截图（20:01）页头单副标题、分组无重复副标题；两底部按钮在场",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-01-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "点击推荐条目（真实弹窗）",
+      "expected": "弹出 showModal：标题=条目标题、内容=摘要+\\n\\n+热度标签、按钮 取消|去寻觅（openDiscussion，discussions/index.vue:54-67）",
+      "actual": "真实弹窗截图 DISCUSSIONS-02-after(19:09)：标题「大家怎么平衡恋爱和考试周？」、内容「一条很实用的讨论串，边界清楚，安排也容易落地。 412 人收藏」、按钮 取消/去寻觅，与代码一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-02-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "弹窗点击「去寻觅」（确认分支）",
+      "expected": "res.confirm=true → openPath('/pages/discover/index') → switchTab 至寻觅 tab（discussions/index.vue:61-65）",
+      "actual": "无法端到端驱动：wx.showModal 事后替换不可拦截——编译产物 vendor.js 中 \"showModal\" 字面量 0 命中，uni 运行时初始化时枚举 wx 拷贝方法引用，页面实际调用 e.index.showModal（编译页 index.js 证实），mockWxMethod（run1）与 wx 层替换+6 连点重试（run3/run4，调用日志 __smlog 恒空）均无法注入确认回调；原生弹窗按钮不在 automator 元素树。部分证据：确认分支调用的 openPath('/pages/discover/index') 与已两次验证通过的 D-05 主按钮完全同函数同 URL",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-03-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "弹窗点击「取消」（取消分支）",
+      "expected": "res.confirm=false → 仅关闭弹窗，停留本页（discussions/index.vue:61-65 仅 confirm 分支跳转）",
+      "actual": "同 DISCUSSIONS-03：取消回调无法自动化注入（wx 层替换不可拦截+原生按钮不可达）；部分证据：真实弹窗打开未确认时路由保持 discussions（run1 DISCUSSIONS-02），代码仅 res.confirm 才跳转",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-04-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "点击底部主按钮「去寻觅」",
+      "expected": "openPath('/pages/discover/index') → switchTab 至寻觅 tab（discussions/index.vue:109-114）",
+      "actual": "run1 route=pages/discover/index；run3 复测第 1 次点击即命中；DISCUSSIONS-05-after 截图为寻觅 tab",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-05-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "operation": "点击底部次按钮「反馈讨论建议」",
+      "expected": "openPath('/subpackages/support/feedback/index') → navigateTo 意见反馈页（discussions/index.vue:109-114）",
+      "actual": "run1 route=feedback/index；run3 第 1 次命中；run4 复测 tries=1 命中，DISCUSSIONS-06-after 为反馈中心页",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/DISCUSSIONS-06-before.png",
+      "after": "reports/screenshots/round-1-interact/DISCUSSIONS-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "打开页面（默认列表视图）",
+      "expected": "视图切换「列表」默认 active；快捷筛选 全部/今天/周末；4 张 mock 活动卡（a-1~a-4）；a-3 预置已感兴趣+20人已报名；mock hasMore=false（stores/activity.ts:63-120,147,179）",
+      "actual": "全部命中：toggles=[列表(active),日历]、filters=3、rows=4、enrolls[2]=已感兴趣、store.hasMore=false、底部「没有更多活动了」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-01-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "快捷筛选「今天」",
+      "expected": "客户端按 scheduleText 含 今天/今晚/今日 过滤（activities/index.vue:46-54）；4 条 mock scheduleText（周四/周六/周日/下周五）均无匹配 → 0 行 + 空态「当前筛选下暂无活动，换个时间看看吧」",
+      "actual": "rows=0，filtered-empty 文案逐字命中",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-02-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "快捷筛选「周末」",
+      "expected": "命中周六/周日条目 → 2 行（电影社轻松线下碰面-周六、周末篮球友谊赛-周日）",
+      "actual": "rows=2 且内容与预期两条完全一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-03-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "快捷筛选回「全部」",
+      "expected": "恢复 4 行",
+      "actual": "rows=4（run1/run2 一致）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-04-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "切换「日历」视图",
+      "expected": "月标题 2026年9月、35 格月历、今日(9/21)高亮（--today）+活动圆点+活动标题（activities/index.vue:479-550）",
+      "actual": "monthTitle=2026年9月、cellCount=35、today cell class 含 --today+--active、网格标题含 周末篮球友谊赛(21)/图书馆南门咖啡散步(22)/电影社轻松线下碰面(24)/校园音乐节(28)；截图 ACTIVITIES-05-after(19:15) 与预期一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-05-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "点击今日（有活动）日期格",
+      "expected": "选中面板出现：日期标签 9月21日、活动数 1个活动、周末篮球友谊赛行（activities/index.vue:552-613）",
+      "actual": "panelLabel=9月21日、panelCount=1个活动、面板内活动行=周末篮球友谊赛",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-06-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "点击当月无活动日期格",
+      "expected": "无活动日也可选中（任务 E1 设计，activities/index.vue:292-299）：格子加 --selected，面板显示空态「当日暂无活动」（emptyForDate）",
+      "actual": "被点格 class 含 calendar-cell--selected/--disabled，面板空态文案=当日暂无活动",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-07-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "月份切换 ›（下月）",
+      "expected": "标题变 2026年10月，选中日期清空、面板关闭（goToNextMonth activities/index.vue:281-290）",
+      "actual": "monthTitle=2026年10月，panelStillOpen=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-08-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "月份切换 ‹‹（上月×2）再 › 回当月",
+      "expected": "‹‹ 后为 2026年8月，再 › 回 2026年9月（跨年边界由 goToPrev/NextMonth 处理）",
+      "actual": "run1/run2 一致：afterPrev2=2026年8月、afterNext=2026年9月",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-09-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "切回「列表」视图",
+      "expected": "列表恢复 4 行，日历卸载",
+      "actual": "rows=4（run1/run2 一致）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-10-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "点击 a-1 报名按钮（感兴趣）",
+      "expected": "toggleEnroll → toast「报名成功」、按钮变「已感兴趣」+enroll-btn--active、store isEnrolled=true 且 enrollCount 12→13（activities/index.vue:106-123, stores/activity.ts:251-276）",
+      "actual": "run1/run2/run4 三次一致：store false→true、12→13、按钮文本已感兴趣+active class；run4 截图 ACTIVITIES-11-after(20:04) 可见「13 人已报名/已感兴趣」；toast 文本未入截图（CLI 截图延迟大于 1.5s toast 窗口，toast 渲染通道已由 FEEDBACK-06/07 截图证明正常）；验证后已还原为未报名",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-11-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "再次点击报名按钮（取消报名）",
+      "expected": "toggle 回未报名：toast「已取消报名」、按钮回「感兴趣」、13→12",
+      "actual": "run1/run2 一致：store true→false、13→12、按钮回感兴趣",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-12-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "快速连点 a-2 报名按钮（两次）",
+      "expected": "不崩溃、无 console error、最终按钮态与 store isEnrolled 一致（enrollingActivityIds 在途守卫 stores/activity.ts:255-258；mock 即时返回使在途窗口极短，允许两次完整 toggle 相互抵消）",
+      "actual": "storeBefore=false/8 → storeAfter=false/8（两次点击各完整 toggle 一次相互抵消），按钮文本「感兴趣」与 store 一致，consoleErrors=0，无状态错乱",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-13-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "点击活动卡片主体",
+      "expected": "goToActivityDetail → /subpackages/tools/activities/detail?id=<id>（activities/index.vue:135-137）",
+      "actual": "run2 route=subpackages/tools/activities/detail?{id:a-1}；run3 第 1 次点击命中；run4 2 次点击内命中（run1 首拍遇 1 次丢点击，复测均通过）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-14-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "列表滚动到底",
+      "expected": "scrolltolower 触发 onScrollToLower（300ms 防抖 activities/index.vue:92-101）；mock hasMore=false 不发新请求；底部「没有更多活动了」",
+      "actual": "scroll-view scrollTo 成功无错，loading-more 文本=没有更多活动了，store.hasMore=false，无重复请求报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-15-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "operation": "点击 AppShell 顶部返回（页面栈仅 1 页）",
+      "expected": "navigateBack fail → 兜底 switchTab /pages/home/index（AppShell.vue:115-127）",
+      "actual": "run2/run4 两次 route=pages/home/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/ACTIVITIES-16-before.png",
+      "after": "reports/screenshots/round-1-interact/ACTIVITIES-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "operation": "带页面栈打开（讨论圈 → navigateTo）",
+      "expected": "LegalTextPage 渲染：页题「隐私政策」、正文加载成功（mock/后端不可达时回退 i18n fallback，无版本徽标）、底部「我已阅读并同意」按钮（LegalTextPage.vue:159-231, config/legal-texts.ts local-fallback）",
+      "actual": "title=隐私政策、versionBadge=[]（fallback 态无徽标，run1/run2 一致）、contentLen=1115、footer 按钮在场；run5 重拍时本地后端(127.0.0.1:8080)可达，出现版本 meta（最后更新 2026-07-26·2026-09-21）与 CMS 正文——fallback/CMS 双状态渲染均正确",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PRIVACY-legal-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PRIVACY-legal-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "operation": "正文 scroll-view 滚动到底",
+      "expected": "长文本可滚动（LegalTextPage.vue:207-216 scroll-view scroll-y）",
+      "actual": "element.scrollTo(0,99999) 成功无错（run1/run2/run5 三次一致），滚动后截图正文位移可见",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PRIVACY-legal-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PRIVACY-legal-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "operation": "点击「我已阅读并同意」（有页面栈）",
+      "expected": "navigateBack 返回上一页（讨论圈）（LegalTextPage.vue:131-148）",
+      "actual": "run1/run2/run5 三次一致：route=subpackages/discover/discussions/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PRIVACY-legal-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PRIVACY-legal-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "operation": "冷启动直达后点击「我已阅读并同意」（无页面栈）",
+      "expected": "navigateBack fail → 兜底 switchTab ROUTES.TAB.DISCOVER（LegalTextPage.vue:134-139）→ pages/discover/index",
+      "actual": "run1/run2/run5 三次一致：route=pages/discover/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PRIVACY-legal-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PRIVACY-legal-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "operation": "带页面栈打开（发现 tab → navigateTo）",
+      "expected": "页题「用户协议」、正文成功加载（fallback 态无版本徽标）、底部「我已阅读并同意」",
+      "actual": "title=用户协议、versionBadge=[]、contentLen=968、按钮在场（run1/run2/run4 一致）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/AGREEMENT-01-before.png",
+      "after": "reports/screenshots/round-1-interact/AGREEMENT-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "operation": "点击「我已阅读并同意」",
+      "expected": "navigateBack 返回发现 tab",
+      "actual": "run1/run2/run4 一致：route=pages/discover/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/AGREEMENT-02-before.png",
+      "after": "reports/screenshots/round-1-interact/AGREEMENT-02-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-FEEDBACK-001",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "reports/screenshots/round-1-interact/FEEDBACK-07-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "反馈提交记录行的时间渲染为原始 ISO 8601 字符串（如 2026-09-21T11:03:29.703Z），未做任何本地化格式化，用户不可读",
+      "evidence": "run2 观察记录 topRow.text=\"R1复拍验证反馈 已提交 你的提交已进入处理队列。 2026-09-21T11:03:29.703Z\"；mock 预置行同样显示 2026-05-18T09…；模板直出 {{ item.submittedAt }}（apps/client/src/subpackages/support/feedback/index.vue:566），数据源为 ISO 字符串（services/mocks/fixtures.ts:1611 submittedAt: new Date().toISOString()）",
+      "ideal": "按小程序惯例格式化为本地时间（如 2026-09-21 19:03 或 x 分钟前），保持列表信息可扫读",
+      "fix": "在 view-models/feedback 或模板层增加统一日期格式化（工程已存在 formatLocalDate 等工具，stores/activity.ts relativeDate 同款本地时区处理），将 item.submittedAt 格式化后渲染",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-次要21.mjs",
+  "shotDir": "reports/screenshots/round-1-interact/",
+  "findingsFile": "reports/audit/round-1/interact/次要21.json",
+  "unverifiable": [
+    "subpackages/setup/showcase/index 页内全部交互（顶部返回、7 组 35+ 跳转条目）：页面仅在展示构建（.env.mp-weixin-showcase，VITE_SHOWCASE_MODE=true）可用；本次验证目标为 mock 构建（isShowcaseMode=false），页面 onShow 即回落 discover（index.vue:156-162），内部元素不可达；不为取证切换另一构建产物",
+    "subpackages/support/feedback/index 图片上传（+ 号 chooseImage）、已传图片点击预览、长按/角标删除：chooseImage 依赖隐私授权与系统相册原生对话框，automator 无法驱动原生 UI；form.attachments 为 setup 内部状态无法从外部预置，预览/删除入口依赖已有图片",
+    "subpackages/discover/activities/index 下拉刷新：scroll-view refresher 为真实下拉手势，automator 无法合成；onRefresherRefresh 为 setup 内部函数未挂页面实例，callMethod 不可达",
+    "subpackages/discover/discussions/index 弹窗确认/取消按钮点击后的跳转分支（DISCUSSIONS-03/04）：wx.showModal 原生弹窗按钮不在 automator 元素树；wx 层事后替换不可拦截（uni 运行时初始化已枚举拷贝 wx 方法引用，编译产物 vendor.js 无 \"showModal\" 字面量，页面实际调用 e.index.showModal）；miniProgram.mockWxMethod 同因无效（run1 实验）。部分证据已记录于对应 check"
+  ],
+  "notes": "取证环境：先按 ask 要求重跑 pnpm build:mp-weixin:mock（注意：默认 PATH 的 node 为 DevTools 自带 v16.13.1 会致 uni build 失败并清空 dist，需 PATH 前置 node-v22.17.0；重跑后 verify-build-features PASS 4/4）。连接方式为方案2 automator SDK 0.12.1 @ ws://127.0.0.1:9420（scripts/automator-probe.cjs 同款），身份A=tmp_r11_login.json 满配登录态（token 注入 + session.bootstrap，每次运行校验 isLoggedIn=true）。共 5 轮执行：run1 全量 43 操作（IDE 负载期 40 次截图 timeout、少量点击被丢）；run2 全量复拍+重试（截图重试 3 次）；run3 导航插桩（uni 非全局仅 wx 可插）+发现 IDE 截图通道整体劣化；run4 改用方案1 的 CLI 通道（wechatide.cmd -c ZCode simulator_screenshot）补齐全部缺失帧并三验 A-11/D-05/D-06/F-10/A-14；run5 补拍 legal/privacy 自有帧。行为判定以多轮一致结果为准；run1 中 FEEDBACK-09/10/11 与 ACTIVITIES-14 的『无反应』经 run2-run4 复测均为 IDE 丢点击（同期 40 次截图 timeout 佐证），已在对应 check 的 actual 中如实记录。截图目录为并行验证员共享：检测到 12:4x-13:0x 落盘的 PRIVACY-*.png 实为他人「隐私权限设置」页证据，为不破坏其证据，本页 8 帧改用 PRIVACY-legal-01..04 前缀并在 checks 中引用；SHOWCASE/FEEDBACK/DISCUSSIONS/ACTIVITIES/AGREEMENT 前缀帧（18:3x-20:1x）均属本次验证。privacy 页在 run5 出现版本 meta 与 CMS 正文（本地后端 127.0.0.1:8080 可达），与 run1/run2 的 fallback 态（无徽标）共同证明双状态渲染正确。全程 console 取证：run1 40 条/run2 36 条消息均 0 error、无 TypeError/is not defined/NAV_FAIL。mock 反馈记录数在同 IDE 会话内跨轮累加（内存态），已按相对计数判定。产物：观察记录 tmp/interact-R1-次要21-observations.json（run1 版本 -observations-run1.json；run3/run4/run5 同名带轮次后缀）、console 全量 tmp/interact-R1-次要21-console*.log。"
+}

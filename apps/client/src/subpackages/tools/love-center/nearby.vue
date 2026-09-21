@@ -103,6 +103,10 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
         uni.showToast({ title: t("contentPages.nearby.liked"), icon: "success" });
       }
     }
+    // MP-R1-NEARBY-001：同步移除本地 cards 对应项——本页卡片是独立本地副本
+    // （非 discoverStore.cards 直接绑定），store 内部已移除但本地不同步，导致
+    // 视觉恒停第一张、第二次操作起 store 报「卡片不存在」。
+    removeLocalCard(cardId);
   } catch (error) {
     const storeMessage = discoverStore.errorMessage;
     if (storeMessage) {
@@ -124,6 +128,8 @@ async function handleSuperLike(cardId: string) {
       uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
       openAppPath(`/subpackages/chat/chat-session/index?userId=${encodeURIComponent(String(card?.userId ?? ""))}`);
     }
+    // MP-R1-NEARBY-001：同 handleSwipe，操作成功后同步推进本地卡片队列
+    removeLocalCard(cardId);
   } catch (error) {
     const storeMessage = discoverStore.errorMessage;
     if (storeMessage) {
@@ -132,6 +138,11 @@ async function handleSuperLike(cardId: string) {
       showErrorToast(error, t("contentPages.nearby.operationFailed"));
     }
   }
+}
+
+/** MP-R1-NEARBY-001：从本地卡片队列移除已消费的卡片（推进视觉到下一张） */
+function removeLocalCard(cardId: string) {
+  cards.value = cards.value.filter((c) => c.id !== cardId);
 }
 
 /** 发消息：进入聊天会话页（会话懒创建，进入后由聊天页完成） */

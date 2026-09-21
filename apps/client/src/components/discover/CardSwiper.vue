@@ -1250,6 +1250,7 @@ defineExpose({ onTouchMove });
       :visible="showDetail"
       :card="currentCard"
       :initial-anchor="detailAnchor"
+      :masked="masked"
       @close="closeDetail"
       @like="() => { closeDetail(); onLike(); }"
       @superLike="() => { closeDetail(); onSuperLike(); }"

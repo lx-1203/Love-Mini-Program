@@ -1,0 +1,418 @@
+{
+  "checks": [
+    {
+      "page": "pages/register/index",
+      "operation": "reLaunch 进入注册页（初始加载）",
+      "expected": "hero 插图+左上返回按钮、「创建账号/用手机号注册」标题、账号信息卡（手机号/验证码/密码/确认密码 4 输入框）+基础身份卡（昵称/出生日期）、协议行未勾选、注册按钮置灰样式（formComplete=false→submit-btn--disabled）、底部安全说明与「去登录」出口（index.vue:426-729）",
+      "actual": "inputCount=5、清除图标不存在(clearIcon=0)、submit-btn 类含 submit-btn--disabled、agree__chk 无 --on；截图布局完整。环境注：DevTools 工具级弹窗「获取手机号失败」（微信账号手机验证，非页面元素，文案不在仓库源码）全程遮挡模拟器中部（见 ENV-devtools-modal-screen.png）；被遮挡区域的行为均以 DOM 快照/属性读取/toast 打桩程序化取证。",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "空表单点击「注册」（空内容提交）",
+      "expected": "validateFirstError 首错=phone：行内错误「请输入手机号」+字段红框抖动+Toast「请输入手机号」(icon:none,2000ms)，不跳转（index.vue:200-214,311-322）",
+      "actual": "DOM fieldErrors=[\"请输入手机号\"]；toast 打桩实测 {title:'请输入手机号',icon:'none',duration:2000}（补拍 02-after-toast）；path 不变。",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "手机号正常输入 13812345678",
+      "expected": "自动 3-4-4 格式化为「138 1234 5678」，重输入清空行内错误，清除图标出现（onPhoneInput index.vue:144-151）",
+      "actual": "clearIcon=1、fieldErrors=[]（错误被重输入清除）；值级补测 element.property('value')='138 1234 5678'",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "手机号超长输入 13812345678999123（17 位）",
+      "expected": "仅保留数字并 slice(0,11) 截断 → 显示「138 1234 5678」（maxlength=13+代码截断 index.vue:145）",
+      "actual": "值级补测 value='138 1234 5678'（11 位），无崩溃无溢出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击手机号清除图标",
+      "expected": "phone 清空、行内错误与 phoneRegistered 复位、清除图标随 v-if 条件消失（clearPhone index.vue:183-187）",
+      "actual": "clearIcon 由 1→0；紧接着的 06 证明手机号已为空（触发空号校验分支）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-05-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "手机号为空时点击「获取验证码」",
+      "expected": "行内「手机号格式不正确，请输入 11 位手机号」+字段抖动+Toast「请先输入正确的手机号」，不发请求（handleSendSms index.vue:246-252）",
+      "actual": "DOM fieldErrors=['手机号格式不正确，请输入 11 位手机号']；toast 打桩实测 {title:'请先输入正确的手机号',icon:'none',duration:2000}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "手机号输入字母/特殊字符 abc138wxy",
+      "expected": "onPhoneInput 以 replace 非数字过滤 → 值为「138」（index.vue:145）",
+      "actual": "clearIcon=1（值非空）；同函数过滤链路由值级补测证实（验证码框 12 位混合输入 → value='123456'；手机号 17 位混合 → '138 1234 5678'）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "输入合法手机号后点击「获取验证码」",
+      "expected": "POST /v1/sms/send-code 成功 → Toast「验证码已发送（模拟：123456）」(1500ms)+按钮变灰底「重新发送 59s」60s 倒计时（index.vue:253-277；本地后端模拟短信）",
+      "actual": "sms-btn 文本='重新发送 58s' 且类含 sms-btn--cd；toast 打桩实测 {title:'验证码已发送（模拟：123456）',icon:'none',duration:1500}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "60s 倒计时内再次点击「获取验证码」（重复触发防护）",
+      "expected": "smsCountdown>0 → handleSendSms 直接 return：不发请求、倒计时继续、不重置（index.vue:246）",
+      "actual": "按钮仍为「重新发送 55s」（倒计时继续递减），未重置为「获取验证码」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "验证码输入含字母杂字符 12ab34cd（特殊字符）",
+      "expected": "onSmsInput 过滤非数字并截断 6 位 → 值「1234」（index.vue:153-156）",
+      "actual": "值级补测（12 位混合输入 12ab34cd56xy）value='123456'（过滤+截断）；无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "验证码补全输入 123456（mock 短信码回填）",
+      "expected": "值='123456'，无行内错误",
+      "actual": "值级补测 value='123456'",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "仅填手机号+验证码时点击「注册」（校验顺序推进）",
+      "expected": "首错推进至 password：「请设置登录密码」行内+Toast（validateFirstError 顺序 phone→sms→password index.vue:199-215）",
+      "actual": "DOM fieldErrors=['请设置登录密码']，不跳转",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "密码输入 abc12345（强度条出现）",
+      "expected": "pwdStrength=2（≥8 位含字母+数字）→ 3 格中亮 2 格+「中」（黄）（index.vue:107-123）",
+      "actual": "DOM strengthLabel='中'、strength 可见；强度条位于工具弹窗遮挡区，格数像素未能目验（标签文字为 DOM 硬证据）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-13-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "密码改为 Abcdef123!（强度升级）",
+      "expected": "pwdStrength=3 → 3 格全亮+「强」（绿）",
+      "actual": "DOM strengthLabel='强'（遮挡区同上，文字为硬证据）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-14-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击密码眼睛图标（密文⇄明文）",
+      "expected": ":password='!showPassword' 切换密文/明文；图标 eye-off.svg⇄eye.svg（index.vue:544,555-561）",
+      "actual": "图标 src DOM 证据（补测 probe-eye-src.mjs）：eye-off.svg → eye.svg → eye-off.svg 两次点击正确往返；无异常。像素被工具弹窗遮挡",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-15-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "确认密码输入 Abc99999（与密码不一致）",
+      "expected": "输入即实时比对：行内「两次输入的密码不一致」红字（onConfirmInput index.vue:163-171）",
+      "actual": "DOM fieldErrors=['两次输入的密码不一致']",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击确认密码眼睛图标",
+      "expected": "showConfirmPassword 取反，图标切换",
+      "actual": "图标 src DOM 证据（补测）：eye-off.svg → eye.svg；无异常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "确认密码改回一致 Abcdef123!",
+      "expected": "一致后行内错误即时清除",
+      "actual": "DOM fieldErrors=[]",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "昵称输入 25 字超长文本",
+      "expected": "maxlength=20 截断为 20 字（index.vue:640）",
+      "actual": "值级补测 value='这是一个特别特别长的昵称测试一二三四五六'（恰好 20 字）；截图显示无布局溢出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-19-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "昵称输入特殊字符 <script>&\"'（XSS 探测）",
+      "expected": "纯文本原样存储/渲染，无脚本执行、无 DOM 破坏、无崩溃",
+      "actual": "截图 22-after 中昵称行显示字面文本 <script>&\"'；inputCountStill=5（DOM 完好）；无 console 异常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "密码输入全角字符「１２３ａｂｃｄｅ」后点击「注册」（特殊字符校验）",
+      "expected": "validatePassword 检出全角 → 行内「密码不能包含空格或全角字符」+Toast 同文案，不提交（index.vue:194）",
+      "actual": "DOM fieldErrors=['密码不能包含空格或全角字符']；toast 打桩实测同文案(2000ms)；不跳转",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-21-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击出生日期字段（打开原生日期 picker 弹层）",
+      "expected": "弹出原生日期选择器（mode=date，end=今天，默认 2005-01-01）（index.vue:661-676）",
+      "actual": "tap 执行无报错；但两轮截图均未见 picker 弹层——DevTools 工具级弹窗遮挡/抑制原生弹层渲染，无法目验弹层是否弹出。picker 的 @change 赋值链路已单独证实（见操作 23）",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-22-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "重填全部字段+picker change 回填生日+勾选协议（准备提交）",
+      "expected": "出生日期显示「2000-01-01」（深色 filled 态）、协议框 --on 绿底对勾、formComplete=true → 注册按钮移除置灰类恢复渐变激活态（index.vue:130-139,672,686-694）",
+      "actual": "DOM pickText='2000-01-01'、agreeClass 含 agree__chk--on、submitClass 不含 submit-btn--disabled（激活态）；截图 26-after 同状态可目验",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-23-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "表单完整状态下快速连续点击「注册」×3（防重复提交）",
+      "expected": "createButtonGuard 2000ms 锁：仅首次点击生效，单次提交并 redirectTo /pages/register/success?phone=…（index.vue:323-336,423；utils/debounce.ts:145-169）",
+      "actual": "finalPath=pages/register/success；成功页截图（庆祝插画+「下一步：完善资料」+「完善我的资料→」+「稍后再说，先随便逛逛」）；无重复提交错误（重复注册会命中已注册分支）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-24-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-24-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "页面打开立即返回（navigateTo 进入后立即点左上返回）",
+      "expected": "goLogin 走 navigateBack 分支回登录页（栈深>1）（index.vue:404-411）",
+      "actual": "from=pages/login/index → 进入 register → 返回后=pages/login/index；无白屏无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-25-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-25-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "已注册手机号完整填表后点击「注册」（重复注册已存在账号）",
+      "expected": "后端 400 PHONE_ALREADY_REGISTERED → 手机号行内「该手机号已注册，试试直接登录」+红框+Toast「该手机号已注册，可直接登录」+「用这个手机号登录」ghost 按钮出现（index.vue:347-359,696-699）",
+      "actual": "三者全部出现：DOM fieldErrors=['该手机号已注册，试试直接登录']、ghost-btn 文本='用这个手机号登录'、toast 打桩实测同文案；截图可见手机号红框+ghost 按钮。副作用：该次业务 400 在 console 触发多条 [captureException] 噪音（见 MP-R1-PAGES-REGISTER-INDEX-001）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-26-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-26-after.png",
+      "issueId": "MP-R1-PAGES-REGISTER-INDEX-001"
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击「用这个手机号登录」次级出口",
+      "expected": "goLogin：当前栈深 1（reLaunch 进入）→ reLaunch 到登录页（index.vue:404-411）",
+      "actual": "pathAfterTap=pages/login/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-27-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-27-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击协议勾选框（勾选）",
+      "expected": "勾选态：agree__chk--on 绿底+对勾图标（index.vue:704-710）",
+      "actual": "agreeClass 含 agree__chk--on",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-28-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-28-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击《用户协议》链接",
+      "expected": "navigateTo /subpackages/legal/agreement/index；不改变勾选状态（openAgreement index.vue:413-416）",
+      "actual": "path=subpackages/legal/agreement/index；勾选态在返回后保持（见操作 30）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-29-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-29-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "从用户协议页返回注册页",
+      "expected": "返回注册页，协议勾选保持 --on",
+      "actual": "path=pages/register/index，agreeClass 仍含 --on",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-30-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-30-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击《隐私政策》链接",
+      "expected": "navigateTo /subpackages/legal/privacy/index",
+      "actual": "path=subpackages/legal/privacy/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-31-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-31-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "从隐私政策页返回注册页",
+      "expected": "返回注册页，勾选保持",
+      "actual": "path=pages/register/index，agreeClass 仍含 --on",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-32-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-32-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "再次点击协议勾选框（取消勾选）",
+      "expected": "--on 移除恢复未勾选",
+      "actual": "agreeClass 无 --on",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-33-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-33-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击底部「去登录」链接",
+      "expected": "goLogin：栈深 1 → reLaunch 登录页（index.vue:725-728,404-411）",
+      "actual": "path=pages/login/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-34-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-34-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "点击左上角返回按钮（单页栈 reLaunch 分支）",
+      "expected": "hero__back → goLogin → reLaunch 登录页（index.vue:433,404-411）",
+      "actual": "path=pages/login/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-35-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-35-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "重复进出注册页 ×3（navigateTo/navigateBack 循环）",
+      "expected": "每轮进出正常渲染/退出，无白屏、无 JS 异常",
+      "actual": "paths=[register,login]×3 全部正常；console 无 TypeError/is not defined/NAV_FAIL/EXCEPTION",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-36-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-36-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "滚动到页面底部（pageScrollTo 9999）",
+      "expected": "底部安全说明与「已有账号？去登录」完整可见（index.vue:721-728）",
+      "actual": "37-after 截图：hero 滚出、出生日期行/注册按钮/协议行/安全说明/「已有账号？去登录」均完整可见",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-37-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-37-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "滚动回页面顶部（pageScrollTo 0）",
+      "expected": "回到 hero 插图+标题区",
+      "actual": "38-after 截图：hero 与「创建账号」标题回到视口顶部",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-38-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-38-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/index",
+      "operation": "B6 分支：后台关闭注册（register_open=false）后进入注册页",
+      "expected": "onShow 检测 isRegisterOpen=false → Toast「注册功能暂未开放」+800ms 后 goLogin 退出注册页（index.vue:288-293）",
+      "actual": "store 置 register_open=false 后 reLaunch 注册页：0.8s 内已退出至 pages/login/index（守卫生效）；截图 B6-closed-after。对照：register_open 复位 true 后页面正常驻留",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-38-after.png（进入前为注册页常态，补测未单独拍 before）",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-B6-closed-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-001",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-26-after.png",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "注册业务 400（手机号已注册）被 http 层默认上报 captureException：实测 1 次预期业务拒绝在 console 产生多条 [captureException] 噪音（最小归因探针 6 条/主跑 2 条；成功注册路径 0 条），与注册页「预期业务拒绝为噪音不上报」的设计注释不一致",
+      "evidence": "apps/client/src/services/http.ts:852-863（最终失败即 captureException，仅 reportError=false 与 401 跳过）；apps/client/src/services/auth.ts:338-347（registerUser 未传 reportError:false）与 auth.ts:372-383（sendSmsCode 同）；设计口径 apps/client/src/pages/register/index.vue:393-396；运行证据 reports/audit/round-1/interact/PAGES-REGISTER-INDEX-console.log（2 条）、tmp/probe-attr2.mjs 输出（同一时刻 13.2s 六条）、成功路径零告警（tmp/probe-attr.mjs）",
+      "ideal": "预期业务拒绝（已注册/验证码错误/未成年等可预期 4xx）不进入异常上报与 console.error，仅网络异常/5xx/非预期错误上报（对齐 loginAsGuest 的 reportError:false 口径 auth.ts:385-404）",
+      "fix": "registerUser/sendSmsCode 的 request 选项补 reportError:false；或 http 层对 category=business 的 4xx 默认跳过 captureException，仅保留显式开启时上报",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-PAGES-REGISTER-INDEX.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json",
+  "unverifiable": [
+    "op22 原生日期 picker 弹层是否弹出：DevTools 工具级弹窗「获取手机号失败」（微信账号手机验证，工具级而非页面元素）全程遮挡模拟器中部并抑制原生弹层渲染，两轮截图均无法目验；tap 无报错，且 picker @change 赋值链路已由操作 23（pick-text=2000-01-01）与成功注册证实",
+    "软键盘弹起时协议行可见性（设计要求「不得被键盘完全遮住」，index.vue:702）：automator 的 element.input 不拉起真实软键盘，无法在自动化环境验证真实键盘遮挡场景",
+    "生产 real 模式/真实短信网关下的注册链路：本验证基于本地后端(127.0.0.1:8080)+模拟短信(mockCode=123456 固定值)，真实微信账号手机验证流程未覆盖"
+  ],
+  "notes": "构建：build:mp-weixin:mock 产物 verify-build-features 4/4 PASS（2026-09-20 01:50 构建），无源码文件晚于产物。链路：automator ws://127.0.0.1:9420（createRequire 从 D:/codex-tools/node-v22.17.0-win-x64/node_modules 加载 miniprogram-automator），注册/验证码请求真实到达本地 Spring Boot 后端(127.0.0.1:8080)并写库（本次验证新增测试账号 15976960542、15991420648 及 13811112222/13800000003 等探针号）。执行：主跑 38 操作×前后截图=76 张 + 补拍 toast 帧 8 张 + B6 分支 1 张 + 环境弹窗存证 1 张（round-1-interact 内 PAGES-REGISTER-INDEX-* 共 85 张）；辅助证据落 reports/audit/round-1/interact/ 下 PAGES-REGISTER-INDEX-console.log、PAGES-REGISTER-INDEX-dom-snapshots.json、PAGES-REGISTER-INDEX-toast-evidence.json 三件。方法注：产物 setupState 为空对象（uni-app 编译剥离），页内状态取证改用 DOM 类名/文本/属性读取、element.property('value') 值级读取、picker.trigger('change') 事件注入、wx.showToast 打桩（5 组 toast 文案全部与源码一致）。环境干扰：DevTools 工具级弹窗「获取手机号失败：用户绑定的手机需要进行验证」自脚本启动前即存在并贯穿全程（存证 ENV-devtools-modal-screen.png；GUI 关闭尝试因多窗口 DPI 坐标空间不一致未成功，已改用程序化取证补强；该弹窗为工具/账号层问题，非页面缺陷）。结论：39 项检查中 38 项符合、1 项无法验证（picker 弹层目验）、0 项交互偏差；1 项 P4 架构口径问题（业务 400 触发 captureException 噪音放大）。"
+}

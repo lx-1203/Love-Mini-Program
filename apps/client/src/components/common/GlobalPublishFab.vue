@@ -104,7 +104,12 @@ onUnmounted(() => {
 .global-fab {
   position: fixed;
   right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 170rpx);
+  /* MP-R1-PROFILE-001：custom-tab-bar 白面板实际总高 =
+   * height(160rpx+env) + padding-bottom(env+24rpx)（box-sizing: content-box 两者相加）
+   * = 184rpx + 2×env(safe-area-inset-bottom)。原 bottom=env+170rpx 低于面板顶，
+   * 按钮被白面板遮住约 80%。现按面板总高核算，再留 16rpx 间距；
+   * FAB 靠右放置，不与 tabBar 中央浮岛（居中凸起 40rpx）重叠。 */
+  bottom: calc(env(safe-area-inset-bottom) * 2 + 200rpx);
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;

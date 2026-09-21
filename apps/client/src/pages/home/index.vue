@@ -176,7 +176,17 @@ function openCircle(circleId: number) {
 
 async function joinCircle(circleId: number) {
   if (!requireLogin()) return;
-  await circleStore.joinCircle(String(circleId)).catch(() => {});
+  // MP-R1-HOME-016（2026-09-20）：原 `.catch(() => {})` 吞错且成功后只更新 circle store，
+  // 首页 feed 的 joined 恒 false → 点击零反馈。现：失败给 toast；成功同步 homeFeed
+  // 单一数据源（按钮立即翻转为「已加入」）并给成功提示。
+  try {
+    await circleStore.joinCircle(String(circleId));
+    const rec = homeStore.homeFeed?.interestRecommendations?.find((c) => c.id === circleId);
+    if (rec) rec.joined = true;
+    uni.showToast({ title: t("common.success"), icon: "success" });
+  } catch {
+    uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+  }
 }
 
 /**

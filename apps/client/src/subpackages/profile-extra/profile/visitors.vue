@@ -38,6 +38,8 @@ import { resolveMediaUrl } from "../../../utils/media";
 /** 前端展示用的访客记录（时间分组由 getGroup 推导，R4-00114：不再预置死字段） */
 interface VisitorItem {
   visitorId: number;
+  /** MP-R1-VISITORS-001：保留原始字符串 id（mock 为 user-200x，Number() 会得到 NaN） */
+  rawUserId: string;
   nickname: string;
   avatarUrl: string;
   campusName: string;
@@ -77,6 +79,9 @@ function goBack() {
 const visitors = computed<VisitorItem[]>(() =>
   likesVisitors.value.map((v) => ({
     visitorId: Number(v.userId),
+    // MP-R1-VISITORS-001：mock userId 形如 user-2001，数值化后为 NaN；
+    // 保留原始字符串 id 供点击兜底拼参
+    rawUserId: String(v.userId ?? ""),
     nickname: v.name,
     avatarUrl: v.avatar,
     campusName: v.headline,
@@ -195,12 +200,18 @@ async function loadVisitors(): Promise<void> {
 
 /**
  * 点击访客项：跳转到对方主页（2026-08-09：他人主页详情页）
- * @param visitorId - 访客用户 ID
+ * MP-R1-VISITORS-001：mock userId 非纯数字，Number() 得 NaN 后旧逻辑 `if (!visitorId) return`
+ * 静默失效（卡片点击无反应）。现对 NaN/0 兜底回原始字符串 id 拼参。
+ * @param item - 访客记录项
  */
-function handleItemClick(visitorId: number): void {
-  if (!visitorId) return;
+function handleItemClick(item: VisitorItem): void {
+  const id =
+    Number.isFinite(item.visitorId) && item.visitorId > 0
+      ? String(item.visitorId)
+      : item.rawUserId;
+  if (!id) return;
   lightHaptic();
-  openAppPath(`${ROUTES.PROFILE.OTHER}?userId=${encodeURIComponent(String(visitorId))}`);
+  openAppPath(`${ROUTES.PROFILE.OTHER}?userId=${encodeURIComponent(id)}`);
 }
 
 /**
@@ -287,7 +298,7 @@ onPullDownRefresh(async () => {
             class="visitors-card press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
-            @tap="handleItemClick(item.visitorId)"
+            @tap="handleItemClick(item)"
           >
             <view class="visitors-card__avatar-wrap">
               <image
@@ -332,6 +343,8 @@ onPullDownRefresh(async () => {
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: var(--section-gap);
+  /* MP-R1-VISITORS-002：右侧计数被微信胶囊遮挡，预留胶囊宽度（约 96px） */
+  padding-right: 96px;
 }
 
 /* 2026-08-09：返回键（圆角图标按钮） */

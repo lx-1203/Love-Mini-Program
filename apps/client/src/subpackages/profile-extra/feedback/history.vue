@@ -34,6 +34,8 @@ import {
 } from "../../../view-models/feedback";
 import { errorHaptic, lightHaptic } from "../../../utils/haptic";
 import type { SubmissionDetailView } from "../../../services/generated/api-types-supplement";
+// MP-R1-FEEDBACK-001：记录时间本地化格式化（复用项目统一时间工具，替代原始 ISO 串）
+import { formatDateTime, getCurrentLocale } from "../../../utils/time";
 
 /**
  * SubTask 1.5.2：URL 参数 id 自动展开定时器引用，用于卸载时清理。
@@ -183,6 +185,17 @@ function handleRetry(): void {
 }
 
 /**
+ * MP-R1-FEEDBACK-001：记录时间本地化展示（原直接渲染原始 ISO 字符串）。
+ * 复用 utils/time 的 formatDateTime（'full' 预设：YYYY-MM-DD HH:mm）。
+ *
+ * @param iso - ISO 时间字符串
+ * @returns 本地化时间文本
+ */
+function formatSubmissionTime(iso: string): string {
+  return formatDateTime(iso, "full", getCurrentLocale());
+}
+
+/**
  * 解析页面 URL 参数中的 id，自动展开指定记录。
  *
  * mp-weixin 与 H5 双端均通过 onLoad 生命周期获取参数。
@@ -308,7 +321,7 @@ onShow(() => {
           </view>
           <text class="record__summary">{{ item.latestReplySummary }}</text>
           <view class="record__meta">
-            <text class="record__time">{{ item.submittedAt }}</text>
+            <text class="record__time">{{ formatSubmissionTime(item.submittedAt) }}</text>
             <text class="record__expand-hint">
               {{ expandedId === item.id ? t("common.collapse") : t("feedback.historyViewDetail") }}
             </text>

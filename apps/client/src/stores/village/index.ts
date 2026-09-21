@@ -237,8 +237,14 @@ export const useVillageStore = defineStore("village", {
             }
           }
 
+          // MP-R1-VILLAGE-001（2026-09-20）：mock 发布的新帖只 unshift 进 this.posts，
+          // fetchPosts 用 mockPosts fixtures 重建列表会把新帖冲掉（发布返回后今日广场不可见）。
+          // 此处合并"本会话自建帖"（id 不在 mockPosts 中的列表项），随排序自然置顶。
+          const fixtureIds = new Set(mockPosts.map((p) => p.id));
+          const selfCreatedPosts = this.posts.filter((p) => !fixtureIds.has(p.id));
+
           const result = filterAndSortPosts(
-            mockPosts,
+            [...selfCreatedPosts, ...mockPosts],
             {
               categoryId: filters?.categoryId,
               keyword: filters?.keyword,
@@ -540,9 +546,12 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (useMock()) {
-          // Mock 模式：toggle 行为，无后端调用
+          // Mock 模式：toggle 行为，无后端调用。
+          // MP-R1-NEARBY-002（2026-09-20）：附近页帖子在 nearbyPosts（独立维度），
+          // 合并查找避免附近页点赞报"帖子不存在"；mock 下两列表项与 mockPosts
+          // 元素同引用，命中其一即全局同步。
           try {
-            toggleMockPostLike(this.posts, this.currentPost, postId);
+            toggleMockPostLike([...this.posts, ...this.nearbyPosts], this.currentPost, postId);
           } catch (error) {
             this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.postNotFound"); // infra R2-00038
             throw error;
@@ -554,7 +563,10 @@ export const useVillageStore = defineStore("village", {
         likingPostIds.add(postId);
 
         // 修复（P1 BUG）：保存原始状态用于失败回滚
-        const post = this.posts.find((p) => p.id === postId);
+        // MP-R1-NEARBY-002：帖子可能只在附近动态列表（nearbyPosts）中
+        const post =
+          this.posts.find((p) => p.id === postId) ??
+          this.nearbyPosts.find((p) => p.id === postId);
         const currentPostSnapshot =
           this.currentPost?.id === postId ? this.currentPost : null;
         const snapshot = captureLikeSnapshot(post, currentPostSnapshot);
@@ -612,9 +624,10 @@ export const useVillageStore = defineStore("village", {
 
       try {
         if (useMock()) {
-          // Mock 模式：toggle 行为，无后端调用
+          // Mock 模式：toggle 行为，无后端调用。
+          // MP-R1-NEARBY-002：合并 nearbyPosts 查找，附近页收藏同样生效。
           try {
-            toggleMockPostFavorite(this.posts, this.currentPost, postId);
+            toggleMockPostFavorite([...this.posts, ...this.nearbyPosts], this.currentPost, postId);
           } catch (error) {
             this.errorMessage = error instanceof Error ? error.message : t("storeErrors.village.postNotFound"); // infra R2-00038
             throw error;
@@ -626,7 +639,10 @@ export const useVillageStore = defineStore("village", {
         favoritingPostIds.add(postId);
 
         // 保存原始状态用于失败回滚
-        const post = this.posts.find((p) => p.id === postId);
+        // MP-R1-NEARBY-002：帖子可能只在附近动态列表（nearbyPosts）中
+        const post =
+          this.posts.find((p) => p.id === postId) ??
+          this.nearbyPosts.find((p) => p.id === postId);
         const currentPostSnapshot =
           this.currentPost?.id === postId ? this.currentPost : null;
         const snapshot = captureFavoriteSnapshot(post, currentPostSnapshot);
@@ -668,15 +684,23 @@ export const useVillageStore = defineStore("village", {
 
       try {
         // 判断当前是否已关注，决定调用关注还是取关 API
-        const isCurrentlyFollowed = this.posts.find(
-          (p) => p.author.userId === userId
-        )?.isFollowed ?? false;
+        // MP-R1-NEARBY-002：附近页帖子在 nearbyPosts，一并列入判断
+        const isCurrentlyFollowed =
+          this.posts.find((p) => p.author.userId === userId)?.isFollowed ??
+          this.nearbyPosts.find((p) => p.author.userId === userId)?.isFollowed ??
+          false;
 
         if (useMock()) {
           // Mock 模式：更新所有该用户的帖子的 isFollowed 状态
           const newFollowedState = !isCurrentlyFollowed;
 
           this.posts.forEach((post) => {
+            if (post.author.userId === userId) {
+              post.isFollowed = newFollowedState;
+            }
+          });
+          // MP-R1-NEARBY-002：附近动态同步，附近页关注芯片即时反馈
+          this.nearbyPosts.forEach((post) => {
             if (post.author.userId === userId) {
               post.isFollowed = newFollowedState;
             }
@@ -693,6 +717,12 @@ export const useVillageStore = defineStore("village", {
         // 更新本地状态：该用户所有帖子的 isFollowed 统一更新
         const newFollowedState = !isCurrentlyFollowed;
         this.posts.forEach((post) => {
+          if (post.author.userId === userId) {
+            post.isFollowed = newFollowedState;
+          }
+        });
+        // MP-R1-NEARBY-002：附近动态同步，附近页关注芯片即时反馈
+        this.nearbyPosts.forEach((post) => {
           if (post.author.userId === userId) {
             post.isFollowed = newFollowedState;
           }
@@ -1046,11 +1076,15 @@ export const useVillageStore = defineStore("village", {
         // 从首页社区动态等未先加载帖子列表的入口直入详情，避免报"帖子不存在"。
         // 首页社区动态用数字 id（"7"），村庄帖子 id 为 "post-N"，做 "N → post-N" 兼容映射。
         const candidates = [postId, postId.startsWith("post-") ? "" : `post-${postId}`];
-        this.currentPost =
+        const found =
           mockPosts.find((p) => p.id === postId) ??
           this.posts.find((p) => p.id === postId) ??
-          candidates.map((id) => mockPosts.find((p) => p.id === id)).find(Boolean) ??
-          null;
+          (candidates.map((id) => mockPosts.find((p) => p.id === id)).find(Boolean) ?? null);
+        // MP-R1-DETAIL-001（2026-09-20）：必须浅拷贝。found 与 posts 列表项/mockPosts
+        // 元素是同一对象引用，若直接赋给 currentPost，likePost/toggleFavorite 的 mock
+        // 分支会对"列表项 + currentPost"各 toggle 一次，同引用下两次相互抵消，
+        // 详情页单击点赞/收藏无任何状态变化。拷贝后两处状态独立各 toggle 一次（同步正确）。
+        this.currentPost = found ? { ...found } : null;
         return;
       }
 
@@ -1060,7 +1094,10 @@ export const useVillageStore = defineStore("village", {
         this.currentPost = mapDetailToPostItem(data);
       } catch (_error) {
         // API 调用失败时回退到本地列表查找
-        this.currentPost = this.posts.find((p) => p.id === postId) ?? null;
+        // MP-R1-DETAIL-001：同样浅拷贝，避免 currentPost 与列表项同引用导致
+        // real 分支乐观更新对同一对象应用两次（相互抵消）
+        const fallback = this.posts.find((p) => p.id === postId);
+        this.currentPost = fallback ? { ...fallback } : null;
       }
     },
 

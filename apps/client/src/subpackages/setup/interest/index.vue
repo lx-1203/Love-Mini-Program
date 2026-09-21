@@ -37,9 +37,26 @@ async function handleSave() {
   }
   saving.value = true;
   try {
-    await clientApi.saveBasicProfile({ interestTags: interests } as never);
+    // MP-R1-SETUPINTEREST-002：saveBasicProfile 为全量 PUT 语义（mock 全量替换、
+    // real 缺字段 400）。先取全量资料合并 interestTags 后再提交，避免清空其余资料。
+    let merged: Record<string, unknown> = {};
+    try {
+      merged = (await clientApi.getBasicProfile()) as unknown as Record<string, unknown>;
+    } catch (_e) {
+      // 全量资料拉取失败时退回仅提交兴趣字段（保持原有可保存行为）
+      merged = {};
+    }
+    await clientApi.saveBasicProfile({ ...merged, interestTags: interests } as never);
     uni.showToast({ title: t("interestSelect.saved"), icon: "success" });
-    setTimeout(() => uni.navigateBack(), 600);
+    // MP-R1-SETUPINTEREST-001：保存后返回需页面栈守卫——深链直达栈=1 时
+    // navigateBack 无反应，兜底 switchTab 回「我的」Tab（tabBar 页）
+    setTimeout(() => {
+      if (getCurrentPages().length > 1) {
+        uni.navigateBack();
+      } else {
+        uni.switchTab({ url: "/pages/profile/index" });
+      }
+    }, 600);
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : t("interestSelect.saveFailed"),

@@ -58,10 +58,15 @@ const isAlumni = computed(
   () => props.post.isAlumni || Boolean(myCampus.value && props.post.author.campusName === myCampus.value)
 );
 
-/** 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） */
+/**
+ * 空操作占位 handler（图片区/活动卡/评论预览/分享等仅阻断冒泡的区域用）。
+ * MP-R1-NEARBY-001（2026-09-20）：卡片内交互统一 @tap.stop——uni-app Vue3 mp-weixin
+ * 编译为标准 catchtap；原 @catchtap 会编译成非标准 bindcatchtap，handler 永不触发
+ * 且 tap 冒泡到卡片根 open-detail（点什么都进详情页）。
+ */
 function noop() {}
 
-// 修复（vue-tsc 无法识别 catchtap 原生属性对 noop/handleLike 的引用，
+// 修复（vue-tsc 无法识别模板内对 noop/handleLike 的原生事件引用，
 // 与 CardSwiper 同法：defineExpose 标记为已使用，避免 TS6133 unused 误报）
 defineExpose({ noop, handleLike });
 
@@ -122,7 +127,7 @@ function openActivity(activityId: number | string) {
         class="post-card__user clickable"
         hover-class="post-card__user--pressed"
         :hover-stay-time="100"
-        @catchtap="emit('open-author', post.author.userId)"
+        @tap.stop="emit('open-author', post.author.userId)"
       >
         <view class="user-avatar">
           <image
@@ -156,7 +161,7 @@ function openActivity(activityId: number | string) {
         :class="{ 'follow-chip--active': post.isFollowed }"
         hover-class="press-feedback--active"
         hover-stay-time="40"
-        @catchtap="emit('follow', post.author.userId)"
+        @tap.stop="emit('follow', post.author.userId)"
       >
         <text class="follow-chip__text">
           {{ post.isFollowed ? t('village.followed') : t('village.follow') }}
@@ -174,7 +179,7 @@ function openActivity(activityId: number | string) {
       v-if="post.images.length > 0"
       class="post-card__images"
       :class="'post-card__images--' + Math.min(post.images.length, MAX_POST_IMAGES)"
-      @catchtap="noop"
+      @tap.stop="noop"
     >
       <view
         v-for="(img, idx) in post.images.slice(0, MAX_POST_IMAGES)"
@@ -207,7 +212,7 @@ function openActivity(activityId: number | string) {
     </view>
 
     <!-- 关联活动卡（2026-08-08 频道化重构：帖子内直接发活动链接） -->
-    <view v-if="post.activity" class="post-card__activity" @catchtap="noop">
+    <view v-if="post.activity" class="post-card__activity" @tap.stop="noop">
       <ActivityCard :activity="post.activity" compact @open-detail="openActivity" />
     </view>
 
@@ -220,12 +225,12 @@ function openActivity(activityId: number | string) {
         :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
         hover-class="press-feedback--active"
         hover-stay-time="40"
-        @catchtap="emit('open-tag', tag)"
+        @tap.stop="emit('open-tag', tag)"
       >{{ tag.startsWith('#') ? tag : '#' + tag }}</text>
     </view>
 
     <!-- 最新 2 条评论预览（QQ 频道风格） -->
-    <view v-if="post.recentComments && post.recentComments.length > 0" class="post-card__comments" @catchtap="noop">
+    <view v-if="post.recentComments && post.recentComments.length > 0" class="post-card__comments" @tap.stop="noop">
       <view
         v-for="c in post.recentComments.slice(0, 2)"
         :key="c.id"
@@ -253,7 +258,7 @@ function openActivity(activityId: number | string) {
       <text v-if="post.auditStatus === 'pending'" class="post-card__audit">审核中</text>
       <view class="post-card__actions">
         <!-- 评论 -->
-        <view class="action-btn" @catchtap="emit('open-detail', post.id)">
+        <view class="action-btn" @tap.stop="emit('open-detail', post.id)">
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
           <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
         </view>
@@ -261,20 +266,20 @@ function openActivity(activityId: number | string) {
         <view
           class="action-btn"
           :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimating }"
-          @catchtap="handleLike"
+          @tap.stop="handleLike"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
           <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
         </view>
         <!-- 分享 -->
-        <view class="action-btn" @catchtap="noop">
+        <view class="action-btn" @tap.stop="noop">
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
         </view>
         <!-- 收藏 -->
         <view
           class="action-btn"
           :class="{ 'action-btn--collected': post.isFavorite }"
-          @catchtap="emit('favorite', post.id)"
+          @tap.stop="emit('favorite', post.id)"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
           <text v-if="post.favorites > 0" class="action-btn__count">{{ post.favorites }}</text>

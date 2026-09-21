@@ -53,8 +53,13 @@ export const useAppConfigStore = defineStore("app-config", {
      * 总闸 true 时按子闸各自生效。开关 key 缺失时按封存处理（=== true 才放行），
      * 与既有通用开关（缺失默认开放）语义相反。</p>
      *
+     * <p>MP-R1-CONSULTING-001：子闸 key 兼容「commerce.<module>」与「<module>」两种口径
+     * —— 后台/注释口径为 commerce.consult、commerce.coin 等，历史上部分调用点传简短
+     * 形式（consult/coin）；优先取带前缀 key，缺省时回退简短 key，两者皆缺才视为封存。</p>
+     *
      * <p>用法：{@code appConfig.isCommerceOn("vip")} / isCommerceOn("coin") /
-     * isCommerceOn("course") / isCommerceOn("consult")；不传 module 仅判断总闸。</p>
+     * isCommerceOn("course") / isCommerceOn("consult")（等价读取 commerce.consult）；
+     * 不传 module 仅判断总闸。</p>
      */
     isCommerceOn:
       (state) =>
@@ -65,7 +70,10 @@ export const useAppConfigStore = defineStore("app-config", {
         if (!module || module === "commerce.enabled") {
           return true;
         }
-        return state.switches[module] === true;
+        // MP-R1-CONSULTING-001：兼容 commerce.<module> / <module> 双口径（缺省封存不变）
+        const prefixed = state.switches[`commerce.${module}`];
+        const bare = state.switches[module];
+        return (prefixed ?? bare) === true;
       },
 
     /**

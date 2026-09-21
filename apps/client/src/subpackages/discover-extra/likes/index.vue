@@ -1031,6 +1031,10 @@ onShareAppMessage(() => {
   /* R10-P2-005：胶囊避让从 .likes-header__actions 上移到整行——
      此前 actions 独占 96px 预留，空间不足时把「心动信号」顶进标题（双侧 shrink:0 相撞） */
   padding-right: calc(var(--capsule-right, 7px) + 96px);
+  /* MP-R1-LIKES-001：允许换行——「心动信号」入口出现时标题不再被挤压截断，
+     放不下的 actions 自动换到第二行（margin-left:auto 保持右对齐） */
+  flex-wrap: wrap;
+  row-gap: var(--sp-3);
 }
 
 /* 2026-08-09：返回键 + 标题（左组合） */
@@ -1038,9 +1042,8 @@ onShareAppMessage(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  min-width: 0;
-  /* R10-P2-005：极端窄屏下允许标题省略，禁止与右侧按钮叠字 */
-  overflow: hidden;
+  /* MP-R1-LIKES-001：不再 min-width:0/ellipsis——标题「匹配列表」为固定短文案，
+     保留固有宽度，空间不足时由 actions 换行让位 */
 }
 
 .likes-header__back {
@@ -1064,11 +1067,7 @@ onShareAppMessage(() => {
   font-size: var(--fs-5xl);
   font-weight: 700;
   color: var(--c-text-primary);
-  /* MP-R8-CAPSULE-001：不折行；R10-P2-005：超宽时省略号截断而非与按钮叠字 */
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* MP-R1-LIKES-001：标题不再参与收缩省略（固定短文案，保留完整宽度） */
   white-space: nowrap;
   // #ifdef H5
   background: linear-gradient(135deg, var(--c-brand), var(--c-romance-500));
@@ -1617,6 +1616,8 @@ onShareAppMessage(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  /* MP-R1-LIKES-001：换行到第二行时保持右对齐 */
+  margin-left: auto;
 }
 
 .likes-header__manage {

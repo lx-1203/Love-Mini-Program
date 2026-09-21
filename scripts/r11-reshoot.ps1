@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Continue"
 $wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
 $proj = "D:\6\恋爱小程序"
-$stamp = "b0918-final"
+$stamp = "b0919-r12c"
 $shots = "D:\6\恋爱小程序\reports\screenshots\r11-acceptance"
 $ident = $args[0]
 $tokfile = "D:\6\恋爱小程序\tmp_r11_login.json"
@@ -16,32 +16,14 @@ $null = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-sourc
 Start-Sleep -Seconds 5
 
 $rows = @(
-"A|subpackages/village/village/publish"
-  "A|subpackages/village/village/detail"
-  "A|subpackages/village/village/tag-posts"
-  "A|subpackages/village/village/history"
-  "A|subpackages/circles/circles/index"
-  "A|subpackages/circles/circles/topic-detail"
-  "A|subpackages/campus/campus/topic-detail"
-  "A|subpackages/tools/love-center/index"
-  "A|subpackages/tools/love-center/nearby"
-  "A|subpackages/tools/love-center/consulting"
-  "A|subpackages/profile-extra/profile/other"
-  "A|subpackages/profile-extra/profile/favorites"
-  "A|subpackages/profile-extra/feedback/history"
-  "A|subpackages/market/detail/index"
-  "B|subpackages/circles/circles/circle-home"
-  "B|subpackages/campus/campus/topic-detail"
-  "B|subpackages/discover-extra/nearby/people"
-  "B|subpackages/tools/search/index"
-  "B|subpackages/tools/heart-signals/index"
-  "B|subpackages/tools/love-center/nearby"
-  "B|subpackages/profile-extra/profile/other"
-  "B|subpackages/setup/showcase/index"
+  "B|subpackages/profile-extra/settings/dnd"
+  "B|subpackages/setup/profile/index"
+  "B|subpackages/setup/interest/index"
   "B|subpackages/discover/activities/index"
-  "B|subpackages/legal/agreement/index"
-  "B|subpackages/market/detail/index"
   "B|subpackages/market/shop/index"
+  "A|pages/home/index"
+  "A|pages/home/index"
+  "A|pages/home/index"
 )
 
 foreach ($row in $rows) {

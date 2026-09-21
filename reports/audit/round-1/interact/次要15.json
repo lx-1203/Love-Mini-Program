@@ -1,0 +1,683 @@
+{
+  "round": "R1",
+  "batch": "次要15",
+  "generatedAt": "2026-09-20T22:01:01.932Z",
+  "checks": [
+    {
+      "page": "BOOT",
+      "operation": "会话态确认（mock 模式）",
+      "expected": "mock 会话恒登录：loggedIn=true，uid=user-1001（apiMode=mock 的旁证）",
+      "actual": "bootstrap-kick => {\"loggedIn\":true,\"uid\":\"user-1001\"}",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\BOOT-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\BOOT-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "打开话题详情页 topicId=campus-topic-1",
+      "expected": "header「话题详情」+返回；作者卡（学长小王/广州大学）；正文「高数B期末复习资料分享」；回复计数=23；回复列表 3 条；无 TypeError",
+      "actual": "route=subpackages/campus/campus/topic-detail；探针: title=话题详情 | topicTitle=高数B期末复习资料分享 | replyCount=23 | replyItems=3 | consoleErr=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "空内容点「发送」",
+      "expected": "submitReply 首行守卫 return：无请求无 toast；按钮带 reply-btn--disabled（pointer-events:none）",
+      "actual": "tapped；探针: btnDisabled=true | inputValue=\"\"",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "输入回复文本",
+      "expected": "输入框回显「自动化交互验证回复」，发送按钮移除 disabled 变品牌绿",
+      "actual": "input ok；探针: inputValue=自动化交互验证回复 | btnDisabled=false",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "点「发送」提交回复",
+      "expected": "mock 提交成功：toast「回复成功」；输入框清空；回复列表 3→4；回复计数 23→24（store 本地追加）",
+      "actual": "（toast 文案帧未截到：原生 toast 存活 1.5s、截图链路含重试延迟；行为证据如下） tapped send；探针: inputValueAfter=\"\" | replyItems=4 | replyCountText=24",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "输入 320 字符超长文本（maxlength 探测）",
+      "expected": "源码未设 maxlength → 微信 input 默认上限 140 字符静默截断；无崩溃；发送按钮可用",
+      "actual": "input long text；探针: valueLen=140 | consoleErr=0",
+      "verdict": "偏差",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-05-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-05-after.png",
+      "issueId": "MP-R1-TOPIC-DETAIL-002"
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "输入特殊字符后清空",
+      "expected": "特殊字符 <>&\"'😉 可以输入不崩溃（转义渲染）；清空后 value=\"\"、发送按钮回 disabled",
+      "actual": "special-input=\"<>&\\\"'😉\", cleared；探针: value=\"\" | btnDisabled=true",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-06-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "点「匿名」切换（开）",
+      "expected": "toggle 加 anonymous-toggle--active（绿底绿字），文案「实名」→「匿名」",
+      "actual": "toggled on；探针: active=true | text=匿名",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-07-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "点「匿名」切换（关）",
+      "expected": "active 移除，文案恢复「实名」",
+      "actual": "toggled off；探针: active=false | text=实名",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-08-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "回复区滚动到底（scrolltolower 触发加载下一页）",
+      "expected": "onLoadMoreReplies 请求 page=2：真实分页后端应返回空并置 repliesHasMore=false、列表保持不变；mock fixture 未实现分页（任何页码都返回同 3 条）→ 预期观察到回复 3→6 重复追加（deviation 候选，证据留存）",
+      "actual": "triggered scrolltolower；探针: replyItems=6 | consoleErr=0",
+      "verdict": "偏差",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-09-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-09-after.png",
+      "issueId": "MP-R1-TOPIC-DETAIL-001"
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "打开话题页后立即返回（页面打开立即返回）",
+      "expected": "navigateTo 后 500ms 内 tap「返回」→ navigateBack 回 hub（栈深恢复 1）",
+      "actual": "route=subpackages/campus/campus/hub",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-10-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "重复进出：再次进入 campus-topic-1",
+      "expected": "reLaunch hub → navigateTo 再次正常渲染（计数回到 23、回复 3 条，mock 数据可重复进入）",
+      "actual": "route=subpackages/campus/campus/topic-detail；探针: topicTitle=高数B期末复习资料分享 | replyCountText=23 | replyItems=3",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-11-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/topic-detail",
+      "operation": "点左上「返回」（干净栈深 2）",
+      "expected": "clearCurrentTopic + navigateBack → 回 hub；无崩溃",
+      "actual": "route=subpackages/campus/campus/hub；探针: storeTopic=currentTopic=null",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-12-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\TOPIC-DETAIL-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "打开校园认证页（先复位 mock 认证态）",
+      "expected": "header「学生认证」+返回；unverified → 无状态卡，说明卡 + 表单（3 输入框 + 学生证上传区 + 「提交审核」）",
+      "actual": "route=subpackages/campus/campus/certification；探针: title=学生认证 | statusCard=0 | inputs=3 | submitText=提交审核",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "空表单点「提交审核」",
+      "expected": "toast「请输入学校名称」，不发起提交",
+      "actual": "（toast 文案帧未截到；表单保留、未提交、certStatus 保持 unverified 直至 CERTIFICATION-09，校验守卫行为成立） tapped submit (empty)",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "填学校后点提交",
+      "expected": "校验推进：toast「请输入专业」",
+      "actual": "（toast 文案帧未截到；同上以状态证明校验推进） filled school, tapped submit",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "填专业后点提交",
+      "expected": "校验推进：toast「请上传学生证照片」",
+      "actual": "（toast 文案帧未截到；同上） filled major, tapped submit",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "学校输入框输入 200 字符超长文本",
+      "expected": "受微信 input 默认 maxlength=140 静默截断（与 T-05 同因）；无崩溃；恢复「北京大学」",
+      "actual": "len=140, restored",
+      "verdict": "偏差",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-05-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-05-after.png",
+      "issueId": "MP-R1-TOPIC-DETAIL-002"
+    },
+    {
+      "page": "campus/certification",
+      "operation": "mock chooseImage 后点学生证上传区",
+      "expected": "隐私检查放行 → chooseImage 返回 mock 临时路径 → 预览图 + 「重新上传」+ 移除(x) 出现（系统相册弹窗不出现）",
+      "actual": "tapped upload with mocked chooseImage；探针: preview=1 | uploadArea=1 | reuploadText=重新上传",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-06-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "点移除(x)按钮清掉已选照片",
+      "expected": "studentCardUrl 置空 → 预览消失，虚线上传区恢复（上传区含学信网 1 个 + 学生证 1 个 = 2）",
+      "actual": "removed；探针: preview=0 | uploadArea=2",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-07-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "再次上传学生证并填学信网验证码",
+      "expected": "预览恢复；学信网验证码「CHSI-TEST-1234」回显",
+      "actual": "re-uploaded + chsi code filled；探针: preview=1 | chsiValue=CHSI-TEST-1234",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-08-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "快速连点「提交审核」×2（重复提交）",
+      "expected": "mock 提交成功：toast「提交成功，请等待审核」；状态卡「审核中」出现、表单区消失；第二次点击落在已禁用/已消失的按钮上被拦截，无异常",
+      "actual": "double-tapped submit；探针: statusCard=1 | statusTitle=审核中 | formSection=0 | storeStatus=certStatus=pending",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-09-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "campus/certification",
+      "operation": "点左上「返回」（干净栈深 2）",
+      "expected": "uni.navigateBack → 回 hub",
+      "actual": "route=subpackages/campus/campus/hub",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-10-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\CERTIFICATION-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "打开 ?type=highMatch（空分组）",
+      "expected": "标题「细分发现 · 高匹配」；mock commonCircleCount 全 0 → 空态「这个分组暂时没有更多人」（deviation 候选：i18n key home.segmentHighMatch / home.segmentEmpty 在 zh-CN home 命名空间缺失）",
+      "actual": "route=subpackages/discover-extra/home/segment；探针: title=细分发现 · home.segmentHighMatch | rows=0 | emptyText=home.segmentEmpty",
+      "verdict": "偏差",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-06-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-06-after.png",
+      "issueId": "MP-R1-SEGMENT-001"
+    },
+    {
+      "page": "home/segment",
+      "operation": "点分区页返回（空态页）",
+      "expected": "navigateBack → 回首页",
+      "actual": "route=pages/home/index",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-07-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "打开附近的人列表 ?scope=nearby",
+      "expected": "标题「附近的人」；「附近/同城」双 tab（附近 active）；列表 9 行（头像/昵称/年龄/在线标/距离 km/标签 ≤3）",
+      "actual": "route=subpackages/discover-extra/nearby/people；探针: title=附近的人 | rows=9 | activeTab=true | firstMeta=北京大学 · 1.2km",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "切换「同城」tab",
+      "expected": "active 迁移 + 标题「同城的人」+ 列表重载（mock 同源 9 行）",
+      "actual": "switched to city；探针: title=同城的人 | activeTabIs2nd=true | rows=9",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "快速连点 附近/同城 tab ×4",
+      "expected": "竞态 token 保护：最终停在最后点击的 tab（同城），无崩溃、无旧响应覆盖",
+      "actual": "tapped 4x alternating (final=city)；探针: title=同城的人 | activeTabIs2nd=true | rows=9 | consoleErr=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "点击列表第一行",
+      "expected": "openUserProfile → navigateTo profile/other?userId=…（mock 他人主页）",
+      "actual": "route=subpackages/profile-extra/profile/other",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "从他人主页返回",
+      "expected": "回到 nearby/people（同城 tab 状态保持）",
+      "actual": "route=subpackages/discover-extra/nearby/people；探针: title=同城的人",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-05-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "列表滚动到底（scrolltolower 增量渲染）",
+      "expected": "9 人 < PAGE_SIZE 20 → visibleCount 不变，列表仍 9 行，无崩溃",
+      "actual": "triggered scrolltolower；探针: rows=9",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-06-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "nearby/people",
+      "operation": "切回「附近」tab 后点左上返回",
+      "expected": "切回附近：标题「附近的人」；返回键 navigateBack → 回 nearby tab",
+      "actual": "route=pages/nearby/index",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-07-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PEOPLE-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "discover/history",
+      "operation": "数据准备：store 级滑卡（左-右-左）",
+      "expected": "historyCards=3 / passedCards=2 / liked=1 / hasRewoundToday=false（mock 内存态；若 storage 已有今日挽回记录则按实际记录）",
+      "actual": "fetch-kick / swipe-kick 4001,4002,4003 / {\"history\":3,\"passed\":2,\"liked\":1,\"hasRewound\":false}",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-00-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-00-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "discover/history",
+      "operation": "打开寻觅历史页",
+      "expected": "标题「今日已看」；统计栏 已浏览=3 / 已喜欢=1 / 已跳过=2；历史卡片 3 张（快照头像昵称 + 「已喜欢/已跳过」徽章）；最后一张已跳过卡带「挽回（每日限1次）」按钮（今日未用过挽回时）",
+      "actual": "route=subpackages/discover-extra/discover/history；探针: title=今日已看 | statNums=3/1/2 | cards=3 | rewindBtn=1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "discover/history",
+      "operation": "点「挽回」按钮",
+      "expected": "mock rewindCard：toast「挽回成功」→ 栈深 2 navigateBack 回 discover tab；hasRewoundToday=true、passedCards 2→1（若准备失败无按钮则如实记录）",
+      "actual": "pre[hasRewoundToday=false] tapped rewind；探针: route=pages/discover/index | storeRewind=hasRewoundToday=true passed=1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "discover/history",
+      "operation": "再次进入历史页验证挽回后状态",
+      "expected": "reLaunch discover → navigateTo（干净单层栈）：挽回按钮消失；最后已跳过卡显示「今日挽回次数已用完」；统计 2/1/1",
+      "actual": "route=subpackages/discover-extra/discover/history；探针: rewindBtn=0 | hintText=今日挽回次数已用完 | statNums=2/1/1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "discover/history",
+      "operation": "点左上返回（干净栈深 2）",
+      "expected": "navigateBack → 回 discover tab（onUnload → discoverStore.dispose）",
+      "actual": "route=pages/discover/index；探针: consoleErr=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\HISTORY-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "打开喜欢页",
+      "expected": "header：返回 + 标题「匹配列表」+「管理」+「心动信号」入口（mock 有信号）；搜索框占位「搜索昵称、学校、城市」；tab badge（喜欢我的 n / 我发出的喜欢 2）；列表卡全解锁（无锁标、无「解锁全部」栏）；列表渲染 mock 数据",
+      "actual": "route=subpackages/discover-extra/likes/index；探针: title=匹配列表 | manageText=管理 | signalEntry=1 | cards=22 | unlockBar=0 | lockIcons=0 | badges=22/2 | storeCounts={\"likedBy\":22,\"likes\":2,\"signals\":2}",
+      "verdict": "偏差",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-01-after.png",
+      "issueId": "MP-R1-LIKES-001"
+    },
+    {
+      "page": "likes/index",
+      "operation": "点「管理」进入批量模式",
+      "expected": "卡片左侧 checkbox 出现（=可见卡数）；底部批量操作栏（全选 + 喜欢 + 跳过）；管理钮文案「管理」→「完成」",
+      "actual": "tapped manage；探针: manageText=完成 | checkboxes=22 | batchBar=1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "批量模式点第一张卡",
+      "expected": "checkbox 勾选（--checked）+ 浮层「已选 1 项」",
+      "actual": "tapped first card；探针: checked=true | batchCount=已选 1 项",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点「全选」",
+      "expected": "当前可见列表全部勾选，文案变「取消」，浮层「已选 n 项」（n=可见卡数）",
+      "actual": "tapped select-all；探针: selectText=取消 | checkedCount=22 | batchCount=已选 22 项",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "再点「取消」（取消全选）",
+      "expected": "全部取消勾选，文案恢复「全选」",
+      "actual": "tapped deselect-all；探针: selectText=全选 | checkedCount=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-05-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "零选中点「跳过」（空内容提交）",
+      "expected": "toast「请至少选择一个用户」，不发起批量操作，停留批量模式",
+      "actual": "（toast 文案帧未截到；批量模式保持、无状态变化） tapped skip with empty selection；探针: stillBatch=1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-06-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "选中 1 项点「跳过」（批量操作成功路径）",
+      "expected": "mock 本地移除：toast「批量操作成功」→ 自动退出批量模式 → 该项从「喜欢我的」消失（列表 -1）",
+      "actual": "（toast 文案帧未截到；LIKES-07-after 截图可见批量栏消失、badge 22→21、苏晴项移除） selected 1 + tapped skip；探针: batchBar=0 | cards=21 | storeLikedBy=likedBy=21",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-07-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "搜索框输入「苏」",
+      "expected": "300ms 防抖后按昵称/签名过滤：mock 含「苏」名字者保留（苏晴/苏黎，若苏晴已被上一操作跳过则 1 项）；× 清空钮出现",
+      "actual": "input 苏；探针: cards=1 | firstCardName=苏黎 | clearBtn=1 | storeQuery=query=\"苏\"",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-08-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点 × 清空搜索",
+      "expected": "输入框与 store 查询词立即清空，列表恢复全量",
+      "actual": "tapped clear；探针: inputValue=\"\" | cards=21 | clearBtn=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-09-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "搜索特殊字符/emoji（无匹配空态）",
+      "expected": "输入「😉xyz」→ 300ms 后无匹配 → 空态「未找到匹配的用户」（searchEmpty 分支）；无崩溃",
+      "actual": "input emoji+xyz；探针: cards=0 | emptyTitle=NO_EL .empty-state__title",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-10-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点 × 清空特殊字符搜索",
+      "expected": "恢复全量列表，无崩溃",
+      "actual": "tapped clear；探针: cards=21",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-11-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "快速连点 tab（喜欢我的↔我发出的喜欢）×4",
+      "expected": "watch(activeTab) 清空搜索/批量状态；最终停在「我发出的喜欢」（2 张卡），无崩溃",
+      "actual": "tapped tabs 4x (final=myLikes)；探针: activeIs2nd=true | cards=2 | consoleErr=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-12-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "切「访客」tab（懒加载）",
+      "expected": "fetchVisitors 懒加载 → mock 22 位访客列表（首位苏晴带新访客红点）",
+      "actual": "switched to visitors；探针: cards=22 | firstName=苏晴 | storeVisitors=visitors=22",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-13-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "切回「喜欢我的」，点第一张卡（非批量、已解锁、非匹配）",
+      "expected": "handleItemClick：非匹配 → navigateTo profile/other?userId=…（他人主页）",
+      "actual": "route=subpackages/profile-extra/profile/other",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-14-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "从他人主页返回喜欢页",
+      "expected": "navigateBack → 回 likes 页",
+      "actual": "route=subpackages/discover-extra/likes/index",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-15-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点「心动信号」入口",
+      "expected": "goToHeartSignals → navigateTo /subpackages/tools/heart-signals/index",
+      "actual": "route=subpackages/tools/heart-signals/index",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-16-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "从心动信号页返回，快速连点「管理」×3",
+      "expected": "navigateBack 回 likes；toggleBatchMode 翻转 3 次 → 最终处于批量模式（「完成」+ 操作栏出现）",
+      "actual": "back + tapped manage 3x；探针: manageText=完成 | batchBar=1",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-17-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点「完成」退出批量模式",
+      "expected": "退出批量模式：操作栏/checkbox 消失，管理钮文案回「管理」",
+      "actual": "tapped finish；探针: manageText=管理 | batchBar=0 | checkboxes=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-18-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "likes/index",
+      "operation": "点左上返回（干净栈深 2 → discover）",
+      "expected": "navigateBack → 回 discover tab；无泄漏报错",
+      "actual": "route=pages/discover/index；探针: consoleErr=0",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-19-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\LIKES-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "从首页 navigateTo 分区页 ?type=online",
+      "expected": "标题「细分发现 · 在线」；骨架屏 → 列表 9 行（mock 全量；just_now 者带「在线」标）；meta「北京大学 · 1.2km」格式",
+      "actual": "route=subpackages/discover-extra/home/segment；探针: title=细分发现 · 在线 | rows=9 | firstMeta=北京大学 · 1.2km | onlineLabels=3",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-01-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "点击列表第一行",
+      "expected": "openProfile → navigateTo /subpackages/profile-extra/profile/other?userId=…（mock 4001 他人主页）",
+      "actual": "route=subpackages/profile-extra/profile/other",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-02-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "从他人主页返回分区页",
+      "expected": "navigateBack → 回 segment?type=online，列表仍在（9 行）",
+      "actual": "route=subpackages/discover-extra/home/segment；探针: rows=9",
+      "verdict": "符合",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-03-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "点分区页左上返回",
+      "expected": "navigateBack → 回首页 tab",
+      "actual": "TIMEOUT route=pages/discover/index",
+      "verdict": "无法验证",
+      "before": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-04-before.png",
+      "after": "d:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SEGMENT-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "home/segment",
+      "operation": "重复进出分区页 ×2（type=newcomer）",
+      "expected": "两次进入均正常渲染（newcomer 无过滤 → 全量 9 行），无崩溃",
+      "actual": "back at pages/discover/index；探针: consoleErr=0（该操作的前后截图帧缺失：截图通道在两次整跑中该步超时；无崩溃断言由探针 consoleErr=0 支撑，渲染断言因 SEGMENT-04 同一环境异常无法核对）",
+      "verdict": "无法验证",
+      "before": "",
+      "after": "",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-SEGMENT-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/home/segment",
+      "screenshot": "reports/screenshots/round-1-interact/SEGMENT-06-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "分区页高匹配分组标题与空态渲染原始 i18n key：标题显示「细分发现 · home.segmentHighMatch」、空态显示「home.segmentEmpty」",
+      "evidence": "SEGMENT-06-after.png 可见两处原始 key 上屏；探针 title=细分发现 · home.segmentHighMatch、emptyText=home.segmentEmpty（v2/v3 两轮复现）。代码：subpackages/discover-extra/home/segment.vue:33（TYPE_LABEL_KEY 使用 home.segmentHighMatch）、segment.vue:135（t(home.segmentEmpty)）；i18n/locales/zh-CN.ts 的 home 命名空间（L487-661）只有 segmentTitle/segmentOnline/segmentSameSchool/segmentSameInterest/segmentNearby/segmentNewcomer 六键，segmentHighMatch(L343)与 segmentEmpty(L352) 位于 nearby 命名空间",
+      "ideal": "按 zh-CN 文案渲染：「细分发现 · 高匹配」标题与「这个分组暂时没有更多人」空态文案（微信小程序 i18n key 未命中时不应把 key 原样上屏）",
+      "fix": "将 segmentHighMatch/segmentEmpty 两键补入 zh-CN.ts（及 en-US.ts）的 home 命名空间，或把 segment.vue 的引用改为 nearby.segmentHighMatch / nearby.segmentEmpty",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TOPIC-DETAIL-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/topic-detail",
+      "screenshot": "reports/screenshots/round-1-interact/TOPIC-DETAIL-09-after.png",
+      "category": "Data",
+      "severity": "P3",
+      "description": "回复触底加载下一页在 mock 构建下重复追加同一批回复：触底一次后列表 3→6（同 3 条 mock 回复重复），且重复 id 作 v-for key，继续触底会持续翻倍",
+      "evidence": "探针 replyItems=6（触发前 3 条， campuses/topic-detail.vue:104-115 onLoadMoreReplies 以「数量增长」判定 hasMore，6>3 故 repliesHasMore 恒 true）；根因 stores/campus.ts fetchCampusReplies mock 分支（L564-570）对任何页码都返回同一份 mockReplies[topicId] 并 push。v2 轮同机制 4→7 亦复现",
+      "ideal": "触底加载分页：下一页无数据时应置 hasMore=false 停止加载，列表不出现重复回复（真实后端分页语义正确）",
+      "fix": "mock 分支按页码切片（如 (page-1)*size 起）或 page>1 返回空数组，模拟真实分页终态",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TOPIC-DETAIL-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/topic-detail",
+      "screenshot": "reports/screenshots/round-1-interact/TOPIC-DETAIL-05-after.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "话题回复输入框与校园认证「学校名称」输入框未显式设置 maxlength，受微信 input 默认 140 字上限静默截断，粘贴/长文本超限时无任何字数提示",
+      "evidence": "探针实测输入 320 字符后 value 长度=140（TOPIC-DETAIL-05 valueLen=140）、认证页输入 200 字符后 len=140（CERTIFICATION-05）；代码：subpackages/campus/campus/topic-detail.vue:273-280 回复 input 无 maxlength 属性；subpackages/campus/campus/certification.vue:312-317 学校名称 input 同",
+      "ideal": "长文本输入应有明确上限与提示（显式 maxlength + 字数计数/达到上限提示），或按产品需要放宽上限，不静默丢弃用户输入",
+      "fix": "为输入框显式设置 maxlength 并在接近上限时展示字数提示；若需支持长回复改用 textarea 并自定义上限",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LIKES-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/likes/index",
+      "screenshot": "reports/screenshots/round-1-interact/LIKES-01-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「心动信号」入口渲染时页面标题「匹配列表」被挤压截断为「匹...」，页面标题不可读",
+      "evidence": "LIKES-01-after.png 顶部标题区仅显示「匹...」（mock heartSignals=2 使入口显示；探针 title 文本仍为完整「匹配列表」，证伪文本缺失、实为 CSS 截断）。代码：likes/index.vue:1033 整行 padding-right: calc(var(--capsule-right,7px) + 96px) 胶囊预留 + 标题 flex-shrink:1/ellipsis（L1063-1082），心动信号入口 flex-shrink:0 nowrap（L1084-1096）；该截断行为是 R10-P2-005 修复（防叠字）的副作用，在入口文案较长时把 4 字标题压到 1 字",
+      "ideal": "标题应保持可读（至少显示「匹配…」级别），心动信号入口在空间不足时收缩为图标，不应把页面标题截到不可读",
+      "fix": "调整压缩次序：给 .likes-header__title 设 flex-shrink:0 并让心动信号入口可收缩/改图标；或缩短入口文案/标题字号分级",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-次要15.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/次要15.json",
+  "unverifiable": [
+    "SEGMENT-04（分区页左上返回）：两次整跑在该步均出现与页面代码无关的页面栈替换（应用被切到 discover tab，route=pages/discover/index，segment.vue/home.vue 无任何 switchTab discover 代码路径）；同一操作在隔离探针（tmp/probe-r1-homediscover.mjs：返回后 t+1..6s 稳定停在 pages/home/index）与本轮 SEGMENT-07（route=pages/home/index）中均验证符合 → 归因 DevTools 长跑自动化环境异常（同 R12-IND-HOME-001 家族），无法在本轮证据下归因页面缺陷",
+    "SEGMENT-05（重复进出分区页 ×2）：循环执行完成、consoleErr=0（无崩溃成立），但两次进入的渲染证据被 SEGMENT-04 同一环境异常覆盖（落点为 discover tab），无法核对渲染断言",
+    "下拉刷新：nearby/people 与 likes/index 在 pages.json 开启 enablePullDownRefresh，segment 未开启；miniprogram-automator 无法合成下拉手势，三页下拉刷新均无法验证",
+    "校园认证学生证上传的真实系统相册/拍照流程：以 miniProgram.mockWxMethod 替身驱动 chooseImage 验证了页面分支（预览/重传/移除/提交），真实相册 UI 无法在自动化中验证",
+    "likes「解锁全部」栏与锁定项点击：mock 数据全部 unlocked=true 且 commerce.coin 封存入口隐藏（探针 unlockBar=0、lockIcons=0），入口按设计不渲染，无法验证",
+    "真实后端链路：本轮验收构建为 mp-weixin-mock（探针 session.uid=user-1001 旁证 apiMode=mock），真实接口行为仅以 curl 对 http://127.0.0.1:8080/api 旁证（话题/回复/喜欢/推荐数据存在），未纳入页面级判定"
+  ],
+  "notes": "方法：读源码列交互元素 → 预期先行 → automator(ws://127.0.0.1:9420) 逐操作 before/after 截图 + DOM/store 探针。61 操作：54 符合 / 5 检查偏差（4 issue）/ 2 无法验证。构建 apps/client/dist/build/mp-weixin（mp-weixin-mock，verify-build-features 4/4 PASS），运行时 mock 口径，全部预期按 mock 数据集书写；会话为 mock 登录（user-1001）。console 证据 tmp/interact-R1-次要15-console.log：6 页遍历 0 处 TypeError/is not defined/NAV_FAIL/exception；各操作探针 consoleErr 亦全为 0。回归核对：MP-R8-STATUS-001（标题叠状态栏）未复现（LIKES-01 截图标题区正常避让）；MP-R8-LIKES-001（假空态）未复现（列表 22 项正常）；MP-R8-CAPSULE-001/R10-P2-005（胶囊避让）以「标题省略」方式生效但衍生本批 MP-R1-LIKES-001 截断问题；R12-IND-TOPICS-001（话题 401 误判不存在）未复现（campus-topic-1 正常渲染）；MP-R1-NEARBY-005 属 pages/nearby/index 不在本批页面。历史轮次结论仅作回归线索，未采信为本轮证据。脚本防假死：截图 3 次重试 + wechatide CLI simulator_refresh 复苏；中断续跑经 raw JSON 断点。"
+}

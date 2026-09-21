@@ -1,0 +1,354 @@
+{
+  "round": "R1",
+  "pageRoute": "pages/messages/index",
+  "pageName": "消息（tabBar）",
+  "identity": "mock 构建登录态：reLaunch /pages/messages/index?dev-user=1 → applyDevUserFromQuery → enterDevUserDemo（mockUserSession user-1001）；数据源 messagesStore mock fixtures（useMock()=true）",
+  "buildCheck": "未重建包；以 mtime 校验产物新鲜度（dist/build/mp-weixin 2026-09-20 10:31:54，全部 src 均早于产物，find -newer 为空），并在 apps/client 下运行 node scripts/verify-build-features.mjs → PASS 4/4 功能特征命中",
+  "checks": [
+    {
+      "page": "pages/messages/index",
+      "operation": "01 打开页面（reLaunch ?dev-user=1，mock 登录）",
+      "expected": "NotLoggedWaiting 不出现，渲染 Header（消息标题+副标+右侧两个圆形图标钮）、快捷卡「有人喜欢你」「正在等待回复」、寻觅助手卡（官方标）、最近聊天列表（顺序 夏言/叶知秋/陈默/匿名匹配·星河/顾言，官方号寻觅助手不入列表）；useTabBar(3) 使 tabBar 消息项选中（index.vue:32）",
+      "actual": "01-after 截图：Header/两张快捷卡/助手卡（6+ 红角标）/最近聊天 5 条全部渲染；evaluate getCurrentPage().path=pages/messages/index query.dev-user=1；DOM chat-item__name 顺序=[夏言,叶知秋,陈默,匿名匹配 · 星河,顾言]；getTabBar().data.selected=3；会话 preview 文案与 mock fixture 一致（未发现审计残留文案，对应 R11-PREVIEW-RESIDUE 回归无复发）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "02 TabBar 消息角标闭环核对（回归 MP-R2-MSG-006 遗留：custom-tab-bar 角标）",
+      "expected": "进入页面后 onShow markAllSessionsRead（index.vue:212）清零会话未读 → useUnreadBadge 双通道（storage tabbar_chat_unread + getTabBar().setData）使 chatBadge=0、TabBar 无红点；助手卡角标 = totalUnreadCount+unreadNotificationCount（index.vue:335）应显示未读通知数",
+      "actual": "evaluate：chatBadge=0、storageBadge=0（custom-tab-bar/index.js:116 同键读取）；助手卡截图角标「6+」与 notifUnread=6 一致；OP17 再证动态方向（标为未读后 chatBadge 0→1 实时出现，见 17-after 消息 tab 红点「1」）。消息 TabBar 角标经 custom-tab-bar 已闭环，MP-R2-MSG-006 遗留项本轮确认已落地",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "03 点击搜索图标展开搜索栏",
+      "expected": "toggleSearch（index.vue:126）searchActive=true → v-if 搜索栏出现（placeholder「搜索聊天记录...」+ × 清除钮），不跳页",
+      "actual": "03-after：搜索栏出现于 Header 下方，placeholder 与清除钮可见；page.$('.search-bar') 命中=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "04 搜索框输入「夏」过滤",
+      "expected": "v-model searchKeyword → filteredSessions（index.vue:108-116）按 partnerName/preview includes 过滤 → 仅剩「夏言」",
+      "actual": "DOM chat-item__name=[\"夏言\"]，其余 4 条隐藏；04-after 截图一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-03-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "05 搜索无结果关键词「不存在xyz」",
+      "expected": "filteredSessions 为空 → 「未找到匹配的聊天」空态（index.vue:435-437）",
+      "actual": "emptyText=\"未找到匹配的聊天\"，列表行=0；05-after 截图空态可见",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-04-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "06 输入特殊字符 <>&\"'%$#",
+      "expected": "纯字符串 includes 过滤，不崩溃不抛错，显示未找到空态",
+      "actual": "emptyText=\"未找到匹配的聊天\"，无 TypeError；console 全量（CLI get_simulator_console grep -n . 共 190 行）0 条 TypeError/is not defined/NAV_FAIL",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-05-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "07 输入 200 字超长文本",
+      "expected": "输入可写入不崩溃，过滤为空显示空态",
+      "actual": "「超长文本测试」×40 输入后 emptyText 正常显示，页面无异常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-06-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "08 点击 × 清空搜索关键词",
+      "expected": "clearSearch（index.vue:131）置空关键词 → 恢复全部 5 条会话",
+      "actual": "DOM chat-item__name 恢复为[夏言,叶知秋,陈默,匿名匹配 · 星河,顾言]；08-after 截图一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-07-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "09 再次点击搜索图标收起搜索栏",
+      "expected": "toggleSearch 翻转 + 重置关键词（index.vue:126-129）→ 搜索栏从 DOM 移除",
+      "actual": "page.$('.search-bar')=null（v-if 移除），列表保持完整；09-after 截图无搜索栏",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-08-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "10 点击「有人喜欢你」快捷卡（goLikes）",
+      "expected": "markTypeRead([like,visitor,interaction_match]) + openAppPath(ROUTES.LIKES.VISITORS_LIKES)（index.vue:144-147）→ navigateTo /subpackages/discover-extra/likes-visitors/index",
+      "actual": "未读通知 6→4（markTypeRead 已执行）且 11-before 帧证实跳转落地：喜欢与访客页（104 总浏览量/5 今日访客/22 今日浏览量，喜欢我的 22/我的访客 5）。注：currentPage 在 tap+2.5s 时仍读到旧页，系子包首次编译耗时（自动化环境），后续帧确认最终落地",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "11 从喜欢与访客页返回",
+      "expected": "navigateBack 回到消息页，数据保持",
+      "actual": "11-after：消息页完整渲染，列表/角标状态保持",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "12 点击寻觅助手卡（openAssistant）",
+      "expected": "openAppPath(/subpackages/chat/official-chat/index?accountId=official-assistant)（index.vue:140-142）",
+      "actual": "12-after：官方号会话页「寻觅助手」渲染（Hi~我是寻觅助手、活动卡片、输入栏），query accountId=official-assistant",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "13 从官方号会话页返回",
+      "expected": "navigateBack 回到消息页",
+      "actual": "13-after：消息页正常渲染",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-12-after.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "14 点击最近聊天「夏言」行（openSession）",
+      "expected": "openAppPath(/subpackages/chat/chat-session/index?sessionId=session-private-1)（index.vue:164-166）",
+      "actual": "14-after：夏言会话页（认识 12 天、消息气泡、输入栏）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-14-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "15 从会话页返回（红点反弹回归）",
+      "expected": "返回后列表无未读反弹（fetchSessionMessages 本地清零 + onShow markAllSessionsRead）",
+      "actual": "evaluate：夏言 unread=0，列表无新红点；15-after 正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-15-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "16 长按「叶知秋」会话行（ActionSheet 弹出）",
+      "expected": "@longpress=onSessionLongpress（index.vue:172-189）→ uni.showActionSheet 弹出 4 项：置顶/取消置顶、标为未读、免打扰、删除会话",
+      "actual": "element.trigger('longpress') 触发成功（longpressed=true），16-after 帧捕获到全屏半透明遮罩（native ActionSheet 已打开的伴随遮罩），但 4 项目录面板未被任何一帧捕获——原生 showActionSheet 面板不参与 automator 元素树且截图通道对原生层不稳定；菜单项行为改由 mockWxMethod('showActionSheet',{tapIndex}) 注入驱动（OP17-21 全部生效）。面板视觉与文案无法取证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "17 长按菜单「标为未读」（叶知秋，tapIndex=1 注入）",
+      "expected": "markSessionUnread（index.vue:1233-1238）unreadCount=max(1,0)=1 → 行内红色角标「1」；totalUnreadCount 变化驱动 TabBar 角标 0→1（useUnreadBadge watch）与助手卡角标 +1",
+      "actual": "evaluate：叶知秋 unread=1、chatBadge=1、storageBadge=1；17-after：叶知秋行右侧红点「1」+ 消息 tab 红点「1」+ 助手卡角标 4+→5+，三处角标联动全部正确",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "18 长按菜单「置顶/取消置顶」（顾言，tapIndex=0 注入）",
+      "expected": "产品语义：置顶后该会话应移动到列表顶部或出现置顶标识（微信标准长按置顶交互）",
+      "actual": "evaluate：顾言 pinned=true 已写入（toggleSessionPin→setSessionPinned mock 分支生效），但 DOM chat-item__name 顺序仍为[夏言,叶知秋,陈默,匿名匹配 · 星河,顾言]——顾言仍在末位；页面渲染按 highIntent/normal 分组（index.vue:95-106）且模板无任何 pinned 标识/图标（index.vue:398-431），置顶操作在本页零可见反馈（18-after 与 17-after 列表完全一致）；后续 OP23 refetch 后 store 按 pinned 先排序，页面分组仍不体现",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-18-after.png",
+      "issueId": "MP-R1-PAGES-MESSAGES-INDEX-002"
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "19 长按菜单「免打扰」（顾言，tapIndex=2 注入）",
+      "expected": "setSessionMuted(id,true)（index.vue:1187-1202 mock 分支本地置位）→ 微信标准应出现免打扰标识",
+      "actual": "evaluate：顾言 muted=true 已生效，但 19-after 与 18-before 逐像素级一致（行内无免打扰图标——模板 chat-item 结构 index.vue:406-430 无 muted 渲染分支），用户无法感知哪条会话被免打扰",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-19-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-19-after.png",
+      "issueId": "MP-R1-PAGES-MESSAGES-INDEX-003"
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "20 长按菜单「恢复提醒」（顾言再次长按，tapIndex=2，label 应翻转为「恢复提醒」）",
+      "expected": "菜单第 3 项 label 因 muted=true 三元翻转（index.vue:174），选择后 setSessionMuted(id,false) 恢复",
+      "actual": "evaluate：顾言 muted 恢复为 false（状态恢复生效）；label 翻转仅代码层确认（L174 三元表达式），菜单面板视觉同 OP16 限制未能入帧",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "21 长按菜单「删除会话」（匿名匹配·星河，tapIndex=3 + showModal 确认注入）",
+      "expected": "tapIndex=3 → uni.showModal「确定删除该会话？」→ 确认后 deleteSession（index.vue:179-186、store mock 分支本地移除）→ 该行消失",
+      "actual": "evaluate：sessions 剩 4 条（匿名匹配·星河已移除）；DOM chat-item__name=[夏言,叶知秋,陈默,顾言]；21-after 列表中该行已消失",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-21-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "22 快速连续点击寻觅助手卡 5 次",
+      "expected": "理想：导航去重只进入一次官方号页；页面栈不叠加多层重复页",
+      "actual": "5 连点（间隔 120ms）后 currentPage=subpackages/chat/official-chat/index?accountId=official-assistant，getCurrentPages().length=2（消息页+官方号页）——未出现多层叠加（navigateTo 进行中的后续调用被 wx 静默失败吞掉），结果为理想状态",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-22-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "23 重复进出页面 ×3（打开 1.2s 后立即切走）",
+      "expected": "每次进入正常渲染（30s TTL bootstrap 兜底），无白屏/卡死，最终停留消息页内容态",
+      "actual": "3 轮 enter/exit probes 全部完成，最终 evaluate：route=pages/messages/index、selected=3、会话数据完整（删除的匿名会话未复活、顾言置顶保留）；23-after 渲染正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-23-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "24 下拉刷新（wx.startPullDownRefresh 触发 onPullDownRefresh）",
+      "expected": "pages.json enablePullDownRefresh=true + onPullDownRefresh（index.vue:214-217）：刷新触发 → loadPage → stopPullDownRefresh；运行期状态（置顶/已删会话）不重置",
+      "actual": "刷新后 evaluate：顾言 pinned=true 保留、已删除的匿名会话未复活（mock fetchSessions 非首载 runtime 过滤生效）、列表完整；24-after 正常。顶部 spinner 动画帧未捕获（mock 模式 loadPage 毫秒级完成，24-during 拍摄时机 600ms 动画已停止）——动画视觉列入 unverifiable",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-24-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-24-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "25 滚动到底再回顶（滚动遮罩，回归 INDEP-004）",
+      "expected": "wx.pageScrollTo(600) → onPageScroll（index.vue:45-48）pageScrolled=true → 顶部渐变遮罩 .messages-page__top-scrim opacity 0→1（index.vue:41-44、252-253）；回顶后遮罩消失",
+      "actual": "25-scrolled：Header 标题滚出视口、内容滑入状态栏区域且状态栏背后呈现渐变遮罩（与 25-before 顶部形态明显不同）；25-after 回顶后恢复原貌。INDEP-004 修复在消息页已落地",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-25-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-25-scrolled.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "26 tabBar 切换「我的」↔「消息」",
+      "expected": "switchTab profile：custom-tab-bar selected=4；switchTab messages：selected=3（useTabBar(3)）；数据保持不重置",
+      "actual": "evaluate：profile 页 selected=4；返回消息页 selected=3、chatBadge=0；26-profile 为「我的」页帧，26-after 消息页完整（无重新白屏）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-26-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-26-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "27 点击 header「+」图标",
+      "expected": "代码层该元素仅 hover-class 无 @tap（index.vue:270-272）→ 点击无任何反应；产品逻辑上「+」图标暗示可发起会话，可点击外观+零功能属可交互元素缺陷",
+      "actual": "tap 后 currentPage 仍为 messages/index、getTabBar 状态不变、27-after 与 27-before 完全一致、无 Toast/弹窗/跳转——确认为死交互元素",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-27-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-27-after.png",
+      "issueId": "MP-R1-PAGES-MESSAGES-INDEX-001"
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "28 点击「正在等待回复」卡（goReply，首次执行被并行任务污染后紧凑重拍）",
+      "expected": "goReply（index.vue:151-158）取 privateSessions[0]=夏言 → openSession → chat-session?sessionId=session-private-1",
+      "actual": "redo 后 28-after：夏言会话页落地（与会话内容一致）；currentPage 在 tap+3s 时仍读旧页（chat-session 导航在本环境稳定慢于 3s，截图重试帧确认最终落地）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-28-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-28-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/messages/index",
+      "operation": "29 下拉刷新动画帧补拍（关联 OP24；含并行污染后 redo）",
+      "expected": "startPullDownRefresh 后顶部立即出现系统刷新动画约 0.5-1s（mock 模式 loadPage 极快）",
+      "actual": "预热截图通道后 8 连拍（400ms deadline/张）全部超时——本机 automator 单次截图协议往返实测 1-10s，大于动画窗口，动画帧不可捕获；29-after 为刷新结束后的正常消息页。功能面已由 OP24 状态证据覆盖",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-29-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-29-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-001",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-27-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "Header 右侧「+」图标为死交互元素：有 hover-class 可点击外观，但未绑定任何 @tap，点击无任何反应",
+      "evidence": "代码 apps/client/src/pages/messages/index.vue:270-272（第二个 header__icon-btn 无 @tap，对比 :267 搜索钮有 @tap=toggleSearch）；27-before/after 截图完全一致，tap 后 currentPage/getTabBar 状态零变化，无 Toast/跳转",
+      "ideal": "可见的可交互控件必须有响应（微信小程序 UI 规范：可点击元素应给予视觉与行为反馈）：点击「+」应发起新会话/展示菜单，或移除该图标",
+      "fix": "为该按钮补充交互（如打开发起会话/添加入口 ActionSheet），或在无功能落地前移除 hover-class 与图标避免误导用户",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-002",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-18-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "长按菜单「置顶/取消置顶」执行成功（store pinned=true）但页面零可见反馈：列表不重排、无置顶标识",
+      "evidence": "OP18 evaluate：顾言 pinned=true；DOM chat-item__name 顺序仍[夏言,叶知秋,陈默,匿名匹配 · 星河,顾言]；页面列表按 highIntent/normal 分组渲染（index.vue:95-106、398-405），模板无 pinned 图标/样式（index.vue:406-430）；store 层 pinned 优先排序（stores/messages.ts:603-605）被页面分组完全覆盖",
+      "ideal": "微信标准长按置顶交互：置顶后会话移动到列表顶部并显示置顶标识，用户能立即感知操作生效",
+      "fix": "消息页列表排序纳入 pinned（pinned 会话优先于分组规则或组内置顶），并在 chat-item 行内渲染置顶角标；同时评估 highIntent 分组与 pinned 优先级的产品优先级",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-003",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-19-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "长按菜单「免打扰」执行成功（store muted=true）但会话行无免打扰图标，用户无法辨识哪些会话处于免打扰",
+      "evidence": "OP19 evaluate：顾言 muted=true；19-after 与 18-before 视觉一致，chat-item 模板（index.vue:406-430）无 muted 渲染分支；store 注释明确「免打扰会话不再在列表顶栏统计未读数」（stores/messages.ts:511-514）但列表行标识缺失",
+      "ideal": "微信标准：免打扰会话行内（时间/未读区）显示铃铛斜杠图标，明确告知用户该会话已静音",
+      "fix": "在 chat-item__right 或名称行按 session.muted 条件渲染免打扰图标（复用 IMAGE_PATHS 图标资源）",
+      "status": "待修复"
+    }
+  ],
+  "scriptPath": "tmp/interact-R1-PAGES-MESSAGES-INDEX.mjs",
+  "scriptPathAux": ["tmp/interact-R1-PAGES-MESSAGES-INDEX-part2.mjs", "tmp/interact-R1-PAGES-MESSAGES-INDEX-part3.mjs"],
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json",
+  "recordsFile": "tmp/interact-R1-PAGES-MESSAGES-INDEX-records.json",
+  "unverifiable": [
+    "OP16 ActionSheet 面板视觉与 4 项菜单文案：uni.showActionSheet 为原生层组件，不参与 automator 元素树，截图仅捕获到全屏遮罩（16-after）未捕获面板；菜单项行为已用 mockWxMethod('showActionSheet',{tapIndex}) 注入驱动并全部验证（OP17-21）。需真机人工核对面板样式与文案",
+    "OP24/OP29 下拉刷新顶部 spinner 动画帧：mock 模式 loadPage 毫秒级完成使动画窗口 <1s，本机 automator 单次截图协议往返实测 1-10s（预热后 8 连拍 400ms deadline 全超时），无法在窗口内捕获；刷新功能本身（handler 触发、数据保持、stopPullDownRefresh）已由 OP24 前后状态证据验证",
+    "「正在升温」区块及「更多 ›」「warm-item 头像点击」：mock 构建下 fetchRelationshipDashboard 直接 return（stores/messages.ts:552-556），dashboard=null → v-if=\"warmPeople.length>0\"（index.vue:364）不渲染，无数据可操作；需真实后端返回 dashboard.warmPeople 的环境验证",
+    "「活动推荐」卡片（activity-rec-card 点击）：同上，dashboard.assistant 为空 → v-if=\"activityRecommendations.length>0\"（index.vue:475）不渲染；需真实后端环境",
+    "未登录态 NotLoggedWaiting 与「去登录」入口（goLogin）：mock 构建 useMock()=true 恒为内容态（index.vue:254 条件永不成立）；需 real 模式构建（真实后端）验证登录锁分支",
+    "ErrorState 网络错误态与重试按钮（handleRetry）：需 messagesStore.errorMessage 非空的真实后端失败场景，mock 模式无法自然触发；store 注入伪造错误属非用户可达路径，未采用"
+  ],
+  "notes": "环境与方法：miniprogram-automator（createRequire 从 D:/codex-tools/node-v22.17.0-win-x64/node_modules 加载）connect ws://127.0.0.1:9420（DevTools 已开自动化端口），交互驱动（tap/input/trigger('longpress')/switchTab/reLaunch/navigateBack/pageScrollTo（wx.pageScrollTo）/startPullDownRefresh）+ evaluate 读取 store/tabbar 状态；截图因 DevTools 渲染层偶发超时采用「automator 重试×4 + wechatide CLI simulator_screenshot 兜底」双通道（微信开发者工具 CLI -c ZCode）。构建核验：未重建（产物 mtime 2026-09-20 10:31 晚于全部 src，find -newer 为空），node scripts/verify-build-features.mjs PASS 4/4。已知干扰：本轮与其他页面子任务共享同一 DevTools 实例，存在并行导航串扰（OP28/29 首拍被 discover 页污染，已删除污染帧并紧凑重拍）；消息页相关导航（子包页）在 tap 后 2.5-3.5s 内 currentPage 读取偏早，判定一律以截图落地帧为准。回归核对结论：MP-R2-MSG-006 助手卡红角标已显示（6+/5+ 动态联动），且消息 TabBar 角标经 custom-tab-bar 双通道闭环（进入清零 02、标为未读实时出现 17）——遗留项确认闭环；INDEP-004 滚动遮罩已落地（OP25）；R11-PREVIEW-RESIDUE 无复发（preview 与 mock fixture 一致，无已删文案）。console 取证：automator console 事件在本环境不转发（0 条），改用 CLI get_simulator_console 全量 190 行——全部为 wx.saveFile/wx.removeSavedFile 废弃 API warn（chat 页图片保存链路，非本页交互产生），0 条 TypeError/is not defined/NAV_FAIL/Cannot read。"
+}

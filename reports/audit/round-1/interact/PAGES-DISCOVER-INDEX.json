@@ -1,0 +1,452 @@
+{
+  "generatedAt": "2026-09-20T11:30+08:00",
+  "round": "R1",
+  "page": "pages/discover/index",
+  "scriptPath": "tmp/interact-R1-PAGES-DISCOVER-INDEX.mjs",
+  "fixupScriptPath": "tmp/interact-R1-fixup.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/PAGES-DISCOVER-INDEX.json",
+  "checks": [
+    {
+      "page": "pages/discover/index",
+      "operation": "01 初载渲染（身份A 登录态）",
+      "expected": "顶部寻觅♥+筛选圆钮；推荐/附近分段（推荐高亮带下划线）；匹配卡居中；3操作键（跳过/打招呼/喜欢粉色大圆）；自定义tabBar寻觅高亮；登录态无登录提示条（index.vue:206-313）",
+      "actual": "截图1-after：标题/筛选钮/分段高亮/卡片(林晓 80%匹配度)/三操作键/tabBar寻觅高亮全部在位，无登录提示条。state: session.isLoggedIn=true, cards=9, tabbar{selected:2,hidden:false}。console 无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-1-initial-load-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-1-initial-load-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "02 点击筛选圆钮",
+      "expected": "抽屉自底滑入：全部筛选标题+关闭钮、基础/高级Tab、身高滑块、学历/感情状态chips、籍贯/未来城市picker、关键词输入、重置/确认；自定义tabBar隐藏（index.vue:215-224,138-141; FilterDrawer.vue:595-696）",
+      "actual": "截图2-after：抽屉完整渲染全部区块；state: drawer=true, tabbar.hidden=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-2-filter-open-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-2-filter-open-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "03 抽屉 基础/高级Tab 切换",
+      "expected": "点高级筛选→该Tab高亮、内容区切为高级筛选项（FilterDrawer.vue:625-644）",
+      "actual": "tap ok；高级Tab class 含 filter-drawer__tab--active；随后切回基础成功",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-3-drawer-tab-advanced-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-3-drawer-tab-advanced-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "04 学历 chip 多选",
+      "expected": "点本科→激活样式+值文案「已选 1」；再点取消（FilterDrawer.vue:349-360）",
+      "actual": "值文案 不限→已选 1；chip class 含/不含 filter-chip--active 正确切换（再点取消）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-4-drawer-education-chip-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-4-drawer-education-chip-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "05 感情状态 chip 单选互斥",
+      "expected": "点未婚激活→点另一项后未婚自动取消（FilterDrawer.vue:365-376）",
+      "actual": "值文案 未婚→曾婚；未婚chip反激活、曾婚chip激活（注：脚本索引第2颗为曾婚非离异，单选互斥行为验证成立）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-5-drawer-relationship-chip-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-5-drawer-relationship-chip-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "06 身高滑块拖动",
+      "expected": "驱动下限滑块触发change→值文案从120-250cm变为<新值>-250cm（FilterDrawer.vue:291-302）",
+      "actual": "automator element.tap() 不触发原生slider change（before/after均120-250cm，无报错）；无合成拖拽路径",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-6-drawer-height-slider-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-6-drawer-height-slider-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "07 关键词正常输入「摄影」",
+      "expected": "输入值=摄影，清空图标出现；immediateApply=false 输入不触发请求（FilterDrawer.vue:439-443,796-803）",
+      "actual": "input ok，clearIconVisible=true；无请求发出",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-7-keyword-input-normal-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-7-keyword-input-normal-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "08 关键词超长文本300字",
+      "expected": "长文本可输入无崩溃（mp-weixin input 默认maxlength=140，超出静默截断属平台默认）",
+      "actual": "无崩溃无JS错误；值长度=140（平台默认上限截断，无产品需求要求更长关键词）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-8-keyword-input-long-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-8-keyword-input-long-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "09 关键词特殊字符",
+      "expected": "<script>alert(1)</script>&\"' 作为纯文本接受，无脚本执行无崩溃（FilterDrawer.vue:802 @input）",
+      "actual": "值原样回读 <script>alert(1)</script>&\"'，页面正常，无JS错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-9-keyword-input-special-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-9-keyword-input-special-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "10 关键词清空按钮",
+      "expected": "点清空图标→值清空、图标消失（FilterDrawer.vue:448-452）",
+      "actual": "valueAfterClear=空串，clearIconStillVisible=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-10-keyword-clear-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-10-keyword-clear-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "11 筛选重置",
+      "expected": "选硕士后点重置→chip反激活、值文案回不限、store.recommendationFilter重置（FilterDrawer.vue:517-533; index.vue:311）",
+      "actual": "chipClass无active、valueText=不限、recFilter={}",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-11-filter-reset-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-11-filter-reset-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "12 筛选确认",
+      "expected": "点确认→抽屉关闭、tabBar恢复显示、filter应用（FilterDrawer.vue:538-543; index.vue:310）",
+      "actual": "drawer=false、tabbar.hidden=false；apply后recFilter={}（重置后确认）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-12-filter-confirm-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-12-filter-confirm-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "13 抽屉关闭按钮",
+      "expected": "重开抽屉点右上关闭钮→抽屉关闭（FilterDrawer.vue:548-551）",
+      "actual": "drawer=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-13-drawer-close-btn-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-13-drawer-close-btn-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "14 遮罩点击关闭",
+      "expected": "重开抽屉点面板外遮罩→抽屉关闭（FilterDrawer.vue:596-603）",
+      "actual": "touch@187,60（遮罩区）→drawer=false",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-14-drawer-mask-close-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-14-drawer-mask-close-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "15 切「附近」分段",
+      "expected": "附近高亮+下划线移动；activeFilter/matchScope=nearby、distanceMax=20、重新fetch；列表≤20km且距离升序（index.vue:96-108; utils.ts:105-146）",
+      "actual": "state: activeFilter=nearby,matchScope=nearby,recFilter={\"distanceMax\":20}；截图15-after：附近高亮带下划线，首卡草莓0.5km（0.5<1.2<2.1 升序正确）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-15-tab-nearby-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-15-tab-nearby-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "16 切回「推荐」分段",
+      "expected": "推荐高亮回移；activeFilter/matchScope=all、distanceMax清除、重新fetch（index.vue:96-108）",
+      "actual": "state: activeFilter=all,matchScope=all,recFilter={}；推荐Tab active class",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-16-tab-recommend-back-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-16-tab-recommend-back-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "17 点击卡片→他人主页",
+      "expected": "navigateTo /subpackages/profile-extra/profile/other?userId=<卡userId>，返回回寻觅（index.vue:110-113; navigation.ts:303-309）",
+      "actual": "栈[discover, profile/other?userId=4002]；navigateBack后栈顶回discover",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-17-card-tap-profile-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-17-card-tap-profile-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "18 点「跳过」(X)",
+      "expected": "当前卡移除、显示下一张（swipe.ts mock分支：本地记录+推进）（index.vue:115-124; swipe.ts:39-133）",
+      "actual": "first: 夏言|4002 → 阿辰|4003，cards=7，无错误提示",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-18-pass-button-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-18-pass-button-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "19 卡片左滑手势（>120px）",
+      "expected": "触发swipe-left→同pass卡片推进（SwipeContainer.vue:58-66; SwipeGesture.ts:37-39阈值120）",
+      "actual": "合成touch序列(start/move/end, Δx=-220)派发成功但手势回调未触发（first卡不变、0报错，两轮一致）；automator合成触摸无法驱动catchtouchmove手势链",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-19-card-swipe-left-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-19-card-swipe-left-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "20 快速连续点跳过×3（150ms间隔）",
+      "expected": "卡片连续推进不崩溃无错误",
+      "actual": "first 阿辰|4003→草莓|4006（推进3张），cards 7→4，无JS错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-20-pass-rapid-x3-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-20-pass-rapid-x3-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "21 点「喜欢」",
+      "expected": "navigateTo /subpackages/discover-extra/discover/matching?userId&cardId&action=like（mock实名门控恒过 campus-gate.ts:33-40）；返回回寻觅",
+      "actual": "栈[discover, matching]→back→discover，卡片已消费(草莓4006→下一张苏奈4007)。但返回后顶部出现红色错误横幅「卡片不存在或已被处理」——匹配页重复消费同一卡所致，见issue MP-R1-PAGES-DISCOVER-INDEX-001（console: swipeRight error×2+unhandledRejection×2+captureException×2）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-21-like-button-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-21-like-button-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-001"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "22 卡片右滑手势（>120px）",
+      "expected": "触发swipe-right→进入匹配页",
+      "actual": "合成touch序列(Δx=+220)派发成功但手势回调未触发（无导航、无状态变化、0报错，两轮一致）；同19，automator无法驱动手势链",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-22-card-swipe-right-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-22-card-swipe-right-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "23 点「打招呼」",
+      "expected": "（mock实名恒过+greet计数<3）navigateTo matching?action=superLike；返回回寻觅",
+      "actual": "栈[discover, matching]→back→discover。同样出现「卡片不存在或已被处理」横幅（见24-after截图顶部），同issue MP-R1-PAGES-DISCOVER-INDEX-001",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-23-superlike-button-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-23-superlike-button-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-001"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "24 打招呼频控（同卡第4次）",
+      "expected": "预设greet:count:<id>=3后点打招呼→不跳转、Toast「已向TA打过3次招呼，等待对方回应后再试」（index.vue:152-163）",
+      "actual": "截图24-after：Toast文案逐字一致、栈顶仍discover。另可见顶部残留「卡片不存在或已被处理」横幅（上一操作23遗留，issue 001）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-24-superlike-rate-limit-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-24-superlike-rate-limit-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-001"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "25 喜欢双击（重复提交，120ms）",
+      "expected": "第一次navigateTo匹配页；页面栈不叠加两个matching，无JS错误",
+      "actual": "like1/like2 tap均ok；栈中matching恰1个；back→discover。console仍现issue 001错误簇",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-25-like-double-tap-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-25-like-double-tap-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-001"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "26 错误横幅「重试」",
+      "expected": "注入errorMessage后红底横幅出现；点重试→重新拉取、横幅消失（index.vue:257-262 @tap=loadDiscoverData）",
+      "actual": "偏差：横幅出现正常，但点重试后横幅未消失（bannerBefore=bannerAfter=「测试错误横幅」，store.err仍在）——loadDiscoverData:173 的30s缓存守卫 isCacheFresh 使fetchCards被跳过，errorMessage无清除路径",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-26-error-banner-retry-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-26-error-banner-retry-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-002"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "27 空卡片空态",
+      "expected": "清空cards→空态（悲伤吉祥物+「推荐暂时没有新的人，去「附近」看看吧」）、3操作键消失；fetch恢复后卡片与操作键回来（index.vue:272-299）",
+      "actual": "clean探针截图：空态文案逐字一致+「这里空空如也」+操作键消失(actionsGone=true)；恢复后cards=8 first=4001。注：带error时按规格显示「推荐加载失败」变体（index.vue:70-78）亦正确",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-27-empty-cards-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-27-empty-cards-clean.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "28 滚动区上滑手势",
+      "expected": "内容≈单屏：滑动后页面稳定无异常（index.vue:256 scroll-view）",
+      "actual": "swipe-up-done，state稳定，无JS错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-28-scroll-view-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-28-scroll-view-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "29 打开立即返回",
+      "expected": "进入600ms内switchTab离开→无崩溃卡死；回来onShow正常（index.vue:186-194）",
+      "actual": "switchTab往返完成，store正常9卡，无错误横幅累积",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-29-open-then-quick-leave-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-29-open-then-quick-leave-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "30 重复进出×3",
+      "expected": "每次往返均正常渲染，无崩溃无错误横幅累积",
+      "actual": "3次home↔discover往返全部落在discover，store正常，console无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-30-reenter-x3-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-30-reenter-x3-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "31 tabBar点击切换",
+      "expected": "点tabBar首页→切首页选中态移动；点寻觅→回（custom-tab-bar index.wxml:7-9 bindtap=switchTab）",
+      "actual": "tab-bar项不在页面元素树内（custom-tab-bar为独立层，automator page.$ 选不到），tap无法执行；switchTab API兜底验证页面级切换 home↔discover 正常",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-31-tabbar-switch-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-31-tabbar-switch-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "32 下拉刷新手势",
+      "expected": "本页无enablePullDownRefresh（pages.json:51-53）、scroll-view无refresher-enabled→下拉无刷新反应",
+      "actual": "drag-down-done，无刷新动画，store不变，无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-32-pull-down-refresh-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-32-pull-down-refresh-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "33 游客态初载",
+      "expected": "未登录：底部绿色胶囊「登录后可与 TA 互动」可见；卡片预览正常（index.vue:302-305,167-180）",
+      "actual": "偏差：hint元素在DOM中（hintFound=true）且可被合成点击命中，但截图中胶囊完全不可见——position:fixed bottom:120rpx 的胶囊被自定义tabBar（原生层恒在页面内容之上）整体遮挡，真实用户看不到该入口。卡片预览正常（9卡）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-33-guest-initial-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-33-guest-initial-after.png",
+      "issueId": "MP-R1-PAGES-DISCOVER-INDEX-003"
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "34 游客点登录提示条",
+      "expected": "navigateTo /pages/login/index；返回回寻觅（index.vue:86-88）",
+      "actual": "tap→pathAfter=pages/login/index→back→discover。导航链路正确（但入口被遮挡使真实用户不可达，见003）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-34-guest-login-hint-tap-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-34-guest-login-hint-tap-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "35 游客点「喜欢」",
+      "expected": "不跳转，Toast「请先登录后再使用该功能」（index.vue:80-84; i18n zh-CN.ts:3845）",
+      "actual": "截图35-after：Toast文案逐字一致，栈顶仍discover",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-35-guest-like-toast-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-35-guest-like-toast-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "36 游客点「打招呼」",
+      "expected": "同上Toast拦截（index.vue:149-151 requireLogin先于频控）",
+      "actual": "截图36-after：Toast文案一致，无跳转",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-36-guest-superlike-toast-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-36-guest-superlike-toast-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "37 游客点「跳过」",
+      "expected": "游客左滑本地放行：卡片推进、无401/错误Toast/强制登录（swipe.ts:74-101）",
+      "actual": "first 林晓|4001→夏言|4002（cards 9→8），无跳转无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-37-guest-pass-local-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-37-guest-pass-local-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/discover/index",
+      "operation": "38 游客点卡片",
+      "expected": "navigateTo other?userId=…（无登录门控 index.vue:110-113）；返回回寻觅",
+      "actual": "栈[discover, other?userId=4002]→back→discover",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-38-guest-card-tap-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-38-guest-card-tap-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-001",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-21-like-button-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "每次喜欢/打招呼成功后必现虚假错误横幅「卡片不存在或已被处理」+ console.error + 未处理Promise拒绝：匹配页对同一卡片重复消费两次",
+      "evidence": "运行时插桩trace：CALL:swipeRight(4002,false)→OK（消费成功）→CALL:swipeRight(4002)→REJECT:Error:卡片不存在或已被处理（无捕获）。代码链：matching.vue:139 runMatchCheck→match.ts:53 已调swipeRight消费；matching.vue:55-62 watch(status idle)→consumeCardFromDeck→matching.vue:149 void useDiscoverStore().swipeRight(id) 二次消费→swipe.ts:63-67 卡片不存在检查抛错→swipe.ts:421 console.error+rethrow；void丢弃rejected promise→uni.onUnhandledRejection×2+captureException×2；swipe.ts:250-251 errorMessage=卡片不存在或已被处理→寻觅页红横幅（截图21-after、24-after可见）。console-fixup日志3簇×6条",
+      "ideal": "喜欢/打招呼成功→卡片恰好消费一次，返回寻觅页显示下一张，无错误横幅、无console错误（同一cardId重复消费应幂等resolve）",
+      "fix": "①matching.vue:149 二次消费前判重（consumedCardId 已在 discoverStore.viewedCards 或 cards 中不存在时跳过）；②或 swipeRight/_doSwipeRight 对已消费cardId幂等返回（不set errorMessage）；③matching.vue:149 void改为 .catch(() => {}) 消除未处理拒绝",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-002",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-26-error-banner-retry-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "错误横幅「重试」按钮在30s缓存窗口内点击无效：不重新拉取、横幅不消失",
+      "evidence": "实测（fixup A-26）：注入errorMessage→横幅出现→点.match-error__retry（tap ok）→bannerBefore=bannerAfter=「测试错误横幅」，store.errorMessage未清。根因 index.vue:259 retry→loadDiscoverData→index.vue:173 !isCacheFresh(\"discover:data\",30_000)为false→fetchCards被跳过、errorMessage无清除路径；而fetchCards失败场景下 setCachedValue（index.vue:175）同样先行写入，真实加载失败后30s内重试同为死键",
+      "ideal": "点「重试」立即重新请求推荐并清除错误横幅（重试语义优先于TTL缓存）",
+      "fix": "重试入口单独走强制刷新：先 removeCachedValue(\"discover:data\")（或直接调 discoverStore.fetchCards()），成功后 errorMessage 由 fetchCards 置空",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-003",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-33-guest-initial-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "游客态底部登录引导胶囊「登录后可与 TA 互动」被自定义tabBar完全遮挡，真实用户不可见不可点",
+      "evidence": "元素存在（hintFound=true）且33-after/34-before截图中底部无绿色胶囊（custom-tab-bar为原生层恒在页面内容之上）；胶囊定位 index.vue:521-534 position:fixed bottom:120rpx，恰落在tabBar高度（112rpx+safe-area）区间内；页面padding-bottom（index.vue:324）只为内容流留空间，对fixed定位无效。自动化合成点击不命中测试仍可触发跳转（34验证），真实触摸会被tabBar拦截",
+      "ideal": "游客进入寻觅页即可看到并点到登录引导（小程序常见做法：胶囊悬浮于tabBar上方）",
+      "fix": "index.vue:523 bottom改为 calc(240rpx + env(safe-area-inset-bottom))（tabBar高112rpx+胶囊高+间距）或引入tabbar高度变量；真机验证层级",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-004",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-21-like-button-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "每日配额用尽（isLimitReached）后页面仍展示卡片并放行喜欢/打招呼，进入匹配页动画后才失败（失败Toast+console错误簇），与左滑路径的页内Toast拦截体验不一致",
+      "evidence": "运行时探针：viewed=10/dailyLimit=10/isLimitReached=true 时 cards=9 仍全部展示、操作键可点；点击后 navigateTo matching→swipeRight 抛「今日推荐次数已用完」（swipe.ts:69-72）→runMatchCheck catch→status failed→失败Toast（match.ts:60-64）；同簇产生 swipeRight error/unhandledRejection/captureException。对比左滑路径在页内Toast拦截（index.vue:115-124 handleSwipeLeft catch→toast）",
+      "ideal": "配额用尽时寻觅页前置拦截：展示「今日推荐次数已用完」空态（store已有quotaExhausted/emptyTitle文案 index.vue:70-78）或点喜欢时页内Toast提示，不导航进匹配动画",
+      "fix": "enterMatching（index.vue:126-135）前检查 discoverStore.isLimitReached→uni.showToast提示并return；或visibleCards渲染条件叠加 !isLimitReached",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "06 身高滑块change：automator element.tap()不触发原生slider change，合成事件无法驱动拖拽（before/after均120-250cm）",
+    "19 卡片左滑手势：合成touchstart/move/end(Δx=-220)派发成功但SwipeContainer手势回调未触发（两轮一致，0报错）；等效按钮链路（pass）已验证",
+    "22 卡片右滑手势：同19（无导航、无状态变化）；等效按钮链路（like）已验证",
+    "31 tabBar项点击：custom-tab-bar不在页面元素树内（automator page.$不可选），tap无法执行；switchTab API兜底已验证页面级切换正常（custom-tab-bar index.wxml:7-9 bindtap=switchTab 未被真实验证）"
+  ],
+  "notes": "环境：微信开发者工具Stable 2.02.2608040，automator ws://127.0.0.1:9420。构建：cd apps/client && pnpm build:mp-weixin:mock（node22），verify-build-features PASS 4/4（寻觅-附近卡片/寻觅-附近空态文案键/安全中心-第三方账号绑定标题键/登录页-请先登录提示）。开局DevTools自动化通道假死（connect成功但命令超时，simulator_refresh无效），经 close_project_window→cli.bat auto --auto-port 9420→simulator_open_page 恢复。身份A=登录态（tmp_r1_login.json token+session.bootstrap，mock模式bootstrap注入林晓会话 session.ts:619）；身份B=游客未登录（FN_GUEST清token+userSession=null，对应index.vue未登录分支）。A-17~A-28首跑因automator currentPage()导航竞态打错页面，改用栈轮询(getCurrentPages)复跑（tmp/interact-R1-fixup.mjs → tmp/interact-R1-progress2.jsonl，截图同名覆盖为权威版本）；A-05脚本预期文案「离异」系索引笔误（实为曾婚），单选互斥结论不受影响。console全量落盘 reports/screenshots/round-1-interact/console-PAGES-DISCOVER-INDEX.log 与 console-fixup-PAGES-DISCOVER-INDEX.log；逐操作observed落盘 tmp/interact-R1-progress.jsonl 与 tmp/interact-R1-progress2.jsonl。verdict统计：符合32 / 偏差2 / 无法验证4。"
+}

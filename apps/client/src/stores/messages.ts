@@ -889,7 +889,15 @@ export const useMessagesStore = defineStore("messages", {
         await withTimeout((async () => {
           if (useMock()) {
             const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind, body: content, sentAt: new Date().toISOString() };
-            this.currentMessages.push(nm);
+            // 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-001）：长按「转发」到其他会话时
+            // 目标会话是 sessionId 而非当前打开会话，此时不得写入当前消息流（否则被转发
+            // 消息错误出现在当前会话视图，用户误以为发错对象），仅更新目标会话元数据与
+            // mockMessages bucket。存在激活会话且与目标不同即判定为转发场景；
+            // 无激活会话（store 脱离页面独立使用）保持原追加行为。
+            const isForwardToOtherSession = this.activeSessionId !== null && sessionId !== this.activeSessionId;
+            if (!isForwardToOtherSession) {
+              this.currentMessages.push(nm);
+            }
             // R16：同步写 mockMessages——fetchSessionMessages 用 mockMessages 整表覆盖，
             // 此前漏写导致刷新后刚发的消息消失。
             // 2026-09-17 修复 [PRODUCT-FIX]：原实现误写 this.mockMessages（state 未声明该字段，
@@ -917,8 +925,11 @@ export const useMessagesStore = defineStore("messages", {
           });
           const mr = mapToMessageItem(result);
           // R16：POST 回包与 WS 回推可能同达，按 id 去重（此前重复 push 出现右侧双气泡）
+          // 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-001）：与 mock 分支同理，
+          // 转发到其他会话（存在激活会话且与目标不同）时回包不写入当前消息流。
           const dup = this.currentMessages.find((m) => m.id === mr.id);
-          if (!dup) this.currentMessages.push(mr);
+          const isForwardToOtherSession = this.activeSessionId !== null && sessionId !== this.activeSessionId;
+          if (!dup && !isForwardToOtherSession) this.currentMessages.push(mr);
           const s = this.sessions.find((x) => x.id === sessionId);
           if (s) { s.lastMessagePreview = buildLocalPreview(kind, content); s.lastMessageSentAt = mr.sentAt; }
           return mr;

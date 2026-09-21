@@ -141,14 +141,24 @@ onLoad((query) => {
   });
 });
 
-/** 2026-08-31：喜欢/超赞成功后从寻觅卡组移除该卡，返回后即看到下一张（修复「喜欢完不切卡」） */
-function consumeCardFromDeck() {
+/**
+ * 2026-08-31：喜欢/超赞成功后从寻觅卡组移除该卡，返回后即看到下一张（修复「喜欢完不切卡」）。
+ * MP-R1-PAGES-DISCOVER-INDEX-001 / MATCHING-001/002（2026-09-20）：
+ * 卡片在 runMatchCheck 内已被 swipeRight 消费移除，此前二次 swipeRight
+ * 触发「卡片不存在或已被处理」误报横幅 + 未处理 Promise 拒绝。现：
+ * ① 先查 discoverStore 中该 id 是否仍存在，不存在直接 return（幂等）；
+ * ② swipeRight 改 await + try/catch，竞态期「卡片不存在」按幂等成功处理
+ *   （不回填 errorMessage、不上报）。
+ */
+async function consumeCardFromDeck() {
   const id = consumedCardId.value;
   if (!id) return;
+  const discoverStore = useDiscoverStore();
+  if (!discoverStore.cards.some((c) => c.id === id)) return;
   try {
-    void useDiscoverStore().swipeRight(id);
-  } catch (err) {
-    // 卡组不存在该卡时忽略（重复消费/预览模式）
+    await discoverStore.swipeRight(id);
+  } catch {
+    // 卡已被消费/移除（「卡片不存在」）→ 幂等成功：不 set errorMessage、不上报
   }
 }
 

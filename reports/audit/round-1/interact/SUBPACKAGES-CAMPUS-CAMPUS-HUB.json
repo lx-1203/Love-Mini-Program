@@ -1,0 +1,291 @@
+{
+  "page": "subpackages/campus/campus/hub",
+  "pageName": "校园圈 hub",
+  "round": "R1",
+  "build": {
+    "command": "cd apps/client && pnpm build:mp-weixin:mock（node v22.17.0，默认 PATH node16 会报 crypto$2.getRandomValues is not a function 构建失败）",
+    "verify": "scripts/verify-build-features.mjs →「PASS：全部 4 项功能特征已包含在构建产物中」，BUILD_EXIT=0"
+  },
+  "connection": "miniprogram-automator（createRequire 从 D:/codex-tools/node-v22.17.0-win-x64/node_modules 加载）automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})；DevTools 偶发 timeout waiting for automator response，已用 retry×3 包装；part1 在 OP13 前截图处 3 次重试仍超时中断（OP00-12 已完成），由 part2 脚本续跑 OP13-22",
+  "identityA": {"source": "tmp_r11_login.json", "boot": "setStorage token → session.bootstrap() → {isLoggedIn:true, campusName:'北京大学', displayName:'林晓', userId:'user-1001'}（mock 构建 bootstrap 注入同一 mockUserSession，session.ts:616-619）"},
+  "identityB": {"source": "tmp_r11_guest.json", "boot": "{isLoggedIn:true, campusName:'北京大学', displayName:'林晓', userId:'user-1001'}（与 A 完全相同，mock 构建下 token 身份不影响该页）"},
+  "console": "双通道取证：① automator on('console')/on('exception') 全程监听 0 条输出；② wechatide CLI get_simulator_console 以注入标记验证通道可用（automation_evaluate 注入 console.log(887766) 后 grep 命中 2 条），再 grep 'TypeError|is not defined|is not a function|Cannot read|NAV_FAIL|error|warn|fail|undefined|null' 结果为空 → 全程 console 无错误",
+  "checks": [
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "打开页面（discover 为基底 navigateTo 进入，带返回栈）",
+      "expected": "栈=[discover,hub]；标题「校园圈/发现和加入你的校园圈子」；未认证 → header+引导卡各显示「去认证」；Tab「我加入的/推荐圈子」且默认推荐高亮；10 张推荐卡片（北京大学归入我加入的不在推荐）；底部「查看更多校园圈」",
+      "actual": "path=subpackages/campus/campus/hub；title=校园圈/发现和加入你的校园圈子；certBtn=去认证；guideBtn=去认证；tabs=[我加入的,推荐圈子]（推荐高亮，截图绿指示条）；cards=10（清华大学~深圳大学）；more=查看更多校园圈",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-00-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-00-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击左上角返回按钮 .campus-hub__back（hub.vue:132 → goBack → uni.navigateBack）",
+      "expected": "navigateBack 回到上一页发现页 discover，不报错",
+      "actual": "currentPage=pages/discover/index，截图为寻觅页，正常返回",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "回归 MP-R4-CAMPUS-001：header「去认证」按钮 vs 微信胶囊遮挡实测（getMenuButtonBoundingClientRect + element.offset/size，代码 padding-right=capsule-right+104px @hub.vue:306）",
+      "expected": "按钮右缘 ≤ 胶囊左缘（无遮挡），截图中按钮完整可见",
+      "actual": "screenW=375；capsule={left:281,right:368,top:51,bottom:83}；certBtn offset={left:184.2,top:136.6} size={64,33} 右缘=248.2 < 胶囊左缘 281 → overlap=false；截图按钮完整（R4 修复保持有效）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击 Tab「我加入的」（hub.vue:203 activeTab=joined）",
+      "expected": "指示条移动、列表=北京大学 1 张（mock 会话 campusName=北京大学）、CTA「进入」实心绿；badge 应如实反映认证状态（mock=未认证 → 应显示「未认证」）",
+      "actual": "指示条/列表/CTA 均符合；但 badge 文案=「认证中」（从未提交认证却显示审核中），且 class 提取为 \"campus-school-card__badge campus-school-card__badge data-v-8bb1c6bf\"——无任何 --verified/--pending/--unverified 修饰类 → 无底色样式（对比推荐 Tab 的灰底白字「未认证」胶囊）；身份 B 复测（OP21）完全一致",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-03-after.png",
+      "issueId": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击 Tab「推荐圈子」切回（hub.vue:213 activeTab=recommend）",
+      "expected": "恢复 10 张卡片，CTA=「申请加入」描边，badge=「未认证」灰底",
+      "actual": "cards=10；cta=[申请加入,申请加入]；badge=[未认证,未认证,未认证]（截图灰底白字胶囊）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "回归 R10-P2-007：长校名完整显示 + 统计数字格式统一（提取全部卡片校名与统计文案）",
+      "expected": "中国人民大学/上海交通大学完整显示不折行不省略；stats 全部为「N.Nk 同学 · N.Nw/N.Nk 动态」按量级统一格式（<1w 用 k，≥1w 用 w），无裸数字混用",
+      "actual": "names=[清华大学,中国人民大学,复旦大学,上海交通大学,同济大学,浙江大学,南京大学,武汉大学,中山大学,深圳大学] 全部完整；stats=[2.6k 同学·2.1w 动态, 2.1k 同学·9.8k 动态, 1.8k 同学·1.5w 动态, 2.4k 同学·1.9w 动态, 1.7k 同学·1.3w 动态, 1.4k 同学·1.1w 动态, 1.6k 同学·1.2w 动态, 1.9k 同学·1.4w 动态, 1.3k 同学·9.5k 动态, 1.2k 同学·8.6k 动态]——量级规则一致；截图校名整行独占无截断",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-05-after.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "搜索框输入「大学」（v-model searchKeyword → filteredSchools 过滤 @hub.vue:99-104）",
+      "expected": "10 张卡全部保留（校名均含「大学」），右侧出现 × 清除按钮",
+      "actual": "cards=10；clearVisible=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "搜索框改输入「北京」（推荐 Tab 下北京大学不属于推荐列表）",
+      "expected": "卡片 0 张，显示空态文案「暂无推荐圈子」（hub.vue:220-222）",
+      "actual": "cards=0；empty=暂无推荐圈子（截图空态文案+输入框保留「北京」）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-06-after.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击 × 清除按钮（hub.vue:194 searchKeyword=''）",
+      "expected": "关键词清空、× 消失、列表恢复 10 张",
+      "actual": "cards=10；clearGone=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "输入特殊字符+超长文本：<script>alert(1)</script>'\"`&%;(){}[]！@#￥%……&*——+ + 「超长文本测试」×6（54 字）",
+      "expected": "页面不崩溃、标题仍在；无命中 → 空态；× 显示；无 TypeError",
+      "actual": "cards=0；empty=暂无推荐圈子；clearVisible=true；title=校园圈；输入框按字面渲染脚本串未执行（截图）；console 无错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击推荐列表第 2 张「中国人民大学」卡片（hub.vue:233 goSchool → campus/index?school=encodeURIComponent(中国人民大学)）",
+      "expected": "navigateTo subpackages/campus/campus/index 并携带 school=中国人民大学，落地页头部显示解码后的校名「中国人民大学」",
+      "actual": "跳转成功 path=subpackages/campus/campus/index?school=%E4%B8%AD%E5%9B%BD%E4%BA%BA%E6%B0%91%E5%A4%A7%E5%AD%A6，但落地页头部校名渲染为 URL 编码串「%E4%B8%AD%E5%9B%BD%E4%BA%BA%E6%B0%91%E4%BD%E2%80%A6」（截图顶部大字）——hub.vue:117 编码后 index.vue:170 未解码（11-after 清华大学、14-after 复旦大学同样复现，见 issue -002）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-10-after.png",
+      "issueId": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击推荐列表第 1 张卡片「申请加入」CTA 按钮（.campus-school-card__cta，无独立 handler 靠卡片 @tap 冒泡）",
+      "expected": "冒泡触发卡片跳转 → campus/index?school=清华大学",
+      "actual": "path=subpackages/campus/campus/index?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6——冒泡跳转正确，但落地页头部同样显示编码校名「%E6%B8%85%E5%8D%8E%E5%A4%A7…」（同 issue -002）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-11-after.png",
+      "issueId": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击 header「去认证」按钮（hub.vue:146 goCertification → ROUTES.CAMPUS.CERTIFICATION）",
+      "expected": "navigateTo 学生认证页 subpackages/campus/campus/certification",
+      "actual": "currentPage=subpackages/campus/campus/certification，截图为「学生认证」表单页",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击引导卡「去认证」按钮（hub.vue:171 goCertification；未认证 → 文案「去认证」而非「查看进度」）",
+      "expected": "navigateTo 学生认证页",
+      "actual": "guideBtnText=去认证；13-after 截图为「学生认证」页 → 跳转成功（脚本内 currentPage 读取因自动化桥抖动滞后读到 hub，以截图为准）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-13-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "快速连续点击 3 次同一张卡片（间隔 150ms，防抖/重复跳转检查）",
+      "expected": "仅入栈 1 个 index 页（栈=discover,hub,index 共 3 层）；入栈多个重复页为偏差",
+      "actual": "pageStack=[pages/discover/index, subpackages/campus/campus/hub, subpackages/campus/campus/index] 共 3 层 → 单次入栈，无重复压栈",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-14-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "页面滚动到底部（推荐 Tab 10 张卡长列表，pageScrollTo 99999）",
+      "expected": "底部「查看更多校园圈」提示完整可见，无缺块/白屏",
+      "actual": "moreText@bottom=查看更多校园圈；截图 10 张卡全部渲染完整+底部提示可见",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "页面打开后立即返回（navigateTo 后 500ms 内 navigateBack，生命周期竞态检查）",
+      "expected": "成功回到 discover，无崩溃、无死页",
+      "actual": "currentPage=pages/discover/index，截图正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-16-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "重复进出 hub ×3 次（navigateTo/navigateBack 循环）",
+      "expected": "3/3 次均正常进入（path 含 campus/hub）并正常退出",
+      "actual": "repeatOk=3/3，截图正常；console 无新增错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-16-after.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "点击底部「查看更多校园圈⌄」提示（hub.vue:280-283，代码无 @tap handler）",
+      "expected": "代码层面无 handler → 无跳转；但产品逻辑上「查看更多+下拉箭头」是可点暗示，且全部 11 校已全部展示（schools 展示全量，hub.vue:55-58），理想应有动作或不应做成可点暗示",
+      "actual": "点击前后 currentPage 与 cards 均无任何变化（10 张卡不变、无跳转无 Toast）——可点暗示落空",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-18-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-18-after.png",
+      "issueId": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "身份B（游客/新号 100159 小新生）注入 token+bootstrap 后打开 hub",
+      "expected": "mock 构建 bootstrap 注入同一 mockUserSession（session.ts:616-619）→ 与身份A一致：10 张推荐卡+「去认证」+默认推荐 Tab",
+      "actual": "boot={isLoggedIn:true,campusName:北京大学,userId:user-1001}；cards=10；names[0]=清华大学；certBtn=去认证；activeTab=[推荐圈子]——与身份A完全一致（mock 构建特性，非缺陷）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-20-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "身份B 点击「我加入的」Tab（交叉验证 issue -001 的身份无关性）",
+      "expected": "若 -001 为普遍缺陷则 B 同样复现：北京大学 1 张、badge「认证中」无样式类、CTA「进入」",
+      "actual": "names=[北京大学]；badge=[认证中]；badgeClass=[campus-school-card__badge campus-school-card__badge data-v-8bb1c6bf]（无修饰类）；cta=[进入]——与身份A一致，-001 对双身份均复现",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-21-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-21-after.png",
+      "issueId": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "operation": "身份B 搜索「南京」",
+      "expected": "搜索过滤对 B 同样生效：命中南京大学 1 张",
+      "actual": "cards=1；names=[南京大学]",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-22-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-22-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-03-after.png",
+      "category": "Data",
+      "severity": "P2",
+      "description": "「我加入的」Tab 下未认证用户（从未提交认证）的校园卡片 badge 显示「认证中」，谎报审核状态，且 badge 无任何配色修饰类、渲染为无底色深色文字（对比推荐 Tab 灰底白字「未认证」胶囊）；双身份均复现",
+      "evidence": "截图 03-after/21-after badge 区；运行时 class 提取=\"campus-school-card__badge campus-school-card__badge data-v-8bb1c6bf\"（无 --verified/--pending/--unverified）；hub.vue:257 文案恒用 t('campusHub.statusPending')（认证中）对所有非 isVerified；hub.vue:250-254 三个修饰类条件均不覆盖 joined+unverified（isPending=false, isVerified=false）→ 落到无样式基类；mock 下 fetchCertificationStatus 直接 return（stores/campus.ts:827-830），certificationStatus 保持初始 unverified（:333）",
+      "ideal": "badge 文案应与实际认证状态一致（未认证→「未认证」），并带对应样式类；参照 CERT_STATUS_MAP（stores/campus.ts:182-187）语义",
+      "fix": "hub.vue:257 改为 activeTab==='joined' ? (isVerified ? t('campusHub.certified') : (isPending ? t('campusHub.statusPending') : t('campusHub.unverified'))) : t('campusHub.unverified')；hub.vue:250-253 补 'campus-school-card__badge--unverified': activeTab==='joined' && !isVerified && !isPending",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-10-after.png",
+      "category": "Data",
+      "severity": "P2",
+      "description": "从 hub 卡片跳转 campus/index 后，页面头部校名渲染为 URL 编码串（%E4%B8%AD%E5%9B%BD%E4%BA%BA%E6%B0%91%E5%A4%A7%E5%AD%A6 而非「中国人民大学」）；清华大学（11-after）、复旦大学（14-after）同样复现——hub 侧 encodeURIComponent 后 index 侧未解码",
+      "evidence": "截图 10-after/11-after/14-after 顶部 header；触发链 hub.vue:117 openAppPath(`${ROUTES.CAMPUS.INDEX}?school=${encodeURIComponent(schoolName)}`) → index.vue:169-171 viewSchool.value = q.school.trim()（无 decodeURIComponent；mp-weixin onLoad query 不自动解码）→ index.vue:205 school-name 渲染 viewSchool；隐患：编码值与「北京大学」字面比较（campus.ts:425 mock 公开判定、私域判定同源参数）永不命中，认证用户本校私域入口会误判",
+      "ideal": "落地页头部显示解码后校名「中国人民大学」等；school 参数在参与任何字面比较前统一解码",
+      "fix": "index.vue onLoad 对 q.school 先 decodeURIComponent（try/catch 包裹，解码失败回退原值），viewSchool 存解码值；后续 fetchCampusTopics(school=…) 一并使用解码值",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+      "round": "R1",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-18-after.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "底部「查看更多校园圈 ⌄」带下拉箭头的可点暗示，但代码无任何 @tap handler，点击后无跳转/无 Toast/无展开；且全部 11 校已全量展示（hub.vue:55-58），「查看更多」语义也不成立",
+      "evidence": "hub.vue:280-283 仅 text+arrow 无事件绑定；运行时点击前后 currentPage、卡片数均无变化（18-before/18-after 截图一致）",
+      "ideal": "可点暗示应有反馈（跳转圈子广场/认证引导或展开更多），或降级为纯说明文案并移除箭头",
+      "fix": "为 .campus-hub__more 绑定动作（如 openAppPath 圈子列表）或移除箭头改为静态说明「已展示全部校园圈」",
+      "status": "待修复"
+    }
+  ],
+  "regression": {
+    "MP-R4-CAMPUS-001": "已验证保持修复：实测胶囊 {left:281,right:368}，去认证按钮右缘 248.2 < 281，overlap=false（OP02，截图 02-after），代码 padding-right=calc(var(--capsule-right,7px)+104px) @hub.vue:306",
+    "R10-P2-007": "已验证保持修复：badge 位于统计行（hub.vue:247-261），校名独占整行 flex:1+nowrap+ellipsis（hub.vue:573-585），中国人民大学/上海交通大学完整显示；数字为量级统一 k/w 格式（OP05）"
+  },
+  "scriptPath": "tmp/interact-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB.mjs",
+  "scriptPathPart2": "tmp/interact-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-p2.mjs",
+  "shotDir": "reports/screenshots/round-1-interact/",
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+  "unverifiable": [
+    "已认证（verified）/审核中（pending）/未通过（rejected）三态下的 header 徽章、引导卡徽章、joined 卡片 badge 样式与「查看进度」文案：mock 构建 fetchCertificationStatus 直接 return（stores/campus.ts:827-830），前端无法自然进入这些状态，需真实后端返回 APPROVED/PENDING 数据",
+    "认证用户点击本校（北京大学）进入私域校园圈的完整链路（话题列表/发帖入口）：依赖 verified 状态，mock 下不可达",
+    "真机不同机型上胶囊与按钮的实际遮挡（本验证为 DevTools 模拟胶囊 87×32@375 宽，已实测无遮挡，真机宽屏机型建议抽查）",
+    "real 构建下 openAppPath 的后端相关分支与真实审核流转：需真实后端环境"
+  ],
+  "notes": "构建：pnpm build:mp-weixin:mock（node22）PASS 4/4 特征、BUILD_EXIT=0（默认 PATH 的 node16 会构建失败 crypto$2.getRandomValues）。连接：automator wsEndpoint 9420；DevTools 偶发「timeout waiting for automator response」（已知坑），脚本以 retry×3 兜底；part1 在 OP13 前截图重试 3 次超时中断（OP00-12 证据完整，catch 落盘 tmp/interact-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-evidence.json），part2（tmp/interact-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-p2.mjs）从栈=[discover,hub] 断点续跑 OP13-22。OP13 脚本内 currentPage 滞后读到 hub，但 13-after 截图实拍为学生认证页 → 以截图判定符合。console 双通道：automator on('console') 0 条 + CLI get_simulator_console 注入标记 887766 验证通道可用后 grep 错误关键字为空（tmp/r1-hub-console3.ps1）。hub 页无弹窗/ActionSheet/Toast/表单提交/下拉刷新（pages.json campus 分包未启用 enablePullDownRefresh，hub.vue 无 onPullDownRefresh/onShow 弹层），相应覆盖项不适用；onShow 仅静默 fetchCertificationStatus（hub.vue:112-114）。输入框已覆盖正常输入/切换关键词/清空按钮/特殊字符+超长。junk 注：hub.vue:106-110 onLoad 写入的 selectedSchool 在模板与逻辑中无任何消费（死代码），未构成用户可见缺陷，未立 issue。"
+}

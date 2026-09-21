@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 import type { CommunityPostViewModel } from "../../view-models/home-dashboard";
+import { useSessionStore } from "../../stores/session";
+import { clientApi } from "../../services/api";
 import SafeImage from "../common/SafeImage.vue";
 
 defineProps<{
@@ -50,6 +53,60 @@ function handleRefresh() {
 }
 // 引用占位避免 noUnusedLocals（保留刷新能力供错误态复用）
 void handleRefresh;
+
+const { t } = useI18n();
+const sessionStore = useSessionStore();
+
+/**
+ * MP-R1-HOME-014（2026-09-20）：关注按钮此前无事件处理，点击冒泡误触卡片跳详情。
+ * 现接通真实关注能力（clientApi.followUser / unfollowUser，mock 模式直接成功），
+ * 组件内维护已关注态（作者粒度），@tap.stop 阻断冒泡。
+ */
+const followedIds = ref<Set<number>>(new Set());
+const followPendingIds = ref<Set<number>>(new Set());
+
+function isFollowed(post: CommunityPostViewModel): boolean {
+  return post.authorId != null && followedIds.value.has(post.authorId);
+}
+
+async function onFollow(post: CommunityPostViewModel) {
+  const authorId = post.authorId;
+  if (authorId == null) return;
+  // 与首页其他交互同口径：未登录先引导登录
+  if (!sessionStore.isLoggedIn) {
+    uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
+    return;
+  }
+  if (followPendingIds.value.has(authorId)) return;
+  const willFollow = !followedIds.value.has(authorId);
+  followPendingIds.value = new Set(followPendingIds.value).add(authorId);
+  try {
+    if (willFollow) {
+      await clientApi.followUser(String(authorId));
+      followedIds.value = new Set(followedIds.value).add(authorId);
+    } else {
+      await clientApi.unfollowUser(String(authorId));
+      const next = new Set(followedIds.value);
+      next.delete(authorId);
+      followedIds.value = next;
+    }
+  } catch {
+    uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+  } finally {
+    const nextPending = new Set(followPendingIds.value);
+    nextPending.delete(authorId);
+    followPendingIds.value = nextPending;
+  }
+}
+
+/**
+ * MP-R1-HOME-015（2026-09-20）：作者头像/昵称点击 → 他人大主页。
+ * authorId 缺失的降级路径不再触发跳转（配合模板移除可点击态）。
+ */
+function onAuthorTap(post: CommunityPostViewModel) {
+  if (post.authorId == null) return;
+  emit("openAuthor", post);
+}
 </script>
 
 <template>
@@ -85,19 +142,41 @@ void handleRefresh;
       <view class="community-feed__list">
         <view v-for="post in items" :key="post.id" class="post-card" @tap="$emit('select', post.id)">
           <view class="post-card__head">
-            <view class="post-card__author-tap" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
+            <!-- MP-R1-HOME-015：authorId 缺失时移除可点击态（role/aria 置空、tap 内部短路） -->
+            <view
+              class="post-card__author-tap"
+              @tap.stop="onAuthorTap(post)"
+              :role="post.authorId != null ? 'button' : ''"
+              :aria-label="post.authorId != null ? post.authorName : ''"
+            >
               <!-- 2026-09-02 R10：作者头像换 SafeImage 兜底（破图不再显示灰山形） -->
               <SafeImage :src="avatarSrc(post)" custom-class="post-card__avatar" mode="aspectFill" :fallback="IMAGE_PATHS.DEFAULT_AVATAR" :lazy-load="false" alt="" />
             </view>
-            <view class="post-card__author" @tap.stop="$emit('openAuthor', post)" role="button" :aria-label="post.authorName">
+            <view
+              class="post-card__author"
+              @tap.stop="onAuthorTap(post)"
+              :role="post.authorId != null ? 'button' : ''"
+              :aria-label="post.authorId != null ? post.authorName : ''"
+            >
               <view class="post-card__name-row">
                 <text class="post-card__name">{{ post.authorName }}</text>
                 <text class="post-card__school">· {{ post.circleName }}</text>
               </view>
               <text class="post-card__time">{{ post.timeText }}</text>
             </view>
-            <view class="post-card__follow">
-              <text class="post-card__follow-text">关注</text>
+            <!-- MP-R1-HOME-014：关注按钮接通 onFollow（@tap.stop 阻断冒泡，不误跳帖子详情）；
+                 authorId 缺失时无关注能力，隐藏伪按钮 -->
+            <view
+              v-if="post.authorId != null"
+              class="post-card__follow"
+              :class="{ 'post-card__follow--followed': isFollowed(post) }"
+              hover-class="post-card__follow--pressed"
+              hover-stay-time="40"
+              role="button"
+              :aria-label="isFollowed(post) ? '已关注' : `关注${post.authorName}`"
+              @tap.stop="onFollow(post)"
+            >
+              <text class="post-card__follow-text">{{ isFollowed(post) ? '已关注' : '关注' }}</text>
             </view>
           </view>
           <text class="post-card__content">{{ post.content }}</text>
@@ -342,6 +421,20 @@ void handleRefresh;
   padding: 6rpx 18rpx;
   border-radius: 999rpx;
   background: #E8FBF2;
+}
+
+/* MP-R1-HOME-014：按压反馈与已关注态（灰底灰字，弱化可点性） */
+.post-card__follow--pressed {
+  opacity: 0.8;
+}
+
+.post-card__follow--followed {
+  background: #F0F2F5;
+}
+
+.post-card__follow--followed .post-card__follow-text {
+  color: #999999;
+  font-weight: 500;
 }
 
 .post-card__follow-text {

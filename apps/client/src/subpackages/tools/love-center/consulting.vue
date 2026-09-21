@@ -31,6 +31,8 @@ const webUrl = ref("");
 
 /**
  * R10-P1-002：咨询/课程属付费项目，commerce.consult 子闸（受总闸管辖）关闭即封存。
+ * MP-R1-CONSULTING-001：isCommerceOn 已兼容「commerce.consult / consult」双口径，
+ * 传 "consult" 等价读取 commerce.consult，注释与实现口径一致。
  * 缺省封存（=== true 才放行），mock 后端未下发 commerce.* 时恒为封存态。
  */
 const commerceSealed = computed(() => !appConfig.isCommerceOn("consult"));

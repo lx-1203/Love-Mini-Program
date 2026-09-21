@@ -161,6 +161,12 @@ function recordVisit(): void {
 
 async function handleLike(): Promise<void> {
   if (liking.value || !targetUserId.value) return;
+  // MP-R1-OTHER-001：已喜欢态去重——重复点喜欢不再发请求、不再反复弹「已喜欢」成功 Toast
+  if (alreadyLiked.value && !isMatched.value) {
+    lightHaptic();
+    uni.showToast({ title: t("profile.other.likeWaiting"), icon: "none" });
+    return;
+  }
   lightHaptic();
   liking.value = true;
   try {

@@ -1,0 +1,21 @@
+[2026-09-19T18:10:35.260Z] === R1 首页交互验证开始 ===
+[2026-09-19T18:10:35.262Z] [connect] 尝试 #1 via ws://127.0.0.1:9420
+[2026-09-19T18:10:35.286Z] [connect] OK model=iPhone 12/13 mini screen=375x812
+[2026-09-19T18:10:35.581Z] [A] token 铸造成功
+[2026-09-19T18:10:35.586Z] [boot] clearStorage: cleared
+[2026-09-19T18:10:35.594Z] [boot] bootstrap: boot-ok
+[2026-09-19T18:10:41.607Z] [boot] verify: logged-in userId=user-1001
+[2026-09-19T18:10:51.616Z] [nav] A-reLaunch-home attempt 1 err: timeout waiting for automator response
+[2026-09-19T18:10:51.630Z] [nav] A-reLaunch-home 实际已生效 current=pages/login/index
+[2026-09-19T18:10:58.154Z] [op 01] reLaunch 打开首页（首屏完整性）
+[2026-09-19T18:10:58.155Z] [op 01] 预期: 首屏完整渲染：状态栏避让头部、标题「首页」+爱心、「我的」头像/定位胶囊/铃铛（角标=真实未读数）、今日推荐卡（林晓/北京大学/大三/92% 合拍度/在线标签/看看TA+喜欢按钮）、今日恋爱进度 2/4 项+四步卡（第4卡标题「参与兴趣互动」完整两行+语义图标）、关系动态 3/2/5/1 四格四色吉祥物、兴趣推荐 4 卡（1.2w/8,932/1.6w/9,210 人加入格式）、附近的人 4 人、社区动态 3 卡、邀请 banner 完整露出不被 tabBar 浮岛遮挡、自定义 tabBar 高亮「首页」
+[2026-09-19T18:11:28.647Z] [shot] 超时/失败 PAGES_HOME_INDEX-01-after attempt 3，重连重试
+[2026-09-19T18:11:28.648Z] [connect] 尝试 #1 via ws://127.0.0.1:9420
+[2026-09-19T18:11:28.660Z] [connect] OK model=iPhone 12/13 mini screen=375x812
+[2026-09-19T18:11:31.676Z] [op 01] after route=pages/login/index state={"login":true,"userId":"user-1001","today":null,"unreadBadge":0,"stackDepth":1,"route":"pages/login/index"}
+[2026-09-19T18:12:32.191Z] [op 02] 点「↻ 换一位」（null）
+[2026-09-19T18:12:32.192Z] [op 02] 预期: 今日推荐切换：林晓(北京大学/大三/92%) → 夏言(清华大学/研一/90%，照片 person-02)；无跳转无 toast；meta 行无「25岁 ·」尾点（回归 MP-R1-HOME-012）
+[2026-09-19T18:12:32.192Z] [tap] MISS 换一位
+[2026-09-19T18:12:55.654Z] [shot] 超时/失败 PAGES_HOME_INDEX-02-after attempt 2，重连重试
+[2026-09-19T18:12:55.655Z] [connect] 尝试 #1 via ws://127.0.0.1:9420
+[2026-09-19T18:12:55.682Z] [connect] OK model=iPhone 12/13 mini screen=375x812

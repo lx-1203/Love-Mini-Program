@@ -124,7 +124,9 @@ async function loadPosts(reset = true) {
       // Mock 模式：模拟标签帖子数据
       await new Promise((r) => setTimeout(r, MOCK_LOAD_DELAY_MS));
       const mockTagPosts = getMockTagPosts(tagName.value);
-      const from = currentPageNum * PAGE_SIZE;
+      // MP-R1-TAGPOSTS-001（2026-09-20）：1 基页码取片起点应为 (页码-1)*PAGE_SIZE，
+      // 原 from=page*PAGE_SIZE 整体错位一页——第 1 页从第 21 条取，mock 共 6 条恒空列表
+      const from = (currentPageNum - 1) * PAGE_SIZE;
       const to = Math.min(from + PAGE_SIZE, mockTagPosts.length);
       const pageItems = from < mockTagPosts.length ? mockTagPosts.slice(from, to) : [];
       posts.value = reset ? pageItems : [...posts.value, ...pageItems];
@@ -231,9 +233,16 @@ function goToDetail(postId: string) {
 
 /**
  * 返回上一页
+ * MP-R1-TAGPOSTS-002（2026-09-20）：栈=1（分享卡/深链直开）时 navigateBack 无处可退；
+ * 村口页（subpackages/village/village/index）不是 tabBar 页，switchTab 会静默失败，
+ * 统一用 reLaunch 兜底（与 publish.vue leave() 同款守卫）。
  */
 function goBack() {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/village/village/index" });
+  }
 }
 
 onLoad((query) => {
@@ -245,13 +254,8 @@ onLoad((query) => {
   }
   // P1-36：无 tagName 参数时提示并返回，不再发空请求
   uni.showToast({ title: t("village.tagPostsMissingParam"), icon: "none" });
-  setTimeout(() => {
-    if (getCurrentPages().length > 1) {
-      uni.navigateBack();
-    } else {
-      uni.switchTab({ url: "/subpackages/village/village/index" });
-    }
-  }, MISSING_PARAM_NAV_DELAY_MS);
+  // MP-R1-TAGPOSTS-002：复用 goBack 守卫——原 switchTab 到非 tabBar 村口页静默失败
+  setTimeout(goBack, MISSING_PARAM_NAV_DELAY_MS);
 });
 
 /**

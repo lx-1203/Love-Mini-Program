@@ -582,3 +582,47 @@ export const mockReplies: Record<string, ReplyItem[]> = {
     },
   ],
 };
+
+/* ========== MP-R1-TOPICDETAIL-001（2026-09-20）：回复徽标数与明细对齐 ========== */
+/**
+ * 此前 mockTopics 的 replyCount（如 photo-topic-1 的 46）远大于 mockReplies 明细数
+ * （多数话题为 0 条），话题详情页出现「回复46 + 暂无回复 + 加载更多」同屏矛盾。
+ * 现按话题确定性生成少量回复明细（作者/内容取自模板池，同一话题每次生成一致），
+ * 并把 replyCount 对齐为明细数；mockTopicDetail（fetchTopicDetail 首选来源）同样对齐。
+ */
+const MOCK_REPLY_TEMPLATES: Array<Pick<ReplyItem, "author"> & { content: string }> = [
+  { author: { userId: "user-3002", name: "阿泽", avatar: "", headline: "摄影爱好者" }, content: "拍得太好了，求分享一下参数！" },
+  { author: { userId: "user-3003", name: "橙子", avatar: "", headline: "设计系" }, content: "收藏了，周末就去试试。" },
+  { author: { userId: "user-3004", name: "南风", avatar: "", headline: "运动达人" }, content: "同感！上次我也遇到一样的情况。" },
+  { author: { userId: "user-3005", name: "北岛", avatar: "", headline: "创业者" }, content: "感谢分享，学到了。" },
+  { author: { userId: "user-3006", name: "苏晴", avatar: "", headline: "生活家" }, content: "蹲一个后续更新～" },
+];
+
+for (const topics of Object.values(mockTopics)) {
+  for (const topic of topics) {
+    const existing = mockReplies[topic.id];
+    if (existing && existing.length > 0) {
+      // 已有手写明细：徽标数对齐明细数
+      topic.replyCount = existing.length;
+      continue;
+    }
+    // 按话题 id 长度确定性生成 2~4 条明细（同一话题每次生成一致）
+    const count = 2 + (topic.id.length % 3);
+    topic.replyCount = count;
+    mockReplies[topic.id] = Array.from({ length: count }, (_, i) => {
+      const tpl = MOCK_REPLY_TEMPLATES[(topic.id.length + i) % MOCK_REPLY_TEMPLATES.length]!;
+      return {
+        id: `${topic.id}-reply-${i + 1}`,
+        topicId: topic.id,
+        author: { ...tpl.author },
+        content: tpl.content,
+        createdAt: new Date(Date.now() - (i + 1) * 13 * 60 * 1000).toISOString(),
+      };
+    });
+  }
+}
+
+// mockTopicDetail 的徽标数同样对齐明细（fetchTopicDetail mock 分支首选该表）
+for (const detail of Object.values(mockTopicDetail)) {
+  detail.replyCount = (mockReplies[detail.id] ?? []).length;
+}

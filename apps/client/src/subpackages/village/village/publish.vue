@@ -14,7 +14,9 @@ import { ref, computed, watch, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, type CircleItem } from "../../../stores/circle";
-import { useVillageStore } from "../../../stores/village";
+// MP-R1-PUB-016：字数上限与 store 校验同一来源（stores/village MAX_CONTENT_LENGTH=500），
+// 此前本地 POST_MAX_LENGTH=1000 与 store 校验 500 不一致，超 500 字发布必败且仅提交时提示
+import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 import { POST_DRAFT_STORAGE_KEY, POST_MAX_IMAGES } from "../../../constants/village";
@@ -33,7 +35,8 @@ const { t } = useI18n();
 const circleStore = useCircleStore();
 const villageStore = useVillageStore();
 
-const POST_MAX_LENGTH = 1000;
+/** MP-R1-PUB-016：接近字数上限的提醒阈值（剩 50 字内计数变警示色） */
+const CONTENT_LENGTH_WARN_THRESHOLD = 50;
 
 /* ---------- 状态 ---------- */
 const content = ref("");
@@ -60,11 +63,34 @@ const targetCircle = ref<CircleItem | null>(null);
 const targetOpen = ref(false);
 
 const currentLength = computed(() => content.value.length);
+/** MP-R1-PUB-016：接近上限时计数警示（颜色提示用 token，见样式 --c-warning） */
+const isNearLimit = computed(
+  () => MAX_CONTENT_LENGTH - currentLength.value <= CONTENT_LENGTH_WARN_THRESHOLD
+);
 const canSubmit = computed(() => content.value.trim().length > 0 && !submitting.value);
 const isCircleTarget = computed(() => targetType.value === "circle");
 
 /** 可发布的目标圈子（仅当前用户已加入的兴趣圈），保持上限 8 个展示 */
 const joinedCircles = computed(() => circleStore.circles.filter((c) => c.isJoined).slice(0, 8));
+
+/** MP-R1-PUB-017：圈子列表加载中（弹层「兴趣圈子」分组提示用） */
+const circlesLoading = ref(false);
+
+// MP-R1-PUB-017（2026-09-20）：直入发布页时 circleStore 尚未加载，joinedCircles 恒空，
+// 「兴趣圈子」分组被静默隐藏。弹层打开时若为空则懒加载一次，加载中/空态在弹层内提示。
+watch(targetOpen, (open) => {
+  if (open && circleStore.circles.length === 0 && !circlesLoading.value) {
+    circlesLoading.value = true;
+    circleStore
+      .fetchCircles()
+      .catch(() => {
+        uni.showToast({ title: "圈子列表加载失败，请稍后重试", icon: "none" });
+      })
+      .finally(() => {
+        circlesLoading.value = false;
+      });
+  }
+});
 
 /** 发布到展示文案 */
 const targetTitle = computed(() => {
@@ -488,7 +514,10 @@ onUnmounted(() => {
               <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
               <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
             </view>
-            <template v-if="joinedCircles.length > 0">
+            <template v-if="circlesLoading">
+              <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
+            </template>
+            <template v-else-if="joinedCircles.length > 0">
               <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
               <view
                 v-for="circle in joinedCircles"
@@ -503,6 +532,9 @@ onUnmounted(() => {
                 <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
               </view>
             </template>
+            <template v-else>
+              <text class="publish-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
+            </template>
           </view>
         </view>
       </view>
@@ -514,11 +546,15 @@ onUnmounted(() => {
           v-model="content"
           class="publish-content__input"
           placeholder="分享一点最近发生的事…"
-          :maxlength="POST_MAX_LENGTH"
+          :maxlength="MAX_CONTENT_LENGTH"
           :show-confirm-bar="false"
           :aria-label="t('village.post.contentPlaceholder')"
         />
-        <view class="publish-content__count">{{ currentLength }}/{{ POST_MAX_LENGTH }}</view>
+        <!-- MP-R1-PUB-016：计数上限与 store 校验同源（500），接近上限变警示色 -->
+        <view
+          class="publish-content__count"
+          :class="{ 'publish-content__count--warning': isNearLimit }"
+        >{{ currentLength }}/{{ MAX_CONTENT_LENGTH }}</view>
       </view>
 
       <!-- 图片九宫格 -->
@@ -649,10 +685,14 @@ onUnmounted(() => {
 .publish-target-sheet__joined { font-size: 20rpx; color: #2FA366; background: #E8F6EE; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
 .publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; /* R21：desc 弹性占位（与 post 版一致），选项行结构跨版统一 */ flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .publish-target-sheet__check { width: 32rpx; height: 32rpx; color: #36C99A; }
+/* MP-R1-PUB-017：弹层「兴趣圈子」分组加载中/空态提示 */
+.publish-target-sheet__hint { display: block; padding: 24rpx 8rpx; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 .publish-content { padding: 24rpx 32rpx; }
 .publish-content__input { width: 100%; min-height: 220rpx; font-size: 30rpx; color: #1A1E1C; line-height: 1.6; }
 .publish-content__count { text-align: right; font-size: 22rpx; color: #9AA39F; margin-top: 8rpx; }
+/* MP-R1-PUB-016：接近字数上限警示（颜色走 --c-warning token） */
+.publish-content__count--warning { color: var(--c-warning, #FF9F43); }
 
 .publish-images { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 16rpx 32rpx; }
 .publish-image { width: 200rpx; height: 200rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: #EAF6F1; }

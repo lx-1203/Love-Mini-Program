@@ -1,0 +1,441 @@
+{
+  "route": "subpackages/village/village/publish",
+  "pageName": "统一发布动态页（发布主入口）",
+  "round": "R1",
+  "executedAt": "2026-09-20",
+  "environment": {
+    "connection": "miniprogram-automator 0.12.1（D:/codex-tools/node-v22.17.0-win-x64/node_modules）automator.connect({ wsEndpoint: 'ws://127.0.0.1:9420' })",
+    "build": "apps/client/dist/build/mp-weixin（mock 模式，verify-build-features 4/4 PASS，产物 2026-09-20 10:31 新于源码 2026-09-18 13:56）",
+    "identities": "A=满配登录（tmp_r11_login.json，boot isLoggedIn=true）；B=游客/新号（tmp_r11_guest.json，boot isLoggedIn=true）",
+    "script": "tmp/interact-R1-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.mjs",
+    "consoleEvidence": "tmp/console-evidence-R1-PUBLISH.log（全量落盘，全程 console error = 0）",
+    "devtoolsQuirk": "DevTools 自动化长跑渲染层假死（r12 已知坑）：screenshot 首调超时、retry 即成功；已用 wechatide simulator_refresh + 自动重试包装覆盖；evaluate 函数体内不得含 await（DevTools 端 eval SyntaxError）"
+  },
+  "checks": [
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP01 打开页面（village/index → navigateTo publish）",
+      "expected": "标题「发布动态」；发布按钮禁用态（浅绿底深绿字）；发布到卡片=「个人动态/默认公开 · 所有人可见」；话题行「已选 0/5」；字数 0/1000；发帖小贴士显示；无「公开广场」字样",
+      "actual": "截图 01-after 逐项核对全部符合：发布按钮禁用态、卡片「个人动态/默认公开 · 所有人可见」、0/1000、已选 0/5、小贴士在、无「公开广场」字样；currentPage.path=subpackages/village/village/publish；行项 4 个。回归 MP-R1-PUB-014（命名统一「个人动态」）与 MP-R1-PUB-015（hint 简化「已选 N/5」）静态检查通过",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP02 点击「发布到」卡片",
+      "expected": "底部弹层「选择发布到」打开：公域分组「个人动态」（当前勾选）+ 校园私域「校园圈」+ 兴趣圈子分组（已加入圈子）",
+      "actual": "sheet 出现；options=[\"个人动态\",\"校园圈\",\"音乐\",\"美食\"]；截图 02-after 显示三级分组标题（公域·所有人可见 / 校园私域·同校可见 / 兴趣圈子·圈内成员可见）+「个人动态」右侧勾选 + 音乐/美食带「已加入」标签与成员数",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP03 弹层点击「校园圈」选项",
+      "expected": "弹层关闭；卡片显示「校园圈/校园圈 · 所有校园成员可见」；「谁可以看」meta 变「学校圈」",
+      "actual": "sheetGone=true；截图 03-after：卡片「校园圈/校园圈 · 所有校园成员可见」、谁可以看=「学校圈」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP04 重开弹层点击「个人动态」",
+      "expected": "弹层关闭；卡片恢复「个人动态/默认公开 · 所有人可见」；「谁可以看」恢复「所有人可见」",
+      "actual": "截图 04-after：卡片「个人动态/默认公开 · 所有人可见」、谁可以看=「所有人可见」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP05 重开弹层点击第一个已加入兴趣圈子（音乐）",
+      "expected": "弹层关闭；卡片显示「音乐」+「圈内成员可见」标签；「谁可以看」变「兴趣圈」",
+      "actual": "截图 05-after：卡片「音乐」+绿色「圈内成员可见」标签+「8,123 成员」；谁可以看=「兴趣圈」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP06 弹层打开后 tap 弹层容器 → 再点卡片 toggle",
+      "expected": "点击弹层可关闭（遮罩关闭路径 targetOpen=false）；再点「发布到」卡片可重新打开（toggle）",
+      "actual": "tap 弹层容器后 sheet 消失（关闭生效）；tap 卡片后 sheet 重新出现（toggle 打开生效）。注：automator tap 固定元素中心，无法单独区分「遮罩空白区点击关闭」与「panel 区点击不关闭（@tap.stop）」两个子路径；panel 内 @tap.stop 行为列 unverifiable",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP07 textarea 输入「今天天气真好」（6字）",
+      "expected": "字数统计变 6/1000；「发布」按钮由禁用（浅绿底深绿字）变可用（绿底白字）",
+      "actual": "截图 07-after：内容回显「今天天气真好」、字数 6/1000、发布按钮变绿底白字；草稿防抖保存 draft.content=「今天天气真好」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP08 输入特殊字符（HTML 标签/引号/反斜杠/emoji/#标签）",
+      "expected": "内容正常回显无崩溃；正文 #标签 被草稿合并逻辑捕获（tags 含 #标签）；console 无 TypeError/异常",
+      "actual": "draft.tags=[\"#标签\"]（正文话题合并进草稿快照）；无崩溃、无回显异常；本页全程 console error=0",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP09 输入 1200 字超长文本",
+      "expected": "textarea maxlength=1000 原生截断 → 字数显示 1000/1000",
+      "actual": "草稿快照 content 长度=1200：automator element.input() 注入绕过原生层 maxlength 截断（工具行为），无法在自动化环境验证原生截断；可验证部分通过：字数统计与 content 长度实时同步、无异常。原生截断列 unverifiable",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-09-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP10 general 目标下输入 600 字（页面允许 ≤1000）后点「发布」",
+      "expected": "按页面 maxlength=1000 语义应可发布；实际预期出现「帖子内容不能超过500字」报错 toast 且不跳转（输入上限不一致缺陷）",
+      "actual": "偏差确认：字数 600/1000（截图 10-after，600 字全部可输入），点发布后 hook 捕获 toast「帖子内容不能超过500字」(icon=none)，页面停留在 publish 未跳转。页面输入上限（publish.vue:36 POST_MAX_LENGTH=1000）与 store 校验上限（stores/village/constants.ts:12 MAX_CONTENT_LENGTH=500，stores/village/index.ts:433-435）不一致：用户输入 501–1000 字必然发布失败，且仅在提交时才收到报错",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-10-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-10-after.png",
+      "issueId": "MP-R1-PUB-016"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP11 清空 textarea",
+      "expected": "字数回 0/1000；「发布」按钮回禁用态",
+      "actual": "截图 11-after：placeholder 恢复、0/1000、发布按钮回浅绿禁用态",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP12 空内容点「发布」",
+      "expected": "toast「请输入内容」（village.contentRequired），页面不跳转",
+      "actual": "hook toast=[{\"title\":\"请输入内容\",\"icon\":\"none\"}]；path 保持 subpackages/village/village/publish",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-12-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP13 输入 3 字「你好呀」点「发布」",
+      "expected": "toast「正文至少 5 个字再发布哦」（contentMinLength n=5），页面不跳转",
+      "actual": "截图 13-after 实锤 Toast「正文至少 5 个字再发布哦」+ 3/1000；hook 同文案；path 不变",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-13-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-13-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP14 输入正文含 #周末去哪，等 500ms 防抖后查草稿快照（回归 INDEP-001）",
+      "expected": "草稿快照 content=输入值，tags 含「#周末去哪」；console 无 ReferenceError（原缺陷：snapshotDraft 越界引用 mergedTopics 每次编辑抛错、草稿永不生效）",
+      "actual": "draft.content=\"这是草稿合并回归测试正文#周末去哪\"；draft.tags=[\"#周末去哪\"]（buildMergedTopics 合并生效，publish.vue:246-252/261）；ReferenceError 记录=0。INDEP-001 修复确认：草稿「本地保存+恢复」（OP24）全链路生效",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-14-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP15 合法内容（≥5字）点「发布」",
+      "expected": "showLoading「发布中」→ toast「已提交，审核通过后展示」→ ~400ms 后自动返回上一页 village/index；草稿清除",
+      "actual": "hook toast=[{\"title\":\"已提交，审核通过后展示\",\"icon\":\"success\"}]；15-after 截图显示已返回 village/index（圈子页）；草稿已清",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-15-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP16 点「添加话题」行",
+      "expected": "选中 #校园日常，行 meta 变「已选 1/5」",
+      "actual": "截图 16-after：meta=「已选 1/5」（简短格式）。回归 MP-R1-PUB-015 通过",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-16-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-16-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP17 再点「添加话题」行",
+      "expected": "toggle 取消选中，meta 回「已选 0/5」",
+      "actual": "截图 17-after：meta=「已选 0/5」，toggle 移除生效",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-17-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-17-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP18 快速连点「添加话题」6 次",
+      "expected": "toggle 6 次（偶数）→ 最终「已选 0/5」，无异常、无 console 错误",
+      "actual": "截图 18-after：「已选 0/5」，页面正常，console 无新增错误",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-18-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-18-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP19 点「提及好友」行",
+      "expected": "toast「提及好友即将开放」，页面停留",
+      "actual": "hook toast=[{\"title\":\"提及好友即将开放\",\"icon\":\"none\"}]，页面停留 publish",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-19-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-19-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP20 点「谁可以看」两次（general 目标）",
+      "expected": "循环 [public→school]：「所有人可见」→「学校圈」→「所有人可见」",
+      "actual": "20-mid 截图：第一次点击后=「学校圈」；20-after 截图：第二次点击后=「所有人可见」。与代码 cycleVisibility general 分支（publish.vue:223-238）一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-20-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-20-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP21 点「添加位置」行（位置固定当前城市，无 tap 处理）",
+      "expected": "无交互反应（显示「北京市 · 自动定位」），无报错",
+      "actual": "path 保持 publish、无 toast、无跳转、console 无错误，meta 显示「北京市 · 自动定位」（截图 21-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-21-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-21-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP22 点发帖小贴士右上角关闭",
+      "expected": "小贴士区块消失（tipVisible=false）",
+      "actual": "tip 消失=true（22-after 截图无贴士区块）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-22-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP23 有内容（10/1000，截图 23-before 实锤）时点左上角 X",
+      "expected": "showModal「是否保留草稿？」（content=「你还有未发布的内容，是否保留以便下次继续编辑？」保留/放弃）",
+      "actual": "无法验证弹窗 UI：DevTools 自动化环境对原生 modal 自动确认——tap 后 1 秒内已走完 confirm（保留）分支返回 village/index（23-modal 截图为返回后的圈子页），草稿已保存（OP24 重进恢复成功佐证 confirm 分支执行）。hook showModal 未记录（uni 适配层缓存原引用，wrapper 未命中，工具层限制）。弹窗文案/布局无法截图取证；保留/放弃两分支逻辑已由 OP25/OP26 以 mockWxMethod 方式验证正确",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-23-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-23-modal.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP24 带草稿重进页面",
+      "expected": "进入自动恢复草稿：内容回显「草稿保留测试内容示例」、字数 10/1000、发布按钮可用",
+      "actual": "截图 24-after：内容回显、10/1000、发布按钮绿色可用；draft.content=「草稿保留测试内容示例」",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-24-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-24-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP25 X 弹窗选「保留」（mockWxMethod showModal confirm=true）",
+      "expected": "scheduleDraftSave + 离开返回 village/index；storage 草稿 content 为最新输入",
+      "actual": "path=subpackages/village/village/index；draft.content=\"草稿保留测试内容示例-追加\"（confirm 分支 scheduleDraftSave+leave 生效）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-25-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-25-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP26 X 弹窗选「放弃」（mockWxMethod showModal confirm=false）",
+      "expected": "clearDraft（本地 storage + 后端 deleteDraft）+ 返回 village/index；storage 草稿为空",
+      "actual": "path=subpackages/village/village/index；draft=已清（cancel 分支 clearDraft 生效）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-26-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-26-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP27 无内容时点 X",
+      "expected": "无弹窗直接返回 village/index（requestLeave: !dirty → leave()）",
+      "actual": "path=subpackages/village/village/index，无弹窗记录，直接返回（截图 27-after 为圈子页）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-27-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-27-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP28 页面打开后立即（500ms 内）点 X 返回",
+      "expected": "正常返回 village/index，无卡死、无报错",
+      "actual": "path=subpackages/village/village/index，返回正常（截图 28-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-28-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-28-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP29 重复进出页面 ×3（navigateTo → back 循环）",
+      "expected": "每轮正常渲染与返回，console 无新增错误",
+      "actual": "3 轮 paths 全部正确返回 publish，新增 console 错误=0（截图 29-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-29-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-29-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP30 点「＋」选图（mockWxMethod chooseImage 返回 1 张 static 图）",
+      "expected": "隐私检查通过 → chooseImage 返回 → 压缩回退 → 九宫格出现 1 图块 + 右上删除按钮；「＋」仍在（<9张）",
+      "actual": "截图 30-after：九宫格 1 图块+右上删除圆钮、「＋」虚线块仍在；img=true、removeBtn=true",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-30-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-30-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP31 点图片右上删除按钮",
+      "expected": "图块消失（removeImage splice），「＋」仍在",
+      "actual": "img 已移除=true，删除生效（截图 31-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-31-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-31-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP32 mock 一次选 9 张图",
+      "expected": "九宫格 9 图（POST_MAX_IMAGES=9 上限），「＋」添加块消失",
+      "actual": "截图 32-after：3×3 九宫格 9 图、右上删除钮齐全、「＋」消失（imgs=9、addGone=true）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-32-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-32-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP33 快速连点「发布」2 次（createPost 包装 300ms 延迟模拟网络耗时）",
+      "expected": "第一次点击 submitting=true 期间第二次点击被守卫拦截（publish.vue:365）→ createPost 仅调用 1 次；成功返回后草稿清除",
+      "actual": "createPost 调用次数=1（submitting 守卫拦截生效）；toast「已提交，审核通过后展示」1 次；返回 village/index；草稿已清",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-33-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-33-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "OP34 scroll-view 内容区上滑（合成 touch 滚动）",
+      "expected": "内容若超屏可滚动到底部空间；内容不超屏则无滚动（属正常）",
+      "actual": "无法验证：automator 0.12.1 Element.touchstart unimplemented（报错 appservice Element.touchstart unimplemented），无法合成触摸滚动 scroll-view；需真机/手势验证",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-34-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-34-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "B1-01 身份B（游客/新号）打开页面",
+      "expected": "页面正常渲染（同 A：个人动态默认目标、0/1000、禁用发布）；无崩溃",
+      "actual": "path=subpackages/village/village/publish，渲染正常（截图 B1-01-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "B1-02 身份B 打开弹层并选已加入圈子",
+      "expected": "弹层含个人动态/校园圈/已加入圈子分组；选择后卡片显示所选圈子",
+      "actual": "偏差：options 只有 [\"个人动态\",\"校园圈\"]——「兴趣圈子 · 圈内成员可见」分组缺失（对比 A 身份 OP02 有 音乐/美食，截图 B1-02-after）。根因：发布页仅在 circle 目标入参时调 fetchCircles（publish.vue:124-127 loadTarget），直入页面（无参）circleStore.circles 为空，joinedCircles.length>0 的 v-if（publish.vue:491）静默隐藏分组，无加载态/空态提示。A 身份有数据是同 appService 会话内其他页面预加载的副作用",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-02-after.png",
+      "issueId": "MP-R1-PUB-017"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "B1-03 身份B 输入合法内容点「发布」",
+      "expected": "toast「已提交，审核通过后展示」→ 自动返回 village/index",
+      "actual": "hook toast=[{\"title\":\"已提交，审核通过后展示\",\"icon\":\"success\"}]；path=subpackages/village/village/index（截图 B1-03-after）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "operation": "B1-04 身份B X 弹窗「保留」→ 重进恢复 → 「放弃」",
+      "expected": "保留：返回+草稿保存；重进内容回显；放弃：返回+草稿清空",
+      "actual": "保留后 draft=\"身份B草稿弹窗验证内容\"；restored 截图内容回显；放弃后 draft=已清。游客身份草稿链路与 A 身份一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-04-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PUB-016",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-10-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "正文输入上限不一致：textarea maxlength=1000 允许输入 501–1000 字，但 store 校验 MAX_CONTENT_LENGTH=500，输入超 500 字点「发布」必然失败并报「帖子内容不能超过500字」，且仅在提交时才提示，无前置约束",
+      "evidence": "publish.vue:36（POST_MAX_LENGTH = 1000）与 publish.vue:517（:maxlength=\"POST_MAX_LENGTH\"）允许 1000 字；stores/village/constants.ts:12（MAX_CONTENT_LENGTH = 500）与 stores/village/index.ts:433-435（length > 500 抛错）否决提交。实测（OP10）：general 目标输入 600 字（截图 600/1000 回显）→ 点发布 → hook 捕获 toast「帖子内容不能超过500字」、页面停留不跳转",
+      "ideal": "输入框上限与实际可提交上限一致（微信小程序常规：前端 maxlength 与后端校验同源），超限应有即时可视反馈而非提交后才报错",
+      "fix": "将发布页 POST_MAX_LENGTH 与 stores/village MAX_CONTENT_LENGTH 对齐为 500（从同一常量导入），或后端/store 放宽至 1000；并在字数计数接近上限时给出颜色提示",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PUB-017",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-02-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "「发布到」弹层的「兴趣圈子」分组依赖 circleStore 被其他页面预加载：直入发布页（无 circleId/target 参数）时从不调用 fetchCircles，joinedCircles 为空导致分组被 v-if 静默隐藏，且无加载态/空态提示",
+      "evidence": "publish.vue:124-127（loadTarget 仅 isCircleTarget 时 fetchCircles，onLoad 无参时不触发）、publish.vue:66-67（joinedCircles 派生自 circleStore.circles）、publish.vue:491（v-if=\"joinedCircles.length > 0\" 静默隐藏）。实测对比：A 身份（同会话其他页面已预加载）弹层 options=[\"个人动态\",\"校园圈\",\"音乐\",\"美食\"]（02-after）；B 身份直入弹层 options=[\"个人动态\",\"校园圈\"]（B1-02-after），已加入圈子不可选",
+      "ideal": "打开目标选择弹层时应保证已加入圈子数据可用：未加载则触发拉取，拉取中显示加载态，为空显示空态文案（小程序弹层选择器惯例）",
+      "fix": "watch targetOpen 变 true 时若 circleStore.circles.length === 0 则触发 fetchCircles()，弹层内对加载中/空态给出提示",
+      "status": "待修复"
+    }
+  ],
+  "regressionChecks": {
+    "MP-R1-PUB-014": "已修复并验证：OP01/04 截图确认 targetTitle 与弹层选项均为「个人动态」，页面全程无「公开广场」字样（publish.vue:76/481）",
+    "MP-R1-PUB-015": "已修复并验证：OP01/16/17/18 截图确认行 hint 为简短「已选 N/5」格式（publish.vue:542）",
+    "INDEP-001": "已修复并验证：OP08/OP14 草稿快照 tags 正确合并正文话题（buildMergedTopics 提取共用，publish.vue:246-252），全程 console error=0（无 ReferenceError），草稿本地保存（OP07/14）与恢复（OP24/B1-04）全链路生效"
+  },
+  "scriptPath": "tmp/interact-R1-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
+  "unverifiable": [
+    "OP09 textarea maxlength=1000 原生截断：automator element.input() 注入绕过原生层截断（1200 字全部进入草稿快照），自动化环境无法验证真实键盘输入的原生截断；字数统计与内容同步已验证",
+    "OP23 原生「是否保留草稿？」弹窗 UI 与文案：DevTools 自动化环境对原生 modal 自动确认（tap 后 1 秒内完成 confirm 分支返回并保存草稿），弹窗无法驻留截图；保留/放弃分支逻辑已由 OP25/OP26 以 mockWxMethod 方式验证正确",
+    "OP34 scroll-view 内部滚动：automator 0.12.1 Element.touchstart unimplemented，无法合成触摸手势滚动，需真机验证",
+    "真实相册选图完整流程（wx.chooseImage 原生 UI、隐私授权弹窗、真实图片文件压缩）：以 mockWxMethod('chooseImage') 替代验证了选图→九宫格→删除→9 张上限链路（OP30-32），原生相册 UI 交互与隐私授权流未覆盖",
+    "OP06 子项：弹层 panel 区域点击不关闭（@tap.stop）与遮罩空白区点击关闭的区分——automator tap 固定元素中心无法精确命中遮罩空白区；实测 tap 弹层容器关闭了弹层（关闭路径生效），toggle 开合路径均正常",
+    "发布到真实后端（非 mock）的提交链路与 401/网络异常分支：本验证基于 mp-weixin-mock 构建产物"
+  ],
+  "notes": "共执行 38 项操作（A 身份 34 项 + B 身份（游客/新号）4 项），console 全程 error=0（全量落盘 tmp/console-evidence-R1-PUBLISH.log）。执行环境：automator SDK 连 ws://127.0.0.1:9420，mock 构建（verify-build-features 4/4 PASS）。发现偏差 2 项（MP-R1-PUB-016 输入上限不一致 P2、MP-R1-PUB-017 弹层兴趣圈子分组依赖隐式预加载 P3），历史回归 3 项（MP-R1-PUB-014/015、INDEP-001）全部确认已修复。工具环境注意事项（复用建议）：evaluate 函数体内不得含 await（DevTools eval 报 SyntaxError，用触发+轮询替代）；screenshot 首调易超时需 retry；automator 持久 mock 用 restoreWxMethod 复原（无 resetMockWxMethod）；渲染层假死用 wechatide simulator_refresh 恢复。"
+}

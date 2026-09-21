@@ -1,0 +1,197 @@
+{
+  "page": "subpackages/discover-extra/discover/match-success",
+  "pageName": "匹配成功（寻觅主链路）",
+  "round": "R1",
+  "generatedAt": "2026-09-20T20:35:00+08:00",
+  "env": {
+    "build": "apps/client/dist/build/mp-weixin（2026-09-20 16:54，晚于源码 2026-09-17 23:40；dist/match-success.js 含 dev-preview 与两处 toast 文案，确认非旧包）",
+    "connection": "miniprogram-automator automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})，项目 projectPath=D:\\6\\恋爱小程序（project.config.json miniprogramRoot=apps/client/dist/build/mp-weixin/）",
+    "login": "双身份方案之身份A（tmp_r11_login.json token 注入 wx.setStorageSync('token') + session store bootstrap()，isLoggedIn=true）",
+    "sessionNote": "轮1 会话中途出现微信「获取你的位置信息」原生授权弹窗叠加自动化导航假死（已知坑：DevTools 长跑假死），OP03~OP15 轮1 证据作废；经 wechatide CLI『-c ZCode simulator_refresh』复活并 mock wx.getLocation/wx.authorize 防弹窗后，以 r2/r3/r4 三轮补拍在干净会话复检全部受污染操作，最终结论全部以干净会话证据为准"
+  },
+  "interactiveElements": [
+    { "sel": ".success-nav__btn[0]", "desc": "左上返回钮 ‹ → goBack()（match-success.vue:112-121 → 93-100：栈>1 navigateBack(delta=1)，否则 switchTab 寻觅）" },
+    { "sel": ".success-nav__btn[1]", "desc": "右上相机/截图钮 → handleScreenshot()：uni.showToast 截图功能即将上线 icon=none（match-success.vue:123-132 → 103-105）" },
+    { "sel": ".success-nav__btn[2]", "desc": "右上 ··· 钮 → handleShare()：uni.showToast 分享功能即将上线 icon=none（match-success.vue:133-143 → 88-90）" },
+    { "sel": ".match-success__primary", "desc": "立即聊天 → emit chat → goChat()：markChatReady(matched→chat_ready) + openAppPath(/subpackages/chat/chat-session/index?userId=…)（MatchSuccess.vue:130-140 → match-success.vue:76-82）" },
+    { "sel": ".match-success__secondary", "desc": "继续探索 → emit explore → keepExploring()：uni.switchTab(/pages/discover/index)（MatchSuccess.vue:141-150 → match-success.vue:84-86）" },
+    { "sel": ".match-success__share", "desc": "分享喜悦 → emit share → handleShare()：uni.showToast 分享功能即将上线（MatchSuccess.vue:151-153 → match-success.vue:88-90）" }
+  ],
+  "checks": [
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP01 初次进入渲染核验（reLaunch ?dev-preview=1，栈=1）",
+      "expected": "停在 match-success（栈=1）；标题「匹配成功」；副标题「你和 星野 互相喜欢上了」+「快去打个招呼吧~」；匹配度卡标题「我们正在分享你们的共同点」且恒 4 行（MatchSuccess.vue:44-58 displayReasons 补全）；按钮「立即聊天」「继续探索」「分享喜悦」；顶部 nav 三钮（‹/相机/···）可见；无 JS error",
+      "actual": "全部命中：page.path=subpackages/discover-extra/discover/match-success query={dev-preview:1}；element.text 实测 title=匹配成功、subtitle=你和 星野 互相喜欢上了、scoreTitle=我们正在分享你们的共同点、primary=立即聊天、secondary=继续探索、share=分享喜悦；截图可见双头像+心形+4 行匹配卡+nav 三钮；match store status=idle matchedUser=null；该操作 consoleIssues=0。注：轮1 后段出现的系统定位授权弹窗为环境噪声，OP03b-before.png（20:10 干净帧）为同页无遮挡渲染参照",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP01-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP02 回归 MP-R3-MSUCCESS-001/002：nav 状态栏/胶囊避让数值核验",
+      "expected": "依据修复样式 match-success.vue:176（padding: calc(var(--statusbar)+24rpx) calc(var(--capsule-right)+104px) 0 24rpx）与 useMenuButtonRect 注入：左返回钮 top ≥ 状态栏高度（不侵入状态栏/系统时间）；右上两钮右缘 ≤ windowWidth-(capsuleRight+104px) 且 < 胶囊 left（不与胶囊同带碰撞）",
+      "actual": "实测（element.offset/size + wx.getMenuButtonBoundingClientRect + getSystemInfoSync）：statusBarHeight=47，返回钮 y=59 ≥ 47（按钮带 59-95 在状态栏带 0-47 之下，padding-top=47+12rpx 换算=59 精确吻合）；右上相机钮 x=184.2、···钮 x=228.2 w=36 → 右缘 264.2 ≤ 375-(7+104)=264（±0.2px 亚像素取整）；胶囊 left=281 > 264.2，间距 16.8px，无碰撞；截图无叠印。历史 P1 回归项 MP-R3-MSUCCESS-001/002 修复保持有效",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP02-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP03 点击右上相机/截图钮",
+      "expected": "handleScreenshot()（match-success.vue:103-105）→ uni.showToast「截图功能即将上线」(icon=none)；页面不跳转；toast 约 1.5s 自动消失",
+      "actual": "tap 成功（navbtns[1]）；toast 文案经两条独立钩子通道实测一致：轮1 遗留 [PROBE]toast {\"title\":\"截图功能即将上线\",\"icon\":\"none\"} console 记录 + r4 wx.showToast 钩子 {title:截图功能即将上线, icon:none}；after2/after2-gone 截图显示 toast 已消失且页面停留 match-success；toast 可视样式（icon:none 居中半透明黑底白字）以 OP04b-after1-toast-r4.png 同机制实拍为参照",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-after1-toast-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP04 点击右上 ··· 钮",
+      "expected": "handleShare()（match-success.vue:88-90）→ uni.showToast「分享功能即将上线」(icon=none)；页面不跳转",
+      "actual": "tap 成功（navbtns[2]）；toast 文案双通道实测一致（[PROBE]toast 分享功能即将上线 + wx.__lastToast {title:分享功能即将上线, icon:none}）；r4 抓到 toast 可视帧：OP04b-after1-toast-r4.png 屏幕中央清晰可见「分享功能即将上线」半透明黑底 toast；after2-gone 帧已消失；页面停留",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after1-toast-r4.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP05 点击主体「分享喜悦」",
+      "expected": "MatchSuccess.vue:151-153 emit share → handleShare() → toast「分享功能即将上线」；约 1.5s 自动消失；页面停留 match-success",
+      "actual": "tap 成功（page.$ pierce 命中子组件内元素）；toast 文案双通道实测一致（[PROBE]toast + wx.__lastToast 均为 分享功能即将上线/icon none）；OP05b-after2-gone.png（+2.5s）toast 已消失、页面停留；可视样式同 OP04b-after1-toast-r4.png 实拍",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP05b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP05b-after2-gone.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP06 点击「立即聊天」",
+      "expected": "goChat()（match-success.vue:76-82：!partner 早退守卫 → markChatReady（仅 matched→chat_ready，dev-preview 下 status=idle 不变）→ openAppPath(/subpackages/chat/chat-session/index?userId=dev-preview)，navigation.ts:118-131 非.tab 路径走 uni.navigateTo）→ 栈=[match-success, chat-session]，query.userId=dev-preview",
+      "actual": "干净会话（r2）tap 成功（page.$ pierce）→ currentPage=subpackages/chat/chat-session/index query={userId:dev-preview}；OP06b-after2.png 实拍会话页已渲染：「你们已互相配成功，打个招呼开启聊天吧~」+ 推荐开场问题 chips +「会话刚建立，还没有消息。」+ 对话输入栏。轮1 同操作未跳转，经查为原生定位授权弹窗叠加自动化通道假死所致（环境因素）：轮1 console 全程 0 条 [PROBE]navigateTo 与复检矛盾、干净会话复现即通过，判定非本页缺陷",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP06b-after2.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP07 点击「继续探索」",
+      "expected": "keepExploring()（match-success.vue:84-86）→ uni.switchTab(/pages/discover/index)，当前页变寻觅 tab（栈=1）",
+      "actual": "tap 成功；r2 路径轮询：pageBefore=match-success?dev-preview=1 → after=pages/discover/index；r3 复拍 tap 再次成功且落地寻觅 tab；OP07b-after-r3.png 实拍寻觅页（卡片流+底部 tab「寻觅」高亮）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP07b-after-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP08 单页栈点左上返回 ‹（reLaunch 进入）",
+      "expected": "goBack()（match-success.vue:93-100）getCurrentPages 长度=1 → else 分支 uni.switchTab(discover) → 当前页=pages/discover/index",
+      "actual": "r2/r3 两轮复现：tap 成功（navbtns[0]）→ after=pages/discover/index（栈=1）；OP08b-after-r3.png 实拍寻觅 tab；无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP08b-after-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP09 双层栈点左上返回 ‹（寻觅 navigateTo 进入）",
+      "expected": "栈=2 → goBack() if 分支 uni.navigateBack(delta=1) → 回寻觅 tab 栈=1",
+      "actual": "r2：reLaunch discover → navigateTo match-success（navSettled=true 落地）→ tap back 成功 → after=pages/discover/index；OP09-mid-in.png 为进入后页内实拍；无报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP09b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP09-mid-in.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP10 快速连续点击「立即聊天」×5（间隔约 150ms）",
+      "expected": "首次点击触发 navigateTo chat-session 后当前页切换，后续 tap 落在后台实例被框架忽略/失败；不产生叠层导航、无 JS error",
+      "actual": "5 次 tap 全部被自动化通道 ack；终态 currentPage=subpackages/chat/chat-session/index?userId=dev-preview（单会话页）；OP10b-after.png 实拍无叠层异常；页面级 JS error=0；期间出现 1 条微信框架级路由日志「routeDone with a webviewId 58 that is not the current page」（DevTools 快速导航竞态的内部日志，非页面 JS 异常、无用户可见影响，已记录不计 Issue）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP10b-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP11 userId 参数直达（mock 用户 4008，先 reset match store 清 matchedUser）",
+      "expected": "无 matchedUser 且有 userId（match-success.vue:55-60）→ loadFallbackPartner → clientApi.getPersonProfile（api.ts:958-962 mock 按 fixtures id 命中）→ 副标题显示「你和 周岚 互相喜欢上了」，头像/匹配理由用其真实数据；query.userId=4008 落地",
+      "actual": "r2/r3 复现：navSettled=true 且 query.userId=4008；subtitle element.text=「你和 周岚 互相喜欢上了」；OP11b-after-r3.png 实拍：副标题「你和 周岚 互相喜欢上了」、对方头像换为真实照片、匹配卡变为真实理由（同城距离 2.4km 90%/都喜欢电影 85%/都喜欢摄影 80%/都喜欢咖啡 79%）；无 crash",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP11b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP11b-after-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP12 userId 参数直达（不存在的 userId=no-such-user-xyz）",
+      "expected": "getPersonProfile 未命中返回 null（api.ts:961）→ loadFallbackPartner 直接 return（match-success.vue:67）→ fallbackPartner=null → 名字兜底「TA」（discover.partnerDefaultName）→ 副标题「你和 TA 互相喜欢上了」；无 crash",
+      "actual": "r2/r3 复现：navSettled=true 且 query.userId=no-such-user-xyz；subtitle element.text=「你和 TA 互相喜欢上了」；OP12b-after-r3.png 实拍：TA + 默认头像 + 四行默认标签（旅行爱好/音乐品味/电影偏好/生活方式，与 MatchSuccess.vue:47 DEFAULT_REASON_LABELS 一致）；console 无页面 JS error",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP12b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP12b-after-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP13 重复进出页面 ×3（寻觅 navigateTo 进 → navigateBack 出）",
+      "expected": "每轮 navigateTo 渲染正常、navigateBack 干净回寻觅 tab；3 轮无死页、无 JS error",
+      "actual": "r2 三轮全部落地：round1/2/3 in=subpackages/discover-extra/discover/match-success（navSettled 均 true）、out=pages/discover/index；r3 补拍第 1 轮出场帧 OP13b-round1-out-r3.png；进入态帧参照 OP13-round1-in.png；无死页无 JS error",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP13b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP13b-round1-out-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP14 页面打开后立即点返回（<1s，栈=2）",
+      "expected": "打开后约 500ms tap ‹ → goBack() navigateBack(delta=1) → 回寻觅 tab；渲染未完成也返回成功，无报错",
+      "actual": "r2：navigateTo 落地后 500ms tap 成功（navbtns[0]）→ after=pages/discover/index；无报错（轮1 该操作 tap ack 超时系会话假死，干净会话复检通过）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP09b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP13b-round1-out-r3.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "OP15 滚动核验（到底/到顶）",
+      "expected": "页面为整页滚动；若内容底缘 > windowHeight 应可滚到底/顶；若单屏则记录「无可滚动」",
+      "actual": "实测「分享喜悦」元素 y=670 h=37 → 内容底缘 707 < windowHeight=812 → 单屏无可滚动（与 MatchSuccess.vue:159-167 min-height:100% + actions margin-top:auto 的单屏布局设计一致）；OP15b-before.png 为整页实拍；无可滚动属预期内情形，不作偏差",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP15b-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP15b-before.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [],
+  "scriptPath": "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.mjs",
+  "supplementScripts": [
+    "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-r2.mjs",
+    "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-r3.mjs",
+    "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-r4.mjs"
+  ],
+  "rawEvidence": [
+    "tmp/match-success-interact-raw.json",
+    "tmp/match-success-interact-console.log",
+    "tmp/match-success-interact-raw-r2.json",
+    "tmp/match-success-interact-raw-r3.json",
+    "tmp/match-success-interact-raw-r4.json"
+  ],
+  "shotDir": "reports/screenshots/round-1-interact",
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
+  "unverifiable": [
+    "输入框类操作（正常输入/清空/超长文本/特殊字符）：本页无任何输入框，不适用",
+    "Tab/分段切换：本页无 Tab 或分段控件（顶部为自定义 nav 三钮，已单独覆盖），不适用",
+    "ActionSheet/Modal 弹窗开关：本页无弹窗组件，仅 Toast（OP03/04/05 已覆盖打开与自动关闭）",
+    "下拉刷新：pages.json 中 discover/match-success 未启用 enablePullDownRefresh（subpackages 配置内仅 nearby/people:150 启用），不适用",
+    "真实后端/真实分享与截图能力：本验证在 mock 模式（getPersonProfile 走 mockFixtures）；「分享功能即将上线」「截图功能即将上线」为页面代码内置的占位 Toast（match-success.vue:89、104），真实分享/截图能力属后续版本，无法在本环境验证",
+    "身份B（游客/新号）进入本页：匹配成功页依赖真实匹配上下文或 dev-preview 参数，游客态无匹配数据，入口行为由 matching 页兜底逻辑承载（该页由本批另一验证员负责），本页未重复验证"
+  ],
+  "notes": "方法：automator 连 ws://127.0.0.1:9420，逐操作 前截图→tap/导航→路径轮询→后截图；toast 文案用双钩子通道取证（轮1 遗留 [PROBE] console 钩子 + r4 wx.showToast 钩子）。轮1 会话受微信定位授权原生弹窗+自动化长跑假死污染（OP03~OP15 作废），已用 wechatide『-c ZCode simulator_refresh』复活并 mock wx.getLocation/authorize 后复检，最终 15 项 check 全部以干净会话证据判定：15 符合 / 0 偏差 / 0 无法验证（不适用项见 unverifiable）。历史回归 MP-R3-MSUCCESS-001/002（nav 侵入状态栏/与胶囊碰撞）经数值核验（返回钮 y=59≥47；右上钮右缘 264.2 < 胶囊 left 281）确认修复保持。观察项（不计 Issue）：①OP10 连点期间出现 1 条微信框架级路由日志 routeDone webviewId 58 not current page，DevTools 快速导航竞态内部日志，无用户可见影响；②截图通道在本实例上间歇 ack 超时（已用重试+多轮补拍兜底，全部关键结论均有实拍帧或路径数据双重证据）。"
+}

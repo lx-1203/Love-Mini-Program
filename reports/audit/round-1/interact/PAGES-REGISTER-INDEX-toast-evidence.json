@@ -1,0 +1,97 @@
+{
+  "phone": "15991420648",
+  "records": [
+    {
+      "no": "02",
+      "tag": "空表单提交",
+      "toasts": [
+        {
+          "title": "请输入手机号",
+          "icon": "none",
+          "duration": 2000
+        }
+      ],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "06",
+      "tag": "空手机号点获取验证码",
+      "toasts": [
+        {
+          "title": "请先输入正确的手机号",
+          "icon": "none",
+          "duration": 2000
+        }
+      ],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "08",
+      "tag": "合法手机号发码",
+      "toasts": [
+        {
+          "title": "验证码已发送（模拟：123456）",
+          "icon": "none",
+          "duration": 1500
+        }
+      ],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "13",
+      "tag": "密码强度-中(abc12345)",
+      "toasts": [],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "21",
+      "tag": "全角密码提交",
+      "toasts": [
+        {
+          "title": "密码不能包含空格或全角字符",
+          "icon": "none",
+          "duration": 2000
+        }
+      ],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "22",
+      "tag": "出生日期picker弹层",
+      "toasts": [],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "24",
+      "tag": "完整表单提交→成功页",
+      "toasts": [],
+      "err": "",
+      "shot": true
+    },
+    {
+      "no": "26",
+      "tag": "已注册手机号提交",
+      "toasts": [
+        {
+          "title": "该手机号已注册，可直接登录",
+          "icon": "none",
+          "duration": 2000
+        }
+      ],
+      "err": "",
+      "shot": true
+    }
+  ],
+  "consoleErrs": [
+    "[captureException] [object Object] [object Object]",
+    "[captureException] [object Object] [object Object]",
+    "[captureException] [object Object] [object Object]",
+    "[captureException] [object Object] [object Object]"
+  ]
+}

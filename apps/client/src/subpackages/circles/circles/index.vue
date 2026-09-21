@@ -601,8 +601,10 @@ defineExpose({ toggleJoin });
 .circle-card {
   display: flex;
   align-items: center;
-  gap: var(--sp-5);
-  padding: var(--sp-6) var(--sp-7);
+  /* MP-R1-CIRCLE-005（2026-09-20）：375px 下统计行被省略号截断——收窄卡内水平
+     内边距（sp-7→sp-5）与列间距（sp-5→sp-4），让出统计行宽度 */
+  gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-5);
   background: var(--c-neutral-0);
   border-radius: var(--r-lg);
   box-shadow: var(--s-card-soft);
@@ -715,7 +717,8 @@ defineExpose({ toggleJoin });
 .circle-card__meta {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  /* MP-R1-CIRCLE-005：间距 sp-2，配合缩小字号，375px 下统计行完整展示 */
+  gap: var(--sp-2);
   /* 统计行恒单行（修复「2 条动/态」逐字断行，2026-08-29 视觉验收）
      R20：超宽时优雅省略，不再被「加入」按钮区硬裁切 */
   flex-wrap: nowrap;
@@ -733,7 +736,8 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__count {
-  font-size: var(--fs-sm);
+  /* MP-R1-CIRCLE-005：fs-sm→fs-xs，375px 下「N 人 · N 条动态」不再被省略号截断 */
+  font-size: var(--fs-xs);
   color: var(--c-text-tertiary);
   /* R21：省略号必须落在文本节点自身（meta 容器上的 text-overflow 对 flex 子项无效），
      否则统计行在「加入」按钮列被硬裁成半字 */
@@ -750,8 +754,8 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__action {
-  /* R3：水平内边距 sp-7→sp-5，让出统计行宽度（省略号不再吃掉「N 条动态」） */
-  padding: var(--sp-3) var(--sp-5);
+  /* MP-R1-CIRCLE-005：水平内边距 sp-5→sp-4，再让出统计行宽度 */
+  padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-full);
   /* 理想图：浅绿描边胶囊按钮（背景透明、绿字），简洁清爽 */
   background: var(--c-neutral-0, #FFFFFF);

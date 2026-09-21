@@ -86,8 +86,11 @@ function taskPathForCode(code: string): string | undefined {
       return "/subpackages/village/village/index";
     case "campus-verify":
       return "/subpackages/campus/campus/certification";
+    // MP-R1-TASKS-003：完善资料任务同样给出编辑页入口
+    case "complete-profile":
+      return "/subpackages/setup/profile/index?entry=edit";
     default:
-      // daily-checkin / complete-profile 无独立入口（页面内完成/资料编辑入口在 profile 页）
+      // daily-checkin 无独立入口（页面内完成）
       return undefined;
   }
 }
@@ -116,6 +119,8 @@ const localTasks = computed<TaskItem[]>(() => [
     descKey: "profile.taskProfileDesc",
     points: 50,
     done: profileTaskDone.value,
+    // MP-R1-TASKS-003：点击「去完成」跳转资料编辑页（原无 path 点击无响应）
+    path: "/subpackages/setup/profile/index?entry=edit",
   },
   {
     id: "checkin",
@@ -262,12 +267,14 @@ async function handleTaskTap(task: TaskItem) {
     if (task.id === "checkin") {
       try {
         // R4-00058 修复：不再本地置 done 假完成，调用真实 GET 状态 + POST /check-in
-        const result = await clientApi.checkIn();
-        task.done = true;
+        await clientApi.checkIn();
+        // MP-R1-TASKS-001：置 checkinDone 状态驱动 localTasks 重算（原 task.done = true
+        // 改的是 computed 派生的临时对象，徽标/积分卡/进度条当页不更新）
+        checkinDone.value = true;
         successHaptic();
-        // 后端返回连续天数时优先展示真实数据（回退任务配置积分）
-        const days = result?.consecutiveDays ?? task.points;
-        uni.showToast({ title: t("profile.taskCheckinSuccess", { n: days }), icon: "success" });
+        // MP-R1-TASKS-002：文案展示真实获得积分（任务配置 task.points），
+        // 不再把连续天数（consecutiveDays）当积分展示
+        uni.showToast({ title: t("profile.taskCheckinSuccess", { n: task.points }), icon: "success" });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         uni.showToast({ title: message, icon: "none" });

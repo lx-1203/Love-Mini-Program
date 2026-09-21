@@ -1,0 +1,166 @@
+{
+  "round": "R1",
+  "page": "pages/register/success",
+  "pageName": "注册成功页",
+  "generatedAt": "2026-09-20T04:40:00+08:00",
+  "scriptPath": "tmp/interact-R1-PAGES-REGISTER-SUCCESS.mjs",
+  "supplementScriptPath": "tmp/interact-R1-REG-SUCCESS-SUPP.mjs",
+  "shotDir": "reports/screenshots/round-1-interact",
+  "rawEvidence": ["tmp/interact-r1-reg-success-raw.json", "tmp/interact-r1-reg-success-supp-raw.json", "tmp/interact-r1-reg-console-errors.log"],
+  "buildFreshness": "dist/build/mp-weixin 全部产物时间 2026-09-20 01:50，晚于 src 内全部源码（find -newer 校验 0 命中）；未改动源码故未重跑 pnpm build:mp-weixin:mock，新鲜度以 mtime + 内容抽查（wxml 文案/bindtap、constants TAB.HOME）确认",
+  "checks": [
+    {
+      "page": "pages/register/success",
+      "operation": "OP1 带参打开 reLaunch /pages/register/success?phone=13888888888",
+      "expected": "标题=注册成功；主按钮「完善我的资料 →」；次级出口「稍后再说，先随便逛逛」；清单卡 3 行且 tag[0]=138****8888（success.vue:25-30 onLoad 脱敏正则）、tag[1]=已解锁、tag[2]=建议；整页按设计稿 05 单屏渲染",
+      "actual": "route=pages/register/success；DOM 实测 title=注册成功、btn=完善我的资料 →、alt=稍后再说，先随便逛逛、tag0=138****8888；SelectorQuery 计数 rows=3/tags=3；补测干净截图 A05b-13812345678.png（同页同参、无遮罩）显示完整理想渲染。主跑截图 01-after 上有一层环境级原生弹窗（见 issue MP-R1-PAGES-REGISTER-SUCCESS-001，非本页代码，同页补测无弹窗）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-01-after.png",
+      "issueId": "MP-R1-PAGES-REGISTER-SUCCESS-001"
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP2 点击主按钮「完善我的资料 →」",
+      "expected": "goSetupProfile（success.vue:40-42）→ uni.navigateTo 压栈进入 subpackages/setup/profile/index；route 变为 subpackages/setup/profile/index；栈深 1→2",
+      "actual": "tap ok:true；route=subpackages/setup/profile/index；栈深 depthBefore=1 → depthAfter=2；截图 02-after 为「基础资料 第1/4步 基本信息」页（XUNMI·CAMPUS 头部、相册网格），与完善资料流程页一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-02-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP3 自资料页 navigateBack 返回",
+      "expected": "route 回到 pages/register/success；带参状态保留（tag[0]=138****8888）；无报错",
+      "actual": "route=pages/register/success；tag0=138****8888 保留；截图 03-after 与主跑 success 页渲染一致；console grep（NAV_FAIL|TypeError|is not defined）0 命中",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP4 点击次级出口「稍后再说，先随便逛逛」",
+      "expected": "goBrowse（success.vue:45-47）→ uni.switchTab /pages/home/index；route 变为 pages/home/index（tabBar 首位，dist app.json 确认）",
+      "actual": "tap ok:true。主跑 6s 后采样 route=pages/discover/index，初判异常；补测 S1 分时采样还原真相：+1s route=pages/home/index（switchTab 正确生效）→+3s pages/login/index→+6s pages/discover/index，为未登录态下全局会话守卫连锁重定向（home 401/守卫→login，login/index.vue:98,174 mock 自动登录后默认落 discover），非本页跳转错误；同一补测中再次点击后 route 稳定停留 pages/home/index（A04b-repro.png 干净首页渲染）。本页目标路由经构建产物确认：dist constants/routes.js TAB.HOME=\"/pages/home/index\"",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-A04b-repro.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP5 无参打开 reLaunch /pages/register/success",
+      "expected": "onLoad raw=''（success.vue:26-29 长度≠11 不脱敏），maskedPhone 保持空，tag[0] 回退「完成」（success.vue:34 maskedPhone.value || \"完成\"）；tag[1]=已解锁；tag[2]=建议",
+      "actual": "route=pages/register/success；DOM 实测 tag0=完成（OP7 回退后 finalTags 再次确认为完成）；rows=3 行完整",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-05-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-05-after.png",
+      "issueId": "MP-R1-PAGES-REGISTER-SUCCESS-001"
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP6 快速连续点击主按钮 ×3（重复提交）",
+      "expected": "success.vue:40-42 无防抖代码；理想为不重复入栈（栈深不叠加）、资料页可渲染、无 TypeError/崩溃",
+      "actual": "3 次 tap（CLI 间隔实测秒级，非毫秒级）后栈深仅 depthBefore=1→depthAfter=2：只入栈一条 profile，无重复压栈；route=subpackages/setup/profile/index；截图 06-after 为基础资料页无崩溃。原因：首次 navigateTo 后按钮已不在当前页，后续 tap 无命中最上页元素。局限：毫秒级双击窗口无法经 CLI 复现（handler 层 setupState 函数已被编译改名不可直调，补测 S5 证实），该窗口下的表现未覆盖",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-06-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP7 连点压栈后逐层 navigateBack 回退链",
+      "expected": "每层回退正常；最终 route=pages/register/success 且 tag[0]=完成；无崩溃",
+      "actual": "chain=[L1(fromDepth2):pages/register/success]，一步即回到本页；finalTags.tag0=完成；07-after-final 渲染正常",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-07-step1.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-07-after-final.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP8 页面打开后立即 navigateBack",
+      "expected": "reLaunch 后栈深=1 无可退上级；navigateBack 应无跳转效果，route 保持 pages/register/success，不白屏不崩溃",
+      "actual": "navigateBack 调用 ok:true 但栈深 depthBefore=1→depthAfter=1、route=pages/register/success，无跳转无崩溃；08-after 渲染完整",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-08-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP9 重复进出页面 ×2 轮（reLaunch→navigateTo 资料页→返回）",
+      "expected": "两轮 route 均为 success→subpackages/setup/profile/index→success；每轮 tag[0]=138****8888 保留；无渲染异常/残影",
+      "actual": "round1: tagsOnOpen.tag0=138****8888, profileRoute=subpackages/setup/profile/index, backRoute=pages/register/success, tagsAfterBack.tag0=138****8888；round2 同样全部一致；09-round1/round2 截图均完整渲染",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-09-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-09-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP10 滚动到底/到顶（可滚动性检查）",
+      "expected": "单屏设计（success.vue:79-87 min-height:100vh flex，内容约一屏）：应无滚动内容，滚动类操作不适用，布局无破损",
+      "actual": "补测 S3 SelectorQuery 实测 pageH=812、vpH=812（等高=单屏无滚动）；10-before/after 渲染一致无破损",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP11 输入框存在性（输入类操作适用性）",
+      "expected": "模板无 input/textarea（success.vue:50-75 仅 view/image/text）→ 0 个输入组件，清空/超长文本/特殊字符输入不适用",
+      "actual": "补测 S4 SelectorQuery 实测 input=0、textarea=0，与模板一致",
+      "verdict": "符合",
+      "before": "",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-11-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP12 弹窗/Toast/下拉刷新适用性",
+      "expected": "success.vue 无 uni.showToast/showModal/showActionSheet 调用；该页未启用 enablePullDownRefresh → 均不适用",
+      "actual": "srcHasToastLike=false（源码正则扫描）；构建产物 pages/register/success.json={\"usingComponents\":{}} 无 enablePullDownRefresh（app.json 该页为纯字符串条目）。注意：主跑 OP12 记录的 pageJsonHasPullDown=true 是 ±300 字符窗口误命中邻近条目所致，已用构建产物逐页 json 纠正",
+      "verdict": "符合",
+      "before": "",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/register/success",
+      "operation": "OP13 身份B（游客/新号 boot）带 phone=13999999999 打开",
+      "expected": "页面无身份分支（success.vue 全文无条件渲染），应正常渲染：标题=注册成功，tag[0]=139****9999",
+      "actual": "route=pages/register/success；title=注册成功；tag0=139****9999（onLoad 对新参号段独立脱敏正确）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-13-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-13-after.png",
+      "issueId": "MP-R1-PAGES-REGISTER-SUCCESS-001"
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-001",
+      "round": "R1",
+      "page": "pages/register/success（弹窗跨页面持续，波及本次主跑全部截图）",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-01-after.png（弹窗遮挡证据；对照干净渲染 PAGES-REGISTER-SUCCESS-A05b-13812345678.png）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "主跑全程模拟器存在窗口级原生弹窗「获取手机号失败 Error: 用户绑定的手机需要进行验证，请在客户端完成短信验证步骤」，跨页面（success/profile/discover）持续遮挡；该文本经 git grep 与 dist 字节级检索在仓库源码/构建产物/后端 i18n 中均 0 命中，判定为 DevTools/基础库手机号验证组件原生弹窗（测试号手机号验证链路），非本页代码缺陷",
+      "evidence": "遮挡证据：01-after/02-after/04-after/05-after/13-after 均有同一弹窗；同页补测 A05b-13812345678.png 与 A04b-repro.png（home）均无弹窗、渲染完整 → 弹窗为会话/环境级而非页面级；文本检索：git grep \"获取手机号失败\" 0 命中、LC_ALL=C 字节级搜 dist 0 命中、apps/api i18n 无该文案",
+      "ideal": "页面渲染无任何遮挡弹窗（A05b 已证明可达该理想态）；注册成功页承接自动登录会话，正常链路不应触发手机号验证组件报错弹窗",
+      "fix": "环境项：以已通过手机验证的测试号/正式 appid 重跑，或在 boot 前清理 DevTools 手机号验证组件状态；如需根治触发源，排查 8080 后端 login/phone-bind 端点对测试号返回「需短信验证」的分支及其响应是否被某全局处理器转发到原生弹窗",
+      "status": "保留"
+    }
+  ],
+  "unverifiable": [
+    "毫秒级快速连点（真实双击 <300ms 窗口）：CLI automation_element_action 每次点击含进程开销为秒级，无法复现毫秒级双击；handler 层函数经编译改名（setupState.goSetupProfile is not a function，补测 S5）不可直调。已以秒级间隔 ×3 tap 替代验证（无重复入栈），毫秒窗口下表现未覆盖",
+    "「获取手机号失败」原生弹窗的确切触发链路：文本在仓库/构建产物/后端当前源码中均不存在，无法定位与复现触发点（窗口级弹窗，疑与 DevTools 测试 appid 手机号验证组件或 8080 后端旧构建响应相关）",
+    "真机表现（原生返回手势、真机下拉刷新触感、真机弹窗层级）：本次仅在 DevTools 模拟器验证",
+    "身份A/B 登录态的精确校验：boot verify 返回值被 CLI 三层包装为对象（日志呈 [object Object]），无法从日志直接读出 logged-in 字样；首次 verify 未通过后已自动重试并 boot-ok，页面本身无身份分支故影响有限",
+    "注册真实流程闭环（register 表单提交→后端签发 JWT→跳转本页）：需真实短信验证码与后端注册接口写库，本环境以带参直开本页替代，未覆盖上游提交链路"
+  ],
+  "notes": "验证环境：微信开发者工具 CLI（wechatide.cmd -c ZCode）automation_evaluate/automation_navigate/automation_element_action/simulator_screenshot/get_simulator_console；项目根 D:\\6\\恋爱小程序，miniprogramRoot=apps/client/dist/build/mp-weixin（2026-09-20 01:50 构建，晚于全部 src 源码，内容抽查与源码一致）。执行情况：主跑 13 操作全部完成并逐操作落盘前后截图；automator ws(9420) 通道命令假死（与既有记录一致），故采用 CLI 方案1。技术坑：automation_evaluate 的 fn-source 多行必被 CLI 解析层拒（Unexpected token '{'，实测单行全通过），主跑 OP10/OP11 及 rows 数据层读取因此失败，已用单行 fn 补测（tmp/interact-R1-REG-SUCCESS-SUPP.mjs）补齐高度/输入框/行数/时间线证据。核心结论：本页 2 个交互入口（主按钮 navigateTo 完善资料、次级出口 switchTab 首页）行为与代码一致，脱敏/回退/边界/重复进出/双身份全部符合；OP4 主跑落 discover 经分时采样证明是未登录态全局守卫链（home→login→discover），页面跳转本身 +1s 即正确到达 home 且可复现停留；console 取证（grep NAV_FAIL|TypeError|is not defined）全程 0 命中。唯一 issue 为环境级原生弹窗（P3，保留）。"
+}

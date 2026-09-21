@@ -85,6 +85,24 @@ const recommendedSchools = computed(() => schools.filter((sc) => sc.name !== own
 const isPending = computed(() => certificationStatus.value === "pending");
 const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionStore.userSession?.campusName || "");
 
+/**
+ * MP-R1-CAMPUS-HUB-001：badge 三态（认证通过/审核中/未认证）——
+ * 未认证用户不再被谎报为「认证中」，且每个状态都有对应配色修饰类；
+ * 推荐 Tab 统一显示「未认证」灰胶囊。
+ */
+const joinedBadge = computed<{ text: string; class: string }>(() => {
+  if (activeTab.value === "recommend") {
+    return { text: t("campusHub.unverified"), class: "campus-school-card__badge--unverified" };
+  }
+  if (isVerified.value) {
+    return { text: t("campusHub.certified"), class: "campus-school-card__badge--verified" };
+  }
+  if (isPending.value) {
+    return { text: t("campusHub.statusPending"), class: "campus-school-card__badge--pending" };
+  }
+  return { text: t("campusHub.unverified"), class: "campus-school-card__badge--unverified" };
+});
+
 /** 当前选中的 Tab：joined = 我加入的，recommend = 推荐圈子
  * 2026-08-27 校园圈修复：默认落到「推荐圈子」，避免"我加入的"仅有 1 校导致页面大片空白 */
 const activeTab = ref<"joined" | "recommend">("recommend");
@@ -245,17 +263,14 @@ function goBack() {
           <text class="campus-school-card__name">{{ school.name }}</text>
         </view>
         <view class="campus-school-card__meta-row">
+          <!-- MP-R1-CAMPUS-HUB-001：badge 三态（已认证/认证中/未认证）——原实现未认证用户
+               在「我加入的」Tab 谎报「认证中」且无配色类，现按状态映射文案与修饰类，
+               对齐推荐 Tab 的「未认证」胶囊样式 -->
           <view
             class="campus-school-card__badge"
-            :class="{
-              'campus-school-card__badge--verified': activeTab === 'joined' && isVerified,
-              'campus-school-card__badge--pending': activeTab === 'joined' && isPending && !isVerified,
-              'campus-school-card__badge--unverified': activeTab === 'recommend',
-            }"
+            :class="joinedBadge.class"
           >
-            <text class="campus-school-card__badge-text">
-              {{ activeTab === 'joined' ? (isVerified ? t('campusHub.certified') : t('campusHub.statusPending')) : t('campusHub.unverified') }}
-            </text>
+            <text class="campus-school-card__badge-text">{{ joinedBadge.text }}</text>
           </view>
           <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
         </view>
@@ -276,10 +291,11 @@ function goBack() {
       </view>
     </view>
 
-    <!-- 2026-08-27：底部"查看更多校园圈"（对齐理想图 校园圈.png 底部提示） -->
+    <!-- 2026-08-27：底部"查看更多校园圈"（对齐理想图 校园圈.png 底部提示）
+         MP-R1-CAMPUS-HUB-003：原「查看更多校园圈 ⌄」是无可绑动作的死元素（箭头暗示可展开但点击无响应），
+         按审计建议移除箭头改为静态说明文案 -->
     <view class="campus-hub__more">
-      <text class="campus-hub__more-text">查看更多校园圈</text>
-      <text class="campus-hub__more-arrow">&#x2304;</text>
+      <text class="campus-hub__more-text">更多校园圈持续接入中</text>
     </view>
     <view class="campus-hub__footer" />
   </view>

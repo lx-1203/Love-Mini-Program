@@ -926,6 +926,34 @@ let submissions: SubmissionRecord[] = [
   },
 ];
 
+// MP-R1-HISTORY-001：为预置反馈记录（id=1/2）补建详情 Map 条目——原实现仅在
+// createSubmission 时写入 submissionDetails，预置记录点「查看详情」必 404 失败。
+// 文案复用既有 mock 键（不新增 i18n 条目），content/latestReplyContent 与列表摘要一致。
+submissionDetails.set(1, {
+  id: 1,
+  type: "FEEDBACK",
+  title: t("mockData.submissions.title1"),
+  content: t("mockData.submissions.reply1"),
+  attachments: [],
+  status: "processing",
+  latestReplySummary: t("mockData.submissions.reply1"),
+  latestReplyContent: t("mockData.submissions.reply1"),
+  submittedAt: "2026-05-18T09:18:00.000+08:00",
+  convertedActivityId: null,
+});
+submissionDetails.set(2, {
+  id: 2,
+  type: "SUGGESTION",
+  title: t("mockData.submissions.title2"),
+  content: t("mockData.submissions.reply2"),
+  attachments: [],
+  status: "reviewed",
+  latestReplySummary: t("mockData.submissions.reply2"),
+  latestReplyContent: t("mockData.submissions.reply2"),
+  submittedAt: "2026-05-17T18:42:00.000+08:00",
+  convertedActivityId: null,
+});
+
 /** 签到 mock 状态（默认为未签到） */
 let checkInStatus: CheckInStatus = {
   checkedInToday: false,
@@ -1000,6 +1028,10 @@ function buildCommunityPostsFromVillage() {
     .slice(0, 4)
     .map((p) => ({
       id: Number(p.id.replace(/^post-/, "")) || 0,
+      // MP-R1-HOME-015（2026-09-20）：补 authorId 映射（源数据 author.userId="user-3016"
+      // → 数字 3016，与 real 契约 authorId:number 对齐）。缺失/提取失败置 null，
+      // 组件侧对 null 降级为不可点击（不渲染可点击态、不跳转）。
+      authorId: Number(/(\d+)/.exec(p.author.userId)?.[1] ?? "") || null,
       authorName: p.author.name,
       authorAvatar: p.author.avatar || IMAGE_PATHS.DEFAULT_AVATAR,
       circleName: postCategoryNames[p.categoryId] ?? "兴趣圈",

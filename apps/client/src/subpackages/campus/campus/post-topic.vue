@@ -158,7 +158,10 @@ function removeImage(index: number) {
  * mock 模式（B5 兼容）将标签以 #话题 格式追加到内容末尾（mock 无 tags 语义）。
  */
 async function submitTopic() {
-  if (!canSubmit.value) return;
+  // MP-R1-CAMPUSPOST-001：空表单发布不再静默——原 if (!canSubmit) return 在
+  // 校验 toast 之前拦截，空表单点击发布毫无反馈。改为提交中守卫 + 逐项校验提示
+  //（对齐「请输入标题」toast 模式），仅超字数沿用既有静默禁用（按钮置灰可见）。
+  if (isSubmitting.value) return;
 
   if (!title.value.trim()) {
     uni.showToast({ title: t("campus.postTopic.errTitle"), icon: "none" });
@@ -167,6 +170,10 @@ async function submitTopic() {
 
   if (!content.value.trim()) {
     uni.showToast({ title: t("campus.postTopic.errContent"), icon: "none" });
+    return;
+  }
+
+  if (isOverLimit.value) {
     return;
   }
 

@@ -4,6 +4,7 @@
  * 支持标题输入、内容输入、可选图片上传
  */
 import { ref, computed, onUnmounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore } from "../../../stores/circle";
 import { useVillageStore } from "../../../stores/village";
@@ -390,21 +391,24 @@ function goBack() {
   uni.navigateBack();
 }
 
-// 获取页面参数
-const pages = getCurrentPages();
-const currentPage = pages[pages.length - 1];
-const options = (currentPage as { options?: Record<string, string> })?.options ?? {};
-circleId.value = options.circleId || "";
-// 2026-08-08 频道化重构：帖子模式来源频道 + 预选活动
-sourceChannel.value = options.channel || "";
-if (options.activityId) {
-  const actId = options.activityId;
-  // 预选活动：从活动列表查（懒加载后回填）
-  void activityStore.fetchActivities().then(() => {
-    const found = activityStore.activities.find((a) => String(a.id) === actId);
-    if (found) selectedActivity.value = found;
-  });
-}
+// MP-R1-POSTTOPIC-001（2026-09-20）：改用 onLoad(query) 取参（参照 topic-detail.vue 同款修复）。
+// 原实现 setup 顶层 getCurrentPages() 读参，页面栈未就绪/参数落在错误栈帧时
+// circleId 读不到 → 圈内「写话题」被当作无 circleId 发布，错发到村口 posts 流。
+// onLoad 的 query 由路由统一注入，mp-weixin 可靠。
+onLoad((query) => {
+  const q = (query ?? {}) as Record<string, string>;
+  circleId.value = q.circleId || "";
+  // 2026-08-08 频道化重构：帖子模式来源频道 + 预选活动
+  sourceChannel.value = q.channel || "";
+  if (q.activityId) {
+    const actId = q.activityId;
+    // 预选活动：从活动列表查（懒加载后回填）
+    void activityStore.fetchActivities().then(() => {
+      const found = activityStore.activities.find((a) => String(a.id) === actId);
+      if (found) selectedActivity.value = found;
+    });
+  }
+});
 </script>
 
 <template>

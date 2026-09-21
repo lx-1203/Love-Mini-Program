@@ -95,11 +95,14 @@ function updateCountdowns() {
     const expiresAt = new Date(s.expiresAt).getTime();
     const diff = Number.isNaN(expiresAt) ? 0 : expiresAt - now;
     if (diff <= 0) {
+      // MP-R1-HEARTSIGNALS-001：过期仅显示"已过期"——原模板把"后过期"后缀
+      // 无条件拼在倒计时后，过期时渲染成「已过期后过期」
       map[s.id] = t("heartSignals.expiredLabel");
     } else {
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      map[s.id] = t("heartSignals.countdownHM", { hours, minutes });
+      // "后过期"后缀只在未过期时拼接（由本处统一组装，模板不再二次拼接）
+      map[s.id] = t("heartSignals.countdownHM", { hours, minutes }) + t("heartSignals.cardExpireSuffix");
     }
   }
   countdownMap.value = map;
@@ -316,7 +319,7 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
             </view>
             <view class="signal-card__user-info">
               <text class="signal-card__name">{{ signal.fromUserName }}</text>
-              <text class="signal-card__time">{{ getCountdown(signal.id) }}{{ t("heartSignals.cardExpireSuffix") }}</text>
+              <text class="signal-card__time">{{ getCountdown(signal.id) }}</text>
             </view>
           </view>
           <view class="signal-card__body">

@@ -1,0 +1,192 @@
+{
+  "page": "subpackages/discover-extra/discover/matching",
+  "pageName": "匹配中（寻觅主链路）",
+  "round": "R1",
+  "generatedAt": "2026-09-20",
+  "method": {
+    "connection": "miniprogram-automator 0.12.1（createRequire 自 D:\\codex-tools\\node-v22.17.0-win-x64\\node_modules 加载）→ automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})；IDE 经 cli.bat auto --project D:\\6\\恋爱小程序 --auto-port 9420 冷启动",
+    "build": "cd apps/client && pnpm build:mp-weixin:mock（Node 22.17.0；PATH 中默认 node 为开发者工具内置 v16.13.1 会导致 crypto.getRandomValues 构建失败）→ verify-build-features PASS 全部 4 项功能特征命中",
+    "instrumentation": "appService 内 wrap wx.showToast/navigateBack/switchTab/redirectTo 打 [PROBE] 标记 + mp.evaluate 轮询页面栈/match store；match 状态注入与 swipeRight monkey-patch 仅用于模拟后端返回（mock 概率默认 0，见 apps/client/src/stores/discover/constants.ts:125）",
+    "scripts": [
+      "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.mjs",
+      "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-part2.mjs",
+      "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-part3.mjs",
+      "tmp/interact-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-part4.mjs"
+    ],
+    "rawEvidence": [
+      "tmp/matching-interact-raw.json",
+      "tmp/matching-interact-raw-part2.json",
+      "tmp/matching-interact-raw-part3.json",
+      "tmp/matching-interact-raw-part4.json"
+    ]
+  },
+  "interactiveElements": [
+    "左上返回箭头 .matching-page__back（matching.vue:194，@tap=goBack：栈>1 navigateBack，否则 switchTab DISCOVER，matching.vue:42-49）",
+    "「跳过」按钮 .match-loading__skip（components/match/MatchLoading.vue:67，emit skip→handleSkip matching.vue:176-182：动画未完=快进 onAnimationFinished；已完=goBack）",
+    "爱心动画 animationend→finished（MatchLoading.vue:29-35，另有 2600ms fallback 计时器）",
+    "onLoad 分支（matching.vue:73-142）：dev-preview=1 停留；preview=1&cardId&action&userId 预览；有 pending 上下文→runMatchCheck；有 URL 参数→直达初始化；否则 200ms goBack 兜底（MP-R3-MATCHING-001 设计内防死页）"
+  ],
+  "coverageNotes": "本页为单屏动画展示页：无输入框、无滚动容器（min-height:100% 单屏）、无下拉刷新（matching.json 未开启 enablePullDownRefresh）、无弹窗/ActionSheet/Tab；Toast 已验证（已喜欢/卡片不存在或已被处理）；已覆盖可点击元素全部 2 个、快速连点、重复进出、打开立即返回、无上下文/直达/预览/QA 四种 onLoad 分支与 matched/idle/failed 三种出口。",
+  "checks": [
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP01 真实链路进入（beginCheck+navigateTo）→ 匹配动画自然完成 → idle 出口",
+      "expected": "进入后渲染匹配动画页（双头像+匹配中徽标+跳过钮+四行匹配度进度卡+缘分匹配中89%）；mock 概率 0→status=idle；动画完成后 toast「已喜欢」并约 400ms 后自动 navigateBack 回寻觅页；卡组消费该卡（count-1，matchStore 复位）",
+      "actual": "OP01D-live1 截图确认动画页完整渲染（含「跳过」钮）；[PROBE]toast {title:已喜欢,icon:success} → [PROBE]navigateBack {delta:1} 标记按序触发（part3 PROBE-B 同证）；afterPage=pages/discover/index、status=idle、pending=null、卡组 count 递减。但返回寻觅页后出现非预期红色错误横幅「卡片不存在或已被处理」+重试（OP01D-live3/live4），并伴随 console error（见 issue 001/002）",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-after.png",
+      "extraShots": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live1.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live2.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live3.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live4.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live5.png"
+      ],
+      "issueId": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP02 「跳过」在动画未播完时点击（like 链路，快进动画）",
+      "expected": "点「跳过」→onAnimationFinished 立即标记动画完成→runMatchCheck 完成后 watch(idle) 触发→toast「已喜欢」→400ms 后 navigateBack 回寻觅页",
+      "actual": "两次尝试（part2 OP02B：navigateTo 后 250ms；part4 OP02D：进场捕获后立即 tap，tap 返回 ok:true）均未引起任何反应：无 toast 标记、无退出、afterPage 仍为 matching（status 已 idle、pending 未复位）。同一 handler 在 reLaunch 进入的页面实例上验证可用（OP04/OP07 skip tap ok 且生效）。判定为 automator element.tap 对 navigateTo 新开页面实例的组件内元素不生效（工具层限制），非产品行为证据",
+      "verdict": "无法验证",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP02D-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP02D-live1.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP03 左上返回箭头（dev-preview=1 reLaunch 进入，单页栈）",
+      "expected": "点击左上 ‹ → goBack():getCurrentPages().length=1 → uni.switchTab 到 pages/discover/index",
+      "actual": "backRes {ok:true}；约 2.5s 后 afterPage=pages/discover/index，0 条 console issue",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP03-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP03-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP04 「跳过」在动画已播完后点击（dev-preview=1，保留返回语义）",
+      "expected": "动画已播完（2.6s fallback 后）再点「跳过」= goBack()：单页栈 → switchTab 寻觅 tab",
+      "actual": "等 3.2s 后 tap skipRes {ok:true}；afterPage=pages/discover/index，0 条 console issue",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP04-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP04-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP05 无上下文直达（reLaunch 无参数）——回归 MP-R3-MATCHING-001",
+      "expected": "无 pending 且无 URL 参数 → onLoad 兜底分支：200ms 后 goBack() → switchTab 寻觅 tab，不留死页（设计内防死页行为，非 Bug，勿改坏）",
+      "actual": "afterPage=pages/discover/index、status=idle、pending=null；页面自动返回，无死页、无 console issue。设计内兜底行为保持完好",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP05-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP06 dev-preview=1 进入（QA 预览停留）",
+      "expected": "previewMode=true → 动画播完后 watch 因 previewMode 直接 return：不发生跳转，仍停留在匹配中页",
+      "actual": "等 4.5s（超过动画 2.6s+余量）后 afterPage 仍为 subpackages/discover-extra/discover/matching?dev-preview=1，matchStore 停在 checking（未被消费），0 条 console issue",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP06-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP06-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP07 快速连续点击「跳过」×5（间隔约 120ms）",
+      "expected": "第 1 次点击快进动画（previewMode 不跳转），第 2 次起每次 goBack→switchTab 寻觅 tab；重复 switchTab 幂等无报错，最终稳定在寻觅 tab，无 JS error",
+      "actual": "第 1 次 tap ok:true 生效（页面随即 goBack 离开），第 2~5 次元素已随页面销毁查不到（element not found，属预期）；afterPage=pages/discover/index，0 条 console issue，无重复导航报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP07-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP08 preview=1 预览模式重复进出 ×3（navigateTo→停留→navigateBack）",
+      "expected": "每轮 navigateTo 进入显示匹配动画（preview 不调匹配接口、动画完停留），navigateBack 正常退出回寻觅页；3 轮无死页无报错",
+      "actual": "3 轮全部成功：每轮 inPage=subpackages/discover-extra/discover/matching?preview=1&cardId=4001&…，outPage=pages/discover/index；无 console issue，无死页",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP08-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP08-after.png",
+      "extraShots": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP08-round1-in.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP08-round2-in.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP08-round3-in.png"
+      ],
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP09 matched 出口（monkey-patch swipeRight 使 runMatchCheck 自然返回 matched，模拟后端互选）→ 点跳过快进",
+      "expected": "status=matched 且动画完成 → consumeCardFromDeck + redirectTo match-success?userId=…；当前页变为 subpackages/discover-extra/discover/match-success 并完整渲染",
+      "actual": "[PROBE]redirectTo {url:/subpackages/discover-extra/discover/match-success?userId=4003} 触发；afterPage=subpackages/discover-extra/discover/match-success?userId=4003；after 截图确认匹配成功页完整渲染（你和阿辰互相喜欢上了+双头像+匹配度+立即聊天/继续寻觅/分享喜悦）。注：mock 概率默认 0，matched 由运行时 patch 模拟（swipe.ts:262 Math.random()<MOCK_MATCH_PROBABILITY，默认 0）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP09C-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP09C-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP10 failed 出口：URL 直达 cardId 不存在（reLaunch ?cardId=no-such-card-x&action=like&userId=ghost-user-1）",
+      "expected": "直达分支 beginCheck→runMatchCheck→swipeRight 抛「卡片不存在」→status=failed；动画播完后 toast 错误文案（icon none），600ms 后 goBack→switchTab 寻觅 tab；卡组数量不变",
+      "actual": "[PROBE]toast {title:卡片不存在或已被处理,icon:none} → [PROBE]switchTab {url:/pages/discover/index} 按序触发；afterPage=pages/discover/index；status 经 failed→onUnload reset 为 idle；卡组 count 前后均为 2（未消费）。toast 视觉帧未抓到（页面切换快，live2 为转场白屏），以 console 标记为证",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP10D-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP10D-after.png",
+      "extraShots": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP10D-live1.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP10D-live3.png"
+      ],
+      "issueId": ""
+    },
+    {
+      "page": "subpackages/discover-extra/discover/matching",
+      "operation": "OP11 页面打开后立即点左上返回（<1s，栈内 navigateBack）",
+      "expected": "页面栈 [discover, matching] → goBack 走 navigateBack(delta=1) → 回寻觅页，无报错",
+      "actual": "navigateTo 后约 400ms tap .matching-page__back 返回 {ok:true}；afterPage=pages/discover/index，0 条 console issue",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP11-before.png",
+      "after": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP11-after.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/matching",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-live3.png",
+      "category": "Interaction",
+      "severity": "P2 明显体验",
+      "description": "每次喜欢/超赞成功后自动返回寻觅页时，页面顶部出现误报红色错误横幅「卡片不存在或已被处理」+「重试」按钮，误导用户以为操作失败",
+      "evidence": "前后截图：OP01D-live1（匹配动画页正常）→ OP01D-live3/live4（返回寻觅页后红色横幅）；OP01D-live4 同样复现。代码链路：matching.vue:145-153 consumeCardFromDeck() 对已被 runMatchCheck（stores/discover/actions/swipe.ts:355-368 主 swipe 已移除该卡）消费过的 cardId 再次调用 swipeRight；swipe.ts:246-249 卡片不存在检查抛错 → swipe.ts:415-421 catch 设置 errorMessage 并 console.error('swipeRight error:') 后 rethrow → 寻觅页读取 errorMessage 渲染错误横幅；文案来源 i18n zh-CN.ts:4003 cardNotFound。consumeCardFromDeck 的 try/catch（matching.vue:150-152）只能捕获同步异常，swipeRight 为异步（防抖队列 swipe.ts:421 rethrow 在队列 flush 内），注释声称「卡组不存在该卡时忽略」实际未生效",
+      "ideal": "喜欢成功返回寻觅页后不应出现任何错误提示；卡组已消费该卡属预期结果，consumeCardFromDeck 应幂等处理（卡片已移除即静默返回）",
+      "fix": "consumeCardFromDeck 内先检查 useDiscoverStore().cards 中是否仍存在该 id，不存在则直接 return；或改为 await swipeRight 并以 try/catch 捕获异步拒绝（当前 catch 捕获不到）；或在 swipeRight 队列 flush 层对「卡片不存在」按幂等成功 settle",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-002",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/matching",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-OP01D-after.png",
+      "category": "Function",
+      "severity": "P3 视觉细节",
+      "description": "与 issue 001 同根因：consumeCardFromDeck 的重复 swipeRight 异步拒绝未被捕获，每次喜欢必现 console.error('swipeRight error:') + [Global Error][uni.onUnhandledRejection] + [captureException]，造成未处理拒绝与监控上报噪音",
+      "evidence": "part3/part4 脚本 console 取证（tmp/matching-interact-raw-part4.json OP01D.consoleIssues）：error: swipeRight error: [object Object] / error: [Global Error][uni.onUnhandledRejection] / error: [captureException] 三连，每次 like 链路复现（part1 OP01、part2 OP01B 同证）；代码：matching.vue:149 void useDiscoverStore().swipeRight(id) 未 await 且 try/catch 无法捕获异步 rejection，swipe.ts:421 console.error 后 throw error",
+      "ideal": "用户主链路（喜欢）不应产生未处理 Promise 拒绝，不应向监控平台上报预期内的「卡片已消费」事件",
+      "fix": "同 issue 001 的修复点：consumeCardFromDeck 幂等化并 await+try/catch 捕获异步结果；修复后两 issue 一并消除",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "like 链路下动画未播完时点击「跳过」的快进行为（OP02B/OP02D）：automator element.tap 对 navigateTo 新开页面实例的组件内元素返回成功但不触发 handler（对照：同一 handler 在 reLaunch 实例上 OP04/OP07 均生效）；需真机或 UI 自动化方案复核",
+    "真实后端互选（swipeRight 返回 matched=true）自然触发 matched 出口：mock 环境 MOCK_MATCH_PROBABILITY 默认 0（stores/discover/constants.ts:125，swipe.ts:262），本次以运行时 monkey-patch 模拟并验证了 UI 链路（OP09C），真实接口返回未覆盖",
+    "游客/身份 B 双身份复测：automator SDK 会话绑定当前 DevTools 登录态（session.isLoggedIn=true），本批未做身份切换"
+  ],
+  "notes": "回归点核对：MP-R3-MATCHING-001（无上下文 200ms goBack 兜底为设计内防死页）经 OP05 复测保持完好，未当作 Bug、未被改坏。已知环境坑（本次实测补充）：① PATH 默认 node 为开发者工具内置 v16 会致 uni build 报 crypto.getRandomValues 失败，需前置 Node 22；② IDE 反复重启后模拟器可能挂起在欢迎页或报「模拟器启动失败」，需 quit IDE 并清掉当日 WeChatAppEx 僵尸 runtime 后冷启动（cli auto → cli open 触发编译）；③ mp.navigateTo 的 Promise 在整趟导航（含自动返回）结束后才 resolve，页面存活期取证须「不 await 导航 + 轮询 currentPage 捕捉进场」；④ 长会话下 9420 自动化通道会假死超时，需重启 IDE 恢复。测试副作用说明：多轮喜欢后 mock 卡组接近耗尽（count 低至 2），OP01D 返回后卡片堆叠区为空属卡组耗尽的测试条件，非本页缺陷，寻觅页空态表现归寻觅页验证员。"
+}

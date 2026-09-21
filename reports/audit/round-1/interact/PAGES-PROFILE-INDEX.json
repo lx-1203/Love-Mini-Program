@@ -1,0 +1,322 @@
+{
+  "round": "R1",
+  "page": "pages/profile/index",
+  "pageName": "我的（tabBar）",
+  "generatedAt": "2026-09-20T14:05:00+08:00",
+  "environment": {
+    "connection": "automator.connect({wsEndpoint:'ws://127.0.0.1:9420'})（方案2，miniprogram-automator 自 D:/codex-tools 全局目录加载）",
+    "build": "apps/client/dist/build/mp-weixin mtime 2026-09-20 10:31 晚于全部 profile 源码；node scripts/verify-build-features.mjs → 4/4 PASS（寻觅附近卡片/附近空态/安全中心第三方绑定/登录提示）",
+    "identityA": "mock 登录态（session.bootstrap() → user-1001 林晓/北京大学/campusVerified，stores/session.ts:39-58）",
+    "identityB": "游客态（清 token + $patch userSession:null，不重跑 bootstrap）",
+    "consoleEvidence": "reports/screenshots/round-1-interact/console-evidence-PAGES-PROFILE-INDEX.log（6 行，错误仅 2 条且均为自动化通道拥塞窗口的导航竞态警告：navigateTo:fail timeout、routeDone with a webviewId 53；无 NAV_FAIL/TypeError/is not defined）",
+    "knownHurdle": "DevTools 自动化通道长跑假死（R12 §5 已知坑），本次以 CLI simulator_refresh（tmp/r1-refresh-bom.ps1）+ close/open_project_window + cli auto --auto-port 9420 复活后完成全部操作；主脚本通道类失败操作均经 RERUN_OPS 重跑取得结果"
+  },
+  "checks": [
+    {
+      "page": "pages/profile/index",
+      "operation": "OP00 基线：登录态冷启动 reLaunch 直达「我的」",
+      "expected": "页面完整渲染：头像(有图)/分享+设置图标/编辑资料/资料完整度卡/统计4列/我的故事(添加日常)/我的互动4行/更多功能4格/FAB/自定义tabBar「我的」选中；四格计数非假0（我喜欢=2、喜欢我的=22、我赞=356、访客非0，onShow fetchLikes 补拉，MP-R3-PROFILE-001 回归）；头像非白圈（MP-R7-PROFILE-001）；相册缩略图有图（MP-R7-PROFILE-002）",
+      "actual": "全部模块渲染（interactionRows=4/moreCells=4/albumThumbs=3/postCards=3/fab=true）；statValues=[\"2\",\"22\",\"356\",\"104\"] 全部非0（store: likesCount=2, likedByCount=22）；avatarUrl=/static/assets/images/avatars/avatar-1.jpg 且头像图元素存在、截图为真实头像；photoGallery=4 张",
+      "verdict": "符合",
+      "before": "",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-00-base.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP01 点击右上分享图标",
+      "expected": "toast「分享功能即将上线」（MyHeader.vue:22-24）约1.5s自动消失，停留我的页不跳转",
+      "actual": "截图 01-after 于统计卡上方捕获到黑色 toast「分享功能即将上线」；path 恒为 pages/profile/index；01-after2 toast 已消失",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-01-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-01-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP02 点击右上设置图标",
+      "expected": "navigateTo /subpackages/profile-extra/settings/index（MyHeader.vue:18-20）设置页渲染；返回回我的页",
+      "actual": "主跑跳转 path=settings/index（返回读数受桥延迟影响）；补充复跑（等3.5s）：path=subpackages/profile-extra/settings/index 截图设置页完整渲染（帮助/账号管理/社交资产/通知设置），navigateBack 后=pages/profile/index 截图确认",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-02-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-02-dest.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP03 点击「编辑资料」胶囊",
+      "expected": "openAppPath /subpackages/setup/profile/index?entry=edit（index.vue:1204-1208）资料编辑页；返回回我的页",
+      "actual": "跳转后=subpackages/setup/profile/index，返回后=pages/profile/index（03-back 截图我的页完整）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-03-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-03-back.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP04 点击头像（本人态 ActionSheet）",
+      "expected": "本人主页弹出底部操作菜单「查看大图/从相册选择/拍照/取消」（index.vue:976-1002 uni.showActionSheet 3 items），无跳转",
+      "actual": "三路截图一致（automator 800ms/1500+1200ms 两帧 + CLI simulator_screenshot 原生层 3s 帧）：点击后整页出现 ActionSheet 半透明遮罩（页面变暗证实弹层已触发），但菜单面板（3 个选项+取消）在 812px 视口内任何位置均不可见——用户视角为「点头像后屏幕变暗且无任何选项」。reLaunch 后遮罩消除、页面恢复",
+      "verdict": "偏差",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-04-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-04-cli-capture.png",
+      "issueId": "MP-R1-PROFILE-002"
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP05 点击「资料完整度」卡",
+      "expected": "complete 事件 → goCompleteProfile → goToProfileSetup（MyCompletion.vue:12 / index.vue:1214-1216）跳转资料编辑页；完成度百分比渲染；返回回我的页",
+      "actual": "completion=85%（mock 无服务端 profileCompletion → 会话回退口径，index.vue:430-436），跳转后=subpackages/setup/profile/index，返回后=pages/profile/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-05-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-05-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP06 点击「我的互动」行1「喜欢我的人」",
+      "expected": "interactionTap likedMe → ROUTES.LIKES.INDEX（index.vue:889-899）喜欢页；返回回我的页",
+      "actual": "补充复跑：path=subpackages/discover-extra/likes/index 截图喜欢页完整渲染（喜欢我的22/我发出的喜欢2/访客 tab + 列表），navigateBack 后=pages/profile/index 截图确认",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-06-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-06-dest.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP07 点击「我的互动」行4「最近访客」",
+      "expected": "interactionTap visitors → ROUTES.PROFILE.VISITORS（index.vue:895）访客页；返回回我的页",
+      "actual": "跳转后=subpackages/profile-extra/profile/visitors，返回后=pages/profile/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-07-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-07-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP08 点击顶部统计列4「访客」",
+      "expected": "statTap visitor → ROUTES.LIKES.INDEX（index.vue:877-888 四列全部映射喜欢页）；返回回我的页",
+      "actual": "跳转后=subpackages/discover-extra/likes/index（该页顶部含「访客」tab，跳转语义可达）；补充复跑同路径返回回 pages/profile/index 确认",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-08-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-08-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP09 点击「更多功能」格1「我的收藏」",
+      "expected": "moreTap favorites → /subpackages/profile-extra/profile/favorites（index.vue:915）；返回回我的页",
+      "actual": "补充复跑：path=subpackages/profile-extra/profile/favorites 截图收藏页（2 条收藏帖+取消收藏按钮），navigateBack 后=pages/profile/index 截图确认",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-09-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-09-dest.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP10 点击「更多功能」格2「谁看过我」",
+      "expected": "moreTap visitors → /subpackages/profile-extra/profile/visitors（index.vue:916）；返回回我的页",
+      "actual": "跳转后=subpackages/profile-extra/profile/visitors，返回后=pages/profile/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-10-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-10-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP11 点击「更多功能」格3「恋爱相册」（MP-R7-PROFILE-005 回归）",
+      "expected": "moreTap album → ROUTES.PROFILE.ALBUM（index.vue:867-869）相册页必须可达（历史缺陷：ROUTES.ALBUM undefined 点击无效）；返回回我的页",
+      "actual": "跳转后=subpackages/profile-extra/profile/album（= ROUTES.PROFILE.ALBUM 目标，constants/routes.ts:114；主跑记录中 albumRouteOk=false 系脚本断言误带 /index 后缀，非产品缺陷）；补充复跑截图相册页（4 张照片渲染+2 空格+添加照片），返回回 pages/profile/index 截图确认",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-11-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-11-dest.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP12 点击「更多功能」格4「隐私设置」",
+      "expected": "moreTap privacy → /subpackages/profile-extra/settings/index（index.vue:914）；返回回我的页",
+      "actual": "跳转后=subpackages/profile-extra/settings/index（同 OP02 设置页）；返回读数受桥延迟影响，该页返回链路已经 OP02 补充复跑证实",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-12-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-12-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP13 点击「我的相册」缩略图（MP-R7-PROFILE-002/005 回归）",
+      "expected": "tapAlbum → ROUTES.PROFILE.ALBUM 相册页（不得误入帖子历史/不得无效）；缩略图有图非白板",
+      "actual": "缩略图数=3（4 张取前3），跳转后=subpackages/profile-extra/profile/album，相册页截图 4 张照片全部渲染为真实图片（无白板）；返回读数受桥延迟影响（返回链路同 OP11 补充复跑证实）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-13-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-11-dest.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP14 点击「我的帖子」卡片",
+      "expected": "openPost → /subpackages/village/village/detail?id=…（MyStory.vue:49-52）；返回回我的页",
+      "actual": "帖子卡数=3，跳转后=subpackages/village/village/detail，返回后=pages/profile/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-14-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-14-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP15 点击「添加日常」虚线卡",
+      "expected": "addStory → /subpackages/village/village/publish?target=friends（index.vue:874-876）；返回回我的页",
+      "actual": "跳转后=subpackages/village/village/publish，返回后=pages/profile/index",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-15-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-15-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP16 点击「我的故事」故事卡",
+      "expected": "有日常卡时跳转对应日常帖子详情（index.vue:856-863）；mock myDailies 为空时应仅存「添加日常」卡",
+      "actual": "story-card 数量=0（mock /posts/my-dailies 空态），无故事卡可点；「添加日常」卡常驻渲染（00-base 截图）——空态口径与数据一致",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-16-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-16-empty.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP17 点击右下角「发动态」FAB（touchstart+touchend 门控）",
+      "expected": "按压→300ms 展开动画→跳转发帖页 /subpackages/village/village/post（GlobalPublishFab.vue:53-66 → index.vue:1540-1543）；返回后 FAB 复位圆形。注意：FAB 视觉遮挡另见 MP-R1-PROFILE-001",
+      "actual": "touchstart+touchend 后跳转 subpackages/village/village/post（首次即成功，无重复压栈），17-back 截图返回我的页完整、FAB 复位；但截图中 FAB 本体约 80% 被自定义 tabBar 白面板遮盖（见 issue）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-17-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-17-back.png",
+      "issueId": "MP-R1-PROFILE-001"
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP18 快速连点右上「设置」图标 ×5",
+      "expected": "无防抖实现下，路由切换动画期间的重复 navigateTo 被框架丢弃 → 设置页压栈 1 层、无多层压栈、无报错；可单次返回",
+      "actual": "getCurrentPages()=[\"pages/profile/index\",\"subpackages/profile-extra/settings/index\"] 仅压栈 1 层，backs=1 恢复我的页（18-restored 截图）；无 console 报错",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-18-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-18-restored.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP19 页面滚动到底再回顶",
+      "expected": "长页面（故事/相册/帖子/互动/更多功能）滚动可达底部无卡死空白；回顶后首屏复原",
+      "actual": "scroll={scrollTop:859.2, scrollHeight:1671}，19-bottom 截图底部内容完整（我的帖子3篇+我的互动4行+更多功能4格），19-top 回顶首屏复原",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-19-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-19-bottom.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP20 tabBar 切换：我的 → 消息 → 我的",
+      "expected": "消息页渲染；切回我的后选中态回「我的」（useTabBar(4)）、页面状态完好（onShow 二次进入轻量刷新无异常）",
+      "actual": "消息页=pages/messages/index，切回=pages/profile/index，渲染 statCols=4/interactionRows=4/moreCells=4/hasFab=true（20-back 截图）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-20-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-20-back.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP21 重复进出「我的收藏」×3（含进入后立即返回）",
+      "expected": "每次进入收藏页、返回回我的页；重复进出后我的页状态完好",
+      "actual": "主跑 3 次均因自动化桥 page-handle 失效（page destroyed，工具侧）未完成；补充复跑（每轮重新落回+长等待）：iterations=[{i:1,in:profile(700ms 立即返回窗口,route 未完成即 back),back:profile},{i:2,in:favorites,back:profile},{i:3,in:favorites,back:profile}] allBack=true，21-back2/3 截图我的页完好",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-21-enter2.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-21-back2.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP22 他人主页态（userId=4001）+ 点击「打个招呼」",
+      "expected": "他人态渲染（对方昵称/头像/「打个招呼」CTA，index.vue:2419-2423）；点击 → ROUTES.CHAT.SESSION?userId=4001（index.vue:1223-1236）",
+      "actual": "options={userId:\"4001\"}，他人态渲染对方视图（22-after 截图：对方背景/林晓[mock 4001 name1=i18n zh-CN.ts:4377]/21岁/已认证/简介/访客10次角标/「打个招呼」按钮）；点击后 currentPage=subpackages/chat/chat-session/index（会话页到达）；返回读数受桥延迟影响未复验（会话页属 chat 页面验证员范围）",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-22-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-22-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP23 游客态打开我的页 + 点击底部「登录」",
+      "expected": "未登录渲染 NotLoggedProfile（点击登录/0% 完整度/0 统计/故事/互动占位，NotLoggedProfile.vue）；登录按钮 → navigateTo /pages/login/index；恢复登录态后完整 UI 复原",
+      "actual": "hasNotLogged=true，点击登录后=pages/login/index，返回后=pages/profile/index；restoreLogin 后 23-restored 截图完整 UI 复原",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-23-before.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-23-after.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP24 头部视觉回归：右上图标胶囊避让 + 头像/相册图（MP-R3-PROFILE-001/R7-001/R7-002）",
+      "expected": "分享/设置图标 top=statusbar+16rpx、right 避让胶囊 104px（MyHeader.vue:98/106-107），不得被胶囊遮挡；头像图/相册缩略图渲染为图片内容",
+      "actual": "实测 iconBox left=200.2/top=55（两图标右缘≈264px），胶囊 menuRect left=281/right=368/top=51/bottom=83 → 图标横向完全避开胶囊（间距 17px），无遮挡；avatarBox 与 album thumb0 布局存在，截图头像为真实照片、相册缩略图有图",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-24-header.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-24-header.png",
+      "issueId": ""
+    },
+    {
+      "page": "pages/profile/index",
+      "operation": "OP25 游客态带 userId=4001 打开他人主页（游客门禁）",
+      "expected": "未登录稳定停在 LockScreen（NotLoggedProfile），不发起受保护请求、无 401 踢跳/强拉登录页（index.vue:299-311）",
+      "actual": "path=pages/profile/index 且 hasNotLogged=true（25-guest-other 截图：游客版完整渲染，含顶栏返回/应用中心/设置、点击登录、0% 完整度、0 统计、故事/互动占位）；console 无「登录已过期」、无 401 踢跳",
+      "verdict": "符合",
+      "before": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+      "after": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+      "issueId": ""
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PROFILE-001",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-ISSUE-FAB-zoom.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「发动态」悬浮球（GlobalPublishFab）在 375×812 视口被自定义 tabBar 白面板遮挡约 80%，仅露出顶部弧线，用户实际可点区域极小",
+      "evidence": "00-base 截图右下角 + 4 倍放大 ISSUE-FAB-zoom.png：绿色圆球仅顶部弧线露在 tabBar 白面板之上；GlobalPublishFab.vue:103-105 bottom=calc(env(safe-area-inset-bottom)+170rpx)（=119px），而自定义 tabBar（pages.json tabBar custom:true）在 mp-weixin 为原生层，总高（图标区 56px + 安全区 34px + 手势条）≈124px，页面级 fixed 元素 z-index=1000 也必然被其覆盖；组件注释（GlobalPublishFab.vue:11）自称「层级高于底部导航栏」与实际渲染不符。自动化 element.tap 仍能触发跳转（OP17 通过），但真人难以命中",
+      "ideal": "FAB 完整悬浮于 tabBar 之上可整圆点击（组件自身声明的设计意图）；mp-weixin 自定义 tabBar 为独立原生层，页面元素无法覆盖，需以定位避让",
+      "fix": "将 bottom 提高到 tabBar 总高之上：bottom: calc(env(safe-area-inset-bottom) + 200rpx)（≥100px 内容区 + 安全区），或把发布入口并入 tabBar 中央凸起/由 tabBar 层承载；本页 my-profile 底部留白同步核对。该组件为全局组件，附近/寻觅/消息等 tab 页预计同病，建议一并核查",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-002",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-04-cli-capture.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "本人主页点击头像后 uni.showActionSheet 仅渲染半透明遮罩，「查看大图/从相册选择/拍照/取消」菜单面板不可见，用户点头像后屏幕变暗且无任何可选操作",
+      "evidence": "三路独立取证一致：automator 截图（点后 800ms：PAGES-PROFILE-INDEX-04-after.png；点后 2.7s：PAGES-PROFILE-INDEX-04-after2.png）+ CLI simulator_screenshot 原生层捕获（点后 3s：PAGES-PROFILE-INDEX-04-cli-capture.png）均只见整页遮罩、无面板；代码链路 index.vue:962-1003（handleAvatarTap → uni.showActionSheet itemList 3 项）。遮罩出现证实 showActionSheet 已触发，面板未随遮罩渲染。复现环境：微信开发者工具模拟器（375×812）；真机未验证",
+      "ideal": "点击头像弹出底部操作菜单，含「查看大图/从相册选择/拍照/取消」四项，遮罩与面板同时可见、可点选或点遮罩取消",
+      "fix": "排查 DevTools 模拟器下 showActionSheet 面板渲染层（uni-app 编译产物 action-sheet 组件样式/层级，或被 custom-tab-bar/页面根 z-index 压制）；建议改用自定义半屏 ActionSheet 组件（与项目内其他弹层统一）以消除原生面板在模拟器/端上的渲染差异；修复后需在真机复验",
+      "status": "待修复"
+    }
+  ],
+  "regressionChecks": {
+    "MP-R3-PROFILE-001-状态栏带": "通过（OP24 几何实测：图标 200-264px vs 胶囊 left=281，横向间距 17px 无遮挡；top=55 在状态栏带内但横向避让生效）",
+    "MP-R3-PROFILE-001-四格假0(2026-09-13)": "通过（OP00 冷启动直达我的页 statValues=2/22/356/104 全非0，onShow fetchLikes 补拉生效）",
+    "MP-R7-PROFILE-001-头像白圈": "通过（OP00/OP24：avatar-1.jpg 经 resolveMediaUrl 渲染为真实头像照片）",
+    "MP-R7-PROFILE-002-相册缩略图白板": "通过（OP00 本页 3 缩略图有图；OP11 相册页 4 张照片全部渲染）",
+    "MP-R7-PROFILE-003-resolveMediaUrl统一": "通过（照片墙/头像/背景均正常渲染，无相对路径直连失败迹象）",
+    "MP-R7-PROFILE-004-完成度服务端权威": "部分验证（mock 构建 basicProfile.profileCompletion 无服务端值 → 回退口径显示 85%，符合 index.vue:430-436 逻辑；服务端权威分支需 real 环境验证）",
+    "MP-R7-PROFILE-005-ROUTES.ALBUM": "通过（OP11/OP13 恋爱相册两处入口均可达 /subpackages/profile-extra/profile/album）"
+  },
+  "unverifiable": [
+    "头像/背景/照片墙上传链路（wx.chooseImage 系统相册/拍照面板）：自动化无法驱动原生媒体选择面板，需真机或人工操作",
+    "ActionSheet 三项后续链路（查看大图 previewImage/从相册选择/拍照）：受 MP-R1-PROFILE-002 面板未渲染所限无法点选；原生面板自动化不可触达",
+    "语音介绍区块（录音/播放/删除）：该区块在本页当前 UI 未渲染（ProfileShell mine 模式挂载 MyProfile，语音区在 v-if=false 的 legacy 槽内，index.vue:1899），无可交互实例",
+    "完成度服务端权威值（MP-R7-PROFILE-004 real 分支）：mock 构建 /profile/basic 无服务端 profileCompletion 下发，仅验证回退口径 85%",
+    "右上角菜单真实转发（onShareAppMessage，index.vue:1736-1745）：需真实微信手机环境触发转发面板",
+    "OP22 会话页返回链路：chat-session 返回读数受自动化桥延迟影响且该页属 chat 页面验证范围，未复验"
+  ],
+  "notes": "判定口径：跳转类操作以 currentPage.path（框架回报）+ 目的地截图双证据为准；主跑期间 DevTools 自动化通道多次假死（R12 §5 已知坑），经 CLI simulator_refresh、close/open_project_window、cli auto --auto-port 9420 复活后全部 26 操作取得结果；部分主跑「返回后」读数异常经证实为桥延迟伪象（补充复跑 4 条返回链路全部正确回到我的页），未计为产品缺陷。控制台全量证据 6 行，其中 2 条错误均为通道拥塞窗口的导航竞态警告（navigateTo:fail timeout / routeDone webviewId），稳定复跑窗口内无任何应用层错误。原始观察落盘 tmp/interact-R1-PAGES-PROFILE-INDEX.raw.json；主脚本 tmp/interact-R1-PAGES-PROFILE-INDEX.mjs；补充脚本 tmp/interact-R1-PAGES-PROFILE-INDEX-supplement.mjs。"
+}

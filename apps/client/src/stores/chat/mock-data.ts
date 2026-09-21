@@ -199,8 +199,65 @@ export const mockChatOverview: ChatOverview = {
   ],
 };
 
+/**
+ * Mock 临时匿名会话：消息列表「匿名匹配 · 星河」
+ *
+ * 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-002）：消息页 fixture
+ * （stores/messages/mock-data.ts）定义了 id=session-temp-1 的临时会话（含 3 条消息），
+ * 但本表此前仅含 mock-session-1/2 → chatStore.loadSession("session-temp-1") 得 null，
+ * 会话页消息区被清空且「同意交换/结束会话」静默无效。现按 messages fixture 的
+ * 消息 id/文案双源对齐补齐该会话（推荐人 id 与 messages fixture partnerId 一致）。
+ */
+export const mockTempSessionXinghe: TempChatSession = {
+  id: "session-temp-1",
+  recommendedPersonId: "user-2004",
+  partnerName: "匿名匹配 · 星河",
+  partnerHeadline: "匿名匹配聊天",
+  availabilityHint: t("chat.mockSession.availabilityTonight"),
+  phase: "active",
+  closesAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  closedReason: null,
+  messages: [
+    {
+      id: "msg-6",
+      sender: "peer",
+      kind: "text",
+      body: "嗨，我是通过匹配进来的",
+      sentAt: new Date(Date.now() - 3600_000).toISOString(),
+      durationSeconds: null,
+      recalled: false,
+      deliveryStatus: "sent" as const,
+    },
+    {
+      id: "msg-7",
+      sender: "self",
+      kind: "text",
+      body: "你好！",
+      sentAt: new Date(Date.now() - 1800_000).toISOString(),
+      durationSeconds: null,
+      recalled: false,
+      deliveryStatus: "sent" as const,
+    },
+    {
+      id: "msg-8",
+      sender: "peer",
+      kind: "text",
+      body: "你好奇的天文馆我也去过！",
+      sentAt: new Date(Date.now() - 1080_000).toISOString(),
+      durationSeconds: null,
+      recalled: false,
+      deliveryStatus: "sent" as const,
+    },
+  ],
+  contactExchange: {
+    proposer: null,
+    status: "idle",
+  },
+};
+
 /** Mock 会话映射表，用于根据 sessionId 获取完整会话数据 */
 export const mockSessionMap: Record<string, TempChatSession> = {
   [mockSession1.id]: mockSession1,
   [mockSession2.id]: mockSession2,
+  [mockTempSessionXinghe.id]: mockTempSessionXinghe,
 };

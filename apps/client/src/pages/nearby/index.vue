@@ -22,6 +22,7 @@ import { clientApi } from "../../services/api";
 import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
 import type { DiscoverCard } from "../../stores/discover/types";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
+import { showErrorToast } from "../../utils/error-toast";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { SCHOOLS, type School } from "../../config/schools";
 // 第五轮：校园圈卡片统一浅绿背景 + 名字（coverUrl 上传后显示图片），不再使用渐变底色
@@ -232,6 +233,33 @@ function onPostDetail(postId: string) {
 }
 function onPostAuthor(userId: string) {
   openUserProfile(userId);
+}
+
+/** MP-R1-NEARBY-002（2026-09-20）：帖子点赞/收藏/关注——此前 PostCard 只绑了
+ * open-detail/author/tag/activity 四事件，互动无任何反馈。接入 village store
+ * （与村口页 handleLike/handleFavorite/handleFollow 同口径，store 会同步 nearbyPosts）。 */
+async function onPostLike(postId: string) {
+  try {
+    await villageStore.likePost(postId);
+  } catch (error) {
+    showErrorToast(error, t("village.likeFailed"));
+  }
+}
+
+async function onPostFavorite(postId: string) {
+  try {
+    await villageStore.toggleFavorite(postId);
+  } catch (error) {
+    showErrorToast(error, t("village.favoriteFailed"));
+  }
+}
+
+async function onPostFollow(userId: string) {
+  try {
+    await villageStore.followUser(userId);
+  } catch (error) {
+    showErrorToast(error, t("village.followFailed"));
+  }
 }
 
 /** v3 冻结：认识 TA 入口已并入 PostCard 作者行「关注」芯片（R20 移除独立按钮） */
@@ -472,6 +500,9 @@ function formatMemberCount(count: number): string {
         <view v-for="post in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
           <PostCard
             :post="post"
+            @like="onPostLike"
+            @favorite="onPostFavorite"
+            @follow="onPostFollow"
             @open-detail="onPostDetail"
             @open-author="onPostAuthor"
             @open-tag="onPostTag"

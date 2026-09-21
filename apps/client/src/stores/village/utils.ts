@@ -372,6 +372,11 @@ export function toBackendCategory(categoryId: string): string {
  * 抽取自 village store 的 likePost action，用于缩短原函数。
  * 同步更新列表中的帖子与当前详情页帖子（若命中）。
  *
+ * MP-R1-DETAIL-001（2026-09-20）：
+ * - currentPost 与列表项为同一对象引用时只 toggle 一次（原实现对同一对象
+ *   连续 toggle 两次相互抵消，详情页单击点赞无任何状态变化）；
+ * - 列表未命中但 currentPost 命中时（深链直开详情、列表未加载）仅 toggle currentPost。
+ *
  * @param posts - 帖子列表（in-place 修改）
  * @param currentPost - 当前详情页帖子（可选，命中时同步修改）
  * @param postId - 目标帖子 ID
@@ -384,12 +389,18 @@ export function toggleMockPostLike(
 ): void {
   const post = posts.find((p) => p.id === postId);
   if (!post) {
+    if (currentPost?.id === postId) {
+      currentPost.isLiked = !currentPost.isLiked;
+      currentPost.likes += currentPost.isLiked ? 1 : -1;
+      return;
+    }
     throw new Error(t("storeErrors.village.postNotFound"));
   }
   post.isLiked = !post.isLiked;
   post.likes += post.isLiked ? 1 : -1;
 
-  if (currentPost?.id === postId) {
+  // 同引用守卫：currentPost 即列表项时上面对同一对象已 toggle 过一次
+  if (currentPost?.id === postId && currentPost !== post) {
     currentPost.isLiked = !currentPost.isLiked;
     currentPost.likes += currentPost.isLiked ? 1 : -1;
   }
@@ -430,6 +441,9 @@ export function captureLikeSnapshot(
 /**
  * 乐观应用点赞状态（toggle 行为），返回新的 isLiked 状态。
  *
+ * MP-R1-DETAIL-001：post 与 currentPost 为同一对象引用时只应用一次，
+ * 避免同一对象被连续 toggle 两次相互抵消（与 toggleMockPostLike 同守卫）。
+ *
  * @param post - 帖子列表中命中的帖子（可选）
  * @param currentPost - 当前详情页帖子（可选，命中时一并更新）
  * @returns 应用后的新 isLiked 状态（用于后续 API 校正）
@@ -444,7 +458,7 @@ export function applyOptimisticLike(
     post.isLiked = newIsLiked;
     post.likes = Math.max(0, post.likes + (newIsLiked ? 1 : -1));
   }
-  if (currentPost) {
+  if (currentPost && currentPost !== post) {
     newIsLiked = !currentPost.isLiked;
     currentPost.isLiked = newIsLiked;
     currentPost.likes = Math.max(
@@ -507,6 +521,8 @@ export function rollbackLike(
  * 在 Mock 模式下切换帖子收藏状态（toggle 行为）。
  * 同步更新列表中的帖子与当前详情页帖子（若命中）。
  *
+ * MP-R1-DETAIL-001：同 toggleMockPostLike 的同引用守卫/仅 currentPost 命中兜底。
+ *
  * @param posts - 帖子列表（in-place 修改）
  * @param currentPost - 当前详情页帖子（可选，命中时同步修改）
  * @param postId - 目标帖子 ID
@@ -519,12 +535,18 @@ export function toggleMockPostFavorite(
 ): void {
   const post = posts.find((p) => p.id === postId);
   if (!post) {
+    if (currentPost?.id === postId) {
+      currentPost.isFavorite = !currentPost.isFavorite;
+      currentPost.favorites = Math.max(0, currentPost.favorites + (currentPost.isFavorite ? 1 : -1));
+      return;
+    }
     throw new Error(t("storeErrors.village.postNotFound"));
   }
   post.isFavorite = !post.isFavorite;
   post.favorites = Math.max(0, post.favorites + (post.isFavorite ? 1 : -1));
 
-  if (currentPost?.id === postId) {
+  // 同引用守卫：currentPost 即列表项时上面对同一对象已 toggle 过一次
+  if (currentPost?.id === postId && currentPost !== post) {
     currentPost.isFavorite = !currentPost.isFavorite;
     currentPost.favorites = Math.max(
       0,
@@ -560,6 +582,7 @@ export function captureFavoriteSnapshot(
 
 /**
  * 乐观应用收藏状态（toggle 行为），返回新的 isFavorite 状态。
+ * MP-R1-DETAIL-001：post 与 currentPost 同引用时只应用一次（同 applyOptimisticLike 守卫）。
  */
 export function applyOptimisticFavorite(
   post: PostItem | undefined,
@@ -571,7 +594,7 @@ export function applyOptimisticFavorite(
     post.isFavorite = newIsFavorite;
     post.favorites = Math.max(0, post.favorites + (newIsFavorite ? 1 : -1));
   }
-  if (currentPost) {
+  if (currentPost && currentPost !== post) {
     newIsFavorite = !currentPost.isFavorite;
     currentPost.isFavorite = newIsFavorite;
     currentPost.favorites = Math.max(

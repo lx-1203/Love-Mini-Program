@@ -35,14 +35,15 @@ function initialOf(name?: string | null): string {
 
 /**
  * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
- * 无上一页时（如从 reLaunch/直达进入）回退到村口 tab。
+ * MP-R1-HISTORY-001（2026-09-20）：无上一页时（如从 reLaunch/分享卡直达进入）
+ * 原 switchTab 到村口页会静默失败——村口页不是 tabBar 页，改 reLaunch 兜底。
  */
 function goBack() {
   const pages = getCurrentPages();
   if (pages.length > 1) {
     uni.navigateBack({ delta: 1 });
   } else {
-    uni.switchTab({ url: "/subpackages/village/village/index" });
+    uni.reLaunch({ url: "/subpackages/village/village/index" });
   }
 }
 

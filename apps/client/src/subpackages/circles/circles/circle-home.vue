@@ -182,12 +182,31 @@ const feedItems = ref<FeedItem[]>([
   },
 ]);
 
-/** 朋友头像组（本地 mock —— TODO(后端): 好友关系接口） */
-const friendAvatars = [
-  IMAGE_PATHS.DEFAULT_AVATAR,
-  IMAGE_PATHS.DEFAULT_AVATAR,
-  IMAGE_PATHS.DEFAULT_AVATAR,
+/** 朋友头像组（本地 mock —— TODO(后端): 好友关系接口）。
+ *  MP-R1-CIRCLEHOME-003（2026-09-20）：按圈 id 稳定取不同头像，修复三头像同图。 */
+const FRIEND_AVATAR_POOL = [
+  IMAGE_PATHS.PEOPLE.AVATAR_1,
+  IMAGE_PATHS.PEOPLE.AVATAR_2,
+  IMAGE_PATHS.PEOPLE.AVATAR_3,
 ];
+const friendAvatars = computed<string[]>(() => {
+  const seed = circle.value.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return [
+    FRIEND_AVATAR_POOL[seed % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+    FRIEND_AVATAR_POOL[(seed + 1) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+    FRIEND_AVATAR_POOL[(seed + 2) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+  ];
+});
+
+/** 朋友加入数展示（MP-R1-CIRCLEHOME-003）：真实字段优先；mock 种子圈缺该字段时
+ *  按圈 id 稳定推导 5~12（与列表页 friendJoinCount 同规则），修复「等 0 位朋友已加入」。 */
+const friendJoinedCount = computed<number>(() => {
+  const raw = circle.value.friendJoinedCount;
+  if (raw != null && raw > 0) return raw;
+  if (!useMock()) return 0;
+  const seed = circle.value.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return 5 + (seed % 8);
+});
 
 /**
  * ISO 时间 → 相对时间文案（x 分钟前 / x 小时前 / x 天前 / 日期）。
@@ -206,23 +225,30 @@ function relativeTime(iso: string): string {
   return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** 圈内真实话题 → 动态 feed（2026-09-12：对齐理想图信息结构，替换原纯 mock） */
+/** 圈内真实话题 → 动态 feed（2026-09-12：对齐理想图信息结构，替换原纯 mock）。
+ *  MP-R1-CIRCLEHOME-001（2026-09-20）：改存响应式 ref —— 原 computed 每次重映射生成
+ *  非响应式普通对象，toggleLike 原地修改不触发重渲染（点赞后计数不变、爱心不变色）。 */
 const { currentTopics } = storeToRefs(circleStore);
-const realFeed = computed<FeedItem[]>(() =>
-  currentTopics.value
-    .filter((tp) => !circleId.value || tp.circleId === circleId.value)
-    .map((tp) => ({
-      id: tp.id,
-      nickname: tp.author?.name || "圈友",
-      avatar: resolveMediaUrl(tp.author?.avatar || ""),
-      timeText: relativeTime(tp.createdAt),
-      title: tp.title,
-      content: tp.content,
-      images: (tp.images ?? []).slice(0, 3).map((img) => resolveMediaUrl(img)),
-      likes: 0,
-      comments: tp.replyCount ?? 0,
-      liked: false,
-    }))
+const realFeed = ref<FeedItem[]>([]);
+watch(
+  [currentTopics, circleId],
+  () => {
+    realFeed.value = currentTopics.value
+      .filter((tp) => !circleId.value || tp.circleId === circleId.value)
+      .map((tp) => ({
+        id: tp.id,
+        nickname: tp.author?.name || "圈友",
+        avatar: resolveMediaUrl(tp.author?.avatar || ""),
+        timeText: relativeTime(tp.createdAt),
+        title: tp.title,
+        content: tp.content,
+        images: (tp.images ?? []).slice(0, 3).map((img) => resolveMediaUrl(img)),
+        likes: 0,
+        comments: tp.replyCount ?? 0,
+        liked: false,
+      }));
+  },
+  { immediate: true }
 );
 
 /** 展示列表：真实话题优先，空/失败回退本地演示数据（骨架不空屏）。
@@ -340,11 +366,14 @@ function toggleLike(item: FeedItem): void {
 }
 
 /**
- * 动态卡点击 → 话题详情（2026-09-12：真实话题可进入详情互动；mock 兜底数据无后端 id，不跳转）
+ * 动态卡点击 → 话题详情（2026-09-12：真实话题可进入详情互动）。
+ * MP-R1-CIRCLEHOME-002（2026-09-20）：去掉「纯数字 id」白名单——原白名单把
+ * mock 标准圈话题 id（如 "photo-topic-1"）与数字后端 id 之外的一切都静默拦下，
+ * 卡片点击无响应。现对齐 topics.vue goToDetail：非空 id 直接跳详情
+ * （详情页有完整的「话题不存在」降级态兜底）。
  */
 function openFeedDetail(item: FeedItem): void {
-  // 真实话题 id 为纯数字；mock 兜底数据 id 为 "f1"/"f2" 等，直接忽略
-  if (!/^\d+$/.test(item.id)) return;
+  if (!item.id) return;
   openAppPath(`${ROUTES.CIRCLES.TOPIC_DETAIL}?topicId=${encodeURIComponent(item.id)}`);
 }
 
@@ -390,12 +419,11 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
           <text class="hero-btn-chevron">‹</text>
         </view>
         <view class="hero-actions-right">
-          <view class="hero-btn" hover-class="hero-btn--active">
+          <!-- MP-R1-CIRCLEHOME-004（2026-09-20）：「分享」接通原生分享
+               （button open-type="share" 触发本页 onShareAppMessage），不再是无事件死按钮 -->
+          <button class="hero-btn hero-btn--share" open-type="share" hover-class="hero-btn--active" aria-label="分享圈子">
             <image class="hero-btn-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SHARE" mode="aspectFit" />
-          </view>
-          <view class="hero-btn" hover-class="hero-btn--active">
-            <image class="hero-btn-icon" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" />
-          </view>
+          </button>
         </view>
       </view>
       <!-- 顶部渐隐遮罩（保证白色按钮可读） -->
@@ -427,7 +455,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
               />
             </view>
             <text class="info-friend-text">
-              {{ t("circle.friendsJoined", { count: circle.friendJoinedCount || 0 }) }}
+              {{ t("circle.friendsJoined", { count: friendJoinedCount }) }}
             </text>
           </view>
         </view>
@@ -661,6 +689,19 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .hero-btn-icon {
   width: 36rpx;
   height: 36rpx;
+}
+
+/* MP-R1-CIRCLEHOME-004：分享为原生 button（open-type="share"），复位默认样式以对齐 hero-btn */
+.hero-btn--share {
+  margin: 0;
+  padding: 0;
+  border: none;
+  line-height: 1;
+  font-size: 0;
+}
+
+.hero-btn--share::after {
+  border: none;
 }
 
 /* R3：返回按钮白色 chevron（原灰色 back.svg 在深色封面上对比度不足） */
