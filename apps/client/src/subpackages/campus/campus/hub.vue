@@ -317,8 +317,10 @@ function goBack() {
   margin-bottom: 24rpx;
   /* 状态栏高度 + 右侧避让微信胶囊（--capsule-right/--statusbar 由 useMenuButtonRect 注入）
      R4：原 padding-right = capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%；
-     且 var(--statusbar, env(safe-area-inset-top)) 在开发者工具恒 0，margin-top 改用 --statusbar */
-  margin-top: calc(var(--statusbar, env(safe-area-inset-top)) + 8px);
+     MP-R1-CAMPUS-HUB-004：删除 margin-top 中的第二份 --statusbar——页面容器
+     .campus-hub 的 padding-top 已含一份状态栏高度（.campus-hub 为 padding-top 定位，
+     子元素 margin 不发生塌陷，两段位移相加使 header 顶部 = 2×状态栏 + 偏移），
+     顶部偏移统一由页面 padding 承担，与同分包 index.vue/certification.vue 一致 */
   padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 

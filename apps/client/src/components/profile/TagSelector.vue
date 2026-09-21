@@ -33,6 +33,12 @@ const { t } = useI18n();
 const props = defineProps<{
   /** 各分组的已选标签值，按 groupKey 索引 */
   modelValue: Partial<Record<ProfileTagGroupKey, string[]>>;
+  /**
+   * 可见的标签分组（MP-R1-SETUPINTEREST-003）。
+   * 不传时渲染全部 4 组（兼容默认行为）；传入时只渲染指定分组——
+   * 兴趣设置页仅保存 interest 组，原全量渲染使其余 3 组「可见可选但保存即丢」。
+   */
+  groups?: ProfileTagGroupKey[];
 }>();
 
 /**
@@ -44,20 +50,28 @@ const emit = defineEmits<{
 }>();
 
 /**
- * 当前分组的已选标签数量（用于顶部统计）。
+ * 实际渲染的分组（MP-R1-SETUPINTEREST-003：groups 过滤，未传时全量）。
+ */
+const visibleGroups = computed(() => {
+  if (!props.groups || props.groups.length === 0) return profileTagGroups;
+  return profileTagGroups.filter((g) => props.groups!.includes(g.key));
+});
+
+/**
+ * 当前分组的已选标签数量（用于顶部统计，仅统计可见分组）。
  */
 const totalCount = computed(() => {
-  return Object.values(props.modelValue).reduce(
-    (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+  return visibleGroups.value.reduce(
+    (sum, group) => sum + (Array.isArray(props.modelValue[group.key]) ? props.modelValue[group.key]!.length : 0),
     0,
   );
 });
 
 /**
- * 最大可选标签数（所有分组 max 之和）。
+ * 最大可选标签数（可见分组 max 之和）。
  */
 const totalMax = computed(() => {
-  return profileTagGroups.reduce((sum, g) => sum + g.max, 0);
+  return visibleGroups.value.reduce((sum, g) => sum + g.max, 0);
 });
 
 /**
@@ -105,7 +119,7 @@ function toggleTag(group: { key: ProfileTagGroupKey; max: number }, value: strin
 function removeTag(value: string): void {
   lightHaptic();
   const next: Partial<Record<ProfileTagGroupKey, string[]>> = { ...props.modelValue };
-  for (const group of profileTagGroups) {
+  for (const group of visibleGroups.value) {
     const list = next[group.key] ?? [];
     const idx = list.indexOf(value);
     if (idx >= 0) {
@@ -137,7 +151,7 @@ function tagLabel(opt: { label: string; labelKey?: string }): string {
  */
 const selectedTags = computed(() => {
   const result: Array<{ value: string; label: string; icon?: string }> = [];
-  for (const group of profileTagGroups) {
+  for (const group of visibleGroups.value) {
     const list = props.modelValue[group.key] ?? [];
     for (const value of list) {
       const opt = group.options.find((o) => o.value === value);
@@ -196,9 +210,9 @@ const selectedTags = computed(() => {
       </view>
     </view>
 
-    <!-- 分组标签区 -->
+    <!-- 分组标签区（MP-R1-SETUPINTEREST-003：按 groups prop 过滤可见分组） -->
     <view
-      v-for="group in profileTagGroups" :key="group.key"
+      v-for="group in visibleGroups" :key="group.key"
       class="tag-selector__group"
     >
       <view class="tag-selector__group-header">

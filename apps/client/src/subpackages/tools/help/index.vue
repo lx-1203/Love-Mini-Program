@@ -12,6 +12,8 @@ import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import { IMAGE_PATHS } from "../../../config/images";
+// MP-R1-HELP-101：客服邮箱真实地址常量
+import { APP_CONFIG } from "../../../config/app";
 import { lightHaptic } from "../../../utils/haptic";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
@@ -57,8 +59,11 @@ function goFeedback(): void {
 /** 复制客服邮箱到剪贴板 */
 function copyEmail(): void {
   lightHaptic();
+  // MP-R1-HELP-101：复制真实邮箱地址（APP_CONFIG.SUPPORT_EMAIL）——原实现复制
+  // t("help.contactEmail")，该 i18n 键是展示文案标签（"客服邮箱"/"Support Email"），
+  // 全 locales 无任何邮箱地址字面量，剪贴板产物恒为标签文本
   uni.setClipboardData({
-    data: t("help.contactEmail"),
+    data: APP_CONFIG.SUPPORT_EMAIL,
     success: () => {
       uni.showToast({ title: t("help.emailCopied"), icon: "success" });
     },

@@ -1,0 +1,280 @@
+{
+  "round": "R1",
+  "reviewer": "代码审查员-R1-次要21（A2/Layer A，只读代码层审查）",
+  "scope": [
+    "subpackages/profile-extra/settings/index",
+    "subpackages/profile-extra/verification/index",
+    "subpackages/profile-extra/verification/real-name",
+    "subpackages/profile-extra/profile/visitors",
+    "subpackages/profile-extra/profile/other",
+    "subpackages/profile-extra/profile/location",
+    "subpackages/profile-extra/profile/privacy",
+    "subpackages/profile-extra/profile/album"
+  ],
+  "generatedAt": "2026-09-22",
+  "issues": [
+    {
+      "id": "MP-R1-VERIFY-INDEX-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "认证中心（恋爱认证）页模板中 nav-bar 位于 safe-top 之前：navigationStyle=custom（pages.json:36 全局自定义导航）下 nav-bar 从 y=0 起排，标题与返回键顶进状态栏、与系统时间/胶囊叠印。同分包 real-name.vue 与 settings.vue 均已是「safe-top 前置于 nav-bar」的正确顺序并留档（R10-P2-012、MP-R3-SETTINGS-001 的 T1 根因模式），仅本页顺序相反，属已修复模式的复发。",
+      "evidence": "verification/index.vue:443-454（line 445 nav-bar 在前、line 454 safe-top 在后）；对照 real-name.vue:408-412（safe-top 前置，注释明确「安全区占位必须在导航栏之前——此前 nav-bar 顶到 y=0，返回键/标题被状态栏盖住」）；settings/index.vue:426-431（同正确顺序）。两页均已实例化 useMenuButtonRect 注入 --statusbar，但变量只影响 safe-top 高度，顺序错误时 nav-bar 仍压在状态栏上。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "与同分包 real-name.vue/settings.vue 一致：safe-top（height: calc(var(--statusbar, env(safe-area-inset-top)))）必须是页面根节点下第一个子元素，nav-bar 随其后。",
+      "fix": "将 verification/index.vue 模板中的 <view class=\"safe-top\" /> 移到 nav-bar 之前（与 real-name.vue:409-412 对齐），并保留 useMenuButtonRect 注入。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Function",
+      "severity": "P1",
+      "description": "「送心动卡/悄悄话」（whisper）事件链断裂，功能在他人主页完全不可达：other.vue 监听 ProfileShell 的 @whisper 并挂载 WhisperComposeSheet，但事件链上游无人 emit('whisper')——PublicProfile.vue 声明了 whisper emit 却在模板中从未触发，也没有给任何子组件绑定 @whisper；唯一含 whisper 按钮的 PublicAction.vue（「送心动卡」按钮）全仓库零引用（孤儿组件）。其他页面对 WhisperComposeSheet 亦无引用（other.vue 是唯一消费方）。",
+      "evidence": "other.vue:404（@whisper=\"openWhisperSheet\"）、413-419（WhisperComposeSheet 挂载）；ProfileShell.vue:91（@whisper=\"emit('whisper')\" 转发）；PublicProfile.vue:33（仅声明 (e: \"whisper\")）与 65-96（模板内无 emit('whisper')、无 @whisper 绑定、import 列表 1-13 无 PublicAction）；grep -rln \"PublicAction\" src 返回零文件（PublicAction.vue 为孤儿组件，其 :38 含 @tap=\"emit('whisper')\" 按钮）；grep -rln \"WhisperComposeSheet\" src 仅命中组件自身与 other.vue。",
+      "sources": ["code"],
+      "confidence": 0.92,
+      "ideal": "他人主页互动区存在可达的「送心动卡」入口，点击后 openWhisperSheet 正常唤起 WhisperComposeSheet；事件链 页面→ProfileShell→PublicProfile→互动组件 每一级都有 emit 与对应监听。",
+      "fix": "在 PublicProfile.vue 中恢复互动入口：重新引入 PublicAction.vue（或给 RelationshipCTA 增加 whisper 按钮并绑定 @whisper=\"emit('whisper')\"），使 other.vue 的 openWhisperSheet 可达；或删除整条 whisper 死代码（声明、转发、Sheet 挂载、孤儿组件），二选一，需产品确认。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PRIVACY-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Data",
+      "severity": "P2",
+      "description": "隐私设置两个开关（允许推荐给本校/接收同校信息）是「假保存」：(1) setAllowSameSchoolRecommend/setReceiveSameSchoolInfo 只写本地 storage，从未调用任何后端接口，与 profile.ts:779 注释「真实环境同步后端接口」不符——服务端推荐/接收行为完全不受开关控制；(2) loadPersistedPrivacy 仅在 load() 的 mock 分支被调用（profile.ts:335），real 模式加载路径不回填持久化值 → real 模式下重启应用后开关显示回默认值（false/true），用户上次的选择虽在 storage 中却不生效也不展示。页面每次切换还弹「已保存」成功 toast，强化了假象。",
+      "evidence": "privacy.vue:25-40（写 store + toast privacySaved）；stores/profile.ts:777-806（两个 setter 仅 uni.setStorageSync，无 request 调用）；stores/profile.ts:335（loadPersistedPrivacy 仅出现在 useMock() 分支 320-339 内）、341-360（real 分支无任何隐私回填）；grep 证实 PRIVACY_STORAGE_KEY 仅 3 处使用（174/781/799）。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "开关切换后：本地持久化 + 同步后端（或明确该开关为纯前端演示项并在 UI 上不提示「已保存」）；real 模式 load() 时回填持久化值，重启后 UI 与用户选择一致。",
+      "fix": "① 在 real 分支的 load()（或 store 初始化）中调用 loadPersistedPrivacy() 回填两开关；② 接入后端偏好接口（如 PATCH /profile/privacy-settings），失败时回滚并提示；若后端暂无接口，应将 toast 文案改为「已在本机保存」，并修正 profile.ts:779 的失实注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-003",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Regression",
+      "severity": "P2",
+      "description": "「我的动态」入口语义回归：R21 对 MP-R1-SETTINGS-001 的修复把 village/index 从 switchTab 改为 navigateTo 携带 ?tab=mine，页面能打开了，但 village/index.vue 的 onLoad 只消费 query.channel，`tab` 参数被完全忽略；onShow 的 storage 桥接消费路径也只把 tab=mine 映射到「今日广场」通用频道（注释明言 mine 已随频道化移除）。频道体系（today/interest/school/activity/hot）中不存在 mine。结果：用户点「我的动态」落到通用广场流，无本人帖子过滤，入口语义丢失。",
+      "evidence": "settings/index.vue:346（path: \"/subpackages/village/village/index?tab=mine\"）、409-421（handleMenuTap 对非 tabQuery 项走 uni.navigateTo）；village/index.vue:459-465（onLoad 仅读 query.channel）、469-477（consumeTabQuery 后 bridged.tab===\"mine\" → currentChannelId=\"today\"，注释「hot/mine 已随频道化移除，映射到今日广场防残留」）；config/channels.ts:41-85（频道 id 仅 today/interest/school/activity/hot，无 mine）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "点击「我的动态」后进入村口并定位到本人帖子视图（复活的 mine 频道、query.channel 或独立的我的帖子列表页），而非无过滤的今日广场。",
+      "fix": "三选一：① village/index.vue onLoad 增加 query.tab 消费并支持定位本人帖子（如恢复 mine 频道或带 author=me 过滤）；② settings 入口改跳本人主页/我的帖子专页；③ 若产品已放弃「我的动态」视图，应将菜单项文案与目标改为「村口社区」，消除语义错位。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LOCATION-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/location",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "位置设置页依赖的 utils/location.ts 逆地理编码使用占位 API key（key=YOUR_KEY），请求腾讯 geocoder 必然失败，且失败被静默降级为空串（fail: resolve(\"\"）→ city 恒为空。位置页「当前位置」永远只能回退校区名/默认文案「北京大学 · 附近」，经纬度定位成功也解析不出城市，失败无任何提示或日志。",
+      "evidence": "utils/location.ts:71（url: `https://apis.map.qq.com/ws/geocoder/v1/?location=${lat},${lng}&key=YOUR_KEY`，字面占位 key）、82（fail: () => resolve(\"\")）；location.vue:63-68（city.value = loc.city，displayText 由 buildLocationText(city,...) 兜底，utils/location.ts:97-101）。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "使用真实配置的腾讯地图 key（从环境变量/构建配置注入，不落源码），解析失败时给出可观测的诊断日志；key 未配置时逆地理编码整体短路并在文案上反映「城市未知」而非静默默认值。",
+      "fix": "将 key 移入环境配置（clientEnv），location.ts 校验 key 形如占位符时跳过请求并 console.warn（isDev 门控）；有合法 key 后城市解析自动恢复。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-ALBUM-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/album",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "相册点击全屏预览 uni.previewImage 直接传 photoGallery 原始 URL 数组，未做双端兼容处理：(a) 未过 resolveMediaUrl —— 页面网格展示（album.vue:449）把 /uploads/ 相对路径与需 token 的代理路径重写为可加载 URL，预览却用原始值，/uploads/ 相对路径会被小程序当包内文件、代理路径缺 token 被鉴权拦截，预览失败/转圈；(b) 与 other.vue R18 已留档的坑直接相悖——other.vue:81-83 注明「不用 uni.previewImage：微信预览器不支持包内 /static 路径（永久加载转圈）」并自建查看层，而本页（尤其 mock 模式照片墙为 /static/ 路径）仍直用 previewImage。",
+      "evidence": "album.vue:354-362（handlePhotoTap: urls: photoGallery.value, current: url 均为原始值）对照 album.vue:446-451（展示用 :src=\"resolveMediaUrl(cell.url)\"）；other.vue:81-83（R18 注释：包内 /static 路径 previewImage 永久转圈，故改自建查看层）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "预览 URL 与展示 URL 同源：urls/current 均经 resolveMediaUrl；/static/ 包内路径不走 uni.previewImage（复用 other.vue 的自建全屏查看层或按路径分流）。",
+      "fix": "handlePhotoTap 改为 `const urls = photoGallery.value.map(resolveMediaUrl)` 后传 urls/current=resolveMediaUrl(url)；并对 startsWith('/static/') 的项改用自定义查看层（可抽 other.vue 的 photo-viewer 为公共组件）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VERIFY-INDEX-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "恋爱认证「提交」与实名认证「提交」均无 submitting 防重入守卫：函数入口不检查 submitting.value，仅靠样式置灰（action-btn--disabled，不拦截 @tap）。uni.showLoading 默认无 mask，loading 期间页面仍可点击，快速双击会并发执行两次 uploadPostImage + 两次 POST /verification（real），或清旧定时器重设新定时器（mock）。后端 409 可兜底重复申请，但重复上传学生证/身份证图片已发生。",
+      "evidence": "verification/index.vue:176-197（submitVerification 入口无 if (submitting.value) return，直接置 submitting=true + showLoading）、650-658（按钮仅 :class 置灰）；real-name.vue:175-200、574-582 同构；services/http.ts 未查到 showLoading mask 配置（uni 默认 mask:false）。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "提交函数首行 `if (submitting.value) return;`，或 showLoading({ mask: true })，双保险。",
+      "fix": "在 submitVerification/submitRealName 入口增加 submitting 守卫（一行），并建议 showLoading 增加 mask: true 覆盖提交流程。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VERIFY-INDEX-003",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Data",
+      "severity": "P2",
+      "description": "real 模式下「重新认证」「删除人工认证」只重置本地 ref，没有任何 API 调用：用户在 verified 态点「删除人工认证」收到「已删除」toast，但服务端记录仍为 approved；本页 onShow 仅在 pending 态才回源拉取，假状态在本页存续；重新进入页面 onLoad 重新 GET /verification 后又显示「已认证」，前后矛盾。「重新认证」同理仅清表单，无后端撤销语义。",
+      "evidence": "verification/index.vue:389-404（resetVerification：仅重置 5 个 ref）、407-424（removeVerification：showModal 后仅重置 ref + toast，无 request）；303-314（loadVerification 仅 GET）；346-351（onShow 条件 status==='pending' 才回源）；全文件无 DELETE /verification 类调用（仅 GET/POST 各一处）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "删除/重置认证在 real 模式调用后端撤销接口（或按钮在 real 模式隐藏、仅 mock 演示可用），UI 状态与服务端状态单一数据源一致。",
+      "fix": "为两函数增加 useMock() 分支：real 模式调用后端撤销/重提接口（需后端支持），失败提示并保持原状态；后端无接口前，real 模式隐藏「删除人工认证」按钮并在「重新认证」文案上注明需联系审核。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-004",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "硬约束「设计 token 强制」违例：other.vue 样式块整段使用裸十六进制/rgba 色值，不走 var(--token, fallback) 体系（页面背景、返回钮、FAB、BottomSheet 菜单、分割线等十余处）；location.vue 同病（头部、卡片、按钮、地图占位等约 20 处）。与同分包 visitors.vue/album.vue/settings.vue 全面 token 化形成明显反差，深色模式下这两页将保持硬编码浅色，撕裂数据主题。",
+      "evidence": "other.vue:458-573（#ffffff:460、rgba(255,255,255,.85):484、#333A37:495,501、#36C99A:518、rgba 阴影:522、#ffffff:527、#F2F5F3:541、#1A1E1C:552、#FF6B81:556 等）；location.vue:194-419（#ffffff:207,246,401、#1A1E1C:227,282,331,418、#9AA39F:276,323,358,372、#36C99A:302,380,408、#22A35F:308、#E8FBF2:294、#F4F7F5:317、#E8EEF2:347 等）；对照 visitors.vue:330-561、album.vue:484-728（全 token）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "两页样式全部改写为 var(--c-*, fallback) 形式（品牌色 --c-brand、文字 --c-text-primary/secondary/tertiary、容器 --c-bg-container、错误 --c-error 等），与项目 R11 附录 B token 强制约束一致。",
+      "fix": "按既有 token 映射逐条替换（#36C99A→var(--c-brand, #36C99A)、#1A1E1C→var(--c-text-primary, #1A1E1C)、#FF6B81→var(--c-error-soft 或 --c-danger, 现值) 等）；替换后跑一次深色模式走查。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LOCATION-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/location",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "i18n 覆盖缺口：location.vue 整页文案硬编码中文（标题、卡片标签、按钮、toast、aria-label 均未走 t()）；other.vue 大量硬编码中文与 i18n 混用（如 showActionSheet itemList 中 chat.nav.report 走 t() 而「取消关注」是裸字符串），英文语言下界面将中英混杂。",
+      "evidence": "location.vue:96,100,129,138,144,149,175,177,183-187（「未获取到选点结果…」「地图选点仅小程序端可用」「我的位置」「当前位置」「所属校区」「物理地址」「重新定位」「定位中...」「返回首页」等，全无 t()）；other.vue:49,203-206,215,253,258,270-273,278,281,290（itemList: [t(...), t(...), \"取消关注\"] 中英混排）,422,439,444-450；对照同页 other.vue:141,167 已用 t(\"apiErrors.loginRequired\")/t(\"profile.other.likeWaiting\")。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "页面文案全部经 vue-i18n（zh-CN/en-US 双语补 key），同一数组/组件内不得混排 t() 与裸字符串。",
+      "fix": "为两页新增 locale key（location.*、profile.other.* 补齐），模板与 showActionSheet/showModal/showToast 参数全部替换；aria-label 一并国际化。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REAL-NAME-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "实名认证选图超过 5MB 时静默吞没：utils/media.ts 的 chooseImages 对超限图片直接剔除且不报错，real-name.vue 把空结果一律当作「用户取消」直接 return，不给任何提示——用户选了大图后界面毫无反应，误以为点击失灵。",
+      "evidence": "real-name.vue:149-151（const path = paths[0]; if (!path) return; // 注释误标为「用户取消」）；utils/media.ts:380-390（大小校验循环：size > maxBytes 的图片被丢弃，kept 数组可能为空，无 toast/异常）。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "选择结果为空时区分「用户取消」与「图片被大小校验剔除」，后者提示「图片超过 5MB，请压缩后重试」。",
+      "fix": "给 chooseImages 增加返回被剔除数量的选项（或返回 {paths, rejected}），real-name.vue 据此分流提示；实时认证页与此共用封装，一并受益。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-005",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "「更多操作」BottomSheet 中的「分享给好友」是占位死功能：点击仅关闭弹层并 toast「分享入口待接入」，无任何分享能力；该入口以正常菜单项形态呈现，属于向用户暴露的未完成功能。",
+      "evidence": "other.vue:47-50（handleMoreShare: moreSheetVisible=false; uni.showToast({ title: \"分享入口待接入\" })）、443-445（菜单项 @tap=\"handleMoreShare\"）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "接通分享（openAppPath 分享链路或 onShareAppMessage/uni.showShareMenu，与 settings 页 shareFriend 一致），或在 real 构建中隐藏该项。",
+      "fix": "短期：该项加 useMock()（或构建开关）守卫，real 模式不渲染；长期复用 settings/index.vue:372-378 的 showShareMenu 方案落地真实分享。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-006",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Architecture",
+      "severity": "P3",
+      "description": "空拒绝处理违反项目「禁空 catch {}」约束精神：other.vue 两处 `.catch(() => {})` 字面空吞（其中 130 行无任何注释说明），settings/index.vue:78 `fail: () => {}` 空回调（上方有注释说明）。均为有意降级，但静默吞掉失败后调用方无法感知，与项目错误处理规范（错误至少可观测）不一致。",
+      "evidence": "other.vue:130（void likesStore.fetchLikes().catch(() => {});，无注释）、199（void likesStore.fetchLikes().catch(() => {});）；settings/index.vue:73-79（refreshCacheSize 的 fail: () => {}）；grep 扫描 8 页仅此 3 处字面空体。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "降级路径显式化：至少带注释说明吞错原因；fetchLikes 失败宜 isDev 门控 console.warn，便于排查「他人主页已喜欢态不同步」类问题。",
+      "fix": "改为 `.catch(() => { /* 他人主页 best-effort 预取，失败由页面自身状态兜底 */ })` 并在 isDev 下 warn；settings fail 回调维持现状可接受（已有注释），如从严可统一。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-004",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "设置页两个 switch 的 color 属性硬编码 \"#36C99A\"，而同分包 privacy.vue 已示范从 designTokens.color.brand[500] 取色的正确做法，同语义两写法并存（token 强制约束的边角违例；switch color 属性不支持 CSS var，但支持运行时字符串，designTokens 是既有 sanctioned 方案）。",
+      "evidence": "settings/index.vue:564、582（color=\"#36C99A\"）；对照 privacy.vue:85、96（:color=\"designTokens.color.brand[500]\"）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "settings 页 switch 与 privacy 页统一：:color=\"designTokens.color.brand[500]\"。",
+      "fix": "引入 designTokens 并替换两处硬编码色值。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VISITORS-003",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "screenshot": "无截图（纯代码层审查）",
+      "category": "MiniProgram",
+      "severity": "P4",
+      "description": "访客记录头部胶囊避让用固定 `padding-right: 96px`，未接项目标准的 var(--capsule-right, 96px)（useMenuButtonRect 文档规定的兜底写法），页面也只注入了 useStatusBarHeight 未注入 useMenuButtonRect。不同机型胶囊实际右缘间隙非恒 96px，极端情况下计数仍可能贴近/压到胶囊。",
+      "evidence": "visitors.vue:243（根节点仅 :style paddingTop 注入 statusBarHeightPx）、341-348（.visitors-header { padding-right: 96px }，注释自认「预留胶囊宽度（约 96px）」）；对照 useMenuButtonRect.ts:9-14（用法文档：padding-right: calc(var(--capsule-right, 96px) + 24px)）。",
+      "sources": ["code"],
+      "confidence": 0.6,
+      "ideal": "页面接入 useMenuButtonRect 的 styleVars，头部改 padding-right: calc(var(--capsule-right, 96px) + 8rpx)，测量值覆盖兜底值。",
+      "fix": "const { styleVars } = useMenuButtonRect() 绑到根节点，.visitors-header 的 96px 改为 var(--capsule-right, 96px)。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/profile-extra/settings/index（设置）",
+      "checks": "通读全文 909 行。导航：useMenuButtonRect 已实例化(line 36)+safe-top 前置(428-431)，MP-R3-SETTINGS-001 未复发；goBack 栈=1 兜底回「我的」Tab(263-271)，MP-R1-SETTINGS-002 已修复。菜单 9 个 path 全部核对 pages.json：dnd(236)、feedback/history(239)、village/index(76)、visitors(212)、village/history(92)、album(227)、setup/schedule(264)、legal privacy/agreement(307-310)、wallet(325)、tools/security(177)、setup/profile(258) 均注册；village 非 tabBar 页(pages.json tabBar list 五项不含 village)，navigateTo 合法。缓存清理走真实 getStorageInfo/removeStorageSync(71-154)，退出登录走 sessionStore.logout(242-261，session.ts:557 存在)，定时器 onUnmounted 清理(225-228)。发现：MP-R1-SETTINGS-003（village ?tab=mine 语义回归）、SETTINGS-004（switch 硬编码色）、OTHER-006（fail 空回调）。硬约束：无 :hover/grid/import.meta.env.DEV/backdrop-filter/emoji。"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index（认证中心）",
+      "checks": "通读全文 1116 行。发现 P1×1：nav-bar 在 safe-top 之前(445/454)，T1 模式复发（对照 real-name.vue:409-412 正确顺序）；P2×2：提交无防重入守卫(176-197,650-658)、real 模式重置/删除认证无后端调用且 onShow 仅 pending 回源致状态前后矛盾(389-424,346-351)。其余：real 链路 GET/POST /verification 错误处理完备（409 分流 255-269，isUploadedMediaUrl 判定 231）；pending 30s 轮询 onUnmounted 清理(330-367)；simulateApprove 有 isMockMode 守卫(374-386)；路由/图标/i18n key 均核实存在。"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name（实名认证）",
+      "checks": "通读全文 949 行。safe-top 前置(409-412)正确；real 链路 GET/POST /real-name-certification、409 分流、身份证 15/18 位校验(172)、未成年门控 loadAdultGate(327-337)齐备；goBack 栈=1 兜底回认证中心(391-399)。发现 P3×1：chooseImages 超 5MB 静默剔除被当「用户取消」，无反馈(149-151 + media.ts:380-390)；提交防重入缺失并入 MP-R1-VERIFY-INDEX-002（同构代码）。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors（访客记录）",
+      "checks": "通读全文 562 行。历史回归：MP-R1-VISITORS-001 已修复（handleItemClick 对 NaN/0 兜底 rawUserId 拼参，207-215）；MP-R1-VISITORS-002 已修复（头部 padding-right:96px 避让胶囊，346-347；遗留硬编码 P4 见 VISITORS-003）。数据源 likesStore.fetchVisitors（store 内 AbortController 防竞态、失败清列表上抛），页面 catch 设 errorMessage+重试(189-199)；头像经 resolveMediaUrl(307)；enablePullDownRefresh 已注册(pages.json:213-215)且 stopPullDownRefresh 在 finally(232-238)；分组/时间解析兜底完备(99-147)。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other（他人主页）",
+      "checks": "通读全文 574 行 + ProfileShell/PublicProfile/PublicAction/WhisperComposeSheet/BottomSheet/SafeImage 事件链逐级核对。历史回归：R12-IND-PROFILE-OTHER-001 已修复（401 分支文案 133-144；FAB v-if 排除 errorMessage/loading 422）；MP-R1-OTHER-001 已修复（alreadyLiked 守卫 162-169，likes store userId 映射 String(raw.userId) 与 targetUserId 字符串同型比较成立）。新发现 P1×1（whisper 链断裂+PublicAction 孤儿组件）、P2×1（整页硬编码色值违 token 强制）；另 i18n 混排、分享占位、空 .catch 三项 P3。组件接线其余方向全部核实为已接（retry/like/message/report/block/unmatch/follow/openPost/tapPhoto 在 PublicProfile 62-95 与 ProfileShell 88-99 双级转发无遗漏）。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/location（位置设置）",
+      "checks": "通读全文 419 行。发现 P2×2：逆地理编码占位 key=YOUR_KEY 致城市解析恒空且静默（utils/location.ts:71,82）；整页硬编码色值+全页中文硬编码。安全项核对：fetchCurrentLocation 内部自吞错恒不 reject（location.ts:44-47），loadLocation 的 try/finally 无 catch 不会产生未处理拒绝（60-72）；reportLocation 自带节流+吞错（111-124）；marker iconPath 经 resolveMediaUrl 对 /static/ 路径原样返回（media.ts:219-221）不破坏本地位图；goBack 栈=1 reLaunch 到 ROUTES.TAB.HOME（常量存在 routes.ts:36）；MP-WEIXIN 条件编译地图/选点（79-101,157-173）配平。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/privacy（隐私设置）",
+      "checks": "通读全文 191 行。发现 P2×1（MP-R1-PRIVACY-001：开关仅本地持久化、注释与实现不符、real 模式不回填）。其余核对：switch color 取 designTokens.color.brand[500]（85,96，为正确示范）；header 安全区 statusBarHeightPx 注入(68)；goBack 栈=1 兜底 switchTab ROUTES.TAB.PROFILE(60，常量存在)；computed setter 写 store action 而非直改状态；无 :hover/grid/emoji。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album（我的相册）",
+      "checks": "通读全文 729 行。发现 P2×1（previewImage 原始 URL 直传，未过 resolveMediaUrl 且与 other.vue R18 弃用 previewImage 的留档结论相悖）。其余核对：上传链路真实（uploadPhotoAtIndex/removePhotoAtIndex 走 clientApi，profile.ts:820-876）；6 格 flex 布局非 grid(607-625)；isUploading 防重入(139-141)；隐私授权前置(151-160)；MP-R8-STATUS-002 安全区注入(42,492)；onMounted+onShow 双拉有 store inflight 守卫兜底（profile.ts:311-313），不构成重复请求；长按/点按分流正确，模板内联三元在事件包装函数中求值无渲染期副作用。"
+    },
+    {
+      "page": "跨页通用核对",
+      "checks": "硬约束扫描（8 页 grep）：:hover 0 命中（仅注释提及禁用）、display:grid 0、import.meta.env 0（settings 走 isDev）、backdrop-filter 0、裸 emoji 0（图标全走 IMAGE_PATHS）、空 catch 字面 3 处（已立 OTHER-006）。历史回归核对结论：MP-R3-SETTINGS-001 已修复；MP-R1-SETTINGS-001/002 修复（001 语义回归另立 MP-R1-SETTINGS-003）；MP-R1-VISITORS-001/002 已修复；MP-R1-OTHER-001 已修复；R12-IND-PROFILE-OTHER-001 已修复；MP-R7-PROFILE-005（ROUTES.ALBUM）已存在（routes.ts:114）。MP-R7-PROFILE-001/002/003/004 的宿主页面 pages/profile/index 不在本轮负责清单，未做回归验证；本 8 页内媒体路径均经 resolveMediaUrl（visitors.vue:307、album.vue:449、other.vue:91），完成度服务端权威口径已在 village 页留档（profile.ts MP-R8-LOCK-001 注释），未在本 8 页发现同类复发。i18n 抽查 12 个 key（socialAssetsSection/likeWaiting/missingUserParam/alreadyPending/minorNotice/themeAria/visitorsTitle/albumSetAvatarSuccess/privacySaved/scheduleSetting/browseHistory/coinBalance）在 zh-CN.ts 全部存在。未运行任何构建/截图/交互工具（本轮为纯代码层审查，符合分工）。"
+    }
+  ]
+}

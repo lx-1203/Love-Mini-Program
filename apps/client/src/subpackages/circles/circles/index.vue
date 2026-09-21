@@ -177,9 +177,13 @@ async function toggleJoin(circleId: string, isJoined: boolean) {
     } else {
       await circleStore.joinCircle(circleId);
     }
-  } catch (_e) {
-    // 修复 no-empty：catch 块不能为空，添加注释说明静默处理
-    // 加入/退出圈子失败时忽略，由 store 内部已处理错误提示
+  } catch (e) {
+    // MP-R1-CIRCLES-001：store 的 joinCircle/leaveCircle 只 set errorMessage 后 rethrow、
+    // 从不出 toast——列表非空时 errorMessage 无渲染出口，失败必须在此给用户可见反馈
+    uni.showToast({
+      title: e instanceof Error && e.message ? e.message : t("apiErrors.operationFailed"),
+      icon: "none",
+    });
   }
 }
 

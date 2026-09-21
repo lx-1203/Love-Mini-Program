@@ -17,6 +17,9 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "like"): void;
   (e: "message"): void;
+  /* MP-R1-OTHER-002：补回「送心动卡」（whisper）发射点——上游 other.vue 的
+     @whisper → WhisperComposeSheet 链路完整，唯一缺口是本组件无入口按钮 */
+  (e: "whisper"): void;
   (e: "follow"): void;
 }>();
 
@@ -45,6 +48,12 @@ const followLabel = computed(() => (props.following ? "已关注" : "关注"));
       <view class="relationship-cta__btn relationship-cta__btn--hello" hover-class="relationship-cta__btn--pressed" @tap="emit('message')">
         <image class="relationship-cta__bubble" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
         <text class="relationship-cta__text">打招呼</text>
+      </view>
+
+      <!-- MP-R1-OTHER-002：送心动卡入口（点击唤起 other.vue 的 WhisperComposeSheet） -->
+      <view class="relationship-cta__btn relationship-cta__btn--whisper" hover-class="relationship-cta__btn--pressed" @tap="emit('whisper')">
+        <image class="relationship-cta__whisper-icon" :src="IMAGE_PATHS.ICONS_MATCH.HEART_PINK" mode="aspectFit" alt="" />
+        <text class="relationship-cta__text relationship-cta__text--whisper">心动卡</text>
       </view>
 
       <view
@@ -99,9 +108,25 @@ const followLabel = computed(() => (props.following ? "已关注" : "关注"));
 }
 
 .relationship-cta__btn--hello {
-  flex: 1.5;
+  flex: 1.3;
   background: #36C99A;
   box-shadow: 0 8rpx 20rpx rgba(54, 201, 154, 0.3);
+}
+
+/* MP-R1-OTHER-002：送心动卡按钮（白底粉描边，与"关注"描边样式区分度靠文案+图标） */
+.relationship-cta__btn--whisper {
+  flex: 1.1;
+  background: #ffffff;
+  border: 2rpx solid #FF6B81;
+}
+
+.relationship-cta__whisper-icon {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.relationship-cta__text--whisper {
+  color: #FF6B81;
 }
 
 .relationship-cta__btn--follow {

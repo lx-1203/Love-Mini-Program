@@ -307,6 +307,12 @@ onMounted(() => {
 
 <template>
   <view class="dnd-page" :style="menuStyleVars">
+    <!-- MP-R1-DND-002：safe-top 必须先于自绘导航（对照 settings/index.vue:426 注释）——
+         navigationStyle=custom 下页面从 y=0 渲染，原顺序使 88rpx 高不透明 nav-bar 顶进
+         状态栏，返回键/标题与系统时间/胶囊叠印；--statusbar 已注入但 DOM 顺序放错形同虚设 -->
+    <!-- 顶部安全区占位 -->
+    <view class="safe-top" />
+
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view
@@ -320,9 +326,6 @@ onMounted(() => {
       <text class="nav-bar__title">{{ t("dnd.pageName") }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
 
     <!-- 加载状态 -->
     <view v-if="pageState === 'loading'" class="state-wrap">

@@ -28,7 +28,10 @@ export type ClientEnvKey =
   | "VITE_APP_VERSION"
   | "VITE_SENTRY_DSN"
   // R4-00244：媒体 URL 是否拼接 token 查询参数（后端改签名 URL 后可关闭）
-  | "VITE_MEDIA_TOKEN_QUERY";
+  | "VITE_MEDIA_TOKEN_QUERY"
+  // MP-R1-PAGES-HOME-INDEX-004：腾讯地图 WebService key（逆地理编码）。
+  // 密钥只经构建期环境变量注入、不落源码；未配置时调用方跳过外部请求。
+  | "VITE_TENCENT_MAP_KEY";
 
 /** API 模式枚举 */
 export type ApiMode = "real" | "mock";
@@ -73,6 +76,9 @@ function readViteEnv(key: ClientEnvKey): string | undefined {
           break;
         case "VITE_MEDIA_TOKEN_QUERY":
           val = viteEnv.VITE_MEDIA_TOKEN_QUERY;
+          break;
+        case "VITE_TENCENT_MAP_KEY":
+          val = viteEnv.VITE_TENCENT_MAP_KEY;
           break;
       }
       if (typeof val === "string" && val.length > 0) return val;
@@ -137,6 +143,21 @@ export const APP_VERSION: string = readViteEnv("VITE_APP_VERSION") ?? "v0.1.0";
 
 /** Sentry DSN（错误监控，未配置时为空字符串，调用方应判断是否非空） */
 export const SENTRY_DSN: string = readViteEnv("VITE_SENTRY_DSN") ?? "";
+
+/**
+ * 腾讯地图 WebService key（MP-R1-PAGES-HOME-INDEX-004）。
+ * 构建期经 .env 注入，不落源码；未配置/占位值时为空串，
+ * utils/location.ts 判断为空则跳过外部逆地理编码请求（改走后端 ip-city）。
+ */
+export const TENCENT_MAP_KEY: string = resolveTencentMapKey();
+
+function resolveTencentMapKey(): string {
+  const raw = readViteEnv("VITE_TENCENT_MAP_KEY") ?? "";
+  const value = raw.trim();
+  // 占位符/明显无效值一律视为未配置，避免发出注定失败的请求
+  if (!value || /^your[_-]?key$/i.test(value)) return "";
+  return value;
+}
 
 /**
  * 媒体 URL 是否拼接 token 查询参数（R4-00244，默认 true）。

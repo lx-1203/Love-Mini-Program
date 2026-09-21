@@ -91,10 +91,15 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
   if (direction !== "left" && !requireLogin()) return;
   try {
     if (direction === "left") {
-      await discoverStore.swipeLeft(cardId);
+      // MP-R1-LNEARBY-101：传本地卡片快照（本页 cards 为独立本地副本，store.cards
+      // 冷进入为空，原实现恒抛「卡片不存在」）
+      const snapshot = cards.value.find((c) => c.id === cardId) ?? null;
+      await discoverStore.swipeLeft(cardId, snapshot);
     } else {
-      const card = discoverStore.cards.find((c) => c.id === cardId);
-      await discoverStore.swipeRight(cardId);
+      // MP-R1-LNEARBY-101：userId 改取本地 cards——原 discoverStore.cards.find 是
+      // 错误数据源（冷进入为空；成功路径 store 已先移除该卡，matched 时恒以空 userId 跳转）
+      const card = cards.value.find((c) => c.id === cardId) ?? null;
+      await discoverStore.swipeRight(cardId, false, card);
       const result = discoverStore.lastSwipeResult;
       if (result?.matched) {
         uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });
@@ -121,8 +126,9 @@ async function handleSwipe(direction: SwipeDirection, cardId: string) {
 async function handleSuperLike(cardId: string) {
   if (!requireLogin()) return;
   try {
-    const card = discoverStore.cards.find((c) => c.id === cardId);
-    await discoverStore.swipeRight(cardId, true);
+    // MP-R1-LNEARBY-101：快照与 userId 均取自本地 cards（同 handleSwipe）
+    const card = cards.value.find((c) => c.id === cardId) ?? null;
+    await discoverStore.swipeRight(cardId, true, card);
     const result = discoverStore.lastSwipeResult;
     if (result?.matched) {
       uni.showToast({ title: t("contentPages.nearby.likeHint"), icon: "none" });

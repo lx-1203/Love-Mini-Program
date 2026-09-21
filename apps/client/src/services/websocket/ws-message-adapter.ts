@@ -34,6 +34,9 @@ export function mapWsKind(value: string): MessageItem["kind"] {
   if (normalized === "voice") return "voice";
   if (normalized === "emoji") return "emoji";
   if (normalized === "activity") return "activity";
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：补 image 分支（WS 推送与 GET 回包
+  // 同规则），否则 real 模式图片消息经 WS 推送时降级为 URL 文本气泡
+  if (normalized === "image") return "image";
   return "text";
 }
 

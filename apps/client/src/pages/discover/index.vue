@@ -300,7 +300,7 @@ onUnload(() => {
           <MatchCard
             v-if="currentUser"
             :user="currentUser"
-            @tap="handleCardTap"
+            @card-tap="handleCardTap"
             @swipe-left="handleSwipeLeft"
             @swipe-right="handleLike"
           />

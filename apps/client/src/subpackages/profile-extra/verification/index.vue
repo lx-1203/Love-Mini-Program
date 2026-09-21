@@ -174,6 +174,9 @@ async function chooseImage() {
 
 /** 提交认证申请 */
 function submitVerification() {
+  // MP-R1-VERIFY-INDEX-002：防重入守卫——按钮置灰不拦截 @tap，showLoading 默认无 mask，
+  // 快速双击会并发两次 uploadPostImage + 两次 POST /verification
+  if (submitting.value) return;
   lightHaptic();
 
   if (!studentName.value.trim()) {
@@ -194,7 +197,8 @@ function submitVerification() {
   }
 
   submitting.value = true;
-  uni.showLoading({ title: t("verification.submitting") });
+  // MP-R1-VERIFY-INDEX-002：mask:true 覆盖提交流程（双保险）
+  uni.showLoading({ title: t("verification.submitting"), mask: true });
 
   // Mock 分支：保留本地演示逻辑（1s 后置为 pending）
   if (useMock()) {
@@ -441,6 +445,12 @@ function onBlur() {
 
 <template>
   <view class="verification-page" :style="menuStyleVars">
+    <!-- MP-R1-VERIFY-INDEX-001：safe-top 前置于 nav-bar（与同分包 real-name.vue/settings.vue
+         一致，R10-P2-012 根因模式）——navigationStyle:custom 下 nav-bar 从 y=0 起排，
+         顺序错误时标题与返回键顶进状态栏与系统时间叠印 -->
+    <!-- 顶部安全区占位 -->
+    <view class="safe-top" />
+
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
@@ -449,9 +459,6 @@ function onBlur() {
       <text class="nav-bar__title">{{ t('verification.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
 
     <!-- 认证状态卡片（real 首拉中显示骨架，避免状态跳变） -->
     <view v-if="statusLoading" class="status-card" role="status" aria-live="polite">
@@ -493,13 +500,16 @@ function onBlur() {
         </view>
       </view>
 
-      <!-- 重新认证按钮 -->
-      <view class="action-btn press-feedback" @tap="resetVerification" hover-class="action-btn--hover" hover-stay-time="100">
+      <!-- MP-R1-VERIFY-INDEX-003：重新认证/删除人工认证仅 mock 演示可用——两操作原实现
+           只重置本地 ref、无任何后端撤销接口，real 模式下用户收到「已删除」toast 但服务端
+           仍为 approved，重进页面又显示「已认证」，前后矛盾。后端补撤销接口前 real 隐藏。 -->
+      <!-- 重新认证按钮（仅 mock） -->
+      <view v-if="useMock()" class="action-btn press-feedback" @tap="resetVerification" hover-class="action-btn--hover" hover-stay-time="100">
         <text class="action-btn__text">{{ t('verification.resetBtn') }}</text>
       </view>
 
-      <!-- 删除认证（解除人工认定） -->
-      <view class="action-btn action-btn--danger press-feedback" @tap="removeVerification" hover-class="action-btn--hover" hover-stay-time="100">
+      <!-- 删除认证（解除人工认定，仅 mock） -->
+      <view v-if="useMock()" class="action-btn action-btn--danger press-feedback" @tap="removeVerification" hover-class="action-btn--hover" hover-stay-time="100">
         <text class="action-btn__text action-btn__text--danger">{{ t('verification.removeVerificationBtn') }}</text>
       </view>
     </template>

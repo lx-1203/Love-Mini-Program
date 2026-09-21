@@ -107,8 +107,10 @@ function resolveViteEnvDefine(mode: string) {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   // 列出所有需要在客户端代码中通过 process.env.XXX 访问的 Vite 环境变量。
   // 新增 VITE_SENTRY_DSN：用于 Sentry SDK 初始化，未配置时跳过 Sentry 初始化。
+  // 新增 VITE_TENCENT_MAP_KEY：腾讯地图 WebService key（MP-R1-PAGES-HOME-INDEX-004：
+  // 逆地理编码原为占位符 YOUR_KEY 恒失败；未配置时客户端跳过该请求改走后端 ip-city）。
   return Object.fromEntries(
-    ["VITE_API_MODE", "VITE_API_BASE_URL", "VITE_APP_VERSION", "VITE_SENTRY_DSN"].map((key) => {
+    ["VITE_API_MODE", "VITE_API_BASE_URL", "VITE_APP_VERSION", "VITE_SENTRY_DSN", "VITE_TENCENT_MAP_KEY"].map((key) => {
       const value = env[key] ?? "";
       return [`process.env.${key}`, JSON.stringify(value)];
     })

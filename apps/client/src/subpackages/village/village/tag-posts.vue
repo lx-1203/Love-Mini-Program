@@ -228,7 +228,9 @@ function getMockTagPosts(tag: string): PostItem[] {
  */
 function goToDetail(postId: string) {
   villageStore.setCurrentPost(postId);
-  openAppPath("/subpackages/village/village/detail");
+  // MP-R1-DETAIL-006：携带 ?id= 直达——setCurrentPost（real）为异步请求，不带 id 时
+  // 详情页 onLoad 无 id 分支会在 currentPost 落定前误判「帖子不存在」并闪空态
+  openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
 }
 
 /**

@@ -113,7 +113,9 @@ export function isHeartSignal(data: unknown): data is HeartSignal {
  * @param value - 待校验的值
  */
 export function isHeartSignalStatus(value: unknown): value is HeartSignalStatus {
-  return value === "pending" || value === "accepted" || value === "expired";
+  return (
+    value === "pending" || value === "accepted" || value === "expired" || value === "declined"
+  );
 }
 
 /**

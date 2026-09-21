@@ -109,14 +109,19 @@ onShow(() => {
 // 与 autoForwardedToMain 单次标记兜底防重复跳转）。
 let stopSessionForwardWatch: (() => void) | null = null;
 let autoForwardedToMain = false;
+// MP-R1-LOGIN-002：登录流程在途标记——微信登录成功后 store 赋值 userSession 会触发
+// 本 watch，与登录函数自身 await 续体里的导航形成双 switchTab 竞争
+// （「Page route 错误/routeDone with a webviewId」同类缺陷，见 92-95 行注释）。
+// 流程在途期间 watch 一律让位，由 loginSuccessNavigate() 统一导航一次。
+let loginFlowActive = false;
 stopSessionForwardWatch = watch(
   () => !sessionStore.loading && sessionStore.isLoggedIn,
   (sessionReady) => {
     if (sessionReady) {
       stopSessionForwardWatch?.();
-      // 页面自身登录流程已接管跳转（loginNavTimer 已挂起）时不重复跳转，
-      // 保留其 pending 跳转（如资料完善向导）的语义
-      if (!loginNavTimer && !autoForwardedToMain) {
+      // 页面自身登录流程已接管跳转（一次性标记已置 / loginNavTimer 已挂起 /
+      // 登录请求在途）时不重复跳转，保留其 pending 跳转（如资料完善向导）的语义
+      if (!loginNavTimer && !autoForwardedToMain && !loginFlowActive) {
         autoForwardedToMain = true;
         uni.switchTab({ url: "/pages/discover/index" });
       }
@@ -172,6 +177,31 @@ function togglePhoneLogin() {
 function navigateAfterLogin() {
   const pending = consumePendingLoginRedirect();
   replaceAppPath(pending ?? "/pages/discover/index");
+}
+
+/**
+ * 登录成功后的统一导航入口（MP-R1-LOGIN-002）。
+ *
+ * <p>所有登录路径（微信 / 手机号 / 体验账号 / 手机号快捷绑定）成功后必须经由本函数
+ * 跳转：先置 autoForwardedToMain 一次性标记，使 userSession 赋值触发的
+ * watch(isLoggedIn) 与 onShow 恢复检查都让位，保证全程只有一次导航——
+ * 此前微信路径在 await 续体里直接 navigateAfterLogin()，两个一次性标记均未设置，
+ * 与 watch 的 switchTab 形成双导航竞争（「Page route 错误/routeDone with a
+ * webviewId」同类缺陷）。</p>
+ *
+ * @param delayMs 延时毫秒数；0 = 立即导航（微信路径），默认 1500（让 toast 展示后再跳）
+ */
+function loginSuccessNavigate(delayMs = 1500) {
+  autoForwardedToMain = true;
+  if (loginNavTimer) clearTimeout(loginNavTimer);
+  if (delayMs > 0) {
+    loginNavTimer = setTimeout(() => {
+      navigateAfterLogin();
+      loginNavTimer = null;
+    }, delayMs);
+  } else {
+    navigateAfterLogin();
+  }
 }
 
 function toggleRegisterMode() {
@@ -247,18 +277,24 @@ async function onWechatLogin() {
   }
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
   addBreadcrumb("ui", "button_click", { id: "login.wechat" });
+  // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转，
+  // 登录成功后的唯一导航由 loginSuccessNavigate() 负责
+  loginFlowActive = true;
   try {
     // services/auth.ts 封装 wx.login + POST /v1/auth/wechat，无 Mock fallback
     // 失败时抛出 WechatLoginError（含明确业务错误码）
     await sessionStore.loginWithWechat();
     // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
-    navigateAfterLogin();
+    // MP-R1-LOGIN-002：立即导航且先置一次性标记，避免与 watch 双 switchTab 竞争
+    loginSuccessNavigate(0);
   } catch (error) {
     // 登录失败：上报到 Sentry，source 标记为 login.wechat 便于后台按登录方式筛选
     captureException(error, { source: "login.wechat" });
     // 显示具体错误消息（WechatLoginError.message 已包含用户友好提示）
     const message = error instanceof Error ? error.message : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    loginFlowActive = false;
   }
 }
 
@@ -313,6 +349,8 @@ async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: stri
     return;
   }
   addBreadcrumb("ui", "button_click", { id: "login.phoneQuick" });
+  // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
+  loginFlowActive = true;
   try {
     await bindPhoneViaWechat(code);
     uni.showToast({ title: t("login.phoneBoundSuccess"), icon: "success" });
@@ -322,11 +360,8 @@ async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: stri
         console.warn("[Login] 手机号绑定后会话同步失败:", err);
       }
     });
-    if (loginNavTimer) clearTimeout(loginNavTimer);
-    loginNavTimer = setTimeout(() => {
-      navigateAfterLogin();
-      loginNavTimer = null;
-    }, 1500);
+    // MP-R1-LOGIN-002：统一经 loginSuccessNavigate 跳转（先置一次性标记防双导航）
+    loginSuccessNavigate(1500);
   } catch (error) {
     // Mock 模式：后端无此端点返回 404，提示使用验证码登录
     const status = error !== null && typeof error === "object" && "status" in error
@@ -338,9 +373,20 @@ async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: stri
       showPhoneLogin.value = true;
       return;
     }
+    // MP-R1-LOGIN-003：未登录新用户在登录页点「手机号快捷登录」，bindPhoneViaWechat
+    // 以无 token 身份请求受保护端点必得 401——这是预期态（尚未登录），与 404 同策略：
+    // 不上报 Sentry（预期噪音）、提示改用验证码登录并展开表单兜底，
+    // 避免走 http 层通用 401 分支在登录页自身 reLaunch 重载 + 「登录已过期」误导文案。
+    if (status === 401) {
+      uni.showToast({ title: t("login.useSmsToLogin"), icon: "none" });
+      showPhoneLogin.value = true;
+      return;
+    }
     captureException(error, { source: "login.phoneQuick" });
     const message = error instanceof Error ? error.message : t("login.phoneAuthFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    loginFlowActive = false;
   }
 }
 
@@ -370,6 +416,8 @@ async function onPhoneLogin() {
   }
   // infra R2 联调改进:真实调用后端(参考 eladmin 账号体系)。
   // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
+  // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
+  loginFlowActive = true;
   try {
     if (phoneRegisterMode.value) {
       await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value, smsCode.value.trim());
@@ -388,12 +436,8 @@ async function onPhoneLogin() {
         console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
       }
     });
-    if (loginNavTimer) clearTimeout(loginNavTimer);
-    loginNavTimer = setTimeout(() => {
-      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
-      navigateAfterLogin();
-      loginNavTimer = null;
-    }, 1500);
+    // MP-R1-LOGIN-002：统一经 loginSuccessNavigate 跳转（先置一次性标记防双导航）
+    loginSuccessNavigate(1500);
   } catch (error) {
     captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
     // 3-N 未成年人保护：后端 403 MINOR_NOT_ALLOWED → 明确提示未满 18 岁
@@ -404,6 +448,8 @@ async function onPhoneLogin() {
         ? error.message
         : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    loginFlowActive = false;
   }
 }
 /**
@@ -435,6 +481,8 @@ async function onGuestLogin() {
   }
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
   addBreadcrumb("ui", "button_click", { id: "login.guest" });
+  // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
+  loginFlowActive = true;
   try {
     await loginAsGuest();
     // 2026-08-31：游客进入语义与「登录成功」不符（录屏反馈），改为体验模式文案
@@ -448,12 +496,8 @@ async function onGuestLogin() {
         console.warn("[Login] 登录后会话同步失败（守卫将自愈）:", err);
       }
     });
-    if (loginNavTimer) clearTimeout(loginNavTimer);
-    loginNavTimer = setTimeout(() => {
-      // 2026-08-09：统一跳转（消费 LockScreen 未登录引导写入的 pending 跳转）
-      navigateAfterLogin();
-      loginNavTimer = null;
-    }, 1500);
+    // MP-R1-LOGIN-002：统一经 loginSuccessNavigate 跳转（先置一次性标记防双导航）
+    loginSuccessNavigate(1500);
   } catch (error) {
     // 修复（2026-08-09）：入口被配置关闭（后端 403「体验账号入口已关闭」）是预期业务状态，
     // 仅 toast 展示后端文案，不上报 Sentry（http.ts 已通过 reportError=false 静默，此处同步）
@@ -464,6 +508,8 @@ async function onGuestLogin() {
     }
     const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    loginFlowActive = false;
   }
 }
 /**
@@ -482,6 +528,9 @@ async function enterShowcase() {
   }
   try {
     await loginAsGuest();
+    // MP-R1-LOGIN-002 同模式：先置一次性标记，避免 loginAsGuest 赋值会话触发的
+    // watch 补偿 switchTab 与本 reLaunch 竞争
+    autoForwardedToMain = true;
     // R4-00226：路径走 ROUTES 常量
     uni.reLaunch({ url: ROUTES.SHOWCASE });
   } catch (error) {
@@ -505,6 +554,10 @@ async function enterShowcase() {
 function onDevUserEntry() {
   addBreadcrumb("ui", "button_click", { id: "login.devUser" });
   try {
+    // MP-R1-LOGIN-002：与微信路径同模式——enterDevUserDemo 赋值 userSession 会触发
+    // watch(isLoggedIn) 的补偿 switchTab，与本函数的 reLaunch 形成双导航竞争；
+    // 先置一次性标记让 watch 让位，全程仅本 reLaunch 一次导航。
+    autoForwardedToMain = true;
     sessionStore.enterDevUserDemo();
     uni.reLaunch({ url: ROUTES.TAB.DISCOVER });
   } catch (error) {

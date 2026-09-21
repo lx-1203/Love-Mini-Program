@@ -204,8 +204,8 @@ onLoad(() => {
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 16rpx;
-  background: #ffffff;
-  border-bottom: 1rpx solid #EEF2F0;
+  background: var(--c-bg-container, #ffffff);
+  border-bottom: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .location-header__back {
@@ -224,7 +224,7 @@ onLoad(() => {
 .location-header__title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .location-header__placeholder {
@@ -243,7 +243,7 @@ onLoad(() => {
 .location-card {
   padding: 40rpx 32rpx;
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
@@ -273,25 +273,25 @@ onLoad(() => {
 
 .location-card__label {
   font-size: 24rpx;
-  color: #9AA39F;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 .location-card__value {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
   word-break: break-all;
 }
 
 .location-card__coords {
   font-size: 22rpx;
-  color: #94A39F;
+  color: var(--c-text-tertiary, #94A39F);
 }
 
 .location-card__campus {
   padding: 16rpx 24rpx;
   border-radius: 16rpx;
-  background: #E8FBF2;
+  background: var(--c-brand-50, #E8FBF2);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -299,13 +299,13 @@ onLoad(() => {
 
 .location-card__campus-label {
   font-size: 24rpx;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
 }
 
 .location-card__campus-value {
   font-size: 26rpx;
   font-weight: 700;
-  color: #22A35F;
+  color: var(--c-success, #22A35F);
 }
 
 .location-card__address {
@@ -314,13 +314,13 @@ onLoad(() => {
   gap: 16rpx;
   padding: 16rpx 24rpx;
   border-radius: 16rpx;
-  background: #F4F7F5;
+  background: var(--c-bg-page, #F4F7F5);
 }
 
 .location-card__address-label {
   flex-shrink: 0;
   font-size: 24rpx;
-  color: #9AA39F;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 .location-card__address-value {
@@ -328,7 +328,7 @@ onLoad(() => {
   min-width: 0;
   font-size: 24rpx;
   font-weight: 600;
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
   word-break: break-all;
 }
 
@@ -344,7 +344,7 @@ onLoad(() => {
   height: 440rpx;
   border-radius: 24rpx;
   overflow: hidden;
-  background: #E8EEF2;
+  background: var(--c-bg-page, #E8EEF2);
 }
 
 .location-map__canvas--h5 {
@@ -355,7 +355,7 @@ onLoad(() => {
 
 .location-map__h5-text {
   font-size: 26rpx;
-  color: #9AA39F;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 .location-map__tip-row {
@@ -369,7 +369,7 @@ onLoad(() => {
   flex: 1;
   min-width: 0;
   font-size: 22rpx;
-  color: #9AA39F;
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 .location-map__pick {
@@ -377,7 +377,7 @@ onLoad(() => {
   height: 64rpx;
   padding: 0 28rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  background: var(--c-brand, #36C99A);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -386,7 +386,7 @@ onLoad(() => {
 .location-map__pick-text {
   font-size: 26rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .location-actions {
@@ -398,23 +398,23 @@ onLoad(() => {
 .location-btn {
   height: 96rpx;
   border-radius: 999rpx;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .location-btn--primary {
-  background: #36C99A;
+  background: var(--c-brand, #36C99A);
 }
 
 .location-btn__text {
   font-size: 28rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .location-btn:not(.location-btn--primary) .location-btn__text {
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
 }
 </style>

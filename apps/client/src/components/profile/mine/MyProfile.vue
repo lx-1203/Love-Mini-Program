@@ -31,7 +31,8 @@ const emit = defineEmits<{
   (e: "addStory"): void;
   (e: "postTap", id: string): void;
   (e: "interactionTap", key: string): void;
-  (e: "growthTap", key: string): void;
+  // MP-R1-PROFILE-204：growthTap emit 已删（模板内无发射点，契约断裂的死声明；
+  // MyGrowth.vue 孤儿组件一并移除）
   (e: "moreTap", key: string): void;
 }>();
 </script>

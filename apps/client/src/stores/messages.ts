@@ -3,7 +3,7 @@ import { request, withTimeout as withHttpTimeout, EnhancedApiError, getToken } f
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 2026-08-10 切换提速：消息页 TTL 缓存（30s 新鲜度，官方号消息流 60s）
-import { isCacheFresh, fetchWithStaleWhileRevalidate } from "../utils/cache-ttl";
+import { isCacheFresh, fetchWithStaleWhileRevalidate, removeCache, setCachedValue } from "../utils/cache-ttl";
 
 /** 消息页 bootstrap 新鲜度窗口 */
 const BOOTSTRAP_TTL_MS = 30_000;
@@ -337,9 +337,12 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
     sessionId: String(raw.conversationId),
     sender: String(raw.senderId) === currentUserId ? "self" : "peer",
     // 2026-08-08 活动卡片：kind=activity（content 为 JSON）；未知 kind 回退 text 容错旧数据
+    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：补 image 分支——后端透传小写 "image"，
+    // 原映射无该分支使 real 模式图片消息全部降级为 URL 文本气泡
     kind: raw.messageKind === "voice" ? "voice"
       : raw.messageKind === "emoji" ? "emoji"
       : raw.messageKind === "activity" ? "activity"
+      : raw.messageKind === "image" ? "image"
       : "text",
     body: raw.content,
     sentAt: raw.createdAt,
@@ -528,10 +531,24 @@ export const useMessagesStore = defineStore("messages", {
   },
 
   actions: {
-    async bootstrap() {
+    /**
+     * 消息页首屏聚合拉取。
+     * MP-R1-PAGES-MESSAGES-INDEX-009：force=true（下拉刷新）穿透 30s TTL 并等待真实
+     * 数据完成（SWR 缓存路径会让下拉动画在数据到达前结束）；完成后回写缓存时间戳。
+     * MP-R1-PAGES-MESSAGES-INDEX-008：错误重试经 removeCache 穿透缓存（页面调用）。
+     */
+    async bootstrap(force = false) {
       try {
         // 2026-08-10 切换提速：30s 新鲜度窗口，新鲜时直接跳过（内容已在 store 中，秒开）
-        if (!useMock() && isCacheFresh("messages:bootstrap", BOOTSTRAP_TTL_MS)) {
+        if (!force && !useMock() && isCacheFresh("messages:bootstrap", BOOTSTRAP_TTL_MS)) {
+          return;
+        }
+        const fetchAll = () =>
+          Promise.all([this.fetchSessions(), this.fetchRelationshipDashboard(), this.fetchHeartSignals(), this.fetchNotifications()]);
+        if (force) {
+          await withTimeout(fetchAll(), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutBootstrap")); // infra R2-00028: 超时文案 i18n 化
+          // 回写缓存时间戳（下次 30s 内进入仍走秒开路径）
+          setCachedValue("messages:bootstrap", null);
           return;
         }
         await withTimeout(
@@ -539,7 +556,7 @@ export const useMessagesStore = defineStore("messages", {
           fetchWithStaleWhileRevalidate(
             "messages:bootstrap",
             BOOTSTRAP_TTL_MS,
-            () => Promise.all([this.fetchSessions(), this.fetchRelationshipDashboard(), this.fetchHeartSignals(), this.fetchNotifications()])
+            fetchAll
           ),
           ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutBootstrap") // infra R2-00028: 超时文案 i18n 化
         );
@@ -559,18 +576,33 @@ export const useMessagesStore = defineStore("messages", {
           method: "GET",
         });
         this.dashboard = data;
-        // dashboard 携带的会话与 fetchSessions 结果保持一致
+        // dashboard 携带的会话与 fetchSessions 结果保持一致。
+        // MP-R1-PAGES-MESSAGES-INDEX-007：改为按 id 合并进现有列表——原实现
+        // this.sessions=merged 整表覆盖，dashboard（后端 recentChats 不含官方号）
+        // 后到时会丢弃 fetchSessions 刚写入的 official-*/temp_anonymous 会话，
+        // 列表组成随响应到达顺序竞态变化；且旧本地 unreadCount 会覆盖 dashboard 新值。
         if (Array.isArray(data.recentChats)) {
           const existing = new Map(this.sessions.map((s) => [s.id, s]));
-          const merged = data.recentChats.map((raw) => {
-            const oldSession = existing.get(String(raw.id));
+          const mergedById = new Map<string, MessageSession>();
+          for (const raw of data.recentChats) {
             const session = mapToMessageSession(raw as unknown as ConversationView);
+            // 仅保留本地运行期态（置顶为纯前端状态）；未读以服务端新值为准
+            const oldSession = existing.get(session.id);
             if (oldSession) {
-              return { ...session, muted: oldSession.muted, unreadCount: oldSession.unreadCount, pinned: oldSession.pinned };
+              session.pinned = oldSession.pinned;
             }
-            return session;
+            mergedById.set(session.id, session);
+          }
+          // 保留 dashboard 未覆盖的会话（官方号 / 临时匿名 / 其他来源）
+          for (const s of this.sessions) {
+            if (!mergedById.has(s.id)) {
+              mergedById.set(s.id, s);
+            }
+          }
+          this.sessions = [...mergedById.values()].sort((a, b) => {
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+            return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
           });
-          this.sessions = merged;
         }
       } catch (error) {
         // dashboard 失败不阻塞会话列表，保留已有数据
@@ -1195,7 +1227,7 @@ export const useMessagesStore = defineStore("messages", {
      * 后端成功后才改本地状态；mock 分支保持纯本地（会话不落库）。
      * 后端持久化后刷新/换端不还原（ConversationView.muted 下发）。
      */
-    async setSessionMuted(sessionId: string, muted: boolean) {
+    async setSessionMuted(sessionId: string, muted: boolean): Promise<boolean> {
       if (!useMock()) {
         try {
           await request({
@@ -1204,12 +1236,14 @@ export const useMessagesStore = defineStore("messages", {
             data: { muted },
           });
         } catch (_e) {
-          // 服务端失败：不改本地状态（保持原值），错误由调用方 toast 提示
-          return;
+          // 服务端失败：不改本地状态（保持原值），返回 false 由调用方 toast 提示
+          // （MP-R1-PAGES-MESSAGES-INDEX-008：操作失败不再误触整页 error 态）
+          return false;
         }
       }
       const session = this.sessions.find((s) => s.id === sessionId);
       if (session) session.muted = muted;
+      return true;
     },
 
     /**

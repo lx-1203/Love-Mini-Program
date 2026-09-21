@@ -23,6 +23,10 @@ import { IMAGE_PATHS } from "@/config/images";
 // 2026-08-27 修复：首页「社区动态」数据派生自 village 帖子 mock 数据，
 // 保证首页动态与村口帖子同源、点击直达真实帖子详情（id 对齐 post-N）。
 import { mockPosts } from "../../stores/village/mock-data";
+// MP-R1-PAGES-HOME-INDEX-003：首页兴趣圈 joined 口径与 circle store mock 种子同源——
+// 按 MOCK_CIRCLE_ID_ALIASES 归一后读 mockCircles 的 isJoined（与 real 的
+// joinedIds.contains 同语义），消除「首页恒 false vs 圈子 store 已加入」双数据源漂移。
+import { mockCircles, resolveMockCircleId } from "../../stores/circle/mock-data";
 // i18n 翻译函数（SubTask 3.3.4：Mock 数据文案 i18n 化）
 // 在非组件场景使用 i18n.global.t，与组件内 useI18n().t 行为一致。
 import { t } from "@/i18n";
@@ -667,7 +671,9 @@ function buildRecommendedPersonsMock(): MockRecommendedPersonInternal[] {
       ipLocation: "广东 · 广州",
       recentPosts: [
         // D-05b（第五轮 QA）：他人主页动态补配图
-        { id: "p4009-1", content: "今天的晚霞很适合拍照。", images: [resolveMediaUrl("/static/assets/images/portraits/p6.jpg")], likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
+        // MP-R1-VILLAGE-INDEX-103：p6.jpg 实读核对为人像街拍——文案由「晚霞」改为与画面
+        // 一致的人像光线语义（仓库无晚霞实拍图，避免图文不符）
+        { id: "p4009-1", content: "傍晚的光线太适合拍照了。", images: [resolveMediaUrl("/static/assets/images/portraits/p6.jpg")], likes: 58, comments: 11, isLiked: false, createdAt: "2026-07-21T10:00:00Z" },
       ],
     },
   ];
@@ -1043,6 +1049,18 @@ function buildCommunityPostsFromVillage() {
     }));
 }
 
+/**
+ * MP-R1-PAGES-HOME-INDEX-003：把首页兴趣圈的数字 ID（1=摄影圈…）归一为 mock
+ * 标准圈子 ID 后读 mockCircles 种子的 isJoined。joinCircle/leaveCircle 在 mock 下
+ * 原地改写种子对象（同一引用），故每次 buildHomeDashboard 都能取到最新加入态，
+ * 首页按钮不再与 circle store 漂移。
+ */
+function isMockCircleJoined(numericId: number): boolean {
+  const circleId = resolveMockCircleId(String(numericId));
+  if (!circleId) return false;
+  return mockCircles.some((c) => c.id === circleId && c.isJoined);
+}
+
 function buildHomeDashboard(): HomeDashboard {
   return {
     scheduleSummary: {
@@ -1124,11 +1142,14 @@ function buildHomeDashboard(): HomeDashboard {
         ],
       },
       relationActivity: { likesReceived: 3, whispers: 2, visitors: 5, newMatches: 1, totalUnread: 11 },
+      // MP-R1-PAGES-HOME-INDEX-003：joined 按 mockCircles 种子归一输出（单一数据源），
+      // 修复 circle-music/circle-food 种子 isJoined:true 与首页恒 false 的口径矛盾；
+      // 加入/退出后 30s 陈旧刷新、下拉刷新、重进 onShow 不再把按钮翻回「加入」。
       interestRecommendations: [
-        { id: 1, name: "摄影圈", icon: "/static/assets/icons/common/camera.svg", memberCount: 12000, joined: false },
-        { id: 2, name: "旅行圈", icon: "/static/assets/icons/common/travel.svg", memberCount: 8932, joined: false },
-        { id: 3, name: "音乐圈", icon: "/static/assets/icons/common/music.svg", memberCount: 16000, joined: false },
-        { id: 4, name: "美食圈", icon: "/static/assets/icons/common/food.svg", memberCount: 9210, joined: false },
+        { id: 1, name: "摄影圈", icon: "/static/assets/icons/common/camera.svg", memberCount: 12000, joined: isMockCircleJoined(1) },
+        { id: 2, name: "旅行圈", icon: "/static/assets/icons/common/travel.svg", memberCount: 8932, joined: isMockCircleJoined(2) },
+        { id: 3, name: "音乐圈", icon: "/static/assets/icons/common/music.svg", memberCount: 16000, joined: isMockCircleJoined(3) },
+        { id: 4, name: "美食圈", icon: "/static/assets/icons/common/food.svg", memberCount: 9210, joined: isMockCircleJoined(4) },
       ],
       nearbyPeople: [
         { userId: 4001, name: "林晓", distanceText: "1.2km", avatarUrl: "/static/assets/images/people/person-01.png", online: true, commonInterests: ["摄影"] },

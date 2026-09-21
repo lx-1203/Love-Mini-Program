@@ -608,8 +608,22 @@ async function loadSessionData(): Promise<void> {
   if (isTemp) {
     // 临时匿名会话：temp-chat 接口加载会话（返回会话含全部消息），
     // 同步到 messagesStore 单一数据源后渲染
+    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-003：loadSession 经 withErrorHandling
+    // 吞错（rethrow=false），失败时 errorMessage 非空——此时跳过 sync（sync 会把
+    // currentMessages 清为 [] 渲染成「0 气泡+破冰引导」的假空会话），置页面错误态
+    // 让「会话不存在或已失效」真实到达用户。
+    const errBefore = chatStore.errorMessage;
     await chatStore.loadSession(sessionId.value);
+    if (chatStore.errorMessage && chatStore.errorMessage !== errBefore) {
+      pageErrorMessage.value = chatStore.errorMessage;
+      return;
+    }
     syncChatStoreMessagesToMessagesStore();
+    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001：会话数据就绪后（重）启动剩余时间
+    // 倒计时——原仅 onShow 同步调用一处，彼时 loadSession 在途、currentSession 为 null、
+    // isTempSession 为 false，interval 不建立，首进倒计时恒空（退出重进才恢复）。
+    // 函数内已先 clearInterval，重复调用幂等。
+    startTempCountdown();
     return;
   }
 
@@ -1094,7 +1108,15 @@ async function sendText() {
   try {
     if (isTempSession.value) {
       // 临时匿名会话使用 chatStore 的临时聊天链路
+      // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002：chatStore.sendText 失败被 store
+      // 内部 catch 吞掉（不 rethrow），页面 await 永不 reject——以 errorMessage 变化判定
+      // 真实失败：保留草稿 + toast，不再走成功路径清空草稿（原失败时消息正文丢失且无反馈）
+      const errBefore = chatStore.errorMessage;
       await chatStore.sendText(messageToSend);
+      if (chatStore.errorMessage && chatStore.errorMessage !== errBefore) {
+        uni.showToast({ title: chatStore.errorMessage, icon: "none" });
+        return;
+      }
       // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
       syncChatStoreMessagesToMessagesStore();
       // R16（2026-09-07）：删除「补一条 local self 消息」的兜底——后端已修复

@@ -83,6 +83,7 @@ function closeGovernance() {
         :following="props.following"
         @like="emit('like')"
         @message="emit('message')"
+        @whisper="emit('whisper')"
         @follow="emit('follow')"
       />
       <GovernanceMenu

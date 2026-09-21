@@ -105,6 +105,13 @@ async function loadList(filter?: FilterType): Promise<void> {
     // feedbackStore.load 接受 SubmissionType | undefined
     // "all" 对应 undefined（不筛选）
     await feedbackStore.load(type === "all" ? undefined : type);
+    // MP-R1-FEEDBACKHIST-001：store.load 吞错不 rethrow（页面 catch 永不可达，错误卡/
+    // 重试按钮为死代码，失败被呈现为「暂无反馈」空态）——改读 store.errorMessage
+    // 映射到页面错误态
+    if (feedbackStore.errorMessage) {
+      errorMessage.value = feedbackStore.errorMessage;
+      return;
+    }
     // infra R2-00103: 列表刷新成功后清空详情缓存，避免后端更新后仍展示陈旧详情
     detailCache.value = {};
     detailLoading.value = {};

@@ -6,6 +6,7 @@
  */
 
 import { request } from "../services/http";
+import { TENCENT_MAP_KEY, isDev } from "../config/env";
 
 /** 默认位置文案（校园 + 距离） */
 export const DEFAULT_LOCATION_TEXT = "北京大学 · 附近";
@@ -38,13 +39,38 @@ export async function fetchCurrentLocation(): Promise<LocationResult | null> {
     });
 
     const { latitude, longitude } = res;
-    // 尝试逆地理编码获取城市名
-    const city = await reverseGeocode(latitude, longitude);
+    // 尝试逆地理编码获取城市名（腾讯地图 key 未配置时内部直接短路返回空串）
+    let city = await reverseGeocode(latitude, longitude);
+    if (!city) {
+      // MP-R1-PAGES-NEARBY-INDEX-005：腾讯地图 key 未配置/解析失败时，
+      // 回退后端公开端点 /location/ip-city（SecurityConfig permitAll）解析城市，
+      // 避免「城市」维度因 key 缺失整链失真（currentCity 永不设置、
+      // 城市过滤/副标题恒走兜底文案）。
+      city = await fetchCityFromBackend().catch(() => "");
+    }
     return { latitude, longitude, city };
   } catch (_err) {
     // 定位失败（用户拒绝授权 / 系统关闭定位等）
     return null;
   }
+}
+
+/** 后端 /location/ip-city 响应体（ApiResponse<LocationCityView> 的 data 字段）。 */
+interface LocationCityData {
+  city?: string;
+}
+
+/**
+ * 经后端公开端点解析请求方 IP 所属城市（MP-R1-PAGES-NEARBY-INDEX-005）。
+ * 失败返回空串，由调用方继续走兜底文案。
+ */
+async function fetchCityFromBackend(): Promise<string> {
+  const data = (await request({
+    url: "/location/ip-city",
+    method: "GET",
+  })) as Partial<LocationCityData> | null;
+  const city = data?.city;
+  return typeof city === "string" ? city : "";
 }
 
 /** 腾讯地图逆地理编码响应体（仅声明本文件消费的字段，apis.map.qq.com/ws/geocoder/v1）。 */
@@ -64,11 +90,19 @@ interface GeocoderResponse {
  */
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   // 腾讯地图逆地理编码（免费额度，需在微信后台配置请求域名）
-  // 若未配置域名或 key 无效，静默降级返回空串
+  // MP-R1-PAGES-HOME-INDEX-004：key 改由构建期环境变量 VITE_TENCENT_MAP_KEY 注入
+  // （config/env.ts 的 TENCENT_MAP_KEY）；未配置时直接短路返回空串，
+  // 不再发出注定失败的请求（占位符 YOUR_KEY 时代城市解析恒败且每次定位白打一次请求）。
+  if (!TENCENT_MAP_KEY) {
+    if (isDev) {
+      console.warn("[location] VITE_TENCENT_MAP_KEY 未配置，跳过腾讯地图逆地理编码（城市改经后端 /location/ip-city 解析）");
+    }
+    return "";
+  }
   return new Promise((resolve) => {
     // #ifdef MP-WEIXIN
     uni.request({
-      url: `https://apis.map.qq.com/ws/geocoder/v1/?location=${lat},${lng}&key=YOUR_KEY`,
+      url: `https://apis.map.qq.com/ws/geocoder/v1/?location=${lat},${lng}&key=${TENCENT_MAP_KEY}`,
       success: (res: UniApp.RequestSuccessCallbackResult) => {
         // data 为 string | AnyObject | ArrayBuffer，先收敛到对象再按契约读取
         const payload: unknown = res.data;

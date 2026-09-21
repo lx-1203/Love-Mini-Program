@@ -38,6 +38,13 @@ export const APP_CONFIG = {
   APP_VERSION: resolveAppVersion(),
   /** 调试模式标签 */
   DEBUG_TAG: '[CampusLove]',
+  /**
+   * 客服邮箱地址（MP-R1-HELP-101）。
+   * 「复制客服邮箱」动作必须复制本真实地址——i18n 的 help.contactEmail 是展示文案
+   * （"客服邮箱"/"Support Email"标签），此前直接复制标签导致剪贴板内容恒为文案标签。
+   * 邮箱为静态业务常量，不随 locale 切换。
+   */
+  SUPPORT_EMAIL: 'support@campuslove.app',
 };
 
 /**

@@ -10,6 +10,9 @@
  * - 认证状态展示（审核中/已认证/未通过）
  */
 import { ref, onMounted } from "vue";
+// MP-R1-CERT-101：从 real-name 页完成实名后 navigateBack 返回本页，页面实例不重建、
+// onMounted 不再执行——需 onShow 重拉实名门槛
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
@@ -245,6 +248,13 @@ function statusIcon(status: CertificationStatus): string {
 onMounted(() => {
   void loadRealNameGate();
   void campusStore.fetchCertificationStatus();
+});
+
+// MP-R1-CERT-101：本页有 navigateTo 跳 real-name 再返回的确定路径（goRealNameCertification），
+// 实名成功返回后门槛横幅自动消失/表单自动解禁（原只在 onMounted 拉一次，
+// 必须退出本页重进才能解锁）
+onShow(() => {
+  void loadRealNameGate();
 });
 </script>
 

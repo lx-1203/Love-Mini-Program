@@ -40,10 +40,10 @@ export interface DiscoverStoreThis extends DiscoverState {
   fetchCards: () => Promise<void>;
   /** 同步历史记录与已拒绝记录 */
   syncHistoryCards: () => void;
-  /** 左滑（不感兴趣） */
-  swipeLeft: (cardId: string) => Promise<void>;
-  /** 右滑（喜欢） */
-  swipeRight: (cardId: string, isSuperLike?: boolean) => Promise<void>;
+  /** 左滑（不感兴趣）；MP-R1-LNEARBY-101：cardSnapshot 供独立本地卡片队列的调用方传入 */
+  swipeLeft: (cardId: string, cardSnapshot?: DiscoverCard | null) => Promise<void>;
+  /** 右滑（喜欢）；MP-R1-LNEARBY-101：callerSnapshot 供独立本地卡片队列的调用方传入 */
+  swipeRight: (cardId: string, isSuperLike?: boolean, callerSnapshot?: DiscoverCard | null) => Promise<void>;
   /** swipeRight 的实际执行逻辑（由防抖窗口的幂等队列 flush 调用，R4-00177） */
   _doSwipeRight: (
     cardId: string,

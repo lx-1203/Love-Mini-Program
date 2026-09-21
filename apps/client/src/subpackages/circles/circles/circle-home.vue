@@ -104,11 +104,17 @@ const coverImage = computed<string>(() => circleCoverFor(circle.value.name));
 /** 是否已加入（控制底部栏按钮态） */
 const joined = computed(() => circle.value.isJoined);
 
-/** 圈标签（本地 mock —— TODO(后端): 圈子标签字段） */
-const circleTags = ["摄影技巧", "风景拍摄", "人像写真", "城市漫游"];
+/** 圈标签（本地 mock —— TODO(后端): 圈子标签字段）。
+ *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示标签（任何圈子都显示摄影技巧…） */
+const circleTags = computed<string[]>(() =>
+  useMock() ? ["摄影技巧", "风景拍摄", "人像写真", "城市漫游"] : []
+);
 
-/** 置顶公告（本地 mock —— TODO(后端): 圈公告接口） */
-const pinnedNotice = "【规约】友善交流，尊重原创，分享美好瞬间";
+/** 置顶公告（本地 mock —— TODO(后端): 圈公告接口）。
+ *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示公告 */
+const pinnedNotice = computed<string>(() =>
+  useMock() ? "【规约】友善交流，尊重原创，分享美好瞬间" : ""
+);
 
 /** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */
 interface FeedItem {
@@ -252,10 +258,14 @@ watch(
 );
 
 /** 展示列表：真实话题优先，空/失败回退本地演示数据（骨架不空屏）。
- *  MP-R4-CIRCLEHOME-01：real 模式未知圈不回退演示动态（见 isUnknownCircle）。 */
+ *  MP-R4-CIRCLEHOME-01：real 模式未知圈不回退演示动态（见 isUnknownCircle）。
+ *  MP-R1-CIRCLEHOME-001：real 模式已知圈子暂无话题时同样不回退演示动态
+ *  （原 IA-CIRCLEHOME-01 只修未知圈一半——真实圈空 feed 也渲染假校名/假点赞），
+ *  空 feed 走空态；演示回退仅 mock 模式保留。 */
 const displayFeed = computed<FeedItem[]>(() => {
   if (isUnknownCircle.value) return [];
-  return realFeed.value.length > 0 ? realFeed.value : feedItems.value;
+  if (realFeed.value.length > 0) return realFeed.value;
+  return useMock() ? feedItems.value : [];
 });
 
 onLoad((query) => {
@@ -338,8 +348,12 @@ async function toggleJoin(): Promise<void> {
     } else {
       await circleStore.joinCircle(circle.value.id);
     }
-  } catch (_e) {
-    // store 内部已 toast 错误，此处静默
+  } catch (e) {
+    // MP-R1-CIRCLES-001：store 只置 errorMessage 后 rethrow，从不出 toast——补用户可见反馈
+    uni.showToast({
+      title: e instanceof Error && e.message ? e.message : t("apiErrors.operationFailed"),
+      icon: "none",
+    });
   }
 }
 

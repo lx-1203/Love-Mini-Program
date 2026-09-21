@@ -349,16 +349,36 @@ async function doDelete(index: number): Promise<void> {
 /**
  * 点击已上传照片：全屏预览
  *
+ * MP-R1-ALBUM-001：预览 URL 与展示网格同源——
+ * (a) 原实现直传原始 URL 数组：/uploads/ 相对路径被小程序当包内文件、
+ *     /api/v1/media/ 代理路径缺 token 被鉴权拦截，预览失败/转圈；现统一 resolveMediaUrl。
+ * (b) /static/ 包内路径不走 uni.previewImage（other.vue R18 留档：微信预览器不支持包内
+ *     /static 路径，永久加载转圈）——改用页面内全屏遮罩查看层。
+ *
  * @param index - 照片索引
  */
 function handlePhotoTap(index: number): void {
   const url = photoGallery.value[index];
   if (!url) return;
   lightHaptic();
+  if (url.startsWith("/static/")) {
+    viewerUrls.value = photoGallery.value.map((item) => resolveMediaUrl(item));
+    viewerCurrent.value = index;
+    viewerVisible.value = true;
+    return;
+  }
   uni.previewImage({
-    urls: photoGallery.value,
-    current: url,
+    urls: photoGallery.value.map((item) => resolveMediaUrl(item)),
+    current: resolveMediaUrl(url),
   });
+}
+
+/** MP-R1-ALBUM-001：包内 /static 路径的自建全屏查看层状态 */
+const viewerVisible = ref(false);
+const viewerUrls = ref<string[]>([]);
+const viewerCurrent = ref(0);
+function closeViewer(): void {
+  viewerVisible.value = false;
 }
 
 /**
@@ -477,10 +497,61 @@ onShow(() => {
     <view v-if="photoCount > 0" class="album-tip">
       <text class="album-tip__text">{{ t("profile.albumPreviewLongPress") }}</text>
     </view>
+
+    <!-- MP-R1-ALBUM-001：包内 /static 路径的自建全屏查看层（uni.previewImage 不支持包内路径） -->
+    <view v-if="viewerVisible" class="album-viewer" @tap="closeViewer">
+      <image class="album-viewer__img" :src="viewerUrls[viewerCurrent]" mode="aspectFit" />
+      <view class="album-viewer__pager">
+        <text
+          v-for="(item, idx) in viewerUrls"
+          :key="idx"
+          class="album-viewer__dot"
+          :class="{ 'album-viewer__dot--active': idx === viewerCurrent }"
+          @tap.stop="viewerCurrent = idx"
+        />
+      </view>
+    </view>
   </view>
 </template>
 
 <style scoped lang="scss">
+/* MP-R1-ALBUM-001：全屏查看层（黑色遮罩 + 大图 + 圆点分页） */
+.album-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-viewer__img {
+  width: 100%;
+  height: 80vh;
+}
+
+.album-viewer__pager {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom) + 40rpx);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.album-viewer__dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.album-viewer__dot--active {
+  background: #ffffff;
+}
+
 .album-page {
   display: flex;
   flex-direction: column;

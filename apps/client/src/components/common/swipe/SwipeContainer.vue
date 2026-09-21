@@ -13,7 +13,11 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "swipe-left"): void;
   (e: "swipe-right"): void;
-  (e: "tap"): void;
+  /* MP-R1-PAGES-DISCOVER-INDEX-005：对外点击事件由 "tap" 更名 "card-tap"——
+     自定义事件与原生 tap 冒泡同名时，mp-weixin 端 bindtap（原生冒泡）与
+     triggerEvent（手势层 emit）双通道都会命中同名监听，单次点击上游处理函数
+     被重复执行；改用非同名事件后仅保留手势 emit 单通道。 */
+  (e: "card-tap"): void;
 }>();
 
 const {
@@ -33,9 +37,15 @@ const {
     if (!props.disabled) emit("swipe-right");
   },
   onTap: () => {
-    if (!props.disabled) emit("tap");
+    if (!props.disabled) emit("card-tap");
   },
 });
+
+/* MP-R1-PAGES-DISCOVER-INDEX-005：catchtap 阻断原生 tap 冒泡穿越组件边界，
+   原生通道彻底关闭（事件名已与原生 tap 脱钩，此为纵深防御）。 */
+function onCatchTap() {
+  /* 仅阻断冒泡，点击语义统一由手势层 touchend 判定后 emit("card-tap") 承载 */
+}
 
 function handleTouchStart(e: UniTouchEvent) {
   if (props.disabled) return;
@@ -63,6 +73,7 @@ defineExpose({ reset, flyDirection, onTouchMove });
     @touchstart="handleTouchStart"
     catchtouchmove="onTouchMove"
     @touchend="handleTouchEnd"
+    catchtap="onCatchTap"
   >
     <slot />
   </view>

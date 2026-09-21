@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
+import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 
 const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
 defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
@@ -60,8 +62,9 @@ const metaLine = computed(() => {
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
-            <!-- R3：原 BTN_LIKE 资源实为「看看TA」按钮图（渲染成白条），改用白色心形字符 -->
-            <text class="today-card__btn-heart">♥</text>
+            <!-- MP-R1-PAGES-HOME-INDEX-005：♥ 字符在部分字体栈渲染为彩色 emoji 且违反
+                 R11 附录 B「业务组件禁 emoji」硬约束，改用既有白色心形图片资源 -->
+            <image class="today-card__btn-heart-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.HEART_WHITE)" mode="aspectFit" alt="" />
             <text>喜欢</text>
           </view>
         </view>
@@ -298,10 +301,9 @@ const metaLine = computed(() => {
   margin-right: 6rpx;
 }
 
-.today-card__btn-heart {
-  color: #ffffff;
-  font-size: 28rpx;
-  line-height: 1;
+.today-card__btn-heart-img {
+  width: 28rpx;
+  height: 28rpx;
   margin-right: 6rpx;
 }
 

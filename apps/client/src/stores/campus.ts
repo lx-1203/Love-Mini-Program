@@ -396,10 +396,12 @@ export const useCampusStore = defineStore("campus", {
     /**
      * 切换分类
      * @param category - 话题分类
+     * @param school - 公开浏览的目标学校（MP-R1-CAMPUSINDEX-002：切 Tab 透传，
+     *                  未传时后端回退当前用户学校，浏览上下文被静默替换）
      */
-    setActiveCategory(category: CampusTopicCategory) {
+    setActiveCategory(category: CampusTopicCategory, school?: string) {
       this.activeCategory = category;
-      void this.fetchCampusTopics(category, 1);
+      void this.fetchCampusTopics(category, 1, school);
     },
 
     /**

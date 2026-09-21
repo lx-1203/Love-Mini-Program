@@ -16,7 +16,9 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "tap"): void;
+  /* MP-R1-PAGES-DISCOVER-INDEX-005：对外点击事件由 "tap" 更名 "card-tap"，
+     与原生 tap 冒泡脱钩，防止 mp-weixin 端单次点击双通道重复触发 */
+  (e: "card-tap"): void;
   (e: "swipe-left"): void;
   (e: "swipe-right"): void;
 }>();
@@ -53,7 +55,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   <SwipeContainer
     class="match-card-swipe"
     :disabled="disabled"
-    @tap="emit('tap')"
+    @card-tap="emit('card-tap')"
     @swipe-left="emit('swipe-left')"
     @swipe-right="emit('swipe-right')"
   >

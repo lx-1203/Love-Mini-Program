@@ -147,6 +147,12 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
   if (distanceMax !== undefined && distanceMax !== null) {
     parts.push(`distanceMaxKm=${encodeURIComponent(String(distanceMax))}`);
   }
+  // MP-R1-SEARCH-101：schools 序列化补齐（原 filter 类型有 schools 但 query 从未携带，
+  // 请求体与类型契约断裂；后端暂未消费该参数，搜索页已叠加客户端过滤兜底）
+  const schools = (filter as unknown as { schools?: string[] }).schools;
+  if (schools && schools.length > 0) {
+    parts.push(`schools=${encodeURIComponent(schools.join(","))}`);
+  }
   return parts.length > 0 ? `?${parts.join("&")}` : "";
 }
 

@@ -1,0 +1,104 @@
+{
+  "round": "R1",
+  "reviewer": "A2-LayerA-code-review",
+  "generatedAt": "2026-09-22",
+  "pages": ["pages/register/success"],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-001",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无（代码层审查；R21 主跑截图的环境级原生弹窗已按代码层核对）",
+      "category": "Regression",
+      "severity": "P4",
+      "description": "回归核对 R21 线索「主跑截图有环境级原生弹窗（同页补测无）——环境伪影」：代码层证实该页不存在任何可触发原生弹窗的调用，伪影结论维持，非代码回归。",
+      "evidence": "pages/register/success.vue 全文仅两处 uni.* 调用：:41 uni.navigateTo（goSetupProfile）、:46 uni.switchTab（goBrowse）；grep 全文无 uni.showModal / uni.showToast / uni.showActionSheet / uni.showLoading。页面无 try/catch、无 API 请求，代码路径无法产生原生对话框。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "页面不出现任何原生弹窗（维持现状）；R21 弹窗记录继续归档为环境伪影。",
+      "fix": "无需修复。仅当未来真机复现时按运行环境（DevTools/基础库）排查。",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-002",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无（代码层审查）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "主 CTA「完善我的资料 →」点击热区缩小：@tap 绑在内层 <text> 上而非 96rpx 高的按钮容器 <view> 上，text 无显式高度（默认行高盒约 40rpx）且在 flex 容器中垂直居中，按钮上下约各 28rpx 区域点击无响应、无任何反馈。",
+      "evidence": "success.vue:68-70 <view class=\"reg-success__btn\">（height:96rpx，见 :162）内仅 <text class=\"reg-success__btn-text\" @tap=\"goSetupProfile\">（:69）绑定事件；:169-176 btn-text 只设 width:100%/font-size:30rpx，无 height/line-height 撑满。编译产物 dist/build/mp-weixin/pages/register/success.wxml:1 证实 bindtap 位于内层 text 节点。对照同一设计包的注册页 pages/register/index.vue:685-691，@tap 直接绑在 .submit-btn view 上（无此死区）。注释（success.vue:67）称「view+hover-class 绑定失效」是按压反馈问题，与 tap 事件绑定无关，改造时误将事件一并下移。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.7,
+      "ideal": "整枚 96rpx 按钮任意位置可点且有点击态；事件绑在容器 view 上（与 register/index.vue:690 同模式），或 text 设 height:100% + line-height:96rpx 撑满热区。",
+      "fix": "将 @tap=\"goSetupProfile\" 移至 .reg-success__btn view（如需保留按压反馈再单独验证 hover-class）；或给 .reg-success__btn-text 补 height:100%; line-height:96rpx。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-003",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无（代码层审查）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "主按钮渐变终止色 #55d5a7 硬编码，未走设计 token。R11 附录 B 硬约束「设计 token 强制」：项目已有对应 CSS 变量 --c-brand-400（$brand-400: #55D5A7），且 10+ 页面/组件已用 var(--c-brand-400, ...) 的合规写法，本页未跟随。",
+      "evidence": "success.vue:165 background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%) —— 起点走 token、终点裸 hex。token 定义：src/theme/design-variables.scss:14（$brand-400: #55D5A7）、:258（--c-brand-400: #{$brand-400}）。合规参照：pages/profile/index.vue、subpackages/chat/chat-session/index.vue 等 10 文件使用 var(--c-brand-400。grep src 全域同模式硬编码共 6 文件（pages/register/index.vue:1059、subpackages/setup/profile/index.vue、components/common/XunmiMatchRing.vue、XunmiStepProgress.vue、components/home/TodayLoveProgress.vue）——伴生问题，建议一并收敛。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%)，与项目已广泛使用的 token 写法一致。",
+      "fix": "success.vue:165 终止色替换为 var(--c-brand-400, #55d5a7)；同批次收敛 register/index.vue:1059 等 5 处同源硬编码。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-004",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无（代码层审查）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "文件头注释与实现自相矛盾：头注释称入参 phone「缺省时回退会话存储」，但实现只从路由参数取，无任何会话存储回退；同文件 line 20 的字段注释也明确「仅从路由参数取」。",
+      "evidence": "success.vue:7「缺省时回退会话存储」vs :20「UserSession 无手机号字段，仅从路由参数取」+ onLoad（:25-30）仅读 query.phone，raw 长度≠11 时 maskedPhone 保持空串（模板 :34 回退文案「完成」）。已核实 UserSession schema（services/generated/api-types.ts:862-880）确无 phone 字段（仅 phoneBound: boolean）——:20 的注释准确，:7 的头注释过时。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "头注释与实现一致：「入参：phone（注册手机号，用于脱敏展示；缺省时首行标注回退为『完成』，无会话存储回退）」。",
+      "fix": "改 success.vue:7 注释文案，删除「回退会话存储」表述。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-005",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无（代码层审查）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "死样式：.press-feedback / .press-feedback--active 两个类在本页模板中零引用，是从注册页复制后弃用 hover-class 方案留下的残留。",
+      "evidence": "success.vue:184-191 定义两类；grep 本文件 \"press-feedback\" 仅 2 处命中且均为定义本身，模板（:50-75）无 hover-class 或 class 引用。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "页面样式表只含实际引用的类（若 MP-R1-PAGES-REGISTER-SUCCESS-002 改回容器 view + hover-class 方案，则此两类恢复引用，可视为消解）。",
+      "fix": "删除 success.vue:184-191；或随 002 的修复恢复其引用，二选一。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-001",
+      "round": "R1",
+      "page": "pages/register",
+      "screenshot": "无（代码层审查）",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "回归核对 R21 线索「重复注册拦截正确；副作用：业务 400 触发多条 captureException console 噪音」：代码层证实拦截与文案分发已正确，但业务 400 仍会触发 captureException 噪音——页面层已修，服务层漏修。每次预期业务拒绝（已注册/验证码错误等）在 mp 端产生 1 条 console.error + 1 条后端 /v1/error-reports 噪音上报。",
+      "evidence": "页面层：pages/register/index.vue:394-397 仅 !apiError（非 AppApiError）才 captureException，预期业务拒绝不再从页面上报 ✓。服务层：services/auth.ts:331-356 registerUser 的 request 选项只有 skipAuth/noRetry，未传 reportError: false；services/http.ts:857-861 对 error.status!==401 且 reportError!==false 的最终失败（含业务 400，noRetry 只重试 network 类，见 http.ts:853 注释）执行 captureException；mp 端降级通道 services/sentry.ts:187-195 console.error(\"[captureException]\") + void reportErrorToBackend()（POST /v1/error-reports，:497-505）。同文件已有修复范式：auth.ts:390-393 loginAsGuest 传 reportError: false 并注释「预期业务状态……无需上报 Sentry 噪音告警」，register 漏配。错误类型链路核实：http.ts:82 EnhancedApiError extends AppApiError，页面 instanceof AppApiError 分支可达。",
+      "sources": ["code", "log"],
+      "confidence": 0.85,
+      "ideal": "与 loginAsGuest 同口径：registerUser 的 request 选项补 reportError: false（预期业务拒绝由页面 toast/行内错误呈现，不经 captureException 通道）；仅网络层异常（页面 :395-397 已覆盖）保持上报。",
+      "fix": "services/auth.ts registerUser（:336-343 选项对象）增加 reportError: false，并注释对齐 loginAsGuest。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "pages/register/success",
+      "checked": "逐项核对（全部基于本次会话实读/实跑）：①注册与路由：src/pages.json:48-50 已注册；ROUTES.TAB.HOME=pages/home/index 在 tabBar.list（pages.json tabBar 段），switchTab 合法；SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE=/subpackages/setup/profile/index 在 subpackages/setup 分包注册（pages.json:255-262），目标页文件存在且 onLoad 缺省 entry=wizard 模式（setup/profile/index.vue:50-57），与注册后 12 步流程语义吻合；全项目唯一入口为 register/index.vue:336 redirectTo(?phone=)，页面栈关系健康（redirectTo 换栈后 navigateTo 不超层；switchTab 会清非 tab 页）。②状态管理：单数据源——仅 maskedPhone 本地 ref，无 store 依赖、无双写；register 页注册成功后 refreshSession 的会话状态本页不消费，无同步缺口。③API 错误处理/异步流程：本页零 API 调用、零 async、零 Promise，无空 catch、无未处理拒绝面。④样式/token：所有颜色均 var(--token, fallback) 写法，唯一例外 #55d5a7 已立 MP-R1-PAGES-REGISTER-SUCCESS-003；无 :hover、无 grid、无 backdrop-filter、无 position:fixed、无 import.meta.env、无 emoji（grep 逐项 0 命中）；--statusbar 经 useMenuButtonRect().styleVars 注入根节点（:15,:51，编译产物 style=\"{{g}}\" 证实），padding 顶部 calc(var(--statusbar, env(safe-area-inset-top))+96rpx)、底部 env(safe-area-inset-bottom)+48rpx（:85），无 scroll-view/键盘诉求（无输入框），静态页无 onShow 刷新需求。⑤IMAGE_PATHS：模板零硬编码 /static 字符串，REGISTER.SUCCESS 与 ICONS.CHECK_GREEN 均走 config/images.ts 常量；素材存在性已验证——本地 src/static/assets/images/register/reg-success-illustration.jpg、icons/register/check-green.svg 均在盘，real 模式后端基址 apps/api/uploads/app-assets/assets/images/register/reg-success-illustration.jpg 亦在盘。⑥组件事件接线：无子组件引用（仅 composable），无 emit 断链风险；主 CTA 绑定位置问题立 MP-R1-PAGES-REGISTER-SUCCESS-002。⑦硬约束逐项 grep（:hover/grid/catch/import.meta.env/backdrop-filter/position:fixed/emoji 区段 U+1F300–1FAFF、U+2600–27BF）：全部 0 命中。⑧编译产物核对：dist/build/mp-weixin/pages/register/success.{wxml,js} 存在且与源码一致（bindtap 位置、wx:for 三行清单）。⑨R21 两条历史线索均完成代码层回归核对，结论见 issues 001（本页，环境伪影维持）与 MP-R1-PAGES-REGISTER-INDEX-001（register 页，服务层噪音仍在）。未做/不适用：未运行开发者工具与截图（本审查为纯代码层）；编译产物未重新构建，以现存 dist 为证。"
+    }
+  ]
+}

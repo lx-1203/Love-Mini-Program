@@ -190,7 +190,14 @@ async function submitTopic() {
           uploaded.push(img);
           continue;
         }
-        const result = await clientApi.uploadPostImage({ name: "campus-topic.jpg", path: img });
+        // MP-R1-CAMPUSPOST-002：文件名含每图唯一量（时间戳+序号，对齐 village/post.vue 惯例）
+        // ——Idempotency-Key 按「endpoint|file.name」纯 FNV-1a 哈希，恒定 "campus-topic.jpg"
+        // 使同帖多图第 2 张起 key 完全相同 → 409「重复请求已被拦截」→ 整个发布失败；
+        // 且 key 与内容无关，4h TTL 内本页任何再次带图发帖都被同一 key 拦截
+        const result = await clientApi.uploadPostImage({
+          name: `campus-topic-${Date.now()}-${uploaded.length}.jpg`,
+          path: img,
+        });
         uploaded.push(result?.url ?? img);
       }
       submitImages = uploaded;
@@ -224,7 +231,9 @@ async function submitTopic() {
     }
 
     uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "success" });
-    // SubTask 1.5.2：保存跳转定时器引用，卸载时统一清理
+    // MP-R1-CAMPUSPOST-004：成功路径不复位 isSubmitting——原 finally 立即复位，
+    // 成功 toast 与 800ms navigateBack 之间的窗口内唯一重入守卫失效，
+    // 再点一次即完整重跑创建产生重复帖子。保持提交态由页面销毁自然终结，仅失败复位。
     if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = setTimeout(() => {
       postSuccessNavTimer = null;
@@ -235,7 +244,6 @@ async function submitTopic() {
       title: campusStore.errorMessage || t("campus.postTopic.publishFailed"),
       icon: "none",
     });
-  } finally {
     isSubmitting.value = false;
   }
 }
@@ -418,6 +426,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 24rpx;
+  /* MP-R1-CAMPUSPOST-003：header 右端「发布」按钮避让微信胶囊（全局 navigationStyle:custom，
+     胶囊占位约右缘 7~94px 且纵向同带）——同 hub.vue R4 修复口径 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 

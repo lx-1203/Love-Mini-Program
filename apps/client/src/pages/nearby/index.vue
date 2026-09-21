@@ -18,12 +18,14 @@ import { useCircleStore } from "../../stores/circle";
 import { circleCoverFor } from "../../config/circle-covers";
 import { useSessionStore } from "../../stores/session";
 import { useActivityStore } from "../../stores/activity";
-import { clientApi } from "../../services/api";
-import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
-import type { DiscoverCard } from "../../stores/discover/types";
+// MP-R1-PAGES-NEARBY-INDEX-002：删除死链 peoplePreview/loadPeoplePreview 后，
+// clientApi / mapToDiscoverCard / DiscoverCard / NEARBY_MAX_DISTANCE_KM 无引用，一并移除
+import { useMock } from "../../stores/helpers/use-mock";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { showErrorToast } from "../../utils/error-toast";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
+// MP-R1-PUBLISH-006：定位成功解析的城市持久化（publish 页「添加位置」读取展示）
+import { STORAGE_KEYS } from "../../constants/storage-keys";
 import { SCHOOLS, type School } from "../../config/schools";
 // 第五轮：校园圈卡片统一浅绿背景 + 名字（coverUrl 上传后显示图片），不再使用渐变底色
 import { useTabBar } from "../../composables/useTabBar";
@@ -50,10 +52,20 @@ const circleStore = useCircleStore();
 const villageStore = useVillageStore();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
-/** 附近的人预览（取前 3，仅展示，点击进 people 列表） */
-const peoplePreview = ref<DiscoverCard[]>([]);
-const peopleLoading = ref(false);
-const peopleError = ref("");
+// MP-R1-PAGES-NEARBY-INDEX-002：删除「附近的人」预览死链（peoplePreview/peopleLoading/
+// peopleError/lastPeopleLoadFailedAt/loadPeoplePreview）——三个状态与加载函数仅在 script
+// 内被引用，模板零渲染（分区①为静态入口卡），每次 onLoad/onShow/下拉刷新白发一次
+// getRecommendations 请求、结果无人消费。分区①保持 v3 冻结版式的入口卡形态。
+
+/**
+ * MP-R1-PAGES-NEARBY-INDEX-001：受保护数据源拉取门。
+ * real 模式下 /circles 与 /posts 均要求鉴权（SecurityConfig /api/v1/** authenticated），
+ * 未登录发起必 401 → http 层 redirectToLogin 强踢登录页。mock 模式登录为本地模拟
+ * 会话（getToken 恒空），需放行。与 32 行「未登录不发受保护请求」口径收敛为同一守卫。
+ */
+function canFetchProtected(): boolean {
+  return useMock() || getToken().length > 0;
+}
 
 /** 校园入口（前 4 所）。R3：用户本校置顶（原固定取前 4 所，本校不在首屏，与定位文案自相矛盾） */
 const schoolEntries = computed(() => {
@@ -93,37 +105,49 @@ async function initLocation() {
     // 此前 nearby 页只取城市不上报，后端推荐距离仍按旧坐标/默认点计算，
     // 出现「1893km」级异常距离与区域错乱
     void reportLocation(loc.latitude, loc.longitude, true).catch(() => {});
-    // 2026-08-27 修复：定位成功后用真实城市刷新附近动态（不再仅登录态）
+    // 2026-08-27 修复：定位成功后用真实城市刷新附近动态（不再仅登录态）。
+    // MP-R1-PAGES-NEARBY-INDEX-001：城市变化强制重拉（绕过 30s TTL），但仍受登录门约束
     if (loc.city && loc.city !== currentCity.value) {
       currentCity.value = loc.city;
-      void loadCirclePosts();
+      // MP-R1-PUBLISH-006：持久化城市（publish 页「添加位置 · 自动定位」的数据源，
+      // 原全库无写入方导致其恒显示缺省「北京市」）
+      try {
+        uni.setStorageSync(STORAGE_KEYS.NEARBY_CITY, loc.city);
+      } catch (_e) { /* storage 失败不影响主流程 */ }
+      if (canFetchProtected()) {
+        void loadCirclePosts(true);
+      }
     }
   }
 }
 
 onLoad(() => {
   loadNearbyData();
-  // 2026-08-27 修复：兴趣圈列表在 onLoad 直接触发（不再依赖登录态），
-  // 热门兴趣圈横滑区按理想图始终可见
-  void circleStore.fetchCircles().catch(() => {});
-  // 2026-08-27 修复：附近动态也直接在 onLoad 拉取（mock 默认就返回数据）
-  void loadCirclePosts();
   void initLocation();
 });
 
 onShow(() => {
-  // 未登录时也加载预览数据，展示附近推荐
-  if (peoplePreview.value.length === 0 && !peopleLoading.value) {
-    // 2026-08-26 R4：失败重试退避——距上次失败 < 2s 不自动重试，
-    // 避免 onLoad/onShow 双入口在失败场景下连发请求
-    if (Date.now() - lastPeopleLoadFailedAt > 2000) {
-      void loadPeoplePreview();
-    }
+  // MP-R1-PAGES-NEARBY-INDEX-002/004：原 onShow 仅刷新本页从不渲染的 peoplePreview
+  // 死链；现按 TTL 刷新页面真实可见数据源（附近动态 30s / 活动 store 内 30s TTL），
+  // 未登录（real）不发受保护请求，登录后由 watch(isLoggedIn) 补拉。
+  if (canFetchProtected()) {
+    void loadCirclePosts();
+    void loadActivities();
   }
 });
 
 onPullDownRefresh(() => {
-  void loadPeoplePreview().finally(() => uni.stopPullDownRefresh());
+  // MP-R1-PAGES-NEARBY-INDEX-003：下拉刷新并行重拉全部可见数据源（force 绕过
+  // 「空列表才拉取」与 30s TTL 短路），完成后才停止下拉动画；失败有 toast。
+  const tasks: Promise<unknown>[] = [];
+  if (canFetchProtected()) {
+    tasks.push(circleStore.fetchCircles(), loadCirclePosts(true), loadActivities(true));
+  }
+  Promise.all(tasks)
+    .catch(() => {
+      uni.showToast({ title: t("nearby.loadFailed"), icon: "none" });
+    })
+    .finally(() => uni.stopPullDownRefresh());
 });
 
 onUnmounted(() => {
@@ -131,62 +155,65 @@ onUnmounted(() => {
 });
 
 /**
- * 加载附近预览数据（未登录时也加载，点击交互时引导登录）。
- * 2026-08-26 R2：附近动态独立维度——登录后按城市加载 nearbyPosts。
+ * 加载附近数据（MP-R1-PAGES-NEARBY-INDEX-001：real 模式下兴趣圈/附近动态均为
+ * 受保护端点，未登录一律不发起——原 onLoad 108/110 行的无条件调用会触发
+ * 401 → redirectToLogin 强跳登录页；登录后由 watch(isLoggedIn) 补拉）。
  */
 function loadNearbyData(): void {
-  void loadPeoplePreview();
-  // 受保护的数据源仅登录后加载
-  if (getToken()) {
-    void loadActivities();
-    void loadCirclePosts();
-  }
+  if (!canFetchProtected()) return;
+  // 2026-08-27：兴趣圈列表在 onLoad 直接触发，热门兴趣圈横滑区按理想图始终可见
+  void circleStore.fetchCircles().catch(() => {});
+  void loadActivities();
+  void loadCirclePosts();
 }
 
-// 2026-08-15：登录态变化后自动补拉（登录成功即刷新数据）
+// 2026-08-15：登录态变化后自动补拉（登录成功即刷新数据）。
+// MP-R1-PAGES-NEARBY-INDEX-004：登录后维度变化（未登录拉到的列表可能缺城市参数），
+// force 重拉附近动态，绕过「列表非空即跳过」守卫。
 watch(
   () => sessionStore.isLoggedIn,
   (loggedIn) => {
     if (loggedIn) {
-      loadActivities();
-      void loadCirclePosts();
+      void circleStore.fetchCircles().catch(() => {});
+      void loadActivities(true);
+      void loadCirclePosts(true);
     }
   }
 );
 
-/** 2026-08-26 R4：附近的人预览最近一次加载失败时间戳（失败重试退避用，0=未失败） */
-let lastPeopleLoadFailedAt = 0;
-
-/** 附近的人预览（distanceMax 过滤，真实链路；2026-08-26 R4：in-flight 防抖 + 失败退避） */
-async function loadPeoplePreview() {
-  if (peopleLoading.value) return; // 2026-08-26 R4：in-flight 防抖（onLoad/onShow 双入口去重）
-  peopleLoading.value = true;
-  peopleError.value = "";
-  try {
-    const people = await clientApi.getRecommendations({
-      distanceMax: NEARBY_MAX_DISTANCE_KM,
-    });
-    peoplePreview.value = people.map((person) => mapToDiscoverCard(person));
-    lastPeopleLoadFailedAt = 0;
-  } catch (error) {
-    lastPeopleLoadFailedAt = Date.now();
-    peopleError.value = error instanceof Error ? error.message : t("nearby.loadFailed");
-  } finally {
-    peopleLoading.value = false;
+/** 拉取附近活动（复用 activity store；force=true 绕过 store 内 30s TTL 与空列表短路） */
+async function loadActivities(force = false) {
+  if (force) {
+    await activityStore.fetchActivities(true);
+    return;
   }
-}
-
-/** 拉取附近活动（复用 activity store） */
-async function loadActivities() {
   if (activityStore.activities.length === 0) {
     await activityStore.fetchActivities();
   }
 }
 
-/** 拉取附近动态（2026-08-26 R2：独立维度 fetchNearbyPosts，按当前城市过滤；空态由页面登录引导承接） */
-async function loadCirclePosts() {
-  if (villageStore.nearbyPosts.length === 0 && !villageStore.loadingNearbyPosts) {
-    await villageStore.fetchNearbyPosts(currentCity.value || undefined);
+/** 附近动态刷新 TTL（MP-R1-PAGES-NEARBY-INDEX-004，对齐首页 feed 30s 陈旧阈值） */
+const NEARBY_POSTS_TTL_MS = 30_000;
+let lastNearbyFetchAt = 0;
+
+/**
+ * 拉取附近动态（2026-08-26 R2：独立维度 fetchNearbyPosts，按当前城市过滤）。
+ * MP-R1-PAGES-NEARBY-INDEX-004：原「列表非空即跳过」守卫使数据整会话不更新——
+ * 现按 TTL 刷新（30s 内且非 force 不重拉）；force 路径（登录补拉/下拉刷新/城市变化）
+ * 无条件重拉。失败不更新时间戳（错误态可立即重试）。
+ */
+async function loadCirclePosts(force = false) {
+  if (villageStore.loadingNearbyPosts) return;
+  if (
+    !force &&
+    villageStore.nearbyPosts.length > 0 &&
+    Date.now() - lastNearbyFetchAt < NEARBY_POSTS_TTL_MS
+  ) {
+    return;
+  }
+  await villageStore.fetchNearbyPosts(currentCity.value || undefined);
+  if (!villageStore.nearbyError) {
+    lastNearbyFetchAt = Date.now();
   }
 }
 

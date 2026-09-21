@@ -113,7 +113,8 @@ async function handleClear(): Promise<void> {
 /** 点击卡片进入帖子详情 */
 function goToDetail(item: PostHistoryItem): void {
   villageStore.setCurrentPost(item.post.id);
-  openAppPath("/subpackages/village/village/detail");
+  // MP-R1-DETAIL-006：携带 ?id= 直达（避免详情页在 setCurrentPost 异步落定前误报「帖子不存在」）
+  openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(String(item.post.id))}`);
 }
 
 /** 点击头像进入用户主页 */

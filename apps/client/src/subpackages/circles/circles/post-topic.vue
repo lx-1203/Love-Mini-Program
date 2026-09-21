@@ -16,7 +16,10 @@ import { clientApi } from "../../../services/api";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
 import { isUploadedMediaUrl } from "../../../utils/media";
-import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// MP-R1-POSTTOPIC-007：与 campus/post-topic（R10-P1-003）对齐——根 view 注入
+// --statusbar/--capsule-right，头部 padding 走 CSS var 链单一来源
+// （原 useStatusBarHeight 内联注入方案已由本方案替代）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { getChannelConfig } from "../../../config/channels";
 import { IMAGE_PATHS } from "../../../config/images";
 import ActivityCard from "../../../components/village/ActivityCard.vue";
@@ -28,8 +31,10 @@ const { t } = useI18n();
 const circleStore = useCircleStore();
 const villageStore = useVillageStore();
 const activityStore = useActivityStore();
-// MP-R4-POSTTOPIC-01：JS 测量状态栏高度，导航栏 padding-top 动态注入
-const statusBarHeightPx = useStatusBarHeight();
+// MP-R1-POSTTOPIC-007：根节点 styleVars（--statusbar 注入到页面根 view；
+// App.vue 的 page 级 env padding 与头部内联 JS padding 双重叠加，刘海真机头部
+// 比状态栏多让出一整个状态栏高度的空白带——现收敛为 CSS var 单一来源）
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /**
  * 模板 catchtap="noop" 阻止冒泡的空处理器（原生小程序属性写法，
@@ -337,6 +342,17 @@ async function submitTopic() {
       circleId.value ||
       (publishTarget.value === "interest" && interestCategory.value ? interestCategory.value : "");
 
+    // MP-R1-POSTTOPIC-004：无 circleId 的「兴趣分类」发布路径在 real 模式必然失败——
+    // 兴趣分类为 slug（study/sports/…），后端「圈子话题仅支持数字兴趣圈 ID
+    // （@PathVariable Long）」，slug 触发 MissingPathVariableException → 500；
+    // mock 模式可「成功」掩盖问题。real 模式下解析不出数字圈 ID 时明确提示，
+    // 不再发起必败请求。
+    if (!useMock() && !/^\d+$/.test(String(resolvedCircleId))) {
+      isSubmitting.value = false;
+      uni.showToast({ title: t("circle.postTopicEnterFromCircle"), icon: "none" });
+      return;
+    }
+
     // 修复（review #22）：提交翻译后的标签文本，而不是 i18n key
     const tagTexts = selectedTags.value.map((key) => t(key));
 
@@ -353,7 +369,13 @@ async function submitTopic() {
           uploaded.push(img);
           continue;
         }
-        const result = await clientApi.uploadPostImage({ name: "topic.jpg", path: img });
+        // MP-R1-CAMPUSPOST-002 同源修复：文件名含每图唯一量（时间戳+序号）——
+        // Idempotency-Key 按「endpoint|file.name」哈希，恒定文件名使多图第 2 张起
+        // 必命中 409 幂等拦截，且 4h TTL 内跨帖再传同 key 也被拦
+        const result = await clientApi.uploadPostImage({
+          name: `topic-${Date.now()}-${uploaded.length}.jpg`,
+          path: img,
+        });
         uploaded.push(result?.url ?? img);
       }
       submitImages = uploaded;
@@ -412,10 +434,10 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="post-page">
-    <!-- 顶部导航栏（MP-R4-POSTTOPIC-01：var(--statusbar, env(safe-area-inset-top)) 在 mp 模拟器为 0，
-         导航返回/标题叠进系统状态栏 → 与 nearby 同款 JS 注入 statusBarHeight） -->
-    <view class="post-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
+  <view class="post-page" :style="menuStyleVars">
+    <!-- 顶部导航栏（MP-R1-POSTTOPIC-007：--statusbar 由根节点 menuStyleVars 注入，
+         头部 padding 走 CSS var 链；原「page 级 env padding + 头部内联 JS padding」双重叠加） -->
+    <view class="post-header">
       <view class="post-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="back-icon">{{ t("circle.postTopicBack") }}</text>
       </view>
@@ -511,8 +533,11 @@ onLoad((query) => {
         </view>
       </view>
 
-      <!-- ===== 话题标签多选（Task B5，最多 3 个） ===== -->
-      <view class="tags-section">
+      <!-- ===== 话题标签多选（Task B5，最多 3 个） =====
+           MP-R1-POSTTOPIC-003：真实模式 createTopic 请求体只发 title/content/images，
+           tags 与 favorite 既不进请求体也无后端字段（勾选即静默丢弃）——real 模式
+           隐藏本区块，杜绝「UI 可选、提交即丢」；mock 模式行为不变 -->
+      <view v-if="useMock()" class="tags-section">
         <view class="tags-section__header">
           <text class="section-label">{{ t('circle.postTopicTagsLabel') }}</text>
           <text class="tags-section__hint">{{ t('circle.postTopicTagsHint', { n: MAX_TAGS }) }}</text>
@@ -565,8 +590,8 @@ onLoad((query) => {
         </view>
       </view>
 
-      <!-- ===== 喜爱标签开关（Task B5） ===== -->
-      <view class="favorite-section">
+      <!-- ===== 喜爱标签开关（Task B5；MP-R1-POSTTOPIC-003：real 模式隐藏，理由同上） ===== -->
+      <view v-if="useMock()" class="favorite-section">
         <view class="favorite-section__left">
           <text class="favorite-section__title">{{ t('circle.postTopicFavoriteLabel') }}</text>
           <text class="favorite-section__desc">{{ t('circle.postTopicFavoriteDesc') }}</text>
@@ -688,8 +713,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* MP-R4-POSTTOPIC-01：padding-top 由模板内联注入 statusBarHeight + 10px（模拟器 env 为 0 不可依赖） */
-  padding: 20rpx 32rpx 24rpx;
+  /* MP-R1-POSTTOPIC-007：padding-top 走 --statusbar CSS var 链（与 campus/post-topic 同构，
+     替代原模板内联 statusBarHeightPx + 10px 与 App.vue page 级 env padding 的双重叠加） */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 24rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 

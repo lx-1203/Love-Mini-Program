@@ -31,7 +31,15 @@ const myAvatar = computed(
     // 解析失败/为空时落地本地默认头像，禁止空白圆
     resolveMediaUrl(profileStore.avatarUrl) || IMAGE_PATHS.DEFAULT_AVATAR,
 );
-const partnerAvatar = computed(() => partner.value?.avatar || partner.value?.photo || IMAGE_PATHS.DEFAULT_AVATAR);
+// MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-002：partnerAvatar 与
+// myAvatar 同口径——store 透传的服务端原始路径（/uploads/... 或 /api/v1/media/...）
+// 必须经统一媒体出口 resolveMediaUrl 解析（mp-weixin 把相对路径当包内文件且 <image>
+// 无法携带鉴权头），加载失败落默认头像。原 mock /static 路径验收掩盖了该缺陷。
+const partnerAvatar = computed(
+  () =>
+    resolveMediaUrl(partner.value?.avatar || partner.value?.photo || "") ||
+    IMAGE_PATHS.DEFAULT_AVATAR,
+);
 const reasons = computed(() => (partner.value ? buildMatchReasons(partner.value) : []));
 
 onLoad((query) => {

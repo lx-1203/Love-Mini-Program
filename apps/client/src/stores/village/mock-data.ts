@@ -422,10 +422,12 @@ const mockPostsRaw: Array<
     author: mockAuthors[0],
     categoryId: "cat-sincere",
     title: "",
+    // MP-R1-VILLAGE-INDEX-103：图文语义一致化——post-7.jpg 实读核对为「热气球 + 金色晨昏原野」，
+    // 文案由「爬山日落」改为与画面一致的热气球清晨（原配 post-1.jpg 为城堡草坪，图文不符）
     content:
-      "周末去爬山，山顶的日落太治愈了，有一起的朋友吗？",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
-    tags: ['#爬山', '#周末活动'],
+      "周末去坐了热气球，清晨的日光太治愈了，有一起的朋友吗？",
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-7.jpg"))))],
+    tags: ['#热气球', '#周末活动'],
     likes: 20,
     comments: 3,
     shares: 1,
@@ -441,9 +443,11 @@ const mockPostsRaw: Array<
     author: mockAuthors[1],
     categoryId: "cat-sincere",
     title: "",
+    // MP-R1-VILLAGE-INDEX-103：post-8.jpg 实读核对为「雾中木栈桥」——文案由《长安三万里》
+    // 观后感改为取景地分享（原配 post-2.jpg 为礁石海景，图文不符）
     content:
-      "刚看完《长安三万里》，李白的一生太浪漫了，推荐！",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
+      "雾天的栈桥太出片了，恍惚走进了电影画面里，推荐这个取景地！",
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-8.jpg")))))],
     tags: ['#电影', '#分享'],
     likes: 27,
     comments: 6,
@@ -462,7 +466,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "想找个人一起学做咖啡，拉花入门中，进度缓慢但快乐～",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
+    // MP-R1-VILLAGE-INDEX-103：post-5.jpg 实读核对为「冒热气的咖啡杯特写」，与咖啡文案一致
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
     tags: ['#咖啡', '#兴趣'],
     likes: 34,
     comments: 9,
@@ -498,9 +503,11 @@ const mockPostsRaw: Array<
     author: mockAuthors[4],
     categoryId: "cat-sincere",
     title: "",
+    // MP-R1-VILLAGE-INDEX-103：post-5.jpg 已归组给咖啡帖（post-9）；本帖与 post-10 同属
+    // 户外主题组复用 post-4.jpg（海岸悬崖），文案同步对齐画面
     content:
-      "第一次尝试露营，星空下的北京近郊太美了。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
+      "第一次一个人去海边露营，海风一吹烦恼清零。",
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#露营', '#户外'],
     likes: 48,
     comments: 15,
@@ -517,10 +524,12 @@ const mockPostsRaw: Array<
     author: mockAuthors[5],
     categoryId: "cat-sincere",
     title: "",
+    // MP-R1-VILLAGE-INDEX-103：仓库无宠物实拍图，post-6.jpg 实读为「商业街人流」——
+    // 文案由「养英短」改为与画面一致的扫街日常
     content:
-      "养了一只英短，叫年糕，每天回家都治愈一天的疲惫。",
+      "周末在街口扫街，人来人往全是生活的气息。",
     images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
-    tags: ['#宠物', '#日常'],
+    tags: ['#扫街', '#日常'],
     likes: 55,
     comments: 18,
     shares: 11,

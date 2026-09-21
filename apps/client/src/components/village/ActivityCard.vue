@@ -60,6 +60,10 @@ function openDetail() {
 }
 
 function enroll(e: { stopPropagation?: () => void }) {
+  // MP-R1-VILLAGE-INDEX-102：mp-weixin 端 patchMPEvent 把 stopPropagation 补丁为 NOOP，
+  // 函数内阻断无效（点「报名」同时触发卡片根 openDetail 跳页）。改用模板 @tap.stop
+  // （编译为 catchtap，与 PostCard 全卡片口径一致，见 PostCard.vue MP-R1-NEARBY-001 注释）；
+  // 此处保留 stopPropagation 作为 H5 端兜底。
   e?.stopPropagation?.();
   emit("enroll", props.activity.id);
 }
@@ -122,7 +126,7 @@ function enroll(e: { stopPropagation?: () => void }) {
       :class="{ 'activity-card__enroll--done': enrolled }"
       role="button"
       :aria-label="enrolled ? t('village.activityEnrolled') : t('village.activityEnroll')"
-      @tap="enroll"
+      @tap.stop="enroll"
     >
       <text class="activity-card__enroll-text">{{ enrolled ? t("village.activityEnrolled") : t("village.activityEnroll") }}</text>
     </view>

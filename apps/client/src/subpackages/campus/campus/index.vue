@@ -80,7 +80,15 @@ const scrollLeft = ref(0);
  * @param category - 话题分类
  */
 function switchCategory(category: CampusTopicCategory) {
-  campusStore.setActiveCategory(category);
+  // MP-R1-CAMPUSINDEX-002：公开浏览上下文（viewSchool）随话题请求透传——原
+  // setActiveCategory 内部 fetchCampusTopics(category,1) 不带 school，real 模式切 Tab
+  // 后端回退当前用户学校，公开浏览清华的列表被静默替换成本校帖子（页头校名不变）
+  campusStore.setActiveCategory(category, viewSchool.value || undefined);
+}
+
+/** 错误态重试（MP-R1-CAMPUSINDEX-002：与首屏同口径透传 viewSchool） */
+function retryCampusTopics() {
+  void campusStore.fetchCampusTopics(activeCategory.value, 1, viewSchool.value || undefined);
 }
 
 /**
@@ -158,9 +166,12 @@ let topicLoadMoreInFlight = false;
 function onLoadMoreTopic() {
   if (campusStore.loading || !topicHasMore.value || topicLoadMoreInFlight) return;
   topicLoadMoreInFlight = true;
-  void campusStore.fetchCampusTopics(activeCategory.value, campusStore.topicPage + 1).finally(() => {
-    topicLoadMoreInFlight = false;
-  });
+  // MP-R1-CAMPUSINDEX-002：翻页同样透传 viewSchool（浏览上下文全链路一致）
+  void campusStore
+    .fetchCampusTopics(activeCategory.value, campusStore.topicPage + 1, viewSchool.value || undefined)
+    .finally(() => {
+      topicLoadMoreInFlight = false;
+    });
 }
 
 onLoad((query) => {
@@ -277,7 +288,7 @@ onMounted(async () => {
       <view v-else-if="errorMessage && topics.length === 0" class="campus-state" role="status" aria-live="polite">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ errorMessage }}</text>
-        <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="campusStore.fetchCampusTopics()">
+        <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="retryCampusTopics">
           <text class="campus-state__btn-text">{{ t('campus.index.retry') }}</text>
         </view>
       </view>
@@ -302,9 +313,12 @@ onMounted(async () => {
             </view>
             <text class="topic-card__preview">{{ topic.contentPreview }}</text>
             <view class="topic-card__footer">
-              <image
+              <!-- MP-R1-CAMPUSINDEX-003：头像经 SafeImage（内部 resolveMediaUrl 重写
+                   /uploads 相对路径为鉴权代理 URL）——原裸 <image> 直连后端 authorAvatar 原文，
+                   真实用户上传头像（/uploads/ 形态）在 mp-weixin 必然加载失败 -->
+              <SafeImage
                 v-if="!topic.isAnonymous && topic.author?.avatar"
-                class="topic-card__avatar"
+                custom-class="topic-card__avatar"
                 :src="topic.author.avatar"
                 mode="aspectFill"
               />
@@ -381,7 +395,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.28);
+  /* MP-R1-CAMPUSINDEX-004：裸 rgba 改既有 overlay token */
+  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -801,7 +816,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .public-browse-banner__desc {
   font-size: 22rpx;
   color: var(--c-text-secondary, #666666);
-}/* ===== 2026-08-21 未认证推荐兴趣圈 ===== */
+}/* ===== 2026-08-21 未认证推荐兴趣圈 =====
+   MP-R1-CAMPUSINDEX-004：整块颜色收敛到设计 token（原 #222222 标题在深色模式下
+   与 --c-bg-container #1A1F26 对比度≈1.06:1 几乎不可读） */
 .cert-recommend {
   margin-top: 24rpx;
   padding: 24rpx;
@@ -817,12 +834,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .cert-recommend__title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .cert-recommend__more {
   font-size: 24rpx;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
 }
 
 .cert-recommend__grid {
@@ -852,8 +869,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   bottom: 8rpx;
   font-size: 22rpx;
   font-weight: 700;
-  color: #FFFFFF;
-  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.5);
+  color: var(--c-neutral-0, #FFFFFF);
+  text-shadow: 0 2rpx 8rpx var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
 }
 
 </style>

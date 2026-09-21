@@ -341,9 +341,17 @@ const socialMenus = computed<MenuItem[]>(() => {
     });
   }
   items.push(
-    // MP-R1-SETTINGS-001：village/index 非 tabBar 页，switchTab 跳转静默失败（死链）。
-    // 改为 navigateTo 携带 ?tab=mine（与村口「我的」分区入口一致）。
-    { icon: IMAGE_PATHS.ICONS_PROFILE.POSTS, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.myPosts"), path: "/subpackages/village/village/index?tab=mine" },
+    // MP-R1-SETTINGS-003：「我的动态」改跳本人主页（switchTab 桥接）——原跳
+    // village/index?tab=mine，但村口频道体系（today/interest/school/activity/hot）无 mine，
+    // tab 参数被 onLoad 完全忽略，落到无过滤的今日广场，入口语义丢失。
+    // 本人主页（我的 Tab）承载「我的帖子」列表（MyStory 区块），为语义正确的落点。
+    {
+      icon: IMAGE_PATHS.ICONS_PROFILE.POSTS,
+      bgColor: "var(--c-tint-pink-soft, #FFF0F5)",
+      label: t("profile.myPosts"),
+      path: ROUTES.TAB.PROFILE,
+      tabQuery: { source: "my-posts" },
+    },
     { icon: IMAGE_PATHS.ICONS_PROFILE.VISITORS, bgColor: "var(--c-bg-brand, #E8FAF3)", label: t("profile.visitors"), path: "/subpackages/profile-extra/profile/visitors" },
     { icon: IMAGE_PATHS.ICONS_PROFILE.CLOCK, bgColor: "var(--c-tint-blue-soft, #E8F4FF)", label: t("profile.browseHistory"), path: ROUTES.VILLAGE.HISTORY },
     { icon: IMAGE_PATHS.ICONS_PROFILE.ALBUM, bgColor: "var(--c-tint-pink-soft, #FFF0F5)", label: t("profile.albumTitle"), path: "/subpackages/profile-extra/profile/album" },

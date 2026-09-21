@@ -455,9 +455,10 @@ onLoad((query) => {
 </template>
 
 <style scoped lang="scss">
+/* MP-R1-OTHER-004：整块样式收敛到设计 token（原裸 hex 不随深色主题切换） */
 .other-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
 }
 
 .other-header {
@@ -481,7 +482,7 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
   border-radius: 50%;
 }
 
@@ -492,13 +493,13 @@ onLoad((query) => {
 
 .other-header__back-arrow {
   font-size: 52rpx;
-  color: #333A37;
+  color: var(--c-text-primary, #333A37);
   line-height: 1;
 }
 
 .other-header__more-dots {
   font-size: 36rpx;
-  color: #333A37;
+  color: var(--c-text-primary, #333A37);
   line-height: 1;
 }
 
@@ -515,7 +516,7 @@ onLoad((query) => {
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
-  background: #36C99A;
+  background: var(--c-brand, #36C99A);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -524,7 +525,7 @@ onLoad((query) => {
 }
 
 .other-more-fab-icon {
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-size: 48rpx;
   font-weight: 800;
   line-height: 1;
@@ -538,7 +539,7 @@ onLoad((query) => {
 
 .other-more-item {
   padding: 32rpx 16rpx;
-  border-bottom: 1rpx solid #F2F5F3;
+  border-bottom: 1rpx solid var(--c-line, #F2F5F3);
   display: flex;
   align-items: center;
 }
@@ -549,11 +550,11 @@ onLoad((query) => {
 
 .other-more-item-text {
   font-size: 30rpx;
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .other-more-item-text--danger {
-  color: #FF6B81;
+  color: var(--c-error, #FF6B81);
 }
 
 /* ========== 2026-09-05 R18：生活瞬间全屏查看层 ========== */

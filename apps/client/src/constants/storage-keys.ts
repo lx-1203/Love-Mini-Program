@@ -60,8 +60,14 @@ export const STORAGE_KEYS = {
   /* ========== 村口社区模块 ========== */
   /** 帖子草稿（未发布的发帖内容，含标题/正文/标签） */
   VILLAGE_POST_DRAFT: "village:post-draft",
+  /** MP-R1-PUBLISH-004：统一发布页草稿（publish.vue 专用，带 updatedAt） */
+  VILLAGE_PUBLISH_DRAFT: "village:publish-draft",
   /** R4-00232：圈子页当前频道持久化（config/channels.ts 的 LAST_CHANNEL_KEY） */
   VILLAGE_LAST_CHANNEL: "village_last_channel",
+
+  /* ========== 定位模块 ========== */
+  /** MP-R1-PUBLISH-006：最近一次定位成功解析的城市（nearby 页写入，publish 页读取展示） */
+  NEARBY_CITY: "nearby:city",
 
   /* ========== 搜索模块（2026-08-11） ========== */
   /** 本地搜索历史（最近 10 条） */

@@ -111,7 +111,13 @@ async function openCampusProfile(schoolName: string) {
   campusPeople.value = [];
   try {
     const people = await clientApi.getRecommendations({ schools: [schoolName] });
-    campusPeople.value = people.map((p) => mapToDiscoverCard(p)).slice(0, 5);
+    // MP-R1-SEARCH-101：客户端按学校过滤——buildRecommendationsQuery 无 schools 序列化、
+    // 后端 /recommendations 无 schools 入参、mock fixtures 也不消费，预览实为未过滤全量推荐；
+    // 以 DiscoverCard.campusName（服务端回传的归属学校）匹配过滤，保证预览与校名一致
+    const mapped = people.map((p) => mapToDiscoverCard(p));
+    campusPeople.value = mapped
+      .filter((card) => (card.campusName ?? "") === schoolName)
+      .slice(0, 5);
   } catch (_e) {
     campusPeople.value = [];
   }
@@ -335,7 +341,7 @@ function goToActivity(activityId: number) {
           hover-stay-time="120"
           role="button"
           :aria-label="t(s.nameKey ?? s.name)"
-          @tap="openCampusProfile(t(s.nameKey ?? s.name))"
+          @tap="openCampusProfile(s.name)"
         >
           <view class="school-row__icon">
             <image class="school-row__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SCHOOL" mode="aspectFit" alt="" />
@@ -344,7 +350,7 @@ function goToActivity(activityId: number) {
             <text class="school-row__name">{{ t(s.nameKey ?? s.name) }}</text>
             <text class="school-row__meta">{{ s.city ?? '' }}</text>
           </view>
-          <text class="school-row__arrow">{{ campusExpanded === t(s.nameKey ?? s.name) ? '收起' : '校园主页' }}</text>
+          <text class="school-row__arrow">{{ campusExpanded === s.name ? '收起' : '校园主页' }}</text>
         </view>
         <view v-if="campusExpanded" class="campus-preview">
           <text class="campus-preview__title">{{ t('search.campusProfile') }}</text>
@@ -437,7 +443,7 @@ function goToActivity(activityId: number) {
   align-items: center;
   gap: 12rpx;
   padding: 16rpx 24rpx;
-  background: #fff;
+  background: var(--c-bg-container, #ffffff);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -450,7 +456,7 @@ function goToActivity(activityId: number) {
   display: flex;
   align-items: center;
   height: 72rpx;
-  background: var(--bg-input, #f2f3f5);
+  background: var(--c-bg-container, #F2F3F5);
   border-radius: 36rpx;
   padding: 0 24rpx;
   gap: 12rpx;
@@ -465,7 +471,7 @@ function goToActivity(activityId: number) {
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  color: var(--text-primary, #1f2329);
+  color: var(--c-text-primary, #1f2329);
 }
 
 .search-clear-img {
@@ -498,7 +504,7 @@ function goToActivity(activityId: number) {
 .section-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: var(--text-primary, #1f2329);
+  color: var(--c-text-primary, #1f2329);
 }
 
 .section-fire {
@@ -508,7 +514,7 @@ function goToActivity(activityId: number) {
 
 .section-clear {
   font-size: 24rpx;
-  color: var(--text-tertiary, #8f959e);
+  color: var(--c-text-tertiary, #8f959e);
 }
 
 .hot-list {
@@ -521,7 +527,7 @@ function goToActivity(activityId: number) {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  background: #fff;
+  background: var(--c-bg-container, #ffffff);
   border-radius: 30rpx;
   padding: 12rpx 24rpx;
 }
@@ -529,7 +535,7 @@ function goToActivity(activityId: number) {
 .hot-rank {
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--text-tertiary, #8f959e);
+  color: var(--c-text-tertiary, #8f959e);
 }
 
 .hot-rank--top {
@@ -538,7 +544,7 @@ function goToActivity(activityId: number) {
 
 .hot-word {
   font-size: 26rpx;
-  color: var(--text-primary, #1f2329);
+  color: var(--c-text-primary, #1f2329);
 }
 
 .history-list {
@@ -551,7 +557,7 @@ function goToActivity(activityId: number) {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  background: #fff;
+  background: var(--c-bg-container, #ffffff);
   border-radius: 30rpx;
   padding: 12rpx 24rpx;
 }
@@ -563,7 +569,7 @@ function goToActivity(activityId: number) {
 
 .history-word {
   font-size: 26rpx;
-  color: var(--text-secondary, #4e5969);
+  color: var(--c-text-secondary, #4e5969);
 }
 
 .result-wrap {
@@ -576,7 +582,7 @@ function goToActivity(activityId: number) {
 
 .result-meta__text {
   font-size: 24rpx;
-  color: var(--text-tertiary, #8f959e);
+  color: var(--c-text-tertiary, #8f959e);
 }
 
 .skeleton-wrap {
@@ -594,7 +600,7 @@ function goToActivity(activityId: number) {
 
 .load-more__text {
   font-size: 24rpx;
-  color: var(--text-tertiary, #8f959e);
+  color: var(--c-text-tertiary, #8f959e);
 }
 
 /* ========== v3 搜索分组 ========== */
@@ -609,17 +615,17 @@ function goToActivity(activityId: number) {
 .search-tab {
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--bg-input, #F2F3F5);
+  background: var(--c-bg-container, #F2F3F5);
 }
 
 .search-tab--active {
-  background: #36C99A;
+  background: var(--c-brand, #36C99A);
 }
 
 .search-tab__text {
   font-size: 26rpx;
   font-weight: 600;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .search-tab--active .search-tab__text {
@@ -638,14 +644,14 @@ function goToActivity(activityId: number) {
   margin-bottom: 16rpx;
   background: #ffffff;
   border-radius: 18rpx;
-  border: 1rpx solid #EEF2F0;
+  border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
 .user-row__avatar {
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: #F0F2F5;
+  background: var(--c-bg-page, #F0F2F5);
   flex-shrink: 0;
 }
 
@@ -660,17 +666,17 @@ function goToActivity(activityId: number) {
 .user-row__name, .school-row__name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .user-row__meta, .school-row__meta {
   font-size: 22rpx;
-  color: #666666;
+  color: var(--c-text-secondary, #666666);
 }
 
 .user-row__arrow, .school-row__arrow {
   font-size: 24rpx;
-  color: #666666;
+  color: var(--c-text-secondary, #666666);
   flex-shrink: 0;
 }
 
@@ -678,7 +684,7 @@ function goToActivity(activityId: number) {
   width: 72rpx;
   height: 72rpx;
   border-radius: 18rpx;
-  background: #EAF8F2;
+  background: var(--c-brand-50, #EAF8F2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -693,14 +699,14 @@ function goToActivity(activityId: number) {
 .campus-preview {
   margin: 0 0 24rpx;
   padding: 20rpx 24rpx;
-  background: #EEF7F2;
+  background: var(--c-bg-page, #EEF7F2);
   border-radius: 18rpx;
 }
 
 .campus-preview__title {
   font-size: 26rpx;
   font-weight: 700;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
   display: block;
   margin-bottom: 16rpx;
 }
@@ -723,17 +729,17 @@ function goToActivity(activityId: number) {
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: #F0F2F5;
+  background: var(--c-bg-page, #F0F2F5);
 }
 
 .campus-person__name {
   font-size: 22rpx;
-  color: #222222;
+  color: var(--c-text-primary, #222222);
 }
 
 .campus-preview__empty-text {
   font-size: 22rpx;
-  color: #666666;
+  color: var(--c-text-secondary, #666666);
 }
 
 </style>

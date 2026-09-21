@@ -16,9 +16,13 @@ import { usePageAccess } from "../../composables/usePageAccess";
 import XunmiMascot from "../../components/common/XunmiMascot.vue";
 import { messagesPageRequirements } from "../../config/page-access";
 import { useTabBar } from "../../composables/useTabBar";
+// MP-R1-PAGES-MESSAGES-INDEX-010：本页 header 依赖的 --statusbar/--capsule-right 此前从未注入
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
 import { useMock } from "../../stores/helpers/use-mock";
+// MP-R1-PAGES-MESSAGES-INDEX-008：错误重试需清除 bootstrap 缓存键穿透 TTL
+import { removeCache } from "../../utils/cache-ttl";
 // 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
 import { applyDevUserFromQuery } from "../../utils/dev-user";
 import { IMAGE_PATHS } from "../../config/images";
@@ -50,10 +54,19 @@ onPageScroll((e) => {
 const sessionStore = useSessionStore();
 const messagesStore = useMessagesStore();
 const likesStore = useLikesStore();
+// MP-R1-PAGES-MESSAGES-INDEX-010：与 home/nearby 一致，根节点绑定 styleVars 注入
+// --statusbar/--capsule-right（env(safe-area-inset-top) 在开发者工具恒 0，
+// 不注入时头部与状态栏/系统时间叠印）
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
 
 function goLogin() {
+  openAppPath("/pages/login/index");
+}
+
+/** MP-R1-PAGES-MESSAGES-INDEX-005：未登录态「手机号登录」按钮 → 登录页（含手机号登录表单入口） */
+function goPhoneLogin() {
   openAppPath("/pages/login/index");
 }
 
@@ -63,7 +76,11 @@ const searchKeyword = ref("");
 const dashboard = computed(() => messagesStore.dashboard);
 const likedMeCount = computed(() => dashboard.value?.todayHeart.likedMeCount ?? likesStore.likedBy.length);
 const waitingReplyCount = computed(() => dashboard.value?.todayHeart.waitingReplyCount ?? Math.max(0, likesStore.likes.length - likesStore.mutualLikes.length));
-const assistantActivityCount = computed(() => dashboard.value?.assistant.length ?? 2);
+// MP-R1-PAGES-MESSAGES-INDEX-011：删除编造的 ?? 2 兜底——dashboard 为 null 时活动区
+// 整体隐藏（模板 v-if 守卫），不再显示凭空捏造的「2 场活动」
+const assistantActivityCount = computed(() => dashboard.value?.assistant.length ?? 0);
+/** 助手卡活动区首条真实文案（MP-R1-PAGES-MESSAGES-INDEX-011：删除硬编码露营行） */
+const assistantFirstActivityTitle = computed(() => dashboard.value?.assistant[0]?.title ?? "");
 /** 活动推荐卡片数据（来自 dashboard.assistant，仅在有数据时展示） */
 const activityRecommendations = computed(() =>
   (dashboard.value?.assistant ?? [])
@@ -134,7 +151,10 @@ const filteredSessions = computed(() => {
 const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
   // 2026-08-30 竞态修复：改用聚合 pageLoading（sessions/signals/notifications/interactions 各自独立标志）
   if (messagesStore.pageLoading) return "loading";
-  if (messagesStore.errorMessage) return "error";
+  // MP-R1-PAGES-MESSAGES-INDEX-008：errorMessage 与整页 error 态解耦——长按置顶/
+  // 删除等单会话操作失败也会写入 store.errorMessage，原判定会把整页替换成 ErrorState。
+  // 现仅「无任何可展示内容且带错误」才判 error（首屏加载失败），操作失败由页面 toast。
+  if (messagesStore.errorMessage && orderedSessions.value.length === 0 && warmPeople.value.length === 0) return "error";
   if (privateSessions.value.length === 0 && warmPeople.value.length === 0) return "empty";
   return "content";
 });
@@ -150,7 +170,18 @@ function clearSearch() {
 
 function handleRetry() {
   if (!isUnlocked.value) return;
-  void messagesStore.bootstrap();
+  // MP-R1-PAGES-MESSAGES-INDEX-008/009：错误态重试强制穿透 30s TTL 缓存，
+  // 并清除 bootstrap 缓存键（原 isCacheFresh 早退导致错误态卡死至 TTL 过期）
+  removeCache("messages:bootstrap");
+  void messagesStore.bootstrap(true);
+}
+
+/** 单会话操作失败 toast（MP-R1-PAGES-MESSAGES-INDEX-008：操作错误不进整页 error 态） */
+function toastOpError(error: unknown): void {
+  uni.showToast({
+    title: error instanceof Error && error.message ? error.message : t("apiErrors.operationFailed"),
+    icon: "none",
+  });
 }
 
 function openAssistant() {
@@ -189,14 +220,22 @@ function onSessionLongpress(session: MessageSession) {
   uni.showActionSheet({
     itemList: ["置顶/取消置顶", "标为未读", session.muted ? "恢复提醒" : "免打扰", "删除会话"],
     success: ({ tapIndex }) => {
-      if (tapIndex === 0) messagesStore.toggleSessionPin(session.id);
+      // MP-R1-PAGES-MESSAGES-INDEX-008：单会话操作失败仅 toast（含隐藏的 unhandled rejection 修复），
+      // 不再把整页切到 error 态
+      if (tapIndex === 0) {
+        void messagesStore.setSessionPinned(session.id, !session.pinned).catch(toastOpError);
+      }
       if (tapIndex === 1) messagesStore.markSessionUnread(session.id);
-      if (tapIndex === 2) void messagesStore.setSessionMuted(session.id, !session.muted);
+      if (tapIndex === 2) {
+        void messagesStore.setSessionMuted(session.id, !session.muted).then((ok) => {
+          if (!ok) uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+        });
+      }
       if (tapIndex === 3) {
         uni.showModal({
           title: "确定删除该会话？",
           success: (res) => {
-            if (res.confirm) void messagesStore.deleteSession(session.id);
+            if (res.confirm) void messagesStore.deleteSession(session.id).catch(toastOpError);
           },
         });
       }
@@ -204,12 +243,18 @@ function onSessionLongpress(session: MessageSession) {
   });
 }
 
-function loadPage() {
+/** MP-R1-PAGES-MESSAGES-INDEX-009：改 async 并支持 force 透传（原非 async，await 实为 void） */
+async function loadPage(force = false) {
   if (!isUnlocked.value) return;
-  void Promise.all([messagesStore.bootstrap(), likesStore.fetchLikes().catch(() => {})]).then(() => {
-    // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
-    void messagesStore.markAllSessionsRead();
-  });
+  await Promise.all([
+    messagesStore.bootstrap(force),
+    // MP-R1-PAGES-MESSAGES-INDEX-006：空 catch 违反硬约束且静默失败，改为留痕
+    likesStore.fetchLikes().catch((e: unknown) => {
+      console.warn("[messages] fetchLikes failed", e);
+    }),
+  ]);
+  // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
+  void messagesStore.markAllSessionsRead();
 }
 
 watch(isUnlocked, (unlocked) => {
@@ -228,7 +273,9 @@ onShow(() => {
   void messagesStore.markAllSessionsRead();
 });
 onPullDownRefresh(async () => {
-  await loadPage();
+  // MP-R1-PAGES-MESSAGES-INDEX-009：loadPage 已 async 且 force 穿透 TTL，
+  // stopPullDownRefresh 在数据链路完成后才调用（原 await 落在 void 上立即返回）
+  await loadPage(true);
   uni.stopPullDownRefresh();
 });
 
@@ -252,9 +299,11 @@ function getStatusClass(status?: string): string {
   return map[status || ""] || "status-new";
 }
 
-function formatTime(dateStr?: string): string {
+function formatTime(dateStr?: string | null): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
+  // MP-R1-PAGES-MESSAGES-INDEX-004：NaN 防护（非法时间串不再渲染 "NaN/NaN"）
+  if (Number.isNaN(d.getTime())) return "";
   const now = new Date();
   if (d.toDateString() === now.toDateString()) {
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -264,10 +313,12 @@ function formatTime(dateStr?: string): string {
 </script>
 
 <template>
-  <view class="messages-page">
+  <view class="messages-page" :style="menuStyleVars">
     <!-- R5(INDEP-004)：滚动状态栏遮罩（与首页同款） -->
     <view class="messages-page__top-scrim" :style="topScrimStyle" />
-    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn && !useMock()" @go-login="goLogin" />
+    <!-- MP-R1-PAGES-MESSAGES-INDEX-005：补 @go-phone-login 监听——组件 emit goPhoneLogin
+         此前无监听者，未登录态「手机号登录」按钮点击零响应 -->
+    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn && !useMock()" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
     <template v-else>
       <!-- ========== Header ========== -->
       <view class="header">
@@ -360,15 +411,17 @@ function formatTime(dateStr?: string): string {
               </view>
               <text class="assistant-card__arrow">→</text>
             </view>
-            <view class="assistant-card__activity">
+            <!-- MP-R1-PAGES-MESSAGES-INDEX-011：活动区全部数据驱动——dashboard 无 assistant
+                 数据时整块隐藏，不再显示编造的「2 场活动」与硬编码露营文案 -->
+            <view v-if="assistantActivityCount > 0" class="assistant-card__activity">
               <view class="assistant-card__activity-item">
                 <view class="assistant-card__activity-text-wrap">
                   <image class="assistant-card__activity-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
                   <text class="assistant-card__activity-text">今天附近有 {{ assistantActivityCount }} 场活动适合你参加</text>
                 </view>
               </view>
-              <view class="assistant-card__activity-item">
-                <text class="assistant-card__activity-text">周末露营活动开始报名啦~</text>
+              <view v-if="assistantFirstActivityTitle" class="assistant-card__activity-item">
+                <text class="assistant-card__activity-text">{{ assistantFirstActivityTitle }}</text>
               </view>
             </view>
           </view>
@@ -418,7 +471,8 @@ function formatTime(dateStr?: string): string {
               >
                 <view class="chat-item__avatar-wrap">
                   <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
-                  <view v-if="(session as any).online" class="chat-item__online-dot"></view>
+                  <!-- MP-R1-PAGES-MESSAGES-INDEX-004：移除在线绿点——(session as any).online 恒 undefined
+                       （MessageSession 无该字段、无数据源），绿点从未渲染；待真实在线态数据源接入后再恢复 -->
                 </view>
                 <view class="chat-item__content">
                   <view class="chat-item__top-row">
@@ -451,7 +505,8 @@ function formatTime(dateStr?: string): string {
                       :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
                       mode="aspectFit"
                     />
-                    <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                    <!-- MP-R1-PAGES-MESSAGES-INDEX-004：真实字段 lastMessageSentAt（原 (session as any).lastMessageTime 恒 undefined → 时间列恒空） -->
+                    <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
                   </view>
                   <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
                     <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
@@ -506,7 +561,8 @@ function formatTime(dateStr?: string): string {
                       :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
                       mode="aspectFit"
                     />
-                    <text class="chat-item__time">{{ formatTime((session as any).lastMessageTime) }}</text>
+                    <!-- MP-R1-PAGES-MESSAGES-INDEX-004：真实字段 lastMessageSentAt（搜索结果行同款修复） -->
+                    <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
                   </view>
                   <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
                     <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
@@ -573,8 +629,9 @@ function formatTime(dateStr?: string): string {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  /* --statusbar 由 page-meta 注入（px），修复自定义导航与状态栏叠印；
-     R20：右侧加胶囊避让（--capsule-right≈7px 间隙 + 胶囊本体 87px） */
+  /* MP-R1-PAGES-MESSAGES-INDEX-010：--statusbar/--capsule-right 由根节点 useMenuButtonRect()
+     styleVars 绑定注入（本页未用 page-meta——项目内 page-meta 有限制，见 village/detail.vue 注释），
+     修复自定义导航与状态栏叠印及 --capsule-right 回落猜测值 7px 的问题 */
   padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 24rpx) 32rpx 16rpx;
   padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: var(--c-bg-container, #FFFFFF);
@@ -1022,16 +1079,6 @@ function formatTime(dateStr?: string): string {
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
-}
-.chat-item__online-dot {
-  position: absolute;
-  bottom: 4rpx;
-  right: 4rpx;
-  width: 18rpx;
-  height: 18rpx;
-  border-radius: 50%;
-  background: var(--c-text-success, #36C99A);
-  border: 3rpx solid var(--c-bg-container, #FFFFFF);
 }
 .chat-item__content {
   flex: 1;

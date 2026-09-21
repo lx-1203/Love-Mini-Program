@@ -146,6 +146,10 @@ const isCircleTarget = computed(() => targetType.value === "circle");
 /** 发布到展示标题 */
 const targetTitle = computed(() => {
   if (isCircleTarget.value && targetCircle.value) return targetCircle.value.name;
+  // MP-R1-POST-101：圈子目标解析失败（如恢复草稿时圈子已退出）时显示「兴趣圈帖子」，
+  // 不再伪装成「个人动态」——原 UI 显示与提交链路（createTopic 进圈）不一致，
+  // 用户极可能把想发广场的内容误发进兴趣圈
+  if (isCircleTarget.value) return "兴趣圈帖子";
   if (targetType.value === "campus") return t("circle.postTopicTargetCampus");
   return "个人动态";
 });
@@ -171,20 +175,26 @@ const visibilityText = computed(() => {
 /* ---------- 进入：解析发布目标 + 恢复草稿 ---------- */
 onLoad((query) => {
   const cid = query?.circleId ? Number(query.circleId) : null;
-  if (query?.target === "campus") targetType.value = "campus";
+  const entryTarget = query?.target;
+  if (entryTarget === "campus") targetType.value = "campus";
   if (cid && !Number.isNaN(cid)) {
     targetType.value = "circle";
     targetId.value = cid;
   }
   void loadTarget();
-  void restoreDraft();
+  // MP-R1-POST-101：入口参数优先于旧草稿（恢复后强制回设，见 restoreDraft 入参）
+  void restoreDraft(entryTarget, cid);
 });
 
 onMounted(() => {
   // 监听表单变化，debounce 保存草稿到 storage
+  // MP-R1-PUBLISH-002 同构修复：images/topics 原地变异（push/splice），非 deep /
+  // 非摊平 getter 的 watch 感知不到 → 改 getter 摊平数组，增删均触发草稿保存
   watch(
-    [title, content, images, topics, location, visibility, targetType, targetId],
-    () => scheduleDraftSave()
+    [title, content, () => [...images.value], () => [...topics.value], location, visibility, targetType, targetId],
+    () => {
+      if (!suppressDraftSave.value) scheduleDraftSave();
+    }
   );
 });
 
@@ -311,8 +321,10 @@ function snapshotDraft() {
 }
 
 function scheduleDraftSave() {
+  if (suppressDraftSave.value) return;
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => {
+    if (suppressDraftSave.value) return;
     try {
       uni.setStorageSync(POST_DRAFT_STORAGE_KEY, snapshotDraft());
     } catch (_e) {
@@ -321,7 +333,14 @@ function scheduleDraftSave() {
   }, POST_DRAFT_SAVE_DEBOUNCE_MS);
 }
 
-async function restoreDraft() {
+/**
+ * MP-R1-POST-101：发布成功清空表单期间置位——解除草稿监听，防止「清空表单」触发的
+ * watch 把含 targetType:'circle' 的空表单快照写回 storage（500ms 定时器先于 800ms
+ * 返回延时触发），下次进入恢复出「发布到卡片显示个人动态、实际提交进圈」的自相矛盾状态。
+ */
+const suppressDraftSave = ref(false);
+
+async function restoreDraft(entryTarget?: string, entryCircleId?: number | null) {
   let draft: {
     targetType?: string;
     targetId?: number | null;
@@ -340,6 +359,16 @@ async function restoreDraft() {
     // 读取失败忽略
   }
   if (!draft) return;
+  // MP-R1-POST-101：空草稿守卫——发布成功清表单时误写的空快照（全字段为空但
+  // targetType/visibility 有值）不得恢复，否则「发布到」卡片解析不出圈名显示成
+  // 「个人动态」而提交却走 createTopic 进圈
+  const hasContent =
+    (typeof draft.title === "string" && draft.title.trim().length > 0) ||
+    (typeof draft.content === "string" && draft.content.trim().length > 0) ||
+    (Array.isArray(draft.images) && draft.images.length > 0) ||
+    (Array.isArray(draft.topics) && draft.topics.length > 0) ||
+    (Array.isArray(draft.tags) && draft.tags.length > 0);
+  if (!hasContent) return;
   if (draft.targetType === "circle" && draft.targetId) {
     targetType.value = "circle";
     targetId.value = Number(draft.targetId);
@@ -353,10 +382,24 @@ async function restoreDraft() {
   else if (Array.isArray(draft.tags)) topics.value = draft.tags;
   if (typeof draft.location === "string") location.value = draft.location;
   if (typeof draft.visibility === "string") visibility.value = draft.visibility;
-  if (images.value.length > 0) void loadTarget();
+  // MP-R1-POST-101：入口参数优先于草稿（原 onLoad 解析的 circleId 会被旧草稿
+  // targetId 无提示覆盖）
+  if (entryTarget === "campus") targetType.value = "campus";
+  if (entryCircleId != null && !Number.isNaN(entryCircleId)) {
+    targetType.value = "circle";
+    targetId.value = entryCircleId;
+  }
+  // MP-R1-POST-101：解析闸不依赖 images——只要目标是圈子就解析圈名（原
+  // images.length>0 闸使无图圈子草稿恢复后 targetCircle 恒 null → 卡片误显「个人动态」）
+  if (targetType.value === "circle" && targetId.value != null) void loadTarget();
 }
 
+/** MP-R1-PUBLISH-003 同构：先取消在途定时器再删存储，防止定时器把已删草稿写回 */
 function clearDraft() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
   try {
     uni.removeStorageSync(POST_DRAFT_STORAGE_KEY);
   } catch (_e) {
@@ -380,7 +423,17 @@ function requestLeave() {
     cancelText: t("village.post.draftDiscard"),
     success: (res) => {
       if (res.confirm) {
-        scheduleDraftSave();
+        // MP-R1-PUBLISH-003 同构：保留草稿路径同步落盘（不等 500ms 防抖——防抖定时器
+        // 会在 leave→onUnmounted 时被清，最终快照永不落盘）
+        if (draftSaveTimer) {
+          clearTimeout(draftSaveTimer);
+          draftSaveTimer = null;
+        }
+        try {
+          uni.setStorageSync(POST_DRAFT_STORAGE_KEY, snapshotDraft());
+        } catch (_e) {
+          // storage 失败不阻塞
+        }
         leave();
       } else {
         clearDraft();
@@ -468,6 +521,9 @@ async function submitPublish() {
     // 发布成功后清除草稿，避免下次进入恢复已发布内容
     // MP-R8-DRAFT-001（2026-09-16）：后端 /drafts 草稿同步删除（restoreDraft 优先后端草稿）
     void clientApi.deleteDraft().catch(() => {});
+    // MP-R1-POST-101：先置抑制标志 → clearDraft（已内置取消在途定时器）→ 再清表单，
+    // 保证清表单触发的 watch 不再把空表单快照写回 storage（旧草稿复活链路的根因）
+    suppressDraftSave.value = true;
     clearDraft();
     // 2026-09-05 R17：清空本地表单（返回 feed 后重新进入应为全新表单）
     title.value = "";
@@ -484,8 +540,14 @@ async function submitPublish() {
       postSubmitNavTimer = null;
     }, POST_SUBMIT_NAVIGATE_BACK_MS);
   } catch (_e) {
+    // MP-R1-POST-102：按失败分支取对应 store 的 errorMessage——circle 分支真实原因写入
+    // circleStore.errorMessage（createTopic rethrow），villageStore 是跨页长驻状态，
+    // 原实现要么展示无关陈旧文案、要么退化为泛化「发布失败」
     uni.showToast({
-      title: villageStore.errorMessage || t("village.post.publishFailed"),
+      title:
+        (isCircleTarget.value
+          ? circleStore.errorMessage
+          : villageStore.errorMessage) || t("village.post.publishFailed"),
       icon: "none",
     });
   } finally {

@@ -180,9 +180,11 @@ function toRealTask(view: TaskView): TaskItem {
 
 /**
  * real 模式拉取任务列表（3-J）。
+ * MP-R1-TASKS-004：force=true 绕过 load-once 守卫——原守卫使领取成功后的刷新短路，
+ * 任务仍显示「领取」、进度/积分不更新；用户再次点击触发重复 POST 被后端报错。
  */
-async function loadRealTasks(): Promise<void> {
-  if (realTasks.value !== null) return;
+async function loadRealTasks(force = false): Promise<void> {
+  if (!force && realTasks.value !== null) return;
   loadingRealTasks.value = true;
   try {
     const list = await request<TaskView[]>({ url: "/tasks", method: "GET" });
@@ -318,8 +320,8 @@ async function claimTask(task: TaskItem): Promise<void> {
       title: t("profile.taskClaimSuccess", { n: result?.rewardPoints ?? task.points }),
       icon: "success",
     });
-    // 领取成功后刷新列表（claimed/claimable 状态更新）
-    await loadRealTasks();
+    // 领取成功后刷新列表（claimed/claimable 状态更新；MP-R1-TASKS-004：force 绕过 load-once 守卫）
+    await loadRealTasks(true);
   } catch (error) {
     const message = error instanceof Error ? error.message : t("profile.taskClaimFailed");
     uni.showToast({ title: message || t("profile.taskClaimFailed"), icon: "none" });
@@ -336,8 +338,10 @@ async function claimTask(task: TaskItem): Promise<void> {
 onShow(async () => {
   if (useMock()) {
     // R4-00059：拉取真实签到状态同步「每日签到」任务完成态（同时刷新 session 资料完成度）
+    // MP-R1-TASKS-005：await（原 void 把 refreshSession 的 rejection 从外层 try/catch 剥离，
+    // 失败成 unhandledRejection 进全局上报）
     try {
-      void sessionStore.refreshSession();
+      await sessionStore.refreshSession();
       const status = await clientApi.getCheckInStatus();
       // R4-00151：字段名对齐后端契约 checkedInToday
       if (status?.checkedInToday === true) {
@@ -350,7 +354,8 @@ onShow(async () => {
   }
   // real：刷新 session（资料完成度驱动 complete-profile 进度）并拉取任务列表
   try {
-    void sessionStore.refreshSession();
+    // MP-R1-TASKS-005：await（原 void 剥离 rejection，对照 session.ts:803 正确范式）
+    await sessionStore.refreshSession();
     await loadRealTasks();
   } catch (_e) {
     // 拉取失败保持当前列表（不阻塞页面展示）

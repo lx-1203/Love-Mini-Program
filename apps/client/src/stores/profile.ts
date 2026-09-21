@@ -359,6 +359,12 @@ export const useProfileStore = defineStore("profile", {
           // 2026-08-09：照片墙与 basicProfile 同步（原实现漏同步导致页面照片墙恒为空）
           this.photoGallery = Array.isArray(basic?.photoGallery) ? [...basic.photoGallery] : [];
 
+          // MP-R1-PRIVACY-001：real 模式同样回填本地持久化的隐私开关——原仅在 mock 分支
+          // 回填，real 重启后开关显示回默认值（用户上次选择在 storage 中却不生效也不展示）
+          const persistedPrivacyReal = loadPersistedPrivacy();
+          this.allowSameSchoolRecommend = persistedPrivacyReal.allowSameSchoolRecommend;
+          this.receiveSameSchoolInfo = persistedPrivacyReal.receiveSameSchoolInfo;
+
           // SubTask 1.4.1：解析 vipStatus。
           // 当前后端 UserSession schema 暂未声明 vipStatus 字段，但实际响应可能已包含
           // （后端 DTO 扩展常常先于 OpenAPI 重新生成）。这里通过类型断言安全读取：
@@ -776,7 +782,8 @@ export const useProfileStore = defineStore("profile", {
      */
     setAllowSameSchoolRecommend(allow: boolean): void {
       this.allowSameSchoolRecommend = allow;
-      // Phase 4.5 验收：权限开关状态持久化（真实环境同步后端接口，mock 模式本地存储）
+      // Phase 4.5 验收：权限开关状态持久化（MP-R1-PRIVACY-001：当前仅本机 storage 持久化，
+      // 后端偏好接口未接入——服务端推荐/接收行为暂不受开关控制，见 privacy 页文案说明）
       try {
         uni.setStorageSync(PRIVACY_STORAGE_KEY, {
           allowSameSchoolRecommend: this.allowSameSchoolRecommend,

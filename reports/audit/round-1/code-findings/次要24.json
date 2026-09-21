@@ -1,0 +1,375 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "代码审查员-R1-次要24（Layer A 只读代码审查）",
+    "scope": [
+      "subpackages/legal/agreement/index（用户协议，含共用组件 LegalTextPage.vue）",
+      "subpackages/market/detail/index（商品详情）",
+      "subpackages/market/shop/index（积分商城/逛逛页）",
+      "subpackages/market/wallet/index（钱包）",
+      "subpackages/vip/index（会员购买）",
+      "subpackages/vip/promo-code（优惠码）",
+      "subpackages/vip/bills（会员账单）"
+    ],
+    "method": "7 个页面 .vue 全文逐行阅读 + 全部直接引用的 store（app-config/coins/vip-billing/promo-code/vip-auto-renew/checkin）/组件（LegalTextPage/AppShell/SafeImage/EmptyState/SkeletonBlock）/工具（debounce/haptic/useMenuButtonRect/useStatusBarHeight）/配置（images/vip-plans/feature-flags/env/routes/legal-texts/theme tokens）交叉核对；硬约束逐条 grep；i18n key 用括号配对解析器对 zh-CN.ts/en-US.ts 全量比对；pages.json 分包注册与 pull-down 配置核对。未运行构建、未截图（A2 只读角色）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-DETAIL-001",
+      "round": "R1",
+      "page": "subpackages/market/detail/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Async",
+      "severity": "P2",
+      "description": "商业化封存判断在 onLoad 早退后无响应式重载，形成竞态：app-config store 初始 switches={}（stores/app-config.ts:23），isCommerceOn() 在配置拉回前恒 false（封存态，app-config.ts:64-77）；配置由 sessionStore.bootstrap 非阻塞拉取（stores/session.ts:661-670，注释自述「非阻塞」）。用户在配置返回前进入商品详情页时 onLoad 早退（detail/index.vue:261-271 `if (commerceSealed.value) return`），之后配置到达、commerceSealed 翻转为 false，但没有任何 watcher/重新拉取逻辑。此时模板 v-if 链全部为假：commerceSealed=false、loading=false、error=false、notFound=false、product=null（detail/index.vue:296-349）→ 导航栏以下整页空白，仅返回键可救。",
+      "evidence": "detail/index.vue:33 commerceSealed=computed(!isCommerceOn())；:261-271 onLoad 早退；:296/313/319/334/349 v-if/v-else-if 链在 product=null 且四态皆 false 时无渲染分支；stores/app-config.ts:22-23 switches 初始 {}、:64-77 缺失即封存；stores/session.ts:661-670 bootstrap 非阻塞拉取。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "封存态解除（commerceSealed true→false）后自动补拉商品：watch(commerceSealed) 由 true 变 false 且尚未加载时调用 loadProduct(productId)，或 onLoad 早退时留一个「待配置」状态而非直接跳过。",
+      "fix": "在 detail/index.vue 增加 watch(commerceSealed, (sealed)=>{ if(!sealed && !product.value && !loading.value && productId.value) void loadProduct(productId.value) })。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SHOP-001",
+      "round": "R1",
+      "page": "subpackages/market/shop/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Async",
+      "severity": "P3",
+      "description": "与 MP-R1-DETAIL-001 同源的封存竞态（app-config 异步到达前 onShow 早退，见 detail 条目）：shop/index.vue:34-39 onShow 在 commerceSealed 时直接 return，checkInStore.fetchStatus() 与 fetchShopItems() 均不执行；配置稍后到达、封存卡切换为正常内容区后不会自动补拉——商品列表保持空数组且 shopLoading/shopError 均 false → 模板落入「空态」分支（:333-335），仅显示 shop.empty 文案、无重试按钮。用户在本页停留期间将一直看到「暂无商品」假空态，直到离开再进入（onShow 重新触发）。",
+      "evidence": "shop/index.vue:34-39 onShow 早退；:230-233 filteredItems 空数组；:333-335 空态分支无重试按钮（对比 :318-330 错误态有重试）；stores/app-config.ts:23（switches 初始空）+ session.ts:661-670（异步拉取）。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "封存解除后自动补拉签到状态与商品列表；或空态分支补充「点击重试」。",
+      "fix": "watch(commerceSealed, (sealed)=>{ if(!sealed && shopItems.value.length===0 && !shopLoading.value){ void checkInStore.fetchStatus(); void fetchShopItems(); } })。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-WALLET-001",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Async",
+      "severity": "P3",
+      "description": "与 MP-R1-DETAIL-001 同源的封存竞态（app-config 异步到达前 onShow 早退）：wallet/index.vue:45-47 onShow 在 commerceSealed 时 return，fetchBalance/listTransactions 均不执行；配置到达解除封存后页面自动切出正常模板，但数据永不加载——余额卡显示「¥0」（balanceYuan 初始 0，coins.ts:96,103）、明细显示 wallet.empty 空文案（wallet/index.vue:141,172），对资金页构成「余额为零」的误导性展示，直到用户离开再进入。",
+      "evidence": "wallet/index.vue:45-59 onShow 早退；:141 `{{ loading ? '--' : balanceYuan.toFixed(0) }}`（loading=false 时渲染 0）；:172 空文案分支；stores/coins.ts:96 balanceCents 初始 0；stores/app-config.ts:23 + session.ts:661-670。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "封存解除后自动补拉余额与流水；或数据未加载时余额显示占位符而非 0。",
+      "fix": "watch(commerceSealed, (sealed)=>{ if(!sealed && !coinsStore.loaded){ loading.value=true; void refetch(); } })，并给余额加 loaded 判定。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DETAIL-002",
+      "round": "R1",
+      "page": "subpackages/market/detail/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "组件 prop 接线错误：商品不存在（404）空态向 EmptyState 传 `:desc=\"t('shop.detailNotFoundDesc')\"`（detail/index.vue:335），但 EmptyState 组件声明的 prop 是 description（兼有旧 prop message），不存在 desc（EmptyState.vue:17-35）。desc 落入 attrs 被忽略，descriptionText 回退到 presetSubMap['no-data']（EmptyState.vue:79-83）→ 404 空态副文案恒显示通用的「这里空空如也」（zh-CN.ts:2836 empty.noDataSub），页面特意准备的 shop.detailNotFoundDesc 文案（zh 与 en 均存在，已核对）从未展示。",
+      "evidence": "detail/index.vue:334-335 `<EmptyState :title=... :desc=... />`；components/common/EmptyState.vue:29 `description?: string`（无 desc）、:40 默认 ''、:79-83 `props.description || presetSubMap[props.type] || t('empty.noDataSub')`；i18n 全量解析确认 shop.detailNotFoundDesc 在 zh-CN.ts/en-US.ts 均存在但无处消费。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "prop 名对齐：改为 :description=\"t('shop.detailNotFoundDesc')\"，404 空态显示「商品不存在或已下架」类专属文案。",
+      "fix": "detail/index.vue:335 :desc → :description。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VIP-001",
+      "round": "R1",
+      "page": "subpackages/vip/index",
+      "screenshot": "无（代码层审查+交互推演，未真机验证）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "自动续费原生 switch 取消确认后 UI 与 store 脱节：`<switch :checked=\"autoRenewEnabled\" @change=\"toggleAutoRenew\">`（vip/index.vue:486-491）。原生 switch 被点击后先自行翻转视觉状态再派发 change；toggleAutoRenew（:283-336）完全忽略事件对象（不读 e.detail.value），改从 store 取反并弹确认框——用户在确认框点「取消」时 store 未变、:checked 绑定值未变，Vue 不产生 setData → 原生组件保持被拨动后的状态，开关视觉为「开」而 store 仍 enabled=false（下次进入页面才复位）。小程序原生组件该失同步是高频缺陷模式；且 cancel 路径无任何回拨处理。",
+      "evidence": "vip/index.vue:486-491 switch 绑定；:290 `const nextEnabled = !autoRenewEnabled.value`（忽略 e.detail.value）；:291-319 两条 confirm 弹窗路径 :305/:318 `if (!confirmed) return;`（直接返回，无 UI 回拨）；stores/vip-auto-renew.ts:45-52 status 默认 enabled:false。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "取消后把开关视觉回拨到 store 实际值（如临时翻转本地回显变量，或确认后再改绑定值）；change 处理应读取 e.detail.value 作为用户意图来源。",
+      "fix": "toggleAutoRenew 接收事件参数；cancel 时强制同步（例如先置 autoRenewLocalOverride 再 nextTick 还原，或改用受控 view+自绘开关）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-BILLS-001",
+      "round": "R1",
+      "page": "subpackages/vip/bills",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "P1-08 会员开关关闭时账单页仍发起后端请求：bills.vue 的 onLoad 守卫（:36-45）只在 flag=false 时 toast+返回，但 setup 顶层 :155 无条件执行 `loadBills()` → listBills real 模式立即 GET /vip/bills（stores/vip-billing.ts:215-218）。这违背同批注释声明的设计意图（bills.vue:22「false 时子页拦截返回」；vip/index.vue:29「flag=false 时……不发起后端请求」，vip 页 onMounted 有对应守卫 :353-364）。开关关闭的真实模式下产生一次注定失败的 API 调用（且 EnhancedApiError 会被 loadBills 捕获再 toast 一次冗余错误）。",
+      "evidence": "bills.vue:36-45 onLoad 守卫；:154-155 `// 初始化加载 loadBills();`（无条件、无 flag 判断，且先于/独立于 onLoad 守卫生效）；对照 vip/index.vue:353-364 onMounted 内 `if (!featureFlags.membershipEnabled) return;`；stores/vip-billing.ts:213-229 real 分支发请求。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "与 vip/index.vue 一致：初始化加载前判断 featureFlags.membershipEnabled，关闭时不发请求。",
+      "fix": "bills.vue:155 改为 `if (featureFlags.membershipEnabled) { void loadBills(); }`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-BILLS-002",
+      "round": "R1",
+      "page": "subpackages/vip/bills",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "加载失败与空态混同、无重试入口：loadBills 捕获异常只弹一条 toast（bills.vue:79-86），store.bills 保持空数组 → 页面随后命中 EmptyState「暂无账单」（:204-208，isEmpty=true 且 isLoading=false）。网络错误的最终呈现是一张「没有账单」的空态卡，用户无从区分失败与确实无账单，也没有错误态/重试按钮（仅下拉刷新可隐性重试；对比同组 shop/detail 页均有 error+retry 分支）。",
+      "evidence": "bills.vue:79-86 catch 仅 showToast；:199-208 模板只有 loading/empty/卡片三分支、无 error 分支；对照 shop/index.vue:318-330 与 detail/index.vue:319-331 的错误态+重试。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "增加 error 态分支（EmptyState type=\"network\" + 重试按钮调 loadBills(true)），失败时不渲染「暂无账单」。",
+      "fix": "bills.vue 增加 loadError ref，catch 中置位；模板 v-else-if=loadError 渲染错误卡+重试。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-WALLET-002",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "金额分→元展示用 toFixed(0) 造成金额失真：流水金额 `(item.amount/100).toFixed(0)`（wallet/index.vue:118）与余额 `balanceYuan.toFixed(0)`（:141）。toFixed 四舍五入：990 分（¥9.9）显示为「-¥10」，9999 分余额显示「¥100」。单位约定为分（coins.ts:14「后端金额一律为分，前端展示换算为元」），mock 数据恰好都是整元（500/80000 分）掩盖了问题，real 模式任意金额即失真。附带：充值成功 toast 金额字面量 100 与请求体 amountCents:10000 双处硬编码（:76,84），改额时易漂移。",
+      "evidence": "wallet/index.vue:116-119 amountText toFixed(0)；:141 balanceYuan.toFixed(0)；stores/coins.ts:103 balanceYuan=balanceCents/100（可带小数）；:76 `data: { amountCents: 10000 }` 与 :84 `t(\"wallet.rechargeSuccess\", { n: 100 })`。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "金额展示保留两位小数 toFixed(2)（或按项目其他资金页 promo-code.vue:85/bills.vue:95-97 的 toFixed(2) 口径统一）；充值金额抽单一常量。",
+      "fix": "amountText 与余额渲染改 toFixed(2)；RECHARGE_DEMO_CENTS=10000 常量化。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-WALLET-003",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "onShow 拉取失败被静默吞掉后，页面以「真实数据」的面目展示兜底零值：catch 注释「网络异常静默」（wallet/index.vue:54-55）后 loading=false，余额卡照常渲染 ¥0（:141）、明细渲染 wallet.empty（:172）——弱网用户看到的是「余额为零、无流水」而非错误态，资金页语义误导（与 MP-R1-WALLET-002 的 toFixed 叠加更甚）。失败与「确实为零」在 UI 上不可区分，且无重试。",
+      "evidence": "wallet/index.vue:49-58 Promise.all try/catch 静默；:141 余额无 loaded/failed 判定；:157-172 明细三分支无错误态；stores/coins.ts:116-138 fetchBalance 失败时 balanceCents 保持旧值（首次即 0）。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "记录 loadFailed 状态，余额/明细区展示错误+重试；至少对「从未成功加载」显示占位符而非 0。",
+      "fix": "增加 loadError ref 与错误分支；余额在 !coinsStore.loaded && loadError 时显示 '--'。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VIP-002",
+      "round": "R1",
+      "page": "subpackages/vip/promo-code",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "VIP 三个子页返回键均无空栈兜底，深链直开时卡死且产生未处理的 navigateBack 失败：vip/index.vue:256-259、promo-code.vue:180-183、bills.vue:149-152 都是裸 `uni.navigateBack({ delta: 1 })`（无 fail 回调）。页面栈为 1（分享卡片/扫码直开，globalStyle navigationStyle:custom 无系统返回）时 navigateBack 失败：页面无任何回退途径，且未处理的 Promise rejection 形式失败被静默丢弃。同组 market 三页与 legal 页都做了栈判断（detail/index.vue:242-249、shop/index.vue:55-62、wallet/index.vue:92-99、LegalTextPage.vue:131-148 navigateBack fail→switchTab），同类自定义返回键行为不一致。",
+      "evidence": "vip/index.vue:255-259；promo-code.vue:179-183；bills.vue:148-152（三者均无 getCurrentPages 判断、无 fail 回调）；对照 detail/index.vue:241-249 `const pages = getCurrentPages(); if (pages.length > 1) … else uni.switchTab(...)`。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "统一封装 goBack（栈>1 navigateBack，否则 switchTab(ROUTES.TAB.PROFILE)），三页复用。",
+      "fix": "三页 goBack 补 `if (getCurrentPages().length > 1) … else uni.switchTab({ url: ROUTES.TAB.PROFILE })`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SHOP-002",
+      "round": "R1",
+      "page": "subpackages/market/shop/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Architecture",
+      "severity": "P3",
+      "description": "mock 商品目录在两个页面手工双份维护：shop/index.vue buildMockShopItems（:133-196）与 detail/index.vue mockCatalog（:102-169）是同一份 6 条商品数据（id/价格/原价/销量/图片/分类完全对应）的两份独立字面量，仅注释声称「与 shop 页 mock 源、后端种子数据对齐」（detail/index.vue:5-7,87-89），无单一真相源；分类 id→i18n 文案映射也两份（detail:76-84 vs shop:42-48）。任一侧改价/增删商品即静默漂移（详情页与列表页显示不一致）。同文件类近问题：vip-billing store 注释亦自认与 stores/vip.ts fetchBills 重复（vip-billing.ts:64-67，属其他审查范围）。",
+      "evidence": "shop/index.vue:133-196 与 detail/index.vue:102-169 逐字段对照（id 1-6，price 99/29.9/9.9/19.9/15/12.9，image 用同一批 IMAGE_PATHS.PRODUCTS.*）；shop:42-48 与 detail:76-84 分类映射重复。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "抽取 config/mock-products.ts（或 stores/market 模块）导出唯一 mock 目录与分类映射，两页共同消费。",
+      "fix": "新建共享 mock 商品源模块，shop/detail 改为 import；分类文案映射随之收敛。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SAFEAREA-001",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "无（代码层审查+平台行为推演，需真机复核）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "全局 page 级 safe-area 内边距与本组页面自带的顶部/底部安全区补偿叠加，env(safe-area-inset-*) 非 0 的环境（真机刘海屏，依项目自述「模拟器/DevTools env 恒 0」即 R10-P1-003 背景）会出现双重留白，DevTools 中不可见：App.vue:337-339 对 page 无条件设 `padding-top: var(--statusbar, env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom)`，而 --statusbar 只被注入到页面根 view（useMenuButtonRect styleVars，composables/useMenuButtonRect.ts:52-56），page 元素取不到该变量 → page 顶部按 env 走；本组页面又各自再加一层：wallet 头部 `calc(var(--sp-4) + var(--statusbar, env(...)))`（wallet:199）、detail/vip/promo-code/bills 的 .safe-top（detail:453-457、vip:602-606、promo-code:395-401、bills:316-322）、shop 头部（shop:403）、legal 经 AppShell 状态栏占位（AppShell.vue:224）。env>0 时顶部＝env＋注入值双重、底部 page padding 与 .safe-bottom/footer-space 再双重（wallet:192,389）。代码层叠加关系确凿；env 实际取值随平台而定，故标 P2/置信 0.5，建议真机（刘海机型）回归。",
+      "evidence": "App.vue:318-341（无 #ifdef 包裹的 page 规则，:337-339 两行 padding）；composables/useMenuButtonRect.ts:50-56（--statusbar 注入到根 view 而非 page）；grep 全项目仅 pages/messages 与 village/detail 使用 page-meta（可向 page 注入变量），本组 6 页均无；各页 safe-top/头部行号见上。",
+      "sources": ["code"],
+      "confidence": 0.5,
+      "ideal": "safe-area 补偿单一来源：要么删除全局 page padding 改由 page-meta 全局注入 --statusbar，要么页面侧去掉自留 safe-top/头部 env 补偿，二者取一。",
+      "fix": "优先方案：App.vue 全局挂 <page-meta :page-style>（含 --statusbar），页面级 .safe-top 全部移除；或全局 page 规则去掉两行 padding。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SCROLLVIEW-001",
+      "round": "R1",
+      "page": "subpackages/market/detail/index",
+      "screenshot": "无（代码层审查，证据为源码行号；同类问题跨 3 页）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "scroll-y 的 scroll-view 高度不受约束、内部滚动永不生效：detail `.product-scroll`（detail:350,530-533）与 shop `.shop-scroll`（shop:310,556-559）都是 flex:1 + overflow:hidden，但父容器（.product-page/.shop-page）只有 min-height:100% 无确定高度——flex 子项 min-height:auto 收敛到内容高度，scroll-view 被内容撑高，scroll-y 永不触发；实际滚动由原生页面滚动兜底（AppShell.vue:201-206 注释表明这正是项目约定「禁止锁死 height:100%、让内容自然撑高」），因此声明为 scroll-view 的元素实际是普通 view，overflow:hidden 为死代码，长列表失去 scroll-view 的复用/回流优化。LegalTextPage 的 .legal-content 同型（LegalTextPage.vue:208-216,327-331），且其外层 .legal-page 的 min-height:100% 相对 auto 高度的 .shell__body 解析，实际失效，loading/错误态的 flex:1 垂直居中亦不成立。",
+      "evidence": "detail/index.vue:399-405（min-height:100%）+:530-533（.product-scroll flex:1/overflow:hidden）；shop/index.vue:391-398+:556-559 同型；LegalTextPage.vue:236-242+:327-331；components/layout/AppShell.vue:200-206（项目约定注释：min-height 让内容自然撑高）。",
+      "sources": ["code"],
+      "confidence": 0.6,
+      "ideal": "与项目约定一致化：要么这些区域明确改为普通 view（删除 scroll-view/overflow:hidden），要么给 scroll-view 确定高度（父容器 height:100vh 禁用、可用 page 固定高 + calc 链）使其真正内滚。",
+      "fix": "低成本：detail/shop 的 scroll-view 改 view 并删除 overflow:hidden；legal 同理（其内部本就依赖页面滚动）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROMO-001",
+      "round": "R1",
+      "page": "subpackages/vip/promo-code",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "文件带 UTF-8 BOM：promo-code.vue 与 bills.vue 首字节为 EF BB BF（U+FEFF 位于 <script 标签之前），同组其余 5 页与 LegalTextPage 均无 BOM。当前 Vite/vue-loader 可容忍，但影响字符串级工具（行号偏移、正则锚定 ^<script、拼接/对比脚本）与文件一致性；此前轮次归档脚本曾出现 to-lf.cjs 等行尾治理，BOM 属同类卫生问题。",
+      "evidence": "hexdump 校验：subpackages/vip/promo-code.vue 与 subpackages/vip/bills.vue 前 3 字节 efbbbf；agreement/detail/shop/wallet/vip-index/LegalTextPage 6 个文件无 BOM（python 逐文件 raw[:3]==b'\\xef\\xbb\\xbf' 全量比对输出）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "全部源码文件无 BOM、统一 LF。",
+      "fix": "对两个文件去 BOM 重写（一次性脚本或编辑器另存为 UTF-8 无 BOM）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROMO-002",
+      "round": "R1",
+      "page": "subpackages/vip/promo-code",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "硬编码路由字符串绕过 ROUTES 常量：promo-code.vue:39 与 bills.vue:42 兜底跳转 `uni.switchTab({ url: \"/pages/profile/index\" })`，而同场景 vip/index.vue:63 用 ROUTES.TAB.PROFILE（constants/routes.ts:42）。Task 33 路由常量化（vip/index.vue:27 注释自述）未覆盖两个子页，路径改动时存在漂移风险。",
+      "evidence": "promo-code.vue:39、bills.vue:42 字面量路径；vip/index.vue:63 `uni.switchTab({ url: ROUTES.TAB.PROFILE })`；constants/routes.ts:40-43 TAB.PROFILE 常量存在。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "全部路由经 constants/routes.ts。",
+      "fix": "两处改为 ROUTES.TAB.PROFILE 并补 import。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-WALLET-004",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "幻影设计 token：wallet/index.vue:232、:291 使用 `var(--r-2xl, 32rpx)`，但全项目（theme/*.scss、styles/*.scss、App.vue、uni.scss）不存在 --r-2xl 定义（半径阶梯到 --r-xl 为止），恒走 32rpx fallback——token 名失真，后续若有人以为 token 存在而删 fallback 或按 --r-xl 语义统一时引入回归。全组 token 比对仅此一个未定义项（--statusbar/--capsule-right 为运行时 JS 注入变量，正常）。",
+      "evidence": "python 全量提取 8 个文件 var(--*) 与 611 个已定义 token 交叉比对：唯一未定义项 --r-2xl（有 fallback）；grep theme/styles/App.vue/uni.scss 无 `--r-2xl:` 定义；wallet/index.vue:232,291。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "要么在 design-variables.scss 补 --r-2xl 定义，要么改用现有阶梯 token（--r-xl）。",
+      "fix": "wallet 两处 var(--r-2xl, 32rpx) → var(--r-xl, 32rpx) 或新增 token 定义。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SHOP-003",
+      "round": "R1",
+      "page": "subpackages/market/shop/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "MiniProgram",
+      "severity": "P4",
+      "description": "scroll-view 布尔属性以字符串传入：shop/index.vue:292 `show-scrollbar=\"false\"`（静态属性传字符串 \"false\"，非 :show-scrollbar=\"false\"）；且 WeChat 该属性需配合 enhanced 生效，此处未启用 enhanced，属两头不靠的死配置（当前无实际渲染影响，仅规范问题）。",
+      "evidence": "shop/index.vue:292 `<scroll-view scroll-x class=\"category-scroll\" show-scrollbar=\"false\">`；对比同文件 :310 scroll-y 用法。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "删除该属性，或 `:show-scrollbar=\"false\"` + `:enhanced=\"true\"` 明确意图。",
+      "fix": "移除 show-scrollbar=\"false\"。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VIP-003",
+      "round": "R1",
+      "page": "subpackages/vip/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "死样式：vip-page 背景为同色起止的渐变 `linear-gradient(180deg, var(--c-neutral-800) 0%, var(--c-neutral-800) 100%)`（vip/index.vue:551），与纯色等价却保留渐变语法（渲染开销+可读性噪音）。同类死样式还有 bills.vue:412-414 `.empty-state__icon`（emoji 图标移除后遗留、模板无引用）。",
+      "evidence": "vip/index.vue:547-555；bills.vue:405-418（.empty-state__icon 无对应模板节点，模板 :197-260 已无 icon 节点）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "纯色 background: var(--c-neutral-800)；删除未引用的 .empty-state__icon。",
+      "fix": "两处直接删除/简化。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROMO-003",
+      "round": "R1",
+      "page": "subpackages/vip/promo-code",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "兑换成功后入口不收敛、可重复提交：handleRedeem 成功后 lastValidation 仍为 available（store 不清校验结果），底部固定兑换按钮（v-if=\"validationResult?.available\"，promo-code.vue:303-315）继续显示且仅 redeeming 期间禁用 → 再次点击会再次发起 redeemCode（real 模式依赖服务端按码拒绝兜底，mock 模式每次都返回成功）。store 侧已有失败清残留逻辑（promo-code.ts:192-195），成功路径无对称处理。",
+      "evidence": "promo-code.vue:138-170 handleRedeem 成功仅弹 modal；:303-315 footer 依赖 validationResult?.available；stores/promo-code.ts:154-199 redeemCode 成功不清 lastValidation。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "兑换成功后 store.reset()（或置 lastValidation=null），收起兑换按钮与校验卡，仅保留兑换结果卡。",
+      "fix": "handleRedeem 成功分支内调用 store.reset() 前暂存结果用于结果卡展示。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/legal/agreement/index",
+      "filesRead": [
+        "subpackages/legal/agreement/index.vue（全文 21 行，薄壳页面）",
+        "components/common/LegalTextPage.vue（全文 368 行逐行，本页实际逻辑载体）",
+        "config/legal-texts 引用核对（getLegalText/LegalTextType 导入路径存在）",
+        "components/layout/AppShell.vue（props/slot/status-bar 占位 :44-58,:180-260）"
+      ],
+      "checks": "架构重复（R4-00050 已收敛到共用组件，本页仅 2 行声明 ✓）；API 错误处理（loadLegalText catch 全覆盖、getLegalText 自兜底 ✓；displayUpdatedAt 的 try/catch 为死代码但无害）；异步流程（onMounted→void loadLegalText ✓）；样式（全部 var(--token) 且交叉比对无缺失 token；禁 :hover/grid/import.meta.env/emoji 均通过，hover-class+hover-stay-time ✓）；事件接线（重试/我已阅读 @tap 均有实现 ✓）；小程序专项（MP-WEIXIN 分支 navigateBack fail→switchTab(ROUTES.TAB.DISCOVER) 兜底 ✓、H5 分支 .catch ✓；scroll-view flex:1 高度问题并入 MP-R1-SCROLLVIEW-001；safe-area 双重补偿经 AppShell 并入 MP-R1-SAFEAREA-001）。i18n legal.userAgreement.* / legal.loadFailed / common.* 全部存在（zh+en 解析比对）。"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "filesRead": [
+        "subpackages/market/detail/index.vue（全文 652 行逐行）",
+        "stores/app-config.ts（全文 127 行）",
+        "components/common/SafeImage.vue props、components/common/EmptyState.vue（props+模板+computed 全文）",
+        "config/images.ts ICONS_COMMON/ICONS_EMOJI/PRODUCTS 组、services/http.ts 错误类（EnhancedApiError.status）",
+        "utils/media resolveMediaUrl 引用核对"
+      ],
+      "checks": "封存竞态（P2，MP-R1-DETAIL-001，onLoad 早退后无补拉→空白页）；EmptyState :desc 接线错误（P3，MP-R1-DETAIL-002，已核实组件无 desc prop）；404/错误双态+重试（:223-239 status===404 分支依赖 http 错误对象 .status，已核实 EnhancedApiError 携带 ✓）；goBack 空栈兜底 ✓（:242-249）；scroll-view flex:1 高度（MP-R1-SCROLLVIEW-001）；safe-top 与全局 page padding 叠加（MP-R1-SAFEAREA-001）；mock 目录与 shop 页重复（并入 MP-R1-SHOP-002）；IMAGE_PATHS.ICONS_COMMON.BACK/LOCK_SVG 与静态资产 lock.svg/back.png 磁盘存在性核对 ✓；硬约束（:hover/grid/import.meta.env/emoji/空 catch/backdrop-filter）全部通过；pages.json detail/index 已注册 ✓。"
+    },
+    {
+      "page": "subpackages/market/shop/index",
+      "filesRead": [
+        "subpackages/market/shop/index.vue（全文 735 行逐行）",
+        "stores/checkin.ts fetchStatus（:207,:280-317 token 竞态防护核对）",
+        "stores/app-config.ts、stores/helpers/use-mock.ts（全文 30 行）",
+        "components/common/SafeImage.vue props"
+      ],
+      "checks": "onShow 刷新 ✓（:34-39 拉签到+商品，封存时跳过——但跳过后无补拉即 MP-R1-SHOP-001）；mock 300ms 人工延迟每次 onShow 重放（mock-only，未立项，coverage 记录）；fetchShopItems 加载/错误/空三态+重试 ✓（:203-228,:312-330）、shopLoading 重入守卫 ✓；分类切换 real 模式重拉/mock 本地过滤 ✓（:239-244）；show-scrollbar=\"false\" 字符串属性（P4，MP-R1-SHOP-003）；shop-grid 用 flex-wrap 非 grid ✓（禁 grid 通过）；封存卡 SVG 锁 ✓；分类/商品 i18n key 全量存在 ✓；mock 目录双份重复（P3，MP-R1-SHOP-002）；goBack 空栈兜底 ✓（:55-62）。"
+    },
+    {
+      "page": "subpackages/market/wallet/index",
+      "filesRead": [
+        "subpackages/market/wallet/index.vue（全文 391 行逐行）",
+        "stores/coins.ts（全文 286 行）",
+        "config/env.ts isDev、services/env.ts isMockMode（re-export 层）",
+        "components/common/SkeletonBlock.vue props"
+      ],
+      "checks": "onShow 刷新 ✓（:45-59 Promise.all 双拉）；封存竞态（MP-R1-WALLET-001）；静默 catch→¥0 假零态（MP-R1-WALLET-003，catch 带注释非空 catch，不违反禁空 catch 约束）；toFixed(0) 金额失真（MP-R1-WALLET-002）；演示充值幂等键 Idempotency-Key ✓（:70-78，注释与后端契约一致）；充值按钮 useMock()||isDev 门控 ✓（:147-151，isDev 经 config/env 封装非直读 import.meta.env ✓）；isIncome 兼容 CREDIT/INCOME ✓（:106-108）；goBack 空栈兜底 switchTab profile ✓；--r-2xl 幻影 token（P4，MP-R1-WALLET-004）；100vh（:190）与项目其它页 100% 口径不一致（未立项，coverage 记录：mp 100vh 含状态栏，本页自定义头部自身补偿，实际影响存疑）；back 键 ‹ 为标点非 emoji ✓。"
+    },
+    {
+      "page": "subpackages/vip/index",
+      "filesRead": [
+        "subpackages/vip/index.vue（全文 1019 行逐行）",
+        "stores/vip-auto-renew.ts（全文 223 行）",
+        "config/vip-plans.ts（前 80 行结构+三套餐）",
+        "config/feature-flags.ts 引用核对、theme/tokens.ts designTokens.color.gold（:131 '#FFD700'）",
+        "utils/debounce.ts createButtonGuard（:145-165）"
+      ],
+      "checks": "P1-08 守卫链完整 ✓（onLoad 拦截 :57-66 + 页面交互全部短路 :49-55 + onMounted 请求守卫 :353-364——与 bills 页对比差异见 MP-R1-BILLS-001）；mock 支付定时器 onUnmounted 清理 ✓（:89-99，历史缺陷已修复）；real 模式禁假支付 ✓（:174-177）；switch 取消不回弹（P2，MP-R1-VIP-001）；goBack 无空栈兜底（MP-R1-VIP-002）；DEFAULT_PLAN_ID 兜底 quarterly 在 VIP_PLANS 非空时不可达（首项 monthly）且 selectedPlan 空时 subscribe 静默 return（:161，边缘，coverage 记录）；SWITCH_ACTIVE_COLOR 从 tokens.ts 取色 ✓（双源同步注释 ：129-134）；VIP_PLANS 字段与模板消费（nameKey/periodKey/badgeKey/perDayKey/popular）逐项匹配 ✓；i18n vip.* 全量存在（zh+en）✓；禁 :hover/grid/emoji/empty catch/import.meta.env 通过（:12-13 为注释）；硬编码路由已用 ROUTES ✓。"
+    },
+    {
+      "page": "subpackages/vip/promo-code",
+      "filesRead": [
+        "subpackages/vip/promo-code.vue（全文 602 行逐行）",
+        "stores/promo-code.ts（全文 219 行）",
+        "config/vip-plans.ts（R4-00117 默认金额来源）"
+      ],
+      "checks": "输入校验链 ✓（空值/格式 /^[A-Za-z0-9-]{4,24}$/、金额>0、validating 重入守卫 :99-135）；错误处理 ✓（validate/redeem 均 catch→toast，store 抛 EnhancedApiError 由页面兜住）；readInputValue 跨端 detail.value 兜底 ✓（:57-60）；redeem 防重锁 ✓（store :156-162）；兑换成功可重复提交入口（P4，MP-R1-PROMO-003）；BOM（P4，MP-R1-PROMO-001）；硬编码 /pages/profile/index（P4，MP-R1-PROMO-002）；金额 toFixed(2) ✓（:85,:93,:154-155 与 wallet 页口径不一致，已在 wallet 条目注明）；cursor-spacing 键盘避让 ✓（:215,:233）；onLoad 拦截 ✓（:33-42，真实模式下本页无 setup 期请求，无 bills 类问题）；i18n vip.promoCode* 全量存在 ✓；store 内 t(\"promoCode.redeeming\")（promo-code.ts:161）key 存在但命名空间与页面级 vip.promoCode* 并行（历史遗留别名，未立项，coverage 记录）。"
+    },
+    {
+      "page": "subpackages/vip/bills",
+      "filesRead": [
+        "subpackages/vip/bills.vue（全文 526 行逐行）",
+        "stores/vip-billing.ts（全文 255 行）",
+        "components/common/EmptyState.vue"
+      ],
+      "checks": "pages.json enablePullDownRefresh:true 已配置 ✓（pages.json:340-343，onPullDownRefresh 可触发）+ stopPullDownRefresh ✓（:89-92）；listBills 布尔/对象双入参兼容 ✓（store:160-167）；会员开关关闭仍发请求（P3，MP-R1-BILLS-001）；错误态与空态混同无重试（P3，MP-R1-BILLS-002）；无 onShow 刷新（页面低频+有下拉，未立项，coverage 记录）；formatDate/formatAmount toFixed(2) ✓（:95-97）；typeColor/statusLabel 对未知值回退原文（store 类型仅三种，与后端 BillType 对齐，coverage 记录）；.empty-state__icon 死样式（并入 MP-R1-VIP-003）；BOM（并入 MP-R1-PROMO-001 同批）；硬编码 /pages/profile/index（并入 MP-R1-PROMO-002）；i18n vip.bills* 全量存在（zh+en）✓；硬约束全部通过。"
+    }
+  ]
+}

@@ -132,10 +132,12 @@ function goBack() {
     <!-- 本地示例内容 -->
     <template v-else>
       <view class="content-header">
-        <text class="content-header__title">{{ t('contentPages.mbti.title') }}</text>
+        <!-- MP-R1-LMBTI-101：返回键移到标题左侧——原固定右上角（right:8px、32×32px）
+             与微信胶囊（87×32px、距右缘 7px、top≈statusbar+4px）矩形几乎完全重叠 -->
         <view class="content-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
           <image class="content-header__back-icon" :src="backIcon" mode="aspectFit" alt="" />
         </view>
+        <text class="content-header__title">{{ t('contentPages.mbti.title') }}</text>
       </view>
 
       <scroll-view scroll-y class="content-scroll" :show-scrollbar="false">
@@ -272,12 +274,12 @@ function goBack() {
   flex: 1;
 }
 
-/* ========== 顶部栏（标题 + 右上角固定返回按钮） ========== */
+/* ========== 顶部栏（MP-R1-LMBTI-101：[返回键][标题] 左对齐行布局，
+   原右上角 absolute 返回键与微信胶囊矩形几乎完全重叠） ========== */
 .content-header {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--sp-3);
   padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
   background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
@@ -289,9 +291,6 @@ function goBack() {
 }
 
 .content-header__back {
-  position: absolute;
-  top: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top)));
-  right: var(--sp-4);
   width: 64rpx;
   height: 64rpx;
   display: flex;

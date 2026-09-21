@@ -20,6 +20,9 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import EmojiText from "../../../components/common/EmojiText.vue";
+// MP-R1-OFFICIALCHAT-002：三处死按钮（···/表情/+）接线——表情复用私聊页 EmojiPanel，
+// ···与 + 暂无对应能力先给「敬请期待」提示（不留死按钮）
+import EmojiPanel from "../../../components/chat/EmojiPanel.vue";
 // P8-2.3：报名成功后消费本地 mock 会话存储中的「报名成功」助手活动消息
 import { consumeAssistantActivityNotifies } from "../../../utils/assistant-notify";
 import type {
@@ -63,6 +66,21 @@ const inputValue = ref("");
 const inputFocus = ref(false);
 /** R21：与私聊页一致的发送键可用态（空输入禁用） */
 const canSend = computed(() => inputValue.value.trim().length > 0 && !sending.value);
+
+/* MP-R1-OFFICIALCHAT-002：表情面板（复用私聊页 EmojiPanel）+ 死按钮提示 */
+const emojiPanelVisible = ref(false);
+function toggleEmojiPanel() {
+  emojiPanelVisible.value = !emojiPanelVisible.value;
+}
+function handleEmojiSelect(emoji: string) {
+  inputValue.value += emoji;
+}
+function onSessionMoreTap() {
+  uni.showToast({ title: "会话设置敬请期待", icon: "none" });
+}
+function onPlusTap() {
+  uni.showToast({ title: "更多功能敬请期待", icon: "none" });
+}
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 /* 2026-09-06 修复：本人头像单一数据源 = profileStore.avatarUrl（与会话页一致），
  * 原写死 avatar-1.jpg 与当前用户身份割裂 */
@@ -359,7 +377,7 @@ onLoad((query) => {
           </view>
           <text class="nav-subtitle">{{ accountDesc }}</text>
         </view>
-        <view class="nav-right">
+        <view class="nav-right" @tap="onSessionMoreTap">
           <text class="nav-more-icon">···</text>
         </view>
       </view>
@@ -424,9 +442,12 @@ onLoad((query) => {
                   <view v-else-if="isActivityMsg(msg)" class="bubble bubble--assistant bubble--card" @tap="handleActivityTap(buildActivityDetailUrl(msg))">
                     <text class="bubble__text" v-if="msg.cardTag">{{ msg.cardTag }}</text>
                     <view class="activity-embed" v-if="msg.cardActivity">
+                      <!-- MP-R1-OFFICIALCHAT-004：优先消息自带封面（前后端契约均有
+                           cardActivity.imageUrl），空值回落库存图——原恒硬编码 activity-1.jpg，
+                           real 模式所有活动卡片永远显示同一张与内容无关的库存图 -->
                       <image
                         class="activity-embed__image"
-                        :src="resolveMediaUrl('/static/assets/images/activities/activity-1.jpg')"
+                        :src="resolveMediaUrl(msg.cardActivity.imageUrl || '/static/assets/images/activities/activity-1.jpg')"
                         mode="aspectFill"
                       />
                       <view class="activity-embed__info">
@@ -486,10 +507,10 @@ onLoad((query) => {
       <!-- ===== 底部输入栏（R20：与私聊页 wechat-input-bar 统一——[表情][+] [输入框] [发送]，
            移除私聊页没有的麦克风按钮，消除同组件跨场景布局不一致） ===== -->
       <view class="input-bar">
-        <view class="input-bar__icon">
+        <view class="input-bar__icon" @tap="toggleEmojiPanel">
           <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
         </view>
-        <view class="input-bar__icon input-bar__icon--plus">
+        <view class="input-bar__icon input-bar__icon--plus" @tap="onPlusTap">
           <view class="plus-btn">
             <text class="plus-btn__icon">+</text>
           </view>
@@ -517,6 +538,9 @@ onLoad((query) => {
           <text class="input-bar__send-text">发送</text>
         </view>
       </view>
+
+      <!-- MP-R1-OFFICIALCHAT-002：表情面板（复用私聊页 EmojiPanel，选中追加进输入框） -->
+      <EmojiPanel v-if="emojiPanelVisible" @select="handleEmojiSelect" />
     </template>
   </view>
 </template>

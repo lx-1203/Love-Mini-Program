@@ -165,9 +165,10 @@ export const useActivityStore = defineStore("activity", {
      * 与 fetchMoreActivities 的 ?page=N&pageSize=M 契约不一致。现统一走 request 并
      * 显式传 page=1&pageSize，保证首次加载与加载更多使用同一分页契约，hasMore 判断一致。
      */
-    async fetchActivities() {
+    async fetchActivities(force = false) {
       // 2026-08-10 切换提速：30s 内已加载且有数据时直接跳过
-      if (!useMock() && this.activities.length > 0 && isCacheFresh('activities:list', ACTIVITIES_TTL_MS)) {
+      // MP-R1-PAGES-NEARBY-INDEX-003：force=true（下拉刷新/登录补拉）绕过 TTL 与空列表短路
+      if (!force && !useMock() && this.activities.length > 0 && isCacheFresh('activities:list', ACTIVITIES_TTL_MS)) {
         return;
       }
       this.loading = true;

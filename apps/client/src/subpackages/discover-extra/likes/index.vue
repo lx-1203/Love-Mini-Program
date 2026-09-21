@@ -30,6 +30,11 @@ import { IMAGE_PATHS } from "../../../config/images";
 function goLogin() {
   openAppPath("/pages/login/index");
 }
+
+/** MP-R1-LIKES-102：未登录「手机号登录」→ 登录页（含手机号登录表单入口） */
+function goPhoneLogin() {
+  openAppPath("/pages/login/index");
+}
 import BaseTabs from "../../../components/common/BaseTabs.vue";
 import Skeleton from "../../../components/common/Skeleton.vue";
 import ErrorState from "../../../components/common/ErrorState.vue";
@@ -244,10 +249,24 @@ async function handleUnlock() {
     });
     uni.showToast({ title: t("likesVisitors.unlockSuccess"), icon: "success" });
   } catch (error) {
-    uni.showToast({
-      title: error instanceof Error ? error.message : t("likesVisitors.unlockFail"),
-      icon: "none",
-    });
+    const msg = error instanceof Error ? error.message : t("likesVisitors.unlockFail");
+    // MP-R1-LIKES-103：余额不足 → 弹窗引导跳转钱包充值页（对齐 likes-visitors 页
+    // 2026-08-31 付费死路修复，录屏 05:52——原本页仅裸 toast，无任何去路）
+    if (msg.includes("余额不足") || /balance/i.test(msg)) {
+      uni.showModal({
+        title: t("likesVisitors.unlockFailBalanceTitle"),
+        content: t("likesVisitors.unlockFailBalanceContent"),
+        confirmText: t("likesVisitors.goRecharge"),
+        cancelText: t("common.cancel"),
+        success: (res) => {
+          if (res.confirm) {
+            openAppPath(ROUTES.WALLET);
+          }
+        },
+      });
+      return;
+    }
+    uni.showToast({ title: msg, icon: "none" });
   }
 }
 
@@ -582,7 +601,9 @@ onShareAppMessage(() => {
 <template>
   <view class="likes-page" :style="menuStyleVars">
     <!-- 未完善资料：显示锁定页面 -->
-    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" />
+    <!-- MP-R1-LIKES-102：补 @go-phone-login 监听——组件 emit goPhoneLogin 此前无监听者，
+         未登录态「手机号登录」按钮点击零响应 -->
+    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
 
     <!-- 已完善资料：显示正常内容 -->
     <template v-else>

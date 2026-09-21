@@ -19,7 +19,11 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
-import { POST_DRAFT_STORAGE_KEY, POST_MAX_IMAGES } from "../../../constants/village";
+// MP-R1-PUBLISH-004：publish 独立草稿存储键（原与 post.vue 共用 village:post-draft，
+// 两页快照结构不同互写污染：post 的 title 被静默丢弃、publish 的空 title 反向覆盖）
+import { PUBLISH_DRAFT_STORAGE_KEY, POST_MAX_IMAGES } from "../../../constants/village";
+// MP-R1-PUBLISH-006：缓存城市键统一入 constants/storage-keys.ts
+import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
 import { IMAGE_PATHS } from "../../../config/images";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
@@ -43,14 +47,18 @@ const content = ref("");
 const images = ref<string[]>([]);
 const topics = ref<string[]>([]);
 const location = ref("");
-// 2026-09-06 位置固定为当前城市（默认定位，不可更改）：读缓存城市，缺省北京
+// 2026-09-06 位置固定为当前城市（默认定位，不可更改）：读缓存城市，缺省北京。
+// MP-R1-PUBLISH-006：原全库无 nearby:city 写入方 → 恒显示缺省「北京市 · 自动定位」；
+// nearby 页定位成功处已补写入（utils/location.ts 链路），无缓存时不再宣称「自动定位」。
 const currentCity = (() => {
   try {
-    return uni.getStorageSync("nearby:city") || "北京市";
+    const city = uni.getStorageSync(STORAGE_KEYS.NEARBY_CITY);
+    return typeof city === "string" && city.trim().length > 0 ? city : "";
   } catch (_e) {
-    return "北京市";
+    return "";
   }
 })();
+const currentCityLabel = currentCity ? `${currentCity} · 自动定位` : "北京市";
 // 2026-08-31：默认目标为公开广场 → 默认所有人可见；选择圈子目标时联动为圈内成员可见
 const visibility = ref("public");
 const tipVisible = ref(true);
@@ -133,9 +141,10 @@ const visibilityText = computed(() => {
 /* ---------- 进入：解析目标 + 恢复草稿 ---------- */
 onLoad((query) => {
   const cid = query?.circleId ? Number(query.circleId) : null;
-  if (query?.target === "campus") targetType.value = "campus";
+  const entryTarget = query?.target;
+  if (entryTarget === "campus") targetType.value = "campus";
   // R16：日常模式入口（我的故事「添加日常」）
-  if (query?.target === "friends") {
+  if (entryTarget === "friends") {
     targetType.value = "friends";
     visibility.value = "friends";
   }
@@ -144,7 +153,9 @@ onLoad((query) => {
     targetId.value = cid;
   }
   void loadTarget();
-  void restoreDraft();
+  // MP-R1-PUBLISH-005：入口参数（friends/campus/circleId）优先级高于旧草稿——
+  // restoreDraft 内部恢复后会强制回设入口语义的目标与可见范围
+  void restoreDraft(entryTarget, cid);
 });
 
 async function loadTarget() {
@@ -247,9 +258,12 @@ function openMentionPicker() {
  * 按发布目标约束合法集合：公开广场→公开/学校圈；学校圈→学校圈；兴趣圈→圈内。
  */
 function cycleVisibility() {
+  // MP-R1-PUBLISH-001：general 目标不再提供「学校圈」轮换项——后端 CreatePostRequest
+  // 无 visibility 字段、可见范围由 targetType 推导（general→public_），UI 承诺的
+  // 「学校圈」会被服务端静默变成全平台公开。UI 所见 = 服务端落库，故只保留「公开」。
   const order: string[] =
     targetType.value === "general"
-      ? ["public", "school"]
+      ? ["public"]
       : targetType.value === "campus"
         ? ["school"]
         : ["interest"];
@@ -288,7 +302,45 @@ function snapshotDraft() {
     topics: topics.value,
     location: location.value,
     visibility: visibility.value,
+    // MP-R1-PUBLISH-004：快照带时间戳，恢复时与后端草稿取新（原后端旧草稿无条件压过本地）
+    updatedAt: Date.now(),
   };
+}
+
+/** 草稿 updatedAt 归一为毫秒（本地为 number，后端为 ISO 字符串） */
+function draftTimeMs(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const t = Date.parse(value);
+    return Number.isNaN(t) ? 0 : t;
+  }
+  return 0;
+}
+
+/** MP-R1-PUBLISH-003：取消全部在途草稿定时器 */
+function cancelDraftTimers() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
+  if (draftSyncTimer) {
+    clearTimeout(draftSyncTimer);
+    draftSyncTimer = null;
+  }
+}
+
+/**
+ * MP-R1-PUBLISH-003：同步落盘当前快照（本地 + 后端双写，不等防抖）。
+ * 「保留草稿」退出路径直接 flush——原 scheduleDraftSave() 挂上 500ms 定时器后立即
+ * leave()→onUnmounted clearTimeout，最终快照永不落盘（最后 ≤500ms 编辑必丢）。
+ */
+function flushDraftSave() {
+  cancelDraftTimers();
+  const snap = snapshotDraft();
+  try {
+    uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
+  } catch (_e) { /* storage 失败不阻塞 */ }
+  void clientApi.saveDraft(snap).catch(() => { /* 后端失败由本地兜底 */ });
 }
 
 function scheduleDraftSave() {
@@ -296,7 +348,7 @@ function scheduleDraftSave() {
   draftSaveTimer = setTimeout(async () => {
     const snap = snapshotDraft();
     try {
-      uni.setStorageSync(POST_DRAFT_STORAGE_KEY, snap);
+      uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
     } catch (_e) { /* storage 失败不阻塞 */ }
     // 后端双写（失败静默，本地兜底）
     if (draftSyncTimer) clearTimeout(draftSyncTimer);
@@ -310,18 +362,31 @@ function scheduleDraftSave() {
   }, POST_DRAFT_SAVE_DEBOUNCE_MS);
 }
 
-async function restoreDraft() {
-  // 优先后端草稿，其次本地
-  let draft: { targetType?: string; targetId?: number | null; content?: string; images?: string[]; topics?: string[]; tags?: string[]; location?: string; visibility?: string } | null = null;
+/**
+ * 恢复草稿。
+ * @param entryTarget 入口参数 query.target（MP-R1-PUBLISH-005：带隐私语义的入口参数
+ *   优先级高于草稿——friends/campus 入口恢复草稿后强制回设目标与可见范围，
+ *   禁止「目标卡=个人日常」与「谁可以看=所有人可见」同屏矛盾）
+ * @param entryCircleId 入口参数 query.circleId（草稿的圈子目标不得劫持带 circleId 的入口）
+ */
+async function restoreDraft(entryTarget?: string, entryCircleId?: number | null) {
+  // MP-R1-PUBLISH-004：后端草稿与本地草稿按 updatedAt 取新（原后端无条件优先）
+  type DraftShape = { targetType?: string; targetId?: number | null; content?: string; images?: string[]; topics?: string[]; tags?: string[]; location?: string; visibility?: string; updatedAt?: unknown };
+  let remoteDraft: DraftShape | null = null;
   try {
     const remote = await clientApi.getDraft();
-    if (remote && remote.content) draft = remote as unknown as typeof draft;
+    if (remote && remote.content) remoteDraft = remote as unknown as DraftShape;
   } catch (_e) { /* 后端不可用走本地 */ }
-  if (!draft) {
-    try {
-      const local = uni.getStorageSync(POST_DRAFT_STORAGE_KEY);
-      if (local && typeof local === "object") draft = local;
-    } catch (_e) { /* ignore */ }
+  let localDraft: DraftShape | null = null;
+  try {
+    const local = uni.getStorageSync(PUBLISH_DRAFT_STORAGE_KEY);
+    if (local && typeof local === "object") localDraft = local as DraftShape;
+  } catch (_e) { /* ignore */ }
+  let draft: DraftShape | null = null;
+  if (remoteDraft && localDraft) {
+    draft = draftTimeMs(localDraft.updatedAt) >= draftTimeMs(remoteDraft.updatedAt) ? localDraft : remoteDraft;
+  } else {
+    draft = remoteDraft ?? localDraft;
   }
   if (!draft) return;
   if (draft.targetType === "circle" && draft.targetId) {
@@ -336,16 +401,33 @@ async function restoreDraft() {
   else if (Array.isArray(draft.tags)) topics.value = draft.tags;
   if (typeof draft.location === "string") location.value = draft.location;
   if (typeof draft.visibility === "string") visibility.value = draft.visibility;
+  // MP-R1-PUBLISH-005：入口参数优先——恢复草稿后强制回设
+  if (entryTarget === "friends") {
+    targetType.value = "friends";
+    visibility.value = "friends";
+  } else if (entryTarget === "campus") {
+    targetType.value = "campus";
+    visibility.value = "school";
+  }
+  if (entryCircleId != null && !Number.isNaN(entryCircleId)) {
+    targetType.value = "circle";
+    targetId.value = entryCircleId;
+  }
   // 草稿为圈子目标时同样校验是否仍为「已加入」圈子（否则回退到个人动态）
   if (isCircleTarget.value || images.value.length > 0) void loadTarget();
 }
 
+/** MP-R1-PUBLISH-003：先取消在途定时器再删存储（防止定时器把已删草稿写回） */
 function clearDraft() {
-  try { uni.removeStorageSync(POST_DRAFT_STORAGE_KEY); } catch (_e) { /* ignore */ }
+  cancelDraftTimers();
+  try { uni.removeStorageSync(PUBLISH_DRAFT_STORAGE_KEY); } catch (_e) { /* ignore */ }
   void clientApi.deleteDraft().catch(() => {});
 }
 
-watch([content, images, topics, location, visibility, targetType, targetId], () => scheduleDraftSave(), { deep: false });
+// MP-R1-PUBLISH-002：images/topics 为 ref 数组且 chooseImage/removeImage/toggleTopic 全部
+// 原地变异（push/splice 不换 .value 引用），非 deep watch 感知不到——改 getter 摊平数组，
+// 每次增删都触发草稿保存（只加图不打字的用户图片不再丢出草稿）
+watch([content, () => [...images.value], () => [...topics.value], location, visibility, targetType, targetId], () => scheduleDraftSave());
 
 /* ---------- 退出：未发布提示保留草稿 ---------- */
 const allowLeave = ref(false);
@@ -359,7 +441,9 @@ function requestLeave() {
     confirmText: t("village.post.draftKeep"),
     cancelText: t("village.post.draftDiscard"),
     success: (res) => {
-      if (res.confirm) { scheduleDraftSave(); leave(); }
+      // MP-R1-PUBLISH-003：「保留」路径同步 flush（原 scheduleDraftSave 的定时器在
+      // leave→onUnmounted 时被清，最终快照永不落盘）
+      if (res.confirm) { flushDraftSave(); leave(); }
       else { clearDraft(); leave(); }
     },
   });
@@ -583,7 +667,8 @@ onUnmounted(() => {
           <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
           <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
-          <text class="publish-row__meta">{{ currentCity ? currentCity + ' · 自动定位' : '选择位置' }}</text>
+          <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
+          <text class="publish-row__meta">{{ currentCity ? currentCityLabel : '选择位置' }}</text>
         </view>
         <view class="publish-row press-feedback" role="button" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>

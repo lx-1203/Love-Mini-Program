@@ -110,6 +110,13 @@ async function toggleEnroll(activityId: string) {
   submittingId.value = activityId;
   try {
     const enrolled = await activityStore.enrollActivity(activityId);
+    // MP-R1-DISCOVERACTIVITIES-002：store 内部吞错 return false（页面 catch 为死代码）——
+    // false 时先读 activityStore.errorMessage 区分「取消成功」与「失败」，
+    // 失败展示失败文案，不再把失败当「已取消报名」渲染
+    if (!enrolled && activityStore.errorMessage) {
+      uni.showToast({ title: activityStore.errorMessage, icon: "none" });
+      return;
+    }
     // review nit 修复：报名/取消结果本地提示（mock 模式 store 内无 toast）
     uni.showToast({
       title: enrolled ? t("activities.enrolledToast") : t("activities.unenrolledToast"),
@@ -704,6 +711,9 @@ defineExpose({ toggleEnroll });
 .activity-scroll {
   flex: 1;
   height: 0;
+  /* MP-R1-DISCOVERACTIVITIES-001：父容器（AppShell .shell__body）无确定高度，
+     flex-basis=0 的滚动容器存在坍缩为 0 高的风险——加 min-height 兜底保证列表可见可滚 */
+  min-height: 50vh;
 }
 
 .activity-list {
@@ -867,6 +877,8 @@ defineExpose({ toggleEnroll });
 .calendar-scroll {
   flex: 1;
   height: 0;
+  /* MP-R1-DISCOVERACTIVITIES-001：同 .activity-scroll，min-height 兜底 */
+  min-height: 50vh;
 }
 
 /* --- 月份导航 --- */

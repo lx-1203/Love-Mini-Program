@@ -8,7 +8,7 @@
  *
  * 页面结构：顶部导航栏 → 商品大图 → 名称/价格/销量/库存 → 商品介绍 → 底部购买栏。
  */
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import SafeImage from "../../../components/common/SafeImage.vue";
@@ -267,6 +267,15 @@ onLoad((query) => {
     void loadProduct(rawId);
   } else {
     notFound.value = true;
+  }
+});
+
+// MP-R1-次要24-1：封存判断竞态补偿——app-config 初始 switches={} 时 commerceSealed
+// 恒 true，onLoad 早退后配置才异步拉回；封存解除且尚无数据时自动补拉商品，
+// 避免模板 v-if 链（sealed/loading/error/notFound/product）全部为假导致整页空白
+watch(commerceSealed, (sealed) => {
+  if (!sealed && !product.value && !loading.value && !error.value && !notFound.value && productId.value) {
+    void loadProduct(productId.value);
   }
 });
 </script>

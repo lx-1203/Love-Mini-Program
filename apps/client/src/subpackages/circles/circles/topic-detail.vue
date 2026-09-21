@@ -222,6 +222,17 @@ onLoad((query) => {
   }
 });
 
+// MP-R1-TOPICDETAIL-001：加载失败错误态（与 campus/topic-detail review #18 同款）——
+// fetchTopicDetail 失败 store 置 errorMessage 并 rethrow，模板原只有「话题不存在」分支，
+// 401/网络失败被误渲染成「话题不存在」；现加 network 分支 + 重试
+const errorMessage = computed(() => circleStore.errorMessage);
+function retryLoad() {
+  if (!topicId.value) return;
+  circleStore.errorMessage = null;
+  void circleStore.fetchTopicDetail(topicId.value);
+  void circleStore.fetchReplies(topicId.value, 1);
+}
+
 // 修复（严格模式 noUnusedLocals）：sayHello/goToAuthorProfile 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ sayHello, goToAuthorProfile });
@@ -371,6 +382,15 @@ onShareAppMessage(() => {
       <!-- 底部留白 -->
       <view class="body-footer" />
     </scroll-view>
+
+    <!-- MP-R1-TOPICDETAIL-001：加载失败错误态（与"话题不存在"区分，提供重试） -->
+    <EmptyState
+      v-else-if="!loading && errorMessage"
+      type="network"
+      :title="errorMessage || t('circle.topicDetailNotExist')"
+      :action-text="t('common.retry')"
+      @action="retryLoad"
+    />
 
     <!-- 话题不存在 -->
     <EmptyState

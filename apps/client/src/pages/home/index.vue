@@ -155,10 +155,19 @@ async function likeToday() {
 
 async function rotateToday() {
   if (!requireLogin()) return;
-  likeSent.value = false;
-  const next = await homeStore.rotateTodayRecommendation();
-  if (!next) {
-    uni.showToast({ title: t("home.noMoreRecommendation"), icon: "none" });
+  // MP-R1-PAGES-HOME-INDEX-002：与 likeToday 同口径 try/catch——
+  // 此前裸 await，real 模式接口失败即未处理 Promise 拒绝，且 likeSent 已被提前
+  // 重置（心动态被清但推荐人不换、无任何提示）。现：失败 toast；likeSent 重置
+  // 移入成功路径（换到新推荐人才重置心动状态，无更多推荐时保留原状态）。
+  try {
+    const next = await homeStore.rotateTodayRecommendation();
+    if (!next) {
+      uni.showToast({ title: t("home.noMoreRecommendation"), icon: "none" });
+      return;
+    }
+    likeSent.value = false;
+  } catch {
+    uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
   }
 }
 
@@ -385,7 +394,8 @@ function openInvite() {
         <view class="location-sheet__items">
           <view class="location-sheet__item">
             <view class="location-sheet__item-icon location-sheet__item-icon--green">
-              <text class="location-sheet__item-emoji">📍</text>
+              <!-- MP-R1-PAGES-HOME-INDEX-005：业务图标禁 emoji（R11 附录 B 硬约束），改用既有图片资源 -->
+              <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
               <text class="location-sheet__item-name">城市定位</text>
@@ -396,7 +406,7 @@ function openInvite() {
 
           <view class="location-sheet__item">
             <view class="location-sheet__item-icon location-sheet__item-icon--blue">
-              <text class="location-sheet__item-emoji">🏫</text>
+              <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
               <text class="location-sheet__item-name">校区</text>
@@ -407,7 +417,7 @@ function openInvite() {
 
           <view class="location-sheet__item">
             <view class="location-sheet__item-icon location-sheet__item-icon--orange">
-              <text class="location-sheet__item-emoji">🔄</text>
+              <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.REFRESH_SVG)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
               <text class="location-sheet__item-name">定位精度</text>
@@ -597,8 +607,9 @@ page {
   background: #FFF5E6;
 }
 
-.location-sheet__item-emoji {
-  font-size: 28rpx;
+.location-sheet__item-icon-img {
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .location-sheet__item-info {

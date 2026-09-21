@@ -10,7 +10,7 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
  * 资料未完善时展示 LockScreen 锁定页面
  */
 import { computed, ref, watch } from "vue";
-import { onShow, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
+import { onShow, onUnload, onShareAppMessage, onTabItemTap } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
@@ -52,13 +52,13 @@ import CertDetailSheet from "../../components/profile/CertDetailSheet.vue";
 // 在部分机型只渲染遮罩、菜单面板不可见，三路取证一致），复用全局 BottomSheet 组件
 import BottomSheet from "../../components/common/BottomSheet.vue";
 import NotLoggedProfile from "../../components/profile/NotLoggedProfile.vue";
-import SocialProgressIndicator from "../../components/social/SocialProgressIndicator.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
 // 2026-08-08：QQ 头像框机制（注册表驱动，按身份佩戴不同主题）
 import AvatarFrame from "../../components/common/AvatarFrame.vue";
 import { useAvatarFrame } from "../../composables/useAvatarFrame";
 import MatchCountChip from "../../components/common/MatchCountChip.vue";
-import ProfileTabs from "../../components/profile/ProfileTabs.vue";
+// MP-R1-PROFILE-203/205：ProfileTabs（他人态恒渲染空 Tab）、SocialProgressIndicator
+// （仅挂于 v-if=false 死块）随死块清理移除引用
 import ProfileShell from "../../components/profile/ProfileShell.vue";
 import VerificationBadge from "../../components/common/VerificationBadge.vue";
 // Task F：全局发帖悬浮按钮组件
@@ -238,6 +238,15 @@ const { remainingCount: matchCount } = storeToRefs(discoverStore);
  */
 const targetUserId = ref<string>("");
 
+// MP-R1-PROFILE-207：tabBar 主动切回「我的」的一次性信号——本页为 Tab 页，实例 options
+// 恒定，分享卡片冷启动携带的 userId 会在每次 onShow 被 getCurrentPages().options 读回，
+// 用户切走再切回仍停留他人主页且无「返回本人」出口。onTabItemTap 仅在用户主动点 Tab 时触发
+// （从子页面 navigateBack 返回不触发，不破坏「浏览他人主页→进聊天→返回」流程）。
+let tabReentered = false;
+onTabItemTap(() => {
+  tabReentered = true;
+});
+
 function loadPageUserIdParam(): void {
   // P1-04：优先消费 pending-tab-query 桥接（openAppPath 跳转本 Tab 页携带的 query）。
   // 本页是 Tab 页，switchTab 无法携带 query string，openAppPath 将 query 写入
@@ -246,6 +255,14 @@ function loadPageUserIdParam(): void {
   const bridgedUserId = bridged.userId;
   if (typeof bridgedUserId === "string" && bridgedUserId.length > 0) {
     targetUserId.value = bridgedUserId;
+  }
+  // MP-R1-PAGES-HOME-INDEX-001：消费首页「去邀请」banner 桥接的 invite=1 参数，
+  // 到达我的页即弹出邀请弹窗（此前该参数被「读即清」机制读出后直接丢弃，
+  // CTA 静默退化为普通切换 Tab）。openInviteModal 为函数声明（提升），此处可直呼。
+  if (bridged.invite === "1") {
+    void openInviteModal();
+  }
+  if (typeof bridgedUserId === "string" && bridgedUserId.length > 0) {
     return;
   }
   // 兜底：getCurrentPages 直读页面 options（直开链接 / H5 冷启动场景）
@@ -738,7 +755,10 @@ const minePosts = computed(() =>
   myPostsPreview.value.map((post) => ({
     id: post.id,
     content: post.summary,
-    images: post.images ?? [],
+    // MP-R1-PROFILE-201：帖子配图为后端相对路径（/api/v1/media/**，见 LocalMediaStorageService
+    // URL_PREFIX），裸 <image> 在 mp-weixin 按包内文件加载必然白图——统一经 resolveMediaUrls
+    // 解析（拼 apiRoot + token），与 PostCard 同待遇
+    images: resolveMediaUrls(post.images ?? []),
     likes: post.likes,
     comments: post.comments,
     createdAt: "",
@@ -835,11 +855,9 @@ const moreItems = computed(() => [
   { key: "privacy", label: "隐私设置" },
 ]);
 
-const growthItems = computed(() => [
-  { key: "achievement", label: t("profile.achievementTitle") },
-  { key: "vip", label: t("profile.openVip") },
-  { key: "invite", label: t("profile.shareFriend") },
-]);
+// MP-R1-PROFILE-204：growthItems / onProfileShellGrowthTap 已删——ProfileShell/MyProfile
+// 从未声明 growthItems prop 与 growthTap emit（三层契约断裂，事件永不触发），
+// MyGrowth.vue 孤儿组件一并移除；「邀请好友」入口迁入本人态附加功能区（可达）。
 
 /** 2.0 薄化页面的动作转发（MyProfile 事件 -> 既有处理器） */
 function goLogin() {
@@ -899,10 +917,6 @@ function onProfileShellInteractionTap(key: string) {
   };
   const path = map[key];
   if (path) openAppPath(path);
-}
-function onProfileShellGrowthTap(key: string) {
-  if (key === "achievement") onTabChange("about");
-  if (key === "invite") void openInviteModal();
 }
 function onProfileShellMoreTap(key: string) {
   if (key === "posts") {
@@ -1796,6 +1810,16 @@ function refreshMyPostsWithRetry(retries: number): void {
 
 onShow(() => {
   loadPageUserIdParam();
+  // MP-R1-PROFILE-207：用户经 tabBar 主动切回「我的」→ 复位一次性他人浏览上下文，
+  // 回到本人主页（需在 loadPageUserIdParam 之后执行，覆盖其从 options 读回的 userId）
+  if (tabReentered) {
+    tabReentered = false;
+    if (targetUserId.value) {
+      targetUserId.value = "";
+      otherProfile.value = null;
+      otherBgUrl.value = "";
+    }
+  }
   // 2026-08-12 V3：他人主页按对方背景显示（每次进入他人态都拉取，避免切换目标后残留）
   // 2026-08-13：升级为完整他人资料加载（背景 + 头像/昵称/标签视图），
   // 内部含游客门禁（未登录不发起受保护请求，稳定停在 LockScreen）
@@ -1897,7 +1921,6 @@ onUnload(() => {
         :percent="completionPercent"
         :interaction-items="interactionItems"
         :more-items="moreItems"
-        :growth-items="growthItems"
         :posts="minePosts"
         @tap-avatar="onProfileShellAvatar"
         @edit="onProfileShellEdit"
@@ -1908,316 +1931,159 @@ onUnload(() => {
         @story-video="onProfileShellStoryVideo"
         @add-story="onProfileShellAddStory"
         @interaction-tap="onProfileShellInteractionTap"
-        @growth-tap="onProfileShellGrowthTap"
         @more-tap="onProfileShellMoreTap"
       >
-        <template #legacy v-if="false">
-      <ProfileTabs :active="activeTab" @change="onTabChange" />
+      </ProfileShell>
 
-      <!-- ===== 资料 Tab：标签 / 他人照片墙 / 成就 / 语音 / 照片墙 / VIP / 社交升温 ===== -->
-      <view v-if="activeTab === 'about'" class="profile-tab-content">
-        <!-- 匹配标签胶囊行（学历 / 感情状态 / 未来规划 / 对方兴趣标签，QQ 风格） -->
-        <view v-if="showProfileTags" class="profile-head-card__tags">
-          <text class="profile-head-card__tags-title">{{ t('profile.matchTagsTitle') }}</text>
-          <view class="profile-head-card__chips">
-            <text
-              v-for="(chip, idx) in profileTagChips" :key="idx"
-              class="user-info__chip"
-            >{{ chip }}</text>
-          </view>
-        </view>
-
-        <!-- 他人态：照片墙缩略图（来自对方公开视图 photoGallery） -->
-        <view v-if="!isOwnProfile && otherGallery.length > 0" class="profile-head-card__gallery">
-          <SafeImage
-            v-for="(url, idx) in otherGallery" :key="idx"
-            :src="url"
-            custom-class="profile-head-card__gallery-img"
-            mode="aspectFill"
-            :lazy-load="true"
-            :fallback="IMAGE_PATHS.AVATARS.DEFAULT"
-          />
-        </view>
-
-        <!-- 成就卡片（2026-08-08 QQ 主页重构：匹配次数 / 喜欢次数 / 社交升温） -->
-        <!-- 2026-08-13：仅自己主页展示（他人态由匹配标签 + 照片墙替代） -->
-        <view v-if="isOwnProfile" class="achievement-card">
+      <!-- ==================== MP-R1-PROFILE-202/206：本人主页附加功能区 ====================
+           语音介绍 / 背景图编辑 / 邀请好友 / VIP 开通此前全部位于不可达分支
+           （legacy 槽 v-if=false 或他人态分支内 isOwnProfile 门禁恒 false 块），
+           已接通后端的真实链路（P2.6 录音播放 / Phase E1 背景上传 / POST /invites）
+           在成品中无任何可达入口。现迁入本人态活代码路径（ProfileShell 之后渲染），
+           复用页面既有 handler 与样式类。 -->
+      <template v-if="isOwnProfile">
+        <!-- 语音介绍（最长 60s）：录制 / 播放 / 重录 / 删除 -->
+        <view class="media-section">
           <view class="section-header">
             <view class="section-header__left">
-              <text class="section-header__title">{{ t('profile.achievementTitle') }}</text>
-            </view>
-          </view>
-          <view class="achievement-card__grid">
-            <view
-              v-for="(item, index) in achievementStats" :key="index"
-              class="achievement-card__item"
-            >
-              <image class="achievement-card__icon" :src="item.icon" mode="aspectFit" alt="" />
-              <text class="achievement-card__value">{{ item.value }}</text>
-              <text class="achievement-card__label">{{ item.label }}</text>
-              <text class="achievement-card__hint">{{ item.hint }}</text>
-            </view>
-          </view>
-        </view>
-
-      <!-- ==================== Phase Feedback5：语音介绍区块（最长 60s；设计需求：仅语音，无视频） ==================== -->
-      <view v-if="isOwnProfile" class="media-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
-            <view class="voice-only-tag">
-              <text class="voice-only-tag__text">{{ t('profile.voiceOnlyTag') }}</text>
-            </view>
-            <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
-          </view>
-        </view>
-
-        <!-- 未录制：CTA 引导录制（录音中切换为"录音中，点击停止"） -->
-        <view
-          v-if="!voiceStatusUrl"
-          class="video-cta press-feedback"
-          hover-class="video-cta--hover"
-          hover-stay-time="40"
-          role="button"
-          :aria-label="t('profile.recordVoiceAria')"
-          @tap="handleRecordVoice"
-        >
-          <view class="video-cta__icon-wrap" :class="{ 'video-cta__icon-wrap--recording': isRecordingVoice }">
-            <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
-          </view>
-          <text class="video-cta__text">
-            {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
-          </text>
-          <!-- 2026-08-09：去除重复说明（voiceStatusHint 已展示在标题区），仅录音中显示倒计时 -->
-          <text v-if="isRecordingVoice" class="video-cta__hint">
-            {{ recordingLabel }}
-          </text>
-        </view>
-
-        <!-- 已录制：语音卡片 + 播放/删除 -->
-        <view v-else class="voice-preview">
-          <view class="voice-preview__card">
-            <view
-              class="voice-preview__play press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.playVoiceAria')"
-              @tap="handlePlayVoice"
-            >
-              <image class="voice-preview__play-icon" :src="isVoicePlaying ? IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG : IMAGE_PATHS.ICONS_COMMON.PLAY_SVG" mode="aspectFit" alt="" />
-            </view>
-            <view class="voice-preview__info">
-              <view class="voice-preview__wave">
-                <view
-                  v-for="(_, idx) in 12"
-                  :key="idx"
-                  class="voice-preview__bar"
-                  :class="{ 'voice-preview__bar--active': isVoicePlaying }"
-                  :style="{ height: (10 + ((idx * 7) % 18)) + 'rpx' }"
-                />
+              <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
+              <view class="voice-only-tag">
+                <text class="voice-only-tag__text">{{ t('profile.voiceOnlyTag') }}</text>
               </view>
-              <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
-            </view>
-            <!-- 2026-08-09：重录（直接开始新录音，上传后覆盖旧语音） -->
-            <view
-              class="voice-preview__delete press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.voiceReRecordAria')"
-              @tap="handleRecordVoice"
-            >
-              <text class="voice-preview__delete-text">{{ t('profile.voiceReRecord') }}</text>
-            </view>
-            <view
-              class="voice-preview__delete press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.deleteVoiceAria')"
-              @tap="handleRemoveVoice"
-            >
-              <text class="voice-preview__delete-text">{{ t('profile.delete') }}</text>
+              <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
             </view>
           </view>
-        </view>
-      </view>
 
-      <!-- ==================== Task E3 / H-08：照片墙区块 ==================== -->
-      <view v-if="isOwnProfile" class="media-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.photoWall') }}</text>
-            <text class="section-header__count">{{ photoGallery.length }} / {{ PHOTO_GALLERY_MAX }}</text>
-          </view>
-        </view>
-
-        <!-- 2026-08-09：空态引导（弱化空洞感，引导上传第一张照片） -->
-        <view v-if="photoGallery.length === 0" class="photo-wall-empty">
-          <text class="photo-wall-empty__text">{{ t('profile.photoWallEmptyHint') }}</text>
-        </view>
-
-        <view class="photo-grid">
           <view
-            v-for="cell in photoCells"
-            :key="cell.index"
-            class="photo-grid__cell"
+            v-if="!voiceStatusUrl"
+            class="video-cta press-feedback"
+            hover-class="video-cta--hover"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('profile.recordVoiceAria')"
+            @tap="handleRecordVoice"
           >
-            <!-- 已上传：显示图片 + 长按删除（2026-08-08：pexels 外链本地化兜底） -->
-            <view
-              v-if="cell.filled"
-              class="photo-grid__img-wrap"
-              @longpress="handleRemovePhoto(cell.index)"
-            >
-              <!-- MP-R7-PROFILE-003（2026-09-15）：toLocalImage 仅兜底 pexels/mock 外链，
-                   用户上传的 /api/v1/media/** 相对路径会原样直连 <image> 加载失败，统一走 resolveMediaUrl -->
-              <SafeImage class="photo-grid__img" :src="resolveMediaUrl(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
-              <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
+            <view class="video-cta__icon-wrap" :class="{ 'video-cta__icon-wrap--recording': isRecordingVoice }">
+              <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
+            </view>
+            <text class="video-cta__text">
+              {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
+            </text>
+            <text v-if="isRecordingVoice" class="video-cta__hint">
+              {{ recordingLabel }}
+            </text>
+          </view>
+
+          <view v-else class="voice-preview">
+            <view class="voice-preview__card">
               <view
-                v-if="cell.auditStatus === 'pending'"
-                class="photo-grid__badge photo-grid__badge--pending"
+                class="voice-preview__play press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="t('profile.playVoiceAria')"
+                @tap="handlePlayVoice"
               >
-                <text class="photo-grid__badge-text">{{ t('profile.photoAuditPending') }}</text>
+                <image class="voice-preview__play-icon" :src="isVoicePlaying ? IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG : IMAGE_PATHS.ICONS_COMMON.PLAY_SVG" mode="aspectFit" alt="" />
+              </view>
+              <view class="voice-preview__info">
+                <view class="voice-preview__wave">
+                  <view
+                    v-for="(_, idx) in 12"
+                    :key="idx"
+                    class="voice-preview__bar"
+                    :class="{ 'voice-preview__bar--active': isVoicePlaying }"
+                    :style="{ height: (10 + ((idx * 7) % 18)) + 'rpx' }"
+                  />
+                </view>
+                <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
               </view>
               <view
-                v-else-if="cell.auditStatus === 'rejected'"
-                class="photo-grid__badge photo-grid__badge--rejected"
+                class="voice-preview__delete press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="t('profile.voiceReRecordAria')"
+                @tap="handleRecordVoice"
               >
-                <text class="photo-grid__badge-text">{{ t('profile.photoAuditRejected') }}</text>
+                <text class="voice-preview__delete-text">{{ t('profile.voiceReRecord') }}</text>
+              </view>
+              <view
+                class="voice-preview__delete press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="t('profile.deleteVoiceAria')"
+                @tap="handleRemoveVoice"
+              >
+                <text class="voice-preview__delete-text">{{ t('profile.delete') }}</text>
               </view>
             </view>
-            <!-- 空格子：显示"+"占位，点击上传 -->
-            <view
-              v-else
-              class="photo-grid__add press-feedback"
-              hover-class="photo-grid__add--hover"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.uploadPhotoAria')"
-              @tap="handleUploadPhoto(cell.index)"
-            >
-              <image class="photo-grid__add-icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
-              <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
+          </view>
+        </view>
+
+        <!-- 背景图编辑（Phase E1 上传链路） -->
+        <view class="media-section">
+          <view class="section-header">
+            <view class="section-header__left">
+              <text class="section-header__title">{{ t('profile.editBackground') }}</text>
             </view>
           </view>
-        </view>
-      </view>
-
-        <!-- VIP 卡片：仅商业化 VIP 开关开启时展示（批次 A5：commerce.enabled + commerce.vip 双闸） -->
-      <view v-if="appConfig.isCommerceOn('vip') && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
-        <view class="vip-card__left">
-          <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
-          <view class="vip-card__text-wrap">
-            <text class="vip-card__title">{{ t('profile.openVip') }}</text>
-            <text class="vip-card__desc">{{ t('profile.openVipDesc') }}</text>
-          </view>
-        </view>
-        <view class="vip-card__btn">
-          <text class="vip-card__btn-text">{{ t('profile.subscribeNow') }}</text>
-        </view>
-      </view>
-
-      <!-- 社交升温进度（2026-08-13：仅自己主页展示，他人态无自己进度语义） -->
-      <view v-if="false && isOwnProfile" class="social-section">
-        <SocialProgressIndicator />
-      </view>
-
-      </view><!-- /资料 Tab -->
-
-      <!-- ===== 动态 Tab：我的动态列表 ===== -->
-      <view v-if="isOwnProfile && activeTab === 'posts'" class="profile-tab-content my-posts-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.myPosts') }}</text>
-            <text v-if="myPostsTotal > 0" class="section-header__count">{{ t('profile.postsCount', { n: myPostsTotal }) }}</text>
-          </view>
           <view
-            v-if="myPostsPreview.length > 0"
-            class="section-header__more press-feedback"
-            role="button"
-            :aria-label="t('profile.viewAllPostsAria')"
-            @tap="goToMyPosts"
-            hover-class="section-header__more--hover"
+            class="video-cta press-feedback"
+            hover-class="video-cta--hover"
             hover-stay-time="40"
-          >
-            <text class="section-header__more-text">{{ t('common.viewAll') }}</text>
-            <text class="section-header__more-arrow">›</text>
-          </view>
-        </view>
-
-        <!-- 动态列表（有数据时，QQ 空间说说卡片样式：时间→正文3行→配图横排→点赞评论） -->
-        <view v-if="myPostsPreview.length > 0" class="my-posts-list" role="list">
-          <view
-            v-for="(post, index) in myPostsPreview"
-            :key="post.id"
-            class="my-post-item press-feedback"
-            :class="{ 'my-post-item--no-border': index === myPostsPreview.length - 1 }"
             role="button"
-            :aria-label="post.summary"
-            @tap="handlePostTap(post.id)"
-            hover-class="my-post-item--hover"
-            hover-stay-time="40"
+            :aria-label="t('profile.editBgAria')"
+            @tap="handleEditBackground"
           >
-            <!-- 说说头部：发布时间 + 更多 -->
-            <view class="my-post-item__head">
-              <text class="my-post-item__time">{{ post.timeLabel }}</text>
-              <text class="my-post-item__more">⋯</text>
-            </view>
-            <!-- 说说正文（最多 3 行） -->
-            <text class="my-post-item__summary">{{ post.summary }}</text>
-            <!-- 配图缩略图（最多 3 张横排，有图才展示） -->
-            <view v-if="(post.images || []).length > 0" class="my-post-item__images">
+            <view class="video-cta__icon-wrap">
               <image
-                v-for="(img, imgIdx) in (post.images || []).slice(0, 3)" :key="imgIdx"
-                class="my-post-item__img"
-                :src="img"
-                mode="aspectFill"
-                lazy-load
-                alt=""
+                v-if="!isUploading || uploadKind !== 'background'"
+                class="video-cta__icon"
+                :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+                mode="aspectFit" alt=""
               />
+              <view v-else class="profile-bg__edit-spinner" />
             </view>
-            <!-- 说说底部：点赞 / 评论 -->
-            <view class="my-post-item__stats">
-              <view class="my-post-item__stat">
-                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="my-post-item__stat-text">{{ post.likes }}</text>
-              </view>
-              <view class="my-post-item__stat">
-                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="my-post-item__stat-text">{{ post.comments }}</text>
-              </view>
-            </view>
+            <text class="video-cta__text">
+              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
+            </text>
           </view>
         </view>
 
-        <!-- 空状态 -->
-        <view
-          v-else
-          class="my-posts-empty press-feedback"
-          role="button"
-          :aria-label="t('profile.publishFirstAria')"
-          @tap="goToMyPosts"
-          hover-class="my-posts-empty--hover"
-          hover-stay-time="40"
-        >
-          <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
-          <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
-          <text class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
+        <!-- 邀请好友（POST /invites 真实链路，3-K）：入口自此可达 -->
+        <view class="media-section">
+          <view
+            class="video-cta press-feedback"
+            hover-class="video-cta--hover"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('profile.shareFriend')"
+            @tap="openInviteModal"
+          >
+            <view class="video-cta__icon-wrap">
+              <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG" mode="aspectFit" alt="" />
+            </view>
+            <text class="video-cta__text">{{ t('profile.shareFriend') }}</text>
+          </view>
         </view>
-      </view>
 
-      <!-- 2026-08-14：主页 3 组功能菜单 / 退出登录 / 底部版本已收敛到设置页（pages/settings/index） -->
-
-      <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="40">
-        <text class="dev-entry__text">DEV</text>
-      </view>
-
-            <!-- 底部安全区占位 -->
-      <view class="safe-bottom" />
-        </template>
-      </ProfileShell>
+        <!-- MP-R1-PROFILE-206：VIP 开通卡迁入本人主页（商业化开关开启时）；
+             原块误置于他人态分支（isVip 恒 false → 他人主页显示本人 VIP 营销入口） -->
+        <view v-if="appConfig.isCommerceOn('vip') && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
+          <view class="vip-card__left">
+            <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
+            <view class="vip-card__text-wrap">
+              <text class="vip-card__title">{{ t('profile.openVip') }}</text>
+              <text class="vip-card__desc">{{ t('profile.openVipDesc') }}</text>
+            </view>
+          </view>
+          <view class="vip-card__btn">
+            <text class="vip-card__btn-text">{{ t('profile.subscribeNow') }}</text>
+          </view>
+        </view>
+      </template>
 
       <!-- v3：我的主页悬浮发帖（旧 legacy 内容已隐藏，FAB 独立渲染避免重叠） -->
       <GlobalPublishFab v-if="isOwnProfile" @publish="goToPublishTopic" />
@@ -2425,79 +2291,22 @@ onUnload(() => {
         <!-- QQ 名片卡（2026-08-13 V4 重构）：白色内容面板从背景下方升起（圆角顶），
              首区为匹配标签 + 他人照片墙；头像/昵称已上移到背景 identity 叠加层 -->
         <view class="profile-head-card">
-          <!-- Task F1 / M-08：按钮根据 isOwnProfile 切换（2026-08-14：Hero 主 CTA；标签/照片墙已移入资料 Tab） -->
-          <!-- 自己的 profile：显示"编辑资料"按钮 -->
-          <view v-if="isOwnProfile" class="edit-btn press-feedback" role="button" :aria-label="t('profile.editProfileAria')" @tap="goToProfileSetup" hover-class="edit-btn--hover" hover-stay-time="40">
-            <image class="edit-btn__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
-            <text class="edit-btn__text">{{ t('profile.editProfile') }}</text>
-          </view>
-          <!-- 对方 profile：显示"打个招呼"按钮 -->
-          <view v-else class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="40">
+          <!-- 对方 profile：显示"打个招呼"按钮（MP-R1-PROFILE-203：v-if="isOwnProfile" 的
+               edit-btn 死分支已删——本分支为他人态 v-else，isOwnProfile 恒 false） -->
+          <view class="greet-btn press-feedback" role="button" :aria-label="t('profile.sayHiAria')" @tap="handleSayHi" hover-class="greet-btn--hover" hover-stay-time="40">
             <image class="greet-btn__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
             <text class="greet-btn__text">{{ t('profile.sayHi') }}</text>
           </view>
         </view>
 
-        <!-- 2026-08-26 P0：核心数据统计栏（我喜欢的 / 喜欢我的（未开通）/ 最近来访（未开通）/ 获赞，点击进对应页） -->
-        <!-- 2026-08-13：仅自己主页展示（原他人态误显示查看者自己的统计/成就数据） -->
-        <view v-if="isOwnProfile" class="stats-bar">
-          <view
-            v-for="(stat, index) in stats"
-            :key="index"
-            class="stats-bar__item press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="stat.label"
-            @tap="handleStatTap(index)"
-          >
-            <view class="stats-bar__value-wrap">
-              <text class="stats-bar__value">{{ stat.value }}</text>
-              <!-- 付费解锁项：右上角小锁标识（QQ 主页方案） -->
-              <view v-if="stat.locked" class="stats-bar__lock">
-                <image class="stats-bar__lock-text" :src="IMAGE_PATHS.ICONS_EMOJI.LOCK" mode="aspectFit" alt="" />
-              </view>
-            </view>
-            <text class="stats-bar__label">{{ stat.label }}</text>
-          </view>
-        </view>
-
+        <!-- MP-R1-PROFILE-203：stats-bar / profile-menu 两个 v-if="isOwnProfile" 死块已删
+            （他人态 v-else 分支内恒 false；本人态由 ProfileShell/MyProfile 承载） -->
       </view>
 
-      <!-- ===== v3 我的主页：菜单列表（我的资料 / 兴趣偏好 / 我的动态 / 每日签到 / 隐私与安全） ===== -->
-      <view v-if="isOwnProfile" class="profile-menu">
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuProfile')" @tap="openAppPath('/subpackages/setup/profile/index')">
-          <text class="profile-menu__label">{{ t('profile.menuProfile') }}</text>
-          <text class="profile-menu__hint">{{ t('profile.completionPercent', { percent: completionPercent }) }}</text>
-          <text class="profile-menu__arrow">›</text>
-        </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuInterest')" @tap="openAppPath('/subpackages/setup/interest/index')">
-          <text class="profile-menu__label">{{ t('profile.menuInterest') }}</text>
-          <text class="profile-menu__hint">{{ t('profile.menuInterestHint') }}</text>
-          <text class="profile-menu__arrow">›</text>
-        </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuPosts')" @tap="onTabChange('posts')">
-          <text class="profile-menu__label">{{ t('profile.menuPosts') }}</text>
-          <text class="profile-menu__hint">{{ t('profile.menuPostsHint') }}</text>
-          <text class="profile-menu__arrow">›</text>
-        </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuCheckin')" @tap="handleProfileCheckin">
-          <text class="profile-menu__label">{{ t('profile.menuCheckin') }}</text>
-          <text class="profile-menu__hint">{{ checkInStore.checkedIn ? t('profile.checkinDone', { n: checkInStore.consecutiveDays }) : t('profile.checkinToday') }}</text>
-          <text class="profile-menu__arrow">›</text>
-        </view>
-        <view class="profile-menu__row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('profile.menuPrivacy')" @tap="openAppPath('/subpackages/profile-extra/settings/index')">
-          <text class="profile-menu__label">{{ t('profile.menuPrivacy') }}</text>
-          <text class="profile-menu__hint">{{ t('profile.menuPrivacyHint') }}</text>
-          <text class="profile-menu__arrow">›</text>
-        </view>
-      </view>
-
-      <!-- ===== 2026-08-14：Hero + 双 Tab（资料 / 动态）重构 ===== -->
-      <ProfileTabs :active="activeTab" @change="onTabChange" />
-
-      <!-- ===== 资料 Tab：标签 / 他人照片墙 / 成就 / 语音 / 照片墙 / VIP / 社交升温 ===== -->
-      <view v-if="activeTab === 'about'" class="profile-tab-content">
+      <!-- ===== 资料 Tab：标签 / 他人照片墙（MP-R1-PROFILE-205：他人态隐藏双 Tab 切换器，
+           资料内容常显——原 ProfileTabs 渲染「动态」Tab 但内容块被 isOwnProfile 门禁，
+           点击后内容区完全空白） ===== -->
+      <view class="profile-tab-content">
         <!-- 匹配标签胶囊行（学历 / 感情状态 / 未来规划 / 对方兴趣标签，QQ 风格） -->
         <view v-if="showProfileTags" class="profile-head-card__tags">
           <text class="profile-head-card__tags-title">{{ t('profile.matchTagsTitle') }}</text>
@@ -2521,283 +2330,14 @@ onUnload(() => {
           />
         </view>
 
-        <!-- 成就卡片（2026-08-08 QQ 主页重构：匹配次数 / 喜欢次数 / 社交升温） -->
-        <!-- 2026-08-13：仅自己主页展示（他人态由匹配标签 + 照片墙替代） -->
-        <view v-if="isOwnProfile" class="achievement-card">
-          <view class="section-header">
-            <view class="section-header__left">
-              <text class="section-header__title">{{ t('profile.achievementTitle') }}</text>
-            </view>
-          </view>
-          <view class="achievement-card__grid">
-            <view
-              v-for="(item, index) in achievementStats" :key="index"
-              class="achievement-card__item"
-            >
-              <image class="achievement-card__icon" :src="item.icon" mode="aspectFit" alt="" />
-              <text class="achievement-card__value">{{ item.value }}</text>
-              <text class="achievement-card__label">{{ item.label }}</text>
-              <text class="achievement-card__hint">{{ item.hint }}</text>
-            </view>
-          </view>
-        </view>
-
-      <!-- ==================== Phase Feedback5：语音介绍区块（最长 60s；设计需求：仅语音，无视频） ==================== -->
-      <view v-if="isOwnProfile" class="media-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
-            <view class="voice-only-tag">
-              <text class="voice-only-tag__text">{{ t('profile.voiceOnlyTag') }}</text>
-            </view>
-            <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
-          </view>
-        </view>
-
-        <!-- 未录制：CTA 引导录制（录音中切换为"录音中，点击停止"） -->
-        <view
-          v-if="!voiceStatusUrl"
-          class="video-cta press-feedback"
-          hover-class="video-cta--hover"
-          hover-stay-time="40"
-          role="button"
-          :aria-label="t('profile.recordVoiceAria')"
-          @tap="handleRecordVoice"
-        >
-          <view class="video-cta__icon-wrap" :class="{ 'video-cta__icon-wrap--recording': isRecordingVoice }">
-            <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
-          </view>
-          <text class="video-cta__text">
-            {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
-          </text>
-          <!-- 2026-08-09：去除重复说明（voiceStatusHint 已展示在标题区），仅录音中显示倒计时 -->
-          <text v-if="isRecordingVoice" class="video-cta__hint">
-            {{ recordingLabel }}
-          </text>
-        </view>
-
-        <!-- 已录制：语音卡片 + 播放/删除 -->
-        <view v-else class="voice-preview">
-          <view class="voice-preview__card">
-            <view
-              class="voice-preview__play press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.playVoiceAria')"
-              @tap="handlePlayVoice"
-            >
-              <image class="voice-preview__play-icon" :src="isVoicePlaying ? IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG : IMAGE_PATHS.ICONS_COMMON.PLAY_SVG" mode="aspectFit" alt="" />
-            </view>
-            <view class="voice-preview__info">
-              <view class="voice-preview__wave">
-                <view
-                  v-for="(_, idx) in 12"
-                  :key="idx"
-                  class="voice-preview__bar"
-                  :class="{ 'voice-preview__bar--active': isVoicePlaying }"
-                  :style="{ height: (10 + ((idx * 7) % 18)) + 'rpx' }"
-                />
-              </view>
-              <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
-            </view>
-            <!-- 2026-08-09：重录（直接开始新录音，上传后覆盖旧语音） -->
-            <view
-              class="voice-preview__delete press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.voiceReRecordAria')"
-              @tap="handleRecordVoice"
-            >
-              <text class="voice-preview__delete-text">{{ t('profile.voiceReRecord') }}</text>
-            </view>
-            <view
-              class="voice-preview__delete press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.deleteVoiceAria')"
-              @tap="handleRemoveVoice"
-            >
-              <text class="voice-preview__delete-text">{{ t('profile.delete') }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- ==================== Task E3 / H-08：照片墙区块 ==================== -->
-      <view v-if="isOwnProfile" class="media-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.photoWall') }}</text>
-            <text class="section-header__count">{{ photoGallery.length }} / {{ PHOTO_GALLERY_MAX }}</text>
-          </view>
-        </view>
-
-        <!-- 2026-08-09：空态引导（弱化空洞感，引导上传第一张照片） -->
-        <view v-if="photoGallery.length === 0" class="photo-wall-empty">
-          <text class="photo-wall-empty__text">{{ t('profile.photoWallEmptyHint') }}</text>
-        </view>
-
-        <view class="photo-grid">
-          <view
-            v-for="cell in photoCells"
-            :key="cell.index"
-            class="photo-grid__cell"
-          >
-            <!-- 已上传：显示图片 + 长按删除（2026-08-08：pexels 外链本地化兜底） -->
-            <view
-              v-if="cell.filled"
-              class="photo-grid__img-wrap"
-              @longpress="handleRemovePhoto(cell.index)"
-            >
-              <!-- MP-R7-PROFILE-003（2026-09-15）：toLocalImage 仅兜底 pexels/mock 外链，
-                   用户上传的 /api/v1/media/** 相对路径会原样直连 <image> 加载失败，统一走 resolveMediaUrl -->
-              <SafeImage class="photo-grid__img" :src="resolveMediaUrl(cell.url)" mode="aspectFill" lazy-load :fallback="IMAGE_PATHS.POST_PLACEHOLDER" alt="" />
-              <!-- 2026-08-09：审核状态角标（pending 审核中 / rejected 未通过，本人可见） -->
-              <view
-                v-if="cell.auditStatus === 'pending'"
-                class="photo-grid__badge photo-grid__badge--pending"
-              >
-                <text class="photo-grid__badge-text">{{ t('profile.photoAuditPending') }}</text>
-              </view>
-              <view
-                v-else-if="cell.auditStatus === 'rejected'"
-                class="photo-grid__badge photo-grid__badge--rejected"
-              >
-                <text class="photo-grid__badge-text">{{ t('profile.photoAuditRejected') }}</text>
-              </view>
-            </view>
-            <!-- 空格子：显示"+"占位，点击上传 -->
-            <view
-              v-else
-              class="photo-grid__add press-feedback"
-              hover-class="photo-grid__add--hover"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="t('profile.uploadPhotoAria')"
-              @tap="handleUploadPhoto(cell.index)"
-            >
-              <image class="photo-grid__add-icon-img" :src="IMAGE_PATHS.MESSAGE_ICONS.ADD" mode="aspectFit" />
-              <text class="photo-grid__add-text">{{ t('profile.add') }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-        <!-- VIP 卡片：仅商业化 VIP 开关开启时展示（批次 A5：commerce.enabled + commerce.vip 双闸） -->
-      <view v-if="appConfig.isCommerceOn('vip') && !isVip" class="vip-card press-feedback card-base" role="button" :aria-label="t('profile.openVipAria')" @tap="handleVipClick" hover-class="vip-card--pressed" hover-stay-time="40">
-        <view class="vip-card__left">
-          <image class="vip-card__icon" :src="IMAGE_PATHS.ICONS_COMMON.VIP" mode="aspectFit" alt="" />
-          <view class="vip-card__text-wrap">
-            <text class="vip-card__title">{{ t('profile.openVip') }}</text>
-            <text class="vip-card__desc">{{ t('profile.openVipDesc') }}</text>
-          </view>
-        </view>
-        <view class="vip-card__btn">
-          <text class="vip-card__btn-text">{{ t('profile.subscribeNow') }}</text>
-        </view>
-      </view>
-
-      <!-- 社交升温进度（2026-08-13：仅自己主页展示，他人态无自己进度语义） -->
-      <view v-if="false && isOwnProfile" class="social-section">
-        <SocialProgressIndicator />
-      </view>
-
+        <!-- MP-R1-PROFILE-203：成就卡片 / 语音介绍 / 照片墙 三个 v-if="isOwnProfile" 死块
+             已删（他人态分支内恒 false；语音/背景编辑已迁入本人态附加功能区） -->
       </view><!-- /资料 Tab -->
 
-      <!-- ===== 动态 Tab：我的动态列表 ===== -->
-      <view v-if="isOwnProfile && activeTab === 'posts'" class="profile-tab-content my-posts-section">
-        <view class="section-header">
-          <view class="section-header__left">
-            <text class="section-header__title">{{ t('profile.myPosts') }}</text>
-            <text v-if="myPostsTotal > 0" class="section-header__count">{{ t('profile.postsCount', { n: myPostsTotal }) }}</text>
-          </view>
-          <view
-            v-if="myPostsPreview.length > 0"
-            class="section-header__more press-feedback"
-            role="button"
-            :aria-label="t('profile.viewAllPostsAria')"
-            @tap="goToMyPosts"
-            hover-class="section-header__more--hover"
-            hover-stay-time="40"
-          >
-            <text class="section-header__more-text">{{ t('common.viewAll') }}</text>
-            <text class="section-header__more-arrow">›</text>
-          </view>
-        </view>
-
-        <!-- 动态列表（有数据时，QQ 空间说说卡片样式：时间→正文3行→配图横排→点赞评论） -->
-        <view v-if="myPostsPreview.length > 0" class="my-posts-list" role="list">
-          <view
-            v-for="(post, index) in myPostsPreview"
-            :key="post.id"
-            class="my-post-item press-feedback"
-            :class="{ 'my-post-item--no-border': index === myPostsPreview.length - 1 }"
-            role="button"
-            :aria-label="post.summary"
-            @tap="handlePostTap(post.id)"
-            hover-class="my-post-item--hover"
-            hover-stay-time="40"
-          >
-            <!-- 说说头部：发布时间 + 更多 -->
-            <view class="my-post-item__head">
-              <text class="my-post-item__time">{{ post.timeLabel }}</text>
-              <text class="my-post-item__more">⋯</text>
-            </view>
-            <!-- 说说正文（最多 3 行） -->
-            <text class="my-post-item__summary">{{ post.summary }}</text>
-            <!-- 配图缩略图（最多 3 张横排，有图才展示） -->
-            <view v-if="(post.images || []).length > 0" class="my-post-item__images">
-              <image
-                v-for="(img, imgIdx) in (post.images || []).slice(0, 3)" :key="imgIdx"
-                class="my-post-item__img"
-                :src="img"
-                mode="aspectFill"
-                lazy-load
-                alt=""
-              />
-            </view>
-            <!-- 说说底部：点赞 / 评论 -->
-            <view class="my-post-item__stats">
-              <view class="my-post-item__stat">
-                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="my-post-item__stat-text">{{ post.likes }}</text>
-              </view>
-              <view class="my-post-item__stat">
-                <image class="my-post-item__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" lazy-load="true" alt="" />
-                <text class="my-post-item__stat-text">{{ post.comments }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 空状态 -->
-        <view
-          v-else
-          class="my-posts-empty press-feedback"
-          role="button"
-          :aria-label="t('profile.publishFirstAria')"
-          @tap="goToMyPosts"
-          hover-class="my-posts-empty--hover"
-          hover-stay-time="40"
-        >
-          <image class="my-posts-empty__icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" alt="" />
-          <text class="my-posts-empty__text">{{ t('profile.noPosts') }}</text>
-          <text class="my-posts-empty__action">{{ t('profile.publishFirst') }}</text>
-        </view>
-      </view>
-
-      <!-- 2026-08-14：主页 3 组功能菜单 / 退出登录 / 底部版本已收敛到设置页（pages/settings/index） -->
-
-      <!-- [DEV-MODE] 开发者模式入口按钮 -->
-      <view v-if="isDev" class="dev-entry press-feedback" role="button" :aria-label="t('profile.devEntryAria')" @tap="openAppPath(ROUTES.DEV)" hover-class="dev-entry--hover" hover-stay-time="40">
-        <text class="dev-entry__text">DEV</text>
-      </view>
-
-            <!-- Task F：全局发帖悬浮按钮（publish → 发帖编辑页） -->
-      <GlobalPublishFab v-if="isOwnProfile" @publish="goToPublishTopic" />
+      <!-- ===== MP-R1-PROFILE-203：「动态 Tab」内容块（isOwnProfile 门禁恒 false）已删；
+           MP-R1-PROFILE-206：VIP 卡片已迁入本人主页附加功能区 ===== -->
+      <!-- ===== MP-R1-PROFILE-203：他人态分支内全部 isOwnProfile 门禁死块（动态 Tab、
+           重复 FAB、VIP 旧位置等）已删除 ===== -->
 
       <!-- 底部安全区占位 -->
       <view class="safe-bottom" />

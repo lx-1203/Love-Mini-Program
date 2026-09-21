@@ -179,6 +179,11 @@ const feedPosts = computed<PostItem[]>(() =>
 /* ========== 频道切换 ========== */
 let lastActiveChannel = "";
 
+// MP-R1-VILLAGE-INDEX-101：频道切换统一走单事件 @change——原 ChannelTabs 同时
+// emit update:modelValue + change（Vue3 同步调用监听器），v-model 先把
+// currentChannelId 改成新值，@change→selectChannel 首行同值守卫恒真直接 return，
+// 数据拉取/频道记忆/滚动位置保存恢复全部失效。现去掉 v-model，由 selectChannel
+// 统一赋值，副作用只执行一次。
 function selectChannel(id: ChannelId) {
   if (currentChannelId.value === id) return;
   // 保存旧频道滚动位置
@@ -198,8 +203,13 @@ function onChannelChange(id: string) {
   selectChannel(id as ChannelId);
 }
 
-/** 拉取当前频道数据 */
-async function loadChannelData(id: string = currentChannelId.value) {
+/**
+ * 拉取当前频道数据。
+ * MP-R1-VILLAGE-INDEX-104：新鲜度标记只在请求成功后写入——原实现 void 发起的同时
+ * 立即 setCachedValue，请求失败后 30s 内「重试/下拉刷新」全被 TTL 短路，错误态卡死。
+ * force=true（下拉刷新/发帖返回）绕过 TTL 强制拉取。
+ */
+async function loadChannelData(id: string = currentChannelId.value, force = false) {
   const channel = getChannelConfig(id);
   if (!channel) return;
   // 修复（2026-08-09）：未登录时不发受保护请求（页面处于 LockScreen 锁定态，
@@ -209,30 +219,46 @@ async function loadChannelData(id: string = currentChannelId.value) {
   // 频道在未登录/无 token 时也能加载出真实帖子列表（real 模式守卫行为保持不变）。
   if (!useMock() && !getToken()) return;
   // 2026-08-10 切换提速：30s 新鲜度窗口（切 tab 回来不再全量重拉帖子流）
-  if (!useMock() && isCacheFresh(`village:feed:${id}`, 30_000)) {
+  if (!force && !useMock() && isCacheFresh(`village:feed:${id}`, 30_000)) {
     return;
   }
+  const markFresh = () => setCachedValue(`village:feed:${id}`, true);
   if (channel.dataSource === "interest-hub") {
-    void circleStore.fetchFeaturedTopics(1);
-    setCachedValue(`village:feed:${id}`, true);
+    try {
+      await circleStore.fetchFeaturedTopics(1);
+    } catch (_e) {
+      /* 失败已置 circleStore.errorMessage，不写新鲜度（可立即重试） */
+      return;
+    }
+    markFresh();
     return;
   }
   // 2026-08-11 热度榜频道：走 hot-board 接口（按热度分排序）
   if (channel.dataSource === "hot-board") {
-    void villageStore.fetchHotBoard(1);
-    setCachedValue(`village:feed:${id}`, true);
+    try {
+      await villageStore.fetchHotBoard(1);
+    } catch (_e) {
+      return;
+    }
+    if (villageStore.errorMessage) return;
+    markFresh();
     return;
   }
-  void villageStore.fetchPosts(currentFilters.value);
-  setCachedValue(`village:feed:${id}`, true);
+  try {
+    await villageStore.fetchPosts(currentFilters.value);
+  } catch (_e) {
+    /* fetchPosts 内部吞错置 errorMessage */
+  }
+  if (villageStore.errorMessage) return;
+  markFresh();
   if (channel.dataSource === "activity-feed" && activities.value.length === 0) {
     void activityStore.fetchActivities();
   }
 }
 
-/** 发帖返回刷新（post-topic 成功时 uni.$emit('village:post-created')） */
+/** 发帖返回刷新（post-topic 成功时 uni.$emit('village:post-created')；MP-R1-VILLAGE-INDEX-104：强制穿透 TTL） */
 function onPostCreated() {
-  void loadChannelData();
+  void loadChannelData(currentChannelId.value, true);
 }
 
 /* ========== 兴趣圈频道内容 ========== */
@@ -337,7 +363,9 @@ async function handleFollow(userId: string) {
 /* ========== 跳转 ========== */
 function goToDetail(postId: string) {
   villageStore.setCurrentPost(postId);
-  openAppPath(ROUTES.VILLAGE.DETAIL);
+  // MP-R1-DETAIL-006：携带 ?id= 直达（setCurrentPost real 分支为异步请求，
+  // 不带 id 时详情页在数据落定前会 toast「帖子不存在」并闪 EmptyState）
+  openAppPath(`${ROUTES.VILLAGE.DETAIL}?id=${encodeURIComponent(postId)}`);
 }
 
 function goToAuthorProfile(authorId: string) {
@@ -397,7 +425,8 @@ const isLoadingMore = ref(false);
 async function onRefresh() {
   isRefreshing.value = true;
   try {
-    await loadChannelData();
+    // MP-R1-VILLAGE-INDEX-104：下拉刷新/错误重试强制穿透 30s TTL
+    await loadChannelData(currentChannelId.value, true);
   } finally {
     isRefreshing.value = false;
     uni.stopPullDownRefresh();
@@ -578,7 +607,7 @@ onShareAppMessage(() => ({
         </view>
         <!-- 频道 Tab（QQ 频道风格横向滑动） -->
         <ChannelTabs
-          v-model="currentChannelId"
+          :model-value="currentChannelId"
           :configs="CHANNEL_CONFIGS"
           :locked-ids="channelLockedIds"
           @change="onChannelChange"

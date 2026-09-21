@@ -173,6 +173,8 @@ const ID_CARD_PATTERN = /^\d{15}$|^\d{17}[\dXx]$/;
 
 /** 提交实名认证申请 */
 function submitRealName() {
+  // MP-R1-VERIFY-INDEX-002 同构：防重入守卫 + showLoading mask（按钮置灰不拦截 @tap）
+  if (submitting.value) return;
   lightHaptic();
 
   if (!isAdult.value) {
@@ -197,7 +199,7 @@ function submitRealName() {
   }
 
   submitting.value = true;
-  uni.showLoading({ title: t("realName.submitting") });
+  uni.showLoading({ title: t("realName.submitting"), mask: true });
 
   // Mock 分支：保留本地演示逻辑（1s 后置为 pending）
   if (useMock()) {

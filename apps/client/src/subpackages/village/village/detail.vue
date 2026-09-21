@@ -528,8 +528,10 @@ function chooseCommentImage() {
           if (commentImages.value.length >= 3) break;
           const { url } = await clientApi.uploadPostImage({
             // UniUploadFileLike 契约要求 name（H5 File.name 回退 + FormData filename），
-            // 与 circles/campus post-topic 调用方同一包装惯例
-            name: "comment.jpg",
+            // 与 circles/campus post-topic 调用方同一包装惯例。
+            // MP-R1-CAMPUSPOST-002 同源修复：文件名含每图唯一量（时间戳+序号），
+            // 避免恒定 name 命中同一 Idempotency-Key 被 409 拦截
+            name: `comment-${Date.now()}-${commentImages.value.length}.jpg`,
             path,
           });
           commentImages.value = [...commentImages.value, url];
@@ -3215,9 +3217,9 @@ page {
   background: #ffffff;
 }
 
-</style>
-
-/* ========== 2026-09-05 R19：帖子图片全屏查看层 ========== */
+/* ========== 2026-09-05 R19：帖子图片全屏查看层 ==========
+   MP-R1-DETAIL-001：原这段规则位于 style 块结束标记之后（SFC 块外），解析器整体丢弃，
+   模板的全屏查看层无任何样式（不可见亦不可关）。已移回 style 块内。 */
 .image-viewer {
   position: fixed;
   inset: 0;
@@ -3232,3 +3234,5 @@ page {
   width: 100%;
   height: 80vh;
 }
+
+</style>

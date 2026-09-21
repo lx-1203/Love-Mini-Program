@@ -26,7 +26,9 @@ const allowRecommend = computed({
   get: () => profileStore.allowSameSchoolRecommend,
   set: (val: boolean) => {
     profileStore.setAllowSameSchoolRecommend(val);
-    uni.showToast({ title: t("profile.privacySaved"), icon: "success" });
+    // MP-R1-PRIVACY-001：开关当前仅本机持久化（后端偏好接口未接入，服务端推荐行为
+    // 暂不受开关控制）——文案如实说明「已在本机保存」，不强化「已同步」假象
+    uni.showToast({ title: t("profile.privacySavedLocal"), icon: "none" });
   },
 });
 
@@ -35,7 +37,8 @@ const receiveInfo = computed({
   get: () => profileStore.receiveSameSchoolInfo,
   set: (val: boolean) => {
     profileStore.setReceiveSameSchoolInfo(val);
-    uni.showToast({ title: t("profile.privacySaved"), icon: "success" });
+    // MP-R1-PRIVACY-001：同上，如实文案
+    uni.showToast({ title: t("profile.privacySavedLocal"), icon: "none" });
   },
 });
 

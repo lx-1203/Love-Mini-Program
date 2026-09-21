@@ -14,9 +14,12 @@ import { t } from "@/i18n";
 import { mockHeartSignals, mockLikedBy, mockLikes, mockVisitors } from "./likes/mock-data";
 
 /**
- * 心动信号状态
+ * 心动信号状态。
+ * MP-R1-HSIGNALS-101：扩四值保留 declined——后端 HeartSignal.status 原样下发 'declined'，
+ * 原映射把非 accepted/expired 一律折叠回 pending，导致「已拒绝」信号刷新后重回待处理
+ * Tab（可重复操作）而「已拒绝」Tab 恒空（mock decline 本地写 expired 掩盖了缺陷）。
  */
-export type HeartSignalStatus = "pending" | "accepted" | "expired";
+export type HeartSignalStatus = "pending" | "accepted" | "expired" | "declined";
 
 /**
  * 后端 LikedUserView 类型
@@ -108,7 +111,13 @@ function mapToHeartSignal(raw: HeartSignalView): HeartSignal {
     fromUserName: raw.fromUserName || "",
     fromUserAvatar: raw.fromUserAvatar || "",
     toUserId: String(raw.userBId),
-    status: (raw.status === "accepted" ? "accepted" : raw.status === "expired" ? "expired" : "pending") as HeartSignalStatus,
+    status: (raw.status === "accepted"
+      ? "accepted"
+      : raw.status === "expired"
+        ? "expired"
+        : raw.status === "declined"
+          ? "declined"
+          : "pending") as HeartSignalStatus,
     sentAt: raw.createdAt,
     expiresAt: raw.expiresAt,
   };

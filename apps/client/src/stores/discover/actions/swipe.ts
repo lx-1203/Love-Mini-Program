@@ -35,8 +35,14 @@ import { t } from "@/i18n";
 /**
  * 左滑（不感兴趣）
  * @param cardId - 卡片 ID
+ * @param cardSnapshot - 调用方本地卡片快照（MP-R1-LNEARBY-101：love-center/nearby 等
+ *   页面维护独立本地卡片队列，store.cards 冷进入为空——按快照执行，不再误报「卡片不存在」）
  */
-export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promise<void> {
+export async function swipeLeft(
+  this: DiscoverStoreThis,
+  cardId: string,
+  cardSnapshot?: DiscoverCard | null
+): Promise<void> {
   this.errorMessage = null;
 
   try {
@@ -59,8 +65,8 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
       }
     }
 
-    // 卡片存在检查
-    const card = this.cards.find((c) => c.id === cardId);
+    // 卡片存在检查（MP-R1-LNEARBY-101：优先取调用方快照，回退 store 队列）
+    const card = cardSnapshot ?? this.cards.find((c) => c.id === cardId);
     if (!card) {
       this.errorMessage = t("storeErrors.discover.cardNotFound");
       throw new Error(t("storeErrors.discover.cardNotFound"));
@@ -152,7 +158,8 @@ export async function swipeLeft(this: DiscoverStoreThis, cardId: string): Promis
 export async function swipeRight(
   this: DiscoverStoreThis,
   cardId: string,
-  isSuperLike = false
+  isSuperLike = false,
+  callerSnapshot?: DiscoverCard | null
 ): Promise<void> {
   // 参数校验提前（与 _doSwipeRight 保持一致，避免无效参数进入队列）
   if (!cardId || cardId.trim().length === 0) {
@@ -172,7 +179,8 @@ export async function swipeRight(
     }
 
     // 防抖窗口内快照卡片（修复 R4-00177：执行时卡片可能已被左滑/刷新移除）
-    const card = this.cards.find((c) => c.id === cardId) ?? null;
+    // MP-R1-LNEARBY-101：优先取调用方本地快照（独立本地卡片队列场景）
+    const card = callerSnapshot ?? this.cards.find((c) => c.id === cardId) ?? null;
     queue.push({
       cardId,
       isSuperLike,

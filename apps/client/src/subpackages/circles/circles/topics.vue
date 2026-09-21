@@ -214,8 +214,12 @@ async function toggleJoin() {
   try {
     if (c.isJoined) await circleStore.leaveCircle(c.id);
     else await circleStore.joinCircle(c.id);
-  } catch (_e) {
-    // store 内部已提示错误
+  } catch (e) {
+    // MP-R1-CIRCLES-001：store 只置 errorMessage 后 rethrow，从不出 toast——补用户可见反馈
+    uni.showToast({
+      title: e instanceof Error && e.message ? e.message : t("apiErrors.operationFailed"),
+      icon: "none",
+    });
   }
 }
 
