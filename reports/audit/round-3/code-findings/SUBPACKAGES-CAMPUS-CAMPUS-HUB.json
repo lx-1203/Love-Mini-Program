@@ -1,0 +1,148 @@
+{
+  "round": "R3",
+  "generatedAt": "2026-09-22",
+  "reviewer": "A2 代码审查员（Layer A · 只读代码审查）",
+  "pages": ["subpackages/campus/campus/hub"],
+  "issues": [
+    {
+      "id": "MP-R3-CAMPUS-HUB-001",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "搜索框背景与页面容器使用同一个 token，且搜索框无边框/无阴影，搜索框在明暗两套主题下都不可见（视觉上退化为悬浮在页面底色上的占位文字）。",
+      "evidence": "页面容器 hub.vue:366 `background: var(--c-bg-page, #EEF7F2)`；搜索框 hub.vue:812 `background: var(--c-bg-page, #F0F4F2)`——token 命中时两处取同一值。design-variables.scss:119 `$bg-page: #EEF7F2`，即浅色模式两者均为 #EEF7F2；tokens.scss:228 深色模式两者均为 #0E1116。hub.vue:808-818 的 .campus-search 规则块只有 margin/height/border-radius/background/flex/padding/gap，无 border、无 box-shadow。两处 fallback 值不同（#EEF7F2 vs #F0F4F2）证明本意是让搜索框比页面底色略深一档，但都写成 --c-bg-page 后该意图落空。已排除全局样式干扰：styles/、App.vue、theme/ 中无 .campus-search 定义。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "搜索框作为可交互输入容器应与页面底色有可辨识的层次（理想图 校园圈.png 中搜索框为独立浅色胶囊）。",
+      "fix": ".campus-search 背景改用有区分度的 token（如 var(--c-bg-container) 或 var(--c-tint-gray-50)），或补一条 `border: 1rpx solid var(--c-line)`；两处 fallback 同步修正。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-002",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "设计 token 强制违例：4 处颜色值未走 var(--token, fallback) 通道，均为裸值，深色模式下不会随 token 适配，且与同文件其余全部走 token 的写法不一致。",
+      "evidence": "hub.vue:692 `.campus-school-card__badge--unverified { background: #9AA39F; }`（裸 hex，对比同组 hub.vue:675 `var(--c-brand)`、hub.vue:683 `var(--c-warning-bg-tint)` 均走 token）；hub.vue:837-838 `.campus-search__placeholder { color: #9AA39F; }`（裸 hex）；hub.vue:426 `box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.32)` 与 hub.vue:580 `box-shadow: 0 6rpx 24rpx rgba(26, 55, 48, 0.06)` 为裸 rgba，而同文件 hub.vue:774 同类阴影已用 `var(--c-brand-border-tint-stronger, …)`（该 token 定义于 design-variables.scss:800，值恰为 rgba(61,201,148,0.4)，即 hub.vue:426 的裸值与既有 token 同义异值）。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "R11 附录 B「设计 token 强制」：所有颜色经 var(--token, fallback) 引用，深色模式由 tokens.scss 的 dark-theme-vars mixin 统一适配。",
+      "fix": "#9AA39F 两处改挂中性灰 token（新增或复用 --c-text-tertiary 类语义 token）并带 fallback；hub.vue:426 改用 var(--c-brand-border-tint-stronger, rgba(54,201,154,0.32))；hub.vue:580 阴影抽为阴影 token 或带 fallback 的语义 token。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-003",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "「我加入的」按校名全等字符串匹配静态 11 校名单，而认证页校名为自由文本输入——已认证用户校名不在名单内时，「我加入的」恒空（显示「暂未加入任何校园圈」），且本人学校反而出现在「推荐圈子」并带「申请加入」CTA，正是 MP-R2-CAMPUS-HUB-002 要消除的矛盾组合在名单外学校的形态。",
+      "evidence": "hub.vue:89-91 `joinedSchools = isVerified ? schools.filter(sc => sc.name === ownSchool.value) : []` 全等匹配；ownSchool = hub.vue:96 `certificationInfo.schoolName || sessionStore.userSession?.campusName`；静态名单仅 11 校（schools.ts:32-44）；认证表单 schoolName 是自由输入框（certification.vue:326-333 `v-model=\"schoolName\"`，无 SCHOOLS 选择器约束），后端可返回任意校名；recommendedSchools = hub.vue:93 `filter(sc => sc.name !== ownSchool.value)`，名单外学校的用户必然命中「推荐」分支，CTA 渲染见 hub.vue:322-324（activeTab==='joined' 才显示「进入」，否则「申请加入」）；空态文案 hub.vue:271-273。另外两侧均未 trim/归一化，空白或全半角差异也会破坏匹配。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "已认证用户的「我加入的」应展示其认证学校圈（数据驱动），推荐列表不重复出现本人已加入的学校；无匹配时给出明确解释而非「暂未加入」。",
+      "fix": "短期：匹配前 trim + 后端 campuses 接口（loadSchools 已具备，schools.ts:120-142）驱动名单而非静态 SCHOOLS；长期：认证返回 schoolId，按 id 关联圈子；名单未收录已认证学校时「我加入的」空态单独文案（如「该校圈子接入中」）并在推荐列表中对该校显示「已加入」态。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-004",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "卡片成员数/动态数为页面内硬编码演示数据，real 模式原样展示给用户；配合每张卡相同的 3 张静态头像，呈现为「真实成员预览」。已有「约」前缀缓解（MP-R2-CAMPUS-HUB-007），但数字本身仍为虚构且每校数值固定不变。",
+      "evidence": "hub.vue:61-73 schoolStats 全表硬编码（如 pku: members \"3.2k 同学\", posts \"2.8w 动态\"）；渲染于 hub.vue:308 `{{ statsOf(school).members }} · {{ statsOf(school).posts }}` 与 hub.vue:317 `{{ statsOf(school).peers }}`；hub.vue:75-83 statsOf 仅加「约」前缀；成员头像为固定 3 张静态图（hub.vue:311-316，IMAGE_PATHS.AVATARS.AVATAR_1/2/3），所有学校共用；注释自认「后续可由后端 campuses 接口扩展提供」（hub.vue:59-60）。CAMPUS_COVER 映射（hub.vue:36-49）同为此页私有数据，与 schools.ts 集中管理原则分裂（schools.ts:29-31 已自注与 home 页重复问题）。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "统计与成员预览来自后端 campuses 接口或至少不展示具体虚构数字；数据模型集中到 config/schools.ts（或接口层），页面不再维护按校 key 的私有表。",
+      "fix": "接入 /api/v1/config/campuses 扩展字段（members/posts/avatars），无数据时显示中性文案（如「持续入驻中」）而非虚构数值；过渡期如保留估算表，迁入 config/schools.ts 并保留「约」标注。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-005",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "页面底部未做 iPhone 底部安全区（Home Indicator）避让：滚动到底时「更多校园圈持续接入中」提示文字距页面底边约 28px，小于 34px 安全区，全面屏机型上可能被 Home 横条区域压住边缘。",
+      "evidence": "hub.vue 全文件 grep `safe-area-inset-bottom` 0 命中（本审查执行）；底部收尾仅 hub.vue:803-805 `.campus-hub__footer { height: 48rpx }`（375px 宽下 ≈24px）+ hub.vue:789 `.campus-hub__more { padding: 32rpx 0 8rpx }`，合计提示文字下方留白 ≈28px < 34px；对照同分包 campus/index.vue:787 已使用 `bottom: calc(env(safe-area-inset-bottom) + 150rpx)`，hub.vue:367 顶部也已有 `env(safe-area-inset-top)` 兜底，唯独底部缺失。",
+      "sources": ["code"],
+      "confidence": 0.55,
+      "ideal": "页面滚动内容末尾预留 env(safe-area-inset-bottom) 高度，全面屏底部内容不进入不可点按区。",
+      "fix": "`.campus-hub__footer { height: calc(48rpx + env(safe-area-inset-bottom)); }`（必要时补 constant() 兼容），与同分包 index.vue 的底部避让口径对齐。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-006",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "栈底兜底（页面栈=1 时 switchTab 回退）与同分包 campus/index.vue 模式一致但回退目标不一致：hub 回「附近」tab，campus/index 回「首页」tab；同一「校园圈」链路两个页面裸直达时回退落点不同。hub.vue:163 注释声称「与 campus/index.vue:98-106 同口径」，实际仅模式同口径、目标页不同。",
+      "evidence": "hub.vue:164-170 `getCurrentPages().length > 1 ? navigateBack : uni.switchTab({ url: \"/pages/nearby/index\" })`；campus/index.vue:104-108（goBack）同为兜底但 `switchTab({ url: \"/pages/home/index\" })`。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "同业务链路的栈底兜底回退到统一的落地 tab（或由 navigation.ts 提供统一的 goBackOrFallback 工具）。",
+      "fix": "在 utils/navigation.ts 增加 navigateBackOrFallback(fallbackTab) 统一封装，两页共用同一 fallback 常量（ROUTES.TAB 下取一）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-007",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "样式清洁度：MP-R1-CAMPUS-HUB-003 修复移除「查看更多校园圈 ⌄」元素后遗留死 CSS `.campus-hub__more-arrow`（模板零引用）；`.campus-school-card__badge` 内 `flex-shrink: 0` 连续声明两次。",
+      "evidence": "hub.vue:797-801 `.campus-hub__more-arrow { … }` 全文件仅此一处（本审查 grep more-arrow 仅命中定义行，模板 330-333 已无对应节点）；hub.vue:668-670 `flex-shrink: 0;` 重复两行。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "模板删除的元素其样式同步清理；无重复声明。",
+      "fix": "删除 hub.vue:797-801 死样式块与 hub.vue:670 重复声明行。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-CAMPUS-HUB-008",
+      "round": "R3",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "无（R3 为代码层审查轮）",
+      "category": "Performance",
+      "severity": "P4",
+      "description": "statsOf(school) 在模板内每卡片调用 3 次（每次调用新建对象 + 3 次字符串前缀处理），搜索框每敲一个字符触发整列表重渲染时重复执行；数据静态，应为预计算。",
+      "evidence": "hub.vue:308 `{{ statsOf(school).members }} · {{ statsOf(school).posts }}`（一次渲染 2 次调用）与 hub.vue:317 `{{ statsOf(school).peers }}`（1 次）；statsOf 实现 hub.vue:75-83（对象字面量 + startsWith/模板串）；searchKeyword v-model（hub.vue:238）驱动 filteredSchools（hub.vue:127-132）重算，卡片逐项重渲染。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "静态派生数据计算一次；列表渲染不做重复函数调用。",
+      "fix": "在 schools 映射时一次性附加 stats（hub.vue:54-57 的 map 中合并 statsOf 结果），模板直接读 school.stats。",
+      "status": "待修复"
+    }
+  ],
+  "regressionChecks": [
+    {
+      "id": "MP-R1-CAMPUS-HUB-001(R21)",
+      "claim": "「我加入的」badge 恒「认证中」且无修饰类无底色",
+      "verdict": "已修复（代码层核实）",
+      "evidence": "hub.vue:103-114 joinedBadge 三态映射（verified→campusHub.certified/--verified，pending→statusPending/--pending，其余→unverified/--unverified），推荐 Tab 统一「未认证」；修饰类样式齐全：hub.vue:673-680 --verified（绿底白字）、hub.vue:682-688 --pending（warning 底 + warning 字）、hub.vue:690-697 --unverified（灰底白字）。badge 绑定于 hub.vue:302-307。注：--unverified 的底色为裸 #9AA39F，已另立 MP-R3-CAMPUS-HUB-002。"
+    },
+    {
+      "id": "MP-R1-CAMPUS-HUB-003(R21)",
+      "claim": "「查看更多校园圈⌄」无 handler 可点暗示落空",
+      "verdict": "已修复（代码层核实）",
+      "evidence": "hub.vue:330-333 已改为纯静态说明文案 campusHub.moreHint（「更多校园圈持续接入中」，zh-CN.ts:3440 / en-US.ts moreHint 均存在），无箭头、无 @tap、不暗示可展开；遗留死 CSS 见 MP-R3-CAMPUS-HUB-007。"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/campus/campus/hub",
+      "note": "全文件通读 hub.vue（1-858 行，script/template/style 三段）。依赖链核对：stores/campus.ts（fetchCertificationStatus 404→unverified 不报错、其余错误写 errorMessage；refreshCertification 有 catch 且置 certLoadFailed，onShow 走 void 调用——无空 catch、无未处理拒绝）、stores/session.ts（campusName 默认值）、utils/navigation.ts（openAppPath 空串防御/tab query 桥接/栈满 redirectTo 兜底）、constants/routes.ts（ROUTES.CAMPUS.* 四路径与 pages.json:118-135 注册一致）、config/schools.ts（SCHOOLS 11 校 + loadSchools 后端回退）、composables/useMenuButtonRect.ts（--capsule-right/--statusbar 注入）、config/images.ts（页面引用的 GENERATED.CAMPUS_*、CIRCLE_COVERS.CAMPUS、AVATARS.AVATAR_1/2/3、ICONS_COMMON.GRADUATION_CAP_SVG、ICONS_EMOJI.SEARCH 键全部存在，且 static/assets 对应实体文件逐个 ls 核实存在）。i18n：campusHub.* 全部键及 common.retry/back/networkError 在 zh-CN.ts 与 en-US.ts 双语存在。下游契约：goSchool → campus/index.vue:179-198 onLoad 解码 ?school= 并公开浏览，链路成立；无参数时 index 重定向回 hub 无死循环。组件事件接线：本页无自定义子组件，无 emit 接线风险；@tap 冒泡无冲突（卡片整体单动作）。小程序专项：无 scroll-view；栈底兜底有（目标不一致另立 P4）；搜索 input 有 cursor-spacing、页面流内布局无键盘遮挡问题；onShow 刷新认证状态已实现。硬约束 grep（本审查执行，均 0 命中）：:hover、display:grid/grid-template、import.meta.env、backdrop-filter、空 catch、模板/文案 emoji（‹ 与 × 为标点符号）。CardSwiper 与自定义组件宿主 flex:1 本页不适用。token 核对：页面用到的 --c-* 全部在 design-variables.scss 有浅色定义、tokens.scss 有深色覆盖，唯 4 处裸色值违例（MP-R3-CAMPUS-HUB-002）。未执行项：真机/模拟器运行验证（本轮为纯代码审查，未驱动开发者工具）、TypeScript 编译检查（审查指令未要求，未运行）。"
+    }
+  ]
+}

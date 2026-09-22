@@ -249,7 +249,7 @@ pnpm --filter @campus-love/client run build:mp-weixin
 
 ## 部署指南
 
-参见 `DEPLOYMENT.md` 与 `docker-compose.yml`。生产部署使用 Docker Compose 编排 api / client / admin / mysql / redis / prometheus / grafana / alertmanager / node-exporter / backup 服务（R4-02079：编排未包含 rabbitmq 与 nginx——消息队列未部署，应用在 MQ 不可用时自动降级；静态资源由各服务自带容器镜像暴露，域名入口由外层网关/Nginx 配置转发），每个服务已配置 healthcheck 与日志轮转。
+参见 `doc/DEPLOYMENT.md` 与 `docker-compose.yml`。生产部署使用 Docker Compose 编排 api / client / admin / mysql / redis / prometheus / grafana / alertmanager / node-exporter / backup 服务（R4-02079：编排未包含 rabbitmq 与 nginx——消息队列未部署，应用在 MQ 不可用时自动降级；静态资源由各服务自带容器镜像暴露，域名入口由外层网关/Nginx 配置转发），每个服务已配置 healthcheck 与日志轮转。
 
 ```bash
 # 一键启动全部服务
@@ -266,7 +266,7 @@ docker compose --profile monitoring up -d
 docker compose --profile backup up -d
 ```
 
-更详细的部署架构、域名与 SSL、Nginx 反向代理、监控告警、备份恢复、升级回滚等见 `DEPLOYMENT.md`。
+更详细的部署架构、域名与 SSL、Nginx 反向代理、监控告警、备份恢复、升级回滚等见 `doc/DEPLOYMENT.md`。
 
 ## CI/CD 与镜像安全
 
@@ -291,7 +291,7 @@ cosign generate-key-pair
 ```
 
 未配置 secrets 时，CI 中签名步骤自动跳过（PR 场景不影响构建）。
-镜像签名验证流程见 `DEPLOYMENT.md` 「镜像签名验证」小节，CI/CD 完整流程见 `docs/CI-CD.md`。
+镜像签名验证流程见 `doc/DEPLOYMENT.md` 「镜像签名验证」小节，CI/CD 完整流程见 `docs/CI-CD.md`。
 
 ## 文档导航
 
@@ -314,7 +314,7 @@ cosign generate-key-pair
 
 ### 部署与运维
 
-- `DEPLOYMENT.md`：生产部署指南（Docker Compose / Nginx / 监控 / 备份 / 升级回滚）
+- `doc/DEPLOYMENT.md`：生产部署指南（Docker Compose / Nginx / 监控 / 备份 / 升级回滚）
 - `docs/CI-CD.md`：CI/CD 流程
 - `docs/GRADUAL-RELEASE.md`：灰度发布方案
 - `docs/TROUBLESHOOTING.md`：故障排查手册

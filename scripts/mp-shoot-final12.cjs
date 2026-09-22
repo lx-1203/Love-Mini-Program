@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
 /** 抗崩溃全量截图 final12：所有页面 top+bottom，登录注入 */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const OUT_DIR = process.argv[2] || 'D:\\6\\恋爱小程序\\截图存档\\2026-08-21-final12';
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const OUT_DIR = process.argv[2] || `${REPO_ROOT}\\截图存档\\2026-08-21-final12`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 process.on('uncaughtException', (e) => console.log('[uncaught]', e.message));
@@ -57,7 +58,7 @@ async function shootPage(mp, p) {
     // 未登录态：清除 storage + touch app.js 触发 devtools 重新编译（重置 JS 运行时 store）
     try { await mp.callWxMethod('clearStorage'); } catch (e) {}
     try {
-      const appJs = 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/app.js';
+      const appJs = `${REPO_ROOT}/apps/client/dist/build/mp-weixin/app.js`;
       const now = new Date();
       fs.utimesSync(appJs, now, now);
       console.log('  [notlogged] touched app.js for runtime reset');

@@ -113,7 +113,7 @@ services:
       - mysql-data:/var/lib/mysql
       # 仅保留 CI 初始化脚本；Flyway 迁移目录不挂载到 initdb.d（infra #7：
       # 80+ 迁移脚本重复执行会损坏首次部署，且 ${admin_openid} 占位符会被原样写入）
-      - ./init-mysql.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - ./database/init-mysql.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     healthcheck:
       # 密码通过容器环境变量 MYSQL_PWD 传递，不出现在进程参数（infra #3）
       test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h 127.0.0.1 -uroot --silent || exit 1"]

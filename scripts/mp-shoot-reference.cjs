@@ -1,10 +1,11 @@
 /* 参考页截图：对理想效果图对应路由逐页截「第一屏 + 底部」 */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS = 'ws://127.0.0.1:9420';
 const API = 'http://127.0.0.1:8080/api/v1';
-const REPO = 'D:/6/恋爱小程序';
+const REPO = `${REPO_ROOT}`;
 const OUT = path.join(REPO, '截图存档', process.env.OUT || '2026-08-22-重构基线', 'client');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const WAIT = 9000;

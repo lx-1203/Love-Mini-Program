@@ -9,12 +9,13 @@
  * - 控制台无业务错误 / 无页面异常
  * - 关键业务文案存在（改版特征）
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
-const OUT_DIR = 'D:\\6\\恋爱小程序\\verification_logs';
+const OUT_DIR = `${REPO_ROOT}\\verification_logs`;
 const WAIT_MS = 8000;
 
 const pageErrors = [];

@@ -3,13 +3,14 @@
  * 诊断脚本 v2：查询高度链各节点实际尺寸 + 卡片 style。
  * 运行：node scripts/diag-discover-card.cjs
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const OUT_DIR = 'D:\\6\\恋爱小程序\\截图存档\\diag';
+const OUT_DIR = `${REPO_ROOT}\\截图存档\\diag`;
 
 function ts() { return new Date().toISOString().replace('T', ' ').substring(0, 23); }
 

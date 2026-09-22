@@ -23,7 +23,7 @@
     "verify:phase01": "npm run test && npm run lint:openapi && npm run lint:openapi:spectral && npm --workspace apps/client run typecheck && npm run verify:client-builds && npm run api:test",
     "lighthouse:client": "lighthouse http://localhost:5173 --output=html --output-path=./test-screenshots/lighthouse-client.html --only-categories=performance --preset=desktop",
     "lighthouse:admin": "lighthouse http://localhost:5177 --output=html --output-path=./test-screenshots/lighthouse-admin.html --only-categories=performance --preset=desktop",
-    "lighthouse:ci": "lhci autorun"
+    "lighthouse:ci": "lhci autorun --config=config/lighthouserc.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

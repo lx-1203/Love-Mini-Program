@@ -1,5 +1,6 @@
 /* QA 自动化：连接微信开发者工具，触发真实编译，验证编译结果 */
-const automator = require("D:/6/恋爱小程序/apps/client/node_modules/miniprogram-automator");
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const automator = require(`${REPO_ROOT}/apps/client/node_modules/miniprogram-automator`);
 
 async function main() {
   const miniProgram = await automator.connect({

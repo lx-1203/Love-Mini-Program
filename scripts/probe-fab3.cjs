@@ -1,4 +1,4 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 async function main(){
   const mp = await automator.connect({ wsEndpoint: 'ws://127.0.0.1:9420' });
   await new Promise(r=>setTimeout(r,3000));

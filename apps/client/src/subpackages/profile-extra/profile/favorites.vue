@@ -86,8 +86,16 @@ function openPost(id: string) {
 }
 
 async function unfavorite(id: string) {
-  await villageStore.toggleFavorite(id);
-  uni.showToast({ title: t("profile.unfavoriteDone"), icon: "none" });
+  // MP-R2-FAVORITES-001：取消收藏失败 toast（原裸 await，rejection 未处理 + UI 静默还原）
+  try {
+    await villageStore.toggleFavorite(id);
+    uni.showToast({ title: t("profile.unfavoriteDone"), icon: "none" });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error && error.message ? error.message : t("common.operationFailed"),
+      icon: "none",
+    });
+  }
 }
 
 onShow(() => {
@@ -137,7 +145,7 @@ onShow(() => {
 .favorites-empty__title { font-size: 30rpx; font-weight: 600; color: var(--c-text-primary, #1E1E1E); display: block; }
 .favorites-empty__desc { font-size: 24rpx; color: var(--c-text-secondary, #666666); margin-top: 8rpx; }
 
-.favorites-list { height: calc(100vh - 120rpx); }
+.favorites-list { /* MP-R2-FAVORITES-002：高度随页头自适应 */ flex: 1; min-height: 0; }
 .favorite-card {
   display: flex;
   gap: 20rpx;

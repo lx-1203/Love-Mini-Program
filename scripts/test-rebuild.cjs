@@ -1,5 +1,6 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const http = require('http');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function httpPost(url, body) {
   return new Promise((resolve, reject) => {
@@ -24,7 +25,7 @@ function httpPost(url, body) {
   console.log('token injected');
   await mp.reLaunch('/pages/discover/index');
   await sleep(10000);
-  const p = 'D:/6/恋爱小程序/tmp/rebuild-discover-test.png';
+  const p = `${REPO_ROOT}/tmp/rebuild-discover-test.png`;
   await mp.screenshot({ path: p, fullPage: false });
   await sleep(2000);
   console.log('shot size:', require('fs').existsSync(p) ? require('fs').statSync(p).size : 0);

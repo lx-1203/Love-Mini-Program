@@ -8,9 +8,12 @@ import { readdirSync } from "node:fs";
 import crypto from "node:crypto";
 
 const require = createRequire(import.meta.url);
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PASSWORD = "QEvyQIedhtB26zZc";
 const PORT = 4455;
-const ROOT = "D:/6/恋爱小程序";
+const ROOT = `${REPO_ROOT}`;
 
 function resolveWs() {
   const pnpmDir = `${ROOT}/node_modules/.pnpm`;

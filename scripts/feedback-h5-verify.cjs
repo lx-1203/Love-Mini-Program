@@ -9,9 +9,10 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const { execSync } = require("node:child_process");
 
-const ROOT = "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\h5";
+const ROOT = `${REPO_ROOT}\\apps\\client\\dist\\build\\h5`;
 const PORT = 8711;
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -57,7 +58,7 @@ async function main() {
   // 定位 puppeteer（monorepo 根 node_modules）
   let puppeteer;
   try {
-    puppeteer = require("D:/6/恋爱小程序/node_modules/puppeteer");
+    puppeteer = require(`${REPO_ROOT}/node_modules/puppeteer`);
   } catch (e) {
     console.error("[puppeteer] 未找到:", e.message);
     process.exit(1);
@@ -99,7 +100,7 @@ async function main() {
       // 等待 Vue 渲染
       await new Promise((r) => setTimeout(r, 2500));
       const text = await page.evaluate(() => document.body.innerText.slice(0, 600));
-      const shotPath = `D:/6/恋爱小程序/verification_logs/feedback-${item.name.split("(")[0].replace(/[^\w\u4e00-\u9fa5]/g, "")}.png`;
+      const shotPath = `${REPO_ROOT}/verification_logs/feedback-${item.name.split("(")[0].replace(/[^\w\u4e00-\u9fa5]/g, "")}.png`;
       fs.mkdirSync(path.dirname(shotPath), { recursive: true });
       await page.screenshot({ path: shotPath, fullPage: false });
       results.push({ page: item.name, ok: true, text: text.slice(0, 120).replace(/\n/g, " | "), screenshot: shotPath });

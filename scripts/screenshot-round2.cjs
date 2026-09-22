@@ -11,13 +11,14 @@
  * 前置：微信开发者工具已打开 dist/build/mp-weixin 且 9420 端口监听；
  *       后端 real profile 已启动（http://127.0.0.1:8080）。
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const OUT_DIR = 'D:\\6\\恋爱小程序\\截图存档\\2026-08-08-2\\client';
+const OUT_DIR = `${REPO_ROOT}\\截图存档\\2026-08-08-2\\client`;
 const WAIT_MS = 9000;
 
 const errors = [];

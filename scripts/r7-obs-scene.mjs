@@ -9,9 +9,12 @@ import { readdirSync } from "node:fs";
 import crypto from "node:crypto";
 
 const require = createRequire(import.meta.url);
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PASSWORD = "QEvyQIedhtB26zZc";
 const PORT = 4455;
-const ROOT = "D:/6/恋爱小程序";
+const ROOT = `${REPO_ROOT}`;
 const SCENE = "场景";
 const WIN_CAPTURE = "窗口采集";        // 目标 source（uuid fa1e80e4）
 const MONITOR = "显示器采集";

@@ -30,6 +30,8 @@ onLoad(async () => {
 });
 
 async function handleSave() {
+    // MP-R2-INTEREST-001：防重入守卫（原双击并发两次保存 + 双次 navigateBack）
+    if (saving.value) return;
   const interests = selected.value.interest ?? [];
   if (interests.length < 3) {
     uni.showToast({ title: t("interestSelect.minThree"), icon: "none" });
@@ -43,8 +45,10 @@ async function handleSave() {
     try {
       merged = (await clientApi.getBasicProfile()) as unknown as Record<string, unknown>;
     } catch (_e) {
-      // 全量资料拉取失败时退回仅提交兴趣字段（保持原有可保存行为）
-      merged = {};
+      // MP-R2-INTEREST-002：全量 PUT 语义下拉取失败即提交半份数据会 400 卡死流程——
+      // 改为提示重试，不盲目提交
+      uni.showToast({ title: t("common.networkError"), icon: "none" });
+      return;
     }
     await clientApi.saveBasicProfile({ ...merged, interestTags: interests } as never);
     uni.showToast({ title: t("interestSelect.saved"), icon: "success" });
@@ -75,7 +79,9 @@ async function handleSave() {
       <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
     </view>
 
-    <TagSelector v-model="selected" />
+    <!-- MP-R1-SETUPINTEREST-003：仅展示「兴趣」组——本页初始化/回填/校验/保存均只处理
+         interest 一组，原全量渲染 4 组使其余 3 组可见可选、保存即静默丢弃 -->
+    <TagSelector v-model="selected" :groups="['interest']" />
 
     <view class="interest-save press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('interestSelect.save')" @tap="handleSave">
       <text class="interest-save__text">{{ saving ? t('common.loading') : t('interestSelect.save') }}</text>

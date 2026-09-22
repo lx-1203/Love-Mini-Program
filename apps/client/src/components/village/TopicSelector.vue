@@ -64,7 +64,7 @@ const filteredTopics = computed<PopularTopic[]>(() => {
     return popularTopics;
   }
   return popularTopics.filter((topic) =>
-    topic.name.toLowerCase().includes(keyword),
+    [topic.name, topic.nameKey ? t(topic.nameKey) : ""].some((s) => s.toLowerCase().includes(keyword)),
   );
 });
 
@@ -152,7 +152,7 @@ function createCustomTopic(): void {
   }
 
   // 检查是否已存在
-  const existsInHot = popularTopics.some((p) => p.name === name);
+  const existsInHot = popularTopics.some((p) => p.name === name || (p.nameKey && t(p.nameKey) === name));
   const existsInSelected = props.modelValue.includes(name);
   if (existsInHot || existsInSelected) {
     uni.showToast({ title: t("topicSelector.createTopicExists"), icon: "none" });

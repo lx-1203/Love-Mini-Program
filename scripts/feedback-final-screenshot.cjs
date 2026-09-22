@@ -5,7 +5,7 @@
  * 2. 5 个 tab 页 switchTab 连续切换（验证切换无报错、无抖动异常）
  * 3. 记录当前系统信息（机型）
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 

@@ -6,7 +6,8 @@
  * 截图保存到 verification_logs/emoji-check-20260805/。
  * 仅检测渲染输出，不检测注释/源码。
  */
-const puppeteer = require('D:/6/恋爱小程序/node_modules/puppeteer');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const puppeteer = require(`${REPO_ROOT}/node_modules/puppeteer`);
 
 const BASE = 'http://localhost:5173';
 const OUT_DIR = 'verification_logs/emoji-check-20260805';

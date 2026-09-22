@@ -1,13 +1,14 @@
 /* eslint-disable no-console */
 /** 稳健全页面截图：注入 token → 每页回顶+首屏+滚动 → 超时不阻塞 */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const REPO = 'D:\\6\\恋爱小程序';
+const REPO = `${REPO_ROOT}`;
 const OUT_DIR = process.argv[2] || path.join(REPO, '截图存档', '2026-08-20-logged');
 const WAIT_NAV = 12000;
 const WAIT_SHOT = 6000;

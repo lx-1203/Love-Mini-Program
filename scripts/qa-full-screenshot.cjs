@@ -18,6 +18,7 @@
  *
  * 输出：报告/验证截图-2026-08-26/<页面路径>/NN-<说明>.png
  */
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 'use strict';
 
 const fs = require('fs');
@@ -30,7 +31,7 @@ const path = require('path');
 // 替换 require.cache 中该模块的 exports（模块缓存共享）。
 function resolveLiciaCmpPath() {
   const candidates = [
-    'D:/6/恋爱小程序/node_modules/.pnpm/licia@1.41.1/node_modules/licia/cmpVersion.js',
+    `${REPO_ROOT}/node_modules/.pnpm/licia@1.41.1/node_modules/licia/cmpVersion.js`,
   ];
   for (const p of candidates) {
     if (fs.existsSync(p)) return p;
@@ -85,7 +86,7 @@ try {
 // 二、patch MiniProgram.checkVersion：新版开发者工具 Tool.getInfo 的 SDKVersion 为
 // undefined，automator 会误判"版本过低(<2.7.3)"并 throw。undefined/dev 时静默通过。
 try {
-  const MINIPROGRAM_PATH = 'D:/6/恋爱小程序/node_modules/.pnpm/miniprogram-automator@0.12.1_supports-color@10.2.2/node_modules/miniprogram-automator/out/MiniProgram.js';
+  const MINIPROGRAM_PATH = `${REPO_ROOT}/node_modules/.pnpm/miniprogram-automator@0.12.1_supports-color@10.2.2/node_modules/miniprogram-automator/out/MiniProgram.js`;
   const MiniProgramMod = require(MINIPROGRAM_PATH);
   const MiniProgramClass = MiniProgramMod.default || MiniProgramMod;
   const proto = MiniProgramClass.prototype;
@@ -109,7 +110,7 @@ try {
   console.warn('[patch-warn] checkVersion 补丁未应用:', e && e.message);
 }
 
-const automator = require('D:/6/恋爱小程序/apps/client/node_modules/miniprogram-automator');
+const automator = require(`${REPO_ROOT}/apps/client/node_modules/miniprogram-automator`);
 
 const WS_ENDPOINT = process.env.WS_ENDPOINT || 'ws://127.0.0.1:9420';
 const OUT_ROOT = path.resolve(__dirname, '../报告/验证截图-2026-08-26');

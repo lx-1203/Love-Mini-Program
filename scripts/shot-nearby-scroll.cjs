@@ -1,4 +1,5 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 async function main(){
   const mp = await automator.connect({ wsEndpoint: 'ws://127.0.0.1:9420' });
   await new Promise(r=>setTimeout(r,3000));
@@ -9,7 +10,7 @@ async function main(){
     // 通过 evaluate 滚动态
     await mp.evaluate('wx.createSelectorQuery().select(".nearby-home__scroll").node(function(res){ if(res) { res.node.scrollTop = 1400; } }).exec()').catch(e=>console.log('[scroll eval err]',e.message));
     await new Promise(r=>setTimeout(r,2500));
-    await mp.screenshot({path:'D:\\6\\恋爱小程序\\tmp\\nearby-scroll.png'}); console.log('[OK] nearby-scroll');
+    await mp.screenshot({path:`${REPO_ROOT}\\tmp\\nearby-scroll.png`}); console.log('[OK] nearby-scroll');
   }catch(e){ console.log('[FAIL]',e.message); }
   await mp.disconnect(); process.exit(0);
 }

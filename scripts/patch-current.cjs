@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const src = fs.readFileSync('D:/6/恋爱小程序/scripts/mp-shoot-current.cjs', 'utf8');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const src = fs.readFileSync(`${REPO_ROOT}/scripts/mp-shoot-current.cjs`, 'utf8');
 const oldBlock = src.slice(src.indexOf('  // 登录注入'), src.indexOf('  for (let i = 0; i < PAGES.length; i++)'));
 const newBlock = `  // 登录注入
   try {
@@ -16,5 +17,5 @@ const newBlock = `  // 登录注入
 
 `;
 const out = src.replace(oldBlock, newBlock);
-fs.writeFileSync('D:/6/恋爱小程序/scripts/mp-shoot-current.cjs', out, 'utf8');
+fs.writeFileSync(`${REPO_ROOT}/scripts/mp-shoot-current.cjs`, out, 'utf8');
 console.log('done, fetch remains:', out.includes('fetch('));

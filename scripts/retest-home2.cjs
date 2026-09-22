@@ -1,6 +1,7 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const http = require('http');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function httpPost(url, body) {
   return new Promise((resolve, reject) => {
@@ -27,7 +28,7 @@ async function main() {
   console.log('token injected');
   await withTimeout(mp.reLaunch('/pages/home/index'), 15000, 'relaunch home');
   await sleep(12000);
-  const p1 = 'D:/6/恋爱小程序/tmp/home-fresh-1.png';
+  const p1 = `${REPO_ROOT}/tmp/home-fresh-1.png`;
   await withTimeout(mp.screenshot({ path: p1, fullPage: false }), 12000, 'shot');
   await sleep(2000);
   console.log('saved', fs.existsSync(p1) ? fs.statSync(p1).size : 0);

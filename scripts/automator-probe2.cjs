@@ -3,11 +3,12 @@
  * automator 探针 v2：绕过 inspectee（App.getCurrentPage 崩溃），
  * 直接用 callWxMethod 导航 + miniProgram.screenshot 截图。
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420'; // 2026-08-08：cli auto --auto-port 9420 启用自动化服务
-const OUT = 'D:\\6\\恋爱小程序\\tmp\\probe2.png';
+const OUT = `${REPO_ROOT}\\tmp\\probe2.png`;
 
 async function main() {
   console.log('[probe2] connecting...');

@@ -8,10 +8,11 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const BASE = "http://[::1]:5173";
 
 async function main() {
-  const puppeteer = require("D:/6/恋爱小程序/node_modules/puppeteer");
+  const puppeteer = require(`${REPO_ROOT}/node_modules/puppeteer`);
   const browser = await puppeteer.launch({
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
@@ -48,7 +49,7 @@ async function main() {
         text = await page.evaluate(() => document.body.innerText || "");
         if (text.length > 0) break;
       }
-      const shotPath = `D:/6/恋爱小程序/verification_logs/feedback-dev-${item.name.split("(")[0].replace(/[^\w\u4e00-\u9fa5]/g, "")}.png`;
+      const shotPath = `${REPO_ROOT}/verification_logs/feedback-dev-${item.name.split("(")[0].replace(/[^\w\u4e00-\u9fa5]/g, "")}.png`;
       await page.screenshot({ path: shotPath });
       results.push({
         page: item.name,

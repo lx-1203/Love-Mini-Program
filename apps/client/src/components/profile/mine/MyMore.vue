@@ -11,11 +11,12 @@ withDefaults(defineProps<{ items: MoreItem[] }>(), {
 });
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
+// MP-R2-PROFILE-010：/static 硬编码收敛到 IMAGE_PATHS（real 模式基址重写兼容）
 const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }> = {
-  favorites: { image: "/static/assets/images/profile-favorite.svg", color: "#FFB020" },
-  visitors: { image: "/static/assets/images/profile-visitors.svg", color: "#4D8DFF" },
-  album: { image: "/static/assets/images/profile-album.svg", color: "#FF6B81" },
-  privacy: { image: "/static/assets/images/profile-privacy.svg", color: "#A29BFE" },
+  favorites: { image: IMAGE_PATHS.ICONS_PROFILE.FAVORITES_SVG, color: "#FFB020" },
+  visitors: { image: IMAGE_PATHS.ICONS_PROFILE.VISITORS_SVG, color: "#4D8DFF" },
+  album: { image: IMAGE_PATHS.ICONS_PROFILE.ALBUM_SVG, color: "#FF6B81" },
+  privacy: { image: IMAGE_PATHS.ICONS_PROFILE.PRIVACY_SVG, color: "#A29BFE" },
   profile: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.USER, color: "#36C99A" },
   interest: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
   posts: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.FILE_TEXT, color: "#FF9F43" },

@@ -1,5 +1,6 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs=require('fs'), path=require('path');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 async function main(){
   const mp = await automator.connect({ wsEndpoint: 'ws://127.0.0.1:9420' });
   await new Promise(r=>setTimeout(r,3000));
@@ -7,7 +8,7 @@ async function main(){
   await new Promise(r=>setTimeout(r,2000));
   try{ await mp.reLaunch('/pages/nearby/index'); }catch(e){ console.log('[relaunch err]', e.message); }
   await new Promise(r=>setTimeout(r,14000));
-  const out='D:\\6\\恋爱小程序\\tmp\\nearby-fresh.png';
+  const out=`${REPO_ROOT}\\tmp\\nearby-fresh.png`;
   await mp.screenshot({path:out}); console.log('[OK]', out);
   await mp.disconnect(); process.exit(0);
 }

@@ -1,4 +1,5 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const http = require('http');
 const fs = require('fs');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -36,7 +37,7 @@ async function run(page) {
   } catch (e) {}
   await withTimeout(mp.reLaunch(page.url), 15000, 'reLaunch');
   await sleep(10000);
-  const shot = `D:/6/恋爱小程序/tmp/debug-${page.name}.png`;
+  const shot = `${REPO_ROOT}/tmp/debug-${page.name}.png`;
   await withTimeout(mp.screenshot({ path: shot, fullPage: false }), 10000, 'shot');
   await sleep(2000);
   const splitErr = errors.filter(e => e.includes('split')).length;

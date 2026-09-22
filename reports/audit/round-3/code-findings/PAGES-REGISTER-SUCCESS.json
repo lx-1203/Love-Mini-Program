@@ -1,0 +1,101 @@
+{
+  "round": "R3",
+  "reviewer": "A2 代码审查员（Layer A · 代码层只读审查）",
+  "pages": ["pages/register/success"],
+  "issues": [
+    {
+      "id": "MP-R3-PAGES-REGISTER-SUCCESS-001",
+      "round": "R3",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "R2 遗留未修（MP-R2-PAGES-REGISTER-SUCCESS-003 原样复现）：文件头注释声称 phone「缺省时回退会话存储」，但 onLoad 仅解析路由参数，全文无任何 uni.getStorageSync/会话回退实现；line 20 注释亦自述「UserSession 无手机号字段，仅从路由参数取」。当前唯一入口 register/index.vue:360 redirectTo 恒带 ?phone=，运行行为正确，属注释描述了不存在的回退路径，误导后续维护者。",
+      "evidence": "success.vue:7 「入参：phone（注册手机号，用于脱敏展示；缺省时回退会话存储）」 vs success.vue:25-30 onLoad 仅 `String(query?.phone || \"\")` 解析；全文件 grep 无 getStorageSync。对照 R2 修复提交 29a2b1df 的 diff（仅改 @tap 位置与渐变色 token，未触及本条）。缺省时首行 tag 回退显示「完成」（success.vue:34 已兜底），无空串风险。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "注释与实现一致；唯一入口已保证传参，推荐删改「缺省时回退会话存储」表述为「缺省时首行 tag 显示完成」。",
+      "fix": "修正 success.vue:7 注释为实际行为，或按注释补会话级回退（二选一，推荐改注释）。与 R2 结论一致。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-PAGES-REGISTER-SUCCESS-002",
+      "round": "R3",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "R2 遗留未修（MP-R2-PAGES-REGISTER-SUCCESS-004 原样复现）：样式段末尾 .press-feedback / .press-feedback--active 两条规则（success.vue:185-192）在模板中零引用、无任何 hover-class 配套，为复制 register/index.vue 样式时的残留死代码。且该副本已过期：全局版 theme/global.scss:272-278 已于 2026-08-26 卡顿优化调整为 60ms cubic-bezier(0.4,0,0.2,1)，本页副本仍是 0.1s ease——若日后经 hover-class 重新接线，将出现旧参数的 scoped 覆盖与全局版漂移。",
+      "evidence": "success.vue 全文 grep \"press-feedback\" 仅命中 185-192 的规则定义本身；模板段（50-75 行）无 class 引用、无 hover-class。对照 theme/global.scss:272-278（60ms cubic-bezier 全局版，配套注释「2026-08-26 卡顿优化：过渡 100ms → 60ms」）与 App.vue:561（「基础 .press-feedback 已迁移至 theme/global.scss」）。R2 修复提交 29a2b1df 未触及该段。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "页面样式表只保留模板实际引用的规则；按压反馈统一消费全局 theme/global.scss 版本。",
+      "fix": "删除 success.vue:185-192 两个未引用规则块；若产品要求主按钮有按压反馈，改用全局方案：按钮 view 加 class=\"press-feedback\" hover-class=\"press-feedback--active\"（同 register/index.vue:688 模式），勿在本页重定义。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-PAGES-REGISTER-SUCCESS-003",
+      "round": "R3",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "手机号脱敏逻辑跨页内联重复，无共享工具函数：success.vue:28 与 register/index.vue:271 各自内联同一正则 `replace(/^(\\d{3})\\d{4}(\\d{4})$/, \"$1****$2\")`；src/utils 与 src/composables 中不存在 maskPhone/formatPhone/maskMobile 类共享实现（grep 零命中）。两处当前语义一致，但脱敏规则若调整（如部分隐藏位数）需双点同步，易漂移。",
+      "evidence": "grep -rnF '$1****$2' src --include=*.vue --include=*.ts 仅命中 src/pages/register/index.vue:271 与 src/pages/register/success.vue:28 两处；grep maskPhone|formatPhone|maskMobile 于 src/utils、src/composables 零命中（确认无既有工具被绕开）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "脱敏规则单点维护：在 src/utils 提供 maskPhone(raw: string): string，两页统一导入（符合 R11 附录 B「工具函数从 .ts 导入」）。",
+      "fix": "新增 src/utils/format.ts（或就近既有 utils 文件）导出 maskPhone，success.vue:28 与 register/index.vue:271 改为调用共享函数（index.vue 归属页面另行审查员，此处登记线索）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R3-PAGES-REGISTER-SUCCESS-004",
+      "round": "R3",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Style",
+      "severity": "P3",
+      "description": "R2 发现 MP-R2-PAGES-REGISTER-SUCCESS-001（渐变第二色阶硬编码 #55d5a7）已修复并经本轮代码层验证：第二 stop 已改为 var(--c-brand-400, #55d5a7)，与 token 定义接通。",
+      "evidence": "当前代码 success.vue:166 `background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);`；token 存在于 theme/design-variables.scss:14 `$brand-400: #55D5A7` 与 :258 `--c-brand-400: #{$brand-400}`；修复提交 29a2b1df diff 可见该行变更。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "（同 R2）所有色值经 token 引用——已达成。",
+      "fix": "无需进一步动作。",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R3-PAGES-REGISTER-SUCCESS-005",
+      "round": "R3",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "R2 发现 MP-R2-PAGES-REGISTER-SUCCESS-002（@tap 绑内层 text 致 96rpx 按钮上下约 27rpx 点击死区）已修复并经本轮代码层验证：@tap 已移至按钮 view，点击热区与视觉实体一致。",
+      "evidence": "当前代码 success.vue:69 `<view class=\"reg-success__btn\" @tap=\"goSetupProfile\">`，内层 text（:70）纯展示；修复提交 29a2b1df diff 可见 @tap 自 text 迁至 view，且附 MP-R2-PAGES-REGISTER-SUCCESS-002 注释。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "（同 R2）主 CTA 可点区域与视觉实体一致——已达成。",
+      "fix": "无需进一步动作。",
+      "status": "已验证"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "pages/register/success",
+      "file": "apps/client/src/pages/register/success.vue（193 行，逐行通读）+ 引用链 routes.ts / images.ts / useMenuButtonRect.ts / useStatusBarHeight.ts / theme/global.scss / theme/design-variables.scss / styles/tokens.scss / pages.json / register/index.vue（入链）",
+      "checks": [
+        "架构/重复代码/命名：页面零 store 依赖；maskedPhone 单一 ref 唯一数据源，rows 用 computed 派生（success.vue:33-37），无 store/页面双源同步问题；subLines 静态常量合理。命名 BEM（reg-success__*）全文件一致。重复代码 1 处新立案（MP-R3-003 脱敏正则跨页内联）；死 CSS 1 处系 R2 遗留复现（MP-R3-002）。",
+        "状态管理单一数据源：通过。无 Pinia 引用，无本地状态与全局会话冗余存储（line 20 注释明确 UserSession 无手机号字段）。",
+        "API 错误处理：本页无任何 API 调用、无 try/catch（天然无空 catch，硬约束通过）；两条导航 uni.navigateTo（success.vue:41）/uni.switchTab（:46）目标均核实存在——register/success 注册于 pages.json:49，pages/home/index 为 tabBar 页（pages.json:398 pagePath），/subpackages/setup/profile/index 在 pages.json:255 root=subpackages/setup 分包内注册（:257-259）；全项目 pages 下 uni.navigateTo 共 5 处均无 fail 回调（项目级惯例，非本页特有缺陷，不立案）。",
+        "异步流程：onLoad 同步解析 query，String(query?.phone||\"\") 空值安全 + 11 位纯数字校验 + 脱敏（success.vue:26-29）；无网络请求、无未处理 Promise 拒绝。入链 register/index.vue:360 redirectTo（不叠栈）+ encodeURIComponent(phone)；iOS 侧滑回退落 login，login/index.vue:96-99 onShow 已登录守卫自动 switchTab 离开，无死端。",
+        "样式/硬约束：图片全部走 IMAGE_PATHS（success.vue:12,18,52,61；images.ts:627-628 REGISTER.SUCCESS、:637 REGISTER_ICONS.CHECK_GREEN；磁盘核实 reg-success-illustration.jpg、check-green.svg 均存在），无硬编码 /static 字符串。颜色经 R2 修复后全部 var(--c-*, fallback)：fallback 值与亮色 token 一致（--c-bg-page=#EEF7F2，design-variables.scss:119/359）；box-shadow 的 rgba 字面量（success.vue:123-125,167）沿用 R2 审查口径不立案——tokens.scss:186-187 暗色策略明示品牌色/光晕阴影跨主题保持不变。--statusbar 注入链路完整（useMenuButtonRect.ts:49-52 → success.vue:15,51,86；useStatusBarHeight.ts:12-17 非空 catch）。无 :hover、无 grid、无 backdrop-filter、无 import.meta.env.DEV、无 emoji（「→」为 U+2192 箭头）、页面切换逻辑全部内联本 .vue。",
+        "组件事件接线：本页无子组件、无 emit 接线面（本项目高频缺陷面 N/A）；@tap 未加 .stop 但页内无嵌套可点祖先，无冒泡误触。",
+        "小程序专项：无 scroll-view、无键盘输入面、无 fixed 元素；flex+gap（success.vue:131）与姊妹页（register/index.vue、setup/profile/index.vue）既有用法一致，非本页特有风险；页面为静态结果页，onLoad 单次解析即为正确生命周期（无 onShow 刷新需求）；自定义导航全局生效（pages.json:36 navigationStyle:custom），顶部避让由 padding-top 的 var(--statusbar, env(safe-area-inset-top)) 承担（success.vue:86），底部 env(safe-area-inset-bottom) 兜底。",
+        "硬约束清点（R11 附录 B，10 项）：10/10 通过（R2 时 token 强制 1 项未过，本轮已验证修复）。",
+        "回归核对 MP-R1-PAGES-REGISTER-SUCCESS-001（三态正确/主跑截图原生弹窗）：代码层复核通过——三行清单 computed 稳定渲染、缺省 phone 时 tag 兜底「完成」（success.vue:34）、双出口路由与素材均验证存在；本页全文无任何模态/弹窗 API（uni.showModal/showToast/Notification 零命中），环境弹窗非本页代码产物，维持「环境伪影」结论，不作为 Regression 立案。",
+        "回归核对 MP-R1-PAGES-REGISTER-INDEX-001（业务 400 触发多条 captureException 噪音）：属 pages/register/index.vue，非本页及其依赖（success.vue 不引用该文件），严格说不在本任务范围；顺带代码层核实该问题已修复——index.vue:419-428 仅对非 AppApiError（网络/未知）与 status>=500 调 captureException（:421,:426），预期业务 4xx 走用户面 toast 不上报，无回归。",
+        "R2 遗留核对：修复提交 29a2b1df 仅覆盖 R2-001（token）与 R2-002（热区），本轮分别以 MP-R3-004/005 记为已验证；R2-003（注释失实）与 R2-004（死 CSS）未修，以 MP-R3-001/002 原样复现再立案。"
+      ]
+    }
+  ]
+}

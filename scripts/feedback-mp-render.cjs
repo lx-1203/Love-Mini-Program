@@ -3,7 +3,7 @@
 /**
  * 验证页面真实渲染：检查页面 DOM 节点数量与关键文本
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 

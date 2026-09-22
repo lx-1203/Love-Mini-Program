@@ -277,7 +277,7 @@
 .base-tabbar-clear-zone {
   display: block;
   width: 100%;
-  height: var(--tab-bar-clear-zone, calc(360rpx + env(safe-area-inset-bottom)));
+  height: var(--tab-bar-clear-zone, calc(300rpx + env(safe-area-inset-bottom)));
   flex-shrink: 0;
 }
 

@@ -1,8 +1,9 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const OUT_DIR = 'D:\\6\\恋爱小程序\\截图存档\\2026-08-20-r2';
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const OUT_DIR = `${REPO_ROOT}\\截图存档\\2026-08-20-r2`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function httpPost(url, body) {
   return new Promise((resolve, reject) => {

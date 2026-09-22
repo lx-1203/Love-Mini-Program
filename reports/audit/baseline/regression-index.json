@@ -1,0 +1,2958 @@
+[
+  {
+    "id": "T1",
+    "page": "全局（home/profile/daily-question/match-success/settings/likes/album/heart-signals 等 ≥12 页）",
+    "components": [
+      "AppShell",
+      "自定义导航头（各页自绘）"
+    ],
+    "riskFiles": [
+      "apps/client/src/composables/useMenuButtonRect.ts",
+      "apps/client/src/composables/useStatusBarHeight.ts",
+      "apps/client/src/components/layout/AppShell.vue",
+      "apps/client/scripts/check-statusbar-offset.mjs"
+    ],
+    "verification": [
+      "statusbar-time-visible-home",
+      "statusbar-time-visible-settings",
+      "statusbar-time-visible-profile-loggedout",
+      "statusbar-offset-guard-fail-fast-on-real-build"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T2",
+    "page": "全局（publish/campus-hub/likes/visitors/discover/profile 凡 fixed 元素与胶囊带、tabBar 净空）",
+    "components": [
+      "GlobalPublishFab",
+      "custom-tab-bar",
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/common/GlobalPublishFab.vue",
+      "apps/client/src/custom-tab-bar/index.js",
+      "apps/client/src/custom-tab-bar/index.wxss",
+      "apps/client/src/subpackages/campus/campus/hub.vue",
+      "apps/client/src/subpackages/profile-extra/profile/visitors.vue",
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/pages/profile/index.vue"
+    ],
+    "verification": [
+      "capsule-clearance-publish-btn",
+      "capsule-clearance-campus-hub-cert-btn",
+      "visitors-header-vs-capsule",
+      "profile-fab-vs-tabbar-clearance",
+      "discover-guest-pill-vs-tabbar-native-layer"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "T3",
+    "page": "带参页冷启动/深链（circle-home/topic-detail/chat-session/profile-other 及 tag-posts/history/dnd/settings/verification/real-name/official-chat 返回链）",
+    "components": [
+      "PageStateContainer",
+      "ErrorState",
+      "EmptyState"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/utils/navigation.ts"
+    ],
+    "verification": [
+      "circle-home-cold-start-valid-id-no-false-empty",
+      "campus-topic-detail-deeplink-401-visible",
+      "chat-session-userid-deeplink-title",
+      "profile-other-deeplink-401-state"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T4",
+    "page": "home/circles topic-detail/likes/profile/visitors/publish/chat-session/heart-signals/profile-other（数据契约矛盾/静默假数据/假空态假零）",
+    "components": [
+      "CommunityFeed",
+      "EmptyState",
+      "LockScreen"
+    ],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts",
+      "apps/client/src/stores/circle/mock-data.ts",
+      "apps/client/src/stores/likes/mock-data.ts",
+      "apps/client/src/stores/likes.ts",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/messages.ts",
+      "apps/api/src/main/java/com/campuslove/api/mock"
+    ],
+    "verification": [
+      "topic-detail-reply-badge-vs-list-nonempty",
+      "home-four-stats-no-fake-zero-cold-start",
+      "likes-me-list-loads-when-logged-in",
+      "visitors-card-click-responds",
+      "chat-forward-preview-intact",
+      "mock-fixture-immutability-accept-decline"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T5",
+    "page": "全局媒体链路（头像上传/图片读取/鉴权 token/默认头像/实名证件/上传幂等）",
+    "components": [
+      "SafeImage",
+      "Avatar",
+      "LockScreen"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/utils/image-local.ts",
+      "apps/client/src/utils/media-token-cache.ts",
+      "apps/client/src/services/http.ts",
+      "apps/client/src/services/api.ts",
+      "apps/client/src/static/assets/default-avatar.jpg",
+      "apps/api/src/main/java/com/campuslove/api/media/MediaUploadController.java",
+      "apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java",
+      "apps/api/src/main/java/com/campuslove/api/media/MediaAccessService.java",
+      "apps/admin/src/api/media.ts"
+    ],
+    "verification": [
+      "avatar-upload-returns-200",
+      "uploaded-media-read-200-with-token",
+      "media-proxy-url-append-token",
+      "uploadfile-carries-idempotency-key",
+      "realname-id-tmp-path-guard",
+      "default-avatar-single-source"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T6",
+    "page": "village/publish、village/post、circles/post-topic、campus/post-topic（草稿/发布闭环）",
+    "components": [
+      "TopicSelector",
+      "ChannelComposerBar"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/subpackages/village/village/post.vue",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/village/constants.ts",
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "apps/api/src/main/java/com/campuslove/api/draft/DraftController.java",
+      "apps/api/src/main/java/com/campuslove/api/draft/RealDraftService.java"
+    ],
+    "verification": [
+      "draft-cleared-after-publish-reenter",
+      "draft-delete-returns-200",
+      "publish-content-limit-parity-500",
+      "publish-circle-group-loaded-on-direct-entry",
+      "post-topic-circle-id-targets-circle",
+      "campus-post-empty-submit-toast"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T7",
+    "page": "chat/official-chat、chat/chat-session、pages/messages（聊天/会话）",
+    "components": [
+      "ChatBubble",
+      "ChatInput",
+      "ChatHeader",
+      "AssistantCard",
+      "ConversationItem",
+      "VoiceMessageBubble"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue",
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/stores/chat/index.ts",
+      "apps/client/src/stores/chat/mock-data.ts",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/components/message/AssistantCard.vue",
+      "apps/client/src/services/websocket/reconnect.ts",
+      "apps/client/src/custom-tab-bar/index.js"
+    ],
+    "verification": [
+      "officialchat-scroll-bottom-after-send-content-grow",
+      "officialchat-longmsg-window-scrolls",
+      "chat-forward-target-preview-intact",
+      "temp-anon-session-full-flow",
+      "messages-pin-mute-visible-feedback",
+      "officialchat-more-plus-emoji-buttons",
+      "ws-reconnect-closes-old-socket-task",
+      "tabbar-messages-badge-custom-tabbar"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "T8",
+    "page": "village feed/chat/巡检参数表（审计数据污染正式库）",
+    "components": [],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/village/VillageController.java",
+      "apps/client/src/services/mocks/fixtures.ts",
+      "apps/client/scripts/r20-capture.cjs"
+    ],
+    "verification": [
+      "audit-residue-scan-posts-comments-sessions",
+      "inspection-param-id-still-valid-after-cleanup"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "T9",
+    "page": "pages/home、campus/hub（数字格式 1.2w vs 8,932 vs 9.8k）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/subpackages/campus/campus/hub.vue",
+      "apps/client/src/components/home/TodayRecommendationCard.vue"
+    ],
+    "verification": [
+      "home-count-format-matches-latest-ruling",
+      "campus-count-k-format-consistency"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "T10",
+    "page": "love-center/consulting、market×3、vip×3（商业化封存开关接线）",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/app-config.ts",
+      "apps/client/src/subpackages/tools/love-center/consulting.vue",
+      "apps/client/src/subpackages/market/shop/index.vue",
+      "apps/client/src/subpackages/market/detail/index.vue",
+      "apps/client/src/subpackages/market/wallet/index.vue",
+      "apps/client/src/subpackages/vip/index.vue",
+      "apps/api/src/main/java/com/campuslove/api/common/CommerceDisabledException.java"
+    ],
+    "verification": [
+      "consult-switch-prefix-and-short-key-both-honored",
+      "consulting-sealed-no-price-when-off",
+      "market-three-pages-sealed",
+      "vip-onload-guard-redirect"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T11",
+    "page": "全局（双身份巡检证据有效性）",
+    "components": [
+      "LockScreen"
+    ],
+    "riskFiles": [
+      "apps/client/scripts/r20-capture.cjs",
+      "apps/client/scripts/r22-capture.cjs",
+      "apps/client/src/stores/session.ts",
+      "apps/client/src/utils/dev-user.ts"
+    ],
+    "verification": [
+      "tour-boot-verify-session-loggedin-check",
+      "dual-identity-a-vs-b-pixel-diff-nonzero",
+      "logged-out-state-reachability-in-mock-build"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "T12",
+    "page": "全局（环境级坑：DevTools 缓存/系统代理/Node 版本/reLaunch 风暴/token 互踢/automator 怪癖/Git Bash/登录态两步法）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/scripts/r20-capture.cjs",
+      "apps/client/scripts/r20-reshoot-home.cjs",
+      "apps/client/scripts/r22-capture.cjs",
+      "apps/client/src/services/http.ts"
+    ],
+    "verification": [
+      "devtools-cache-clean-rebuild-before-verdict",
+      "system-proxy-127-0-0-1-7897-off-check",
+      "node22-precheck-before-uni-build",
+      "navigate-back-limit-no-relaunch-storm",
+      "automator-catchtap-dispatch-caveat-noted"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "T13",
+    "page": "PostCard 全用点（nearby/village/search）+ home/circle-home/official-chat/campus-hub/settings/messages/tasks（事件绑定失效/死交互）",
+    "components": [
+      "PostCard",
+      "CommunityFeed",
+      "CardDetailOverlay",
+      "BottomActionBar",
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/PostCard.vue",
+      "apps/client/src/components/home/CommunityFeed.vue",
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/subpackages/chat/official-chat/index.vue",
+      "apps/client/src/subpackages/campus/campus/hub.vue",
+      "apps/client/src/subpackages/profile-extra/settings/index.vue",
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/tasks.vue"
+    ],
+    "verification": [
+      "catchtap-grep-zero-across-src",
+      "postcard-inner-tap-no-bubble-to-detail",
+      "home-follow-button-feedback-within-500ms",
+      "circlehome-feed-card-click-responds",
+      "any-clickable-element-observable-feedback-500ms"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T14",
+    "page": "tag-posts/history/dnd/settings/verification/real-name/official-chat/interest（返回/栈底守卫）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/tag-posts.vue",
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/profile-extra/settings/dnd.vue",
+      "apps/client/src/subpackages/profile-extra/settings/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "apps/client/src/subpackages/chat/official-chat/index.vue",
+      "apps/client/src/subpackages/setup/interest/index.vue",
+      "apps/client/src/utils/navigation.ts"
+    ],
+    "verification": [
+      "stack1-back-tagposts-relaunch-village",
+      "stack1-back-history-relaunch",
+      "stack1-back-dnd-switchtab-profile",
+      "stack1-back-settings-switchtab-profile",
+      "stack1-back-verification-no-rejection",
+      "stack1-back-realname-no-rejection",
+      "stack1-back-officialchat-switchtab-messages",
+      "console-zero-navigateback-unhandled-rejection",
+      "matching-200ms-goback-fallback-intact"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T15",
+    "page": "discover-extra/home/segment、campus/index、campus/hub、heart-signals、feedback、campus/topic-detail（渲染层文案/编码缺陷）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/i18n/locales/en-US.ts",
+      "apps/client/src/subpackages/discover-extra/home/segment.vue",
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/subpackages/campus/campus/hub.vue",
+      "apps/client/src/subpackages/tools/heart-signals/index.vue",
+      "apps/client/src/subpackages/profile-extra/feedback/history.vue",
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "segment-title-and-empty-i18n-resolved",
+      "campus-index-schoolname-decoded",
+      "heartsignals-expired-copy-no-double-suffix",
+      "feedback-history-time-human-format",
+      "campus-topic-reply-input-maxlength-set",
+      "campus-hub-joined-badge-state-styling"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-POST-001",
+    "page": "subpackages/village/village/post",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "post-publish-btn-vs-capsule-clearance"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R1-VILLAGE-002",
+    "page": "subpackages/village/village/index",
+    "components": [
+      "ChannelComposerBar"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "village-search-input-right-edge-vs-capsule"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R1-OFFICIAL-003",
+    "page": "subpackages/chat/official-chat",
+    "components": [
+      "ChatBubble",
+      "ChatInput"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-scroll-bottom-on-load",
+      "officialchat-last-msg-not-clipped-by-input"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R1-CIRCLE-004",
+    "page": "subpackages/circles/circles/index",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "circles-stats-line-375px-no-midchar-clip"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R2-CHAT-001",
+    "page": "subpackages/chat/chat-session",
+    "components": [
+      "ChatHeader",
+      "ChatBubble"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue"
+    ],
+    "verification": [
+      "chat-session-userid-deeplink-not-missing-id-error-page"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R2-PUB-002",
+    "page": "subpackages/village/village/publish",
+    "components": [
+      "TopicSelector"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "publish-channel-sheet-has-interest-circle-group"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R3-MATCHING-001",
+    "page": "subpackages/discover-extra/discover/matching",
+    "components": [
+      "MatchLoading",
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/discover/matching.vue"
+    ],
+    "verification": [
+      "matching-no-context-200ms-goback-fallback-not-broken"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "R12-IND-GLOBAL-001",
+    "page": "全局（双身份巡检方法论）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/scripts/r20-capture.cjs",
+      "apps/client/scripts/r22-capture.cjs",
+      "apps/client/src/stores/session.ts"
+    ],
+    "verification": [
+      "tour-boot-asserts-session-isloggedin",
+      "boot-verify-log-present-per-identity",
+      "identity-b-differs-from-identity-a"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R1-NEARBY-005",
+    "page": "pages/nearby",
+    "components": [
+      "NearbySection"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/components/nearby/NearbySection.vue"
+    ],
+    "verification": [
+      "nearby-interest-circle-4th-card-fully-visible"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-006",
+    "page": "pages/home（合拍度徽章）",
+    "components": [
+      "TodayRecommendationCard",
+      "XunmiMatchRing"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayRecommendationCard.vue",
+      "apps/client/src/components/common/XunmiMatchRing.vue"
+    ],
+    "verification": [
+      "home-match-badge-solid-pink-no-gradient",
+      "match-badge-no-style-text-leak"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-007",
+    "page": "pages/home（关系动态四格）",
+    "components": [
+      "RelationActivity"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/RelationActivity.vue"
+    ],
+    "verification": [
+      "relation-activity-four-cards-distinct-colors"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-008",
+    "page": "pages/home（人数单位/千分位）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/components/home/TodayRecommendationCard.vue"
+    ],
+    "verification": [
+      "home-count-format-vs-latest-t9-ruling"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-009",
+    "page": "pages/home（恋爱进度）",
+    "components": [
+      "TodayLoveProgress"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayLoveProgress.vue"
+    ],
+    "verification": [
+      "love-progress-4th-card-visible-no-sequence-numbers"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-010",
+    "page": "pages/home（社区动态入口语义）",
+    "components": [
+      "CommunityFeed"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/CommunityFeed.vue"
+    ],
+    "verification": [
+      "community-feed-more-link-goes-to-feed-not-publish"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-011",
+    "page": "pages/home（社区动态相邻卡同作者）",
+    "components": [
+      "CommunityFeed"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/home.ts",
+      "apps/client/src/components/home/CommunityFeed.vue",
+      "apps/api/src/main/java/com/campuslove/api/home/HomeService.java"
+    ],
+    "verification": [
+      "community-feed-adjacent-cards-different-authors"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-012",
+    "page": "pages/home（年龄尾点）",
+    "components": [
+      "TodayRecommendationCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayRecommendationCard.vue"
+    ],
+    "verification": [
+      "recommend-card-age-no-trailing-dot"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-013",
+    "page": "pages/home（banner 下方空白）",
+    "components": [
+      "HomeBanner"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/HomeBanner.vue",
+      "apps/client/src/pages/home/index.vue"
+    ],
+    "verification": [
+      "home-banner-below-no-one-third-blank-zone"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PUB-014-015",
+    "page": "subpackages/village/village/publish、village/post",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "publish-post-naming-consistent",
+      "publish-row-hint-concise"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TOPICS-016",
+    "page": "subpackages/circles/circles/topics",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/topics.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "topics-circle-avatar-not-gray-camera-placeholder"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-STATUS-017",
+    "page": "全局（状态栏时间可见性）",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/composables/useMenuButtonRect.ts",
+      "apps/client/src/composables/useStatusBarHeight.ts",
+      "apps/client/scripts/check-statusbar-offset.mjs"
+    ],
+    "verification": [
+      "statusbar-time-visible-all-5-tabs-and-subpages"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-MSG-006",
+    "page": "pages/messages（助手卡/角标未读数据源 + tabBar 角标遗留）",
+    "components": [
+      "AssistantCard",
+      "UnreadBadge",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/message/AssistantCard.vue",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/composables/useUnreadBadge.ts",
+      "apps/client/src/custom-tab-bar/index.js"
+    ],
+    "verification": [
+      "assistant-card-unread-badge-includes-notification-unread",
+      "tabbar-messages-badge-via-custom-tab-bar-closed-loop"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-HOME-012",
+    "page": "pages/home（社区动态卡数）",
+    "components": [
+      "CommunityFeed"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/home.ts",
+      "apps/api/src/main/java/com/campuslove/api/home/HomeService.java"
+    ],
+    "verification": [
+      "community-feed-renders-multiple-cards-not-one"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-VILL-013",
+    "page": "subpackages/village/village/index（图文语义映射）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts",
+      "apps/api/src/main/java/com/campuslove/api/village/VillageController.java"
+    ],
+    "verification": [
+      "village-post-image-matches-text-semantic-mapping"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-HOME-001",
+    "page": "pages/home（铃铛+角标侵入状态栏）",
+    "components": [
+      "HomeHeader",
+      "XunmiNotificationBadge"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/HomeHeader.vue"
+    ],
+    "verification": [
+      "home-bell-badge-below-statusbar-notch"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-HOME-006",
+    "page": "pages/home（滚动统计叠印）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue"
+    ],
+    "verification": [
+      "home-stats-scrolled-under-gradient-mask-no-overlay"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-PROFILE-001",
+    "page": "pages/profile（右上图标进状态栏带）",
+    "components": [
+      "MyHeader",
+      "ProfileShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/components/profile/mine/MyHeader.vue"
+    ],
+    "verification": [
+      "profile-share-settings-icons-statusbar-clear"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-DAILY-001-003",
+    "page": "subpackages/tools/daily-question",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/daily-question/index.vue"
+    ],
+    "verification": [
+      "daily-question-header-vs-statusbar-clear"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-MSUCCESS-001-002",
+    "page": "subpackages/discover-extra/discover/match-success",
+    "components": [
+      "MatchSuccess"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/discover/match-success.vue",
+      "apps/client/src/components/match/MatchSuccess.vue"
+    ],
+    "verification": [
+      "match-success-back-btn-statusbar-clear",
+      "match-success-actions-vs-capsule-clear"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-SETTINGS-001",
+    "page": "subpackages/profile-extra/settings",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/settings/index.vue",
+      "apps/client/src/composables/useMenuButtonRect.ts"
+    ],
+    "verification": [
+      "settings-custom-nav-injected-via-usemenubuttonrect"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R4-PROFILE-001",
+    "page": "pages/profile/官方号（游客头像素材）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "guest-qiuwei-female-avatar-material"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R4-CAMPUS-001",
+    "page": "subpackages/campus/campus/hub（认证钮被胶囊压住）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-cert-btn-full-visible-capsule-formula-7-plus-104"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R3-REGRESSION-BREAKTHROUGH",
+    "page": "subpackages/profile-extra/profile/other（小满封面修复未生效类）",
+    "components": [
+      "PublicHero"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/PublicHero.vue",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "profile-other-xiaoman-cover-fix-still-effective"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "IA-CONSOLE-01",
+    "page": "pages/login（login watch immediate TypeError）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/login/index.vue",
+      "apps/client/src/stores/session.ts"
+    ],
+    "verification": [
+      "real-build-console-clean-on-login-flow"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "IA-CONSOLE-02",
+    "page": "pages/home、pages/nearby（reportLocation ReferenceError）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/utils/location.ts"
+    ],
+    "verification": [
+      "location-report-no-referenceerror-in-console"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R5-AVATAR-500",
+    "page": "setup/profile 编辑页（头像上传 500）",
+    "components": [],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/media/MediaUploadController.java",
+      "apps/client/src/api/profile.ts",
+      "apps/client/src/services/voice-upload.ts"
+    ],
+    "verification": [
+      "avatar-upload-normalizetype-whitelist-includes-avatar"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R5-MEDIA404",
+    "page": "媒体服务（上传图片读取 404）",
+    "components": [
+      "SafeImage"
+    ],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java",
+      "apps/api/src/main/java/com/campuslove/api/media/MediaAccessController.java"
+    ],
+    "verification": [
+      "uploaded-image-subpath-read-200"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R5-MEDIAAUTH",
+    "page": "全局（resolveMediaUrl 媒体 token）",
+    "components": [
+      "SafeImage",
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/utils/media-token-cache.ts"
+    ],
+    "verification": [
+      "media-api-v1-prefix-urls-carry-token"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R5-ADMINTHUMB",
+    "page": "apps/admin（后台缩略图 401）",
+    "components": [],
+    "riskFiles": [
+      "apps/admin/src/api/media.ts",
+      "apps/admin/src/views/content/MediaAssets.vue",
+      "apps/admin/src/views/content/Users.vue"
+    ],
+    "verification": [
+      "admin-thumbnails-load-with-media-token"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R6-EDITFLOW",
+    "page": "subpackages/setup/profile（编辑模式保存后跳转）",
+    "components": [
+      "SetupProgress"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/profile/index.vue"
+    ],
+    "verification": [
+      "profile-edit-mode-save-returns-mine-not-wizard-next"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R6-PROFILE-001",
+    "page": "pages/profile（我的帖子永远空态）",
+    "components": [
+      "MyContent",
+      "MyProfileFeed"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/stores/profile.ts",
+      "apps/client/src/components/profile/mine/MyContent.vue"
+    ],
+    "verification": [
+      "my-posts-list-loadsmyposts-wired-onshow"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R7-PROFILE-001-002",
+    "page": "pages/profile（头像白圈/相册白板）",
+    "components": [
+      "Avatar",
+      "PhotoCard",
+      "MyProfileGallery"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "profile-avatar-album-render-via-resolvemediaurl"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R7-PROFILE-005",
+    "page": "pages/profile（ROUTES.ALBUM 入口失效）",
+    "components": [
+      "MyMore"
+    ],
+    "riskFiles": [
+      "apps/client/src/constants/routes.ts",
+      "apps/client/src/pages/profile/index.vue"
+    ],
+    "verification": [
+      "album-entry-click-navigates-to-album-page"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R7-REALNAME-001",
+    "page": "subpackages/profile-extra/verification/real-name（tmp 路径误判）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "apps/client/src/subpackages/profile-extra/verification/index.vue"
+    ],
+    "verification": [
+      "realname-id-persisted-url-not-http-tmp"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R7-UPLOAD-001",
+    "page": "全局上传（uni.uploadFile 幂等键）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/http.ts",
+      "apps/client/src/services/api.ts",
+      "apps/client/src/services/voice-upload.ts"
+    ],
+    "verification": [
+      "uploadfilevia-uni-carries-idempotency-key-header",
+      "post-matches-like-idempotency-key-present-no-422"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R8-STATUS-001-002",
+    "page": "subpackages/discover-extra/likes、subpackages/profile-extra/profile/album",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/likes/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "likes-album-titles-vs-statusbar-clear"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R8-LIKES-001",
+    "page": "subpackages/discover-extra/likes（喜欢我的永远空态）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/likes.ts",
+      "apps/client/src/subpackages/discover-extra/likes/index.vue"
+    ],
+    "verification": [
+      "likes-me-tab-fetches-when-logged-in"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R8-DRAFT-001-002",
+    "page": "subpackages/village/village/publish + apps/api 草稿（发布后草稿残留）",
+    "components": [],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/draft/DraftController.java",
+      "apps/api/src/main/java/com/campuslove/api/draft/RealDraftService.java",
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "draft-delete-current-200-transactional",
+      "reenter-publish-after-success-no-draft-restore"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R11-FIVE-TYPE-BUGS",
+    "page": "全局（幂等键 header/headers、nearby-people tagLabelsFor、uploadPostImage name、messages mock 字段）",
+    "components": [
+      "ConversationItem"
+    ],
+    "riskFiles": [
+      "apps/client/src/services/http.ts",
+      "apps/client/src/services/api.ts",
+      "apps/client/src/subpackages/discover-extra/nearby/people.vue",
+      "apps/client/src/utils/tag-label.ts",
+      "apps/client/src/stores/messages.ts"
+    ],
+    "verification": [
+      "typecheck-zero-errors",
+      "nearby-people-renders-no-referenceerror",
+      "uploadpostimage-includes-name-field"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R10-P1-001",
+    "page": "subpackages/circles/circles/circle-home（冷启动误判不存在）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "circle-home-coldstart-releaunch-waits-fetch-settled"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R10-P1-002",
+    "page": "subpackages/tools/love-center/consulting（封存态仍展示价格）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/consulting.vue",
+      "apps/client/src/stores/app-config.ts"
+    ],
+    "verification": [
+      "commerce-off-consulting-hides-course-prices"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R10-P1-003",
+    "page": "全站 ≥5 页（状态栏叠印系统性）",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/scripts/check-statusbar-offset.mjs",
+      "apps/client/src/composables/useMenuButtonRect.ts",
+      "apps/client/src/composables/useStatusBarHeight.ts"
+    ],
+    "verification": [
+      "statusbar-guard-0-err-0-warn",
+      "guard-fails-real-build-when-violation-introduced"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R10-P1-004",
+    "page": "match-success、real-name（头像空白白圆）",
+    "components": [
+      "MatchSuccess",
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/person-avatars.ts",
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/static/assets/default-avatar.jpg",
+      "apps/client/src/static/default-avatar.jpg",
+      "apps/client/src/static/default-avatar.png"
+    ],
+    "verification": [
+      "match-success-and-realname-avatars-render",
+      "default-avatar-single-source-note-disk-shows-3-copies-20260922"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "N1-N6",
+    "page": "home/campus topic-detail/tools/search/tag-posts/discussions/album（9.18 复核六项）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "apps/client/src/subpackages/tools/search/index.vue",
+      "apps/client/src/subpackages/village/village/tag-posts.vue",
+      "apps/client/src/subpackages/discover/discussions/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "home-no-blank-with-retry",
+      "campus-topic-detail-loads",
+      "search-placeholder-copy",
+      "tag-posts-hashtag-not-bare",
+      "discussions-cards-distinct-copy",
+      "album-no-duplicate-images"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R12-IND-NEARBY-LC-001",
+    "page": "subpackages/tools/love-center/nearby（附近的人全灭）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/nearby.vue",
+      "apps/client/src/stores/discover/index.ts",
+      "apps/api/src/main/java/com/campuslove/api/location"
+    ],
+    "verification": [
+      "nearby-people-list-nonzero-when-distance-unknown"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R12-IND-NEARBY-LC-002",
+    "page": "subpackages/tools/love-center/nearby（返回键被胶囊遮挡）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/nearby.vue"
+    ],
+    "verification": [
+      "nearby-back-btn-not-under-capsule-space-between"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R12-IND-PROFILE-OTHER-001",
+    "page": "subpackages/profile-extra/profile/other（深链 401 笼统渲染）",
+    "components": [
+      "PublicProfile",
+      "PublicAction"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/PublicProfile.vue"
+    ],
+    "verification": [
+      "profile-other-401-shows-error-state-no-interaction-fab"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R12-IND-TOPICS-001",
+    "page": "subpackages/campus/campus/topic-detail（401 误渲染话题不存在）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "topic-detail-401-surfaces-error-not-false-empty"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R12-IND-HOME-001",
+    "page": "pages/home（偶发白屏）",
+    "components": [
+      "TabBar",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/scripts/r20-reshoot-home.cjs"
+    ],
+    "verification": [
+      "home-blank-watch-2-of-144-auto-reshoot-works"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-NEARBY-001",
+    "page": "PostCard 全用点（nearby/village/search）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/PostCard.vue",
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/subpackages/tools/love-center/nearby.vue"
+    ],
+    "verification": [
+      "postcard-author-row-tap-no-detail-jump",
+      "postcard-tag-tap-triggers",
+      "postcard-like-fav-tap-activates",
+      "catchtap-compiled-bindcatchtap-zero"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-NEARBY-002",
+    "page": "pages/nearby、love-center/nearby（关注 chip 无反馈/卡不推进）",
+    "components": [
+      "CardDetailOverlay",
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/components/discover/CardDetailOverlay.vue",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/subpackages/tools/love-center/nearby.vue"
+    ],
+    "verification": [
+      "nearby-follow-chip-gives-feedback",
+      "nearby-skip-advances-visual-card",
+      "nearby-like-advances-no-card-missing-error"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-DETAIL-001",
+    "page": "subpackages/village/village/detail（点赞单击无效）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/detail.vue",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/village/utils.ts"
+    ],
+    "verification": [
+      "post-detail-like-single-click-updates-render-and-store"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VILLAGE-001",
+    "page": "subpackages/village/village/index（mock 新帖不进 feed）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "village-mock-published-post-appears-in-today-feed"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TAGPOSTS-001",
+    "page": "subpackages/village/village/tag-posts（分页 off-by-one）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/tag-posts.vue"
+    ],
+    "verification": [
+      "tag-posts-page1-nonempty",
+      "tag-posts-pagination-continuity-across-pages"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TAGPOSTS-002",
+    "page": "subpackages/village/village/tag-posts（栈=1 返回/缺参兜底）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/tag-posts.vue"
+    ],
+    "verification": [
+      "tag-posts-stack1-back-relaunch-village",
+      "tag-posts-missing-param-relaunch-not-silent-switchtab"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HISTORY-001",
+    "page": "subpackages/village/village/history、subpackages/profile-extra/feedback/history",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/profile-extra/feedback/history.vue",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "history-stack1-back-relaunch",
+      "feedback-history-detail-not-404",
+      "feedback-history-id-param-autopen-works"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CIRCLE-005",
+    "page": "subpackages/circles/circles/index（375px 截断）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "circles-stats-and-friends-rows-readable-375px"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TOPICDETAIL-001",
+    "page": "subpackages/circles/circles/topic-detail（回复徽标 vs 空态）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/circle/mock-data.ts",
+      "apps/client/src/subpackages/circles/circles/topic-detail.vue"
+    ],
+    "verification": [
+      "topic-detail-reply-badge-count-matches-list-length"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-POSTTOPIC-001",
+    "page": "subpackages/circles/circles/post-topic（circleId 未生效）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "post-topic-lands-in-target-circle-not-village-feed"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CIRCLEHOME-001-004",
+    "page": "subpackages/circles/circles/circle-home（点赞恒 0/动态卡无响应/朋友已加入/分享更多无绑定）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/client/src/stores/circle/mock-data.ts"
+    ],
+    "verification": [
+      "circlehome-like-activates-nonzero",
+      "circlehome-feed-card-click-responds",
+      "circlehome-friend-joined-count-real-field",
+      "circlehome-share-more-buttons-bound"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CAMPUSINDEX-001",
+    "page": "subpackages/campus/campus/index（校名 URL 编码/话题列表恒空）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "campus-index-schoolname-decoded-ruc-tsinghua-fudan",
+      "campus-index-topic-list-nonempty"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CAMPUS-HUB-001-003",
+    "page": "subpackages/campus/campus/hub（badge 恒认证中/查看更多无 handler）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-joined-badge-reflects-real-state-with-modifier-class",
+      "campus-hub-view-more-handler-responds"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CAMPUSPOST-001",
+    "page": "subpackages/campus/campus/post-topic（空表单静默提交）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/post-topic.vue"
+    ],
+    "verification": [
+      "campus-post-empty-submit-shows-intercept-toast"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TOPIC-DETAIL-001-002",
+    "page": "subpackages/campus/campus/topic-detail（mock 分页重复追加/maxlength）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "campus-topic-replies-no-duplicate-append-on-scroll-bottom",
+      "campus-topic-reply-input-maxlength-set"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-SEGMENT-001",
+    "page": "subpackages/discover-extra/home/segment（i18n 裸 key）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/i18n/locales/en-US.ts",
+      "apps/client/src/subpackages/discover-extra/home/segment.vue"
+    ],
+    "verification": [
+      "segment-title-empty-render-not-raw-key"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-LIKES-001",
+    "page": "subpackages/discover-extra/likes（整体判偏差）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/likes/index.vue",
+      "apps/client/src/stores/likes.ts"
+    ],
+    "verification": [
+      "likes-page-probe-checks-pass-per-evidence-file"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HELP-001",
+    "page": "subpackages/tools/help（复制到文案标签而非邮箱）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/help/index.vue"
+    ],
+    "verification": [
+      "help-copy-email-clipboard-contains-address"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HEARTSIGNALS-001-002",
+    "page": "subpackages/tools/heart-signals（已过期后过期/mock 写穿）",
+    "components": [
+      "LockScreen"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/heart-signals/index.vue",
+      "apps/client/src/stores/likes.ts",
+      "apps/client/src/stores/likes/mock-data.ts"
+    ],
+    "verification": [
+      "heartsignals-expired-copy-single-suffix",
+      "heartsignals-accept-decline-pending-restores-after-session"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CONSULTING-001",
+    "page": "love-center/consulting、stores/app-config（封存 key 契约）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/app-config.ts",
+      "apps/client/src/subpackages/tools/love-center/consulting.vue"
+    ],
+    "verification": [
+      "consult-key-prefix-and-short-both-unseal",
+      "backend-commerce-key-contract-interface-level-check"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-SETTINGS-001-002",
+    "page": "subpackages/profile-extra/settings（我的动态死链/栈=1 返回）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/settings/index.vue"
+    ],
+    "verification": [
+      "settings-my-posts-entry-navigates",
+      "settings-stack1-back-switchtab-profile"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VERIFY-REALNAME-BACK",
+    "page": "subpackages/profile-extra/verification/index、verification/real-name（栈=1 返回 rejection ×4）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/real-name.vue"
+    ],
+    "verification": [
+      "verification-stack1-back-guard-no-rejection",
+      "realname-stack1-back-guard-no-rejection"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VISITORS-001-002",
+    "page": "subpackages/profile-extra/profile/visitors（NaN 静默 return/胶囊遮挡）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/visitors.vue"
+    ],
+    "verification": [
+      "visitors-card-click-opens-target-profile",
+      "visitors-header-vs-capsule-clearance"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-OTHER-001",
+    "page": "subpackages/profile-extra/profile/other（重复喜欢重复 toast）",
+    "components": [
+      "RelationshipCTA",
+      "PublicAction"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/RelationshipCTA.vue"
+    ],
+    "verification": [
+      "other-alreadyliked-guard-no-duplicate-success-toast"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-TASKS-001-003",
+    "page": "subpackages/profile-extra/profile/tasks（签到不更新/文案/未完成无响应）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/tasks.vue",
+      "apps/client/src/stores/checkin.ts"
+    ],
+    "verification": [
+      "tasks-checkin-updates-page-ui-immediately",
+      "tasks-copy-defects-fixed",
+      "tasks-click-responds-when-profile-incomplete"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-DND-001",
+    "page": "subpackages/profile-extra/settings/dnd（栈=1 返回）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/settings/dnd.vue"
+    ],
+    "verification": [
+      "dnd-stack1-back-switchtab-profile"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-OFFICIALCHAT-001",
+    "page": "subpackages/chat/official-chat（滚底失效复发）",
+    "components": [
+      "ChatBubble",
+      "ChatInput"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-send-then-assistant-bubble-above-input",
+      "officialchat-longmsg-window-scrolls-to-bottom"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-OFFICIALCHAT-002",
+    "page": "subpackages/chat/official-chat（三处死按钮，未见修复引用）",
+    "components": [
+      "ChatHeader",
+      "ChatInput",
+      "EmojiPanel"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-more-button-feedback",
+      "officialchat-plus-button-feedback",
+      "officialchat-emoji-button-feedback"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-OFFICIALCHAT-003",
+    "page": "subpackages/chat/official-chat（栈=1 返回 rejection ×3）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-stack1-back-switchtab-messages"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-SETUPCAMPUS-001",
+    "page": "subpackages/setup/campus（showModal cancel 未处理，未见修复引用）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/campus/index.vue"
+    ],
+    "verification": [
+      "setup-campus-privacy-cancel-no-unhandled-rejection-no-captureexception"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-SETUPINTEREST-001-002",
+    "page": "subpackages/setup/interest（保存后 navigateBack rejection）",
+    "components": [
+      "SetupProgress"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/interest/index.vue"
+    ],
+    "verification": [
+      "interest-save-back-no-unhandled-rejection"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-FEEDBACK-001",
+    "page": "subpackages/support/feedback、subpackages/profile-extra/feedback/history（ISO 时间渲染）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/support/feedback/index.vue",
+      "apps/client/src/subpackages/profile-extra/feedback/history.vue",
+      "apps/client/src/stores/feedback.ts"
+    ],
+    "verification": [
+      "feedback-submit-success-time-human-format",
+      "feedback-history-time-human-format"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PUB-016",
+    "page": "subpackages/village/village/publish（正文上限 1000 vs 500）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/village/constants.ts"
+    ],
+    "verification": [
+      "publish-501-chars-warns-early-not-only-on-submit",
+      "publish-and-store-limit-same-source-500",
+      "post-page-limit-parity-check"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PUB-017",
+    "page": "subpackages/village/village/publish（直入不 fetchCircles）",
+    "components": [
+      "TopicSelector"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "publish-direct-entry-interest-circle-group-loads"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HOME-014-016",
+    "page": "pages/home（关注无 handler/作者行失效/加入态不变）",
+    "components": [
+      "CommunityFeed",
+      "InterestRecommendation"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/CommunityFeed.vue",
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "home-follow-button-feedback-no-detail-jump",
+      "home-author-row-click-works",
+      "home-join-button-state-toggles-after-tap"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-DISCOVER-INDEX-001-002",
+    "page": "pages/discover、discover/matching（返回后错误横幅/重复消费）",
+    "components": [
+      "CardSwiper",
+      "MatchLoading"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+      "apps/client/src/stores/discover/index.ts"
+    ],
+    "verification": [
+      "matching-back-no-card-consumed-error-banner",
+      "discover-error-banner-retry-refetches-and-clears"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-DISCOVER-INDEX-003",
+    "page": "pages/discover（游客入口胶囊被 tabBar 遮挡）",
+    "components": [
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/custom-tab-bar/index.wxss"
+    ],
+    "verification": [
+      "discover-guest-entry-pill-visible-above-tabbar"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-DISCOVER-INDEX-004",
+    "page": "pages/discover（细节未留档，仅 HEAD diff 引用）",
+    "components": [
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue"
+    ],
+    "verification": [
+      "discover-page-full-probe-suite-regression"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-MESSAGES-INDEX-001",
+    "page": "pages/messages（header「+」死元素，未见修复引用）",
+    "components": [
+      "MessageHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/components/message/MessageHeader.vue"
+    ],
+    "verification": [
+      "messages-header-plus-tap-observable-feedback"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-MESSAGES-INDEX-002-003",
+    "page": "pages/messages（置顶/免打扰零可见反馈）",
+    "components": [
+      "ConversationItem",
+      "MessageHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/components/message/ConversationItem.vue"
+    ],
+    "verification": [
+      "messages-pin-shows-pinned-marker-and-reorders",
+      "messages-mute-shows-muted-icon"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PROFILE-001-002",
+    "page": "pages/profile（FAB 被 tabBar 遮/头像 ActionSheet 不可见）",
+    "components": [
+      "GlobalPublishFab",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/common/GlobalPublishFab.vue",
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/custom-tab-bar/index.wxss"
+    ],
+    "verification": [
+      "profile-fab-fully-above-tabbar",
+      "profile-avatar-actionsheet-options-visible"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CHAT-SESSION-001",
+    "page": "subpackages/chat/chat-session（转发后 preview 写错）",
+    "components": [
+      "ConversationItem",
+      "ChatBubble"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/subpackages/chat/chat-session/index.vue"
+    ],
+    "verification": [
+      "chat-forward-target-session-preview-matches-forwarded-content"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CHAT-SESSION-002",
+    "page": "subpackages/chat/chat-session（临时匿名会话功能面破碎）",
+    "components": [
+      "ChatBubble",
+      "ChatInput",
+      "ChatHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/stores/chat/mock-data.ts",
+      "apps/client/src/stores/chat/index.ts"
+    ],
+    "verification": [
+      "temp-anon-session-bubbles-render",
+      "temp-anon-longpress-own-message",
+      "temp-anon-exchange-contact-works",
+      "temp-anon-end-session-takes-effect"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-REGISTER-INDEX-001",
+    "page": "pages/register（400 触发多条 captureException 噪音，未见修复引用）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/register/index.vue",
+      "apps/client/src/services/sentry.ts"
+    ],
+    "verification": [
+      "register-duplicate-block-console-noise-measured"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PAGES-REGISTER-SUCCESS-001",
+    "page": "pages/register/success（环境级原生弹窗伪影）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/register/success.vue"
+    ],
+    "verification": [
+      "register-success-three-states-clean-rerun"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R21-UNVERIFIABLE-LIST",
+    "page": "全局（R21 工具限制无法验证项：滑块/CardSwiper 手势/custom-tab-bar 点击/scroll-view 原生滚动/input confirm/原生 maxlength/下拉刷新帧/原生弹窗/discussions 确认按钮/MBTI web-view 返回/分享菜单/未登录态/有新消息提示条）",
+    "components": [
+      "CardSwiper",
+      "custom-tab-bar",
+      "BottomActionBar"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/discover/CardSwiper.vue",
+      "apps/client/src/custom-tab-bar/index.js",
+      "apps/client/scripts/r22-capture.cjs"
+    ],
+    "verification": [
+      "real-device-manual-pass-for-r21-unverifiable-list",
+      "logged-out-state-special-build-or-injection"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-OFF-004",
+    "page": "subpackages/chat/official-chat（hero 遮挡首条消息）",
+    "components": [
+      "ChatBubble"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-first-msg-visible-at-scroll-top"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-HOME-007",
+    "page": "pages/home（「全部›」被裁）",
+    "components": [
+      "SectionHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/components/common/SectionHeader.vue"
+    ],
+    "verification": [
+      "home-section-all-link-not-clipped"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-TAB-010",
+    "page": "tabBar（游离绿色短横线）",
+    "components": [
+      "custom-tab-bar",
+      "TabBar"
+    ],
+    "riskFiles": [
+      "apps/client/src/custom-tab-bar/index.wxml",
+      "apps/client/src/custom-tab-bar/index.wxss",
+      "apps/client/src/components/layout/TabBar.vue"
+    ],
+    "verification": [
+      "tabbar-no-stray-active-indicator"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-NEAR-011",
+    "page": "pages/nearby（校园圈徽标硬换行）",
+    "components": [
+      "NearbySection"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/components/nearby/NearbySection.vue"
+    ],
+    "verification": [
+      "nearby-campus-badge-no-midword-wrap"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-MSG-001",
+    "page": "pages/messages（最近聊天被挤出首屏）",
+    "components": [
+      "ConversationItem",
+      "TodayHeartSection",
+      "QuickEntryCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/components/message/TodayHeartSection.vue"
+    ],
+    "verification": [
+      "messages-recent-chats-visible-first-screen"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-CIRCLES-001-002",
+    "page": "subpackages/circles/circles/index（统计省略号/按钮内边距）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "circles-stats-ellipsis-and-button-padding"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-CAMPUS-001",
+    "page": "subpackages/campus/campus/hub（统计「态」字孤行）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-stats-no-orphan-char"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-POST-001-003",
+    "page": "subpackages/village/village/detail（图文不符/互动数缺失）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/detail.vue",
+      "apps/api/src/main/java/com/campuslove/api/village/VillageController.java"
+    ],
+    "verification": [
+      "post-detail-image-text-match-and-counts-present"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-CIRCLEHOME-001-002",
+    "page": "subpackages/circles/circles/circle-home（hero 返回钮/云海帖三图）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "circlehome-hero-back-btn-statusbar-clear",
+      "circlehome-cloudsea-post-images-match"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-DISCOVER-002",
+    "page": "pages/discover（匹配度粉圆糊化）",
+    "components": [
+      "XunmiMatchRing",
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/components/common/XunmiMatchRing.vue"
+    ],
+    "verification": [
+      "discover-match-ring-readable-size"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PUBLISH-001",
+    "page": "subpackages/village/village/publish（禁用态对比度）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue"
+    ],
+    "verification": [
+      "publish-disabled-btn-contrast-at-least-46"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-SETTINGS-002",
+    "page": "subpackages/profile-extra/settings（恋爱认证双入口）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/settings/index.vue"
+    ],
+    "verification": [
+      "settings-verification-entry-single"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R4-OTHER-001",
+    "page": "subpackages/profile-extra/profile/other（返回钮侵入状态栏）",
+    "components": [
+      "PublicHero"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/PublicHero.vue"
+    ],
+    "verification": [
+      "profile-other-back-btn-statusbar-clear"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R4-CHAT-001",
+    "page": "subpackages/chat/chat-session（userId 深链标题回退）",
+    "components": [
+      "ChatHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/components/chat/ChatHeader.vue"
+    ],
+    "verification": [
+      "chat-deeplink-title-shows-partner-name-not-default"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CIRCLE-001",
+    "page": "subpackages/circles/circles/circle-home（作者头像绑死默认图）",
+    "components": [
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/client/src/stores/circle/mock-data.ts"
+    ],
+    "verification": [
+      "circlehome-feed-and-reply-avatars-real-not-default"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-LOGIN-001",
+    "page": "pages/login（授权拒绝后死路）",
+    "components": [
+      "WechatBtn",
+      "PhoneBtn"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/login/index.vue"
+    ],
+    "verification": [
+      "login-deny-expands-register-login-form"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CIRCLE-002",
+    "page": "subpackages/circles/circles/topic-detail（回复计数有数无明细）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/topic-detail.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/api/src/main/java/com/campuslove/api/village"
+    ],
+    "verification": [
+      "topic-detail-reply-count-has-listed-replies"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "IA-POSTTOPIC-01",
+    "page": "circles/post-topic、campus/post-topic（导航叠压状态栏）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/subpackages/campus/campus/post-topic.vue"
+    ],
+    "verification": [
+      "post-topic-nav-statusbar-clear-both-impls"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "IA-STATS-01",
+    "page": "apps/api /profile/stats（硬编码 0/语义错位）",
+    "components": [
+      "MyStats"
+    ],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/profile/ProfileController.java",
+      "apps/client/src/services/profile.adapter.ts",
+      "apps/client/src/api/profile.ts"
+    ],
+    "verification": [
+      "profile-stats-returns-real-aggregation"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "IA-CIRCLEHOME-01",
+    "page": "subpackages/circles/circles/circle-home（real 缺参静默 mock）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/stores/helpers/use-mock.ts"
+    ],
+    "verification": [
+      "circlehome-missing-param-real-mode-empty-state"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "INDEP-001",
+    "page": "subpackages/village/village/publish（snapshotDraft ReferenceError）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/village/utils.ts"
+    ],
+    "verification": [
+      "publish-editing-no-referenceerror-draft-dualwrite-works"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "INDEP-002",
+    "page": "subpackages/chat/chat-session（conv- 键误当会话 id）",
+    "components": [
+      "ChatHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/stores/chat/index.ts"
+    ],
+    "verification": [
+      "chat-conv-prefix-resolves-uid-no-400"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "INDEP-003",
+    "page": "全局 WS（重连不关旧 socketTask）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/websocket/reconnect.ts",
+      "apps/client/src/services/websocket/transport.ts"
+    ],
+    "verification": [
+      "ws-reconnect-closes-previous-socket-task"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "INDEP-004",
+    "page": "pages/messages（滚动遮罩）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue"
+    ],
+    "verification": [
+      "messages-scrolled-header-gradient-mask"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R7-PROFILE-003-004",
+    "page": "pages/profile（toLocalImage 兜底/完成度口径）",
+    "components": [
+      "MyCompletion",
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/image-local.ts",
+      "apps/client/src/stores/profile.ts",
+      "apps/client/src/components/profile/mine/MyCompletion.vue",
+      "apps/api/src/main/java/com/campuslove/api/profile/ProfileController.java"
+    ],
+    "verification": [
+      "profile-local-image-falls-back-to-media-proxy",
+      "profile-completion-server-authority-value"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R7-ADMIN-IMG",
+    "page": "apps/admin（查看图片直链 401）",
+    "components": [],
+    "riskFiles": [
+      "apps/admin/src/views/content/MediaAssets.vue",
+      "apps/admin/src/api/media.ts"
+    ],
+    "verification": [
+      "admin-view-image-fetch-with-authorization-200"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R8-STATUS-003-004",
+    "page": "heart-signals、CardDetailOverlay（关闭钮/浮层顶栏状态栏）",
+    "components": [
+      "CardDetailOverlay"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/heart-signals/index.vue",
+      "apps/client/src/components/discover/CardDetailOverlay.vue"
+    ],
+    "verification": [
+      "heartsignals-and-carddetail-close-vs-statusbar-clear"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R8-CAPSULE-001",
+    "page": "subpackages/discover-extra/likes（管理钮压进胶囊）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/likes/index.vue"
+    ],
+    "verification": [
+      "likes-manage-btn-clears-capsule-fullwidth"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R8-LOCK-001",
+    "page": "heart-signals LockScreen（完成度矛盾）",
+    "components": [
+      "LockScreen"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/common/LockScreen.vue",
+      "apps/client/src/stores/profile.ts",
+      "apps/client/src/subpackages/tools/heart-signals/index.vue"
+    ],
+    "verification": [
+      "lockscreen-completion-matches-server-onshow-60s-ttl"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R8-OWNPOST-001",
+    "page": "subpackages/village/village/detail（自己的帖子显示 +关注）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/detail.vue",
+      "apps/client/src/components/village/PostCard.vue"
+    ],
+    "verification": [
+      "own-post-no-follow-button-runtime-recheck"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R9-STATUS-005",
+    "page": "subpackages/setup/interest（标题叠印状态栏）",
+    "components": [
+      "SetupProgress"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/interest/index.vue"
+    ],
+    "verification": [
+      "interest-title-vs-statusbar-clear"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-005",
+    "page": "subpackages/discover-extra/likes（标题与返回重叠）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/likes/index.vue"
+    ],
+    "verification": [
+      "likes-title-back-no-overlap"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-006",
+    "page": "subpackages/tools/love-center/nearby（昵称徽标压简介）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/nearby.vue"
+    ],
+    "verification": [
+      "nearby-nickname-schoollabel-badge-no-overlap-intro"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-007",
+    "page": "subpackages/campus/campus/hub（校名截断/数字 k 格式）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-schoolname-truncation-managed",
+      "campus-hub-numbers-k-format"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-008",
+    "page": "subpackages/tools/search（缺返回/空态双文案）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/search/index.vue"
+    ],
+    "verification": [
+      "search-back-entry-present-empty-copy-single"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-012",
+    "page": "market×3、verification（缺自定义导航栏）",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/market/shop/index.vue",
+      "apps/client/src/subpackages/market/detail/index.vue",
+      "apps/client/src/subpackages/market/wallet/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "apps/client/src/components/layout/AppShell.vue"
+    ],
+    "verification": [
+      "market-and-realname-pages-custom-nav-present"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P2-014",
+    "page": "love-center（导航不一致/MBTI 入口重复）",
+    "components": [
+      "AppShell"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/index.vue",
+      "apps/client/src/subpackages/tools/love-center/consulting.vue",
+      "apps/client/src/subpackages/tools/love-center/mbti.vue",
+      "apps/client/src/components/layout/AppShell.vue"
+    ],
+    "verification": [
+      "consulting-nav-appshell-unified-mbti-single-entry"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R10-P3-015-016-018-019-020-022",
+    "page": "多页（审计残留/标签英文/讨论圈元信息/官方消息矛盾/分类其他/相册空位）",
+    "components": [
+      "XunmiFeedCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/subpackages/discover/discussions/index.vue",
+      "apps/client/src/subpackages/chat/official-chat/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "audit-residue-cleaned",
+      "tags-chinese-mapped",
+      "discussions-cards-have-meta",
+      "officialchat-msg-consistency",
+      "album-empty-slots-handled"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R12-IND-EVIDENCE-001",
+    "page": "全局（console 证据落盘）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/scripts/r20-capture.cjs",
+      "apps/client/scripts/r22-capture.cjs"
+    ],
+    "verification": [
+      "console-evidence-log-per-page-full-capture"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R12-IND-HTTP-401-001",
+    "page": "全局（401 reLaunch 登录页劫持，书面豁免）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/http.ts",
+      "apps/client/src/guards/session-guard.ts"
+    ],
+    "verification": [
+      "401-relaunch-hijack-impact-surface-observed"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R12-IND-AUTH-GATE-001",
+    "page": "多页（公开内容鉴权口径不一致，书面豁免）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/guards/session-guard.ts",
+      "apps/client/src/guards/profile-guard.ts",
+      "apps/client/src/guards/campus-gate.ts"
+    ],
+    "verification": [
+      "public-content-auth-gating-consistency-recorded"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R12-IND-PROFILE-INDEX-001",
+    "page": "pages/profile（未登录态头部叠印，待查）",
+    "components": [
+      "NotLoggedProfile"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/components/profile/NotLoggedProfile.vue"
+    ],
+    "verification": [
+      "profile-loggedout-header-vs-statusbar-check"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "P3-NUMFMT-RULING",
+    "page": "pages/home、campus/hub（数字格式裁决记录）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "number-format-changes-checked-against-latest-ruling"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-NEARBY-IA-FREEZE",
+    "page": "pages/nearby（分区顺序严格冻结）",
+    "components": [
+      "NearbySection"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/components/nearby/NearbySection.vue"
+    ],
+    "verification": [
+      "nearby-section-order-unchanged"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-CIRCLE-SHORTNAME",
+    "page": "pages/nearby、circles（圈名短名口径）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "circle-shortname-follows-nearby-standard"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-PUBLISH-DUAL-IMPL",
+    "page": "village/publish、village/post（双实现并存，行为需一致）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "publish-post-limit-and-group-behavior-parity"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-TABBAR-FLOAT",
+    "page": "custom-tab-bar（寻觅中央浮岛）",
+    "components": [
+      "custom-tab-bar",
+      "TabBar"
+    ],
+    "riskFiles": [
+      "apps/client/src/custom-tab-bar/index.wxml",
+      "apps/client/src/custom-tab-bar/index.wxss",
+      "apps/client/src/components/layout/TabBar.vue"
+    ],
+    "verification": [
+      "tabbar-center-island-design-preserved"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-ASSET-GAPS",
+    "page": "全局素材（纹理头像/复旦封面/云海山景/heart_pink）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts",
+      "apps/client/src/static/assets/default-avatar.jpg"
+    ],
+    "verification": [
+      "asset-gap-list-no-transparent-or-wrong-material"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-BACKLOG-ITEMS",
+    "page": "帖子来源圈子行/他人主页结构/本校 CTA/关系动态头像/圈子头像堆叠",
+    "components": [
+      "XunmiFeedCard",
+      "PublicProfile",
+      "RelationActivity",
+      "XunmiAvatarGroup"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/common/XunmiFeedCard.vue",
+      "apps/client/src/components/profile/public/PublicProfile.vue",
+      "apps/client/src/components/home/RelationActivity.vue"
+    ],
+    "verification": [
+      "backlog-items-still-registered-not-silently-changed"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-MBTI-DUAL-IA",
+    "page": "love-center/mbti（16 型速览+4 题测试混排保留观察）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/mbti.vue",
+      "apps/client/src/subpackages/tools/love-center/index.vue"
+    ],
+    "verification": [
+      "mbti-dual-ia-unchanged-or-product-decided"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-LOVECENTER-THIN",
+    "page": "love-center/index（内容单薄，书面豁免）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/index.vue"
+    ],
+    "verification": [
+      "lovecenter-entry-count-recorded"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-CIRCLES-EMPTY-CTA",
+    "page": "circles/index（空态 CTA 含糊）",
+    "components": [
+      "EmptyState"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "circles-empty-state-pagestate-distinct-cta-pending"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P3-ZERO-WIRE-DECISIONS",
+    "page": "全局（getPhoneNumber/ContentSecurityChecker/WS connect 封存决议）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/guards/session-guard.ts",
+      "apps/client/src/services/websocket/index.ts",
+      "apps/client/src/pages/login/index.vue"
+    ],
+    "verification": [
+      "three-zero-wire-points-still-sealed"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "P4-RELEASE-CHAIN",
+    "page": "release 链（verify-env-release/主包 ≤2MB/真机隐私链，发布前必须执行）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/manifest.json",
+      "apps/client/scripts/p0-compliance-check.mjs",
+      "apps/client/scripts/check-project-rules.mjs"
+    ],
+    "verification": [
+      "verify-env-release-run-before-release",
+      "main-package-2mb-strict-gate",
+      "real-device-privacy-authorization-chain"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-LINT-WARNINGS",
+    "page": "全局 lint（14432 warnings，0 error 达标）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/package.json"
+    ],
+    "verification": [
+      "lint-zero-error-maintained-warn-batch-separate"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-G4-INTERACTION-COVERAGE",
+    "page": "全局（G4 交互逐点点验工具建设）",
+    "components": [
+      "CardSwiper",
+      "BottomActionBar",
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/scripts/r11-interaction-scan.mjs"
+    ],
+    "verification": [
+      "interaction-scan-coverage-expanded-beyond-tool-limits"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-ILLEGAL-JSON-400",
+    "page": "apps/api（非法 JSON 500→400）",
+    "components": [],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/common/BusinessException.java"
+    ],
+    "verification": [
+      "illegal-json-body-returns-400-not-500"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-AGREEMENT-DEFAULT",
+    "page": "pages/login、pages/register（协议默认勾选差异，仅记录）",
+    "components": [
+      "TermsText"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/login/index.vue",
+      "apps/client/src/pages/register/index.vue"
+    ],
+    "verification": [
+      "agreement-default-state-unchanged-as-recorded"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-WECHAT-LOGIN-PROD",
+    "page": "微信登录生产化（WECHAT_APPID/SECRET 502 降级）",
+    "components": [
+      "WechatBtn"
+    ],
+    "riskFiles": [
+      "apps/api/src/main/java/com/campuslove/api/auth/WechatAuthController.java",
+      "apps/api/src/main/java/com/campuslove/api/auth/WeChatClient.java",
+      "apps/client/src/services/auth.ts",
+      "apps/client/src/manifest.json"
+    ],
+    "verification": [
+      "wechat-login-502-degradation-expected-until-configured"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-REALDEVICE-GESTURES",
+    "page": "全局（真机手势人工抽检：侧滑返回/下拉刷新 + R21 无法验证清单）",
+    "components": [
+      "CardSwiper",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/discover/CardSwiper.vue",
+      "apps/client/src/pages/discover/index.vue"
+    ],
+    "verification": [
+      "real-device-gesture-manual-checklist-executed"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-INDEP-006-VUE-TYPEERROR",
+    "page": "全局（压缩产物 Vue TypeError 2 次未归因，登记监控）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/sentry.ts",
+      "apps/client/src/utils/global-error.ts"
+    ],
+    "verification": [
+      "indep006-typeerror-monitoring-no-recurrence"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-MEDIA-TOKEN-STRICT",
+    "page": "媒体令牌（media-query-token-strict 上线切换 + 5 分钟令牌）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/config.ts",
+      "apps/client/src/utils/media-token-cache.ts",
+      "apps/client/src/utils/media.ts"
+    ],
+    "verification": [
+      "media-token-strict-flag-off-in-dev-token-ttl-5min"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-PHOTOWALL-NO-ECHO",
+    "page": "setup/profile（照片墙当次不回显，P3 决策接受）",
+    "components": [
+      "PhotoCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/profile/index.vue"
+    ],
+    "verification": [
+      "photowall-echo-on-reentry-only"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-CAMPUS-HUB-ELLIPSIS",
+    "page": "campus/hub（校名省略号四列挤压，P4 维持）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-name-ellipsis-mitigated-not-regressed"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-CAMPUS-FIELD-MIX",
+    "page": "校区字段（北校区/南校区为有意种子）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "campus-north-south-fields-unchanged"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-RECOMMEND-GENDER",
+    "page": "推荐池（未设性别默认女性候选为预期）",
+    "components": [
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/discover/index.ts",
+      "apps/api/src/main/java/com/campuslove/api/discover"
+    ],
+    "verification": [
+      "recommend-pool-default-female-behavior-unchanged"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-HOME-MICRO",
+    "page": "pages/home（横滑无露头/瓦片字号/标签微偏，P4 记录）",
+    "components": [
+      "PeopleScroll",
+      "InterestRecommendation",
+      "NearbyPeople"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/PeopleScroll.vue",
+      "apps/client/src/components/home/InterestRecommendation.vue",
+      "apps/client/src/components/home/NearbyPeople.vue"
+    ],
+    "verification": [
+      "home-hscroll-tile-font-tag-offset-p4-recorded"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "P4-CAMPUS-TOPIC-MOCK-PAGING",
+    "page": "campus/topic-detail（mock 分页语义为演示数据口径）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "campus-topic-mock-paging-no-duplicate-append"
+    ],
+    "severity": "P4"
+  },
+  {
+    "id": "R11-MATRIX-BLANK",
+    "page": "R11 截图矩阵 BLANK 场景（pages/home A+B、profile/other A+B、vip/index A）",
+    "components": [
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/subpackages/vip/index.vue",
+      "apps/client/scripts/r20-capture.cjs"
+    ],
+    "verification": [
+      "screenshot-matrix-rerun-blank-pages-cleared",
+      "home-blank-2-of-144-repro-watch"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R11-MATRIX-STUCK",
+    "page": "R11 截图矩阵 STUCK/骨架场景（tag-posts/history/circles-index/topic-detail×2/love-center/search/profile-other/favorites/feedback-history/activities/market-detail）",
+    "components": [
+      "Skeleton"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/tag-posts.vue",
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/circles/circles/index.vue",
+      "apps/client/src/subpackages/circles/circles/topic-detail.vue",
+      "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "apps/client/src/subpackages/tools/love-center/index.vue",
+      "apps/client/src/subpackages/tools/search/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+      "apps/client/src/subpackages/profile-extra/feedback/history.vue",
+      "apps/client/src/subpackages/discover/activities/index.vue",
+      "apps/client/src/subpackages/market/detail/index.vue",
+      "apps/client/scripts/r20-capture.cjs"
+    ],
+    "verification": [
+      "screenshot-matrix-rerun-stuck-pages-cleared",
+      "tag-posts-and-circles-index-not-permanent-skeleton"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "OPEN-CATCHTAP-SWEEP",
+    "page": "全局（@catchtap 是否全仓清零的静态复查，R21 只修 PostCard 10 处）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/PostCard.vue"
+    ],
+    "verification": [
+      "grep-catchtap-zero-in-apps-client-src"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "OPEN-LBS-PHASE2",
+    "page": "全局（9.17 周汇报 LBS Phase 2，后续轮未见处置记录）",
+    "components": [],
+    "riskFiles": [],
+    "verification": [
+      "lbs-phase2-disposition-record-checked"
+    ],
+    "severity": "P3"
+  }
+]

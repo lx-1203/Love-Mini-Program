@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const automator = require("miniprogram-automator");
 
+const REPO_ROOT = require("path").resolve(__dirname, "..", "..", "..");
 try {
   const mpMod = require("miniprogram-automator/out/MiniProgram.js");
   const MP = mpMod.default || mpMod;
@@ -14,7 +15,7 @@ try {
   console.log("[patch] skipped:", e.message);
 }
 
-const OUT_DIR = process.argv[2] || "D:/6/恋爱小程序/截图存档/r20";
+const OUT_DIR = process.argv[2] || `${REPO_ROOT}/截图存档/r20`;
 const CONV_ID = process.argv[3] || "";
 const WS = "ws://127.0.0.1:9420";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

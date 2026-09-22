@@ -5,7 +5,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+# 本脚本位于 <repo>/scripts/launcher/，仓库根需上溯两级
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
 $toolsRoot = Join-Path $projectRoot "tools"
 $sharedConfig = Join-Path $projectRoot "database\\flyway\\flyway.toml"
 $userConfig = Join-Path $projectRoot "database\\flyway\\flyway.user.toml"

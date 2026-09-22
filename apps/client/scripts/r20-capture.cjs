@@ -8,6 +8,7 @@ const automator = require("miniprogram-automator");
 
 // R20：automator 0.12 的 checkVersion 与新版开发者工具握手返回 undefined 导致崩溃，
 // 直接短路版本检查（仅影响握手，不影响自动化能力）
+const REPO_ROOT = require("path").resolve(__dirname, "..", "..", "..");
 try {
   const mpMod = require("miniprogram-automator/out/MiniProgram.js");
   const MP = mpMod.default || mpMod;
@@ -18,7 +19,7 @@ try {
   console.log("[patch] checkVersion patch skipped:", e.message);
 }
 
-const OUT_DIR = process.argv[2] || "D:/6/恋爱小程序/截图存档/r20";
+const OUT_DIR = process.argv[2] || `${REPO_ROOT}/截图存档/r20`;
 const WS = "ws://127.0.0.1:9420";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

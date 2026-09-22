@@ -1,7 +1,8 @@
 /* 探针：验证 automator 连接 + 登录 + 截图首页 */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS = 'ws://127.0.0.1:9420';
 const API = 'http://127.0.0.1:8080/api/v1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -23,7 +24,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await mp.callWxMethod('setStorage', { key: 'refreshToken', data: '' });
     console.log('token injected');
   }
-  const out = 'D:/6/恋爱小程序/截图存档/2026-08-22-重构基线';
+  const out = `${REPO_ROOT}/截图存档/2026-08-22-重构基线`;
   fs.mkdirSync(out, { recursive: true });
   await mp.callWxMethod('reLaunch', { url: '/pages/home/index' });
   await sleep(9000);

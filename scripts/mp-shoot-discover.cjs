@@ -12,13 +12,14 @@
  *   node scripts/mp-shoot-discover.cjs --round=1   # 主账号 47 全量
  *   node scripts/mp-shoot-discover.cjs --round=2   # 副账号 8 双账号页
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const BASE_OUT = 'D:\\6\\恋爱小程序\\截图存档\\2026-08-08-5';
+const BASE_OUT = `${REPO_ROOT}\\截图存档\\2026-08-08-5`;
 const WAIT_MS = 9000;
 
 const round = process.argv.includes('--round=2') ? 2 : 1;

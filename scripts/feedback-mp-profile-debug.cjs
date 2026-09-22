@@ -3,7 +3,7 @@
  * 单页验证：reLaunch 到 /pages/profile/index 后检查当前页面路由与字段数。
  * 用于排查 feedback-mp-render.cjs 中 profile 页 route 异常显示为 chat 的问题。
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 

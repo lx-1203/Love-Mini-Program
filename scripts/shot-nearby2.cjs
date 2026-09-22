@@ -1,6 +1,7 @@
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs=require('fs'), path=require('path');
-const OUT='D:\\6\\恋爱小程序\\tmp\\nearby-shots2'; fs.mkdirSync(OUT,{recursive:true});
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const OUT=`${REPO_ROOT}\\tmp\\nearby-shots2`; fs.mkdirSync(OUT,{recursive:true});
 const errs=[], cons=[];
 async function main(){
   const mp = await automator.connect({ wsEndpoint: 'ws://127.0.0.1:9420' });

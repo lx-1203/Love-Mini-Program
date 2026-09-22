@@ -9,7 +9,7 @@
  * 关键经验（承自 mp-shoot-*.cjs）：automator 0.12.1 的 reLaunch 会崩 inspectee，
  * 必须用 miniProgram.callWxMethod('reLaunch', {url})。
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const WAIT_MS = 8000;

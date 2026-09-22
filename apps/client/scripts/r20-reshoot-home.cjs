@@ -1,12 +1,13 @@
 const path = require("path");
 const automator = require("miniprogram-automator");
+const REPO_ROOT = require("path").resolve(__dirname, "..", "..", "..");
 try {
   const mpMod = require("miniprogram-automator/out/MiniProgram.js");
   const MP = mpMod.default || mpMod;
   if (MP && MP.prototype) MP.prototype.checkVersion = async function () {};
 } catch (e) {}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const OUT = "D:/6/恋爱小程序/截图存档/r20";
+const OUT = `${REPO_ROOT}/截图存档/r20`;
 (async () => {
   const mp = await automator.connect({ wsEndpoint: "ws://127.0.0.1:9420" });
   await mp.reLaunch("/pages/discover/index");

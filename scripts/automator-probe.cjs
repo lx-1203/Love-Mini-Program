@@ -3,11 +3,12 @@
  * automator 探针：验证连接 + currentPage + screenshot 是否可用。
  * 运行：node scripts/automator-probe.cjs
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
-const OUT = 'D:\\6\\恋爱小程序\\tmp\\probe.png';
+const OUT = `${REPO_ROOT}\\tmp\\probe.png`;
 
 async function main() {
   console.log('[probe] connecting...');

@@ -46,7 +46,11 @@ function removeTimeWindow(idx: number) {
   form.preferredTimeWindows.splice(idx, 1);
 }
 
+// MP-R2-SCHEDULE-001：保存防重入标志（原连点并发两次 PUT）
+const saving = ref(false);
+
 async function save() {
+  if (saving.value) return;
   // 修复：添加输入验证
   if (!form.preferredCampusArea.trim()) {
     uni.showToast({ title: t("setup.schedule.locationRequired"), icon: "none" });
@@ -59,6 +63,7 @@ async function save() {
     return;
   }
 
+  saving.value = true;
   try {
     await profileStore.saveScheduleProfile({ ...form });
     // P0-35 修复：日程保存后进入推荐偏好（注册流程最后一步），
@@ -68,6 +73,8 @@ async function save() {
     // R4-00047：错误兜底文案走 i18n
     const message = error instanceof Error ? error.message : t("setup.schedule.saveFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    saving.value = false;
   }
 }
 </script>

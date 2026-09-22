@@ -1,5 +1,6 @@
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 process.on('uncaughtException', () => {});
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const http = require('http');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,7 +23,7 @@ function withTimeout(p, ms, l) { return Promise.race([p, sleep(ms).then(() => 'T
   mp.on('error', () => {});
   const data = await httpPost('http://127.0.0.1:8080/api/v1/auth/guest-login', '{}');
   await mp.callWxMethod('setStorage', { key: 'token', data: data.token });
-  const OUT = 'D:/6/恋爱小程序/tmp/verify-r5';
+  const OUT = `${REPO_ROOT}/tmp/verify-r5`;
   fs.mkdirSync(OUT, { recursive: true });
   for (const p of [{ n: 'login', u: '/pages/login/index' }, { n: 'home', u: '/pages/home/index' }]) {
     await withTimeout(mp.reLaunch(p.u), 20000, 'rl');

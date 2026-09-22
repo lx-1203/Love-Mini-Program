@@ -67,6 +67,7 @@ import {
   setSortBy,
   setMatchScope,
   setNearbyScope,
+  setDiscoverMode,
   resetFilter,
   setAdvancedFilter,
   resetAdvancedFilter,
@@ -118,7 +119,10 @@ const _useDiscoverStore = defineStore("discover", {
       quotaExhausted: false,
       onlineStatusMap: {},
       lastSwipeResult: null,
-      activeFilter: "nearby",
+      activeFilter: "all",
+      // MP-R2-PAGES-DISCOVER-INDEX-004：默认值三处对齐——原 activeFilter:"nearby" 与
+      // matchScope:"all"、页面 activeMode 默认 "recommend" 矛盾（首帧后消费 store 的
+      // 逻辑拿到与页面展示不符的 "nearby"）
       // 设计需求默认值：匹配度优先 + 不限范围
       sortBy: "match",
       matchScope: "all",
@@ -206,6 +210,7 @@ const _useDiscoverStore = defineStore("discover", {
     setSortBy,
     setMatchScope,
     setNearbyScope,
+    setDiscoverMode,
     applyQuickFilter,
     resetFilter,
     setAdvancedFilter,

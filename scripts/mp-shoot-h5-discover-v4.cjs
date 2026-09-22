@@ -20,9 +20,10 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\h5";
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const ROOT = `${REPO_ROOT}\\apps\\client\\dist\\build\\h5`;
 const PORT = 8711;
-const OUT_DIR = "D:\\6\\恋爱小程序\\截图存档\\2026-08-08-4\\h5";
+const OUT_DIR = `${REPO_ROOT}\\截图存档\\2026-08-08-4\\h5`;
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
@@ -64,7 +65,7 @@ async function main() {
 
   let puppeteer;
   try {
-    puppeteer = require("D:/6/恋爱小程序/node_modules/puppeteer");
+    puppeteer = require(`${REPO_ROOT}/node_modules/puppeteer`);
   } catch (e) {
     console.error("[puppeteer] 未找到:", e.message);
     process.exit(1);

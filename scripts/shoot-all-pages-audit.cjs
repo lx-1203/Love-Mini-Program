@@ -12,13 +12,14 @@
  *
  * 运行：node scripts/shoot-all-pages-audit.cjs
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const REPO = 'D:\\6\\恋爱小程序';
+const REPO = `${REPO_ROOT}`;
 const OUT_DIR = path.join(REPO, '截图存档', '2026-08-14-全页面截图审查', 'client');
 const WAIT_MS = 9000;
 const SCROLL_WAIT_MS = 4000;

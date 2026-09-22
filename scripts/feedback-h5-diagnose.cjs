@@ -6,7 +6,8 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\h5";
+const REPO_ROOT = require("path").resolve(__dirname, "..");
+const ROOT = `${REPO_ROOT}\\apps\\client\\dist\\build\\h5`;
 const PORT = 8712;
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -49,7 +50,7 @@ async function main() {
   await new Promise((resolve) => server.listen(PORT, "127.0.0.1", resolve));
   console.log(`[server] http://127.0.0.1:${PORT}`);
 
-  const puppeteer = require("D:/6/恋爱小程序/node_modules/puppeteer");
+  const puppeteer = require(`${REPO_ROOT}/node_modules/puppeteer`);
   const browser = await puppeteer.launch({
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],

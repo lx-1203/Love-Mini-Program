@@ -13,15 +13,16 @@
  *   node scripts/mp-shoot-2026-08-20.cjs --only home         # 仅首页
  *   node scripts/mp-shoot-2026-08-20.cjs --dir 2026-08-20-p0-r1  # 指定输出子目录
  */
-const automator = require('C:/Users/dsghy/.trae-cn/work/6a633c3af5ee6dc3c02e0619/node_modules/miniprogram-automator');
+const automator = require(require.resolve("miniprogram-automator", { paths: [require("path").join(__dirname, "..", "apps/client"), require("path").resolve(__dirname, "..")] }));
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
 // ─── 配置 ───────────────────────────────────────────────────────────────────
+const REPO_ROOT = require("path").resolve(__dirname, "..");
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
-const REPO = 'D:\\6\\恋爱小程序';
+const REPO = `${REPO_ROOT}`;
 const BASE_DIR = path.join(REPO, '截图存档');
 const WAIT_FIRST = 9000;   // 首屏等待 9s
 const WAIT_SCROLL = 4000;  // 滚动后等待 4s
