@@ -83,7 +83,8 @@ onUnload(() => {
 async function onRefresherRefresh() {
   refresherTriggered.value = true;
   try {
-    await activityStore.fetchActivities();
+    // MP-R2-次要22-005：下拉刷新穿透 30s TTL（store 契约 force=true；原恒走缓存短路空转）
+    await activityStore.fetchActivities(true);
   } finally {
     refresherTriggered.value = false;
   }

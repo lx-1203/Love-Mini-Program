@@ -165,7 +165,7 @@ async function submitCert() {
     let uploadUrl = studentCardUrl.value;
     if (!useMock() && !isUploadedMediaUrl(uploadUrl)) {
       const uploaded = await clientApi.uploadPostImage({
-        name: "studentCard.jpg",
+        name: `studentCard-${Date.now()}.jpg` /* MP-R2-CERT-001：幂等键唯一量 */,
         path: uploadUrl,
       });
       uploadUrl = uploaded?.url ?? uploadUrl;
@@ -174,7 +174,7 @@ async function submitCert() {
     let chsiUploadUrl = chsiScreenshotUrl.value;
     if (!useMock() && chsiUploadUrl && !isUploadedMediaUrl(chsiUploadUrl)) {
       const uploaded = await clientApi.uploadPostImage({
-        name: "chsi-screenshot.jpg",
+        name: `chsi-${Date.now()}.jpg` /* MP-R2-CERT-001 */,
         path: chsiUploadUrl,
       });
       chsiUploadUrl = uploaded?.url ?? chsiUploadUrl;
@@ -203,7 +203,12 @@ async function submitCert() {
  * 返回上一页
  */
 function goBack() {
-  uni.navigateBack();
+  // MP-R2-NAV-001：栈底兜底（与 tag-posts/history/circle-home 同口径）
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
 }
 
 /**

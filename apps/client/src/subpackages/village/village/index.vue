@@ -781,9 +781,12 @@ onShareAppMessage(() => ({
             </view>
 
             <template v-else>
-              <!-- 置顶折叠条（今日广场；QQ 频道风格） -->
+              <!-- 置顶折叠条（QQ 频道风格）。
+                   MP-R2-VILLAGE-INDEX-004：放宽到所有帖子频道——原仅今日广场渲染折叠条，
+                   而 feedPosts 在所有帖子频道都排除 isPinned 帖，学校圈/活动频道出现置顶帖时
+                   既不进折叠条也不进列表（凭空消失）；空数组时折叠条自然隐藏 -->
               <PinnedPostsBar
-                v-if="isTodayChannel && pinnedPosts.length > 0"
+                v-if="pinnedPosts.length > 0"
                 :posts="pinnedPosts"
                 @open="goToDetail"
               />

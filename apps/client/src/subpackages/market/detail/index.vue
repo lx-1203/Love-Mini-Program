@@ -259,11 +259,13 @@ function handleBuyNow(): void {
 }
 
 onLoad((query) => {
+  const rawId = typeof query?.id === "string" ? query.id : "";
+  // MP-R2-次要22-002：productId 先记录再判封存——封存态 onLoad 早退后productId
+  // 恒为空，解封补偿 watch 因 productId 为空永不触发（整页空白）
+  productId.value = rawId;
   // 批次 A / ADR-2：封存态不发商品请求，直接展示封存卡
   if (commerceSealed.value) return;
-  const rawId = query?.id;
-  if (typeof rawId === "string" && rawId.length > 0) {
-    productId.value = rawId;
+  if (rawId.length > 0) {
     void loadProduct(rawId);
   } else {
     notFound.value = true;
@@ -282,6 +284,8 @@ watch(commerceSealed, (sealed) => {
 
 <template>
   <view class="product-page" :style="menuStyleVars">
+    <!-- 顶部安全区占位 -->
+    <view class="safe-top" />
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view
@@ -297,9 +301,6 @@ watch(commerceSealed, (sealed) => {
       <text class="nav-bar__title">{{ t('shop.detailTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
 
     <!-- 批次 A / ADR-2：商业化封存态（优先级最高，SVG 锁图标，禁 emoji） -->
     <view v-if="commerceSealed" class="product-state product-state--sealed" aria-live="polite">

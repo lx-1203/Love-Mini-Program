@@ -262,6 +262,8 @@ export interface CampusState {
   loading: boolean;
   /** 错误信息 */
   errorMessage: string | null;
+  /** MP-R2-CAMPUSINDEX-007：话题列表加载错误（独立字段） */
+  topicsError: string | null;
   /** 话题列表当前页码 */
   topicPage: number;
   /** 话题列表是否还有更多 */
@@ -328,6 +330,8 @@ export const useCampusStore = defineStore("campus", {
     activities: [],
     loading: false,
     errorMessage: null,
+    /** MP-R2-CAMPUSINDEX-007：话题列表加载错误（独立于认证/活动的共享 errorMessage） */
+    topicsError: null as string | null,
     topicPage: 1,
     topicHasMore: true,
     certificationStatus: "unverified",
@@ -401,6 +405,11 @@ export const useCampusStore = defineStore("campus", {
      */
     setActiveCategory(category: CampusTopicCategory, school?: string) {
       this.activeCategory = category;
+      // MP-R2-CAMPUSINDEX-002(b)：切 Tab 前清空旧分类列表——否则切 Tab 请求失败时
+      // errorMessage 分支被 topics.length>0 屏蔽，旧分类内容静默挂在新 Tab 名下
+      this.topics = [];
+      this.topicPage = 1;
+      this.topicHasMore = false;
       void this.fetchCampusTopics(category, 1, school);
     },
 
@@ -417,6 +426,9 @@ export const useCampusStore = defineStore("campus", {
       const token = ++fetchCampusTopicsToken;
       this.loading = true;
       this.errorMessage = null;
+      // MP-R2-CAMPUSINDEX-007：话题错误独立字段（原与认证/活动共用 errorMessage，
+      // 错误文案与重试动作错位）
+      this.topicsError = null;
       const targetCategory = category ?? this.activeCategory;
 
       try {
@@ -460,7 +472,9 @@ export const useCampusStore = defineStore("campus", {
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchCampusTopicsToken) return;
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicsFailed");
+        // MP-R2-CAMPUSINDEX-007：话题错误写独立字段（errorMessage 与认证/活动共用导致文案错位）
+        this.topicsError = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicsFailed");
+        this.errorMessage = this.topicsError;
       } finally {
         // 修复：仅最新 token 的请求才允许清 loading
         if (token === fetchCampusTopicsToken) {

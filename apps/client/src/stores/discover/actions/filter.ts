@@ -55,6 +55,23 @@ export function setNearbyScope(this: DiscoverStoreThis): void {
 }
 
 /**
+ * MP-R2-PAGES-DISCOVER-INDEX-006：寻觅页顶部分段（推荐/附近）切换单一入口。
+ * 页面此前内联直写 activeFilter/matchScope/recommendationFilter 三字段 + 手动
+ * fetchCards，与 setNearbyScope/setMatchScope 同构双路径（任一侧调整必漂移漏改）。
+ *
+ * @param mode - "recommend"（不限范围）| "nearby"（附近，限定 distanceMax）
+ */
+export function setDiscoverMode(this: DiscoverStoreThis, mode: "recommend" | "nearby"): void {
+  this.activeFilter = mode === "nearby" ? "nearby" : "all";
+  this.matchScope = mode === "nearby" ? "nearby" : "all";
+  this.recommendationFilter = {
+    ...this.recommendationFilter,
+    distanceMax: mode === "nearby" ? NEARBY_MAX_DISTANCE_KM : undefined,
+  };
+  void this.fetchCards();
+}
+
+/**
  * 设置排序规则（设计需求：匹配度优先/最新注册/最活跃）。
  * 立即生效并刷新推荐列表。
  */

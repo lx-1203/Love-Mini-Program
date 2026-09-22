@@ -44,7 +44,10 @@ const reasons = computed(() => (partner.value ? buildMatchReasons(partner.value)
 
 onLoad((query) => {
   if (!profileStore.avatarUrl) {
-    void profileStore.load().catch(() => {});
+    void profileStore.load().catch((e) => {
+      // MP-R2-...-MATCH-SUCCESS-003：留排查痕迹（头像有 DEFAULT_AVATAR 兜底，不打断主流程）
+      console.warn("[match-success] profile load failed", e);
+    });
   }
 
   // 2026-08-25 P1：dev-preview=1 直接渲染匹配成功页（QA 复验入口，规格书 07）
@@ -60,6 +63,13 @@ onLoad((query) => {
     return;
   }
 
+  // MP-R2-...-MATCH-SUCCESS-005：query.userId 存在且与 store 残留对象不一致时，
+  // 以入口参数为准（matchedUser 在 matched/chat_ready 态跨页存续，直达分享链接
+  // 会展示旧匹配对象且「立即聊天」跳错人）
+  const qUserId = q.userId || "";
+  if (qUserId && matchStore.matchedUser && String(matchStore.matchedUser.userId) !== qUserId) {
+    matchStore.reset();
+  }
   if (!matchStore.matchedUser) {
     const userId = typeof query?.userId === "string" ? query.userId : "";
     if (userId) {
@@ -168,6 +178,9 @@ function handleScreenshot() {
   position: relative;
   min-height: 100%;
   background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
+  /* MP-R2-...-MATCH-SUCCESS-009：纵向 flex 容器，使组件宿主 flex:1 高度链成立 */
+  display: flex;
+  flex-direction: column;
 }
 
 /* 2026-08-25 P0：顶部 nav（规格书 7.1 / 7.2）

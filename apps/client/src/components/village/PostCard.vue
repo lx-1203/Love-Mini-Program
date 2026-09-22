@@ -255,7 +255,7 @@ function openActivity(activityId: number | string) {
     <view class="post-card__footer">
       <text class="post-card__time">{{ formatRelativeTime(post.createdAt) }}</text>
       <!-- 2026-09-05 R17：审核中徽标——自己刚发的帖在审核流期间 feed 内可见 -->
-      <text v-if="post.auditStatus === 'pending'" class="post-card__audit">审核中</text>
+      <text v-if="post.auditStatus === 'pending'" class="post-card__audit">{{ t('village.auditPending') }}</text>
       <view class="post-card__actions">
         <!-- 评论 -->
         <view class="action-btn" @tap.stop="emit('open-detail', post.id)">
@@ -611,8 +611,8 @@ function openActivity(activityId: number | string) {
   font-size: 20rpx;
   padding: 2rpx 12rpx;
   border-radius: var(--r-full, 999rpx);
-  background: rgba(255, 159, 67, 0.12);
-  color: #FF9F43;
+  background: var(--c-warning-bg-tint, rgba(255, 159, 67, 0.12));
+  color: var(--c-warning, #FF9F43);
   flex-shrink: 0;
 }
 

@@ -207,6 +207,8 @@ export interface ConversationView {
   unreadCount: number;
   headline: string;
   pinned: boolean;
+  /** MP-R2-PAGES-MESSAGES-INDEX-001：免打扰（后端 PUT mute 持久化；未下发时前端兜底 false） */
+  muted?: boolean;
   phase: string;
   sessionType: string;
   /**
@@ -271,6 +273,8 @@ function mapToMessageSession(raw: ConversationView): MessageSession {
     lastMessageSentAt: raw.lastMessageAt,
     unreadCount: raw.unreadCount,
     pinned: raw.pinned ?? false,
+    // MP-R2-PAGES-MESSAGES-INDEX-001：后端下发 muted（PUT mute 持久化），缺失兜底 false
+    muted: (raw as { muted?: boolean }).muted ?? false,
     phase: (raw.phase || "active") as MessageSession["phase"],
     sessionType: (raw.sessionType || "private") as SessionType,
     closesAt: null,
@@ -586,10 +590,13 @@ export const useMessagesStore = defineStore("messages", {
           const mergedById = new Map<string, MessageSession>();
           for (const raw of data.recentChats) {
             const session = mapToMessageSession(raw as unknown as ConversationView);
-            // 仅保留本地运行期态（置顶为纯前端状态）；未读以服务端新值为准
+            // 保留本地运行期态（置顶/免打扰）；未读以服务端新值为准。
+            // MP-R2-PAGES-MESSAGES-INDEX-001：muted 与 pinned 同款保留——后端 recent-chats
+            // 不下发 muted，dashboard 合并不保留会使重拉取后免打扰图标消失
             const oldSession = existing.get(session.id);
             if (oldSession) {
               session.pinned = oldSession.pinned;
+              if (session.muted !== true) session.muted = oldSession.muted;
             }
             mergedById.set(session.id, session);
           }

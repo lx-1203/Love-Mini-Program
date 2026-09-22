@@ -26,7 +26,6 @@ const sessionStore = useSessionStore();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { certificationStatus, certificationInfo, isVerified } = storeToRefs(campusStore);
 
-const selectedSchool = ref("");
 /** 2026-08-20：校园圈搜索关键词（参考图顶部搜索框对齐） */
 const searchKeyword = ref("");
 
@@ -74,11 +73,22 @@ const schoolStats: Record<string, { members: string; posts: string; peers: strin
 };
 
 function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
-  return schoolStats[school.id] || { members: "1.0k 同学", posts: "8k 动态", peers: "等 120 位同学" };
+  const fallback = { members: "约1.0k 同学", posts: "约8k 动态", peers: "约 120 位同学" };
+  const stats = schoolStats[school.id];
+  // MP-R2-CAMPUS-HUB-007：硬编码统计为演示估算值——统一加「约」语义标注，
+  // 避免在 real 模式被当作真实统计（后端 campuses 接口就绪后替换本表）
+  if (!stats) return fallback;
+  const prefixTilde = (v: string) => (v.startsWith("约") ? v : `约${v}`);
+  return { members: prefixTilde(stats.members), posts: prefixTilde(stats.posts), peers: prefixTilde(stats.peers) };
 }
 
-/** 我加入的（本校已认证） */
-const joinedSchools = computed(() => schools.filter((sc) => sc.name === ownSchool.value));
+/** 我加入的（本校已认证）。
+ * MP-R2-CAMPUS-HUB-002：补认证门槛——bindSchool 直写 campusName 不经认证，
+ * 未认证但已绑定学校的用户原会看到「未认证」badge + 「进入」CTA 的矛盾组合
+ * （进入后被 campus/index 门禁又降级为公开浏览） */
+const joinedSchools = computed(() =>
+  isVerified.value ? schools.filter((sc) => sc.name === ownSchool.value) : []
+);
 /** 推荐圈子（其他学校） */
 const recommendedSchools = computed(() => schools.filter((sc) => sc.name !== ownSchool.value));
 
@@ -121,14 +131,24 @@ const filteredSchools = computed(() => {
   return base.filter((sc) => sc.name.includes(kw) || sc.id.includes(kw.toLowerCase()));
 });
 
-onLoad((query) => {
-  if (query && typeof query.school === "string" && query.school.trim()) {
-    selectedSchool.value = query.school.trim();
-  }
-});
+// MP-R2-CAMPUS-HUB-003：onLoad 原读取 ?school= 写入 selectedSchool 死状态（全页零消费），
+// 参数消费语义由 goSchool 链路承接；死 ref 已删除
 
+// MP-R2-CAMPUS-HUB-004：认证状态拉取失败可感知（原空 catch + errorMessage 零消费，
+// 非 404 失败静默按「未认证」渲染）——错误条 + 重试入口
+const certLoadFailed = ref(false);
+async function refreshCertification(): Promise<void> {
+  certLoadFailed.value = false;
+  try {
+    await campusStore.fetchCertificationStatus();
+  } catch (_e) {
+    certLoadFailed.value = true;
+    return;
+  }
+  if (campusStore.errorMessage) certLoadFailed.value = true;
+}
 onShow(() => {
-  void campusStore.fetchCertificationStatus().catch(() => {});
+  void refreshCertification();
 });
 
 function goSchool(schoolName: string) {
@@ -139,13 +159,26 @@ function goCertification() {
   openAppPath(ROUTES.CAMPUS.CERTIFICATION);
 }
 
+// MP-R2-CAMPUS-HUB-006：栈底兜底（分享/编译直达栈=1 时裸 navigateBack 静默失败），
+// 与 campus/index.vue:98-106 同口径
 function goBack() {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/nearby/index" });
+  }
 }
 </script>
 
 <template>
   <view class="campus-hub" :style="menuStyleVars">
+    <!-- MP-R2-CAMPUS-HUB-004：认证状态拉取失败错误条 + 重试（原全链路静默） -->
+    <view v-if="certLoadFailed" class="campus-hub__cert-error">
+      <text class="campus-hub__cert-error-text">{{ campusStore.errorMessage || t('common.networkError') }}</text>
+      <view class="campus-hub__cert-error-retry press-feedback" role="button" @tap="refreshCertification">
+        <text class="campus-hub__cert-error-retry-text">{{ t('common.retry') }}</text>
+      </view>
+    </view>
     <view class="campus-hub__header">
       <view class="campus-hub__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
         <text class="campus-hub__back-text">&#x2039;</text>
@@ -207,9 +240,9 @@ function goBack() {
         :placeholder="t('campusHub.searchPlaceholder')"
         placeholder-class="campus-search__placeholder"
         confirm-type="search"
-        aria-label="搜索校园圈"
+        :aria-label="t('campusHub.searchAria')"
       />
-      <text v-if="searchKeyword" class="campus-search__clear" role="button" aria-label="清除" @tap="searchKeyword = ''">×</text>
+      <text v-if="searchKeyword" class="campus-search__clear" role="button" :aria-label="t('campusHub.clearAria')" @tap="searchKeyword = ''">×</text>
     </view>
 
     <!-- Tab 切换 -->
@@ -236,7 +269,7 @@ function goBack() {
 
     <!-- 空状态 -->
     <view v-if="filteredSchools.length === 0" class="campus-hub__empty">
-      <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? '暂未加入任何校园圈' : '暂无推荐圈子' }}</text>
+      <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? t('campusHub.emptyJoined') : t('campusHub.emptyRecommend') }}</text>
     </view>
 
     <!-- 圈子卡片列表 -->
@@ -295,13 +328,39 @@ function goBack() {
          MP-R1-CAMPUS-HUB-003：原「查看更多校园圈 ⌄」是无可绑动作的死元素（箭头暗示可展开但点击无响应），
          按审计建议移除箭头改为静态说明文案 -->
     <view class="campus-hub__more">
-      <text class="campus-hub__more-text">更多校园圈持续接入中</text>
+      <text class="campus-hub__more-text">{{ t('campusHub.moreHint') }}</text>
     </view>
     <view class="campus-hub__footer" />
   </view>
 </template>
 
 <style scoped lang="scss">
+/* MP-R2-CAMPUS-HUB-004：认证状态错误条 */
+.campus-hub__cert-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin: 16rpx 32rpx 0;
+  padding: 16rpx 24rpx;
+  border-radius: 16rpx;
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1));
+}
+.campus-hub__cert-error-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--c-error, #E5454D);
+}
+.campus-hub__cert-error-retry {
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand, #36C99A);
+}
+.campus-hub__cert-error-retry-text {
+  font-size: 24rpx;
+  color: var(--c-neutral-0, #FFFFFF);
+}
+
 .campus-hub {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
@@ -357,7 +416,7 @@ function goBack() {
 .campus-hub__subtitle {
   font-size: 24rpx;
   font-weight: 400;
-  color: #8A9694;
+  color: var(--c-text-tertiary, #8A9694);
 }
 
 .campus-hub__cert-btn {
@@ -392,7 +451,7 @@ function goBack() {
   gap: 20rpx;
   padding: 28rpx;
   border-radius: 22rpx;
-  background: linear-gradient(135deg, #EAF8F2 0%, #FFFFFF 100%);
+  background: linear-gradient(135deg, var(--c-brand-50, #EAF8F2) 0%, #FFFFFF 100%);
   border: 1rpx solid var(--c-line, #EEF2F0);
   margin-bottom: 32rpx;
 }
@@ -436,7 +495,7 @@ function goBack() {
   flex-shrink: 0;
   padding: 14rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand, #36C99A) 100%);
 }
 
 .campus-guide__btn-text {
@@ -475,7 +534,7 @@ function goBack() {
 .campus-hub__tab-text {
   font-size: 28rpx;
   font-weight: 500;
-  color: #8A9694;
+  color: var(--c-text-tertiary, #8A9694);
 }
 
 .campus-hub__tab-text--active {
@@ -504,7 +563,7 @@ function goBack() {
 
 .campus-hub__empty-text {
   font-size: 26rpx;
-  color: #8A9694;
+  color: var(--c-text-tertiary, #8A9694);
 }
 
 /* ===== School Card ===== */
@@ -617,15 +676,15 @@ function goBack() {
 }
 
 .campus-school-card__badge--verified .campus-school-card__badge-text {
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .campus-school-card__badge--pending {
-  background: #FFF4E5;
+  background: var(--c-warning-bg-tint, #FFF4E5);
 }
 
 .campus-school-card__badge--pending .campus-school-card__badge-text {
-  color: #FF9F43;
+  color: var(--c-warning, #FF9F43);
 }
 
 .campus-school-card__badge--unverified {
@@ -634,7 +693,7 @@ function goBack() {
 }
 
 .campus-school-card__badge--unverified .campus-school-card__badge-text {
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 .campus-school-card__badge-text {
@@ -696,7 +755,7 @@ function goBack() {
 /* ===== CTA (Green Filled) ===== */
 /* 推荐 tab「申请加入」= 白底绿描边绿字（对齐理想图层级：仅「去认证」实心） */
 .campus-school-card__cta--outline {
-  background: #FFFFFF !important;
+  background: var(--c-neutral-0, #FFFFFF) !important;
   border: 2rpx solid var(--c-brand, #36C99A) !important;
   box-shadow: none !important;
 }
@@ -718,7 +777,7 @@ function goBack() {
 .campus-school-card__cta-text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 /* ===== Footer ===== */
@@ -750,7 +809,7 @@ function goBack() {
   margin: 0 40rpx 20rpx;
   height: 76rpx;
   border-radius: 999rpx;
-  background: #F0F4F2;
+  background: var(--c-bg-page, #F0F4F2);
   display: flex;
   align-items: center;
   padding: 0 28rpx;

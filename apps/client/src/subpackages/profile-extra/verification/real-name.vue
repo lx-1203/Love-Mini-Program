@@ -19,7 +19,7 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { request } from "../../../services/http";
 import { clientApi } from "../../../services/api";
 // infra R2-00131：统一图片选择封装（含隐私授权守卫 + 大小校验）
-import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
+import { chooseImages, isUploadedMediaUrl, resolveMediaUrl } from "../../../utils/media";
 // R10-P2-012：注入 --statusbar（safe-top 依赖该变量，DevTools env 恒 0）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
@@ -529,7 +529,7 @@ function onBlur() {
             </view>
             <view v-else class="upload-card__preview">
               <image
-                :src="idCardFrontPath"
+                :src="resolveMediaUrl(idCardFrontPath)"
                 class="upload-card__image"
                 mode="aspectFill" lazy-load alt=""
               />
@@ -553,7 +553,7 @@ function onBlur() {
             </view>
             <view v-else class="upload-card__preview">
               <image
-                :src="idCardBackPath"
+                :src="resolveMediaUrl(idCardBackPath)"
                 class="upload-card__image"
                 mode="aspectFill" lazy-load alt=""
               />

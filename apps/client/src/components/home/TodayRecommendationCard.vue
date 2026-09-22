@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
+
+// MP-R2-PAGES-HOME-INDEX-012：主图加载失败终态——切占位图，不留永久灰底
+const photoFailed = ref(false);
+watch(
+  () => props.item?.photoUrl,
+  () => {
+    photoFailed.value = false;
+  }
+);
 
 const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
 defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
@@ -33,7 +42,14 @@ const metaLine = computed(() => {
     <view v-else class="today-card__body">
       <!-- 2026-09-02 R5/R8：整张 body 可点击 + hover 视觉反馈 + photo 懒加载降首屏卡顿 -->
       <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || '查看推荐人主页'">
-        <image class="today-card__photo" :src="item.photoUrl || ''" mode="aspectFill" lazy-load alt="" />
+        <image
+          class="today-card__photo"
+          :src="photoFailed || !item.photoUrl ? IMAGE_PATHS.POST_PLACEHOLDER : item.photoUrl"
+          mode="aspectFill"
+          lazy-load
+          alt=""
+          @error="photoFailed = true"
+        />
         <view v-if="item.online" class="today-card__online">
           <text class="today-card__online-dot"></text>
           <text class="today-card__online-text">在线</text>

@@ -94,7 +94,8 @@ export interface ChatStoreThis extends ChatState {
   /** 设置会话置顶状态 */
   setSessionPinned: (sessionId: string, pinned: boolean) => Promise<void>;
   /** 发送文本消息 */
-  sendText: (body: string) => Promise<void>;
+  /** MP-R2-CHAT-CHAT-SESSION-INDEX-001：返回成功/失败布尔（原 void 使页面差分检测失效） */
+  sendText: (body: string) => Promise<boolean>;
   /**
    * 发送语音消息
    *

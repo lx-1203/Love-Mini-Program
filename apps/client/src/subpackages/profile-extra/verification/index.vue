@@ -172,6 +172,12 @@ async function chooseImage() {
   });
 }
 
+// MP-R2-VERIFICATION-001：预览用解析后 URL（/api/v1/media、/uploads 相对路径
+// 必须重写为鉴权代理绝对 URL 才能在 mp 端加载）
+const resolvedUploadedImage = computed(() =>
+  uploadedImagePath.value ? resolveMediaUrl(uploadedImagePath.value) : ""
+);
+
 /** 提交认证申请 */
 function submitVerification() {
   // MP-R1-VERIFY-INDEX-002：防重入守卫——按钮置灰不拦截 @tap，showLoading 默认无 mask，
@@ -297,7 +303,11 @@ function applyVerificationView(view: LoveVerificationView): void {
   if (view.studentName) studentName.value = view.studentName;
   if (view.studentId) studentId.value = view.studentId;
   if (view.schoolName) schoolName.value = view.schoolName;
-  if (view.studentIdCardUrl) uploadedImagePath.value = view.studentIdCardUrl;
+  if (view.studentIdCardUrl) {
+    // MP-R2-VERIFICATION-001：uploadedImagePath 保持服务端原始相对路径（单一来源，
+    // isUploadedMediaUrl 据此判定不再重复上传）；预览经 resolvedImagePath 解析
+    uploadedImagePath.value = view.studentIdCardUrl;
+  }
 }
 
 /**
@@ -645,7 +655,7 @@ function onBlur() {
           </view>
           <view v-else class="upload-card__preview">
             <image
-              :src="uploadedImagePath"
+              :src="resolvedUploadedImage" 
               class="upload-card__image"
               mode="aspectFill" lazy-load alt=""
             />

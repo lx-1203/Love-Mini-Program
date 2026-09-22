@@ -1,0 +1,283 @@
+{
+  "round": "R2",
+  "reviewer": "代码审查员-R2-次要21（Layer A 代码层审查，只读，未改任何文件）",
+  "scope": [
+    "subpackages/profile-extra/settings/dnd（免打扰设置）",
+    "subpackages/profile-extra/feedback/history（反馈历史）",
+    "subpackages/chat/official-chat/index（官方客服会话）",
+    "subpackages/setup/campus/index（校区设置）",
+    "subpackages/setup/schedule/index（课表设置）",
+    "subpackages/setup/recommend-pref/index（推荐偏好）",
+    "subpackages/setup/interest/index（兴趣设置）",
+    "subpackages/support/feedback/index（意见反馈）"
+  ],
+  "issues": [
+    {
+      "id": "MP-R2-OFFICIALCHAT-001",
+      "round": "R2",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Regression",
+      "severity": "P2",
+      "description": "MP-R1-OFFICIAL-003 / R21-OFFICIALCHAT-001（加载后从未滚底，最后一条消息被截断）修复不完整：① mock 分支初始加载 3 条历史消息后从不调用 scrollToBottom（仅当存在本地报名通知时才滚底），mock 是本项目演示/截图主模式，消息多于视口时最后一条历史消息初始不可见；② real 分支的滚底定时器存在挂载竞态——骨架 gate ready 在 onLoad 后 500ms 才放行（chat-body/v-else 未渲染前 scroll-view 不存在），而「fetch 完成 +120ms」的 scrollToBottom 在 fetch 快于约 380ms 时会把 scroll-into-view 赋给一个尚未挂载的 scroll-view，初始属性是否触发定位无保证，滚底可能失效。",
+      "evidence": "official-chat/index.vue:221-261 mock 分支 messages.value=[...] 后仅 254-259 行 pendingNotifies.length>0 才 scrollToBottom；276-279 real 分支 await nextTick(); setTimeout(()=>scrollToBottom(),120)；346-348 onLoad 里 setTimeout(()=>{ready.value=true},500)；361 行 <SkeletonBlock v-if=\"!ready\">、393 行 chat-body v-else（scroll-view 413-420 在 ready=false 时不渲染）；scrollToBottom 实现 191-199。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "三条路径（mock 初载 / real 初载 / 发送与 mock 回复）统一在 scroll-view 挂载后滚底：mock 分支补 scrollToBottom（或与 real 分支共用加载完成钩子）；real 分支滚底时机对齐 ready 放行（如 watch([ready, loading]) 后再锚定），不依赖固定 120ms 与 500ms 的相对先后。",
+      "fix": "在 mock 分支 messages 赋值后无条件 void scrollToBottom()；将滚底改为 watch(ready) 放行后统一执行（fetch 已完成则立即锚定），或把 setTimeout 120ms 改为在 ready.value=true 的同一回调内 nextTick 后锚定。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-INTEREST-001",
+      "round": "R2",
+      "page": "subpackages/setup/interest/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "保存按钮缺防重入守卫：handleSave 入口不检查 saving，双击/快速连点会并发执行两次 getBasicProfile+saveBasicProfile，且每次成功路径都挂一个 600ms 后的返回回调——两个回调先后触发两次 navigateBack/switchTab，栈≥2 时多弹一页（返回到注册流程之外的页面），栈=1 时第二次 switchTab 重复切换。同项目 dnd.vue 已有「if (isSaving.value) return」守卫，本页缺失。",
+      "evidence": "interest/index.vue:32-38 handleSave 开头只有 <3 校验，无 if (saving.value) return；38 行才置 saving=true；53-59 行每次成功都会 setTimeout(600) 内 navigateBack 或 switchTab；对照 dnd.vue:239 if (isSaving.value) return;、campus/index.vue:153-159 同款守卫 + BottomActionBar :disabled（campus/index.vue:282-286）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "handleSave 首行加 if (saving.value) return;，或保存按钮在 saving 态置灰禁点；返回回调只应执行一次。",
+      "fix": "在 interest/index.vue handleSave 校验后、置 saving 前加 saving.value 早退守卫（或把返回动作放入 finally 前的 once 标志），并把保存按钮在 saving 时加禁用类。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OFFICIALCHAT-002",
+      "round": "R2",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "整页样式绕过设计 token（硬约束「设计 token 强制」）：30+ 处裸 hex（导航返回箭头 #36C99A、官方徽标 #FFFFFF/#1F9A75、错误文案 #E94D87、重试按钮 #E8F8F1、气泡文本 #333/#fff、时间戳 #bbb、输入栏 #fff/#f0f0f0、发送键 #36C99A、禁用态 #C7E9DC 等），而同文件又混用 var(--c-brand, #36C99A)/var(--c-neutral-50)——同页双轨制，深色/换肤失效，且与本项目其余 7 页（dnd/history/campus/schedule/recommend-pref/interest/feedback 均走 var(--c-*)）风格割裂。",
+      "evidence": "official-chat/index.vue:571-576（nav-bar background:#fff; border #f0f0f0）、587-595（.nav-back-icon color:#36C99A、.nav-more-icon #333）、614-626（official-badge #FFFFFF/#36C99A/#1F9A75）、640-652（error #E94D87、retry #E8F8F1/#36C99A）、748-751（#bbb）、785-810（bubble #fff/#f0f0f0/#333/#fff）、900-905、908-918（input-bar #fff/#f0f0f0）、981-994（send #36C99A、disabled #C7E9DC）；对照 dnd.vue:499-851 全 token。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "色值统一收敛到 design token（var(--c-*) 带兜底），与页内已有的 var(--c-brand) 用法一致；个别确无 token 的色值补 token 定义而非内联 hex。",
+      "fix": "将上述裸 hex 批量替换为对应 var(--c-*)（#36C99A→var(--c-brand)、#fff→var(--c-bg-container)/var(--c-text-inverse)、#E94D87→var(--c-error) 等），保持视觉回归截图对照。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OFFICIALCHAT-003",
+      "round": "R2",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "UI 文案大量硬编码中文不走 i18n：页面已引入 useI18n 且仅 2 个 toast 用 t()，其余「加载中.../重试/官方/对我说点什么吧～/发送/已读/查看详情/去看看/稍后再说/会话设置敬请期待/更多功能敬请期待/xx人已报名」以及 accountName「寻觅助手」、accountDesc「你的恋爱小管家」全部为字面量；en-US 语言环境下整页仍为中文，与全应用 i18n（dnd/history/feedback/setup 各页全量 t()）不一致。",
+      "evidence": "official-chat/index.vue:56-57（寻觅助手/你的恋爱小管家）、79-83（敬请期待 toast）、361（label=\"加载中\"）、386-389（加载中.../重试）、402-405（hero 文案）、459（人已报名）、463-465（查看详情）、471-476（去看看/稍后再说）、496（已读）、523（placeholder）、538（发送）；对照同文件 151/281 行 t(\"messages.officialChatSendFailed\")/t(\"messages.officialChatLoadFailed\")（key 已存在于 src/i18n/locales/zh-CN.ts，grep=1）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "模板与脚本展示文案全部走 t()（messages.officialChat* 命名空间），账号名/描述回退后端字段、本地字面量仅作 mock 兜底。",
+      "fix": "在 locales zh-CN/en-US 增加 messages.officialChat* 键集，替换 16 处硬编码文案。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-INTEREST-002",
+      "round": "R2",
+      "page": "subpackages/setup/interest/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "进入页面拉取已有兴趣失败被静默吞掉（catch 空注释「静默」）：用户看不到旧兴趣、也不知道加载失败，误以为从未选过；叠加保存路径的降级——保存时二次拉取全量资料失败则退回仅提交 {interestTags}，而 real 模式 saveBasicProfile 为全量 PUT 语义（页内注释自证「real 缺字段 400」），此时保存大概率 400 报错，用户被一个不明所以的错误 toast 卡在流程里。",
+      "evidence": "interest/index.vue:20-30 onLoad try{getBasicProfile}catch(_e){ // 静默 }（无 errorMessage/重试）；42-49 行 merged 拉取失败退回 merged={}，49 行 saveBasicProfile({...merged, interestTags})；页内 40-41 行注释自证「real 缺字段 400」。清单项「API 错误处理：静默失败」；注：catch 带参数且有注释，不违反「禁空 catch {}」字面约束。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.75,
+      "ideal": "加载失败给出非阻断提示或静默重试一次；保存时全量资料拉取失败不应盲目 PUT 半份数据，至少应提示「资料拉取失败，请重试」终止本次保存。",
+      "fix": "onLoad catch 置一个轻提示/重试态；handleSave 中 merged 拉取失败时 toast 并 return，不再以 {} 合并提交。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-SCHEDULE-001",
+      "round": "R2",
+      "page": "subpackages/setup/schedule/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "保存无防重复提交：save() 不置 saving 标志，BottomActionBar 也未传 :disabled（对比 campus 页 :disabled=\"!isComplete || saving\"），响应返回前连点会并发两次 PUT /profile/schedule。real 模式下 http 拦截器按 method+url+body 生成稳定幂等键可被后端去重兜底，mock 模式则直接双写；且页面无任何提交中反馈。",
+      "evidence": "schedule/index.vue:49-72 save() 全程无 saving/guard；119 行 <BottomActionBar :primary-label=\"...\" @primary=\"save\" /> 无 :disabled；对照 campus/index.vue:153-159+282-286、recommend-pref/index.vue:115-117+225（saving 守卫/文案切换）；幂等键机制 services/http.ts:254-278。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "与 campus/recommend-pref 页对齐：saving 标志 + BottomActionBar :disabled=\"saving\" + label 切换「保存中」。",
+      "fix": "补 const saving=ref(false)，save() 入口守卫、finally 复位，并传 :disabled=\"saving\"。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-SETUP-001",
+      "round": "R2",
+      "page": "subpackages/setup/campus/index（关联 schedule/recommend-pref）",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "注册流程进度条与真实链路/完成度链路脱节：SetupProgress 学生变体为 4 步（基本信息→校园认证→推荐偏好→完成），不含「时间安排」；但 campus 页保存与跳过都 replaceAppPath 到 SCHEDULE 页（P0-35 注释明确完成度 30+30+20=80 需要 schedule），schedule 页自身不渲染进度条且两字段必填，recommend-pref 又显示「第3/4步 推荐偏好」。结果：用户在必经的第 3 个页面（schedule）上看不到任何进度指示，进度条步骤序号与实际经过的页面数对不上；campus 页头部注释（第 6 行「学生：profile→campus→recommend-pref→完成」与 140 行「保存后不再进入课表步骤」）也与代码行为（167-169 进 schedule）矛盾，误导后续维护。",
+      "evidence": "SetupProgress.vue:64-72（STEP_DEFS_STUDENT 4 步无 schedule）、67 行注释「课表导入移出主流程」；campus/index.vue:167-169（P0-35 保存进 SCHEDULE）、184-192（skip 也进 SCHEDULE）、5-6 行注释 vs 140 行注释自相矛盾；schedule/index.vue:5-7（30+30+20=80 → profileCompleted）、76 行（无 SetupProgress）、51-60 行（preferredCampusArea/时段必填）；recommend-pref/index.vue:29（学生分支显示 step 3/4）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.7,
+      "ideal": "三选一对齐：①学生变体补「时间安排」步骤（5 步、推荐偏好=4、schedule=3 且 schedule 页挂进度条）；②或流程真正回到「campus→recommend-pref」并把 schedule 保持注册后可选（同时改完成度链路）；③至少统一注释与代码，schedule 页加步骤指示。",
+      "fix": "与产品确认链路后改 STEP_DEFS_STUDENT 或改 campus save/skip 目标；同步修正 campus/index.vue 头部矛盾注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-FEEDBACKHIST-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/feedback/history",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "单条记录详情加载失败时，页面级 errorMessage 被置位，模板 v-if 链让「错误卡」整体替换掉提交记录列表（列表消失），需要点重试重拉列表才能恢复——一次详情请求失败的用户惩罚过重；且错误卡上的「重试」调 loadList()（重拉列表），并不会重试刚才失败的详情展开。",
+      "evidence": "history.vue:162-168 toggleExpand catch 置 errorMessage（页面级）+收起；模板 288-298 errorMessage→错误卡（v-if 首分支）、301-306 空态 v-else-if、309 列表 v-else；296 行重试 @tap=\"handleRetry\"→189-192 handleRetry 只调 loadList()。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.75,
+      "ideal": "详情失败只在展开的记录行内提示（行级错误/重试），不劫持页面级错误分支；列表保持可见。",
+      "fix": "为详情失败引入 record 级错误状态（如 detailError: Record<number,string>），行内渲染重试；catch 不再写页面级 errorMessage。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-FEEDBACK-001",
+      "round": "R2",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "「查看历史」与记录项跳转用裸 uni.navigateTo 且 fail 静默：未复用项目统一导航封装 openAppPath——后者已带页面栈满（≥10 层）redirectTo 兜底与 webview-limit 降级。深链路进入反馈页时（栈满 10 层），两个入口点击后无任何响应（fail 空注释），与历史「点击无效」类缺陷同型。",
+      "evidence": "support/feedback/index.vue:366-381 goHistory（MP-WEIXIN 分支 uni.navigateTo fail:()=>{// 静默}）、388-404 goDetail 同款；对照 utils/navigation.ts:96-116（openAppPath 栈满 redirectTo + errMsg 降级）。注：跳转逻辑内联 .vue 本身符合硬约束，问题仅在未复用栈满兜底。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.65,
+      "ideal": "跳转改走 openAppPath(HISTORY_PAGE_URL)（含栈满兜底），或至少 fail 回调里降级 redirectTo + 轻提示。",
+      "fix": "goHistory/goDetail 改用 openAppPath；如需保留 fail 提示可传 options.fail。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-FEEDBACK-002",
+      "round": "R2",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "提交记录区加载失败被呈现为「暂无反馈」空态：onMounted void feedbackStore.load()，store 吞错不抛（仅写 store.errorMessage），页面既不读该错误也不展示错误/重试，加载失败时 submissions 为空 → EmptyState「暂无反馈」。与 history 页已修复并留档的 MP-R1-FEEDBACKHIST-001 同病，本页未同步修复（同 store 的两消费方错误呈现不一致）。",
+      "evidence": "support/feedback/index.vue:96-98（onMounted void load，无错误处理）、558-562（submissions.length===0 即 EmptyState）；stores/feedback.ts:25-36（load catch 吞错写 errorMessage）；对照 history.vue:108-114（已改为读 store.errorMessage 映射页面错误态）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.7,
+      "ideal": "与 history 页一致：load 后检查 feedbackStore.errorMessage，非空时渲染错误条+重试，而非空态。",
+      "fix": "增加 listError computed（读 store.errorMessage）或 load 后同步到页面级 errorMessage，模板在列表区加错误分支。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-APP-001",
+      "round": "R2",
+      "page": "subpackages/setup/*、support/feedback、profile-extra/feedback/history（AppShell 消费方）",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Architecture",
+      "severity": "P3",
+      "description": "AppShell 没有 showTabBar 这个 prop，5 个页面仍传 :show-tab-bar=\"false\"（无效属性 fallthrough 到根节点）：作者意图无法生效，实际生效的是 tabBarSafe 默认 true → 非 tabBar 子包页统一被垫 paddingBottom calc(env(safe-area-inset-bottom)+180rpx)（为不存在的 tabbar 预留 90px 空白）。属性名与组件真实 prop（tabBarSafe）漂移，属「props 契约失效」的重复性误用。",
+      "evidence": "AppShell.vue:23-54（Props 仅 variant/title/subtitle/showBack/bgVariant/bgImage/fixed/safeArea/tabBarSafe，无 showTabBar）、104-108（bodyPaddingBottom=calc(env+180rpx)）；误用点：campus/index.vue:196、schedule/index.vue:76、recommend-pref/index.vue:158、support/feedback/index.vue:420、history.vue:266-271。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "AppShell 补 showTabBar prop（映射到 tabBarSafe）或消费方改传 :tab-bar-safe=\"false\"；底部留白语义显式化。",
+      "fix": "二选一：组件加 alias prop，或批量替换 5 处调用为 tabBarSafe 语义；替换后核对页面底部留白视觉。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-SETUP-002",
+      "round": "R2",
+      "page": "subpackages/setup/campus|schedule|recommend-pref|interest",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "4 个 setup 页面 scoped 样式尾部重复内联同一段「page { background: #ffffff; }」+同一条 R16 注释（复制粘贴 4 份），且为硬编码色值不走 token（对照硬约束「设计 token 强制」）；interest 页同时还在根节点定义了不同的 var(--c-bg-page) 底色，两处底色语义并存。全局页面底色应收敛到全局样式/token 一处定义。",
+      "evidence": "campus/index.vue:403-406、schedule/index.vue:197-200、recommend-pref/index.vue:347-350、interest/index.vue:135-138（四段完全相同的 page{background:#ffffff} 与注释）；interest/index.vue:89-97（根节点另设 var(--c-bg-page,#EEF7F2)）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "页面底色收敛为 token（如 var(--c-bg-container)）或全局 page 样式单点定义，删除 4 处内联重复。",
+      "fix": "在全局样式（theme/global.scss 或 App.vue）统一 page 背景色，删除 4 个 .vue 中的重复块。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-INTEREST-003",
+      "round": "R2",
+      "page": "subpackages/setup/interest/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "保存按钮样式硬编码且含死代码：「linear-gradient(135deg, #36C99A 0%, #36C99A 100%)」两端同色的无效渐变（等效纯色），颜色/文字色 #36C99A、#ffffff 均未走 token（同文件其余样式均用 var(--c-*)，仅按钮块裸 hex）。",
+      "evidence": "interest/index.vue:120-132（124 行同色渐变、124/131 行 #36C99A/#ffffff；对照同文件 91/112/117 行均用 var）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "background: var(--c-brand)（或真渐变 token --c-gradient-brand），文字 var(--c-text-inverse)。",
+      "fix": "替换 124/131 行为 token；如需渐变用 design-variables 的 --c-gradient-brand。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OFFICIALCHAT-004",
+      "round": "R2",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "同一消息流两套 emoji 渲染：助手气泡走 EmojiText（emoji→SVG），用户气泡用纯 <text> 原样输出——而输入栏表情面板插入的正是 emoji 字符，用户发出的表情在自己气泡里呈系统原生 emoji、在助手侧呈 SVG，观感不一致；另 inputFocus 状态只写不读（@focus/@blur 赋值后无任何消费，表情面板也不随聚焦收起），属死状态。",
+      "evidence": "official-chat/index.vue:493-495（用户气泡 <text class=\"bubble__text--user\">{{ msg.content }}</text>）vs 433-439/480-486（助手 EmojiText）；66 行 inputFocus 定义、527-528 行仅赋值无读取。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.7,
+      "ideal": "用户气泡同样用 EmojiText 渲染（emoji-size 对齐气泡字号）；inputFocus 要么删除、要么用于聚焦时收起表情面板。",
+      "fix": "用户气泡改 <EmojiText :text=\"msg.content\" ...>；inputFocus 接 toggleEmojiPanel(false) 或移除。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-RECOMMEND-001",
+      "round": "R2",
+      "page": "subpackages/setup/recommend-pref/index",
+      "screenshot": "N/A（代码层审查，无截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "scopeOptions 在 setup 期用 t() 求值一次（普通数组非 computed），运行时切换语言后选项标签不更新——与 dnd.vue 同场景用 computed 的做法不一致（FILTER_OPTIONS/重复方式选项均为 computed）；同页 retry 用原生 <button> 未处理小程序 button 默认 ::after 边框（仅 border:0），视觉上可能残留细线。",
+      "evidence": "recommend-pref/index.vue:66-70（const scopeOptions=[{label:t(...)}...] 非 computed）对照 dnd.vue:62-67（computed）、history.vue:64-69（computed）；173 行 retry <button class=\"retry-btn\">，256-266 行样式无 ::after 处理。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.6,
+      "ideal": "选项数组改 computed 与全项目一致；retry 按钮补 button::after{border:none} 或改 view。",
+      "fix": "scopeOptions 包 computed；retry-btn 样式追加 ::after 覆写。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    "【dnd（settings/dnd.vue，852 行，全读）】加载/保存/校验/goBack 守卫齐全：loadSetting catch→错误态+重试(dnd.vue:90-117,293-296,337-347)；handleSave isSaving 守卫+服务端回填(238-275)；goBack 栈=1 switchTab 我的兜底(281-288)——回归 MP-R1-DND-001 代码级已修✔。safe-top 先于 nav-bar(310-314) 且 useMenuButtonRect 注入 --statusbar(31-33)——R3 settings 顶入状态栏根因模式本页无。样式全 token、无 :hover/grid/backdrop-filter/空 catch/emoji；picker/switch/change 事件全部接线；constant()+env() 双写兜底(566-570)。未发现问题。未发现 onShow 刷新需求（设置页单次进入）。开关改动需手动保存属设计（页有保存键）。",
+    "【feedback/history（history.vue，604 行，全读）】onShow 统一加载(260-262)、store.errorMessage 映射错误态(108-114)、ISO 时间已 formatDateTime(37-38,201-203)——回归 MP-R1-FEEDBACK-001 已修✔；自动展开定时器 onUnmounted 清理(47-57,220-245)；附件 previewImage(180-184)。发现 1 项：MP-R2-FEEDBACKHIST-001（详情失败错误卡劫持整页列表）。utils/time.ts formatDateTime/getCurrentLocale 核对有效（Invalid Date→'-'，Intl 兜底链 226-241）；AppShell 返回自带栈=1 兜底(AppShell.vue:111-140)。",
+    "【official-chat（index.vue，1001 行，全读）】死按钮已接线（···/+ toast 敬请期待 78-83、表情接 EmojiPanel 70-77,510-543）——回归 MP-R1-OFFICIALCHAT-002 已修✔；goBack 栈守卫+switchTab ROUTES.TAB.CHAT（TAB_BAR_ROUTES 含 CHAT，routes.ts:259-264）——MP-R1-OFFICIALCHAT-003 已修✔；发送真实 API+幂等键+失败回滚草稿(99-155)；滚底锚点方案(174-199)。发现 4 项：MP-R2-OFFICIALCHAT-001（P0 历史同病：mock 分支初载不滚底+ready 竞态，Regression）、002（token 硬编码）、003（文案不走 i18n）、004（用户气泡 EmojiText 不一致+inputFocus 死状态）。emoji 字符仅存在于 mock 消息正文（120,225,231,249），经 EmojiText 转 SVG 渲染，与 stores/messages/mock-data.ts:71,104 既有模式一致，不判为「业务组件 emoji」违规。LockScreen 解锁后跳离页面（LockScreen.vue:91-104），onLoad 的 isUnlocked 早退无死锁。 IMAGE_PATHS 引用的 5 个资源文件实测存在（src/static/assets/... smile.svg/mascot_smile.png/activity-sports.jpg/close-white.svg/camera.png）。scroll-view 高度链路（100vh flex 列 + chat-body flex:1 + input-bar flex-shrink:0）核对成立；input 有 cursor-spacing。",
+    "【campus（setup/campus/index.vue，409 行，全读）】隐私「?」弹窗 showCancel:false（106-113），取消路径不复存在、页内无 captureException——回归 MP-R1-SETUPCAMPUS-001 已修✔；三级联动重置逻辑正确（77-101）；isReauthScenario 分流保存/跳过目标（149-192）；profileStore.load() 吞错（stores/profile.ts:305-414 catch 不 rethrow），onMounted await 无未处理 rejection。border: var(--c-border-card) 为完整 border 值（design-variables.scss:488），合法。发现关联 2 项：MP-R2-SETUP-001（进度条缺时间安排步骤+页内注释自相矛盾）、MP-R2-SETUP-002（page 底色内联重复）。回归线索 MP-R1-CAMPUSINDEX-001（校名 URL 编码+话题列表恒空）指向 subpackages/campus/campus/index（校园圈，pages.json:123），非本页（本页无话题列表），不在本轮分页范围，未验证。",
+    "【schedule（setup/schedule/index.vue，203 行，全读）】数组渲染全部时段+新增/删除(40-47,83-118)；保存校验/错误 toast/i18n(49-72)。发现 1 项：MP-R2-SCHEDULE-001（无防重复提交，BottomActionBar 未传 disabled）。courseBlocks 以空数组随 {…form} 提交符合契约注释(23-30)；onMounted 依赖 store.load 吞错无未处理 rejection(32-35)；cursor-spacing 存在(79,90)。removal 用 idx 为 key 的潜在复用问题经核对 v-model 绑定数组元素，值随索引更新，不构成发现。",
+    "【recommend-pref（setup/recommend-pref/index.vue，353 行，全读）】GET/PUT /recommendations/preferences/me 不带 userId（83-95,122-135）；catch 置 error=true 错误态+重试(97-110)——review #28 修复在位；saving 守卫(115-117)；未登录默认值分支(91-96)。发现 1 项：MP-R2-RECOMMEND-001（scopeOptions 非 computed + retry 原生 button ::after）。loadIdentity 同步导入(20,27)；SetupProgress clamp 逻辑安全(110-116)。",
+    "【interest（setup/interest/index.vue，141 行，全读）】MP-R1-SETUPINTEREST-001（栈守卫 navigateBack/switchTab 兜底 53-59）与 002（全量合并防清空 40-49）已修✔；MP-R9-STATUS-005（padding-top:calc(var(--statusbar,…)+24rpx) + useMenuButtonRect 注入，7-15,72,92-93）已修✔；TagSelector groups=['interest'] 过滤（MP-R1-SETUPINTEREST-003，80 行；TagSelector.vue:36-58 v-model/update:modelValue 接线核对✔）。发现 2 项：MP-R2-INTEREST-001（P2 无防重入→双提交双返回）、002（onLoad 静默吞错+保存降级 PUT 半份数据）、003（同色渐变+裸 hex）。TagSelector/TagSelector 事件链与 profile-tags 配置核对无断线。",
+    "【support/feedback（index.vue，820 行，全读）】MP-R1-FEEDBACK-001 时间已 formatDateTime(40-41,407-416,580) 已修✔；上传链路（隐私授权→chooseImage→校验→uploadImage，150-265）守卫/取消分支/错误 toast 齐全；提交三类型经 store 布尔返回+store.errorMessage(310-358)；@tap.stop 删除按钮防冒泡(511)；IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG/CAMERA 资源实测存在。发现 2 项：MP-R2-FEEDBACK-001（裸 navigateTo 无栈满兜底）、002（记录区加载失败静默空态，与 history 页已修模式不同步）。历史页路径 /subpackages/profile-extra/feedback/history 已在 pages.json:239 注册，带 ?id= 深链由 history 页 getCurrentPages options 消费。",
+    "【横向核对】硬约束扫证（8 页+直接组件）：:hover 伪类 0 处（仅注释与 :hover-stay-time 属性，grep 实证）；display:grid/grid-template 0 处；空 catch{} 0 处（grep 'catch\\s*{\\s*}' 0 命中）；8 页无 import.meta.env 直读（仅注释提及）；backdrop-filter 0 处；页面切换逻辑均内联 .vue 或调用 .ts 工具（navigation/time/media/haptic 均 .ts 导入）✔；CardSwiper 本轮页面未引用（N/A）；自定义组件宿主 flex:1 项：TagSelector/EmojiPanel 在 flex 列容器内由默认 stretch/收缩吸收，未发现布局断点，判 N/A。组件事件接线全量核对：BottomActionBar@primary（campus/schedule/recommend-pref/feedback 4 页均监听）、EmojiPanel@select、TagSelector v-model、AppShell@back（默认实现）均无断线。i18n 抽查 17 个 key 全部存在于 src/i18n/locales/zh-CN.ts。",
+    "【回归线索核对结论（仅限本轮 8 页，代码级）】已修✔：MP-R1-DND-001、MP-R1-OFFICIALCHAT-002、MP-R1-OFFICIALCHAT-003、MP-R1-SETUPCAMPUS-001、MP-R1-SETUPINTEREST-001/002（但衍生出新缺陷 MP-R2-INTEREST-001）、MP-R1-FEEDBACK-001、MP-R9-STATUS-005。部分修复→立案 Regression：MP-R1-OFFICIAL-003/R21-OFFICIALCHAT-001（mock 分支未覆盖+ready 竞态，MP-R2-OFFICIALCHAT-001）。不在本轮页面范围未验证：MP-R3-PROFILE-001/002、MP-R3-SETTINGS-001、MP-R7-PROFILE-001/002/003/004/005、MP-R1-SETTINGS-001/002（settings/index 与 profile 页非本轮分页）、MP-R1-CAMPUSINDEX-001（实为 subpackages/campus/campus/index 校园圈页）。本轮未运行任何开发者工具/截图/构建，全部结论来自源码阅读与 grep/文件存在性检查，未修改任何文件。"
+  ]
+}

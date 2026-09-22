@@ -74,7 +74,12 @@ async function loadCards(filter: { distanceMax?: number }) {
 
 /** 返回上一页（右上角固定按钮） */
 function goBack() {
-  uni.navigateBack();
+  // MP-R2-LNEARBY-001：栈底兜底（分享/直达栈=1 时裸 navigateBack 静默失败）
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
 }
 
 /** 2026-08-10 功能补齐：附近的人滑动/喜欢/发消息接真实链路（与寻觅页一致） */

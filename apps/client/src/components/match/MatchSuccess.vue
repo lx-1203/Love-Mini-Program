@@ -1,4 +1,7 @@
 <script setup lang="ts">
+// MP-R2-...-MATCH-SUCCESS-009：启用 virtualHost 使宿主不产生包裹节点，
+// 根 min-height:100% 与 actions 的 margin-top:auto 高度链成立（CTA 锚底）
+defineOptions({ options: { virtualHost: true } });
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
@@ -149,13 +152,19 @@ function getScoreIcon(index: number): string {
         <text class="match-success__secondary-text">{{ t('matchSuccess.explore') }}</text>
       </view>
       <view class="match-success__share" hover-class="match-success__share--pressed" @tap="emit('share')">
-        <text class="match-success__share-icon">⤴</text><text class="match-success__share-text">分享喜悦</text>
+        <image class="match-success__share-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SHARE" mode="aspectFit" alt="" /><text class="match-success__share-text">分享喜悦</text>
       </view>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
+/* MP-R2-...-MATCH-SUCCESS-009：宿主撑满 */
+:host {
+  flex: 1;
+  min-height: 100%;
+}
+
 .match-success {
   min-height: 100%;
   display: flex;
@@ -398,6 +407,11 @@ function getScoreIcon(index: number): string {
   color: #8a9694;
 }
 
+.match-success__share-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 6rpx;
+}
 .match-success__share {
   padding: 14rpx 0;
   text-align: center;

@@ -108,12 +108,12 @@ const icons = {
 }
 
 .match-actions__btn--pass {
-  background: #ffffff;
+  background: var(--c-neutral-0, #ffffff);
   border: 1rpx solid #EDF0F0;
 }
 
 .match-actions__btn--super {
-  background: #ffffff;
+  background: var(--c-neutral-0, #ffffff);
   border: 1rpx solid #EDF0F0;
 }
 

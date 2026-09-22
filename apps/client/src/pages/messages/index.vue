@@ -7,6 +7,8 @@
  */
 import { computed, ref, watch } from "vue";
 import { resolveMediaUrl } from "@/utils/media";
+// MP-R2-PAGES-MESSAGES-INDEX-004：聊天列表时间收敛到 utils/time 单一实现
+import { formatChatListTime } from "../../utils/time";
 import { onLoad, onShow, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
@@ -37,7 +39,8 @@ useTabBar(3);
 usePageAccess({ ...messagesPageRequirements, requiresProfile: false });
 
 // 2026-08-25 P0：i18n（标题/副标接入 chat.headerTitle / chat.headerSubtitle）
-const { t } = useI18n();
+// MP-R2-PAGES-MESSAGES-INDEX-004：formatTime 收敛到 utils/time 需要当前 locale
+const { t, locale: locale_ } = useI18n();
 
 // R5(INDEP-004)：滚动后内容滑入状态栏与系统时间叠印——与首页同款滚动遮罩
 const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0);
@@ -150,7 +153,9 @@ const filteredSessions = computed(() => {
 
 const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
   // 2026-08-30 竞态修复：改用聚合 pageLoading（sessions/signals/notifications/interactions 各自独立标志）
-  if (messagesStore.pageLoading) return "loading";
+  // MP-R2-PAGES-MESSAGES-INDEX-006：force 下拉刷新时保留现有内容（原 pageLoading 即
+  // 整页切骨架再切回，内容闪烁）——仅首屏（无任何可展示数据）才显示整块 Skeleton
+  if (messagesStore.pageLoading && orderedSessions.value.length === 0 && warmPeople.value.length === 0) return "loading";
   // MP-R1-PAGES-MESSAGES-INDEX-008：errorMessage 与整页 error 态解耦——长按置顶/
   // 删除等单会话操作失败也会写入 store.errorMessage，原判定会把整页替换成 ErrorState。
   // 现仅「无任何可展示内容且带错误」才判 error（首屏加载失败），操作失败由页面 toast。
@@ -301,14 +306,19 @@ function getStatusClass(status?: string): string {
 
 function formatTime(dateStr?: string | null): string {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
+  const ts = Date.parse(dateStr);
   // MP-R1-PAGES-MESSAGES-INDEX-004：NaN 防护（非法时间串不再渲染 "NaN/NaN"）
-  if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) {
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  }
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  if (Number.isNaN(ts)) return "";
+  // MP-R2-PAGES-MESSAGES-INDEX-004：收敛到 utils/time 单一实现
+  // （当天/昨天/本周/更早 + i18n；原页面私有副本与全仓 6 处近似实现行为漂移）
+  const locale = (locale_.value === "en-US" ? "en-US" : "zh-CN") as "zh-CN" | "en-US";
+  return formatChatListTime(ts, locale);
+}
+
+/** MP-R2-PAGES-MESSAGES-INDEX-003：头像加载失败兜底（原内联版缺失） */
+const avatarFailedIds = ref<Set<string>>(new Set());
+function onAvatarError(session: MessageSession): void {
+  avatarFailedIds.value = new Set(avatarFailedIds.value).add(session.id);
 }
 </script>
 
@@ -353,7 +363,7 @@ function formatTime(dateStr?: string | null): string {
         </template>
         <template #empty>
           <view class="empty-chat">
-            <image class="empty-chat__img" :src="resolveMediaUrl('/static/assets/images/mascot/default.png')" mode="aspectFit" />
+            <image class="empty-chat__img" :src="IMAGE_PATHS.MASCOT.DEFAULT" mode="aspectFit" />
             <text class="empty-chat__title">还没有新的缘分</text>
             <text class="empty-chat__desc">去附近看看吧</text>
           </view>
@@ -441,7 +451,7 @@ function formatTime(dateStr?: string | null): string {
                 @tap="openWarmPerson(person)"
               >
                 <view class="warm-item__avatar-wrap">
-                  <image class="warm-item__avatar" :src="person.avatarUrl || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
+                  <image class="warm-item__avatar" :src="person.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
                   <view class="warm-item__heart-icon">
                     <image class="warm-item__heart-img" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" />
                   </view>
@@ -457,119 +467,69 @@ function formatTime(dateStr?: string | null): string {
               <text class="section__title">最近聊天</text>
             </view>
 
-            <template v-if="!searchKeyword">
-              <view v-if="orderedSessions.length === 0" class="section__empty">
-                <text class="section__empty-text">暂无聊天记录</text>
+            <!-- MP-R2-PAGES-MESSAGES-INDEX-003：主列表与搜索分支两段 ~50 行内联模板
+                 收敛为单一份（显示列表 = 搜索态 filteredSessions / 常态 orderedSessions），
+                 pinned/muted/时间等修复不再需要双写 -->
+            <view
+              v-for="session in (searchKeyword ? filteredSessions : orderedSessions)"
+              :key="session.id"
+              class="chat-item"
+              hover-class="chat-item--hover"
+              @tap="openSession(session)"
+              @longpress="onSessionLongpress(session)"
+            >
+              <view class="chat-item__avatar-wrap">
+                <image
+                  class="chat-item__avatar"
+                  :src="avatarFailedIds.has(session.id) || !session.partnerAvatar ? IMAGE_PATHS.DEFAULT_AVATAR : session.partnerAvatar"
+                  mode="aspectFill"
+                  @error="onAvatarError(session)"
+                />
+                <!-- MP-R1-PAGES-MESSAGES-INDEX-004：在线绿点已移除（无真实数据源） -->
               </view>
-              <view
-                v-for="session in orderedSessions"
-                :key="session.id"
-                class="chat-item"
-                hover-class="chat-item--hover"
-                @tap="openSession(session)"
-                @longpress="onSessionLongpress(session)"
-              >
-                <view class="chat-item__avatar-wrap">
-                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
-                  <!-- MP-R1-PAGES-MESSAGES-INDEX-004：移除在线绿点——(session as any).online 恒 undefined
-                       （MessageSession 无该字段、无数据源），绿点从未渲染；待真实在线态数据源接入后再恢复 -->
-                </view>
-                <view class="chat-item__content">
-                  <view class="chat-item__top-row">
-                    <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
-                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-002）：置顶会话角标 -->
-                    <image
-                      v-if="session.pinned"
-                      class="chat-item__pin-icon"
-                      :src="IMAGE_PATHS.ICONS_EMOJI.PIN"
-                      mode="aspectFit"
-                    />
-                    <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
-                      <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
-                    </view>
-                  </view>
-                  <EmojiText
-                    v-if="session.lastMessagePreview"
-                    :text="session.lastMessagePreview"
-                    emoji-size="24rpx"
-                    text-class="chat-item__preview"
+              <view class="chat-item__content">
+                <view class="chat-item__top-row">
+                  <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
+                  <image
+                    v-if="session.pinned"
+                    class="chat-item__pin-icon"
+                    :src="IMAGE_PATHS.ICONS_EMOJI.PIN"
+                    mode="aspectFit"
                   />
-                  <text v-else class="chat-item__preview">暂无消息</text>
+                  <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
+                    <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
+                  </view>
                 </view>
-                <view class="chat-item__right">
-                  <view class="chat-item__time-row">
-                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：免打扰会话行内图标 -->
-                    <image
-                      v-if="session.muted"
-                      class="chat-item__muted-icon"
-                      :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
-                      mode="aspectFit"
-                    />
-                    <!-- MP-R1-PAGES-MESSAGES-INDEX-004：真实字段 lastMessageSentAt（原 (session as any).lastMessageTime 恒 undefined → 时间列恒空） -->
-                    <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
-                  </view>
-                  <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
-                    <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
-                  </view>
+                <EmojiText
+                  v-if="session.lastMessagePreview"
+                  :text="session.lastMessagePreview"
+                  emoji-size="24rpx"
+                  text-class="chat-item__preview"
+                />
+                <text v-else class="chat-item__preview">暂无消息</text>
+              </view>
+              <view class="chat-item__right">
+                <view class="chat-item__time-row">
+                  <image
+                    v-if="session.muted"
+                    class="chat-item__muted-icon"
+                    :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
+                    mode="aspectFit"
+                  />
+                  <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
+                </view>
+                <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
+                  <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
                 </view>
               </view>
-            </template>
+            </view>
 
-            <template v-else>
-              <view v-if="filteredSessions.length === 0" class="section__empty">
-                <text class="section__empty-text">未找到匹配的聊天</text>
-              </view>
-              <view
-                v-for="session in filteredSessions"
-                :key="session.id"
-                class="chat-item"
-                hover-class="chat-item--hover"
-                @tap="openSession(session)"
-                @longpress="onSessionLongpress(session)"
-              >
-                <view class="chat-item__avatar-wrap">
-                  <image class="chat-item__avatar" :src="session.partnerAvatar || '/static/assets/default-avatar.jpg'" mode="aspectFill" />
-                </view>
-                <view class="chat-item__content">
-                  <view class="chat-item__top-row">
-                    <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
-                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-002）：置顶会话角标（搜索结果同款） -->
-                    <image
-                      v-if="session.pinned"
-                      class="chat-item__pin-icon"
-                      :src="IMAGE_PATHS.ICONS_EMOJI.PIN"
-                      mode="aspectFit"
-                    />
-                    <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
-                      <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
-                    </view>
-                  </view>
-                  <EmojiText
-                    v-if="session.lastMessagePreview"
-                    :text="session.lastMessagePreview"
-                    emoji-size="24rpx"
-                    text-class="chat-item__preview"
-                  />
-                  <text v-else class="chat-item__preview">暂无消息</text>
-                </view>
-                <view class="chat-item__right">
-                  <view class="chat-item__time-row">
-                    <!-- 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：免打扰会话行内图标（搜索结果同款） -->
-                    <image
-                      v-if="session.muted"
-                      class="chat-item__muted-icon"
-                      :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
-                      mode="aspectFit"
-                    />
-                    <!-- MP-R1-PAGES-MESSAGES-INDEX-004：真实字段 lastMessageSentAt（搜索结果行同款修复） -->
-                    <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
-                  </view>
-                  <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
-                    <text class="chat-item__unread-text">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>
-                  </view>
-                </view>
-              </view>
-            </template>
+            <view
+              v-if="(searchKeyword ? filteredSessions : orderedSessions).length === 0"
+              class="section__empty"
+            >
+              <text class="section__empty-text">{{ searchKeyword ? '未找到匹配的聊天' : '暂无聊天记录' }}</text>
+            </view>
           </view>
 
           <!-- ========== 活动推荐（R3：后移，核心会话列表优先） ========== -->
@@ -611,6 +571,9 @@ function formatTime(dateStr?: string | null): string {
   background: var(--c-bg-page, #EEF7F2);
   display: flex;
   flex-direction: column;
+  /* MP-R2-PAGES-MESSAGES-INDEX-002：自定义 tabBar 为 fixed 悬浮层（实高 160rpx+safe），
+     原无底部避让——最后一条会话被遮且无法滚动出来；与 home/discover 页同口径预留 */
+  padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
 }
 
 .messages-page__top-scrim {

@@ -255,11 +255,11 @@ function friendJoinCount(cid: string, _memberCount: number): number {
 
 /** 2026-08-25 P0：右上角"写话题 + ···"操作（规格书 15.2） */
 function onTopicsMore() {
+  // MP-R2-TOPICS-001：收敛为仅「写话题」——原「举报/分享」为无行为死选项
   uni.showActionSheet({
-    itemList: ["写话题", "举报圈子", "分享圈子"],
+    itemList: ["写话题"],
     success: ({ tapIndex }) => {
       if (tapIndex === 0) goToPostTopic();
-      // 其他选项为占位
     },
   });
 }
@@ -297,7 +297,12 @@ function goCircleDetail(_id: string) {
 }
 
 function goBack() {
-  uni.navigateBack();
+  // MP-R2-NAV-001：栈底兜底（分享卡/深链直开栈=1 时裸 navigateBack 静默失败）
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/circles/circles/index" });
+  }
 }
 
 onLoad((query) => {

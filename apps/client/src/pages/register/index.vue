@@ -21,6 +21,9 @@ import { computed, ref, onUnmounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
+// MP-R2-PAGES-REGISTER-INDEX-002：注入 --statusbar（与 login/success 同模式；
+// DevTools env 恒 0，样式层 calc(var(--statusbar,...)) 必须由 JS 注入才有真机补偿值）
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
 import { registerUser, sendSmsCode } from "../../services/auth";
 import { AppApiError } from "../../services/api-error";
@@ -35,6 +38,8 @@ const ICONS = IMAGE_PATHS.REGISTER_ICONS;
 const appConfigStore = useAppConfigStore();
 const { isRegisterOpen } = storeToRefs(appConfigStore);
 const sessionStore = useSessionStore();
+// MP-R2-PAGES-REGISTER-INDEX-002：--statusbar 注入到页面根节点
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /* ---------------- 表单状态 ---------------- */
 /** 手机号（显示态：自动格式化 138 8888 8888） */
@@ -115,11 +120,13 @@ const pwdStrength = computed(() => {
   if (v.length >= 8 && hasLetter && hasDigit) return 2;
   return 1;
 });
+// MP-R2-PAGES-REGISTER-INDEX-005：色值改走 CSS 变量（内联 :style 支持 var()），
+// 不再硬编码 hex——深色主题/品牌色调整时自动跟随
 const PWD_STRENGTH_META = [
   { label: "", color: "", text: "" },
-  { label: "弱", color: "#E5454D", text: "#E5454D" },
-  { label: "中", color: "#F59E0B", text: "#B87400" },
-  { label: "强", color: "#36C99A", text: "#1F8D6A" },
+  { label: "弱", color: "var(--c-error, #E5454D)", text: "var(--c-error, #E5454D)" },
+  { label: "中", color: "var(--c-warning, #F59E0B)", text: "var(--c-warning, #B87400)" },
+  { label: "强", color: "var(--c-brand, #36C99A)", text: "var(--c-brand-700, #1F8D6A)" },
 ];
 
 /** 按强度取样式元数据（noUncheckedIndexedAccess 下索引访问为 T|undefined，越界回退空样式） */
@@ -148,6 +155,9 @@ function onPhoneInput(e: Event & { detail?: { value?: string } }) {
     [a, b, c].filter(Boolean).join(" "),
   );
   if (errors.value.phone) errors.value.phone = "";
+  // MP-R2-PAGES-REGISTER-INDEX-004：号码内容变化即认为「已注册」结论失效，
+  // 与 clearPhone 的复位口径对齐（否则「用这个手机号登录」出口仍指向旧号码语境）
+  if (phoneRegistered.value) phoneRegistered.value = false;
 }
 
 function onSmsInput(e: Event & { detail?: { value?: string } }) {
@@ -277,6 +287,11 @@ async function handleSendSms() {
   }
 }
 
+// MP-R2-PAGES-REGISTER-INDEX-003：B6 兜底跳转定时器保存引用——
+// ① onUnmounted 可取消（原实现 800ms 窗口内离开页面后 goLogin 仍执行，
+//    navigateBack/reLaunch 语义在页面出栈后失真）；② onShow 重入先取消防叠加。
+let b6ExitTimer: ReturnType<typeof setTimeout> | null = null;
+
 onShow(() => {
   // 时间戳基准：回前台按剩余时间刷新（切后台 setInterval 冻结场景）
   if (smsEndTime > Date.now()) {
@@ -288,7 +303,11 @@ onShow(() => {
   // B6：注册功能被后台关闭（register_open=false）→ 提示并退出
   if (!isRegisterOpen.value) {
     toast("注册功能暂未开放");
-    setTimeout(() => goLogin(), 800);
+    if (b6ExitTimer) clearTimeout(b6ExitTimer);
+    b6ExitTimer = setTimeout(() => {
+      b6ExitTimer = null;
+      goLogin();
+    }, 800);
   }
 });
 
@@ -296,6 +315,11 @@ onUnmounted(() => {
   if (smsTimer) clearInterval(smsTimer);
   if (shakeTimer) clearTimeout(shakeTimer);
   if (agreeShakeTimer) clearTimeout(agreeShakeTimer);
+  // MP-R2-PAGES-REGISTER-INDEX-003：取消挂起的 B6 跳转
+  if (b6ExitTimer) {
+    clearTimeout(b6ExitTimer);
+    b6ExitTimer = null;
+  }
 });
 
 /* ---------------- 注册链路（设计规范 §6.3） ---------------- */
@@ -391,13 +415,19 @@ function handleRegisterError(error: unknown) {
     toast(detail || "注册功能暂未开放");
     return;
   }
-  // 非预期错误上报（预期业务拒绝为噪音不上报——与登录页口径一致）
+  // MP-R2-PAGES-REGISTER-INDEX-001：预期业务拒绝（AppApiError 4xx，已注册/验证码错误/
+  // 未成年/昵称长度等）为噪音不上报；非 AppApiError（网络/未知）或 5xx 才补报
   if (!apiError) {
     captureException(error, { source: "register.submit" });
     toast("网络异常，请检查网络后重试");
     return;
   }
-  toast(apiError.status >= 500 ? "服务暂时不可用，请稍后重试" : detail || "网络异常，请检查网络后重试");
+  if (apiError.status >= 500) {
+    captureException(error, { source: "register.submit" });
+    toast("服务暂时不可用，请稍后重试");
+    return;
+  }
+  toast(detail || "网络异常，请检查网络后重试");
 }
 
 /* ---------------- 导航 ---------------- */
@@ -424,7 +454,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 </script>
 
 <template>
-  <view class="register-page">
+  <view class="register-page" :style="menuStyleVars">
     <!-- 页头：插图全出血 + 底部渐隐（设计稿 01） -->
     <view class="hero">
       <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
@@ -768,7 +798,9 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .hero__back {
   position: absolute;
   left: 32rpx;
-  top: 88rpx;
+  /* MP-R2-PAGES-REGISTER-INDEX-002：状态栏高度补偿（与 login/success 同模式）——
+     navigationStyle:custom 下页面自 y=0 布局，固定 88rpx 在 >44px 状态栏机型压入系统区域 */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 88rpx);
   width: 68rpx;
   height: 68rpx;
   border-radius: 50%;
@@ -791,7 +823,8 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .hero__txt {
   position: absolute;
   left: 48rpx;
-  top: 208rpx;
+  /* MP-R2-PAGES-REGISTER-INDEX-002：同 hero__back，状态栏动态补偿 */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 208rpx);
   display: flex;
   flex-direction: column;
   z-index: 2;
@@ -801,7 +834,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   font-size: 19rpx;
   font-weight: 800;
   letter-spacing: 4rpx;
-  color: #1f8d6a;
+  color: var(--c-brand-700, #1f8d6a);
   margin-bottom: 10rpx;
 }
 
@@ -1000,7 +1033,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 }
 
 .sms-btn--sending .sms-btn__text {
-  color: #1f8d6a;
+  color: var(--c-brand-700, #1f8d6a);
 }
 
 .sms-btn--disabled {
@@ -1012,7 +1045,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   height: 26rpx;
   border-radius: 50%;
   border: 4rpx solid rgba(31, 141, 106, 0.25);
-  border-top-color: #1f8d6a;
+  border-top-color: var(--c-brand-700, #1f8d6a);
   animation: spin 0.8s linear infinite;
 }
 
@@ -1056,7 +1089,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   height: 96rpx;
   margin-top: 8rpx;
   border-radius: 24rpx;
-  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);
+  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
@@ -1155,7 +1188,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 }
 
 .agree__link {
-  color: #1f8d6a;
+  color: var(--c-brand-700, #1f8d6a);
   font-weight: 500;
 }
 

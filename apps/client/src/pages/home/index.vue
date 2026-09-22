@@ -32,6 +32,10 @@ import BottomSheet from "../../components/common/BottomSheet.vue";
 import { fetchCurrentLocation, buildLocationText, reportLocation } from "../../utils/location";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
+// MP-R2-PAGES-HOME-INDEX-001：受保护请求登录门（real 无 token 时 /home/dashboard 401
+// → redirectToLogin 强踢登录页，击穿「未登录预览」形态）
+import { useMock } from "../../stores/helpers/use-mock";
+import { getToken } from "../../services/http";
 
 useTabBar(0);
 
@@ -80,6 +84,8 @@ let lastFeedFetchTs = 0;
 
 function refreshHomeFeed() {
   if (loading.value) return;
+  // MP-R2-PAGES-HOME-INDEX-001：real 未登录不发受保护的 /home/dashboard（mock 放行）
+  if (!useMock() && !getToken()) return;
   lastFeedFetchTs = Date.now();
   void homeStore.fetchDashboard();
 }
@@ -153,8 +159,14 @@ async function likeToday() {
   }
 }
 
+/** MP-R2-PAGES-HOME-INDEX-003：「换一位」防重入/in-flight 标志（原裸奔，连点并发
+ *  多个 rotate 请求，乱序响应覆盖 homeFeed，显示的推荐人不是最后一次点击结果） */
+const rotateLoading = ref(false);
+
 async function rotateToday() {
   if (!requireLogin()) return;
+  if (rotateLoading.value) return;
+  rotateLoading.value = true;
   // MP-R1-PAGES-HOME-INDEX-002：与 likeToday 同口径 try/catch——
   // 此前裸 await，real 模式接口失败即未处理 Promise 拒绝，且 likeSent 已被提前
   // 重置（心动态被清但推荐人不换、无任何提示）。现：失败 toast；likeSent 重置
@@ -168,6 +180,8 @@ async function rotateToday() {
     likeSent.value = false;
   } catch {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+  } finally {
+    rotateLoading.value = false;
   }
 }
 
@@ -183,18 +197,38 @@ function openCircle(circleId: number) {
   openAppPath(`${ROUTES.CIRCLES.HOME}?circleId=${encodeURIComponent(String(circleId))}`);
 }
 
+/** MP-R2-PAGES-HOME-INDEX-004：「加入」按钮 pending 守卫（原无防重入，连点 mock 下
+ *  重复 memberCount+1、real 下重复 POST /circles/{id}/join） */
+const joinPendingIds = ref<Set<number>>(new Set());
+
 async function joinCircle(circleId: number) {
   if (!requireLogin()) return;
+  if (joinPendingIds.value.has(circleId)) return;
   // MP-R1-HOME-016（2026-09-20）：原 `.catch(() => {})` 吞错且成功后只更新 circle store，
   // 首页 feed 的 joined 恒 false → 点击零反馈。现：失败给 toast；成功同步 homeFeed
   // 单一数据源（按钮立即翻转为「已加入」）并给成功提示。
+  const pending = new Set(joinPendingIds.value);
+  pending.add(circleId);
+  joinPendingIds.value = pending;
   try {
     await circleStore.joinCircle(String(circleId));
     const rec = homeStore.homeFeed?.interestRecommendations?.find((c) => c.id === circleId);
-    if (rec) rec.joined = true;
+    if (rec) {
+      rec.joined = true;
+      // MP-R2-PAGES-HOME-INDEX-004：人数与 circle store 同步（mock joinCircle 已
+      // memberCount+1；real 从返回的 memberCount 回填），消除首页与圈子页人数漂移
+      const storeCircle = circleStore.circles.find((c) => c.id === String(circleId));
+      if (storeCircle && typeof storeCircle.memberCount === "number") {
+        rec.memberCount = storeCircle.memberCount;
+      }
+    }
     uni.showToast({ title: t("common.success"), icon: "success" });
   } catch {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+  } finally {
+    const next = new Set(joinPendingIds.value);
+    next.delete(circleId);
+    joinPendingIds.value = next;
   }
 }
 
@@ -494,12 +528,13 @@ page {
 .home-section-gap {
   /* 2026-09-03 R11 终极修 + 2026-09-03 收尾：custom-tabBar 恒在页面之上 + 中央浮岛圆形按钮 z-index 高，
      底部 InviteBanner 必须留出净高让内容完整露出。统一收敛到设计 token
-     --tab-bar-clear-zone（= 360rpx + env(safe-area-inset-bottom)，见 theme/design-variables.scss），
+     --tab-bar-clear-zone（= 300rpx + env(safe-area-inset-bottom)，见 theme/design-variables.scss；
+     MP-R2-PAGES-HOME-INDEX-007：兜底值与 token 本体对齐，消除 360rpx 时代残留）,
      页面级共用工具类：.base-tabbar-clear-zone（styles/_components.scss）。 */
   display: block;
   width: 100%;
   flex-shrink: 0;
-  height: var(--tab-bar-clear-zone, calc(360rpx + env(safe-area-inset-bottom)));
+  height: var(--tab-bar-clear-zone, calc(300rpx + env(safe-area-inset-bottom)));
 }
 
 /* ========== 2026-09-02 R5：定位 BottomSheet 弹窗样式 ========== */

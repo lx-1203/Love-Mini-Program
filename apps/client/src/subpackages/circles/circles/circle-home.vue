@@ -458,7 +458,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             {{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}
             · {{ circle.topicCount }} {{ t("circle.topicUnit") }}
           </text>
-          <view class="info-friends">
+          <view v-if="friendJoinedCount > 0" class="info-friends">
             <view class="info-friend-avatars">
               <image
                 v-for="(avatar, idx) in friendAvatars"

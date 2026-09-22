@@ -1,0 +1,294 @@
+{
+  "round": "R2",
+  "reviewer": "A2 代码审查员（Layer A，只读源码审查）",
+  "scope": [
+    "subpackages/profile-extra/verification/index",
+    "subpackages/profile-extra/verification/real-name",
+    "subpackages/profile-extra/profile/other",
+    "subpackages/profile-extra/profile/location",
+    "subpackages/profile-extra/profile/privacy",
+    "subpackages/profile-extra/profile/album",
+    "subpackages/profile-extra/profile/favorites",
+    "subpackages/profile-extra/profile/tasks"
+  ],
+  "issues": [
+    {
+      "id": "MP-R2-OTHER-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "他人主页 real 模式：相册「生活瞬间」缩略图与「最近动态」帖子图片/作者头像以裸 <image> 直连后端相对路径，被小程序当包内文件（MP-R7-PROFILE-001/002 同病回归）。同页大图查看层却走了 resolveMediaUrl，同一数组两种待遇。",
+      "evidence": "① PublicGallery.vue:19 `<image class=\"public-gallery__img\" :src=\"photo\" …>` 直连 photos 原始项；② PublicMoment.vue:59 `:src=\"authorAvatar\"`、:77 `:src=\"img\"` 同样裸连（PublicProfile.vue:71/75 传入的即 profile.media.photos / posts 原始值）；③ 后端上传返回并落库相对路径：LocalMediaStorageService.java:120 `URL_PREFIX = \"/api/v1/media/\"`、:308 `String url = URL_PREFIX + relativePath`，UserProfileController.java:86/117-119 将 avatarUrl/photoGallery 原样放入 DTO；④ media.ts:193-201 明确注释「相对路径会被 mp 当作包内文件…需拼 apiRoot 为绝对 URL」且 resolveMediaUrl 处理 MEDIA_PROXY_PREFIX；⑤ 对照：other.vue:91 大图查看层 `resolveMediaUrl(src)`、album.vue:469 缩略图 `resolveMediaUrl(cell.url)`，证明项目规范是渲染层必须解析，PublicGallery/PublicMoment 是漏网点。",
+      "sources": ["code:apps/client/src/components/profile/public/PublicGallery.vue:19", "code:apps/client/src/components/profile/public/PublicMoment.vue:59", "code:apps/client/src/components/profile/public/PublicMoment.vue:77", "code:apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java:308", "code:apps/client/src/utils/media.ts:198", "code:apps/client/src/subpackages/profile-extra/profile/other.vue:91"],
+      "confidence": 0.85,
+      "ideal": "real 模式下他人主页相册/动态图片经鉴权代理 URL（带 token）正常出图，网络面板有图片请求，与 profile 页相册行为一致。",
+      "fix": "在 PublicGallery/PublicMoment 渲染层统一 `resolveMediaUrl(photo)`（或与 album.vue:469 同款），或在 fetchPublicProfile 返回前对 media.photos/posts[].images/basic.avatar 批量 resolveMediaUrls。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-VERIFICATION-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/verification/index + real-name",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Regression",
+      "severity": "P2",
+      "description": "认证中心/实名认证 real 模式：驳回（rejected）后表单回显把服务端相对路径（/api/v1/media/…）直接赋给图片 ref 并裸连 <image>，预览必裂；且再次提交时 isUploadedMediaUrl 对相对路径判 false，会把该相对路径当本地文件走 uploadPostImage 上传，必然失败，驳回后无法重新提交。",
+      "evidence": "① verification/index.vue:300 `uploadedImagePath.value = view.studentIdCardUrl`（服务端路径）→ 模板 :647-651 `<image :src=\"uploadedImagePath\">` 裸连；② real-name.vue:301-302 同构回显 → 模板 :531-534/:555-558 裸连；③ media.ts:88-103 isUploadedMediaUrl 仅 http(s) 且非本地协议返回 true，相对路径返回 false；④ verification/index.vue:235-241 / real-name.vue:234-240 据此把 cardUrl/frontUrl 送入 clientApi.uploadPostImage（api.ts:882 uploadFileViaUni），uni.uploadFile 的 filePath 为非本地路径时必败；⑤ 后端落库为相对路径：LocalMediaStorageService.java:308。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/verification/index.vue:300", "code:apps/client/src/subpackages/profile-extra/verification/index.vue:647", "code:apps/client/src/subpackages/profile-extra/verification/real-name.vue:301", "code:apps/client/src/utils/media.ts:88", "code:apps/client/src/services/api.ts:882"],
+      "confidence": 0.8,
+      "ideal": "驳回后回显的证件图经 resolveMediaUrl 正常预览；重新提交时已是服务端路径的图片不再走本地上传。",
+      "fix": "回显时 `uploadedImagePath.value = resolveMediaUrl(view.studentIdCardUrl)`（real-name 两图同理）；提交前的「是否需上传」判定改用「非 /api/v1/media/ 与 /uploads/ 前缀且非 http(s)」的本地路径判定（如新增 isLocalTempPath），或直接以 chooseImage 产生的临时路径标记。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OTHER-002",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "已匹配（mutual）状态下再点「喜欢」绕过去重守卫：other.vue:165 守卫条件 `alreadyLiked && !isMatched` 在 matched 时放行。mock 分支进入 likesStore.likeUser 后命中其内部 alreadyLiked 检查抛错，用户看到「已喜欢过该用户」错误 toast（成功按钮反复弹错误）；real 分支重复 POST /matches/like，后端 @Idempotent 命中幂等缓存返回同一 HeartSignalView（signal.id 非空），前端再次弹「匹配成功」modal，可无限重复。另：likes 列表拉取失败被 `.catch(() => {})` 吞掉后 alreadyLiked 恒 false，MP-R1-OTHER-001 守卫失效退化。",
+      "evidence": "① other.vue:164-169 守卫；② other.vue:194-214 real 分支 signal.id 非空即弹匹配 modal、:199 `void likesStore.fetchLikes().catch(() => {})`、:130 同款空 catch；③ likes.ts:553-557 likeUser alreadyLiked throw；④ MatchController.java:156 `@Idempotent` + :163 返回 HeartSignalView；⑤ RelationshipCTA.vue:36-46 matched prop 未参与模板（liked 仅改文案为「已喜欢」，按钮仍可点）。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/other.vue:165", "code:apps/client/src/subpackages/profile-extra/profile/other.vue:200", "code:apps/client/src/stores/likes.ts:553", "code:apps/api/src/main/java/com/campuslove/api/match/MatchController.java:156", "code:apps/client/src/components/profile/public/RelationshipCTA.vue:36"],
+      "confidence": 0.75,
+      "ideal": "matched 态下 CTA 主按钮转为「去聊天」或点击直接进会话；重复点喜欢不再弹任何 modal/错误 toast。",
+      "fix": "handleLike 顶部守卫改为 `if (alreadyLiked.value) { isMatched ? 跳转会话/提示 : 等待 toast; return; }`；RelationshipCTA 在 matched 时将 like 按钮切为去聊天语义（emit message）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-FAVORITES-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "API 错误处理",
+      "severity": "P3",
+      "description": "取消收藏按钮的 unfavorite 无任何错误处理：villageStore.toggleFavorite 在参数非法/接口失败时 rethrow（real 分支失败回滚后 `throw error`），favorites 页直接 await 未捕获 → 未处理 Promise 拒绝 + 乐观回滚后 UI 静默还原，用户点了「取消收藏」无任何反馈（与本项目其他操作统一的「失败 toast」范式不一致）。",
+      "evidence": "① favorites.vue:88-91 `async function unfavorite(id) { await villageStore.toggleFavorite(id); uni.showToast(成功) }` 无 try/catch；② stores/village/index.ts:667-669 catch 内回滚后 `throw error`、:615-618 参数校验 throw；③ 模板 :47 `@tap.stop=\"unfavorite(post.id)\"` 挂载 async 函数。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/favorites.vue:88", "code:apps/client/src/stores/village/index.ts:668"],
+      "confidence": 0.9,
+      "ideal": "取消收藏失败时 toast 错误信息且列表状态不变；不再产生 unhandledRejection。",
+      "fix": "unfavorite 包 try/catch，失败 `uni.showToast({ title: error.message || t('common.operationFailed'), icon: 'none' })`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-REALNAME-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "实名认证的未成年人门禁依赖 clientApi.getBasicProfile，而该接口在 real 模式遇 401 时静默返回 mockFixtures 假资料（services/api.ts:331）。token 过期的真实未成年用户会用 mock 角色的出生日期计算 isAdult，前端门禁失真（表单放行，直到提交被后端 AgePolicy 拒绝）。",
+      "evidence": "① api.ts:328-333 real 分支 `catch (e) { if (isUnauthorizedError(e)) return mockFixtures.getBasicProfile(); throw e; }`；② real-name.vue:329-339 loadAdultGate 用 `clientApi.getBasicProfile()` 的 birthDate 计算 isAdult；③ real-name.vue:335 注释自述「出生日期缺失视为未成年（从严处理）」，但 401 时拿到的是 mock 资料而非缺失。",
+      "sources": ["code:apps/client/src/services/api.ts:331", "code:apps/client/src/subpackages/profile-extra/verification/real-name.vue:335"],
+      "confidence": 0.8,
+      "ideal": "门禁判定只消费真实登录态资料；鉴权失败走「默认从严 + 重新登录引导」，绝不回落 mock 演示数据。",
+      "fix": "getBasicProfile 的 401 回退加调用方开关（仅展示型页面允许 mock 兜底），或 loadAdultGate 改用带标记的原始请求并捕获 401 单独处理。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OTHER-003",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "他人主页 real 分支与公共主页组件族大量硬编码中文绕过 vue-i18n，项目存在 en-US 语言包，英文用户在 real 模式看到中文。同一文案两套实现并存：mock 分支走 t(\"profile.other.likeWaiting\")、real 分支硬编码同文「已喜欢，等待回应」；匹配 modal、关注/取关、取消匹配、分享入口、生活瞬间/最近动态/打招呼/心动卡/在线等组件文案均硬编码。",
+      "evidence": "① other.vue:215 `uni.showToast({ title: \"已喜欢，等待回应\"…})` vs :189 `t(\"profile.other.likeWaiting\")`（zh-CN.ts:1472 该 key 存在）；② other.vue:203-205（匹配 modal 文案）、:253/:258（已关注/取消关注）、:270-273（取消匹配 modal）、:281、:290（ActionSheet 内混排 t() 与硬编码）；③ PublicProfile.vue:55/:61（加载中…/重试，ProfileShell.vue:72/:77 同语义已走 t()）；④ PublicGallery.vue:10「生活瞬间」、PublicMoment.vue:42/:64/:87「最近动态/匿名用户」、PublicIdentity.vue:47/:51「在线/匹配度」、RelationshipCTA.vue:27-32/:50/:56「喜欢/打招呼/心动卡/已屏蔽」；⑤ i18n/locales/en-US.ts 存在，双语包成立。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/other.vue:215", "code:apps/client/src/components/profile/public/PublicMoment.vue:42", "code:apps/client/src/components/profile/public/RelationshipCTA.vue:50", "code:apps/client/src/i18n/locales/zh-CN.ts:1472"],
+      "confidence": 0.9,
+      "ideal": "面向用户文案全部经 t()；同一语义在 mock/real 两分支复用同一 key。",
+      "fix": "补齐 profile.other / publicProfile 相关 key（zh/en 同步），替换上述硬编码点；删除 other.vue:215 重复字面量改用既有 likeWaiting key。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OTHER-004",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other（组件链）",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "公共主页组件族样式大面积硬编码 hex/rgba，不接设计 token，违反 R11 附录 B「设计 token 强制」；同链路的 other.vue 本体已按 MP-R1-OTHER-004 收敛 token（other.vue:458 注释留档），组件层未同步，深色主题下这些区块不随主题切换。",
+      "evidence": "① ProfileShell.vue:131 `background: #ffffff`、:145 `#6B7571`、:151 `#E8FBF3`、:156 `#36C99A`；② RelationshipCTA.vue:80 `#EEF1F5`、:112 `#36C99A`、:120 `#FF6B81`、:140-141 `#E8FBF3/#A9E5CE`、:169 `#FFFFFF` 等（104-178 几乎全裸）；③ PublicIdentity.vue:126-127/:145/:152/:191 等；④ PublicMoment.vue:108/:121/:145/:151 等；⑤ PublicGallery.vue:30/:39/:54；⑥ PublicProfile.vue:104/:120/:126/:131；⑦ PublicHero.vue:59/:89/:92/:109。对照 other.vue:458 「MP-R1-OTHER-004：整块样式收敛到设计 token（原裸 hex 不随深色主题切换）」。",
+      "sources": ["code:apps/client/src/components/profile/ProfileShell.vue:131", "code:apps/client/src/components/profile/public/RelationshipCTA.vue:112", "code:apps/client/src/components/profile/public/PublicIdentity.vue:126", "code:apps/client/src/subpackages/profile-extra/profile/other.vue:458"],
+      "confidence": 0.9,
+      "ideal": "颜色/阴影/圆角全部走 var(--c-*)/token 变量（允许 var(…, fallback) 形态），与 other.vue 同标准。",
+      "fix": "按 other.vue:461 起的 token 化样式为模板，逐文件替换裸 hex 为对应语义 token（--c-bg-container/--c-brand/--c-error/--c-text-primary 等）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-FAVORITES-002",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "收藏列表 scroll-view 高度硬编码 `calc(100vh - 120rpx)`，但页头实际高度 = 动态 --statusbar 注入 + 16rpx + 24rpx + 行高（favorites.vue:112），在状态栏较高的真机上页头 >120rpx，导致 scroll-view 底部溢出屏幕（末张卡片被裁/页面出现双滚动）。同项目 album.vue:558 已留档「mp-weixin 不用 100vh」的经验。",
+      "evidence": "① favorites.vue:140 `.favorites-list { height: calc(100vh - 120rpx); }`；② favorites.vue:112 `padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) 0 24rpx;`——页头高度随机型变化而扣除值固定；③ 对照 album.vue:556-559 注释「mp-weixin 不支持 100vh（含导航栏高度），改用 100%」。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/favorites.vue:140", "code:apps/client/src/subpackages/profile-extra/profile/favorites.vue:112"],
+      "confidence": 0.7,
+      "ideal": "列表区高度随页头自适应（flex 布局 flex:1 + min-height:0，或 flex:1 的 scroll-view），任意机型不溢出、无页面级双滚动。",
+      "fix": "favorites-page 改 flex column + 高度 100vh，scroll-view 设 `flex:1; min-height:0; height:auto`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OTHER-006",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other（组件链）",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "PublicProfile 内的 GovernanceMenu 是死代码：governanceVisible 只被 closeGovernance 置 false，全组件无任何置 true 的写入点；'more' emit 声明了但模板无发射点，ProfileShell 转发 @more 后 other.vue 也未绑定。举报/拉黑/取消匹配实际由 other.vue 的 FAB+BottomSheet+showActionSheet 承担。另 PublicProfile 内部 loading/error 分支因 ProfileShell 同条件分支先行渲染而不可达，属重复实现且文案未 i18n。",
+      "evidence": "① PublicProfile.vue:45 `const governanceVisible = ref(false)`、:47-49 只有 close、:89-96 `<GovernanceMenu :visible=\"governanceVisible\" …>`；② PublicProfile.vue:29-43 emits 含 'more'，模板无 `emit('more')`；③ ProfileShell.vue:92 `@more=\"emit('more')\"` 而 other.vue:393-411 未绑定 @more；④ PublicProfile.vue:54-63 loading/error 分支 vs ProfileShell.vue:71-79 同条件先行；⑤ other.vue:421-453 FAB+BottomSheet 实际链路。",
+      "sources": ["code:apps/client/src/components/profile/public/PublicProfile.vue:45", "code:apps/client/src/components/profile/public/PublicProfile.vue:89", "code:apps/client/src/components/profile/ProfileShell.vue:92"],
+      "confidence": 0.85,
+      "ideal": "组件只保留一条可达的实现路径：要么删除 GovernanceMenu 与 'more'/loading/error 死分支，要么接回 FAB 触发 GovernanceMenu 并删页面级重复弹层。",
+      "fix": "删除 PublicProfile 的 GovernanceMenu 挂载与 'more'/tapAvatar 等未用 emit 及不可达 loading/error 分支（或接通），收敛 emits 声明。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-TASKS-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "状态管理",
+      "severity": "P4",
+      "description": "real 模式 GET /tasks 失败时静默回退本地 mock 任务列表（realTasks 保持 null → tasks=localTasks），此时「每日签到」项无 path 且 real 分支无签到处理逻辑，点击完全无响应；另 checkinDone 为单向锁存，置 true 后跨天/状态翻转为 false 时不清零。",
+      "evidence": "① tasks.vue:200 `const tasks = computed(() => realTasks.value ?? localTasks.value)`、:192-193 catch 仅注释；② tasks.vue:293-303 real 分支：claimable falsy → isTaskClaimed/done false → task.path undefined → 函数静默 return；③ tasks.vue:275 `checkinDone.value = true` 与 :347-349 `if (status?.checkedInToday === true)` 均只置 true，无 else 复位。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/tasks.vue:200", "code:apps/client/src/subpackages/profile-extra/profile/tasks.vue:293", "code:apps/client/src/subpackages/profile-extra/profile/tasks.vue:347"],
+      "confidence": 0.75,
+      "ideal": "real 模式任务接口失败显示错误/重试而非 mock 任务；checkinDone 与服务端 checkedInToday 全量同步（true/false 都写入）。",
+      "fix": "loadRealTasks 失败置 realTasks 为 [] 并显示重试态（或至少给 localTasks 兜底项补 path/提示）；onShow 同步改为 `checkinDone.value = status?.checkedInToday === true`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-TASKS-002",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Data",
+      "severity": "P4",
+      "description": "real 模式任务项 titleKey 为空串，aria-label 计算的 `t(task.titleKey)` 得到空标签（读屏读出「任务：」），显示层有 `task.title || t(task.titleKey)` 兜底而 aria 层没有，无障碍语义在 real 模式失效。",
+      "evidence": "① tasks.vue:410 `:aria-label=\"t('profile.taskItemAria', { label: t(task.titleKey) })\"`；② tasks.vue:168-171 toRealTask 返回 `titleKey: \"\", descKey: \"\", title: view.name`；③ 显示层 :418/:421 有 `task.title ||` 兜底，aria 层无。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/tasks.vue:410", "code:apps/client/src/subpackages/profile-extra/profile/tasks.vue:168"],
+      "confidence": 0.85,
+      "ideal": "aria-label 在 real 模式同样携带后端任务名，读屏可读完整任务语义。",
+      "fix": "改为 `t('profile.taskItemAria', { label: task.title || t(task.titleKey) })`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-ALBUM-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/album",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Performance",
+      "severity": "P4",
+      "description": "相册页首次进入数据加载执行两次：onMounted 与 onShow 都调 loadAlbum（uni-app 页面首展时 onShow 在 onMounted 后必触发），重复 fetchProfile 请求。",
+      "evidence": "① album.vue:392-394 `onMounted(() => { void loadAlbum(); })`；② album.vue:396-399 `onShow(() => { void loadAlbum(); })`；两者首展均触发。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/album.vue:392", "code:apps/client/src/subpackages/profile-extra/profile/album.vue:396"],
+      "confidence": 0.8,
+      "ideal": "首展仅一次加载，回前台再刷新。",
+      "fix": "删除 onMounted 钩子（onShow 已覆盖首展与回前台），或加首展标志位去重。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-OTHER-005",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "状态管理",
+      "severity": "P4",
+      "description": "关注状态 following 初始恒 false 且不从 profile 回填（代码注释自认后端无「是否已关注」查询字段；UserProfileDTO.Relation 契约亦无 following 字段）。已关注用户重进他人主页看到「关注」按钮，再点重复发起 followUser，关注数虚增依赖后端幂等兜底。",
+      "evidence": "① other.vue:70-72 注释「后端暂无『是否已关注』查询字段，本地维护」+ `const following = ref(false)`；② types/profile.ts:58-64 UserProfileRelation 仅 liked/matched/commonInterests/matchScore；③ UserProfileController.java:136 `new UserProfileDTO.Relation(liked, matched, false, false, …)` 不含 following。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/profile/other.vue:71", "code:apps/client/src/types/profile.ts:58", "code:apps/api/src/main/java/com/campuslove/api/profile/UserProfileController.java:136"],
+      "confidence": 0.7,
+      "ideal": "进入他人主页即还原真实关注态；已关注时按钮显示「已关注」。",
+      "fix": "后端 Relation 增补 following 字段（follow 表查询）并由 other.vue 初始化 `following.value = profile.relation.following`。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PUBLICBIO-001",
+      "round": "R2",
+      "page": "subpackages/profile-extra/profile/other（组件链）",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "PublicBio 模板以 Dingbat 装饰字符 ❝（U+275D）作引号装饰，处于「业务组件禁 emoji」约束的字符区间（部分平台渲染为 emoji 字形），与全库 emoji→SVG 替换方向不一致。",
+      "evidence": "grep 扫描范围（本批 8 页 + components/profile 全部）唯一命中：components/profile/public/PublicBio.vue:7 `<text class=\"public-bio__quote\">❝</text>`。",
+      "sources": ["code:apps/client/src/components/profile/public/PublicBio.vue:7"],
+      "confidence": 0.6,
+      "ideal": "装饰符改用 IMAGE_PATHS 内 SVG 图标或纯 CSS 伪元素绘制。",
+      "fix": "替换为 ICONS_EMOJI 系列引号/装饰 SVG 或 CSS content 引号。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-VERIFICATION-002",
+      "round": "R2",
+      "page": "subpackages/profile-extra/verification/index + real-name",
+      "screenshot": "N/A（A2 代码层审查，未截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "两个认证端点的状态枚举大小写契约不一致：恋爱认证 lowercase（pending/approved/rejected），实名认证 UPPERCASE（PENDING/APPROVED/REJECTED），前端两页分别硬编码两套映射与两套类型。当前前后端各自对齐无功能缺陷，但属同域契约分裂，后续接入审核后台/统一状态机时是易错点。",
+      "evidence": "① verification/index.vue:45 `status: \"pending\"|\"approved\"|\"rejected\"|null` ↔ LoveVerificationView.java:11（小写）；② real-name.vue:43 `\"PENDING\"|\"APPROVED\"|\"REJECTED\"|null` ↔ RealNameCertificationView.java:15（大写）；③ RealNameCertification.java:56 默认 `\"PENDING\"`。",
+      "sources": ["code:apps/client/src/subpackages/profile-extra/verification/index.vue:45", "code:apps/client/src/subpackages/profile-extra/verification/real-name.vue:43", "code:apps/api/src/main/java/com/campuslove/api/verification/RealNameCertification.java:56"],
+      "confidence": 0.7,
+      "ideal": "同域两认证端点状态枚举统一大小写（或前端统一一层枚举归一化函数）。",
+      "fix": "前端增加 `normalizeVerificationStatus(s)` 归一化后消费；后端新接口按 lowercase 对齐。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/profile-extra/verification/index（认证中心）",
+      "checked": "通读 1127 行。防重入守卫/定时器清理/深链返回兜底/pending 30s 轮询齐全；模拟通过按钮与重置/删除认证已限 mock（MP-R1-VERIFY-INDEX-003 在档）；safe-top 前置 nav-bar 正确。发现：驳回回显图片相对路径直连 <image> 与重提上传必败（MP-R2-VERIFICATION-001）；状态枚举契约分裂（MP-R2-VERIFICATION-002）。空 catch：loadVerification :313 仅注释（全库既定兜底惯例，未单列）。IMAGE_PATHS 引用全部存在（ICONS_EMOJI.CHECK_CIRCLE/PENDING/CHECK_FAIL/GRAD_CAP/TARGET/SCORE/ROCKET/GIFT/CHAT/WARNING 已逐一核对 config/images.ts:466-574）。"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name（实名认证）",
+      "checked": "通读 952 行。身份证格式校验/未成年人门禁/409 处理/轮询/定时器清理在档。发现：401 时 getBasicProfile 静默回退 mockFixtures 导致 isAdult 由假资料决定（MP-R2-REALNAME-001）；回显证件照相对路径同病（并入 MP-R2-VERIFICATION-001）。:318/:336 兜底 catch 仅注释（惯例内）。未认证态图标误用 CHECK_CIRCLE（:113，语义小瑕疵未单列）。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other（他人主页）",
+      "checked": "通读页面 576 行 + 组件链 ProfileShell/PublicProfile/PublicHero/PublicIdentity/PublicBio/PublicGallery/PublicMoment/RelationshipCTA/GovernanceMenu/WhisperComposeSheet/BottomSheet + likes store + api/profile.ts + types/profile.ts + 后端 UserProfileController/MatchController。历史线索核对：R12-IND-PROFILE-OTHER-001 已修复（401 单独文案 other.vue:139-144、错误态 FAB 隐藏 :422 v-if=\"!errorMessage && !loading\"）；MP-R1-OTHER-001 主路径已修复（守卫 :165-169 + :199 刷新），matched 分支残余缺口记 MP-R2-OTHER-002；事件接线核对：ProfileShell↔PublicProfile↔other.vue 的 retry/like/message/whisper/report/block/unmatch/follow/open-post/tap-photo 全部对齐，WhisperComposeSheet(close/sent)与 BottomSheet(close) 对齐。发现：相册/动态裸 <image>（MP-R2-OTHER-001）、i18n 混用（MP-R2-OTHER-003）、token 违规（MP-R2-OTHER-004，注意 RelationshipCTA `--c-gradient-pink` 已带 token 形式仅个别处）、GovernanceMenu 死代码（MP-R2-OTHER-006）、following 不回填（MP-R2-OTHER-005）。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/location（位置设置）",
+      "checked": "通读 420 行 + utils/location.ts。fetchCurrentLocation 内部消化失败返回 null、reportLocation 静默自兜底，onLoad 裸调无 unhandled rejection 风险；map/marker/chooseLocation 均限定 MP-WEIXIN 条件编译，H5 有降级占位；goBack 深链兜底 reLaunch。样式 token 化良好（var 带 fallback）。未发现需立项问题。i18n：页面文案硬编码中文但与既有 R5 验收形态一致，未单列。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/privacy（隐私设置）",
+      "checked": "通读 195 行 + stores/profile.ts（allowSameSchoolRecommend/receiveSameSchoolInfo 持久化 :169-185/:332-337/:360-366 核实存在）。switch checked/color 走 designTokens；MP-R1-PRIVACY-001「仅本机保存」文案如实（已知保留项）；goBack 兜底正确。状态栏注入用了 useStatusBarHeight 内联 px + CSS var 双机制并存（内联优先，功能正常），不构成缺陷未立项。无发现。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album（我的相册）",
+      "checked": "通读 800 行 + stores/profile.ts 关键 action（uploadAvatar :698）。MP-R1-ALBUM-001 修复在档：网格与预览均 resolveMediaUrl（:365/:371）、/static 走自建查看层；flex 三列替代 grid、hover-class 替代 :hover、隐私授权前置。发现：onMounted+onShow 双触发（MP-R2-ALBUM-001）。localReorderAsAvatar 失败回退仅本地生效为注释留档的既定兜底，未单列。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/favorites（我的收藏）",
+      "checked": "通读 179 行 + stores/village/index.ts toggleFavorite（:611-673）。发现：unfavorite 无错误处理（MP-R2-FAVORITES-001）；scroll-view 高度硬编码（MP-R2-FAVORITES-002）。@tap.stop 用法正确阻止冒泡到 openPost；onShow 刷新在档（:95 空 catch 为 mock 兜底惯例）。resolveMediaUrl 用于封面/头像（:35/:39）正确。"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/tasks（任务中心）",
+      "checked": "通读 634 行 + services/api.ts checkIn/getCheckInStatus（:622-641，幂等键在档）+ session store（isProfileComplete :401/refreshSession :467）+ i18n key 抽查（zh-CN.ts:1676-1695 存在）。历史线索核对：MP-R1-TASKS-001 已修复（checkinDone 状态驱动 :275）、002 已修复（真实积分文案 :279）、003 已修复（complete-profile path :123，localTasks 同步补 :123）、004/005 修复留档在案。发现：real 失败静默回退 mock 任务+签到无响应+checkinDone 单向锁存（MP-R2-TASKS-001）、real 模式 aria 空标签（MP-R2-TASKS-002）。"
+    }
+  ],
+  "regressionCluesVerdict": [
+    {"id": "MP-R3-PROFILE-001", "verdict": "不在本批页面（属 pages/profile/index.vue），未审。"},
+    {"id": "MP-R7-PROFILE-001/002", "verdict": "profile 页本体外，同病新证据见 MP-R2-OTHER-001 / MP-R2-VERIFICATION-001（代码层已验证后端返回相对路径）。"},
+    {"id": "MP-R7-PROFILE-005", "verdict": "已修复：ROUTES.PROFILE.ALBUM 存在（constants/routes.ts:114）且 pages/profile/index.vue:889 引用；album 页已注册（pages.json subpackages/profile-extra）。"},
+    {"id": "R12-IND-PROFILE-OTHER-001", "verdict": "已修复：other.vue:134-144 区分 401；:422 错误态隐藏互动 FAB。"},
+    {"id": "MP-R1-OTHER-001(R21)", "verdict": "主路径已修复（other.vue:165 守卫 + :199 刷新）；matched 分支残余缺口记 MP-R2-OTHER-002。"},
+    {"id": "MP-R1-TASKS-001/002/003(R21)", "verdict": "三项均已修复（tasks.vue:275/:279/:123），证据见 coverage。"},
+    {"id": "MP-R7-PROFILE-003/004", "verdict": "涉及 pages/profile/index.vue 与 LockScreen 页，不在本批 8 页范围，未审。"}
+  ],
+  "hardConstraintsScan": {
+    "禁:hover": "PASS — 范围文件 grep :hover 仅命中 album.vue:13 注释；交互均用 hover-class。",
+    "禁grid": "PASS — 范围文件无 display:grid/grid-template。",
+    "禁空catch{}": "PASS（字面）— 无字面空块；存在仅注释兜底 catch（verification/index.vue:313、real-name.vue:318/336、tasks.vue:192/350/360）与两处 `.catch(() => {})`（other.vue:130/199），前者为全库既定兜底惯例未单列，后者并入 MP-R2-OTHER-002 说明。",
+    "组件禁import.meta.env.DEV": "PASS — 范围文件仅注释提及。",
+    "业务组件禁emoji": "边缘违规 1 处 — PublicBio.vue:7 ❝（U+275D），记 MP-R2-PUBLICBIO-001。",
+    "设计token强制": "违规 — 公共主页组件族大面积硬编码 hex，记 MP-R2-OTHER-004。",
+    "backdrop-filter仅H5条件编译": "PASS — 范围文件无 backdrop-filter。",
+    "IMAGE_PATHS": "PASS — 两页+组件引用的全部 key 已逐一核对存在（config/images.ts:182/200/210/248/274/298/356/433/466-574）。"
+  }
+}

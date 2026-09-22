@@ -2,7 +2,7 @@
 /**
  * 逛逛页 - 校内商品/票务/优惠券展示
  */
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCheckInStore } from "../../../stores/checkin";
@@ -30,6 +30,14 @@ const checkInStore = useCheckInStore();
  */
 const appConfig = useAppConfigStore();
 const commerceSealed = computed(() => !appConfig.isCommerceOn());
+
+// MP-R2-次要22-003：解封补偿——app-config 初始 switches={} 时 commerceSealed 恒 true，
+// onShow 早退后配置异步拉回，shopItems 为空且无补偿会误显「暂无商品」
+watch(commerceSealed, (sealed) => {
+  if (!sealed && shopItems.value.length === 0 && !shopLoading.value) {
+    void fetchShopItems();
+  }
+});
 
 onShow(() => {
   // 批次 A / ADR-2：封存态不发任何请求（签到状态/商品列表均不拉取）

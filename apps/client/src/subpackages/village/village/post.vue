@@ -21,6 +21,8 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { clientApi } from "../../../services/api";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { IMAGE_PATHS } from "../../../config/images";
+// MP-R2-POST-006：本地/已上传路径判定
+import { isUploadedMediaUrl } from "../../../utils/media";
 import {
   POST_MAX_LENGTH,
   POST_MAX_IMAGES,
@@ -212,7 +214,10 @@ onUnmounted(() => {
 
 // 页面卸载时清理 village store 定时器/请求资源
 onUnload(() => {
-  villageStore.dispose();
+  // MP-R2-POST-002：移除 villageStore.dispose()——dispose 会 abort 跨页共享的
+  // fetchPostsController，而 navigateBack 时村口页 onShow 先于本页 onUnload 执行，
+  // 其触发的 fetchPosts 刚建好 controller 就被 abort，发帖返回的频道刷新被静默取消。
+  // 村口页自身 onUnload 已兜底同一清理（index.vue onUnload dispose）。
 });
 
 async function loadTarget() {
@@ -308,12 +313,15 @@ function toggleTopic(topic: string) {
 
 /* ---------- 草稿：本地 storage ---------- */
 function snapshotDraft() {
+  // MP-R2-POST-006：草稿只持久化已上传 URL（临时路径跨进程失效，恢复后整排裂图
+  // 且 real 提交必败）；本地临时图仅存活于当前会话表单
+  const stableImages = images.value.filter((img) => isUploadedMediaUrl(img));
   return {
     targetType: targetType.value,
     targetId: targetId.value,
     title: title.value,
     content: content.value,
-    images: images.value,
+    images: stableImages,
     topics: topics.value,
     location: location.value,
     visibility: visibility.value,
@@ -377,17 +385,27 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
   }
   if (typeof draft.title === "string") title.value = draft.title;
   if (typeof draft.content === "string") content.value = draft.content;
-  if (Array.isArray(draft.images)) images.value = draft.images;
+  // MP-R2-POST-006：恢复时过滤失效临时路径（仅保留已上传 URL）
+  if (Array.isArray(draft.images)) images.value = draft.images.filter((img) => isUploadedMediaUrl(img));
   if (Array.isArray(draft.topics)) topics.value = draft.topics;
   else if (Array.isArray(draft.tags)) topics.value = draft.tags;
   if (typeof draft.location === "string") location.value = draft.location;
   if (typeof draft.visibility === "string") visibility.value = draft.visibility;
   // MP-R1-POST-101：入口参数优先于草稿（原 onLoad 解析的 circleId 会被旧草稿
   // targetId 无提示覆盖）
-  if (entryTarget === "campus") targetType.value = "campus";
+  // MP-R2-POST-003：入口参数覆盖 targetType 时按 chooseCampus/selectTarget 的
+  // 完整归位口径同步关联状态（清理 targetId/targetCircle、重置 visibility），
+  // 否则出现「campus 目标 + interest 可见性」等矛盾 payload
+  if (entryTarget === "campus") {
+    targetType.value = "campus";
+    targetId.value = null;
+    targetCircle.value = null;
+    visibility.value = "school";
+  }
   if (entryCircleId != null && !Number.isNaN(entryCircleId)) {
     targetType.value = "circle";
     targetId.value = entryCircleId;
+    visibility.value = "interest";
   }
   // MP-R1-POST-101：解析闸不依赖 images——只要目标是圈子就解析圈名（原
   // images.length>0 闸使无图圈子草稿恢复后 targetCircle 恒 null → 卡片误显「个人动态」）
@@ -455,6 +473,9 @@ function leave() {
 
 /* ---------- 提交 ---------- */
 async function submitPublish() {
+  // MP-R2-POST-004：防重守卫置于函数首行——canSubmit 含 !submitting 项，提交在途时
+  // canSubmit 恒 false，二次点按会命中「请输入内容」分支产生误导提示
+  if (submitting.value) return;
   if (!canSubmit.value) {
     uni.showToast({ title: t("village.contentRequired"), icon: "none" });
     return;
@@ -463,7 +484,6 @@ async function submitPublish() {
     uni.showToast({ title: t("village.post.contentTooLong", { n: POST_MAX_LENGTH }), icon: "none" });
     return;
   }
-  if (submitting.value) return;
   submitting.value = true;
   try {
     // real 模式先上传本地图片换取远端 URL；mock 沿用本地路径
@@ -751,7 +771,11 @@ async function submitPublish() {
 
       <!-- 附加功能（话题/位置/提及/可见范围）——2026-09-05 R17 全部可编辑 -->
       <view class="post-rows">
+        <!-- MP-R2-POST-001：圈子目标下隐藏话题入口——createTopic real 请求体仅
+             title/content/images（后端 CreateTopicRequest 无 tags），所选话题静默丢弃；
+             general/campus 路径（createPost 透传 tags）入口保留 -->
         <view
+          v-if="!isCircleTarget"
           class="post-row press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
@@ -845,6 +869,7 @@ async function submitPublish() {
         <text class="post-tool__label">图片</text>
       </view>
       <view
+        v-if="!isCircleTarget"
         class="post-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"

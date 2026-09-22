@@ -274,6 +274,7 @@ export default {
     /* 2026-08-25 P0: 5th quick entry label (spec 4.4) */
     myConnections: "My connections",
     postsEmpty: "No posts nearby yet — explore a circle",
+    hotCirclesEmpty: "No hot circles yet",
     peopleEmpty: "No new people nearby",
     peopleEmptyHint: "Try a wider range or come back later",
     viewAll: "All",
@@ -315,6 +316,16 @@ export default {
     quotaExhausted: "Daily limit reached — resets at 00:00",
   },
   matching: {
+    skip: "Skip",
+    matching: "Matching",
+    subtitle: "Analyzing your interests for a match",
+    progressTitle: "We're analyzing what you have in common",
+    matchRate: "Match {n}%",
+    totalProgress: "Matching... {n}%",
+    dimTravel: "Travel",
+    dimMusic: "Music taste",
+    dimMovie: "Movies",
+    dimLifestyle: "Lifestyle",
     searching: "Finding someone for you",
     searchingDesc: "Matching by interests, distance and preferences",
     cancel: "Cancel matching",
@@ -780,6 +791,10 @@ export default {
   discover: {
     title: "Discover",
     subtitle: "Explore more people you may like",
+    filter: "Filter",
+    nearby: "Nearby",
+    loginHint: "Sign in to interact with them",
+    greetLimitReached: "You've said hi 3 times — wait for their response",
     recommend: "Recommended",
     moreRecommend: "More picks",
     viewAll: "View all",
@@ -1069,6 +1084,17 @@ export default {
   /* ========== Chat ========== */
   chat: {
     title: "Messages",
+    sessionNotExist: "Session not found or expired",
+    send: "Send",
+    avatarMenuAria: "Avatar actions",
+    peerFallbackName: "them",
+    patMessage: "You patted {name}",
+    viewProfile: "View profile",
+    pat: "Pat",
+    muteLocalOnly: "Muted on this device (session sync unsupported)",
+    imageTempUnsupported: "Temp sessions don't support images yet",
+    imagePartialFailed: "Sent {ok}, {fail} failed",
+    loadFailed: "Load failed, tap to retry",
     breakQuestion: {
       commonInterests: "You both like",
       recommendedOpener: "Suggested opener",
@@ -1789,6 +1815,7 @@ export default {
     postClosed: "Posting is temporarily unavailable. Stay tuned!",
     follow: "+ Follow",
     followed: "Following",
+    auditPending: "Under review",
     publishPost: "Post",
     postTitle: "New post",
     detailTitle: "Post detail",
@@ -2105,6 +2132,7 @@ export default {
     smsCodePlaceholder: "Enter SMS verification code",
     getSmsCode: "Get code",
     smsSent: "Verification code sent (mock SMS)",
+    smsSentMock: "Verification code sent (mock: {code})",
     loginSuccess: "Login successful",
     guestEnterToast: "You're in experience mode, take a look around",
     wechatTimeout: "WeChat login timed out, please retry",
@@ -3317,6 +3345,11 @@ export default {
   campusHub: {
     title: "Campus Circles",
     searchPlaceholder: "Search school or circle",
+    emptyJoined: "No campus circles joined yet",
+    emptyRecommend: "No recommended circles",
+    moreHint: "More campus circles coming soon",
+    searchAria: "Search campus circles",
+    clearAria: "Clear",
     subtitle: "Discover and join your campus circles",
     joinedTitle: "Joined",
     recommendTitle2: "Recommended",
@@ -3435,7 +3468,9 @@ export default {
       imagePickLabel: "Upload Images",
       imagePickHint: "Add Image",
       maxImages: "Up to {n} images",
-      privacyRequired: "Please agree to the privacy policy before picking images",
+      privacyRequired: "Please agree to the privacy policy before picking images",,
+      hotCirclesTitle: "Hot circles",
+      viewMore: "View more"
     },
     /* topic-detail.vue */
     topicDetail: {

@@ -13,7 +13,7 @@
  * - 不使用 import.meta.env
  */
 import { ref, computed } from "vue";
-import { onLoad, onPullDownRefresh } from "@dcloudio/uni-app";
+import { onLoad, onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
 import { lightHaptic } from "../../utils/haptic";
@@ -148,16 +148,28 @@ function statusLabel(status: string): string {
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  // MP-R2-次要22-010：onShow 刷新账单（store 缓存短路兜底，vip 页开通/兑换后进入可见新数据）
+onShow(() => {
+  if (featureFlags.membershipEnabled) void loadBills();
+});
+
+// MP-R2-次要22-008：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 
 // 初始化加载
-loadBills();
+
 </script>
 
 <template>
   <view class="bills-page" :style="menuStyleVars">
-    <!-- 顶部导航栏 -->
+    <view class="safe-top" />
+
+<!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
         <text class="nav-bar__back-icon">‹</text>
@@ -165,9 +177,7 @@ loadBills();
       <text class="nav-bar__title">{{ t('vip.billsNavTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <view class="safe-top" />
-
+    
     <!-- 主视觉 -->
     <view class="hero">
       <view class="hero__icon">

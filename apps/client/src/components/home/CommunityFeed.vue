@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
@@ -64,6 +64,27 @@ const sessionStore = useSessionStore();
  */
 const followedIds = ref<Set<number>>(new Set());
 const followPendingIds = ref<Set<number>>(new Set());
+
+// MP-R2-PAGES-HOME-INDEX-002：挂载时从服务端「我的关注列表」初始化已关注态——
+// 原实现仅组件本地内存 Set，离开首页即清零，回来自动回到「关注」可对已关注作者
+// 重复发起 follow（状态不真实）。失败静默降级为本地态（关注操作本身仍可用）。
+onMounted(() => {
+  const myUserId = sessionStore.userSession?.userId;
+  if (!sessionStore.isLoggedIn || !myUserId) return;
+  void clientApi
+    .getMyFollowing(String(myUserId))
+    .then((list) => {
+      const ids = new Set(followedIds.value);
+      for (const item of list ?? []) {
+        const id = Number((item as unknown as { userId?: number | string }).userId);
+        if (!Number.isNaN(id)) ids.add(id);
+      }
+      followedIds.value = ids;
+    })
+    .catch(() => {
+      /* 初始化失败降级为本地态，不打断渲染 */
+    });
+});
 
 function isFollowed(post: CommunityPostViewModel): boolean {
   return post.authorId != null && followedIds.value.has(post.authorId);

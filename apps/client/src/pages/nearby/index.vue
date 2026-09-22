@@ -138,12 +138,19 @@ onShow(() => {
 
 onPullDownRefresh(() => {
   // MP-R1-PAGES-NEARBY-INDEX-003：下拉刷新并行重拉全部可见数据源（force 绕过
-  // 「空列表才拉取」与 30s TTL 短路），完成后才停止下拉动画；失败有 toast。
+  // 「空列表才拉取」与 30s TTL 短路），完成后才停止下拉动画。
+  // MP-R2-PAGES-NEARBY-INDEX-002：三个 store 的 fetch 内部吞错不 rethrow，
+  // Promise.catch 是死路径——改为完成后统一检查各 store 错误字段给 toast。
   const tasks: Promise<unknown>[] = [];
   if (canFetchProtected()) {
     tasks.push(circleStore.fetchCircles(), loadCirclePosts(true), loadActivities(true));
   }
   Promise.all(tasks)
+    .then(() => {
+      if (circleStore.errorMessage || villageStore.nearbyError || activityStore.errorMessage) {
+        uni.showToast({ title: t("nearby.loadFailed"), icon: "none" });
+      }
+    })
     .catch(() => {
       uni.showToast({ title: t("nearby.loadFailed"), icon: "none" });
     })
@@ -419,7 +426,15 @@ function formatMemberCount(count: number): string {
 
       <!-- ② 热门兴趣圈（开放加入，无需校园认证） -->
       <NearbySection :title="t('nearby.hotCircles')" :more-text="t('nearby.viewAll')" @more="goCircleList">
-        <scroll-view scroll-x class="circle-scroll" :show-scrollbar="false">
+        <!-- MP-R2-PAGES-NEARBY-INDEX-003：分区②补三态（原彻底无状态：失败后只剩标题） -->
+        <view v-if="circleStore.loading && hotCircles.length === 0" class="nearby-home__empty">
+          <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
+        </view>
+        <view v-else-if="hotCircles.length === 0" class="nearby-home__empty">
+          <text v-if="circleStore.errorMessage" class="nearby-home__empty-text">{{ circleStore.errorMessage }}</text>
+          <text v-else class="nearby-home__empty-text">{{ t('nearby.hotCirclesEmpty') }}</text>
+        </view>
+        <scroll-view v-else scroll-x class="circle-scroll" :show-scrollbar="false">
           <view class="circle-scroll__list">
             <view
               v-for="circle in hotCircles"
@@ -497,6 +512,10 @@ function formatMemberCount(count: number): string {
         <view v-if="activityStore.loading && activityStore.activities.length === 0" class="nearby-home__empty">
           <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
         </view>
+        <!-- MP-R2-PAGES-NEARBY-INDEX-003：失败优先于空态（原失败伪装「暂无活动」） -->
+        <view v-else-if="activityStore.errorMessage && activityStore.activities.length === 0" class="nearby-home__empty">
+          <text class="nearby-home__empty-text">{{ activityStore.errorMessage }}</text>
+        </view>
         <view v-else-if="activityStore.activities.length === 0 && !activityStore.loading" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.activitiesEmpty') }}</text>
         </view>
@@ -520,6 +539,10 @@ function formatMemberCount(count: number): string {
         </view>
         <view v-else-if="circlePosts.length === 0 && villageStore.loadingNearbyPosts" class="nearby-home__empty">
           <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
+        </view>
+        <!-- MP-R2-PAGES-NEARBY-INDEX-003：失败优先于空态（原失败伪装「暂无动态」） -->
+        <view v-else-if="villageStore.nearbyError && circlePosts.length === 0" class="nearby-home__empty">
+          <text class="nearby-home__empty-text">{{ villageStore.nearbyError }}</text>
         </view>
         <view v-else-if="circlePosts.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
@@ -599,7 +622,7 @@ function formatMemberCount(count: number): string {
 .nearby-home__publish {
   padding: 12rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  background: var(--c-brand, #36C99A);
 }
 
 .nearby-home__publish-text {
@@ -616,7 +639,7 @@ function formatMemberCount(count: number): string {
   padding: 16rpx 24rpx;
   border-radius: var(--r-full, 9999rpx);
   background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid #E3EDE8;
+  border: 1rpx solid var(--c-line, #E3EDE8);
 }
 
 .nearby-home__search-icon {
@@ -798,8 +821,8 @@ function formatMemberCount(count: number): string {
   padding: 24rpx;
   border-radius: 20rpx;
   /* 统一浅绿背景（不再每校一色渐变） */
-  background: #E6F6EF;
-  border: 1rpx solid #D3EDE0;
+  background: var(--c-brand-50, #E6F6EF);
+  border: 1rpx solid var(--c-brand-100, #D3EDE0);
   margin-bottom: 16rpx;
   overflow: hidden;
 }
@@ -832,7 +855,7 @@ function formatMemberCount(count: number): string {
 .campus-entry__badge-text {
   font-size: 16rpx;
   font-weight: 700;
-  color: #1F9A75;
+  color: var(--c-brand-600, #1F9A75);
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
@@ -851,12 +874,12 @@ function formatMemberCount(count: number): string {
 .campus-entry__name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1F9A75;
+  color: var(--c-brand-600, #1F9A75);
 }
 
 .campus-entry__desc {
   font-size: 22rpx;
-  color: #2E8B6A;
+  color: var(--c-brand-700, #2E8B6A);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -874,12 +897,12 @@ function formatMemberCount(count: number): string {
 .campus-entry__status-text {
   font-size: 22rpx;
   font-weight: 600;
-  color: #1F9A75;
+  color: var(--c-brand-600, #1F9A75);
 }
 
 .campus-entry__arrow {
   font-size: 30rpx;
-  color: #1F9A75;
+  color: var(--c-brand-600, #1F9A75);
   opacity: 0.85;
   font-weight: 600;
   align-self: center;
@@ -981,7 +1004,7 @@ function formatMemberCount(count: number): string {
   flex-shrink: 0;
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  background: var(--c-brand, #36C99A);
 }
 
 .nearby-login-guide__btn-text {
@@ -1065,11 +1088,11 @@ function formatMemberCount(count: number): string {
 
 /* V-08（第五轮 QA）：5 功能入口 icon 底色五色系对齐（粉/绿/蓝/橙/紫），
    原 people/circle 同为绿色系易混淆，people 改暖粉珊瑚色 */
-.nearby-entry__icon--people { background: #FFF0F3; }
+.nearby-entry__icon--people { background: var(--c-tint-pink-soft, #FFF0F3); }
 .nearby-entry__icon--circle { background: var(--c-bg-brand, #E8F5E4); }
-.nearby-entry__icon--campus { background: #EEF3FF; }
-.nearby-entry__icon--activity { background: #FFF5E6; }
-.nearby-entry__icon--dynamic { background: #F0EEFF; }
+.nearby-entry__icon--campus { background: var(--c-tint-blue-soft, #EEF3FF); }
+.nearby-entry__icon--activity { background: var(--c-tint-cream-50, #FFF5E6); }
+.nearby-entry__icon--dynamic { background: var(--c-lavender-100, #F0EEFF); }
 
 .nearby-entry__img {
   width: 44rpx;

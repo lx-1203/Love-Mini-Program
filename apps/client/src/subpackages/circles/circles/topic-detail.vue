@@ -144,7 +144,12 @@ function goToAuthorProfile(authorId: string) {
  */
 function goBack() {
   circleStore.clearCurrentTopic();
-  uni.navigateBack();
+  // MP-R2-NAV-001：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/circles/circles/index" });
+  }
 }
 
 /** 举报原因选项（与产品约定，覆盖常见违规场景；Task 28：i18n 化计算属性） */

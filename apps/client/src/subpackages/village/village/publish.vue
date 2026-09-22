@@ -27,7 +27,7 @@ import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
 import { IMAGE_PATHS } from "../../../config/images";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
-import { chooseImages } from "../../../utils/media";
+import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
 import { compressImages } from "../../../utils/compress-image";
 // R20（2026-09-08）：publish-header 原用 var(--statusbar, env(safe-area-inset-top))（模拟器/无刘海机型=0），
 // 系统时间与「发布动态」标题叠印 → 改 JS 注入 statusBarHeight
@@ -86,17 +86,28 @@ const circlesLoading = ref(false);
 
 // MP-R1-PUB-017（2026-09-20）：直入发布页时 circleStore 尚未加载，joinedCircles 恒空，
 // 「兴趣圈子」分组被静默隐藏。弹层打开时若为空则懒加载一次，加载中/空态在弹层内提示。
+// MP-R2-PUB-103：fetchCircles 内部吞错不 rethrow，原 .catch(toast) 永不可达且失败被
+// 渲染成「尚未加入兴趣圈子」空态——现读取 errorMessage 区分失败（弹层内可重试）。
+const circlesLoadFailed = ref(false);
+async function ensureCirclesLoaded(): Promise<void> {
+  if (circleStore.circles.length > 0 || circlesLoading.value) return;
+  circlesLoading.value = true;
+  circlesLoadFailed.value = false;
+  try {
+    await circleStore.fetchCircles();
+  } catch (_e) {
+    /* store 内部已吞错， errorMessage 判定在下方 */
+  } finally {
+    circlesLoading.value = false;
+    if (circleStore.errorMessage) circlesLoadFailed.value = true;
+  }
+}
+function retryLoadCircles(): void {
+  void ensureCirclesLoaded();
+}
 watch(targetOpen, (open) => {
-  if (open && circleStore.circles.length === 0 && !circlesLoading.value) {
-    circlesLoading.value = true;
-    circleStore
-      .fetchCircles()
-      .catch(() => {
-        uni.showToast({ title: "圈子列表加载失败，请稍后重试", icon: "none" });
-      })
-      .finally(() => {
-        circlesLoading.value = false;
-      });
+  if (open && circleStore.circles.length === 0) {
+    void ensureCirclesLoaded();
   }
 });
 
@@ -266,7 +277,9 @@ function cycleVisibility() {
       ? ["public"]
       : targetType.value === "campus"
         ? ["school"]
-        : ["interest"];
+        : targetType.value === "friends"
+          ? ["friends"]
+          : ["interest"];
   // noUncheckedIndexedAccess：数组索引访问为 string|undefined，先收敛再赋值
   const first = order[0];
   if (first && !order.includes(visibility.value)) {
@@ -292,12 +305,15 @@ function buildMergedTopics(): string[] {
 }
 
 function snapshotDraft() {
+  // MP-R2-PUB-106：草稿只存可跨会话稳定引用——临时路径（wxfile://tmp、http://tmp）
+  // 跨进程失效，恢复后九宫格整排破图且阻塞发布；仅持久化已上传 URL
+  const stableImages = images.value.filter((img) => isUploadedMediaUrl(img));
   return {
     targetType: targetType.value,
     targetId: targetId.value,
     title: "",
     content: content.value,
-    images: images.value,
+    images: stableImages,
     tags: buildMergedTopics(),
     topics: topics.value,
     location: location.value,
@@ -394,13 +410,27 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
     targetId.value = Number(draft.targetId);
   } else if (draft.targetType === "campus") {
     targetType.value = "campus";
+  } else if (draft.targetType === "friends") {
+    // MP-R2-PUB-101：补 friends 分支——原缺失使 friends 草稿经无参入口恢复后
+    // targetType 回落 general 而 visibility 仍为 friends（目标卡与「谁可以看」矛盾，
+    // 且后端按 targetType 推导可见范围 general→public_，静默放大可见性）
+    targetType.value = "friends";
   }
   if (typeof draft.content === "string") content.value = draft.content;
-  if (Array.isArray(draft.images)) images.value = draft.images;
+  // MP-R2-PUB-106：恢复时过滤失效临时路径（仅保留已上传 URL）
+  if (Array.isArray(draft.images)) images.value = draft.images.filter((img) => isUploadedMediaUrl(img));
   if (Array.isArray(draft.topics)) topics.value = draft.topics;
   else if (Array.isArray(draft.tags)) topics.value = draft.tags;
   if (typeof draft.location === "string") location.value = draft.location;
-  if (typeof draft.visibility === "string") visibility.value = draft.visibility;
+  // MP-R2-PUB-101：按 targetType 重算可见范围合法值，替代无条件恢复草稿 visibility
+  // （UI 所见 = 服务端按 targetType 推导的落库口径，杜绝「个人动态+仅朋友可见」同屏矛盾）
+  const legalVisibility: Record<string, string> = {
+    general: "public",
+    campus: "school",
+    circle: "interest",
+    friends: "friends",
+  };
+  visibility.value = legalVisibility[targetType.value] ?? "public";
   // MP-R1-PUBLISH-005：入口参数优先——恢复草稿后强制回设
   if (entryTarget === "friends") {
     targetType.value = "friends";
@@ -449,14 +479,19 @@ function requestLeave() {
   });
 }
 
-function leave() {
-  allowLeave.value = true;
+/** MP-R2-PUB-108：导航兜底单一出口（leave/发布成功跳转共用） */
+function navigateAway(): void {
   // 兜底：首页/深链场景 navigateBack 会失败
   if (getCurrentPages().length > 1) {
     uni.navigateBack();
   } else {
     uni.reLaunch({ url: "/subpackages/village/village/index" });
   }
+}
+
+function leave() {
+  allowLeave.value = true;
+  navigateAway();
 }
 
 /* ---------- 提交 ---------- */
@@ -481,7 +516,9 @@ async function submitPublish() {
   try {
     // real 模式上传本地图片
     let finalImages = images.value;
-    const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    // MP-R2-PUB-102：本地/已上传判定统一走 isUploadedMediaUrl——裸 /^https?:/ 正则会把
+    // DevTools/iOS 的 http://tmp/*、http://usr/* 临时路径误判为已上传，后端落库死链
+    const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
     if (localImages.length > 0 && !useMock()) {
       uni.showLoading({ title: t("village.post.uploadingImages") });
       try {
@@ -490,7 +527,7 @@ async function submitPublish() {
           const r = await clientApi.uploadPostImage({ name: `post-image-${Date.now()}.jpg`, path: img });
           urls.push(r.url);
         }
-        finalImages = [...images.value.filter((img) => /^https?:\/\//.test(img)), ...urls];
+        finalImages = [...images.value.filter((img) => isUploadedMediaUrl(img)), ...urls];
       } catch (_e) {
         uni.hideLoading();
         uni.showToast({ title: t("village.post.imageUploadFailed"), icon: "none" });
@@ -523,13 +560,9 @@ async function submitPublish() {
     void clientApi.deleteDraft().catch(() => {});
     clearDraft();
     allowLeave.value = true;
-    setTimeout(() => {
-      if (getCurrentPages().length > 1) {
-        uni.navigateBack();
-      } else {
-        uni.reLaunch({ url: "/subpackages/village/village/index" });
-      }
-    }, 400);
+    // MP-R2-PUB-108：复用 navigateAway()（原与 leave() 逐行重复）。
+    // 400ms 与 post.vue 的 POST_SUBMIT_NAVIGATE_BACK_MS(800) 口径差异留待产品统一
+    setTimeout(navigateAway, 400);
   } catch (e) {
     // 2026-08-31：优先展示后端具体原因（如「请先加入该圈子，再在圈内发帖」）
     const msg = e instanceof Error && e.message
@@ -601,6 +634,13 @@ onUnmounted(() => {
             <template v-if="circlesLoading">
               <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
             </template>
+            <!-- MP-R2-PUB-103：失败态区别于空态（原失败渲染「尚未加入兴趣圈子」误导已加入用户），可重试 -->
+            <template v-else-if="circlesLoadFailed">
+              <text class="publish-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
+              <view class="publish-target-sheet__option press-feedback" role="button" @tap="retryLoadCircles">
+                <text class="publish-target-sheet__name">重试加载</text>
+              </view>
+            </template>
             <template v-else-if="joinedCircles.length > 0">
               <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
               <view
@@ -656,7 +696,10 @@ onUnmounted(() => {
 
       <!-- 行项 -->
       <view class="publish-rows">
-        <view class="publish-row press-feedback" role="button" @tap="toggleTopic('#校园日常')">
+        <!-- MP-R2-PUB-104：圈子目标下隐藏话题行——createTopic real 请求体仅 title/content/images，
+             后端 CreateTopicRequest 无 tags 字段，所选话题在圈子路径全部静默丢弃（UI 承诺即丢数据）。
+             general/campus/friends 路径的 createPost 正常携带 tags，入口保留 -->
+        <view v-if="!isCircleTarget" class="publish-row press-feedback" role="button" @tap="toggleTopic('#校园日常')">
           <text class="publish-row__icon">#</text>
           <text class="publish-row__label">添加话题</text>
           <text class="publish-row__meta">已选 {{ topics.length }}/5</text>
@@ -675,11 +718,17 @@ onUnmounted(() => {
           <text class="publish-row__label">提及好友</text>
           <text class="publish-row__arrow">›</text>
         </view>
-        <view class="publish-row press-feedback" role="button" @tap="cycleVisibility">
+        <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真） -->
+        <view
+          class="publish-row"
+          :class="{ 'press-feedback': targetType !== 'friends' }"
+          role="button"
+          @tap="targetType !== 'friends' && cycleVisibility()"
+        >
           <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
           <text class="publish-row__label">谁可以看</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
-          <text class="publish-row__arrow">›</text>
+          <text v-if="targetType !== 'friends'" class="publish-row__arrow">›</text>
         </view>
       </view>
 
@@ -725,16 +774,16 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
-.publish-header__x { width: 36rpx; height: 36rpx; color: #1A1E1C; }
+.publish-header__x { width: 36rpx; height: 36rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-header__title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1A1E1C;
+  color: var(--c-text-primary, #1A1E1C);
   /* R4：三栏弹性布局——标题在 [X] 与 [发布] 之间的剩余空间内居中（绝对居中会与发布按钮贴挤） */
   flex: 1;
   text-align: center;
 }
-.publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: #36C99A; flex-shrink: 0; }
+.publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: var(--c-brand, #36C99A); flex-shrink: 0; }
 /* R3：禁用态白字对浅绿底对比度仅 1.36:1（judged 证据），文字改深绿保证可辨认 */
 .publish-header__submit--disabled { background: #C7E9DC; }
 .publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }
@@ -743,7 +792,7 @@ onUnmounted(() => {
 .publish-body { flex: 1; min-height: 0; }
 
 .publish-to { padding: 32rpx 32rpx 8rpx; }
-.publish-to__label { font-size: 26rpx; color: #6B7571; margin-bottom: 16rpx; }
+.publish-to__label { font-size: 26rpx; color: var(--c-text-secondary, #6B7571); margin-bottom: 16rpx; }
 .publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
 .publish-to__avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .publish-to__avatar-img {
@@ -752,30 +801,30 @@ onUnmounted(() => {
 .publish-to__avatar-emoji { width: 44rpx; height: 44rpx; }
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }
-.publish-to__name { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
-.publish-to__tag { padding: 2rpx 12rpx; border-radius: 8rpx; background: #E8FBF2; color: #36C99A; font-size: 20rpx; }
-.publish-to__subtitle { font-size: 24rpx; color: #9AA39F; }
-.publish-to__arrow { font-size: 36rpx; color: #C2CAC6; }
+.publish-to__name { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
+.publish-to__tag { padding: 2rpx 12rpx; border-radius: 8rpx; background: #E8FBF2; color: var(--c-brand, #36C99A); font-size: 20rpx; }
+.publish-to__subtitle { font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
+.publish-to__arrow { font-size: 36rpx; color: var(--c-text-quaternary, #C2CAC6); }
 
 .publish-target-sheet { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.45); display:flex; align-items:flex-end; }
 /* R21：弹层加高到 78vh（兴趣圈子分组此前在 70vh 下不可见）+ 底部安全区，末行不再贴屏裁切 */
 .publish-target-sheet__panel { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
 .publish-target-sheet__head { padding: 16rpx 0 24rpx; }
-.publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: #1A1E1C; }
+.publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
 /* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
-.publish-target-sheet__group { display: block; padding: 20rpx 8rpx 8rpx; font-size: 22rpx; font-weight: 600; color: #36C99A; }
+.publish-target-sheet__group { display: block; padding: 20rpx 8rpx 8rpx; font-size: 22rpx; font-weight: 600; color: var(--c-brand, #36C99A); }
 .publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
-.publish-target-sheet__name { font-size: 28rpx; color: #1A1E1C; }
+.publish-target-sheet__name { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-target-sheet__circle-opt { display: flex; align-items: center; }
 .publish-target-sheet__joined { font-size: 20rpx; color: #2FA366; background: #E8F6EE; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
-.publish-target-sheet__desc { font-size: 24rpx; color: #9AA39F; margin-left: 12rpx; /* R21：desc 弹性占位（与 post 版一致），选项行结构跨版统一 */ flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.publish-target-sheet__check { width: 32rpx; height: 32rpx; color: #36C99A; }
+.publish-target-sheet__desc { font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); margin-left: 12rpx; /* R21：desc 弹性占位（与 post 版一致），选项行结构跨版统一 */ flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.publish-target-sheet__check { width: 32rpx; height: 32rpx; color: var(--c-brand, #36C99A); }
 /* MP-R1-PUB-017：弹层「兴趣圈子」分组加载中/空态提示 */
 .publish-target-sheet__hint { display: block; padding: 24rpx 8rpx; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 .publish-content { padding: 24rpx 32rpx; }
-.publish-content__input { width: 100%; min-height: 220rpx; font-size: 30rpx; color: #1A1E1C; line-height: 1.6; }
-.publish-content__count { text-align: right; font-size: 22rpx; color: #9AA39F; margin-top: 8rpx; }
+.publish-content__input { width: 100%; min-height: 220rpx; font-size: 30rpx; color: var(--c-text-primary, #1A1E1C); line-height: 1.6; }
+.publish-content__count { text-align: right; font-size: 22rpx; color: var(--c-text-tertiary, #9AA39F); margin-top: 8rpx; }
 /* MP-R1-PUB-016：接近字数上限警示（颜色走 --c-warning token） */
 .publish-content__count--warning { color: var(--c-warning, #FF9F43); }
 
@@ -786,28 +835,28 @@ onUnmounted(() => {
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
 /* R21：添加图片块对齐 post 版虚线白底样式（原继承浅绿实心底，与理想图不符） */
 .publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed #C7D8D2; box-sizing: border-box; }
-.publish-image__plus { font-size: 56rpx; color: #9AA39F; }
+.publish-image__plus { font-size: 56rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 .publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
 .publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 24rpx; border-bottom: 1rpx solid #F2F5F3; }
-.publish-row__icon { width: 44rpx; height: 44rpx; color: #36C99A; text-align: center; }
-.publish-row__label { font-size: 28rpx; color: #1A1E1C; }
-.publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: #9AA39F; }
-.publish-row__arrow { font-size: 32rpx; color: #C2CAC6; }
+.publish-row__icon { width: 44rpx; height: 44rpx; color: var(--c-brand, #36C99A); text-align: center; }
+.publish-row__label { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
+.publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
+.publish-row__arrow { font-size: 32rpx; color: var(--c-text-quaternary, #C2CAC6); }
 
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: 20rpx; display: flex; align-items: flex-start; gap: 16rpx; }
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.publish-tip__title { font-size: 26rpx; font-weight: 700; color: #36C99A; display: flex; align-items: center; gap: 8rpx; }
-.publish-tip__title-icon { width: 28rpx; height: 28rpx; color: #36C99A; }
-.publish-tip__desc { font-size: 24rpx; color: #6B7571; }
-.publish-tip__close-icon { width: 28rpx; height: 28rpx; color: #9AA39F; }
+.publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; gap: 8rpx; }
+.publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand, #36C99A); }
+.publish-tip__desc { font-size: 24rpx; color: var(--c-text-secondary, #6B7571); }
+.publish-tip__close-icon { width: 28rpx; height: 28rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 .publish-body__bottom-space { height: 24rpx; }
 
 .publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
 .publish-tool { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
-.publish-tool__icon { width: 40rpx; height: 40rpx; color: #6B7571; }
-.publish-tool__label { font-size: 20rpx; color: #9AA39F; }
+.publish-tool__icon { width: 40rpx; height: 40rpx; color: var(--c-text-secondary, #6B7571); }
+.publish-tool__label { font-size: 20rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */

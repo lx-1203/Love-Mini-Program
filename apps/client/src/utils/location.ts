@@ -5,8 +5,9 @@
  * LBS Phase 2：新增坐标上报功能。
  */
 
-import { request } from "../services/http";
+import { request, getToken } from "../services/http";
 import { TENCENT_MAP_KEY, isDev } from "../config/env";
+import { useMock } from "../stores/helpers/use-mock";
 
 /** 默认位置文案（校园 + 距离） */
 export const DEFAULT_LOCATION_TEXT = "北京大学 · 附近";
@@ -138,11 +139,18 @@ export function buildLocationText(city: string, campusName?: string | null): str
  * LBS Phase 2：上报坐标到后端（节流 5 分钟）。
  * 成功静默，失败忽略（不影响主流程）。
  *
+ * MP-R2-PAGES-HOME-INDEX-001 / MP-R2-PAGES-NEARBY-INDEX-001：/location/report 为
+ * 受保护端点（SecurityConfig 仅放行 /location/ip-city），未登录（real）时匿名请求
+ * 401 → http 层 handle401 → redirectToLogin 强踢登录页，击穿首页/附近页的
+ * 「未登录预览」产品形态。此处统一加登录门：real 无 token 直接短路；
+ * mock 模式无真实 token，放行走 mock 后端。
+ *
  * @param latitude  纬度（gcj02）
  * @param longitude 经度（gcj02）
  * @param force     强制上报（跳过节流，用于进入 nearby 页时）
  */
 export async function reportLocation(latitude: number, longitude: number, force = false): Promise<void> {
+  if (!useMock() && getToken().length === 0) return;
   const now = Date.now();
   if (!force && now - lastReportAt < REPORT_THROTTLE_MS) return;
   lastReportAt = now;

@@ -6,13 +6,14 @@
  * （复用 PostCard 卡片，含「标题命中」标识）。
  */
 import { computed, onMounted, ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onReachBottom } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSearchStore } from "../../../stores/search";
 import { useVillageStore } from "../../../stores/village";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 import PostCard from "../../../components/village/PostCard.vue";
 import { SCHOOLS } from "../../../config/schools";
 import { clientApi } from "../../../services/api";
@@ -36,6 +37,12 @@ const searchStore = useSearchStore();
 const villageStore = useVillageStore();
 
 const inputFocused = ref(true);
+
+// MP-R2-SEARCH-002：触底加载下一页（store 已实现 loadMore/hasMore，页面此前无触发器，
+// 第 2 页永远无法到达）
+onReachBottom(() => {
+  void searchStore.loadMore();
+});
 
 onLoad((options) => {
   const keyword = options?.keyword;
@@ -321,7 +328,7 @@ function goToActivity(activityId: number) {
           :aria-label="u.nickname"
           @tap="goUserProfile(u)"
         >
-          <image class="user-row__avatar" :src="u.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+          <image class="user-row__avatar" :src="resolveMediaUrl(u.avatarUrl) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)" mode="aspectFill" alt="" />
           <view class="user-row__info">
             <text class="user-row__name">{{ u.nickname }}</text>
             <text class="user-row__meta">{{ u.campusName || '' }}{{ u.campusName && u.bio ? ' · ' : '' }}{{ u.bio || '' }}</text>
@@ -365,7 +372,7 @@ function goToActivity(activityId: number) {
               :aria-label="person.name"
               @tap="openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(person.userId)}`)"
             >
-              <image class="campus-person__avatar" :src="person.avatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+              <image class="campus-person__avatar" :src="resolveMediaUrl(person.avatar) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)" mode="aspectFill" alt="" />
               <text class="campus-person__name">{{ person.name }}</text>
             </view>
           </view>

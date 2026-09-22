@@ -710,11 +710,15 @@ function toggleBio() {
 
 /* ========== 2026-08-08：兴趣圈 / 动态详情 / 查看全部 跳转 ========== */
 
-/** 点击兴趣圈卡片 → 跳转圈子社区页 */
+/** 点击兴趣圈卡片 → 跳转圈子社区页。
+ * MP-R2-VILLAGE-INDEX-003：原携带 ?focus= 跳村口，但村口全页无 focus 消费点
+ * （onLoad 只认 query.channel、onShow 只认 bridged.tab），参数被静默丢弃，
+ * 用户仅落回上次频道。改跳 circles 列表页（与村口「兴趣宫格」同口径，
+ * 列表页可按名称直接看到目标圈子）。 */
 function onCircleTap(circleName: string): void {
   safeAction(() => {
     lightHaptic();
-    openAppPath(`/subpackages/village/village/index?focus=${encodeURIComponent(circleName)}`);
+    openAppPath("/subpackages/circles/circles/index");
   }, t("cardDetail.circleNavFailed"));
 }
 

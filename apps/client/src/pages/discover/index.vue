@@ -95,16 +95,9 @@ function goLogin() {
  */
 function switchDiscoverMode(mode: DiscoverMode) {
   activeMode.value = mode;
-  discoverStore.activeFilter = mode === "nearby" ? "nearby" : "all";
-  discoverStore.matchScope = mode === "nearby" ? "nearby" : "all";
-  // 同步透传参数：附近限定 distanceMax=20，服务端 R16 已支持 distanceMaxKm 过滤
-  discoverStore.recommendationFilter = {
-    ...discoverStore.recommendationFilter,
-    distanceMax: mode === "nearby" ? NEARBY_MAX_DISTANCE_KM : undefined,
-  };
-  // R16（2026-09-07）：切 Tab 强制重拉——此前仅本地过滤同一份列表（30s TTL 缓存），
-  // 两个 Tab 内容完全重复；现在附近走服务端 distanceMaxKm 过滤，必须重新 fetch
-  void discoverStore.fetchCards();
+  // MP-R2-PAGES-DISCOVER-INDEX-006：收敛到 store 单一 action（原内联直写三字段 +
+  // 手动 fetchCards 与 setNearbyScope/setMatchScope 同构双路径，任一侧调整必漂移）
+  discoverStore.setDiscoverMode(mode);
 }
 
 function handleCardTap() {
@@ -155,17 +148,32 @@ async function handleLike() {
 async function handleSuperLike() {
   if (!requireLogin()) return;
   if (!ensureCertified("realname")) return;
-  // 2026-09-06 打招呼频控：同一目标最多 3 次（本地计数），超出后提示等待对方回应；
-  // 与实名认证门控配合，构成「合法身份 + 有限次数」的打招呼判定
+  // MP-R2-PAGES-DISCOVER-INDEX-005：配额门控提前——原实现先对 greet:count:* +1 写
+  // storage、enterMatching 内 isLimitReached 才拦截且不回滚，配额用尽期每次点击虚耗
+  // 目标额度。现先做同款配额检查，通过后才递增频控计数。
+  if (discoverStore.isLimitReached) {
+    uni.showToast({ title: t("discover.card.quotaExhaustedTitle"), icon: "none" });
+    return;
+  }
+  // 2026-09-06 打招呼频控：同一目标最多 3 次（本地计数，按日失效），超出后提示等待
+  // 对方回应；与实名认证门控配合，构成「合法身份 + 有限次数」的打招呼判定
   const targetId = currentCard.value?.id;
   if (targetId) {
     const key = `greet:count:${targetId}`;
-    const count = Number(uni.getStorageSync(key) || 0);
+    const today = new Date().toISOString().slice(0, 10);
+    let record: { date?: string; count?: number } | null = null;
+    try {
+      const raw = uni.getStorageSync(key);
+      if (raw && typeof raw === "object") record = raw as { date?: string; count?: number };
+    } catch (_e) {
+      /* 存储读取失败按无记录处理 */
+    }
+    const count = record && record.date === today ? Number(record.count ?? 0) : 0;
     if (count >= 3) {
-      uni.showToast({ title: "已向TA打过3次招呼，等待对方回应后再试", icon: "none" });
+      uni.showToast({ title: t("discover.greetLimitReached"), icon: "none" });
       return;
     }
-    uni.setStorageSync(key, count + 1);
+    uni.setStorageSync(key, { date: today, count: count + 1 });
   }
   enterMatching("superLike");
 }
@@ -177,8 +185,13 @@ function loadDiscoverData() {
   // mock 模式（useMock=true）fetchCards 走 mockFixtures.getRecommendations 本地数据，无网络请求，
   // 故放行；真实模式保持原语义（游客放行 mock 预览、登录后带 token 拉真实数据）。
   if (!isCacheFresh("discover:data", DISCOVER_TTL_MS) && (getToken() || !sessionStore.isLoggedIn || useMock())) {
-    void discoverStore.fetchCards();
-    setCachedValue("discover:data", true);
+    void discoverStore.fetchCards().then(() => {
+      // MP-R2-PAGES-DISCOVER-INDEX-003：仅成功写缓存——原实现 void 发起后同步写缓存，
+      // 失败也标记新鲜 30s，切走再切回被缓存短路成「暂无推荐」空态且无重试
+      if (!discoverStore.errorMessage) {
+        setCachedValue("discover:data", true);
+      }
+    });
   }
   if (sessionStore.isLoggedIn) {
     void profileStore.load();
@@ -202,10 +215,11 @@ onLoad(() => {
 
 onShow(() => {
   discoverStore.resetDailyLimit();
-  // R5(INDEP-005)：清除上一会话残留的陈旧错误横幅（如「卡片不存在或已被处理」），
-  // 避免用户重新进入页面即看到与当前操作无关的历史错误
-  discoverStore.errorMessage = null;
+  // MP-R2-PAGES-DISCOVER-INDEX-003：仅「即将重拉」（缓存不新鲜）时才清错误横幅——
+  // 原实现无条件清空 + 缓存新鲜不重拉，网络失败被静默降级为「暂无推荐」空态
   if (!isCacheFresh("discover:data", DISCOVER_TTL_MS)) {
+    // R5(INDEP-005)：清除上一会话残留的陈旧错误横幅（即将重拉，横幅语义已失效）
+    discoverStore.errorMessage = null;
     loadDiscoverData();
   }
 });
@@ -226,7 +240,7 @@ onUnload(() => {
     <view class="discover-header">
       <view class="discover-header__top">
         <view class="discover-header__titles">
-          <text class="discover-header__title">寻觅</text>
+          <text class="discover-header__title">{{ t('discover.title') }}</text>
           <image class="discover-header__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
         </view>
         <view
@@ -234,8 +248,8 @@ onUnload(() => {
           hover-class="discover-header__filter--pressed"
           hover-stay-time="40"
           role="button"
-          :aria-label="'筛选'"
-          @tap="discoverStore.isFilterDrawerOpen = true"
+          :aria-label="t('discover.filter')"
+          @tap="discoverStore.openFilterDrawer()"
         >
           <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
         </view>
@@ -248,7 +262,7 @@ onUnload(() => {
           hover-stay-time="40"
           role="tab"
           :aria-selected="activeMode === 'recommend' ? 'true' : 'false'"
-          :aria-label="'推荐'"
+          :aria-label="t('discover.recommend')"
           @tap="switchDiscoverMode('recommend')"
         >
           <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'recommend' }">推荐</text>
@@ -261,7 +275,7 @@ onUnload(() => {
           hover-stay-time="40"
           role="tab"
           :aria-selected="activeMode === 'nearby' ? 'true' : 'false'"
-          :aria-label="'附近'"
+          :aria-label="t('discover.nearby')"
           @tap="switchDiscoverMode('nearby')"
         >
           <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">附近</text>
@@ -318,7 +332,7 @@ onUnload(() => {
 
     <!-- 未登录时：底部登录提示（不拦截全屏，卡片可预览） -->
     <view v-if="!sessionStore.isLoggedIn" class="discover-login-hint press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goLogin">
-      <text class="discover-login-hint__text">登录后可与 TA 互动</text>
+      <text class="discover-login-hint__text">{{ t('discover.loginHint') }}</text>
     </view>
 
     <FilterDrawer
@@ -336,72 +350,18 @@ onUnload(() => {
   display: flex;
   height: 100vh;
   /* 2026-09-06 背景统一：寻觅页改纯白，与理想图（寻觅匹配卡片页面）及他人主页一致 */
-  background: #ffffff;
+  background: var(--c-neutral-0, #ffffff);
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
-  padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
+  /* MP-R2-PAGES-DISCOVER-INDEX-002：底部避让对齐 custom-tab-bar 实高（content-box 下
+     实高 184rpx + 2×safe）+ 中央「寻觅」浮岛越出量 48rpx——原 112rpx+16rpx+safe 使
+     MatchActions 三键标签与「喜欢」圆钮下缘滚动到底时被 tabBar 半透明白层遮盖 */
+  padding-bottom: calc(232rpx + 48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .match-scroll {
   flex: 1;
   min-height: 0;
-}
-
-.match-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 24rpx 32rpx 16rpx;
-}
-
-.match-header__titles {
-  display: flex;
-  gap: 6rpx;
-}
-
-.match-header__title {
-  font-size: 40rpx;
-  font-weight: 800;
-  color: var(--c-text-primary, #222222);
-}
-
-.match-header__subtitle {
-  font-size: 24rpx;
-  color: #8a9694;
-}
-
-.match-header__count {
-  font-size: 22rpx;
-  color: #5f6f6b;
-  padding-bottom: 6rpx;
-}
-
-.match-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32rpx 16rpx;
-}
-
-.match-toolbar__icons {
-  display: flex;
-  gap: 24rpx;
-}
-
-.match-toolbar__icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: 0 6rpx 16rpx rgba(30, 80, 65, 0.08);
-}
-
-.match-toolbar__icon-img {
-  width: 32rpx;
-  height: 32rpx;
 }
 
 .match-error {
@@ -430,19 +390,6 @@ onUnload(() => {
   padding: 32rpx;
 }
 
-.match-state__action {
-  margin-top: 24rpx;
-  padding: 16rpx 40rpx;
-  border-radius: 999rpx;
-  background: #36C99A;
-}
-
-.match-state__action-text {
-  font-size: 26rpx;
-  color: #ffffff;
-  font-weight: 700;
-}
-
 .discover-header {
   flex-shrink: 0;
   padding: 24rpx 32rpx 16rpx;
@@ -466,7 +413,7 @@ onUnload(() => {
 .discover-header__title {
   font-size: 48rpx;
   font-weight: 700;
-  color: #333A37;
+  color: var(--c-text-primary, #333A37);
   line-height: 1.1;
 }
 
@@ -512,7 +459,7 @@ onUnload(() => {
 
 .discover-header__tab-text {
   font-size: 36rpx;
-  color: #9AA39F;
+  color: var(--c-text-tertiary, #9AA39F);
   font-weight: 500;
   line-height: 1.2;
 }
@@ -540,14 +487,17 @@ onUnload(() => {
   /* MP-R1-PAGES-DISCOVER-INDEX-003（2026-09-20）：原 bottom:120rpx 低于自定义 tabBar
      总高（--tab-bar-h=160rpx + 中央浮岛 ~180rpx + 安全区），胶囊被 tabBar 原生层完全遮挡。
      改为 tabBar(160rpx) + 浮岛越出余量(80rpx) + 安全区，真机在 tabBar 上方完整可点。 */
-  bottom: calc(var(--tab-bar-h, 160rpx) + 80rpx + env(safe-area-inset-bottom));
+  /* MP-R2-PAGES-DISCOVER-INDEX-001：再抬高避开 tabBar 中央「寻觅」凸起浮岛——
+     浮岛 icon-wrap 越出 bar 顶 40rpx（custom-tab-bar/index.wxss:95-114），原 80rpx
+     余量与浮岛带残余重叠约 26pt（胶囊与浮岛同为绿色居中元素，观感叠置） */
+  bottom: calc(var(--tab-bar-h, 160rpx) + 128rpx + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 16rpx;
   padding: 16rpx 40rpx;
-  background: linear-gradient(135deg, #36C99A, #4DD0A8);
+  background: linear-gradient(135deg, var(--c-brand, #36C99A), #4DD0A8);
   border-radius: 999rpx;
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.35);
   z-index: 100;
@@ -555,58 +505,8 @@ onUnload(() => {
 
 .discover-login-hint__text {
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
-.more-recommend {
-  padding: 24rpx 0 8rpx;
-}
-
-.more-recommend__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32rpx 16rpx;
-}
-
-.more-recommend__title {
-  font-size: 28rpx;
-  font-weight: 800;
-  color: var(--c-text-primary, #222222);
-}
-
-.more-recommend__all {
-  font-size: 24rpx;
-  color: #36C99A;
-}
-
-.more-recommend__scroll {
-  width: 100%;
-}
-
-.more-recommend__list {
-  display: flex;
-  gap: 20rpx;
-  padding: 0 32rpx;
-}
-
-.more-recommend__item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  width: 112rpx;
-}
-
-.more-recommend__avatar {
-  width: 104rpx;
-  height: 104rpx;
-  border-radius: 50%;
-  background: #eef3f1;
-}
-
-.more-recommend__name {
-  font-size: 22rpx;
-  color: #5f6f6b;
-}
 </style>

@@ -7,7 +7,7 @@ import { useSessionStore } from "../../stores/session";
 // B6：后台配置即时生效——登录/注册功能开关（login_open / register_open）
 import { useAppConfigStore } from "../../stores/app-config";
 // 2026-08-09：登录成功统一跳转（消费 LockScreen 未登录引导写入的待跳转路径）
-import { replaceAppPath, consumePendingLoginRedirect } from "../../utils/navigation";
+import { replaceAppPath, consumePendingLoginRedirect, openAppPath } from "../../utils/navigation";
 // R4-00226：展示页路径走 ROUTES 常量
 import { ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
@@ -113,7 +113,10 @@ let autoForwardedToMain = false;
 // 本 watch，与登录函数自身 await 续体里的导航形成双 switchTab 竞争
 // （「Page route 错误/routeDone with a webviewId」同类缺陷，见 92-95 行注释）。
 // 流程在途期间 watch 一律让位，由 loginSuccessNavigate() 统一导航一次。
-let loginFlowActive = false;
+// MP-R2-PAGES-LOGIN-INDEX-007：改为响应式 ref——store 的 loading 仅在 bootstrap 期间
+// 置位，登录动作不经过 store，原 :class 绑定 store.loading 恒 false（按钮加载态死绑定）。
+// 现由本页登录流程在途标记驱动按钮加载态。
+const loginFlowActive = ref(false);
 stopSessionForwardWatch = watch(
   () => !sessionStore.loading && sessionStore.isLoggedIn,
   (sessionReady) => {
@@ -121,7 +124,7 @@ stopSessionForwardWatch = watch(
       stopSessionForwardWatch?.();
       // 页面自身登录流程已接管跳转（一次性标记已置 / loginNavTimer 已挂起 /
       // 登录请求在途）时不重复跳转，保留其 pending 跳转（如资料完善向导）的语义
-      if (!loginNavTimer && !autoForwardedToMain && !loginFlowActive) {
+      if (!loginNavTimer && !autoForwardedToMain && !loginFlowActive.value) {
         autoForwardedToMain = true;
         uni.switchTab({ url: "/pages/discover/index" });
       }
@@ -159,6 +162,12 @@ onUnmounted(() => {
   if (loginNavTimer) {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
+  }
+  // MP-R2-PAGES-LOGIN-INDEX-006：补清短信倒计时定时器（原注释宣称清理所有定时器，
+  // 实际遗漏本项——发送验证码后离开页面 interval 空转最长 60s）
+  if (smsCountdownTimer) {
+    clearInterval(smsCountdownTimer);
+    smsCountdownTimer = null;
   }
   stopSessionForwardWatch();
 });
@@ -233,8 +242,13 @@ async function onSendSmsCode() {
       uni.showToast({ title: res.message, icon: "none" });
       return;
     }
-    // 模拟短信：提示 mockCode（真实短信网关接入后不展示验证码本体）
-    const hint = res?.mockCode ? `验证码已发送（模拟：${res.mockCode}）` : t("login.smsSent");
+    // 模拟短信：提示 mockCode。MP-R2-PAGES-LOGIN-INDEX-005：文案走 i18n（原硬编码中文
+    // 绕过 vue-i18n，en-US 用户收到中文）；且 mockCode 仅 dev/mock 构建展示，
+    // 真实后端返回 mockCode 时不再向用户暴露「模拟」字样。
+    const showMockCode = Boolean(res?.mockCode) && (isDev || isMockMode());
+    const hint = showMockCode
+      ? t("login.smsSentMock", { code: res?.mockCode })
+      : t("login.smsSent");
     uni.showToast({ title: hint, icon: "none" });
     smsCountdown.value = 60;
     if (smsCountdownTimer) clearInterval(smsCountdownTimer);
@@ -279,7 +293,7 @@ async function onWechatLogin() {
   addBreadcrumb("ui", "button_click", { id: "login.wechat" });
   // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转，
   // 登录成功后的唯一导航由 loginSuccessNavigate() 负责
-  loginFlowActive = true;
+  loginFlowActive.value = true;
   try {
     // services/auth.ts 封装 wx.login + POST /v1/auth/wechat，无 Mock fallback
     // 失败时抛出 WechatLoginError（含明确业务错误码）
@@ -294,7 +308,7 @@ async function onWechatLogin() {
     const message = error instanceof Error ? error.message : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
-    loginFlowActive = false;
+    loginFlowActive.value = false;
   }
 }
 
@@ -350,7 +364,7 @@ async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: stri
   }
   addBreadcrumb("ui", "button_click", { id: "login.phoneQuick" });
   // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
-  loginFlowActive = true;
+  loginFlowActive.value = true;
   try {
     await bindPhoneViaWechat(code);
     uni.showToast({ title: t("login.phoneBoundSuccess"), icon: "success" });
@@ -386,7 +400,7 @@ async function handleGetPhoneNumber(e: { detail?: { errMsg?: string; code?: stri
     const message = error instanceof Error ? error.message : t("login.phoneAuthFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
-    loginFlowActive = false;
+    loginFlowActive.value = false;
   }
 }
 
@@ -417,7 +431,7 @@ async function onPhoneLogin() {
   // infra R2 联调改进:真实调用后端(参考 eladmin 账号体系)。
   // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
   // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
-  loginFlowActive = true;
+  loginFlowActive.value = true;
   try {
     if (phoneRegisterMode.value) {
       await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value, smsCode.value.trim());
@@ -439,7 +453,14 @@ async function onPhoneLogin() {
     // MP-R1-LOGIN-002：统一经 loginSuccessNavigate 跳转（先置一次性标记防双导航）
     loginSuccessNavigate(1500);
   } catch (error) {
-    captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
+    // MP-R2-PAGES-LOGIN-INDEX-010：预期业务拒绝（4xx，如 400 凭据错误/已注册、
+    // 403 MINOR_NOT_ALLOWED）不进异常告警——仅非 AppApiError（网络/未知）或 5xx 补报，
+    // 避免每次重试产生上报噪音（auth 层已设 reportError:false，此处是唯一通道）
+    const isExpectedBusiness =
+      error instanceof AppApiError && (error as AppApiError).status < 500;
+    if (!isExpectedBusiness) {
+      captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
+    }
     // 3-N 未成年人保护：后端 403 MINOR_NOT_ALLOWED → 明确提示未满 18 岁
     const isMinor = error instanceof AppApiError && error.error === "MINOR_NOT_ALLOWED";
     const message = isMinor
@@ -449,7 +470,7 @@ async function onPhoneLogin() {
         : t("login.loginFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
-    loginFlowActive = false;
+    loginFlowActive.value = false;
   }
 }
 /**
@@ -482,7 +503,7 @@ async function onGuestLogin() {
   // 记录关键按钮点击面包屑，便于在登录失败时定位用户操作节点
   addBreadcrumb("ui", "button_click", { id: "login.guest" });
   // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
-  loginFlowActive = true;
+  loginFlowActive.value = true;
   try {
     await loginAsGuest();
     // 2026-08-31：游客进入语义与「登录成功」不符（录屏反馈），改为体验模式文案
@@ -509,7 +530,7 @@ async function onGuestLogin() {
     const message = error instanceof Error ? error.message : t("login.guestLoginFailed");
     uni.showToast({ title: message, icon: "none" });
   } finally {
-    loginFlowActive = false;
+    loginFlowActive.value = false;
   }
 }
 /**
@@ -579,57 +600,25 @@ function onBirthDateChange(event: { detail: { value: string } }) {
 }
 
 /**
- * 跳转到用户协议页面（微信小程序提审合规必备）。
+ * 跳转到协议/隐私法律页面（微信小程序提审合规必备）。
+ * MP-R2-PAGES-LOGIN-INDEX-004：两处重复实现收敛为单一参数化函数，
+ * 统一走 openAppPath（自带页面栈满 redirectTo 兜底与失败透出），不再手写空 fail/catch。
  *
- * 使用 uni.navigateTo 跳转到 subpackages/legal/agreement/index 分包页面，
- * 该页面通过 getLegalText(LegalTextType.USER_AGREEMENT) 从后端 CMS 拉取最新条款，
- * 后端不可达时回退到 i18n 本地 fallback 文案。
- *
- * mp-weixin 与 H5 双端兼容：mp-weixin 使用 fail 回调，H5 使用 Promise.catch。
+ * @param url 法律页面路径（legal 分包 agreement / privacy）
  */
-function openUserAgreement() {
+function openLegalPage(url: string) {
   lightHaptic();
-  const url = "/subpackages/legal/agreement/index";
-  // #ifdef MP-WEIXIN
-  uni.navigateTo({
-    url,
-    fail: () => {
-      // 跳转失败时静默处理（如页面栈已满）
-    },
-  });
-  // #endif
-  // #ifndef MP-WEIXIN
-  uni.navigateTo({ url }).catch(() => {
-    // 跳转失败时静默处理
-  });
-  // #endif
+  openAppPath(url);
 }
 
-/**
- * 跳转到隐私政策页面（微信小程序提审合规必备）。
- *
- * 使用 uni.navigateTo 跳转到 subpackages/legal/privacy/index 分包页面，
- * 该页面通过 getLegalText(LegalTextType.PRIVACY_POLICY) 从后端 CMS 拉取最新条款，
- * 后端不可达时回退到 i18n 本地 fallback 文案。
- *
- * mp-weixin 与 H5 双端兼容：mp-weixin 使用 fail 回调，H5 使用 Promise.catch。
- */
+/** 跳转到用户协议页面 */
+function openUserAgreement() {
+  openLegalPage("/subpackages/legal/agreement/index");
+}
+
+/** 跳转到隐私政策页面 */
 function openPrivacyPolicy() {
-  lightHaptic();
-  const url = "/subpackages/legal/privacy/index";
-  // #ifdef MP-WEIXIN
-  uni.navigateTo({
-    url,
-    fail: () => {
-      // 跳转失败时静默处理（如页面栈已满）
-    },
-  });
-  // #endif
-  // #ifndef MP-WEIXIN
-  uni.navigateTo({ url }).catch(() => {
-    // 跳转失败时静默处理
-  });
-  // #endif
+  openLegalPage("/subpackages/legal/privacy/index");
 }
 
 /* ============================================================
@@ -686,7 +675,7 @@ function openPrivacyPolicy() {
           <!-- 2026-08-10 a11y 修复：登录按钮补 role="button" + aria-label（屏幕阅读器可识别，e2e @a11y 断言） -->
           <view
             class="btn-primary press-feedback"
-            :class="{ 'btn--loading': loading }"
+            :class="{ 'btn--loading': loginFlowActive }"
             hover-class="press-feedback--active"
             hover-stay-time="40"
             role="button"
@@ -716,11 +705,26 @@ function openPrivacyPolicy() {
           <!-- #endif -->
 
           <!-- 2026-09-02 R11 用户要求：手机登录有两个入口，删除下方冗余的「手机号登录」按钮
-               （快捷登录失败会自动展开表单，不再需要手动入口） -->
+               （快捷登录失败会自动展开表单，不再需要手动入口）。
+               MP-R2-PAGES-LOGIN-INDEX-002：该自动展开依赖 getPhoneNumber（仅微信端存在），
+               H5 构建下手机号登录/注册入口不可达成死路——非微信端恢复手动入口按钮。 -->
+          <!-- #ifndef MP-WEIXIN -->
+          <view
+            class="btn-phone-quick press-feedback"
+            :class="{ 'btn--loading': loginFlowActive }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('login.phoneQuickLogin')"
+            @tap="togglePhoneLogin"
+          >
+            <text class="btn-phone-quick-text">{{ t('login.phoneQuickLogin') }}</text>
+          </view>
+          <!-- #endif -->
 
           <view
             class="btn-guest press-feedback"
-            :class="{ 'btn--loading': loading }"
+            :class="{ 'btn--loading': loginFlowActive }"
             hover-class="press-feedback--active"
             hover-stay-time="40"
             role="button"
@@ -766,7 +770,8 @@ function openPrivacyPolicy() {
   cursor-spacing="20"
                 id="login-password"
                 class="input-field"
-                type="password"
+                type="text"
+                :password="true"
                 :placeholder="t('login.passwordPlaceholder')"
                 placeholder-class="input-placeholder"
                 v-model="password"
@@ -851,7 +856,7 @@ function openPrivacyPolicy() {
           </view>
 
           <view class="form-btns">
-            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loading }" hover-class="press-feedback--active" hover-stay-time="40" @tap="onPhoneLoginGuarded">
+            <view class="btn-primary press-feedback" :class="{ 'btn--loading': loginFlowActive }" hover-class="press-feedback--active" hover-stay-time="40" @tap="onPhoneLoginGuarded">
               <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
             </view>
 
@@ -1113,8 +1118,8 @@ function openPrivacyPolicy() {
   padding: var(--sp-4) var(--sp-5);
   margin-bottom: var(--sp-5);
   border-radius: var(--r-lg);
-  background: var(--c-warning-bg, rgba(245, 158, 11, 0.1));
-  border: 2rpx solid var(--c-warning-border, rgba(245, 158, 11, 0.35));
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1));
+  border: 2rpx solid var(--c-warning-border-tint, rgba(245, 158, 11, 0.35));
   text-align: center;
 }
 
@@ -1217,31 +1222,7 @@ function openPrivacyPolicy() {
   letter-spacing: 2rpx;
 }
 
-/* 次按钮：白底 + 描边 */
-.btn-secondary {
-  width: 100%;
-  height: var(--btn-height-md);
-  border-radius: var(--r-xl);
-  background: var(--c-bg-container);
-  border: 2rpx solid var(--c-border-default);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* #ifdef H5 */
-.btn-secondary:active {
-  transform: scale(0.96);
-  background: var(--c-neutral-50);
-}
-/* #endif */
-
-.btn-secondary-text {
-  font-size: var(--fs-lg);
-  font-weight: 500;
-  color: var(--c-text-primary);
-  letter-spacing: 2rpx;
-}
+/* MP-R2-PAGES-LOGIN-INDEX-008：.btn-secondary* 死样式已删（模板零引用） */
 
 /* 稍后再看按钮：浅灰描边，弱于主/次按钮 */
 .btn-guest {
@@ -1249,7 +1230,7 @@ function openPrivacyPolicy() {
   height: var(--btn-height-md);
   border-radius: var(--r-xl);
   background: var(--c-bg-container);
-  border: 2rpx solid var(--c-neutral-200, #E5E5E5);
+  border: 2rpx solid var(--c-neutral-200, #E8ECEA);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1318,7 +1299,7 @@ function openPrivacyPolicy() {
 .sms-send-btn-text {
   font-size: 24rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
 }
 .sms-send-btn--disabled .sms-send-btn-text {
   color: var(--c-text-tertiary, #999999);
@@ -1515,86 +1496,6 @@ function openPrivacyPolicy() {
   line-height: 1.7;
 }
 
-/* 功能2：第三方账号登录区域样式 */
-.third-party-wrap {
-  margin-top: var(--sp-6);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--sp-4);
-}
-
-.third-party-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-}
-
-.third-party-divider__line {
-  flex: 1;
-  height: 2rpx;
-  background: var(--c-border-default);
-}
-
-.third-party-divider__text {
-  font-size: var(--fs-xs);
-  color: var(--c-text-quaternary);
-  white-space: nowrap;
-}
-
-.third-party-icons {
-  display: flex;
-  justify-content: center;
-  gap: var(--sp-8);
-}
-
-.third-party-icon-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2);
-}
-
-/* #ifdef H5 */
-.third-party-icon-btn:active {
-  opacity: 0.65;
-}
-/* #endif */
-
-.third-party-icon {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-bg-container);
-  border: 2rpx solid var(--c-border-default);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--fs-2xl);
-}
-
-/* Apple 图标用 SVG 背景模拟（避免引入额外图片资源） */
-.third-party-icon--apple {
-  /* Apple 品牌黑色：使用深色 token 替代硬编码 #000000 */
-  background-color: var(--c-neutral-900);
-  position: relative;
-}
-
-.third-party-icon--apple::before {
-  content: "";
-  position: absolute;
-  width: 36rpx;
-  height: 36rpx;
-  background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22white%22%3E%3Cpath%20d%3D%22M16.365%201.43c0%201.14-.493%202.27-1.177%203.08-.744.9-1.99%201.57-2.987%201.57-.12%200-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39%0-1.15.572-2.27%201.206-2.98.804-.94%202.142-1.64%203.248-1.68.03.13.05.28.05.43zm4.565%2015.71c-.03.07-.463%201.58-1.518%203.12-.945%201.34-1.94%202.71-3.43%202.71-1.517%200-1.9-.88-3.63-.88-1.698%200-2.302.91-3.67.91-1.377%200-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28%200-4.28%202.797-6.55%205.552-6.55%201.448%200%202.675.95%203.6.95.865%200%202.222-1.01%203.902-1.01.632%200%202.93.06%204.43%202.19-.114.07-2.402%201.37-2.402%204.13%200%203.27%202.866%204.42%2.967%204.45z%22/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-}
-
-.third-party-icon-label {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-}
+/* MP-R2-PAGES-LOGIN-INDEX-008：.third-party-* 死样式已删（对应模板已于 2026-08-25 移除） */
 
 </style>

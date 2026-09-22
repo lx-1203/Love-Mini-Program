@@ -179,13 +179,20 @@ function handleReset() {
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  // MP-R2-次要22-008：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 </script>
 
 <template>
   <view class="promo-page" :style="menuStyleVars">
-    <!-- 顶部导航栏 -->
+    <view class="safe-top" />
+
+<!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
         <text class="nav-bar__back-icon">‹</text>
@@ -193,9 +200,7 @@ function goBack() {
       <text class="nav-bar__title">{{ t('vip.promoCodeNavTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <view class="safe-top" />
-
+    
     <!-- 主视觉 -->
     <view class="hero">
       <view class="hero__icon">

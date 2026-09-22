@@ -95,6 +95,9 @@ onUnmounted(() => {
   if (mockPaymentTimer) {
     clearTimeout(mockPaymentTimer);
     mockPaymentTimer = null;
+    // MP-R2-次要22-007：收起全局 loading（Promise 永不 resolve 时
+    // then/catch 中的 hideLoading 永不执行，返回上一页被遮罩永久覆盖）
+    uni.hideLoading();
   }
 });
 
@@ -255,7 +258,12 @@ function viewBenefitDetail(benefit: VipBenefit) {
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
-  uni.navigateBack({ delta: 1 });
+  // MP-R2-次要22-008：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack({ delta: 1 });
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
 }
 
 /* ========== 自动续费开关 ========== */
@@ -279,15 +287,38 @@ const nextBillingDate = computed(() => {
   }
 });
 
-/** 切换自动续费开关 */
-async function toggleAutoRenew() {
+/**
+ * MP-R1-VIP-001：受控回显 key——原生 switch 先自行翻转视觉再派发 change，
+ * 用户点「取消」时 store 值与 :checked 均未变、不产生 setData，原生组件保持被拨动后
+ * 的状态（视觉「开」而 store 仍关）。递增 key 强制重建 switch，使 :checked 按真实
+ * store 值重新渲染。
+ */
+const autoRenewSwitchKey = ref(0);
+function revertAutoRenewSwitch(): void {
+  autoRenewSwitchKey.value += 1;
+}
+
+/** 切换自动续费开关（MP-R1-VIP-001：读 e.detail.value 作为用户意图） */
+async function toggleAutoRenew(e?: { detail?: { value?: boolean } }) {
   // P1-08：会员功能未启用时短路（开关禁用且不发起后端请求）
-  if (guardMembershipDisabled()) return;
+  if (guardMembershipDisabled()) {
+    revertAutoRenewSwitch();
+    return;
+  }
   lightHaptic();
-  if (autoRenewStore.updating) return;
+  if (autoRenewStore.updating) {
+    revertAutoRenewSwitch();
+    return;
+  }
+
+  // 用户意图以开关拨动后的值为准（原实现忽略事件对象、从 store 取反）
+  const nextEnabled = e?.detail?.value ?? !autoRenewEnabled.value;
+  if (nextEnabled === autoRenewEnabled.value) {
+    revertAutoRenewSwitch();
+    return;
+  }
 
   // 开启前确认
-  const nextEnabled = !autoRenewEnabled.value;
   if (nextEnabled) {
     const confirmed = await new Promise<boolean>((resolve) => {
       uni.showModal({
@@ -302,7 +333,10 @@ async function toggleAutoRenew() {
         fail: () => resolve(false),
       });
     });
-    if (!confirmed) return;
+    if (!confirmed) {
+      revertAutoRenewSwitch();
+      return;
+    }
   } else {
     // 关闭前确认
     const confirmed = await new Promise<boolean>((resolve) => {
@@ -315,7 +349,10 @@ async function toggleAutoRenew() {
         fail: () => resolve(false),
       });
     });
-    if (!confirmed) return;
+    if (!confirmed) {
+      revertAutoRenewSwitch();
+      return;
+    }
   }
 
   try {
@@ -330,6 +367,7 @@ async function toggleAutoRenew() {
       icon: "success",
     });
   } catch (error) {
+    revertAutoRenewSwitch();
     const message = error instanceof Error ? error.message : t("vip.autoRenewToggleFailed");
     uni.showToast({ title: message, icon: "none" });
   }
@@ -366,6 +404,8 @@ onMounted(() => {
 
 <template>
   <view class="vip-page" :style="menuStyleVars">
+    <!-- 顶部安全区占位 -->
+    <view class="safe-top" />
     <!-- 顶部导航栏 -->
     <view class="nav-bar">
       <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100">
@@ -374,9 +414,6 @@ onMounted(() => {
       <text class="nav-bar__title">{{ t('vip.navTitle') }}</text>
       <view class="nav-bar__placeholder" />
     </view>
-
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
 
     <!-- VIP 头部卡片 -->
     <view class="vip-header">
@@ -484,6 +521,7 @@ onMounted(() => {
           </text>
         </view>
         <switch
+          :key="autoRenewSwitchKey"
           :checked="autoRenewEnabled"
           :color="SWITCH_ACTIVE_COLOR"
           :disabled="autoRenewStore.updating || membershipDisabled"

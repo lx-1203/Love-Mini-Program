@@ -55,6 +55,15 @@ onUnmounted(() => {
 
 /** 选中的分类 */
 const selectedCategory = ref<CampusTopicCategory>("course_exchange");
+// MP-R2-CAMPUSINDEX-002(a)：消费 campus/index 透传的当前分类（原恒默认 course_exchange，
+// 发布回流后新帖出现在错误 Tab 顶部）
+import { onLoad } from "@dcloudio/uni-app";
+onLoad((query) => {
+  const cat = query?.category;
+  if (typeof cat === "string" && cat.trim().length > 0) {
+    selectedCategory.value = cat as CampusTopicCategory;
+  }
+});
 /** 话题标题 */
 const title = ref("");
 /** 话题内容 */
@@ -124,7 +133,8 @@ function toggleAnonymous() {
  */
 async function chooseImage() {
   if (images.value.length >= MAX_IMAGES) {
-    uni.showToast({ title: t("campus.postTopic.maxImages", { max: MAX_IMAGES }), icon: "none" });
+    uni.showToast({ title: // MP-R2-CAMPUSPOST-002：插值变量与文案占位符对齐（zh/en 均为 {n}，{max} 渲染空串）
+        t("campus.postTopic.maxImages", { n: MAX_IMAGES }), icon: "none" });
     return;
   }
   try {
@@ -141,8 +151,13 @@ async function chooseImage() {
       images.value.push(...(res.tempFilePaths as string[]));
     },
     fail: (err) => {
-      console.error("选择图片失败:", err);
-    },
+          console.error("选择图片失败:", err);
+          // MP-R2-CAMPUSPOST-005：区分用户取消与真实失败（权限被拒等），失败给可见反馈
+          const msg = String((err as { errMsg?: string })?.errMsg ?? "");
+          if (!/cancel/i.test(msg)) {
+            uni.showToast({ title: "选择图片失败，请检查相册/相机权限", icon: "none" });
+          }
+        },
   });
 }
 
@@ -453,7 +468,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-header__title {
-  font-size: 34rpx;
+  font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
   color: var(--c-text-inverse);
 }
@@ -688,7 +703,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 40rpx;
   height: 40rpx;
   border-radius: var(--r-circle, 50%);
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--c-bg-overlay, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -696,7 +711,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .image-item__remove-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 300;
   line-height: 1;
 }
@@ -720,7 +735,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -70%);
-  font-size: 48rpx;
+  font-size: var(--fs-2xl, 48rpx);
   color: $text-tertiary;
   font-weight: 300;
   line-height: 1;

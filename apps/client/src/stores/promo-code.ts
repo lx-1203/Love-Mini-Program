@@ -137,6 +137,11 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
       });
       lastValidation.value = result;
       return result;
+    } catch (error) {
+      // MP-R2-次要22-006：失败清除上一次校验结果——陈旧的「可用」卡会让兑换按钮
+      // 以输入框现值绕过「先校验通过」门槛
+      lastValidation.value = null;
+      throw error;
     } finally {
       validating.value = false;
     }

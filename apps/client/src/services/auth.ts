@@ -236,6 +236,9 @@ export async function loginWithWechat(): Promise<UserSession> {
       data: { code },
       skipAuth: true,
       noRetry: true,
+      // MP-R2-PAGES-LOGIN-INDEX-010：code 失效（401）/业务拒绝为预期态（本函数已统一
+      // 转换为 WechatLoginError 由调用方 toast），http 层不再重复上报
+      reportError: false,
     });
   } catch (error) {
     // 将 HTTP 错误转换为 WechatLoginError
@@ -299,6 +302,9 @@ export async function loginWithPhone(phone: string, password: string): Promise<U
     data: { phone, password },
     skipAuth: true,
     noRetry: true,
+    // MP-R2-PAGES-LOGIN-INDEX-010：凭据错误（400）/业务拒绝为预期态，由调用方 toast
+    // 后端文案；对齐 loginAsGuest 先例，避免 http 层 + 页面层双通道重复上报
+    reportError: false,
   });
   // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
   const responseRecord = response as unknown as Record<string, unknown>;
@@ -344,6 +350,9 @@ export async function registerUser(
     data: { phone, password, nickname, birthDate, verificationCode },
     skipAuth: true,
     noRetry: true,
+    // MP-R2-PAGES-REGISTER-INDEX-001：对齐 loginAsGuest 先例——已注册（400「该手机号已
+    // 注册」）/未成年（403）/验证码错误等预期业务拒绝由调用方 toast 展示，不进 http 层上报
+    reportError: false,
   });
   // UserSession schema 未声明 token/refreshToken,通过 unknown 中转 + 类型守卫访问
   const responseRecord = response as unknown as Record<string, unknown>;
@@ -378,6 +387,8 @@ export async function sendSmsCode(
     data: { phone },
     skipAuth: true,
     noRetry: true,
+    // MP-R2-PAGES-REGISTER-INDEX-001：频控/参数类预期业务拒绝由调用方 toast，不上报
+    reportError: false,
   });
   return response;
 }

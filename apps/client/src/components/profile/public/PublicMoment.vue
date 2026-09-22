@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UserProfilePost } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 
 withDefaults(
   defineProps<{
@@ -56,7 +57,7 @@ function relativeTime(iso?: string): string {
         <image
           v-if="authorAvatar"
           class="public-moment__avatar"
-          :src="authorAvatar"
+          :src="resolveMediaUrl(authorAvatar)"
           mode="aspectFill"
           alt=""
         />
@@ -74,7 +75,7 @@ function relativeTime(iso?: string): string {
           v-for="(img, idx) in post.images.slice(0, 3)"
           :key="`${post.id}-${idx}`"
           class="public-moment__img"
-          :src="img"
+          :src="resolveMediaUrl(img)"
           mode="aspectFill"
           alt=""
         />

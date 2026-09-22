@@ -140,7 +140,12 @@ function openProfile(userId: string) {
 }
 
 function goBack() {
-  uni.navigateBack();
+  // MP-R2-LNEARBY-001：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/discover/index" });
+  }
 }
 
 /** 附近 / 同城 切换 */
@@ -236,7 +241,10 @@ function switchScope(next: "nearby" | "city") {
 
 <style scoped lang="scss">
 .people-page {
-  min-height: 100%;
+  /* MP-R2-PEOPLE-001：定高使 scroll-view 内滚生效（原 min-height:100% 容器随内容
+     增长，scrolltolower 永不触发，第 21 人起不可见）；对齐 love-center/nearby 100vh 惯例 */
+  height: 100%;
+  overflow: hidden;
   background: var(--c-bg-page, #EEF7F2);
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 0;
   box-sizing: border-box;

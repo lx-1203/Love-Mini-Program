@@ -120,7 +120,12 @@ function retakeTest() {
 
 /** 返回上一页（右上角固定按钮） */
 function goBack() {
-  uni.navigateBack();
+  // MP-R2-LNEARBY-001：栈底兜底
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
 }
 </script>
 

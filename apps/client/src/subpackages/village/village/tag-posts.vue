@@ -14,6 +14,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { TOAST_DURATION } from "../../../constants/limits";
 // 修复 no-duplicate-imports：合并 ../../stores/village 的重复 import
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../../stores/village";
+import { useMock } from "../../../stores/helpers/use-mock";
 // R4-batch2: mock 标签帖子数据源（仅 apiMode === "mock" 分支使用，real 模式不读取）
 import { mockTagPosts } from "../../../stores/village/mock-data";
 
@@ -29,6 +30,13 @@ const stateIcons = {
 
 /** Phase 4.4 验收 · 帖子点赞（2026-08-08 论坛互动真实化：接入 villageStore.likePost，后端为准） */
 async function toggleLike(post: PostItem): Promise<void> {
+  // MP-R2-TAGPOSTS-001：mock 模式本页 posts 不在 store 列表中，likePost 必抛
+  // 「帖子不存在」——mock 直接翻转本地状态；real 走 store 真实接口
+  if (useMock()) {
+    post.isLiked = !post.isLiked;
+    post.likes = Math.max(0, post.likes + (post.isLiked ? 1 : -1));
+    return;
+  }
   try {
     await villageStore.likePost(post.id);
     // R4-00092：store 的乐观更新仅作用于 store 内部列表，本页为独立本地列表，

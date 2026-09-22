@@ -1,0 +1,151 @@
+{
+  "round": "R2",
+  "page": "subpackages/village/village/post",
+  "reviewer": "代码审查员-R2-SUBPACKAGES-VILLAGE-VILLAGE-POST（A2, Layer A, 只读代码层审查）",
+  "date": "2026-09-22",
+  "issues": [
+    {
+      "id": "MP-R2-POST-001",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "发布到兴趣圈时，用户选择的话题标签被静默丢弃。post.vue:496-501 将 tags: topics.value 传入 circleStore.createTopic，但该 store real 模式请求体仅含 {title, content, images}（stores/circle.ts:524-531，注释明确后端 CreateTopicRequest 无 tags 字段）；mock 模式构造并 unshift 进 currentTopics 的 TopicItem 同样不含 tags（stores/circle.ts:504-517），tags 只附加在返回值上而 post.vue 不消费返回值。UI 侧话题选择弹层、已选 chips、计数器（post.vue:759-764、805-810、889-932）向用户承诺了该能力——最多 5 个话题在圈子目标下无任何持久化。对照：个人动态/校园圈目标走 villageStore.createPost，tags 正常透传后端（stores/village/index.ts:483-486）。",
+      "evidence": "post.vue:496-501（传 tags）；stores/circle.ts:524-531（real 请求体无 tags）；stores/circle.ts:504-517（mock TopicItem 无 tags）；stores/village/index.ts:483-486（createPost 透传 tags 作对照）",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "圈子目标发布时话题标签要么被持久化（后端 CreateTopicRequest 扩展 tags，或提交前以 #xx 形式并入正文），要么在圈子目标下隐藏/禁用话题入口并向用户说明不生效。",
+      "fix": "短期（纯前端）：isCircleTarget 为真时隐藏「添加话题」行、底部话题工具与已选 chips，或提交前把 topics 以「#话题」形式拼入 content 首行；长期：后端 CreateTopicRequest 增加 tags 字段并透传持久化。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-002",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Async",
+      "severity": "P3",
+      "description": "post.vue onUnload 调用 villageStore.dispose()（post.vue:214-216），dispose 会 abort 跨页共享的 fetchPostsController（stores/village/index.ts:1255-1263）。微信 navigateBack 生命周期顺序为上一页 onShow 先于当前页 onUnload：从 post 返回村口时，index.vue onShow→loadChannelData()（index.vue:531「发帖返回后刷新当前频道」）先发起 fetchPosts 并创建新 controller，随后 post 的 onUnload→dispose() 立即将其 abort；fetchPosts 对被取消的请求静默返回、不置错误（stores/village/index.ts:283-288）。real 模式下撰写超过 30s TTL（index.vue:247 isCacheFresh 短路条件）后返回必然命中——恰是最常见场景。结果：发帖返回后的频道刷新被静默取消、无任何提示（自家新帖因 createPost 本地 unshift 仍可见，stores/village/index.ts:495-497，故仅表现为其余内容陈旧）。mock 模式 fetchPosts 无网络等待不受影响。dispose 的设计注释（index.ts:1250-1253）虽要求页面 onUnload 接线，但未考虑 controller 被父页在途刷新共享的竞态。",
+      "evidence": "post.vue:214-216；stores/village/index.ts:1255-1263（abort fetchPostsController）；stores/village/index.ts:283-288（abort 静默吞掉）；village/index.vue:498-532（onShow 刷新）、247（30s TTL）；stores/village/index.ts:495-497（real unshift）",
+      "sources": ["code"],
+      "confidence": 0.6,
+      "ideal": "villageStore.dispose() 仅由村口主列表页卸载/切换账号时调用；或 dispose 拆分：abort 共享 fetchPostsController 的职责收回 fetchPosts 内部生命周期管理，页面卸载只清理评论防抖定时器与 in-flight 集合。",
+      "fix": "移除 post.vue:214-216 的 villageStore.dispose()（index.vue:564-565 已在村口页自身 onUnload 兜底同一清理）；若保留，则给 dispose 增加轻量模式不触碰 fetchPostsController。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-003",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "MP-R1-POST-101 引入的「入口参数优先于草稿」逻辑只回设 targetType，未同步归位关联状态：entryTarget==='campus' 时不清残留的 targetId/targetCircle（post.vue:387-388，对照 chooseCampus() 248-249 会置 null）；entryCircleId 命中时不按 selectTarget() 的约束回设 visibility='interest'（post.vue:233、388-391）。触发链：旧草稿为圈子目标（visibility=interest）→ 从校园入口（target=campus）进入 → 提交 payload 为 {visibility:'interest', targetType:'campus', targetId:<circleId>}（post.vue:515-517）语义矛盾；反向（campus 草稿 visibility=school + circleId 入口）则圈子帖携带 public/school 可见性提交。UI 侧「谁可以看」显示陈旧值（post.vue:169-173），可见范围弹层选项集（84-95）不含该值导致无勾选项，用户难以自行发现矛盾。",
+      "evidence": "post.vue:372-391（restoreDraft 覆盖逻辑）；post.vue:228-253（selectTarget/chooseCampus/chooseGeneral 的完整归位对照）；post.vue:515-517（payload 透传）",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "入口参数覆盖 targetType 时执行与 chooseCampus/selectTarget 相同的目标态归位（清理 targetId/targetCircle、按目标重置 visibility），保证状态单一来源。",
+      "fix": "restoreDraft 中 entryTarget==='campus' 分支补 targetId=null; targetCircle=null; visibility='school'；entryCircleId 命中分支补 visibility='interest'，或直接复用 chooseCampus()/selectTarget() 归位函数。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-004",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "提交进行中二次点按「发布」会弹出误导性提示「请输入内容」。submitPublish 先判 canSubmit（post.vue:458-461）后判 submitting（post.vue:466），而 canSubmit 计算含 !submitting 项（post.vue:141-143）——提交在途时 canSubmit 恒为 false，二次点按命中第一分支 toast t(\"village.contentRequired\")，zh-CN.ts:1850 实值为「请输入内容」，此时标题/正文明明非空，用户会误以为内容丢失。按钮在途虽渲染置灰态（post.vue:576、1061-1064）但仍可命中 tap。",
+      "evidence": "post.vue:141-143（canSubmit 含 !submitting）；post.vue:458-466（校验顺序：canSubmit 先于 submitting 守卫）；src/i18n/locales/zh-CN.ts:1850（contentRequired=请输入内容）",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "防重守卫置于函数首行静默返回：if (submitting.value) return; 之后再做空内容与超长校验。",
+      "fix": "将 post.vue:466 的 if (submitting.value) return; 移至 submitPublish 函数首行。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-005",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "同页混用 i18n 与硬编码中文，en-US 语言环境下页面中英混排。硬编码约 30 处：发布到(588)、选择发布到(627)、个人动态(638)、校园圈(657)、添加话题(762)、添加位置(774)、提及好友(786)、谁可以看(798)、发帖小贴士及文案(817-819)、标题 placeholder「填写标题会有更多赞哦～」(701)、底部工具栏五项(845-885)、话题/位置弹层全部文案(893-977)、可见范围弹层分组标题(630/649/669)、「兴趣圈帖子」兜底标题(152)、副标题(163-164) 等；而同页既有 19 个 key（headerTitle/contentPlaceholder/draftModal*/visibilityPublic/postSuccess 等）经逐一 grep 验证在 zh-CN/en-US/tmp-zh 三份 locale 均存在。同一界面两套文案来源违背单一数据源。",
+      "evidence": "post.vue:588/627/638/657/701/762/774/786/798/817-819/845-885/893-977（硬编码清单）；src/i18n/locales/{zh-CN,en-US,tmp-zh} 19 个既有 key 全命中（已逐一 grep 验证）",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "页面全部用户可见文案走 t()，key 补入三份 locale。",
+      "fix": "为上述硬编码文案新增 village.post.* 命名空间 key（如 publishTo/targetSheetTitle/generalTarget/campusTarget/addTopic/addLocation/mention/whoCanSee/tipsTitle/tipsDesc/titlePlaceholder/toolbarImage 等），三份 locale 同步补齐后替换模板字面量。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-006",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "草稿恢复的本地临时图片路径不跨进程有效，杀进程/隔日再进后草稿图片全部裂图且阻塞发布。chooseImage/compressImage 产出的是临时路径（post.vue:271-294），snapshotDraft 原样写入 storage（316）、restoreDraft 原样回填（380）。微信小程序临时文件生命周期仅限当前进程：重启后 <image> 预览全部失效；real 模式提交时对失效路径逐张 uploadPostImage 失败 → toast imageUploadFailed（post.vue:472-488），用户须手动逐张删除（最多 9 张）才能发布。restoreDraft 无任何路径有效性校验（对照 title/content/topics 均有类型守卫）。",
+      "evidence": "post.vue:271-294（临时路径产出）；post.vue:310-321、343-395（草稿存取无路径校验）；post.vue:472-488（real 上传失败即整单中止）",
+      "sources": ["code"],
+      "confidence": 0.6,
+      "ideal": "恢复草稿时校验图片路径可访问性（uni.getFileSystemManager().access/getFileInfo），失效项自动剔除或标记为待重选；或将草稿图片转存为本地持久文件（saveFile）后再记路径。",
+      "fix": "restoreDraft 回填 images 前逐张 uni.getFileInfo 校验，失败的过滤掉并 toast 说明；提交侧 uploadPostImage 失败时定位到具体图片索引提示删除，而非整单失败。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-007",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "同子包并存两条发布页实现，路由注释与实际职责矛盾。constants/routes.ts:82-84 注释称 post 为「发帖页（旧，保留兼容）」，但 post.vue 实为村口主发帖入口（village/index.vue:391「统一发帖入口（P12）」、pages/profile/index.vue:1571），而 publish.vue 仅服务 profile:896 的 target=friends 入口。两页各自维护同一条提交流水线：本地图上传→createTopic/createTopic 分支→deleteDraft→清表单→navigateBack/reLaunch 兜底（publish.vue:499-530 vs post.vue:457-556 结构等价，上传命名同为 post-image-${Date.now()}.jpg），仅草稿键隔离（village:post-draft vs village:publish-draft，constants/village.ts:41-49）。历史上 P0 级修复（categoryId:'interest'）即需双处同步（两页均已打上），后续任一链路修缺陷（如本报告 MP-R2-POST-001/002/003）同样存在单侧修复漂移风险。",
+      "evidence": "constants/routes.ts:82-84（注释与实际路由矛盾）；village/index.vue:387-392、pages/profile/index.vue:1571/896（两条入口并存）；publish.vue:499-530 vs post.vue:457-556（重复流水线）；constants/village.ts:41-49（双草稿键）",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "收敛为单一发布页/共享提交 composable；或至少将 routes.ts 注释更正为实际职责分工，并在两页头部互相标注镜像关系。",
+      "fix": "抽出 usePostSubmit composable（上传+分支提交+草稿清理+返回兜底）供两页复用；routes.ts:83 注释改为「发帖页（村口主入口）」、82 行改为「统一发布页（profile 好友动态入口）」。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-POST-008",
+      "round": "R2",
+      "page": "village/post",
+      "screenshot": "无（A2 代码层审查，证据为代码行号）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "post.vue:452 硬编码路由字面量 uni.reLaunch({ url: \"/subpackages/village/village/index\" })，而 constants/routes.ts:34 已有同值常量 ROUTES.TAB.VILLAGE，且 routes.ts 头注（11-13 行）明确要求路径统一维护「与 pages.json 保持一致」；本页头注（post.vue:10）自称路由走 ROUTES.VILLAGE.POST 体系，页面却未 import ROUTES。",
+      "evidence": "post.vue:452（硬编码字面量）；constants/routes.ts:11-13（单一维护约定）、34（ROUTES.TAB.VILLAGE 同值常量）；post.vue:10（头注自称走 ROUTES 体系）",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "路由字面量统一引自 constants/routes.ts。",
+      "fix": "import { ROUTES } from \"../../../constants/routes\" 并替换为 uni.reLaunch({ url: ROUTES.TAB.VILLAGE })。",
+      "status": "待修复"
+    }
+  ],
+  "regressionVerification": [
+    {
+      "clueId": "MP-R1-POST-001",
+      "page": "village/post",
+      "desc": "「发布」按钮与微信胶囊碰撞",
+      "severity": "P0",
+      "verdict": "已修复（代码层验证）",
+      "evidence": "post.vue:1030-1032 padding-right: calc(var(--capsule-right, 7px) + 104px) = 111px 预留 > 微信标准胶囊足迹（右缘 7px 间隙 + 87px 本体 = 94px），水平无重叠；post.vue:562 paddingTop 由 useStatusBarHeight()（composables/useStatusBarHeight.ts:11-21，getSystemInfoSync 注入）动态留白，垂直方向标题/按钮不再与系统状态栏叠印。--capsule-right 全局由 useMenuButtonRect 注入（composables/useMenuButtonRect.ts:47-52），本页未接线但 CSS 兜底值 7px 恰等于标准胶囊间隙，数学上仍安全（111px>94px）。"
+    },
+    {
+      "clueId": "MP-R2-VILL-013",
+      "page": "village（index/fixtures，非本审查路由页，顺带核销）",
+      "desc": "晚霞帖配热饮图（图文不符）",
+      "severity": "P1",
+      "verdict": "已修复（代码层验证）",
+      "evidence": "src/services/mocks/fixtures.ts:673-677：原「晚霞」文案已改为「傍晚的光线太适合拍照了。」并配人像街拍 p6.jpg，注释（MP-R1-VILLAGE-INDEX-103）明确「仓库无晚霞实拍图，避免图文不符」；全 src grep「晚霞」仅命中该修复注释，无任何晚霞文案+热饮图配对残留；stores/village/mock-data.ts 中咖啡帖（post-5/post-9）与冒热气咖啡杯图配对已实读核对一致（mock-data.ts:468-471、834-836）。"
+    }
+  ],
+  "checksNotRun": [
+    "ESLint：cd D:\\6\\恋爱小程序 && npx eslint apps/client/src/subpackages/village/village/post.vue → ConfigError: Key \"constructor-super\": structuredClone is not defined（环境 Node 版本过旧，ESLint 9 flat config 无法加载）。故「禁空 catch {}」仅能按人工核对结论：post.vue 无字面空 catch 块，4 处注释式 catch（330-332/358-360/404-407/434-436）与 1 处 .catch(() => {})（523，上方 522 行有说明注释）均为项目既有惯例且 R11 验收时已存在。",
+    "运行时/截图/交互验证：A2 为只读代码层审查，不驱动开发者工具。",
+    "TypeScript 编译、单元测试：本次 ask 未要求，未运行。"
+  ]
+}

@@ -107,7 +107,7 @@ const verified = computed(
   font-size: 56rpx;
   font-weight: 700;
   line-height: 1.15;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   text-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.35);
 }
 
@@ -139,7 +139,7 @@ const verified = computed(
 .match-info__gender-symbol {
   width: 26rpx;
   height: 26rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .match-info__verified {
@@ -149,14 +149,14 @@ const verified = computed(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #36C99A;
-  color: #ffffff;
+  background: var(--c-brand, #36C99A);
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .match-info__verified-icon {
   width: 20rpx;
   height: 20rpx;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 /* 学校 16px Medium + 学院 14px 70% 白 */
@@ -170,7 +170,7 @@ const verified = computed(
 .match-info__school {
   font-size: 32rpx;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .match-info__college {
@@ -208,7 +208,7 @@ const verified = computed(
   border: 1rpx solid rgba(255, 255, 255, 0.3);
   font-size: 24rpx;
   font-weight: 400;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 /* 个性签名：引号 16px + 白色 14px，两行 */

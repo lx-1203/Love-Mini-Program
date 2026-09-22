@@ -413,6 +413,9 @@ function onScrollToUpper() {
       // scroll-top 与 scroll-into-view 互斥：先清 into-view 再设置 scroll-top
       scrollIntoViewId.value = "";
       scrollTop.value = after - (before - curScrollTop);
+      } catch (err) {
+      // MP-R2-CHAT-CHAT-SESSION-INDEX-006：分页失败轻提示（原 rejection 未处理进全局 onError）
+      uni.showToast({ title: err instanceof Error ? err.message : t("chat.loadFailed"), icon: "none" });
     } finally {
       loadingOlder.value = false;
     }
@@ -585,7 +588,10 @@ async function loadSessionData(): Promise<void> {
   let session = messagesStore.sessions.find((s) => s.id === sessionId.value);
   const looksPrivateNumeric = /^\d+$/.test(String(sessionId.value));
   const looksConversationUid = /^conv-/.test(String(sessionId.value));
-  if (!session && !looksPrivateNumeric && !looksConversationUid && messagesStore.sessions.length === 0) {
+  // MP-R2-CHAT-CHAT-SESSION-INDEX-004：conv- 深链同样允许 bootstrap 救援——
+  // 原条件 !looksConversationUid 把 conv- 冷启动排除在外，会话列表为空时 byUid 解析
+  // 必落空，未解析的 conv- 进 fetchSessionMessages → 后端 @Positive Long 400
+  if (!session && !looksPrivateNumeric && messagesStore.sessions.length === 0) {
     // 会话列表未加载过：先引导加载（bootstrap 私信列表），再复查一次
     try {
       await messagesStore.bootstrap();
@@ -612,10 +618,12 @@ async function loadSessionData(): Promise<void> {
     // 吞错（rethrow=false），失败时 errorMessage 非空——此时跳过 sync（sync 会把
     // currentMessages 清为 [] 渲染成「0 气泡+破冰引导」的假空会话），置页面错误态
     // 让「会话不存在或已失效」真实到达用户。
-    const errBefore = chatStore.errorMessage;
     await chatStore.loadSession(sessionId.value);
-    if (chatStore.errorMessage && chatStore.errorMessage !== errBefore) {
-      pageErrorMessage.value = chatStore.errorMessage;
+    // MP-R2-CHAT-CHAT-SESSION-INDEX-001：以 activeSession 是否就绪判定失败
+    // （确定性信号；原「errorMessage 文案差分」在重进同一失效深链时因文案相同误判成功，
+    //  sync 把 currentMessages 清成 [] 渲染假空会话）
+    if (!chatStore.activeSession) {
+      pageErrorMessage.value = chatStore.errorMessage || t("chat.sessionNotExist");
       return;
     }
     syncChatStoreMessagesToMessagesStore();
@@ -939,7 +947,7 @@ function handleViewProfile() {
 onShareAppMessage(() => {
   const peerId = resolvePeerUserId();
   if (peerId === null) {
-    return { title: t("share.shareVillage"), path: ROUTES.TAB.VILLAGE };
+    return { title: t("profile.shareVillage"), path: ROUTES.TAB.VILLAGE };
   }
   const session = currentSession.value;
   const name =
@@ -969,7 +977,9 @@ async function handleToggleMute() {
     uni.showToast({ title: t("chat.muteLocalOnly"), icon: "none" });
     return;
   }
-  await messagesStore.setSessionMuted(sid, !muted);
+  const muteOk = await messagesStore.setSessionMuted(sid, !muted);
+      // MP-R2-CHAT-CHAT-SESSION-INDEX-007：按 store 契约消费返回值（失败静默=点击没按上）
+      if (!muteOk) uni.showToast({ title: t("chat.operationFailed"), icon: "none" });
 }
 
 /** 拉黑：2026-08-10 功能补齐——real 模式调用 POST /users/{id}/block（后端生效：会话过滤/发送拦截/推荐排除），
@@ -1111,10 +1121,14 @@ async function sendText() {
       // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002：chatStore.sendText 失败被 store
       // 内部 catch 吞掉（不 rethrow），页面 await 永不 reject——以 errorMessage 变化判定
       // 真实失败：保留草稿 + toast，不再走成功路径清空草稿（原失败时消息正文丢失且无反馈）
-      const errBefore = chatStore.errorMessage;
-      await chatStore.sendText(messageToSend);
-      if (chatStore.errorMessage && chatStore.errorMessage !== errBefore) {
-        uni.showToast({ title: chatStore.errorMessage, icon: "none" });
+      // MP-R2-CHAT-CHAT-SESSION-INDEX-001：sendText 返回布尔（原「errorMessage 文案
+      // 差分」在连续两次相同错误时误判成功 → 清空草稿丢失正文）
+      const ok = await chatStore.sendText(messageToSend);
+      if (!ok) {
+        uni.showToast({
+          title: chatStore.errorMessage || t("chat.sendFailed"),
+          icon: "none",
+        });
         return;
       }
       // Task 1.1.1：单一数据源 - chatStore 操作后同步消息到 messagesStore
@@ -1672,6 +1686,13 @@ async function handleImagePlaceholder() {
     uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
     return;
   }
+  // MP-R2-CHAT-CHAT-SESSION-INDEX-002：temp 会话 id 非数字，私信图片接口
+  // @PathVariable @Positive Long 必 400——在支持 temp 图片链路前明确提示，
+  // 不再发起必然失败的请求（本页上拉分页/撤回均已按同约束绕行）
+  if (isTempSession.value) {
+    uni.showToast({ title: t("chat.imageTempUnsupported"), icon: "none" });
+    return;
+  }
   if (isSendingImage.value) return;
   isSendingImage.value = true;
   try {
@@ -1679,21 +1700,35 @@ async function handleImagePlaceholder() {
     if (paths.length === 0) return; // 用户取消
     // 2026-08-13 收尾：上传期间显示加载提示（多张仅首次弹，结束时统一收起）
     uni.showLoading({ title: t("chat.sendingImage"), mask: true });
+    // MP-R2-CHAT-CHAT-SESSION-INDEX-003：统计成功/失败张数——原单张失败静默跳过、
+    // 全部失败也弹「发送成功」（toast 条件 paths.length>0 恒真）
+    let sentCount = 0;
+    let failedCount = 0;
     for (const path of paths) {
-      // 逐张上传 + 发送（保持顺序；单张失败跳过继续）
+      // 逐张上传 + 发送（保持顺序；单张失败计数后继续）
       try {
         const { url } = await clientApi.uploadPostImage({
           path,
-          name: `chat-${Date.now()}.jpg`,
+          name: `chat-${Date.now()}-${sentCount}.jpg`,
         } as UniUploadFileLike);
-        if (!url) continue;
+        if (!url) {
+          failedCount += 1;
+          continue;
+        }
         await messagesStore.sendMessage(sessionId.value, url, undefined, "image");
+        sentCount += 1;
       } catch (err) {
+        failedCount += 1;
         captureException(err, { source: "chat.send-image" });
       }
     }
     uni.hideLoading();
-    if (paths.length > 0) {
+    if (failedCount > 0) {
+      uni.showToast({
+        title: t("chat.imagePartialFailed", { ok: sentCount, fail: failedCount }),
+        icon: "none",
+      });
+    } else if (sentCount > 0) {
       uni.showToast({ title: t("chat.imageSent"), icon: "success" });
     }
   } catch (error) {
@@ -1734,9 +1769,10 @@ async function handleAvatarPat() {
   avatarMenuVisible.value = false;
   if (!sessionId.value) return;
   try {
-    const name = pageTitle.value || "对方";
+    const name = pageTitle.value || t("chat.peerFallbackName");
     if (isTempSession.value) {
-      await chatStore.sendText("你拍了拍" + name);
+      // MP-R2-CHAT-CHAT-SESSION-INDEX-008：拍一拍文案 i18n 化
+        await chatStore.sendText(t("chat.patMessage", { name }));
       syncChatStoreMessagesToMessagesStore();
     } else {
       await messagesStore.sendMessage(sessionId.value, "你拍了拍" + name);
@@ -2005,7 +2041,7 @@ defineExpose({ noop });
             hover-stay-time="120"
             @tap="onSend"
           >
-            <text class="wechat-input-bar__send-text">发送</text>
+            <text class="wechat-input-bar__send-text">{{ t("chat.send") }}</text>
           </view>
         </view>
 
@@ -2283,7 +2319,7 @@ defineExpose({ noop });
       @tap="closeAvatarMenu"
       role="dialog"
       aria-modal="true"
-      :aria-label="'头像操作'"
+      :aria-label="t('chat.avatarMenuAria')"
     >
       <view class="avatar-menu-sheet" @tap.stop="noop">
         <view class="avatar-menu-head">
@@ -2292,14 +2328,14 @@ defineExpose({ noop });
         </view>
         <view class="avatar-menu-actions">
           <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarProfile" role="button">
-            <text class="avatar-menu-item-text">看主页</text>
+            <text class="avatar-menu-item-text">{{ t("chat.viewProfile") }}</text>
           </view>
           <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarPat" role="button">
-            <text class="avatar-menu-item-text">拍一拍</text>
+            <text class="avatar-menu-item-text">{{ t("chat.pat") }}</text>
           </view>
         </view>
         <view class="avatar-menu-cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="closeAvatarMenu" role="button">
-          <text class="avatar-menu-cancel-text">取消</text>
+          <text class="avatar-menu-cancel-text">{{ t("common.cancel") }}</text>
         </view>
       </view>
     </view>
@@ -2318,86 +2354,25 @@ defineExpose({ noop });
 }
 
 /* 顶部导航：返回箭头 + 居中标题（微信聊天页风格） */
-.chat-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) var(--sp-4) var(--sp-2);
-  background: var(--c-bg-page);
-  flex-shrink: 0;
-}
 
-.chat-nav__back {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-full);
-  background: var(--c-bg-container);
-  border: 1rpx solid var(--c-border-light);
-  flex-shrink: 0;
-}
 
-.chat-nav__back-icon {
-  width: 36rpx;
-  height: 36rpx;
-}
+
+
+
 
 /* 2026-08-09 微信 1:1 重构：标题区两行（昵称 16px 粗体 + 状态 12px 灰字） */
-.chat-nav__title-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2rpx;
-  padding: 0 var(--sp-2);
-}
+
 
 /* 微信：昵称 16px 加粗 = 32rpx/700（无对应 token 档位，局部字面量） */
-.chat-nav__title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: var(--c-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
+
 
 /* 微信：状态文字 12px 灰色 = 24rpx（无对应 token 档位，局部字面量） */
-.chat-nav__status {
-  font-size: 24rpx;
-  color: var(--c-text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
+
 
 /* 微信：右侧「···」更多按钮（与返回按钮对称 64rpx） */
-.chat-nav__more {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-full);
-  background: var(--c-bg-container);
-  border: 1rpx solid var(--c-border-light);
-  flex-shrink: 0;
-}
 
-.chat-nav__more-text {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: var(--c-text-secondary);
-  line-height: 1;
-  /* 三点字符垂直居中微调，无对应 token 档位 */
-  letter-spacing: 2rpx;
-}
+
+
 
 /* 消息滚动区：flex 子项必须 min-height:0（mp-weixin） */
 .chat-scroll {
@@ -2410,8 +2385,7 @@ defineExpose({ noop });
 .chat-list {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  padding: var(--sp-3) 0;
+    padding: var(--sp-3) 0;
 }
 
 /* 微信式时间分隔条：居中胶囊样式（R20：浅灰胶囊底提升与消息的归属可读性，
@@ -2421,7 +2395,7 @@ defineExpose({ noop });
   text-align: center;
   font-size: var(--fs-xs);
   color: var(--c-text-secondary);
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--c-overlay-faint, rgba(0, 0, 0, 0.05));
   border-radius: 999rpx;
   padding: 6rpx 24rpx;
   margin: var(--sp-3) 0;

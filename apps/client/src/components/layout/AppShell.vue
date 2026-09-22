@@ -39,6 +39,8 @@ interface Props {
   safeArea?: boolean;
   /** 是否适配 TabBar 底部安全区（默认 true） */
   tabBarSafe?: boolean;
+  /** MP-R2-APP-001：兼容历史调用方的无效属性（:show-tab-bar="false"）——映射到 tabBarSafe */
+  showTabBar?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -51,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
   fixed: false,
   safeArea: true,
   tabBarSafe: true,
+  /* MP-R2-APP-001：默认 undefined → 不影响 tabBarSafe 旧行为 */
 });
 
 const emit = defineEmits<{
@@ -103,6 +106,8 @@ const headerStyle = computed(() => {
 
 /** 底部内边距 */
 const bodyPaddingBottom = computed(() => {
+  // MP-R2-APP-001：显式 :show-tab-bar="false" 视为关闭 tabBar 底部适配
+  if (props.showTabBar === false) return '0';
   if (!props.tabBarSafe) return '0';
   return 'calc(env(safe-area-inset-bottom) + 180rpx)';
 });

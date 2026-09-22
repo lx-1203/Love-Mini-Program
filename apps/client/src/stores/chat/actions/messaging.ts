@@ -56,9 +56,11 @@ export async function sendText(
   this: ChatStoreThis,
   body: string,
   kind: SendMessageRequest["kind"] = "text"
-): Promise<void> {
+): Promise<boolean> {
+  // MP-R2-CHAT-CHAT-SESSION-INDEX-001：返回成功/失败布尔替代页面「errorMessage 文案差分」
+  // 检测——差分在连续两次相同错误文案时误判为成功（页面随后清空草稿，消息正文丢失）
   if (!this.activeSession) {
-    return;
+    return false;
   }
 
   // 修复（P1 BUG）：生成客户端 sendId 用于跟踪消息投递状态
@@ -112,11 +114,13 @@ export async function sendText(
     );
     // 发送成功，更新状态为 sent
     this._setMessageStatus(sendId, "sent");
+    return true;
   } catch (error) {
     // 修复（P1 BUG）：发送失败，更新状态为 failed 并设置 errorMessage
     this._setMessageStatus(sendId, "failed");
     this.errorMessage =
-      error instanceof Error ? error.message : "发送消息失败，请重试";
+      error instanceof Error ? error.message : t("chat.sendFailed");
+    return false;
   }
 }
 

@@ -876,7 +876,7 @@ onShareTimeline(() => {
         <view v-if="currentPost.author.campusName" class="post-location">
           <image class="post-location__pin" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="post-location__text">{{ currentPost.author.campusName }}</text>
-          <text class="post-location__distance">· 距你 1.2km</text>
+          <text class="post-location__distance"><!-- MP-R2-DETAIL-001：写死假距离移除（无数据绑定、无 i18n） --></text>
         </view>
 
         <!-- 2026-08-26 P0：理想图行内互动栏（点赞数 | 评论数 | 分享） -->

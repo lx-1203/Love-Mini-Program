@@ -64,9 +64,10 @@ function goBrowse() {
       </view>
     </view>
 
-    <!-- 主按钮：点击热区用裸 <text>（本页实测 view+hover-class 绑定失效、text 绑定可用） -->
-    <view class="reg-success__btn">
-      <text class="reg-success__btn-text" @tap="goSetupProfile">完善我的资料 →</text>
+    <!-- MP-R2-PAGES-REGISTER-SUCCESS-002：@tap 移回 view，点击热区与 96rpx 按钮实体一致
+         （原绑在内层 text 上，按钮上下约 27rpx 为点击死区） -->
+    <view class="reg-success__btn" @tap="goSetupProfile">
+      <text class="reg-success__btn-text">完善我的资料 →</text>
     </view>
 
     <!-- 次级出口 -->
@@ -162,7 +163,7 @@ function goBrowse() {
   height: 96rpx;
   margin-top: 56rpx;
   border-radius: 24rpx;
-  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);
+  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
 }
 

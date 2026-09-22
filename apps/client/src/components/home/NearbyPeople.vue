@@ -71,7 +71,8 @@ function onNearbyAvatarError(event: Event) {
     </scroll-view>
     <!-- 2026-09-02 R5：用户反馈「值得认识的人无法点击」→ hover-class 加 + catchtap 防冒泡 + 明确 role=button -->
     <view v-if="items.length > 0" class="nearby-people__bar press-feedback" hover-class="press-feedback--active" role="button" aria-label="查看全部附近的人" @tap="$emit('more')">
-      <text class="nearby-people__bar-text">附近有 {{ Math.max(items.length, 4) }} 位值得认识的人</text>
+      <!-- MP-R2-PAGES-HOME-INDEX-005：展示真实数量（原 Math.max(…,4) 保底伪造人数，2 人时文案称 4 位） -->
+      <text class="nearby-people__bar-text">附近有 {{ items.length }} 位值得认识的人</text>
       <text class="nearby-people__bar-arrow">›</text>
     </view>
   </view>

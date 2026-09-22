@@ -10,6 +10,9 @@ import { toMatchCardUser } from "../../../view-models/match";
 import type { MatchCardUser } from "../../../types/match";
 import { useProfileStore } from "../../../stores/profile";
 import { IMAGE_PATHS } from "../../../config/images";
+import { isDev } from "../../../config/env";
+// MP-R2-MATCHING-002：统一媒体出口
+import { resolveMediaUrl } from "../../../utils/media";
 import { ROUTES } from "../../../constants/routes";
 
 import MatchLoading from "../../../components/match/MatchLoading.vue";
@@ -22,15 +25,24 @@ const { t } = useI18n();
 const matchStore = useMatchStore();
 const profileStore = useProfileStore();
 
-const animationDone = ref(false);
+// MP-R2-MATCHING-009：删除本地 animationDone 双真值（原与 store 份靠双写同步）
 const checked = ref(false);
 const previewMode = ref(false);
 /** 2026-08-31 修复「喜欢/超赞后返回仍停留原卡」：记录本次匹配消费的卡片，成功后从卡组移除 */
 const consumedCardId = ref("");
 
 const partner = computed(() => matchStore.matchedUser);
-const myAvatar = computed(() => profileStore.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR);
-const partnerAvatar = computed(() => partner.value?.avatar || partner.value?.photo || IMAGE_PATHS.DEFAULT_AVATAR);
+// MP-R2-MATCHING-002 (P1)：双头像必须经统一媒体出口 resolveMediaUrl——服务端原始
+// 相对路径（/uploads/...）被 mp-weixin 当包内文件且 <image> 无法携带鉴权头，
+// real 模式渲染空圆（与 match-success.vue MP-R1-...-002 同机理）
+const myAvatar = computed(
+  () => resolveMediaUrl(profileStore.avatarUrl) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR),
+);
+const partnerAvatar = computed(
+  () =>
+    resolveMediaUrl(partner.value?.avatar || partner.value?.photo || "") ||
+    resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR),
+);
 
 function redirectToSuccess() {
   const userId = partner.value?.userId ?? "";
@@ -49,7 +61,7 @@ function goBack() {
 }
 
 watch(
-  () => [matchStore.status, animationDone.value] as const,
+  () => [matchStore.status, matchStore.animationDone] as const,
   ([status, animated]) => {
     if (!checked.value || !animated || previewMode.value) return;
     if (status === "matched") {
@@ -85,7 +97,9 @@ onLoad((query) => {
       "like"
     );
     if (!profileStore.avatarUrl) {
-      void profileStore.load().catch(() => {});
+      void profileStore.load().catch((e) => {
+        if (isDev) console.warn("[matching] profile.load 失败:", e);
+      });
     }
     return;
   }
@@ -100,11 +114,13 @@ onLoad((query) => {
     );
     void loadPartnerProfile(userId).then((user) => {
       if (user) {
-        matchStore.matchedUser = user;
+        matchStore.setMatchedUser(user);
       }
     });
     if (!profileStore.avatarUrl) {
-      void profileStore.load().catch(() => {});
+      void profileStore.load().catch((e) => {
+        if (isDev) console.warn("[matching] profile.load 失败:", e);
+      });
     }
     return;
   }
@@ -121,7 +137,7 @@ onLoad((query) => {
       );
       void loadPartnerProfile(userId).then((user) => {
         if (user) {
-          matchStore.matchedUser = user;
+          matchStore.setMatchedUser(user);
         }
       });
     } else {
@@ -133,7 +149,9 @@ onLoad((query) => {
   consumedCardId.value = consumedCardId.value || matchStore.pendingCardId || cardId;
 
   if (!profileStore.avatarUrl) {
-    void profileStore.load().catch(() => {});
+    void profileStore.load().catch((e) => {
+        if (isDev) console.warn("[matching] profile.load 失败:", e);
+      });
   }
 
   void matchStore.runMatchCheck().finally(() => {
@@ -174,7 +192,6 @@ async function loadPartnerProfile(userId: string): Promise<MatchCardUser | null>
 }
 
 function onAnimationFinished() {
-  animationDone.value = true;
   matchStore.markAnimationDone();
 }
 
@@ -184,17 +201,18 @@ function onAnimationFinished() {
  * 动画已播完再点「跳过」= 返回上一页（保留原语义）。
  */
 function handleSkip() {
-  if (!animationDone.value) {
+  if (!matchStore.animationDone) {
     onAnimationFinished();
     return;
   }
   goBack();
 }
 
+// MP-R2-MATCHING-007：onUnload 无条件复位本页独占的匹配状态机——原仅 idle/failed 复位，
+// previewMode 两入口与「check 完成前退出」时 status 停在 checking/matched，
+// 残留 pendingCardId 会使下次进入绕过 200ms 兜底 → 对已消费卡 swipeRight → 误报错误
 onUnload(() => {
-  if (matchStore.status === "idle" || matchStore.status === "failed") {
-    matchStore.reset();
-  }
+  matchStore.reset();
 });
 </script>
 
@@ -238,7 +256,7 @@ onUnload(() => {
 
 .matching-page__back-icon {
   font-size: 48rpx;
-  color: #333A37;
+  color: var(--c-text-primary, #333A37);
   line-height: 1;
   font-weight: 500;
 }

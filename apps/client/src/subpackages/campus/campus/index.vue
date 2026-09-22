@@ -10,7 +10,7 @@
  */
 import { ref, computed, onMounted } from "vue";
 import { resolveMediaUrl } from "@/utils/media";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
@@ -116,7 +116,9 @@ function goToTopicDetail(topicId: string) {
  * 跳转到发布话题页面
  */
 function goToPostTopic() {
-  openAppPath("/subpackages/campus/campus/post-topic");
+  // MP-R2-CAMPUSINDEX-002(a)：透传当前分类——原发布页恒默认 course_exchange，
+  // 发布回流后新帖 unshift 到列表顶但归属错误 Tab
+  openAppPath(`/subpackages/campus/campus/post-topic?category=${encodeURIComponent(activeCategory.value)}`);
 }
 
 /**
@@ -196,6 +198,13 @@ onLoad((query) => {
   uni.redirectTo({ url: "/subpackages/campus/campus/hub" });
 });
 
+// MP-R2-CAMPUSINDEX-006：从认证页/详情页返回时重取认证状态（原仅 onMounted 取一次，
+// 后台审核通过后返回本页仍显示「审核中」，已认证内容区/FAB 不出现）
+onShow(() => {
+  if (redirectedToHub.value) return;
+  void campusStore.fetchCertificationStatus();
+});
+
 onMounted(async () => {
   if (redirectedToHub.value) return;
   // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
@@ -247,8 +256,8 @@ onMounted(async () => {
     <!-- 2026-08-21：未认证时推荐兴趣圈（避免内容区空白） -->
     <view v-if="!isVerified" class="cert-recommend card-base">
       <view class="cert-recommend__head">
-        <text class="cert-recommend__title">热门兴趣圈</text>
-        <text class="cert-recommend__more" @tap="goCircles">查看更多 ›</text>
+        <text class="cert-recommend__title">{{ t('campus.index.hotCirclesTitle') }}</text>
+        <text class="cert-recommend__more" @tap="goCircles">{{ t('campus.index.viewMore') }} ›</text>
       </view>
       <view class="cert-recommend__grid">
         <view v-for="item in RECOMMEND_CIRCLES" :key="item.name" class="cert-recommend__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goCircles">
@@ -371,7 +380,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex-direction: column;
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* MP-R2-CAMPUSINDEX-001 (P1)：容器必须有界高度——原仅 min-height:100%，内容超屏时
+     容器随内容增长，flex:1 的 .topic-scroll 被拉伸到全内容高，scroll-view 不产生内部
+     滚动，@scrolltolower 翻页永不触发（real 第 11 条起不可见）。改定高 + 溢出隐藏 */
+  height: 100%;
+  overflow: hidden;
   background: $bg-page;
 }
 

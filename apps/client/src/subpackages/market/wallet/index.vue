@@ -6,7 +6,7 @@
  * 数据源：useCoinsStore（mock 内存 / real /api/v1/wallet/*）。
  * 解锁私信/访客/喜欢你/悄悄话均从此余额扣费（见 stores/coins.ts）。
  */
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCoinsStore } from "../../../stores/coins";
@@ -42,20 +42,37 @@ const transactions = computed(() => coinsStore.transactions);
 /** 加载状态 */
 const loading = ref(false);
 
-onShow(async () => {
-  // 批次 A / ADR-2：封存态不发任何钱包请求（余额/流水均不拉取）
-  if (commerceSealed.value) return;
+// MP-R2-次要22-004：解封补偿——配置异步拉回后自动补拉余额/流水，
+// 避免解封后余额显示兜底 0 元、流水显示「暂无流水」误导用户
+watch(commerceSealed, (sealed) => {
+  if (!sealed && !loading.value) {
+    void refreshWallet();
+  }
+});
+
+// MP-R2-次要22-011：加载失败态（原网络异常静默后余额显示兜底 0 元、流水显示
+// 「暂无流水」，与真实空账不可区分）+ 统一刷新函数（onShow 与解封补偿共用）
+const loadFailed = ref(false);
+
+async function refreshWallet(): Promise<void> {
   loading.value = true;
+  loadFailed.value = false;
   try {
     await Promise.all([
       coinsStore.fetchBalance(true),
       coinsStore.listTransactions({ page: 0, size: 20 }),
     ]);
   } catch (_e) {
-    // 网络异常静默，页面展示兜底文案
+    loadFailed.value = true;
   } finally {
     loading.value = false;
   }
+}
+
+onShow(async () => {
+  // 批次 A / ADR-2：封存态不发任何钱包请求（余额/流水均不拉取）
+  if (commerceSealed.value) return;
+  await refreshWallet();
 });
 
 /** 演示充值：+100 元（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
@@ -115,7 +132,7 @@ function typeLabel(type?: string): string {
 /** 金额文本（收入 +，支出 -） */
 function amountText(item: { type?: string; amount: number }): string {
   const sign = isIncome(item.type) ? "+" : "-";
-  return `${sign}¥${(item.amount / 100).toFixed(0)}`;
+  return `${sign}¥${(item.amount / 100).toFixed(2)}`;
 }
 </script>
 
@@ -138,7 +155,7 @@ function amountText(item: { type?: string; amount: number }): string {
         <text class="wallet__balance-label">{{ t('wallet.balanceLabel') }}</text>
         <view class="wallet__balance-value-row">
           <text class="wallet__balance-currency">¥</text>
-          <text class="wallet__balance-value">{{ loading ? '--' : balanceYuan.toFixed(0) }}</text>
+          <text class="wallet__balance-value">{{ (loading || loadFailed) ? '--' : balanceYuan.toFixed(2) }}</text>
         </view>
         <text class="wallet__balance-hint">{{ t('wallet.balanceHint') }}</text>
         <!-- R4-00067：演示充值无支付流程（直接 POST /wallet/recharge 入账），
@@ -153,7 +170,14 @@ function amountText(item: { type?: string; amount: number }): string {
 
       <!-- 收支明细 -->
       <view class="wallet__section">
-        <text class="wallet__section-title">{{ t('wallet.transactions') }}</text>
+        <!-- MP-R2-次要22-011：加载失败重试条 -->
+      <view v-if="loadFailed" class="wallet__load-error">
+        <text class="wallet__load-error-text">{{ t('common.networkError') }}</text>
+        <view class="wallet__load-error-retry press-feedback" role="button" @tap="refreshWallet">
+          <text class="wallet__load-error-retry-text">{{ t('common.retry') }}</text>
+        </view>
+      </view>
+      <text class="wallet__section-title">{{ t('wallet.transactions') }}</text>
         <view v-if="transactions.length > 0" class="wallet__tx-list">
           <view v-for="tx in transactions" :key="tx.id" class="wallet__tx-item">
             <view class="wallet__tx-info">
@@ -186,6 +210,32 @@ function amountText(item: { type?: string; amount: number }): string {
 </template>
 
 <style scoped lang="scss">
+/* MP-R2-次要22-011：加载失败重试条 */
+.wallet__load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin: 0 0 20rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 16rpx;
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1));
+}
+.wallet__load-error-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--c-error, #E5454D);
+}
+.wallet__load-error-retry {
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand, #36C99A);
+}
+.wallet__load-error-retry-text {
+  font-size: 24rpx;
+  color: var(--c-neutral-0, #FFFFFF);
+}
+
 .wallet {
   min-height: 100vh;
   background: var(--c-bg-page, #f4f6fa);

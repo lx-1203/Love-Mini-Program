@@ -617,20 +617,7 @@ function handleMenuTap(item: MenuItem) {
           </view>
           <text class="menu-item__arrow">›</text>
         </view>
-        <view
-          class="menu-item press-feedback menu-item--no-border"
-          @tap="viewPrivacyPolicy"
-          hover-class="menu-item--hover"
-          hover-stay-time="40"
-        >
-          <view class="menu-item__left">
-            <view class="menu-item__icon settings-card--page">
-              <image class="menu-item__emoji-img" :src="menuIcons.clipboard" mode="aspectFit" alt="" />
-            </view>
-            <text class="menu-item__label">{{ t('settings.privacyPolicy') }}</text>
-          </view>
-          <text class="menu-item__arrow">›</text>
-        </view>
+        <!-- MP-R2-SETTINGS-001：重复的「隐私政策」入口已删（关于分组已有同款，两处独立维护易漂移） -->
       </view>
     </view>
 

@@ -1,6 +1,12 @@
 <script setup lang="ts">
+// MP-R2-MATCHING-011：启用 virtualHost 使宿主节点不产生包裹元素，
+// 组件根 min-height:100% 高度链成立（背景覆盖全视口，消除底部色差带）
+defineOptions({ options: { virtualHost: true } });
 import { onMounted, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
+// MP-R2-MATCHING-006：用户可见文案 i18n 化
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
 
 withDefaults(
   defineProps<{
@@ -39,12 +45,13 @@ onUnmounted(() => {
 });
 
 /** 匹配度进度（参考图：旅行/音乐/电影/生活方式 四项 + 总进度） */
+// MP-R2-MATCHING-006：label 改 i18n key（模板 t() 渲染）
 const PROGRESS = [
-  { label: "旅行爱好", percent: 90, icon: "/static/assets/images/mascot/star.png", color: "#FF6B9D" },
+  { labelKey: "matching.dimTravel", percent: 90, icon: IMAGE_PATHS.MASCOT.STAR, color: "#FF6B9D" },
   // R4：heart_pink.png 为全透明空文件（行图标渲染空白圆），换 lucide music 图标
-  { label: "音乐品味", percent: 85, icon: "/static/assets/icons/common/music.svg", color: "#6C5CE7" },
-  { label: "电影偏好", percent: 80, icon: "/static/assets/images/mascot/sparkle.png", color: "#00B894" },
-  { label: "生活方式", percent: 79, icon: "/static/assets/images/mascot/sprout.png", color: "#FDCB6E" },
+  { labelKey: "matching.dimMusic", percent: 85, icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC, color: "#6C5CE7" },
+  { labelKey: "matching.dimMovie", percent: 80, icon: IMAGE_PATHS.MASCOT.SPARKLE, color: "#00B894" },
+  { labelKey: "matching.dimLifestyle", percent: 79, icon: IMAGE_PATHS.ICONS_V2.SPROUT, color: "#FDCB6E" },
 ];
 
 /** 底部总进度（参考图：缘分匹配中... 89%） */
@@ -55,17 +62,17 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   <view class="match-loading">
     <!-- 粉色爱心装饰 - 用图片替换emoji -->
     <image class="match-loading__deco match-loading__deco--1" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--2" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--2" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
     <image class="match-loading__deco match-loading__deco--3" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
     <image class="match-loading__deco match-loading__deco--4" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--5" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--5" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
     <image class="match-loading__deco match-loading__deco--6" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
     <image class="match-loading__deco match-loading__deco--7" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--8" :src="IMAGE_PATHS.MASCOT.HEART_PINK" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--8" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
 
     <!-- 右上角跳过 -->
     <view class="match-loading__skip" hover-class="match-loading__skip--pressed" @tap="emit('skip')">
-      <text class="match-loading__skip-text">跳过</text>
+      <text class="match-loading__skip-text">{{ t("matching.skip") }}</text>
     </view>
 
     <!-- 头像区域 + 涟漪动画 -->
@@ -94,32 +101,32 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
         <view class="match-loading__avatar-wrap">
           <image class="match-loading__avatar match-loading__avatar--blur" :src="partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
           <view class="match-loading__avatar-mask" />
-          <text class="match-loading__avatar-hint">匹配中</text>
+          <text class="match-loading__avatar-hint">{{ t("matching.matching") }}</text>
         </view>
       </view>
     </view>
 
     <text class="match-loading__title">正在寻找有缘的Ta...</text>
-    <text class="match-loading__subtitle">分析彼此兴趣，缘分匹配中</text>
+    <text class="match-loading__subtitle">{{ t("matching.subtitle") }}</text>
 
     <!-- 匹配度进度卡片 -->
     <view class="match-loading__progress">
-      <view class="match-loading__progress-header">我们正在分析你们的共同点</view>
-      <view v-for="p in PROGRESS" :key="p.label" class="match-loading__row">
+      <view class="match-loading__progress-header">{{ t("matching.progressTitle") }}</view>
+      <view v-for="p in PROGRESS" :key="p.labelKey" class="match-loading__row">
         <view class="match-loading__row-icon-wrap">
           <image class="match-loading__row-icon-img" :src="p.icon" mode="aspectFit" />
         </view>
-        <text class="match-loading__row-label">{{ p.label }}</text>
+        <text class="match-loading__row-label">{{ t(p.labelKey) }}</text>
         <view class="match-loading__row-bar">
           <view class="match-loading__row-bar-inner" :style="{ width: p.percent + '%' }" />
         </view>
-        <text class="match-loading__row-percent">匹配度 {{ p.percent }}%</text>
+        <text class="match-loading__row-percent">{{ t("matching.matchRate", { n: p.percent }) }}</text>
       </view>
     </view>
 
     <!-- 总进度（卡片外部，页面底部独立显示） -->
     <view class="match-loading__total">
-      <text class="match-loading__total-text">缘分匹配中... {{ totalPercent }}%</text>
+      <text class="match-loading__total-text">{{ t("matching.totalProgress", { n: totalPercent }) }}</text>
       <view class="match-loading__total-bar">
         <view class="match-loading__total-bar-inner" :style="{ width: totalPercent + '%' }" />
       </view>
@@ -128,6 +135,12 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 </template>
 
 <style scoped lang="scss">
+/* MP-R2-MATCHING-011：宿主节点撑满（配合 virtualHost） */
+:host {
+  flex: 1;
+  min-height: 100%;
+}
+
 .match-loading {
   position: relative;
   min-height: 100%;
@@ -270,7 +283,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   top: 50%;
   transform: translate(-50%, -50%);
   font-size: 22rpx;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
   font-weight: 700;
   background: rgba(255, 255, 255, 0.85);
   padding: 6rpx 14rpx;
@@ -376,8 +389,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__row-bar-inner {
   height: 100%;
   border-radius: 999rpx;
-  /* R4-batch4 像素级对齐：参考图进度条用品牌绿 #36C99A，更柔和 */
-  background: #36C99A;
+  /* R4-batch4 像素级对齐：参考图进度条用品牌绿 var(--c-brand, #36C99A)，更柔和 */
+  background: var(--c-brand, #36C99A);
   transition: width 1.2s ease-out;
 }
 
@@ -385,8 +398,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   width: 160rpx;
   font-size: 22rpx;
   font-weight: 700;
-  /* R4-batch4 像素级对齐：参考图匹配度百分比为品牌绿 #36C99A */
-  color: #36C99A;
+  /* R4-batch4 像素级对齐：参考图匹配度百分比为品牌绿 var(--c-brand, #36C99A) */
+  color: var(--c-brand, #36C99A);
   text-align: right;
   flex-shrink: 0;
 }
@@ -404,7 +417,7 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__total-text {
   font-size: 34rpx;
   font-weight: 700;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
 }
 
 .match-loading__total-bar {
@@ -418,8 +431,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
 .match-loading__total-bar-inner {
   height: 100%;
   border-radius: 999rpx;
-  /* R4-batch4 像素级对齐：参考图总进度条使用品牌绿 #36C99A */
-  background: #36C99A;
+  /* R4-batch4 像素级对齐：参考图总进度条使用品牌绿 var(--c-brand, #36C99A) */
+  background: var(--c-brand, #36C99A);
   transition: width 1.5s ease-out;
 }
 

@@ -335,6 +335,11 @@ export const IMAGE_PATHS = {
    * 路径指向本地 static 资源（base lib 3.16.2 强制 https，开发模式走本地避免 HTTP 警告）
    */
   MASCOT: {
+    /* MP-R2-PAGES-MESSAGES-INDEX-005：空态默认吉祥物收编（messages 页原硬编码路径） */
+    DEFAULT: '/static/assets/images/mascot/default.png',
+    /* MP-R2-MATCHING-004：匹配进度卡图标收编（matching 页原硬编码路径） */
+    STAR: '/static/assets/images/mascot/star.png',
+    SPARKLE: '/static/assets/images/mascot/sparkle.png',
     HEART: '/static/assets/images/mascot/mascot_heart.png',         // 心动/喜欢
     CRUSH: '/static/assets/images/mascot/mascot_crush.png',         // 暗恋/心动
     LIKE: '/static/assets/images/mascot/mascot_like.png',           // 喜欢
@@ -442,6 +447,11 @@ export const IMAGE_PATHS = {
 
   /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
   ICONS_PROFILE: {
+    /* MP-R2-PROFILE-010：MyMore 菜单图标收编（原页面硬编码 /static 路径） */
+    FAVORITES_SVG: '/static/assets/images/profile-favorite.svg',
+    VISITORS_SVG: '/static/assets/images/profile-visitors.svg',
+    ALBUM_SVG: '/static/assets/images/profile-album.svg',
+    PRIVACY_SVG: '/static/assets/images/profile-privacy.svg',
     POSTS:        ICONS_BASE + '/social/heart-signal.svg', // 我的动态 → 复用 heart-signal
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
     MATCHES:      ICONS_BASE + '/social/match.svg',         // 我的匹配 → 复用 social.match

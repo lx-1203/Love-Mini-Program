@@ -68,6 +68,11 @@ export const useMatchStore = defineStore("match", () => {
     animationDone.value = true;
   }
 
+  /** MP-R2-MATCHING-008：matchedUser 唯一写入口（原页面两处直写 state 旁路） */
+  function setMatchedUser(user: MatchCardUser | null): void {
+    matchedUser.value = user;
+  }
+
   function markChatReady(): void {
     if (status.value === "matched") {
       status.value = "chat_ready";
@@ -94,6 +99,7 @@ export const useMatchStore = defineStore("match", () => {
     beginCheck,
     runMatchCheck,
     markAnimationDone,
+    setMatchedUser,
     markChatReady,
     reset,
   };

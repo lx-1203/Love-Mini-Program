@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveMediaUrl } from "../../../utils/media";
 withDefaults(defineProps<{ photos: string[] }>(), {
   photos: () => [],
 });
@@ -16,7 +17,7 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
         hover-class="public-gallery__cell--pressed"
         @tap="emit('tapPhoto', index)"
       >
-        <image class="public-gallery__img" :src="photo" mode="aspectFill" alt="" />
+        <image class="public-gallery__img" :src="resolveMediaUrl(photo)" mode="aspectFill" alt="" />
       </view>
     </view>
   </view>

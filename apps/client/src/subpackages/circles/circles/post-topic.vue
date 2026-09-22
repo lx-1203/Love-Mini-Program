@@ -21,6 +21,9 @@ import { isUploadedMediaUrl } from "../../../utils/media";
 // （原 useStatusBarHeight 内联注入方案已由本方案替代）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { getChannelConfig } from "../../../config/channels";
+// MP-R2-POSTTOPIC-002：已选活动卡跳详情需要
+import { ROUTES } from "../../../constants/routes";
+import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import ActivityCard from "../../../components/village/ActivityCard.vue";
 import { designTokens } from "../../../theme/tokens";
@@ -96,6 +99,12 @@ const presetTagList = computed(() => PRESET_TAG_KEYS.map((key) => ({ key, label:
 const interestCategoryList = computed(() =>
   INTEREST_CATEGORY_KEY_MAP.map((cat) => ({ id: cat.id, name: t(cat.key) }))
 );
+
+// MP-R2-POSTTOPIC-003：入口 circleId 对应的圈名（仅用于只读展示）
+const resolvedCircleName = computed(() => {
+  if (!circleId.value) return "";
+  return circleStore.circles.find((c) => c.id === circleId.value)?.name || "";
+});
 
 /** 当前发布目标圈子名称（校园圈 / 兴趣分类名） */
 const targetName = computed(() => {
@@ -301,8 +310,34 @@ async function submitTopic() {
     return;
   }
 
+  // MP-R2-POSTTOPIC-006：清空两个 store 的陈旧 errorMessage——原 catch 只读
+  // circleStore.errorMessage，帖子模式失败（写 villageStore）看不到真实原因，
+  // 且 circleStore 残留错误会张冠李戴地展示给用户
+  villageStore.errorMessage = null;
+  circleStore.errorMessage = null;
   isSubmitting.value = true;
   try {
+    // MP-R2-POSTTOPIC-001：上传转换上移到分支判断之前（与 campus/post-topic.vue 同构）——
+    // 原上传块仅覆盖 createTopic 路径，「帖子模式/campus 兜底」的 createPost 分支把本地
+    // 临时路径（wxfile://tmp、http://tmp）原样入库，带图发布后 feed 配图必然裂图
+    const localTopicImages = images.value.filter((img) => !isUploadedMediaUrl(img));
+    let submitImages = images.value;
+    if (localTopicImages.length > 0 && !useMock()) {
+      const uploaded: string[] = [];
+      for (const img of images.value) {
+        if (isUploadedMediaUrl(img)) {
+          uploaded.push(img);
+          continue;
+        }
+        // 文件名含每图唯一量（MP-R1-CAMPUSPOST-002 同源），防幂等键 409
+        const result = await clientApi.uploadPostImage({
+          name: `post-topic-${Date.now()}-${uploaded.length}.jpg`,
+          path: img,
+        });
+        uploaded.push(result?.url ?? img);
+      }
+      submitImages = uploaded;
+    }
     // 校园圈无显式 circleId 时走 posts 流（与学校圈频道一致）：
     // 圈子话题后端仅支持数字兴趣圈 ID（@PathVariable Long），
     // slug "campus-circle" 会触发 MissingPathVariableException → 500
@@ -320,7 +355,7 @@ async function submitTopic() {
         categoryId: `cat-${campusPostFallback ? "campus" : postCategory.value}`,
         title: title.value.trim(),
         content: content.value.trim(),
-        images: images.value,
+        images: submitImages,
         tags: selectedTags.value.map((key) => t(key)),
         activityId: selectedActivity.value ? String(selectedActivity.value.id) : undefined,
       });
@@ -356,30 +391,7 @@ async function submitTopic() {
     // 修复（review #22）：提交翻译后的标签文本，而不是 i18n key
     const tagTexts = selectedTags.value.map((key) => t(key));
 
-    // 修复（R4-00071）：话题图片本地临时路径（tempFilePath）在 real 模式
-    // 先经 clientApi.uploadPostImage（/media/upload）逐张上传换取可访问 URL，
-    // 再随 createTopic 提交，避免话题配图在 real 模式全部裂图。
-    // mock 模式下 clientApi.uploadPostImage 内部返回原路径，行为不变。
-    const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
-    let submitImages = images.value;
-    if (localImages.length > 0 && !useMock()) {
-      const uploaded: string[] = [];
-      for (const img of images.value) {
-        if (isUploadedMediaUrl(img)) {
-          uploaded.push(img);
-          continue;
-        }
-        // MP-R1-CAMPUSPOST-002 同源修复：文件名含每图唯一量（时间戳+序号）——
-        // Idempotency-Key 按「endpoint|file.name」哈希，恒定文件名使多图第 2 张起
-        // 必命中 409 幂等拦截，且 4h TTL 内跨帖再传同 key 也被拦
-        const result = await clientApi.uploadPostImage({
-          name: `topic-${Date.now()}-${uploaded.length}.jpg`,
-          path: img,
-        });
-        uploaded.push(result?.url ?? img);
-      }
-      submitImages = uploaded;
-    }
+    // MP-R2-POSTTOPIC-001：图片已在分支判断前统一上传（submitImages）
 
     await circleStore.createTopic(resolvedCircleId, {
       title: title.value.trim(),
@@ -397,13 +409,28 @@ async function submitTopic() {
       uni.navigateBack();
     }, POST_TOPIC_NAV_DELAY_MS);
   } catch (_e) {
+    // MP-R2-POSTTOPIC-006：按提交分支取对应 store 的 errorMessage
+    // （话题模式→circleStore；帖子模式→villageStore）
+    const sourceError = isPostMode.value || campusPostFallback
+      ? villageStore.errorMessage
+      : circleStore.errorMessage;
     uni.showToast({
-      title: circleStore.errorMessage || t("circle.postTopicPublishFailed"),
+      title: sourceError || t("circle.postTopicPublishFailed"),
       icon: "none",
     });
-  } finally {
+    // MP-R2-POSTTOPIC-004：仅失败复位（campus/post-topic.vue MP-R1-CAMPUSPOST-004 同款
+    // 修法）——原 finally 无条件复位使成功 toast 与 800ms navigateBack 之间可重复提交
     isSubmitting.value = false;
   }
+}
+
+// MP-R2-POSTTOPIC-002：已选活动卡事件处理（原 emit 无监听为死按钮）
+function onSelectedActivityOpen(): void {
+  if (!selectedActivity.value) return;
+  openAppPath(`${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(String(selectedActivity.value.id))}`);
+}
+function onSelectedActivityEnroll(): void {
+  uni.showToast({ title: t("circle.postTopicActivityRemove"), icon: "none" });
 }
 
 /**
@@ -480,8 +507,15 @@ onLoad((query) => {
         </view>
       </view>
 
-      <!-- ===== 发布到圈子选择器（Task B5） ===== -->
-      <view class="target-section">
+      <!-- ===== 发布到圈子选择器（Task B5） =====
+           MP-R2-POSTTOPIC-003：携带 circleId 进入（圈内「写话题」两个生产入口均如此）时
+           resolvedCircleId 恒取入口 circleId，选择器两态都不影响实际提交目标——选择器是
+           交互死 UI 且默认「校园圈」文案与真实去向相反。此场景隐藏选择器、只读展示目标圈名 -->
+      <view v-if="circleId" class="target-section">
+        <text class="section-label">{{ t('circle.postTopicPublishTo') }}</text>
+        <text class="section-label">{{ resolvedCircleName || t('circle.postTopicTargetInterest') }}</text>
+      </view>
+      <view v-else class="target-section">
         <text class="section-label">{{ t('circle.postTopicPublishTo') }}</text>
         <view class="target-options" role="radiogroup">
           <view
@@ -576,7 +610,14 @@ onLoad((query) => {
           </view>
         </view>
         <view v-else class="activity-selected">
-          <ActivityCard :activity="selectedActivity" compact />
+          <!-- MP-R2-POSTTOPIC-002：接线 ActivityCard 的 open-detail/enroll（原两个 emit
+               均无监听，点卡片与「报名」都是静默死按钮）；发帖场景由父级给出反馈 -->
+          <ActivityCard
+            :activity="selectedActivity"
+            compact
+            @open-detail="onSelectedActivityOpen"
+            @enroll="onSelectedActivityEnroll"
+          />
           <view
             class="activity-remove press-feedback"
             hover-class="press-feedback--active"

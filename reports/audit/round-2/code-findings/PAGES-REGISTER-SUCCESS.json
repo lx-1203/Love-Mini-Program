@@ -1,0 +1,85 @@
+{
+  "round": "R2",
+  "reviewer": "A2 代码审查员（Layer A · 代码层只读审查）",
+  "pages": ["pages/register/success"],
+  "issues": [
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-001",
+      "round": "R2",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Style",
+      "severity": "P3",
+      "description": "设计 token 强制违反：主按钮渐变第二色阶硬编码 #55d5a7（success.vue:165），未走 CSS 变量；同文件其余颜色均采用 var(--c-*, fallback) 规范写法，唯此处第二 stop 裸写十六进制。项目本身已有该色阶 token：design-variables.scss:14 定义 $brand-400: #55D5A7，design-variables.scss:258 注出 --c-brand-400，可直接引用。",
+      "evidence": "success.vue:165 `background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);`（第一 stop 有 var、第二 stop 无）。对照 src/theme/design-variables.scss:14 `$brand-400: #55D5A7;` 与 :258 `--c-brand-400: #{$brand-400};`。同款硬编码模式另见于 src/pages/register/index.vue:1059 与 src/subpackages/setup/profile/index.vue:1282（跨页复制扩散）。当前无用户可见差异：tokens.scss:197-256 的 dark-theme-vars mixin 未覆盖 --c-brand（仅覆盖 --c-bg-brand/--c-brand-50/100/200/--c-gradient-brand），故暗色模式下该渐变也不会错色，属 token 治理问题而非视觉缺陷。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "所有色值经 token 引用：`linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%)`，与同页 line 81/99/112/119/134/148/153/181 的 var(--c-*, fallback) 写法一致。",
+      "fix": "success.vue:165 第二 stop 改为 var(--c-brand-400, #55d5a7)。同模式建议一并修 register/index.vue:1059、setup/profile/index.vue:1282（另两页归属各自审查员，此处仅登记线索）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-002",
+      "round": "R2",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "主按钮热区缩小：视觉按钮 .reg-success__btn 高 96rpx（success.vue:157-167），但 @tap 绑在内层 <text> 上（success.vue:69）。text 作为 flex 子项宽 100%、高仅行高（font-size 30rpx × 默认行高 ≈ 42rpx），view 本体与任何祖先节点均无 tap 处理器，按钮上下各约 27rpx（合计约 56% 高度外的部分）为点击死区——用户点在按钮视觉实体的上/下沿无响应。",
+      "evidence": "success.vue:68-70：`<view class=\"reg-success__btn\">` 无 @tap；`<text class=\"reg-success__btn-text\" @tap=\"goSetupProfile\">`。success.vue:157-167：view 高 96rpx、flex 居中；169-176：text 仅设 width:100%，无 height/line-height 撑满。旁证：同链路姊妹页 register/index.vue:688-690 的主按钮把 @tap 与 hover-class 直接绑在 view 上（项目既有正确模式）。success.vue:67 注释「view+hover-class 绑定失效、text 绑定可用」——hover-class 是按压态视觉属性而非事件绑定，该理由不构成把 @tap 移到内层 text 的依据。",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "主 CTA 的可点区域与其视觉实体一致（整枚 96rpx 按钮），符合小程序最小热区惯例。",
+      "fix": "将 @tap 移至 success.vue:68 的 view 上（text 保留纯展示），或给 .reg-success__btn-text 补 height:100%/line-height:96rpx 使其撑满按钮。次级出口 .reg-success__alt（success.vue:73，26rpx 字号无内边距）热区同样偏小，可一并加 padding 扩热区。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-003",
+      "round": "R2",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "文档注释与实现不符：文件头注释（success.vue:7）声称 phone「缺省时回退会话存储」，但 onLoad（success.vue:25-30）仅解析路由参数，全文无任何 uni.getStorageSync/会话回退逻辑；line 20 注释亦自述「UserSession 无手机号字段，仅从路由参数取」。当前注册链路恒传参（register/index.vue:336 redirectTo 带 ?phone=），行为正确，属注释描述了不存在的回退路径。",
+      "evidence": "success.vue:7 「入参：phone（注册手机号，用于脱敏展示；缺省时回退会话存储）」 vs success.vue:25-30 仅 `query?.phone` 解析；全文件 grep 无 getStorageSync（逐行通读确认）。src/pages/register/index.vue:336 redirectTo 恒带 phone 参数。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "注释与实现一致：要么删除「回退会话存储」表述，要么补实现——后续若从其他入口（如深链直达）进入本页，缺省时首行 tag 回退「完成」（success.vue:34 已兜底），不会空串。",
+      "fix": "修正 success.vue:7 注释为实际行为（缺省时首行 tag 显示「完成」），或按注释补会话级回退。二选一，推荐改注释（当前唯一入口已保证传参）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-004",
+      "round": "R2",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "死代码：样式段末尾的 .press-feedback / .press-feedback--active 两条规则（success.vue:184-191）在本页模板中零引用，为从 register/index.vue 复制样式时的残留（原页配合 hover-class 使用，见 register/index.vue:433、688；本页无任何 hover-class 属性）。",
+      "evidence": "success.vue 全文 grep \"press-feedback\" 命中 2 次，均为 184-191 的 CSS 规则定义本身；模板段（50-75 行）无引用、无 hover-class。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "页面样式表只保留模板实际引用的规则。",
+      "fix": "删除 success.vue:184-191 两个空引用规则块。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "pages/register/success",
+      "file": "apps/client/src/pages/register/success.vue（192 行，逐行通读）",
+      "checks": [
+        "架构/状态管理：页面零 store 依赖，maskedPhone 单一 ref 为唯一数据源，rows 用 computed 派生（success.vue:33-37），无 store/页面双源同步问题；subLines 静态常量合理。",
+        "API 错误处理：本页无任何 API 调用、无 try/catch（天然无空 catch）；两个导航 API（success.vue:40-42 navigateTo、45-47 switchTab）目标路由均已在 pages.json 核实存在——register/success 注册于 pages.json:49、pages/home/index 为 tabBar 页（switchTab 合法）、/subpackages/setup/profile/index 在 subpackages/setup 分包（pages.json:255）且磁盘文件存在，无静默导航失败风险。",
+        "异步流程：onLoad 同步解析 query，String(query?.phone || \"\") 空值安全，11 位纯数字校验 + 脱敏正则（success.vue:26-29）正确；无未处理 Promise 拒绝。",
+        "路由入链/页面栈：上游客 register/index.vue:336 以 redirectTo 进入（不叠栈）且恒带 encodeURIComponent(phone)；iOS 侧滑回退落 login 页时 login/index.vue:96-98 onShow 已登录守卫会自动 switchTab 离开，无死循环/死端。",
+        "样式：图片走 IMAGE_PATHS（success.vue:12,18,52,61，REGISTER.SUCCESS 与 REGISTER_ICONS.CHECK_GREEN 均在 images.ts:618/637 定义且磁盘文件存在 check-green.svg、reg-success-illustration.jpg），无硬编码 /static/ 字符串；颜色除 MP-R2-001 登记的 #55d5a7 外全部 var(--c-*, fallback)；安全区 padding 用 var(--statusbar, env(...)) + env(safe-area-inset-bottom)（success.vue:85），--statusbar 由 useMenuButtonRect.styleVars 注入（useMenuButtonRect.ts:49-52，依赖 useStatusBarHeight.ts 模块级单例 + 非空 catch，链路完整）；无 :hover、无 grid、无 backdrop-filter、无 import.meta.env.DEV、无 emoji（「→」为 U+2192 箭头符号非 emoji）、无自定义组件（宿主 flex:1 与 CardSwiper 条款 N/A）、页面切换逻辑全部内联本 .vue。",
+        "组件事件接线：本页无子组件、无 emit 接线面；@tap 未用 .stop 但无嵌套可点祖先，无冒泡误触。",
+        "小程序专项：无 scroll-view；flex+gap 用法与姊妹页（register/index.vue 7 处、setup/profile/index.vue 10 处）一致，非本页特有风险；无键盘输入面。",
+        "硬约束清点（R11 附录 B）：10 项中 9 项通过，仅「设计 token 强制」命中 1 处（MP-R2-PAGES-REGISTER-SUCCESS-001）。",
+        "回归核对 MP-R1-PAGES-REGISTER-SUCCESS-001（三态正确/截图弹窗为环境伪影）：代码层复核通过——三行清单由 computed 稳定渲染、缺省 phone 时 tag 兜底「完成」（success.vue:34）、双出口路由与素材均验证存在；本页全文无任何模态弹窗 API，环境弹窗非本页代码产物。不作为 Regression 发现立案，状态：代码层已验证无回归。",
+        "回归核对 MP-R1-PAGES-REGISTER-INDEX-001（captureException 噪音）：属 pages/register/index.vue（非本页依赖，success.vue 不引用该文件），不在本任务页面范围，未核查、未立案。"
+      ]
+    }
+  ]
+}

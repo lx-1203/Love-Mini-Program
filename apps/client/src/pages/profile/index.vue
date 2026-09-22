@@ -260,7 +260,13 @@ function loadPageUserIdParam(): void {
   // 到达我的页即弹出邀请弹窗（此前该参数被「读即清」机制读出后直接丢弃，
   // CTA 静默退化为普通切换 Tab）。openInviteModal 为函数声明（提升），此处可直呼。
   if (bridged.invite === "1") {
-    void openInviteModal();
+    // MP-R2-PROFILE-008：登录门禁——real 模式 POST /invites 为受保护端点，
+    // 未登录触发会 401 → redirectToLogin 强踢登录页（与 loadOtherProfile 游客门禁同口径）
+    if (sessionStore.isLoggedIn) {
+      void openInviteModal();
+    } else {
+      uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
+    }
   }
   if (typeof bridgedUserId === "string" && bridgedUserId.length > 0) {
     return;
@@ -789,7 +795,7 @@ const mineSocialProof = computed(() => ({
  */
 const myDailyStories = computed(() => {
   if (!isOwnProfile.value) return [];
-  const ownAvatar = profileView.value.avatarUrl || "/static/assets/images/people/person-09.png";
+  const ownAvatar = profileView.value.avatarUrl || IMAGE_PATHS.AVATARS.DEFAULT;
   return profileStore.myDailies.slice(0, 6).map((d) => ({
     id: d.id,
     cover: d.images.length > 0 ? resolveMediaUrl(d.images[0]) : resolveMediaUrl(ownAvatar),
@@ -900,7 +906,8 @@ function onProfileShellStatTap(key: string) {
     iLike: ROUTES.LIKES.INDEX,
     likedMe: ROUTES.LIKES.INDEX,
     praised: ROUTES.LIKES.INDEX,
-    visitor: ROUTES.LIKES.INDEX,
+    // MP-R2-PROFILE-007：访客统一跳访客页（原跳 LIKES.INDEX 与「最近访客」入口落点不一致）
+    visitor: ROUTES.PROFILE.VISITORS,
     likes: ROUTES.LIKES.INDEX,
     match: ROUTES.LIKES.INDEX,
   };
@@ -2100,22 +2107,9 @@ onUnload(() => {
       <!-- 页面顶部安全区占位 -->
       <view class="safe-top" />
 
-      <!-- 未完善资料：顶部完善引导横幅（2026-08-07 链路调整，替代整页锁定） -->
-      <view
-        v-if="!sessionStore.isProfileComplete"
-        class="profile-complete-banner press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="40"
-        role="button"
-        :aria-label="t('profile.completeBannerAria', { n: completionPercent })"
-        @tap="goCompleteProfile"
-      >
-        <text class="profile-complete-banner__text">
-          {{ t('profile.completeBanner', { n: completionPercent }) }}
-        </text>
-        <text class="profile-complete-banner__action">{{ t('profile.completeBannerAction') }}</text>
-        <text class="profile-complete-banner__arrow">&rsaquo;</text>
-      </view>
+      <!-- MP-R2-PROFILE-009：他人态不渲染查看者本人的「资料完善度 n%」横幅——
+           本 v-else 分支只承载他人态，横幅数据源（completionPercent）是查看者自己的，
+           与页面主体（对方资料）语境错位；本人完善引导由 ProfileShell 的 MyCompletion 承担 -->
 
       <!-- 顶部右上角：空间分享 + 设置 + 匹配次数 chip（2026-08-14：退出登录收敛到设置页） -->
       <view class="profile-top-bar">

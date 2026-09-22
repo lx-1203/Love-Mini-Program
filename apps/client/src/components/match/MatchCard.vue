@@ -171,7 +171,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__distance-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 .match-card__online {
@@ -183,7 +183,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   gap: 8rpx;
   padding: 10rpx 22rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  background: var(--c-brand, #36C99A);
   box-shadow: 0 6rpx 16rpx rgba(61, 201, 148, 0.35);
 }
 
@@ -191,11 +191,11 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--c-neutral-0, #ffffff);
 }
 
 .match-card__online-dot--away {
-  background: #ffffff;
+  background: var(--c-neutral-0, #ffffff);
   background: rgba(54, 201, 154, 0.9);
   box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.35);
 }
@@ -203,7 +203,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__online-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
 }
 
 /* 匹配度徽章：右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用） */
@@ -246,7 +246,7 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__score-value {
   font-size: 40rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-neutral-0, #ffffff);
   line-height: 1.1;
 }
 

@@ -178,7 +178,7 @@ onUnmounted(() => {
       class="history-list"
       scroll-y
       refresher-enabled
-      :refresher-triggered="false"
+      :refresher-triggered="isRefreshing"
       @refresherrefresh="onRefresh"
       @scrolltolower="onLoadMore"
     >
@@ -275,7 +275,7 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .history-page {
   min-height: 100vh;
-  background: var(--page-bg, #f5f6fa);
+  background: var(--c-bg-page, #f5f6fa);
 }
 
 /* 2026-08-09：返回键（圆角图标按钮） */
@@ -440,7 +440,7 @@ onUnmounted(() => {
 
 .history-item__stat {
   font-size: 22rpx;
-  color: var(--text-tertiary, #bbb);
+  color: var(--c-text-tertiary, #bbb);
 }
 
 /* 加载更多 */

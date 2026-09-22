@@ -12,6 +12,7 @@ import type { DiscoverCard } from "../../../stores/discover/types";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 import { showErrorToast } from "../../../utils/error-toast";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
@@ -145,7 +146,7 @@ function openProfile(userId: string) {
         :aria-label="item.name"
         @tap="openProfile(item.userId)"
       >
-        <image class="segment-row__avatar" :src="item.avatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
+        <image class="segment-row__avatar" :src="resolveMediaUrl(item.avatar) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)" mode="aspectFill" alt="" />
         <view class="segment-row__info">
           <view class="segment-row__name-row">
             <text class="segment-row__name">{{ item.name }}</text>
