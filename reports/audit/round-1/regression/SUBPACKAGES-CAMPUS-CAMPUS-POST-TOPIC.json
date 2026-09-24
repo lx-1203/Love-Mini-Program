@@ -1,0 +1,22 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/post-topic",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC（A5，索引差分模式：只核 riskFiles 与本轮改动/证据相关条目）",
+  "date": "2026-09-24",
+  "note": "本页指定核对条目 1 项（MP-R1-CAMPUSPOST-002，P1）。判定未复发：修复代码在位且本轮改动零波及。运行时确认（real 模式多图上传网络面板核键）仍属 A2 已声明的『已修复待终验』范畴，非本轮回归缺口。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-CAMPUSPOST-002",
+      "page": "subpackages/campus/campus/post-topic",
+      "status": "未复发",
+      "evidence": "代码级差分验证，四环节逐一实证：(1) 页面侧唯一文件名修复在位——post-topic.vue:212-215 `name: `campus-topic-${Date.now()}-${uploaded.length}.jpg``，逐图循环 :203-217，已上传 URL 经 isUploadedMediaUrl 跳过但 uploaded.length 仍单调递增保证序号唯一；本文件本轮零改动（git diff --stat 对 post-topic.vue/services/api.ts/services/http.ts 均无输出，git status 修改列表亦无 post-topic.vue）。(2) 幂等键生成在位——services/api.ts:207 `\"Idempotency-Key\": `idem-UPLOAD-${hashString(`${endpoint}|${file.name ?? file.path ?? \"\"}`)}``，键随唯一文件名唯一。(3) 哈希函数在位——services/http.ts:244 `export function hashString`（FNV-1a）。(4) 本轮仅有的两个改动文件均不触及该路径：git diff 证实 stores/campus.ts 仅重构 formatCampusTime（收敛 utils/time，与上传无关）；utils/media.ts 仅在 resolveMediaUrl 内新增 avatars/people 走后端分支（:217-230 附近），而页面循环依赖的 isUploadedMediaUrl（utils/media.ts:87-103）未被改动、且与 resolveMediaUrl 互不调用——跳过已传 URL 的序号逻辑不受影响。交互取证 exec-results.json 中本页 38 条（PT01-PT38）全部为 mock 环境 automator 执行，选图/发布 tap 因元素不可达 FAILED（PT18/PT19/PT38 等），无 real 模式 /media/upload 请求或 409 记录——运行时证据不改变回归判定（代码路径完整可读且未被本轮改动触碰），但 A2 报告声明的终验项维持：real 模式一次选 2-3 张图发帖、网络面板确认各 /media/upload 的 Idempotency-Key 互不相同且无 409。"
+    }
+  ],
+  "coverage": [
+    "回归索引 reports/audit/baseline/regression-index.json 与本页相关条目核对：直接指定项 MP-R1-CAMPUSPOST-002（P1）；索引中同根主题 T5（uploadfile-carries-idempotency-key，riskFiles 含 media.ts/http.ts/api.ts）、MP-R7-UPLOAD-001、R11-FIVE-TYPE-BUGS（uploadpostimage name）——其 riskFiles 已被本轮 diff 差分覆盖（api.ts/http.ts 零改动，media.ts 改动不波及），不另立条目",
+    "本轮改动差分（git status 快照 + git diff 实读）：本页上传链 5 文件中 post-topic.vue/services/api.ts/services/http.ts 零改动；campus.ts（20 行：formatCampusTime 重构）与 utils/media.ts（+18 行：resolveMediaUrl avatars/people 分支）改动均已逐行核对不触及上传/幂等路径",
+    "运行时证据边界如实声明：exec-results.json（1.2MB，1283 条）中本页 38 条均为 mock 环境（pre:login user-1001 + storageSet bootstrap），automator 无法完成真实相册选图与 real 上传，故无 Idempotency-Key/409 运行时记录；本回归判定基于代码级证据，未驱动开发者工具、未实机（职责外）",
+    "未重读项：回归索引 4430 行仅抽读与本页相关主题（T1/T5/T6 及 campus 域条目），未全量重读——符合索引差分模式"
+  ]
+}

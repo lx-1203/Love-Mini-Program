@@ -20,7 +20,6 @@ import { getToken, request } from "../../services/http";
 import { useMock } from "../../stores/helpers/use-mock";
 import { useProfileStore } from "../../stores/profile";
 import { useLikesStore } from "../../stores/likes";
-import { useCheckInStore } from "../../stores/checkin";
 import { mockFixtures } from "../../services/mocks/fixtures";
 import { mockAuthors } from "../../stores/village/mock-data";
 import type { RecommendedPersonView } from "../../stores/discover/types";
@@ -34,7 +33,7 @@ import { isDev } from "../../services/env";
 
 // R4-00113：版本号展示用统一版本源
 
-import { openAppPath, switchTabWithQuery, consumePendingTabQuery } from "../../utils/navigation";
+import { openAppPath, consumePendingTabQuery } from "../../utils/navigation";
 // P2.6：帮助与客服 / 安全中心独立页路由
 import { ROUTES } from "../../constants/routes";
 // R4-00111：官方号 code 常量
@@ -74,8 +73,6 @@ import { resolveMediaUrl, resolveMediaUrls } from "../../utils/media";
 import type { UniUploadFileLike } from "../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../utils/privacy";
-// 2026-08-09：图片压缩共享工具（批量上传照片墙前压缩，质量 80）
-import { compressImages } from "../../utils/compress-image";
 
 /**
  * 当前页面对象（最小契约）。
@@ -123,7 +120,6 @@ const sessionStore = useSessionStore();
 useTabBar(4);
 const profileStore = useProfileStore();
 const likesStore = useLikesStore();
-const checkInStore = useCheckInStore();
 const socialProgressStore = useSocialProgressStore();
 const discoverStore = useDiscoverStore();
 const villageStore = useVillageStore();
@@ -190,33 +186,9 @@ const uploadProgress = ref<string>("");
 const uploadKind = ref<UploadKind>(null);
 
 /**
- * 照片墙最大数量（与后端契约一致，6 张）
- */
-const PHOTO_GALLERY_MAX = 6;
-
-/**
  * 照片墙审核项列表（2026-08-09）：URL → 审核状态 映射，供格子角标使用。
  */
-const { photoGalleryItems, avatarAuditStatus } = storeToRefs(profileStore);
-
-/**
- * 照片墙格子列表（始终渲染 6 格，已上传的格子显示图片，空格子显示"+"占位）
- * 2026-08-09：每格携带审核状态（pending 审核中 / rejected 未通过），供角标展示。
- */
-const photoCells = computed<Array<{ index: number; url: string; filled: boolean; auditStatus: string }>>(() => {
-  const cells: Array<{ index: number; url: string; filled: boolean; auditStatus: string }> = [];
-  const itemMap = new Map(photoGalleryItems.value.map((it) => [it.url, it.auditStatus]));
-  for (let i = 0; i < PHOTO_GALLERY_MAX; i++) {
-    const url = photoGallery.value[i] ?? "";
-    cells.push({
-      index: i,
-      url,
-      filled: url.length > 0,
-      auditStatus: url.length > 0 ? (itemMap.get(url) ?? "approved") : "approved",
-    });
-  }
-  return cells;
-});
+const { avatarAuditStatus } = storeToRefs(profileStore);
 
 /** 照片墙是否已上传至少一张（用于切换 CTA 文案） */
 // 修复（严格模式 noUnusedLocals）：hasPhotos 计算属性未被模板/脚本引用，已移除。
@@ -670,45 +642,6 @@ const otherGallery = computed<string[]>(() =>
   isOwnProfile.value ? [] : (otherProfile.value?.photoGallery ?? []).slice(0, 6)
 );
 
-/* ========== 2026-08-08 QQ 主页重构：成就卡片（整合社交升温 + 匹配 + 喜欢） ========== */
-
-/** 成就卡 3 格数据：匹配次数 / 喜欢次数 / 社交升温进度 */
-interface AchievementStat {
-  icon: string;
-  value: string;
-  label: string;
-  hint: string;
-  path?: string;
-}
-
-const achievementStats = computed<AchievementStat[]>(() => {
-  const progress = socialProgressStore.progress;
-  const matchCount = progress?.matchCount ?? 0;
-  const likeCount = progress?.likeCount ?? 0;
-  const pct = socialProgressStore.progressPercentage;
-  const tierLabel = progress?.tierLabel ?? t("profile.achievementWarmHint");
-  return [
-    {
-      icon: IMAGE_PATHS.ICONS_SOCIAL.MATCH,
-      value: String(matchCount),
-      label: t("profile.achievementMatch"),
-      hint: t("profile.achievementMatchHint"),
-    },
-    {
-      icon: IMAGE_PATHS.ICONS_EMOJI.HEART,
-      value: String(likeCount),
-      label: t("profile.achievementLike"),
-      hint: t("profile.achievementLikeHint"),
-    },
-    {
-      icon: IMAGE_PATHS.ICONS_EMOJI.FIRE,
-      value: `${pct}%`,
-      label: tierLabel,
-      hint: t("profile.achievementWarmHint"),
-    },
-  ];
-});
-
 /** 是否为VIP（从 profileStore.vipStatus 获取，避免写死） */
 const isVip = computed(() => profileView.value.isVip);
 
@@ -726,35 +659,6 @@ const school = computed(() => profileView.value.school);
 
 /** 我的动态预览列表（最多 3 条） */
 const myPostsPreview = computed(() => profileView.value.myPostsPreview);
-
-/** 我的动态总数 */
-const myPostsTotal = computed(() => profileView.value.myPostsTotal);
-
-/**
- * 数据统计项（从 profileStats 获取真实数据）
- */
-interface StatItem {
-  label: string;
-  value: number | string;
-  /** 付费解锁项（右上角小锁标识） */
-  locked?: boolean;
-  /** 点击跳转目标 */
-  path?: string;
-}
-
-/**
- * 核心数据统计栏（QQ 主页改造方案）：
- * 我喜欢的 / 喜欢我的（未开通）/ 最近来访（未开通）/ 获赞
- */
-const stats = computed<StatItem[]>(() => {
-  const s = profileStore.profileStats;
-  // v3 核心数据：匹配 / 我喜欢 / 获赞（消除“喜欢”歧义）
-  return [
-    { label: t("profile.statMatch"), value: likesStore.mutualLikes.length, path: ROUTES.LIKES.INDEX },
-    { label: t("profile.statILike"), value: likesStore.likes.length, path: ROUTES.LIKES.INDEX },
-    { label: t("profile.statLiked"), value: s?.likesCount ?? 0, path: ROUTES.LIKES.INDEX },
-  ];
-});
 
 /** 2.0：薄化主页供给 MyProfile 的统一视图模型 */
 const minePosts = computed(() =>
@@ -942,40 +846,6 @@ function onProfileShellMoreTap(key: string) {
   };
   const path = map[key];
   if (path) openAppPath(path);
-}
-
-/**
- * 统计栏点击（QQ 主页改造方案）：
- * 喜欢我的/最近来访 → 喜欢与访客页（页内解锁）；我喜欢的/获赞 → 列表页。
- */
-function handleStatTap(index: number) {
-  lightHaptic();
-  const item = stats.value[index];
-  if (item?.path) {
-    openAppPath(item.path);
-  } else {
-    uni.showToast({ title: t("profile.statComingSoon"), icon: "none" });
-  }
-}
-
-/** v3 每日签到（只改状态不弹全屏） */
-async function handleProfileCheckin() {
-  if (!sessionStore.isLoggedIn) {
-    uni.showToast({ title: t("apiErrors.loginRequired"), icon: "none" });
-    return;
-  }
-  if (checkInStore.checkedIn) {
-    uni.showToast({ title: t("profile.checkinDone", { n: checkInStore.consecutiveDays }), icon: "none" });
-    return;
-  }
-  try {
-    await checkInStore.checkIn();
-    if (checkInStore.checkedIn) {
-      uni.showToast({ title: t("profile.checkinSuccess"), icon: "success" });
-    }
-  } catch (_e) {
-    uni.showToast({ title: t("profile.checkinFailed"), icon: "none" });
-  }
 }
 
 /**
@@ -1508,7 +1378,8 @@ function handlePlayVoice() {
       });
       voiceAudio.onError(() => {
         isVoicePlaying.value = false;
-        uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
+        // MP-R1-PROFILE-003：播放失败不得复用「录音失败」文案误导用户
+        uni.showToast({ title: t("profile.voicePlayFailed"), icon: "none" });
       });
     }
     voiceAudio.src = src;
@@ -1543,33 +1414,6 @@ function handleRemoveVoice() {
       uni.showToast({ title: t("profile.voiceDeleted"), icon: "success" });
     },
   });
-}
-
-/**
- * 查看我的动态全部（跳转到村口「我的」分区）
- */
-function goToMyPosts() {
-  lightHaptic();
-  switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
-}
-
-/**
- * 点击单条动态预览项（review #62：优先跳转帖子详情，不再一律跳"我的"分区）
- * @param postId - 帖子 ID；为空或帖子不存在时回退"我的"分区
- */
-async function handlePostTap(postId: string) {
-  lightHaptic();
-  if (!postId) {
-    switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
-    return;
-  }
-  await villageStore.setCurrentPost(postId);
-  if (villageStore.currentPost) {
-    openAppPath(`/subpackages/village/village/detail?id=${encodeURIComponent(postId)}`);
-    return;
-  }
-  // 帖子不存在（可能已被删除）：回退"我的"分区
-  switchTabWithQuery("/subpackages/village/village/index", { tab: "mine" });
 }
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
@@ -1647,123 +1491,6 @@ async function uploadBackground(file: UniUploadFileLike) {
     uploadProgress.value = "";
   }
 }
-
-/**
- * Task E3 / H-08：点击照片墙空格子触发图片选择（2026-08-09 批量版）。
- * - 一次最多选择剩余可上传数量（6 - 已有张数）
- * - 选中后压缩（质量 80）并逐张顺序上传到空格子
- *
- * @param index - 目标索引（0-5），空格子索引应为当前 photoGallery.length
- *
- * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
- */
-async function handleUploadPhoto(index: number) {
-  if (isUploading.value) return;
-  if (index < 0 || index >= PHOTO_GALLERY_MAX) return;
-  lightHaptic();
-  const remaining = PHOTO_GALLERY_MAX - photoGallery.value.length;
-  if (remaining <= 0) {
-    uni.showToast({ title: t("profile.albumFull", { n: PHOTO_GALLERY_MAX }), icon: "none" });
-    return;
-  }
-  try {
-    await ensurePrivacyAuthorized();
-  } catch (_e) {
-    uni.showToast({
-      title: t('profile.privacyRequiredImage'),
-      icon: "none",
-    });
-    return;
-  }
-  // 从第一个空格开始连续填充（防御：以实际已有张数为准）
-  const startIdx = Math.min(index, photoGallery.value.length);
-  uni.chooseImage({
-    count: remaining,
-    sizeType: ["compressed"],
-    sourceType: ["album", "camera"],
-    success: async (res) => {
-      const tempPaths = (res.tempFilePaths as string[]) ?? [];
-      if (tempPaths.length === 0) {
-        uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
-        return;
-      }
-      // 批量压缩（单张失败回退原图，不阻塞后续）
-      const compressedPaths = await compressImages(tempPaths);
-      await uploadPhotos(compressedPaths, startIdx);
-    },
-    fail: (err) => {
-      if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: t("profile.choosePhotoFailed"), icon: "none" });
-      }
-    },
-  });
-}
-
-/**
- * 实际执行照片墙批量上传（与 chooseImage 解耦，便于测试）。
- * 逐张顺序上传，进度文案显示 {done}/{total}。
- *
- * @param paths - 本地临时图片路径数组（已压缩）
- * @param startIdx - 起始目标索引（0-5）
- */
-async function uploadPhotos(paths: string[], startIdx: number) {
-  isUploading.value = true;
-  uploadKind.value = "photo";
-  const total = paths.length;
-  try {
-    for (let i = 0; i < total; i++) {
-      const targetIdx = startIdx + i;
-      if (targetIdx >= PHOTO_GALLERY_MAX) break;
-      uploadProgress.value = t("profile.uploadingPhotos", { done: i + 1, total });
-      const file = buildFileLike(paths[i] ?? "");
-      await profileStore.uploadPhotoAtIndex(file, targetIdx);
-    }
-    successHaptic();
-    uni.showToast({ title: t("profile.photoAdded"), icon: "success" });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
-    uni.showToast({ title: message, icon: "none" });
-  } finally {
-    isUploading.value = false;
-    uploadKind.value = null;
-    uploadProgress.value = "";
-  }
-}
-
-/**
- * Task E3 / H-08：长按照片墙格子触发删除（仅对已上传格子生效）。
- * @param index - 目标索引（0 到 photoGallery.length-1）
- */
-function handleRemovePhoto(index: number) {
-  if (isUploading.value) return;
-  if (index < 0 || index >= photoGallery.value.length) return;
-  lightHaptic();
-  uni.showModal({
-    title: t("profile.deletePhoto"),
-    content: t("profile.deletePhotoConfirm"),
-    confirmText: t("profile.delete"),
-    confirmColor: designTokens.color.error,
-    success: async (res) => {
-      if (!res.confirm) return;
-      isUploading.value = true;
-      uploadKind.value = "photo";
-      uploadProgress.value = t("profile.deleting");
-      try {
-        await profileStore.removePhotoAtIndex(index);
-        successHaptic();
-        uni.showToast({ title: t("profile.photoDeleted"), icon: "success" });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : t("profile.deleteFailed");
-        uni.showToast({ title: message, icon: "none" });
-      } finally {
-        isUploading.value = false;
-        uploadKind.value = null;
-        uploadProgress.value = "";
-      }
-    },
-  });
-}
-
 
 /**
  * 空间分享（2026-08-08 QQ 主页重构）：右上角分享按钮 + 微信右上角菜单分享。

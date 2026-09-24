@@ -1,0 +1,349 @@
+{
+  "page": "pages/register/index",
+  "generated": "2026-09-23",
+  "source": "apps/client/src/pages/register/index.vue（全部结论读源码核实，未运行未改动）",
+  "selectors": {
+    "note": "uni 编译后 class 保留；automator page.$$('.field__input') 渲染树顺序=[0]手机号 [1]验证码 [2]密码 [3]确认密码 [4]昵称；$$('.field__eye')=[0]密码 [1]确认密码；$$('.agree__link')=[0]用户协议 [1]隐私政策",
+    "back": ".hero__back",
+    "inputs": ".field__input",
+    "clear": ".field__clear",
+    "smsBtn": ".sms-btn",
+    "eye": ".field__eye",
+    "picker": ".field__picker",
+    "submit": ".submit-btn",
+    "ghost": ".ghost-btn",
+    "agreeChk": ".agree__chk",
+    "agreeLink": ".agree__link",
+    "toLogin": ".to-login__link"
+  },
+  "cases": [
+    {
+      "id": "REG01",
+      "page": "pages/register/index",
+      "title": "冷启动深链直开注册页：完整渲染且协议默认不勾选",
+      "tier": "normal",
+      "pre": "清空 storage（删除 token/refreshToken，无登录态）→ miniProgram.callWxMethod('reLaunch', '/pages/register/index')",
+      "action": "等待渲染后截全页（fullPage）",
+      "expected": "getCurrentPages 长度 1 且 [0].route==='pages/register/index'；hero 标题「创建账号」、副标题、表单卡（账号信息 4 字段 + 基础身份 昵称/出生日期）、主按钮「注 册」、协议行、底部「已有账号？去登录」均渲染；.agree__chk 无 agree__chk--on 类（合规：进入页面一律未勾选，index.vue:54-55）；无 console error（铁律：冷启动深链严禁闪现错误空态）",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链）+ console（过滤 TypeError/is not defined/NAV_FAIL）"
+    },
+    {
+      "id": "REG02",
+      "page": "pages/register/index",
+      "title": "从登录页「去注册」入口进入（navigateTo，栈深 2）",
+      "tier": "navigation",
+      "pre": "清空 storage → reLaunch('/pages/login/index')",
+      "action": "tap 登录页注册入口（pages/login/index.vue:226 goRegister → uni.navigateTo ROUTES.REGISTER）",
+      "expected": "getCurrentPages=['pages/login/index','pages/register/index']；注册页正常渲染",
+      "evidence": "navigation：路由断言即可，可不截图"
+    },
+    {
+      "id": "REG03",
+      "page": "pages/register/index",
+      "title": "栈深场景点返回按钮 → navigateBack 落回登录页",
+      "tier": "navigation",
+      "pre": "承接 REG02 的栈（login→register）",
+      "action": "tap .hero__back（goLogin：pages.length>1 → uni.navigateBack，index.vue:434-441）",
+      "expected": "500ms 内路由变化（铁律：可点击元素必须有反馈）；getCurrentPages=['pages/login/index']，落点=来源页 login",
+      "evidence": "navigation：路由断言即可"
+    },
+    {
+      "id": "REG04",
+      "page": "pages/register/index",
+      "title": "直开（栈深 1）点返回按钮 → reLaunch 到登录页",
+      "tier": "navigation",
+      "pre": "承接 REG01 直开栈（getCurrentPages 长度 1）",
+      "action": "tap .hero__back（goLogin：pages.length===1 → uni.reLaunch ROUTES.LOGIN，index.vue:438-439）",
+      "expected": "getCurrentPages 长度 1 且 [0].route==='pages/login/index'；无路由报错（navigateBack 在栈深 1 会失败，此处必须走 reLaunch 分支）",
+      "evidence": "navigation：路由断言 + console 无 NAV_FAIL"
+    },
+    {
+      "id": "REG05",
+      "page": "pages/register/index",
+      "title": "底部「去登录」链接返回登录页",
+      "tier": "navigation",
+      "pre": "承接 REG02 栈（login→register）",
+      "action": "tap .to-login__link（复用 goLogin，index.vue:757）",
+      "expected": "getCurrentPages=['pages/login/index']，落点=来源页",
+      "evidence": "navigation：路由断言即可"
+    },
+    {
+      "id": "REG06",
+      "page": "pages/register/index",
+      "title": "点《用户协议》链接：跳分包协议页且不改变勾选状态",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；先 tap .agree__chk 勾选协议（确认 agree__chk--on）",
+      "action": "tap $$ ('.agree__link')[0]（openAgreement → uni.navigateTo SUBPACKAGE_ROUTES.LEGAL.AGREEMENT='/subpackages/legal/agreement/index'，index.vue:443-446，@tap.stop 阻断冒泡）",
+      "expected": "路由跳转至 /subpackages/legal/agreement/index；navigateBack 返回注册页后 .agree__chk 仍带 agree__chk--on（铁律：点击协议链接不得改变勾选状态，index.vue:444 注释）",
+      "evidence": "normal：after 截图（返回后勾选态可见）+ 路由断言 + console"
+    },
+    {
+      "id": "REG07",
+      "page": "pages/register/index",
+      "title": "点《隐私政策》链接：跳分包隐私页",
+      "tier": "navigation",
+      "pre": "冷启动直开注册页",
+      "action": "tap $$('.agree__link')[1]（openPrivacy → navigateTo '/subpackages/legal/privacy/index'，index.vue:448-450）",
+      "expected": "路由跳转至 /subpackages/legal/privacy/index；返回后勾选态不变",
+      "evidence": "navigation：路由断言即可"
+    },
+    {
+      "id": "REG08",
+      "page": "pages/register/index",
+      "title": "手机号输入：数字过滤 + 3-4-4 自动格式化",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "对 $$('.field__input')[0] 依次 input('138abc')（含字母）→ 清空后 input('13888888888')",
+      "expected": "非数字被过滤（onPhoneInput replace(/\\D/g,'')，index.vue:152）；输入 11 位后显示格式化「138 8888 8888」（index.vue:154-156）；行内无错误；输入内容变化后不残留「已注册」结论（phoneRegistered 复位，index.vue:160）",
+      "evidence": "normal：after 截图（格式化形态可见）+ console"
+    },
+    {
+      "id": "REG09",
+      "page": "pages/register/index",
+      "title": "手机号超长输入截断为 11 位",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "对 $$('.field__input')[0] input('1388888888812345')（15 位）",
+      "expected": "仅保留前 11 位数字，显示「138 8888 8888」（slice(0,11)，index.vue:152）；无溢出换行/布局破坏",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "REG10",
+      "page": "pages/register/index",
+      "title": "清空按钮：清手机号并复位错误与「已注册」出口",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；$$('.field__input')[0] input('13888888888')（使 .field__clear 出现，v-if phone，index.vue:504-511）",
+      "action": "tap .field__clear（clearPhone，index.vue:193-197）",
+      "expected": "输入框清空；.field__clear 消失；手机号行内错误被清除；若此前处于「已注册」态（ghost-btn 已出现），.ghost-btn 同步消失（MP-R2-PAGES-REGISTER-INDEX-004，index.vue:158-160）",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "REG11",
+      "page": "pages/register/index",
+      "title": "验证码输入：非数字过滤 + 6 位截断",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "对 $$('.field__input')[1] 依次 input('12ab') → 清空 → input('1234567890')",
+      "expected": "字母被过滤；最终仅保留 6 位数字「123456」（slice(0,6)，index.vue:164）",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "REG12",
+      "page": "pages/register/index",
+      "title": "密码强度条实时三档 + 明文/密文切换",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "对 $$('.field__input')[2] 依次 input('12345678') → input('abc12345') → input('Abc123!@#$')；期间 tap $$('.field__eye')[0] 切换明文；截图后 tap 恢复密文",
+      "expected": "输入后 .strength 出现（v-if password，index.vue:594）；三档判定与源码一致（pwdStrength，index.vue:112-122）：'12345678'→1 档红「弱」、'abc12345'→2 档橙「中」、'Abc123!@#$'→3 档绿「强」；eye 点击后 :password 取反显示明文（index.vue:574,590），图标 EYE/EYE_OFF 互换；无 500ms 死按钮",
+      "evidence": "normal：after 截图（明文态 + 强度条三档可见）+ console"
+    },
+    {
+      "id": "REG13",
+      "page": "pages/register/index",
+      "title": "确认密码不一致行内报错，改一致后错误清除",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；$$('.field__input')[2] input('abc12345')",
+      "action": "$$('.field__input')[3] input('abc123456') → 再改 input('abc12345')",
+      "expected": "不一致时 .field--error 红框 + 行内「两次输入的密码不一致」（onConfirmInput 实时比对，index.vue:176-177）；改回一致后错误即时清除（index.vue:177 三元分支）",
+      "evidence": "normal：after 截图（含不一致错误态）+ console"
+    },
+    {
+      "id": "REG14",
+      "page": "pages/register/index",
+      "title": "昵称输入：特殊字符/emoji 可输入，超 20 字截断",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "对 $$('.field__input')[4] input('🌸小风同学_A1') → 清空 → input 25 个字符（超长）",
+      "expected": "特殊字符/emoji 正常回显（onNicknameInput 无过滤，index.vue:183-186）；超长被 maxlength=20 截断为 20 字；无布局破坏",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "REG15",
+      "page": "pages/register/index",
+      "title": "出生日期 picker 选择回显（成年日期）",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "page.$('.field__picker') trigger('change', { value: '2008-06-01' })（成年：早于 2008-09-23）",
+      "expected": ".field__pick-text 回显「2008-06-01」并带 field__pick-text--filled 深色态（index.vue:702-703）；无行内错误；picker 上限 end=今天（index.vue:695），原生弹层的取消/遮罩关闭为系统行为不在 JS 断言范围",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "REG16",
+      "page": "pages/register/index",
+      "title": "手机号无效时点「获取验证码」：行内错误+抖动+Toast，不发请求",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；$$('.field__input')[0] input('123')（不合法）",
+      "action": "tap .sms-btn（handleSendSms，index.vue:255-262）",
+      "expected": "500ms 内反馈：手机号字段 field--error 红框 + shake 抖动类 + 行内「手机号格式不正确，请输入 11 位手机号」+ Toast「请先输入正确的手机号」；console 无 POST /v1/sms/send-code 请求",
+      "evidence": "normal：after 截图（错误态+Toast 可见）+ Toast 文案 + console（断言无 send-code 请求）"
+    },
+    {
+      "id": "REG17",
+      "page": "pages/register/index",
+      "title": "合法手机号发送验证码：发送成功 Toast + 60s 倒计时",
+      "tier": "critical",
+      "pre": "冷启动直开注册页（有副作用：触发后端短信下发/频控）",
+      "action": "$$('.field__input')[0] input 随机新号（'1'+[3-9]随机+9 位随机）→ tap .sms-btn → 观察按钮态",
+      "expected": "按钮先变 sending 态（spinner，sms-btn--sending）；成功后 Toast：mock 短信模式为「验证码已发送（模拟：XXXXXX）」（res.mockCode 存在），否则「验证码已发送至 138****8888」（index.vue:270-272）；按钮变灰底「重新发送 Ns」倒计时 60→0（index.vue:553,273-282）；计满后恢复「获取验证码」",
+      "evidence": "critical：before + after 截图 + Toast 文案 + console（POST /v1/sms/send-code 恰 1 次 200）；记录 mockCode 供 REG24/REG25 使用。后端不可达时 Toast「网络异常，请检查网络后重试」→ 该链路如实标 UNVERIFIED"
+    },
+    {
+      "id": "REG18",
+      "page": "pages/register/index",
+      "title": "倒计时期间重复点击验证码按钮：不重发",
+      "tier": "normal",
+      "pre": "承接 REG17（smsCountdown>0）",
+      "action": "倒计时中连续 tap .sms-btn 3 次（handleSendSms 首行卫语句 return，index.vue:256）",
+      "expected": "按钮保持倒计时态不变；console 无新增 send-code 请求；倒计时数字正常递减不重置",
+      "evidence": "normal：after 截图 + console（send-code 总请求数仍为 1）"
+    },
+    {
+      "id": "REG19",
+      "page": "pages/register/index",
+      "title": "空表单直接点注册：首错定位手机号",
+      "tier": "normal",
+      "pre": "冷启动直开注册页（表单全空，协议未勾）",
+      "action": "tap .submit-btn（validateFirstError 首项，index.vue:211,335-347）",
+      "expected": "不跳转、不发请求；手机号字段 field--error + shake + 行内「请输入手机号」+ Toast「请输入手机号」；500ms 内全部反馈可见",
+      "evidence": "normal：after 截图（错误定位可见）+ Toast 文案 + console（无 /v1/auth/register 请求）"
+    },
+    {
+      "id": "REG20",
+      "page": "pages/register/index",
+      "title": "验证码/密码非法组合提交：逐项首错定位（表单「非法」态）",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "分步构造并各 tap .submit-btn：① 手机号合法、验证码空 ② 验证码='12345'（5 位）、密码='12345678'（纯数字）③ 密码='abc123'（<8 位）④ 密码='ａｂｃ１２３４５'（全角）",
+      "expected": "① 首错「请输入短信验证码」；② 首错「验证码为 6 位数字」（index.vue:214）；③ 首错「密码至少 8 位，需包含字母和数字」（index.vue:202）；④ 首错「密码不能包含空格或全角字符」（index.vue:204，全角字符可被输入不被过滤）；每步均为对应字段行内错误+shake+Toast 同文案，不跳转不发请求",
+      "evidence": "normal：每步 after 截图 + Toast 文案 + console（无 register 请求）"
+    },
+    {
+      "id": "REG21",
+      "page": "pages/register/index",
+      "title": "生日未选/未成年生日提交拦截（客户端 18 岁预检）",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；手机号/验证码/密码/确认/昵称全部填合法值（沿用 REG17 随机号与 mockCode；生日留空）",
+      "action": "① tap .submit-btn（生日空）→ ② $$('.field__picker') trigger('change',{value:'2009-01-01'})（未成年）→ tap .submit-btn",
+      "expected": "① 行内「请选择出生日期」+shake+Toast（index.vue:221）；② 行内「未满 18 岁暂无法注册」+shake+Toast（isAdult 预检，index.vue:222,103-109），不跳转不发请求；两步之后将生日改为合法成年日期错误清除",
+      "evidence": "normal：每步 after 截图 + Toast 文案 + console（无 register 请求）"
+    },
+    {
+      "id": "REG22",
+      "page": "pages/register/index",
+      "title": "全表单合法但未勾协议提交：协议区抖动拦截（空提交终态）",
+      "tier": "normal",
+      "pre": "承接 REG21 改为成年生日后的合法表单；确保 .agree__chk 未勾选",
+      "action": "tap .submit-btn（validateFirstError 末项 agree，index.vue:223,337-341）",
+      "expected": "不跳转不发请求；.agree__chk 带 agree__chk--shake 抖动 + 协议文案变红（agree--error/agree__text--error）；Toast「请先阅读并勾选同意《用户协议》和《隐私政策》」；主按钮此时为置灰态（formComplete=false，submit-btn--disabled，index.vue:138-146,717）但仍可点出定位提示",
+      "evidence": "normal：after 截图（协议抖动/变红）+ Toast 文案 + console（无 register 请求）"
+    },
+    {
+      "id": "REG23",
+      "page": "pages/register/index",
+      "title": "协议勾选框切换：勾上/取消",
+      "tier": "normal",
+      "pre": "冷启动直开注册页",
+      "action": "tap .agree__chk → 断言 → 再 tap 一次 → 断言",
+      "expected": "第一次点击后 .agree__chk 出现 agree__chk--on（绿底白勾图标，index.vue:736-739）；第二次点击恢复未勾态；500ms 内 DOM 变化",
+      "evidence": "normal：after 截图（勾选态）+ console"
+    },
+    {
+      "id": "REG24",
+      "page": "pages/register/index",
+      "title": "注册主按钮快击×5：createButtonGuard 防连点只提交 1 次",
+      "tier": "critical",
+      "pre": "冷启动直开注册页；用全新随机号完成全表单合法填写（验证码用 REG17 同号 mockCode）并勾选协议（formComplete=true，按钮非置灰）",
+      "action": "500ms 内对 .submit-btn 连续 tap 5 次（onSubmitGuarded=createButtonGuard(handleSubmit,2000)，index.vue:453；utils/debounce.ts:145-169 锁窗口 2000ms）",
+      "expected": "仅发起 1 次 POST /v1/auth/register（console 请求数=1）；按钮进入 loading 态「注 册 中」+ spinner（submit-btn--loading，index.vue:717-723）；注册期间 handleSubmit 二次进入被 submitting 卫语句与按钮锁双重拦截（index.vue:329）；最终按注册结果跳转 success 或不跳",
+      "evidence": "critical：before + after 截图 + 路由 + console（register 请求数=1 为核心断言）+ loading 态截图"
+    },
+    {
+      "id": "REG25",
+      "page": "pages/register/index",
+      "title": "合法全表单注册成功：签发 JWT 并 redirectTo 注册成功页",
+      "tier": "critical",
+      "pre": "冷启动直开注册页（有副作用：创建账号+JWT 落 storage）",
+      "action": "全新随机号全流程：发验证码取 mockCode → 填手机号/验证码/密码 abc12345/确认/昵称/成年生日 → 勾协议 → tap .submit-btn（registerUser POST /v1/auth/register，services/auth.ts:337-366）",
+      "expected": "loading ≥400ms（防闪烁 delay，index.vue:350-354）后 uni.redirectTo('/pages/register/success?phone=<号码>')（index.vue:360）；getCurrentPages 长度 1 且 [0].route==='pages/register/success'（redirectTo 替换栈顶）；storage 出现非空 token/refreshToken（setToken，auth.ts:359-364）；成功页首行清单 tag 显示脱敏号「138****XXXX」（success.vue:25-30）；无 console error",
+      "evidence": "critical：before + after 截图 + 路由链 + Toast 文案（成功无错误 Toast）+ console（register 200 + 无报错）；记录该手机号供 REG26 复用"
+    },
+    {
+      "id": "REG26",
+      "page": "pages/register/index",
+      "title": "已注册手机号重复注册：行内错误+「用这个手机号登录」出口出现，已填内容不清空",
+      "tier": "critical",
+      "pre": "冷启动直开注册页；用 REG25 已注册成功的同一手机号重新填写全表单（新验证码）并勾协议",
+      "action": "tap .submit-btn（后端 400「该手机号已注册」→ handleRegisterError 命中「已注册」分支，index.vue:377-383）",
+      "expected": "不跳转；手机号字段 field--error + shake + 行内「该手机号已注册，试试直接登录」+ Toast「该手机号已注册，可直接登录」；.ghost-btn「用这个手机号登录」出现（phoneRegistered=true，v-if，index.vue:727-729）；铁律：失败不清空已填内容（仅密码框重新置为密文 showPassword=false，index.vue:363-368）；预期业务拒绝不进 Sentry 上报（reportError:false，auth.ts:353-355）",
+      "evidence": "critical：before + after 截图 + 路由（未跳转断言）+ Toast 文案 + console（register 400 + 无 captureException 噪音）"
+    },
+    {
+      "id": "REG27",
+      "page": "pages/register/index",
+      "title": "「用这个手机号登录」次级出口返回登录页",
+      "tier": "navigation",
+      "pre": "承接 REG26（.ghost-btn 已出现）",
+      "action": "tap .ghost-btn（goLogin 同 REG03/REG04 双分支，index.vue:727）",
+      "expected": "栈深场景 navigateBack 落回 'pages/login/index'，500ms 内路由变化",
+      "evidence": "navigation：路由断言即可"
+    },
+    {
+      "id": "REG28",
+      "page": "pages/register/index",
+      "title": "B6 后台关闭注册开关：Toast 提示后 800ms 自动退回登录页",
+      "tier": "critical",
+      "pre": "冷启动直开注册页前，经 automation_evaluate 置 app-config store 开关关闭（getApp().$vm.$pinia.state.value['app-config'].switches.register_open=false；getter isRegisterOpen 判 !==false，stores/app-config.ts:37），随后 reLaunch 进注册页触发 onShow（index.vue:303-311）",
+      "action": "进入页面后立即开始观测（不操作）",
+      "expected": "onShow 即 Toast「注册功能暂未开放」（icon:none）；约 800ms 后 goLogin 自动退出（栈深 navigateBack / 直开 reLaunch login）；console 无报错；扩展断言（MP-R2-PAGES-REGISTER-INDEX-003）：若在 800ms 窗口内手动返回，onUnmounted 取消挂起跳转，回登录页后不发生二次跳转（index.vue:314-323）",
+      "evidence": "critical：before + after 截图 + Toast 文案 + 路由链 + console；evaluate 无法触达 store 时改 mock GET /api/v1/app-config 响应，仍不可行则如实标 UNVERIFIED"
+    },
+    {
+      "id": "REG29",
+      "page": "pages/register/index",
+      "title": "页面滚动到底/回顶：底部说明与去登录出口可达",
+      "tier": "noop",
+      "pre": "冷启动直开注册页",
+      "action": "页面 scrollTo bottom → 记录 scrollTop → scrollTo top",
+      "expected": "滚到底后 .safety-note（「注册即代表你已满 18 周岁…」）与 .to-login 完整可见不被截断；回顶后 hero 完整；无状态变化、无报错",
+      "evidence": "noop：执行日志（scrollTop 前后值 + console）即可，可不截图"
+    },
+    {
+      "id": "REG30",
+      "page": "pages/register/index",
+      "title": "打开即返回：进入后立即点返回无卡死",
+      "tier": "navigation",
+      "pre": "冷启动直开注册页（栈深 1）",
+      "action": "渲染完成 1s 内立即 tap .hero__back",
+      "expected": "正常 reLaunch 落回 'pages/login/index'；无路由异常、无白屏卡死、console 无错误",
+      "evidence": "navigation：路由断言 + console"
+    },
+    {
+      "id": "REG31",
+      "page": "pages/register/index",
+      "title": "重复进出注册页：状态复位、定时器无残留叠加",
+      "tier": "normal",
+      "pre": "reLaunch('/pages/login/index')；读 login 页「去注册」入口作为往返通道",
+      "action": "循环 2 次：进入注册页（发一次验证码使倒计时运行）→ 立即返回 login → 再进入",
+      "expected": "第二次进入时表单为初始空态（无上一次残留输入/错误/shake）；验证码倒计时不再显示（onUnmounted 清 smsTimer，index.vue:314-316）；console 无累积错误、无重复定时器迹象（B6 重入防叠加，index.vue:306）",
+      "evidence": "normal：第二轮 after 截图 + console（错误计数不增）"
+    },
+    {
+      "id": "REG32",
+      "page": "pages/register/index",
+      "title": "小控件点击热区测量（R11 §5 铁律：热区≥88rpx）",
+      "tier": "normal",
+      "pre": "冷启动直开注册页；先给手机号输入使 .field__clear 可见",
+      "action": "对 .hero__back、.field__clear、.field__eye、.agree__chk 逐一取 boundingClientRect 尺寸",
+      "expected": "量得实际热区并记录（源码标注值：hero__back 68rpx、field__clear 32rpx、field__eye 40rpx、agree__chk 32rpx，均 <88rpx，index.vue:798-816,941-951,1148-1160）——按 R11 §5 铁律为候选缺陷（图标可视尺寸小、无扩展热区），如实上报供判定员裁度，不以截图多少降低标准",
+      "evidence": "normal：执行日志（各元素 width/height 数值）+ console；每元素 1 张局部截图"
+    }
+  ],
+  "notes": [
+    "覆盖范围：仅指定页 pages/register/index。同目录 pages/register/success.vue（注册成功页，REG25 的落点）已读源码（goSetupProfile→navigateTo /subpackages/setup/profile/index、goBrowse→switchTab home、phone 参数脱敏 success.vue:25-30），其 2 个交互建议在 REGISTER-SUCCESS 独立批次覆盖，未计入本清单以免与他批重复。",
+    "本页无页面参数（带参固化表 r11-param-map.json 不含本页）；成功页 phone 参数已在 REG25 expected 内断言。",
+    "无法自动化的点（如实说明）：验证码倒计时切后台冻结→回前台按剩余时间刷新（onShow 时间戳基准，index.vue:295-302）需真实切后台，automator/CLI 通道无切后台 API，建议人工验证，未单独立例。",
+    "R17/R24/R25 依赖后端 mock 短信（POST /v1/sms/send-code 返回 mockCode，auth.ts:381-394）；环境后端不可达时相应用例按 evidence 规则标 UNVERIFIED，不得以证据缺失放行。",
+    "热区候选缺陷已按源码标注值写入 REG32（hero__back 68rpx 等 <88rpx），最终裁量归判定员。",
+    "本页所有接口均 skipAuth（auth.ts:351,388），用例前置无需 mock 登录 token；tmp_r11_*.json 的 2 小时时效与本页用例无关（仅 REG28 需 evaluate 改 store，无需登录态）。"
+  ]
+}

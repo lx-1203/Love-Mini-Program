@@ -201,8 +201,18 @@ export async function loadSession(
         () => mockSessionMap[sessionId] ?? null,
         // Real 模式：调用后端 API 加载会话，并标记为已读
         async () => {
-          const session = await chatTransport.loadSession(sessionId);
-          await clientApi.markTempChatSessionRead(sessionId);
+          let session: Awaited<ReturnType<typeof chatTransport.loadSession>>;
+          try {
+            session = await chatTransport.loadSession(sessionId);
+            await clientApi.markTempChatSessionRead(sessionId);
+          } catch (e) {
+            // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001：real 加载失败（如深链临时
+            // 会话已过期 404）必须显式清空 activeSession——withErrorHandling 只写
+            // errorMessage 不清态，残留的上一个会话会被页面误用（渲染旧会话消息、
+            // sendText 把消息发进错误会话）。与下方 mock 未知 id 分支对齐。
+            this.activeSession = null;
+            throw e;
+          }
           return session;
         }
         // 默认 shouldRefreshOverview: true, shouldUpdateActiveSession: true

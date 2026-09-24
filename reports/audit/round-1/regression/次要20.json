@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "历史回归审查员-R1-次要20（A5，索引差分模式：只核对 riskFiles 与本轮改动/证据相关的条目）",
+    "scope": "subpackages/village: detail/tag-posts/history；subpackages/circles: topics/topic-detail/circle-home；subpackages/campus: topic-detail/certification",
+    "date": "2026-09-24",
+    "index": "reports/audit/baseline/regression-index.json（4430 行全读，按 riskFiles 与 8 页面 + 本轮改动文件差分）",
+    "round_changed_files_in_scope": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue（+v-if 空容器抑制，与历史修复同向）",
+      "apps/client/src/subpackages/village/village/history.vue（refresher-triggered: isRefreshing→loadingHistory）",
+      "apps/client/src/stores/circle.ts（formatCircleTime 收敛 utils/time，formatDateTime/getCurrentLocale 导出实证 utils/time.ts:188/:358）",
+      "apps/client/src/stores/campus.ts（formatCampusTime 同上收敛）"
+    ],
+    "commands_actually_run": [
+      "git status --porcelain / git diff HEAD（改动面确认）",
+      "node compiler-sfc(vue 3.4.21) parse 8 页：errors:0、styles:1、orphan-after-style:no、detail.vue viewer-css-in-block:true",
+      "Read apps/client/src/static/assets/images/posts/post-4.jpg（视觉实证：冒热气的杯子）",
+      "git log --oneline -S maxlength -- campus/topic-detail.vue → 空输出（该文件历史从未有 maxlength）",
+      "node mock 徽标-回复一致性脚本（circles mock-data）→ 0 矛盾",
+      "grep/ sed 逐文件核对各历史修复接线与注释在位性"
+    ],
+    "exec_evidence": "reports/audit/round-1/interact/exec-results.json（1283 条，命中本 8 页 111 条：VD01-28/VT01-08/VH01-09/CT01-16/CD01-13/CH01-13/XT01-11/XC01-13）",
+    "not_run": "未运行小程序/未真机（A5 职责=索引差分+源码+既有证据）；FAILED 项均为脚本 __CAND__/.v-model 选择器未解析的工具失败，未采信为业务反证，也未采信为通过证据。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-VILLAGE-REG-001",
+      "round": "R1",
+      "page": "subpackages/village/village（index 主 feed，经 detail/tag-posts 等 scope 页渲染）",
+      "screenshot": "不适用（回归核对：代码 + 图片素材实读 post-4.jpg）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "MP-R2-VILL-013（晚霞帖配热饮图，P1）未彻底修复、同族批量图文语义不符复发成立：services/mocks/fixtures.ts 仅修 p6.jpg 一处文案（674-675，MP-R1-VILLAGE-INDEX-103 注释），主 feed 数据源 stores/village/mock-data.ts 成批未治理——post-10《分享我的旅行清单：想去冰岛看极光》仍配 posts/post-4.jpg，本审查员亲自实读该图为「冒热气的杯子」，与原始线索「风景帖×热饮图」完全同型；post-9（咖啡拉花）与 post-19 配 post-5.jpg、post-11 注释误述 post-4.jpg 为「海岸悬崖」而实读为热饮杯，均无 post-10 同款语义对齐处理。该数据经 villageStore.posts→detail.vue currentPost.images（detail.vue:831-852）在本批 scope 页面完整渲染。",
+      "evidence": "stores/village/mock-data.ts:483-493（post-10 images=[resolveMediaUrl×3('/static/assets/images/posts/post-4.jpg')]，无治理注释）；Read post-4.jpg=热饮杯特写（本会话实读）；fixtures.ts:670-675（仅 p6.jpg 一处修复注释）；对照 mock-data.ts:468-470/506-508/519-521（post-9/11/12 均有 MP-R1-VILLAGE-INDEX-103 修复注释，post-10 缺席）。与 A2 代码审查独立结论（code-findings/次要20.json MP-R1-VILLMOCK-101）互证。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "mock 主 feed 帖子配图与文案语义一致（极光/旅行帖配风景素材），同一图片不横跨语义无关多帖复用，与 fixtures.ts 治理口径对齐。",
+      "fix": "按文案语义重排 mock-data.ts mockPostsRaw 的 images 映射（post-10 换风景素材或改文案；post-9/19、post-16/24/33 同批治理），并与 services/mocks/fixtures.ts 口径对齐；修复后以 detail 页图文对照截图复核。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSTOPIC-REG-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/topic-detail",
+      "screenshot": "不适用（回归核对：代码 + git -S 历史）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "MP-R1-TOPIC-DETAIL-001-002（campus/topic-detail mock 分页重复追加/maxlength，P1）的 maxlength 子项复发（修复缺失）：historical-issues.md:248 记「mock 回复重复追加 3→6；输入无 maxlength | 已修」，但当前代码输入框无 maxlength、提交链路无长度校验——回复输入长度完全不受限（历史症结即「140 静默截断」被记录为 R21/T15 修复项）。同条目的分页重复追加子项修复在位未复发。git -S 证明该文件历史上从未提交过 maxlength 属性，所谓「已修」从未落地到当前代码（修复缺失，按回归口径判复发）。",
+      "evidence": "campus/topic-detail.vue:271-277（<input v-model=replyContent> 属性串无 maxlength，全文件 grep maxlength 0 命中）；:46-49 submitReply 仅 trim 判空；stores/campus.ts:696-709 replyToCampusTopic 仅校验非空无长度上限；git log --oneline -S \"maxlength\" -- 该文件 → 空输出（本会话实跑）；historical-issues.md:248（「已修」记录）与 :136（R21 TOPIC-DETAIL-002 列为修复项）。重复追加子项未复发对照：campus.ts:576-586（MP-R1-TOPIC-DETAIL-001 切片修复注释在位）+ exec-results XT09 EXECUTED。",
+      "sources": ["code", "log"],
+      "confidence": 0.85,
+      "ideal": "回复输入框设置 maxlength（与后端/话题回复上限一致，历史口径 140），超长有前端反馈；后端 400 有 toast 兜底而非静默。",
+      "fix": "campus/topic-detail.vue:273 input 补 :maxlength=\"140\"（确认后端上限后对齐常量），必要时 submitReply 前置长度校验+toast；circles/topic-detail.vue:414 同族输入一并核查对齐。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R2-VILL-013",
+      "page": "subpackages/village/village（detail 等 scope 页渲染）",
+      "status": "已复发",
+      "evidence": "同族批量图文不符仍在：mock-data.ts:483-493 post-10 极光帖配 post-4.jpg，本会话 Read 实读该图=冒热气的杯子（与原始线索同型）；fixtures.ts:674-675 仅修一处。详见 Issue MP-R1-VILLAGE-REG-001。"
+    },
+    {
+      "id": "MP-R1-DETAIL-001",
+      "page": "subpackages/village/village/detail",
+      "status": "未复发",
+      "evidence": "双案由均核：①查看层样式案（historical-issues:300 原『待修复』）——detail.vue:3223-3237 .image-viewer/.image-viewer__img 已在 style 块内（R19 修复注释在位），本会话以项目 vue 3.4.21 compiler-sfc 实跑 parse：errors:0/styles:1/</style> 后无孤立内容/viewer-css-in-block:true，8 页全部 0 错误无孤立样式；运行时 VD08 EXECUTED（点图开、点遮罩关）。②点赞案（historical-issues:237 interact）——detail.vue:405-408 handleLike→villageStore.likePost、:891 @tap 接线在位；VD04 快击终验 FAILED 为脚本 __CAND__ 选择器未解析（工具失败，非业务反证），运行时单击终验仍缺（历史即标『待运行时终验』），如实记录。"
+    },
+    {
+      "id": "MP-R1-TAGPOSTS-001",
+      "page": "subpackages/village/village/tag-posts",
+      "status": "未复发",
+      "evidence": "tag-posts.vue:128-142 mock 分页 from 错位修复注释在位（『原 from=page*PAGE_SIZE 整体错位一页』）+ real 分页 hasMore=data.length>=PAGE_SIZE（:191）；exec-results VT06（下拉重置页码）/VT07（上拉+没有更多）EXECUTED。"
+    },
+    {
+      "id": "MP-R1-TAGPOSTS-002",
+      "page": "subpackages/village/village/tag-posts",
+      "status": "未复发",
+      "evidence": "tag-posts.vue:250-254 goBack 栈深判断+reLaunch 村口兜底在位；VT02（栈=1 reLaunch 兜底）/VT08（缺参 Toast+600ms 返回）EXECUTED。"
+    },
+    {
+      "id": "MP-R1-HISTORY-001",
+      "page": "subpackages/village/village/history",
+      "status": "未复发",
+      "evidence": "history.vue:38-46 MP-R1-HISTORY-001 修复注释+goBack 栈底 reLaunch 兜底在位；VH02 EXECUTED。本轮 refresher-triggered 改动（isRefreshing→loadingHistory，loadingHistory 来自 storeToRefs :26）经 VH06 EXECUTED（『refresher-triggered 绑定 loadingHistory』）证实未破坏既有行为。"
+    },
+    {
+      "id": "MP-R1-TOPICS-016",
+      "page": "subpackages/circles/circles/topics",
+      "status": "未复发",
+      "evidence": "topics.vue:524-535 头像三态：resolveMediaUrl(image)→@error 占位→initialOf 文字兜底，无灰色相机占位；CT06（作者头像进主页）EXECUTED；historical-issues.md:191 标已修与现状一致。"
+    },
+    {
+      "id": "MP-R1-TOPICDETAIL-001",
+      "page": "subpackages/circles/circles/topic-detail",
+      "status": "未复发",
+      "evidence": "circles/topic-detail.vue:46-48 hasMoreReplies=replies.length<服务端 replyCount、:318-319 徽标用服务端 replyCount（review #54 注释）；本会话 mock 徽标-回复一致性脚本核对 0 矛盾。"
+    },
+    {
+      "id": "MP-R1-TOPICDETAIL-001-401",
+      "page": "subpackages/circles/circles/topic-detail",
+      "status": "未复发",
+      "evidence": "401 误渲染主案由修复在位：:231-232 network 分支注释（『401/网络失败被误渲染成话题不存在；现加 network 分支+重试』）、:391 错误态与不存在态区分、CD12 EXECUTED。备注：goBack 仍调 clearCurrentTopic（:146），验证项 topic-detail-back-does-not-clear-shared-store 字面未满足，但 topics 列表用独立 currentTopics 字段（topics.vue:34）无实害，属第四周期未关闭项而非复发；campus 侧同族栈底守卫缺失由 A2 新案 MP-R1-CAMPUSTOPIC-102 承接（非本轮改回）。"
+    },
+    {
+      "id": "R10-P1-001",
+      "page": "subpackages/circles/circles/circle-home",
+      "status": "未复发",
+      "evidence": "circle-home.vue:88-90 circlesFetchSettled 骨架防误判（useMock 直返/useMock() true 前不判空）在位；CH01 EXECUTED（冷启动骨架→内容，未闪『圈子不存在』）。"
+    },
+    {
+      "id": "MP-R1-CIRCLEHOME-001-004",
+      "page": "subpackages/circles/circles/circle-home",
+      "status": "未复发",
+      "evidence": "①朋友已加入 real 恒 0：:212 useMock() false 返回 0；②动态卡点击：CH06 EXECUTED（MP-R1-CIRCLEHOME-002 修复）；③分享按钮：CH03 EXECUTED（open-type=share 原生分享）；④点赞接线在位（toggleLike 本地翻转）；CH07/CH08 快击 FAILED 均为脚本 __CAND__ 选择器未解析，不采信为业务反证。"
+    },
+    {
+      "id": "MP-R1-CIRCLEHOME-001-002",
+      "page": "subpackages/circles/circles/circle-home（第四周期 real 演示动态）",
+      "status": "未复发",
+      "evidence": "circle-home.vue:110/:116 circleTags/pinnedNotice real 恒空数组、:267-268 feedItems real 空时返回 [] 不回退 mock；本轮 +v-if 改动（tag-row/pinned-card 空容器抑制）与该修复同向强化，diff 已逐行核对无冲突。"
+    },
+    {
+      "id": "R12-IND-TOPICS-001",
+      "page": "subpackages/campus/campus/topic-detail",
+      "status": "未复发",
+      "evidence": "campus/topic-detail.vue:254-256 errorMessage→EmptyState type=network 分支在位（401/网络与『话题不存在』区分）；XT01（冷启动渲染正常）EXECUTED；campus/topic-detail.vue 本轮无改动。"
+    },
+    {
+      "id": "MP-R1-TOPIC-DETAIL-001-002",
+      "page": "subpackages/campus/campus/topic-detail",
+      "status": "已复发",
+      "evidence": "maxlength 子项修复缺失（historical-issues.md:248 标『已修』）：input 无 maxlength（:271-277，全文件 0 命中）、store 提交无长度校验（campus.ts:696-709）、git -S maxlength 该文件 0 提交（本会话实跑）。重复追加子项未复发（campus.ts:576-586 切片修复在位 + XT09 EXECUTED）。详见 Issue MP-R1-CAMPUSTOPIC-REG-001。"
+    },
+    {
+      "id": "MP-R1-CERT-101",
+      "page": "subpackages/campus/campus/certification",
+      "status": "未复发",
+      "evidence": "certification.vue:13-15 修复注释（『onMounted 不再执行——需 onShow 重拉实名门槛』）+ :261-263 onShow(()=>void loadRealNameGate()) 在位；XC11 FAILED 为脚本 .gate-banner__btn 选择器未解析（工具失败非业务反证）。"
+    }
+  ],
+  "coverage": [
+    "索引差分口径：regression-index.json 全文 4430 行通读，riskFiles 命中本 8 页面或本轮改动文件（circle-home.vue/history.vue/circle.ts/campus.ts）的条目逐条核对；与页面无 riskFile 交集的条目（如 publish/post/hub/messages 族）未展开。",
+    "本轮 4 个改动文件与历史修复的相容性逐行核对：circle-home.vue v-if 改动强化 real 不渲染空容器、history.vue refresher 绑定改绑定既有 store 字段、circle.ts/campus.ts 仅时间格式化收敛（utils/time.ts:188 formatDateTime/:358 getCurrentLocale 导出实证），均未触碰 401/点赞/分页/栈底守卫等历史修复路径。",
+    "两条指定条目：MP-R2-VILL-013 判已复发（Issue MP-R1-VILLAGE-REG-001，P1）；MP-R1-DETAIL-001 判未复发（compiler-sfc 实跑实证 + VD08 EXECUTED；点赞子案运行时单击终验仍缺已如实标注）。",
+    "页面相关差分条目 12 条：10 条未复发（附代码行+exec-results 佐证），1 条已复发（campus maxlength 子项，Issue MP-R1-CAMPUSTOPIC-REG-001，P1），1 条含未关闭子项已在 checked 备注说明（TOPICDETAIL-001-401 返回清 store，无实害非复发）。",
+    "与 A2 代码审查（code-findings/次要20.json）独立互证：MP-R2-VILL-013 复发结论一致（本审查员独立实读图片与代码行）；MP-R1-DETAIL-001 修复结论一致（本审查员独立跑 compiler-sfc）。",
+    "未运行小程序/未截图/未真机（A5 只读职责）；exec-results 中 FAILED 项均核为脚本选择器工具失败（__CAND__/.v-model），既未采信为业务反证也未采信为通过证据。"
+  ]
+}

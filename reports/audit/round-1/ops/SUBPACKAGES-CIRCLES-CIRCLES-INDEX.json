@@ -1,0 +1,214 @@
+{
+  "cases": [
+    {
+      "id": "CI01",
+      "page": "subpackages/circles/circles/index",
+      "title": "冷启动七态时序：Loading 转圈 → Success 内容态，严禁闪现错误/空态",
+      "tier": "noop",
+      "pre": "身份A（100158 曦风）mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，isLoggedIn=true 校验通过）→ wx.reLaunch('/subpackages/circles/circles/index') 冷启动深链（onLoad :66-78 有 token 或 mock 即 fetchCircles，circle.ts:299-320 mock 分支同步装载 14 圈）",
+      "action": "启动后 0s/0.5s/1s 三次 DOM 采样（evaluate 取 .circles-state/state-loading 转圈、.circle-card 数量、state-error/state-empty 存在性），不打点",
+      "expected": "loading=true 且 circles 空 → PageStateContainer loading 态（LoadingSpinner「正在加载」，PageStateContainer.vue:15-21）；数据就绪 → content 态渲染 14 张 .circle-card（card-slide-up 入场动画按 index*60ms 级联，index.vue:362-364）；全程不得闪现 error/empty 态空屏（冷启动铁律）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "noop：执行日志（三时刻 DOM 采样记录 + console 全量过滤）"
+    },
+    {
+      "id": "CI02",
+      "page": "subpackages/circles/circles/index",
+      "title": "头部返回钮 → navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → 先 wx.reLaunch('/pages/home/index')，再 openAppPath 进入本页（页面栈 ≥2 层）",
+      "action": "tap .circles-header__back（index.vue:299-308，role=button aria-label=返回，64rpx 圆钮，hover press-feedback）",
+      "expected": "500ms 内 goBack → uni.navigateBack({delta:1})（index.vue:255-261）返回来源页（如 pages/home/index）；getCurrentPages 栈顶 route=来源页；本页出栈销毁",
+      "evidence": "navigation：getCurrentPages 路由链断言（返回后栈顶=来源页）；可免截图"
+    },
+    {
+      "id": "CI03",
+      "page": "subpackages/circles/circles/index",
+      "title": "栈底（reLaunch 直达）点返回 → 兜底 switchTab 回首页，不白屏不卡死",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/circles/circles/index') 冷启动直达（页面栈仅 1 层，R11 巡检标准进入方式）",
+      "action": "tap .circles-header__back（index.vue:299-308）",
+      "expected": "navigateBack 无上层可退走 .catch 分支 → uni.switchTab('/pages/home/index')（index.vue:256-258）成功落地，不触发 reLaunch 兜底；getCurrentPages 栈顶 route=pages/home/index 且为 tab 切换（不新增栈层）；无白屏/无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/home/index）；console 无 navigateBack fail 未处理拒绝"
+    },
+    {
+      "id": "CI04",
+      "page": "subpackages/circles/circles/index",
+      "title": "头部搜索钮 → toast「搜索功能即将上线」占位反馈（非死按钮）",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch 直达本页，content 态",
+      "action": "tap .circles-header__search（index.vue:313-322，role=button aria-label=搜索，64rpx 圆钮 @tap=goSearch）",
+      "expected": "500ms 内 toast 弹出，文案=「搜索功能即将上线」icon=none（index.vue:264-266，注意该文案为硬编码中文非 i18n）；无路由变化（getCurrentPages 不变）；toast 自动消失不永驻",
+      "evidence": "normal：after 截图（toast 可见态）+ 路由断言（停留本页）+ console 过滤"
+    },
+    {
+      "id": "CI05",
+      "page": "subpackages/circles/circles/index",
+      "title": "快捷分类 tab「摄影」→ 客户端过滤仅剩摄影圈，高亮与 aria-selected 迁移",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch 直达本页，默认 all tab 全量 14 卡",
+      "action": "tap 第 2 个 .circles-tab（「摄影」，QUICK_TABS index.vue:212-221，@tap=activeQuickTab='photo' :344-355）",
+      "expected": "500ms 内该 tab 加 .circles-tab--active（绿底描边高亮 :891-894）且 aria-selected=true，原「全部」tab 高亮移除；列表经 tabFilteredCircles 过滤（:225-232 keyword=摄影）仅剩 1 张「摄影」卡片（memberCount 12000→显示 1.2w）；纯 computed 过滤无网络请求；console 无报错",
+      "evidence": "normal：after 截图（过滤后列表+tab 高亮）+ 路由断言 + console（无新增 /circles 请求）"
+    },
+    {
+      "id": "CI06",
+      "page": "subpackages/circles/circles/index",
+      "title": "快捷分类 tab「更多」（图标态，keyword=null）→ 显示全量列表",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch 直达本页；先切到「摄影」tab 使列表处于过滤态（承接 CI05）",
+      "action": "tap 末个 .circles-tab（「更多」，iconSrc=ICONS_EMOJI.LIST list.svg（images.ts:529），@tap=activeQuickTab='more'）",
+      "expected": "500ms 内「更多」tab 高亮迁移（icon 态 tab 无文本，仅 30rpx 图标 :353,902-906）；activeQuickTab='more' 时 tabFilteredCircles 直接返回 filteredCircles 全量（:226-228）→ 恢复 14 张卡片（category 未带参时）；无网络请求",
+      "evidence": "normal：after 截图（全量恢复）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "CI07",
+      "page": "subpackages/circles/circles/index",
+      "title": "tab 往返切换（全部→运动→全部）：高亮正确迁移、数据与加入状态不丢",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch 直达本页；先对「旅行」执行一次加入（承接 CI09 使 isJoined=true）以验证状态保持",
+      "action": "依次 tap .circles-tab「运动」（过滤仅 1 张运动卡）→ 再 tap「全部」；记录每次切换后卡片数与「旅行」卡按钮文案",
+      "expected": "每次切换 500ms 内高亮与 aria-selected 迁移到目标 tab；「运动」态仅 1 张卡片；回「全部」恢复 14 张且「旅行」卡保持「已加入」态（store 状态不被 tab 切换重置）；切换期间无加载态闪现、无网络请求；滚动位不因过滤异常错乱（内容变短时 clamp 合法）",
+      "evidence": "normal：after 截图（回到全部的终态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "CI08",
+      "page": "subpackages/circles/circles/index",
+      "title": "圈卡片点击（非按钮区）→ navigateTo 圈子主页 circle-home?circleId={id}",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 直达本页，all tab 全量；记录当前栈深",
+      "action": "tap 第 1 张 .circle-card 卡身（.circle-card__cover-wrap 或 __body 区域，@tap=goToCircleHome(circle) index.vue:361-366；避开右侧 .circle-card__action）",
+      "expected": "500ms 内 navigateTo /subpackages/circles/circles/circle-home?circleId=circle-photo（ROUTES.CIRCLES.HOME routes.ts:134 + openAppPath 非 tab 页 navigateTo，navigation.ts:106-116）；getCurrentPages 栈深 +1 且栈顶 route=subpackages/circles/circles/circle-home、query.circleId=被点卡片 id；mock 下 14 圈均无 campusVerified 字段不触发认证拦截；返回后落回本页",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶 route+query.circleId）+ 返回落点断言"
+    },
+    {
+      "id": "CI09",
+      "page": "subpackages/circles/circles/index",
+      "title": "加入兴趣圈（旅行圈）：按钮态翻转 + 成员数 +1 + @tap.stop 不冒泡",
+      "tier": "critical",
+      "pre": "身份A 已登录 → reLaunch 直达本页，all tab；定位「旅行」卡（circle-travel，未加入态，8932 人）；记录 before 截图（按钮「+ 加入」描边胶囊态，zh-CN circle.joinBtn:3660）",
+      "action": "tap 该卡 .circle-card__action（@tap.stop=toggleJoin('circle-travel', false) index.vue:402-412 → circle.ts joinCircle mock 分支 :335-348）",
+      "expected": "500ms 内按钮翻转为「已加入」并加 .circle-card__action--joined 浅绿底态（:778-782）；isJoined=true、memberCount 8932→8933（统计行「8,933 人 · 352 条动态」千分位可见变化）；@tap.stop 阻断冒泡不触发卡片 goToCircleHome（无路由变化，栈深不变）；无 toast（成功路径静默）；真实模式对照：POST /circles/circle-travel/join 恰 1 次且按返回 {joined, memberCount} 更新（circle.ts:354-364）",
+      "evidence": "critical：before+after 截图（按钮/成员数对比）+ 路由断言（停留本页栈深不变）+ Toast 捕获（应为空）+ console（请求计数=1、无 TypeError/NAV_FAIL）"
+    },
+    {
+      "id": "CI10",
+      "page": "subpackages/circles/circles/index",
+      "title": "退出兴趣圈（美食圈）：按钮回「+ 加入」+ 成员数 -1",
+      "tier": "critical",
+      "pre": "身份A 已登录 → reLaunch 直达本页；mock 种子「美食」circle-food 为已加入态（isJoined=true，7240 人，mock-data.ts:94-101）；记录 before 截图（「已加入」态）",
+      "action": "tap 该卡 .circle-card__action（@tap.stop=toggleJoin('circle-food', true) → circle.ts leaveCircle mock 分支 :384-391）",
+      "expected": "500ms 内按钮回「+ 加入」描边态、移除 --joined 类；isJoined=false、memberCount 7240→7239（「7,239 人 · 287 条动态」）；无路由变化；memberCount 已≥1 不触发 max(0,…) 钳制；真实模式对照：DELETE /circles/{id}/join 恰 1 次（circle.ts:395-405）",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 捕获（应为空）+ console（请求计数=1、无报错）"
+    },
+    {
+      "id": "CI11",
+      "page": "subpackages/circles/circles/index",
+      "title": "加入按钮快击×5 防连点：不出现反复翻转/成员数异常累加",
+      "tier": "critical",
+      "pre": "身份A 已登录 → reLaunch 直达本页；选一张未加入且成员数千分位可见的卡（运动 circle-sports，6,532 人）；记录 before 截图与成员数；注意：源码 toggleJoin（index.vue:173-188）无防重入锁，mock 分支为同步本地翻转——本条按铁律「主按钮防连点（快击 5 次只提交 1 次）」判定实际表现",
+      "action": "快击 5 次 .circle-card__action（间隔<100ms）",
+      "expected": "终态按钮文案与样式唯一且确定（铁律要求：仅 1 次生效 → 终态「已加入」、成员数恰 +1=6,533；真实模式网络请求计数=1）；不得出现 +5/成员数反复加减、按钮文案抖动后不一致、或未处理 Promise 拒绝；若实测 5 连击产生多次翻转/多次请求即为防连点缺陷（如实判定）",
+      "evidence": "critical：before+after 截图（终态按钮+成员数）+ 路由断言 + Toast 捕获 + console（请求/翻转计数）"
+    },
+    {
+      "id": "CI12",
+      "page": "subpackages/circles/circles/index",
+      "title": "加入/退出失败分支：toast 可见反馈 + 状态不翻转（条件用例）",
+      "tier": "critical",
+      "pre": "条件用例：需真实模式（apiMode=real）且使 joinCircle reject（断网 / token 失效 / 后端 5xx）；mock 模式 joinCircle 恒成功无法构造。构造后进入本页 content 态，记录 before 截图",
+      "action": "tap 任一未加入卡 .circle-card__action（toggleJoin 进入 catch 分支 index.vue:180-187）",
+      "expected": "500ms 内 toast 弹出：文案=后端错误 message 或兜底「操作失败，请重试」（apiErrors.operationFailed zh-CN:14，index.vue:183-186，icon none）；按钮保持「+ 加入」不翻转（store 仅 set errorMessage 后 rethrow，本地 isJoined/memberCount 不变 circle.ts:365-368）；MP-R1-CIRCLES-001 修复有效：列表非空时 errorMessage 无渲染出口，失败必须有此 toast 反馈；Loading 不永驻、无未处理 Promise 拒绝。无法构造时如实标 UNVERIFIED",
+      "evidence": "critical：before+after 截图（toast+按钮未翻转）+ 路由断言 + Toast 文案捕获 + console（失败请求与 catch 路径日志）"
+    },
+    {
+      "id": "CI13",
+      "page": "subpackages/circles/circles/index",
+      "title": "带参深链 ?category=travel → 按分类过滤仅旅行圈，标题仍为硬编码「兴趣趣圈」",
+      "tier": "normal",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/circles/circles/index?category=travel')（本页不在 r11-param-map.json params 固化表，参数契约取自源码 Task B2 注释 index.vue:31-47 与 CATEGORY_KEYWORDS :55-64，合法值 study/sports/music/movie/travel/game/food/reading）",
+      "action": "onLoad 读参后观察列表（不打点；如需比对可再 tap「全部」tab 验证互不干扰）",
+      "expected": "filteredCircles 命中（圈名含「旅行」/locale 标签/id 含 'travel'，:100-114）→ 仅「旅行」1 张卡；页面标题保持硬编码「兴<趣>圈」（:309，2026-08-25 P0 已移除按 category 派生的动态标题）；quick tab 默认仍在「全部」（category 与 activeQuickTab 过滤链互不叠加：tab=all 时直接透传 filteredCircles :226-228）；无报错",
+      "evidence": "normal：after 截图（过滤后列表+标题）+ 路由断言（当前页 query.category=travel）+ console 过滤"
+    },
+    {
+      "id": "CI14",
+      "page": "subpackages/circles/circles/index",
+      "title": "带参深链 ?category=movie → 诚实过滤空列表（不静默回退全量）",
+      "tier": "normal",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/circles/circles/index?category=movie')；mock 14 圈名称均不含「电影」/label（zh-CN circle.catMovie:3702）/英文名 'movie'",
+      "action": "onLoad 读参后观察列表区（不打点）",
+      "expected": "matched=[] → 卡片区渲染 0 张（review #21 诚实过滤语义，:112-113 注释「有映射但无匹配时展示空列表」）；页面不崩溃不白屏：circles.length=14>0 故 pageState 仍 content、banner 与 7 个 tab 照常渲染、无 PageStateContainer 空态文案兜底（现状如实记录，判定员评估空列表可读性）；console 无报错",
+      "evidence": "normal：after 截图（空列表区域）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "CI15",
+      "page": "subpackages/circles/circles/index",
+      "title": "卡片信息渲染规范：万位 w / 千分位 / 热门徽标阈值 / 好友行 5~12 稳定",
+      "tier": "noop",
+      "pre": "身份A 已登录 → reLaunch 直达本页，all tab 全量 14 卡",
+      "action": "evaluate 批量取各卡 .circle-card__count / .circle-card__hot-badge / .circle-card__friends-text 文本，与 mock 种子数据（mock-data.ts:54-185）断言，不打点",
+      "expected": "摄影 12000→「1.2w 人 · 486 条动态」（≥10000 走 w 单位 index.vue:194-197）；旅行 8932→「8,932 人 · 352 条动态」（1000..9999 千分位 toLocaleString，R21 无英文 k :198-202）；热门徽标恰出现在成员数≥8000 的 5 张卡（摄影/旅行/音乐/游戏/考研，HOT_THRESHOLD :209，文案「热门」zh-CN:3646）；运动 6532、宠物 5621 等无徽标；好友行「等 N 位朋友加入」N∈5..12 且同一圈 id 刷新后不变（circleId 哈希确定性 :243-252）；375px 宽度下统计行不被省略号截断成半字（MP-R1-CIRCLE-005 回归：count 自身 ellipsis :743-753）",
+      "evidence": "noop：执行日志（DOM 文本断言记录 + console 过滤）；如需核验 375px 截断可附 1 张 after 截图"
+    },
+    {
+      "id": "CI16",
+      "page": "subpackages/circles/circles/index",
+      "title": "滚动到底/顶：14 卡完整渲染、无分页请求、banner+tabs 随页保留",
+      "tier": "noop",
+      "pre": "身份A 已登录 → reLaunch 直达本页，all tab 全量（本页 scroll-view .circles-list :333 无 scrolltolower 处理器、页面无 onPullDownRefresh（pages.json circles/index 无窗口配置），全量列表无上拉分页/下拉刷新）",
+      "action": "scroll-view 滚动到底（末卡「萌宠」circle-cutepets 可见）→ 记录 scrollTop 与末卡渲染 → 滚回顶部",
+      "expected": "到底时末尾卡片完整渲染（封面经 circleCoverFor 圈名映射 circle-covers.ts:35-45，萌宠→PET 封面）+ .list-bottom-spacer 占位；不触发任何分页/补拉请求（console 无新增 /circles 请求）；滚回顶部后推荐副标题（「找到与你志趣相投的人」circlesSubtitle:3671）与 7 个 tab 原位；滚动全程无白屏/跳动",
+      "evidence": "noop：执行日志（scrollTop 采样 + console 请求计数）"
+    },
+    {
+      "id": "CI17",
+      "page": "subpackages/circles/circles/index",
+      "title": "校园认证圈拦截：未认证点击 → toast 引导 + 不跳转（条件用例）",
+      "tier": "normal",
+      "pre": "条件用例：需存在 campusVerified=true 的圈（mock 14 圈均无该字段，mock-data.ts:54-185；真实模式需后端返回认证圈且会话无 campusName）。构造：evaluate 将 store 中任一圈 campusVerified 置 true 并确保 sessionStore.userSession.campusName 为空，记录 before",
+      "action": "tap 该圈 .circle-card 卡身（goToCircleHome 走 campusVerified 拦截分支 index.vue:153-159）",
+      "expected": "500ms 内 toast「进入校园圈需先完成校园认证」（circle.campusVerifyRequired zh-CN:3674，icon none）且不发生路由跳转（getCurrentPages 不变、栈深不变）；已认证会话（campusName 非空）同操作则正常 navigateTo circle-home。无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（toast 可见+未跳转）+ 路由断言 + Toast 文案捕获 + console 过滤"
+    },
+    {
+      "id": "CI18",
+      "page": "subpackages/circles/circles/index",
+      "title": "错误态与重试：error 文案 + 重试按钮真实重拉（条件用例）",
+      "tier": "normal",
+      "pre": "条件用例：真实模式下使 GET /circles 失败（断网/无效 token）→ fetchCircles catch 写 errorMessage 且 circles 空（circle.ts:315-319）→ pageState=error。mock 模式 fetchCircles 恒成功无法构造",
+      "action": "观察错误态 → tap ErrorState 重试按钮（PageStateContainer @retry=handleRetry index.vue:138-140、PageStateContainer.vue:24-33）",
+      "expected": "错误态文案=store errorMessage 或兜底「加载失败，请稍后重试」（circle.loadFailedRetry zh-CN:3669，errorText index.vue:133）；tap 重试后重新发起 fetchCircles：成功 → 恢复 content 渲染 14 卡；仍失败 → 停留 error 态可再次重试（Loading 不永驻、无重复叠加请求）；恢复后 console 无报错。无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（错误态与恢复态各 1 张）+ 路由断言 + console（重试请求计数）"
+    },
+    {
+      "id": "CI19",
+      "page": "subpackages/circles/circles/index",
+      "title": "空态：circles 空 → EmptyState「暂无兴趣圈」（条件用例）",
+      "tier": "normal",
+      "pre": "条件用例：需 circles=[] 且非 loading/error（pageState=empty index.vue:123-128）。mock 下 fetchCircles 恒装载 14 圈；构造：evaluate 清空 circleStore.circles 并置 loading=false",
+      "action": "观察空态渲染（不打点；如 PageStateContainer 空 CTA 则不点击）",
+      "expected": "EmptyState 渲染文案「暂无兴趣圈」（circle.circlesEmpty zh-CN:3672，empty-text 传入 index.vue:327；注意 zh-CN:374 另有同名 key 属其他命名空间，勿混淆）；无报错、无骨架残留；随后 onShow 自愈逻辑（CI20）或重进可恢复列表。无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（空态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "CI20",
+      "page": "subpackages/circles/circles/index",
+      "title": "onShow 自愈补拉 + 登录态 watch：空列表自动重拉不永久空态（条件用例）",
+      "tier": "normal",
+      "pre": "条件用例：覆盖 2026-08-30 韧性修复路径（index.vue:80-86 onLoad 时 token 未就绪跳过拉取）。构造：evaluate 清空 circleStore.circles → navigateTo 任一页再返回本页触发 onShow（或注入登录态变化触发 watch :274-281）",
+      "action": "返回本页后观察列表（不打点）",
+      "expected": "onShow 检测已登录 && circles 空 && !loading → 自动 fetchCircles（无需手动重试）；列表自愈恢复 14 卡；未登录且非 mock 时不发受保护请求（无 401 雪崩，console 无 /circles 请求与 401）；不出现重复并发拉取（loading 守卫）。无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（自愈后列表）+ 路由断言 + console（补拉请求恰 1 次、无 401）"
+    },
+    {
+      "id": "CI21",
+      "page": "subpackages/circles/circles/index",
+      "title": "重复进出与状态恢复：进 circle-home 再返回，加入状态与列表数据不丢",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch 直达本页；先对「旅行」执行加入（承接 CI09 终态 isJoined=true）；记录 before 截图与 scrollTop",
+      "action": "tap「旅行」卡进入 circle-home → navigateBack 返回本页；重复「进入→返回」3 次",
+      "expected": "每次返回落点=本页且栈深恢复；「旅行」卡保持「已加入」态、成员数保持加入后值（pinia circle store 常驻，页面重挂载仅读 store 不重置）；circles 非空时 onShow 不触发补拉（:83 条件 circles.length===0 不成立，无多余请求）；3 次往返后栈深稳定无泄漏、无报错",
+      "evidence": "normal：after 截图（终态与 before 对比）+ 路由断言（栈深）+ console（无新增 /circles 请求、无报错）"
+    }
+  ]
+}

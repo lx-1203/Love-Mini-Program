@@ -1,0 +1,2144 @@
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI01",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "登录态进入恋爱认证页：状态卡首拉渲染（骨架防状态跳变）",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/verification/index",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI01-after.png(57783B)"
+ ],
+ "durationMs": 19448
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI02",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "navigation",
+ "title": "栈内返回：navigateBack 落回来源页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | dom: .nav-bar__back:absent .length:absent | pre:navigateTo /subpackages/profile-extra/verification/index | act:navigateBack delta1 | act:tap .nav-bar__back",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 25769
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI03",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "navigation",
+ "title": "深链直达栈=1 返回兜底：switchTab 回「我的」Tab",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | navError=Uncaught [object Object] | dom: .nav-bar__back:absent | pre:reLaunch /subpackages/profile-extra/verification/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .nav-bar__back",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 19295
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI04",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "表单空提交：第一步校验 toast「请输入学生姓名」",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | dom: .action-btn:present | pre:auto-reLaunch subpackages/profile-extra/verification/index | act:tap .action-btn",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [
+  {
+   "api": "showToast",
+   "title": "请输入学生姓名",
+   "ts": 1790139253061
+  }
+ ],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI04-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 19782
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI05",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "渐进填写校验链：学号→学校→学生证 逐项补齐",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | dom: #verification-student-name:present #verification-student-id:present #verification-school-name:present | act:input #verification-student-name=\"自动化输入-VI05\"",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI05-after.png(57796B)"
+ ],
+ "durationMs": 11742
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI06",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "critical",
+ "title": "完整提交认证成功：选图 + 三项合法 → 状态变「审核中」",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | dom: .upload-card:present | act-FAIL:input(__CAND__) el.input is not a function | act:tap .upload-card | act-FAIL:tap(__CAND__) element not found: __CAND__(\"提交\")",
+ "failureReason": "action input __CAND__ failed: el.input is not a function",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-before.png(57796B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml"
+ ],
+ "durationMs": 24503
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI07",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "critical",
+ "title": "提交防连点：快击×5 仅 1 次提交流程",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"提交按钮\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"提交按钮\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.wxml"
+ ],
+ "durationMs": 24773
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI08",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "critical",
+ "title": "real 重复提交 409：toast「已有申请审核中」",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"提交\")",
+ "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-after.wxml"
+ ],
+ "durationMs": 26984
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI09",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "选图取消/隐私拒绝：两类 toast 反馈且状态不变",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"图\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"传\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"图\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI09-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 17200
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI10",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "输入边界：maxlength 截断与特殊字符不崩",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__",
+ "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI10-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 13611
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI11",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "verified 态按钮可见性：重新认证/删除认证仅 mock 可见",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | observe-only",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI11-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 11570
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI12",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "critical",
+ "title": "重新认证/删除认证确认弹窗（仅 mock）：确认重置/取消不动",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | dom: #E5454D:absent | act-FAIL:tap(#E5454D) element not found: #E5454D(\"重新认证\") | act-FAIL:tap(#E5454D) element not found: #E5454D(\"重新认证\") | act-FAIL:tap(#E5454D) element not found: #E5454D(\"重新认证\")",
+ "failureReason": "action tap #E5454D failed: element not found: #E5454D(\"重新认证\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-after.wxml"
+ ],
+ "durationMs": 30634
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI13",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "normal",
+ "title": "pending 态展示与轮询/onShow 重拉、卸载清定时器",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"模拟审核通过\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"模拟审核通过\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI13-after.png(57787B)"
+ ],
+ "durationMs": 13763
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VI14",
+ "page": "subpackages/profile-extra/verification/index",
+ "tier": "noop",
+ "title": "滚动到底/顶：长表单内容完整可达",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | act:pageScrollTo bottom | act:pageScrollTo top",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 3211
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN01",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "登录态进入实名认证页：状态首拉 + 成年门禁预检",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/verification/real-name",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN01-after.png(68358B)"
+ ],
+ "durationMs": 20379
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN02",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "navigation",
+ "title": "深链直达栈=1 返回兜底：navigateTo 回恋爱认证页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | navError=Uncaught [object Object] | dom: .nav-bar__back:present | pre:reLaunch /subpackages/profile-extra/verification/real-name | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .nav-bar__back",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [
+  "[2026-09-23T04:57:53.218Z][info] \"preloadSubpackages: subpackages/discover\"",
+  "[2026-09-23T04:57:53.219Z][info] \"preloadSubpackages: success\""
+ ],
+ "evidence": [],
+ "durationMs": 9424
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN03",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "navigation",
+ "title": "栈内返回：navigateBack 落回来源页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | navError=Uncaught [object Object] | dom: .nav-bar__back:present .length:present | pre:navigateTo /subpackages/profile-extra/verification/real-name | pre:auto-reLaunch subpackages/profile-extra/verification/real-name | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .nav-bar__back",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 13359
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN04",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "空提交：toast「请输入真实姓名」",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/index | dom: .action-btn:present | act:tap .action-btn",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  },
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "options": {}
+  }
+ ],
+ "toast": [
+  {
+   "api": "showToast",
+   "title": "请输入学生姓名",
+   "ts": 1790139496493
+  }
+ ],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN04-after.png(57740B)"
+ ],
+ "durationMs": 11125
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN05",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "身份证号格式校验：短号拒绝、合法号放行到下一步",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | dom: #real-name-id-card-no:present | pre:auto-reLaunch subpackages/profile-extra/verification/real-name | act:input #real-name-id-card-no=\"12345\"",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN05-after.png(66589B)"
+ ],
+ "durationMs": 18429
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN06",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "正反面缺失链：先拦正面、传正面后拦背面",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"面\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"面\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN06-after.png(66652B)"
+ ],
+ "durationMs": 14415
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN07",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "critical",
+ "title": "完整提交实名认证成功：状态变「审核中」",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"按\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN07-before.png(66652B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN07-after.png(66652B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN07-after.wxml"
+ ],
+ "durationMs": 24982
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN08",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "critical",
+ "title": "提交防连点：快击×5 仅 1 次提交流程",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"提交按钮\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"提交按钮\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN08-before.png(66652B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN08-after.png(66652B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN08-after.wxml"
+ ],
+ "durationMs": 23823
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN09",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "critical",
+ "title": "real 重复提交 409：toast「已有申请审核中」",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__",
+ "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN09-before.png(66635B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN09-after.png(66635B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN09-after.wxml"
+ ],
+ "durationMs": 22868
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN10",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "身份证输入边界：maxlength=18 截断、末位 X 合法、特殊字符不崩",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__",
+ "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN10-after.png(66635B)"
+ ],
+ "durationMs": 13452
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN11",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "未成年人门禁（real 条件）：banner + 表单禁用 + 提交拦截",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"提交\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"提交\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN11-after.png(66635B)"
+ ],
+ "durationMs": 14392
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "RN12",
+ "page": "subpackages/profile-extra/verification/real-name",
+ "tier": "normal",
+ "title": "verified 态脱敏回显：姓名 + 掩码身份证号",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/verification/real-name | observe-only",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN12-after.png(66635B)"
+ ],
+ "durationMs": 11331
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS01",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "进入访客页：骨架→分组列表 + 头部计数与头像兜底",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/profile/visitors",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS01-after.png(111581B)"
+ ],
+ "durationMs": 18522
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS02",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "navigation",
+ "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | navError=Uncaught [object Object] | pre:navigateTo /subpackages/profile-extra/profile/visitors | pre:reLaunch /subpackages/profile-extra/profile/visitors | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 17223
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS03",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "点击访客卡跳他人主页：id 兜底拼参不静默失效",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"客\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"客\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS03-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 15249
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS04",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "下拉刷新：真实重拉 fetchVisitors 并收起动画",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | dom: .stopPullDownRefresh:absent | act:refresherPull: no scroll-view,callMethod onPullDownRefresh ok",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS04-after.png(111494B)"
+ ],
+ "durationMs": 12666
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS05",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "错误态与重试：错误卡展示 → 点重试恢复",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | action-not-performed(see act-FAIL) | pre:auto-reLaunch subpackages/profile-extra/profile/visitors | act-FAIL:tap(__CAND__) element not found: __CAND__(\"重试\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"重试\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [
+  "[2026-09-23T05:02:05.022Z][info] \"preloadSubpackages: subpackages/discover\"",
+  "[2026-09-23T05:02:05.022Z][info] \"preloadSubpackages: success\""
+ ],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS05-after.png(111494B)"
+ ],
+ "durationMs": 23529
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS06",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "空态：暂无访客记录卡且无计数文本",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | observe-only",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS06-after.png(111494B)"
+ ],
+ "durationMs": 11445
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS07",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "noop",
+ "title": "滚动到底/顶：分组列表完整可达",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | act:pageScrollTo bottom | act:pageScrollTo top",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 3284
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "VS08",
+ "page": "subpackages/profile-extra/profile/visitors",
+ "tier": "normal",
+ "title": "打开即返回 + 重复进出×2：无残留 loading、状态恢复",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/visitors | navError=Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS08-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 15697
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO01",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "固化参数深链进入他人主页：资料渲染 + 访客记录上报",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/other | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/profile-extra/profile/other | pre-FAIL:input element not found: .other",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO01-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 22729
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO02",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "深链缺 userId：明确错误指引、无重试按钮、无 ··· 菜单",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/other | observe-only | dom: .missingUserParam:absent | pre:reLaunch /subpackages/profile-extra/profile/other (param-map)",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO02-after.png(13967B)"
+ ],
+ "durationMs": 18788
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO03",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "navigation",
+ "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/other | navError=Uncaught [object Object] | pre:reLaunch /subpackages/profile-extra/profile/other (param-map) | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 9556
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO04",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "navigation",
+ "title": "头部 ··· 治理 ActionSheet：举报/拉黑/关注 三项渲染与取消",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: tap 右上 ···（other.vue:386-396）→ 查看 ActionSheet → 点取消",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 1489
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO05",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "喜欢（未喜欢态）+ 快击×5：单次请求、状态与文案翻转",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | dom: .liked:absent | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"提交\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"喜欢\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"提交\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO05-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO05-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO05-after.wxml"
+ ],
+ "durationMs": 27819
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO06",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "重复点喜欢去重：已喜欢不发请求、matched 不再弹匹配框",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"喜欢\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"喜欢\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO06-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO06-after.png(13963B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO06-after.wxml"
+ ],
+ "durationMs": 24191
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO07",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "匹配成功弹窗：确认去聊天 / 取消留在本页",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__(\"去聊天\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"再看看\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"去聊天\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO07-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO07-after.png(13943B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO07-after.wxml"
+ ],
+ "durationMs": 26800
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO08",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "navigation",
+ "title": "打招呼：实名门控通过与拦截两分支",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__(\"打招呼\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"打招呼\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 4688
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO09",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "心动卡弹层：开启/空提交拦截/遮罩与×三路关闭/未登录拦截",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | pre:logout ok | act-FAIL:tap(__CAND__) element not found: __CAND__(\"心动卡\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发送悄悄话\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"动\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"动\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"动\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"心动卡\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO09-after.png(13943B)"
+ ],
+ "durationMs": 24039
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO10",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "心动卡发送：合法内容成功送达 + 快击×5 防重 + 超长截断",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"发送\") | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发送悄悄话\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"发送\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO10-before.png(13943B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO10-after.png(13950B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO10-after.wxml"
+ ],
+ "durationMs": 28798
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO11",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "关注/取关切换 + 快击×5：toast 与按钮态、busy 防重",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"提交\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"关注\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"已关注\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"提交\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO11-before.png(13950B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO11-after.png(13950B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO11-after.wxml"
+ ],
+ "durationMs": 28853
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO12",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "拉黑二次确认：确认生效 toast / 取消无请求",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: ① 更多操作弹层 →「拉黑用户」（other.vue:456-458 → handleMoreBlock :56-60）→ modal 点确认；② 重走点取消",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO12-before.png(13974B)"
+ ],
+ "durationMs": 17839
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO13",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "critical",
+ "title": "举报：理由 ActionSheet → 提交成功 toast",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: ① 头部 ··· 或 更多操作 →「举报用户」（:452-455 → handleReportUser :310-331）→ 选一个理由",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO13-before.png(13974B)"
+ ],
+ "durationMs": 11380
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO14",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "更多操作 BottomSheet：分享占位 toast + 遮罩/× 关闭",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"分享给好友\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"分享给好友\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"分享给好友\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"分享给好友\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO14-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 18725
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO15",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "生活瞬间照片全屏查看：打开与点遮罩关闭",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"照\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"照\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"照\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"照\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO15-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 18828
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO16",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "navigation",
+ "title": "最近动态帖子卡 → 村口帖子详情",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"子\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"子\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 3865
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO17",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "Hero 头像点击：tapAvatar 全链路 emit 但页面未绑定（死按钮取证）",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO17-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 13573
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO18",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "取消匹配入口可达性：GovernanceMenu visible 恒 false（死功能取证）",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: 遍历页面寻找取消匹配入口并尝试触发（tap ··· ActionSheet、更多操作弹层、底部 CTA）",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 2169
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO19",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "noop",
+ "title": "滚动到底/顶：底部固定 CTA 不遮挡内容",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/other | act:pageScrollTo bottom | act:pageScrollTo top",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 3169
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO20",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "打开即返回 + 重复进出×2：无残留弹层、状态恢复",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/other | navError=Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO20-after.png(13935B)"
+ ],
+ "durationMs": 15217
+}
+====================================================================================================
+{
+ "suite": "S15-c23a",
+ "manifest": "次要23",
+ "id": "PO21",
+ "page": "subpackages/profile-extra/profile/other",
+ "tier": "normal",
+ "title": "鉴权失败深链 401：loginRequired 文案 + 重试按钮可用",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/other | action-not-performed(see act-FAIL) | pre:reLaunch /subpackages/profile-extra/profile/other (param-map) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"重试\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"重试\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO21-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 23195
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC01",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "normal",
+ "title": "进入位置设置：定位首拉 + 定位卡 + 地图 marker",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/location | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/profile/location",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC01-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 21635
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC02",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "critical",
+ "title": "重新定位（定位权限）：按钮态切换 + 坐标刷新 + 上报",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/location | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"重新定位\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"重新定位\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC02-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC02-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC02-after.wxml"
+ ],
+ "durationMs": 26023
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC03",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "critical",
+ "title": "地图选点：原生选点器回填坐标地址 / 失败 toast",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/location | navError=Uncaught [object Object] | dom: .chooseLocation:absent | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act-FAIL:tap(.chooseLocation) element not found: .chooseLocation(\"地图选点\")",
+ "failureReason": "action tap .chooseLocation failed: element not found: .chooseLocation(\"地图选点\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-after.png(100376B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-after.wxml"
+ ],
+ "durationMs": 26283
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC04",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "navigation",
+ "title": "「返回首页」按钮：openAppPath 落首页 Tab",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/location | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"返回首页\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"返回首页\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 4796
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC05",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "navigation",
+ "title": "返回键：栈内 navigateBack / 深链栈=1 reLaunch 首页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/location | navError=Uncaught [object Object] | pre:reLaunch /subpackages/profile-extra/profile/location | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 10619
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC06",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "noop",
+ "title": "地图拖动/缩放：纯视图操作无状态变化",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/location | observe-only",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 1580
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "LC07",
+ "page": "subpackages/profile-extra/profile/location",
+ "tier": "normal",
+ "title": "打开即返回 + 重复进出×2：无定位 loading 永驻",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/location | navError=Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC07-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 15736
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV01",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "normal",
+ "title": "进入隐私设置：两开关默认态（推荐关/接收开）",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/privacy | observe-only | pre:reLaunch /subpackages/profile-extra/profile/privacy",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-PRIVACY-PV01-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 19977
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV02",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "normal",
+ "title": "开关1 切换：状态翻转 + toast「已在本机保存」",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: tap 开关1（允许推荐给本校学生，privacy.vue:86-90）开→关→开",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 1484
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV03",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "normal",
+ "title": "开关2 切换：同反馈链路",
+ "status": "SKIPPED",
+ "observed": "action-not-automatable: tap 开关2（接收同校信息，privacy.vue:97-101）",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 1505
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV04",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "normal",
+ "title": "本机持久化：返回重进状态保持且与 storage 一致",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/privacy | navError=Uncaught [object Object] | dom: .setStorageSync:absent | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-PRIVACY-PV04-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 11865
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV05",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "normal",
+ "title": "快击开关×5：最终态一致、无卡死",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/privacy | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-PRIVACY-PV05-after.png(33873B)"
+ ],
+ "durationMs": 12313
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "PV06",
+ "page": "subpackages/profile-extra/profile/privacy",
+ "tier": "navigation",
+ "title": "返回：栈内 navigateBack / 深链栈=1 switchTab 我的",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/privacy | navError=Uncaught [object Object] | pre:reLaunch /subpackages/profile-extra/profile/privacy | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 9356
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL01",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "进入恋爱相册：有照片网格态 / 无照片空态",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/profile/album",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL01-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 21155
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL02",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "critical",
+ "title": "上传照片到空位：隐私授权 → 上传蒙层 → 成功 toast 计数+1",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/album | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"位\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"位\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL02-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL02-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL02-after.wxml"
+ ],
+ "durationMs": 25825
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL03",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "critical",
+ "title": "相册已满：点击 filled 格走预览、添加按钮隐藏、守卫 toast",
+ "status": "EXECUTED",
+ "observed": "top=pages/login/index | observe-only | pre:auto-reLaunch subpackages/profile-extra/profile/album",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "pages/discover/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [
+  "[2026-09-23T05:12:48.895Z][info] \"preloadSubpackages: subpackages/discover\"",
+  "[2026-09-23T05:12:48.909Z][info] \"preloadSubpackages: success\""
+ ],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL03-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL03-after.png(217115B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL03-after.wxml"
+ ],
+ "durationMs": 25918
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL04",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "上传中防连点：isUploading 守卫快击×5 不再触发选图",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/album | action-not-performed(see act-FAIL) | pre:auto-reLaunch subpackages/profile-extra/profile/album | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"其它空位\")",
+ "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"其它空位\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL04-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 24613
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL05",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "critical",
+ "title": "长按设为头像：ActionSheet → 本地重排或真实上传回显",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/album | action-not-performed(see act-FAIL) | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"设为头像\")",
+ "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-before.png(132724B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-after.png(132732B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-after.wxml"
+ ],
+ "durationMs": 25927
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL06",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "critical",
+ "title": "删除照片二次确认：确认删除 toast / 取消不动",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/album | action-not-performed(see act-FAIL) | act-FAIL:longpress(__CAND__) element not found: __CAND__",
+ "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL06-before.png(132732B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL06-after.png(132732B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL06-after.wxml"
+ ],
+ "durationMs": 23910
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL07",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "照片预览双路：/static/ 自建查看层（圆点分页）/ 网络 URL 原生 previewImage",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/album | action-not-performed(see act-FAIL) | dom: .previewImage:absent | act-FAIL:tap(.previewImage) element not found: .previewImage",
+ "failureReason": "action tap .previewImage failed: element not found: .previewImage",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL07-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 15293
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL08",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "超 10MB 大图拒绝：toast 提示且不上传",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | act:mockWxMethod chooseImage huge | act:tap .album-add-btn | act:wait 1500ms | act:restoreWxMethod chooseImage",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [
+  {
+   "api": "showToast",
+   "title": "图片大小不能超过 10MB",
+   "ts": 1790140479580
+  }
+ ],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL08-after.png(132732B)"
+ ],
+ "durationMs": 13565
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL09",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "取消选图静默：无错误 toast 不崩溃",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | act:mockWxMethod chooseImage cancel | act:tap .album-add-btn | act:wait 1200ms | act:restoreWxMethod chooseImage",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL09-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 13888
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL10",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "navigation",
+ "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | navError=Uncaught [object Object] | pre:reLaunch /subpackages/profile-extra/profile/album | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 11533
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL11",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "noop",
+ "title": "滚动到底/顶：网格与按钮完整可达",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | act:pageScrollTo bottom | act:pageScrollTo top",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 3470
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "AL12",
+ "page": "subpackages/profile-extra/profile/album",
+ "tier": "normal",
+ "title": "onShow 重拉 + 打开即返回 + 重复进出×2",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/album | navError=Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL12-after.png(132708B)"
+ ],
+ "durationMs": 15250
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA01",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "normal",
+ "title": "进入收藏页：骨架→列表/空态 与 标题计数",
+ "status": "EXECUTED",
+ "observed": "top=pages/login/index | navError=timeout waiting for automator response | observe-only | dom: .filter:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/profile/favorites NAV_ERROR: watchdog-timeout nav 15000ms | pre:auto-nav ERR timeout waiting for automator response",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "pages/login/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA01-after.png(217087B)"
+ ],
+ "durationMs": 58130
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA02",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "navigation",
+ "title": "卡片点击 → 村口帖子详情（带 id）",
+ "status": "FAILED",
+ "observed": "top=pages/discover/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:auto-nav ERR timeout waiting for automator response | act-FAIL:tap(__CAND__) element not found: __CAND__(\"卡\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"卡\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 24362
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA03",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "critical",
+ "title": "取消收藏：toast + 卡片移除计数-1，@tap.stop 不触发跳转",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/favorites | action-not-performed(see act-FAIL) | dom: .toggleFavorite:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消收藏\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"取消收藏\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-before.png(70905B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-after.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-after.wxml"
+ ],
+ "durationMs": 26378
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA04",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "critical",
+ "title": "取消收藏失败：错误 toast + UI 不静默还原",
+ "status": "FAILED",
+ "observed": "top=subpackages/profile-extra/profile/favorites | action-not-performed(see act-FAIL) | dom: .message:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消收藏\")",
+ "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"取消收藏\")",
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA04-before.png(ERROR:timeout waiting for automator response)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA04-after.png(70897B)",
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA04-after.wxml"
+ ],
+ "durationMs": 24422
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA05",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "navigation",
+ "title": "返回：navigateBack 失败兜底 reLaunch 我的",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/favorites | navError=Uncaught [object Object] | pre:reLaunch /subpackages/profile-extra/profile/favorites | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [],
+ "durationMs": 10993
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA06",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "noop",
+ "title": "scroll-view 滚动到底/顶：列表完整可达",
+ "status": "EXECUTED",
+ "observed": "top=pages/discover/index | pre:auto-reLaunch subpackages/profile-extra/profile/favorites | act:pageScrollTo bottom | act:pageScrollTo top",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "pages/discover/index",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [
+  "[2026-09-23T05:18:18.005Z][info] \"preloadSubpackages: subpackages/discover\"",
+  "[2026-09-23T05:18:18.020Z][info] \"preloadSubpackages: success\""
+ ],
+ "evidence": [
+  "scrollPos=top"
+ ],
+ "durationMs": 8440
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA07",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "normal",
+ "title": "onShow 真实重拉：新收藏同步显示",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/favorites | pre:auto-reLaunch subpackages/profile-extra/profile/favorites | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA07-after.png(70846B)"
+ ],
+ "durationMs": 27319
+}
+====================================================================================================
+{
+ "suite": "S16-c23b",
+ "manifest": "次要23",
+ "id": "FA08",
+ "page": "subpackages/profile-extra/profile/favorites",
+ "tier": "normal",
+ "title": "打开即返回：无残留骨架、落点正确",
+ "status": "EXECUTED",
+ "observed": "top=subpackages/profile-extra/profile/favorites | navError=Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+ "failureReason": null,
+ "route": [
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "options": {}
+  }
+ ],
+ "toast": [],
+ "console": [],
+ "evidence": [
+  "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA08-after.png(ERROR:timeout waiting for automator response)"
+ ],
+ "durationMs": 11998
+}

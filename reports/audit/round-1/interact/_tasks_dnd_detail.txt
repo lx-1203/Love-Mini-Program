@@ -1,0 +1,160 @@
+========== TK01 | 冷启动直开无参：标题「任务中心」+积分卡+4 任务项渲染，骨架过渡不闪错
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/profile/tasks | observe-only | dom: .tasks-header__title:present .tasks-summary:present .task-item:present .ps1:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: []
+========== TK02 | 点击「每日签到」未完成任务：完成签到 Toast「签到成功！+5 积分」+勾选态+积分卡/进度条即时更新
+status: EXECUTED | tier: critical
+observed: top=subpackages/profile-extra/profile/tasks | dom: .task-item:present .task-item__status-text:present .tasks-summary__label:present .tasks-summary__percent:present .checkIn:absent .task-item__check:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tapIndex .task-item#2 tapped
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-before.png(ERROR:timeout waiting for automator response)', 'D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.png(ERROR:timeout waiting for automator response)', 'D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.wxml']
+========== TK03 | 签到快击×5 与完成后重复点击：仅 1 次签到提交，后续点击只 Toast「已完成」
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/profile/tasks | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:rapidTap __CAND__ x5 done=5
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK03-after.png(ERROR:timeout waiting for automator response)']
+========== TK04 | 点击「完善个人资料」任务：openAppPath 跳资料编辑页并携带 ?entry=edit
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/profile/tasks | dom: .task-item:present .path:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tapIndex .task-item#1 tapped
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: []
+========== TK05 | 点击「发布首条动态」任务：跳 village 首页
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/profile/tasks | navError=timeout waiting for automator response | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tap .task-item
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: []
+========== TK06 | 点击「完成校园认证」任务：跳校园认证页
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/profile/tasks | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tap .task-item
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: []
+========== TK07 | 返回键：深链栈=1 时 switchTab 回首页 Tab，栈>1 时 navigateBack 落来源页
+status: FAILED | tier: navigation
+observed: top=subpackages/profile-extra/profile/tasks | dom: .tasks-header__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:reLaunch /subpackages/profile-extra/profile/tasks | act:navigateTo /subpackages/profile-extra/profile/tasks
+fail: action tap .tasks-header__back failed: element not found: .tasks-header__back("我的")
+route: [{"route": "pages/profile/index", "options": {}}]
+toast: []
+console: ['"preloadSubpackages: subpackages/setup, subpackages/vip, subpackages/market"', '"preloadSubpackages: success"']
+evidence: []
+========== TK08 | onShow 状态同步：签到完成后退出重进，签到任务保持已完成不重置
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/profile/tasks | observe-only | dom: .task-item:present .checkedInToday:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK08-after.png(ERROR:timeout waiting for automator response)']
+========== TK09 | 整页滚动浏览：任务列表滚动到底/顶无卡死、元素无错位
+status: EXECUTED | tier: noop
+observed: top=subpackages/profile-extra/profile/tasks | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:pageScrollTo bottom | act:pageScrollTo top
+fail: None
+route: [{"route": "subpackages/profile-extra/profile/tasks", "options": {}}]
+toast: []
+console: []
+evidence: ['scrollPos=top']
+========== DND01 | 冷启动直开：loading→content 三态过渡，GET /api/dnd 回显表单默认值
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/settings/dnd | observe-only | dom: .spinner:absent .state-wrap:absent .switch:present .time-row__value:present .radio-row__indicator--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: []
+========== DND02 | 总开关切换：状态行「已开启/已关闭」即时变化
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | dom: .switch-row:present .status-row__value:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .switch-row
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND02-after.png(ERROR:timeout waiting for automator response)']
+========== DND03 | 重复方式切自定义：星期网格出现；切回每天：网格消失且已选星期清空
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | dom: .radio-row:present .weekday-grid:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .radio-row
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND03-after.png(61593B)']
+========== DND04 | 自定义星期多选/去选：chip 高亮切换、按周一→周日排序写入表单
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | observe-only | dom: .weekday-item--active:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND04-after.png(ERROR:timeout waiting for automator response)']
+========== DND05 | 时间选择器：修改开始/结束时间后显示值即时更新
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | observe-only | dom: .time-row__value:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND05-after.png(ERROR:timeout waiting for automator response)']
+========== DND06 | 校验-自定义未选星期保存：Toast「请至少选择一个星期」且不发起 PUT
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .customWeekdaysRequired:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .save-btn
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: [{'api': 'showToast', 'title': '设置已保存', 'ts': 1790141167420}]
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND06-after.png(61584B)']
+========== DND07 | 校验-开始时间=结束时间：Toast「结束时间必须大于开始时间」且不发起 PUT
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | observe-only | dom: .save-btn:present .invalidTimeRange:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: ['"preloadSubpackages: subpackages/discover"', '"preloadSubpackages: success"']
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND07-after.png(ERROR:timeout waiting for automator response)']
+========== DND08 | 合法表单保存成功：PUT /api/dnd → Toast「设置已保存」+响应回写；快击×5 仅 1 次 PUT
+status: EXECUTED | tier: critical
+observed: top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:rapidTap .save-btn x5 done=5
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: [{'api': 'showToast', 'title': '设置已保存', 'ts': 1790141243632}, {'api': 'showToast', 'title': '设置已保存', 'ts': 1790141243700}, {'api': 'showToast', 'title': '设置已保存', 'ts': 1790141243779}, {'api': 'showToast', 'title': '设置已保存', 'ts': 1790141243860}, {'api': 'showToast', 'title': '设置已保存', 'ts': 1790141243943}]
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-before.png(61600B)', 'D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.png(ERROR:timeout waiting for automator response)', 'D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.wxml']
+========== DND09 | 保存失败：Toast 展示错误信息，按钮恢复可点（Loading 不永驻）
+status: EXECUTED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .saveFailed:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .save-btn
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: [{'api': 'showToast', 'title': '设置已保存', 'ts': 1790141274880}]
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND09-after.png(ERROR:timeout waiting for automator response)']
+========== DND10 | 加载失败错误态：错误信息+「重试」按钮点击后重新拉取
+status: FAILED | tier: normal
+observed: top=subpackages/profile-extra/settings/dnd | action-not-performed(see act-FAIL) | dom: .retry-btn:absent .state-text:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act-FAIL:tap(.retry-btn) element not found: .retry-btn
+fail: action tap .retry-btn failed: element not found: .retry-btn
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: ['D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND10-after.png(ERROR:timeout waiting for automator response)']
+========== DND11 | 返回键深链栈=1：switchTab 兜底回「我的」Tab
+status: EXECUTED | tier: navigation
+observed: top=subpackages/profile-extra/settings/dnd | dom: .nav-bar__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:reLaunch /subpackages/profile-extra/settings/dnd
+fail: None
+route: [{"route": "subpackages/profile-extra/settings/dnd", "options": {}}]
+toast: []
+console: []
+evidence: []

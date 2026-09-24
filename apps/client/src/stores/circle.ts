@@ -3,6 +3,9 @@ import { request } from "../services/http";
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 import { IMAGE_PATHS } from "../config/images";
+// R13：相对时间收敛到 utils/time 单一实现（与消息列表/村庄卡片同源）
+import { formatDateTime, getCurrentLocale } from "../utils/time";
+import { resolveMediaUrl } from "../utils/media";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 // Mock 数据（R4-batch2：mock 用户/圈子数据移入 stores/circle/mock-data.ts，
@@ -97,7 +100,9 @@ function mapToTopicItem(raw: BackendCircleTopicView): TopicItem {
     circleId: String(raw.circleId),
     title: raw.title,
     content: raw.contentPreview,
-    images: raw.images,
+    // MP-R1-CTOPIC-101：话题配图统一经 resolveMediaUrl——real 模式鉴权媒体
+    // （/media 代理、/uploads）原样透传无法加载（裂图）；与同页头像解析口径一致
+    images: (raw.images ?? []).map((img) => resolveMediaUrl(img)),
     author: {
       userId: String(raw.authorId),
       name: raw.authorName,
@@ -257,21 +262,13 @@ export interface CircleState {
 const TOPIC_PAGE_SIZE = 10;
 
 /**
- * 格式化相对时间
+ * 格式化相对时间（刚刚 / N 分钟前 / N 小时前 / N 天前，≥7 天降级为绝对日期）
+ *
+ * R13：原私有副本对非法时间串会渲染出 "NaN天前"、对未来时间戳渲染出负数，
+ * 且缺少 en-US 文案；收敛到 utils/time 后与消息列表、村庄帖子卡片同源。
  */
 export function formatCircleTime(dateStr: string): string {
-  const now = Date.now();
-  const then = Date.parse(dateStr);
-  const diff = now - then;
-
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diff < minute) return "刚刚";
-  if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)}小时前`;
-  return `${Math.floor(diff / day)}天前`;
+  return formatDateTime(dateStr, "relative", getCurrentLocale());
 }
 
 /**

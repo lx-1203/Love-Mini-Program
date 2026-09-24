@@ -97,6 +97,15 @@ function closePhotoViewer() {
   photoViewerSrc.value = "";
 }
 
+/** MP-R1-REQ23-003：Hero 大头像 tapAvatar 全链 emit 此前页面未绑定（死按钮）——
+ *  最小合理行为：查看大图（复用 photoViewer，与本人主页头像查看大图同语义） */
+function previewAvatar() {
+  const avatar = profileForRender.value?.basic.avatar;
+  if (!avatar) return;
+  photoViewerSrc.value = resolveMediaUrl(avatar);
+  photoViewerVisible.value = true;
+}
+
 /** 渲染视图：把本地喜欢/匹配状态同步到统一 DTO 的 relation 字段 */
 const profileForRender = computed<UserProfileDTO | null>(() => {
   const p = profile.value;
@@ -293,8 +302,14 @@ function handleUnmatch() {
 
 function openGovernanceMenu() {
   if (!targetUserId.value) return;
+  // MP-R1-REQ23-002：互喜态在 ActionSheet 追加「取消匹配」——handleUnmatch 完整实现
+  // （modal 二次确认 → unlikeUser → 刷新）但 GovernanceMenu 死代码永不渲染、
+  // ··· 菜单仅举报/拉黑/关注三项，互喜用户在本页无法解除匹配（PO18 取证确认入口不存在）
+  const items: string[] = [t("chat.nav.report"), t("chat.nav.block"), following.value ? "取消关注" : t("profile.otherFollow")];
+  const unmatchIndex = isMatched.value ? items.length : -1;
+  if (isMatched.value) items.push("取消匹配");
   uni.showActionSheet({
-    itemList: [t("chat.nav.report"), t("chat.nav.block"), following.value ? "取消关注" : t("profile.otherFollow")],
+    itemList: items,
     success: (res) => {
       if (res.tapIndex === 0) {
         handleReportUser();
@@ -302,6 +317,8 @@ function openGovernanceMenu() {
         handleBlockUser();
       } else if (res.tapIndex === 2 && targetUserId.value) {
         void handleFollowToggle();
+      } else if (unmatchIndex >= 0 && res.tapIndex === unmatchIndex) {
+        handleUnmatch();
       }
     },
   });
@@ -415,6 +432,7 @@ onLoad((query) => {
       @follow="handleFollowToggle"
       @open-post="goPostDetail"
       @tap-photo="previewPhoto"
+      @tap-avatar="previewAvatar"
     />
 
     <WhisperComposeSheet

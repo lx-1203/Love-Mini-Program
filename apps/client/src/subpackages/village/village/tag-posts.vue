@@ -16,7 +16,7 @@ import { TOAST_DURATION } from "../../../constants/limits";
 import { useVillageStore, formatRelativeTime, type PostItem } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
 // R4-batch2: mock 标签帖子数据源（仅 apiMode === "mock" 分支使用，real 模式不读取）
-import { mockTagPosts } from "../../../stores/village/mock-data";
+import { mockTagPosts, mockPosts } from "../../../stores/village/mock-data";
 
 /** 状态/互动图标（emoji 实体替换为 SVG） */
 const stateIcons = {
@@ -226,9 +226,13 @@ function onLoadMore() {
  */
 function getMockTagPosts(tag: string): PostItem[] {
   // 过滤匹配的帖子
-  return mockTagPosts.filter((p) =>
-    p.tags.some((t) => t.toLowerCase().includes(tag.toLowerCase()))
-  );
+  // MP-R1-TAGPOSTS-201：聚合范围并入主 feed（mockPosts）——带「#摄影」等标签的
+  // 主 feed 帖此前不在候选内，标签聚合页恒空态；浅拷贝避免与 store 列表同引用
+  // （同 stores/village/index.ts setCurrentPost 的双 toggle 教训）。
+  const lowerTag = tag.toLowerCase();
+  return [...mockTagPosts, ...mockPosts]
+    .filter((p) => p.tags.some((t) => t.toLowerCase().includes(lowerTag)))
+    .map((p) => ({ ...p }));
 }
 
 /**
@@ -445,8 +449,11 @@ $red-badge: var(--c-error, #FF4757);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-TAGPOSTS-102：必须定高（height:100% 而非 min-height:100%）——min-height
+     让容器随内容增长，flex:1 的 scroll-view 失去高度约束 → 整页 window 滚动，
+     @scrolltolower 翻页与 refresher 失效（对齐 campus/campus/index.vue 修复模式）。 */
+  height: 100%;
   background: $bg-page;
   overflow: hidden;
 }

@@ -6,7 +6,6 @@
  * 顺序：Header → QuickActionCards → 寻觅助手 → 正在升温 → 最近聊天 → 活动推荐
  */
 import { computed, ref, watch } from "vue";
-import { resolveMediaUrl } from "@/utils/media";
 // MP-R2-PAGES-MESSAGES-INDEX-004：聊天列表时间收敛到 utils/time 单一实现
 import { formatChatListTime } from "../../utils/time";
 import { onLoad, onShow, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
@@ -21,6 +20,7 @@ import { useTabBar } from "../../composables/useTabBar";
 // MP-R1-PAGES-MESSAGES-INDEX-010：本页 header 依赖的 --statusbar/--capsule-right 此前从未注入
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { openAppPath } from "../../utils/navigation";
+import { lightHaptic } from "../../utils/haptic";
 import { ROUTES } from "../../constants/routes";
 import { useMock } from "../../stores/helpers/use-mock";
 // MP-R1-PAGES-MESSAGES-INDEX-008：错误重试需清除 bootstrap 缓存键穿透 TTL
@@ -169,6 +169,38 @@ function toggleSearch() {
   if (!searchActive.value) searchKeyword.value = "";
 }
 
+/**
+ * MP-R1-PAGES-MESSAGES-INDEX-102：补「+（发起会话）」入口——从已认识的人
+ * （访客/喜欢记录）中选择对象后直达 chat-session?userId=；无已知联系人时
+ * 引导去附近认识新朋友。避免消息页无法主动找人开聊的功能缺失。
+ */
+async function handleStartChat() {
+  lightHaptic();
+  if (likesStore.visitors.length === 0) {
+    await likesStore.fetchVisitors().catch(() => {
+      /* 失败走下方空列表兜底 */
+    });
+  }
+  const people = likesStore.visitors.slice(0, 6);
+  if (people.length === 0) {
+    openAppPath(ROUTES.TAB.NEARBY);
+    return;
+  }
+  const names = people.map((p) => p.name || t("chat.peerFallbackName"));
+  uni.showActionSheet({
+    itemList: names,
+    success: (res) => {
+      const person = people[res.tapIndex];
+      if (person?.userId) {
+        openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(person.userId)}`);
+      }
+    },
+    fail: () => {
+      /* 用户取消 */
+    },
+  });
+}
+
 function clearSearch() {
   searchKeyword.value = "";
 }
@@ -196,6 +228,11 @@ function openAssistant() {
 function goLikes() {
   void messagesStore.markTypeRead(["like", "visitor", "interaction_match"]);
   openAppPath(ROUTES.LIKES.VISITORS_LIKES);
+}
+
+// MP-R1-PAGES-MESSAGES-INDEX-103：空态行动出口——跳附近 Tab
+function goNearby() {
+  openAppPath(ROUTES.TAB.NEARBY);
 }
 
 // 2026-09-04 视觉验收修复：「去回复」原先误绑 goLikes，跳到喜欢与访客页与文案不符；
@@ -341,6 +378,10 @@ function onAvatarError(session: MessageSession): void {
           <text class="header__subtitle">{{ t('chat.headerSubtitle') }}</text>
         </view>
         <view class="header__right">
+          <!-- MP-R1-PAGES-MESSAGES-INDEX-102：补「+（发起会话）」入口（放大镜+加号双钮） -->
+          <view class="header__icon-btn" hover-class="header__icon-btn--hover" role="button" :aria-label="t('chat.startChatAria')" @tap="handleStartChat">
+            <text class="header__icon-plus">＋</text>
+          </view>
           <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
             <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
           </view>
@@ -365,7 +406,11 @@ function onAvatarError(session: MessageSession): void {
           <view class="empty-chat">
             <image class="empty-chat__img" :src="IMAGE_PATHS.MASCOT.DEFAULT" mode="aspectFit" />
             <text class="empty-chat__title">还没有新的缘分</text>
-            <text class="empty-chat__desc">去附近看看吧</text>
+            <!-- MP-R1-PAGES-MESSAGES-INDEX-103/026：空态给可点的行动出口——
+                 原 desc 为死文案，新用户空态成死胡同；改为「去附近看看」按钮 -->
+            <view class="empty-chat__cta press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('messages.emptyExploreAria')" @tap="goNearby">
+              <text class="empty-chat__cta-text">去附近看看</text>
+            </view>
           </view>
         </template>
 
@@ -568,7 +613,11 @@ function onAvatarError(session: MessageSession): void {
 <style scoped lang="scss">
 .messages-page {
   min-height: 100vh;
-  background: var(--c-bg-page, #EEF7F2);
+  /* MP-R1-PAGES-MESSAGES-INDEX-106：消息页整页白底（v3.1 契约「发现/附近/消息白底」
+     节奏红线 + 消息.png 主视觉）——页面级覆写，不动全局 --c-bg-page 避免波及深色
+     适配与其他页面；白卡以描边/浅阴影分层 */
+  --c-bg-page: #FFFFFF;
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   /* MP-R2-PAGES-MESSAGES-INDEX-002：自定义 tabBar 为 fixed 悬浮层（实高 160rpx+safe），
@@ -582,7 +631,8 @@ function onAvatarError(session: MessageSession): void {
   left: 0;
   right: 0;
   z-index: 9;
-  background: linear-gradient(180deg, var(--c-bg-page, #EEF7F2) 82%, rgba(238, 247, 242, 0));
+  /* MP-R1-PAGES-MESSAGES-INDEX-106：滚动遮罩随白底主视觉同步改白 */
+  background: linear-gradient(180deg, #FFFFFF 82%, rgba(255, 255, 255, 0));
   pointer-events: none;
   transition: opacity 160ms ease-out;
 }
@@ -650,6 +700,13 @@ function onAvatarError(session: MessageSession): void {
   width: 40rpx;
   height: 40rpx;
 }
+/* MP-R1-PAGES-MESSAGES-INDEX-102：「+（发起会话）」按钮字形 */
+.header__icon-plus {
+  font-size: 40rpx;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--c-text-primary, #1A1E1C);
+}
 
 /* ========== Search Bar ========== */
 .search-bar {
@@ -681,7 +738,10 @@ function onAvatarError(session: MessageSession): void {
   padding: 12rpx 32rpx 20rpx;
 }
 .quick-card {
-  flex: 1;
+  /* R13：第二张卡按数据 v-if 隐藏时，flex:1 会让单卡通栏铺满，
+     与理想图「两枚等宽半屏卡」不符——限宽至半屏保持版式比例 */
+  flex: 1 1 0;
+  max-width: calc(50% - 10rpx);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -733,16 +793,17 @@ function onAvatarError(session: MessageSession): void {
   align-self: flex-start;
   padding: 12rpx 32rpx;
   border-radius: 999rpx;
-  border: none;
-  /* 实心绿色按钮（对齐 2026-08-27 理想图修复：原为文字链接样式） */
-  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
-  box-shadow: 0 4rpx 12rpx var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.4));
+  /* MP-R1-PAGES-MESSAGES-INDEX-105：按 消息.png 归一为「浅绿描边小胶囊 + 品牌绿文字」，
+     非实心渐变（2026-08-27 的实心修复与现行裁决链冲突，以唯一页面级对照依据 消息.png
+     为准）；去渐变与投影 */
+  background: transparent;
+  border: 1rpx solid var(--c-brand, #36C99A);
   margin-top: 8rpx;
 }
 .quick-card__btn-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-neutral-0, #FFFFFF);
+  color: var(--c-text-brand, var(--c-brand, #36C99A));
 }
 
 /* ========== 寻觅助手 ========== */
@@ -1085,10 +1146,12 @@ function onAvatarError(session: MessageSession): void {
   color: var(--c-text-secondary, #6B7571);
 }
 .status-mutual {
-  background: rgba(77, 141, 255, 0.12);
+  /* MP-R1-PAGES-MESSAGES-INDEX-104：互相关注规格色为品牌绿 #3CC99A（原蓝色系
+     --c-text-link 与三态语义冲突：聊天中绿/暧昧粉/互关蓝） */
+  background: rgba(60, 201, 154, 0.12);
 }
 .status-mutual .chat-item__status-text {
-  color: var(--c-text-link, #4D8DFF);
+  color: var(--c-text-success, #3CC99A);
 }
 .status-ambiguous {
   background: rgba(255, 107, 129, 0.12);
@@ -1169,5 +1232,17 @@ function onAvatarError(session: MessageSession): void {
 .empty-chat__desc {
   font-size: 26rpx;
   color: var(--c-text-tertiary, #9AA39F);
+}
+/* MP-R1-PAGES-MESSAGES-INDEX-103：空态「去附近看看」行动按钮 */
+.empty-chat__cta {
+  margin-top: 24rpx;
+  padding: 16rpx 48rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid var(--c-brand, #36C99A);
+}
+.empty-chat__cta-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-text-brand, var(--c-brand, #36C99A));
 }
 </style>

@@ -333,7 +333,15 @@ page {
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
   width: 100%;
-  padding-top: var(--statusbar, env(safe-area-inset-top));
+  /* page 为 content-box（global.scss 的 border-box 仅含 view/text/image），
+     height:100% + padding 会在刘海屏产生页面级余量滚动（锁视口页可被整体拖动） */
+  box-sizing: border-box;
+  /* MP-R1-POSTTOPIC-002 / MP-R1-CAMPUSINDEX-002 / MP-R1-MARKET-002：
+     移除 page 级 padding-top 状态栏避让——--statusbar 只注入在页面组件根节点，
+     CSS 变量不向祖先级联，page 恒取 env() 兜底（DevTools=0 不可见、真机≈状态栏高），
+     与各页内部避让相加成「双倍避让」（刘海真机头部整体下移一个状态栏）。
+     状态栏避让统一由各页根注入 --statusbar + CSS var 链单层承担；
+     page 级仅保留安全区底部内边距。 */
   padding-bottom: env(safe-area-inset-bottom);
 }
 

@@ -3,7 +3,7 @@ import { request, withTimeout as withHttpTimeout, EnhancedApiError, getToken } f
 import { useSessionStore } from "./session";
 import { useMock } from "./helpers/use-mock";
 // 2026-08-10 切换提速：消息页 TTL 缓存（30s 新鲜度，官方号消息流 60s）
-import { isCacheFresh, fetchWithStaleWhileRevalidate, removeCache, setCachedValue } from "../utils/cache-ttl";
+import { isCacheFresh, fetchWithStaleWhileRevalidate, setCachedValue } from "../utils/cache-ttl";
 
 /** 消息页 bootstrap 新鲜度窗口 */
 const BOOTSTRAP_TTL_MS = 30_000;
@@ -715,6 +715,13 @@ export const useMessagesStore = defineStore("messages", {
           if (useMock()) {
             // 修复：旧请求返回时不再修改状态
             if (token !== fetchSessionMessagesToken) return;
+            // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-201/-104：未知 sessionId（不在
+            // mockMessages 也不在会话列表）时置错误而非静默空数组——原实现渲染「假空会话」
+            //（破冰引导+可用输入栏俱全），诱导用户对不存在的会话发言，与 real 404 行为对齐。
+            const knownSession = this.sessions.some((x) => x.id === sessionId);
+            if (!mockMessages[sessionId] && !knownSession) {
+              throw new Error(t("chat.sessionNotExist"));
+            }
             this.currentMessages = mockMessages[sessionId] ? [...mockMessages[sessionId]] : [];
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) s.unreadCount = 0;
@@ -886,6 +893,13 @@ export const useMessagesStore = defineStore("messages", {
             url: "/messages/conversations",
             method: "POST",
             data: { userBId },
+            // 该端点是 get-or-create（同一对方重复调用应复用既有会话）。若沿用
+            // 拦截器按 method+URL+body 生成的稳定幂等键，则同一对方的第二次
+            // 进入会话必然命中同一 key 被后端判为重复请求（409 IDEMPOTENT_CONFLICT），
+            // 聊天页整页报错且无消息。故按调用生成唯一键，仅防同一次点击内的重复提交。
+            headers: {
+              "Idempotency-Key": `idem-conv-${userBId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+            },
           });
           const session = mapToMessageSession(data);
           if (!this.sessions.find((s) => s.id === session.id)) {

@@ -1,0 +1,136 @@
+{
+  "round": "R1",
+  "page": "pages/discover/index",
+  "reviewer": "视觉审查员-R1-PAGES-DISCOVER-INDEX（A3，截图与证据的视觉/布局/状态审查，以小程序真实表现为准）",
+  "date": "2026-09-23",
+  "evidenceBaseline": {
+    "manifest": "reports/audit/round-1/screenshot-manifest.json",
+    "manifestGitSha": "aefd8a72",
+    "currentGitSha": "aefd8a72",
+    "match": true,
+    "interactExec": "reports/audit/round-1/interact/exec-results.json（gitSha=aefd8a72，一致）",
+    "buildMode": "build:mp-weixin:mock",
+    "note": "round-1-interact 目录中编号式截图（PAGES-DISCOVER-INDEX-1..38、A 系列部分）未被本轮 exec-results.json 引用，来源不可证，未作为证据引用；仅引用 exec-results.evidence 指向的 DC 系列落盘截图与 B 轮 tour 截图。放大裁剪图为本轮从 manifest 校验通过的原截图派生（reports/audit/round-1/tmp-a3/，生成脚本 crop*.ps1/scan*.ps1 同目录留档）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-026",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__弹层态.png（派生放大：reports/audit/round-1/tmp-a3/pop-tab-left.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "筛选抽屉的「基础筛选/高级筛选」Tab 切换器零样式：模板引用的 4 个类（filter-drawer__tabs / filter-drawer__tab / filter-drawer__tab--active / filter-drawer__tab-text）在组件 <style> 块与编译产物 wxss 中均无任何定义。渲染结果（弹层态截图）：两个 Tab 以裸文本纵向堆叠、左缘贴屏幕边（x=0，无水平内边距），与同面板其它标签（约 14-16px 左内边距）明显不一致；两个 Tab 字重颜色完全相同，无激活态标识，用户无法分辨当前处于哪个 Tab（截图当前展示的是基础筛选内容，但 Tab 层面看不出来）。这同时解释了交互取证 DC29「.filter-drawer__tab(高级筛选) element not found」失败的现象背景（Tab 区域无可辨识的分段控件形态）。",
+      "evidence": "模板：apps/client/src/components/discover/FilterDrawer.vue:625-643（4 个类的唯一出现位置）；样式：同文件 <style> 块全量选择器扫描（node 正则提取）共 39 个选择器，不含任何 filter-drawer__tab*；编译产物：apps/client/dist/build/mp-weixin/components/discover/FilterDrawer.wxss grep 'filter-drawer__tab' 0 命中；截图：B/弹层态 '全部筛选'下方 '基础筛选'/'高级筛选' 左缘贴边纵向堆叠，放大图 pop-tab-left.png 证实两 Tab 无激活差异。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.95,
+      "ideal": "基础/高级筛选为水平并排的分段控件，与面板内容左缘对齐（同 --sp-7 内边距），激活 Tab 有明确视觉态（如主题色文字/下划线），与全 App 分段控件形态（如本页推荐/附近分段）一致。",
+      "fix": "在 FilterDrawer.vue <style> 补 .filter-drawer__tabs（flex 横排 + 0 var(--sp-7) 内边距）、.filter-drawer__tab（flex:1/定宽 + 居中 + 热区≥88rpx 高）、.filter-drawer__tab--active 与 .filter-drawer__tab-text/--active（激活色 token，如 var(--c-brand-600)）样式；补后重跑 DC29（Tab 切换）与 DC43（热区扫描）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-027",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__弹层态.png（派生放大：tmp-a3/pop-right-strip.png、pop-edu-head.png、pop-sliders-detail.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "筛选抽屉基础筛选内容区右向溢出约 25-40px，多行信息被屏幕右缘裁切：①学历行与感情状态行的行值「不限」（filter-section__value，绿色 fs-base）只露出首字左侧笔画竖条（像素扫描 x[370..371]，屏宽 373），值文本几乎完全不可见；②身高行值实际文案为「120-250cm」（FilterDrawer.vue:321-323），渲染至 x≈369 被裁，尾字符 cm/0 缺失；③身高上限滑块的粉色轨道直抵屏幕右缘（扫描 x[17..371]），右端滑块手柄在屏内完全不可见，下限绿色手柄也只剩右半（x[17..25]，左缘平切呈半圆）；而同面板的籍贯/未来城市 picker、关键词输入框、底部重置/确认按钮右缘均正常（≈x359，符合 32rpx 内边距），说明仅 filter-section__head 行与滑块轨宽超出了应等内容框。源码样式（.filter-drawer__body padding 0 var(--sp-7)、--sp-7=32rpx、__head space-between）与编译产物均看似正确，运行时几何与源码意图不符，根因需运行时排查（疑似 token 作用域/容器宽计算问题），但视觉结果本身确凿。",
+      "evidence": "像素扫描（PowerShell GetPixel，脚本 tmp-a3/scan.ps1）：edu-value-green x[370..371]、rel-value-green x[370..371]、height-value-green 右端 x≈369、pink-track x[17..371]、green-handle x[17..25]；放大图 pop-right-strip.png（4x）可见「120-250」尾 0 被切与两行「不」字残条；代码：apps/client/src/components/discover/FilterDrawer.vue:321-323（值文案 120-250cm）、:654/:693/:716（三处 filter-section__value）、:930-934（__body padding 0 var(--sp-7)）、:945-951（__head space-between）、:1004-1010（.height-slider width:100%; margin:0）；编译产物 FilterDrawer.wxss 同值（grep 命中）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "全部行值文本完整落在 32rpx 内容边距内可读（身高「120-250cm」、学历/感情状态「不限」/「已选 n」右对齐完整可见）；双滑块两个手柄在屏内完整呈圆形，轨道不超出内容框。",
+      "fix": "运行时排查抽屉内容宽计算：核对 --sp-7/--fs-* 等 token 在 FilterDrawer 组件作用域是否真实生效（必要时给组件内引用补回退值），检查 .filter-drawer__panel/.filter-drawer__body/.filter-section 是否存在隐性宽度来源（slider width:100%+margin:0 的原生组件量测）；修复后以同坐标像素扫描复验三行值文本右缘 ≤x357、两滑块手柄完整可见。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-028",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png（派生放大：tmp-a3/def-ring4x.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "卡片右下角「匹配度」与理想图及验收契约不符（R11 挂起项「L4 环形⚠️」本轮复核仍未解决）：理想图为绿色细描边环形进度（SVG stroke-dasharray 契约，R13-ACCEPTANCE §7），实测理想图环形为绿色 RGB(68,184,130)、外径约占屏宽 20%；当前实现为粉色实心圆盘（取色 RGB(255,117,139)，比例约屏宽 24%），无任何进度弧语义——匹配度数值的高低不影响图形形态，环形进度所承载的「接近满环」视觉信息丢失。代码注释显示 R21 因 mp-weixin 对内联 conic-gradient 支持不稳而弃用环改实心粉圆，但验收契约要求的是 SVG stroke-dasharray 方案（非 conic-gradient），当前实现两者皆非。",
+      "evidence": "截图：B/默认.png 卡片右下粉盘「80% 匹配度」，放大 def-ring4x.png 无弧形；理想图：素材/理想效果图/寻觅匹配卡片页面.png 右下绿环「92% 匹配度」，区域扫描绿色 bbox x[614..787]（直径 173px/860≈20%），环顶取色 RGB(68,184,130)；实际盘取色 RGB(255,117,139)；代码：apps/client/src/components/match/MatchCard.vue:91-98（注释「右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用）」+ 结构）、:209-258（实心盘样式）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "右下角绿色细环 SVG 进度环（stroke-dasharray 按匹配度画弧）+ 中心百分比 + 「匹配度」小字，颜色用品牌绿（理想图实测 #44B882 一族，对应 Primary #34C98A 系）。",
+      "fix": "按 R13-ACCEPTANCE §7 以 SVG stroke-dasharray 实现细环（mp-weixin 可用 cover-view/图片化或 canvas 2d 方案，禁 conic-gradient），弧色取 Primary 绿，底环用半透明白；数值仍由 user.matchScore 驱动；修复后截图对比理想图环径比例（≈20% 屏宽）复验。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-029",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png（派生放大：tmp-a3/def-header-right.png）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "头部缺少理想图中的「空心收藏心形」入口（R11 挂起项复核确认仍缺失）：理想图在推荐/附近分段行右侧有空心心形收藏入口，当前页面该位置没有任何元素（放大图证实头部右侧仅一枚滑杆筛选按钮）。功能域 grep 证实寻觅域（pages/discover/index.vue + components/match/*）无任何收藏/favorite/collect 实现或引用——即缺的不只是入口图标，而是整条收藏能力在寻觅域未落地；按「功能缺失必须记 Function」记账，需求范围（收藏的对象与去向页）留需求对照员裁定。相邻记录一项同区域 L7 偏差：筛选入口图标当前为滑杆样式（ICONS_V2.SLIDERS），理想图为漏斗形描边图标，形态不一致（该图标可点击、有按压态，功能本身在位，仅图形差异）。",
+      "evidence": "截图：def-header-right.png（头部右侧仅滑杆按钮一枚，无第二入口）；理想图：素材/理想效果图/寻觅匹配卡片页面.png 分段行右侧空心心形；代码：apps/client/src/pages/discover/index.vue:241-256（头部 top 行仅 title+heart 徽标+filter 一枚按钮）、:257-288（tabs 行右侧无任何元素）；grep '收藏|favorite|collect' 于 pages/discover/index.vue 与 components/match/*.vue：0 命中。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "分段行右侧呈现空心心形收藏入口（理想图同位同形），点击具备收藏语义与落点（收藏列表/状态回显）。",
+      "fix": "先由需求对照员确认收藏功能范围；实现上补 header tabs 行右侧空心心形入口（态：空心/实心回显）+ 收藏动作与去向，图标走 IMAGE_PATHS 资产并保证热区≥88rpx；同区域可将 filter 图标替换为理想图漏斗形描边图标对齐 L7。若本期明确不做收藏，应在设计契约中显式记录裁剪决策并关闭本条。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-030",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png（派生放大：tmp-a3/def-gender4x.png）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "性别符已补齐（R11 挂起「性别符待修」中「缺失」部分已解决：姓名行现渲染粉色圆底徽章），但样式与理想图存在偏差：理想图为年龄后直接跟裸粉色 ♀ 字符（无底色）；实际为 40rpx 粉色圆底（#FF6B81）+ 白色符号 image。另同姓名行在实际渲染中多出一枚认证绿勾徽章（verificationBadgeLevel 驱动），理想图姓名行无此元素——徽章语义合理、属数据驱动差异，仅记录不强制改。技术性风险：gender-female.svg 以 stroke=\"currentColor\" 绘制，在 <image> 上下文无 CSS 颜色继承，符号呈深色（放大图符号为深色非白），与注释声明的「白色符号」不符，且 26rpx 下 ♀ 横杠几不可辨、形似定位 pin。",
+      "evidence": "截图：def-gender4x.png（6x：粉圆内深色符号呈圆头+竖尾形，横杠不清；右侧绿圆白勾为认证徽章）；理想图：同区「星野 25 ♀」为裸粉 ♀；代码：apps/client/src/components/match/MatchInfo.vue:56-58（性别徽章 image）、:59-61（认证徽章）、:120-143（圆底 #FF6B81/#54A0FF）；资产：apps/client/src/static/assets/icons/emoji/gender-female.svg（stroke=currentColor，viewBox 24）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "年龄右侧直接渲染裸粉色 ♀/♂ 字符（理想图样式），符号清晰可辨；如保留圆底徽章方案，则符号应为白色且在 26rpx 下仍可辨男女。",
+      "fix": "二选一：①对齐理想图改裸符号文本（font-color token 女 var(--c-love)/男蓝）；②保留圆底徽章，把 svg 内 currentColor 改为固定 #FFFFFF（或按性别出双色资产），并考虑放大符号占比使 ♀ 横杠可辨。认证绿勾徽章保留与否由需求对照员裁定。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-031",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png（派生放大：tmp-a3/def-bio.png）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "bio 引言装饰符样式与理想图偏差：理想图为大号绿色双引号（约占两行 bio 高度的醒目装饰，绿色）；实际为小号浅白色 ❝ 字符（MatchInfo.vue:84，U+275D 文本节点），观感弱且依赖字体字形（缺字机型回退不可控——该字符问题代码审查员已以 MP-R1-PAGES-DISCOVER-INDEX-013 立案，本条补其视觉层差异，修复可并案处理：替换 ❝ 时同时按理想图定大号绿色样式）。",
+      "evidence": "截图：def-bio.png（3x：bio 首字符为小浅色引号）；理想图：bio 区大号绿色双引号 + 两行简介；代码：apps/client/src/components/match/MatchInfo.vue:84（❝ 文本节点）、关联立案 reports/audit/round-1/code-findings/PAGES-DISCOVER-INDEX.json 013。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "引言装饰为理想图样式：大号绿色双引号，不依赖系统字体字形（图片资产或 CSS 绘制）。",
+      "fix": "与 013 并案：以 IMAGE_PATHS 引号资产或 CSS 伪元素绘制双引号，颜色用品牌绿 token，尺寸对齐理想图（约两行 bio 高的装饰位）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/discover/index",
+      "observation": "默认态与理想图逐层对照：L1 结构（寻觅♥标题+右上筛选 / 推荐|附近分段 / 沉浸式大图卡信息位自上而下=左上白底粉字距离chip、右上白底绿点绿字在线徽标、姓名+年龄+性别徽章、学校·专业、距离·在线、4枚兴趣标签、bio、右下匹配度、CTA 行、五Tab 中央凸起寻觅）与理想图完全同构；L3 交互位置全部同位（含 CTA 底部横排 跳过|打个招呼|喜欢——理想图本身即为该布局，与 ideal 描述文字的「右侧竖列」不符处以理想图为准）；L4 卡片高度占比实测 400/820≈49%，理想图 970/1828≈53%，量级吻合；分段激活态黑字+粉下划线与理想图一致（低倍下误判为粉字，4x 放大 def-segment.png 证伪）；取色对照：喜欢钮/心形徽标/分段下划线实测粉色（#FF6B81 一族）与理想图同族（喜欢钮 #FE6687、下划线 #FE5D7E），Love token 与理想图无漂移（v3.1 契约 #FF6FA3 与理想图渲染值存在差异，按「理想图为唯一页面级对照依据」不立案）。",
+      "evidence": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png + tmp-a3/def-segment.png、def-cta.png、def-chips.png + scan2.ps1 取色输出（ideal like-btn RGB(254,102,135) / act 下划线 RGB(255,127,146) / ideal 下划线 RGB(254,93,126)）"
+    },
+    {
+      "page": "pages/discover/index",
+      "observation": "弹层态遮罩与层级正确：全屏弹层打开时遮罩同时压暗页头（页头空白区 RGB 由默认态 (255,255,255) 变为 (147,150,159)），面板白色圆角顶起于页头之下，自定义 tabBar 被隐藏（截图底部无 tabBar，与 DC27 observed「全屏弹层+自定义 tabBar 隐藏」一致）；底部重置/确认按钮右缘正常（≈x359），确认按钮品牌绿填充、重置浅底描边，无 safe-area 缺失迹象（代码含 env(safe-area-inset-bottom)，FilterDrawer.vue:1089）。",
+      "evidence": "reports/screenshots/round-1-tour/B/pages_discover_index__弹层态.png + tmp-a3/pop-footer.png + mask.ps1 像素对比输出（header-bg 255→147）+ exec-results.json DC27 observed"
+    },
+    {
+      "page": "pages/discover/index",
+      "observation": "行为证据档核对：exec-results.json gitSha=aefd8a72 与当前 HEAD 一致；PAGES-DISCOVER-INDEX 清单 44 例（EXECUTED 28 / FAILED 15 / SKIPPED 1），FAILED 集中在筛选抽屉细粒度交互（DC28/29/31/32/35-39 的 element not found）与空态/错误态构造（DC05/06/07/10/21）——判定归交互判定员；对本页视觉审查的影响是：推荐空态、附近空态、错误横幅、加载骨架、长文本/特殊字符输入六类状态本轮无成功落盘截图（DC05/DC07 失败现场截图实为正常卡片态，DC06 现场落在绿底「附近」tab 页），上述状态本页视觉层未验证而非「无问题」。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json（gitSha 字段与 FAILED 清单）+ reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC05-after.png、DC06-after.png、DC07-after.png 逐张查证"
+    },
+    {
+      "page": "pages/discover/index",
+      "observation": "设备尺寸差异观察（不立案）：交互取证设备的 DC05-after（379×834）首屏中 CTA 三键圆钮下半被 tabBar 折叠遮挡、文字标签不可见（需滚动可达）；tour-B 设备（373×820）同内容完整可见。差异源于同 rpx 布局在不同宽高比设备上的折叠位置，滚动可达（代码层 padding-bottom 280rpx+safe 已修，DC42 滚动用例 EXECUTED），不构成缺陷；如需首屏免滚完整 CTA，可在后续设计裁量。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC05-after.png 对比 reports/screenshots/round-1-tour/B/pages_discover_index__默认.png"
+    }
+  ],
+  "coverage": [
+    "证据基线：screenshot-manifest.json gitSha=aefd8a72=HEAD ✓；exec-results.json gitSha=aefd8a72 ✓；过期证据处理——round-1-interact 下未被 exec-results 引用的编号截图（1..38、A 系列部分）来源不可证，未引用、未据其下结论。",
+    "13 项举证（pages/discover/index）：①截图已看✓（B轮 默认/弹层态/交互后 三张 + DC05/06/07 现场三张，逐张+11 张派生放大图）；②理想图已对照✓（素材/理想效果图/寻觅匹配卡片页面.png，L1-L10 逐层，取色/占比实测）；③滚动已测△（本轮静态审查不驱动滚动；DC42 EXECUTED 引用，另记 379×834 折叠观察）；④点击已测△（44 例交互结果引用，判定归交互判定员）；⑤返回已测△（DC25/DC41 EXECUTED 引用）；⑥safe-area 已查✓（抽屉 footer env(safe-area-inset-bottom) 代码在位；登录胶囊避让属代码层 003 已修待终验，本轮无游客态落盘截图未做视觉复核）；⑦TabBar 已查✓（默认态五 Tab 中央凸起寻觅选中正确、消息红点样式正常；弹层态 tabBar 隐藏✓）；⑧空态已查△（本轮无成功落盘截图——证据缺口如实记录，非「无问题」）；⑨长文已查△（DC35 FAILED 无截图，缺口）；⑩加载态已查△（DC01 EXECUTED 但截图保存失败 exceeded storage limit，缺口）；⑪错误态已查△（DC07 FAILED 无截图，缺口）；⑫组件一致性已查✓（筛选 chips/底部双按钮与全 App chip、pill button 形态一致；CTA 圆钮与理想图同构；抽屉 Tab 因 026 缺样式属不一致项已立案）；⑬历史 Bug 回归已查✓（005-013 簇：006 视觉复核通过——CTA 三键+标签滚动前完整可见于 tabBar 之上；009 初始态视觉正常落在「推荐」；013 视觉复核确认 ❝ 仍渲染、仍开放；005/010 交互层归交互判定员、008/011/012 维持代码层立案；R11 挂起三项全部复核：环形仍粉盘（028）、收藏入口仍缺（029）、性别符已补但样式差（030））。",
+    "Token 裁决链执行：git show 29a2b1df:docs/design/v3.1-contract.md 核对 Primary #34C98A/Love #FF6FA3/Whisper #4D8DFF ✓；现行 --c-love=#FF6B81（design-variables.scss:272）与契约字面有差，但理想图渲染粉（#FE6687/#FE5D7E）与现行值同族，按「理想图为唯一页面级对照依据」不立案 token 漂移；环色以理想图实测绿 RGB(68,184,130) 为准（028 证据）。",
+    "不重复报清单：代码层 findings 003-025 全部读过；本轮 026/027（FilterDrawer Tab 零样式/内容区右溢）、028（匹配环）、029（收藏入口+filter 图标 L7）为其未覆盖的新视觉/功能面发现；030/031 与代码层 013 显式标注并案关系；DC43 热区 72rpx、DC28-39 交互失败判定等属交互判定员职责，未在视觉层重复立案。",
+    "本轮未做（职责/能力边界）：未驱动模拟器/真机（静态审查+已有行为证据）；未运行单测/vue-tsc；未复核 en-US 语言下页面渲染（无截图证据）；027 的运行时根因未定位（源码样式与编译产物均无显性错误，需运行时排查，视觉结果与量测已固化）；DC02 observed 中 .discover-login-hint:present（已登录态）疑为 v-show 存在性判定口径问题，属交互层，未立案。"
+  ]
+}

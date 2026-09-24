@@ -1,0 +1,220 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "A4-需求对照-次要26",
+    "date": "2026-09-24",
+    "scope": "subpackages/market/shop/index, subpackages/market/wallet/index, subpackages/vip/index, subpackages/vip/promo-code, subpackages/vip/bills",
+    "evidenceBaseline": {
+      "execResults": "reports/audit/round-1/interact/exec-results.json (suite=S21-c26, gitSha aefd8a72)",
+      "staticScreenshots": [
+        "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png",
+        "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png"
+      ],
+      "interactScreenshots": "reports/screenshots/round-1-interact/",
+      "source": "D:/6/恋爱小程序/apps/client/src/",
+      "pageCompareDetail": "reports/audit/round-1/page-compare/次要26.md"
+    },
+    "requirementAnchor": "5 页均无页面级理想图（素材/理想效果图 19 张无商业/会员页；v3.1-contract §19 表无商业页，§13 明确移除 VIP 首屏块）。需求基线=仓库内封存需求链：feature-flags.ts:24-29（membershipEnabled=false，Phase Feedback6 会员先不上线）+ 批次 A/ADR-2 商业化封存（app-config.ts:64-77 commerce.enabled 总闸+coin 子闸，缺省恒封存）+ i18n commerce.* 文案。target 分两层：①封存/拦截态兜底行为（当前缺省必测层）②解封态功能全量（运行时证据全部因执行器无注入面缺失，A6 仲裁 UNVERIFIED，见 MP-R1-C26-003）",
+    "crossRefs": {
+      "visualReviewer": "reports/audit/round-1/findings/次要26.json (MP-R1-MARKET-020/021/022)",
+      "interactionJudge": "reports/audit/round-1/interact/次要26-judge.json (MP-R1-C26-001/002/003; 6 VERIFIED/43 UNVERIFIED/0 FAILED)"
+    }
+  },
+  "issues": [
+    {
+      "id": "MP-R1-C26REQ-001",
+      "round": "R1",
+      "page": "subpackages/vip/bills",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VIP-BILLS-BI03-after.png（拦截态落地 profile 页，解封态无截图；缺陷证据为源码）",
+      "category": "Function",
+      "severity": "P1",
+      "description": "VIP 账单页「进入即加载账单」核心功能缺失：onShow 生命周期被误嵌进 goBack() 函数体内（bills.vue:152-154），页面 setup 时未注册；运行时 tap 阶段 getCurrentInstance()=null，uni-app createLifeCycleHook→injectHook(lifecycle, hook, null) 仅产生 Vue 警告不注册（uni-app.es.js:83-94 + vue.runtime.cjs.js:4199）。同时 :164 残留「// 初始化加载」注释其后无任何调用。loadBills 唯一存活调用点=onPullDownRefresh（:89-92），且 listBills 全仓无其他调用方（无他页预取兜底）。后果：解封态首次进入 store.bills 初始为空（vip-billing.ts:135）→ 恒显「暂无账单」假空态，用户必须自行发现下拉刷新才能见到数据；「重进 onShow 刷新（缓存短路兜底）」（:151 注释 MP-R2-次要22-010）同样永不生效。附带每次点返回白执行一次无效 onShow()（dev 警告噪音）。缺陷在 HEAD aefd8a72 即存在（git show HEAD 核实），由 f70ffdc2 引入；交互执行器 BI03 用例标题已独立点名「onShow 误嵌缺陷嫌疑」",
+      "evidence": "apps/client/src/subpackages/vip/bills.vue:149-166（goBack 函数体内嵌 onShow(() => { if (featureFlags.membershipEnabled) void loadBills(); }) + goBack 返回逻辑 + 「// 初始化加载」注释悬空）；bills.vue:79-92（loadBills 定义与 onPullDownRefresh 唯一活调用）；apps/client/node_modules/@dcloudio/uni-app/dist/uni-app.es.js:83-94（createLifeCycleHook: target=getCurrentInstance()→injectHook(lifecycle,hook,target)）；apps/client/node_modules/@dcloudio/uni-h5-vue/dist/vue.runtime.cjs.js:4199（target 空时仅 warn「...can only be used during execution of setup()」）；apps/client/src/stores/vip-billing.ts:135（bills=ref([])）+ 全仓 grep「listBills」仅 bills.vue:81 一个调用点；exec-results.json S21-c26/BI03 title=「进入即加载：应显示 3 条 mock 账单（onShow 误嵌缺陷嫌疑）」；git show HEAD:apps/client/src/subpackages/vip/bills.vue 行号一致（已提交缺陷，非工作区引入）",
+      "sources": [
+        "code",
+        "log"
+      ],
+      "confidence": 0.95,
+      "ideal": "进入账单页（解封态）即自动加载并显示账单列表（mock 3 条：订阅/续费/退款）；再次进入或返回前台时经 onShow 刷新（store 缓存短路兜底）；下拉刷新作为强制重拉补充",
+      "fix": "①将 onShow(() => { if (featureFlags.membershipEnabled) void loadBills(); }) 移回 setup 顶层（与 onLoad/onPullDownRefresh 并列）；②setup 末尾（原「// 初始化加载」注释处）补 void loadBills()（或并入 onShow 首载）；③回归验证：首次进入显示 3 条 mock 账单、下拉刷新重拉、重进不重复请求（缓存短路）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C26REQ-002",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png（封存态；缺陷路径在解封态，证据为源码）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "演示充值无防重入锁 + 幂等键每次点击重新生成，防重复提交完全失效：handleRecharge（wallet/index.vue:79-106）无 submitting/进行中标志（loading ref 仅控制余额卡显示 --，不拦截充值）；幂等键 const orderId = `RECHARGE-DEMO-${Date.now()}`（:87）每次调用重生成——快击 N 次即发出 N 个不同 Idempotency-Key 的 POST /wallet/recharge，服务端幂等头无法去重，理论快击 5 次入账 5×¥100。交互执行器 WA09 用例标题已独立标注「充值按钮防连点：快击×5 应仅 1 次提交（源码无锁，缺陷候选）」，其实际执行因封存前置不可达未复现多次入账（A6 判 UNVERIFIED），「多次入账」后果为源码推断（置信 0.85）。影响面=mock/dev 演示态（real 模式充值按钮隐藏 :164）；但 likes/likes-visitors「余额不足→去充值」引导（likes/index.vue:255-266）在解封态会把付费用户直接送到本页，届时为真实交易正确性问题",
+      "evidence": "apps/client/src/subpackages/market/wallet/index.vue:79-106（handleRecharge 全文无进行中锁；:87 orderId=RECHARGE-DEMO-${Date.now()} 每击重生成；:90-95 Idempotency-Key 请求头）；wallet/index.vue:43（loading 仅驱动余额卡 '--' 显示）；:163-168（充值按钮 v-if=useMock()||isDev）；exec-results.json S21-c26/WA09 title=「充值按钮防连点：快击×5 应仅 1 次提交（源码无锁，缺陷候选）」status=FAILED（.wallet__recharge not found，封存前置不可达）",
+      "sources": [
+        "code",
+        "log"
+      ],
+      "confidence": 0.85,
+      "ideal": "充值点击后立即锁定（submitting 标志+按钮禁用态），单次充值流程使用固定幂等键，快击×5 仅 1 次提交、1 次入账；流程结束（成功/失败）解锁",
+      "fix": "①新增 recharging ref：handleRecharge 入口 recharging=true、finally=false；按钮 :class 禁用态+tap 守卫；②幂等键在单次流程内固定（进入页面或流程开始时生成一次，失败重试时复用或按需重置），不复用 Date.now() 每击生成",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C26REQ-003",
+      "round": "R1",
+      "page": "subpackages/vip/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VIP-INDEX-VP04-after.png（拦截态整页渲染，协议行不可交互；证据为源码）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "VIP 开通页「服务协议 · 自动续费协议」为纯文本死链：两处 agreement__link（vip/index.vue:507/:509）均无任何 @tap/事件绑定，点击无响应。而站内已有用户协议承载页 /subpackages/legal/agreement/index（routes.ts:251 SUBPACKAGE_ROUTES.LEGAL.AGREEMENT，LegalTextPage 包装 USER_AGREEMENT，register 页 :445 与 settings 页 :112 均已接入跳转）未被本页链接；「自动续费协议」全文在站内无任何承载页。开通前置的协议可达性功能缺失（付费转化页合规路径断裂）",
+      "evidence": "apps/client/src/subpackages/vip/index.vue:505-510（<text class=\"agreement__link\">{{ t('vip.serviceAgreement') }}</text>·<text class=\"agreement__link\">{{ t('vip.autoRenewAgreement') }}</text>，无 @tap）；constants/routes.ts:251（AGREEMENT: \"/subpackages/legal/agreement/index\" 已注册）；pages/register/index.vue:445 与 subpackages/profile-extra/settings/index.vue:112 已有跳转（反证页面可用、仅本页未接）；subpackages/legal/agreement/index.vue:17（legal-type=USER_AGREEMENT，无自动续费协议类型）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "「服务协议」点击跳转 /subpackages/legal/agreement/index（USER_AGREEMENT）；「自动续费协议」点击可查看续费协议全文（LegalTextPage 新增类型或协议页内章节）；付费开通动作前协议必须可达",
+      "fix": "①服务协议 text 补 @tap → uni.navigateTo({ url: SUBPACKAGE_ROUTES.LEGAL.AGREEMENT })；②自动续费协议：LegalTextPage/LegalTextType 扩展 AUTO_RENEW 类型（或后端 CMS 增同类型文本）后同样接入跳转；短期可先并入用户协议页锚点章节",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C26REQ-004",
+      "round": "R1",
+      "page": "subpackages/vip/promo-code",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VIP-PROMO-CODE-PC04-after.png（拦截态；证据为源码）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "优惠码输入长度口径不一致：输入框 maxlength=32（promo-code.vue:224）允许输入 32 位，但格式校验正则 /^[A-Za-z0-9-]{4,24}$/（:105）上限 24 位——25~32 位（含 32 位截断后）的合法优惠码恒被判「格式无效」无法校验/兑换。交互用例 PC04 预期「超长 32 截断」与实际校验行为不符（该用例因封存前置 UNVERIFIED，缺陷以源码确证）",
+      "evidence": "apps/client/src/subpackages/vip/promo-code.vue:105（if (!/^[A-Za-z0-9-]{4,24}$/.test(codeInput.value.trim())) → toast 格式无效）vs :224（maxlength=\"32\"）；exec-results.json S21-c26/PC04 title=「输入三态：格式非法 Toast、超长 32 截断、特殊字符拦截不执行」",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "输入截断长度与格式校验上限一致（统一 24 或统一 32），该区间内的合法码可正常进入服务端校验",
+      "fix": "正则上限对齐 32（/^[A-Za-z0-9-]{4,32}$/）或 maxlength 降为 24；与后端 PromoCodeService 的长度约束取齐后统一",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/market/shop/index",
+      "baseline": "无页面级理想图（19 张理想效果图无商业页；v3.1-contract §19 无本页）。需求基线=批次 A/ADR-2 商业化封存（app-config.ts:64-77 commerce.enabled 总闸，缺省恒封存）+ 页面自述功能目标（shop/index.vue 头注释与 3-H real 链路注释：分类过滤/商品网格/进详情/加载三态）",
+      "structureNotes": "L1 骨架：返回键+标题「逛逛」→封存卡（:377-381）；解封态=积分条(287-296)→分类条(299-315)→商品网格(318-373)。静态截图 A/B 证实封存态结构（锁卡「功能封存中/该功能暂未开放，开放时间将另行通知」，无商品区无错误空态），SH01 EXECUTED（.shop-sealed present，.shop-points-bar/.category-bar/.shop-grid absent）。L2 布局：状态栏避让(:411)+2 列网格(:622)达标。L3 组件：SafeImage/SVG 锁（禁 emoji 达标）/spinner/重试/空态三态件齐备。L4 内容：i18n 全量（zh-CN.ts:3288-3320，6 款 mock 商品+5 分类）。L5 交互：分类切换/进详情/返回兜底代码在位；SH08/SH09 FAILED→A6 仲裁执行器前置不可达 UNVERIFIED。L6 状态：加载/错误/空/封存四态+解封补偿 watch(:36-40)。L7 文案：站内命名不一致（入口「去商城兑换」vs 页面自标题「逛逛」，zh-CN.ts:960 vs :3289）。L8 数据：mock 6 款/real GET /products?page=0&pageSize=20；real 模式仅第 0 页、无触底加载更多（>20 件不可达，解封后风险）。L9 无障碍：role/aria/aria-live 全量。L10 token：全 --c-* token；返回键热区 64rpx<88rpx 已由 A6 MP-R1-C26-001 立案不重复。L1-L4 无偏差",
+      "usageNotes": "封存态（当前缺省）唯一任务=告知封存+返回，达成：返回键栈=1 兜底 switchTab 首页（:63-70），1 步回 tab。解封态核心任务（逛商品→筛选→进详情）代码链路齐备，但默认构建中商城无任何活入口：唯一含「去商城兑换」按钮的 CheckinPopup.vue:99-101 为孤儿组件（全仓无引用，easycom 需模板出现标签）；仅 showcase 展示构建（setup/showcase/index.vue:128）与深链可达。签到积分仍正常累积但「积分→商城兑换」闭环入口断裂（封存需求内可接受，解封时须回接 CheckinPopup 或另接入口）。不易迷路",
+      "functionGaps": [
+        {
+          "target": "解封态功能全量：积分条+5 分类切换过滤+6 商品网格+商品卡进详情",
+          "current": "代码全部在位（shop/index.vue:50-56/:238-262/:345-369）；SH07-SH10 四条预案用例全部因执行器无解封注入面（pre-FAIL input element not found: .enabled）UNVERIFIED（A6 仲裁，归执行器 Issue MP-R1-C26-003）",
+          "gap": "解封功能运行时零执行证据（未证伪，非缺失）",
+          "fix": "执行器补配置注入面（mock 下发 commerce.enabled=true 或 storage 预置）后重跑 SH07-SH10"
+        },
+        {
+          "target": "real 模式商品列表可达全部商品（分页浏览）",
+          "current": "仅请求 page=0&pageSize=20（:220-228），无 onReachBottom/加载更多交互；后端已分页（ProductPageView total/page/pageSize）",
+          "gap": "分页浏览缺失：>20 件商品不可达（解封后 real 模式风险；mock 6 款不触发）",
+          "fix": "scroll-view @scrolltolower 触底加载下一页并追加"
+        },
+        {
+          "target": "积分兑换入口（签到积分→商城闭环）",
+          "current": "CheckinPopup.vue:99-101「去商城兑换」为孤儿组件（全仓无引用）；仅 showcase 构建与深链可达",
+          "gap": "默认构建无活入口（封存态下符合 ADR-2；解封后为缺口）",
+          "fix": "解封时恢复 CheckinPopup 挂载或在签到/我的页接商城入口"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要26.md"
+    },
+    {
+      "route": "subpackages/market/wallet/index",
+      "baseline": "无页面级理想图。需求基线=ADR-2 commerce.coin 子闸封存（wallet/index.vue:30-34）+ 页面自述功能目标（头注释：余额/收支明细/演示充值；MP-R2-次要22-011 失败态；R4-00067 演示充值仅 mock/dev）",
+      "structureNotes": "L1 骨架：绿渐变 header（返回+「我的钱包」）→封存卡（:201-205）；解封态=余额卡(153-169)→收支明细(171-197)。截图 A/B 证实封存态；WA01 EXECUTED（.wallet__sealed present，balance/recharge/tx-list absent）。L2 布局达标。L3 组件：SkeletonBlock(:194)/错误重试条(:174-179)/SVG 锁齐备；返回键 64rpx 弱对比已由 A3 MP-R1-WALLET-021 与 A6 MP-R1-C26-002 立案。L4 内容：收入 +¥ 绿/支出 -¥（:133-136/:187-189）、i18n 全量。L5 交互：充值 handleRecharge（:79-106）无进行中锁+幂等键 Date.now() 每击重生成（:87）→防重入失效（确凿，MP-R1-C26REQ-002）。L6 状态：加载 -- 不误显 0 元（:158）/失败重试/空流水/解封补偿 watch（:47-51）/onShow 封存早退（:72-76）；WA07-10 UNVERIFIED（执行器）。L7 文案：real 模式隐藏充值按钮（:164，无网关不假开放）达标。L8 数据：coins.ts:116/:215 + 后端 WalletController.java:47 在位。L9 无障碍达标。L10 token 达标（回退色 #36C99A 与 v3.1 #34C98A 微差为历史兜底值）。L1-L4 无偏差",
+      "usageNotes": "封存态任务=告知+返回 ✓（栈=1 兜底 switchTab profile :109-116，1 步回 tab）。解封态核心任务（看余额→充值→见流水）链路在位，但充值防重缺失会产生重复入账路径（演示态 +¥100/击）；likes/likes-visitors「余额不足→去充值」弹窗（likes/index.vue:255-266）在解封态把付费用户直送本页（解锁入口本身受 commerce 闸守卫 :196-197，封存态不会触发该引导， journey 一致性无死路）。解封链路运行时零证据（执行器缺口）。不易迷路",
+      "functionGaps": [
+        {
+          "target": "充值防连点：快击×5 仅 1 次提交",
+          "current": "handleRecharge 无锁；Idempotency-Key=RECHARGE-DEMO-${Date.now()} 每击重生成（:87-95）",
+          "gap": "防重入缺失，快击可 N 次入账（代码确凿；运行未复现——封存前置不可达，立 MP-R1-C26REQ-002 P2）",
+          "fix": "submitting 锁+按钮禁用态；幂等键单次流程内固定"
+        },
+        {
+          "target": "解封态：余额 ¥800.00 与流水正负号/颜色、失败 -- 不误显 0 元+重试恢复",
+          "current": "代码在位（:133-136/:158/:174-179）；WA07 被 A6 纠正 UNVERIFIED（A1 误标 EXECUTED）、WA08-10 UNVERIFIED",
+          "gap": "解封功能运行时零执行证据",
+          "fix": "随解封注入面补验（MP-R1-C26-003）"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要26.md"
+    },
+    {
+      "route": "subpackages/vip/index",
+      "baseline": "无页面级理想图；v3.1-contract §13 明确「移除 VIP 首屏块」。需求基线=featureFlags.membershipEnabled=false（feature-flags.ts:24-29，Phase Feedback6 会员先不上线）+ 页面自述功能目标（头注释：6 权益+3 套餐+协议+自动续费+2 入口+底栏；P1-08 flag=false 全禁用；infra R2-00021 real 不假成功）",
+      "structureNotes": "L1 骨架：nav→金冠头部→6 权益 grid(:428-453)→3 套餐 grid(:456-502)→协议行(:505-510)→自动续费(:512-531)→优惠码/账单入口(:533-557)→固定底栏应付价+开通(:559-576)；暗金体系与绿系商业页分区明确。L2 布局达标（fixed 底栏+安全区）。L3 组件达标（选中态/对勾/角标/划线原价/均价；switch 受控回显 key :296-299/:524；buttonGuard 1500ms :245）。L4 内容达标（VIP_PLANS 18/48/158 配置驱动 vip-plans.ts:56-84）。L5 交互：协议双链接纯文本无事件（:505-510）=确凿死链（MP-R1-C26REQ-003）；其余交互代码在位。L6 状态/守卫达标：flag=false onLoad 拦截 toast「会员功能暂未开放」+栈>1 返回/栈=1 弹回我的（:49-66）；VP01/02/03 EXECUTED（toast 逐字+落点 profile+5×重复进出拦截无卡死）；页面内再守卫（:161/:304/:469/:570）。L7 mock 闭环/防连点/卸载清理代码在位（:94-102/:182-245）；VP04-12 UNVERIFIED（执行器无 .membershipEnabled 注入面）。L8 数据达标（auto-renew store+后端 AutoRenewController/BillingController）。L9 无障碍+ Sentry 面包屑达标。L10 token 达标。L1-L4 无偏差",
+      "usageNotes": "当前缺省态任务=拦截+弹回，经 3 条 EXECUTED 证实达成；VP01-after 截图证实落回「我的」tab。正常构建中 VIP 页无入口（双闸：profile VIP 卡 v-if=isCommerceOn('vip') pages/profile/index.vue:1807 ∧ membershipEnabled=false）——属「会员先不上线」需求内，解封需双闸同开。解封态核心任务（选套餐→开通→管自动续费→进优惠码/账单）链路齐备，协议死链为唯一确凿交互断点。1 步回 tab（goBack 栈底兜底 profile :259-267）。不易迷路",
+      "functionGaps": [
+        {
+          "target": "开通前协议可查看（服务协议/自动续费协议）",
+          "current": "两协议链接均为纯 text 无事件（vip/index.vue:505-510）；用户协议页 /subpackages/legal/agreement/index 已存在且 register/settings 已接入（routes.ts:251、settings/index.vue:112），本页未链接；自动续费协议无承载页",
+          "gap": "协议可达性功能缺失（立 MP-R1-C26REQ-003 P2）",
+          "fix": "服务协议接入 LEGAL.AGREEMENT 跳转；自动续费协议扩展 LegalTextPage 类型或并入协议页章节"
+        },
+        {
+          "target": "解封态功能全量：权益弹层/套餐切换价联动/mock 开通闭环+防连点/自动续费双向确认+受控回显/real 不假成功/两入口跳转",
+          "current": "代码全部在位（:110-117/:148-151/:159-245/:245/:302-374/:177-180/:379-388）；VP04-VP12 九条预案用例全部因执行器无 .membershipEnabled 注入面 UNVERIFIED（A6 MP-R1-C26-003）",
+          "gap": "解封功能运行时零执行证据（未证伪）",
+          "fix": "执行器补 membershipEnabled 注入面后重跑 VP04-VP12"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要26.md"
+    },
+    {
+      "route": "subpackages/vip/promo-code",
+      "baseline": "无页面级理想图。需求基线=featureFlags.membershipEnabled=false（P1-08 子页拦截）+ 页面自述功能目标（头注释：输入校验/结果展示/一键兑换；R4-00117 金额默认取套餐配置）",
+      "structureNotes": "L1 骨架：nav→hero 票券图标→码输入(:218-227)→订单金额输入(:231-245)→校验/重置双按钮(:248-268)→校验结果卡（5 行 :271-305，无效红卡原因行）→兑换 footer（校验通过才现 :308-320）→兑换结果卡(:323-343)。L2-L4 达标（金色体系与 VIP 主页一致；金额默认取季卡价 :69；i18n 全量）。L5 交互：maxlength=32(:224) vs 正则 4-24(:105) 口径不一致（确凿，MP-R1-C26REQ-004 P3）；防连点在位（validating :113+redeeming :143+store 缓存短路 promo-code.ts:162-163）。L6 守卫达标：flag=false onLoad 拦截（:33-42）；PC01/PC02 EXECUTED（toast+弹回/有栈返回）。L7 校验三态/兑换闭环/重置代码在位（:99-177）；PC03-09 UNVERIFIED（执行器）。L8 数据达标（store mock 按字符特征 + 后端 PromoCodeController/Service/Repository）。L9 无障碍达标。L10 token 达标。L1-L4 无偏差",
+      "usageNotes": "当前缺省态任务=拦截弹回 ✓（PC01/02 EXECUTED）。解封态核心任务（输码→校验→兑换）单页闭环无迷路面，重置一键清空（:173-177）。正常构建无独立入口（仅 VIP 主页入口项 :537-545，而 VIP 主页缺省自身被拦截）——封存需求内。1 步回 tab（goBack 栈底兜底 profile :180-188）",
+      "functionGaps": [
+        {
+          "target": "输入三态：空码/格式非法/金额非法 + 超长 32 截断",
+          "current": "空码/金额校验在位（:100-112）；maxlength=32 与格式正则 4-24 上限不一致（:105 vs :224）",
+          "gap": "25~32 位合法码恒被判格式无效（立 MP-R1-C26REQ-004 P3）",
+          "fix": "正则上限对齐 32 或 maxlength 降 24，与后端约束取齐"
+        },
+        {
+          "target": "解封态功能全量：合法码五行走电卡/无效红卡/兑换闭环+防连点/重置清空",
+          "current": "代码在位（:271-343/:138-170/:173-177）；PC03-PC09 七条预案用例 UNVERIFIED（执行器无注入面，A6 MP-R1-C26-003）",
+          "gap": "解封功能运行时零执行证据",
+          "fix": "随解封注入面补验"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要26.md"
+    },
+    {
+      "route": "subpackages/vip/bills",
+      "baseline": "无页面级理想图。需求基线=featureFlags.membershipEnabled=false（P1-08 子页拦截）+ 页面自述功能目标（头注释：账单历史展示/下拉刷新/按类型筛选；MP-R2-次要22-010 onShow 刷新承诺；pages.json enablePullDownRefresh）",
+      "structureNotes": "L1 骨架：nav→hero（剪贴板）→筛选 4 chips（:190-204）→账单卡列表（:206-270）；拦截层达标（:36-45，BI01/BI02 EXECUTED：toast 逐字+落回 profile/有栈返回）。L2 布局达标（白底列表型，筛选条分隔）。L3 组件达标（类型 4 色徽标 :447-474/状态 3 色 :475-499/金额加粗/原价划线/交易号 mono :516-535/EmptyState）。L4 内容达标（8 行字段 :233-267；mock 3 条 vip-billing.ts:98-125 相对时间）。L5 交互：核心缺陷——onShow 误嵌 goBack 函数体（:149-154）+ 初始化加载调用缺失（:164 注释悬空）→ 进入即加载永不发生（确凿 P1，MP-R1-C26REQ-001；uni-app createLifeCycleHook 运行时仅告警不注册 uni-app.es.js:83-94+vue.runtime.cjs.js:4199）。L6 状态：下拉刷新/加载文案/空态代码在位（:89-92/:209-218）但首屏被 L5 缺陷污染为假空态。L7 文案达标。L8 数据达标（分页+缓存 vip-billing.ts:157-164；后端 BillingController /api/v1/vip/bills）。L9 无障碍达标。L10 token 达标。BI03-08 UNVERIFIED（执行器；BI04 pullDown ERR 为执行器脚本问题）。L1-L4 结构无偏差，但功能目标核心项失效",
+      "usageNotes": "当前缺省态任务=拦截弹回 ✓（BI01/02 EXECUTED）。解封态核心任务「查看账单历史」首屏即失败：进页恒「暂无账单」假空态，用户不知道需下拉刷新才能取数（迷路点确凿）；筛选 chips 在空态下无数据可筛，形成「功能全在、数据永不来」的断裂体验。1 步回 tab（goBack 栈底兜底 profile）",
+      "functionGaps": [
+        {
+          "target": "进入即加载账单列表（mock 3 条：订阅/续费/退款）",
+          "current": "onShow 误嵌 goBack（:149-154）setup 时不注册+初始化调用缺失（:164）；loadBills 唯一活调用=onPullDownRefresh（:89-92）；listBills 全仓无其他调用方",
+          "gap": "核心功能缺失：解封态首屏恒假空态，须用户自行发现下拉刷新（立 MP-R1-C26REQ-001 P1）",
+          "fix": "onShow 移回 setup 顶层；setup 末尾补 void loadBills()；回归验证首屏 3 条/下拉重拉/重进缓存短路"
+        },
+        {
+          "target": "重进/onShow 刷新（store 缓存短路兜底，VIP 页开通/兑换后进入可见新数据）",
+          "current": "同一误嵌致 onShow 从未注册，承诺（:151 注释 MP-R2-次要22-010）失效",
+          "gap": "同一缺陷第二后果",
+          "fix": "同上"
+        },
+        {
+          "target": "下拉刷新真实重拉/筛选 4 chips 过滤/账单卡字段徽标",
+          "current": "代码在位（:89-92/:48-76+:190-204/:221-269）；BI03-08 UNVERIFIED（执行器缺口）",
+          "gap": "运行时未证实",
+          "fix": "P1 修复后随解封注入面一并回归"
+        }
+      ],
+      "verdict": "不达标",
+      "file": "reports/audit/round-1/page-compare/次要26.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/次要26-req.json"
+}

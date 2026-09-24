@@ -1,0 +1,102 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/hub",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "evidenceBaseline": {
+    "manifestGitSha": "aefd8a72",
+    "headGitSha": "aefd8a72",
+    "match": true,
+    "note": "reports/audit/round-1/screenshot-manifest.json gitSha 与 git rev-parse HEAD 实测一致，全部截图/行为证据按未过期采信。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "北京大学圈卡从「推荐圈子」列表整体缺失：三张滚动位截图共枚举出且仅 10 校（清华/人大/复旦/上交/同济/浙大/南大/武大/中大/深大），首卡为清华大学，理想图首卡应为北京大学圈（全量 11 校）。根因：recommendedSchools 以校名全等排除 ownSchool，ownSchool 兜底取 session.campusName（mock user-1001=\"北京大学\"），致使用户处于未认证视角（全部卡片「未认证」badge + 引导卡仍示「去认证」）其本校也被从推荐剔除；joinedSchools 同因未认证为空 → 本校圈在本页任何 Tab 均不可见、不可申请加入，搜索「北京」因此空态「暂无推荐圈子」。代码层 008 仅覆盖 joined 侧恒空、018 仅覆盖 ?school= 丢参、014 为架构留档且明言「运行期背离需数据实证」——本条是该背离的运行期可视化实证 + 推荐侧缺卡，代码层未立项。",
+      "evidence": "截图链：tour A 默认.png(首卡清华大学)、滚动-中部.png、滚动-底部.png 三态合计枚举恰 10 校且无北京大学；interact 证据 SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH01-after2.png 同为 10 卡首清华，与其结论「11 校卡片完整渲染」矛盾；CH06-after.png 搜索框含「北京」但列表呈「暂无推荐圈子」空态，与其结论「命中北京大学」矛盾。代码链：apps/client/src/subpackages/campus/campus/hub.vue:93-94（recommendedSchools = schools.filter(sc => sc.name !== ownSchool.value)）、hub.vue:96（ownSchool = certificationInfo?.schoolName || sessionStore.userSession?.campusName || \"\"）、apps/client/src/stores/session.ts:46-49（mock campusVerified: true、campusName: \"北京大学\"）→ ownSchool=\"北京大学\" 被排除；campusStore mock 分支永不更新 certificationStatus（代码发现 014 引 stores/campus.ts:331/:845-848）→ 页面呈未认证视角。manifest gitSha=aefd8a72 与当前 HEAD 一致，证据未过期。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.85,
+      "ideal": "素材/理想效果图/校园圈.png：首卡「北京大学圈 已认证」全量 11 校可见；未认证视角下所有校圈均应展示并给「申请加入」CTA，用户本校不应因会话绑定名被静默隐藏。",
+      "fix": "推荐列表排除仅在已认证时生效：const recommendedSchools = computed(() => { const own = ownSchool.value; return isVerified.value && own ? schools.filter((sc) => sc.name !== own) : schools; });（或改按 schoolId 匹配，与代码层 008/018 长期方案合流）；同步修正 interact 套件 CH01/CH06/CH23 的 observed 断言（当前与自身证据截图矛盾）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/hub",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "滚动后页面内容顶入状态栏与胶囊区：滚动-底部截图中模拟器状态栏时间「1:22」与复旦卡第二行「约等 210 位同学」文字直接叠印、卡封面与「●●●●● WeChat/信号」图标重叠；滚动-中部截图中清华卡「申请加入」CTA 贴入右上胶囊按钮区。header（返回/标题/去认证）为普通流内元素随页滚走（无 position:fixed/sticky），滚动后页面顶部既无导航可达性、状态栏文字又压在内容上，属小程序设备行为级「状态栏叠印」。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png 顶部 70px 内「1:22」与「…210 位同学」同域叠印（放大裁片 reports/audit/round-1/tmp-a3/hub_scrollbottom_top_zoom.png）；滚动-中部.png 顶部清华卡 CTA 与胶囊区重叠；代码 apps/client/src/subpackages/campus/campus/hub.vue:365-368（.campus-hub padding-top 含 --statusbar，位移随内容滚动）、hub.vue:372-384（.campus-hub__header 仅有 padding-right，无 fixed/sticky，grep position:fixed|sticky 0 命中）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "navigationStyle: custom 下自定义头部应固定于状态栏下方（fixed/sticky + 等高占位），滚动时内容不穿入状态栏可读区，返回键任意滚动位可达。",
+      "fix": ".campus-hub__header 改 position: fixed（top: var(--statusbar)）+ 等高占位视图，或页面骨架改 scroll-view 使头部不随滚；至少为状态栏区域加不透明底色遮罩。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "理想图 L1-L10 对照（未认证视角）：结构逐层对齐——引导条(图标+双行文案+去认证绿pill)→搜索框→双tab(推荐圈子active+绿下划线)→校圈卡(左封面图/标题/「未认证」灰badge/统计行/头像堆×3/右「申请加入」绿描边pill)→底部静态提示；L4 卡片比例、L5 间距节奏、L6 粗细层级、L8 品牌绿系与理想图一致；L1-L4 无结构偏差（缺卡见 Issue-001）。L10 措辞级差异如实记录不立项：引导卡副文案「完成学校认证，即可加入该校专属校圈」vs 理想「认证学校后可加入专属校园圈」、卡标题无「圈」后缀（清华 vs 清华大学圈）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png 对照 素材/理想效果图/校园圈.png"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "代码层「已修复待终验」项视觉终验通过：MP-R1-CAMPUS-HUB-004（状态栏高度双计）——默认/交互后态 header 顶部偏移正常，与胶囊无异常间距、无双重下坠；MP-R1-CAMPUS-HUB-003（死元素）——滚动-底部截图示「更多校园圈持续接入中」为纯静态文本、无点击暗示样式。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png、subpackages_campus_campus_hub__滚动-底部.png（对照 hub.vue:377-382 修复注释）"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "代码层 MP-R1-CAMPUS-HUB-017（「约」前缀盲拼 peers）运行态复现证实：放大裁片显示卡片第二行实际渲染「约等 256 位同学」（清华）、「约等 210 位同学」（复旦）等，代码推演的「约等」拼接在真机渲染属实、全部渲染卡受影响。该项已由代码层立项（待修复），此处仅补运行态截图证据，不重复立项。",
+      "evidence": "reports/audit/round-1/tmp-a3/hub_card1_zoom.png（默认.png 第一卡放大）+ 滚动-中部/底部.png 各卡同行文本"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "R13-ACCEPTANCE §7 已裁决项维持原样、无新增偏差：统计行「约2.6k 同学 · …」单行省略（动态数整段被省略号截断，为裁决保留形态）、「约」前缀诚实标注、数字统一 k/w 格式——三态截图口径一致。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png / 滚动-中部.png / 滚动-底部.png 统计行"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "双身份一致性：Tour B（身份B）默认态与 Tour A 逐元素一致（同为未认证 10 卡视角、布局无漂移），无跨身份状态错位。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__默认.png vs tour/A 同名默认.png"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "弹层态/交互后与默认态一致：本页无弹层组件，两态截图与默认态仅时间戳不同、无布局差异，符合页面能力边界。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__弹层态.png、__交互后.png"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "空态/搜索态文案分 Tab 正确：joined 空态「暂未加入任何校园圈」（CH04-after）、搜索空态「暂无推荐圈子」（CH06-after），均含底部静态提示；空态为纯文本无插画，跨页一致性对照因 messages 页「空态」截图实为数据态（证据失真）无法成立，如实记录不下结论。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH04-after.png、CH06-after.png；对照 pages_messages_index__空态.png（实为数据态）"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "observation": "证据链完整性缺陷（移交交互判定员参考）：CH05-after.png 与 CH04-after.png md5 相同（2e230f36d6d4，47601B），「我加入的→推荐圈子 11 校恢复」的截图证据实为 CH04 空态图副本，不构成恢复态证据；CH16-before≡CH08-after（04720fc6571f）、CH17-before≡CH16-after≡CH17-after（f81c8039572e）；且本页 25 条 interact 记录 pre 行均含「login A ok userId=user-1001 MISMATCH!」身份核对标记，CH14/15/16（认证态族）结论的取证身份存疑。",
+      "evidence": "md5 实测（本会话 hashlib 计算）：reports/screenshots/round-1-interact/ 下 CH04/CH05/CH08/CH16×2/CH17×2 七文件；reports/audit/round-1/interact/exec-results.json hub 全部 25 条 observed 行"
+    }
+  ],
+  "coverage": [
+    "【截图已看】tour/A 全部 5 态（默认/交互后/弹层态/滚动-中部/滚动-底部）+ tour/B 默认态 + interact 证据图 CH01-after2/CH04-after/CH06-after/CH08-after/CH16-before/CH16-after/CH17-before/CH17-after，共 14 张逐张过目并做放大裁片复核（hub_card1_zoom/hub_header_zoom/hub_guide_zoom/hub_scrollbottom_top_zoom/hub_scrollbottom_bottom_zoom）。",
+    "【理想图已对照】素材/理想效果图/校园圈.png 按 L1 结构→L2 信息层级→L3 交互位置→L4 卡片尺寸→L5 间距→L6 Typography→L7 Icon→L8 颜色→L9 阴影→L10 微细节 逐层过：L1-L4 无偏差（Issue-001 缺卡除外）、L5-L9 一致、L10 措辞差异见观察1。",
+    "【滚动已测】滚动-中部/滚动-底部静态截图 + CH22（pageScrollTo bottom→top，observed scrollPos=top，底部提示完整可见）。",
+    "【点击已测】exec-results.json hub 25 条：CH04/05(tab 切换)、CH06/07/09(搜索/清空/超长)、CH10/11(卡片/CTA)、CH12/13(双去认证入口)、CH18/19(连点防抖)、CH25(confirm 键)；其中 CH08/16/17/20 FAILED 已逐条核其失败原因与证据图。",
+    "【返回已测】CH02 栈底 switchTab 兜底回附近、CH03 栈中 navigateBack、CH19 连点×5 只回一层——返回链路实机证据齐（交互判定员复核口径）。",
+    "【safe-area 已查】底部截图末卡(深圳大学)+提示完整、页脚留白可见；顶部状态栏偏移正常（默认态）。代码层缺 env(safe-area-inset-bottom) 已由代码发现 012 立项——模拟器截图无 Home 指示条，不据其证实或证伪，维持「未基于新截图验证」标注。",
+    "【TabBar 已查】本页为 navigateTo 分包栈页，截图证实无 TabBar 渲染；理想图中五 Tab 底栏为「附近页承载」模型，现行返回键+栈模型与 R11/R13 锚定语义一致，不另立项。",
+    "【空态已查】joined 空态（CH04）、搜索空态（CH06）文案分 Tab 正确、无崩溃；空态样式为纯文本（观察7）。",
+    "【长文已测】CH09 60 字符搜索输入 EXECUTED（observed dom 正常；其证据截图超时未落盘，采信 observed 行并如实标注）。",
+    "【加载态已查】列表数据为前端静态表（hub.vue:54-73），无异步首屏加载态；认证态 onShow 刷新（hub.vue:150-152）。页面无骨架屏/loading 态可触发——如实在案。",
+    "【错误态已查】CH17 模拟认证拉取失败未成功触发（retry 元素 absent——正常态本就不应存在，失败注入未生效），错误条+重试的实机渲染未取证；代码层 005 已实现该链路（status 已修复待终验），维持「错误态未基于本轮截图验证」。",
+    "【组件一致性已查】badge/CTA/搜索框/引导卡/pill 与理想图及双身份截图对照一致；空态跨页对照因对照证据失真中止（观察7）；搜索图标、毕业帽图标、返回 chevron 风格与全站绿系一致。",
+    "【历史 Bug 回归已查】代码层已修复待终验 7 项中：004/003 视觉终验通过（观察2）、017 运行态复现（观察3）；001/005/006/007/010 的交互/数据终验归交互判定员与代码回归员，不越界。代码层待修复 008/009/011/012/013/014/015/016/018 不重复立项；其中 014 的运行期背离实证并入 Issue-001。",
+    "【未执行项】未运行编译/lint/真机（视觉审查轮职责外）；未重跑截图（以 manifest gitSha=aefd8a72 与 HEAD 一致采信现有证据）；错误态实机渲染、真机 Home 指示条遮挡未取证——均如实标注，未以推测补位。"
+  ]
+}

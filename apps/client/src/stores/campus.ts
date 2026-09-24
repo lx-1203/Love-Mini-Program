@@ -6,6 +6,8 @@ import { useMock } from "./helpers/use-mock";
 import { useSessionStore } from "./session";
 // infra R2-00099: mock 头像统一 IMAGE_PATHS
 import { IMAGE_PATHS } from "../config/images";
+// R13：相对时间收敛到 utils/time 单一实现（与消息列表/村庄卡片同源）
+import { formatDateTime, getCurrentLocale } from "../utils/time";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 // Mock 数据（R4-batch2：mock 用户/话题数据移入 stores/campus/mock-data.ts，
@@ -298,21 +300,13 @@ const TOPIC_PAGE_SIZE = 10;
 let fetchCampusTopicsToken = 0;
 
 /**
- * 格式化相对时间
+ * 格式化相对时间（刚刚 / N 分钟前 / N 小时前 / N 天前，≥7 天降级为绝对日期）
+ *
+ * R13：与 formatCircleTime 同为原私有副本，同样缺 NaN / 未来时间戳防护；
+ * 收敛到 utils/time 单一实现。
  */
 export function formatCampusTime(dateStr: string): string {
-  const now = Date.now();
-  const then = Date.parse(dateStr);
-  const diff = now - then;
-
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (diff < minute) return "刚刚";
-  if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)}小时前`;
-  return `${Math.floor(diff / day)}天前`;
+  return formatDateTime(dateStr, "relative", getCurrentLocale());
 }
 
 /**
@@ -472,9 +466,10 @@ export const useCampusStore = defineStore("campus", {
       } catch (error) {
         // 修复：旧请求的错误不更新 errorMessage
         if (token !== fetchCampusTopicsToken) return;
-        // MP-R2-CAMPUSINDEX-007：话题错误写独立字段（errorMessage 与认证/活动共用导致文案错位）
+        // MP-R2-CAMPUSINDEX-007 + MP-R1-CAMPUSINDEX-003：话题错误只写独立字段，
+        // 不再回写共享 errorMessage（原回写使认证错误文案串入话题错误槽、且与
+        // 「重试只重拉话题」的动作错位；页面错误槽已改绑 topicsError）
         this.topicsError = error instanceof Error ? error.message : t("storeErrors.campus.loadTopicsFailed");
-        this.errorMessage = this.topicsError;
       } finally {
         // 修复：仅最新 token 的请求才允许清 loading
         if (token === fetchCampusTopicsToken) {

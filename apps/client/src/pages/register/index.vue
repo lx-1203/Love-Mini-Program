@@ -31,7 +31,7 @@ import { useAppConfigStore } from "../../stores/app-config";
 import { useSessionStore } from "../../stores/session";
 import { addBreadcrumb, captureException } from "../../services/sentry";
 import { createButtonGuard } from "../../utils/debounce";
-import { isDev } from "../../config/env";
+import { isDev, isMockMode } from "../../config/env";
 
 const ICONS = IMAGE_PATHS.REGISTER_ICONS;
 
@@ -267,9 +267,12 @@ async function handleSendSms() {
       toast(res.message);
       return;
     }
-    // 模拟短信：提示 mockCode（真实短信网关接入后不展示验证码本体）——与登录页行为一致
+    // 模拟短信：提示 mockCode。MP-R1-PAGES-REGISTER-INDEX-009：与登录页同口径
+    // （login showMockCode）——mockCode 仅 isDev || isMockMode() 展示，真实构建
+    // 不得向用户明文 toast 验证码本体（后端 SmsCodeController 当前恒返回 mockCode）。
     const masked = phoneRaw.value.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
-    toast(res?.mockCode ? `验证码已发送（模拟：${res.mockCode}）` : `验证码已发送至 ${masked}`, 1500);
+    const showMockCode = Boolean(res?.mockCode) && (isDev || isMockMode());
+    toast(showMockCode ? `验证码已发送（模拟：${res.mockCode}）` : `验证码已发送至 ${masked}`, 1500);
     smsEndTime = Date.now() + 60_000;
     smsCountdown.value = 60;
     if (smsTimer) clearInterval(smsTimer);

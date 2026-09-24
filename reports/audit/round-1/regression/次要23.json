@@ -1,0 +1,33 @@
+{
+  "round": "R1",
+  "reviewer": "历史回归员-R1-次要23",
+  "generatedAt": "2026-09-24",
+  "scope": "subpackages/profile-extra/{verification/index,verification/real-name,profile/visitors,profile/other,profile/location,profile/privacy,profile/album,profile/favorites}；回归索引条目差分：MP-R1-VERIFY-INDEX-001、MP-R1-OTHER-002、MP-R2-OTHER-001（对应索引 verification key：verification-navbar-below-statusbar / other-whisper-entry-reachable-and-functional / other-page-images-via-media-resolver）",
+  "method": "索引差分 + 只读核验：①读 reports/audit/baseline/regression-index.json（288 条）筛出本 8 页 riskFiles/verification 相关条目；②逐条读当前工作区源码核验问题路径是否仍存在；③读 reports/audit/round-1/interact/exec-results.json（gitSha aefd8a72，1283 条）按 page 过滤 profile-extra 145 条并逐条看 failureReason/observed；④核对 reports/screenshots/round-1-interact/ 与 round-1/{A,B} 截图；⑤git diff 核对本轮工作区未提交改动（verification/index.vue、album.vue、RelationshipCTA.vue 各 1 处 vue-tsc 族小修）不触及回归修复点。未修改任何源码、未运行开发者工具。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-VERIFY-INDEX-001",
+      "page": "subpackages/profile-extra/verification/index",
+      "status": "未复发",
+      "evidence": "代码级：verification/index.vue:462 `<view class=\"safe-top\" />` 前置于 :465 `<view class=\"nav-bar\">`（:458-460 注释记录 R10-P2-012 根因模式）；--statusbar 经 useMenuButtonRect 注入（index.vue:24-26），.safe-top 高度 calc(var(--statusbar, env(safe-area-inset-top)))（index.vue:744-746）；同构页 real-name.vue:412/414 同序。运行时：exec-results.json VI01/VI05/VI14（page=subpackages/profile-extra/verification/index）均 EXECUTED，截图 reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI01-after.png 实拍状态栏时间 12:52 与「恋爱认证」标题+返回键分居两条、无叠印。工作区未提交 diff 仅 :12 增补 import resolveMediaUrl（R13 族），不触及导航结构。原缺陷路径（nav-bar 先于 safe-top 渲染）已不存在。"
+    },
+    {
+      "id": "MP-R1-OTHER-002",
+      "page": "subpackages/profile-extra/profile/other",
+      "status": "未复发（代码级链路闭合）；运行时正图缺，留交互轮终验",
+      "evidence": "代码级（全链闭合，修复提交 b3d31fcd 2026-09-22 05:49）：发射点 RelationshipCTA.vue:54 `@tap=\"emit('whisper')\"`（emits 声明 :22，心动卡按钮在 CTA bar 第 3 位、无 v-if 条件渲染 :53-57）→ PublicProfile.vue:86 `@whisper=\"emit('whisper')\"`（RelationshipCTA 于 :82-88 无条件渲染）→ ProfileShell.vue:91 转发 → other.vue:411 `@whisper=\"openWhisperSheet\"`（other.vue:240-250：targetUserId 空校验+登录门控+ensureCertified(\"realname\") 实名门控）→ :421-425 WhisperComposeSheet :visible/:close/:sent 接线完整。原缺陷路径（上游无人 emit）已不存在。反证排除：①静态截图 round-1/A|B other 默认.png 底栏无心动卡，但文件时间 2026-09-19/20 早于修复提交 2 天，系旧构建产物不作反证；②交互轮 PO09（心动卡弹层）FAILED 的 failureReason 为 `element not found: 心动卡`，其 PO09-after.png 实拍页面为「链接缺少用户参数，请从列表页重新进入」missingParam 守卫态——取证预置 pre:logout 后深链丢参所致（同截图 PO02 即该态的通过用例），非按钮缺失。缺口：已登录+有效 userId 下点击心动卡唤起弹层的运行时截图缺失，待交互轮补拍终验。"
+    },
+    {
+      "id": "MP-R2-OTHER-001",
+      "page": "subpackages/profile-extra/profile/other",
+      "status": "未复发",
+      "evidence": "代码级（三处裸直连均已收敛到统一解析出口，与图片查看层同源）：①相册缩略图 PublicGallery.vue:20 `:src=\"resolveMediaUrl(photo)\"`；②最近动态头像/配图 PublicMoment.vue:60/:78 均 resolveMediaUrl；③封面/头像 PublicHero.vue:13/:29 经 SafeImage，其 resolveOnce 统一执行 localizeHttpIfNeeded(toLocalImage(resolveMediaUrl(raw)))（SafeImage.vue:52/:101-109/:218）；大图查看层 other.vue:87-91 previewPhoto → resolveMediaUrl 后入 photoViewerSrc。缩略图与大图双重待遇消除。运行时旁证：round-1/A other 静态截图封面大图与头像均成功加载（无灰块/破图）。工作区 diff 未触及以上任何一行。"
+    }
+  ],
+  "notes": [
+    "本轮工作区未提交改动（相对 gitSha aefd8a72）共 3 处与本 8 页相关，均不回退修复：RelationshipCTA.vue:55 ICONS_MATCH.HEART_PINK→HEART（图标 key 修正）、album.vue:506 viewerUrls v-for item→_item（未使用变量）、verification/index.vue:12 增补 import resolveMediaUrl。修复点本身（safe-top 顺序、whisper 链、resolveMediaUrl 三处）在 diff 之外未被改动。",
+    "取证环境提示（非本 3 条回归结论的一部分）：exec-results.json 大量条目带 `MISMATCH!`（pre:login B 得 userId=user-1001 与身份 A 相同），且 profile-extra 145 条中 62 条 FAILED/SKIPPED 几乎全为 `element not found: __CAND__`——多页（settings 全系、VI/RN 提交链）文本候选失配疑为 harness 层文案/身份预置问题；本回归仅采信其中可交叉验证的条目（PO09 归因有截图实锤，VI01/RN01 等渲染类 EXECUTED 条目与截图互证）。",
+    "索引中同页其它历史条目（MP-R1-VERIFY-REALNAME-BACK、MP-R1-VISITORS-001-002、MP-R1-PRIVACY-001、MP-R1-ALBUM-001、MP-R7-PROFILE-001-002、MP-R8-STATUS-001-002、R10-P2-012、R13-TSC-DEFECTS 等）的 riskFiles 与本轮改动无交集（本轮 diff 未触及），未展开核对，维持索引原状。"
+  ]
+}

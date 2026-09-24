@@ -1,0 +1,192 @@
+matching cases: 24
+================================================================================
+MT01 | normal | EXECUTED
+title: dev-preview 冷启动：QA 复验入口停在匹配中页，2.6s 动画兜底结束后不跳转不 Toast
+observed: "top=subpackages/discover-extra/discover/matching | observe-only | dom: .match-loading__skip:present .match-loading__avatars:present .match-loading__progress:present .match-loading__total:present .round:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT01-after.png(100408B)"]
+durationMs: 18913
+================================================================================
+MT02 | critical | FAILED
+title: 寻觅页喜欢进入（store 上下文）单向喜欢成功：Toast『已喜欢』→400ms 后返回寻觅页且当前卡已消费切下一张
+observed: "top=subpackages/discover-extra/discover/matching | action-not-performed(see act-FAIL) | dom: .likeSent:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | act-FAIL:tapIndex(__CAND__) element not found: __CAND__(\"按\")"
+failureReason: action tapIndex __CAND__ failed: element not found: __CAND__("按")
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}, {"route": "subpackages/discover-extra/discover/matching", "options": {}}]
+console: ["[2026-09-23T11:25:31.328Z][error] \"swipeRight error:\" {}"]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT02-before.png(104863B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT02-after.png(104205B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT02-after.wxml"]
+durationMs: 41224
+================================================================================
+MT03 | critical | EXECUTED
+title: 互相喜欢 status='matched'：动画结束后 redirectTo match-success?userId=，栈中本页被替换
+observed: "top=subpackages/discover-extra/discover/matching | navError=timeout waiting for automator response | observe-only | dom: .userId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | pre:navigateTo /subpackages/discover-extra/discover/matching NAV_ERROR: timeout waiting for automator response"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}, {"route": "subpackages/discover-extra/discover/matching", "options": {}}]
+toast: [{"api": "showToast", "title": "卡片不存在或已被处理", "ts": 1790130788503}]
+console: ["[2026-09-23T02:33:00.287Z][error] \"swipeRight error:\" {}", "[2026-09-23T02:33:08.503Z][error] \"swipeRight error:\" {}"]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT03-before.png(100701B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT03-after.png(ERROR:timeout waiting for automator response)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT03-after.wxml"]
+durationMs: 60446
+================================================================================
+MT04 | critical | EXECUTED
+title: 匹配确认接口失败 status='failed'：Toast 错误文案→600ms 后返回，原卡不被消费
+observed: "top=subpackages/discover-extra/discover/matching | observe-only | dom: .lastError:absent .likeFailed:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}, {"route": "subpackages/discover-extra/discover/matching", "options": {}}]
+console: ["[2026-09-23T02:34:00.667Z][error] \"swipeRight error:\" {}"]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT04-before.png(100499B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT04-after.png(100137B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT04-after.wxml"]
+durationMs: 37054
+================================================================================
+MT05 | critical | EXECUTED
+title: 超级喜欢 superLike 路径：runMatchCheck 以 isSuperLike=true 提交，成功分支文案与消费同喜欢
+observed: "top=subpackages/discover-extra/discover/matching | observe-only | dom: .swipeRight:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}, {"route": "subpackages/discover-extra/discover/matching", "options": {}}]
+console: ["[2026-09-23T02:34:37.740Z][error] \"swipeRight error:\" {}"]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT05-before.png(99864B)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT05-after.png(ERROR:timeout waiting for automator response)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT05-after.wxml"]
+durationMs: 37077
+================================================================================
+MT06 | navigation | EXECUTED
+title: 无上下文直达兜底：无 query 无 store pending 时 200ms 自动返回，不留死页
+observed: "top=pages/discover/index | observe-only | pre:reLaunch /subpackages/discover-extra/discover/matching | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:35:08.400Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:35:08.401Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:35:15.001Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:35:15.001Z][info] \"preloadSubpackages: success\""]
+durationMs: 14940
+================================================================================
+MT07 | navigation | EXECUTED
+title: 顶部返回箭头（栈>1）：点击 500ms 内 navigateBack 回来源页
+observed: "top=subpackages/discover-extra/discover/matching | dom: .matching-page__back:present .length:absent .reset:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching?dev-preview=1 | act:tap .matching-page__back"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}]
+durationMs: 17531
+================================================================================
+MT08 | navigation | EXECUTED
+title: 顶部返回箭头（栈=1 冷启动深链）：switchTab 落寻觅 Tab
+observed: "top=subpackages/discover-extra/discover/matching | dom: .matching-page__back:absent | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | act:tap .matching-page__back"
+route: [{"route": "pages/discover/index", "options": {}}]
+durationMs: 8454
+================================================================================
+MT09 | normal | FAILED
+title: 动画未播完点『跳过』= 快进动画：立即触发 finish，结果分支提前出现
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .match-loading__skip:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1 | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | pre:login A ok userId=user-1001 MISMATCH!"
+failureReason: action tap .match-loading__skip failed: element not found: .match-loading__skip
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:26:11.481Z][error] \"swipeRight error:\" {}", "[2026-09-23T11:26:22.206Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:26:22.206Z][info] \"preloadSubpackages: success\"", "[2026-09-23T11:26:29.184Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:26:29.184Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT09-after.png(ERROR:timeout waiting for automator response)"]
+durationMs: 44847
+================================================================================
+MT10 | normal | FAILED
+title: 动画已播完再点『跳过』= 返回上一页（保留原语义）
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .match-loading__skip:absent .reset:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:wait 2600ms | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act-FAIL:tap(.match-loading__skip) element not found: .match-loading__skip"
+failureReason: action tap .match-loading__skip failed: element not found: .match-loading__skip
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:26:53.205Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:26:53.206Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT10-after.png(218663B)"]
+durationMs: 23670
+================================================================================
+MT11 | normal | FAILED
+title: 『跳过』快击×5 防连点：finished 单次守卫，仅离开页面一次
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .match-loading__skip:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act-FAIL:rapidTap(.match-loading__skip) element not found: .match-loading__skip"
+failureReason: action rapidTap .match-loading__skip failed: element not found: .match-loading__skip
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:27:19.653Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:27:19.654Z][info] \"preloadSubpackages: success\"", "[2026-09-23T11:27:23.998Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:27:23.998Z][info] \"preloadSubpackages: success\"", "[2026-09-23T11:27:33.745Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:27:33.746Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT11-after.png(218599B)"]
+durationMs: 31152
+================================================================================
+MT12 | normal | FAILED
+title: 返回箭头快击×5：单次 navigateBack 生效无异常
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .matching-page__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act-FAIL:rapidTap(.matching-page__back) element not found: .matching-page__back"
+failureReason: action rapidTap .matching-page__back failed: element not found: .matching-page__back
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:27:55.766Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:27:55.767Z][info] \"preloadSubpackages: success\"", "[2026-09-23T11:28:04.044Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:28:04.044Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT12-after.png(218695B)"]
+durationMs: 30725
+================================================================================
+MT13 | normal | EXECUTED
+title: 热区规格核查（铁律≥88rpx）：返回按钮 72×72rpx、跳过按钮≈64rpx 高——预期不达标
+observed: "top=pages/discover/index | observe-only | dom: .matching-page__back:absent .match-loading__skip:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:37:57.407Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:37:57.407Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT13-after.png(217168B)"]
+durationMs: 18989
+================================================================================
+MT14 | normal | EXECUTED
+title: preview=1 分享/演示模式：不调匹配接口零副作用，动画结束停留本页
+observed: "top=subpackages/discover-extra/discover/matching | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/discover-extra/discover/matching?preview=1&cardId=<id>&action=like&userId=10003"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"preview": "1", "cardId": "<id>", "action": "like", "userId": "10003"}}]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT14-after.png(ERROR:timeout waiting for automator response)"]
+durationMs: 18427
+================================================================================
+MT15 | critical | EXECUTED
+title: URL 直达（分享恢复/自动化）三参齐全无 store 上下文：真实发起匹配提交
+observed: "top=pages/discover/index | observe-only | dom: .cards:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching?cardId=<存活卡id>&action=like&userId=10003 | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+toast: [{"api": "showToast", "title": "卡片不存在或已被处理", "ts": 1790131125396}]
+console: ["[2026-09-23T02:38:40.746Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:38:40.748Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:38:43.026Z][error] \"swipeRight error:\" {}", "[2026-09-23T02:38:46.233Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:38:46.234Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:38:52.702Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:38:52.703Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT15-before.png(ERROR:timeout waiting for automator response)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT15-after.png(ERROR:timeout waiting for automator response)", "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT15-after.wxml"]
+durationMs: 37454
+================================================================================
+MT16 | normal | EXECUTED
+title: 头像兜底链：双方头像源全空时落 DEFAULT_AVATAR，不渲染空白圆
+observed: "top=pages/discover/index | observe-only | dom: .load:present | pre:logout ok | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/discover-extra/discover/matching | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:39:22.241Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:39:22.242Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:39:28.911Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:39:28.912Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT16-after.png(217238B)"]
+durationMs: 25661
+================================================================================
+MT17 | noop | EXECUTED
+title: 滚动到底/顶：页面 overflow:hidden 不可滚动，内容无裁切
+observed: "top=pages/discover/index | dom: .match-loading:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act:swipe down unsupported(no element api)"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:39:47.681Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:39:47.682Z][info] \"preloadSubpackages: success\""]
+evidence: ["scrollPos=bottom"]
+durationMs: 9141
+================================================================================
+MT18 | noop | EXECUTED
+title: 动画完备性与 Loading 不永驻：2.6s 兜底必触发 finished，进度条 1.2s 到位
+observed: "top=pages/discover/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:39:56.961Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:39:56.961Z][info] \"preloadSubpackages: success\""]
+evidence: ["scrollPos=bottom"]
+durationMs: 9008
+================================================================================
+MT19 | normal | EXECUTED
+title: 重复进出状态机复位（MP-R2-MATCHING-007）：preview 退出后再走真实流程无残留
+observed: "top=pages/discover/index | dom: .reset:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/discover-extra/discover/matching | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object]"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:40:05.964Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:40:05.965Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:40:13.761Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:40:13.762Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT19-after.png(ERROR:timeout waiting for automator response)"]
+durationMs: 30622
+================================================================================
+MT20 | navigation | FAILED
+title: 检查完成前退出（打开即返回竞态）：卸载后 watch 不误触发，store 干净
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .matching-page__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act-FAIL:tap(.matching-page__back) element not found: .matching-page__back | act-FAIL:tap(.matching-page__back) element not found: .matching-page__back"
+failureReason: action tap .matching-page__back failed: element not found: .matching-page__back
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:28:25.759Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:28:25.760Z][info] \"preloadSubpackages: success\""]
+durationMs: 13556
+================================================================================
+MT21 | normal | FAILED
+title: 500ms 反馈铁律全元素扫描：back/skip 两可点击元素均有即时视觉反馈
+observed: "top=pages/discover/index | action-not-performed(see act-FAIL) | dom: .matching-page__back:absent .match-loading__skip:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching | act-FAIL:tap(.matching-page__back) element not found: .matching-page__back | act-FAIL:tap(.matching-page__back) element not found: .matching-page__back"
+failureReason: action tap .matching-page__back failed: element not found: .matching-page__back
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T11:28:39.699Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T11:28:39.701Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT21-after.png(ERROR:timeout waiting for automator response)"]
+durationMs: 24100
+================================================================================
+MT22 | navigation | EXECUTED
+title: r11 固化参数表偏差核查：?target=10003 不被本页读取，落入 200ms 兜底返回（现状断言+修正建议）
+observed: "top=pages/discover/index | observe-only | dom: .ps1:absent | pre:reLaunch /subpackages/discover-extra/discover/matching?target=10003 | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:41:13.583Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:41:13.583Z][info] \"preloadSubpackages: success\"", "[2026-09-23T02:41:20.448Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:41:20.449Z][info] \"preloadSubpackages: success\""]
+durationMs: 15240
+================================================================================
+MT23 | normal | EXECUTED
+title: 深链参数不齐（?preview=1 缺三参 / 仅 cardId）：不闪错误空态，200ms 兜底返回
+observed: "top=pages/discover/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/discover-extra/discover/matching"
+route: [{"route": "pages/discover/index", "options": {}}]
+console: ["[2026-09-23T02:41:29.476Z][info] \"preloadSubpackages: subpackages/discover\"", "[2026-09-23T02:41:29.477Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT23-after.png(ERROR:timeout waiting for automator response)"]
+durationMs: 18514
+================================================================================
+MT24 | normal | EXECUTED
+title: 双身份一致性：A(100158)/B(100159) 各自进入，我的头像各归其位，结构一致
+observed: "top=subpackages/discover-extra/discover/matching | observe-only | dom: .avatarUrl:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/discover-extra/discover/matching?dev-preview=1"
+route: [{"route": "subpackages/discover-extra/discover/matching", "options": {"dev-preview": "1"}}]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT24-after.png(100077B)"]
+durationMs: 17869

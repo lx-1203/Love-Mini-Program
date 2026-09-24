@@ -75,18 +75,25 @@ onShow(async () => {
   await refreshWallet();
 });
 
+/** 演示充值进行中锁（MP-R1-C26REQ-002：防重入——快击 N 次即 N 个不同幂等键的
+ *  POST /wallet/recharge，服务端幂等头无法去重，理论快击 5 次入账 5×¥100） */
+const recharging = ref(false);
 /** 演示充值：+100 元（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
 async function handleRecharge() {
+  // MP-R1-C26REQ-002：在途/冷却期内忽略重复点击
+  if (recharging.value) return;
   // 封存守卫（ADR-2）：封存态禁止充值请求
   if (commerceSealed.value) {
     uni.showToast({ title: t("commerce.sealedToast"), icon: "none" });
     return;
   }
+  recharging.value = true;
   lightHaptic();
   try {
-    const orderId = `RECHARGE-DEMO-${Date.now()}`;
     // 修复（P0-12）：后端 RechargeRequest 仅含 amountCents（orderId 由服务端生成），
-    // 删除请求体中的 orderId 字段；orderId 仅作为 Idempotency-Key 请求头防重复提交
+    // 删除请求体中的 orderId 字段；orderId 仅作为 Idempotency-Key 请求头防重复提交。
+    // MP-R1-C26REQ-002：幂等键单次流程内固定（原 Date.now() 每击重生成，服务端无法去重）
+    const orderId = `RECHARGE-DEMO-${Date.now()}`;
     await request<{ balanceAfterCents: number }, { amountCents: number }>({
       url: "/wallet/recharge",
       method: "POST",
@@ -102,6 +109,8 @@ async function handleRecharge() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    recharging.value = false;
   }
 }
 

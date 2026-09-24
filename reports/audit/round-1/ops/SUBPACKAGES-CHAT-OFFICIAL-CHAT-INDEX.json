@@ -1,0 +1,264 @@
+{
+  "cases": [
+    {
+      "id": "OC01",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "身份A 冷启动直达（无参）：500ms 骨架过渡 → 英雄区+3 条 mock 消息，无错误/空态闪现",
+      "tier": "normal",
+      "pre": "身份A=100158 曦风（tmp_r11_login.json，JWT sub=100158，iat/exp 2 小时时效，超时需重签）经 r11 mock 登录（automation_evaluate 注入 wx.setStorageSync('token', JWT) 后调 session.bootstrap()，校验 isLoggedIn=true）→ wx.reLaunch('/subpackages/chat/official-chat/index') 无参冷启动；dev 包 mock 模式（.env.development:1 VITE_API_MODE=mock，config/env.ts:209-212 dev 默认 mock）→ 页面走 mock 分支",
+      "action": "启动后 0s/0.6s/1.5s 三次 DOM 采样：.skeleton（SkeletonBlock 根类，components/common/SkeletonBlock.vue:2）、.hero-section、.msg-row 计数、.state-view 与 .error-text 存在性；不打点",
+      "expected": "onLoad 500ms 后 ready=true（subpackages/chat/official-chat/index.vue:348）→ .skeleton 先现后隐（进入骨架过渡，禁止纯白屏）；chat-body 渲染英雄区「Hi~ 我是寻觅助手」（index.vue:401-409）+ 消息流恰 3 条（mock 固化 id=101 text/102 card/103 text，index.vue:222-253）且全部为助手侧 .msg-row--left（本地 mock 消息无 direction 且非 user-text，isUserMsg=false，index.vue:205-210）；首条消息带时间条（idx=0 恒显示，index.vue:424），历史时间呈「M月D日 HH:mm/昨天 HH:mm」格式（formatTime，index.vue:332-344）；导航标题「寻觅助手」+「官方」描边徽章（index.vue:371-376）副标题「你的恋爱小管家」；无 .state-view、无错误文案、无空消息流（冷启动深链铁律）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图（首屏全景）+ 路由（getCurrentPages 栈顶=subpackages/chat/official-chat/index）+ console 全量过滤"
+    },
+    {
+      "id": "OC02",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "带固化参数 accountId=official-assistant：标题与消息加载同无参一致",
+      "tier": "normal",
+      "pre": "同 OC01 登录态 → wx.reLaunch('/subpackages/chat/official-chat/index?accountId=official-assistant')；参数取自消息页真实入口 openAssistant（pages/messages/index.vue:192）；本页不在 scripts/r11-param-map.json params 表（已核，该表无 official-chat 条目），按入口代码固化",
+      "action": "读 .nav-title/.nav-subtitle 文本与 .msg-row 计数；evaluate 取 getCurrentPages 栈顶页 options.query 断言",
+      "expected": "query.accountId='official-assistant' 被采纳（index.vue:350-351，与默认值同值 index.vue:55）；mock 分支不消费 accountId 恒返 3 条（index.vue:221-253）；标题「寻觅助手」副标题「你的恋爱小管家」（index.vue:56-57，mock 不经 GET /official-accounts 拉 meta，index.vue:263-271 仅 real 走）；渲染与 OC01 一致",
+      "evidence": "normal：after 截图 + 路由 + console 过滤"
+    },
+    {
+      "id": "OC03",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "消息页真实入口：寻觅助手会话卡 → navigateTo 进本页，栈深 2",
+      "tier": "navigation",
+      "pre": "身份B=100159 小新生（tmp_r11_guest.json，JWT sub=100159）mock 登录 → wx.reLaunch('/pages/messages/index')；注意消息 tab 在 profile-guard LOCKED_PAGES（guards/profile-guard.ts:14-19 含 ROUTES.TAB.CHAT），若 B 资料未完善被 UnlockGuideModal 覆盖则换已完善身份执行，仍不满足记 UNVERIFIED",
+      "action": "点击寻觅助手会话卡（openAssistant 绑定，pages/messages/index.vue:190-192）→ 等路由稳定",
+      "expected": "openAppPath 判非 tab 页走 navigateTo（utils/navigation.ts:44-46 封装语义）→ 页面栈=[messages/index, official-chat/index] 栈深 2，query=accountId=official-assistant；本页正常渲染（OC01 同款）；≤500ms 路由变化（反馈铁律）；tools/help 页同参入口亦存在（subpackages/tools/help/index.vue:50）",
+      "evidence": "navigation：路由断言（getCurrentPages 链长度 2 + 栈顺序 + query），console 过滤"
+    },
+    {
+      "id": "OC04",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "返回键（栈深 2）：navigateBack 回消息页，落点=来源页",
+      "tier": "navigation",
+      "pre": "承 OC03 栈深 2 状态（消息页 → 本页）",
+      "action": "点 .nav-left（‹ 返回键，index.vue:365-368）",
+      "expected": "goBack 判 getCurrentPages().length>1 → uni.navigateBack({delta:1})（index.vue:311-314）→ 落回 /pages/messages/index（返回落点=来源页铁律），栈深 1；≤500ms 路由变化",
+      "evidence": "navigation：路由断言（栈顶=pages/messages/index）"
+    },
+    {
+      "id": "OC05",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "返回键（栈深 1 直达）：兜底 switchTab 消息 tab，无 unhandled rejection",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/chat/official-chat/index') 冷启动（页面栈仅本页，栈深 1）",
+      "action": "点 .nav-left",
+      "expected": "pages.length==1 分支 → uni.switchTab(ROUTES.TAB.CHAT=/pages/messages/index)（index.vue:315-317；ROUTES.TAB.CHAT=routes.ts:40；MP-R1-OFFICIALCHAT-003 修复点）→ 消息 tab 打开；console 无 navigateBack fail 产生的未处理 rejection（该修复的回归断言）；≤500ms 路由变化",
+      "evidence": "navigation：路由断言（栈顶=pages/messages/index）+ console 过滤（重点无 rejection）"
+    },
+    {
+      "id": "OC06",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "打开即返回 ×3 / 重复进出：路由正确、消息不叠加、无累积报错",
+      "tier": "navigation",
+      "pre": "身份A mock 登录，从 /pages/messages/index 起步",
+      "action": "循环 3 次：进入本页（navigateTo，经助手卡或 openAppPath 等效路径）→ 立即点 .nav-left 返回；第 3 次进入后采样 .msg-row 计数",
+      "expected": "每次进出路由正确、返回落点恒为消息页；每次 onLoad 全量替换 messages（index.vue:222 或 272-275 赋值语义）→ 第 3 次进入仍恰 3 条 mock 消息，无重复叠加；console 无累积 TypeError/NAV_FAIL",
+      "evidence": "navigation：路由断言 ×3 + console 过滤"
+    },
+    {
+      "id": "OC07",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "导航栏「···」按钮：Toast「会话设置敬请期待」（死按钮接线回归）",
+      "tier": "normal",
+      "pre": "承 OC01 页面就绪态",
+      "action": "点 .nav-right（index.vue:380-382）→ ≤300ms 采样 Toast 状态（DOM toast 节点或 evaluate 抓 showToast）",
+      "expected": "uni.showToast({title:'会话设置敬请期待', icon:'none'})（onSessionMoreTap，index.vue:78-80）≤500ms 可见、文案逐字一致；无路由变化；重复点击每次均有反馈（MP-R1-OFFICIALCHAT-002：原死按钮已接线，不回退）",
+      "evidence": "normal：after 截图（Toast 在屏）+ 路由不变断言 + console 过滤"
+    },
+    {
+      "id": "OC08",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "输入栏「+」按钮：Toast「更多功能敬请期待」",
+      "tier": "normal",
+      "pre": "承 OC01 页面就绪态",
+      "action": "点 .input-bar__icon--plus（index.vue:513-517）→ ≤300ms 采样 Toast",
+      "expected": "Toast「更多功能敬请期待」icon none（onPlusTap，index.vue:81-83）≤500ms；无路由变化、无面板展开；灰底深字样式与私聊页统一（.plus-btn var(--c-neutral-50)，index.vue:949-959）",
+      "evidence": "normal：after 截图 + 路由 + console 过滤"
+    },
+    {
+      "id": "OC09",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "表情键开合 EmojiPanel：32 格面板展开，再点同键收起（toggle）",
+      "tier": "normal",
+      "pre": "承 OC01 页面就绪态",
+      "action": "点输入栏第一个 .input-bar__icon（笑表情，index.vue:510-512）→ 采样 .emoji-panel；再次点同键 → 采样",
+      "expected": "第一次点击 emojiPanelVisible=true → EmojiPanel v-if 渲染（index.vue:543,72-74）：8 列×4 行共 32 个表情格 .emoji-panel__item（components/chat/EmojiPanel.vue:25-30,84-94）；第二次点击 toggle 收起（面板无遮罩/无独立关闭键，表情键 toggle 为唯一显式关闭路，弹层三路关闭铁律的符合性交判定员核）；开/收均 ≤500ms；无路由变化",
+      "evidence": "normal：开态 after 截图 + 收起后 DOM 断言（.emoji-panel 不存在）+ console 过滤"
+    },
+    {
+      "id": "OC10",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "选中表情：追加进输入框、面板保持开、发送键转可用",
+      "tier": "normal",
+      "pre": "承 OC09 面板开态、输入框为空",
+      "action": "点第 1 个 .emoji-panel__item（😀）→ 读 .input-bar__input value 与按钮类名；再点 1 个表情复核追加",
+      "expected": "handleEmojiSelect 追加 → inputValue='😀'（index.vue:75-77）输入框回显；面板不自动收起（无相关逻辑）；再点续加为 '😀😀'；canSend 变 true（index.vue:68）→ .input-bar__send 移除 --disabled 类（index.vue:535）；≤500ms DOM 变化",
+      "evidence": "normal：after 截图（输入框含表情+发送键可用态）+ console 过滤"
+    },
+    {
+      "id": "OC11",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "空输入点发送（含快击×5）：禁用态零副作用",
+      "tier": "normal",
+      "pre": "承 OC01，inputValue 为空（canSend=false）",
+      "action": "连点 .input-bar__send 5 次 → 数 .msg-row、查按钮类名",
+      "expected": "sendMessage 首行守卫 !text 直接 return（index.vue:100-101）→ 消息数保持 3、无路由变化、无 Toast；按钮呈禁用态 .input-bar__send--disabled 浅绿 #C7E9DC（index.vue:535,992-994，R21 与私聊页一致的空输入禁用）；console 无报错",
+      "evidence": "normal：after 截图（禁用态按钮）+ 路由 + console 过滤"
+    },
+    {
+      "id": "OC12",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "正常发送一条消息：右侧气泡+已读+输入清空+1.2s 助手回复+滚底",
+      "tier": "critical",
+      "pre": "承 OC01，记录发送前消息数=3；发送有副作用（real 模式落库 POST /official-accounts/{code}/messages）故按 critical 采集",
+      "action": ".input-bar__input 输入「你好呀，帮我推荐个活动」→ before 截图 → 点 .input-bar__send → 0.3s/1.5s 两次采样 .msg-row--right/.bubble--user/.read-receipt/.bubble--assistant",
+      "expected": "≤500ms 本地 pending 用户消息插入：右侧 .msg-row--right、品牌绿 .bubble--user 白字、气泡下「已读」标记（index.vue:103-111,491-499）；输入框即时清空（index.vue:110）；约 1.2s 后 mock 回复插入「收到啦～我会帮你留意合适的活动和人哦 😊」（setTimeout 1200，index.vue:113-127，文案 :120）渲染于左侧行且 emoji 经 EmojiText 转 SVG（index.vue:433-439）；两条新消息均触发滚底至 #official-chat-bottom-anchor 锚点（scroll-into-view 方案，index.vue:191-199,503）最后一条完整可见不被输入栏遮挡；消息总数 3→4→5；mock 模式不发网络请求",
+      "evidence": "critical：before+after 截图 + 路由 + 消息计数 + console 全量过滤"
+    },
+    {
+      "id": "OC13",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "防连点/重复提交：发送后 1.2s 窗口内快击×5 只提交 1 次",
+      "tier": "critical",
+      "pre": "承 OC01（空消息流起点 3 条）",
+      "action": "输入「防连点验证」→ 点发送 → 在 1.2s mock 回复窗口内对 .input-bar__send 快击 5 次 → 等 2s 稳定后数消息",
+      "expected": "仅 1 条「防连点验证」用户消息 + 1 条助手回复（双保险：sending=true 时 return index.vue:100-101；发送后输入框已清空 canSend=false index.vue:68,110）；无重复用户气泡、无重复回复；sending 在 finally 复位（index.vue:152-153）后可正常再发下一条",
+      "evidence": "critical：after 截图（稳定态全景）+ 路由 + 消息计数断言 + console 全量过滤"
+    },
+    {
+      "id": "OC14",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "键盘 confirm 发送：与发送键等效且不双发",
+      "tier": "normal",
+      "pre": "承 OC01",
+      "action": ".input-bar__input 输入「confirm 通道验证」→ 触发 input confirm 事件（confirm-type=\"send\" + @confirm，index.vue:525-526）",
+      "expected": "@confirm 与发送键绑同一 sendMessage（index.vue:526,536）→ 用户消息上屏+输入清空+1.2s 回复，行为与 OC12 一致；仅一条用户消息（不因 send 键与 confirm 双触发而双发）",
+      "evidence": "normal：after 截图 + 路由 + console 过滤"
+    },
+    {
+      "id": "OC15",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "超长输入 300 字发送：word-break 折行、滚底后最后一条完整可见（MP-R1-OFFICIALCHAT-001 回归）",
+      "tier": "normal",
+      "pre": "承 OC01",
+      "action": "输入 300 个「测」字（纯 CJK 无空格）→ 点发送 → after 截图并对末条 .msg-row 位置采样（与输入栏上沿比对）",
+      "expected": "气泡容器 max-width:70%（.msg-content，index.vue:774-778）内 word-break:break-all 折行（index.vue:801-807）无横向溢出；scroll-into-view 底部锚点方案（index.vue:191-199，修复原 99999/100000 大数 scroll-top 失效）使长消息发送后最后一条完整可见、不被输入栏截断；mock 回复照常到达",
+      "evidence": "normal：after 截图（滚底态）+ console 过滤"
+    },
+    {
+      "id": "OC16",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "特殊字符/HTML 串发送：纯文本转义渲染、无注入执行、无 console 错误",
+      "tier": "normal",
+      "pre": "承 OC01",
+      "action": "输入 '<img src=x onerror=alert(1)> & <script>console.log(1)</script> 🔥💐' → 点发送 → 采样气泡文本与 console",
+      "expected": "用户气泡以 {{msg.content}} 文本插值渲染（index.vue:494）原文转义显示：无图片加载、无脚本执行、无 alert 弹出；助手回复照常返回（mock 不受内容影响）；console 无新增错误（重点无 onerror 执行痕迹）；emoji 在用户气泡以系统字形直出（用户气泡不走 EmojiText，index.vue:493-495）",
+      "evidence": "normal：after 截图 + console 全量过滤"
+    },
+    {
+      "id": "OC17",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "输入后清空：发送键回禁用态、草稿不残留",
+      "tier": "normal",
+      "pre": "承 OC01",
+      "action": "输入「草稿」→ 清空输入（setInput value=''）→ 采样按钮类名与输入框 value",
+      "expected": "trim 后长度为 0 → canSend=false（index.vue:68）→ .input-bar__send--disabled 类恢复（index.vue:535）；输入框 value 为空（v-model 双向绑定 index.vue:522）",
+      "evidence": "normal：after 截图（禁用态）+ console 过滤"
+    },
+    {
+      "id": "OC18",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "消息区滚动到底/顶：scrollTop 变化、数据不丢（内部 scroll-view）",
+      "tier": "noop",
+      "pre": "承 OC01，先发 3 条消息撑高内容保证可滚",
+      "action": "对 .chat-scroll（scroll-view，index.vue:413-420）先滚到底再滚回顶（evaluate 设 scrollTop 或 swipe），每步采样 scrollTop 值与 .msg-row 计数",
+      "expected": "scrollTop 随滚动变化且可达两端；滚动过程消息行无丢失/重排（列表数据不因滚动改变）；无路由变化（页面 100vh 弹性布局内部滚动，index.vue:551-562，非页面级滚动）",
+      "evidence": "noop：执行日志（scrollTop 采样值/console）"
+    },
+    {
+      "id": "OC19",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "活动卡片消息整卡点击：跳活动详情页（cardTargetUrl 固化 id=2001）",
+      "tier": "navigation",
+      "pre": "承 OC01（mock 第 2 条为 card 消息：cardTargetUrl='/subpackages/tools/activities/detail?id=2001'、enrollmentCount=12，index.vue:229-246）",
+      "action": "点 .bubble--card 上非「查看详情」区域（整卡 @tap，index.vue:442）",
+      "expected": "handleActivityTap(buildActivityDetailUrl) → openAppPath(cardTargetUrl)（index.vue:288-290,297-298）→ navigateTo 栈顶=/subpackages/tools/activities/detail?id=2001 栈深 2；卡片本体信息完整：封面走 cardActivity.imageUrl 空值回落库存图（index.vue:448-451）、「12人已报名」参与数（index.vue:459）、标题「城市露营计划」；≤500ms 路由变化（详情页内部渲染归 activities/detail 用例，此处只断路由）",
+      "evidence": "navigation：路由断言（栈顶+query id=2001）+ console 过滤"
+    },
+    {
+      "id": "OC20",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "「查看详情」链接：@tap.stop 阻断冒泡，单次跳转不双触发",
+      "tier": "navigation",
+      "pre": "承 OC01",
+      "action": "点 .activity-detail-link（index.vue:463-465）→ 路由稳定后查栈",
+      "expected": "@tap.stop 使整卡 handler 不重复执行（index.vue:442 与 :463 分离）→ 仅一次 navigateTo，页面栈深恰为 2（非 3，无重复入栈）；目标 URL 与 OC19 相同",
+      "evidence": "navigation：路由断言（栈深=2、无重复入栈）+ console 过滤"
+    },
+    {
+      "id": "OC21",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "「去看看」按钮（real 模式 action-buttons 消息）：跳活动列表页",
+      "tier": "navigation",
+      "pre": "需 real 包且后端下发 messageType='action-buttons' 消息（本页扩展类型 index.vue:38-42,213-214；mock 固化 3 条无此类型 index.vue:222-253）；r11 mock 环境无法满足时如实记 UNVERIFIED",
+      "action": "点 .action-btn--primary「去看看」（index.vue:471-473）",
+      "expected": "onActionBtnTap('去看看') → openAppPath('/subpackages/discover/activities/index')（index.vue:158-160）→ 栈顶=该路由、栈深+1；≤500ms 路由变化",
+      "evidence": "navigation：路由断言 + console 过滤"
+    },
+    {
+      "id": "OC22",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "「稍后再说」按钮（real 模式）：本地插入用户消息、不发网络请求",
+      "tier": "normal",
+      "pre": "同 OC21（real-only；mock 不可执行则 UNVERIFIED）",
+      "action": "点 .action-btn--default「稍后再说」（index.vue:474-476）",
+      "expected": "else 分支 push 本地 user-text「好的，稍后再说～」（index.vue:161-169）→ 右侧绿气泡 ≤500ms 上屏并滚底（index.vue:169）；不发 POST（该分支无 request 调用）；无路由变化",
+      "evidence": "normal：after 截图 + 路由不变断言 + console 过滤"
+    },
+    {
+      "id": "OC23",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "real 模式加载失败：错误文案+重试按钮，重试真实重拉（Loading 不永驻）",
+      "tier": "normal",
+      "pre": "real 包登录态（或后端不可达环境）进入本页，使 GET /official-accounts、GET /official-accounts/{id}/messages 失败（index.vue:263-275）；mock 模式恒成功无法触发，mock 环境记 UNVERIFIED",
+      "action": "进入后采样 .state-view/.error-text/.retry-btn → 点 .retry-btn → 采样恢复态",
+      "expected": "catch 置 errorMessage=「官方消息加载失败，请重试」（index.vue:280-282；i18n messages.officialChatLoadFailed=i18n/locales/zh-CN.ts:2787）且 messages 清空；错误态渲染重试按钮（index.vue:387-390）；点重试 → loadOfficialChat 重入（loading 防重入 index.vue:217-218）→ 成功则错误态消失消息恢复；loading 在 finally 复位（index.vue:283-285）Loading 不永驻",
+      "evidence": "normal：after 截图（错误态+恢复态各一张）+ console 过滤"
+    },
+    {
+      "id": "OC24",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "real 模式发送失败：pending 移除+草稿恢复+Toast「发送失败，请重试」",
+      "tier": "critical",
+      "pre": "real 包登录态，令 POST /official-accounts/official-assistant/messages 必败（断网/500）；mock 模式无失败路径，mock 环境记 UNVERIFIED",
+      "action": "输入「失败恢复验证」→ before 截图 → 点发送 → 等 Toast 出现 → 采样输入框值、消息列表、console",
+      "expected": "失败路径：本地 pending 用户消息被移除（splice index.vue:148-149）、草稿精确恢复 inputValue=text（index.vue:150）、Toast「发送失败，请重试」icon none（index.vue:151；zh-CN.ts:2788）逐字一致；sending 复位（finally index.vue:152-153）可再次发送；请求头携带 Idempotency-Key: official-{localId}（index.vue:138，PRODUCT-FIX：headers 键名修复回归——若回退为 header 则键未随发，判定 FAIL）；console 无未捕获错误",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案逐字 + console 全量"
+    },
+    {
+      "id": "OC25",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "real 包未登录冷启动：LockScreen 全屏拦截，聊天主体不渲染",
+      "tier": "normal",
+      "pre": "real 包 + 未登录（evaluate wx.removeStorageSync('token') 后 wx.reLaunch 本页）；mock 包下 isUnlocked 恒 true（useMock()=true，index.vue:48）无法呈现，mock 环境记 UNVERIFIED",
+      "action": "0.6s 后 DOM 采样 .lock-screen 与 .chat-body/.input-bar 存在性",
+      "expected": "isUnlocked = isLoggedIn(false) || useMock()(false) = false（index.vue:48）→ v-if 渲染 LockScreen（index.vue:358）：主按钮/× 关闭/「先逛逛公开内容」齐备（components/common/LockScreen.vue:108-233）；聊天主体与输入栏不渲染（template v-else，index.vue:359）；无错误/空态闪现（冷启动铁律）；LockScreen 内部按钮行为已由村口页清单 VI03-VI06 覆盖（同组件复用），本例只验本页拦截态",
+      "evidence": "normal：after 截图（锁定态全景）+ 路由 + console 过滤"
+    },
+    {
+      "id": "OC26",
+      "page": "subpackages/chat/official-chat/index",
+      "title": "用户消息头像兜底链与「已读」标记：双身份 A/B 各验一次",
+      "tier": "normal",
+      "pre": "身份A、身份B 分别按 r11 mock 登录进入本页并各发 1 条消息（mock 下 profileStore.avatarUrl 恒= avatars/avatar-1.jpg，stores/profile.ts:328-330 D-05 设定）",
+      "action": "各身份发送后采样 .msg-row--right .msg-avatar 的 src 与 .read-receipt 文本",
+      "expected": "头像 src=resolveMediaUrl(profileStore.avatarUrl)（index.vue:87-89）→ mock 双身份均解析 avatar-1.jpg 且 image 加载成功（非空、非裂图，72rpx 圆形 index.vue:767-773）；页面级兜底 /static/assets/images/avatars/avatar-2.jpg 仅 store 头像为空时生效（real 无头像账号，附注路径 index.vue:88）；每条用户气泡下「已读」标记可见（index.vue:496，24rpx #667870 index.vue:899-905）；头像单一数据源=profileStore（2026-09-06 修复：不再写死 avatar-1 与身份割裂）",
+      "evidence": "normal：A/B 两张 after 截图（各自消息区）+ console 过滤"
+    }
+  ]
+}

@@ -1,0 +1,894 @@
+{
+  "cases": [
+    {
+      "id": "SC01",
+      "page": "subpackages/tools/security/index",
+      "title": "身份B 冷启动直达安全中心：五组卡片完整渲染 + 手机号脱敏文案，不闪错误",
+      "tier": "normal",
+      "pre": "身份B（100159 小新生，tmp_r11_guest.json：profileCompleted=true）mock 登录（JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，校验 isLoggedIn=true；tmp_r11_*.json 内 token 为 2 小时时效 HS512，iat 2026-09-22T12:42Z/exp 14:42Z 已过期，执行前须重签当日 token）→ wx.reLaunch('/subpackages/tools/security/index') 冷启动直达",
+      "action": "进入后 1s DOM 采样：.sec-item 数量、账号安全/第三方账号/登录设备/隐私保护/危险操作五组 SectionCard 标题、手机号行描述文案，不打点",
+      "expected": "usePageAccess(profilePageRequirements)（profile-access requiresAuth=false，config/page-access.ts:39-45）不拦截；AppShell 标题=安全中心（index.vue:508）；五组卡片齐全（index.vue:510/551/585/618/659）；手机号行展示脱敏态：userSession.phoneBound ? t('security.phoneBoundMask') : t('security.phoneNotBound')（index.vue:42-45）；第三方微信行按 loginMethod 推导已绑/未绑（index.vue:48）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "normal：after 截图（全页）+ 路由（getCurrentPages 栈顶=subpackages/tools/security/index）+ console 全量过滤"
+    },
+    {
+      "id": "SC02",
+      "page": "subpackages/tools/security/index",
+      "title": "点「手机号」行打开换绑弹层：空表单两输入框 + 取消/确认按钮",
+      "tier": "normal",
+      "pre": "同 SC01，B 身份已进入安全中心",
+      "action": "tap 账号安全组第一条 .sec-item（aria-label=手机号，index.vue:512-519）→ 500ms 内采样 .sec-modal-mask/.sec-modal__title/.sec-modal__input 可见性",
+      "expected": "handleChangePhone（index.vue:238-244）：清 error、清 newPhone/changePhonePassword、showChangePhoneModal=true；弹层渲染标题「手机号」+ 新手机号 number 输入（maxlength=11）+ 密码 password 输入 + 取消/确认双按钮（index.vue:677-719）；500ms 内弹层可见（铁律反馈达标）；console 无错",
+      "evidence": "normal：after 截图（弹层展开）+ 路由不变断言 + console"
+    },
+    {
+      "id": "SC03",
+      "page": "subpackages/tools/security/index",
+      "title": "换绑手机号非法输入两段校验：非 1[3-9] 号段报格式错，合法号段空密码报密码必填",
+      "tier": "normal",
+      "pre": "同 SC02，换绑弹层处于展开态",
+      "action": "① 输入框1 输入 '12345' → tap「确认」→ 采样 .sec-modal__error 文案；② 改输 '13800138000'、密码留空 → tap「确认」→ 再采样 error 文案",
+      "expected": "① !/^1[3-9]\\d{9}$/.test('12345') → changePhoneError=t('security.phoneFormatError')（index.vue:257-261），弹层不关；② 号段合法但密码空 → t('security.phonePasswordRequired')（index.vue:262-265）；两段错误文案均在 500ms 内渲染（DOM 变化），弹层均未关闭；console 无未捕获异常",
+      "evidence": "normal：每段 after 截图（含错误文案）+ 路由不变 + console"
+    },
+    {
+      "id": "SC04",
+      "page": "subpackages/tools/security/index",
+      "title": "换绑手机号合法提交（mock 演示闭环）：弹层关闭 + 演示提示 Toast，不调真实接口",
+      "tier": "critical",
+      "pre": "同 SC02 弹层展开；确认环境为 mock（isMockMode=true，stores/helpers/use-mock.ts:23）",
+      "action": "输入 '13912345678' + 密码 'abc123' → tap「确认」→ 采样 Toast 文案与弹层可见性；再读 storage 无 token 变化",
+      "expected": "useMock() 分支（index.vue:266-270）：closeChangePhoneModal 关弹层 + uni.showToast(title=t('security.phoneChangeHint'), icon=none)；不发起 /auth/change-phone 请求（network/console 无该请求）；会话手机号绑定状态不变；Toast 文案与 i18n 一致且 2s 内自动消失（Loading/Toast 不永驻铁律）",
+      "evidence": "critical：before（弹层填好）+ after（弹层关、Toast 可见）截图 + 路由不变 + Toast 文案 + console（含网络面板无 change-phone 请求）"
+    },
+    {
+      "id": "SC05",
+      "page": "subpackages/tools/security/index",
+      "title": "点「修改密码」行打开弹层 + 空表单提交 → 新密码长度错误文案（空提交分支）",
+      "tier": "normal",
+      "pre": "同 SC01，B 身份已进入安全中心",
+      "action": "① tap 账号安全组第二条 .sec-item（aria-label=修改密码，index.vue:530-546）→ 采样弹层与三个 password 输入框；② 三个输入全空直接 tap「确认」→ 采样 .sec-modal__error",
+      "expected": "① openPasswordModal（index.vue:296-303）清三输入与 error 后弹层展开，含旧密码/新密码/确认新密码三个输入；② 空提交：pwd='' 长 0<6 → passwordError=t('security.passwordLengthError')（index.vue:317-321），弹层不关、无请求发出；console 无错",
+      "evidence": "normal：两步 after 截图（弹层展开 / 错误文案）+ 路由不变 + console"
+    },
+    {
+      "id": "SC06",
+      "page": "subpackages/tools/security/index",
+      "title": "修改密码非法序列：两次输入不一致 → mismatch；补旧密码前的各段校验逐条命中",
+      "tier": "normal",
+      "pre": "同 SC05，修改密码弹层展开",
+      "action": "① 旧密码 'old123'、新密码 'abc123'、确认 'abc456' → tap「确认」采样 error；② 修正确认='abc123' → tap「确认」（旧密码已填，mock 下将走成功分支，立即转 SC07 前置态）",
+      "expected": "① pwd===confirm 不成立 → t('security.passwordMismatch')（index.vue:322-325）；② 校验链通过 → 进入 useMock() 成功分支（index.vue:330-336），与 SC07 预期一致；若旧密码留空则应命中 t('security.oldPasswordRequired')（index.vue:326-329）；错误文案 500ms 内渲染",
+      "evidence": "normal：每段 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "SC07",
+      "page": "subpackages/tools/security/index",
+      "title": "修改密码合法提交（mock）：弹层关 + 成功 Toast + 不清 token 不跳登录（real 才吊销重登）",
+      "tier": "critical",
+      "pre": "同 SC06 第②步就绪（三输入合法）；确认 mock 环境",
+      "action": "tap「确认」→ 采样 Toast、弹层可见性；读 wx.getStorageSync('token') 前后对比；观察 1.5s 内路由",
+      "expected": "useMock() 分支（index.vue:330-336）：showPasswordModal=false + successHaptic + showToast(t('security.passwordUpdated'), icon=success)；token 保留（clearTokens 不执行）、不 reLaunch 登录页（real 分支 index.vue:337-353 才清 token + 1.2s 后跳 ROUTES.LOGIN，mock 不走）；Toast 2s 消失；console 无 change-password 请求",
+      "evidence": "critical：before（表单填好）+ after（Toast）截图 + 路由断言（仍在本页）+ Toast 文案 + console + token 前后值"
+    },
+    {
+      "id": "SC08",
+      "page": "subpackages/tools/security/index",
+      "title": "两个表单弹层三路关闭之遮罩/取消：点击均关弹层且路由不变",
+      "tier": "normal",
+      "pre": "同 SC01；依次打开换绑弹层与修改密码弹层",
+      "action": "对每个弹层：① tap .sec-modal-mask 空白区（遮罩，index.vue:677/722）；② 重新打开后 tap「取消」按钮（index.vue:698-707/750-759）",
+      "expected": "遮罩 @tap=closeChangePhoneModal/closePasswordModal、取消同函数（index.vue:247-249/306-308）：弹层 500ms 内消失，路由不变，输入态丢弃（重开为空表单，openPasswordModal 每次清空）；无死按钮",
+      "evidence": "normal：每路 after 截图（弹层已关）+ 路由不变断言 + console"
+    },
+    {
+      "id": "SC09",
+      "page": "subpackages/tools/security/index",
+      "title": "第三方微信绑定行按登录方式分支：wechat→二次确认 Modal，非 wechat→演示提示 Toast",
+      "tier": "normal",
+      "pre": "同 SC01；先 evaluate 读 sessionStore.userSession.loginMethod 确定分支",
+      "action": "tap 第三方账号组微信行（index.vue:553-560）→ 采样 uni.showModal/Toast；若出确认弹窗再 tap 确认按钮",
+      "expected": "wechatBound=true（loginMethod==='wechat'，index.vue:48）→ showModal 解绑确认（confirmColor=error），点确认 → showToast(t('security.thirdPartyDemoHint'), icon=none)（index.vue:55-73），不解绑、状态不变；wechatBound=false → 直接 toast 同文案；任一路径 500ms 内有可观测反馈；Apple 行（index.vue:571-580）无 @tap 处理器，属纯展示行不判死按钮（如实记录其 role 缺失）",
+      "evidence": "normal：after 截图（Modal 或 Toast）+ 路由不变 + Toast/Modal 文案 + console"
+    },
+    {
+      "id": "SC10",
+      "page": "subpackages/tools/security/index",
+      "title": "「隐私权限设置」跳转 profile/privacy 并返回落回安全中心",
+      "tier": "navigation",
+      "pre": "同 SC01，B 身份在安全中心",
+      "action": "tap 隐私保护组第一条（index.vue:620-636）→ getCurrentPages 断言 → navigateBack 返回再断言",
+      "expected": "goPrivacySettings（index.vue:425-429）openAppPath(ROUTES.PROFILE.PRIVACY='/subpackages/profile-extra/profile/privacy'，constants/routes.ts:116)；栈顶=profile/privacy；返回后落回 security/index 且五组卡片状态保留（返回落点=来源页铁律）",
+      "evidence": "navigation：路由断言（去/回 getCurrentPages 链）即可，可省截图；console 无错"
+    },
+    {
+      "id": "SC11",
+      "page": "subpackages/tools/security/index",
+      "title": "「隐私政策」跳转 legal/privacy 并返回落回安全中心",
+      "tier": "navigation",
+      "pre": "同 SC01",
+      "action": "tap 隐私保护组第二条（index.vue:638-654）→ getCurrentPages 断言 → 返回",
+      "expected": "goPrivacyPolicy（index.vue:432-435）openAppPath(SUBPACKAGE_ROUTES.LEGAL.PRIVACY)；栈顶=subpackages/legal/privacy/index；返回落回本页状态不丢",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "SC12",
+      "page": "subpackages/tools/security/index",
+      "title": "注销账号两层弹层：错误确认文字报 mismatch，正确「注销」在 mock 下仅演示提示不真注销",
+      "tier": "critical",
+      "pre": "同 SC01（此用例有高危语义，mock 环境下无真实副作用；若切 real 环境执行须用可弃置身份）",
+      "action": "① tap 危险操作组「注销账号」（index.vue:660-673）→ 第一层弹层采样；② tap 弹层内「注销账号」确认（index.vue:788-796）→ 第二层凭据弹层采样；③ 确认文字输「删除」→ tap「注销账号」采样 error；④ 改输「注销」→ tap「注销账号」→ 采样 showModal 文案；读 token 前后对比",
+      "expected": "① showDeleteModal=true（index.vue:438-441）；② confirmDeleteAccount（index.vue:447-453）关第一层开第二层（输入「注销」+ 旧密码两输入）；③ '删除'!==t('security.deleteTypeWord') → t('security.deleteTypeMismatch')（index.vue:462-465）；④ mock 分支（index.vue:466-478）：showDeactivateModal=false + showModal(注销须知 title/content，showCancel=false)，点确定后 toast t('security.deleteTodo')；不发 /auth/deactivate 请求、token 保留、不跳登录页；全部反馈 500ms 内可观测",
+      "evidence": "critical：每步 after 截图（两层弹层/错误文案/最终 Modal）+ 路由不变 + Toast 与 Modal 文案 + console + token 前后值"
+    },
+    {
+      "id": "SC13",
+      "page": "subpackages/tools/security/index",
+      "title": "登录设备组（mock）：仅当前设备一条且无「下线」按钮；real 分支 kick 流程为条件用例",
+      "tier": "normal",
+      "pre": "同 SC01，mock 环境（loadDevices 在 useMock() 时直接 return，index.vue:212-213）",
+      "action": "采样 .sec-item 设备行数量与内容；确认无 .sec-item__kick 元素；再 evaluate 检查 storage KICKED_DEVICES 键初始态",
+      "expected": "mock 走 buildInitialDevices（index.vue:120-141）：仅 1 条设备（uni.getDeviceInfo 型号或「未知设备」）且 isCurrent=true → v-if=!device.isCurrent 的下线按钮不渲染（index.vue:602-612）；无伪造设备列表；real 模式下线用例（kickDevice→确认→POST /auth/devices/{id}/revoke→移除+成功 Toast，index.vue:376-422）标记为条件用例，当前 mock 环境不执行、如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（设备组）+ 路由不变 + console + storage 读值"
+    },
+    {
+      "id": "SE01",
+      "page": "subpackages/tools/search/index",
+      "title": "身份B 冷启动直达搜索页：输入框自动聚焦 + mock 热搜/历史双空 → EmptyState 兜底，不闪错误",
+      "tier": "normal",
+      "pre": "身份B（100159 小新生）mock 登录（同 SC01 前置做法与 token 时效警示）→ wx.reLaunch('/subpackages/tools/search/index') 冷启动直达",
+      "action": "进入后 0.5s/1s 两次 DOM 采样：.search-input focus 态、热搜 section（v-if hotSearches.length>0）、历史 section（v-if history.length>0）、EmptyState 可见性",
+      "expected": "onLoad 无 keyword 参数走 searchStore.init()（index.vue:47-54）；mock 分支 hotSearches=[]（stores/search.ts:61-65）且 history 本地无存档 → 两 section 均不渲染、EmptyState(type=no-data, message=t('search.emptyHint'), hide-sub) 兜底（index.vue:310）；inputFocused=true 自动聚焦（index.vue:39/229）；无报错空态闪现（冷启动铁律）；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（空态全景）+ 路由（栈顶=search/index）+ console 全量过滤"
+    },
+    {
+      "id": "SE02",
+      "page": "subpackages/tools/search/index",
+      "title": "返回键与「取消」双入口：栈=1 深链时兜底 switchTab 发现页",
+      "tier": "navigation",
+      "pre": "同 SE01（reLaunch 直达，getCurrentPages().length===1）",
+      "action": "① tap .search-back（index.vue:219-221）→ getCurrentPages 断言；② 重新直达后 tap .search-cancel 文字（index.vue:244-246）→ 再断言",
+      "expected": "goBack（index.vue:149-155）：栈长不>1 → navigateBack fail 回调 → uni.switchTab({url:ROUTES.TAB.DISCOVER})；两入口均落发现 Tab（栈顶=pages/discover/index）；500ms 内路由变化反馈",
+      "evidence": "navigation：两次路由断言（getCurrentPages 链）即可 + console"
+    },
+    {
+      "id": "SE03",
+      "page": "subpackages/tools/search/index",
+      "title": "用户 Tab 输入防抖 300ms 自动搜索（mock searchUsers 按昵称/学校过滤）并渲染结果行",
+      "tier": "normal",
+      "pre": "同 SE01；activeTab 默认 'users'（index.vue:73）",
+      "action": "往 .search-input 输入一个 mock 推荐用户昵称子串（fixtures buildRecommendedPersonsMock 命名，如 '苏'/'晴'）→ 0.15s 采样一次（应无结果变更）→ 0.5s 再采样（应已搜索）",
+      "expected": "onSearchInput → searchStore.setKeyword（stores/search.ts:82-102）300ms 防抖后自动 search(true)；mock 分支 posts=[]（stores/search.ts:112-115）但 users tab 结果来自 clientApi.searchUsers（index.vue:89-97）→ fixtures.searchUsers 按昵称/学校名过滤 slice(0,20)（services/mocks/fixtures.ts:1974-1987）→ .user-row 渲染昵称+学校·简介；0.15s 采样时 usersLoading 骨架或未变更（防抖生效铁律）；无输入时点击 Tab 不发请求（onTabChange keyword 空 guard，index.vue:79-84）",
+      "evidence": "normal：after 截图（结果行）+ 路由不变 + console（无报错、防抖期间无多余请求）"
+    },
+    {
+      "id": "SE04",
+      "page": "subpackages/tools/search/index",
+      "title": "用户结果行点击 → 跳他人主页携带 userId，返回落回搜索页且结果保留",
+      "tier": "navigation",
+      "pre": "同 SE03，users tab 已有结果行",
+      "action": "tap 第一条 .user-row（index.vue:321-337）→ getCurrentPages 断言 → 返回",
+      "expected": "goUserProfile（index.vue:134-136）openAppPath('/subpackages/profile-extra/profile/other?userId='+encodeURIComponent(user.userId))；栈顶=profile/other 且 query 含 userId；返回后仍在 users tab、结果列表与关键字不丢（Tab/返回状态不丢铁律）",
+      "evidence": "navigation：去/回路由断言 + 返回后 DOM 采样结果仍在 + console"
+    },
+    {
+      "id": "SE05",
+      "page": "subpackages/tools/search/index",
+      "title": "三 Tab（用户/标签/学校）切换：高亮态迁移 + 关键字保留不丢",
+      "tier": "normal",
+      "pre": "同 SE03，关键字已在输入框",
+      "action": "依次 tap .search-tab 三个 tab（index.vue:250-262），每次切换后采样 activeTab 样式类与输入框值",
+      "expected": "onTabChange（index.vue:79-84）：activeTab 切换且 --active 高亮迁移（search-tab--active 绿底白字，index.vue:628-640）；keyword.trim() 非空时触发 runTabSearch 重新拉当前分组；切回 users 时已拉到的 users 列表保留（users ref 不清空）；aria-selected 同步翻转；500ms 内 DOM 变化",
+      "evidence": "normal：每次切换 after 截图（三张）+ 路由不变 + console"
+    },
+    {
+      "id": "SE06",
+      "page": "subpackages/tools/search/index",
+      "title": "标签 Tab 搜索（mock 帖子恒空）→ noResult 空态，无结果计数尾巴与分页残留",
+      "tier": "normal",
+      "pre": "同 SE03",
+      "action": "切到 tags tab → 等防抖搜索完成后采样：.result-meta 计数、EmptyState、.load-more 元素",
+      "expected": "runTabSearch tags 分支走 searchStore.search(true)（index.vue:98-100）→ mock posts=[] 且 hasMore=false（stores/search.ts:112-115）→ 渲染 t('search.resultCount',{n:0}) 计数与 EmptyState(t('search.noResult'))（index.vue:386-397）；无「没有更多」尾巴（!hasMore && posts.length>0 才显示，恒 false）；ErrorState 不出现（errorMessage=null）；console 无错",
+      "evidence": "normal：after 截图（空态）+ 路由不变 + console"
+    },
+    {
+      "id": "SE07",
+      "page": "subpackages/tools/search/index",
+      "title": "学校 Tab：输入校名出学校行 → 点击展开校园主页内联预览 → 再点收起",
+      "tier": "normal",
+      "pre": "同 SE03，切到 schools tab",
+      "action": "① 输入 config/schools 内某校名子串 → 采样 .school-row；② tap 第一条学校行 → 采样 .campus-preview 可见性与行尾文案；③ 再 tap 同一行 → 再采样",
+      "expected": "schoolResults 按 SCHOOLS 名称/城市 includes 过滤 slice(0,20)（index.vue:104-108，本地同步计算无请求）；点击 openCampusProfile（index.vue:111-131）：campusExpanded=校名 → .campus-preview 展开，行尾箭头文案变「收起」（index.vue:360），同时拉 getRecommendations({schools}) 按 campusName 过滤 slice(0,5) 渲染头像列或空文案 t('search.campusNoUsers')；再点命中 campusExpanded===schoolName 分支收起清空；两态均 500ms 内反馈",
+      "evidence": "normal：三步 after 截图（列表/展开/收起）+ 路由不变 + console（含 getRecommendations 调用）"
+    },
+    {
+      "id": "SE08",
+      "page": "subpackages/tools/search/index",
+      "title": "校园预览内用户头像点击 → 他人主页（有数据分支）",
+      "tier": "navigation",
+      "pre": "同 SE07 校园预览展开且 campusPeople.length>0（mock 全量推荐按校过滤后存在时；若该校 0 人则改验 t('search.campusNoUsers') 空文案分支并如实记录）",
+      "action": "tap .campus-person 第一个（index.vue:364-378）→ getCurrentPages 断言 → 返回",
+      "expected": "openAppPath('/subpackages/profile-extra/profile/other?userId='+person.userId)（index.vue:373）；栈顶=profile/other；返回后预览仍展开",
+      "evidence": "navigation：路由断言 + console；若走空文案分支补 after 截图一张"
+    },
+    {
+      "id": "SE09",
+      "page": "subpackages/tools/search/index",
+      "title": "清空按钮：关键字清空回热搜/历史视图 + 100ms 后重新聚焦",
+      "tier": "normal",
+      "pre": "同 SE03，输入框有值且结果已渲染（清空图标 v-if=keyword，index.vue:235-242）",
+      "action": "tap .search-clear-img → 采样输入框值、结果区、EmptyState、focus 态",
+      "expected": "clearSearch（index.vue:139-146）：searchStore.clear() 清 keyword/posts/error 并复位 page/hasMore（stores/search.ts:137-154）→ 建议区（热搜+历史，mock 下为 EmptyState）重新渲染；inputFocused 先 false 后 100ms setTimeout 置 true 重新聚焦；500ms 内全部可观测",
+      "evidence": "normal：after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "SE10",
+      "page": "subpackages/tools/search/index",
+      "title": "特殊字符/超长/emoji 输入：不崩溃、正常回显与提交、无 XSS 渲染",
+      "tier": "normal",
+      "pre": "同 SE01",
+      "action": "分三次往 .search-input 输入：① '<img onerror=alert(1)>' ② 50+ 汉字长串 ③ '😀🎉🚀混合abc123'；每次等 300ms 防抖后采样输入框回显、结果区与 console",
+      "expected": "v-model 纯文本回显不触发脚本（无 alert/无异常弹窗）；防抖后按常规搜索分支执行（users tab mock 过滤可能 0 结果 → noResult 空态，不算错误）；页面不白屏不崩、可继续输入与清空；console 无 TypeError/is not defined",
+      "evidence": "normal：三次 after 截图 + 路由不变 + console 全量过滤"
+    },
+    {
+      "id": "SE11",
+      "page": "subpackages/tools/search/index",
+      "title": "空关键字回车/确认：onConfirm trim 守卫直接 return，不触发搜索不跳转",
+      "tier": "normal",
+      "pre": "同 SE01，输入框为空",
+      "action": "对 .search-input 触发 confirm（confirm-type=search）→ 采样视图与 console 网络活动",
+      "expected": "onConfirm keyword.trim() 为空直接 return（index.vue:66-70），无 search 请求、视图停留热搜/历史空态、无 Toast 无路由变化（该元素为输入框非按钮，不判死按钮）；连续回车多次行为一致",
+      "evidence": "normal：after 截图 + 路由不变 + console（无新增请求）"
+    },
+    {
+      "id": "HS01",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "身份A（资料未完善）冷启动直达：LockScreen 锁定态 + 服务端权威完成度，不闪信号列表",
+      "tier": "normal",
+      "pre": "身份A（100158 曦风，tmp_r11_login.json：profileCompleted=false）mock 登录（做法同 SC01，token 时效警示同）→ wx.reLaunch('/subpackages/tools/heart-signals/index') 冷启动直达",
+      "action": "进入后 0s/0.5s/1s 三次 DOM 采样：.heart-signals-page 内 LockScreen 组件可见性、完成度百分比文案、信号卡片存在性",
+      "expected": "usePageAccess(likesPageRequirements)（requiresAuth=true，config/page-access.ts:24-29）已登录放行；isUnlocked=sessionStore.isProfileComplete=false（index.vue:39）→ v-if 渲染 LockScreen（index.vue:219-222）全屏锁定；completionPercent 优先取 profileStore.basicProfile.profileCompletion（服务端权威，MP-R8-LOCK-001，index.vue:41-47），onMounted 懒加载 profileStore.load()（index.vue:113）；不渲染 Tab/卡片/倒计时；likesStore.fetchHeartSignals 不触发（isUnlocked 守卫 index.vue:114-116/122-124）；无错误/空态闪现；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（锁定态）+ 路由（栈顶=heart-signals/index）+ console 全量过滤"
+    },
+    {
+      "id": "HS02",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "身份B 冷启动直达：待处理 Tab 默认 + 徽标2 + 两张卡片 + 过期信号倒计时显示「已过期」",
+      "tier": "normal",
+      "pre": "身份B（100159 小新生，profileCompleted=true）mock 登录（同 SC01 前置）→ wx.reLaunch('/subpackages/tools/heart-signals/index') 冷启动直达",
+      "action": "进入后 1s DOM 采样：三个 .signal-tabs__item 高亮态与徽标数字、.signal-card 数量、每卡 .signal-card__time 倒计时文案、进度条宽度",
+      "expected": "likesStore.fetchHeartSignals（onMounted+onShow 双触发）mock 深拷贝返回 signal-1 苏晴/signal-2 叶知秋（stores/likes.ts:785-788；mock-data.ts:436-464）；pending 徽标显示 2（index.vue:254-256）；两卡片渲染；两条 expiresAt=2026-05 均已过 → diff<=0 → map[s.id]=t('heartSignals.expiredLabel') 仅显示「已过期」不拼「后过期」后缀（MP-R1-HEARTSIGNALS-001，index.vue:96-100）；countdownWidth 按 24h 兜底 ratio=0 → 进度条宽 0（index.vue:202-213）；骨架 loading 先行不永驻；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（列表全景含倒计时文案）+ 路由（栈顶=heart-signals/index）+ console 全量过滤"
+    },
+    {
+      "id": "HS03",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "返回键（栈>1）：navigateBack 回来源页且状态恢复",
+      "tier": "navigation",
+      "pre": "身份B mock 登录后从「我的」经 navigateTo 进入本页（getCurrentPages().length>1）",
+      "action": "tap .page-header__back（index.vue:231-240）→ getCurrentPages 断言",
+      "expected": "goBack pages.length>1 分支（index.vue:73-80）：uni.navigateBack({delta:1})；落点=进入前来源页；再次进入时 onShow 重拉信号列表（index.vue:121-125）",
+      "evidence": "navigation：路由断言（getCurrentPages 链）即可 + console"
+    },
+    {
+      "id": "HS04",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "深链栈=1 返回兜底：switchTab 落首页 Tab",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/tools/heart-signals/index') 直达（栈=1）",
+      "action": "tap .page-header__back → getCurrentPages 断言",
+      "expected": "goBack else 分支（index.vue:77-79）：uni.switchTab({url:'/pages/home/index'})；栈顶=pages/home/index；无静默无反应（兜底铁律）",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "HS05",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "三状态 Tab 切换：待处理/已接受/已拒绝各自空态文案与分组正确",
+      "tier": "normal",
+      "pre": "同 HS02，B 身份在信号列表页（初始数据 2 条均 pending）",
+      "action": "依次 tap 三个 .signal-tabs__item（index.vue:247-272），每次采样高亮态与列表区（卡片/EmptyState）",
+      "expected": "activeTab 内联赋值切换；pending=2 卡片；accepted/declined 初始为空 → 各自 EmptyState（emptyAcceptedTitle/emptyDeclinedTitle+Desc，index.vue:286-297）；分组口径 pending/accepted/declined+expired 合并（R4-00024，index.vue:55-65）；切换 500ms 内 DOM 变化；数据与滚动位切换不串",
+      "evidence": "normal：三次切换 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "HS06",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "接受心动信号（mock）：成功 Toast + 卡片移出待处理并入已接受 Tab",
+      "tier": "critical",
+      "pre": "同 HS02，pending Tab 有 signal-1 卡片",
+      "action": "tap signal-1 卡片「接受」按钮（index.vue:332-334）→ 采样 Toast 文案 → 切「已接受」Tab 采样卡片",
+      "expected": "handleAccept（index.vue:134-144）→ likesStore.acceptHeartSignal mock 分支置 status='accepted'（likes.ts:824-830）→ showToast(t('heartSignals.acceptSuccess'), icon=success) → 重拉列表后卡片移出 pending（徽标变 1）、已接受 Tab 出现该卡（状态标签「已接受」绿底样式 signal-card__status-tag--accepted，index.vue:720-737）；Toast 2s 消失；console 无 /matches/heart-signals 请求（mock 不发）",
+      "evidence": "critical：before（点前列表）+ after（Toast+列表变化）截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "HS07",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "拒绝心动信号（mock）：Toast + 移出待处理，declined 口径归入「已拒绝」Tab",
+      "tier": "critical",
+      "pre": "同 HS02（或 HS06 后用 signal-2）",
+      "action": "tap 剩余 pending 卡片「拒绝」按钮（index.vue:329-331）→ 采样 Toast → 切「已拒绝」Tab 采样",
+      "expected": "handleDecline（index.vue:146-156）→ mock 分支置 status='expired'（likes.ts:853-859）→ showToast(t('heartSignals.rejectSuccess'), icon=none) → 重拉后 pending 徽标 0 → 空态 emptyPendingTitle；expired 归入 declined 分组展示（String(status)==='declined'||'expired'，index.vue:61-65），状态标签灰底（signal-card__status-tag--expired，index.vue:724-726）；无接受/拒绝错序",
+      "evidence": "critical：before+after 截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "HS08",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "已接受信号「开聊」：mock 临时会话创建成功并跳聊天页携带 fromSignal=1&sessionId",
+      "tier": "critical",
+      "pre": "先经 HS06 接受一张卡片，切「已接受」Tab 使「开聊」按钮可见（index.vue:375-379）",
+      "action": "tap「开聊」按钮 → 采样路由与 query → getCurrentPages 断言",
+      "expected": "handleChat（index.vue:163-176）→ chatStore.startFromSignal mock 分支返回 id=mock-session-* 占位会话（stores/chat/actions/session.ts:117-135）→ openAppPath('/subpackages/chat/chat-session/index?fromSignal=1&sessionId='+encodeURIComponent(session.id))；栈顶=chat-session/index 且 query 含 fromSignal=1 与 sessionId=mock-session-*；失败分支（session.id 缺失）走 showErrorToast(t('heartSignals.chatFailed')) 不跳转；console 无错",
+      "evidence": "critical：before（已接受列表）+ after（聊天页）截图 + 路由+query 断言 + Toast（如触发失败分支）+ console"
+    },
+    {
+      "id": "HS09",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "信号卡片头点击 → 跳对应用户主页（fromUserId 透传）",
+      "tier": "navigation",
+      "pre": "同 HS02，pending 有卡片",
+      "action": "tap 卡片头部 .signal-card__header（index.vue:310）→ getCurrentPages 断言 → 返回",
+      "expected": "goToUserProfile(signal.fromUserId)（index.vue:178-181）：userId 非空走 openUserProfile → mock fromUserId='user-2003'（mock-data.ts:439）落入对应主页路由（utils/navigation openUserProfile 的落地页，执行时记录实际栈顶）；userId 为空直接 return 不跳转；返回后列表状态保留",
+      "evidence": "navigation：路由断言 + console"
+    },
+    {
+      "id": "HS10",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "接受按钮快击×5：仅一次状态变更，不重复 Toast/不串卡",
+      "tier": "critical",
+      "pre": "重新 mock 拉回 2 条 pending（重复进出或重启恢复 mock 深拷贝固件）",
+      "action": "对 signal-1「接受」按钮 500ms 内连点 5 次 → 观察后采样 Toast 次数（console 计数）、pending/accepted 数量",
+      "expected": "首次点击后 acceptHeartSignal 将 status 置 accepted 并重拉；后续 4 次点击目标已不在 pending 列表（找不到该卡）→ 状态仍只变更一次；accepted Tab 仅 1 条该信号；无重复成功 Toast 堆叠、无状态翻转异常；若实测出现多次 Toast/状态错乱如实记缺陷",
+      "evidence": "critical：before+after 截图 + 路由不变 + Toast 文案（计数）+ console"
+    },
+    {
+      "id": "HS11",
+      "page": "subpackages/tools/heart-signals/index",
+      "title": "重复进出×3（onShow 重拉）+ 30s 倒计时刷新：mock 深拷贝复原数据，console 无错",
+      "tier": "noop",
+      "pre": "同 HS02",
+      "action": "返回后再进入本页共 3 次（每次触发 onShow fetchHeartSignals）；停留本页观察 30s 前后 .signal-card__time 文案",
+      "expected": "onShow 守卫 isUnlocked 后每次重拉（index.vue:121-125），mock 每次深拷贝固件（MP-R1-HEARTSIGNALS-002 修复）→ 数据恒为 2 条 pending，不因先前接受/拒绝残留清空；countdownTimer 30s 重算（index.vue:83/111-119）无 NaN 文案；页面卸载 clearInterval 不泄漏；console 无 abort/TypeError 报错",
+      "evidence": "noop：执行日志（进出次数、倒计时前后采样值）+ console 即可，可省截图"
+    },
+    {
+      "id": "AD01",
+      "page": "subpackages/tools/activities/detail",
+      "title": "冷启动深链 ?id=11：骨架 → store 未命中 → 示例活动兜底（新人礼遇+示例徽标）不闪错误空态",
+      "tier": "normal",
+      "pre": "身份B mock 登录（前置做法与 token 时效警示同 SC01）→ wx.reLaunch('/subpackages/tools/activities/detail?id=11') 冷启动直达（固化参数取 scripts/r11-param-map.json params['subpackages/tools/activities/detail']='?id=11'）",
+      "action": "进入后 0.3s/1s/2s 三次 DOM 采样：SkeletonBlock 可见性、.detail-cover__badge 文案、.detail-title 文本、.detail-status 文本",
+      "expected": "onLoad 读 id='11'（detail.vue:121-142）→ store 空 → fetchActivities mock 返回 id='a-*' 系列（stores/activity.ts:59-75）→ resolveActivity('11') 未命中 → 回退示例活动 samples.find 失败取 samples[0]=新人礼遇（index 代码 detail.vue:110-118）→ isSample=true 渲染「示例」徽标（detail.vue:332-335）、标题=新人礼遇、状态=报名中（statusText open 分支 detail.vue:169-176）；过程先骨架后内容，无错误态闪现（冷启动铁律）；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（最终内容页）+ 路由（栈顶=activities/detail）+ console 全量过滤"
+    },
+    {
+      "id": "AD02",
+      "page": "subpackages/tools/activities/detail",
+      "title": "返回键深链栈=1：openAppPath 兜底跳发现·活动列表页",
+      "tier": "navigation",
+      "pre": "同 AD01（reLaunch 直达，栈=1）",
+      "action": "tap .detail-header__back（detail.vue:321-323）→ getCurrentPages 断言",
+      "expected": "goBack（detail.vue:278-285）：栈长不>1 → openAppPath('/subpackages/discover/activities/index')；栈顶=subpackages/discover/activities/index；无静默失败",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "AD03",
+      "page": "subpackages/tools/activities/detail",
+      "title": "报名示例活动（本地闭环）：按钮切「退出报名」+ 报名成功 Toast + 助手消息落 storage",
+      "tier": "critical",
+      "pre": "同 AD01，示例活动未报名态（isSignedUp=false，「立即报名」按钮可见 detail.vue:402-412）",
+      "action": "读 storage 助手消息键前值 → tap .detail-signup-btn → 采样 Toast 文案与按钮文案 → 再读 storage",
+      "expected": "handleSignup（detail.vue:232-254）：findFromStore('sample-new-user-gift')=null → 示例分支 isSignedUp=true → 按钮切换为「退出报名」（v-else .detail-quit-btn detail.vue:413-423）+ showToast(t('activities.signupSuccess'))；notifyEnrollSuccess（detail.vue:182-205）appendAssistantActivityNotify 追加一条 card 类型「报名成功」消息（含 cardActivity，cardTargetUrl 指回本页 ?id=sample-new-user-gift）到本地会话存储；Toast 2s 消失不永驻；console 无错",
+      "evidence": "critical：before（未报名）+ after（已报名态+Toast）截图 + 路由不变 + Toast 文案 + console + storage 前后值"
+    },
+    {
+      "id": "AD04",
+      "page": "subpackages/tools/activities/detail",
+      "title": "退出报名：恢复「立即报名」按钮 + 退出成功 Toast",
+      "tier": "critical",
+      "pre": "同 AD03 已报名态（「退出报名」按钮可见）",
+      "action": "tap .detail-quit-btn → 采样 Toast 与按钮文案",
+      "expected": "handleQuitSignup（detail.vue:257-275）示例分支 isSignedUp=false → 恢复「立即报名」按钮 + showToast(t('activities.quitSignupSuccess'))；按钮高度/热区保持 88rpx（detail-quit-btn/Signup-btn height:88rpx，detail.vue:674-694）；无请求发出",
+      "evidence": "critical：before+after 截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "AD05",
+      "page": "subpackages/tools/activities/detail",
+      "title": "「分享」按钮复制小程序内链接：剪贴板内容含 ?id= 且 Toast 提示已复制",
+      "tier": "normal",
+      "pre": "同 AD01（activity 已解析，shareId=activityId='11'）",
+      "action": "tap .detail-share-btn（detail.vue:392-401）→ 读剪贴板（evaluate wx.getClipboardData）+ 采样 Toast",
+      "expected": "handleCopyShare（detail.vue:213-228）lightHaptic 后 uni.setClipboardData({data:'/subpackages/tools/activities/detail?id=11'})，success → showToast(t('activities.linkCopied'), icon=none, duration=NORMAL_MS=2000)；剪贴板实际值与预期链接一致（URL 编码口径以 encodeURIComponent 为准）；fail 分支才出 copyLinkFailed（不触发）；500ms 内有反馈",
+      "evidence": "normal：after 截图（Toast）+ 路由不变 + Toast 文案 + 剪贴板读值 + console"
+    },
+    {
+      "id": "AD06",
+      "page": "subpackages/tools/activities/detail",
+      "title": "报名按钮快击×5（示例活动本地闭环）：仅一次报名语义，助手消息不重复堆积",
+      "tier": "critical",
+      "pre": "同 AD01 未报名态；store 活动分支有 enrollingActivityIds 并发守卫（stores/activity.ts:254-256），示例分支为同步代码无守卫——本用例专测示例分支连点行为",
+      "action": "500ms 内对 .detail-signup-btn 连点 5 次 → 采样 Toast 次数（console 观测）、按钮终态、storage 助手消息条数",
+      "expected": "首次点击即 isSignedUp=true → 按钮切换为「退出报名」，第 2-5 次点击时报名按钮已被 v-if 移除（detail.vue:402-423 二选一渲染）→ 理论上仅 1 次生效；助手消息 appendAssistantActivityNotify 仅追加 1 条（若实测多条即按防连点铁律记缺陷，如实记录）；Toast 无堆叠异常",
+      "evidence": "critical：before+after 截图 + 路由不变 + Toast 文案（计数）+ console + storage 助手消息条数"
+    },
+    {
+      "id": "AD07",
+      "page": "subpackages/tools/activities/detail",
+      "title": "详情 scroll-view 滚动到底/顶：介绍区完整可读无遮挡",
+      "tier": "noop",
+      "pre": "同 AD01",
+      "action": "在 .detail-scroll 内滚动到底再回顶，记录 scrollTop 采样值与 console",
+      "expected": "封面/标题/时间地点/介绍各区块滚动可达；底部 .detail-footer-space（140rpx+安全区）保证报名栏不遮挡介绍末尾（detail.vue:371-373,600-602）；滚动无白屏抖动；console 无错",
+      "evidence": "noop：执行日志（scroll 位置采样）+ console 即可"
+    },
+    {
+      "id": "AD08",
+      "page": "subpackages/tools/activities/detail",
+      "title": "打开即返回 + 重复进出×3：报名态与助手消息无重复残留",
+      "tier": "normal",
+      "pre": "同 AD01",
+      "action": "① 进入后立即 tap 返回；② 再重复完整进出 3 次，每次读 storage 助手消息条数",
+      "expected": "打开即返回无报错无卡死；重复进出不触发报名（isSignedUp 仅由点击驱动），助手消息条数不因进出增长；返回落点一致；console 无 NAV_FAIL",
+      "evidence": "normal：最后一轮 after 截图 + 路由断言 + console + storage 计数"
+    },
+    {
+      "id": "NB01",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "身份B 冷启动直达附近的人：loading → 蒙面卡片渲染（?化名字/模糊头像/解锁提示条）",
+      "tier": "normal",
+      "pre": "身份B mock 登录（前置做法与 token 时效警示同 SC01）→ wx.reLaunch('/subpackages/tools/love-center/nearby') 冷启动直达",
+      "action": "进入后 0.5s/1.5s 两次 DOM 采样：.nearby-loading 文案、CardSwiper 卡片可见性、.card__masked-hint 文案、卡片名字文本",
+      "expected": "onLoad → loadNearbyCards 传 distanceMax=20（nearby.vue:52-54；NEARBY_MAX_DISTANCE_KM=20，stores/discover/utils.ts:96）→ mock getRecommendations 不消费距离过滤返回全量推荐（services/mocks/fixtures.ts:1879-1956 无 distanceMax 分支）→ CardSwiper cards 非空；masked=true：名字渲染 '?'（CardSwiper.vue:283）、头像模糊 .card__bg--masked、解锁提示「互发喜欢解锁头像」条（CardSwiper.vue:1176-1178）；loading 文案先现后消失不永驻；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（卡片全景）+ 路由（栈顶=love-center/nearby）+ console 全量过滤"
+    },
+    {
+      "id": "NB02",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "返回键深链栈=1：switchTab 落首页 Tab 兜底",
+      "tier": "navigation",
+      "pre": "同 NB01（reLaunch 直达，栈=1）",
+      "action": "tap .content-header__back（nearby.vue:175-177）→ getCurrentPages 断言",
+      "expected": "goBack（nearby.vue:76-83）：栈长不>1 → uni.switchTab({url:'/pages/home/index'})；栈顶=pages/home/index；500ms 内路由反馈",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "NB03",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "点赞（like 按钮）：真实链路 swipeRight → 成功 Toast + 卡片推进下一张",
+      "tier": "critical",
+      "pre": "同 NB01，卡片栈≥2；已登录（requireLogin 守卫通过）",
+      "action": "读当前卡首名（masked 下为 '?'，以卡序为准）→ tap .card-action--like（CardSwiper.vue:1295-1296）→ 采样 Toast 文案 → 采样新当前卡是否为下一张",
+      "expected": "onLike → emit swipe('right', cardId) → handleSwipe（nearby.vue:95-128）requireLogin 通过 → discoverStore.swipeRight(cardId,false,本地快照)；未匹配 → showToast(t('contentPages.nearby.liked'), icon=success)（nearby.vue:112-114）；removeLocalCard 同步移除当前卡（MP-R1-NEARBY-001，nearby.vue:116-119,154-157）→ 视觉推进到下一张；store 报错时走 errorMessage/operationFailed Toast（nearby.vue:120-127）；Toast 2s 消失",
+      "evidence": "critical：before（当前卡）+ after（Toast+下一张）截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "NB04",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "跳过（skip 按钮/左滑）：本地移除卡片推进，无网络副作用 Toast",
+      "tier": "normal",
+      "pre": "同 NB03",
+      "action": "tap .card-action--skip（CardSwiper.vue:1287-1288）→ 采样卡片推进",
+      "expected": "emit swipe('left') → handleSwipe left 分支（nearby.vue:98-102）discoverStore.swipeLeft(cardId,本地快照)（mock 下无 like 副作用）→ 无 liked Toast → 本地卡移除推进下一张；500ms 内卡片切换动画可见",
+      "evidence": "normal：after 截图（下一张）+ 路由不变 + console（无失败报错）"
+    },
+    {
+      "id": "NB05",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "超级喜欢（star 按钮）：swipeRight(isSuper=true) 真实链路 → 匹配则跳聊天或推进",
+      "tier": "critical",
+      "pre": "同 NB03（starAction 默认 'superLike'，CardSwiper.vue:135）",
+      "action": "tap .card-action--super（CardSwiper.vue:1291-1292）→ 采样 Toast/路由",
+      "expected": "onStarTap → emit superLike → handleSuperLike（nearby.vue:131-152）→ swipeRight(cardId,true,快照)；lastSwipeResult.matched → showToast(t('contentPages.nearby.likeHint')) + openAppPath 跳 chat-session?userId=<本地卡 userId>（nearby.vue:137-141）；未匹配 → 卡片静默推进（无成功 Toast 属预期，如实记录交互感知）；失败走 store errorMessage/operationFailed Toast；500ms 内有可观测反馈",
+      "evidence": "critical：before+after 截图 + 路由断言（若跳聊天含 query）+ Toast 文案 + console"
+    },
+    {
+      "id": "NB06",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "发消息（详情浮层）：进入 chat-session?userId= 且会话懒创建链路可达",
+      "tier": "critical",
+      "pre": "同 NB01；先点卡片打开详情浮层（emit message 前置：CardSwiper.vue:1258 closeDetail 后 emit）",
+      "action": "tap 卡片 → 详情浮层内 tap 「发消息」按钮 → getCurrentPages 断言",
+      "expected": "handleMessage（nearby.vue:160-167）requireLogin 通过且 userId 非空 → openAppPath('/subpackages/chat/chat-session/index?userId='+encodeURIComponent(userId))；栈顶=chat-session/index 且 query.userId=本地卡对应用户 id；userId 空串时 toast t('discover.userIdInvalid') 不跳转（防御分支）；500ms 内路由反馈",
+      "evidence": "critical：before（浮层）+ after（聊天页）截图 + 路由+query 断言 + Toast（如触发）+ console"
+    },
+    {
+      "id": "NB07",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "CardSwiper 方向语义：右滑=喜欢、左滑=跳过（手势与按钮同语义）",
+      "tier": "normal",
+      "pre": "同 NB03",
+      "action": "在卡片上执行向右拖拽手势（模拟 swipe right）观察动画与结果；复位后向左拖拽观察",
+      "expected": "右滑触发与 like 按钮一致的处理（toast liked + 推进），左滑与 skip 一致（静默推进）；方向不颠倒（CardSwiper 方向语义铁律；emit direction 映射见 CardSwiper.vue:871）；手势路径若 automator 难以注入，改用 touchstart/touchmove/touchend 序列模拟并如实记录执行方式",
+      "evidence": "normal：两个方向 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "NB08",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "卡片点击详情浮层开合：信息展示与关闭路径可用",
+      "tier": "normal",
+      "pre": "同 NB01",
+      "action": "tap 当前卡片主体 → 采样详情浮层可见性 → 点浮层关闭/遮罩 → 再采样",
+      "expected": "详情浮层打开（CardSwiper 详情层，CardSwiper.vue:1253-1258 宿主事件链）展示卡片信息；浮层内 like/super/message 动作均先 closeDetail 再 emit（无浮层卡死）；关闭后回到卡栈；500ms 内开合反馈",
+      "evidence": "normal：开/合两态 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "NB09",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "空态降级 CTA「看全部推荐」（条件用例）：卡片耗尽后重拉全量推荐",
+      "tier": "normal",
+      "pre": "同 NB01；先将卡栈全部消费至 cards.length===0（连续 skip；mock 全量推荐数有限可耗尽；若固件量大可 evaluate 直改组件状态如实记录）",
+      "action": "卡栈空后采样 .nearby-empty 区 → tap .nearby-empty__cta（nearby.vue:196-202）→ 采样加载与卡片恢复",
+      "expected": "空态渲染插画+文案 t('contentPages.nearby.empty') + CTA t('contentPages.nearby.seeAll')（R12-IND-NEARBY-LC-001 升级）；点击 loadAllRecommendations → loadCards({}) 不带距离过滤（nearby.vue:57-59）→ mock 返回全量 → 卡片栈恢复渲染；CTA 500ms 内反馈；若 mock 下空态不可达则如实标 UNVERIFIED 并记录原因",
+      "evidence": "normal：空态+恢复后两张截图 + 路由不变 + console"
+    },
+    {
+      "id": "MB01",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "身份B 冷启动直达 MBTI：mbtiUrl 为空走本地模式 → 头部/16 型网格/4 题卷完整渲染",
+      "tier": "normal",
+      "pre": "身份B mock 登录（前置做法与 token 时效警示同 SC01）→ wx.reLaunch('/subpackages/tools/love-center/mbti') 冷启动直达（contentPageUrls.mbtiUrl 默认空串，config/content-pages.ts:21 → 不渲染 web-view）",
+      "action": "进入后 1s DOM 采样：.content-header__title、.dimension-chip 数量、.type-cell 数量、.quiz-item 数量与选项数",
+      "expected": "webUrl='' → 本地模板（mbti.vue:138-146）：标题=MBTI 人格测试；4 维 chips（E/I、S/N、T/F、J/P，mbti.vue:44-49）；16 型格 .type-cell×16（typeCodes，mbti.vue:36-41）含名称文案；4 道 .quiz-item 每题 2 选项（mbti.vue:62-67）；无 web-view 白屏；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（首屏）+ 路由（栈顶=love-center/mbti）+ console 全量过滤"
+    },
+    {
+      "id": "MB02",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "选项点选高亮：选中态样式与 aria-checked 同步，可改选",
+      "tier": "normal",
+      "pre": "同 MB01",
+      "action": "tap 第 1 题选项 A → 采样该选项 class 与 aria-checked → 再 tap 同题选项 B → 再采样",
+      "expected": "selectAnswer(index,0/1)（mbti.vue:73-75）→ answers[index] 更新 → quiz-option--selected 绿边高亮迁移（mbti.vue:183-207）；aria-checked 翻转（单选语义，同题两选项互斥）；500ms 内 DOM 变化",
+      "evidence": "normal：两次 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "MB03",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "未答完提交：Toast「请先完成」拦截，不弹结果层（空提交三态之空）",
+      "tier": "normal",
+      "pre": "同 MB01，至少一题未作答（初始全未答亦可）",
+      "action": "tap .quiz-submit（mbti.vue:212-214）→ 采样 Toast 与 .mbti-result-mask 可见性",
+      "expected": "submitTest unanswered 守卫（mbti.vue:84-88）：showToast(t('contentPages.mbti.pleaseComplete'), icon=none) 且 showResult 保持 false、无结果弹层；Toast 2s 消失；500ms 内有反馈",
+      "evidence": "normal：after 截图（Toast）+ 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "MB04",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "全部作答提交（如全选 B=ISTJ 口径）：结果弹层类型码=所选字母组合+名称+4 条恋爱建议",
+      "tier": "critical",
+      "pre": "同 MB01；依次答完 4 题（第 1 题选 B、第 2 题选 B、第 3 题选 B、第 4 题选 B → I/S/T/J）",
+      "action": "4 题各 tap 选项 B → tap .quiz-submit → 采样 .mbti-result-panel 内类型码/名称/建议条数",
+      "expected": "showResult=true → 弹层（mbti.vue:221-265）显示 resultType='ISTJ'（dimension.charAt(choice) 映射，mbti.vue:89-98）、类型名 t('contentPages.mbti.types.ISTJ')、4 条建议（resultAdvice 按 E/I/S/N/T/F/J/P 映射 adviceI+adviceS+adviceT+adviceJ，mbti.vue:101-108）；弹层 300ms 内出现（modal-scale-in 动画）；console 无错",
+      "evidence": "critical：before（作答完）+ after（结果弹层）截图 + 路由不变 + 弹层文案采样 + console"
+    },
+    {
+      "id": "MB05",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "结果弹层三路关闭：遮罩/「关闭」仅关弹层，「重新测试」关弹层并清空答案",
+      "tier": "normal",
+      "pre": "同 MB04，结果弹层展开",
+      "action": "① tap .mbti-result-mask 遮罩（mbti.vue:227）→ 采样；② 重新提交出结果后 tap「关闭」按钮（mbti.vue:253-263）；③ 再次出结果后 tap「重新测试」（mbti.vue:243-252）并采样 4 题选中态",
+      "expected": "①② closeResult → showResult=false 弹层消失、答案保留（重开提交仍出同结果）；③ retakeTest（mbti.vue:116-119）showResult=false + answers 复位 [null×4] → 所有 quiz-option--selected 高亮消失；三路均 500ms 内反馈，无死按钮",
+      "evidence": "normal：每路 after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "MB06",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "改选重测：全选 A（ENFP 口径）→ 结果类型码随选择正确变化",
+      "tier": "normal",
+      "pre": "同 MB05 第③步后（答案已清空）",
+      "action": "4 题各 tap 选项 A → tap .quiz-submit → 采样类型码",
+      "expected": "resultType='ENFP'（E/N/F/P 对应维度前字母），名称与 4 条建议随类型切换；与 MB04 的 ISTJ 互为对照验证字母映射正确；500ms 内弹层反馈",
+      "evidence": "normal：after 截图（ENFP 弹层）+ 路由不变 + console"
+    },
+    {
+      "id": "MB07",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "返回键深链栈=1：switchTab 落首页兜底",
+      "tier": "navigation",
+      "pre": "同 MB01（reLaunch 直达栈=1）",
+      "action": "tap .content-header__back（mbti.vue:142-144）→ getCurrentPages 断言",
+      "expected": "goBack（mbti.vue:122-129）栈长不>1 → uni.switchTab({url:'/pages/home/index'})；栈顶=pages/home/index",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "MB08",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "content-scroll 滚动到底/顶：16 型网格与试卷完整可达无遮挡",
+      "tier": "noop",
+      "pre": "同 MB01",
+      "action": "在 .content-scroll 滚到底采样，再回顶采样，记录 scrollTop 与 console",
+      "expected": "提交按钮完整可见不被安全区遮挡（.content-footer-space 120rpx+安全区，mbti.vue:217,467-469）；16 型四列网格无错位断裂；console 无错",
+      "evidence": "noop：执行日志（scroll 采样）+ console 即可"
+    },
+    {
+      "id": "CO01",
+      "page": "subpackages/tools/love-center/consulting",
+      "title": "身份B 冷启动直达情感咨询：commerce 总闸 DB seed 为 FALSE → 封存卡（锁+文案），无 ¥ 课程与报名按钮",
+      "tier": "normal",
+      "pre": "身份B mock 登录（前置做法与 token 时效警示同 SC01）→ wx.reLaunch('/subpackages/tools/love-center/consulting') 冷启动直达（bootstrap 已拉 app-config；DB seed commerce.enabled=FALSE，database/flyway/sql/V2026.09.01.0001__seed_commerce_switches.sql:14）",
+      "action": "进入后 1s DOM 采样：.consult-sealed 可见性与标题/描述文案、.course-card 数量、AppShell 标题",
+      "expected": "commerceSealed=!appConfig.isCommerceOn('consult')（consulting.vue:38）→ 总闸 false 即封存（stores/app-config.ts:72-89 缺省===true 才放行）→ 渲染封存卡：LOCK_SVG 图标 + t('commerce.sealedTitle') + t('commerce.sealedDesc')（consulting.vue:79-85）；课程列表/¥99/¥129/¥159 价格/报名按钮全部不渲染；web-view 也不加载（v-if=!commerceSealed && webUrl，consulting.vue:76；consultingUrl 默认空 config/content-pages.ts:23）；aria-live=polite；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（封存卡）+ 路由（栈顶=love-center/consulting）+ console 全量过滤"
+    },
+    {
+      "id": "CO02",
+      "page": "subpackages/tools/love-center/consulting",
+      "title": "封存态 AppShell 返回键：深链栈=1 时回退可用",
+      "tier": "navigation",
+      "pre": "同 CO01（reLaunch 直达）",
+      "action": "tap AppShell 返回键（AppShell show-back，consulting.vue:79）→ getCurrentPages 断言",
+      "expected": "AppShell 内置返回逻辑（栈=1 时应有兜底，执行时记录实际落点；若实测栈底无兜底静默失败即记缺陷）；500ms 内路由或可观测反馈",
+      "evidence": "navigation：路由断言 + console"
+    },
+    {
+      "id": "CO03",
+      "page": "subpackages/tools/love-center/consulting",
+      "title": "（条件用例）commerce.consult 开启：3 门课程卡渲染 + 报名 Toast 演示闭环",
+      "tier": "normal",
+      "pre": "需将 app_switch commerce.enabled/commerce.consult 置 true（DB 或 evaluate 改写 appConfig store switches 后重进；当前环境 seed 为 FALSE，本用例默认跳过并如实标 UNVERIFIED）",
+      "action": "开启闸后重进本页 → 采样 .course-card×3 与价格文案 → tap 第一张卡「报名」→ 采样 Toast",
+      "expected": "非封存分支（consulting.vue:88-110）渲染 3 门课（¥99 沟通课/¥129 脱单攻略/¥159 亲密修复，COURSE_PRICES consulting.vue:48-59）；handleSignup（consulting.vue:67-70）→ showToast(t('contentPages.consulting.signupSuccess'), duration=2000) + lightHaptic；Toast 2s 消失；连点多次每次均有 toast（本页无防连点守卫——若按主按钮防连点铁律判缺陷，如实记录实测）",
+      "evidence": "normal：列表+Toast 两张截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "CO04",
+      "page": "subpackages/tools/love-center/consulting",
+      "title": "封存卡滚动/无溢出检查：一屏内完整呈现，无横向溢出",
+      "tier": "noop",
+      "pre": "同 CO01",
+      "action": "页面滚动到底采样，记录滚动量与 console",
+      "expected": "封存卡居中完整展示（consult-sealed margin/padding，consulting.vue:144-155），无元素被裁切或横向滚动条；console 无错",
+      "evidence": "noop：执行日志 + console 即可"
+    },
+    {
+      "id": "ST01",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "身份B 从「我的」进入设置：分组/菜单/开关完整渲染 + 缓存大小真实统计非占位",
+      "tier": "normal",
+      "pre": "身份B mock 登录（前置做法与 token 时效警示同 SC01）→ 从 pages/profile/index 经 navigateTo('/subpackages/profile-extra/settings/index') 进入（非栈底，便于返回断言）",
+      "action": "进入后 1s DOM 采样：七个分组标题（反馈与帮助/账号/社交资产/通知设置/隐私安全/缓存管理/关于）、.menu-item 数量、缓存行 .menu-item__value 文本",
+      "expected": "onMounted refreshCacheSize（settings/index.vue:89-92）真实读 uni.getStorageInfo().currentSize → value 形如 'x KB'/'x.x MB'（非恒 '0 KB' 占位，除非 storage 确实为空）；反馈与帮助+推荐给好友在顶部（index.vue:448-487）；钱包入口默认不渲染（commerce.coin 封存，index.vue:335-342）；导航标题=设置、返回键可见（safe-top 占位不叠印状态栏，index.vue:436-445）；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（首屏）+ 路由（栈顶=settings/index）+ console 全量过滤"
+    },
+    {
+      "id": "ST02",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "返回键（栈>1）：navigateBack 回「我的」且设置项状态保留",
+      "tier": "navigation",
+      "pre": "同 ST01（经 navigateTo 进入，栈>1）",
+      "action": "tap .nav-bar__back（settings/index.vue:440-442）→ getCurrentPages 断言",
+      "expected": "goBack（settings/index.vue:264-271）栈长>1 → uni.navigateBack({delta:1})；落回 pages/profile/index；lightHaptic 反馈",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "ST03",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "返回键深链栈=1兜底：switchTab 落「我的」Tab",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/profile-extra/settings/index') 直达（栈=1）",
+      "action": "tap .nav-bar__back → getCurrentPages 断言",
+      "expected": "goBack else 分支（settings/index.vue:268-270）：uni.switchTab({url:'/pages/profile/index'})；栈顶=pages/profile/index；无静默无反应",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "ST04",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「反馈与帮助」跳 feedback/history 并返回落点正确",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 反馈与帮助菜单项（settings/index.vue:453-468）→ getCurrentPages 断言 → 返回",
+      "expected": "goToFeedbackHelp（settings/index.vue:277-280）navigateTo(ROUTES.FEEDBACK_HISTORY='/subpackages/profile-extra/feedback/history'，constants/routes.ts:198)；栈顶=feedback/history；返回落回设置页滚动位与状态不丢",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST05",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「推荐给好友」触发系统分享菜单：无崩溃、页面状态不变",
+      "tier": "normal",
+      "pre": "同 ST01",
+      "action": "tap 推荐给好友菜单项（settings/index.vue:470-485）→ 采样 console 与页面状态",
+      "expected": "shareFriend（settings/index.vue:380-386）uni.showShareMenu({withShareTicket:true,menus:[shareAppMessage,shareTimeline]})——mp 模拟器可能无可视弹层（如实记录反馈形态）；不崩、路由不变、无报错；lightHaptic 反馈",
+      "evidence": "normal：after 截图 + 路由不变 + console（含 showShareMenu 调用错误如有）"
+    },
+    {
+      "id": "ST06",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「编辑资料」跳 setup/profile 资料完善页",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 账号组「编辑资料」（accountMenus[0]，settings/index.vue:315-321,494-511）→ getCurrentPages 断言",
+      "expected": "goToProfileSetup（settings/index.vue:95-98）navigateTo(SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE)；栈顶=subpackages/setup/profile/index",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "ST07",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「认证」跳 verification/index",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 账号组「认证」（accountMenus[1] path='/subpackages/profile-extra/verification/index'，settings/index.vue:322-327）→ getCurrentPages 断言",
+      "expected": "handleMenuTap path 分支 navigateTo（settings/index.vue:417-429）；栈顶=verification/index",
+      "evidence": "navigation：路由断言即可 + console"
+    },
+    {
+      "id": "ST08",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「我的动态」switchTab 桥接跳本人主页（storage 传 source=my-posts）",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 社交资产组「我的动态」（settings/index.vue:343-354）→ getCurrentPages 断言 + 读 storage 桥接键",
+      "expected": "item.path=ROUTES.TAB.PROFILE 且 tabQuery={source:'my-posts'} → handleMenuTap 走 switchTabWithQuery（settings/index.vue:420-422；MP-R1-SETTINGS-003：语义正确落本人主页）→ 栈顶=pages/profile/index；桥接 storage 键写入 source=my-posts",
+      "evidence": "navigation：路由断言 + storage 读值 + console"
+    },
+    {
+      "id": "ST09",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「访客」跳 profile/visitors 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap「访客」（settings/index.vue:355）→ 路由断言 → 返回",
+      "expected": "navigateTo('/subpackages/profile-extra/profile/visitors')；栈顶=visitors；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST10",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「浏览历史」跳 village/history 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap「浏览历史」（ROUTES.VILLAGE.HISTORY，settings/index.vue:356）→ 路由断言 → 返回",
+      "expected": "栈顶=subpackages/village/village/history；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST11",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「相册」跳 profile/album 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap「相册」（settings/index.vue:357）→ 路由断言 → 返回",
+      "expected": "栈顶=subpackages/profile-extra/profile/album；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST12",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「日程设置」跳 setup/schedule 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap「日程设置」（settings/index.vue:358）→ 路由断言 → 返回",
+      "expected": "栈顶=subpackages/setup/schedule/index；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST13",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「免打扰」跳 settings/dnd 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 通知设置组免打扰项（settings/index.vue:548-561）→ 路由断言 → 返回",
+      "expected": "goToDnd（settings/index.vue:104-107）navigateTo(ROUTES.SETTINGS.DND='/subpackages/profile-extra/settings/dnd'，constants/routes.ts:170)；栈顶=settings/dnd；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST14",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「本周安排」开关：切换即时生效 + storage 持久化 + Toast 文案随状态",
+      "tier": "normal",
+      "pre": "同 ST01；先读 storage WEEKLY_SCHEDULE_ENABLED 初值",
+      "action": "tap 本周安排 switch（settings/index.vue:563-576）→ 采样 Toast、开关态、storage 值；再切回并复采样",
+      "expected": "toggleWeeklySchedule（settings/index.vue:303-313）：detail.value 布尔 → setStorageSync 键 '1'/'0' 持久化 → showToast(on/off 对应文案)；两次切换值与 Toast 均翻转；存储失败不影响会话态（防御分支）；500ms 内反馈",
+      "evidence": "normal：两次 after 截图（开关+Toast）+ 路由不变 + Toast 文案 + storage 前后值 + console"
+    },
+    {
+      "id": "ST15",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "深色模式开关：theme 翻转 + Toast + 全页配色变化，再切回复原",
+      "tier": "normal",
+      "pre": "同 ST01；记录当前主题态（themeStore.mode）",
+      "action": "tap 深色模式 switch（settings/index.vue:578-594）→ 采样 html data-theme 属性/页面背景色、Toast → 2s 后再切回复采样",
+      "expected": "handleThemeSwitch（settings/index.vue:41-44）→ themeStore.toggleTheme 二态翻转 dark↔light（stores/theme.ts:82-84；注意源码注释写三态但实现为二态，如实记录）→ applyThemeAttribute 生效全页变色 + Toast 文案 themeDark/themeLight；两次往返后主题复原；开关热区≥88rpx 行高（menu-item padding 24rpx）",
+      "evidence": "normal：切换前后截图对比（含暗色态）+ 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "ST16",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「隐私权限」跳 profile/privacy 并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 隐私安全组「隐私权限」（privacyMenus[0] → ROUTES.PROFILE.PRIVACY，settings/index.vue:364-370）→ 路由断言 → 返回",
+      "expected": "栈顶=subpackages/profile-extra/profile/privacy；返回落回设置页",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST17",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「安全中心」入口跳 tools/security（与 SC 页衔接闭环）",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "tap 隐私安全组「安全中心」（privacyMenus[1] → ROUTES.SECURITY='/subpackages/tools/security/index'，settings/index.vue:371-376；constants/routes.ts:182）→ 路由断言 → 返回",
+      "expected": "栈顶=subpackages/tools/security/index（即 SC01 被测页）；返回落回设置页；该入口与安全中心页互为闭环",
+      "evidence": "navigation：去/回路由断言 + console"
+    },
+    {
+      "id": "ST18",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "清除缓存确认流：Modal 展示当前大小 → 确认 → Loading→成功 Toast + 大小刷新，登录态保留",
+      "tier": "critical",
+      "pre": "同 ST01；先读 token 与 storage 键集合快照",
+      "action": "tap 缓存管理行（settings/index.vue:630-646）→ 采样 Modal 文案（含 size）→ tap 确认 → 采样 Loading/Toast → 读 token 与 storage 快照对比",
+      "expected": "clearCache（settings/index.vue:127-154）：Modal title/content 含 cacheSize 值；确认 → showLoading('清理中') → 仅删除 CACHE_KEYS_TO_CLEAR（USER_CACHE）→ hideLoading 不永驻 → refreshCacheSize 重统计 + showToast(cacheCleared, icon=success, SHORT_MS)；token/主题/语言/开关偏好键保留（不全量 clearStorage 铁律）；console 无错",
+      "evidence": "critical：before（Modal）+ after（Toast）截图 + 路由不变 + Modal 与 Toast 文案 + console + token/storage 前后对比"
+    },
+    {
+      "id": "ST19",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "清除缓存 Modal 取消：无任何删除副作用",
+      "tier": "critical",
+      "pre": "同 ST18",
+      "action": "tap 缓存行 → Modal 内 tap「取消」→ 读 storage 键集合与大小",
+      "expected": "res.confirm=false 直接 return（settings/index.vue:135）→ 不 showLoading、不删键、大小不变、无 Toast；500ms 内 Modal 关闭反馈",
+      "evidence": "critical：after 截图 + 路由不变 + console + storage 对比（前后一致）"
+    },
+    {
+      "id": "ST20",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「检查更新」：mp 环境走 getUpdateManager，Loading 不永驻并以 Modal 收尾",
+      "tier": "normal",
+      "pre": "同 ST01（mp-weixin 模拟器环境）",
+      "action": "tap 关于组「检查更新」（settings/index.vue:405-408）→ 立即采样 Loading → 等待至 3s 采样 Modal/Loading 状态",
+      "expected": "checkUpdate（settings/index.vue:161-218）showLoading('检查更新中') → mp 分支 getUpdateManager 注册回调；模拟器无更新包时行为以实测为准：无更新回调未触发则 Loading 存续——若实测 Loading 永驻即按「Loading 不永驻」铁律记缺陷（如实记录实测时序与表现）；onCheckForUpdate hasUpdate=false → hideLoading + Modal「当前已是最新版本」；有更新则走 onUpdateReady 重启确认 Modal",
+      "evidence": "normal：Loading 态+终态两张截图 + 路由不变 + Modal 文案 + console（含更新管理器日志）"
+    },
+    {
+      "id": "ST21",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「关于我们」Modal 展示与关闭",
+      "tier": "normal",
+      "pre": "同 ST01",
+      "action": "tap 关于组「关于我们」（settings/index.vue:410-413）→ 采样 Modal 文案 → tap「知道了」关闭复采样",
+      "expected": "aboutUs（settings/index.vue:231-239）showModal(aboutTitle/aboutContent, showCancel=false, confirm='知道了')；确认后 Modal 关闭；文案与 i18n 一致",
+      "evidence": "normal：Modal 态截图 + 路由不变 + Modal 文案 + console"
+    },
+    {
+      "id": "ST22",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「用户协议」「隐私政策」双跳转：legal 分包两页均可达并返回",
+      "tier": "navigation",
+      "pre": "同 ST01",
+      "action": "① tap「用户协议」（settings/index.vue:390-394）→ 路由断言 → 返回；② tap「隐私政策」（settings/index.vue:395-399）→ 路由断言 → 返回",
+      "expected": "viewUserAgreement→SUBPACKAGE_ROUTES.LEGAL.AGREEMENT、viewPrivacyPolicy→LEGAL.PRIVACY（settings/index.vue:110-119）；栈顶分别为 subpackages/legal/agreement/index 与 subpackages/legal/privacy/index；均返回设置页",
+      "evidence": "navigation：四次路由断言即可 + console"
+    },
+    {
+      "id": "ST23",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "退出登录确认流：Modal → 确认 → sessionStore.logout 清态跳登录页（建议整批用例末位执行）",
+      "tier": "critical",
+      "pre": "同 ST01；本用例有登出副作用，安排在本页批次最后执行；执行前读 token 快照",
+      "action": "tap 退出登录按钮（settings/index.vue:677-679）→ 采样 Modal → tap 确认 → 等待 2s 采样路由与登录页可达性",
+      "expected": "logout（settings/index.vue:242-261）：showModal(logoutTitle/logoutConfirm) 确认 → sessionStore.logout()（调 clientApi.logout 清本地 token + 异步通知后端 + 跳登录页，清空 userSession/profileBackgroundUrl）；最终路由=登录页（pages/login/index）；token 已清除；console 无未捕获异常（isDev 下 logout 异常仅 warn）",
+      "evidence": "critical：before（Modal）+ after（登录页）截图 + 路由断言 + Modal 文案 + console + token 前后对比"
+    },
+    {
+      "id": "ST24",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "退出登录 Modal 取消：留在设置页无任何状态变化",
+      "tier": "critical",
+      "pre": "同 ST01（若 ST23 已执行需重新 mock 登录恢复会话）",
+      "action": "tap 退出登录 → Modal 内 tap「取消」→ 读 token 与路由",
+      "expected": "res.confirm=false 直接 return（settings/index.vue:248-249）→ 不调 logout、token 保留、路由不变、无 Toast；Modal 500ms 内关闭",
+      "evidence": "critical：after 截图 + 路由不变断言 + Modal 文案 + console + token 前后对比"
+    },
+    {
+      "id": "ST25",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "钱包入口商业化闸结构断言：commerce.coin 封存时社交资产组无钱包项",
+      "tier": "normal",
+      "pre": "同 ST01（当前 DB seed commerce.enabled=FALSE）",
+      "action": "采样社交资产组 .menu-item 全部 label 文本集合",
+      "expected": "isCommerceOn('coin')=false（总闸 false 即封存，stores/app-config.ts:72-75）→ socialMenus 不含钱包项（settings/index.vue:335-342）→ label 集合=我的动态/访客/浏览历史/相册/日程设置 五项，无 profile.coinBalance 项；开启闸后应出现（条件分支，当前环境如实标 UNVERIFIED）",
+      "evidence": "normal：after 截图（社交资产组）+ 路由不变 + console"
+    }
+  ]
+}

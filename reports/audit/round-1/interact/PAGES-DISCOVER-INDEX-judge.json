@@ -1,0 +1,712 @@
+{
+  "round": "R1",
+  "page": "pages/discover/index",
+  "pageName": "寻觅（tabBar）",
+  "judgeRole": "A6 交互判定员（证据仲裁）",
+  "judgedAt": "2026-09-23",
+  "basis": {
+    "manifestExpected": "reports/audit/round-1/ops/PAGES-DISCOVER-INDEX.json",
+    "a1Observed": "reports/audit/round-1/interact/exec-results.json（suite=S03-discover-messages，gitSha=aefd8a72）",
+    "screenshots": "reports/screenshots/round-1-interact/（A1 操作截图；wxml 快照见 wxml/ 子目录）",
+    "tourScreenshots": "reports/audit/round-1/screenshot-manifest.json + reports/screenshots/round-1-tour/A/pages_discover_index__{默认,交互后,弹层态}.png"
+  },
+  "verdictStandard": "三方对照（Manifest.expected vs A1.observed vs 截图/wxml 快照）。expected 全部断言有 observed 证据支持→VERIFIED；关键交互达成但次要断言（文案参数/storage/截图视觉）未采集→VERIFIED 低置信并在 actual 注明；observed 硬证据与 expected 矛盾（排除前置/执行问题后）→FAILED；动作未执行/执行器报错/前置断链/证据缺失→UNVERIFIED。禁止凭代码推测判 VERIFIED。",
+  "summary": {
+    "total": 44,
+    "verified": 9,
+    "failed": 1,
+    "unverified": 34,
+    "note": "A1 执行存在 5 类系统性环境问题导致大面积 UNVERIFIED：①截图 saveFile 超限/automator 超时（22:47-23:00 批次截图全失）；②登录身份 MISMATCH（注入得到 user-1001 dev-user，非 Manifest 身份A 100158）；③滑动手势 unsupported(no element api)；④筛选抽屉类用例跨会话重跑时『接 DC27 抽屉打开态』前置断链（after 截图实证全部为初始卡片态）；⑤DC06/DC10 将页内分段切换错误编排为 switchTab /pages/nearby/index。"
+  },
+  "checks": [
+    {
+      "caseId": "DC01",
+      "page": "pages/discover/index",
+      "operation": "游客冷启动首帧：骨架→卡片，不闪错误空态，登录胶囊避让浮岛",
+      "expected": "reLaunch 后骨架→1 张 MatchCard+三操作按钮；不闪错误/空态；游客登录胶囊显示且位于 tabBar 浮岛上方；console 无 NAV_FAIL/TypeError",
+      "actual": "A1 EXECUTED：top=pages/discover/index；dom .skeleton/.match-card/.match-actions__item/.discover-login-hint 全 present；console 仅 preload 2 条无报错。但 after 截图保存失败（saveFile:fail exceeded the maximum size of the file storage limit），胶囊避让浮岛与骨架消失（.skeleton 与 .match-card 同帧 present 无法区分时序）两项断言无视觉/时序证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC01",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC01-after.png(ERROR:saveFile:fail exceeded the maximum size of the file storage limit)"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC02",
+      "page": "pages/discover/index",
+      "operation": "已登录（身份A 100158）冷启动：卡片+三按钮，tabBar selected=2，无登录胶囊",
+      "expected": "MatchCard+三操作按钮渲染完整；.discover-login-hint 不存在；tabBar 寻觅高亮 selected=2；console 无 401/NAV_FAIL/TypeError",
+      "actual": "A1 observed 无 login/token 注入步骤（仅 reLaunch），dom 显示 .discover-login-hint:present + .isLoggedIn:absent —— 页面实际停留游客态，登录态前置未达成，expected 的登录态断言（胶囊消失/selected=2/带 token 请求）全部未验；after 截图亦超时失败。巡检图 round-1-tour/A/pages_discover_index__交互后.png（登录态）可见三按钮+tabBar 寻觅高亮，但非本用例执行时刻证据，不作放水依据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC02（observed 无 login 步骤，.discover-login-hint:present）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC02-after.png(ERROR:timeout waiting for automator response)"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC03",
+      "page": "pages/discover/index",
+      "operation": "推荐卡片信息完整性与头像兜底链",
+      "expected": "距离数值自动补 km；在线用户右上「在线」绿字胶囊；匹配度 N%+「匹配」；无照片回退 hero；无 undefined/null 字面量",
+      "actual": "A1 dom：.match-card__distance/.match-card__online/.match-card__score-value/.match-info 全 present。登录态截图（PAGES-DISCOVER-INDEX-DC28-after.png，同页同卡）目视：距离胶囊「1.2km」✓、右上绿字「在线」✓、右下「80% 匹配度」✓、信息区（林晓 21 · 北京大学 · 产品经理 · 兴趣 chips）✓、无 undefined/null 字面量 ✓。无照片账号缺失，无照片回退分支按 Manifest 预授权如实标注未验",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC03",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC28-after.png（同页登录态卡片全要素）",
+        "reports/screenshots/round-1-tour/A/pages_discover_index__交互后.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "DC04",
+      "page": "pages/discover/index",
+      "operation": "静置 Idle 30s：无循环请求、无报错",
+      "expected": "console 无重复 recommendations 请求（30s TTL 内 onShow 不重拉）、无 TypeError/is not defined/未处理 promise；页面停留寻觅页",
+      "actual": "A1 EXECUTED：act:wait 30000ms 完整执行，top 停留 pages/discover/index，console 仅 preload 2 条（无重复请求、无报错）。noop tier 以执行日志为准（Manifest），达成。登录身份 MISMATCH（user-1001）不影响本断言",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC04（console 仅 2 条 preload，无请求无报错）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "DC05",
+      "page": "pages/discover/index",
+      "operation": "推荐空态：筛选无结果文案",
+      "expected": "出现 EmptyState 文案「推荐暂时没有新的人，去「附近」看看吧」；非配额文案；无 JS 报错",
+      "actual": "A1 FAILED（执行失败而非预期未达成）：开头 top=(none)+navError=Cannot destructure property 'rawPath' of 't.getPageMetaByWebviewId(...)' as it is null（automator 页面栈崩溃）、pre-FAIL login $vm 读取失败、act-FAIL input .length not found；after 截图（PAGES-DISCOVER-INDEX-DC05-after.png）为正常卡片态，空态未制造成功",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC05（failureReason=input .length failed）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC05-after.png（无空态）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC06",
+      "page": "pages/discover/index",
+      "operation": "附近空态独立文案（页内切「附近」分段）",
+      "expected": "tap 寻觅页顶部分段「附近」后空态文案变为「附近暂时没有可匹配的人，去看看推荐吧」",
+      "actual": "A1 执行编排错误：将页内分段切换实现为 act:switchTab /pages/nearby/index，随后 tapIndex .discover-header__tab(\"附近\") 在 nearby 页找不到（act-FAIL）；after 截图实为附近 tab 页画面。寻觅页分段从未被点击，断言未验。源码佐证：页内分段 .discover-header__tab 存在（pages/discover/index.vue:259-282），非产品缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC06（act:switchTab /pages/nearby/index + act-FAIL tapIndex）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC06-after.png（附近页画面）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC07",
+      "page": "pages/discover/index",
+      "operation": "错误横幅+重试清缓存强制重拉",
+      "expected": "断网制造 fetchCards 失败出现 .match-error 横幅，恢复网络后 tap 重试 500ms 内有反馈并强制重拉",
+      "actual": "A1 act-FAIL:tap(.match-error__retry) element not found——断网/5xx 前置从未执行（observed 无任何断网操作），错误横幅未出现；after 截图（220099B）为正常卡片态无横幅。前置未达成，重试语义未验",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC07（observed 无断网步骤，.match-error__retry:absent）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC07-after.png（无错误横幅）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC08",
+      "page": "pages/discover/index",
+      "operation": "关闭态（match_open=false）全页 EmptyState",
+      "expected": "switches['match_open']=false 后显示「匹配功能暂未开放，敬请期待」，卡片与三按钮不渲染；恢复后卡片恢复",
+      "actual": "A1 observed 无任何修改 app-config 开关的步骤（仅 login B（身份 MISMATCH user-1001）+reLaunch+awayBack），dom .matchClosed:absent 为正常态表现；关闭态未制造。Manifest pre 明确『两条路径都不可行时如实标 UNVERIFIED，不降低判定』。另：执行窗口 22:50:24 出现 [Global Error][Vue Error] runtime-2 + captureException（已立 Issue MP-R1-DISCOVER-INDEX-103）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC08（observed 无改开关步骤；console 2 条 error）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC09",
+      "page": "pages/discover/index",
+      "operation": "onShow 缓存窗口语义（30s 内不重拉/过期重拉）",
+      "expected": "①30s 内切回不发起 recommendations 请求且数据保持；②>30s 切回触发重拉（console 见新请求）",
+      "actual": "A1 仅记录 act:switchTab /pages/discover/index + act:wait 30000ms——缺少『切走』步骤与过期后再次切回步骤；console=[] 无网络请求记录，两向判定（请求有无）均无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC09（observed 仅切回+等待，console 空）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC10",
+      "page": "pages/discover/index",
+      "operation": "切「附近」分段：本地过滤/排序/单次拉取",
+      "expected": "tap 页内「附近」分段后 active 类迁移、visibleCards 重算、仅 1 次 recommendations 请求",
+      "actual": "同 DC06 编排错误：act:switchTab /pages/nearby/index 后 tapIndex .discover-header__tab(\"附近\") not found、备用 tap .setDiscoverMode 亦 not found（该类名非 DOM 类，系执行器杜撰探测点）；after 截图为附近页。页内分段从未点击",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC10",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC10-after.png（附近页画面）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC11",
+      "page": "pages/discover/index",
+      "operation": "附近↔推荐快速互切 5 次",
+      "expected": "寻觅页内两分段快速互切 5 次，最终停「推荐」，数据不丢、请求收敛",
+      "actual": "A1 top=nearby/index：pre 即 switchTab 到附近页，act:toggleTap need 2 elements found 0，仅在附近页 tap 「推荐」文本——互切发生在错误页面，寻觅页分段行为未验；截图亦超时失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC11（top=pages/nearby/index）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC12",
+      "page": "pages/discover/index",
+      "operation": "左滑卡片=跳过（登录态副作用）",
+      "expected": "位移>120px 左滑后卡片飞出、队列推进、viewedCards+1、pass 记录",
+      "actual": "A1 act:swipe left unsupported(no element api)——automator 无元素级手势 API，左滑从未执行；before/after wxml 快照栈顶同为「林晓」卡（0 推进）。手势语义未验",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC12（act:swipe left unsupported）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC12-after.wxml（栈顶仍林晓）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC13",
+      "page": "pages/discover/index",
+      "operation": "游客左滑本地放行（无 pass 请求/无 401/不强拉登录）",
+      "expected": "游客左滑卡片本地推进，console 无 pass 请求无 401，停留寻觅页",
+      "actual": "A1 滑动手势 unsupported 未执行；且 observed 显示 act 阶段混入 act:login A ok（游客前置被破坏后执行了登录）；before/after 快照同为林晓卡。手势与游客分支均未验",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC13（act:login A ok 混入 + swipe unsupported）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC13-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC14",
+      "page": "pages/discover/index",
+      "operation": "右滑卡片=喜欢（路由进 matching?action=like）",
+      "expected": "右滑>120px 后 500ms 内路由 matching?userId&cardId&action=like",
+      "actual": "A1 act:swipe right unsupported(no element api)——右滑从未执行，before/after 快照同为林晓卡，路由未触发",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC14",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC14-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC15",
+      "page": "pages/discover/index",
+      "operation": "手势阈值语义（8~120px 回弹 / <8px=tap）",
+      "expected": "①60px 位移松手回弹无副作用；②<8px 按 tap 处理",
+      "actual": "A1 两步手势均依赖 swipe API，act:swipe left unsupported——两个阈值分支均未执行，无 before/after 栈顶一致性证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC15（durationMs 仅 2422，act:swipe unsupported）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC16",
+      "page": "pages/discover/index",
+      "operation": "点击卡片→他人主页 other?userId=<userId>",
+      "expected": "tap .match-card 后 500ms 内路由 /subpackages/profile-extra/profile/other?userId=<栈顶卡userId>，getCurrentPages=[discover,other]",
+      "actual": "A1 tap .match-card ×3 全部派发成功（automator 无 tap 报错），但 route 始终 [pages/discover/index]，无 Toast 无 DOM 变化；console 连续 3 条 warn「Component components/common/swipe/SwipeContainer does not have a method onCatchTap to handle event tap」。根因（源码佐证）：执行基线 aefd8a72 的 SwipeContainer.vue 模板 catchtap=\"onCatchTap\"（line 78）但 defineExpose 仅 { reset, flyDirection, onTouchMove } 漏 onCatchTap，运行时方法不存在，tap 被 catch 语义吞掉、card-tap 未 emit——点卡片死按钮，违反 500ms 反馈铁律。工作区已补 defineExpose({...,onCatchTap})（SwipeContainer.vue:67，MP-R1-PAGES-DISCOVER-INDEX-005）→ 已修复待终验",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC16（tap×3 无路由 + console warn×3）",
+        "reports/audit/round-1/interact/exec-results.json#DC41（onCatchTap warn 复现，独立用例）",
+        "git show aefd8a72:apps/client/src/components/common/swipe/SwipeContainer.vue（defineExpose 无 onCatchTap，模板 catchtap 已绑定）",
+        "apps/client/src/components/common/swipe/SwipeContainer.vue:46-47,67,78（工作区修复）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "DC17",
+      "page": "pages/discover/index",
+      "operation": "跳过按钮（登录态）500ms 内反馈+队列推进",
+      "expected": "tap「跳过」500ms 内卡片飞出/队列推进（新栈顶卡与 before 不同）；viewedCards+1",
+      "actual": "A1 act:tapIndex .match-actions__btn--pass#1(\"跳过\") tapped 派发成功。队列推进由 wxml 快照链证明：DC12-after（跳过前最近快照）栈顶=林晓（1.2km），DC17-after 栈顶=夏言（3.4km）——中间用例 DC13/14/15 手势均未执行、DC16 点击不推进，故推进归于本次 tap 跳过。viewedCards+1 计数未采集（无 store dump）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC17（tapped）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC12-after.wxml（林晓）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC17-after.wxml（夏言）"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "DC18",
+      "page": "pages/discover/index",
+      "operation": "喜欢主 CTA：500ms 内进 matching?action=like",
+      "expected": "tap「喜欢」500ms 内路由 matching?userId&cardId&action=like",
+      "actual": "A1 act:tapIndex .match-actions__btn--like#3(\"喜欢\") tapped 派发成功；route 快照未含 matching——但 DC18-after wxml 实证页面已是「匹配中 正在寻找有缘的Ta...89%」匹配页（matching.vue），路由实际发生；route 缺失源于产品机制：mock 下 matching 检查成功后 toast「已喜欢」并 400ms 自动 navigateBack（matching.vue:66-73 watch status idle → goBack），瞬时页面 getCurrentPages 快照漏记。query 参数（userId/cardId/action=like）未采集",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC18（tapped）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC18-after.wxml（匹配中页内容）",
+        "apps/client/src/subpackages/discover-extra/discover/matching.vue:66-73（自动返回机制，解释 route 快照缺失）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "DC19",
+      "page": "pages/discover/index",
+      "operation": "喜欢按钮防连点×5：快击只提交 1 次",
+      "expected": "快击 5 次仅 1 层 matching 不叠层；返回后状态一致、无重复 like 提交",
+      "actual": "A1 act:rapidTap __CAND__ x5 done=5 派发完成。toast 累积数组仅 1 条「已喜欢」（DC20 证明该数组为多次累积记录，2 键 2 条）→ 5 击仅 1 次提交成功；DC19-after wxml 栈顶=discover 页（阿辰卡）无 matching 叠层；卡片推进至新卡状态一致。matching 因自动返回机制无法做栈深断言（同 DC18），「仅进 1 次 matching」由单条成功 toast 侧面证明",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC19（toast=[已喜欢]×1）",
+        "reports/audit/round-1/interact/exec-results.json#DC20（toast 2 条累积，证明数组全量性）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC19-after.wxml（栈顶 discover 无叠层）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "DC20",
+      "page": "pages/discover/index",
+      "operation": "未登录点喜欢/打招呼：权限门 Toast",
+      "expected": "两步均 Toast「请先登录后再使用该功能」；无路由变化；卡片保留",
+      "actual": "A1 toast 累积数组 2 条，标题均精确等于「请先登录后再使用该功能」（zh-CN.ts:3883 loginRequired）；route 始终 [discover] 无变化；DC20-after wxml 卡片页完整保留（6343B，比登录态多的字节即登录胶囊文本）。三源一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC20（toast×2 文案精确匹配）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC20-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "DC21",
+      "page": "pages/discover/index",
+      "operation": "实名认证门控弹窗（未实名点喜欢）",
+      "expected": "未实名点喜欢弹「完成实名认证后开启」，确认去认证/取消留页",
+      "actual": "前置不可满足：执行环境为 mock 模式，isRealNameVerified() 首行 if (useMock()) return true（guards/campus-gate.ts:34）恒过，无未实名身份可制造——Manifest pre 明确『mock 恒过则如实标 UNVERIFIED 并注明，不降低判定』。另执行器 tap .showModal(\"喜欢\") 选择器无效（uni.showModal 为原生弹层非页面元素）；login B 亦 MISMATCH（user-1001）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC21（act-FAIL tap .showModal）",
+        "apps/client/src/guards/campus-gate.ts:34（useMock() 短路恒过）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC21-before.png（无弹窗，正常卡片态）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC22",
+      "page": "pages/discover/index",
+      "operation": "打招呼（super-like）：进 matching?action=superLike 且计数+1",
+      "expected": "tap「打个招呼」500ms 内路由 matching?action=superLike；storage greet:count:<cardId>={date,count:1}",
+      "actual": "A1 act:tap .match-actions__btn--super 派发成功；DC22-after wxml 实证页面为「匹配中」页（matching 到达，同 DC18 自动返回机制）→ 主交互达成。但 query 参数（action=superLike）与 storage 计数键均未采集（pre:storageRemove 亦用了未解析的字面量键 greet:count:<栈顶卡cardId>），expected 的 storage 断言无证据",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC22（tap super；pre storageRemove 字面量键）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC22-after.wxml（匹配中页）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "DC23",
+      "page": "pages/discover/index",
+      "operation": "打招呼频控：同卡第 4 次 Toast 且不路由",
+      "expected": "预置 count=3 后 tap「打个招呼」Toast「已向TA打过3次招呼…」且不路由、计数不递增",
+      "actual": "前置注入失败：A1 pre:storageSet greet:count:<栈顶卡cardId> 为未解析的字面量键（未替换为真实 cardId），handleSuperLike 读真实键 greet:count:<id> 无记录 → 频控未生效，走了正常提交链（toast「已喜欢」+DC23-after 栈顶推进为小满卡=matching 成功返回后 consumeCardFromDeck 所致）。预期频控行为未验，非产品缺陷证据（频控逻辑 index.vue:172-175 未被真实触达）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC23（storageSet 字面量键；toast=已喜欢）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC23-after.wxml（栈顶小满=已推进）",
+        "apps/client/src/pages/discover/index.vue:160-178（真实键为 greet:count:${targetId}）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC24",
+      "page": "pages/discover/index",
+      "operation": "今日额度用尽门控：Toast「今日推荐次数已用完」",
+      "expected": "预置 10 条 viewedCards 后 tap 喜欢/打招呼均 Toast「今日推荐次数已用完，明天再来吧」且不路由",
+      "actual": "A1 pre:storageSet discover_daily_record 已执行但预置内容有效性未证（日期/格式是否被 resetDailyLimit/store 初始化接受无 dump）；tap「喜欢」+「打个招呼」后 toast=[] 且 route 不变、无 matching wxml——既无额度 Toast 也未进 matching，两键点击均无可观测结果，无法区分『预置无效额度未满』与『门控静默失效』",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC24（toast=[]，route=[discover]）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC24-after.wxml（与 DC23-after 同为小满卡初始态）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC25",
+      "page": "pages/discover/index",
+      "operation": "游客登录胶囊→登录页；返回落点=寻觅页",
+      "expected": "tap 胶囊 500ms 内路由 /pages/login/index（navigateTo 入栈）；返回后栈=[discover]、队列不重置",
+      "actual": "A1 observed：act:navigateBack NAV_ERROR: Uncaught [object Object]（栈仅 1 层时执行器先行 navigateBack 失败）+ act:tap .discover-login-hint ×2 派发成功，但 route 始终 [discover]、无 toast、console 空、evidence=[]（无截图无 wxml）。tap 成功派发而路由未发生与 expected 矛盾，但总时长仅 3735ms、navigateTo 为异步，存在『route 快照采集早于路由完成』的时序疑点，且无第二证据源可仲裁（源码链路 goLogin→openAppPath→navigateTo 正常，index.vue:86-88 + navigation.ts:106）——单源证据不足定性为产品缺陷",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC25（tap×2 无路由、evidence 空、durationMs=3735）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC26",
+      "page": "pages/discover/index",
+      "operation": "登录态变化联动：注入 token 后 watch 重拉、胶囊消失",
+      "expected": "evaluate 注入 token+bootstrap 后 isLoggedIn 变 true，自动重拉（新 recommendations 请求）、胶囊消失",
+      "actual": "A1 observed 无 token 注入/bootstrap 步骤（仅 pre:logout ok，observe-only）；dom 断言自相矛盾：.discover-login-hint:absent（游客态应 present）且 .isLoggedIn:absent；route 链 [discover, login] 来源不明。注入联动行为完全未验",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC26（observe-only，无注入步骤）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC27",
+      "page": "pages/discover/index",
+      "operation": "打开筛选抽屉：全屏弹层+tabBar 隐藏+默认基础 Tab",
+      "expected": "tap 筛选按钮 500ms 内抽屉弹出、自定义 tabBar 隐藏、默认基础筛选 Tab、draft 同步已应用筛选",
+      "actual": "A1 act:tap .discover-header__filter 派发成功 ×2，dom .filter-drawer:present（抽屉已弹出）；tabBar 隐藏与基础 Tab 内容为视觉断言，A1 截图 saveFile 失败，由巡检截图 round-1-tour/A/pages_discover_index__弹层态.png 佐证：全屏抽屉含全部筛选/基础/高级 tab、身高 120-250 滑块、学历/感情状态 chips、籍贯/未来城市 picker、关键词输入、重置+确认，且自定义 tabBar 不可见 ✓。draft 与已应用筛选同步断言未采集",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC27（tap 成功+.filter-drawer:present）",
+        "reports/screenshots/round-1-tour/A/pages_discover_index__弹层态.png（抽屉全屏+tabBar 隐藏+基础 Tab 默认）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "DC28",
+      "page": "pages/discover/index",
+      "operation": "抽屉三路关闭（遮罩/关闭钮/确认）",
+      "expected": "三路均可关闭抽屉且 tabBar 恢复，未确认修改不生效",
+      "actual": "前置断链：Manifest pre=『接 DC27 抽屉打开态』，但 DC28 于次日在新会话重跑且无打开抽屉步骤，act-FAIL:tap(.filter-drawer) element not found；after 截图（PAGES-DISCOVER-INDEX-DC28-after.png）实证为寻觅页初始卡片态（无抽屉）。三路关闭全部未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC28（act-FAIL×3 element not found）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC28-after.png（抽屉未打开）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC29",
+      "page": "pages/discover/index",
+      "operation": "抽屉基础/高级 Tab 切换与 draft 互不干扰",
+      "expected": "切「高级筛选」内容即时切换，两侧 draft 互不覆盖，来回 5 次不丢失",
+      "actual": "同 DC28 前置断链：act:toggleTap found 0、tapIndex .filter-drawer__tab(\"高级筛选\") not found；after 截图（220119B）与 DC28 同为无抽屉初始态（画面逐像素同级）。Tab 切换未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC29",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC29-after.png（无抽屉初始态，220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC30",
+      "page": "pages/discover/index",
+      "operation": "身高双滑块互斥钳制",
+      "expected": "下限≥上限时钳制为上限-1，反之对称；文案同步「249-250cm」格式",
+      "actual": "A1 observe-only：滑块 change 动作未执行，dom .filter-section__value:absent，无任何文案/钳制证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC30（observe-only，无 act 记录）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC31",
+      "page": "pages/discover/index",
+      "operation": "学历多选 chips：选 2 高亮+「已选 2」再取消",
+      "expected": "两枚 chip 依次高亮、头部计数「已选 2」、再点取消变「已选 1」",
+      "actual": "同 DC28 前置断链（抽屉未打开）：act-FAIL:tap(.filter-section__value(\"本科\")) element not found（该类名为组头文案容器非 chip 本身，且抽屉不存在）；after 截图 220119B 同初始态",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC31（action-not-performed）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC31-after.png（220119B 无抽屉）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC32",
+      "page": "pages/discover/index",
+      "operation": "感情状态单选互斥",
+      "expected": "点选高亮、再点取消恢复「不限」、点他项互斥",
+      "actual": "同 DC31：抽屉未打开，act-FAIL tap .filter-section__value(\"未婚\") not found；after 截图 220119B 同初始态",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC32",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC32-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC33",
+      "page": "pages/discover/index",
+      "operation": "籍贯省/市联动 multiSelector picker",
+      "expected": "换省后市列重置，确认回填「省 市」，取消不改",
+      "actual": "A1 observe-only：picker 唤起/滚动/确定/取消全部未执行，无 draft 状态佐证（Manifest 允许的 evaluate 佐证亦无）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC33（observe-only，durationMs=11412 无 act）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC34",
+      "page": "pages/discover/index",
+      "operation": "未来城市单列 selector picker",
+      "expected": "选择城市后触发器回填城市名",
+      "actual": "A1 status=SKIPPED：action-not-automatable（原生 picker 弹层无法自动化），0 次尝试，Manifest 已预料（『原生弹层截图无法取得时以 evaluate 佐证并如实注明』，但 evaluate 亦未执行）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC34（SKIPPED action-not-automatable）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "DC35",
+      "page": "pages/discover/index",
+      "operation": "关键词输入三态（placeholder/清空钮/超长特殊字符）",
+      "expected": "placeholder 显示；输入回显+清空钮出现；超长/特殊字符不崩溃，300ms 防抖",
+      "actual": "同 DC28 前置断链：pre-FAIL input .keyword-input__field element not found（抽屉未打开），输入三态全部未执行；after 截图 220119B 同初始态",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC35（pre-FAIL input not found）",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC35-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC36",
+      "page": "pages/discover/index",
+      "operation": "关键词清空按钮",
+      "expected": "tap 清空钮后输入清空、清空钮消失、placeholder 恢复",
+      "actual": "同 DC35：抽屉未打开，pre-FAIL input ×2 + act-FAIL tap .keyword-input__clear not found，未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC36",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC36-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC37",
+      "page": "pages/discover/index",
+      "operation": "筛选重置（draft 清空+store 重拉）",
+      "expected": "tap 重置后基础+高级 draft 全部回默认、store 清空并重拉、抽屉保持打开",
+      "actual": "同 DC28 前置断链：act-FAIL tap .filter-drawer__btn--reset(\"重置\") element not found（抽屉未打开）；非空 draft 前置亦未制造",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC37",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC37-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC38",
+      "page": "pages/discover/index",
+      "operation": "筛选确认（draft→store+关抽屉+按条件重拉）",
+      "expected": "确认后关抽屉、store 应用筛选参数、重拉带参；空确认等价重置不报错",
+      "actual": "同 DC28 前置断链：pre-FAIL input + act-FAIL tap .filter-drawer__btn--confirm(\"确认\") element not found（抽屉未打开），160-175 身高/本科/摄影条件未设置，两条路径均未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC38",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC38-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC39",
+      "page": "pages/discover/index",
+      "operation": "高级筛选控件组 v-model 同步",
+      "expected": "性别/学校/兴趣/仅看在线点击同步 draft，确认后合并进 store 并重拉带参",
+      "actual": "同 DC28 前置断链（且高级 Tab 未切入）：act-FAIL tap __CAND__(\"仅看在线\") + __CAND__(\"确认\") element not found；after 截图 220119B 同初始态",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC39",
+        "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-DC39-after.png（220119B）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC40",
+      "page": "pages/discover/index",
+      "operation": "TabBar 互切 home↔寻觅：selected 同步、数据不丢",
+      "expected": "switchTab 往返落点正确、寻觅 selected=2 恢复、队列保持、快速互切 3 次无异常",
+      "actual": "部分执行：act:switchTab /pages/home/index + act:switchTab /pages/discover/index 两步成功（互切路由可达），但快速互切 3 次依赖 tap 自定义 tabBar 元素 __CAND__(\"首页\")/__(\"寻觅\") 均 element not found 未执行；selected=2 高亮为视觉断言无截图（evidence=[]）；执行窗口 10:47:25 出现 [Global Error][Vue Error] runtime-2 + captureException（与 DC08 同款，已立 Issue MP-R1-DISCOVER-INDEX-103）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC40（switchTab 两步成功+act-FAIL×2+console Vue Error）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC41",
+      "page": "pages/discover/index",
+      "operation": "打开即返回+重复进出 3 次",
+      "expected": "tap 卡片进 other 后立即 navigateBack，循环 3 次落点与状态恢复",
+      "actual": "依赖的『tap 卡片跳转 other』已被 DC16 证伪（onCatchTap 缺失死按钮）→ 循环无法建立：A1 仅 1 轮 act（navigateBack NAV_ERROR Uncaught + tap .match-card），route 始终 [discover]，3 次往返未发生；console 复现 onCatchTap warn ×1",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC41（1 轮未完成+NAV_ERROR+onCatchTap warn）",
+        "reports/audit/round-1/interact/exec-results.json#DC16（跳转链断裂根因）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "DC42",
+      "page": "pages/discover/index",
+      "operation": "滚动到底/顶：内容避让 tabBar 浮岛",
+      "expected": "滚动无白屏/卡死/报错；滚到底操作按钮下缘不被 tabBar 遮挡；回顶无残留",
+      "actual": "A1 act:pageScrollTo bottom + pageScrollTo top 执行，evidence scrollPos=top（回顶无残留），console 无报错，.match-scroll present。遮挡判定为视觉断言，滚底截图未留存；Manifest noop tier 自身规定『执行日志即可，遮挡判定可补截图』，按执行日志口径达成（巡检交互后图目视三按钮与 tabBar 无重叠，作旁证）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC42（scrollPos=top，无报错）",
+        "reports/screenshots/round-1-tour/A/pages_discover_index__交互后.png（三按钮与 tabBar 布局旁证）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "DC43",
+      "page": "pages/discover/index",
+      "operation": "热区与 500ms 反馈扫描（无死按钮）",
+      "expected": "逐元素 tap 500ms 内断言反馈；evaluate 读取实际布局尺寸；筛选按钮 72rpx<88rpx 按热区铁律记缺陷",
+      "actual": "A1 observe-only：逐元素扫描与 getBoundingClientRect 尺寸测量均未执行，无尺寸数据输出，『无死按钮』结论不可得（且 DC16 已发现 1 个死按钮：卡片点击）。热区三项偏差（筛选钮 72rpx index.vue:427-429 / 分段 tab 36rpx 字号+4rpx padding index.vue:453-464 / 抽屉关闭钮 56rpx FilterDrawer.vue:913-915）经工作区最新源码核实仍存在，已立 Issue MP-R1-DISCOVER-INDEX-104",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC43（observe-only）",
+        "apps/client/src/pages/discover/index.vue:427-429,453-464",
+        "apps/client/src/components/discover/FilterDrawer.vue:913-915"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DC44",
+      "page": "pages/discover/index",
+      "operation": "跳过按钮连点×5：副作用与展示一致",
+      "expected": "viewedCards 新增 ≤5 且与推进一致、无同卡重复记录、无卡死、<2 张自动补卡",
+      "actual": "A1 act:rapidTap __CAND__ x5 done=5 派发完成，但 toast=[]、route 不变、无 store dump、before/after 截图均 saveFile 失败；DC44-after wxml 栈顶=小满（2.1km 浙大）与 DC23-after 完全相同（6302B 同尺寸同内容）——两次快照间历经 DC24 两键点击与本轮 5 连点共 7 次操作，卡片队列 0 推进且 0 Toast，5 击疑似全部无效（若属实违反 500ms 反馈铁律），但因无 store 状态与截图证据无法定性，已立待复核 Issue MP-R1-DISCOVER-INDEX-102",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DC44（rapidTap done=5，toast=[]，截图 ERROR）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC44-after.wxml（=DC23-after 小满卡，0 推进）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC23-after.wxml"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-DISCOVER-INDEX-101",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/（DC16 截图未留存 ERROR:timeout；以 console+wxml+基线源码为证）",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "点击推荐卡片无任何反应（死按钮）：automator 对 .match-card 派发 tap×3，路由栈始终停留 pages/discover/index，无 Toast/DOM 变化，console 连续 3 条 warn「Component SwipeContainer does not have a method onCatchTap to handle event tap」；DC41 独立复现 1 次。违反「任何可点击元素点击后 500ms 内必须有可观测反馈」铁律，且阻断点击卡片→他人主页（DC16）、打开即返回（DC41）两条交互链",
+      "evidence": "exec-results.json#DC16 route=[discover]+console warn×3；#DC41 复现；git show aefd8a72:SwipeContainer.vue 模板 line78 catchtap=\"onCatchTap\" 但 defineExpose 仅 {reset,flyDirection,onTouchMove}（方法未暴露，运行时查找失败，catch 语义吞掉 tap，card-tap 未 emit）",
+      "sources": [
+        "interaction",
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "点击卡片任意位置 500ms 内路由 /subpackages/profile-extra/profile/other?userId=<栈顶卡userId>（Manifest DC16）",
+      "fix": "工作区已修复：apps/client/src/components/common/swipe/SwipeContainer.vue:67 defineExpose 补 onCatchTap（MP-R1-PAGES-DISCOVER-INDEX-005）；需重编译后终验 DC16/DC41",
+      "status": "已修复待终验"
+    },
+    {
+      "id": "MP-R1-DISCOVER-INDEX-102",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/PAGES-DISCOVER-INDEX-DC44-after.wxml",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "跳过按钮快速连点 5 次（间隔<100ms）疑似全部无效：rapidTap×5 done=5 后 toast=[]、路由不变，DC23-after 与 DC44-after 两次 wxml 快照栈顶同为「小满」卡（两快照间共 7 次操作 0 推进 0 反馈）。若复测证实，则违反 500ms 反馈铁律（连点期间首击亦应推进/飞出）；因无 store dump 与截图，暂列待复核",
+      "evidence": "exec-results.json#DC44（rapidTap done=5，toast=[]）；wxml DC23-after（6302B 小满）=DC44-after（6302B 小满）；MatchActions.vue:36 busy 门控与 swipe.ts 队列推进链需复测定位",
+      "sources": [
+        "interaction"
+      ],
+      "confidence": 0.5,
+      "ideal": "5 连点应推进 1~5 张且 viewedCards 记录数与推进数一致（Manifest DC44），首击 500ms 内有反馈",
+      "fix": "重编译后以 evaluate 读写 discover store（before/after viewedCards.length+cards 队列 dump）复测连点×5，定位是 MatchActions busy 门控、SwipeContainer 手势层还是 store swipeLeft 去重导致 0 推进",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCOVER-INDEX-103",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "（console 证据，无截图）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "寻觅页在页面切换窗口出现 2 次 [Global Error][Vue Error] runtime-2（vuejs.org/error-reference#runtime-2，渲染期错误）+ captureException 上报：DC08 窗口 22:50:24（reLaunch awayBack 期间）与 DC40 窗口 10:47:25（home↔discover switchTab 期间）。均无堆栈细节（空 object），不能排除由执行器 evaluate/$vm 注入触发，但出现时刻与页面切换重合，需定位",
+      "evidence": "exec-results.json#DC08 console 22:50:24.976 [error] [Global Error][Vue Error] + captureException；#DC40 console 10:47:25.251 同款 ×2 条",
+      "sources": [
+        "interaction",
+        "log"
+      ],
+      "confidence": 0.5,
+      "ideal": "Manifest DC01/DC02/DC40 均要求 console 无 TypeError/Vue Error/未处理异常",
+      "fix": "开启 vue errorHandler 带堆栈落盘（或开发者工具 Sources 断点）复现 home↔discover 切换与 reLaunch，确认是否为寻觅页渲染期属性缺失（runtime-2 语义）并修复",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCOVER-INDEX-104",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_discover_index__弹层态.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "三项可点元素热区低于 88rpx 铁律：①筛选按钮 72×72rpx（index.vue:427-429，弹层态截图右上角目视确认偏小）；②寻觅/附近分段 tab 文本 36rpx 字号+4rpx padding-bottom 无最小热区（index.vue:453-464）；③筛选抽屉关闭钮 56×56rpx（FilterDrawer.vue:913-915）。工作区最新源码核实仍存在；R1 执行器未产出实测尺寸（DC43 observe-only），以源码+Manifest DC43 预先声明为证",
+      "evidence": "ops Manifest DC43（72rpx<88rpx 已知偏差声明）；apps/client/src/pages/discover/index.vue:427-429,453-464；FilterDrawer.vue:913-915；巡检弹层态截图目视",
+      "sources": [
+        "code",
+        "screenshot"
+      ],
+      "confidence": 0.6,
+      "ideal": "全部可点元素热区≥88rpx（88rpx≈44px），可通过透明 padding 扩展命中区而不改视觉尺寸",
+      "fix": "筛选按钮与关闭钮以 ::after 扩展命中区或调大点击容器至 88rpx（视觉圆保持 72/56rpx）；分段 tab 增加 min-height/min-width 88rpx 的命中层",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "DC01|A1 after 截图 saveFile 超限失败，登录胶囊避让浮岛与骨架消失断言无视觉/时序证据（dom/console 已证卡片渲染无报错）|1",
+    "DC02|登录注入前置未执行（observed 无 login 步骤），页面停留游客态（.discover-login-hint:present），登录态断言全部未验|1",
+    "DC05|automator navError（getPageMetaByWebviewId null）页面栈崩溃+login $vm 读取失败，空筛选未制造（after 截图无空态）|1",
+    "DC06|执行编排错误：页内分段切换被实现为 switchTab /pages/nearby/index（after 截图为附近页），寻觅页分段 tab 从未点击|1",
+    "DC07|断网/5xx 前置未执行，错误横幅未出现（after 截图为正常卡片态），重试按钮不存在|1",
+    "DC08|match_open=false 开关前置未执行（无改开关步骤），关闭态未制造；Manifest 预授权记 UNVERIFIED|1",
+    "DC09|仅执行切回+30s 等待，两向缓存断言无网络日志支撑（console 空，缺切走与过期后切回步骤）|1",
+    "DC10|同 DC06 编排错误：switchTab 到 nearby 页后找 .discover-header__tab 必然 not found，页内分段未点击|1",
+    "DC11|互切 5 次在 nearby 页执行（top=nearby，toggleTap found 0），寻觅页分段行为未验|1",
+    "DC12|滑动手势 unsupported(no element api) 未执行，before/after wxml 快照同为林晓卡（0 推进）|1",
+    "DC13|滑动手势未执行；且 act 阶段混入 login A 破坏游客前置|1",
+    "DC14|右滑手势 unsupported 未执行，快照无变化|1",
+    "DC15|两步阈值手势均 unsupported 未执行，无 before/after 栈顶一致性证据|1",
+    "DC21|mock 模式实名恒过（campus-gate.ts:34 useMock 短路）未实名前置不可满足（Manifest 预授权）；tap .showModal 选择器无效；login B MISMATCH|1",
+    "DC23|频控预置 storageSet 键未解析（字面量 greet:count:<栈顶卡cardId>）频控未生效，实际走了正常提交链（toast 已喜欢+栈顶推进）|1",
+    "DC24|discover_daily_record 预置有效性未证；tap 两键无 Toast 无路由无 matching，无法区分预置失败与门控失效|1",
+    "DC25|tap 登录胶囊×2 后 route 仍 [discover]（无 toast/console/wxml 佐证），navigateTo 异步+总时长 3.7s 存在采集时序疑点，单源证据不足定性|1",
+    "DC26|token 注入步骤未执行（observe-only），dom 断言自相矛盾（游客态胶囊 absent），watch 重拉未验|1",
+    "DC28|前置『接 DC27 抽屉打开态』跨会话断链：重跑时无开抽屉步骤，act-FAIL element not found，after 截图实证初始卡片态，三路关闭全未执行|1",
+    "DC29|同 DC28 抽屉未打开（220119B 同画面），高级筛选 Tab 切换未执行|1",
+    "DC30|observe-only：滑块 change 未执行，无文案/钳制证据|1",
+    "DC31|同 DC28 抽屉未打开，学历 chips 未点击|1",
+    "DC32|同 DC28 抽屉未打开，感情状态 chips 未点击|1",
+    "DC33|observe-only：picker 唤起/确定/取消未执行，无 draft 状态佐证|1",
+    "DC34|SKIPPED action-not-automatable：原生 picker 弹层不可自动化，0 次尝试|0",
+    "DC35|同 DC28 抽屉未打开，关键词输入三态未执行（.keyword-input__field not found）|1",
+    "DC36|同 DC28 抽屉未打开，清空钮不存在|1",
+    "DC37|同 DC28 抽屉未打开，重置未执行且非空 draft 前置未制造|1",
+    "DC38|同 DC28 抽屉未打开，确认未执行且筛选条件未设置|1",
+    "DC39|同 DC28 抽屉未打开（高级 Tab 亦未切入），高级控件未执行|1",
+    "DC40|switchTab 两步成功但快速互切 3 次未执行（自定义 tabBar 元素 not found），selected 同步无截图，窗口内出现 Vue Error runtime-2|1",
+    "DC41|依赖的卡片跳转 other 已被 DC16 证伪（onCatchTap 死按钮），往返 3 次未完成（1 次 tap+navigateBack NAV_ERROR）|1",
+    "DC43|observe-only：逐元素 500ms 反馈扫描与 getBoundingClientRect 尺寸测量均未执行，无尺寸数据输出|1",
+    "DC44|rapidTap×5 派发但无 store dump/截图；DC23-after 与 DC44-after 快照同栈顶卡（小满）提示 5 击 0 推进，无法定性|1"
+  ],
+  "notes": {
+    "evidenceConflicts": [
+      "route 快照 vs wxml 快照矛盾：DC18/DC19/DC22 的 route=[discover] 但 after wxml 为匹配中页/toast=已喜欢——根因为 matching 页 mock 成功后 400ms 自动 navigateBack（matching.vue:66-73），瞬时页面 getCurrentPages 快照漏记；判定以 wxml+toast 为准",
+      "toast 数组为多次累积记录（DC20 两键 2 条），据此认定 DC19 连点 5 次仅 1 条成功 toast=单次提交"
+    ],
+    "systemicExecIssues": "A1 执行（exec gitSha=aefd8a72）存在 5 类环境问题：①22:47-23:00 批次截图全部 saveFile 超限/automator 超时；②登录注入得到 user-1001（dev-user mock）而非 Manifest 身份A 100158，执行器自标 MISMATCH!（44 条中 24 条带此标注）；③手势 swipe 无元素级 API（DC12-15 全部未执行）；④抽屉类用例（DC28-39）跨会话重跑丢失『接 DC27 抽屉打开态』前置（after 截图 220119B 同画面实证）；⑤DC06/DC10/DC11 将页内分段切换错误编排为 switchTab 附近页。上述均非产品缺陷证据，相关用例判 UNVERIFIED 而非 FAILED，建议 A2 轮修复执行脚本后重测",
+    "notRun": "无——44 条用例均有 A1 执行记录（含 SKIPPED 的 DC34）；本判定未运行任何驱动开发者工具的操作（A6 只读证据）",
+    "issueFollowups": "MP-R1-DISCOVER-INDEX-101 建议终验时以真机/重编译产物复测 DC16+DC41；-102/-103 需带 store dump 与 errorHandler 堆栈复测；-104 为静态尺寸核对，修后需 DC43 扫描实测"
+  }
+}

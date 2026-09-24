@@ -44,18 +44,17 @@ onUnmounted(() => {
   if (fallbackTimer) clearTimeout(fallbackTimer);
 });
 
-/** 匹配度进度（参考图：旅行/音乐/电影/生活方式 四项 + 总进度） */
-// MP-R2-MATCHING-006：label 改 i18n key（模板 t() 渲染）
+/** 匹配度进度（旅行/音乐/电影/生活方式 四维）。
+ * MP-R1-MATCHING-REQ-01：冻结契约 §12「匹配中进度为视觉模拟，不显示虚假算法百分比」——
+ * 删除写死的 90/85/80/79 数值与 totalPercent（均值+5 的假数据），进度条改为纯视觉
+ * 律动动画（indeterminate），标题接 matching.searching 冻结文案。 */
 const PROGRESS = [
-  { labelKey: "matching.dimTravel", percent: 90, icon: IMAGE_PATHS.MASCOT.STAR, color: "#FF6B9D" },
+  { labelKey: "matching.dimTravel", icon: IMAGE_PATHS.MASCOT.STAR },
   // R4：heart_pink.png 为全透明空文件（行图标渲染空白圆），换 lucide music 图标
-  { labelKey: "matching.dimMusic", percent: 85, icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC, color: "#6C5CE7" },
-  { labelKey: "matching.dimMovie", percent: 80, icon: IMAGE_PATHS.MASCOT.SPARKLE, color: "#00B894" },
-  { labelKey: "matching.dimLifestyle", percent: 79, icon: IMAGE_PATHS.ICONS_V2.SPROUT, color: "#FDCB6E" },
+  { labelKey: "matching.dimMusic", icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC },
+  { labelKey: "matching.dimMovie", icon: IMAGE_PATHS.MASCOT.SPARKLE },
+  { labelKey: "matching.dimLifestyle", icon: IMAGE_PATHS.ICONS_V2.SPROUT },
 ];
-
-/** 底部总进度（参考图：缘分匹配中... 89%） */
-const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) / PROGRESS.length) + 5;
 </script>
 
 <template>
@@ -106,10 +105,11 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
       </view>
     </view>
 
-    <text class="match-loading__title">正在寻找有缘的Ta...</text>
+    <!-- MP-R1-MATCHING-REQ-01：标题接 matching.searching 冻结文案（原硬编码中文且未走 i18n） -->
+    <text class="match-loading__title">{{ t("matching.searching") }}</text>
     <text class="match-loading__subtitle">{{ t("matching.subtitle") }}</text>
 
-    <!-- 匹配度进度卡片 -->
+    <!-- 匹配度进度卡片（纯视觉律动，无数值） -->
     <view class="match-loading__progress">
       <view class="match-loading__progress-header">{{ t("matching.progressTitle") }}</view>
       <view v-for="p in PROGRESS" :key="p.labelKey" class="match-loading__row">
@@ -118,17 +118,8 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
         </view>
         <text class="match-loading__row-label">{{ t(p.labelKey) }}</text>
         <view class="match-loading__row-bar">
-          <view class="match-loading__row-bar-inner" :style="{ width: p.percent + '%' }" />
+          <view class="match-loading__row-bar-inner match-loading__row-bar-inner--pulse" />
         </view>
-        <text class="match-loading__row-percent">{{ t("matching.matchRate", { n: p.percent }) }}</text>
-      </view>
-    </view>
-
-    <!-- 总进度（卡片外部，页面底部独立显示） -->
-    <view class="match-loading__total">
-      <text class="match-loading__total-text">{{ t("matching.totalProgress", { n: totalPercent }) }}</text>
-      <view class="match-loading__total-bar">
-        <view class="match-loading__total-bar-inner" :style="{ width: totalPercent + '%' }" />
       </view>
     </view>
   </view>
@@ -394,47 +385,19 @@ const totalPercent = Math.round(PROGRESS.reduce((sum, p) => sum + p.percent, 0) 
   transition: width 1.2s ease-out;
 }
 
-.match-loading__row-percent {
-  width: 160rpx;
-  font-size: 22rpx;
-  font-weight: 700;
-  /* R4-batch4 像素级对齐：参考图匹配度百分比为品牌绿 var(--c-brand, #36C99A) */
-  color: var(--c-brand, #36C99A);
-  text-align: right;
-  flex-shrink: 0;
+/* MP-R1-MATCHING-REQ-01：纯视觉律动（indeterminate），不携带任何数值语义 */
+.match-loading__row-bar-inner--pulse {
+  width: 40%;
+  animation: match-loading-bar-pulse 1.8s ease-in-out infinite;
 }
 
-/* ========== 总进度（卡片外部独立区域） ========== */
-.match-loading__total {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16rpx;
-  margin-top: 48rpx;
+@keyframes match-loading-bar-pulse {
+  0% { width: 24%; }
+  50% { width: 72%; }
+  100% { width: 24%; }
 }
 
-.match-loading__total-text {
-  font-size: 34rpx;
-  font-weight: 700;
-  color: var(--c-brand, #36C99A);
-}
-
-.match-loading__total-bar {
-  width: 100%;
-  height: 14rpx;
-  border-radius: 999rpx;
-  background: rgba(54, 201, 154, 0.15);
-  overflow: hidden;
-}
-
-.match-loading__total-bar-inner {
-  height: 100%;
-  border-radius: 999rpx;
-  /* R4-batch4 像素级对齐：参考图总进度条使用品牌绿 var(--c-brand, #36C99A) */
-  background: var(--c-brand, #36C99A);
-  transition: width 1.5s ease-out;
-}
+/* MP-R1-MATCHING-REQ-01：总进度（89% 假数据）渲染与样式已随契约 §12 一并移除 */
 
 /* ========== 动画 ========== */
 @keyframes match-loading-heart {

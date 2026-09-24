@@ -1,0 +1,50 @@
+{
+  "round": "R1",
+  "page": "pages/messages/index",
+  "reviewer": "历史回归员-R1-PAGES-MESSAGES-INDEX（A5 索引差分模式：只核对历史条目是否复发，只读清单/代码/证据，不改代码、不碰开发者工具）",
+  "date": "2026-09-24",
+  "method": "回归索引 reports/audit/baseline/regression-index.json 中 page=riskFiles 含 apps/client/src/pages/messages/index.vue / stores/messages.ts 的条目做差分：MP-R1-PAGES-MESSAGES-INDEX-004、005、R13-DATA-3894、R1-PAGES-MESSAGES-INDEX-006..018（ask 指定 4 组）。因 git status 显示 index.vue 与 stores/messages.ts 本轮均有未提交改动，全部结论以当前工作树源码重读为准（不沿用 A2 code-findings 稿结论）；交互层佐证取 reports/audit/round-1/interact/exec-results.json（round R1，gitSha aefd8a72，1283 条结果中本页 MSG01-40）+ reports/screenshots/round-1-tour/A 双身份静态截图。本轮 git diff HEAD 显示两 risk 文件仅 3 处改动（quick-card flex 限宽 CSS、store 移除未使用的 removeCache import、会话 get-or-create 幂等键改唯一键），均不触及任何修复路径（removeCache 页面层自有 import index.vue:26 仍在使用，utils/cache-ttl.ts:122 实现仍在）。",
+  "issues": [
+    {
+      "id": "R13-DATA-3894",
+      "round": "R1",
+      "page": "pages/messages/index + 数据",
+      "screenshot": "（mock 构建五会话预览无该文案——reports/audit/round-1/findings/PAGES-MESSAGES-INDEX.json:117；真实环境页面实拍缺失）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "回归核对：private_messages id=3894「全链路验收测试消息 2026-09-12」外露消息预览位——非本轮复发（历史上从未修复，无「修复被改回」可言），维持待修复。本轮复核确认：①该字符串在本轮全部 round-1 证据中仅命中报告文档（grep -rn \"全链路验收测试消息\" reports/audit/round-1/ 仅命中 code-findings/findings/page-compare 的记录性文字；apps/ 代码与种子零命中），属运行时数据库残留、非代码带入；②本轮无任何 SQL 执行或授权删除记录（reports/audit/round-1/ops/ 全为页面操作记录，无 DB 记录），删除仍停在等授权；③mock 构建截图无法证实/证伪真实库表现（findings/PAGES-MESSAGES-INDEX.json:117 明示）。因此本轮既不能宣告已清除、也无新外露证据，回归状态=证据不足，按原结论继续挂起。",
+      "evidence": "本轮执行的检查：grep -rn \"3894\" 与 grep -rn \"全链路验收测试消息\" reports/audit/round-1/ → 仅命中 reports/audit/round-1/code-findings/PAGES-MESSAGES-INDEX.json:45-46、findings/PAGES-MESSAGES-INDEX-req.json:23-24/165、findings/PAGES-MESSAGES-INDEX.json:117、page-compare/PAGES-MESSAGES-INDEX.md:27,67（均为审查记录，非 SQL 结果）；渲染链未变：apps/client/src/pages/messages/index.vue:502-507 <EmojiText :text=\"session.lastMessagePreview\"> ← stores/messages.ts:272 lastMessagePreview: raw.lastMessagePreview ← apps/api/.../RealPrivateMessageService.java:574 conv.getLastMessagePreview() ← entity/PrivateConversation.java:42 @Column(name=\"last_message_preview\")。缺：private_messages id=3894 计数 SQL + private_conversations.last_message_preview（conv 461）同步状态的 SQL + 真实环境消息页实拍（索引 verification 要求 SQL+页面实拍双证）。",
+      "sources": ["code", "log"],
+      "confidence": 0.8,
+      "ideal": "消息列表与库内数据均无验收残留文案；id 3334「你好呀，测试消息」似种子文案按线索建议保留。",
+      "fix": "（等授权执行，删除不可逆）双表同步清理：DELETE private_messages 残留行 id=3894 + 将对应会话（conv 461）private_conversations.last_message_preview 恢复为次新消息预览或置空由后端重算；清理后以 SQL 计数 + 真实环境消息页实拍双证回归。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-004",
+      "page": "pages/messages/index",
+      "status": "未复发",
+      "evidence": "代码（本轮工作树重读）：index.vue:518 模板读真实字段 formatTime(session.lastMessageSentAt)，假字段 lastMessageTime 在 apps/client/src 全域 grep 零命中（本轮执行 `grep -rn lastMessageTime apps/client/src/ | grep -v lastMessageSentAt` 无输出）；formatTime（index.vue:306-315）含 Number.isNaN 防护并收敛到 utils/time.ts:384 formatChatListTime；类型/映射链 stores/messages.ts:69 lastMessageSentAt: string|null、:273 lastMessageSentAt: raw.lastMessageAt。运行时：exec-results.json MSG38「会话时间显示：当天/昨天/本周/更早分段与非法串 NaN 防护」status=EXECUTED，dom 观测 .chat-item__time:present .isNaN:absent（caveat：该批用例带 pre:login A userId=user-1001 MISMATCH! 身份不匹配标记，且 MSG38 关联截图文件落盘失败 timeout——DOM 观测仍有效）。视觉：reports/screenshots/round-1-tour/A/pages_messages_index__默认.png（本轮读取）会话行右侧时间列可见：00:55/昨天/0+00:28（免打扰图标+时间）/周一/周日。"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-005",
+      "page": "pages/messages/index",
+      "status": "未复发",
+      "evidence": "代码（本轮工作树重读，emit→监听→跳转链完整）：components/discover/NotLoggedWaiting.vue:22-25 defineEmits 含 goPhoneLogin、:31-33 emit(\"goPhoneLogin\")、:90-99 手机号登录按钮 @tap=goPhoneLogin；index.vue:328-330 <NotLoggedWaiting v-if=\"!sessionStore.isLoggedIn && !useMock()\" @go-login=\"goLogin\" @go-phone-login=\"goPhoneLogin\">；index.vue:70-73 goPhoneLogin → openAppPath(\"/pages/login/index\")。运行时终验欠账：exec-results.json MSG03「未登录态手机号登录→跳登录页（死按钮修复回归）」status=FAILED，但失败原因是 .not-logged__btn--secondary:absent——自动化环境 logout+清 storage 后等待页整个未渲染（MSG01 同：.not-logged__bg/__title/__btn 全 absent），属 R21-UNVERIFIABLE-LIST「logged-out-state-reachability-in-mock-build」环境限制，不是修复被改回；未登录态点击路径仍待真实环境终验。"
+    },
+    {
+      "id": "R13-DATA-3894",
+      "page": "pages/messages/index + 数据",
+      "status": "证据不足",
+      "evidence": "缺：①private_messages id=3894 行级 SQL 实查（本轮无连库，索引 verification 要求 private-messages-3894-authorized-deletion-sql-and-page-proof 未满足）；②private_conversations.last_message_preview（conv 461）同步清理 SQL 证据；③真实环境消息页实拍（mock 构建 5 会话预览无该文案，无法证真伪，findings/PAGES-MESSAGES-INDEX.json:117）。已有证据：全仓受控文件 grep 仅 reports/audit/baseline/* 命中（无种子/迁移来源）→ 运行时库残留；本轮 round-1 证据链无任何 SQL/授权删除记录 → 既不能判「已清除」也无复发新证据。详见 issues[0]。"
+    },
+    {
+      "id": "R1-PAGES-MESSAGES-INDEX-006..018",
+      "page": "pages/messages/index",
+      "status": "未复发",
+      "evidence": "P2 簇六症状（对应索引条目 MP-R1-PAGES-MESSAGES-INDEX-006-011）逐项以当前工作树重读，修复全部仍在：006 空 catch→index.vue:256-258 fetchLikes().catch(console.warn)；007 dashboard 并发整表覆盖→stores/messages.ts:584-613 mergedById 按 id 合并（:603-607 保留 official/temp 会话、:596-600 保留 pinned/muted、未读以服务端为准）；008 长按失败全屏错误态→index.vue:153-164 error 判定与 errorMessage 解耦（仅无内容且带错才整页 error）、:183-189 toastOpError、:229-243 pinned/muted/delete 失败仅 toast、:175-181 handleRetry 先 removeCache(\"messages:bootstrap\") 再 bootstrap(true)，store 侧 messages.ts:1244-1261 setSessionMuted 失败返回 false 不改本地态；009 下拉刷新 TTL 空转→index.vue:250-262 async loadPage(force)、:279-284 await loadPage(true) 后 stopPullDownRefresh，messages.ts:544-557 force 分支 await fetchAll 后回写缓存时间戳；010 --statusbar/--capsule-right 未注入→index.vue:59-62 useMenuButtonRect().styleVars、:325 :style=\"menuStyleVars\"、:594-598 var(--statusbar,env(safe-area-inset-top))/var(--capsule-right,7px)，composables/useMenuButtonRect.ts:49-52 输出两变量（本轮重读）；011 助手卡假数据→index.vue:81-96 无 ??2 兜底（assistantActivityCount ?? 0）、:423-435 v-if=\"assistantActivityCount>0\" 数据驱动、:105-110 warmPeople ?? [] 无硬编码用户、:439 v-if 隐藏，运行时 MSG22/MSG25 均 EXECUTED（无数据时 .assistant-card__activity/.warm-list 均 absent）。随簇 P3/P4：013 双份模板收敛→index.vue:469-473 单 v-for 仍在；014 formatTime 收敛→index.vue:9-10/311-314 + utils/time.ts:384 仍在；015 免打扰失败 toast→index.vue:233-237 + messages.ts:1244-1261 仍在；016 标为未读本地态→messages.ts:1285-1297 TODO(backend) 按原样保留（已知限制非回归）。历史未修项（非复发，维持原状）：012 onShow 双路 markAllSessionsRead（index.vue:261+277，force 绕 2s 节流 messages.ts:816/:1333）重复回执仍在；017 裸 rgba 底色仍在（本轮 grep index.vue 8 处命中）；018 头像 88rpx 双源仍在（index.vue:769-775）。运行时 caveat：MSG28-31 长按 ActionSheet 族因 automator longpress/原生弹层派发限制 action-not-performed（R21 不可验证清单），008/015 的终验仍欠真实环境；MSG10 下拉刷新 EXECUTED 但其 act 步骤带 \"ERR uni is not defined\" 自动化伪影，动画不永驻的运行时确认不足，代码层 force 链路已证。"
+    }
+  ]
+}

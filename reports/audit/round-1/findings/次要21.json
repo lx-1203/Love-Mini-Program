@@ -1,0 +1,162 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-次要21（A3，截图与证据的视觉/布局/状态审查）",
+    "date": "2026-09-24",
+    "evidenceBase": {
+      "gitSha": "aefd8a72",
+      "gitShaCheck": "git rev-parse HEAD → aefd8a72f2231e8df7affd09004c14c3e4e73745，与 reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72、interact/exec-results.json gitSha=aefd8a72 一致，全部证据未过期",
+      "staticShots": "screenshot-manifest 共 305 张；其中本批 8 页 A/B 双身份共 26 张全部存在于磁盘并逐张审查（含 6x/3x 像素裁切取证，裁切件存 reports/audit/round-1/tmp-a3/）",
+      "askPremiseCorrection": "任务书称「本批页面本轮没有静态截图——把缺截图记为 P1」。经核实该前提与证据矛盾：manifest（gitSha 一致）列出本批 26 张且磁盘全部存在（node fs.existsSync 逐一核验 26 ok / 0 missing）；任务书所附失败原因（dev/index、register/index、register/success、campus/index、discover/matching、activities/detail、showcase/index）均非本批页面。按观察证据制（禁止编造问题），未记录该 P1，改为逐张审查真实截图",
+      "interactEvidence": "reports/audit/round-1/interact/exec-results.json 本批 69 行已通读；交互成败判定归交互判定员，本审查仅引用其作为行为佐证",
+      "idealImageMapping": "素材/理想效果图/ 19 张整页稿与本批 8 个二级页无页面级映射（最接近的「附近的首页.png」实为 pages/nearby/index 附近 Tab 首页，非本批 nearby/people）。L1–L4 逐页对照不适用；改为品牌链逐像素核对（--c-brand=#36C99A 渲染像素精确命中；页面底色 #EEF7F2=--c-bg-surface 符合 v3.1 白底/极浅绿节奏）+ 跨页一致性对照",
+      "notRun": "真机/real 后端验证未运行（本批截图均为 build:mp-weixin:mock）；错误态/封存商业态在 mock 环境不可触发（SG06/NP09/LK15/DH06 等 FAILED 行均为「错误态元素不存在」——错误态未渲染所致，非页面故障，属环境限制如实记录）"
+    }
+  },
+  "issues": [
+    {
+      "id": "MP-R1-NP-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/nearby/people",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_nearby_people__默认.png（B 身份同缺陷：reports/screenshots/round-1-tour/B/subpackages_discover-extra_nearby_people__默认.png；6x 放大取证 reports/audit/round-1/tmp-a3/np-avatar-zone-6x.png、np-rows-zoom.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「附近的人」全部列表行头像整体不可见（A/B 双身份、全部 9+ 行一致）：行内无头像圆形、无灰底占位、无骨架，昵称直接顶到行左缘，头像应占的 96rpx 空间塌陷。同批对照：segment 页同尺寸头像正常渲染、likes/likes-visitors 页头像正常渲染，仅本页全列表缺失。人脉目录类页面的主视觉元素整页缺失，处于 P1/P2 边界；因浏览/点击/分页功能不受影响，定 P2。该页代码层审查（code-findings/次要21.json coverage）曾判「SafeImage 失败兜底到位，未发现新问题」，本条为视觉层补漏。",
+      "evidence": "① 截图：A/B 默认态全部行无头像；np-avatar-zone-6x.png 6x 放大证实行 1 头像区为纯白（无图/无占位/无骨架），昵称「林晓」起点 x≈37px（行 padding 12px + gap 10px + 塌陷头像 ~15px），而正常应位于 12+48+10=70px。② 根因（编译层）：people.vue:219 <SafeImage custom-class=\"people-row__avatar\">，尺寸类落在 SafeImage 内层 <image> 上；页面编译产物 subpackages/discover-extra/nearby/people.wxss 选择器为「.people-row__avatar.data-v-06308c40{width:96rpx;height:96rpx;…}」（双类链），而内层 image 实际类为「data-v-00127654 safe-image__img people-row__avatar」（编译 SafeImage.wxml），既缺 data-v-06308c40 作用域类，且 SafeImage.json={\"component\":true} 未开 styleIsolation → 小程序组件样式隔离使页面 wxss 无法命中组件内部节点 → 头像无任何尺寸 → 根节点 .safe-image（width:100%;height:100%）百分比套百分比循环解析塌陷为 0。③ 正常对照：likes-visitors/index.vue:394-396 将 SafeImage 包在页面自带尺寸的 .list__avatar 包装 view 内（页面 wxss 直接作用于自有节点）→ 头像正常渲染；segment.vue:149,248-254 裸 <image class=\"segment-row__avatar\"> 同理正常。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.95,
+      "ideal": "每行渲染 96rpx 圆形头像（有图显示图、失败回退默认头像、加载中显示占位），布局为「头像 48px + 间距 10px + 信息列」，与其他列表页（likes/likes-visitors/segment）一致。",
+      "fix": "对齐 likes-visitors/index.vue:394-396 模式：people.vue:219 外包 <view class=\"people-row__avatar-wrap\">，把 96rpx/圆形/底色样式移到该页面自有节点（.people-row__avatar-wrap{width:96rpx;height:96rpx;border-radius:50%;overflow:hidden;flex-shrink:0}），SafeImage 靠根节点 width/height:100% 填满包装；或改用 segment.vue:149 裸 <image> + resolveMediaUrl 回退链。修复后需在 real 模式终验头像渲染。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LIK-005",
+      "round": "R1",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes-visitors_index__滚动-底部.png（单帧完整可见乱序：…5/7 → 5/16 → 5/15 → 5/13…；另 A/B 滚动-中部、likes/index 滚动-中部+底部同源复现）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "「喜欢我的」列表时间序非倒序：渲染顺序出现 …5/7 → 5/16 → 5/15 → 5/13 → 5/12… 的折返（likes-visitors 页与 likes 页「喜欢我的」Tab 共用同一 store 数据，两页均受影响）。用户按「最近喜欢我」心智浏览时，5/16 的记录排在 5/7 之后。根因：stores/likes/mock-data.ts mockLikedBy 夹具本身非单调（第 1–14 行 5/20→5/6 降序后，第 15 行起回跳 5/15 重启降序，第 23 行再次回跳 5/20），而 store 映射与页面渲染均无防御性排序，直接按数据源顺序渲染。截图日期与夹具逐行精确吻合（含 UTC→本地 +8 跨日：夹具 5/15T20:10Z 渲染为 5/16）。真机 real 模式若后端有序则症状消失，但 store 层无排序契约，夹具即当前可运行构建的实际表现。",
+      "evidence": "① 截图：B 身份滚动-底部单帧可见 5/7(沈知微)→5/16(苏黎)→5/15(周子衿)→5/13(陆时寒)…；A 身份滚动-中部末行 5/7 与滚动-底部首行 5/15 跨窗口拼合同样折返；likes/index A 滚动-中部/底部窗口拼接同现（同 store）。② 代码：stores/likes/mock-data.ts:157（likedAt 5/06）→ :166（回跳 5/15）为折返边界；:224-227 mockVisitors 同构非单调；stores/likes.ts fetchLikes/fetchVisitors（:431 起）与 likes-visitors/index.vue:103（三元直取 likedBy/visitors 渲染）均无 sort。③ 行为：exec-results LV11 仅验证时间格式 M/D 无 NaN，未覆盖排序。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "「喜欢我的/我的访客」列表一律按 likedAt/visitedAt 降序（最近在前），数据源乱序时由客户端排序兜底。",
+      "fix": "双保险：① 修正 stores/likes/mock-data.ts 夹具为整体降序（至少消除 :157→:166、:224 段内回跳）；② stores/likes.ts 映射后统一 .sort((a,b)=>Date.parse(b.likedAt)-Date.parse(a.likedAt))（visitors 用 visitedAt），使排序成为 store 契约而非依赖后端。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LIK-006",
+      "round": "R1",
+      "page": "subpackages/discover-extra/likes/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes_index__默认.png（B 身份同；3x 放大取证 reports/audit/round-1/tmp-a3/lk-signal-zoom.png）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「心动信号」入口图标不可见：胶囊内仅渲染文案「心动信号」+右侧粉色圆点徽标，SafeImage 承载的心形信号图标（应位于文案左侧）塌陷未渲染，文案前为空白。与 MP-R1-NP-001 同根因（页面 scoped 尺寸类无法穿透 SafeImage 组件样式隔离命中内层 image）：.likes-header__signal-icon 编译为页面 wxss 双类链选择器 .likes-header__signal-icon.data-v-2d07402d{width:var(--sp-8);height:var(--sp-8)}，内层 image 不携带该作用域类。因入口仍有文字+徽标、可点击可用，降为 P3。",
+      "evidence": "① 截图：lk-signal-zoom.png 3x 放大显示胶囊内「心动信号」四字前无任何图标，右侧粉色圆点为 likes-header__signal-badge（无条件渲染的徽标 view，非图标）；标记顺序 likes/index.vue:640-643 为 icon→text→badge，可见圆点位置与 badge 吻合。② 代码/编译：likes/index.vue:640 SafeImage custom-class=\"likes-header__signal-icon\"；编译产物 index.wxss 中该选择器带 .data-v-2d07402d 作用域链；--sp-8=32rpx（design-variables.scss:502）；SafeImage.json 无 styleIsolation → 隔离不命中。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.85,
+      "ideal": "心动信号胶囊「图标(32rpx) + 文案 + 徽标」三段齐备，图标可见且与邻近胶囊（管理）视觉均衡。",
+      "fix": "同 MP-R1-NP-001 修法：将尺寸类移到页面自有节点（包一层 .likes-header__signal-icon-wrap{width:var(--sp-8);height:var(--sp-8)}），或改裸 <image class=\"likes-header__signal-icon\">（页面级 image 类可直接命中）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LC-001",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__默认.png（B 身份同）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "恋爱中心 hub 页标题误用「恋爱咨询」：AppShell 标题取 t('home.loveConsulting')（zh「恋爱咨询」，首页咨询模块的文案键），而页面自身的产品身份是「恋爱中心」（i18n common.showcase.groups.home.items.loveCenter.title=恋爱中心，desc「咨询 / 课程 / 测试」；文件头注释亦为「恋爱中心」）。在商业化封存默认态下页面内容仅剩「附近的人 + MBTI 人格测试」两个入口，consulting 板块整体不渲染（LC01 行为断言 loveConsulting 区 absent），标题指向页面上不存在的内容，页名与内容错位。",
+      "evidence": "① 截图：A/B 默认/滚动三态页首大标题均为「恋爱咨询」，页面内无任何咨询内容（仅快捷入口+恋爱测试两区）。② 代码：love-center/index.vue:88 <AppShell :title=\"t('home.loveConsulting')\" show-back>；zh-CN.ts:639 'loveConsulting': '恋爱咨询'；zh-CN.ts:2292-2294 loveCenter.title='恋爱中心'。当前构建无任何生产入口使用「恋爱中心」文案指向本页（grep 仅 DEV showcase 与本页自身），但页面文件/路由/注释身份均为恋爱中心（constants/routes.ts:203-205）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "hub 页标题与页面身份一致（恋爱中心），或若产品定位即「恋爱咨询」则页面应包含咨询内容/入口；二者不矛盾地并存。",
+      "fix": "love-center/index.vue:88 改用独立键（如 t('loveCenter.title') 或新增 contentPages.loveCenterTitle='恋爱中心'），勿复用首页咨询模块键 home.loveConsulting。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LC-002",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__滚动-底部.png（B 身份同；对照同页 默认/滚动-中部 三态）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "恋爱中心页尾部约 600–680px 空白可滚动区：内容实际仅「快捷入口 + 恋爱测试」两区（约 260px 高），滚动到底后两区之下全为空白页面底色，且「返回」胶囊随内容滚入状态栏叠印区（AppShell 头部非吸顶）。根因：.love-center 自带 min-height:100vh，而宿主 AppShell 内容体已有 min-height:100%（AppShell.vue:254），二者叠加使页面总高≈头部高+100vh（实测可滚动 ~120px、底态空白 ~680px），min-height:100vh 在本页完全冗余且制造空洞滚动行程。",
+      "evidence": "① 截图：滚动-底部（A/B 一致）内容止于首屏 140px 处，其余 ~680px 全空白；滚动-中部「返回」pill 已被状态栏图标叠印（顶部左上「返回」与 WeChat 图标重叠）。② 代码：love-center/index.vue:172-175 .love-center{min-height:100vh;…}；AppShell.vue:253-254 注释明确「仅保留 min-height 让内容自然撑高」的 body 已有 min-height:100%。像素测算：默认态首区 y≈176 → 底态 y≈55，滚动 ≈121px；总高 ≈941px ≈ 头部 90 + 100vh 820 + safe-area，与 100vh 冗余模型吻合。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "页面滚动范围与真实内容等高（两区 ~350px 总高时页面不可滚或仅 safe-area 余量），返回胶囊不因冗余滚动暴露在状态栏叠印区。",
+      "fix": "删除 love-center/index.vue:173 的 min-height:100vh（AppShell body 已兜底），保留 padding-bottom: env(safe-area-inset-bottom)。头部吸顶问题为 AppShell 全局行为，归共享组件层统一处理，本条不展开。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HELP-002",
+      "round": "R1",
+      "page": "subpackages/tools/help/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_help_index__默认.png（B 身份同）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "「客服邮箱-复制」的复制产物在页面上不可见：条目仅展示 label「客服邮箱」与「服务时间：9:00-21:00」，邮箱地址 support@campuslove.app 未在页面任何位置展示，用户复制的是一个看不见的值，复制后无法核对、也无法在邮件客户端外使用。原缺陷 MP-R1-HELP-101（复制标签而非邮箱）已修复：本轮行为证据 HP06 断言剪贴板=support@campuslove.app + toast「已复制」，代码留有修复注释；本条跟踪其遗留建议（邮箱展示），此前仅以附带建议存在于代码层 findings，未立为受跟踪问题，现以视觉证据补立。",
+      "evidence": "① 截图：A/B 联系我们卡「客服邮箱」行仅两行文案（label+服务时间），无邮箱字面量；「复制」胶囊位于行尾。② 行为：exec-results.json HP06（EXECUTED）observed「剪贴板=support@campuslove.app + toast『已复制』」。③ 代码：help/index.vue:60-64 copyEmail → APP_CONFIG.SUPPORT_EMAIL（config/app.ts:47='support@campuslove.app'）；:154-156 行渲染仅 t('help.contactEmail')+t('help.serviceHours')，无邮箱；locales 全库无邮箱字面量（代码层 grep 结论，与本页渲染一致）。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.9,
+      "ideal": "复制产物对用户可见：客服邮箱行 desc 展示真实邮箱地址（或复制成功 toast 中回显地址）。",
+      "fix": "help/index.vue:155 desc 改为拼接展示：t('help.serviceHours') + ' · ' + APP_CONFIG.SUPPORT_EMAIL（或将邮箱独立为一行 desc）；若担心文案过长可仅在 toast 回显地址。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/discover-extra/home/segment",
+      "observation": "头像链路修复的 mock 视觉证实：9 行头像全部渲染真实 mock 照片、无裂图（MP-R2-SEGMENT-001 已修复待终验的视觉佐证；real 模式仍需终验）。行布局 头像96rpx+昵称+在线徽标+学校·距离+chevron 与 nearby/likes 页行结构一致；在线徽标（绿点+文字 #36C99A 系）仅对 status=online 行渲染，与 isOnline() 逻辑一致。标题「细分发现 · 在线」与 SG01/SG08 六枚举标题断言一致。缺陷面：无（本页问题仅为代码层已立的 MP-R1-SEG-001/002，不重复）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_home_segment__默认.png + B 同名图；对照 segment.vue:149（resolveMediaUrl+DEFAULT_AVATAR 兜底）。备注：type=online 标题下混入无在线徽标的行，为 buildFilter 传 {onlineOnly:true} 而 mock 端未过滤所致（环境限制，非页面缺陷，segment.vue:78-79 已正确传参）。"
+    },
+    {
+      "page": "subpackages/discover-extra/nearby/people",
+      "observation": "除 MP-R1-NP-001 头像塌陷外其余视觉面健康：顶部「附近的人/同城的人」双 Tab 高亮态清晰（激活态浅绿底+描边），行内 昵称+年龄+在线徽标 / 学校·距离 / 兴趣标签×3 三层信息层级分明，标签胶囊浅绿底绿字一致；列表排序在线组(1.2/2.1/2.4km)与离线组(0.5/1.6/3.4/3.5/4.2km)各自距离升序，符合「在线优先→距离」规则；下拉刷新已启用（NP07 行为通过）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_discover-extra_nearby_people__默认.png；np-rows-zoom.png（行结构 2x 放大）。"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/history",
+      "observation": "空态健康：统计栏 0/0/0（已浏览/已喜欢/已跳过）与 DH01 冷启动断言一致，不闪错误；铃铛空态图标+主文案「还没有浏览记录」+引导文案「快去寻觅页发现有趣的TA吧」层级正常；标题「今日已看」品牌绿字白底、返回圆钮白底绿箭头，无状态栏叠印。A/B 一致。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_discover-extra_discover_history__默认.png。有记录态/挽回按钮未能在此构建触达（DH02-DH06 元素不存在，mock 无浏览记录所致），已如实记入 notRun。"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "observation": "主列表视觉健康：搜索框 placeholder「搜索昵称、学校、城市」、三 Tab 胶囊（喜欢我的 22 / 我发出的喜欢 2 / 访客）徽标渲染正确；行内头像/已认证(绿)/未认证(粉)徽章/日期右对齐/chevron 一致（LK05 搜索、LK07 批量模式、LK14 下拉行为均 EXECUTED 佐证可交互）。缺陷见 MP-R1-LIK-005（时间序折返，跨窗口可见）与 MP-R1-LIK-006（心动信号图标缺失）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_discover-extra_likes_index__默认.png 及 滚动-中部/滚动-底部；lk-signal-zoom.png。"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "observation": "概览卡三数字（104 总访问量 / 5 今日访客 / 22 今日浏览量）与双 Tab（喜欢我的 22 / 我的访客 5）渲染正确；解锁/打码态在 mock 下全部按已解锁渲染（P0-17 契约），头像、日期 M/D、学校·年级·标签三层信息完整；fixed 解锁条在封存态不渲染（LV06 断言一致）。缺陷见 MP-R1-LIK-005（该页单帧即见乱序，为本问题主证据页）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_discover-extra_likes-visitors_index__默认.png 及 滚动-中部/滚动-底部。"
+    },
+    {
+      "page": "subpackages/tools/daily-question",
+      "observation": "锁定态视觉健康：绿色渐变头部（135deg --c-brand→--c-brand-300）白字标题、--statusbar 注入使「返回/每日一问」行位于状态栏之下无叠印（代码注释与渲染一致）；锁定卡「签到后解锁」+副文案+「去签到」CTA 居中，CTA 底色像素实测 #36c99a 与 --c-brand token 精确一致。A/B 一致。签到后解锁态经行为证据 DQ02（tap CTA→锁定卡消失→问题卡渲染）佐证可达，静态轮未另截。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_tools_daily-question_index__默认.png；dq-header-zoom.png；exec-results DQ01/DQ02/DQ04。"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "observation": "快捷入口行（定位图标+附近的人）、恋爱测试行（拼图图标+MBTI 人格测试）图标渲染正常、行高与点击热区充足；封存态下四板块与 consulting 入口不渲染（LC01 断言一致）。缺陷见 MP-R1-LC-001（标题「恋爱咨询」错位）与 MP-R1-LC-002（尾部空白滚动区）。三态（默认/滚动-中部/滚动-底部）A/B 均已逐张核对。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_tools_love-center_index__默认.png 及 滚动-中部/滚动-底部。"
+    },
+    {
+      "page": "subpackages/tools/help/index",
+      "observation": "页面结构健康：眉题「常见问题与联系我们」+大标题「帮助与客服」；FAQ 六项全部默认收起（HP01 断言一致），问题行字号层级与右 chevron 一致；联系我们三入口（在线客服/意见反馈/客服邮箱）图标底色圆角一致、复制胶囊浅绿底。底部服务说明文案在视口底部截断属正常滚动裁切（页可滚）。缺陷见 MP-R1-HELP-002（邮箱不可见）。FAQ 展开态未获静态帧（HP02 after 截图 automator 超时未落盘），仅行为断言佐证，如实记录。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_tools_help_index__默认.png；exec-results HP01/HP02/HP06。"
+    }
+  ],
+  "coverage": [
+    "证据校验：git rev-parse HEAD=aefd8a72f2231e8df7affd09004c14c3e4e73745 与 screenshot-manifest.json/interact exec-results.json 的 gitSha=aefd8a72 一致——全部证据基于当前代码，无过期证据。本批静态截图 26/26 存在于磁盘（node fs.existsSync 核验 26 ok/0 missing）并逐张审查；任务书「本批没有静态截图→记 P1 缺截图」前提与证据矛盾（其失败原因列表均属其他页面），按观察证据制未记录该 P1，详见 meta.askPremiseCorrection。",
+    "subpackages/discover-extra/home/segment：截图已看(A/B)✓ 理想图对照：19 张整页稿无本页映射→以品牌链像素核对替代（在线徽标/按钮/底色均 token 命中）✓ 滚动已测：SG07 pageScrollTo 顶/底 EXECUTED（无分页设计）✓ 点击已测：SG04 行跳转、SG05 返回兜底 ✓ 返回已测：goBack 带 switchTab 兜底（代码+SG05）✓ safe-area：--statusbar 注入，头部无叠印 ✓ TabBar/胶囊：本页无 TabBar，胶囊区无叠印 ✓ 空态：SG02 sameSchool 过滤 0 行不崩 ✓ 长文：文案均短串 ✓ 加载态：骨架 SG01 ✓ 错误态：mock 不可触发（SG06 元素不存在，如实记录）✓ 组件一致性：行结构与 nearby 页一致 ✓ 历史回归：MP-R2-SEGMENT-001 视觉证实已修（mock）✓。结论：无新缺陷。",
+    "subpackages/discover-extra/nearby/people：截图已看(A/B)✓ 理想图对照：「附近的首页.png」为附近 Tab 首页非本页，不适用→品牌链替代 ✓ 滚动已测：NP05 触底分页 EXECUTED ✓ 点击已测：NP08 行跳转、NP04 同 Tab 防重 ✓ 返回已测：NP06 栈兜底 ✓ safe-area：头部无叠印 ✓ 空态：NP09 错误态 mock 不可触发 ✓ 加载态：骨架 NP01 ✓ 组件一致性：与 segment/likes 行对照（头像唯独本页缺失→MP-R1-NP-001）✓ 历史回归：MP-R2-PEOPLE-001 定高滚动已修模式在位 ✓。",
+    "subpackages/discover-extra/discover/history：截图已看(A/B)✓ 理想图对照：无映射→品牌链（标题绿字/统计卡/空态图标均 token 系）✓ 空态已查：0/0/0+空态组件✓ 点击已测：DH07/DH08 ✓ 返回已测：DH07（栈=1 死按钮已由代码层 MP-R1-HIS-002 立案，行为佐证，不重复）✓ 加载态：骨架 DH01 ✓ 错误态/有记录态/挽回流：mock 无数据不可触发（DH02-DH06 失败行如实记录为环境限制）✓ 组件一致性：统计卡三列与 likes-visitors 概览卡同构 ✓。",
+    "subpackages/discover-extra/likes/index：截图已看(A/B×3态)✓ 理想图对照：无映射→品牌链（Tab 胶囊/搜索框/认证徽章色一致）✓ 滚动已测：滚动-中部/底部帧+LK 系 ✓ 点击已测：LK03/05/07/08/09/10/13/14/16 ✓ 空态：LK05 searchEmpty 断言 ✓ 长文：搜索 120 字边界 LK06（元素未中，环境限制如实记录）✓ 错误态：LK15 mock 不可触发 ✓ 组件一致性：与 likes-visitors 行对照→排序折返共享（MP-R1-LIK-005）、图标塌陷（MP-R1-LIK-006）✓ 历史回归：MP-R1-LIKES-102 未登录按钮接线已修（LK01 通过）✓。",
+    "subpackages/discover-extra/likes-visitors/index：截图已看(A/B×3态)✓ 理想图对照：无映射→品牌链 ✓ 滚动已测：三态帧 ✓ 点击已测：LV03/05/09/10 ✓ 空态：未登录 LockScreen（LV01）✓ 数据极值：badge 99+ 封顶逻辑在 Tab 徽标（LV03 断言）✓ 时间格式：LV11 M/D 无 NaN ✓ 组件一致性：与 likes 页对照→MP-R1-LIK-005 ✓ 历史回归：R4-00019 iOS 时间归一化在位（LV11）✓。",
+    "subpackages/tools/daily-question/index：截图已看(A/B)✓ 理想图对照：无映射→品牌链（CTA 像素=#36c99a token 精确命中）✓ 点击已测：DQ01/02/04（去签到/空提交拦截）✓ 返回已测：DQ12（栈=1 死按钮已由代码层 MP-R1-DQ-004 立案，不重复）✓ safe-area：--statusbar 头部无叠印（dq-header-zoom.png）✓ 滚动已测：DQ10 scrolltolower ✓ 空态/长文：600→500 截断 DQ07（输入元素未中，环境限制如实记录）✓ 错误态：DQ11 mock 不可触发 ✓ 组件一致性：锁定卡与 likes 未登录引导不同构（NotLoggedWaiting/LockScreen/lock-card 三种引导并存，跨页提示为代码层已留意面，本批无页面级缺陷）✓。",
+    "subpackages/tools/love-center/index：截图已看(A/B×3态)✓ 理想图对照：无映射→品牌链 ✓ 点击已测：LC01/03/04/06 ✓ 返回已测：LC05（AppShell 返回元素未中，环境限制）✓ 空态：封存板块不渲染=配置正确 ✓ 组件一致性：入口行图标/行高与帮助页联系行同构 ✓ 缺陷：MP-R1-LC-001（标题）、MP-R1-LC-002（尾部空白）。",
+    "subpackages/tools/help/index：截图已看(A/B)✓ 理想图对照：无映射→品牌链 ✓ 点击已测：HP01/02/04/05/06/08/09 ✓ 返回已测：HP07（元素未中，环境限制）✓ 空态：未登录放行 HP09 ✓ 长文：FAQ 答案展开 HP02 行为断言（after 帧未落盘，如实记录）✓ 组件一致性：三联系入口图标底/复制胶囊同构 ✓ 历史回归：MP-R1-HELP-101 行为证实已修（HP06 剪贴板=真实邮箱）；遗留视觉缺口立案为 MP-R1-HELP-002。",
+    "横向：① 编号与 code-findings/次要21.json（A2 代码层 15 项）零重叠：本审查 6 项均为其遗漏或仅作附带建议未立案者（NP-001 为其 people.vue「未发现新问题」的补漏；HELP-002 为其附带建议升级立案；LIK-005 为其未覆盖的数据排序面；LIK-006/LC-001/LC-002 为其扫描维度外视觉面）。② 交互判定归交互判定员：本审查对 exec-results 中 FAILED 行仅区分「页面缺陷」与「错误态/元素在 mock 不可触发」，未下交互结论。③ 品牌链注记：实现品牌绿 #36C99A（design-variables.scss:15 $brand-500=--c-brand）渲染像素精确命中；设计文档链内部不一致（v2 #34C38F / v3.1 契约 #34C98A / DESIGN_GUIDE.md:38 #34C38F），实现自成体系且全项目统一，不作为页面级缺陷。④ 未运行：真机/real 后端验证、错误态/封存商业态的视觉触发（mock 限制）。"
+  ]
+}

@@ -1,0 +1,626 @@
+{
+  "round": "R1",
+  "page": "pages/home/index",
+  "manifest": "reports/audit/round-1/ops/PAGES-HOME-INDEX.json",
+  "observedSource": "reports/audit/round-1/interact/exec-results.json (manifest=PAGES-HOME-INDEX, 59/59 cases present, suite S02-home-nearby, gitSha aefd8a72)",
+  "screenshotDirs": [
+    "reports/screenshots/round-1-interact/",
+    "reports/screenshots/round-1-tour/A/ (巡检: pages_home_index__默认/弹层态/交互后/滚动-中部/滚动-底部)"
+  ],
+  "judgedAt": "2026-09-23",
+  "summary": { "total": 59, "verified": 21, "failed": 6, "unverified": 32 },
+  "verdictRules": "一致→VERIFIED；预期未达成→FAILED（立 Issue）；执行失败/证据缺失/前置未构造/记录内部矛盾→UNVERIFIED。跨用例推断依据执行器语义（scripts/qa/r1-exec.cjs:289-309 route=动作后稳定末栈；:1318-1327 仅当栈顶≠用例页才记录 pre:auto-reLaunch，故下一用例出现该行=上一用例点击确实使页面离开首页）。落点页字符串被直接捕获→VERIFIED≥0.65；仅证实『已离开首页』且被点元素仅绑定唯一导航 handler→VERIFIED≤0.6 并在 actual 注明；均不采用纯代码推测。",
+  "checks": [
+    {
+      "caseId": "H01", "page": "pages/home/index", "operation": "tap .header-me（我的头像入口）",
+      "expected": "500ms 内 uni.switchTab 至 /pages/profile/index，栈顶 route=pages/profile/index",
+      "actual": "act:tap .header-me 已执行；动作后稳定 route=[pages/home/index]（~2s 采样窗内未见跳转）；下一用例 H02 为显式 pre:reLaunch，覆盖了落点现场，无法证实/证伪迟到落点；无截图",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H01", "scripts/qa/r1-exec.cjs:1318-1327"], "confidence": 0.3
+    },
+    {
+      "caseId": "H02", "page": "pages/home/index", "operation": "tap .header-location（定位胶囊→我的位置 BottomSheet）",
+      "expected": "500ms 内 .bottom-sheet-root 出现：标题「我的位置」+×、当前位置/校区(已认证)行、tabBar 自动隐藏、footer 重新定位/我知道了",
+      "actual": "dom .bottom-sheet-root:present；after 截图（113763B）可见：面板自底部展开、标题「我的位置」+右上×、hero 当前位置 南京·附近/北京大学/进入位置主页›、校区行「已认证」、footer 重新定位+我知道了、自定义 tabBar 已隐藏；路由停留 pages/home/index；与巡检截图 pages_home_index__弹层态.png 同态。footer「定位中...」瞬态未被帧捕获（终态已复位）",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H02-after.png",
+        "reports/screenshots/round-1-tour/A/pages_home_index__弹层态.png",
+        "reports/audit/round-1/interact/exec-results.json#H02 (dom .bottom-sheet-root:present, route=[home])"
+      ], "confidence": 0.8
+    },
+    {
+      "caseId": "H03", "page": "pages/home/index", "operation": "tap .header-icon（铃铛→消息 tab）",
+      "expected": "500ms 内 switchTab 至 /pages/messages/index，栈顶=pages/messages/index",
+      "actual": "自身稳定 route=[home]（采样窗内未见落点）；但 H04 记录 pre:auto-reLaunch pages/home/index ⇒ H04 首读时栈顶≠home ⇒ H03 点击确已使页面离开首页；被点元素唯一导航绑定 @notifyTap=goMessages→switchTab(messages)（pages/home/index.vue:334,129）；落点页字符串未被捕获",
+      "verdict": "VERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H03", "reports/audit/round-1/interact/exec-results.json#H04 (pre:auto-reLaunch)", "apps/client/src/pages/home/index.vue:334"], "confidence": 0.55
+    },
+    {
+      "caseId": "H04", "page": "pages/home/index", "operation": "观察 .header-badge 三态（0/1..99/>99）",
+      "expected": "0 隐藏；1..99 显原值；>99 显 99+；不出现历史静态演示值「6」",
+      "actual": "observe-only：dom .header-badge:present（未读>0 分支渲染 ✓）；after 截图采集失败(timeout)；数值未记录；0 态与 >99 态未构造（manifest 允许如实 UNVERIFIED）。另：多张首页截图（H26/H48-after 等）角标放大后显示「6」，与历史静态演示值同值；经查 HomeHeader.vue:74-77 绑定 notifyBadge 真实未读数（非硬编码），大概率是 mock 未读数恰为 6，但 A1 未记录数值来源，无法终判",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H04 (screenshot ERROR:timeout)",
+        "reports/audit/round-1/interact/_tmp_badge_crop.png（H26-after 角标放大=「6」）",
+        "apps/client/src/components/home/HomeHeader.vue:74-77"
+      ], "confidence": 0.4
+    },
+    {
+      "caseId": "H05", "page": "pages/home/index", "operation": "tap .today-card__photo-wrap（照片区→他人主页）",
+      "expected": "500ms 内 navigateTo /subpackages/profile-extra/profile/other?userId={item.userId}，800ms 防抖锁内连点仅 1 次导航",
+      "actual": "act:tap 已执行；稳定 route=[home]；H06 无任何重置且其首读 top=pages/home/index、dom .today-card__info:present（仍在首页）⇒ 照片区点击未产生任何落点；H07 终栈仅 1 层 profile/other（来自 H06），无双重入栈。同卡信息区点击可达（H06 VERIFIED），唯独照片区死响应",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H05 (route=[home])",
+        "reports/audit/round-1/interact/exec-results.json#H06 (首读 top=home, dom today-card__info:present)",
+        "reports/audit/round-1/interact/exec-results.json#H07 (终栈单层 profile/other)"
+      ], "confidence": 0.7
+    },
+    {
+      "caseId": "H06", "page": "pages/home/index", "operation": "tap .today-card__info（信息区→他人主页）",
+      "expected": "navigateTo /subpackages/profile-extra/profile/other?userId={item.userId}，仅 1 层入栈",
+      "actual": "act:tap 已执行；落点被直接捕获：H07 首读/终栈 top=subpackages/profile-extra/profile/other（options.userId=4001，栈深 2=仅 1 层入栈）；H07 在该页查找首页元素失败（act-FAIL element not found）进一步佐证已离开首页",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H06 (act:tap .today-card__info)",
+        "reports/audit/round-1/interact/exec-results.json#H07 (top=profile/other, route options.userId=4001, act-FAIL)"
+      ], "confidence": 0.7
+    },
+    {
+      "caseId": "H07", "page": "pages/home/index", "operation": "tap .today-card__btn--outline（看看TA→他人主页）",
+      "expected": "navigateTo profile/other?userId；@tap.stop 阻断冒泡，栈深仅 +1",
+      "actual": "act-FAIL: element not found —— 执行时页面已被 H06 的落点 profile/other 占用（H07 首读 top=profile/other），目标元素不在当前页；wxml 证实「看看TA」按钮真实存在（H08-after.wxml: today-card__btn--outline「看看TA」），非产品缺元素",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H07 (act-FAIL)",
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H08-after.wxml（按钮存在）"
+      ], "confidence": 0.5
+    },
+    {
+      "caseId": "H08", "page": "pages/home/index", "operation": "快击5次 .today-card__btn--love（喜欢）",
+      "expected": "防重入使 likeUser 仅发起 1 次（1 个 toast「已喜欢」）；失败 toast「操作失败，请重试」；按钮无持久视觉态（现状注记）",
+      "actual": "rapidTap ×5 完成；捕获 5 条「已喜欢」toast（ts 1790148124092/4164/4240/4319/4398，间隔 59~86ms）⇒ 5 次 tap 均走通成功分支并各自提交，防连点契约（快击5次仅提交1次）未达成；停留首页 ✓；before/after 截图字节数相同（164130B，无持久视觉态，与 manifest 现状注记一致）；无网络计数采集，但 5×成功 toast 即 5 次成功回调的直接证据",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H08 (toast 5×已喜欢)",
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H08-before.png 与 -after.png（同 164130B）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H08-after.wxml",
+        "apps/client/src/pages/home/index.vue:149-158（in-flight 守卫在 mock 即时成功下不构成快击去重）"
+      ], "confidence": 0.85
+    },
+    {
+      "caseId": "H09", "page": "pages/home/index", "operation": "快击5次 .today-card__rotate（换一位）",
+      "expected": "防重入仅 1 次请求；成功后推荐人姓名/照片/meta 更换；失败 toast 操作失败且推荐人不变",
+      "actual": "rapidTap ×5 完成、无失败 toast、停留首页 ✓；推荐人更换被 wxml 直接证实：H08-after.wxml 推荐人=林晓（22岁·北京大学·大三）→ H09-after.wxml 推荐人=夏言（22岁·清华大学·研一）；请求计数未采集（仅1次无法确认）；before 截图采集失败(timeout)",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H08-after.wxml（林晓）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H09-after.wxml（夏言）",
+        "reports/audit/round-1/interact/exec-results.json#H09 (route=[home], toast=[])"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H10", "page": "pages/home/index", "operation": "tap .today-card__rotate（池底→toast 暂无更多推荐）",
+      "expected": "池耗尽时 toast「暂无更多推荐，稍后再来看看」；推荐人保留；rotateLoading 复位",
+      "actual": "tap 执行后无任何 toast——与『池未耗尽、换人成功（无 toast）』路径一致，池耗尽前置未被构造/证实；after 截图采集失败(timeout)。条件用例按 manifest 如实标 UNVERIFIED",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H10 (toast=[], screenshot ERROR)"], "confidence": 0.4
+    },
+    {
+      "caseId": "H11", "page": "pages/home/index", "operation": "冷启动 0/0.5/1s 三次 DOM 采样（七态观测）",
+      "expected": "loading 骨架「正在为你挑选心动的人…」→Success；严禁闪现错误空态；meta 无「25岁 ·」残尾点",
+      "actual": "仅末端一次采样留证：skeleton:absent / body:present / empty:absent（Success 态、无错误空态 ✓）；manifest 要求的 0/0.5/1s 三时刻时序采样未留证，无法排除过渡帧闪现；wxml 末端 meta=「22岁 · 北京大学 · 大三」无残尾点 ✓",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H11 (单次 dom 采样)",
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H08-after.wxml（meta 无残尾点）"
+      ], "confidence": 0.4
+    },
+    {
+      "caseId": "H12", "page": "pages/home/index", "operation": "tap .love-step（完善资料→我的页）",
+      "expected": "500ms 内 switchTab /pages/profile/index，栈顶=pages/profile/index",
+      "actual": "act:tap .love-step（执行器记录 2 次 tap）；落点被直接捕获：H13 终栈 route=[pages/profile/index]（tab 栈单页=switchTab 特征），且 H13 因页面已不在首页而 act-FAIL；落点迟于 H12 自身稳定采样窗（执行器时序异常，已记录），但落点页与 expected 完全一致",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H12 (act:tap .love-step)",
+        "reports/audit/round-1/interact/exec-results.json#H13 (终栈 [profile/index], act-FAIL)"
+      ], "confidence": 0.7
+    },
+    {
+      "caseId": "H13", "page": "pages/home/index", "operation": "tap .love-step（认识新人→寻觅页）",
+      "expected": "switchTab /pages/discover/index",
+      "actual": "act-FAIL: element not found —— 页面被 H12 的落点 profile/index 占用（H13 终栈 [profile/index] 为证），.love-step 不在当前页，动作未执行",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H13 (act-FAIL, 终栈 [profile/index])"], "confidence": 0.5
+    },
+    {
+      "caseId": "H14", "page": "pages/home/index", "operation": "tap .love-step（回复悄悄话→消息页）",
+      "expected": "tap step.action=messages 的步骤卡 → switchTab /pages/messages/index；记录 step.action 实际值",
+      "actual": "执行器未按 action 值定位，tap 命中第 1 张步骤卡：H15 终栈 [pages/profile/index] 证实落点为我的页而非消息页；manifest 要求的 step.action 实际值未 evaluate 记录。消息步骤卡行为未被测到",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H14 (act:tap .love-step)",
+        "reports/audit/round-1/interact/exec-results.json#H15 (终栈 [profile/index])"
+      ], "confidence": 0.5
+    },
+    {
+      "caseId": "H15", "page": "pages/home/index", "operation": "tap .love-step（参与兴趣互动→附近页）",
+      "expected": "switchTab /pages/nearby/index",
+      "actual": "act-FAIL: element not found —— 页面被 H14 落点 profile/index 占用（H15 top=pages/profile/index），动作未执行",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H15 (act-FAIL)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H16", "page": "pages/home/index", "operation": "tap .love-progress__help（?帮助圆点·死按钮取证）",
+      "expected": "取证：现状点击无任何反馈（只取证不判缺陷，缺陷判定交本判定员）",
+      "actual": "tap 已执行：无 toast、无路由变化（route=[home]）、无 console 变化 —— 「零反馈」取证完成，与 manifest 预期一致；另立死按钮候选缺陷 MP-R1-HOME-107（元素有灰圆底「?」可点击外观但无 @tap/role）",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H16 (route=[home], toast=[], console=[])",
+        "apps/client/src/components/home/TodayLoveProgress.vue:69-71"
+      ], "confidence": 0.8
+    },
+    {
+      "caseId": "H17", "page": "pages/home/index", "operation": "tap .relation-activity__all（全部›→消息页）",
+      "expected": "500ms 内 switchTab /pages/messages/index",
+      "actual": "自身稳定 route=[home]；H18 记录 pre:auto-reLaunch pages/home/index ⇒ H18 首读栈顶≠home ⇒ H17 点击确已离开首页；元素唯一导航绑定 @all=goMessages→messages（RelationActivity emit + index.vue:357）；落点页字符串未捕获",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H17",
+        "reports/audit/round-1/interact/exec-results.json#H18 (pre:auto-reLaunch)",
+        "apps/client/src/pages/home/index.vue:357"
+      ], "confidence": 0.55
+    },
+    {
+      "caseId": "H18", "page": "pages/home/index", "operation": "tap .relation-cell 第1格（人喜欢了你→喜欢我的页）",
+      "expected": "navigateTo /subpackages/discover-extra/likes-visitors/index",
+      "actual": "H19 记录 pre:auto-reLaunch ⇒ H18 点击确已离开首页（落点发生）；同选择器 .relation-cell（首格）在 H20 终栈、H21→H22 栈顶两次被直接捕获落点=subpackages/discover-extra/likes-visitors/index，与 expected 一致；H18 自身落点串未捕获",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H18",
+        "reports/audit/round-1/interact/exec-results.json#H19 (pre:auto-reLaunch)",
+        "reports/audit/round-1/interact/exec-results.json#H20 (终栈 [home, likes-visitors/index])",
+        "reports/audit/round-1/interact/exec-results.json#H22 (top=likes-visitors/index)"
+      ], "confidence": 0.6
+    },
+    {
+      "caseId": "H19", "page": "pages/home/index", "operation": "tap .relation-cell 第2格（条悄悄话→消息页）",
+      "expected": "openAppPath(/pages/messages/index) 自动转 switchTab，栈顶=pages/messages/index",
+      "actual": "记录内部矛盾：act:tap 成功执行，但稳定 route=[home]；H20 首读 top=home（无 auto-reLaunch 行）且其 dom/tap 均在首页完成 ⇒ H19 点击无任何落点；同选择器在 H20/H21 均跳 likes-visitors（首格），无法排除『选择器首格命中导致测错元素』与『cell 悄悄话点击死响应』两种解释；messages 落点在任何记录中均未出现",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H19 (route=[home])",
+        "reports/audit/round-1/interact/exec-results.json#H20 (首读 home + 终栈 [home, likes-visitors])"
+      ], "confidence": 0.4
+    },
+    {
+      "caseId": "H20", "page": "pages/home/index", "operation": "tap .relation-cell 第3格（人看过你→访客页）",
+      "expected": "navigateTo /subpackages/profile-extra/profile/visitors",
+      "actual": "执行器未定位第 3 格：tap .relation-cell 首格命中，终栈 [home, subpackages/discover-extra/likes-visitors/index]（第 1 格的 likes-visitors，非访客页）；第 3 格行为未被测到",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H20 (终栈 [home, likes-visitors/index])"], "confidence": 0.5
+    },
+    {
+      "caseId": "H21", "page": "pages/home/index", "operation": "tap .relation-cell 第4格（个新匹配→喜欢页）",
+      "expected": "navigateTo /subpackages/discover-extra/likes/index",
+      "actual": "执行器未定位第 4 格：tap .relation-cell 首格命中；H22 首读 top=likes-visitors/index 证实 H21 落点为第 1 格的 likes-visitors 而非 likes/index；第 4 格行为未被测到",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H21",
+        "reports/audit/round-1/interact/exec-results.json#H22 (top=likes-visitors/index)"
+      ], "confidence": 0.5
+    },
+    {
+      "caseId": "H22", "page": "pages/home/index", "operation": "touchHold .relation-cell 第2格≥100ms（按压反馈与命中区）",
+      "expected": "按下呈 relation-cell--active（#DFF3EA + scale .97）；吉祥物不吃命中区，4 格 tap 全响应",
+      "actual": "act:touchHold element-not-found —— 执行时页面被 likes-visitors 占用（H22 top=likes-visitors/index），元素不存在；按压态截图采集失败(timeout)。4 格独立可达性本轮未获证（H19-H21 选择器首格命中），历史回归点无法关闭",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H22 (act-FAIL, screenshot ERROR)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H23", "page": "pages/home/index", "operation": "tap .interest-recommend .section-head__more（查看更多→圈子首页）",
+      "expected": "500ms 内 navigateTo /subpackages/circles/circles/index",
+      "actual": "落点被直接捕获：H24 终栈 [pages/home/index, subpackages/circles/circles/index]（该落点唯一来源为本 more handler，index.vue:367）；落点迟于 H23 自身稳定采样窗（执行器时序异常已记录）；H24 首读 home 证实落点发生在 H24 窗口内而非更早残留",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H23",
+        "reports/audit/round-1/interact/exec-results.json#H24 (终栈 [home, circles/circles/index])"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H24", "page": "pages/home/index", "operation": "tap .interest-card 第1张（→圈子主页 circleId）",
+      "expected": "openCircle → navigateTo /subpackages/circles/circles/circle-home?circleId={id}；固参冒烟 circleId=8",
+      "actual": "tap 已执行（在首页命中），但任何记录中均无 circle-home 落点：自身终栈 [home, circles/index]（该 circles/index 为 H23 的落点）；紧随的 H25 toast 流捕获「页面打开失败，请重试」(ts 1790148176985，落在 H24→H25 窗口) ⇒ navigateTo circle-home 发起后走 fail 兜底（疑子包加载/路径失败）；固参冒烟 circleId=8 无执行记录",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H24 (终栈无 circle-home)",
+        "reports/audit/round-1/interact/exec-results.json#H25 (toast[0] 页面打开失败，请重试)",
+        "apps/client/src/pages/home/index.vue:195-197,271-278"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H25", "page": "pages/home/index", "operation": "快击5次 .interest-card__join（加入）",
+      "expected": "防重入仅 1 次请求；按钮翻「已加入」+人数同步；toast「操作成功」×1",
+      "actual": "rapidTap ×5 完成；捕获 4 条「操作成功」toast（ts 1790148196582/6641/6706/6860）⇒ 4 次成功提交，防连点契约未达成（toast[0] 页面打开失败@176985 系 H24 窗口污染，不计入）；按钮翻转 ✓：H25-after.wxml 首卡 interest-card__join--joined「已加入」；人数同步、请求计数未采集",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H25 (toast 4×操作成功)",
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H25-after.wxml（首卡已加入）",
+        "apps/client/stores/circle.ts:326-366"
+      ], "confidence": 0.85
+    },
+    {
+      "caseId": "H26", "page": "pages/home/index", "operation": "tap .interest-card__join（失败注入→操作失败）",
+      "expected": "注入拒绝后 toast「操作失败，请重试」、按钮保持「加入」、可重试",
+      "actual": "失败注入未被实施（无注入前置记录）；实际 tap 走成功分支：toast「操作成功」——失败路径未被测到，按 manifest『失败注入不可行时如实标 UNVERIFIED』",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H26 (toast=操作成功)", "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H26-after.png"], "confidence": 0.5
+    },
+    {
+      "caseId": "H27", "page": "pages/home/index", "operation": ".interest-scroll 连续左滑×2 采样 scrollLeft",
+      "expected": "scrollLeft 递增可达末卡、不越界回弹、无撕裂",
+      "actual": "act:swipe left unsupported(no element api) —— 自动化不支持该横滑手势，scrollLeft 未采样",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H27"], "confidence": 0.5
+    },
+    {
+      "caseId": "H28", "page": "pages/home/index", "operation": "tap .nearby-people .section-head__more（全部›→附近列表页）",
+      "expected": "navigateTo /subpackages/discover-extra/nearby/people；失败 toast 页面打开失败",
+      "actual": "tap 已执行（tap 时元素可查到）但无任何落点：稳定 route=[home]；H29 首读 top=home（无 auto-reLaunch 行）且在首页完成 dom 探测（.nearby-item:present）与 tap —— 证明直至 H29 动作时刻页面仍在首页 ⇒ 「全部›」点击死响应；同目标的底部 bar（H30）可达同一列表页，形成对照",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H28 (route=[home])",
+        "reports/audit/round-1/interact/exec-results.json#H29 (首读 home, dom .nearby-item:present, tap 成功)",
+        "reports/audit/round-1/interact/exec-results.json#H30 (bar 对照可达)"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H29", "page": "pages/home/index", "operation": "tap 第1个 .nearby-item（头像项→他人主页）",
+      "expected": "openUserProfile(item.userId) → navigateTo profile/other?userId={userId}",
+      "actual": "act:tapIndex .nearby-item#1 已执行；H30 记录 pre:auto-reLaunch ⇒ H30 首读栈顶≠home ⇒ H29 点击确已离开首页；元素唯一导航绑定 @select=openUserProfile（index.vue:376）；落点串与 query.userId 未被捕获",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H29 (tapIndex #1)",
+        "reports/audit/round-1/interact/exec-results.json#H30 (pre:auto-reLaunch)",
+        "apps/client/src/pages/home/index.vue:376"
+      ], "confidence": 0.55
+    },
+    {
+      "caseId": "H30", "page": "pages/home/index", "operation": "tap .nearby-people__bar（附近有 N 位…→附近列表页）",
+      "expected": "navigateTo /subpackages/discover-extra/nearby/people；bar 文案 N=真实 items.length",
+      "actual": "落点被直接捕获：H31 终栈 [home, subpackages/discover-extra/nearby/people]；H31 在该页找不到首页元素而 act-FAIL 佐证已离开首页；H31-after 截图显示「附近的人」列表页完整渲染（林晓/小满/周岚/草莓…）。N 与 items.length 一致性未记录（子断言未留证）",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H30",
+        "reports/audit/round-1/interact/exec-results.json#H31 (终栈 [home, nearby/people], act-FAIL)",
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H31-after.png"
+      ], "confidence": 0.7
+    },
+    {
+      "caseId": "H31", "page": "pages/home/index", "operation": "触发 .nearby-item__avatar @error（兜底头像）",
+      "expected": "dataset.fallbackApplied=1，src 切 DEFAULT_AVATAR，仅回退 1 次",
+      "actual": "act-FAIL: element not found —— 页面被 H30 落点 nearby/people 占用（H31 终栈为证），首页 nearby 项不存在，@error 未被触发",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H31 (act-FAIL)", "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H31-after.png"], "confidence": 0.5
+    },
+    {
+      "caseId": "H32", "page": "pages/home/index", "operation": ".nearby-scroll 左滑至末尾采样 scrollLeft",
+      "expected": "scrollLeft 递增可达最后一人、回弹不越界",
+      "actual": "act:swipe left unsupported(no element api) —— 手势不可自动化，scrollLeft 未采样",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H32"], "confidence": 0.5
+    },
+    {
+      "caseId": "H33", "page": "pages/home/index", "operation": "tap .community-feed .section-head__more（查看更多→村口列表页）",
+      "expected": "navigateTo /subpackages/village/village/index（不得误跳发帖页 post）",
+      "actual": "落点被直接捕获：H34 终栈 [home, subpackages/village/village/index]（该落点唯一来源为本 more handler，index.vue:314-317）；未误跳发帖页（R21 回归点符合预期）；落点迟于 H33 自身采样窗（执行器时序异常已记录）；H34 首读 home 证实落点发生在 H34 窗口内",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H33",
+        "reports/audit/round-1/interact/exec-results.json#H34 (终栈 [home, village/village/index])"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H34", "page": "pages/home/index", "operation": "tap 第1张 .post-card（→帖子详情 id）",
+      "expected": "openPost(post.id) → navigateTo /subpackages/village/village/detail?id={postId}；固参冒烟 id=1",
+      "actual": "tap 已执行（在首页命中 .post-card），但任何记录中均无 village/detail 落点：自身终栈 [home, village/index]（为 H33 的落点），H35 无 detail 残留；固参冒烟 id=1 无执行记录。不能排除 tap 坐标落在卡内作者区（H35 终栈异常出现 profile/other?userId=4001，与 H07 同参），但 detail?id 预期确定未达成",
+      "verdict": "FAILED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H34 (终栈无 village/detail)",
+        "reports/audit/round-1/interact/exec-results.json#H35 (终栈异常 [home, profile/other?userId=4001])",
+        "apps/client/src/pages/home/index.vue:305-309"
+      ], "confidence": 0.55
+    },
+    {
+      "caseId": "H35", "page": "pages/home/index", "operation": "tap .post-card__author-tap（作者头像→他人主页 @tap.stop）",
+      "expected": "navigateTo profile/other?userId={authorId}，不冒泡双跳",
+      "actual": "act-FAIL: element not found —— .post-card__author-tap 为 CommunityFeed 子组件内部节点，自动化选择器不可匹配（同批 H47/H48 等 cross-component 探针均 absent）；且本用例终栈异常出现无动作来源的 [home, profile/other?userId=4001]（执行器污染记录，不作为产品证据）",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H35 (act-FAIL + 终栈异常)"], "confidence": 0.4
+    },
+    {
+      "caseId": "H36", "page": "pages/home/index", "operation": "tap .post-card__author（昵称区→他人主页）",
+      "expected": "同 H35 目标页与守卫，无重复导航",
+      "actual": "act:tap 已执行；H37 记录 pre:auto-nav ERR（auto-reLaunch 触发=首读栈顶≠home）⇒ H36 点击确已离开首页；元素唯一导航绑定 @select=openUserProfile（index.vue:385）；落点串未捕获，且 H37 前置导航超时（timeout waiting for automator response）污染后续读数",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H36",
+        "reports/audit/round-1/interact/exec-results.json#H37 (pre:auto-nav ERR=auto 分支触发)"
+      ], "confidence": 0.55
+    },
+    {
+      "caseId": "H37", "page": "pages/home/index", "operation": "tap .post-card__follow（关注→已关注）",
+      "expected": "按钮翻「已关注」灰底；不冒泡跳详情；重进仍已关注（服务端持久）",
+      "actual": "翻转被 wxml 直接证实：H37-after.wxml 首帖（小鹿）按钮=post-card__follow--followed aria-label=已关注 文本「已关注」；停留首页无冒泡跳详情 ✓；成功路径无 toast（与预期一致）；before/after 截图均采集失败(timeout)；「30s 重进仍已关注」持久性子断言未执行",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H37-after.wxml（已关注）",
+        "reports/audit/round-1/interact/exec-results.json#H37 (route=[home], screenshot ERROR)"
+      ], "confidence": 0.6
+    },
+    {
+      "caseId": "H38", "page": "pages/home/index", "operation": "tap .post-card__follow（已关注→取消关注）",
+      "expected": "unfollowUser 发起，按钮回「关注」绿字浅绿底；失败 toast 且保持",
+      "actual": "取消翻转被 wxml 直接证实：H38-after.wxml 小鹿按钮无 --followed 修饰、文本「关注」；before 态由 H37-after.wxml（已关注）衔接佐证；after 截图 163657B 成功保存；无未处理拒绝",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H38-after.wxml（关注）",
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H38-after.png",
+        "reports/audit/round-1/interact/exec-results.json#H38"
+      ], "confidence": 0.65
+    },
+    {
+      "caseId": "H39", "page": "pages/home/index", "operation": "快击5次 .post-card__follow（防连点）",
+      "expected": "followPendingIds 守卫下仅 1 次请求；终态唯一「已关注」；无中间态残留",
+      "actual": "rapidTap ×5 完成；终态唯一被 wxml 证实：H39-after.wxml 首帖=已关注（followed 样式），before（H38-after=关注）→after（已关注）翻转成立、截图字节数变化（163657B→163550B）⇒ 状态迁移发生；但请求计数未采集，『仅提交 1 次』核心断言无法确认（mock 即时成功下终态无法区分 1 次与 N 次幂等提交）",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H39-after.wxml（已关注）",
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H39-before.png/-after.png",
+        "reports/audit/round-1/interact/exec-results.json#H39"
+      ], "confidence": 0.4
+    },
+    {
+      "caseId": "H40", "page": "pages/home/index", "operation": "tap .community-feed__retry（错误态重试）",
+      "expected": "重拉 /home/dashboard 恢复列表；loading 防重入",
+      "actual": "act-FAIL: element not found —— 错误态未注入成功（errorMessage 为空），重试钮不存在，条件未构造；按 manifest『错误注入不可行时如实标 UNVERIFIED』（A1 status=FAILED 系动作未执行，非产品缺陷）",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H40 (act-FAIL, screenshot ERROR)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H41", "page": "pages/home/index", "operation": "观察社区动态空态",
+      "expected": "communityPosts=[] 时白卡空态「今天还没有新的动态，去附近看看」",
+      "actual": "observe-only 且空态无法构造（communityPosts 非空）；无 DOM 采样记录",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H41 (observe-only, 无 dom 记录)"], "confidence": 0.3
+    },
+    {
+      "caseId": "H42", "page": "pages/home/index", "operation": ".community-feed__scroll 左滑至末卡",
+      "expected": "scrollLeft 递增可达末卡、无塌陷",
+      "actual": "act:swipe left unsupported(no element api)",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H42"], "confidence": 0.5
+    },
+    {
+      "caseId": "H43", "page": "pages/home/index", "operation": "tap .invite-banner（→我的页 + invite=1 桥接）",
+      "expected": "switchTab 我的页 + storage 桥 campus-love:pending-tab-query 写入/消费 + 重复 onShow 不重触发",
+      "actual": "路由落点被 in-case 直接捕获：终栈 [pages/profile/index]（switchTab 特征）✓；act:tap 记录执行 2 次（防抖语义未测）；invite=1 桥接键写入/消费与二次 onShow 幂等的 storage 取证缺失（子断言未留证）",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H43 (终栈 [profile/index])",
+        "apps/client/src/pages/home/index.vue:319-321"
+      ], "confidence": 0.6
+    },
+    {
+      "caseId": "H44", "page": "pages/home/index", "operation": "tap .location-sheet__hero（关层并跳位置主页）",
+      "expected": "关层（tabBar 恢复）+ navigateTo /subpackages/profile-extra/profile/location",
+      "actual": "前置 pre:tap .header-location 开层后 act:tap .location-sheet__hero 已执行（元素可查到=弹层已开）；H45 记录 pre:auto-reLaunch ⇒ 栈顶≠home ⇒ H44 点击确已离开首页（跳转发生）；位置主页落点串未捕获；「返回首页后弹层关闭态」子断言无记录",
+      "verdict": "VERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H44 (pre:tap .header-location + act:tap hero)",
+        "reports/audit/round-1/interact/exec-results.json#H45 (pre:auto-reLaunch)"
+      ], "confidence": 0.5
+    },
+    {
+      "caseId": "H45", "page": "pages/home/index", "operation": "tap .location-sheet__btn--primary（重新定位→定位中...）",
+      "expected": "点击即变「定位中...」500ms 内；回调后 finally 复位，Loading 不永驻",
+      "actual": "act-FAIL: element not found —— 前置未见开层动作（pre 仅 auto-reLaunch），弹层未打开（或跨组件选择器不可匹配）；且终栈异常为 [pages/discover/index]（非首页非弹层态，执行器污染）。「定位中」瞬态完全未被测到",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H45 (act-FAIL, 终栈 discover/index, screenshot ERROR)"], "confidence": 0.4
+    },
+    {
+      "caseId": "H46", "page": "pages/home/index", "operation": "tapIndex .location-sheet__btn#2（我知道了→关层+tabBar 恢复）",
+      "expected": ".bottom-sheet-root 移除；tabBar setTabBarHidden(false) 恢复",
+      "actual": "dom 探测 .location-sheet__btn:absent .bottom-sheet-root:absent ⇒ 弹层未打开（前置缺开层动作），tapIndex#2 为盲点执行；关层与 tabBar 恢复均未被测到；after 截图采集失败",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H46 (dom root:absent, screenshot ERROR)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H47", "page": "pages/home/index", "operation": "tap .bottom-sheet-close（×关闭）",
+      "expected": "弹层关闭 + tabBar 恢复",
+      "actual": "act-FAIL: element not found —— 前置未开层（pre 仅 auto-reLaunch），close 元素不存在（该元素为 BottomSheet 子组件节点，自动化选择器本就不可匹配，双重不可达）；after 截图采集失败",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H47 (act-FAIL)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H48", "page": "pages/home/index", "operation": "tap .bottom-sheet-mask（遮罩关闭）",
+      "expected": "onMaskTap 关层 + tabBar 恢复；不穿透遮罩",
+      "actual": "act-FAIL: element not found —— 弹层未打开；H48-after 截图（164217B）直观证实首页无弹层、tabBar 可见 ⇒ 前置失败（非产品缺陷），遮罩关闭未被测到",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H48 (act-FAIL)",
+        "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H48-after.png（无弹层）"
+      ], "confidence": 0.6
+    },
+    {
+      "caseId": "H49", "page": "pages/home/index", "operation": "三路关闭各一遍+第4次开层",
+      "expected": "每次开合 500ms 内响应、tabBar 显隐无残留、refetch 计数=开层次数",
+      "actual": "A1 记 SKIPPED：action-not-automatable（连续三路关闭组合动作未实现自动化）",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H49 (SKIPPED)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H50", "page": "pages/home/index", "operation": "下拉刷新（startPullDownRefresh 注入）",
+      "expected": "真实重拉 /home/dashboard；stopPullDownRefresh 不永驻；loading 防重入",
+      "actual": "act:pullDown 注入失败：{\"__plain\":\"ERR uni is not defined\"}（evaluate 上下文无 uni）⇒ 下拉未真实触发；after 截图保存失败(saveFile 超限)；重拉请求计数无记录",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H50 (ERR uni is not defined, screenshot ERROR)"], "confidence": 0.5
+    },
+    {
+      "caseId": "H51", "page": "pages/home/index", "operation": "pageScrollTo 滚到底（遮罩淡入+InviteBanner 露出）",
+      "expected": "整页自然滚动可达底；Banner 不被 tabBar 浮岛遮挡；scrollTop>10 后 scrim opacity 1",
+      "actual": "act:pageScrollTo bottom 已执行，evidence 仅 scrollPos=bottom（滚动本身可达底 ✓）；scrim opacity 采样与 InviteBanner 露出/遮挡判定未记录；无截图",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H51 (scrollPos=bottom)"], "confidence": 0.4
+    },
+    {
+      "caseId": "H52", "page": "pages/home/index", "operation": "pageScrollTo(0) 滚回顶部（遮罩淡出）",
+      "expected": "scrim 淡出（pageScrolled=false, 160ms）；头部无系统时间叠印",
+      "actual": "act:pageScrollTo top 已执行，evidence 仅 scrollPos=top；scrim opacity 与叠印判定未记录（巡检截图 pages_home_index__默认.png 顶部区无叠印，可供人审但非本用例执行产物）",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H52 (scrollPos=top)",
+        "reports/screenshots/round-1-tour/A/pages_home_index__默认.png（旁证）"
+      ], "confidence": 0.4
+    },
+    {
+      "caseId": "H53", "page": "pages/home/index", "operation": "switchTab 离开 10s 再回（<30s 不重拉）",
+      "expected": "回切恢复渲染；<30s 无 /home/dashboard 重拉；>30s 对照静默重拉；滚动位/状态不丢",
+      "actual": "act 序列完整（switchTab nearby → wait 10000ms → switchTab home，终栈 [home]）✓；但 <30s 不重拉无网络请求计数、>30s 对照场景未执行、首条内容与滚动位保持无采样记录",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H53 (act 序列, 无网络计数)"], "confidence": 0.4
+    },
+    {
+      "caseId": "H54", "page": "pages/home/index", "operation": "未登录 tap .today-card__btn--love（请先登录）",
+      "expected": "预览 feed 可加载；toast「请先登录后再使用该功能」；不发起 likeUser；路由不变",
+      "actual": "pre:logout+reLaunch 后 love 按钮可探到（预览 feed 渲染 ✓）；toast「请先登录后再使用该功能」被捕获 ✓；route=[home] 路由不变 ✓；不发起 likeUser 无网络记录（requireLogin 短路的旁证为 toast 即现）；after 截图采集失败",
+      "verdict": "VERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H54 (toast 请先登录后再使用该功能, route=[home])"], "confidence": 0.75
+    },
+    {
+      "caseId": "H55", "page": "pages/home/index", "operation": "未登录 tap .interest-card__join（请先登录）",
+      "expected": "toast 请先登录；不发起 joinCircle；按钮保持「加入」；路由不变",
+      "actual": "toast「请先登录后再使用该功能」捕获 ✓；route=[home] ✓；按钮保持态未在 tap 后复采（requireLogin 先于 store 调用的旁证为 toast 即现）；after 截图采集失败",
+      "verdict": "VERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H55 (toast ✓, route=[home])"], "confidence": 0.7
+    },
+    {
+      "caseId": "H56", "page": "pages/home/index", "operation": "未登录 tap .post-card__follow（组件内门禁）",
+      "expected": "toast 请先登录；不发起 followUser；按钮保持「关注」；不冒泡跳详情",
+      "actual": "toast「请先登录后再使用该功能」捕获 ✓；route=[home]（未冒泡跳帖子详情）✓；after 截图保存失败(saveFile 超限)",
+      "verdict": "VERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H56 (toast ✓, route=[home])"], "confidence": 0.7
+    },
+    {
+      "caseId": "H57", "page": "pages/home/index", "operation": "未登录 tap .today-card__rotate（请先登录）",
+      "expected": "toast 请先登录（先于 rotateLoading 判断）；不发起 rotate；推荐人不变",
+      "actual": "toast「请先登录后再使用该功能」捕获 ✓；route=[home] ✓；推荐人不变由无请求无重渲染旁证（未复采姓名）；after 截图采集失败",
+      "verdict": "VERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H57 (toast ✓, route=[home])"], "confidence": 0.7
+    },
+    {
+      "caseId": "H58", "page": "pages/home/index", "operation": "打开即返回+重复进出×3（栈稳定/防堆积）",
+      "expected": "3 轮进出均 500ms 内渲染；fetchDashboard 请求数≤2；无 NAV_FAIL/TypeError",
+      "actual": "仅记录 1 次 act:reLaunch /pages/home/index（终栈 [home]）；3 轮协议、每轮断言与请求计数均未留证",
+      "verdict": "UNVERIFIED", "evidence": ["reports/audit/round-1/interact/exec-results.json#H58 (仅 1 轮记录)"], "confidence": 0.3
+    },
+    {
+      "caseId": "H59", "page": "pages/home/index", "operation": "冷启动深链 0/0.5/1/2s 四连拍（严禁闪现错误空态）",
+      "expected": "骨架→数据（或合法空态）顺序呈现；任一时刻无错误态；console 无 NAV_FAIL/TypeError/is not defined",
+      "actual": "observe-only：四张时序截图全部采集失败(timeout)，仅末端单次观测（无错误空态 ✓）；console 过滤字面（NAV_FAIL/TypeError/is not defined）未见命中，但 16+ 例首页用例反复出现未处理「[Global Error][Vue Error] runtime-2」+captureException（另立 MP-R1-HOME-108），冷启动铁律下需归因",
+      "verdict": "UNVERIFIED", "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#H59 (screenshot ERROR:timeout, console Vue Error)"
+      ], "confidence": 0.4
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-HOME-101", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-HOME-INDEX-H08-before.png 与 -after.png（164130B 全同）；wxml/PAGES-HOME-INDEX-H08-after.wxml",
+      "category": "Interaction", "severity": "P2",
+      "description": "今日推荐「喜欢」快击5次产生 5 次成功提交：捕获 5 条「已喜欢」toast（间隔 59~86ms），违反「快击5次仅提交1次」主按钮防连点铁律；in-flight likeLoading 守卫（index.vue:149-158）在 mock 即时成功场景不构成快击去重，真实弱网下窗口会放大",
+      "evidence": "exec-results.json#H08 toast=[已喜欢×5, ts 1790148124092→1790148124398]；route=[home]（停留正确）；before/after 截图同字节数（无持久视觉态，与 manifest 现状注记一致）",
+      "sources": ["interaction", "screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "快击 5 次期间 clientApi.likeUser 仅发起 1 次、toast「已喜欢」仅出现 1 次",
+      "fix": "在 likeLoading 之外增加结果期节流（如 800ms 成功锁或 item 级 liked 幂等判重），使成功回调返回后短窗内重复 tap 不再提交",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-102", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/PAGES-HOME-INDEX-H25-after.wxml",
+      "category": "Interaction", "severity": "P2",
+      "description": "兴趣圈「加入」快击5次产生 4 次成功提交：捕获 4 条「操作成功」toast（ts 1790148196582/6641/6706/6860），防重入契约未达成；按钮翻「已加入」正确（wxml 首卡 interest-card__join--joined）；人数同步与请求计数未采集。注：toast 流中首条「页面打开失败，请重试」(ts …176985) 系 H24 窗口的导航失败兜底污染，不计入本用例",
+      "evidence": "exec-results.json#H25 toast=[页面打开失败×1(污染), 操作成功×4]；H25-after.wxml 首卡已加入；stores/circle.ts:326-366 joinCircle",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.85,
+      "ideal": "快击 5 次仅 1 次 joinCircle 请求与 1 次「操作成功」toast，按钮翻已加入、人数与 store 同步",
+      "fix": "joinPendingIds 判重需覆盖『成功返回后至按钮态刷新完成』的窗口，或在 page joinCircle 入口对已加入 id 直接短路",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-103", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#H24/#H25（终栈无 circle-home + fail toast）",
+      "category": "Interaction", "severity": "P2",
+      "description": "兴趣推荐·圈子卡片点击未能打开圈子主页：tap 在首页命中后，任何记录均无 subpackages/circles/circles/circle-home 落点，且 H25 toast 流捕获 navigateTo fail 兜底「页面打开失败，请重试」⇒ 跳转发起后失败（疑子包加载/路径/参数问题）；manifest 固参冒烟 circleId=8 无执行记录",
+      "evidence": "exec-results.json#H24（终栈 [home, circles/index]，无 circle-home）；exec-results.json#H25 toast[0] 页面打开失败，请重试（ts 1790148176985）；index.vue:195-197 openCircle、271-278 fail 兜底",
+      "sources": ["interaction", "log", "code"],
+      "confidence": 0.65,
+      "ideal": "点击第 1 张兴趣卡 navigateTo circle-home?circleId={id} 成功打开；circleId=8 固参冒烟通过",
+      "fix": "以 circleId=8 直发 navigateTo 复现 fail 分支：核对 subpackages/circles 分包配置、openCircle 的 encodeURIComponent 包裹与 id 类型（number→string）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-104", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#H34/#H35（终栈无 detail）",
+      "category": "Interaction", "severity": "P2",
+      "description": "社区动态·帖子卡空白区点击未打开帖子详情：tap 命中后任何记录均无 subpackages/village/village/detail?id 落点（终栈 [home, village/index] 为 H33 的「查看更多」落点）；固参冒烟 id=1 无执行记录。旁证：H35 终栈异常出现 profile/other?userId=4001，提示卡片点击坐标可能落入作者热区（命中区划分待查），二者均使『卡片空白区→详情』预期落空",
+      "evidence": "exec-results.json#H34（tap 执行、终栈无 detail）；exec-results.json#H35（终栈 [home, profile/other?userId=4001]）；index.vue:305-309 openPost；CommunityFeed.vue:164 emit select",
+      "sources": ["interaction", "log", "code"],
+      "confidence": 0.55,
+      "ideal": "点击帖子卡空白区 navigateTo village/detail?id={postId} 成功打开；id=1 固参冒烟通过",
+      "fix": "核查 .post-card 的 select 事件绑定与子区热区（author-tap/join/follow 的 @tap.stop 覆盖面），并以 detail?id=1 直发复现路由",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-105", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#H05/#H06/#H07",
+      "category": "Interaction", "severity": "P2",
+      "description": "今日推荐·照片区（.today-card__photo-wrap）点击无任何路由反应：tap 执行后稳定栈停留首页，且下一用例在首页无重置继续执行（首读 top=home、信息区元素可探、tap 成功）⇒ 无落点亦无迟到落点；终栈仅 1 层 profile/other 证明无二次入栈。同卡信息区（H06）可达他人主页，形成对照。违反「可点击元素 500ms 内必须有可观测反馈」铁律（死按钮候选）",
+      "evidence": "exec-results.json#H05（route=[home]）；#H06（首读 home、dom today-card__info:present、tap 成功）；#H07（终栈单层 profile/other）；index.vue:133-141 todayNavLock、142 openTodayProfile",
+      "sources": ["interaction", "log", "code"],
+      "confidence": 0.7,
+      "ideal": "照片区点击 500ms 内 navigateTo profile/other?userId={item.userId}，800ms 锁内仅 1 次",
+      "fix": "核查 photo-wrap 的 @tap 绑定链（组件 emit→page openTodayProfile）与 todayNavLock 复位时序，真机复验点击",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-106", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#H28/#H29/#H30",
+      "category": "Interaction", "severity": "P2",
+      "description": "附近的人「全部 ›」点击无路由反应：tap 执行后稳定栈停留首页，下一用例（无重置）仍在首页完成探测与点击 ⇒ 无落点。同目标的底部 bar（H30）可达 nearby/people，形成对照，入口语义残缺",
+      "evidence": "exec-results.json#H28（route=[home]）；#H29（首读 home、dom .nearby-item:present、tap 成功）；#H30（bar 落点 nearby/people 佐证目标页可达）；NearbyPeople.vue:37 emit more、index.vue:271-278/375",
+      "sources": ["interaction", "log", "code"],
+      "confidence": 0.65,
+      "ideal": "点击「全部 ›」500ms 内 navigateTo /subpackages/discover-extra/nearby/people",
+      "fix": "核查 NearbyPeople more 事件在首页的绑定与 openNearbyList 调用（含 fail 兜底是否被误触发），真机复验",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-107", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#H16",
+      "category": "UI", "severity": "P3",
+      "description": "恋爱进度「?」帮助圆点为纯装饰 view（无 @tap、无 role=button），点击零反馈；灰圆底「?」外观具有可点击暗示，构成死按钮候选。manifest H16 授权判定员裁定：取证成立，立缺陷候选（低危装饰元素）",
+      "evidence": "exec-results.json#H16（tap 后无 toast/无路由/无 console 变化）；TodayLoveProgress.vue:69-71（仅装饰 view）",
+      "sources": ["interaction", "code"],
+      "confidence": 0.8,
+      "ideal": "帮助圆点点击给出说明反馈（tooltip/弹层），或去除可点击外观（去灰圆底/降对比度）",
+      "fix": "绑定帮助说明弹层（复用 BottomSheet）或移除装饰性「?」元素",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-108", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json（H01/H02/H03/H04/H08/H11/H14/H18/H21/H23/H25/H30/H37/H54/H58/H59 console 字段）",
+      "category": "Function", "severity": "P2",
+      "description": "首页用例 console 反复出现未处理全局错误「[Global Error][Vue Error] …#runtime-2」并触发 captureException（16+ 例，多在页面装载期），非 NAV_FAIL/TypeError 字面故未触发用例级失败，但属未处理 Vue runtime 异常，冷启动铁律（H59 严禁闪现错误态）下需归因消除",
+      "evidence": "exec-results.json 各用例 console 字段：[error] \"[Global Error][Vue Error]\" {} \"https://vuejs.org/error-reference/#runtime-2\" + [error] \"[captureException]\"（H01/H02/H03/H04/H08/H11/H14/H18/H21/H23/H25/H30/H37/H54/H58/H59）",
+      "sources": ["log"],
+      "confidence": 0.65,
+      "ideal": "首页装载与交互全程 console 无未处理 Vue runtime 错误",
+      "fix": "以 dev 版本复现定位 runtime-2 错误源（生产链接脱敏），修复后回归 H59 四连拍与 console 全量过滤",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HOME-109", "round": "R1", "page": "pages/home/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json（各用例 pre 段）",
+      "category": "Consistency", "severity": "P3",
+      "description": "登录前置身份错位：manifest 约定身份A=100158（曦风），A1 实际注入登录 userId=user-1001（执行器自记 MISMATCH!，16+ 例）。已登录用例均以替代身份执行，涉及个性化数据断言（未读数、关注关系、推荐池）的外推力下降；交互路径结论基本不受影响",
+      "evidence": "exec-results.json 多例 observed 含 \"pre:login A ok userId=user-1001 MISMATCH!\"；对照 PAGES-HOME-INDEX.json H01 pre（100158 曦风）",
+      "sources": ["log"],
+      "confidence": 0.9,
+      "ideal": "注入身份与 manifest 约定一致（100158），执行器不再自报 MISMATCH",
+      "fix": "修正 r1-exec IDENT_DEFS/mintToken 至 100158 或修订 manifest 身份定义，重跑受影响已登录用例",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "H01|落点证据被下一用例显式 pre:reLaunch 覆盖，自身稳定采样窗内未见跳转且无截图|1",
+    "H04|角标数值未记录、after 截图采集失败(timeout)，0/>99 态未构造（截图放大角标=「6」，代码绑定真实未读数，来源待核）|1",
+    "H07|执行时页面被 H06 落点 profile/other 占用，目标元素不在当前页（wxml 证实按钮存在）|1",
+    "H10|推荐池耗尽前置未构造，tap 后无 toast 与成功路径不可区分，截图采集失败|1",
+    "H11|0/0.5/1s 三时刻 DOM 采样未留证，仅末端一次观测（末态 Success 无错误空态）|1",
+    "H13|执行时页面被 H12 落点 profile/index 占用，.love-step 查找失败|1",
+    "H14|未按 action=messages 定位步骤卡（命中第1张，H15 终栈证实落点 profile/index），step.action 实际值未记录|1",
+    "H15|执行时页面被 H14 落点 profile/index 占用|1",
+    "H19|记录内部矛盾：tap 执行但无任何落点（H20 首读 home 且在首页完成动作），同选择器 H20/H21 均跳 likes-visitors，产品缺陷与选择器首格偏差无法区分，messages 落点从未出现|1",
+    "H20|选择器首格命中第1格（终栈 [home, likes-visitors/index]），第3格（访客页）行为未测|1",
+    "H21|选择器首格命中第1格（H22 栈顶=likes-visitors），第4格（喜欢页）行为未测|1",
+    "H22|touchHold 执行时页面被 likes-visitors 占用元素不存在，按压态截图采集失败；4 格命中区回归无法关闭|1",
+    "H26|joinCircle 失败注入未实施，实际点击走成功分支（toast 操作成功），失败路径未测|1",
+    "H27|自动化不支持横滑手势(no element api)，scrollLeft 未采样|1",
+    "H31|trigger 时页面被 H30 落点 nearby/people 占用，首页 avatar 元素不存在，@error 兜底未触发|1",
+    "H32|自动化不支持横滑手势|1",
+    "H35|.post-card__author-tap 为子组件内部节点自动化不可匹配（act-FAIL），且终栈异常出现无动作来源 profile/other?userId=4001（执行器污染）|1",
+    "H39|终态唯一「已关注」成立，但请求计数未采集，「仅提交1次」无法确认（mock 即时成功下不可区分幂等重放）|1",
+    "H40|错误态未注入成功（retry 钮不存在），条件未构造|1",
+    "H41|空态无法构造（communityPosts 非空）且无 DOM 采样记录|1",
+    "H42|自动化不支持横滑手势|1",
+    "H45|弹层未打开（前置缺开层动作，primary 按钮不存在），且终栈异常 discover/index；「定位中」瞬态未测|1",
+    "H46|弹层未打开（bottom-sheet-root:absent），tapIndex#2 盲点执行，关层/tabBar 恢复未测|1",
+    "H47|弹层未打开且 close 为子组件节点不可匹配，关闭行为未测|1",
+    "H48|弹层未打开（H48-after 截图证实首页无弹层、tabBar 可见），遮罩关闭未测|1",
+    "H49|A1 记 SKIPPED action-not-automatable，三路关闭组合未执行|0",
+    "H50|uni.startPullDownRefresh 注入失败(ERR uni is not defined)，下拉未真实触发；截图保存超限|1",
+    "H51|scrollPos=bottom 已采样，但 scrim opacity 与 InviteBanner 露出/遮挡判定未记录|1",
+    "H52|scrollPos=top 已采样，但 scrim opacity 与无叠印判定未记录|1",
+    "H53|往返切换已执行，但 <30s 不重拉无网络计数、>30s 对照场景未执行、滚动位保持无采样|1",
+    "H58|仅记录 1 轮 reLaunch，3 轮进出协议、每轮断言与请求计数(≤2)均未留证|1",
+    "H59|0/0.5/1/2s 四连拍全部采集失败(timeout)，仅末端单次观测；console 未见 NAV_FAIL/TypeError 字面但有未处理 Vue runtime 错误（MP-R1-HOME-108）|1"
+  ],
+  "notes": "判定方法：三方对照（Manifest.expected / A1.exec-results.observed / 截图+wxml）。执行器语义经源码核实（scripts/qa/r1-exec.cjs）：(1) route 数组=动作后 600/900ms 起以 450ms×3 稳定化的 getCurrentPages 末栈；(2) pre:auto-reLaunch 仅在栈顶≠用例页时记录，故『下一用例出现该行』可作为『上一用例点击确已离开首页』的执行证据，『下一用例无该行且在首页继续动作』可作为『上一用例无落点』的执行证据；(3) 动作后另有静默 suite 级 LEVEL2 恢复 reLaunch。已知执行器局限（影响 UNVERIFIED 归因，非产品结论）：a) 子组件内部节点选择器不可匹配（.post-card__author-tap/.bottom-sheet-close/.bottom-sheet-mask/.location-sheet__hero 等 act-FAIL 或探针 absent）；b) 横滑手势无元素 API（H27/H32/H42）；c) 通道超时频发（多例截图 ERROR:timeout、H37 auto-nav ERR）；d) 少数用例终栈异常（H35/H45）记为污染不作证据；e) .relation-cell/.love-step 等复合选择器取首元素，导致 H19/H20/H21/H14 未按 manifest 定位第 2/3/4 格与 action=messages 步骤。H04 旁注：多张首页截图角标放大后为「6」，与历史静态演示值同值；HomeHeader.vue:74-77 已绑定真实未读数（v-if notifyBadge>0，>99 显 99+），大概率 mock 未读数恰为 6，建议修复方在修复 MP-R1-HOME-109（身份错位）后复核未读数据链路。H08/H25/H39 的防连点结论互为印证：like/join 均现多次成功 toast，follow 无 toast 无法计数——建议三处统一采用同一防重锁方案。round-1-tour 巡检截图（pages_home_index__默认/弹层态/交互后/滚动-中部/滚动-底部）已作为第三源旁证使用。"
+}

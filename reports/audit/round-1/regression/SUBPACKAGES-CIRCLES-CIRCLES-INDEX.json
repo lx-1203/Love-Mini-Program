@@ -1,0 +1,40 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/index",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX（A5，回归索引差分模式）",
+  "date": "2026-09-24",
+  "method": "回归索引（baseline/regression-index.json）中 riskFiles=apps/client/src/subpackages/circles/circles/index.vue 的全部 3 条条目（MP-R1-CIRCLE-004 P0 指定 + MP-R1-CIRCLE-005 P1 / MP-R3-CIRCLES-001-002 P2 同文件补充）逐一差分：源码实读 × 本轮执行证据（interact/exec-results.json）× 本轮截图目检（含 3x/4x 局部放大）。未改代码、未跑开发者工具。",
+  "buildProvenance": {
+    "execGitSha": "aefd8a72",
+    "fixCommit": "5e2d050c（2026-09-21 21:44:43 +0800，本次 MP-R1-CIRCLE-005 修复注入提交：卡 padding sp-7→sp-5 / gap sp-5→sp-4 / meta gap 10rpx→sp-2 / count fs-sm→fs-xs / action sp-5→sp-4）",
+    "captureTimeline": "round-1-interact/INDEX-01~12 与 round-1/A、B 静态图摄于 Sep 19-21（修复前构建，其统计行呈优雅省略、无半字裁切，可证 R21 修复有效，但不用于本轮闭环）；round-1-interact/CI06~CI21 系列摄于 Sep 23 09:48-09:54（aefd8a72 构建含 5e2d050c 修复），为本轮闭环判定依据",
+    "viewport": "CI 系列 373×820 px（≤375px 视口，比验收条件更严苛）；INDEX/静态系列 377×814 px",
+    "workingTreeDelta": "git diff HEAD -- index.vue 仅 2 处（banner i18n key circlesSubtitle、非活跃 tab 胶囊底色 --c-bg-page→--c-bg-container），统计行/friends/action 样式区块与截图构建完全一致，代码证据与视觉证据同源"
+  },
+  "caveats": [
+    "身份协议偏差：exec-results.json 几乎全部条目含 'pre:login A ok userId=user-1001 MISMATCH!'——身份 A 注入后 session 落在 mock 用户 user-1001（预期 100158；标记逻辑 scripts/qa/r1-exec.cjs:890，match===false 即 MISMATCH）。本页回归判定为几何/布局问题，与身份数据形状无关（各卡成员数/动态数均真实渲染），截断结论不受影响；但「双身份复拍」协议未严格满足，如实披露（该问题属 T11/R12-IND-GLOBAL-001 取证协议域，非本页回归条目，不在此立案）。",
+    "dom 探测 :absent 失真：exec-results.json 本页全部条目 dom 探测（如 CI15 '.circle-card__count:absent'）均为 absent，系 automator page.$ 穿不透自定义组件（AppShell/PageStateContainer 槽位）边界（r1-exec.cjs:1242-1250 的 $ 失败回退 WXML 正则亦未命中编译后类名），与截图实际渲染矛盾，以截图为准。",
+    "未执行的检查：未运行开发者工具复拍（只读约束）；375px 判定依据本轮既有截图（373px 视口）而非本席新拍。"
+  ],
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-CIRCLE-004",
+      "page": "subpackages/circles/circles/index",
+      "status": "未复发（375px 复拍闭环达成）",
+      "evidence": "【源码】修复链在位（当前树=HEAD 该区块）：index.vue:742-753 .circle-card__count flex:1+min-width:0+nowrap+ellipsis+fs-xs（R21 注释「省略号必须落在文本节点自身，否则统计行在加入按钮列被硬裁成半字」）；index.vue:721-733 meta nowrap+gap sp-2；index.vue:608-611 卡 gap sp-4/padding sp-6 sp-5；index.vue:762 action padding sp-3 sp-4；index.vue:945-954 friends-text 同款单行省略。【运行时】修复后构建（aefd8a72 含 5e2d050c）本轮截图 reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-after.png、CI10-after.png（373×820，Sep 23，经 3x/4x 局部放大目检）：五张卡统计行「1.2w 人 · 486 条动态 / 8,932 人 · 352 条动态 / 8,123 人 · 301 条动态 / 6,532 人 · 244 条动态 / 7,240 人 · 287 条动态」全量完整展示，好友行「等 6/10/5/7/12 位朋友加入」完整，省略号未触发、无半字硬裁、不被「加入」按钮列裁切；373px≤375px 比验收更严苛。对比修复前截图（INDEX-01-after.png，Sep 21 00:19 早于 5e2d050c）统计行呈优雅省略（'8,932 人 · 352 …'）亦无半字裁切，证明 R21 文本节点省略修复自始有效。【执行记录】exec-results.json CI09/CI10 status=EXECUTED。无 Regression Issue 生成。"
+    },
+    {
+      "id": "MP-R1-CIRCLE-005",
+      "page": "subpackages/circles/circles/index",
+      "status": "未复发（达标）",
+      "evidence": "verification 点 circles-stats-and-friends-rows-readable-375px：修复提交 5e2d050c 后构建的 373px 视口截图（CI09-after/CI10-after，Sep 23）显示统计行与好友行均完整可读（详见 MP-R1-CIRCLE-004 证据），与代码注释宣称一致（index.vue:724「375px 下统计行完整展示」、743-744「fs-sm→fs-xs 不再被省略号截断」、761）。代码注释与实测此前不符的疑虑（基于修复前 INDEX-01 截图）已被修复后截图消除。"
+    },
+    {
+      "id": "MP-R3-CIRCLES-001-002",
+      "page": "subpackages/circles/circles/index",
+      "status": "未复发",
+      "evidence": "verification 点 circles-stats-ellipsis-and-button-padding：省略号兜底落在文本节点自身（index.vue:742-753 统计行、945-954 好友行，均 flex:1/min-width:0/nowrap/ellipsis）；加入按钮水平内边距 sp-3/sp-4（index.vue:762）。373px 实测（CI09/CI10-after）两行全量展示，省略号兜底未被触发。"
+    }
+  ]
+}

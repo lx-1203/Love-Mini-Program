@@ -235,6 +235,11 @@ function validateForm(): string | null {
  * 3. 成功：toast 提示 + 触觉反馈
  * 4. 失败：toast 提示错误信息
  */
+/** MP-R1-REQ24-DND-001：完成态冷却——mock API 毫秒级返回使 isSaving 只挡在途请求，
+ *  快击×5 触发 5 轮完整保存（5 条「设置已保存」toast，311ms 内实测）；成功后保持
+ *  冷却 800ms 再释放，保证一次保存意图仅一次 PUT 与一次成功反馈 */
+const SAVE_COOLDOWN_MS = 800;
+
 async function handleSave(): Promise<void> {
   if (isSaving.value) return;
   const validationError = validateForm();
@@ -270,7 +275,9 @@ async function handleSave(): Promise<void> {
     errorHaptic();
     uni.showToast({ title: msg, icon: "none" });
   } finally {
-    isSaving.value = false;
+    setTimeout(() => {
+      isSaving.value = false;
+    }, SAVE_COOLDOWN_MS);
   }
 }
 

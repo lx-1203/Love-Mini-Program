@@ -1,0 +1,530 @@
+{
+ "round": "R1",
+ "page": "subpackages/circles/circles/post-topic",
+ "pageName": "兴趣圈·发帖",
+ "judgedAt": "2026-09-23",
+ "manifest": "reports/audit/round-1/ops/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+ "execResults": "reports/audit/round-1/interact/exec-results.json",
+ "summary": {
+  "total": 34,
+  "verified": 7,
+  "failed": 1,
+  "unverified": 26
+ },
+ "checks": [
+  {
+   "caseId": "PT01",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "冷启动深链 ?circleId=8 观察表单渲染（observe-only）",
+   "expected": "表单即时渲染无错误/空态闪现；circleId 只读分支（无 .target-chip）；mock 标签/喜爱区渲染；活动弹层不可见；console 无 TypeError",
+   "actual": "A1 EXECUTED：route top=post-topic options={circleId:8}；dom .title-input/.target-section/.tags-section/.favorite-section 均 present，.activity-picker/.target-chip absent（只读分支成立）；console 无错误记录。巡检截图（身份A 滚动-底部）直观证实 target-section 两行「发布到/兴趣圈」无 chip、mock 区块共存",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT01",
+    "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-底部.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT02",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "无参进入观察目标选择器默认态",
+   "expected": "「校园圈」chip 高亮+aria-checked；.category-options 不渲染；.target-name__text=发布到：校园圈；7 枚 tag-chip 与喜爱 switch 渲染",
+   "actual": "A1 EXECUTED：dom .target-chip/.target-chip--active/.target-name__text/.tag-chip present，.category-options absent；after 截图直观证实「校园圈」绿框高亮、「发布到：校园圈」、7 枚标签（脱单/学习/组队/树洞/分享/求助/吐槽）+ 喜爱 switch 关态",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT02",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT02-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT03",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 第2枚「兴趣圈」chip→宫格「音乐」→「校园圈」→「兴趣圈」",
+   "expected": "高亮迁移+宫格渲染/收起、分类清空、目标名联动",
+   "actual": "A1 FAILED（执行侧）：tap .target-chip 后 __CAND__(\"音乐\") 未命中失败，后续 __CAND__(\"校园圈\")/(\"兴趣圈\") 同样未命中；终态 dom .category-options:absent。09:54 批次 after 截图证实两枚 chip（校园圈/兴趣圈）渲染正常——元素存在，系执行器文本候选解析失败致动作链断裂，兴趣圈分支行为未被触达",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT03-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT04",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 分类「旅行」→「阅读」→再点已选「阅读」",
+   "expected": "高亮单选互斥迁移+目标名联动+再点不取消",
+   "actual": "A1 FAILED（执行侧）：前置「兴趣圈」态未达成（承接 PT03 失败），.category-chip 不存在（dom absent），两次 tap 均未命中；分类单选交互未被触达",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT04"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT05",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "空表单 tap .post-header__submit「发布」",
+   "expected": "500ms 内 toast「请输入标题」；无请求无跳转；钮 disabled 灰态",
+   "actual": "A1 EXECUTED：toast hook 捕获 {title:\"请输入标题\"} 与 expected 文案逐字一致；route top 停留本页；after.wxml 证实 .post-header__submit 带 post-header__submit--disabled 灰态类、title/content value 均 空；console 无错误。before/after png 捕获超时失败（automator 超时，本轮已知环境问题），以 wxml+toast API 证据替代",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT05",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT05-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT06",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "仅标题填「周末徒步招募同伴」tap 发布",
+   "expected": "toast「请输入内容」；标题保留不丢失；无请求无跳转",
+   "actual": "A1 EXECUTED：toast hook 捕获 {title:\"请输入内容\"} 逐字一致；before/after png 均捕获成功；after.wxml 证实 title value=\"周末徒步招募同伴\" 保留、content 空、按钮带 disabled 类（title 有值+content 空 → :476 条件成立）；route 停留本页",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT06-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT06-after.wxml"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT07",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "标题输入 35 字长串→记录长度→逐字清空",
+   "expected": "maxlength=30 钳制第 31 字不进入；清空后钮回 disabled、placeholder 复现",
+   "actual": "A1 EXECUTED 但执行偏差：实际仅输入 10 字「自动化输入-PT07」（observed 记录 len=10），未执行 35 字长串与清空步骤；30 字钳制行为无任何采样证据（PT08 截图中标题仍为该 10 字）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT08-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT08",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "内容粘贴 500 字→记录计数→尝试追加 1 字",
+   "expected": "计数「500/500」正常灰；maxlength=500 钳制；title+content 非空→发布钮亮起",
+   "actual": "A1 EXECUTED：after 截图（120855B）直观证实内容区多行「测」填满、.content-count 显示「500/500」正常灰色（非 over 红）；dom .content-input/.content-count present；console 无错误。注：observed 日志记录的输入值仅 30 字与截图 500/500 矛盾（疑执行器日志截断长值），以截图+计数元素为准；「追加 1 字验证钳制」子步骤未执行、发布钮亮起未直接采样（头部钮被胶囊遮挡）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT08",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT08-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PT09",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "标题填 emoji/HTML/引号串；内容填换行/四字节 emoji 混合串",
+   "expected": "回显与 v-model 一致无崩溃；计数按码元统计；console 无报错",
+   "actual": "A1 EXECUTED 但执行偏差：仅标题输入「🌸<img src=x onerror=alert(1)>」（observed 两次重复记录，引号/&amp; 部分未录入）；after 截图证实标题按纯文本转义回显（🌸 + <img …> 字面量）、无脚本执行、无崩溃，内容区仍为 PT08 遗留 500 字（PT09 规定的内容混合串未输入）；console 无错误。回显安全性行为部分证实，但 action 规格未完整执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT09-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT10",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "?circleId=8 带参发布成功主路径",
+   "expected": "toast「发布成功」+ ~800ms navigateBack 返回来源页 + currentTopics 首位新增 circleId=8",
+   "actual": "A1 EXECUTED 但前置偏差：pre 为 auto-reLaunch post-topic（无参），route options={} ——「带参 ?circleId=8」分支未被注入执行，实际走无参 campus 兜底分支；toast hook 捕获 {title:\"发布成功\"}（01:57:04.5Z）✓；发布后 800ms uni.navigateBack 于栈底失败（console 01:57:05.4Z [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page + captureException）；store 级 currentTopics 断言未采集；after png 捕获超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT10",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT10-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT11",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "发布钮快击×5（间隔<100ms）",
+   "expected": "仅提交 1 次：currentTopics 恰 +1、toast 恰 1 次、仅一次 navigateBack",
+   "actual": "A1 EXECUTED 但前置未按规格执行：未重新进入、未填表单（observed 无 input 步骤），表单为 PT10 遗留合法值（before 截图与 after.wxml 证实 title=周末徒步招募同伴/content 17/500、按钮非 disabled）；rapidTap done=5 后 toast 计数=0（预期恰 1 次「发布成功」）、无导航、表单原样——与 PT10 遗留 isSubmitting=true（成功路径不复位 :423-425）+ :286 守卫静默吞掉全部 5 次点击一致；「恰提交 1 次」无法证实",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT11",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT11-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT11-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT12",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "发布成功 toast 后 800ms 窗口内再 tap 发布",
+   "expected": "第二次点击被吞：currentTopics 仅 +1、toast 仅 1 次、仅一次 navigateBack",
+   "actual": "A1 FAILED（执行侧）：执行器以 __CAND__(\"发布成功\") 定位 toast 元素失败、__CAND__(\"发布\") 同样未命中，两次动作均未执行（action-not-performed）；before/after png 同为 64818B（页面零变化）；页面为空表单态（wxml 证实 value 均空、按钮 disabled）——前置「表单合法」未建立，防重复提交行为未被触达",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT12-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT12-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT13",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "无参默认「校园圈」合法表单 tap .bottom-submit__btn",
+   "expected": "toast「发布成功」+ ~800ms 返回；createPost cat-campus；villageStore.posts 首位新增",
+   "actual": "A1 EXECUTED 但发布未发生：表单填齐（wxml 证实 篮球场夜间局缺人 8 字 + 内容、按钮非 disabled）、tap 已执行，但 toast 计数=0、无导航、无任何反馈，表单原样保留（after.wxml）——页面实例继承前序用例（observed 无 reLaunch），疑 PT10 遗留 isSubmitting=true 致 :286 静默 return；console 该时段（01:58-01:59Z）无任何错误/请求记录；before/after png 捕获超时。cat-campus 兜底链与 village:post-created 事件未被触达",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT13",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT13-after.wxml",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT14",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "标题 4 字「篮球局」+内容 tap 发布",
+   "expected": "toast「帖子标题至少 5 个字」；isSubmitting 复位可重试；无请求",
+   "actual": "A1 FAILED（执行侧）：表单按规格填齐（wxml 证实 title=篮球局 4 字+content 非空、按钮非 disabled），但执行器以 __CAND__(\"发布\") 文本定位失败未点到发布钮，:351-354 的 <5 拦截分支未被触达，toast 未触发；after png 捕获成功证实表单态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT14",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT14-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT14-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT15",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "切「兴趣圈」不选分类，合法表单 tap 发布",
+   "expected": "toast「选择兴趣分类」；无请求无跳转",
+   "actual": "A1 FAILED（执行侧）：pre 即失败（__CAND__(\"兴趣圈\") 未命中，目标仍为默认校园圈），后续 __CAND__(\"发布\") 同样未命中；拦截分支未被触达；after png 捕获成功（65134B）为目标校园圈初始态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT15",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT15-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT16",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "（条件）real 模式发布失败反馈与重试",
+   "expected": "toast=store errorMessage 或「发布失败」；isSubmitting 复位可重试",
+   "actual": "A1 FAILED（执行侧）+条件不可构造：mock 模式 createTopic/createPost 恒成功，失败分支无法构造（Manifest 明示如实标 UNVERIFIED）；且执行器 __CAND__(\"发布\") 两次未命中动作未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT16"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT17",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "（条件）real 模式 slug circleId 拦截",
+   "expected": "toast「请从具体兴趣圈进入发布」；不发必败请求",
+   "actual": "A1 FAILED（执行侧）+条件不可构造：mock 模式该路直接成功（useMock() 门 :387 不可触达）；执行器 __CAND__(\"发布\") 未命中动作未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT17"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT18",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "标签多选「脱单/学习/组队」→「树洞」→取消「学习」→再选「树洞」",
+   "expected": "前 3 次高亮+aria-pressed；第 4 次上限 toast「最多选择 3 个标签」；取消/重选高亮联动",
+   "actual": "A1 FAILED（执行侧）：__CAND__(\"脱单\")/(\"树洞\")/(\"学习\") 全部未命中，动作均未执行；PT02 截图证实 7 枚 .tag-chip 渲染正常（脱单/学习/组队/树洞/分享/求助/吐槽 文字清晰可读）——属执行器文本候选解析失败，标签多选与上限 toast 行为未被触达",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT18",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT02-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT19",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 喜爱 switch 翻转",
+   "expected": "500ms 内 checked 翻转；mock 返回体携带 favorite=true",
+   "actual": "A1 FAILED（执行侧）：执行器以「爱」文本定位 switch 失败；dom 采样选择器无效（.color:present/.brand:absent 与页面结构无关）；PT02 截图证实喜爱 switch 渲染正常（关态）。翻转行为与 mock 返回体 favorite 字段未被触达/采集",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT19",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT19-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT20",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "?channel=today 打开活动选择弹层→关闭→再开",
+   "expected": "首开 loading→列表 ≤10 条；二次打开复用缓存；fetchActivities 恰 1 次",
+   "actual": "A1 EXECUTED：route options={channel:today}；tap .activity-add ×2；终态 dom .activity-picker:present + .loading:absent（弹层开且加载完成）；旁证：PT27/PT23 截图（同 channel=today）证实弹层列表正常渲染 4 项（标题+时间·地点，≤10）且「加载中...」已消失。缺口：列表条数/请求计数未在本用例采样、after png 捕获超时、两次 tap 之间未见关闭步骤——「复用缓存恰 1 次请求」无法断言",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT20",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT27-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT23-after.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "PT21",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 弹层列表第 1 项（a-1 图书馆南门咖啡散步）",
+   "expected": "弹层自动关闭 + 已选 compact ActivityCard 渲染 + 「移除关联」出现",
+   "actual": "A1 SKIPPED：observed=action-not-automatable「tap 列表第 1 项」，执行器无法自动化弹层列表项点击，无任何证据采集",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT21"
+   ],
+   "confidence": 0.95
+  },
+  {
+   "caseId": "PT22",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "弹层三路关闭：遮罩 tap / × / 内容区 tap.stop",
+   "expected": "①②关闭、③不关闭；aria-label=关闭",
+   "actual": "A1 FAILED（执行侧）：执行编排失败——重进页面后未先 tap .activity-add 打开弹层，直接 tap .activity-picker（元素不存在，dom .activity-picker:absent）与 .activity-picker__content 均未命中；三路关闭行为未被触达（× 的 tap 也无记录）；after png（72701B）为无弹层初始态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT22",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT22-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT23",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap「移除关联」→重开弹层",
+   "expected": "500ms 回 + 添加态；重开无 loading、无重复 fetchActivities",
+   "actual": "A1 FAILED（执行侧）：前置已选活动态未达成（PT21 跳过），.activity-remove 不存在 tap 未命中；随后 tap .activity-add 重开弹层成功（旁证截图弹层列表 4 项渲染正常、无 loading 残留），但请求计数未采集，「缓存不重复请求」无法断言",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT23",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT23-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT24",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 已选活动卡卡身跳详情 ?id=",
+   "expected": "500ms 内 openAppPath(/subpackages/tools/activities/detail?id=a-1)；栈深 +1；返回落回本页",
+   "actual": "A1 FAILED（执行侧）：无已选活动卡可点（PT21 跳过），__CAND__ 两次全部未命中（element not found，无候选名）；无路由链断言、无截图",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT24"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT25",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "tap 已选活动卡「报名」钮",
+   "expected": "500ms 内 toast「移除关联」；不跳转、已选卡不消失",
+   "actual": "A1 FAILED（执行侧）：「报名」钮不存在（依赖 PT21 已选态，被跳过），__CAND__(\"报名\") 未命中，toast 未触发；after png（72673B）为无弹层无已选卡初始态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT25",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT25-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT26",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "帖子模式（channel=today+关联活动 a-1）发布成功全链",
+   "expected": "toast「发布成功」+ ~800ms 返回；createPost cat-all + activityId=a-1 透传；posts 首位新增",
+   "actual": "A1 EXECUTED 但活动关联步骤未执行（承接 PT21 被跳过，observed 无选择活动动作）→ activityId 透传无法验证；toast hook 捕获 {title:\"发布成功\"}（02:03:17.5Z）✓；发布后 800ms navigateBack 栈底失败（console 02:03:18.3Z unhandled rejection + captureException）；route top 停留 post-topic；posts 断言未采集；after png 捕获超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT26",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT26-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT27",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "（条件）活动列表空态",
+   "expected": "弹层渲染「暂无可用活动」空态不崩溃；Loading 不永驻",
+   "actual": "A1 EXECUTED 但条件不可构造：mock 恒有活动数据，空态无法出现；after 截图（93633B）证实弹层打开后渲染 4 项活动列表（图书馆南门咖啡散步等，含时间·地点）非空态、无白屏崩溃（Manifest 明示无法构造时如实标 UNVERIFIED）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT27",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT27-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT28",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "深链 ?channel=today&activityId=a-1 自动回填",
+   "expected": "fetchActivities 后已选卡自动回填 a-1：ActivityCard+移除关联 而非 + 添加态；与标签/喜爱区共存",
+   "actual": "A1 EXECUTED（observe-only）：route options={channel:today, activityId:a-1}；after 截图直观证实「关联活动」区渲染已选 compact 卡「图书馆南门咖啡散步」（周日 19:00-20:00 · 南门咖啡店 · 12人已报名 + 报名钮）与「移除关联」入口，+ 添加态消失；标签区与喜爱区共存渲染；console 无错误。可选对照 activityId=a-999 未执行（Manifest 标注可选）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT28",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT28-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT29",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "头部返回钮 navigateBack 落回 circle-home",
+   "expected": "500ms 内返回；栈顶 route=circle-home；本页出栈销毁",
+   "actual": "A1 EXECUTED 但前置未达成：执行器以 reLaunch circle-home 后再 auto-reLaunch post-topic（栈深=1，非「经页内入口进入栈深≥2」），tap 返回钮时 navigateBack 无上层可退失败——console 02:04:15.8Z [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page；无路由链断言、无截图；「落回 circle-home」无法验证（观测到的 navError=Uncaught [object Object] 与 console 一致）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT29",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT30",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "栈底直达点返回 + 打开即返回",
+   "expected": "停留本页不崩溃不白屏；打开即返回正常；console 无未处理异常",
+   "actual": "A1 EXECUTED：两次 tap .post-header__back 后 route top 均停留 post-topic（route 断言 ✓），页面保持可交互（不崩溃不白屏 ✓）；但 console 捕获 2 次 [Global Error][uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page（02:04:24.936Z / 02:04:25.149Z）+ captureException 上报——「console 无未处理异常」未达成：goBack（post-topic.vue:441-443）无 fail/catch 兜底，栈底失败被全局未处理拒绝捕获并进入错误上报链，非 Manifest 预期的「uni fail 静默」",
+   "verdict": "FAILED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT30",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT31",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "重复「circle-home→写话题进入→返回」×3 验证表单重置",
+   "expected": "每次进入空白表单；返回落点正确；栈深稳定",
+   "actual": "A1 EXECUTED 但动作未执行：observed 为 observe-only（无任何 往返/填表/返回 步骤，仅 dom .title-input/.content-input present）；after png 捕获超时（ERROR 标记，文件不存在）；3 次往返、空白表单采样、栈深断言均无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT31"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT32",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": ".post-body 滚到底→滚回顶",
+   "expected": "底部大按钮完整可见；无分页请求；表单态不丢；无白屏跳动",
+   "actual": "A1 EXECUTED：act pageScrollTo bottom/top + scrollElement .post-body bottom 完整执行，evidence scrollPos=bottom，dom .post-body/.bottom-submit__btn present（滚动后按钮仍在 DOM 且页面无异常）；console 无新增错误（全量 S06 console 59 行中滚动时段无错误/请求类记录）；巡检截图（身份A 滚动-底部）直观证实底部「发布话题」按钮完整渲染无截断、表单区块（标签/喜爱/图片 0/9）完整。注：scrollTop 数值与请求计数未逐项采样，pullDown 预检报 uni is not defined（执行器侧，与本页无下拉刷新配置一致）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT32",
+    "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-底部.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PT33",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "（条件）隐私授权拒绝拦截添加图片",
+   "expected": "toast「需同意隐私协议后才能选择图片」；不调起 chooseImage",
+   "actual": "A1 EXECUTED 但条件不可构造：DevTools 环境默认已授权隐私协议，拒绝分支无法触发；tap .image-upload 后 toast 计数=0（放行路径，符合已授权预期）；dom .image-upload:present；after png（54380B）证实 + 钮正常渲染无异常",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT33",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT33-after.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT34",
+   "page": "subpackages/circles/circles/post-topic",
+   "operation": "图片添加/删除/9 张上限",
+   "expected": "缩略图渲染+计数 n/9 联动；× 删除；9 张后 + 钮隐藏",
+   "actual": "A1 FAILED（执行侧）：tap .image-upload 执行后图片未添加成功（uni.chooseImage 系统相册无法被 automator mock，Manifest 预授权「若无法 mock 则如实标注」），.image-item__remove 不存在 tap 未命中；缩略图/计数/删除/上限链路均未被触达；after png 捕获超时（09:5x 批次同名文件存在但为无图初始态）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT34",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT34-after.png"
+   ],
+   "confidence": 0.85
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-POSTTOPIC-101",
+   "round": "R1",
+   "page": "subpackages/circles/circles/post-topic",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT12-after.png",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "返回/发布后跳转的 uni.navigateBack 均无 fail 兜底：栈底（冷启动深链/reLaunch 直达）触发返回时产生未处理 Promise 拒绝，被全局 onUnhandledRejection 捕获并经 captureException 进入错误上报链，造成控制台错误噪音与误上报。违反交互规格「返回落点=来源页」在栈底场景的优雅退化预期（PT30 expected「console 无未处理异常」直接未达成）。",
+   "evidence": "exec-results PT30 console：02:04:24.936Z 与 02:04:25.149Z 两条 navigateBack:fail cannot navigate back at first page（[uni.onUnhandledRejection] + [captureException]）；同链路 PT10（01:57:05.402Z）、PT26（02:03:18.293Z）、PT29（02:04:15.793Z，observed navError=Uncaught [object Object]）；代码 post-topic.vue:441-443 goBack 直调 uni.navigateBack() 无 fail 回调，:369-372/:409-412 postSuccessNavTimer 内 uni.navigateBack() 同样裸调；S06 全量 console 共 10 行同类错误",
+   "sources": [
+    "log",
+    "code",
+    "interaction"
+   ],
+   "confidence": 0.95,
+   "ideal": "栈底返回应静默降级或给出兜底落点（如 reLaunch/switchTab 至来源页或首页），不产生未处理拒绝与错误上报噪音",
+   "fix": "goBack 与 postSuccessNavTimer 的 uni.navigateBack 增加 fail 回调（或 try/catch + fail 判断栈深 getCurrentPages().length===1 时改用 switchTab/reLaunch 兜底），与 circles/index 的 switchTab 兜底对齐",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-POSTTOPIC-102",
+   "round": "R1",
+   "page": "subpackages/circles/circles/post-topic",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT11-before.png",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "发布成功后 isSubmitting 设计上不复位（:423-425 仅失败复位），正常情况下 800ms 后 navigateBack 离开页面无感知；但当 navigateBack 失败（栈底：冷启动深链/reLaunch 直达发布）时用户滞留本页且发布钮永久吞点击——合法表单点击无 toast、无跳转、无任何反馈，核心发布功能对该页面实例永久失效。深链直达发布场景（巡检/分享深链）必现。",
+   "evidence": "状态链三源一致：①PT10 表单合法发布成功（toast「发布成功」01:57:04.5Z 捕获）→800ms 后 navigateBack:fail（console 01:57:05.4Z）页面滞留；②PT11 于同页面实例合法表单（before 截图+wxml 证实 title=周末徒步招募同伴/content 17/500、按钮非 disabled）rapidTap×5 → toast 计数=0、无导航、表单原样（after.wxml）；③PT13 同实例再次合法表单（wxml：篮球场夜间局缺人 8 字+内容）单击 → toast=0、无反馈、表单原样；代码：submitTopic :286 守卫静默 return 无反馈，成功路径无 isSubmitting 复位（:423-425 注释确认设计如此）",
+   "sources": [
+    "log",
+    "screenshot",
+    "interaction",
+    "code"
+   ],
+   "confidence": 0.75,
+   "ideal": "发布成功且跳转失败时，页面应复位提交态并给用户可感知的出路（提示+手动返回入口/自动兜底跳转），而非静默困死",
+   "fix": "postSuccessNavTimer 内 navigateBack 增加 fail 回调：失败时 uni.showToast 提示并复位 isSubmitting（或改用 uni.redirect/reLaunch 落地来源频道页），保证按钮不永久失效",
+   "status": "待修复"
+  }
+ ],
+ "unverifiable": [
+  "PT03|执行器 __CAND__ 文本定位「兴趣圈/音乐」失败，宫格未被打开，动作链断裂（截图证实 chip 正常渲染，非页面缺陷）|1",
+  "PT04|前置兴趣圈分类宫格未渲染（承接 PT03 执行失败），.category-chip 不存在，动作未执行|1",
+  "PT07|执行偏差：action 未按规格执行（输入 10 字非 35 字、未清空），maxlength=30 钳制未验证|1",
+  "PT09|执行偏差：内容混合串（换行/反斜杠/👨‍👩‍👧）未输入，仅标题部分特殊字符被验证（回显转义正常）|1",
+  "PT10|前置偏差：reLaunch 未带 ?circleId=8（route options={}），带参主路径未执行；store 断言未采集；栈底 navigateBack 失败产生未处理拒绝|1",
+  "PT11|前置未按规格执行：未带参重进、表单为 PT10 遗留值；5 连击 toast=0 疑 isSubmitting 残留吞掉，「恰 1 次提交」无法证实|1",
+  "PT12|执行失败：__CAND__ 文本定位「发布成功/发布」未命中动作未执行；前置合法表单未建立（before/after 截图同字节数页面零变化）|1",
+  "PT13|页面态继承前序用例（无 reLaunch），合法表单单击后 toast=0 无反馈，疑 isSubmitting 残留吞掉点击；发布链路未被触达|1",
+  "PT14|执行器 __CAND__(\"发布\") 定位失败未点到发布钮（CSS 选择器 .post-header__submit 在 PT05/PT06 可命中），<5 拦截 toast 未触发|1",
+  "PT15|前置切「兴趣圈」失败（__CAND__ 未命中）+ 发布点击失败，未选分类拦截分支未被触达|1",
+  "PT16|条件不可构造：mock 恒成功（需 real 模式+注入失败）；另有执行器定位「发布」失败|1",
+  "PT17|条件不可构造：mock 模式 slug circleId 直接成功（useMock() 门），real 模式拦截分支无法在当前环境触发|1",
+  "PT18|执行器 __CAND__ 文本定位 tag chip 全部失败（PT02 截图证实 chip 渲染正常），多选/上限/取消行为未被触达|1",
+  "PT19|执行器以「爱」文本定位 switch 失败（dom 采样选择器亦无效），switch 翻转与 favorite 字段未被验证|1",
+  "PT20|弹层开启+loading 结束有 dom 证实，但列表条数/请求计数未采样、after 截图超时、关闭-重开编排缺失，「恰 1 次请求」无法断言|1",
+  "PT21|action-not-automatable：弹层列表项点击无法自动化，零证据采集|1",
+  "PT22|执行编排失败：未先打开弹层即点遮罩（元素不存在），三路关闭行为均未被触达|1",
+  "PT23|前置已选活动态未达成（PT21 跳过）致 .activity-remove 不存在；重开弹层的请求计数未采集|1",
+  "PT24|前置已选活动态未达成（PT21 跳过），卡身元素不存在，路由链断言无证据|1",
+  "PT25|前置已选活动态未达成（PT21 跳过）致「报名」钮不存在，toast 行为未被触达|1",
+  "PT26|活动关联步骤未执行（承接 PT21 跳过），activityId 透传未验证；toast 已捕获但 navigateBack 栈底失败、store 断言缺失|1",
+  "PT27|条件不可构造：mock 恒有活动数据（截图证实弹层 4 项列表非空态），real 模式断网空态无法在当前环境触发|1",
+  "PT29|前置栈深未达成（reLaunch 进入致栈=1），落回 circle-home 无法验证；实测栈底返回产生 navigateBack:fail 未处理拒绝|1",
+  "PT31|动作未执行（observe-only，3 次往返与表单采样均缺失）+ after 截图捕获超时|1",
+  "PT33|条件不可构造：DevTools 默认已授权隐私协议，ensurePrivacyAuthorized reject 分支无法触发（Manifest 明示如实标 UNVERIFIED）|1",
+  "PT34|uni.chooseImage 无法 mock 致图片未添加，删除钮不存在，添加/删除/计数/上限链路未被触达|1"
+ ],
+ "notes": "三源对照结论：VERIFIED 7 / FAILED 1 / UNVERIFIED 26。①FAILED 仅 PT30：栈底返回产生 2 次 navigateBack:fail 未处理拒绝（PT30 自身 console 02:04:24/25），同根因另见 PT10/PT26/PT29 console（S06 全量共 10 行），立 Issue MP-R1-POSTTOPIC-101（P3）。②PT10→PT11→PT13 状态链立 Issue MP-R1-POSTTOPIC-102（P2）：发布成功+navigateBack 栈底失败 → isSubmitting 永不复位（:423-425 成功路径设计不复位）→ :286 守卫静默吞掉后续合法点击（PT11×5、PT13×1 均 0 toast、表单原样）。③UNVERIFIED 主因分布：(a) 执行器 __CAND__ 文本候选解析失败（PT03/04/12/14/15/18/19/22，被引元素均经截图/wxml 证实正常渲染，非页面缺陷）；(b) 前置断链/状态继承（PT04/13/22/23/24/25 依赖的前置态未建立；PT11/13 继承 PT10 页面实例）；(c) 前置参数未注入（PT10 route options={} 未带 circleId=8）；(d) 条件不可构造（PT16/17/27/33，mock 恒成功/恒有数据/DevTools 已授权）；(e) 系统能力不可自动化（PT21 列表项点击、PT34 chooseImage）；(f) 截图 automator 超时（PT03/04/05/10/11/13/16/17/20/26/31 after 批次，与 PAGES-DISCOVER-INDEX-judge.json 记录的本轮系统性环境问题①一致）。④登录身份 MISMATCH（user-1001 dev-user 非 Manifest 身份A 100158）为本轮已知系统性环境问题②，对本页断言无实质影响（发布/校验逻辑不依赖特定用户），已按 0.05-0.1 幅度计入 confidence。⑤VERIFIED 中 PT08 存在日志输入值（30 字）与截图（500/500）矛盾，疑执行器日志截断长值，以截图+计数元素为准；PT05 before/after png 缺失以 wxml（disabled 类）+toast API 捕获替代；PT01 三时刻采样坍缩为单次。⑥磁盘证据存在两批次（09:5x 上午批与 19:1x 晚间批），判定以 exec-results.json 记录为准，同名磁盘文件作旁证。"
+}

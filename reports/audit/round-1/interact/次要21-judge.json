@@ -1,0 +1,1155 @@
+{
+  "round": "R1",
+  "judge": "次要21",
+  "pages": [
+    "subpackages/discover-extra/home/segment",
+    "subpackages/discover-extra/nearby/people",
+    "subpackages/discover-extra/discover/history",
+    "subpackages/discover-extra/likes/index",
+    "subpackages/discover-extra/likes-visitors/index",
+    "subpackages/tools/daily-question/index",
+    "subpackages/tools/love-center/index",
+    "subpackages/tools/help/index"
+  ],
+  "gitSha": "aefd8a72",
+  "generatedAt": "2026-09-23T13:55:28.406Z",
+  "summary": {
+    "manifestCases": 81,
+    "total": 81,
+    "verified": 16,
+    "failed": 2,
+    "unverified": 63
+  },
+  "checks": [
+    {
+      "caseId": "SG01",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "reLaunch 无参冷启动直开，采样标题/骨架/列表/错误态",
+      "expected": "标题=「细分发现 · 在线」，骨架→列表，不闪错误空态，console 无异常",
+      "actual": "top=segment；.segment-header__title:present .segment-list:present .segment-state__text:absent；console 空；巡检截图(A/B)标题「细分发现 · 在线」+列表9行+无错误空态",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG01",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_home_segment__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_discover-extra_home_segment__默认.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "SG02",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "采样 .segment-header__title、.segment-row 数量与行内校区文案（.segment-row__meta）",
+      "expected": "标题=「细分发现 · 同校」（zh-CN.ts:339）；列表仅保留 isSameSchool===true 的卡片（predicate segment.vue:84-87）且 slice(0,50) 截断（67-69）；在线徽标仅 activeStatusText∈{online,just_now} 行显示（109-111,153-156）",
+      "actual": "UNVERIFIED：同校列表 .segment-row:absent（环境无 isSameSchool 数据），过滤与 slice(0,50) 截断无法验证；标题文本未采样",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG02"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "SG03",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "reLaunch ?type=%E2%9A%A0hack123 非法参数",
+      "expected": "回退默认 online 渲染，不闪错误、无 JS 异常",
+      "actual": "top=segment options.type=%E2%9A%A0hack123；.segment-header__title:present；console 空（无 TypeError/is not defined）；页面未渲染错误态",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG03"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "SG04",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "tap 首行 .segment-row（整行 role=button，segment.vue:139-147），500ms 内观察路由",
+      "expected": "顶栈=subpackages/profile-extra/profile/other 且 query.userId=该行用户 id（openProfile encodeURIComponent，segment.vue:112-114,147）；点击 500ms 内必有路由反馈（死按钮铁律）",
+      "actual": "UNVERIFIED：tap 首行后路由零变化（顶栈仍 segment），行内 .userId:absent 跳转分支未触发，after 截图 ERROR:timeout，无法区分死按钮/合法拦截/automator 点击未冒泡",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "SG05",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "两场景各 tap .segment-header__back（segment.vue:120-122），断言路由",
+      "expected": "场景1 顶栈回到来源页；场景2 navigateBack fail → uni.switchTab('/pages/home/index')（segment.vue:51-59），落点=首页 tab 且状态恢复",
+      "actual": "UNVERIFIED：.segment-header__back automator 采样 absent（类名与 segment.vue:120 一致，巡检截图证实按钮渲染），tap 未生效，两场景路由均未变化，兜底 switchTab 未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "SG06",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "失败后采样 .segment-state__text 与 .segment-retry；恢复网络后 tap .segment-retry（131-133）",
+      "expected": "失败时展示错误文案（errorMessage，72）+ 友好 toast（showErrorToast，71）+ 重试按钮；点击后 errorMessage 清空（63）、骨架→列表，Loading 不永驻",
+      "actual": "UNVERIFIED：无法制造断网失败态：.segment-state__text/.segment-retry 均未出现（网络正常），tap .segment-retry element not found",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "SG07",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "页面滚动到底再回顶",
+      "expected": "无分页设计，行数≤上限，回顶数据不变",
+      "actual": "act:pageScrollTo bottom→top；evidence scrollPos=top；.segment-row:present；无错误无新增请求；行数总数未采样",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG07"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "SG08",
+      "page": "subpackages/discover-extra/home/segment",
+      "operation": "每个枚举 reLaunch 后采样 .segment-header__title",
+      "expected": "标题依次=「细分发现 · 在线/同校/同兴趣/附近/新加入/高匹配」（TYPE_LABEL_KEY→zh-CN.ts:338-343）；每路由均正常渲染不闪错误；sameInterest 过滤 commonCircleCount>0、highMatch ≥3（segment.vue:84-97）",
+      "actual": "UNVERIFIED：六枚举参数矩阵未执行：observed 仅默认态采样（durationMs=2228，无逐枚举 reLaunch 与标题采样记录）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#SG08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP01",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "reLaunch 无参冷启动直开",
+      "expected": "标题=「附近的人」，附近 Tab 高亮，骨架→列表/空态，不闪错误空态",
+      "actual": "top=nearby/people；.people-header__title:present .people-tab--active:present .people-list:present .people-state__text:absent；console 空；巡检截图(A/B)标题「附近的人」+附近Tab高亮+列表",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP01",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_nearby_people__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_discover-extra_nearby_people__默认.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "NP02",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "采样 .people-header__title、.people-tab--active、前几行 .people-row 的在线状态文案顺序",
+      "expected": "标题=「同城的人」（zh-CN.ts:383）；请求不带距离过滤（people.vue:74-76 scope=city 传 {}）；排序=活跃度（just_now→today→其余，119-123）→ commonCircleCount 降序（97-103）；列表 userId 去重无重复行（81-89）",
+      "actual": "UNVERIFIED：scope=city 路由达成但标题文本/活跃度→共同圈子排序/userId 去重均无采样证据，无法核实排序与去重",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP02"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP03",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "tap 同城 Tab（第二个 .people-tab）→ 等加载完成 → tap 附近 Tab 切回",
+      "expected": "点击 500ms 内高亮 class（people-tab--active）与 aria-selected 切换（172-188）；切换触发 load 重拉（152-156）：骨架出现后渲染新列表；切回后数据恢复、无残留错误态；Loading 不永驻",
+      "actual": "UNVERIFIED：执行器跑错页面：act:switchTab /pages/nearby/index 后找 .people-tab 失败（类名实际存在于 people.vue:172,181），Tab 切换行为未在目标页执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP04",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "连续 tap 当前已激活的附近 Tab ×3，观察 console 网络请求计数",
+      "expected": "switchScope 命中 next===scope 直接 return（people.vue:152-154），无新 recommendations 请求、无骨架闪烁",
+      "actual": "UNVERIFIED：observe-only：同 Tab 连点×3 与请求计数观测未执行，无任何 act 记录",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP05",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "scroll-view 滚动触发 @scrolltolower（207）→ 采样 .people-row 数量；再滚回顶部",
+      "expected": "触底后 visibleCount 20→40（loadMoreVisible，46-50）新增行渲染且与既有行 userId 不重复（81-89 去重）；回顶滚动位与数据不丢；行数 ≤ 列表全长不越界",
+      "actual": "UNVERIFIED：触底分页未执行：无 scrolltolower 触发与 .people-row 行数前后记录（仅 pageScrollTo top），截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP06",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "两场景各 tap .people-header__back（people.vue:162-164）",
+      "expected": "场景1 navigateBack 回来源页；场景2 getCurrentPages().length≤1 → uni.switchTab('/pages/discover/index')（142-149 MP-R2-LNEARBY-001 栈底兜底），落点=发现 tab",
+      "actual": "UNVERIFIED：.people-header__back automator 采样 absent（类名与 people.vue:162 一致，巡检截图证实按钮渲染），tap 未生效，兜底 switchTab 发现页未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP07",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "页面顶部下拉触发 onPullDownRefresh（people.vue:61-63），等待完成",
+      "expected": "触发真实重新加载（重新请求 recommendations）；完成后 uni.stopPullDownRefresh 收起刷新动画，不永驻；列表刷新后排序规则不变",
+      "actual": "UNVERIFIED：onPullDownRefresh callMethod ok（触发证实），但真实重拉请求计数与 stopPullDownRefresh 收起无证据（.stopPullDownRefresh DOM 采样口径无效）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP07"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP08",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "tap 首行 .people-row（整行 role=button，people.vue:208-216）",
+      "expected": "顶栈=subpackages/profile-extra/profile/other?userId=<行id>（openProfile→openUserProfile，people.vue:138-140；navigation.ts:303-309，userId 空/'undefined' 被拦截不跳转）；页面不出现喜欢/悄悄话按钮（people.vue:7 冻结口径）",
+      "actual": "UNVERIFIED：tap 行后路由零变化（顶栈仍 nearby/people），环境行 userId 缺失跳转分支未触发，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP09",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "失败后采样 .people-state__text 与 .people-state__retry；恢复网络 tap 重试（197-199）",
+      "expected": "失败展示 errorMessage（109）+ 重试按钮；点击后重新 load：骨架→列表，竞态 token 保证新响应生效（66-78）；Loading 不永驻",
+      "actual": "UNVERIFIED：无法制造断网失败态：.people-state__text/.people-state__retry 未出现，tap 重试 element not found",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP09"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "NP10",
+      "page": "subpackages/discover-extra/nearby/people",
+      "operation": "快速连点 附近↔同城 Tab 共 5 次，停止后等待 3s 采样列表与高亮",
+      "expected": "仅最后一个请求允许写状态（loadToken 竞态，people.vue:66-78,111-115）：最终列表排序/标题与最后选中的 scope 一致，无旧响应覆盖；loading 正确收起（112-114）；无 TypeError",
+      "actual": "UNVERIFIED：快速切换×5 未执行：observed 仅 act:wait 3000ms，无 Tab 连点与请求顺序记录，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#NP10"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH01",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "reLaunch 冷启动直开（无记录）",
+      "expected": "统计 0/0/0 + EmptyState「还没有浏览记录」，不白屏不闪错误态",
+      "actual": "top=history；.stats-bar:present .stat-num:present .history-error:absent；console 空；巡检截图(A/B)统计 0/0/0+空态「还没有浏览记录/快去寻觅页发现有趣的TA吧」",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH01",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_history__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_history__默认.png"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "DH02",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "采样 .stat-num 三值与 .history-card 数量、各卡 .status-badge 文本、.card-name/.card-avatar 渲染",
+      "expected": "已浏览=historyCards.length、已喜欢=direction==='right' 数、已跳过=passedCards 数（147-157）；每卡徽章与 direction 一致（191-198；zh-CN.ts:3618-3619）；昵称/头像优先取 swipe 持久化快照而非「未知用户」占位（57-64 R4-00012）",
+      "actual": "UNVERIFIED：automator 不支持 swipe 手势（pre:swipe right unsupported no element api），无法产生浏览记录，统计与徽章验证未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH02"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH03",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "截图 before → tap .rewind-btn（210）→ 等待成功回调 → 截图 after；再采样该卡操作区",
+      "expected": "点击后按钮变「挽回中...」并禁用（212,210 :disabled）；成功 toast「挽回成功」（95-98；zh-CN.ts:3609）；随后 navigateBack 回来源页（栈=1 时 switchTab 发现页，101-105）；hasRewoundToday 置真后再进本页该卡显示「今日挽回次数已用完」提示（218-222；zh-CN.ts:3621）",
+      "actual": "UNVERIFIED：前置不可达：swipe left unsupported 无 rejection 记录，.rewind-btn 不存在（before 截图 33669B 空态），挽回链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH04",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "500ms 内快击 .rewind-btn ×5，观察网络请求计数与按钮态",
+      "expected": "rewinding 锁首次点击即置真，后续点击被 return 拦截（history.vue:91-93），按钮 :disabled + pointer-events:none（210,491-494）；rewindCard 仅执行 1 次（后端每日限流不触发 429）；结束后按钮态恢复或随成功流转",
+      "actual": "UNVERIFIED：同 DH03：swipe 不支持导致无可挽回项，rapidTap .rewind-btn element not found，防连点未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH05",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "tap .rewind-btn → 等待失败回调 → 采样 toast 与页面栈",
+      "expected": "走 catch：showErrorToast 分类映射文案（默认「挽回失败」，history.vue:106-110；zh-CN.ts:3610），不展示技术细节；路由不变（不触发 101-105 跳转）；finally 恢复 rewinding=false 按钮可再点（109-111）",
+      "actual": "UNVERIFIED：同 DH03：无 rejection 项且断网不可制造，挽回失败分支未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH06",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "失败后采样 .history-error 区块；恢复网络 tap .history-error__retry（170-172）",
+      "expected": "失败时 role=alert 错误文案 + 重试按钮（168-173）；点击 handleRetry 重新 fetchCards（41-43）→ 骨架→正常内容，错误区消失",
+      "actual": "UNVERIFIED：无法制造断网：.history-error/.history-error__retry 均未出现，重试链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DH07",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "栈=1 直开 tap .back-btn（死按钮观测点）",
+      "expected": "500ms 内无路由变化属预期；若确认无任何反馈（路由/DOM/Toast/震动）按死按钮缺陷如实登记",
+      "actual": "tap 执行、路由零变化、toast 空、console 出现 [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page（3 条 error）；源码 history.vue:115-117 裸 navigateBack 无 fail 兜底 → 死按钮+未捕获 rejection",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH07(console)",
+        "apps/client/src/subpackages/discover-extra/discover/history.vue:115-117"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "DH08",
+      "page": "subpackages/discover-extra/discover/history",
+      "operation": "进入本页采样统计 → 返回 → 再进入，重复 3 轮",
+      "expected": "每轮 onUnload 触发 discoverStore.dispose() 清理定时器/请求（128-130 R4-00158），再进 onMounted syncHistoryCards 重同步（119-122）；统计数字每轮一致不翻倍；无定时器泄漏引发的持续 console 输出",
+      "actual": "UNVERIFIED：重复进出×3 未执行：observe-only 无往返动作与统计采样记录（仅 .dispose:absent 无效采样）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DH08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK01",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "采样 NotLoggedWaiting 存在、列表区不渲染；tap 其「手机号登录」按钮（组件 emit go-phone-login，likes/index.vue:604-606）",
+      "expected": "未登录只渲染 NotLoggedWaiting（v-if !isLoggedIn，606），不发起 fetchLikes 请求（492-496 isUnlocked 门控）；点击登录按钮后顶栈=/pages/login/index（goPhoneLogin→openAppPath，34-37；MP-R1-LIKES-102 修复零响应缺陷）",
+      "actual": "UNVERIFIED：tap「手机号登录」后路由零变化，但绑定链完整（NotLoggedWaiting.vue:96→likes/index.vue:606→goPhoneLogin→openAppPath navigation.ts:124），无法区分 automator 文本节点 tap 不冒泡与修复回归，MP-R1-LIKES-102 复核未完成",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK01"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK02",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "登录直开采样标题/三 Tab/badge",
+      "expected": "标题「匹配列表」+三 Tab（喜欢我的/我发出的喜欢/访客）+badge+默认 likedBy+心动信号入口",
+      "actual": "A1 执行缺登录前置（无 login 记录，页面停未登录态致 .likes-header__title:absent，.title:present 为 NotLoggedWaiting 标题）；巡检截图(A 登录态同 gitSha aefd8a72)完整证实：标题「匹配列表」+心动信号入口+管理+三 Tab(badge 22/2/访客)+列表；console 空",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK02",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes_index__默认.png"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "LK03",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "tap「访客」Tab（BaseTabs 第三项，686-694），采样搜索框值、批量栏存在性、访客列表",
+      "expected": "switchTab('visitors') 且 visitors 为空时触发 fetchVisitors 懒加载（423-428）；watch 联动 handleClearSearch + setBatchMode(false)（368-373）：搜索框与 store 关键词清空、底部批量栏消失；访客列表/空态正常渲染",
+      "actual": "UNVERIFIED：前置制造残留状态失败（搜索框 input 元素未找到），tap「访客」执行但搜索清空/批量态消失/访客列表均无采样",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK04",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "likedBy→myLikes→visitors→likedBy 往返切换，每步记录滚动位置与列表行数",
+      "expected": "切回 likedBy 后列表数据仍在（store 缓存，不重复请求 likedBy 源）；各 Tab badge 数与列表一致不丢；无错误态闪现；Loading 不永驻",
+      "actual": "UNVERIFIED：observe-only：likedBy→myLikes→visitors→likedBy 往返切换未执行，步行数与滚动位无记录，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK05",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "在 .likes-search__input 输入某昵称前缀，观察 300ms 内/后列表变化；tap .likes-search__clear（673-681）；再输入不存在的字符串",
+      "expected": "停止输入 300ms 后才触发过滤（SEARCH_DEBOUNCE_MS=300，110-135），期间不逐字符重算；清空立即恢复全量且输入框值同步（141-148）；无匹配时 EmptyState 标题=「未找到匹配的用户」（isSearchEmpty，101-106,712；zh-CN likes.searchEmpty）",
+      "actual": "UNVERIFIED：输入执行但 300ms 防抖时序与过滤结果无采样；.likes-search__clear 采样 absent 与 act:tap 记录矛盾，searchEmpty 判定不可解释",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK06",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "依次输入 `<img src=x onerror=alert(1)>`、😄🙂100个、120 字符长串；每轮后 tap 清空按钮",
+      "expected": "输入回显正常（input :value 绑定 668）、防抖后过滤执行无异常、无脚本执行迹象；清空后列表恢复全量；console 无 TypeError",
+      "actual": "UNVERIFIED：特殊字符/超长输入未执行：input 元素未找到",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK07",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "tap .likes-header__manage「管理」（645-656）→ 采样批量 UI → tap「完成」退出 → 再进入",
+      "expected": "进入批量模式：卡片左侧 checkbox 出现（734-740）、底部批量栏+「已选 0 项」提示出现（929-998）、lightHaptic 触发（302）；selectedIds 清空（301-304 setBatchMode 进入即清）；「完成」退出后全部批量 UI 消失；再进入已选仍为 0（无残留）",
+      "actual": "UNVERIFIED：tap 管理/完成均执行成功，但 checkbox 出现、批量栏+「已选 0 项」、进入清空已选均无 DOM 采样证据，批量 UI 出现性未证实",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK07"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK08",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "截图 before → tap 两张卡的 checkbox（734-740）→ tap 底部「喜欢」按钮（946-959）→ 截图 after",
+      "expected": "已选计数变「已选 2 项」（994-998；zh-CN 1437）；执行期间按钮文案「处理中...」且半透明禁用（957,1605-1607）；成功 toast「批量操作成功」（353；zh-CN 1434）+ successHaptic；自动退出批量模式（355）；列表状态随 batchActions 更新",
+      "actual": "UNVERIFIED：前置失败：批量模式未进入（tap「管理」文本定位失败；wxml 快照证实页面无批量栏/checkbox，likes-header__manage 存在），勾选与批量喜欢链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK09",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "tap 底部「喜欢」按钮，观察 toast 与网络请求",
+      "expected": "selectedIds 为空命中校验：toast「请至少选择一个用户」（342-345；zh-CN 1433），不调用 batchActions、无网络请求；批量模式保持不退出",
+      "actual": "UNVERIFIED：同 LK08：批量模式未进入（wxml 无批量栏），空提交 toast「请至少选择一个用户」链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK09"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK10",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "500ms 内快击底部「喜欢」×5，观察 batchActions 调用次数",
+      "expected": "batchProcessing 锁命中直接 return（347），batchActions 仅执行 1 次；期间按钮 disabled 态（949）；完成后 toast 一次、退出批量模式一次",
+      "actual": "UNVERIFIED：observe-only：选中后快击「喜欢」×5 未执行，batchActions 调用次数无记录",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK10"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK11",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "采样 .likes-unlock-bar 存在性；tap 一张打码卡（未解锁分支 handleLockedItemTap，731,481-483）",
+      "expected": "解锁栏不渲染（v-if hasLockedItems && !batchMode && commerceCoinOn，1002）；打码项点击 → handleUnlock 命中封存分支 toast「功能封存中，暂不可用」（196-199；zh-CN 791），无扣费请求；打码样式（头像 blur + 「匿名用户」）不被解锁流程绕过",
+      "actual": "UNVERIFIED：.likes-unlock-bar:absent 证实封存态解锁栏不渲染，但环境列表无打码项（巡检截图全真实昵称），点击打码 toast「功能封存中」未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK11"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK12",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "分别 tap 互喜项与普通项（handleItemClick 分支，467-474）",
+      "expected": "互喜项（isMutualMatch 命中 459-461）→ 顶栈=subpackages/chat/chat-session/index?userId=<id>（goToChat 450-453）；普通项 → 顶栈=subpackages/profile-extra/profile/other?userId=<id>；空 userId 不跳转（468-469）",
+      "actual": "UNVERIFIED：SKIPPED action-not-automatable：互喜/非互喜分支数据无法自动化构造",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK12"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK13",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "采样 .likes-header__signal 存在性（630-643）；tap 它",
+      "expected": "入口带脉冲红点渲染（642）；点击后顶栈=subpackages/tools/heart-signals/index（goToHeartSignals→ROUTES.HEART_SIGNALS，488-490；routes.ts:185）；500ms 内有路由反馈",
+      "actual": "UNVERIFIED：.likes-header__signal:present 证实入口渲染，但 observe-only tap 未执行，跳转 heart-signals 未验证，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK13"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK14",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "顶部下拉触发 onPullDownRefresh（564-576），观察请求与动画",
+      "expected": "fetchLikes/fetchHeartSignals/fetchVisitors 三请求并发发出；任一失败不阻塞（各 .catch 兜底 570-572）；完成后 uni.stopPullDownRefresh 收起，不永驻；未登录态下拉直接 stop 不发请求（565-568）",
+      "actual": "UNVERIFIED：onPullDownRefresh callMethod ok（触发证实），但三源并发请求计数与 stopPullDownRefresh 收起无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK14"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK15",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "失败后采样 .likes-error 区块（role=alert，702-704）；恢复网络 tap ErrorState 重试（retryLoad，582-586）",
+      "expected": "错误时渲染 ErrorState(type=network) 而非空白列表（702-704）；点击重试同时重拉喜欢/心动信号/访客三源（583-585）；成功后错误区消失列表恢复",
+      "actual": "UNVERIFIED：无法制造断网：.likes-error 未出现，ErrorState 与重试链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK15"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK16",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "两场景各 tap .likes-header__back（617-624）",
+      "expected": "场景1 navigateBack 回来源页；场景2 getCurrentPages≤1 → uni.switchTab(ROUTES.TAB.HOME=/pages/home/index)（157-164），落点=首页 tab",
+      "actual": "UNVERIFIED：.likes-header__back automator 采样 absent（类名与 likes/index.vue:618 一致，巡检截图证实返回键渲染），tap 未生效，栈=1 兜底 switchTab 首页未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK16"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LK17",
+      "page": "subpackages/discover-extra/likes/index",
+      "operation": "likedBy 进批量模式采样按钮组 → 切 myLikes Tab 再进批量模式采样 → 勾选 1 项 tap「取消喜欢」执行",
+      "expected": "likedBy 批量栏只有「喜欢」「跳过」两钮（946-974 v-if activeTab==='likedBy'）；myLikes 批量栏只有「取消喜欢」（976-989）；取消喜欢成功 toast「批量操作成功」+ 退出批量模式（350-356）；批量处理中按钮禁用态两 Tab 一致",
+      "actual": "UNVERIFIED：前置失败：myLikes 批量「取消喜欢」按钮未找到（批量模式未进入），按钮组显隐与取消链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LK17"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV01",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "清除 token 未登录直开",
+      "expected": "LockScreen 引导，不发鉴权请求，不强制跳登录（免踢）",
+      "actual": "pre:logout ok；top 仍 likes-visitors/index（未被踢登录）；console 空（无 401）；LockScreen DOM 存在性未采样但路由与请求口径证实",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV01"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "LV02",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "登录直开采样标题/概览/Tab",
+      "expected": "标题「喜欢与访客」+概览三数字+默认 likedMe Tab+列表/空态不闪错误",
+      "actual": "A1 执行缺登录前置（无 login 记录，.page-header__title/.overview/.tabs__item--active 全 absent 停 LockScreen 态）；巡检截图(A 登录态)证实：标题「喜欢与访客」+概览 104/5/22+「喜欢我的」badge22 高亮+列表渲染；console 空",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV02",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes-visitors_index__默认.png"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "LV03",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "tap「我的访客」Tab → 采样 → tap「喜欢我的」切回",
+      "expected": "点击 500ms 内高亮下划线（tabs__item--active::after，574-584）与列表切换（switchTab 135-137）；访客 Tab badge=isNew 数、>99 显「99+」（75-78,364）；切回后数据不丢",
+      "actual": "UNVERIFIED：执行器跑错页面：act:switchTab /pages/profile/index 后找「我的访客」失败，Tab 切换与 badge 99+ 封顶未在目标页执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV04",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "采样打码项 DOM：.list__avatar--blur、.list__lock、.list__name 文本、.list__tag 集合",
+      "expected": "头像 blur(14rpx)（634-638）+ 锁标识覆盖（398-400）+ 昵称显「匿名用户」（406；zh-CN 2665）+ 仅年龄/同城基础标签（409-411）；金币标签不渲染（412-414 v-if commerceCoinOn）；已解锁项显真实昵称/签名/时间（405-407,418）",
+      "actual": "UNVERIFIED：环境列表无打码项（巡检截图全真实昵称；.list__avatar--blur/.list__lock absent，.list__name present），前置「存在 unlocked!==true 项」不成立，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV05",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "tap 一条打码项（isItemUnlocked=false 分支，391），观察 toast 与网络",
+      "expected": "handleLockedItemTap→handleUnlock 命中封存分支（154-157）：toast「功能封存中，暂不可用」（zh-CN 791）；不弹确认框、不发 /wallet/unlock 请求；路由不变",
+      "actual": "UNVERIFIED：observe-only：点击打码项动作未执行，封存 toast 与无扣费请求未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV06",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "采样 .unlock-bar 与 .exposure-bar 存在性",
+      "expected": "coin 封存+membership 关闭：解锁栏与提升曝光条均不渲染",
+      "actual": ".unlock-bar:absent .exposure-bar:absent 直接证实；巡检截图页面底部无商业化固定条",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV06",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__默认.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LV07",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "tap .unlock-bar__btn（425）→ 弹窗采样 → 场景a 点「取消」；场景b 点「解锁」；场景c 余额不足时观察弹窗",
+      "expected": "弹窗「解锁查看」内容含单价与条数（181-190；zh-CN 2670-2672「消耗 {coins} 交友币/人解锁全部 {count} 条记录（会员免费）」）；取消→无请求无扣费（191）；确认→逐条 unlockUser（193-200）→ toast「解锁成功」（205；zh-CN 2673）+ 打码解除（item.unlocked=true）+ 余额刷新（202-204）；余额不足→弹窗",
+      "actual": "UNVERIFIED：manifest 预设：默认封存环境执行不到解锁弹窗分支（wxml 证实无 unlock-bar），需 commerce.coin=true 环境重跑",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV07"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV08",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "分别 tap 互喜已解锁项与普通已解锁项（goToUserProfile 分支，239-247）",
+      "expected": "互喜项 → 顶栈=subpackages/chat/chat-session/index?userId=<id>；普通项 → 顶栈=subpackages/profile-extra/profile/other?userId=<id>；userId 空不跳转（240-241）；500ms 内路由反馈",
+      "actual": "UNVERIFIED：SKIPPED action-not-automatable：互喜/普通已解锁项分支无法自动化构造",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV09",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "两场景各 tap .page-header__back（313-322）",
+      "expected": "场景1 navigateBack 回消息页；场景2 → uni.switchTab('/pages/home/index')（253-260），落点=首页 tab",
+      "actual": "UNVERIFIED：.page-header__back automator 采样 absent（类名与 likes-visitors/index.vue:315 一致），tap 未生效，兜底 switchTab 首页未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV09"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV10",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "进入采样列表 → 返回 → 再进入，重复 3 轮；统计 fetchLikes/fetchVisitors 触发次数",
+      "expected": "每轮 onShow 仅在 !profileStore.loading 时补拉（121-123 R4-00020 条件反置修复）；fetchLikes/fetchVisitors 均 .catch 兜底（127-132）无 unhandledRejection 刷屏；列表每轮渲染一致",
+      "actual": "UNVERIFIED：重复进出×3 未执行：observe-only（仅 .loading:present 采样），fetchLikes/fetchVisitors 触发计数无记录",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV10"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LV11",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "operation": "采样已解锁项时间文本",
+      "expected": "yyyy-MM-dd HH:mm:ss 解析显 M/D，无效显空串不显 NaN（R4-00019）",
+      "actual": ".list__time:present；巡检截图列表时间列「5/21」「5/18」「5/16」等 M/D 格式，无 NaN；文本级逐字对照未做",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LV11",
+        "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__默认.png"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "DQ01",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "未签到直开采样锁定卡",
+      "expected": "锁定卡「签到后解锁」+描述+「去签到」CTA，问题卡不渲染，console 无异常",
+      "actual": ".lock-card:present .lock-card__title:present .lock-card__cta:present；问题卡未渲染；console 空；巡检截图(A/B)完整吻合",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ01",
+        "reports/screenshots/round-1-tour/A/subpackages_tools_daily-question_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_tools_daily-question_index__默认.png"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "DQ02",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "tap .lock-card__cta 去签到",
+      "expected": "toast「签到成功，每日一问已解锁」→锁定卡消失→问题卡/回答区渲染",
+      "actual": "toast 逐字匹配「签到成功，每日一问已解锁」；after 采样 .lock-card__cta:absent（锁定卡消失）；DQ02-after.wxml 含 question-card×5/submit-btn×3/anonymous-toggle×3/匿名；before/after 截图存在；注：「已签到再进不显锁定卡」在 reLaunch 后不成立，归因 mock 后端不持久 checkedInToday（checkIn.ts:30-34 后端权威），非页面缺陷",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ02(toast)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ02-after.wxml",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ02-after.png"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "DQ03",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "500ms 内快击 .lock-card__cta ×5，观察 checkIn 调用次数与按钮态",
+      "expected": "isCheckingIn 锁 + checkedIn 短路（27-28）：checkIn() 仅执行 1 次；期间按钮显「签到中…」且 opacity 0.7（148,145,428-430）；结束后 toast 一次，不重复扣签到额度",
+      "actual": "UNVERIFIED：前置不可达：mock 登录 A/B 均返回 user-1001（MISMATCH），DQ02 已消耗该用户签到且状态不持久，沿用会话时锁定卡已消失（.lock-card__cta:absent），防连点场景无法重建",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ04",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "不输入内容直接 tap .submit-btn",
+      "expected": "空提交禁用态：无 toast 无请求，按钮文案不变",
+      "actual": ".submit-btn:present（回答区在）；tap×2 后 toast 空、console 无请求无异常；禁用态视觉 class 未采样（消极断言已证）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ04",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ02-after.wxml"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "DQ05",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "截图 before → 输入回答文本 → tap 匿名勾选（196-201）→ tap 提交 → 截图 after",
+      "expected": "提交中按钮「提交中...」（209）；成功 toast「回答成功」（64；zh-CN 3778）+ 输入框清空（63）+ hasAnswered=true 后输入区被「你已回答今日问题」提示替代（215-218；zh-CN 3804）+ 拉取他人回答列表（84-88）；再进本页不再出输入区",
+      "actual": "UNVERIFIED：reLaunch 直开时签到态丢失（mock 后端不持久 checkedInToday，checkIn.ts 后端权威），wxml 证实页面停锁定卡（仅 lock-card×6，无 input/submit-btn），回答输入区不存在",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ06",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "500ms 内快击 .submit-btn ×5，观察 submitAnswer 调用次数",
+      "expected": "isSubmitting 锁（56）+ disabled class（204）使命令仅执行 1 次；store.submitAnswer 仅一次网络写入；完成后 toast 一次、输入清空一次",
+      "actual": "UNVERIFIED：同 DQ05：.submit-btn:absent（wxml 仅锁定卡），快击防连点场景无法执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ07",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "粘贴 600 字文本采样 textarea 值长度；清空后输入 `<b>hi</b>😀😀` 再提交",
+      "expected": "maxlength=500 截断（192）输入不超过 500 字；特殊字符回显原样无解析执行；提交链路正常（成功 toast 或业务错误 toast，不崩溃）；console 无 TypeError",
+      "actual": "UNVERIFIED：同 DQ05：input 目标不存在（锁定卡态），600 字截断与特殊字符回显未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ07"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ08",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "tap .anonymous-toggle ×1 → 采样 → 再 tap ×1 → 采样",
+      "expected": "首次点击 isAnonymous=true：勾选容器变品牌色（anonymous-toggle__check--active，197-200,555-559）并显示白色勾图标；再点回退未选中态；切换即时（500ms 内 DOM 反馈，铁律）",
+      "actual": "UNVERIFIED：同 DQ05：.anonymous-toggle:absent（wxml 仅锁定卡），勾选切换未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ09",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "采样 .answer-card 数 → tap .answers-load-more（254-265）→ 再采样；构造 answerHasMore=false 场景采样尾态",
+      "expected": "点击后 fetchAnswers(answerPage+1) 追加不覆盖（112-115；store 374-392 answerPage/answerHasMore 维护）；按钮文案加载期间「加载中...」（264）；无更多时显示「没有更多回答了」且按钮不可再拉（266-268；zh-CN 3813）",
+      "actual": "UNVERIFIED：同 DQ05 且需已回答前置：.answer-card/.answers-load-more absent，分页未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ09"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ10",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "滚动 .dq-body 至底部触发 @scrolltolower（134,117-120）；连续触底 2 次",
+      "expected": "触发 loadMoreAnswers 追加下一页；loading 中重复触底被 guard 拦截（113 !answerHasMore || loading return）；无重复同页请求",
+      "actual": "UNVERIFIED：滚动执行（scrollPos=bottom）但 loadMoreAnswers 触发与请求页码序列无记录，guard 行为未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ10"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ11",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "失败后采样 .dq-state 错误区块（161-173）；恢复网络 tap .dq-state__retry",
+      "expected": "错误文案（errorMessage 或「问题加载失败，请稍后重试」，162；zh-CN 3784）+「重试」按钮；点击 retryQuestion 重新拉题（99-105），成功后问题卡渲染、Loading 不永驻",
+      "actual": "UNVERIFIED：无法制造拉题失败：.dq-state/.dq-state__retry 未出现，重试链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ11"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "DQ12",
+      "page": "subpackages/tools/daily-question/index",
+      "operation": "栈=1 直开 tap .dq-header__back（死按钮观测点）",
+      "expected": "无路由变化属预期；确认无任何反馈则按死按钮缺陷登记",
+      "actual": "tap 执行、路由零变化、toast 空、console [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page；源码 daily-question/index.vue:78-80 裸 navigateBack 无兜底 → 死按钮+未捕获 rejection",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#DQ12(console)",
+        "apps/client/src/subpackages/tools/daily-question/index.vue:78-80"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LC01",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "登录直开采样入口结构",
+      "expected": "标题「恋爱咨询」+快捷入口含附近的人不含 consulting+四板块不渲染+MBTI 测试区",
+      "actual": ".love-center__quick:present .love-center__test:present .loveConsulting:absent；console 空；巡检截图(A/B)：标题「恋爱咨询」+快捷入口「附近的人」+MBTI 人格测试+无四板块",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC01",
+        "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_index__默认.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LC02",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "tap 首个 .love-center__quick（94-107，entry.url=ROUTES.LOVE_CENTER.NEARBY）",
+      "expected": "顶栈=subpackages/tools/love-center/nearby（52-55 navigateTo；routes.ts:208）；点击 500ms 内路由反馈 + lightHaptic（53）",
+      "actual": "UNVERIFIED：tap .love-center__quick 后路由零变化；同页 LC03/LC04 出现 navigateTo:fail timeout（环境导航超时），无法归因死按钮或环境故障",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC02"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LC03",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "tap .love-center__test（136-149）",
+      "expected": "顶栈=subpackages/tools/love-center/mbti（onTestTap→ROUTES.LOVE_CENTER.MBTI，71-75；routes.ts:212）；500ms 内路由反馈",
+      "actual": "UNVERIFIED：tap 触发 navigateTo:fail timeout unhandledRejection（console 3 条 error），mbti(web-view) 未入栈；环境导航超时无法判定页面本身；导航失败无用户反馈的隐患一并记录",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LC04",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "分别 tap「恋爱咨询」（→ROUTES.HELP）与「恋爱课程」（→ROUTES.LOVE_CENTER.CONSULTING）（onBoardTap 分支，62-69）",
+      "expected": "恋爱咨询/社交咨询 → 顶栈=subpackages/tools/help/index（64-67）；恋爱课程/社交课程 → 顶栈=subpackages/tools/love-center/consulting（68）；每次点击 lightHaptic + 500ms 路由反馈",
+      "actual": "UNVERIFIED：manifest 预设：默认封存环境四板块不渲染（LC01 证实 loveConsulting absent），执行器 tap 到的「恋爱咨询」为 AppShell 标题文本，navigateTo:fail timeout 为环境现象",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LC05",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "两场景各 tap AppShell 返回按钮（show-back，88；AppShell.vue:201）",
+      "expected": "场景1 navigateBack 回来源页；场景2 navigateBack fail → switchTab('/pages/home/index')，再 fail → reLaunch 首页（AppShell.vue:118-144 三级兜底），永远有响应（不似 segment/history 的裸返回）",
+      "actual": "UNVERIFIED：AppShell 返回按钮 automator 定位失败（tap 元素未找到；巡检截图证实「< 返回」按钮渲染），三级兜底未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "LC06",
+      "page": "subpackages/tools/love-center/index",
+      "operation": "500ms 内快击 .love-center__test ×3，随后采样 getCurrentPages 深度",
+      "expected": "首击 500ms 内必有路由反馈（铁律）；记录入栈深度：若 3 次点击产生 3 层 mbti 入栈则如实登记连点缺陷（onTestTap 无防抖锁，71-75）；页面不崩溃，返回可逐层回退",
+      "actual": "UNVERIFIED：rapidTap ×3 执行（done=3）但栈深度不变（未入栈），与 LC03 navigateTo:fail timeout 一致属环境导航超时，重复入栈行为无法验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LC06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP01",
+      "page": "subpackages/tools/help/index",
+      "operation": "登录直开采样 FAQ/客服/footer",
+      "expected": "标题「帮助与客服」+FAQ 6 项全收起+客服三入口+底部服务说明",
+      "actual": ".help-faq__item:present .help-faq__answer:absent（全收起✓）；.help-contact__item/.help-footer 采样 absent 系 automator 跨 SectionCard 组件查询缺陷（源码 help/index.vue:105,123,141,161 无条件渲染）；巡检截图(A/B)完整证实全部 expected",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP01",
+        "reports/screenshots/round-1-tour/A/subpackages_tools_help_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_tools_help_index__默认.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "HP02",
+      "page": "subpackages/tools/help/index",
+      "operation": "tap 第 1 条 .help-faq__item → 采样 → 再 tap 同一项 → 采样",
+      "expected": "首点展开：.help-faq__answer 渲染答案文本（94-95）、chevron 旋转 270°（92,204-206）、aria-expanded=true（86）；再点收起恢复（toggleFaq 42-45 幂等取反）；500ms 内 DOM 反馈 + lightHaptic（43）",
+      "actual": "UNVERIFIED：tap FAQ×2 执行但展开中间态无采样：终态 answer absent 无法区分「展开后收起」与「从未展开」，截图 ERROR:timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP02"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP03",
+      "page": "subpackages/tools/help/index",
+      "operation": "依次 tap FAQ1→FAQ2→FAQ3→FAQ4→FAQ5→FAQ6，每步采样全部 .help-faq__answer 可见数",
+      "expected": "expandedIndex 单值互斥（44）：点击新项时旧项收起，任意时刻可见答案区 ≤1；第 6 项（VIP FAQ）内容完整渲染不截断；无布局跳动异常",
+      "actual": "UNVERIFIED：执行动作偏离：点击目标误为 .help-faq__answer（未展开必 absent）而非 .help-faq__item，手风琴互斥序列未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP04",
+      "page": "subpackages/tools/help/index",
+      "operation": "tap 第一条 .help-contact__item（104-120）",
+      "expected": "顶栈=subpackages/chat/official-chat/index 且 query.accountId=official-assistant（goOnlineService，48-51）；500ms 内路由反馈",
+      "actual": "UNVERIFIED：.help-contact__item 采样 absent 与 act:tap 无报错自相矛盾，路由零变化，跳转 official-chat 无法归因页面或工具",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP04"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP05",
+      "page": "subpackages/tools/help/index",
+      "operation": "tap 第二条 .help-contact__item（122-138）",
+      "expected": "顶栈=subpackages/profile-extra/feedback/history（goFeedback→ROUTES.FEEDBACK_HISTORY，54-57；routes.ts:198）；500ms 内路由反馈",
+      "actual": "UNVERIFIED：同 HP04：采样/执行矛盾，路由零变化，跳转 feedback/history 未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP05"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP06",
+      "page": "subpackages/tools/help/index",
+      "operation": "tap 第三条 .help-contact__item（140-156，copyEmail）→ 读取剪贴板 → 采样 toast",
+      "expected": "setClipboardData 写入 APP_CONFIG.SUPPORT_EMAIL='support@campuslove.app'（59-71；config/app.ts:47），剪贴板内容断言为该邮箱而非 i18n 标签文本；success toast「已复制」（68；help.emailCopied）；lightHaptic 触发",
+      "actual": "UNVERIFIED：同 HP04 + pre:auto-nav ERR timeout；剪贴板内容与「已复制」toast 均无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP06"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP07",
+      "page": "subpackages/tools/help/index",
+      "operation": "两场景各 tap AppShell 返回按钮（75 show-back）",
+      "expected": "场景1 回来源页；场景2 走 AppShell 三级兜底最终落 /pages/home/index（AppShell.vue:118-144），永远有响应",
+      "actual": "UNVERIFIED：AppShell 返回按钮 automator 定位失败（tap 元素未找到），兜底链路未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP07"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP08",
+      "page": "subpackages/tools/help/index",
+      "operation": "500ms 内快击 FAQ 第 1 项 ×5，随后采样展开态与布局",
+      "expected": "toggleFaq 纯布尔取反（42-45）：奇数次点击（5）后该项处于展开态、其余收起；无重复弹层/布局错乱；每次点击均有 DOM 反馈（铁律无死按钮）",
+      "actual": "UNVERIFIED：observe-only：FAQ 快击×5 未执行，奇偶终态无记录",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP08"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "HP09",
+      "page": "subpackages/tools/help/index",
+      "operation": "清除 token 未登录直开",
+      "expected": "usePageAccess 未登录放行，不重定向，页面正常渲染，无 401",
+      "actual": "pre:logout ok；top 仍 help/index（无重定向✓）；console 空（无 401/异常）；渲染完整性由 HP01 巡检截图旁证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#HP09",
+        "reports/screenshots/round-1-tour/A/subpackages_tools_help_index__默认.png"
+      ],
+      "confidence": 0.6
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-C21-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/history",
+      "screenshot": "(A1 未采集成功；证据=exec-results.json#DH07 console 三条 error 落盘)",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "寻觅历史页在页面栈=1（reLaunch 直开）时点击返回键 .back-btn：goBack() 为裸 uni.navigateBack() 无 fail 兜底（history.vue:115-117），navigateBack:fail cannot navigate back at first page 产生 uni.onUnhandledRejection 并 captureException 上报，500ms 内路由/DOM/Toast/震动均无反馈，构成死按钮（R11 §5 铁律）+ 错误上报噪音。",
+      "evidence": [
+        "Manifest DH07 expected（次要21.json DH07 预设死按钮观测点）",
+        "A1 observed：act:tap .back-btn 后路由零变化、toast:[]、console [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page ×3（exec-results.json DH07）",
+        "源码：apps/client/src/subpackages/discover-extra/discover/history.vue:115-117 function goBack(){uni.navigateBack();} 无 fail 兜底"
+      ],
+      "sources": [
+        "interaction",
+        "code",
+        "log"
+      ],
+      "confidence": 0.85,
+      "ideal": "栈=1 时点击返回应有兜底落点（同类页 segment.vue:51-59 为 fail→uni.switchTab 首页口径）或静默吞掉 fail，不产生 unhandledRejection；点击 500ms 内有可观测反馈。",
+      "fix": "goBack 改为 uni.navigateBack({fail:()=>uni.switchTab({url:\"/pages/discover/index\"})})，与 segment.vue:51-59/people.vue:142-149 兜底口径对齐，消除栈底死按钮与错误上报。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C21-002",
+      "round": "R1",
+      "page": "subpackages/tools/daily-question/index",
+      "screenshot": "(A1 未采集成功；证据=exec-results.json#DQ12 console 三条 error 落盘)",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "每日一问页在页面栈=1（reLaunch 直开）时点击顶部返回 .dq-header__back：goBack() 裸 uni.navigateBack() 无 fail 兜底（daily-question/index.vue:78-80），产生 navigateBack:fail cannot navigate back at first page 的 unhandledRejection 并 captureException 上报，点击无任何用户可感知反馈，构成死按钮（R11 §5 铁律）。",
+      "evidence": [
+        "Manifest DQ12 expected（次要21.json DQ12 预设死按钮观测点）",
+        "A1 observed：act:tap .dq-header__back 后路由零变化、toast:[]、console [uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page ×3（exec-results.json DQ12）",
+        "源码：apps/client/src/subpackages/tools/daily-question/index.vue:78-80 function goBack(){uni.navigateBack();} 无 fail 兜底"
+      ],
+      "sources": [
+        "interaction",
+        "code",
+        "log"
+      ],
+      "confidence": 0.85,
+      "ideal": "栈=1 时点击返回应有兜底落点或静默处理，点击 500ms 内有可观测反馈，不产生 unhandledRejection。",
+      "fix": "goBack 补 fail 兜底（switchTab 首页或发现页），与 segment.vue:51-59 同口径。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C21-003",
+      "round": "R1",
+      "page": "(执行环境) mock 登录身份",
+      "screenshot": "(非页面缺陷；证据=exec-results.json 多条 pre:login 记录)",
+      "category": "Data",
+      "severity": "P2",
+      "description": "交互执行环境 mock 登录返回 userId=user-1001，与用例计划身份 A=100158(曦风)/B=100159(小新生) 不符（执行器自标 MISMATCH），且 A/B 两身份实际落入同一 user-1001：双身份互斥类前置（如 DQ03 签到额度错开）失效，全部「A/B 双身份各一份」覆盖要求仅巡检(tour)达成、交互执行未达成。",
+      "evidence": [
+        "exec-results.json：约 60 条记录含 pre:login A/B ok userId=user-1001 MISMATCH! 标记（含 DQ03 的 pre:login B ok userId=user-1001 MISMATCH!）",
+        "巡检 screenshot-manifest.json gitSha=aefd8a72 buildMode=build:mp-weixin:mock 的 A/ 与 B/ 双身份截图目录齐全（说明 tour 身份正确，差异仅在交互执行器登录链路)"
+      ],
+      "sources": [
+        "log"
+      ],
+      "confidence": 0.9,
+      "ideal": "mock 登录应按 tmp_r11_login.json/tmp_r11_guest.json 返回 100158/100159 两个可区分身份，A/B 前置互斥用例可独立重建。",
+      "fix": "检查交互执行器 mock 登录桩的 userId 映射（automation 注入 token 与 session.bootstrap 返回值），使 A/B 注入各自身份后重跑 DQ03 等身份互斥用例。",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "SG02|同校列表 .segment-row:absent（环境无 isSameSchool 数据），过滤与 slice(0,50) 截断无法验证；标题文本未采样|1",
+    "SG04|tap 首行后路由零变化（顶栈仍 segment），行内 .userId:absent 跳转分支未触发，after 截图 ERROR:timeout，无法区分死按钮/合法拦截/automator 点击未冒泡|1",
+    "SG05|.segment-header__back automator 采样 absent（类名与 segment.vue:120 一致，巡检截图证实按钮渲染），tap 未生效，两场景路由均未变化，兜底 switchTab 未验证|1",
+    "SG06|无法制造断网失败态：.segment-state__text/.segment-retry 均未出现（网络正常），tap .segment-retry element not found|1",
+    "SG08|六枚举参数矩阵未执行：observed 仅默认态采样（durationMs=2228，无逐枚举 reLaunch 与标题采样记录）|1",
+    "NP02|scope=city 路由达成但标题文本/活跃度→共同圈子排序/userId 去重均无采样证据，无法核实排序与去重|1",
+    "NP03|执行器跑错页面：act:switchTab /pages/nearby/index 后找 .people-tab 失败（类名实际存在于 people.vue:172,181），Tab 切换行为未在目标页执行|1",
+    "NP04|observe-only：同 Tab 连点×3 与请求计数观测未执行，无任何 act 记录|1",
+    "NP05|触底分页未执行：无 scrolltolower 触发与 .people-row 行数前后记录（仅 pageScrollTo top），截图 ERROR:timeout|1",
+    "NP06|.people-header__back automator 采样 absent（类名与 people.vue:162 一致，巡检截图证实按钮渲染），tap 未生效，兜底 switchTab 发现页未验证|1",
+    "NP07|onPullDownRefresh callMethod ok（触发证实），但真实重拉请求计数与 stopPullDownRefresh 收起无证据（.stopPullDownRefresh DOM 采样口径无效）|1",
+    "NP08|tap 行后路由零变化（顶栈仍 nearby/people），环境行 userId 缺失跳转分支未触发，截图 ERROR:timeout|1",
+    "NP09|无法制造断网失败态：.people-state__text/.people-state__retry 未出现，tap 重试 element not found|1",
+    "NP10|快速切换×5 未执行：observed 仅 act:wait 3000ms，无 Tab 连点与请求顺序记录，截图 ERROR:timeout|1",
+    "DH02|automator 不支持 swipe 手势（pre:swipe right unsupported no element api），无法产生浏览记录，统计与徽章验证未执行|1",
+    "DH03|前置不可达：swipe left unsupported 无 rejection 记录，.rewind-btn 不存在（before 截图 33669B 空态），挽回链路未执行|1",
+    "DH04|同 DH03：swipe 不支持导致无可挽回项，rapidTap .rewind-btn element not found，防连点未验证|1",
+    "DH05|同 DH03：无 rejection 项且断网不可制造，挽回失败分支未执行|1",
+    "DH06|无法制造断网：.history-error/.history-error__retry 均未出现，重试链路未执行|1",
+    "DH08|重复进出×3 未执行：observe-only 无往返动作与统计采样记录（仅 .dispose:absent 无效采样）|1",
+    "LK01|tap「手机号登录」后路由零变化，但绑定链完整（NotLoggedWaiting.vue:96→likes/index.vue:606→goPhoneLogin→openAppPath navigation.ts:124），无法区分 automator 文本节点 tap 不冒泡与修复回归，MP-R1-LIKES-102 复核未完成|1",
+    "LK03|前置制造残留状态失败（搜索框 input 元素未找到），tap「访客」执行但搜索清空/批量态消失/访客列表均无采样|1",
+    "LK04|observe-only：likedBy→myLikes→visitors→likedBy 往返切换未执行，步行数与滚动位无记录，截图 ERROR:timeout|1",
+    "LK05|输入执行但 300ms 防抖时序与过滤结果无采样；.likes-search__clear 采样 absent 与 act:tap 记录矛盾，searchEmpty 判定不可解释|1",
+    "LK06|特殊字符/超长输入未执行：input 元素未找到|1",
+    "LK07|tap 管理/完成均执行成功，但 checkbox 出现、批量栏+「已选 0 项」、进入清空已选均无 DOM 采样证据，批量 UI 出现性未证实|1",
+    "LK08|前置失败：批量模式未进入（tap「管理」文本定位失败；wxml 快照证实页面无批量栏/checkbox，likes-header__manage 存在），勾选与批量喜欢链路未执行|1",
+    "LK09|同 LK08：批量模式未进入（wxml 无批量栏），空提交 toast「请至少选择一个用户」链路未执行|1",
+    "LK10|observe-only：选中后快击「喜欢」×5 未执行，batchActions 调用次数无记录|1",
+    "LK11|.likes-unlock-bar:absent 证实封存态解锁栏不渲染，但环境列表无打码项（巡检截图全真实昵称），点击打码 toast「功能封存中」未验证|1",
+    "LK12|SKIPPED action-not-automatable：互喜/非互喜分支数据无法自动化构造|1",
+    "LK13|.likes-header__signal:present 证实入口渲染，但 observe-only tap 未执行，跳转 heart-signals 未验证，截图 ERROR:timeout|1",
+    "LK14|onPullDownRefresh callMethod ok（触发证实），但三源并发请求计数与 stopPullDownRefresh 收起无证据|1",
+    "LK15|无法制造断网：.likes-error 未出现，ErrorState 与重试链路未执行|1",
+    "LK16|.likes-header__back automator 采样 absent（类名与 likes/index.vue:618 一致，巡检截图证实返回键渲染），tap 未生效，栈=1 兜底 switchTab 首页未验证|1",
+    "LK17|前置失败：myLikes 批量「取消喜欢」按钮未找到（批量模式未进入），按钮组显隐与取消链路未执行|1",
+    "LV03|执行器跑错页面：act:switchTab /pages/profile/index 后找「我的访客」失败，Tab 切换与 badge 99+ 封顶未在目标页执行|1",
+    "LV04|环境列表无打码项（巡检截图全真实昵称；.list__avatar--blur/.list__lock absent，.list__name present），前置「存在 unlocked!==true 项」不成立，截图 ERROR:timeout|1",
+    "LV05|observe-only：点击打码项动作未执行，封存 toast 与无扣费请求未验证|1",
+    "LV07|manifest 预设：默认封存环境执行不到解锁弹窗分支（wxml 证实无 unlock-bar），需 commerce.coin=true 环境重跑|1",
+    "LV08|SKIPPED action-not-automatable：互喜/普通已解锁项分支无法自动化构造|1",
+    "LV09|.page-header__back automator 采样 absent（类名与 likes-visitors/index.vue:315 一致），tap 未生效，兜底 switchTab 首页未验证|1",
+    "LV10|重复进出×3 未执行：observe-only（仅 .loading:present 采样），fetchLikes/fetchVisitors 触发计数无记录|1",
+    "DQ03|前置不可达：mock 登录 A/B 均返回 user-1001（MISMATCH），DQ02 已消耗该用户签到且状态不持久，沿用会话时锁定卡已消失（.lock-card__cta:absent），防连点场景无法重建|1",
+    "DQ05|reLaunch 直开时签到态丢失（mock 后端不持久 checkedInToday，checkIn.ts 后端权威），wxml 证实页面停锁定卡（仅 lock-card×6，无 input/submit-btn），回答输入区不存在|1",
+    "DQ06|同 DQ05：.submit-btn:absent（wxml 仅锁定卡），快击防连点场景无法执行|1",
+    "DQ07|同 DQ05：input 目标不存在（锁定卡态），600 字截断与特殊字符回显未执行|1",
+    "DQ08|同 DQ05：.anonymous-toggle:absent（wxml 仅锁定卡），勾选切换未执行|1",
+    "DQ09|同 DQ05 且需已回答前置：.answer-card/.answers-load-more absent，分页未执行|1",
+    "DQ10|滚动执行（scrollPos=bottom）但 loadMoreAnswers 触发与请求页码序列无记录，guard 行为未验证|1",
+    "DQ11|无法制造拉题失败：.dq-state/.dq-state__retry 未出现，重试链路未执行|1",
+    "LC02|tap .love-center__quick 后路由零变化；同页 LC03/LC04 出现 navigateTo:fail timeout（环境导航超时），无法归因死按钮或环境故障|1",
+    "LC03|tap 触发 navigateTo:fail timeout unhandledRejection（console 3 条 error），mbti(web-view) 未入栈；环境导航超时无法判定页面本身；导航失败无用户反馈的隐患一并记录|1",
+    "LC04|manifest 预设：默认封存环境四板块不渲染（LC01 证实 loveConsulting absent），执行器 tap 到的「恋爱咨询」为 AppShell 标题文本，navigateTo:fail timeout 为环境现象|1",
+    "LC05|AppShell 返回按钮 automator 定位失败（tap 元素未找到；巡检截图证实「< 返回」按钮渲染），三级兜底未验证|1",
+    "LC06|rapidTap ×3 执行（done=3）但栈深度不变（未入栈），与 LC03 navigateTo:fail timeout 一致属环境导航超时，重复入栈行为无法验证|1",
+    "HP02|tap FAQ×2 执行但展开中间态无采样：终态 answer absent 无法区分「展开后收起」与「从未展开」，截图 ERROR:timeout|1",
+    "HP03|执行动作偏离：点击目标误为 .help-faq__answer（未展开必 absent）而非 .help-faq__item，手风琴互斥序列未执行|1",
+    "HP04|.help-contact__item 采样 absent 与 act:tap 无报错自相矛盾，路由零变化，跳转 official-chat 无法归因页面或工具|1",
+    "HP05|同 HP04：采样/执行矛盾，路由零变化，跳转 feedback/history 未验证|1",
+    "HP06|同 HP04 + pre:auto-nav ERR timeout；剪贴板内容与「已复制」toast 均无证据|1",
+    "HP07|AppShell 返回按钮 automator 定位失败（tap 元素未找到），兜底链路未验证|1",
+    "HP08|observe-only：FAQ 快击×5 未执行，奇偶终态无记录|1"
+  ],
+  "notes": "1) 判定基线：Manifest=reports/audit/round-1/ops/次要21.json（expected 权威）、A1=reports/audit/round-1/interact/exec-results.json（observed 权威，gitSha aefd8a72）、截图=round-1-interact/ 操作截图+wxml 快照与 round-1-tour/A|B 巡检截图（同 gitSha）。2) A1 交互执行普遍 pre:login MISMATCH（user-1001≠100158/100159）且 A/B 同身份（Issue MP-R1-C21-003）；LK02/LV02 的 A1 记录无 login 前置（页面停未登录/LockScreen 态致采样全 absent），其 expected 以同 gitSha 巡检登录态截图证实后判 VERIFIED（置信 0.65）。3) DH07/DQ12 为本次确证缺陷：栈底返回死按钮+unhandledRejection（console 铁证+源码裸 navigateBack 无兜底）。4) DQ05 系列前置不可达归因 mock 后端不持久 checkedInToday（apps/client/src/stores/checkIn.ts:30-34 后端权威字段），非页面缺陷。5) LC02/LC03/LC06 的 love-center 子页跳转在本环境 navigateTo:fail timeout（mbti 为 web-view），导航失败无用户反馈的 UX 隐患建议在可联网环境复核后再定级。6) automator 已知局限影响面：跨自定义组件(SectionCard/AppShell)内元素采样 absent（HP01/HP04-HP06/LC05/HP07）、文本节点 tap 不触发父级 @tap（LK01/LK08/LK09）、swipe 手势不支持（DH02-DH05）、断网故障注入不可用（SG06/NP09/DH06/LK15/DQ11）。"
+}

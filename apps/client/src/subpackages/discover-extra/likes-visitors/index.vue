@@ -136,6 +136,17 @@ function switchTab(key: string) {
   activeTab.value = key as "likedMe" | "visitors";
 }
 
+// MP-R1-LSV-001：错误态「重试」按钮此前无 @retry 监听（emit 无监听为 no-op），
+// 网络失败后点重试零反馈；对齐 likes/index.vue:703 口径补 retryLoad
+function retryLoad(): void {
+  void likesStore.fetchLikes().catch(() => {
+    /* store 已记录 errorMessage，页面错误态展示 */
+  });
+  void likesStore.fetchVisitors().catch(() => {
+    /* 同上 */
+  });
+}
+
 /** 单条记录是否已解锁（服务端 unlocked 字段；缺失按未解锁处理） */
 function isItemUnlocked(item: LikeRecord | VisitorRecord): boolean {
   return item.unlocked === true;
@@ -367,7 +378,8 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
     </view>
 
     <!-- 错误态 -->
-    <ErrorState v-if="errorMessage && currentList.length === 0" :message="errorMessage" />
+    <!-- MP-R1-LSV-001：补 @retry="retryLoad"（原重试按钮点击零响应） -->
+    <ErrorState v-if="errorMessage && currentList.length === 0" :message="errorMessage" @retry="retryLoad" />
 
     <!-- 加载中 -->
     <view v-else-if="loading" class="list">

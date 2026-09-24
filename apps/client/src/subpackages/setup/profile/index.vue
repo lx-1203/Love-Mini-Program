@@ -41,8 +41,13 @@ import {
   saveIdentity,
   type UserIdentity,
 } from "../../../config/identity";
+// MP-R1-SETUPPROFILE-001：注入 --statusbar——全局 navigationStyle=custom 下页面自
+// y=0 布局，固定定位的返回键/标题组（88rpx/208rpx）在状态栏 >44px 机型压入系统
+// 时间/电量区；与注册页 MP-R2-PAGES-REGISTER-INDEX-002 修复同构
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 
 const ICONS = IMAGE_PATHS.REGISTER_ICONS;
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
@@ -624,7 +629,7 @@ async function save() {
 </script>
 
 <template>
-  <view class="edit-page">
+  <view class="edit-page" :style="menuStyleVars">
     <!-- 页头：注册页同款插图全出血 + 底部渐隐 -->
     <view class="hero">
       <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
@@ -1058,7 +1063,8 @@ async function save() {
 .hero__back {
   position: absolute;
   left: 32rpx;
-  top: 88rpx;
+  /* MP-R1-SETUPPROFILE-001：补偿状态栏高度（固定 88rpx 在 >44px 机型压入系统区域） */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 88rpx);
   width: 68rpx;
   height: 68rpx;
   border-radius: 50%;
@@ -1081,7 +1087,8 @@ async function save() {
 .hero__txt {
   position: absolute;
   left: 48rpx;
-  top: 208rpx;
+  /* MP-R1-SETUPPROFILE-001：同上，标题组随状态栏下移 */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 208rpx);
   display: flex;
   flex-direction: column;
   z-index: 2;

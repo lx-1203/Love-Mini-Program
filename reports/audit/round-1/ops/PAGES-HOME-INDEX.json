@@ -1,0 +1,594 @@
+{
+  "cases": [
+    {
+      "id": "H01",
+      "page": "pages/home/index",
+      "title": "顶部「我的」头像入口 → 我的页（tab）",
+      "tier": "navigation",
+      "pre": "身份A（100158 曦风）mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，isLoggedIn=true 校验通过）→ wx.reLaunch('/pages/home/index')，等待首页首拉完成",
+      "action": "tap .header-me（HomeHeader.vue:60，aria-label=本人昵称，56rpx 圆头像钮）",
+      "expected": "500ms 内 uni.switchTab 路由至 /pages/profile/index（ROUTES.PROFILE.INDEX，openAppPath 识别 tab 页自动 switchTab）；getCurrentPages 栈顶 route=pages/profile/index；首页在 tab 栈中不销毁",
+      "evidence": "navigation：getCurrentPages 路由链断言（目标 /pages/profile/index）；返回后落点断言；可免截图"
+    },
+    {
+      "id": "H02",
+      "page": "pages/home/index",
+      "title": "顶部定位胶囊 → 弹出「我的位置」BottomSheet + tabBar 自动隐藏",
+      "tier": "normal",
+      "pre": "身份A 已登录（同 H01 注入流程）→ reLaunch('/pages/home/index') 数据就绪",
+      "action": "tap .header-location（HomeHeader.vue:63，aria-label=定位，文本=locationText）",
+      "expected": "500ms 内 .bottom-sheet-root 出现：面板自底部滑入，标题「我的位置」+ handle 棒 + 右上×；当前位置文案=locationText、校区行=campusName/未认证；自定义 tabBar 自动隐藏（BottomSheet watch → setTabBarHidden(true)，BottomSheet.vue:50-55）；footer「重新定位」先短暂呈「定位中...」后复位（openLocationSheet→refetchLocation，locating=true→finally false）",
+      "evidence": "normal：after 截图（弹层展开态）+ 路由断言（仍在 pages/home/index）+ console 过滤（NAV_FAIL/TypeError/is not defined）"
+    },
+    {
+      "id": "H03",
+      "page": "pages/home/index",
+      "title": "顶部铃铛 → 消息页（tab）",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch('/pages/home/index') 数据就绪",
+      "action": "tap .header-icon（HomeHeader.vue:67，aria-label=通知）",
+      "expected": "500ms 内 goMessages → uni.switchTab(ROUTES.TAB.CHAT) 路由至 /pages/messages/index；getCurrentPages 栈顶 route=pages/messages/index",
+      "evidence": "navigation：getCurrentPages 路由链断言；返回落点=首页"
+    },
+    {
+      "id": "H04",
+      "page": "pages/home/index",
+      "title": "通知角标数值三态（0 隐藏 / 1..99 原值 / >99 显 99+）",
+      "tier": "normal",
+      "pre": "身份A 已登录（onShow 触发 messagesStore.bootstrap 拉未读数，HomeHeader notifyBadge=unreadNotificationCount）。条件用例：角标值由后端未读数决定；>99 形态如无法构造则标注 UNVERIFIED",
+      "action": "观察 .header-badge（不打点）；如需构造：注入 1 条未读通知后 switchTab 离开再回（触发 onShow bootstrap 刷新）",
+      "expected": "未读=0 时 .header-badge 不渲染（v-if notifyBadge>0）；1..99 显示原始数字；>99 显示「99+」（HomeHeader.vue:70-72）；不再出现历史静态演示值「6」",
+      "evidence": "normal：after 截图（角标可见态）+ console（bootstrap 未报错）+ 未读数与角标一致性记录；0 态与 >99 态无法构造时如实标 UNVERIFIED"
+    },
+    {
+      "id": "H05",
+      "page": "pages/home/index",
+      "title": "今日推荐·照片区点击 → 他人主页（800ms 防抖锁）",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，今日推荐 item 非空（.today-card__body 渲染）",
+      "action": "tap .today-card__photo-wrap（TodayRecommendationCard.vue:44，press-feedback hover；photo 右下有合拍度徽章）",
+      "expected": "500ms 内 goTodayProfile → openUserProfile(item.userId) → navigateTo /subpackages/profile-extra/profile/other?userId={item.userId}；todayNavLock 800ms 窗口内连点仅 1 次导航；item.userId 为空时守卫不跳（openUserProfile R16 拦截）",
+      "evidence": "navigation：getCurrentPages 断言目标 route=subpackages/profile-extra/profile/other 且 query.userId=item.userId；返回落点=首页"
+    },
+    {
+      "id": "H06",
+      "page": "pages/home/index",
+      "title": "今日推荐·信息区（姓名/meta/简介）点击 → 他人主页",
+      "tier": "navigation",
+      "pre": "同 H05",
+      "action": "tap .today-card__info（TodayRecommendationCard.vue:67，role=button aria-label=查看{name}主页）",
+      "expected": "同 H05：navigateTo /subpackages/profile-extra/profile/other?userId={item.userId}，仅 1 层入栈",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H07",
+      "page": "pages/home/index",
+      "title": "今日推荐「看看TA」按钮 → 他人主页（@tap.stop 不双跳）",
+      "tier": "navigation",
+      "pre": "同 H05",
+      "action": "tap .today-card__btn--outline（TodayRecommendationCard.vue:79，@tap.stop）",
+      "expected": "navigateTo /subpackages/profile-extra/profile/other?userId={item.userId}；@tap.stop 阻断冒泡，页面栈仅新增 1 层（不叠加 info 区二次 view 事件）",
+      "evidence": "navigation：getCurrentPages 断言栈深 +1 且栈顶为 profile/other"
+    },
+    {
+      "id": "H08",
+      "page": "pages/home/index",
+      "title": "今日推荐「喜欢」→ toast 已喜欢 + 快击5次仅提交1次",
+      "tier": "critical",
+      "pre": "身份A 已登录 → reLaunch 首页，推荐人 item 非空；记录动作前截图基线",
+      "action": "快击 5 次 .today-card__btn--love（间隔<100ms，TodayRecommendationCard.vue:80 @tap.stop → page likeToday）",
+      "expected": "likeLoading 防重入使 clientApi.likeUser(item.userId) 仅发起 1 次（网络计数=1）；成功 toast「已喜欢」（icon success，zh-CN discover.likeSent:923）；按钮 loading 期 opacity 0.6 后恢复；接口失败改 toast「操作失败，请重试」（apiErrors.operationFailed:3889）且无未处理 Promise 拒绝；注：likeSent 内部置位但未绑定 UI，按钮无持久视觉态（如实记录现状）",
+      "evidence": "critical：before+after 截图 + 路由断言（停留首页）+ Toast 文案捕获（「已喜欢」）+ console（likeUser 请求计数=1、无 TypeError/NAV_FAIL）"
+    },
+    {
+      "id": "H09",
+      "page": "pages/home/index",
+      "title": "今日推荐「↻ 换一位」→ 推荐人更换 + 快击5次仅1次请求",
+      "tier": "critical",
+      "pre": "身份A 已登录 → reLaunch 首页，推荐池余量>1；记录动作前推荐人姓名/照片截图",
+      "action": "快击 5 次 .today-card__rotate（TodayRecommendationCard.vue:37 → page rotateToday）",
+      "expected": "rotateLoading 防重入使 homeStore.rotateTodayRecommendation 仅发起 1 次；成功后推荐人姓名/照片/meta 变化（homeFeed.todayRecommendation 替换），内部 likeSent 重置（无 UI 持久态）；失败 toast「操作失败，请重试」且推荐人保持不变（try/catch 同口径，MP-R1-PAGES-HOME-INDEX-002 回归）",
+      "evidence": "critical：before+after 截图（换人前后对比）+ 路由断言（停留首页）+ Toast 文案（成功无 toast/失败「操作失败，请重试」）+ console（rotate 请求计数=1、无 Uncaught rejection）"
+    },
+    {
+      "id": "H10",
+      "page": "pages/home/index",
+      "title": "换一位到推荐池底 → toast 暂无更多推荐",
+      "tier": "normal",
+      "pre": "条件用例：需 rotateTodayRecommendation 返回 null（池耗尽）——mock 注入空池或连续执行 H09 直至池底",
+      "action": "tap .today-card__rotate（池已空时）",
+      "expected": "toast「暂无更多推荐，稍后再来看看」（home.noMoreRecommendation:509，icon none）；当前推荐人保留不清空；rotateLoading 复位可再点；console 无未处理拒绝",
+      "evidence": "normal：after 截图（推荐人未变+toast）+ 路由断言 + console；池底无法构造时如实标 UNVERIFIED"
+    },
+    {
+      "id": "H11",
+      "page": "pages/home/index",
+      "title": "今日推荐七态观测：冷启动 Loading 骨架 → Success/Empty，严禁闪现错误空态",
+      "tier": "noop",
+      "pre": "身份A 已登录；wx.reLaunch('/pages/home/index') 冷启动深链",
+      "action": "启动后 0s/0.5s/1s 三次 DOM 采样（evaluate 取 .today-card__skeleton / .today-card__body / .today-card__empty 存在性）",
+      "expected": "loading=true 时显示「正在为你挑选心动的人…」骨架；成功渲染照片（photoFailed 时 @error 切 POST_PLACEHOLDER 占位不留永久灰底）/姓名/meta/tags/合拍度徽章；item=null 且 loading=false 时空态「今天暂时没有合适的推荐，晚一点再来看看」；全程不得闪现错误/报错态空屏（冷启动铁律）；meta 行无「25岁 ·」类残尾点（R21）",
+      "evidence": "noop：执行日志（三时刻 DOM 采样记录 + console 全量过滤）"
+    },
+    {
+      "id": "H12",
+      "page": "pages/home/index",
+      "title": "恋爱进度·步骤卡「完善资料」→ 我的页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，.love-progress__steps 渲染 ≥1 步骤卡",
+      "action": "tap 第 1 张 .love-step（TodayLoveProgress.vue:79 @tap emit step；该 step.action=profile）",
+      "expected": "500ms 内 handleLoveStep('profile') → uni.switchTab(/pages/profile/index)；栈顶 route=pages/profile/index",
+      "evidence": "navigation：getCurrentPages 路由链断言；返回落点=首页"
+    },
+    {
+      "id": "H13",
+      "page": "pages/home/index",
+      "title": "恋爱进度·步骤卡「认识新人」→ 寻觅页",
+      "tier": "navigation",
+      "pre": "同 H12",
+      "action": "tap step.action=discover 的 .love-step",
+      "expected": "uni.switchTab(/pages/discover/index)（handleLoveStep index.vue:190）；栈顶 route=pages/discover/index",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H14",
+      "page": "pages/home/index",
+      "title": "恋爱进度·步骤卡「回复悄悄话」→ 消息页",
+      "tier": "navigation",
+      "pre": "同 H12；注：步骤 action 值由后端 feed 下发，执行时先 evaluate 读取实际 step.action 值",
+      "action": "tap step.action=messages（whisper 步骤）的 .love-step",
+      "expected": "uni.switchTab(/pages/messages/index)（handleLoveStep index.vue:191）；若后端下发超出 profile/discover/messages/nearby 四值的 action 则点击无响应——如实记录实际 action 值并标注（无反馈即死按钮缺陷候选）",
+      "evidence": "navigation：getCurrentPages 路由链断言 + step.action 实际值记录"
+    },
+    {
+      "id": "H15",
+      "page": "pages/home/index",
+      "title": "恋爱进度·步骤卡「参与兴趣互动」→ 附近页",
+      "tier": "navigation",
+      "pre": "同 H12",
+      "action": "tap step.action=nearby 的 .love-step",
+      "expected": "uni.switchTab(/pages/nearby/index)（handleLoveStep index.vue:192）；栈顶 route=pages/nearby/index",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H16",
+      "page": "pages/home/index",
+      "title": "恋爱进度「?」帮助圆点：无处理器点击取证（死按钮核查）",
+      "tier": "noop",
+      "pre": "身份A 已登录 → reLaunch 首页",
+      "action": "tap .love-progress__help（TodayLoveProgress.vue:69-71，灰圆底「?」文字）",
+      "expected": "现状源码无 @tap/role=button（仅装饰 view）：点击无任何反馈；若验收认定其外观具有可点击性，记「死按钮」缺陷候选交判定员裁定（本用例只取证不判缺陷）",
+      "evidence": "noop：执行日志（tap 前后 DOM/console 无变化记录）"
+    },
+    {
+      "id": "H17",
+      "page": "pages/home/index",
+      "title": "关系动态「全部 ›」→ 消息页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，RelationActivity 非 loading 态",
+      "action": "tap .relation-activity__all（RelationActivity.vue:22）",
+      "expected": "500ms 内 goMessages → switchTab /pages/messages/index；栈顶 route=pages/messages/index",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H18",
+      "page": "pages/home/index",
+      "title": "关系动态·「人喜欢了你」cell → 喜欢我的页",
+      "tier": "navigation",
+      "pre": "同 H17",
+      "action": "tap .relation-cell 第 1 格（RelationActivity.vue:34，aria-label=查看 N 个喜欢我的人）",
+      "expected": "openRelationLikedBy → navigateTo /subpackages/discover-extra/likes-visitors/index（ROUTES.LIKES.VISITORS_LIKES）；跳转失败时 toast「页面打开失败，请重试」（fail 回调兜底）",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/discover-extra/likes-visitors/index；fail toast 场景记录 console"
+    },
+    {
+      "id": "H19",
+      "page": "pages/home/index",
+      "title": "关系动态·「条悄悄话」cell → 消息页（tab 自动转 switchTab）",
+      "tier": "navigation",
+      "pre": "同 H17",
+      "action": "tap .relation-cell 第 2 格（RelationActivity.vue:45）",
+      "expected": "openRelationWhispers → openAppPath(ROUTES.MESSAGES.INDEX=/pages/messages/index)；isTabPath 命中自动 switchTab（navigation.ts:63-93）；栈顶 route=pages/messages/index",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H20",
+      "page": "pages/home/index",
+      "title": "关系动态·「人看过你」cell → 访客页",
+      "tier": "navigation",
+      "pre": "同 H17",
+      "action": "tap .relation-cell 第 3 格（RelationActivity.vue:56）",
+      "expected": "navigateTo /subpackages/profile-extra/profile/visitors（ROUTES.PROFILE.VISITORS）；失败 toast「页面打开失败，请重试」",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/profile-extra/profile/visitors"
+    },
+    {
+      "id": "H21",
+      "page": "pages/home/index",
+      "title": "关系动态·「个新匹配」cell → 喜欢页",
+      "tier": "navigation",
+      "pre": "同 H17",
+      "action": "tap .relation-cell 第 4 格（RelationActivity.vue:67）",
+      "expected": "navigateTo /subpackages/discover-extra/likes/index（ROUTES.LIKES.INDEX）；失败 toast「页面打开失败，请重试」",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/discover-extra/likes/index"
+    },
+    {
+      "id": "H22",
+      "page": "pages/home/index",
+      "title": "关系动态 4 格按压反馈与命中区回归（pointer-events=none 历史）",
+      "tier": "normal",
+      "pre": "同 H17",
+      "action": "对 .relation-cell 第 2 格按下不抬起 ≥100ms（截图）后抬起触发 tap；四格逐一同法验证 tap 均可达",
+      "expected": "按下即呈 hover-class relation-cell--active（背景 #DFF3EA + scale 0.97，RelationActivity.vue:126-129）500ms 内可观测；吉祥物 image pointer-events=none 不吃 hit-area，4 格 tap 全部响应（历史「仅第 1 格可点」不复发）",
+      "evidence": "normal：按压态 after 截图 + 4 格路由结果记录 + console"
+    },
+    {
+      "id": "H23",
+      "page": "pages/home/index",
+      "title": "兴趣推荐「查看更多 ›」→ 圈子首页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，InterestRecommendation 非 loading",
+      "action": "tap .interest-recommend .section-head__more（InterestRecommendation.vue:39 emit more）",
+      "expected": "500ms 内 navigateTo /subpackages/circles/circles/index（ROUTES.CIRCLES.INDEX，index.vue:367）",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/circles/circles/index"
+    },
+    {
+      "id": "H24",
+      "page": "pages/home/index",
+      "title": "兴趣推荐·圈子卡片点击 → 圈子主页（固化参 circleId=8）",
+      "tier": "navigation",
+      "pre": "同 H23；冒烟目标按 scripts/r11-param-map.json 固化：subpackages/circles/circles/circle-home?circleId=8",
+      "action": "tap 第 1 张 .interest-card（InterestRecommendation.vue:51 emit select；避开 .interest-card__join 区域）",
+      "expected": "openCircle(item.id) → navigateTo /subpackages/circles/circles/circle-home?circleId={卡片id}（encodeURIComponent 包裹，index.vue:197）；固化冒烟验证 circleId=8 目标页正常打开",
+      "evidence": "navigation：getCurrentPages 断言 route 与 query.circleId=卡片 id；circleId=8 冒烟路由记录"
+    },
+    {
+      "id": "H25",
+      "page": "pages/home/index",
+      "title": "兴趣圈「加入」→ 按钮翻已加入+人数同步+toast 操作成功+快击5次仅1次",
+      "tier": "critical",
+      "pre": "身份A 已登录；存在 joined=false 的推荐圈子卡（.interest-card__join 文案=「加入」）；动作前截图基线",
+      "action": "快击 5 次 .interest-card__join（InterestRecommendation.vue:71 @tap.stop → page joinCircle）",
+      "expected": "joinPendingIds 防重入使 circleStore.joinCircle 仅 1 次请求；成功：该卡按钮立即翻「已加入」（浅绿底 joined 样式）、memberCount 与圈子 store 同步（消除人数漂移）、toast「操作成功」（common.success:16，icon success）；失败：toast「操作失败，请重试」且按钮保持「加入」（MP-R1-HOME-016 回归：不再零反馈）",
+      "evidence": "critical：before+after 截图（加入前后按钮态）+ 路由断言（停留首页）+ Toast 文案捕获 + console（join 请求计数=1）"
+    },
+    {
+      "id": "H26",
+      "page": "pages/home/index",
+      "title": "加入圈子失败路径 → toast 操作失败且按钮不翻转",
+      "tier": "normal",
+      "pre": "条件用例：注入 joinCircle 拒绝（mock 失败分支/断网）后进入首页",
+      "action": "tap .interest-card__join（未加入态）",
+      "expected": "toast「操作失败，请重试」；按钮保持「加入」、人数不变；finally 清理 pending 后可再次点击重试；无未处理 Promise 拒绝",
+      "evidence": "normal：after 截图（失败 toast+按钮未翻转）+ 路由断言 + console；失败注入不可行时如实标 UNVERIFIED"
+    },
+    {
+      "id": "H27",
+      "page": "pages/home/index",
+      "title": "兴趣推荐横滑 scroll-view 到底/回弹",
+      "tier": "noop",
+      "pre": "同 H23",
+      "action": "对 .interest-scroll 连续左滑 2 次后采样 scrollLeft，再右滑回 0",
+      "expected": "scrollLeft 随滑动递增可达最后一卡；不越界回弹；卡片间距/圆角无撕裂；console 无错误",
+      "evidence": "noop：执行日志（scrollLeft 采样值 + console）"
+    },
+    {
+      "id": "H28",
+      "page": "pages/home/index",
+      "title": "附近的人「全部 ›」→ 附近列表页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，NearbyPeople 非 loading",
+      "action": "tap .nearby-people .section-head__more（NearbyPeople.vue:37 emit more）",
+      "expected": "openNearbyList → navigateTo /subpackages/discover-extra/nearby/people（ROUTES.NEARBY.PEOPLE）；失败 toast「页面打开失败，请重试」（fail 回调，index.vue:271-278）",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/discover-extra/nearby/people"
+    },
+    {
+      "id": "H29",
+      "page": "pages/home/index",
+      "title": "附近的人·头像项点击 → 他人主页",
+      "tier": "navigation",
+      "pre": "同 H28，附近列表 items.length>0",
+      "action": "tap 第 1 个 .nearby-item（NearbyPeople.vue:51，aria-label=查看{name}主页）",
+      "expected": "openUserProfile(item.userId) → navigateTo /subpackages/profile-extra/profile/other?userId={userId}；userId 空/undefined/null 时守卫不跳（navigation.ts:303-309）",
+      "evidence": "navigation：getCurrentPages 断言 route 与 query.userId"
+    },
+    {
+      "id": "H30",
+      "page": "pages/home/index",
+      "title": "附近底部「附近有 N 位值得认识的人」bar → 附近列表页（N=真实数）",
+      "tier": "navigation",
+      "pre": "同 H28，items.length>0（bar 仅在有数据时渲染）",
+      "action": "tap .nearby-people__bar（NearbyPeople.vue:73，hover press-feedback）",
+      "expected": "同 H28 目标页 /subpackages/discover-extra/nearby/people；bar 文案 N 与 evaluate 读取的 items.length 一致（无 Math.max(…,4) 保底伪造，MP-R2-PAGES-HOME-INDEX-005 回归）",
+      "evidence": "navigation：getCurrentPages 断言 + N 与 items.length 一致性记录"
+    },
+    {
+      "id": "H31",
+      "page": "pages/home/index",
+      "title": "附近头像加载失败兜底默认头像（防无限回退）",
+      "tier": "normal",
+      "pre": "条件用例：将某 .nearby-item__avatar 的 src 置为失效地址（或断网加载）触发 @error",
+      "action": "触发 .nearby-item__avatar @error（NearbyPeople.vue:57-63 onNearbyAvatarError）",
+      "expected": "dataset.fallbackApplied 置 1，src 切默认头像（DEFAULT_AVATAR），仅回退 1 次（无 error 循环刷屏）；界面显示默认头像而非破图/灰底",
+      "evidence": "normal：after 截图（兜底头像态）+ console（error 次数=1 不循环）"
+    },
+    {
+      "id": "H32",
+      "page": "pages/home/index",
+      "title": "附近的人横滑 scroll-view",
+      "tier": "noop",
+      "pre": "同 H28",
+      "action": "对 .nearby-scroll 左滑至末尾采样 scrollLeft 后回 0",
+      "expected": "scrollLeft 递增可达最后一人；回弹不越界；console 无错误",
+      "evidence": "noop：执行日志（scrollLeft 采样 + console）"
+    },
+    {
+      "id": "H33",
+      "page": "pages/home/index",
+      "title": "社区动态「查看更多 ›」→ 村口动态流列表页（非发帖页）",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页，CommunityFeed 非 loading/非 error",
+      "action": "tap .community-feed .section-head__more（CommunityFeed.vue:138 emit more）",
+      "expected": "openCommunity → navigateTo /subpackages/village/village/index（index.vue:314-317；R21 回归点：不得误跳发帖页 post）",
+      "evidence": "navigation：getCurrentPages 断言 route=subpackages/village/village/index"
+    },
+    {
+      "id": "H34",
+      "page": "pages/home/index",
+      "title": "社区动态·帖子卡点击 → 帖子详情（固化参 id=1）",
+      "tier": "navigation",
+      "pre": "同 H33；冒烟目标按 r11-param-map.json 固化：subpackages/village/village/detail?id=1",
+      "action": "tap 第 1 张 .post-card 卡片空白区（避开作者区/关注钮，CommunityFeed.vue:164 emit select）",
+      "expected": "openPost(post.id) → navigateTo /subpackages/village/village/detail?id={postId}（encodeURIComponent 包裹）；固化冒烟 id=1 详情页正常打开",
+      "evidence": "navigation：getCurrentPages 断言 route 与 query.id；id=1 冒烟路由记录"
+    },
+    {
+      "id": "H35",
+      "page": "pages/home/index",
+      "title": "帖子卡·作者头像点击 → 他人主页（@tap.stop）",
+      "tier": "navigation",
+      "pre": "同 H33，取 authorId 非空的帖子",
+      "action": "tap .post-card__author-tap（CommunityFeed.vue:167-172 @tap.stop onAuthorTap）",
+      "expected": "emit openAuthor → openUserProfile(authorId) → navigateTo /subpackages/profile-extra/profile/other?userId={authorId}；不冒泡触发帖子详情双跳（栈深 +1）；authorId=null 时 role 置空、tap 短路不跳（MP-R1-HOME-015）",
+      "evidence": "navigation：getCurrentPages 断言栈深 +1 且栈顶 profile/other、query.userId=authorId"
+    },
+    {
+      "id": "H36",
+      "page": "pages/home/index",
+      "title": "帖子卡·作者昵称区点击 → 他人主页",
+      "tier": "navigation",
+      "pre": "同 H35",
+      "action": "tap .post-card__author（昵称+圈子+时间区，CommunityFeed.vue:176-187 @tap.stop）",
+      "expected": "同 H35 目标页与守卫；无重复导航（两处 @tap.stop 独立触发）",
+      "evidence": "navigation：getCurrentPages 路由链断言"
+    },
+    {
+      "id": "H37",
+      "page": "pages/home/index",
+      "title": "帖子「关注」→ 已关注 + 服务端持久（重进仍已关注）",
+      "tier": "critical",
+      "pre": "身份A 已登录；目标帖作者当前未关注（文案=「关注」）；动作前截图基线；若已关注先执行 H38",
+      "action": "tap .post-card__follow（CommunityFeed.vue:190-201 @tap.stop onFollow，文案「关注」）",
+      "expected": "按钮翻「已关注」灰底灰字（followedIds.add）；不冒泡触发帖子详情（MP-R1-HOME-014 回归）；持久性：switchTab 离开首页超 30s 再回（或重进），按钮仍「已关注」（onMounted getMyFollowing 初始化回放，CommunityFeed.vue:71-87）；失败 toast「操作失败，请重试」且状态回滚",
+      "evidence": "critical：before+after 截图（关注前后按钮态）+ 路由断言 + Toast 文案 + console（followUser 请求与 getMyFollowing 回放记录）"
+    },
+    {
+      "id": "H38",
+      "page": "pages/home/index",
+      "title": "已关注作者「已关注」→ 取消关注回「关注」",
+      "tier": "critical",
+      "pre": "同 H37 前置，作者当前已关注（文案=「已关注」，可先执行 H37 制备）",
+      "action": "tap .post-card__follow（文案「已关注」）",
+      "expected": "unfollowUser 发起，按钮回「关注」绿字浅绿底（followedIds.delete）；失败 toast「操作失败，请重试」且保持「已关注」；pending 清理后可再点",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案 + console（unfollowUser 请求记录）"
+    },
+    {
+      "id": "H39",
+      "page": "pages/home/index",
+      "title": "关注按钮快击5次仅提交1次（防连点）",
+      "tier": "critical",
+      "pre": "同 H37（未关注态起手）",
+      "action": "快击 5 次 .post-card__follow（间隔<100ms）",
+      "expected": "followPendingIds 守卫下 followUser 仅 1 次请求；终态唯一为「已关注」（或失败回滚「关注」），无 1/2/3…次重复提交与中间态残留；按钮按压态 hover post-card__follow--pressed 正常",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案 + console（请求计数=1）"
+    },
+    {
+      "id": "H40",
+      "page": "pages/home/index",
+      "title": "社区动态错误态「重试」→ 重拉 dashboard 恢复",
+      "tier": "normal",
+      "pre": "条件用例：注入 homeFeed 拉取失败（断网/后端 500 使 errorMessage 非空）后进入首页，CommunityFeed 呈错误卡（「动态加载失败：{error}」+ 绿色「重试」钮）",
+      "action": "tap .community-feed__retry（CommunityFeed.vue:156 emit retry → homeStore.fetchDashboard）",
+      "expected": "重拉发起（网络可见 /home/dashboard）；成功后错误卡消失恢复帖子列表；loading 防重入不双拉；console 无未处理拒绝",
+      "evidence": "normal：after 截图（恢复后列表）+ 路由断言 + console（重拉请求记录）；错误注入不可行时如实标 UNVERIFIED"
+    },
+    {
+      "id": "H41",
+      "page": "pages/home/index",
+      "title": "社区动态空态文案（无动态）",
+      "tier": "noop",
+      "pre": "条件用例：communityPosts=[] 且 loading=false、error=null",
+      "action": "观察社区动态区（不打点）",
+      "expected": "白卡空态「今天还没有新的动态，去附近看看」（CommunityFeed.vue:161）；不渲染横向滚动区",
+      "evidence": "noop：执行日志（DOM 采样 + console）；空态无法构造时如实标 UNVERIFIED"
+    },
+    {
+      "id": "H42",
+      "page": "pages/home/index",
+      "title": "社区动态帖子卡横滑",
+      "tier": "noop",
+      "pre": "同 H33",
+      "action": "对 .community-feed__scroll 左滑至末卡采样 scrollLeft 后回 0",
+      "expected": "scrollLeft 递增可达最后一张卡；卡片两行正文限高、图片行 88rpx 恒定无塌陷；console 无错误",
+      "evidence": "noop：执行日志（scrollLeft 采样 + console）"
+    },
+    {
+      "id": "H43",
+      "page": "pages/home/index",
+      "title": "邀请好友 Banner 整卡点击 → 我的页 + invite=1 桥接消费",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → reLaunch 首页；动作前 evaluate 清查 storage 键 campus-love:pending-tab-query 为空",
+      "action": "tap .invite-banner（InviteBanner.vue:15 整卡 @tap emit invite → openInvite）",
+      "expected": "switchTabWithQuery(/pages/profile/index,{invite:'1'})：switchTab 落我的页 + storage 桥写入；profile onShow consumePendingTabQuery 命中 invite=1 触发邀请面板（profile/index.vue:226-235）；桥接即读即清——再次 onShow 不重复触发邀请面板",
+      "evidence": "navigation：getCurrentPages 断言栈顶 pages/profile/index + 桥接键消费前后 storage 记录 + 重复 onShow 不再触发断言"
+    },
+    {
+      "id": "H44",
+      "page": "pages/home/index",
+      "title": "定位弹层 hero 区点击 → 关层并跳「位置主页」",
+      "tier": "navigation",
+      "pre": "同 H02 先 tap .header-location 打开「我的位置」弹层",
+      "action": "tap .location-sheet__hero（index.vue:406-424，role=button aria-label=进入位置主页）",
+      "expected": "locationSheetVisible=false 关层（tabBar 随 BottomSheet close 恢复）+ openAppPath(ROUTES.PROFILE.LOCATION) navigateTo /subpackages/profile-extra/profile/location；栈顶 route=subpackages/profile-extra/profile/location",
+      "evidence": "navigation：getCurrentPages 断言目标路由 + 返回首页后弹层为关闭态记录"
+    },
+    {
+      "id": "H45",
+      "page": "pages/home/index",
+      "title": "定位弹层「重新定位」→ 定位中...态且 Loading 不永驻",
+      "tier": "normal",
+      "pre": "同 H44 弹层打开态",
+      "action": "tap .location-sheet__btn--primary（index.vue:466-475，88rpx 高绿色按钮）",
+      "expected": "点击即变文案「定位中...」（locating=true，aria-label 同步）500ms 内可观测；定位回调后恢复「重新定位」（finally 复位，失败也不卡定位中）；成功时面板内当前位置/城市文案经 buildLocationText 刷新",
+      "evidence": "normal：after 截图（定位中或复位态）+ 路由断言（停留首页弹层态）+ console（无定位报错刷屏）"
+    },
+    {
+      "id": "H46",
+      "page": "pages/home/index",
+      "title": "定位弹层「我知道了」→ 关层 + tabBar 恢复",
+      "tier": "normal",
+      "pre": "同 H44 弹层打开态（tabBar 处于隐藏态）",
+      "action": "tap footer 第 2 个 .location-sheet__btn（aria-label=我知道了，index.vue:476-484）",
+      "expected": "弹层关闭（.bottom-sheet-root 从 DOM 移除）；自定义 tabBar 恢复显示（setTabBarHidden(false)）；停留首页无路由变化",
+      "evidence": "normal：after 截图（关层后首页+tabBar 可见）+ 路由断言 + console"
+    },
+    {
+      "id": "H47",
+      "page": "pages/home/index",
+      "title": "定位弹层右上「×」关闭",
+      "tier": "normal",
+      "pre": "同 H44 弹层打开态",
+      "action": "tap .bottom-sheet-close（BottomSheet.vue:91，aria-label=关闭）",
+      "expected": "弹层关闭 + tabBar 恢复；效果与 H46 一致（closeSheet 同路径）",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "H48",
+      "page": "pages/home/index",
+      "title": "定位弹层遮罩点击关闭（maskClosable=true）",
+      "tier": "normal",
+      "pre": "同 H44 弹层打开态",
+      "action": "tap .bottom-sheet-mask（面板外半透明遮罩区，BottomSheet.vue:73）",
+      "expected": "onMaskTap 关闭弹层 + tabBar 恢复；不触发遮罩下层元素点击（遮罩挡层生效）",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "H49",
+      "page": "pages/home/index",
+      "title": "定位弹层三路关闭 + 重复开合状态干净",
+      "tier": "normal",
+      "pre": "同 H02",
+      "action": "连续三路关闭各一遍：①开层→我知道了关 ②开层→×关 ③开层→遮罩关；再第 4 次开层",
+      "expected": "每次开合均 500ms 内响应、动画/布局一致；tabBar 显隐随层正确切换无残留隐藏态；每次开层恰好 1 次 refetchLocation（无请求堆积）；第 4 次开层功能正常",
+      "evidence": "normal：末次开/关 after 截图 + 路由断言 + console（refetch 请求计数=开层次数）"
+    },
+    {
+      "id": "H50",
+      "page": "pages/home/index",
+      "title": "下拉刷新真实重拉 + stopPullDownRefresh 不永驻",
+      "tier": "normal",
+      "pre": "身份A 已登录，页面停留顶部（scrollTop=0）；pages.json 已开 enablePullDownRefresh（pages.json:55-57）；记录当前 feed 首条内容基线",
+      "action": "顶部下拉手势（touchstart→touchmove 下拉→touchend）或 evaluate 调 uni.startPullDownRefresh()",
+      "expected": "出现下拉刷新指示；触发 onPullDownRefresh → homeStore.fetchDashboard 真实重拉（网络可见 /home/dashboard，非缓存假刷）；数据返回后 uni.stopPullDownRefresh 指示消失（finally 兜底，Loading 不永驻）；loading=true 期间重复下拉不二次拉取（防重入 index.vue:85-91）",
+      "evidence": "normal：after 截图（刷新后列表）+ 路由断言 + console（重拉请求计数、指示消失时刻记录）"
+    },
+    {
+      "id": "H51",
+      "page": "pages/home/index",
+      "title": "整页滚动到底：InviteBanner 完整露出 + 顶部遮罩淡入",
+      "tier": "noop",
+      "pre": "身份A 已登录，页面在顶部",
+      "action": "wx.pageScrollTo 滚至 scrollHeight 底部，采样 scrollTop 与 InviteBanner 底缘相对 tabBar 浮岛位置",
+      "expected": "滚动范围=整页自然滚动（scrollHeight>视口，非 scroll-view 锁死）；InviteBanner 与「去邀请」钮完整可见不被自定义 tabBar 浮岛遮挡（.home-section-gap 净空区生效）；scrollTop>10 后顶部渐变遮罩淡入（pageScrolled=true，opacity 1）",
+      "evidence": "noop：执行日志（scrollTop/scrollHeight 采样 + scrim opacity 记录 + console）"
+    },
+    {
+      "id": "H52",
+      "page": "pages/home/index",
+      "title": "滚回顶部：遮罩淡出、无系统时间叠印",
+      "tier": "noop",
+      "pre": "同 H51 先滚到底",
+      "action": "wx.pageScrollTo(0)，采样顶部 scrim opacity 与头部渲染",
+      "expected": "scrim 淡出（pageScrolled=false，opacity 0，160ms 过渡）；「首页」标题/状态栏区无系统时间/刘海叠印（--statusbar 注入生效）",
+      "evidence": "noop：执行日志（scrollTop=0 + scrim opacity + console）"
+    },
+    {
+      "id": "H53",
+      "page": "pages/home/index",
+      "title": "切 Tab 离开再回：<30s 不重拉、状态不丢",
+      "tier": "navigation",
+      "pre": "身份A 已登录，首页数据就绪；记录当前 feed 首条内容与滚动位",
+      "action": "switchTab 至 /pages/nearby/index → 停留 10s（<30s 陈旧阈值）→ switchTab 回 /pages/home/index；对照场景：停留 >30s 再回",
+      "expected": "回切 500ms 内恢复渲染；<30s 场景不重拉 dashboard（网络无 /home/dashboard 请求）、首条内容与滚动位保持（Tab 切换数据不丢铁律）；>30s 对照场景静默重拉（HOME_FEED_STALE_MS 阈值，loading 期不闪白屏）；滚动位与弹层关闭态在 <30s 场景无丢失",
+      "evidence": "navigation：getCurrentPages 断言 + 网络请求计数记录（两场景各一份）"
+    },
+    {
+      "id": "H54",
+      "page": "pages/home/index",
+      "title": "未登录：预览数据可加载，点喜欢 → 请先登录 toast",
+      "tier": "normal",
+      "pre": "未登录态：evaluate 清除 token/userSession 后 reLaunch('/pages/home/index')",
+      "action": "等 feed 渲染后 tap .today-card__btn--love",
+      "expected": "mock 渠道未登录仍加载预览 feed（useMock 放行；real 渠道无 token 不发 /home/dashboard——按构建渠道分支记录现状）；点喜欢弹 toast「请先登录后再使用该功能」（apiErrors.loginRequired:3883）且不发起 likeUser（requireLogin 短路）；路由不变",
+      "evidence": "normal：after 截图（toast 态）+ 路由断言 + console（无 likeUser 请求）"
+    },
+    {
+      "id": "H55",
+      "page": "pages/home/index",
+      "title": "未登录：点加入 → 请先登录 toast",
+      "tier": "normal",
+      "pre": "同 H54 未登录态",
+      "action": "tap .interest-card__join（未加入态卡）",
+      "expected": "toast「请先登录后再使用该功能」；不发起 joinCircle；按钮保持「加入」；路由不变",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "H56",
+      "page": "pages/home/index",
+      "title": "未登录：点关注 → 请先登录 toast（组件内门禁）",
+      "tier": "normal",
+      "pre": "同 H54 未登录态，社区动态区已渲染帖子卡",
+      "action": "tap .post-card__follow（CommunityFeed onFollow:97-100 组件内 isLoggedIn 门禁）",
+      "expected": "toast「请先登录后再使用该功能」；不发起 followUser；按钮保持「关注」；不冒泡跳帖子详情",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "H57",
+      "page": "pages/home/index",
+      "title": "未登录：点换一位 → 请先登录 toast",
+      "tier": "normal",
+      "pre": "同 H54 未登录态",
+      "action": "tap .today-card__rotate",
+      "expected": "toast「请先登录后再使用该功能」（requireLogin 先于 rotateLoading 判断）；不发起 rotate 请求；推荐人不变",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "H58",
+      "page": "pages/home/index",
+      "title": "打开即返回 + 重复进出 ×3（栈稳定与请求防堆积）",
+      "tier": "navigation",
+      "pre": "身份A 已登录",
+      "action": "连续 3 轮执行：reLaunch('/pages/home/index') → 等 500ms → switchTab 离开；第 3 轮进入后立即 switchTab 返回（打开即返回）",
+      "expected": "每轮进入 500ms 内渲染完成（骨架或数据）；无页面栈异常、无白屏卡死；fetchDashboard 因 loading 防重入与 30s 陈旧阈值，3 轮内实际请求数≤2（无并发堆积）；console 无 NAV_FAIL/TypeError",
+      "evidence": "navigation：3 轮 getCurrentPages 断言记录 + 请求计数 + console"
+    },
+    {
+      "id": "H59",
+      "page": "pages/home/index",
+      "title": "冷启动深链直达首页：严禁闪现错误空态",
+      "tier": "normal",
+      "pre": "身份A 已登录；wechatide 编译冷启动（或 reLaunch 模拟）直接落 pages/home/index",
+      "action": "冷启动后 0/0.5/1/2s 连拍 4 张 simulator_screenshot 并采样各区块态（骨架/数据/空态/错误态）",
+      "expected": "各区块按「骨架→数据（或合法空态文案）」顺序呈现；任一时刻不得闪现错误态/报错空屏（TodayRecommendationCard 错误不落入 empty 分支；RelationActivity/InterestRecommendation 有 SkeletonBlock 占位）；console 全程无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：4 张时序截图 + 各区块态采样记录 + console 全量过滤落盘"
+    }
+  ]
+}

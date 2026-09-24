@@ -1,0 +1,384 @@
+{
+  "cases": [
+    {
+      "id": "PT01",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "冷启动深链直达（无参）：整页渲染完整，默认分类=课程交流，严禁闪现错误/空态",
+      "tier": "navigation",
+      "pre": "身份A（100158 曦风）/身份B（100159 小新生）双跑：mock 登录注入（automation_evaluate 写 wx.setStorageSync('token', JWT) 后调 session.bootstrap() 并校验 isLoggedIn，做法=r11-tour.ps1:19-36）→ wx.reLaunch('/subpackages/campus/campus/post-topic') 冷启动（r11-tour.ps1:113-137 口径）；环境=mock 模式（use-mock.ts:22-25 → config/env isMockMode）",
+      "action": "落页后 evaluate：getCurrentPages() 末页 route、.category-option--selected 文本、.title-input/.content-input 值、.content-count 文本、header .submit-text 文案与 --disabled class",
+      "expected": "路由=subpackages/campus/campus/post-topic；高亮分类=「课程交流」（post-topic.vue:57 默认 course_exchange；CAMPUS_CATEGORY_MAP=campus.ts:171-179）；标题/内容为空、计数 0/500（post-topic.vue:105-108）；header 提交钮文案「发布」且置灰（canSubmit=false，post-topic.vue:112-114）；全程无错误态/空态闪现（冷启动深链铁律）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "navigation：getCurrentPages 路由断言 + console 过滤落盘；另加 1 张首屏 after 截图（冷启动深链铁律需观测首帧，属豁免增量）"
+    },
+    {
+      "id": "PT02",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "冷启动带参深链 ?category=study_help：「学习互助」chip 直接高亮",
+      "tier": "navigation",
+      "pre": "同 PT01 登录；固化参数 ?category=study_help——注意：r11-param-map.json 的 params 表无本页条目（campus 段仅 campus/topic-detail?id=153），本参数为源码派生固化：onLoad 读 query.category（post-topic.vue:61-66），合法枚举见 CampusTopicCategory（campus.ts:167-179）",
+      "action": "wx.reLaunch('/subpackages/campus/campus/post-topic?category=study_help') → evaluate 选中 chip 文本与 class",
+      "expected": "「学习互助」唯一高亮（.category-option--selected，post-topic.vue:299-317）；标题/内容空、计数 0/500 等其余默认同 PT01；无崩溃",
+      "evidence": "navigation：路由断言 + 选中项 DOM 断言 + console"
+    },
+    {
+      "id": "PT03",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "空参深链 ?category=：trim 判空回退默认「课程交流」",
+      "tier": "navigation",
+      "pre": "同 PT01 登录；深链带空值参数",
+      "action": "wx.reLaunch('/subpackages/campus/campus/post-topic?category=') → evaluate 选中 chip",
+      "expected": "cat.trim().length===0 不赋值（post-topic.vue:62-65）→ 高亮=「课程交流」；页面渲染同 PT01",
+      "evidence": "navigation：路由断言 + 选中项 DOM 断言 + console"
+    },
+    {
+      "id": "PT04",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "非法 category=__proto__：不崩溃、无选中高亮、状态机不被污染",
+      "tier": "normal",
+      "pre": "同 PT01 登录；深链 '?category=__proto__'（原型链污染探针；query.category 直接 as 强转无白名单校验，post-topic.vue:64）",
+      "action": "落页后 evaluate 6 个 .category-option 的 class；再点「校园活动」chip 验证可交互",
+      "expected": "页面正常渲染、6 chip 均无选中态（无 key 匹配 __proto__）；随后点击「校园活动」500ms 内正常高亮——选择逻辑未被污染；无错误空态闪现；console 无 TypeError",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT05",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "来源页进入链路：campus/index 点「发布」透传当前 Tab 分类",
+      "tier": "navigation",
+      "pre": "同 PT01 登录 → wx.reLaunch('/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6')（固化参数=北京大学：mock 唯一有数据校名，同 campus-index 清单口径）→ 切到「学习互助」Tab",
+      "action": "tap campus/index 的发布入口（goToPostTopic → openAppPath('/subpackages/campus/campus/post-topic?category='+activeCategory)，campus/index.vue:118-122）",
+      "expected": "落页路由='/subpackages/campus/campus/post-topic?category=study_help'；本页「学习互助」高亮（MP-R2-CAMPUSINDEX-002(a) 透传回归点）；getCurrentPages 链=2 层（campus/index → post-topic）",
+      "evidence": "navigation：getCurrentPages 链断言 + console"
+    },
+    {
+      "id": "PT06",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "页内返回（header「取消」）：navigateBack 落回 campus/index 且来源页状态保持",
+      "tier": "navigation",
+      "pre": "同 PT05 链路进入；进入后点「校友动态」chip（仅本地选中态，不提交）",
+      "action": "tap header「取消」.post-header__back（post-topic.vue:278 → goBack→uni.navigateBack，269-271）",
+      "expected": "落点=campus/index（返回落点=来源页铁律）；campus/index 当前 Tab/滚动位/列表数据保持；未发布不产生新帖；getCurrentPages 末页=campus/index",
+      "evidence": "navigation：getCurrentPages 链断言 + campus/index Tab 状态 DOM 断言 + console"
+    },
+    {
+      "id": "PT07",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "分类 6 选 1 点选：选中态唯一、即时切换、非死按钮",
+      "tier": "normal",
+      "pre": "冷启动直达本页（同 PT01）",
+      "action": "依次 tap 6 个 .category-option（课程交流→社团招新→校园活动→学习互助→生活服务→校友动态，post-topic.vue:95-102/299-317），每步间隔后 evaluate 选中 class（selectCategory 仅改 ref，120-122）",
+      "expected": "每次点击 500ms 内 DOM 变化（无死按钮）；任意时刻恰 1 个 .category-option--selected 且=最后点中项；无路由变化、无 Toast",
+      "evidence": "normal：末次 after 截图 + 路由 + console（六步选中项写入执行日志）"
+    },
+    {
+      "id": "PT08",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "分类 chip 热区量测 ≥88rpx（交互铁律）",
+      "tier": "noop",
+      "pre": "同 PT01 落页",
+      "action": "evaluate 取 6 个 .category-option 的 boundingClientRect 高/宽（换算 rpx=px×750/屏宽）",
+      "expected": "热区高度≥88rpx（≈44px@375 宽）；若 <88rpx 记「热区不达标」缺陷（注：样式为 padding 20rpx 8rpx + 26rpx 文本，post-topic.vue:544-554，实测值如实记录，不得因数值接近而豁免）",
+      "evidence": "noop：执行日志（6 个 rect 原始数据）"
+    },
+    {
+      "id": "PT09",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "标题正常输入：v-model 回显、发布钮仍置灰（内容空）",
+      "tier": "normal",
+      "pre": "同 PT01 落页",
+      "action": ".title-input 输入「校运会志愿者招募」（maxlength=50，post-topic.vue:324-330）→ evaluate input 值与 header/底部按钮 class",
+      "expected": "值回显、placeholder 消失；canSubmit 仍 false（content.trim() 为空，post-topic.vue:113）→ .post-header__submit--disabled 与 .bottom-submit__btn--disabled 均在",
+      "evidence": "normal：after 截图（含置灰按钮）+ 路由 + console"
+    },
+    {
+      "id": "PT10",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "标题超长输入 60 字：maxlength=50 截断",
+      "tier": "normal",
+      "pre": "同 PT01 落页",
+      "action": ".title-input 连续输入 60 个汉字 → evaluate 值长度",
+      "expected": "v-model 值恒 ≤50（input maxlength=\"50\"，post-topic.vue:329）；无越界字符；页面不崩",
+      "evidence": "normal：after 截图 + 路由 + console + 值长度断言日志"
+    },
+    {
+      "id": "PT11",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "标题特殊字符/emoji/脚本串：原样回显、脚本不执行",
+      "tier": "normal",
+      "pre": "同 PT01 落页",
+      "action": ".title-input 输入「🎉<script>alert(1)</script>&amp;『引号」→ evaluate 值与页面节点",
+      "expected": "原样存储回显（文本渲染不执行脚本、不破坏 DOM）；无 console 报错；清空后可继续正常操作",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PT12",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "标题全清空：canSubmit 500ms 内回落置灰",
+      "tier": "normal",
+      "pre": "标题与内容均已填（合法态、按钮亮）",
+      "action": "清空 .title-input（内容保留）→ evaluate 按钮 class",
+      "expected": "按钮 500ms 内回置灰（title.trim() 为空 → canSubmit=false，post-topic.vue:113）；此时点发布 → Toast「请输入标题」（181-184 分支可复验）",
+      "evidence": "normal：after 截图（置灰态）+ 路由 + console"
+    },
+    {
+      "id": "PT13",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "内容计数 0→499→500 封顶：不进入红色超限态",
+      "tier": "normal",
+      "pre": "同 PT01 落页；标题已填",
+      "action": ".content-input 先输入 499 字符再追加至 501 字符（textarea :maxlength=500，post-topic.vue:336-343）→ 每步 evaluate .content-count 文本与 class",
+      "expected": "计数依次 499/500 → 500/500（截断）；计数保持灰色——isOverLimit(>500) 经 maxlength 不可达（post-topic.vue:110/341，.content-count--over 为防御性路径）；500 字时按钮可亮（标题有值）",
+      "evidence": "normal：after 截图 + 路由 + console + 两步计数断言日志"
+    },
+    {
+      "id": "PT14",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "内容清空：计数回 0、提交按钮联动置灰",
+      "tier": "normal",
+      "pre": "标题「考试周互助」+内容已填（按钮亮）",
+      "action": "清空 .content-input → evaluate 计数与按钮",
+      "expected": "计数 0/500；按钮置灰（content.trim() 为空，post-topic.vue:113）",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT15",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "scroll-view 滚到底再回顶：长表单完整渲染、状态不丢",
+      "tier": "noop",
+      "pre": "填标题+500 字内容+mock 选图 1 张+选 2 个话题（保证页面超高，需滚动）",
+      "action": ".post-body scrollTop 置底（露出 .bottom-submit）再回 0，两次取 scrollTop 与关键 DOM 值",
+      "expected": "底部发布按钮完整可见（post-topic.vue:398-408 移动端兜底入口）；回顶后标题/内容/计数/图片/已选话题全部保持（状态不丢铁律）；console 无错",
+      "evidence": "noop：执行日志（两次 scrollTop + 各字段值采样）"
+    },
+    {
+      "id": "PT16",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "空提交（无标题无内容）：Toast「请输入标题」且零副作用",
+      "tier": "normal",
+      "pre": "冷启动直达、表单全空；按钮虽置灰但 @tap 仍绑定（post-topic.vue:282-290，无 disabled 属性）",
+      "action": "tap header 发布钮 1 次",
+      "expected": "Toast「请输入标题」（isSubmitting 守卫后首项校验，post-topic.vue:181-184，MP-R1-CAMPUSPOST-001：空表单不再静默）；无请求、无新帖、无路由变化；Toast 消失后无残留 Loading",
+      "evidence": "normal：after 截图（须含 Toast 文案）+ 路由不变断言 + console"
+    },
+    {
+      "id": "PT17",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "仅标题提交：Toast「请输入内容」",
+      "tier": "normal",
+      "pre": "同 PT01 落页；标题已填",
+      "action": "tap header 发布钮",
+      "expected": "Toast「请输入内容」（post-topic.vue:186-189）；零副作用（无请求/无新帖/不路由）",
+      "evidence": "normal：after 截图（须含 Toast 文案）+ 路由不变断言 + console"
+    },
+    {
+      "id": "PT18",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "合法表单 header 发布成功（mock）：发布中→发布成功→800ms 返回→新帖置顶当前分类",
+      "tier": "critical",
+      "pre": "经 PT05 链路从 campus/index（学习互助 Tab）进入；填标题「自动化验证帖」+内容「R1 用例正文」；记录回流前该 Tab topics 数与首条 id",
+      "action": "tap header「发布」→ 0ms/800ms/1200ms 三次采样（按钮文案、Toast、getCurrentPages、列表首条）",
+      "expected": "点击 500ms 内按钮文案变「发布中」（isSubmitting，post-topic.vue:289）；Toast「发布成功」icon=success（248）；约 800ms 后 navigateBack 落回 campus/index（252-256）；学习互助 Tab 顶部出现新帖（store mock unshift，campus.ts:664）且仅 1 条",
+      "evidence": "critical：before+after 截图 + 路由链（post-topic→campus/index）+ Toast 文案 + console（无 TypeError；mock 分支无网络请求）+ 新帖字段断言日志"
+    },
+    {
+      "id": "PT19",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "主按钮防连点×5：快击 5 次仅创建 1 帖（含成功窗口重入）",
+      "tier": "critical",
+      "pre": "同 PT18 表单与来源链路；记录 topics 基线数",
+      "action": "对 header 发布钮 300ms 内连击 5 次；再在成功 Toast 与 800ms 返回窗口内补击 1 次",
+      "expected": "仅 1 次 createCampusTopic（isSubmitting 守卫，post-topic.vue:179；MP-R1-CAMPUSPOST-004：成功路径不复位 isSubmitting，249-251）——窗口内补击零效果；回流后恰 1 条新帖置顶，无重复帖",
+      "evidence": "critical：before+after 截图 + console（createCampusTopic/发布请求触发次数）+ 新帖计数断言"
+    },
+    {
+      "id": "PT20",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "发布失败路径：Toast=store errorMessage/「发布失败」，按钮复位可重试",
+      "tier": "critical",
+      "pre": "表单合法；用 miniProgram.mockWxMethod('request', …) 令发布链路 reject（real 分支 POST /campus/topics，campus.ts:679-689；mock 本地分支无网络失败源——若运行环境为纯 mock 且无法注入失败，本条如实标 UNVERIFIED 并注明）",
+      "action": "tap 发布 → 等待失败回调 → evaluate 按钮态后再次 tap",
+      "expected": "Toast 文案=campusStore.errorMessage 或「发布失败」（post-topic.vue:257-263）；isSubmitting 复位（262）→ 按钮恢复「发布」可再次点击；不路由、不产生半截帖子",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console（错误栈）；无法注入失败时记 UNVERIFIED"
+    },
+    {
+      "id": "PT21",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "底部主按钮提交成功：与 header 等价路径、bottom 文案变体",
+      "tier": "critical",
+      "pre": "同 PT18 表单；内容 500 字确保底部按钮需滚动露出",
+      "action": "滚到底 tap .bottom-submit__btn（post-topic.vue:398-407）→ 同 PT18 三采样",
+      "expected": "全链路同 PT18（发布→「发布中...」→「发布成功」→返回置顶）；进行中文案为 bottom 变体 submitPublishingBottom（406）",
+      "evidence": "critical：before+after 截图 + 路由链 + Toast 文案 + console"
+    },
+    {
+      "id": "PT22",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "打开即返回：零副作用、返回正常",
+      "tier": "normal",
+      "pre": "经 PT05 链路进入；记录 campus/index topics 数基线",
+      "action": "落页后不做任何输入，立即 tap「取消」",
+      "expected": "返回 campus/index；topics 数不变（无幽灵帖/无半初始化残留）；console 无错",
+      "evidence": "normal：after 截图（campus/index）+ 路由 + console + 帖数断言日志"
+    },
+    {
+      "id": "PT23",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "重复进出：表单态不残留上次输入",
+      "tier": "normal",
+      "pre": "PT05 链路进入，填标题+内容（不提交）→「取消」返回",
+      "action": "再次点 campus/index 发布入口进入本页 → evaluate 全部表单字段",
+      "expected": "全新空态：标题/内容空、计数 0/500、匿名关、话题未选、图片 0（组件实例重建，ref 初值 post-topic.vue:57-92）；分类=透传值正确",
+      "evidence": "normal：after 截图 + 路由 + console + 各字段空态断言日志"
+    },
+    {
+      "id": "PT24",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "选图成功 1 张：图片墙新增缩略图 + 计数 1/6",
+      "tier": "critical",
+      "pre": "冷启动直达；automation 预 mock uni.chooseImage 成功返回 1 条临时路径（mockWxMethod('chooseImage',{tempFilePaths:[...]}）；DevTools http://tmp 路径经 isUploadedMediaUrl 判定（media.ts:88）在 mock 模式保留原路径不再上传（post-topic.vue:201）",
+      "action": "tap .image-upload 加号格（post-topic.vue:362-373）→ evaluate 图片墙与计数",
+      "expected": "500ms 内出现 .image-item 缩略图、计数「1/6」（353）；隐私检查先于 chooseImage（141-145 ensurePrivacyAuthorized）；无失败 Toast；console 可见 chooseImage 调用",
+      "evidence": "critical：before+after 截图 + console（chooseImage 调用与返回）+ 计数断言"
+    },
+    {
+      "id": "PT25",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "删除已选图：× 移除、计数回落、加号格重现",
+      "tier": "normal",
+      "pre": "PT24 完成后（图片墙 1 张）",
+      "action": "tap 该图右上 .image-item__remove（post-topic.vue:358-360，removeImage splice，165-167）",
+      "expected": "图格 500ms 内消失、计数回 0/6、加号格重现（v-if images.length<6，363）；无 Toast、无路由",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT26",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "选图用户取消：静默无 Toast（MP-R2-CAMPUSPOST-005 回归）",
+      "tier": "normal",
+      "pre": "冷启动直达；mock chooseImage fail 且 errMsg='chooseImage:fail cancel'",
+      "action": "tap 加号格 → evaluate Toast 与图片墙",
+      "expected": "无任何 Toast（cancel 分支静默，post-topic.vue:156-159）；图片墙不变；console 有 fail 日志但无未捕获错误",
+      "evidence": "normal：after 截图 + 路由 + console（fail errMsg 原文）"
+    },
+    {
+      "id": "PT27",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "选图真实失败（非 cancel，如权限拒）：Toast 明示",
+      "tier": "normal",
+      "pre": "同 PT26 但 errMsg='chooseImage:fail auth deny'",
+      "action": "tap 加号格",
+      "expected": "Toast「选择图片失败，请检查相册/相机权限」（post-topic.vue:158 硬编码文案）；图片墙不变",
+      "evidence": "normal：after 截图（须含 Toast）+ 路由 + console"
+    },
+    {
+      "id": "PT28",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "隐私授权拒绝：Toast「需同意隐私协议后才能选择图片」且不拉起选图",
+      "tier": "normal",
+      "pre": "冷启动直达；通过 mockWxMethod 使隐私检查链路 reject（ensurePrivacyAuthorized，utils/privacy.ts:344）；若自动化环境无法 mock 隐私接口则如实标 UNVERIFIED",
+      "action": "tap 加号格 → evaluate Toast 与是否触发 chooseImage",
+      "expected": "Toast privacyRequired 文案「需同意隐私协议后才能选择图片」（post-topic.vue:142-145）；uni.chooseImage 不被调用；图片墙不变",
+      "evidence": "normal：after 截图（须含 Toast）+ console（chooseImage 未调用断言）；无法构造时记 UNVERIFIED"
+    },
+    {
+      "id": "PT29",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "满图 6/6：加号格隐藏、上传入口消失",
+      "tier": "normal",
+      "pre": "冷启动直达；mock chooseImage 按 count=MAX-images（post-topic.vue:147）分批 success，逐步补满 6 张（MAX_IMAGES=UI_LIMITS.PHOTO_GALLERY_MAX=6，post-topic.vue:78 + constants/limits.ts:29）",
+      "action": "每次 success 回调后 evaluate .image-upload 存在性与计数，直至 images=6",
+      "expected": "第 6 张后 .image-upload 不再渲染（v-if images.length<MAX_IMAGES，362-363）；计数 6/6；6 张图全部正常展示缩略图；源码 135-139 的「最多上传6张图片」Toast 为按钮隐藏后的兜底（UI 不可达，不作为判定项）",
+      "evidence": "normal：after 截图（6/6 态）+ 路由 + console + 计数断言日志"
+    },
+    {
+      "id": "PT30",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "热门话题选中/再点取消：已选区与计数同步、chip 高亮切换",
+      "tier": "normal",
+      "pre": "冷启动直达；滚动至 TopicSelector 区（热门话题 12 个，config/popular-topics.ts:42-53）",
+      "action": "tap「#校园日常」chip（TopicSelector.vue:244-258）→ 再 tap 已选区同名 chip（213-224）→ 各步 evaluate",
+      "expected": "选中：已选区出现 #校园日常、计数「已选 1/3」（selectedCount，TopicSelector.vue:200）、热区 chip 高亮 topic-chip--selected、带 lightHaptic 震动（105-125）；取消：全部回落、空态「暂未选择任何话题」（225-227）；每步 500ms 内 DOM 反馈",
+      "evidence": "normal：两次 after 截图（选中态+取消态）+ 路由 + console"
+    },
+    {
+      "id": "PT31",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "选满 3 个后点第 4 个：Toast「最多选择 3 个话题」且已选不变",
+      "tier": "normal",
+      "pre": "已依次选中 3 个热门话题（MAX_TOPIC_SELECTION=3，popular-topics.ts:91）",
+      "action": "tap 第 4 个热门 chip",
+      "expected": "Toast maxReached 文案「最多选择 3 个话题」（TopicSelector.vue:116-122）；已选仍 3 个、计数 3/3；无崩溃",
+      "evidence": "normal：after 截图（须含 Toast）+ 路由 + console"
+    },
+    {
+      "id": "PT32",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "话题搜索：即时过滤→无结果态→清空恢复全集",
+      "tier": "normal",
+      "pre": "冷启动直达、滚至搜索框",
+      "action": ".topic-selector__search-input 输入「表白」→ 改输「zzzz不存在」→ 全清空；每步 evaluate 热门区 chip 数与空态节点",
+      "expected": "「表白」→ 仅剩 #表白墙（filteredTopics 客户端即时过滤，TopicSelector.vue:61-69；纯本地过滤无网络请求，300ms 防抖铁律不适用，但输入回显须即时）；「zzzz不存在」→ 显示「未找到相关话题」（260-262）；清空 → 恢复 12 个热门全集",
+      "evidence": "normal：末次 after 截图 + 路由 + console + 三步过滤计数日志"
+    },
+    {
+      "id": "PT33",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "创建新话题成功：自动选中 + 输入框清空",
+      "tier": "normal",
+      "pre": "冷启动直达、滚至「创建新话题」区",
+      "action": ".topic-selector__create-input 输入「R1测试话题」→ tap「创建」按钮（TopicSelector.vue:266-285）→ evaluate",
+      "expected": "已选区新增 #R1测试话题、计数 +1、创建输入框清空（createCustomTopic 成功分支 147-174，172-173 清空）；chip 带 500ms 内反馈（lightHaptic）",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT34",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "空名创建：Toast 提示且不产生空 chip",
+      "tier": "normal",
+      "pre": "同 PT33 落位；创建输入留空",
+      "action": "直接 tap「创建」",
+      "expected": "Toast=createTopicPlaceholder 文案「输入新话题名称」（TopicSelector.vue:149-151）；已选列表不变、计数不变",
+      "evidence": "normal：after 截图（须含 Toast）+ 路由 + console"
+    },
+    {
+      "id": "PT35",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "重名创建（与热门同名）：Toast「该话题已存在」",
+      "tier": "normal",
+      "pre": "同 PT33 落位；热门话题含「校园日常」",
+      "action": "创建输入「校园日常」→ tap「创建」",
+      "expected": "Toast createTopicExists 文案「该话题已存在」（TopicSelector.vue:154-160）；已选不变、无重复 chip（再验证与已选重名同分支：先选中「表白墙」再创建「表白墙」→ 同 Toast）",
+      "evidence": "normal：after 截图（须含 Toast）+ 路由 + console"
+    },
+    {
+      "id": "PT36",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "已选 chip 逐个移除 +「清空」一键清 + 清空按钮显隐",
+      "tier": "normal",
+      "pre": "已选 2 个话题（「清空」按钮可见：v-if modelValue.length>0，TopicSelector.vue:202-210）",
+      "action": "tap 已选区 1 个 chip（removeTopic，130-139）→ 再 tap「清空」（clearAll，179-182）",
+      "expected": "首步：该话题移除、余 1 个、计数 1/3；清空后：0 个、空态文案恢复、「清空」按钮 500ms 内隐藏；全程无 Toast、无路由",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT37",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "匿名开关切换：checked 即时反馈、品牌色生效",
+      "tier": "normal",
+      "pre": "冷启动直达、滚至「匿名发布」行",
+      "action": "tap <switch>（post-topic.vue:389-393）开→关→开，每步 evaluate checked",
+      "expected": "每次切换 500ms 内 checked 变化（toggleAnonymous，127-129）；开关色=品牌色 designTokens.color.brand[500]（84）；无路由、无 Toast",
+      "evidence": "normal：末次 after 截图 + 路由 + console"
+    },
+    {
+      "id": "PT38",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "全功能组合发布（匿名+话题+配图）：回流帖作者/内容/图数/分类正确",
+      "tier": "critical",
+      "pre": "经 PT05 链路从 campus/index（课程交流 Tab）进入；选分类=「校园活动」、开匿名、mock 选图 1 张、选话题「校园日常」+「表白墙」；填标题「组合验证帖」+内容「R1 全功能正文」",
+      "action": "tap header「发布」→ 等成功返回 → 到 campus/index 校验新帖字段",
+      "expected": "发布成功返回 campus/index；新帖（mock unshift，campus.ts:640-665）：isAnonymous=true → author.name=「匿名校友」（campus.ts:652-654）；mock 分支内容末尾拼「#校园日常 #表白墙」（post-topic.vue:221-224）；images 长度=1；分类归入「校园活动」Tab 且置顶（MP-R2-CAMPUSINDEX-002(a) 回归点）；恰 1 条新帖",
+      "evidence": "critical：before+after 截图 + 路由链 + Toast 文案 + console + 新帖字段断言日志"
+    }
+  ]
+}

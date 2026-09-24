@@ -1,0 +1,143 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-01",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「分享喜悦」CTA 无真实分享能力（Function 缺失，非视觉问题）：点击仅弹 Toast「分享功能即将上线」，页面未注册 onShareAppMessage（mp-weixin 分享菜单/分享面板均不可用），理想图与本轮 ask 明确的目标 CTA「继续探索（+分享喜悦）」的分享链路缺失，庆祝时刻的分享诉求无出口。",
+      "evidence": "match-success.vue:106-108（handleShare 仅 uni.showToast，无 fail/成功回调之外的任何分享实现）；MatchSuccess.vue:154-156（分享喜悦文字链仅 emit('share')）；grep 本页源码 onShareAppMessage 零命中（本会话执行；对照组 chat-session/index.vue:14 已注册 onShareAppMessage 可复用模式）；exec-results.json MS09 observed『act:tap .match-success__share』+ 案名『同走 handleShare Toast，不弹分享面板』；理想图底部「分享喜悦」+ ideal-baseline.md:96 行「CTA：立即聊天 + 继续探索（+分享喜悦）」。",
+      "sources": ["code", "interaction:exec-results.json MS09", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "点击「分享喜悦」拉起真实分享：onShareAppMessage 返回 {title: 匹配成功文案, path: ROUTES.DISCOVER.MATCH_SUCCESS?userId=<partnerId>}，与本页已建好的 query.userId 深链兜底（match-success.vue:69-78）闭环，被分享者打开可见同一匹配对象；「···」更多键同链路。",
+      "fix": "match-success.vue 注册 onShareAppMessage（path 携带 partner userId，标题用 matchSuccess.title）；「分享喜悦」改 button open-type=\"share\"（mp-weixin）或在 handleShare 中触发分享面板；补一条 MS 案断言分享回调/面板出现。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-02",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "category": "Data",
+      "severity": "P2",
+      "description": "共同点 4 行进度的分值与兜底标签为前端写死：任何匹配对象、任何用户恒显示 匹配度 90/85/80/79%（进度条宽度随之恒定），后端 buildMatchReasons 已产出真实理由（同校/同专业/同城距离等）但分值不随数据联动——「共同点 4 行进度」实为氛围装饰而非真实匹配信息；静态稿数值本身即 90/85/80/79（实现系按稿写死，MatchSuccess.vue:44 注释自证），但作为功能目标『展示共同点』数据可信性不成立。",
+      "evidence": "MatchSuccess.vue:44-45（defaultScores=[90,85,80,79] 硬编码）、:50（DEFAULT_REASON_LABELS 硬编码兜底）、:63-65（getScorePercent 恒返回硬编码值，与 props.reasons 无关联）；view-models/match.ts:57-75（真实理由源存在但仅用于文本）；exec-results.json MS15 案名自证『匹配度卡恒 4 行固定分值：90/85/80/79』；v3.1-contract §19-08『共同 tags』与 ideal-baseline.md:96『共同点 4 行进度』均为数据性目标。",
+      "sources": ["code", "interaction:exec-results.json MS15"],
+      "confidence": 0.75,
+      "ideal": "4 行=真实共同点（标签+分值）来自匹配结果数据（后端 commonTags/score 或由 toMatchCardUser 字段派生）；数据不足时按实有行数展示、不伪造百分比；文案行 1 与理想图对齐可保留视觉模板。",
+      "fix": "匹配结果透出共同点数据链（matching→store→本页）；getScorePercent/displayReasons 消费真实值并删除恒定 defaultScores；无数据时分值区留空或隐藏而非固定 90/85/80/79；同步修正 MS15 断言语义（恒定值不应是验收预期）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-03",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "Hero 主色三源冲突待裁决：v3.1 冻结契约（29a2b1df）§1 明文「匹配成功=粉 Hero」+粉色渐变 #FF6FA3→#FFD1E2、§19-08「粉 Hero」、ideal-baseline.md:96「粉色主题 Hero」，而现行实现为浅绿渐变 Hero（#E8FBF2→#F0FFF5）+绿标题 #36C99A+绿主 CTA；同时理想图 匹配成功页面.png 本身即为浅绿底+粉心点缀——即『理想图』与『冻结契约/基线文本』互相矛盾，实现与图一致、与契约文本不一致。R13 因实拍错位本页即未判定（需重拍复核），本轮必须先裁决再动码。",
+      "evidence": "git show 29a2b1df:docs/design/v3.1-contract.md §1（Hero 节奏红线+粉色渐变定义）与 §19-08 行（本会话执行读取）；ideal-baseline.md:96；MatchSuccess.vue:175（浅绿渐变）、:187（#36C99A）、:388（绿主钮）；match-success.vue:180（同绿渐变）；素材/理想效果图/匹配成功页面.png 本次目视=浅绿底+粉标题心+粉中央心。",
+      "sources": ["code", "screenshot", "baseline:v3.1-contract §1/§19-08", "baseline:ideal-baseline.md:96"],
+      "confidence": 0.6,
+      "ideal": "三源唯一：若裁决为粉 Hero，页面底改 #FF6FA3→#FFD1E2 渐变、标题/主钮取色随裁决；若裁决为绿（以理想图为准），修订 v3.1-contract §1/§19-08 与 ideal-baseline.md:96 文本，消除「粉 Hero」红线与本页的永久冲突。",
+      "fix": "基线员/产品对 匹配成功页 Hero 底色出裁决记录（写入 ideal-baseline.md 该行对照状态），实现按裁决调整一处渐变+两处文字/按钮色，并对 mp-weixin 截图回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-04",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS07-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "右上 nav 两键均为占位 Toast（Function 缺失）：「截图」弹『截图功能即将上线』、「更多」弹『分享功能即将上线』，代码注释自证对应『规格书 7.1/7.2 P0』承诺（2026-08-25 P0 标记），至今未实现；且理想图右上仅 1 枚扫描框图标，实现为 2 枚（相机+···），键数与理想图也不符——功能与结构双待裁决。",
+      "evidence": "match-success.vue:120-123（handleScreenshot 仅 showToast 截图功能即将上线）、:106-108（handleShare 同）、:140-161（右两键结构，aria-label=截图/更多）；exec-results.json MS07/MS08 observed『act:tapIndex .success-nav__btn#2/#3 tapped』且案名均为 Toast 占位、路由不变；理想图右上单枚扫描框图标（本次目视）vs 实现两键。",
+      "sources": ["code", "interaction:exec-results.json MS07,MS08", "screenshot"],
+      "confidence": 0.7,
+      "ideal": "按裁决实现：截图键走 mp-weixin 截图/海报生成（或 canvas 海报+保存相册），更多键接 onShareAppMessage/分享面板；键数与理想图对齐（1 枚）或在裁决中确认 2 键规格并修订理想图偏差记录。",
+      "fix": "先裁决键数与功能范围（理想图 1 键 vs 规格书 7.2 两键），再实现真实能力；过渡期至少将「更多」接入 REQ-01 的真实分享链路；同步补 MS 案断言。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-05",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_match-success__交互后.png",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "tour 取证『路由→截图』映射再次错位（R13 §0 已知失效模式在 R1 tour 批次复发）：本页 tour 静态 3 张中 2 张（A/交互后、B/交互后）实际内容为寻觅页（pages/discover/index）+全部筛选抽屉，并非匹配成功页，仅 B/默认 1 张有效——基线明言『登录页与匹配成功页先重拍实拍再判定』（ideal-baseline.md:175），本轮该前置条件仍未满足，映射校验门未落地即属回归。",
+      "evidence": "本会话 Read 三张截图：round-1-tour/A/...match-success__交互后.png 与 .../B/...match-success__交互后.png 均显示『寻觅♥ 推荐/附近 + 全部筛选抽屉 + 五 Tab』；仅 .../B/...match-success__默认.png 为真实匹配成功页；reports/audit/baseline/historical-issues.md:98（R13 结论『巡检脚本路由→截图映射不可信，截图前必须校验当前页面路径』）；ideal-baseline.md:175（本页须先重拍再判定）。",
+      "sources": ["screenshot", "baseline:historical-issues.md:98", "baseline:ideal-baseline.md:175"],
+      "confidence": 1.0,
+      "ideal": "tour 脚本对每张截图先 getCurrentPages() 校验栈顶路径与目标页一致再写盘；错位即重拍；本页 A/B 交互后两张重拍为真实匹配成功页（可用 dev-preview=1 或 matching 真实链路到达）。",
+      "fix": "tour/harness 脚本加入栈顶路径断言（R13 §0 结论代码化）；重拍本页 2 张无效截图并更新 screenshot-manifest.json；critical 案 MS10/MS13 同步修（断言栈顶=chat-session）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-REQ-06",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "dev-preview=1 QA 后门无环境门控：任意用户在正式包中通过 query 即可渲染伪造的匹配成功页（固定假对象『星野』+假头像），且页面与真实深链共用（query.userId 深链兜底已建成），生产环境存在展示假匹配状态的入口；v3.1-contract §08 未定义该入口，仅代码注释自证『QA 复验入口，规格书 07』。",
+      "evidence": "match-success.vue:53-64（if (String(q[\"dev-preview\"]) === \"1\") 直接注入 fallbackPartner 星野+AVATAR_1，无 import.meta.env.DEV/__DEV__/条件编译门控）；exec-results.json MS01/MS02 observed dev-preview=1 渲染成功（整页五要素 present）；contract §19-08 行无此入口定义。",
+      "sources": ["code", "interaction:exec-results.json MS01,MS02"],
+      "confidence": 0.8,
+      "ideal": "QA 入口仅存在于开发/体验构建：以条件编译（#ifdef MP-DEBUG）或运行时 env 开关门控 dev-preview 分支，生产包该 query 无效（走正常 userId/store 链）。",
+      "fix": "在 onLoad 的 dev-preview 分支外加环境门控（编译期条件编译优先，避免生产包代码包含假数据字面量）；MS01/MS02 案改为在 debug 构建下执行。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/discover-extra/discover/match-success",
+      "baseline": "素材/理想效果图/匹配成功页面.png（唯一页面级对照依据，本次逐要素目视）+ reports/audit/baseline/ideal-baseline.md:96 + git show 29a2b1df:docs/design/v3.1-contract.md §1/§19-08/§21 + 素材/SVG素材核查与补充报告.md §2.5(:140-151)",
+      "structureNotes": "L1 页面结构：nav（左返回+右相机/···）→标题❤匹配成功❤→副语×2→双头像+中央粉心（pulse+双层涟漪）→白色共同点4行卡→CTA区（立即聊天/继续探索/分享喜悦），顺序与理想图一致✅，CTA margin-top:auto 锚底（virtualHost 高度链）MS16 机证✅；偏差记录①理想图右上1枚扫描框 vs 实现2键（与代码所引规格书7.2冲突，源冲突并入REQ-04）；②独立页无tabBar✅。L2 层级72/32/28/26rpx✅；副语『互相喜欢上了』vs 图『互相喜欢了彼此』P4。L3 交互位（返回/锚底/分享链）✅。L4 双头像192rpx+120rpx心形圆形态一致✅；P4记录：心色#FF6B81→#FF4D6D偏红（契约Love #FF6FA3）、§2.5已备confetti/wing/sparkle庆祝装饰未用（以5枚漂浮爱心近似）。L5 浅绿Hero与理想PNG观感一致、与v3.1粉Hero红线文本冲突→REQ-03；标题双侧心CSS color对<image>无效双心同色（P4视觉线归口）。L6/L7 字梯与间距✅（4行gap24rpx防粘连）。L8 行图标emoji系run/music/book/food，理想为彩底圆（电影/礼盒语义错位）P4记录；引用资产全部在盘（本次ls实证）。L9 ripple2.4s/heart-pulse1.6s/float3.2s/press-feedback✅。L10 标题恒「匹配成功」互喜红线通过（zh-CN.ts:458，全页无「已送出心动」，en \"It's a match!\"）；scoreTitle与图一致✅；行1『旅行爱好』vs图『慢跑爱好』P4。L1–L4 无硬性偏差（冲突项均已立案）。",
+      "usageNotes": "核心任务链 matching→redirectTo(?userId)→match-success→立即聊天→chat-session→返回→继续探索→寻觅Tab 代码层全通（matching.vue:47-50；chat-session index.vue:686-688；stores/match.ts:76-79 兜底入口不误置chat_ready）。机证已闭环：无参兜底（MS02）、带参拉真人（MS03）、store冲突以query为准（MS04）、继续探索落Tab（MS12）、头像兜底（MS14）、锚底（MS16）。任意页2步内回Tab：继续探索/返回均1步达寻觅Tab✅不迷路。断点：①分享喜悦仅Toast无出口（MS09）；②分值恒90/85/80/79对任何对象不变；③兜底入口显示『你和TA』姓名信息弱（设计使然）。机证缺口：critical『立即聊天落会话页』MS10/MS13终态栈/截图/wxml三证均停留本页（取证时序问题非产品缺陷判定，但也不得记通过，需修harness重跑）；MS05栈>1分支退化未取干净机证；harness route字段语义不可靠、login B恒MISMATCH（与寻觅页DC21同根因）。",
+      "functionGaps": [
+        {
+          "target": "「分享喜悦」提供真实分享能力（ask目标CTA『继续探索（+分享喜悦）』；理想图底部分享链接）",
+          "current": "点击仅Toast『分享功能即将上线』，页面无onShareAppMessage（match-success.vue:106-108；MS09机证）",
+          "gap": "庆祝时刻分享链路整体缺失，深链兜底（:69-78）无上游入口配合",
+          "fix": "注册onShareAppMessage(path=MATCH_SUCCESS?userId=partnerId) + 分享喜悦改open-type=share；详见REQ-01"
+        },
+        {
+          "target": "共同点4行进度反映真实匹配数据（contract §19-08『共同 tags』；baseline:96『共同点4行进度』）",
+          "current": "分值恒写死90/85/80/79、标签缺项写死兜底（MatchSuccess.vue:44-65），与props.reasons真实理由无联动（MS15案名自证恒定）",
+          "gap": "进度条为氛围装饰，任意对象恒同值，数据可信性不成立",
+          "fix": "匹配结果透出共同点分值/标签，删除恒定defaultScores，无数据不伪造；详见REQ-02"
+        },
+        {
+          "target": "右上截图/更多具备真实能力（代码注释自证规格书7.1/7.2 P0）",
+          "current": "两键均占位Toast（match-success.vue:106-108,120-123；MS07/MS08机证），且键数2与理想图1枚不符",
+          "gap": "P0承诺功能未实现+键数源冲突",
+          "fix": "裁决键数后实现截图/分享真实链路（更多可并入REQ-01分享）；详见REQ-04"
+        },
+        {
+          "target": "「立即聊天」→chat-session落页（critical，contract §19-08『发消息→chat-session』）",
+          "current": "代码链路完整（goChat→openAppPath navigateTo；chat-session按userId查找/创建会话；markChatReady仅matched态生效），但MS10/MS13两次执行终态栈/截图/wxml均停留match-success，落页未取得机证",
+          "gap": "验证缺口（非确认的产品缺陷）：harness未断言栈顶=chat-session且截图时序/映射存在同批错位旁证",
+          "fix": "修harness（栈顶断言+截图前路径校验）后重跑MS10/MS13；在机证补齐前该项不得记为通过"
+        },
+        {
+          "target": "返回栈>1 navigateBack回来源（contract §19-08『返回=匹配中心』）",
+          "current": "代码:111-118双分支完整；栈=1兜底switchTab寻觅Tab有机证（MS06落pages/discover/index=寻觅中心），栈>1分支因MS05 pre阶段NAV_ERROR退化为栈=1未取干净机证",
+          "gap": "栈>1分支仅代码级确认",
+          "fix": "以真实多级栈（寻觅→matching→成功）重拍返回案"
+        },
+        {
+          "target": "Hero主色三源一致（v3.1粉Hero红线 vs 理想PNG浅绿底 vs 实现浅绿）",
+          "current": "实现与理想PNG观感一致（浅绿+粉心），与contract §1/§19-08及baseline:96『粉色主题Hero』文本冲突",
+          "gap": "规范源间矛盾未裁决，回归判定无唯一依据（R13即因此悬置）",
+          "fix": "基线员裁决后三源收敛（改码或修订规范文本）；详见REQ-03"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-req.json"
+}

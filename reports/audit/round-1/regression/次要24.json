@@ -1,0 +1,138 @@
+{
+  "round": "R1",
+  "reviewer": "历史回归员-R1-次要24",
+  "generatedAt": "2026-09-24",
+  "scope": "subpackages/profile-extra/{profile/tasks,settings/dnd,feedback/history}、subpackages/setup/{profile/index,campus/index,schedule/index,recommend-pref/index,interest/index}；回归索引条目差分（riskFiles 命中本批页面）：MP-R1-TASKS-001-003、MP-R1-TASKS-004-005、T13(tasks 部分)、MP-R1-DND-001、MP-R1-DND-002、T14(dnd 部分)、MP-R1-FEEDBACK-001、MP-R1-HISTORY-001(feedback/history 部分)、MP-R1-FEEDBACKHIST-001、R11-MATRIX-STUCK(feedback-history 部分)、T15(feedback-history 部分)、MP-R5-AVATAR-500、MP-R6-EDITFLOW、P4-PHOTOWALL-NO-ECHO、MP-R1-SETUPCAMPUS-001、R13-TSC-DEFECTS(schedule 部分)、T16(schedule 部分)、MP-R1-SETUPINTEREST-001-002、MP-R1-SETUPINTEREST-003、MP-R9-STATUS-005",
+  "method": "索引差分 + 只读核验：①读 reports/audit/baseline/regression-index.json，按 riskFiles 命中本批 8 页筛出 20 条相关条目；②逐条读当前工作区源码（8 页 .vue + stores/{session,feedback,profile}.ts + composables/{useMenuButtonRect,useStatusBarHeight}.ts + utils/time.ts + apps/api MediaUploadController/LocalMediaStorageService）核验问题路径是否仍存在，全部行号亲读；③读 reports/audit/round-1/interact/exec-results.json（gitSha aefd8a72，1283 条，按 page 过滤本批页面 106 条逐条看 status/failureReason）；④实读交互截图 3 张（DND-05-after-redo、DND-03-after、RE-INTEREST-01-after）并对 DND-05 顶部导航带做像素采样（PowerShell System.Drawing GetPixel，y=40~80 左/中区暗像素均为 0）；⑤本轮实际执行 node scripts/check-statusbar-offset.mjs（555 files, 0 errors, 0 warns → PASS）；⑥git diff/log 定位各修复落点提交与截图 mtime（round-1-interact 截图实拍于 2026-09-21 15:42~19:00）的时间线关系。未改代码、未跑构建、未连开发者工具。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-TASKS-001-003",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "status": "未复发",
+      "evidence": "修复在位（提交 5e2d050c 引入）：tasks.vue:269-284 签到走真实 clientApi.checkIn() 后置 checkinDone.value=true（:275）驱动 localTasks/积分卡/进度条当页重算（MP-R1-TASKS-001），toast 用 task.points 真实积分而非连续天数（:277-279，MP-R1-TASKS-002）；:89-95+:120-123 complete-profile 任务带 path=/subpackages/setup/profile/index?entry=edit（MP-R1-TASKS-003 点击有响应）。运行时 exec-results TK02/TK03/TK04 EXECUTED（签到即时更新/快击仅 1 次/跳编辑页带 entry=edit）；注意截图 mtime（09-21 15:xx）早于修复提交（09-21 21:44），探针可能跑在预修复构建上，故以源码为准。"
+    },
+    {
+      "id": "MP-R1-TASKS-004-005",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "status": "未复发",
+      "evidence": "修复在位（b3d31fcd）：tasks.vue:186-187 loadRealTasks(force) 保留 load-once 守卫但领取成功后 :324 await loadRealTasks(true) 强制刷新（MP-R1-TASKS-004）；onShow 内 :343-344、:357-358 均为 await sessionStore.refreshSession() 且包在外层 try/catch，不再 void 剥离 rejection（MP-R1-TASKS-005）；session.ts:331-336 refreshSession 失败落 errorMessage 且仍 throw（可捕获）。运行时 TK08 EXECUTED（onShow 状态同步）——同为 09-21 预修复构建佐证，代码层结论不变。"
+    },
+    {
+      "id": "T13",
+      "page": "subpackages/profile-extra/profile/tasks（T13 全用点中与本批相关的 tasks 部分）",
+      "status": "未复发",
+      "evidence": "tasks.vue 交互全部为 @tap 实绑定（:377 返回键 goBack、:411 任务项 handleTaskTap），无死交互；本批 8 个页面文件 grep catchtap 零命中（grep -l catchtap 对 8 文件无输出）。运行时 TK02-TK06 点击均有响应/跳转。备注：全仓 .vue 仍存 48 处 catchtap（集中于 chat/swipe/discover 组件），不属本批 8 页，归 OPEN-CATCHTAP-SWEEP 全局项跟踪。"
+    },
+    {
+      "id": "MP-R1-DND-001",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "status": "未复发",
+      "evidence": "修复在位（5e2d050c 引入）：dnd.vue:281-288 goBack 深链栈守卫——getCurrentPages().length>1 走 navigateBack，栈=1 兜底 uni.switchTab({url:'/pages/profile/index'})，与入口链路（设置→我的）一致。运行时 DND11 EXECUTED（返回键深链栈=1 switchTab 兜底回「我的」；其 dom 快照 .nav-bar__back:absent 为跳转完成后元素消失，属预期）。"
+    },
+    {
+      "id": "MP-R1-DND-002",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "status": "未复发",
+      "evidence": "修复在位（b3d31fcd 引入）：dnd.vue:314 .safe-top 先于 :317 .nav-bar 渲染（DOM 顺序已纠正），:309 根节点 :style=\"menuStyleVars\" 注入，:560-564 .safe-top 高度 calc(var(--statusbar, env(safe-area-inset-top)))，--statusbar 来自 useStatusBarHeight.ts:19-27 uni.getSystemInfoSync().statusBarHeight 真值（useMenuButtonRect.ts styleVars）。本轮实际执行 node scripts/check-statusbar-offset.mjs → 555 files, 0 errors, 0 warns PASS。视觉终验缺：本轮静态截图 0 张；round-1-interact DND 截图（DND-05-after-redo.png 等，mtime 2026-09-21 15:42-15:50）早于修复提交 b3d31fcd（09-22 05:49），且我对 DND-05 顶部导航带 y=40~80 像素采样左/中区暗像素均 0（预修复构建中 back/标题未渲染），故既有截图不构成修复后视觉证据；代码层无复发。"
+    },
+    {
+      "id": "T14",
+      "page": "subpackages/profile-extra/settings/dnd（T14 返回/栈底守卫族中 dnd 点位）",
+      "status": "未复发",
+      "evidence": "T14 对 dnd 的核验点 stack1-back-dnd-switchtab-profile 与 console-zero-navigateback-unhandled-rejection：前者即 MP-R1-DND-001（dnd.vue:281-288 栈守卫在位）；后者 dnd.vue 全文无裸 navigateBack-without-guard 路径（唯一 navigateBack 在栈守卫内）。运行时 DND11 EXECUTED。"
+    },
+    {
+      "id": "MP-R1-FEEDBACK-001",
+      "page": "subpackages/profile-extra/feedback/history",
+      "status": "未复发",
+      "evidence": "修复在位（5e2d050c 引入）：history.vue:195-203 formatSubmissionTime= formatDateTime(iso,'full',getCurrentLocale())，不再直出 ISO 串；模板 :331 record__time 用该函数；utils/time.ts:188 formatDateTime 存在且 null 兜底 '-'。运行时 FH01-FH09 全 EXECUTED（页面渲染/筛选/展开/滚动正常）；本轮巡检空数据（FH01 .record:absent）故时间行运行时样张缺，代码层无复发。"
+    },
+    {
+      "id": "T15",
+      "page": "subpackages/profile-extra/feedback/history（T15 文案/编码族中 feedback-history-time-human-format 点位）",
+      "status": "未复发",
+      "evidence": "与 MP-R1-FEEDBACK-001 同点同证：history.vue:195-203+331 本地化时间格式化在位（5e2d050c），utils/time.ts:188 依赖存在；FH01-FH09 EXECUTED 页面无渲染异常。"
+    },
+    {
+      "id": "MP-R1-HISTORY-001",
+      "page": "subpackages/profile-extra/feedback/history（MP-R1-HISTORY-001 双页条目的 feedback/history 部分）",
+      "status": "未复发",
+      "evidence": "history.vue:210-251 loadQueryId 深链 ?id=N 双端解析（MP-WEIXIN options / H5 URLSearchParams）300ms 后自动展开，且 SubTask 1.5.2 定时器引用保存+onUnmounted 清理（:47-57）；:145-172 toggleExpand 懒加载 getSubmissionDetail，失败 toast+收起（无 404 页面态）。运行时 FH05 EXECUTED（深链 ?id 自动展开）、FH03/FH04 EXECUTED（展开/互斥/缓存）。"
+    },
+    {
+      "id": "MP-R1-FEEDBACKHIST-001",
+      "page": "subpackages/profile-extra/feedback/history",
+      "status": "未复发",
+      "evidence": "修复在位（b3d31fcd）：stores/feedback.ts:25-36 load() 内 try/catch 写 this.errorMessage（不再裸吞），history.vue:108-114 loadList 读 store.errorMessage 映射页面错误态（死代码激活），:288-298 error-card+error-card__retry v-if errorMessage 渲染。运行时 FH07 FAILED（探针无法注入失败态，.error-card 未出现——正常链路无错误属预期，非回归；错误路径本轮无运行时样张，代码层可达）。"
+    },
+    {
+      "id": "R11-MATRIX-STUCK",
+      "page": "subpackages/profile-extra/feedback/history（R11 STUCK/骨架场景族中 feedback-history 点位）",
+      "status": "未复发",
+      "evidence": "history.vue:260-262 onShow 必调 loadList，页面无永驻骨架分支（空态走 :301-306 EmptyState）；FH01 EXECUTED 且 dom .filter-chip:present .error-card:absent——页面正常出内容非 STUCK。R11 当时 12 页 STUCK 已由 screenshot-matrix-rerun 处置，本点位无复发。"
+    },
+    {
+      "id": "MP-R5-AVATAR-500",
+      "page": "subpackages/setup/profile/index（头像上传 500，风险文件在 apps/api 与 api/profile.ts/voice-upload.ts）",
+      "status": "未复发",
+      "evidence": "白名单在位：apps/api/src/main/java/com/campuslove/api/media/LocalMediaStorageService.java:437-451 normalizeType 将 'image'/'background'/'avatar' 归一为 image（:442 明含 avatar），avatar 上传不再 500；页面侧 setup/profile/index.vue:36-37 ensurePrivacyAuthorized+resolveMediaUrl 链路在位（87ffeb16 09-19，早于探针运行）。运行时缺口如实记录：EP09/EP10 FAILED——automator 无法驱动选图/相册授权链（工具限制），头像上传本轮运行时未走通，结论基于后端白名单代码证据。"
+    },
+    {
+      "id": "MP-R6-EDITFLOW",
+      "page": "subpackages/setup/profile/index",
+      "status": "未复发",
+      "evidence": "修复在位（2026-09-14 重写携带，87ffeb16 提交）：setup/profile/index.vue:52-57 onLoad 解析 entry=edit 置 entryMode；:519-534 navigateAfterSave——edit 模式 navigateBack（栈=1 兜底 switchTab ROUTES.TAB.PROFILE），wizard 模式才 redirectTo 下一向导步。运行时 EP11 EXECUTED（无变更保存「资料无变更」仍按模式导航返回）、EP02 EXECUTED（wizard 模式进度条显示）；EP03 的「请选择身高」×6 与 EP04-EP10 失败均为探针输入链（__CAND__ 元素定位）限制，非本条回归。该页自 09-19 未再变更，探针证据有效。"
+    },
+    {
+      "id": "P4-PHOTOWALL-NO-ECHO",
+      "page": "subpackages/setup/profile/index（照片墙当次不回显，P4 决策记录项）",
+      "status": "未复发",
+      "evidence": "无回归性复发；基线决策记录已过期：stores/profile.ts:827-847 uploadPhotoAtIndex 成功后即时 this.photoGallery=next（:845）并 syncBasicProfileGallery（审核项 pending），setup/profile/index.vue:419 照片墙渲染绑定 profileStore.photoGallery——当前行为为「上传后当次即回显」，较记录的「当次不回显、仅重进回显（决策接受）」属改善方向，无用户可见退化；EP10 FAILED 探针未走通上传链。建议基线记录更新为「上传即回显」，不构成本轮修复项。"
+    },
+    {
+      "id": "MP-R1-SETUPCAMPUS-001",
+      "page": "subpackages/setup/campus/index",
+      "status": "未复发",
+      "evidence": "结构性不存在：campus/index.vue 全文件仅 1 处 showModal（:106-113 showPrivacyInfo）且 showCancel:false 单确认键——无 cancel 路径可产生 unhandled rejection；grep captureException 全文件零命中。该页自 628d5f06（09-10）未变更，探针证据有效：CA01-CA06/CA08/CA09 EXECUTED 主链正常；CA07 FAILED 为原生 showModal 无法被 automator 点击（工具限制，T12/R21 已知怪癖），非回归。"
+    },
+    {
+      "id": "R13-TSC-DEFECTS",
+      "page": "subpackages/setup/schedule/index（R13 vue-tsc 族中 schedule-ref-import 点位）",
+      "status": "未复发",
+      "evidence": "本轮工作区 1 行 diff 即该修复本体：git diff HEAD -- apps/client/src/subpackages/setup/schedule/index.vue = import 由 { onMounted, reactive } 补为 { onMounted, reactive, ref }；HEAD（aefd8a72）版本 :50 使用 const saving = ref(false) 而 import 缺 ref（ReferenceError 隐患）——即索引声称的「已修代码级」在 HEAD 上曾丢失（提交层回归），当前工作区已补回。运行时佐证：SC01/SC02/SC03/SC07/SC08 EXECUTED（页面挂载渲染正常，无 ref 崩溃；若 dist 为 HEAD 缺陷版则 SC01 应白屏）。结论：按当前工作区源码无复发；该 1 行修复须随本轮一并提交，否则下次以 HEAD 构建将复发。"
+    },
+    {
+      "id": "T16",
+      "page": "subpackages/setup/schedule/index（T16 作用域/未导入引用崩溃族中 schedule 点位）",
+      "status": "未复发",
+      "evidence": "与 R13-TSC-DEFECTS schedule 点位同点同证：工作区 schedule/index.vue:9 import { onMounted, reactive, ref } from 'vue'（:50 ref(false) 可解析）；SC01 EXECUTED 页面挂载正常（boot/page-mount 无 ReferenceError 的页面级证据）。typecheck-zero-errors-sustained 属全局 vue-tsc 门禁，本轮未重跑全量 typecheck（超出本页差分必要面），如实记录为未执行。"
+    },
+    {
+      "id": "MP-R1-SETUPINTEREST-001-002",
+      "page": "subpackages/setup/interest/index",
+      "status": "未复发",
+      "evidence": "修复在位（5e2d050c + aefd8a72 补强）：interest/index.vue:42-53 保存前先 GET 全量资料合并 interestTags 再 PUT（-002 全量语义不再清空其余资料；拉取失败提示重试不盲提）；:55-63 保存后 600ms 栈守卫——栈>1 navigateBack，栈=1 switchTab /pages/profile/index（-001 rejection 兜底）；:33-34 防重入守卫。运行时 IN05/IN06 EXECUTED（保存成功→600ms 返回、快击仅 1 次、少于 3 个拦截）；截图 mtime（09-21 18:07）早于 aefd8a72（09-22 11:24），防重入与拉取失败分支为提交期补强，运行时样张未覆盖，代码层无复发。"
+    },
+    {
+      "id": "MP-R1-SETUPINTEREST-003",
+      "page": "subpackages/setup/interest/index",
+      "status": "未复发",
+      "evidence": "修复在位（aefd8a72 引入）：interest/index.vue:82-84 仅渲染 :groups=\"['interest']\" 一组，初始化（:17）、回填（:20-30）、校验（:36-39）、保存（:35/:53）均只处理 interest——原「4 组可见可选、保存静默丢弃其余 3 组」的问题路径已不存在。关键证据辨析：RE-INTEREST-01-after.png（mtime 09-21 18:07）实拍显示 4 组标签（兴趣 5/5、性格 0/3、生活方式 0/4、感情观 0/3、已选 5/15），系修复提交（09-22 11:24）之前的构建实拍，属「修复前留证」而非当前复发；IN01 的 dom 断言（.tag-selector__group:present）过弱不能区分 1 组/4 组。修复后运行时终验缺（本轮静态截图 0 张），代码层无复发。"
+    },
+    {
+      "id": "MP-R9-STATUS-005",
+      "page": "subpackages/setup/interest/index",
+      "status": "未复发",
+      "evidence": "修复在位（a5916844 09-16，早于探针运行，运行时证据有效）：interest/index.vue:7-8/15 引入 useMenuButtonRect 注入 --statusbar，:96-97 padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx)。本轮实际执行 node scripts/check-statusbar-offset.mjs → 555 files, 0 errors, 0 warns PASS（该页语法级合规）。RE-INTEREST-01-after.png 实拍：标题「选择兴趣」位于状态栏（18:06）下方，无叠印——该修复先于截图，证据有效。"
+    }
+  ],
+  "notes": [
+    "本批 8 页中 subpackages/setup/recommend-pref/index 在回归索引中无任何 riskFiles/verification 命中条目，无可核对历史项；其本轮交互巡检 RP01-RP07 全 EXECUTED（冷启动回显/单选/保存/错误态/返回），无回归信号。",
+    "时间线结论（对本批运行时证据定权关键）：round-1-interact 截图实拍于 2026-09-21 15:42~19:00；修复落点提交 5e2d050c（09-21 21:44）、b3d31fcd（09-22 05:49）、aefd8a72（09-22 11:24）多数晚于拍摄。因此 tasks/dnd/feedback-history/interest 的多数探针 EXECUTED 反映的是修复前/部分修复构建，本批「未复发」结论一律以当前工作区源码亲读 + check-statusbar-offset.mjs（本轮实跑 PASS）为准，探针/截图仅作旁证并在各条 evidence 中注明效度。setup/campus（09-10 后未变）与 setup/profile（09-19 后未变）两页探针证据与当前源码一致，效度完整。",
+    "提交层风险一项：R13-TSC-DEFECTS 的 schedule ref-import 修复在 HEAD（aefd8a72）上缺失，由本轮工作区 1 行 diff 补回——若该 diff 未随本轮提交，下次以 HEAD 构建将复发（ReferenceError）。",
+    "P4-PHOTOWALL-NO-ECHO 基线记录与当前代码不一致（现行为上传即回显，属改善方向），建议基线记录更新，非修复项。",
+    "本轮实际执行命令：node scripts/check-statusbar-offset.mjs（exit=0，555 files/0 err/0 warn）；grep catchtap（本批 8 页 0 命中）；git diff/log -S（修复落点定年）；PowerShell GetPixel 对 DND-05 导航带采样（无 back/标题渲染，证实其为预修复构建）。未运行构建、未重跑交互探针、未连开发者工具（超出本角色只读约束）。",
+    "未发现任何「已复发」条目，故 issues 为空；本文件为新增产出（此前不存在 regression/次要24.json）。"
+  ]
+}

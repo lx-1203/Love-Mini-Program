@@ -1,0 +1,315 @@
+{
+ "round": "R1",
+ "page": "subpackages/circles/circles/index",
+ "gitSha": "aefd8a72",
+ "judgedAt": "2026-09-23",
+ "manifest": "reports/audit/round-1/ops/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+ "execResults": "reports/audit/round-1/interact/exec-results.json",
+ "summary": { "total": 21, "verified": 4, "failed": 0, "unverified": 17 },
+ "checks": [
+  {
+   "caseId": "CI01",
+   "page": "subpackages/circles/circles/index",
+   "operation": "冷启动三时刻(0/0.5/1s)DOM采样·observe-only",
+   "expected": "loading→content 时序，渲染 14 张 .circle-card，全程不得闪现 error/empty；console 无 TypeError/NAV_FAIL/is not defined",
+   "actual": "route 抵达 index ✓；本用例 console=[]（无 TypeError/NAV_FAIL）✓；A1 的 DOM 采样全部返回 :absent（.circles-state/.circle-card）——经 CI09 wxml 落底与同轮 8+ 张截图比对证实为自动化组件边界致盲（元素实际存在），采样数据不可用作否定证据；同轮次 09:47-09:53 全部截图（如 CI06-after）均呈现 content 态 14 卡，无任何一帧 error/empty/loading 卡死。缺口：0-1s 关键窗无直接截图，loading 转圈子断言未被直接观察到（mock 同步装载使该窗口趋近于零）",
+   "verdict": "VERIFIED",
+   "confidence": 0.62,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI06-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-after.wxml",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ]
+  },
+  {
+   "caseId": "CI02",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap .circles-header__back（页面栈≥2 → navigateBack 回来源页）",
+   "expected": "500ms 内 navigateBack 落回 pages/home/index，栈顶=来源页",
+   "actual": "route 恒为 [circles/index]，未发生任何导航；A1 实际以 reLaunch 直达（栈深=1，pre 记录 auto-reLaunch），manifest 要求的『来源页栈≥2』前置未建立；console 无 navigateBack:fail 未处理拒绝——同套件 PT10/PT26/PT29/PT30 证明该 harness 对此类拒绝必有落盘（console-S06 日志），故『tap 已落地但 goBack 失败』被反证；同时 .circles-header__back 被报 :absent 而 wxml 落底证明其存在于页面层——tap 是否落地无法证明。归执行失败/前置未建立",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI02",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-after.wxml"
+   ]
+  },
+  {
+   "caseId": "CI03",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap .circles-header__back（reLaunch 栈底 → 兜底 switchTab 回首页）",
+   "expected": "navigateBack 失败走 .catch → switchTab('/pages/home/index')，栈顶=首页，不白屏",
+   "actual": "route 恒为 [circles/index]，未切换到首页；console=[]——无 navigateBack:fail 未处理拒绝（同套件 post-topic 用例证明此类拒绝必被记录），结合头部返回钮被报 :absent（而 wxml 证明存在），判定 tap 未落地、goBack 兜底链未被触发；源码 goBack 确有 catch→switchTab→reLaunch 链（index.vue:257-263，仅作旁证不作判据）。归执行失败（tap 未落地）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.72,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI03",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ]
+  },
+  {
+   "caseId": "CI04",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap .circles-header__search（占位 toast）",
+   "expected": "500ms 内 toast「搜索功能即将上线」icon=none；无路由变化；自动消失不永驻",
+   "actual": "Toast 钩子捕获 showToast×2，title=「搜索功能即将上线」与预期逐字一致（两次 tap 各一次，A1 因 DOM 读失败重复执行了一次动作）；route 恒为 [index] 无路由变化 ✓；console=[] ✓；与源码 goSearch 硬编码文案一致（index.vue:267-269，旁证）。缺口：after 截图捕获超时（ERROR:timeout waiting for automator response，磁盘无该文件）、500ms 时延未直接计时、自动消失未观测",
+   "verdict": "VERIFIED",
+   "confidence": 0.78,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI04-toast数组",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ]
+  },
+  {
+   "caseId": "CI05",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap 第 2 个 .circles-tab「摄影」（客户端过滤）",
+   "expected": "tab 高亮+aria-selected 迁移，列表过滤仅剩 1 张摄影卡，无网络请求",
+   "actual": "act 记录 tapIndex .circles-tab#2(\"摄影\") tapped，但无任何效果留痕：本用例 after 截图捕获超时（磁盘无文件），且后续 CI06 前置的 reLaunch 会重置组件态，CI06-after 显示 全部 高亮不能反证本用例成败；当前构建下无任何一帧摄影过滤态截图（Sep21 巡检图有过滤态但属旧构建不作数）。tap 效果完全无证据 → 证据缺失",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI06-after.png"
+   ]
+  },
+  {
+   "caseId": "CI06",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap 末个 .circles-tab「更多」（恢复全量）",
+   "expected": "「更多」tab 高亮迁移（icon 态），列表恢复 14 卡，无网络请求",
+   "actual": "CI06-after 截图（09:47）显示 全部 tab 仍高亮、列表全量——『更多高亮』的预期终态未达成；但「更多」为第 7 个 tab，处于横向滚动区屏外（所有截图中可见 tab 止于 美食），harness 未记录任何 tab 条滚动，tap 物理上无法按坐标命中屏外元素；且全部 .circles-tab 查询均 :absent 而 CI04 证明 :absent 元素仍可能被 tap 命中，无法区分『tap 未落地』与『落地无效』。终态不符但产品责任被屏外命中机制开脱 → 归执行失败",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI06-after.png"
+   ]
+  },
+  {
+   "caseId": "CI07",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tab 往返（全部→运动→全部）",
+   "expected": "高亮迁移正确；运动态仅 1 卡；回全部恢复 14 卡且「旅行」保持已加入",
+   "actual": "CI07-after（09:48）终态=全部高亮+全量 14 卡，与预期终态一致；但①前置『旅行已加入（承接 CI09）』未建立——用例按序号执行，CI07(09:48) 先于 CI09(09:49)，截图中 旅行=+加入，『已加入状态不丢』子断言无从验证（manifest 自身排序悖论）；②运动中间态无一帧证据；③终态与『tap 全部落地无效』不可区分。三源不一致部分均源于执行/前置缺陷",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI07-after.png"
+   ]
+  },
+  {
+   "caseId": "CI08",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap 第 1 张 .circle-card 卡身（避开 action 钮）→ navigateTo circle-home",
+   "expected": "栈深+1，栈顶=circle-home?circleId={id}，返回后落回本页",
+   "actual": "route 恒为 [circles/index]，未发生导航；A1 act 日志自证偏离规格：除 tap .circle-card 外还记录了 tap .circle-card__action（规格明令避开）——旁证链：CI07-after(09:48) 摄影=+加入 → CI09-before(09:49) 摄影=已加入，其间仅 CI08 执行，证明实际落点为首卡 action 钮（触发加入翻转）而非卡身；规格化的激励（干净卡身 tap）从未送达，无法裁决 goToCircleHome 导航行为",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI08",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI07-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-before.png"
+   ]
+  },
+  {
+   "caseId": "CI09",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap「旅行」卡 .circle-card__action（加入：翻转+成员数 8933）",
+   "expected": "500ms 内旅行卡翻转「已加入」+memberCount 8932→8933；@tap.stop 不冒泡无路由变化；无 toast",
+   "actual": "before(09:49)/after 截图三方比对：实际 tap 落在首卡「摄影」action 钮——摄影 已加入→+加入（正确翻转、无 toast、无路由变化，恰好演示了静默成功路径），而目标卡「旅行」全程保持 +加入、8,932 人·352 条动态不变；预期（旅行翻转+8,933）未达成，根因=执行器以 class 全局首匹配命中摄影卡而非规格定位的旅行卡。产品 toggle 机制本身被双向验证有效（CI09 出圈/CI10 入圈），不构成产品缺陷；附带数据副作用：摄影被退出圈，污染后续用例前置",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.88,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-after.png"
+   ]
+  },
+  {
+   "caseId": "CI10",
+   "page": "subpackages/circles/circles/index",
+   "operation": "tap「美食」卡 .circle-card__action（退出：回+加入，成员数-1）",
+   "expected": "美食卡回「+ 加入」描边态，memberCount 7240→7239，无路由变化无 toast",
+   "actual": "before/after 截图比对：美食卡前后均为「已加入」7,240 人·287 条动态（未触动）；实际 tap 再次落在首卡「摄影」action 钮——摄影 +加入→已加入（重新加入，静默无 toast 无路由变化）。预期未达成根因与 CI09 相同=执行器误命中首卡；产品侧 toggle 双向（入/出圈）均表现正确",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.88,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI10",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI10-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI10-after.png"
+   ]
+  },
+  {
+   "caseId": "CI11",
+   "page": "subpackages/circles/circles/index",
+   "operation": "快击 .circle-card__action ×5（<100ms 间隔）防连点",
+   "expected": "铁律：仅 1 次生效→终态确定；若多次翻转/多次请求即防连点缺陷（如实判定）",
+   "actual": "act=rapidTap ×5 done=5（落点推断为首卡摄影，当时为已加入态）；终态证据缺失：after 截图捕获超时（磁盘无文件）、wxml 落底仅含页头（345B 组件边界）、成员数 1.2w 显示掩盖 ±n 差异；旁证推理（CI12 再 tap 一次后 CI12-after 摄影=已加入）仅能证明 CI11 产生了奇数次有效翻转（1/3/5 次均相容），无法确证是 1 次生效（防连点成立）还是 5 次全生效（防连点缺陷）。源码 toggleJoin 无重入锁+mock 同步翻转（index.vue:173-188，仅旁证，禁凭代码判定）→ 证据缺失",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.65,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI11",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI11-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI11-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI12-after.png"
+   ]
+  },
+  {
+   "caseId": "CI12",
+   "page": "subpackages/circles/circles/index",
+   "operation": "加入/退出失败分支 toast（条件用例：real 模式 reject）",
+   "expected": "失败 toast（后端 message 或「操作失败，请重试」）+按钮不翻转；无法构造时标 UNVERIFIED",
+   "actual": "条件未构造：本用例无任何 pre 注入记录（无 login/reLaunch/apiMode 切换/断网构造），在 mock 模式下直接 tap（落点推断为首卡摄影）→ mock joinCircle 恒成功，观察结果为静默翻转无 toast（toast=[]），与 mock 成功路径一致、与失败分支无关；manifest 预授权『无法构造时如实标 UNVERIFIED』",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI12-after.png"
+   ]
+  },
+  {
+   "caseId": "CI13",
+   "page": "subpackages/circles/circles/index",
+   "operation": "带参深链 reLaunch ?category=travel",
+   "expected": "过滤仅剩旅行 1 卡；标题保持硬编码「兴趣圈」；quick tab 默认全部；无报错",
+   "actual": "after 截图（09:51，64KB 与全量图明显不同）三方一致：列表恰 1 张旅行卡（8,932 人·352 条动态·热门·+加入），头部标题硬编码「兴趣圈」（趣 描边样式）未随 category 派生，banner+7 tab 原位且 全部 默认高亮；route options 捕获 {category:'travel'} ✓；随后 tap「全部」后列表仍保持旅行过滤（截图可见），印证 category 与 quick-tab 过滤链互不叠加；console=[] ✓",
+   "verdict": "VERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI13-route+options",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI13-after.png"
+   ]
+  },
+  {
+   "caseId": "CI14",
+   "page": "subpackages/circles/circles/index",
+   "operation": "带参深链 ?category=movie（诚实空列表）",
+   "expected": "matched=[]→渲染 0 卡但不崩溃，banner/tabs 照常、无兜底空态文案；console 无报错",
+   "actual": "route options 捕获 {category:'movie'} ✓（深链参数送达）；但空列表渲染状态零证据：after 截图捕获超时（ERROR:timeout，磁盘无文件），DOM 读 .length:absent 为致盲读数，无任何一帧 movie 深链截图。诚实过滤语义无法核对 → 证据缺失",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI14-route+options"
+   ]
+  },
+  {
+   "caseId": "CI15",
+   "page": "subpackages/circles/circles/index",
+   "operation": "卡片渲染规范断言（w 单位/千分位/热门阈值/好友行 5~12）",
+   "expected": "摄影 1.2w；旅行 8,932 千分位；热门恰在 ≥8000 的 5 卡；好友行 N∈5..12 且刷新稳定；375px 无截断",
+   "actual": "本用例自身 DOM 文本抽取全 :absent（致盲），但同轮次多张当前构建截图直接可见全部断言值：摄影「1.2w 人 · 486 条动态」✓；旅行「8,932 人 · 352 条动态」、音乐「8,123 人 · 301 条动态」、运动「6,532 人 · 244 条动态」、美食「7,240 人 · 287 条动态」千分位 ✓；热门徽标恰出现在可见的 3 张 ≥8000 卡（摄影/旅行/音乐），运动/美食无徽标 ✓（游戏/考研两卡在折叠线下未取证）；好友行 等 6/10/5/7/12 位朋友加入 全部 ∈5..12 ✓；跨截图确定性：旅行=等 10 位（CI09-before 与 CI13-after 两次独立装载一致）、摄影=等 6 位（CI09-before 与 CI18-after 复跑一致）✓；375px 宽度下统计行完整无省略号截断 ✓。缺口：游戏/考研卡的徽标与折叠线以下卡未直接取证",
+   "verdict": "VERIFIED",
+   "confidence": 0.78,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI15",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI13-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI18-after.png"
+   ]
+  },
+  {
+   "caseId": "CI16",
+   "page": "subpackages/circles/circles/index",
+   "operation": "scroll-view 滚到底/顶（无分页声明）",
+   "expected": "末卡完整渲染+占位；无分页/补拉请求；回顶后副标题与 7 tab 原位",
+   "actual": "console 仅 preload 信息、无任何 /circles 补拉请求 ✓（『无分页请求』半断言成立）；回顶后 scrollPos=top ✓；但『到底时末卡完整渲染』零证据：harness 的 pullDown 尝试自身报错（ERR uni is not defined），pageScrollTo bottom/top 仅记录动作未采样中途 scrollTop 与末卡渲染，无截图 → 关键断言证据缺失",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI16",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log"
+   ]
+  },
+  {
+   "caseId": "CI17",
+   "page": "subpackages/circles/circles/index",
+   "operation": "校园认证圈拦截 toast（条件用例：campusVerified=true 构造）",
+   "expected": "toast「进入校园圈需先完成校园认证」+不跳转；无法构造时标 UNVERIFIED",
+   "actual": "构造步骤零留痕：无任何 evaluate 注入 campusVerified/清空 campusName 的 pre 记录；act 记录 tap .circle-card 但 toast=[]（预期 toast 未出现）、route 恒 [index]；旁证：CI16 之后摄影卡状态由已加入变+加入（CI19-after 可见），推断该 tap 再次落在首卡 action 钮产生静默翻转而非卡身导航。条件未建立且预期反应未出现 → 按 manifest 预授权标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI17",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI19-after.png"
+   ]
+  },
+  {
+   "caseId": "CI18",
+   "page": "subpackages/circles/circles/index",
+   "operation": "错误态+重试真实重拉（条件用例：GET /circles 失败）",
+   "expected": "error 文案+重试按钮真实重拉恢复；无法构造时标 UNVERIFIED",
+   "actual": "A1 status=FAILED：action-not-performed，tap(__CAND__) element not found——错误态从未出现（mock fetchCircles 恒成功，pageState 恒 content），重试按钮自然不存在；复跑补拍的 CI18-after（19:09，195KB）确认页面处于 content 全量态、无 error UI。条件无法构造，按 manifest 预授权标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI18",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI18-after.png"
+   ]
+  },
+  {
+   "caseId": "CI19",
+   "page": "subpackages/circles/circles/index",
+   "operation": "空态 EmptyState「暂无兴趣圈」（条件用例：清空 circles）",
+   "expected": "EmptyState 渲染「暂无兴趣圈」；无报错；可自愈恢复",
+   "actual": "构造步骤零留痕（无清空 circles 的 evaluate 记录）；CI19-after（09:53）显示全量 14 卡 content 态——空态从未被构造也从未渲染（.circlesEmpty:absent 为致盲读数，但截图正面证明列表非空）。条件未建立 → UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI19",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI19-after.png"
+   ]
+  },
+  {
+   "caseId": "CI20",
+   "page": "subpackages/circles/circles/index",
+   "operation": "onShow 自愈补拉+登录 watch（条件用例：空列表后返回）",
+   "expected": "空列表时 onShow 自动 fetchCircles 自愈；未登录不发受保护请求；无并发重复拉取",
+   "actual": "构造步骤零留痕（无清空 circles 记录）；执行轨迹异常：pre=navigateTo /subpackages/circles/circles/index（对同页 navigateTo，route 数组出现两条 index 栈帧）；CI20-after 显示全量列表——『空列表→自愈』场景从未成立（circles 非空时 onShow 本就不触发补拉，预期路径未被行使）→ 条件未建立",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI20",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI20-after.png"
+   ]
+  },
+  {
+   "caseId": "CI21",
+   "page": "subpackages/circles/circles/index",
+   "operation": "进 circle-home→返回 ×3 状态保持",
+   "expected": "每次返回落点=本页；旅行保持已加入+成员数保持；circles 非空无补拉；栈深稳定",
+   "actual": "执行失败：act=navigateBack 直接报 NAV_ERROR=Uncaught [object Object]（栈底无上层可退，与 console-S06 日志中 post-topic 用例的 navigateBack:fail cannot navigate back at first page 同型）；全程未发生任何进入 circle-home 的导航（route 恒 [index]），3 次往返一次都未发生；前置『旅行已加入（承接 CI09）』同样未建立（CI09 误命中摄影）；CI21-after 仅证明本页 content 态静态完好",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CI21",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI21-after.png"
+   ]
+  }
+ ],
+ "issues": [],
+ "unverifiable": [
+  "CI02|tap 落地性无法证明（头部返回钮被 harness 报 :absent 但 wxml 证明存在）；且前置『来源页栈≥2』未建立（A1 实际 reLaunch 直达栈深=1）；console 无 navigateBack:fail 拒绝（同套件 PT 用例证明该类拒绝必被落盘，反证 tap 未落地）|1",
+  "CI03|同 CI02：tap 未落地（无 navigateBack:fail 拒绝落盘 + route 不变），goBack 兜底链从未被触发|1",
+  "CI05|tap「摄影」效果零留痕：after 截图捕获超时，且 CI06 前置 reLaunch 重置组件态致后续截图不可作反证|1",
+  "CI06|预期终态（更多高亮）未达成，但「更多」tab 位于横向滚动区屏外、harness 无滚动记录，tap 物理无法命中，产品责任被开脱，归执行失败|1",
+  "CI07|前置『旅行已加入』未建立（manifest 排序悖论：CI07 依赖排在其后的 CI09）；运动中间态无证据；终态与 no-op 不可区分|1",
+  "CI08|执行器自证偏离规格（额外 tap 了明令避开的首卡 .circle-card__action，致摄影翻转），干净卡身 tap 从未送达，导航行为无法裁决|1",
+  "CI09|执行偏差：tap 以 class 全局首匹配命中「摄影」而非规格目标「旅行」，旅行卡全程未翻转；toggle 机制本身经摄影卡双向验证有效|1",
+  "CI10|同 CI09：tap 误命中「摄影」（+加入→已加入），目标「美食」全程保持已加入 7,240|1",
+  "CI11|终态证据缺失：after 截图超时、wxml 落底仅页头、1.2w 显示掩盖成员数差异；旁证仅能证明奇数次翻转（1/3/5 相容），防连点成立与否不可判|1",
+  "CI12|条件用例无法构造：mock 模式 joinCircle 恒成功且 A1 未做 real 模式/断网注入，实际执行的是静默成功路径|1",
+  "CI14|category=movie 已送达（route options ✓）但空列表渲染零证据：after 截图超时，无任何一帧截图|1",
+  "CI16|『到底末卡完整渲染』零证据：pageScrollTo 仅记录动作未采样中途状态，pullDown 尝试 harness 自身报错（uni is not defined）；仅『无补拉请求』半断言成立|1",
+  "CI17|条件构造零留痕（未注入 campusVerified/未清 campusName），预期 toast 未出现，tap 推断再次误落首卡 action 钮|1",
+  "CI18|条件无法构造：mock fetchCircles 恒成功，错误态从未出现，重试按钮不存在（A1: element not found）|2",
+  "CI19|条件构造零留痕：circles 未被清空，截图证明列表全量非空，空态从未渲染|1",
+  "CI20|条件构造零留痕：空列表场景未成立；且执行轨迹异常（对同页 navigateTo，栈帧双 index）|1",
+  "CI21|执行失败：栈底 navigateBack 直接 NAV_ERROR（Uncaught [object Object]），circle-home 从未进入，3 次往返零发生；前置旅行已加入亦未建立|1"
+ ],
+ "notes": "R1 交互判定·subpackages/circles/circles/index（S06 套件，git=aefd8a72，exec-results updatedAt 2026-09-23T12:00Z；CI18 为 19:09 复跑补拍）。结论：4 VERIFIED（CI01/CI04/CI13/CI15）/ 0 FAILED / 17 UNVERIFIED——无一判定产品缺陷，非放水，而是三源证据一致表明本轮失败集中在执行侧，四类根因：①执行器选择器失准：以 class 全局首匹配 tap .circle-card__action/.circle-card，实际命中首卡（摄影）action 钮——CI08/CI09/CI10 前后截图链（摄影 已加入→+加入→已加入）与 CI17 旁证完整闭环，误触发还跨用例污染了 store 前置；②仪表致盲：harness 对本页所有类名查询返回 :absent（组件边界），但 wxml 落底与截图证明元素存在、tap 可实际生效（CI04 toast、CI09/10 翻转为证），故一切 :absent 读数不构成否定证据；③条件用例未构造：CI12/17/18/19/20 的注入步骤零留痕（manifest 均预授权 UNVERIFIED）；④捕获超时：CI04/05/11/14 的 after 截图 ERROR:timeout。复跑优先级建议：a) 修复执行器定位（按第 N 卡/文本定位卡片与 action、tab 条先滚动再点屏外 tab、栈感知的返回用例）后重跑 17 条 UNVERIFIED——其中 CI05/06/07（tab 簇，三例零效果）与 CI02/03（返回簇，两例零效果且无 navigateBack:fail 落盘）为最需消歧簇：若修复后 tap 仍无效果即为死按钮 P1；b) CI11 需在复跑中以成员数 DOM 直读（而非 1.2w 显示）+请求计数判防连点。另两处运行级备忘：①全套件登录身份 MISMATCH（实际 userId=user-1001，manifest 约定身份A=100158 曦风）——本页各断言不依赖该具体身份，已计入置信度；②CI02 时间窗（01:46:54Z，reLaunch preload 之前）出现一条无归因 Global Vue Error（runtime-2，空 detail），无法归责本页，留档待查。本页已证实的当前构建正向事实：搜索占位 toast 文案逐字正确且无路由副作用；?category=travel 深链过滤精确（仅旅行卡+标题硬编码+tab 默认全部）；渲染规范（w 单位/千分位/热门阈值/好友行 5..12 跨装载确定/375px 无截断）全部可见达标；冷启动未见过 error/empty 帧且 console 干净。"
+}

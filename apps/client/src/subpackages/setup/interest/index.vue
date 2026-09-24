@@ -70,13 +70,32 @@ async function handleSave() {
     saving.value = false;
   }
 }
+/**
+ * MP-R1-REQ24-INTEREST-001：补返回键——本页为主动进入的设置页（我的→兴趣选择），
+ * 全局 navigationStyle=custom 无系统返回栏且此前无任何返回/跳过出口，不选满 3 个
+ * 保存就无法回「我的」（仅剩系统手势），构成导航死路
+ */
+function goBack() {
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/profile/index" });
+  }
+}
 </script>
 
 <template>
   <view class="interest-page" :style="menuStyleVars">
     <view class="interest-header">
-      <text class="interest-header__title">{{ t('interestSelect.title') }}</text>
-      <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
+      <view class="interest-header__row">
+        <view class="interest-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
+          <text class="interest-header__back-icon">‹</text>
+        </view>
+        <view class="interest-header__texts">
+          <text class="interest-header__title">{{ t('interestSelect.title') }}</text>
+          <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
+        </view>
+      </view>
     </view>
 
     <!-- MP-R1-SETUPINTEREST-003：仅展示「兴趣」组——本页初始化/回填/校验/保存均只处理
@@ -108,6 +127,37 @@ async function handleSave() {
   flex-direction: column;
   gap: 8rpx;
   margin-bottom: 24rpx;
+}
+
+/* MP-R1-REQ24-INTEREST-001：返回键（返回键+标题组同行） */
+.interest-header__row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.interest-header__back {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.interest-header__back-icon {
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--c-text-primary, #222222);
+}
+
+.interest-header__texts {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
 }
 
 .interest-header__title {

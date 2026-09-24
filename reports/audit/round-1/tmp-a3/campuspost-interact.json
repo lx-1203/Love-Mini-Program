@@ -1,0 +1,502 @@
+[
+ {
+  "id": "PT01",
+  "tier": "navigation",
+  "title": "冷启动深链直达（无参）：整页渲染完整，默认分类=课程交流，严禁闪现错误/空态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | observe-only | dom: .category-option--selected:present .title-input:present .content-input:present .content-count:present .submit-text:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 9546
+ },
+ {
+  "id": "PT02",
+  "tier": "navigation",
+  "title": "冷启动带参深链 ?category=study_help：「学习互助」chip 直接高亮",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .category-option--selected:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:reLaunch /subpackages/campus/campus/post-topic?category=study_help",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 16611
+ },
+ {
+  "id": "PT03",
+  "tier": "navigation",
+  "title": "空参深链 ?category=：trim 判空回退默认「课程交流」",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .trim:absent .length:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:reLaunch /subpackages/campus/campus/post-topic?category=",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 16485
+ },
+ {
+  "id": "PT04",
+  "tier": "normal",
+  "title": "非法 category=__proto__：不崩溃、无选中高亮、状态机不被污染",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .category-option:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act-FAIL:tap(__CAND__) element not found: __CAND__(\"校园活动\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"校园活动\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT04-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 22844
+ },
+ {
+  "id": "PT05",
+  "tier": "navigation",
+  "title": "来源页进入链路：campus/index 点「发布」透传当前 Tab 分类",
+  "status": "SKIPPED",
+  "observed": "action-not-automatable: tap campus/index 的发布入口（goToPostTopic → openAppPath('/subpackages/campus/campus/post-topic?category='+activeCategory)，cam",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 23042
+ },
+ {
+  "id": "PT06",
+  "tier": "navigation",
+  "title": "页内返回（header「取消」）：navigateBack 落回 campus/index 且来源页状态保持",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | navError=Uncaught [object Object] | dom: .post-header__back:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | pre:reLaunch /subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6 | pre:auto-reLaunch subpackages/campus/campus/post-topic | pre-FAIL:tap element not found: __CAND__(\"校友动态\")",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 30978
+ },
+ {
+  "id": "PT07",
+  "tier": "normal",
+  "title": "分类 6 选 1 点选：选中态唯一、即时切换、非死按钮",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .category-option:present .category-option--selected:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:tap .category-option",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT07-after.png(61623B)"
+  ],
+  "durationMs": 22355
+ },
+ {
+  "id": "PT08",
+  "tier": "noop",
+  "title": "分类 chip 热区量测 ≥88rpx（交互铁律）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | observe-only | dom: .category-option:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 11042
+ },
+ {
+  "id": "PT09",
+  "tier": "normal",
+  "title": "标题正常输入：v-model 回显、发布钮仍置灰（内容空）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .title-input:present .trim:absent .post-header__submit--disabled:present .bottom-submit__btn--disabled:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:input .title-input=\"校运会志愿者招募\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT09-after.png(61872B)"
+  ],
+  "durationMs": 19636
+ },
+ {
+  "id": "PT10",
+  "tier": "normal",
+  "title": "标题超长输入 60 字：maxlength=50 截断",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .title-input:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:input __CAND__=\"自动化输入-PT10\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT10-after.png(60781B)"
+  ],
+  "durationMs": 19483
+ },
+ {
+  "id": "PT11",
+  "tier": "normal",
+  "title": "标题特殊字符/emoji/脚本串：原样回显、脚本不执行",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .title-input:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:input .title-input=\"🎉<script>alert(1)</script>&am\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT11-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19447
+ },
+ {
+  "id": "PT12",
+  "tier": "normal",
+  "title": "标题全清空：canSubmit 500ms 内回落置灰",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .title-input:present .trim:absent | act:input .title-input=\"自动化输入-PT12\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT12-after.png(60699B)"
+  ],
+  "durationMs": 11437
+ },
+ {
+  "id": "PT13",
+  "tier": "normal",
+  "title": "内容计数 0→499→500 封顶：不进入红色超限态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .content-input:present .content-count:present .content-count--over:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act:input __CAND__=\"自动化输入-PT13\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT13-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19448
+ },
+ {
+  "id": "PT14",
+  "tier": "normal",
+  "title": "内容清空：计数回 0、提交按钮联动置灰",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .content-input:present .trim:absent | act:input .content-input=\"自动化输入-PT14\"",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT14-after.png(59581B)"
+  ],
+  "durationMs": 11409
+ },
+ {
+  "id": "PT15",
+  "tier": "noop",
+  "title": "scroll-view 滚到底再回顶：长表单完整渲染、状态不丢",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .post-body:present .bottom-submit:present | act:pageScrollTo bottom",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "scrollPos=bottom"
+  ],
+  "durationMs": 2377
+ },
+ {
+  "id": "PT16",
+  "tier": "normal",
+  "title": "空提交（无标题无内容）：Toast「请输入标题」且零副作用",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"布\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT16-after.png(72125B)"
+  ],
+  "durationMs": 14571
+ },
+ {
+  "id": "PT17",
+  "tier": "normal",
+  "title": "仅标题提交：Toast「请输入内容」",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/campus/campus/post-topic | act-FAIL:tap(__CAND__) element not found: __CAND__(\"布\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT17-after.png(72164B)"
+  ],
+  "durationMs": 24495
+ },
+ {
+  "id": "PT18",
+  "tier": "critical",
+  "title": "合法表单 header 发布成功（mock）：发布中→发布成功→800ms 返回→新帖置顶当前分类",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发布\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"发布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-before.png(72164B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml"
+  ],
+  "durationMs": 24654
+ },
+ {
+  "id": "PT19",
+  "tier": "critical",
+  "title": "主按钮防连点×5：快击 5 次仅创建 1 帖（含成功窗口重入）",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"发布\")",
+  "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"发布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-after.wxml"
+  ],
+  "durationMs": 24794
+ },
+ {
+  "id": "PT20",
+  "tier": "critical",
+  "title": "发布失败路径：Toast=store errorMessage/「发布失败」，按钮复位可重试",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .errorMessage:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发布\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发布\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"发布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT20-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT20-after.png(72047B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT20-after.wxml"
+  ],
+  "durationMs": 29048
+ },
+ {
+  "id": "PT21",
+  "tier": "critical",
+  "title": "底部主按钮提交成功：与 header 等价路径、bottom 文案变体",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .bottom-submit__btn:present | act:pageScrollTo bottom | act:tap .bottom-submit__btn",
+  "failureReason": null,
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请输入标题",
+    "ts": 1790130409550
+   }
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT21-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT21-after.png(69209B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT21-after.wxml"
+  ],
+  "durationMs": 22913
+ },
+ {
+  "id": "PT22",
+  "tier": "normal",
+  "title": "打开即返回：零副作用、返回正常",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT22-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 16457
+ },
+ {
+  "id": "PT23",
+  "tier": "normal",
+  "title": "重复进出：表单态不残留上次输入",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | observe-only | pre:auto-reLaunch subpackages/campus/campus/post-topic",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT23-after.png(61583B)"
+  ],
+  "durationMs": 18057
+ },
+ {
+  "id": "PT24",
+  "tier": "critical",
+  "title": "选图成功 1 张：图片墙新增缩略图 + 计数 1/6",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | dom: .image-upload:present .image-item:absent | act:tap .image-upload",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-before.png(61558B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-after.png(61558B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-after.wxml"
+  ],
+  "durationMs": 21773
+ },
+ {
+  "id": "PT25",
+  "tier": "normal",
+  "title": "删除已选图：× 移除、计数回落、加号格重现",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .image-item__remove:absent .length:present | pre:auto-reLaunch subpackages/campus/campus/post-topic | act-FAIL:tap(.image-item__remove) element not found: .image-item__remove",
+  "failureReason": "action tap .image-item__remove failed: element not found: .image-item__remove",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT25-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 21456
+ },
+ {
+  "id": "PT26",
+  "tier": "normal",
+  "title": "选图用户取消：静默无 Toast（MP-R2-CAMPUSPOST-005 回归）",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"号\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"号\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT26-after.png(72146B)"
+  ],
+  "durationMs": 14574
+ },
+ {
+  "id": "PT27",
+  "tier": "normal",
+  "title": "选图真实失败（非 cancel，如权限拒）：Toast 明示",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"号\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"号\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT27-after.png(72146B)"
+  ],
+  "durationMs": 14448
+ },
+ {
+  "id": "PT28",
+  "tier": "normal",
+  "title": "隐私授权拒绝：Toast「需同意隐私协议后才能选择图片」且不拉起选图",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .chooseImage:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"号\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"号\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT28-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 15303
+ },
+ {
+  "id": "PT29",
+  "tier": "normal",
+  "title": "满图 6/6：加号格隐藏、上传入口消失",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | observe-only | dom: .image-upload:present .length:present | pre-FAIL:input element not found: .PHOTO_GALLERY_MAX",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT29-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 14385
+ },
+ {
+  "id": "PT30",
+  "tier": "normal",
+  "title": "热门话题选中/再点取消：已选区与计数同步、chip 高亮切换",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"校园日常\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"选\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"校园日常\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT30-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 17433
+ },
+ {
+  "id": "PT31",
+  "tier": "normal",
+  "title": "选满 3 个后点第 4 个：Toast「最多选择 3 个话题」且已选不变",
+  "status": "SKIPPED",
+  "observed": "action-not-automatable: tap 第 4 个热门 chip",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [],
+  "durationMs": 1491
+ },
+ {
+  "id": "PT32",
+  "tier": "normal",
+  "title": "话题搜索：即时过滤→无结果态→清空恢复全集",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .topic-selector__search-input:present | act-FAIL:input(.topic-selector__search-input) element not found: .topic-selector__search-input",
+  "failureReason": "action input .topic-selector__search-input failed: element not found: .topic-selector__search-input",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT32-after.png(72170B)"
+  ],
+  "durationMs": 14120
+ },
+ {
+  "id": "PT33",
+  "tier": "normal",
+  "title": "创建新话题成功：自动选中 + 输入框清空",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .topic-selector__create-input:present | act-FAIL:input(.topic-selector__create-input) element not found: .topic-selector__create-input | act-FAIL:tap(__CAND__) element not found: __CAND__(\"创建\")",
+  "failureReason": "action input .topic-selector__create-input failed: element not found: .topic-selector__create-input",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT33-after.png(72170B)"
+  ],
+  "durationMs": 18482
+ },
+ {
+  "id": "PT34",
+  "tier": "normal",
+  "title": "空名创建：Toast 提示且不产生空 chip",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | pre-FAIL:input element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"创建\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"创建\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT34-after.png(72129B)"
+  ],
+  "durationMs": 16463
+ },
+ {
+  "id": "PT35",
+  "tier": "normal",
+  "title": "重名创建（与热门同名）：Toast「该话题已存在」",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"创建\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT35-after.png(72129B)"
+  ],
+  "durationMs": 16450
+ },
+ {
+  "id": "PT36",
+  "tier": "normal",
+  "title": "已选 chip 逐个移除 +「清空」一键清 + 清空按钮显隐",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"清空\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"清空\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT36-after.png(72129B)"
+  ],
+  "durationMs": 14452
+ },
+ {
+  "id": "PT37",
+  "tier": "normal",
+  "title": "匿名开关切换：checked 即时反馈、品牌色生效",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/campus/campus/post-topic | observe-only | dom: .color:present .brand:absent",
+  "failureReason": null,
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT37-after.png(61610B)"
+  ],
+  "durationMs": 11466
+ },
+ {
+  "id": "PT38",
+  "tier": "critical",
+  "title": "全功能组合发布（匿名+话题+配图）：回流帖作者/内容/图数/分类正确",
+  "status": "FAILED",
+  "observed": "top=subpackages/campus/campus/post-topic | action-not-performed(see act-FAIL) | dom: .name:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发布\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"发布\")",
+  "toast": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-before.png(72129B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-after.png(72130B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-after.wxml"
+  ],
+  "durationMs": 25794
+ }
+]

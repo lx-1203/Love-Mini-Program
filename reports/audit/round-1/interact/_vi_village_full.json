@@ -1,0 +1,1110 @@
+[
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI01",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "身份A 冷启动村口：资料未完善 → LockScreen 全屏锁定态 + 解锁引导弹窗，不闪错误/空态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | dom: .lock-screen:absent .lock-screen__title:absent .unlock-modal:absent .isProfileComplete:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/village/village/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01-after.png(186224B)"
+  ],
+  "durationMs": 19971
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI02",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "解锁引导弹窗三路关闭：「去完善」跳资料页 /「暂不完善」与遮罩仅关弹窗不跳转",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .confirm:absent .hide:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"去完善资料\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"暂不完善\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"暂不完善\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"去完善资料\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI02-after.png(194331B)"
+  ],
+  "durationMs": 20095
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI03",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "LockScreen「×」关闭：reLaunch 栈深 1 → 兜底 switchTab 回寻觅页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__close:absent .length:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index | act-FAIL:tap(.lock-screen__close) element not found: .lock-screen__close",
+  "failureReason": "action tap .lock-screen__close failed: element not found: .lock-screen__close",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 12009
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI04",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "LockScreen 主按钮（已登录未完善身份A）→ 跳资料完善页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__btn:absent | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(.lock-screen__btn) element not found: .lock-screen__btn(\"立即完善\")",
+  "failureReason": "action tap .lock-screen__btn failed: element not found: .lock-screen__btn(\"立即完善\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4917
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI05",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "LockScreen「先逛逛公开内容」→ switchTab 回寻觅页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__btn-link:absent | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(.lock-screen__btn-link) element not found: .lock-screen__btn-link",
+  "failureReason": "action tap .lock-screen__btn-link failed: element not found: .lock-screen__btn-link",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4964
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI06",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "未登录态 LockScreen 主按钮 → 记录待跳转 + replace 到登录页（登录成功自动回资料页）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .lock-screen__btn:present | pre:logout ok | pre:storageRemove token | pre:reLaunch /subpackages/village/village/index | act:tap .lock-screen__btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 9472
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI07",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "身份B 冷启动默认态：头部+5频道Tab+今日广场帖子流+置顶折叠条+发帖条，各文案逐字断言",
+  "status": "EXECUTED",
+  "observed": "top=pages/login/index | navError=timeout waiting for automator response | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index NAV_ERROR: timeout waiting for automator response | pre:auto-nav ERR timeout waiting for automator response | act:pageScrollTo top ERR:timeout waiting for automator response",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/login/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T01:02:25.616Z][error] {}",
+   "[2026-09-23T01:02:25.630Z][error] \"[Global Error][uni.onUnhandledRejection]\" {\"errMsg\":\"switchTab:fail timeout\"}",
+   "[2026-09-23T01:02:25.630Z][error] \"[captureException]\" {\"errMsg\":\"switchTab:fail timeout\"} {\"source\":\"uni.onUnhandledRejection\"}"
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI07-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 53490
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI08",
+  "page": "subpackages/village/village/index",
+  "tier": "noop",
+  "title": "七态时序：首次进频道 loading 骨架屏 → Success 帖子流，严禁空态/错误态闪现",
+  "status": "EXECUTED",
+  "observed": "top=pages/login/index | navError=timeout waiting for automator response | observe-only | dom: .village-state:absent .post-card:absent .village-empty:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index NAV_ERROR: timeout waiting for automator response | pre:auto-nav ERR timeout waiting for automator response",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/login/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 62385
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI09",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "头部搜索框 → 帖子搜索页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .village-search:present | pre:login B ok userId=user-1001 MISMATCH! | act:tap .village-search",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 2821
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI10",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 切到兴趣圈：8 分类宫格+热门话题+精选话题渲染，发帖条占位随频道切换，30s TTL 不重拉",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | dom: .fetchFeaturedTopics:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tapIndex(__CAND__) element not found: __CAND__(\"兴趣圈\") | act:wait 5000ms",
+  "failureReason": "action tapIndex __CAND__ failed: element not found: __CAND__(\"兴趣圈\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI10-after.png(30891B)"
+  ],
+  "durationMs": 11296
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI11",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "兴趣宫格分类项 → 圈子首页（携带 category 参数）",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .interest-grid__item:absent .category:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tapIndex(.interest-grid__item) element not found: .interest-grid__item(\"学习\")",
+  "failureReason": "action tapIndex .interest-grid__item failed: element not found: .interest-grid__item(\"学习\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 11913
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI12",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "热门话题主卡 → 标签帖子页（tagName 编码传参）",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .tagName:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__(\"女生请回答\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"女生请回答\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 5082
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI13",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "精选话题项 → 话题详情页（topicId+circleId 双参数）",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .topic-item:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.topic-item) element not found: .topic-item",
+  "failureReason": "action tap .topic-item failed: element not found: .topic-item",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4904
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI14",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 切到学校圈（B 未校园认证）：Tab 锁标+认证门整卡渲染+发帖条锁定态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#3(\"学校圈\") tapped",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI14-after.png(194366B)"
+  ],
+  "durationMs": 3591
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI15",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "认证门「去认证」→ 校园认证页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .school-gate__btn:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.school-gate__btn) element not found: .school-gate__btn(\"去认证\")",
+  "failureReason": "action tap .school-gate__btn failed: element not found: .school-gate__btn(\"去认证\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4856
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI16",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "模拟认证一键通过：POST simulate → Toast 成功文案 → 认证门消失 → 校园帖流按校区过滤落定",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .school-gate__simulate:absent .refreshSession:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.school-gate__simulate) element not found: .school-gate__simulate",
+  "failureReason": "action tap .school-gate__simulate failed: element not found: .school-gate__simulate",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-before.png(194334B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.png(194334B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.wxml"
+  ],
+  "durationMs": 7255
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI17",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "学校圈空态「发帖」按钮 → 经实名门控进发帖页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .village-empty__action:absent | act-FAIL:tap(.village-empty__action) element not found: .village-empty__action(\"发帖\")",
+  "failureReason": "action tap .village-empty__action failed: element not found: .village-empty__action(\"发帖\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4053
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI18",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "学校圈（已认证）每日一问入口 → 每日一问页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .village-daily-entry:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.village-daily-entry) element not found: .village-daily-entry",
+  "failureReason": "action tap .village-daily-entry failed: element not found: .village-daily-entry",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4743
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI19",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "学校圈（已认证）附近的人 banner → switchTab 寻觅页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .discover-banner:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.discover-banner) element not found: .discover-banner",
+  "failureReason": "action tap .discover-banner failed: element not found: .discover-banner",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 5399
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI20",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 切到活动频道：「推荐活动」区+活动卡+活动帖流渲染，发帖条占位随频道变化",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#4(\"活动\") tapped",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI20-after.png(185906B)"
+  ],
+  "durationMs": 11471
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI21",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "活动卡片点击 → 活动详情页（?id=参数）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .activity-card:present | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .activity-card",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T10:57:13.057Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T10:57:13.057Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 10955
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI22",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "活动卡「报名」：Toast 成功+按钮态切换，且不误触卡片跳详情；再点取消报名",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .activity-card__enroll:present .enrollActivity:absent .activity-card__enroll--done:present | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .activity-card__enroll",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "报名成功",
+    "ts": 1790161061862
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-before.png(193947B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.png(193403B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.wxml"
+  ],
+  "durationMs": 20643
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI23",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 切到热度榜：fetchHotBoard 按点赞降序 20 条/页；发帖条占位回退今日广场文案（源码无 hot 分支）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#5(\"热度榜\") tapped",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI23-after.png(186004B)"
+  ],
+  "durationMs": 12345
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI24",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "频道记忆持久化：切频道后重进页面恢复上次频道（village_last_channel）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:reLaunch /subpackages/village/village/index | act:tap \"兴趣圈\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI24-after.png(186027B)"
+  ],
+  "durationMs": 19527
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI25",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "带参深链 ?channel=activity 直达活动频道并写入频道记忆",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | dom: .channel:present | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index?channel=activity",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {
+     "channel": "activity"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI25-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19055
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI26",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "深链非法 ?channel=xxx 白名单兜底：忽略参数按已存/默认频道渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | dom: .some:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index?channel=hotxyz",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {
+     "channel": "hotxyz"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png(202790B)"
+  ],
+  "durationMs": 18980
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI27",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 桥接残留参数消费：tab=hot/mine 强制映射回今日广场防残留",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | dom: .tab:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet campus-love:pending-tab-query | pre:reLaunch /subpackages/village/village/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI27-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19219
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI28",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "帖子卡整体点击 → 帖子详情页（setCurrentPost + ?id= 直达）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .post-card:present .setCurrentPost:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap .post-card | act:tap .post-card",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 3339
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI29",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "帖子卡作者行点击 → 他人主页（catchtap 阻断，不误入帖子详情）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .post-card__user:present .userId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .post-card__user",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 18466
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI30",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "帖子点赞：乐观更新+计数±1+心形动画；快击×5 幂等守卫只计 1 次",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .action-btn__count--liked:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:rapidTap(__CAND__) element not found: __CAND__(\"提交\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action rapidTap __CAND__ failed: element not found: __CAND__(\"提交\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-before.png(193446B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png(193445B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.wxml"
+  ],
+  "durationMs": 10520
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI31",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "帖子收藏 toggle：书签高亮+计数±1；失败回滚语义",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .action-btn--collected:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"按\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-before.png(193446B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.png(193446B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.wxml"
+  ],
+  "durationMs": 7760
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI32",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "关注 chip toggle：+关注→已关注样式切换，同作者多帖状态同步",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .follow-chip:present .follow-chip--active:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap .follow-chip | act:tap .follow-chip",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.png(202772B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.wxml"
+  ],
+  "durationMs": 22865
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI33",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "帖子标签 chip → 标签帖子页（# 前缀剥离编码传参）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .tagName:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap \"电影\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 2854
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI34",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "卡内冒泡阻断矩阵：图片区点击不进详情；评论预览行与评论 icon 点击进详情",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tap \"一\" | act-FAIL:tap(__CAND__) element not found: __CAND__(\"览\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"览\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"览\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"览\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "a-1"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 11365
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI35",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "帖子卡分享 icon：源码为 noop 无反馈——按 500ms 死按钮铁律实测判定",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI35-after.png(202790B)"
+  ],
+  "durationMs": 18774
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI36",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "置顶帖折叠条展开/收起：列表显隐+箭头方向切换，aria-expanded 同步",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .pinned-bar__summary:absent .pinned-bar__list:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tap(.pinned-bar__summary) element not found: .pinned-bar__summary | act-FAIL:tap(.pinned-bar__summary) element not found: .pinned-bar__summary",
+  "failureReason": "action tap .pinned-bar__summary failed: element not found: .pinned-bar__summary",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI36-after.png(193885B)"
+  ],
+  "durationMs": 15413
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI37",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "置顶帖列表项点击 → 帖子详情页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .pinned-item:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.pinned-item) element not found: .pinned-item",
+  "failureReason": "action tap .pinned-item failed: element not found: .pinned-item",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4741
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI38",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "回到顶部：滚动 >600px 出现按钮（88rpx 热区）→ 点击回顶并消失",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .back-to-top:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.back-to-top) element not found: .back-to-top",
+  "failureReason": "action tap .back-to-top failed: element not found: .back-to-top",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI38-after.png(193863B)"
+  ],
+  "durationMs": 5796
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI39",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "上拉分页：滚到底追加第 2 页 13 帖，加载完展示「— 没有更多了 —」；hasMore=false 后滚动不再触发",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .load-more:present .loadMore:absent | pre:login B ok userId=user-1001 MISMATCH! | act:pageScrollTo bottom",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI39-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 13057
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI40",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "下拉刷新：强制穿透 30s TTL 真实重拉，refresher 收起不永驻",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | pre:pullDown {\"__plain\":\"ERR uni is not defined\"} | act:refresherPull: scroll-view trigger refresherrefresh,callMethod onPullDownRefresh ok",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI40-after.png(165050B)"
+  ],
+  "durationMs": 13790
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI41",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "Tab 切换滚动位与数据不丢：今日广场滚 1000px → 切热度榜 → 切回恢复滚动位且不重拉",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tap \"热度榜\" | act:tap \"今日广场\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI41-after.png(165050B)"
+  ],
+  "durationMs": 12406
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI42",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "底部发帖条输入框占位区点击 → 经实名门控进发帖页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__input:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.composer-bar__input) element not found: .composer-bar__input",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 7379
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI43",
+  "page": "subpackages/village/village/index",
+  "tier": "navigation",
+  "title": "底部发帖条「发帖」按钮点击 → 同入口进发帖页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__publish:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.composer-bar__publish) element not found: .composer-bar__publish(\"发帖\")",
+  "failureReason": "action tap .composer-bar__publish failed: element not found: .composer-bar__publish(\"发帖\")",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4792
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI44",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "发帖主按钮防连点：快击×5 只入栈 1 层发帖页",
+  "status": "FAILED",
+  "observed": "top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__publish:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:rapidTap(.composer-bar__publish) element not found: .composer-bar__publish",
+  "failureReason": "action rapidTap .composer-bar__publish failed: element not found: .composer-bar__publish",
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-before.png(193863B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.png(193863B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.wxml"
+  ],
+  "durationMs": 7206
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI45",
+  "page": "subpackages/village/village/index",
+  "tier": "critical",
+  "title": "发帖成功返回刷新链：village:post-created 事件穿透 TTL 重拉，新帖带「审核中」徽标置顶",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .unshift:absent .post-card__audit:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index | act:wait 1500ms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-before.png(202830B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-after.wxml"
+  ],
+  "durationMs": 30912
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI46",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "打开即返回 + 重复进出×3：无崩溃、TTL 内不重复全量拉、资源清理无泄漏告警",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | dom: .dispose:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:navigateTo /subpackages/village/village/index | act:navigateBack delta1 | act:repeatNav navigateTo __CASE_PAGE__ x3 navErr:Uncaught [object Object],navErr:Uncaught [object Object],navErr:Uncaught [object Object] | act:wait 2000ms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T01:20:04.711Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T01:20:04.711Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI46-after.png(202803B)"
+  ],
+  "durationMs": 40086
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI47",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "进详情后返回落点恢复：频道与滚动位保持，不重置到顶部",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | navError=Uncaught [object Object] | pre:login B ok userId=user-1001 MISMATCH! | pre:tap \"子\" | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI47-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 13089
+ },
+ {
+  "suite": "S05-village",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "id": "VI48",
+  "page": "subpackages/village/village/index",
+  "tier": "normal",
+  "title": "B6 发帖开关关闭（post_publish_open=false）：发帖条隐藏、空态文案切换且无发帖按钮",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/village/village/index | observe-only | dom: .composer-bar:present | pre:login B ok userId=user-1001 MISMATCH! | pre:pullDown {\"__plain\":\"ERR uni is not defined\"} | pre:auto-reLaunch subpackages/village/village/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/village/village/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI48-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19477
+ }
+]

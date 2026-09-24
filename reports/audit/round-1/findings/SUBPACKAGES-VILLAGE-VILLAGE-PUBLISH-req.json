@@ -1,0 +1,189 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/publish",
+  "generatedAt": "2026-09-24",
+  "reviewer": "A4 需求对照员",
+  "evidence": {
+    "ideal": "素材/理想效果图/发布帖子页面.png（唯一页面级对照依据；需求文本：顶部X/发布动态/发布钮→发布到卡（圈场景=发布到摄影圈；个人动态页默认个人动态——双入口设计）；内容顺序：正文0/1000→图格→话题0/5→位置→提及→谁可以看→小贴士→底部工具条；CTA：发布；状态：谁可以看权限选择）",
+    "staticScreenshots": [
+      "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png"
+    ],
+    "execResults": "reports/audit/round-1/interact/exec-results.json (manifest=SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH, 37例: 18 EXECUTED / 19 FAILED——FAILED 全部为 harness act-FAIL（el.input is not a function / element not found），非页面行为失败)",
+    "interactScreenshots": "reports/screenshots/round-1-interact/ (SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB*.png + wxml)",
+    "code": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/constants/village.ts",
+      "apps/client/src/constants/routes.ts",
+      "apps/client/src/stores/village/constants.ts",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/subpackages/village/village/index.vue",
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/pages.json"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-101",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「添加话题」无话题选择器：点击行仅在硬编码话题「#校园日常」间切换，无法从话题列表/搜索中选择；与理想图「添加话题·已选 0/5」暗示的多选能力不符，且弱于同构兄弟页 circles/post-topic（后者有预设话题 chips 多选）。",
+      "evidence": "publish.vue:702 行项 @tap=\"toggleTopic('#校园日常')\"（唯一触发，写死单一话题）；publish.vue:255-260 toggleTopic 仅增删该 tag；补偿路径：正文手打 #tag 可经 buildMergedTopics（publish.vue:299-305）并入、上限 5。兄弟页对照：circles/post-topic.vue:65-72 预设话题标签数组 + :129 切换逻辑。交互证据 PUB18（toggle 1/5↔0/5）FAILED 于 harness（element not found: #tag(\"添加话题\")），执行级未证。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：话题行「# 添加话题｜已选 0 / 5 ›」，可进入话题选择，最多 5 个",
+      "fix": "将行点击改为打开话题选择弹层：移植 circles/post-topic.vue 的预设话题 chips 多选（上限 5，超出提示），并保留正文 #tag 自动并入；或复用 HotTopicsSection 热门话题数据源做推荐话题列表",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-102",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「提及好友」为占位 stub：点击仅弹 Toast「提及好友即将开放」，无好友选择器、选中后正文/表单无任何 @提及数据；理想图中该行为可用能力位。",
+      "evidence": "publish.vue:262-264 openMentionPicker 仅 uni.showToast({ title: t(\"village.post.mentionHint\") })；zh-CN.ts:1991 mentionHint=\"提及好友即将开放\"。交互证据 PUB19 FAILED 于 harness（element not found: __CAND__(\"提及好友\")），执行级未证。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.95,
+      "ideal": "素材/理想效果图/发布帖子页面.png：「@ 提及好友 ›」行可进入好友选择并回填提及",
+      "fix": "短期：行内文案/样式改为「即将开放」弱化 affordance（去 chevron、降透明度），避免承诺不可用能力；长期：接关注/喜欢列表做好友多选，提及以 @昵称 注入正文并随 payload 提交",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-103",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「谁可以看」行不可真正选择（需求文本明示「状态：谁可以看权限选择」）：cycleVisibility 对四种发布目标的轮换列表均为单值（general=public / campus=school / friends=friends / circle=interest），点击永远不改值；但除 friends 外该行仍保留 press-feedback 与 chevron「›」，构成可点假象——用户按理想图预期点此换权限时无任何反馈。权限实际只能经「发布到」切换目标间接改变。",
+      "evidence": "publish.vue:275-282 四分支 order 数组均 1 元素；:285-291 命中后 next=order[(idx+1)%1]=自身，赋值无效果；:722-732 行保留 press-feedback + chevron（仅 friends 隐藏）。设计缘由见 :271-274 注释（MP-R1-PUBLISH-001：后端 CreatePostRequest 无 visibility 字段，可见范围由 targetType 推导，UI 不得承诺「学校圈」轮换）。交互证据 PUB21（验证单值不轮出）FAILED 于 harness（element not found: __CAND__(\"谁可以看\")），执行级未证。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：「👁 谁可以看｜圈内成员可见 ›」为可进入的权限选择（本页需求文本亦列「谁可以看权限选择」为状态能力）",
+      "fix": "两选一：(a) 将该行降级为只读信息行（对齐「添加位置」行样式：去 press-feedback/chevron，meta 展示由目标推导的可见范围），文案与发布到卡 tag 统一为「圈内成员可见/所有人可见/同校可见」；(b) 后端 CreatePostRequest 增加 visibility 字段后恢复真实轮换/弹层选择。禁止保留现「可点无响应」状态",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-104",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "位置为城市级只读展示，无 POI 级选择：理想图为「北京大学 · 未名湖校区」级位置且带 chevron；现固定显示缓存城市（无缓存显示「选择位置」但行不可点），系 2026-09-06 代码内注明的产品决定（位置固定当前城市，不可更改）。核心发布任务不受影响，登记为范围裁剪留档待产品确认。",
+      "evidence": "publish.vue:50-61（读 STORAGE_KEYS.NEARBY_CITY，缺省北京市）；:709-715 位置行无 @tap、无 chevron；:714 无缓存时 meta=「选择位置」但点击无绑定。静态截图显示「北京市 · 自动定位」为修复前构建留影（MP-R1-PUBLISH-006 修复后无缓存不再宣称自动定位）。PUB20 FAILED 于 harness。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "素材/理想效果图/发布帖子页面.png：「📍 添加位置｜北京大学 · 未名湖校区 ›」POI 级可选址",
+      "fix": "产品裁决：维持城市级（则行文案不应保留「添加」动词，且无缓存态应引导授权定位而非显示「选择位置」）；或恢复 POI 选择（chooseLocation + payload 携带 location）",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-105",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "理想图内容顺序中的「底部工具条」（图片/视频·话题·位置·提及·更多）已整体移除，与本轮需求文本「…→小贴士→底部工具条」冲突；代码注明「2026-09-06 已按需求移除（与上方行项重复，且无实际作用）」。四项功能经图格/行项均可达，无能力净损失，仅「更多」无承载；样式残壳仍留在 scoped style 中。",
+      "evidence": "publish.vue:752 注释（移除决定）；:856-859 .publish-toolbar/.publish-tool 样式残壳（模板无引用）；静态截图确认页面底部无工具条。理想图：底部五项工具条（图片/视频、话题、位置、提及、更多）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：底部工具条五项（图片/视频·话题·位置·提及·更多）",
+      "fix": "产品裁决：确认移除则删除 :856-859 残留样式并更新需求文本/理想稿标注；若恢复则各项锚定到既有行为（图片→chooseImage、话题/位置/提及→滚动+聚焦对应行），「更多」需先定义行为再上",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-106",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "字数计数为 0/500，理想图为 0/1000：500 系与 store 校验、常量、后端规则三方对齐的有意收敛（MP-R1-PUB-016/MP-R1-PUBLISH-012，原 1000 会使 post 版放行 501-1000 字后必败），UI 所见=实际落库，属健康的一致性修复；偏差在理想稿数值本身。静态截图 0/1000 为修复前构建留影，HEAD 实渲染 0/500。",
+      "evidence": "publish.vue:673 :maxlength=\"MAX_CONTENT_LENGTH\"、:681 计数渲染；stores/village/constants.ts:12 MAX_CONTENT_LENGTH=500；constants/village.ts:12-16 POST_MAX_LENGTH=500（MP-R1-PUBLISH-012 注释）；stores/village/index.ts:439-441 超 500 报错。静态截图（round-1/A）显示 0/1000（滞后）；exec PUB15 案例名即「粘贴超长截断 500/500」（FAILED 于 harness）。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：正文计数 0/1000",
+      "fix": "更新理想稿/需求文本为 0/500（推荐，现三方一致零风险）；或后端放宽带宽上限至 1000 后同步 store/constants/textarea maxlength，并补 1000 字用例",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-VILLAGE-PUBLISH-107",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB12-after.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "圈子目标下话题行整体隐藏：理想图圈场景（发布到摄影圈）仍示「添加话题」行；现因后端 CreateTopicRequest 无 tags 字段（选中即被静默丢弃），按 MP-R2-PUB-104 有意隐藏以保「UI 承诺=落库」。属数据完整性优先的范围裁剪，圈场景话题能力缺失，待后端支持后恢复。",
+      "evidence": "publish.vue:699-707 v-if=\"!isCircleTarget\" + 注释（createTopic real 请求体仅 title/content/images）；提交分支 :537-544 createTopic 不传 tags。交互证据 PUB12 EXECUTED（案例名即「createTopic 请求体仅 title/content/images（无 tags），话题行已隐藏」），执行级证实隐藏行为。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "素材/理想效果图/发布帖子页面.png：圈场景（摄影圈目标卡）下「# 添加话题｜已选 0/5」行仍存在",
+      "fix": "后端 CreateTopicRequest 增加 tags 字段落库后，移除 v-if 恢复话题行（合并 MP-R1-VILLAGE-PUBLISH-101 的选择器修复）；在此之前保持隐藏是正确行为",
+      "status": "保留"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/village/village/publish",
+      "baseline": "素材/理想效果图/发布帖子页面.png；实际证据：reports/screenshots/round-1/A|B/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png（静态，已目检 A 版）+ reports/audit/round-1/interact/exec-results.json PUB01-PUB37（18 EXECUTED / 19 harness-FAILED）+ publish.vue 867 行逐行通读",
+      "structureNotes": "L1 存在/可达：通过——pages.json:79 注册、constants/routes.ts:82 路由、深链渲染完整（PUB01：header/目标卡/输入/计数/添加块全 present）。L2 骨架顺序：顶部(X/发布动态/发布)→发布到卡→正文+计数→图格→行项组→小贴士与理想一致；两处缺省：底部工具条移除（:752，样式残壳 :856-859）、话题行圈子目标下隐藏（:699-707，PUB12 EXECUTED 证实）。L3 组件：通过——虚线添加块（R21 对齐理想图 :837）、目标卡头像+tag+成员数 1.2w 短格式（:135-139 与理想图「1.2w 成员」同款）。L4 文案：行项文案与贴士正文逐字一致；偏差=计数 0/500 vs 理想 0/1000（三方对齐的有意收敛，静态截图 0/1000 为修复前留影）、圈子目标下谁可以看显示「兴趣圈」vs 理想「圈内成员可见」（:146，同义不同词）。L5 状态：发布钮禁用态（PUB08 空内容 Toast EXECUTED）、计数警示色、弹层三态（加载/失败重试/空态 :634-661）均在；「谁可以看」单值轮换点击无变化但保留可点样式（:275-291,:722-732）=失效 affordance。L6 交互链路：发布成功链路代码完整（:498-576），但 PUB09/10-14 因 harness 无法输入 textarea 全部退化为「请输入内容」Toast——发布成功 E2E 执行级未证。L7 入口 wiring：本页实际存活入口仅 profile「添加故事」→?target=friends（profile/index.vue:806）；村口主发帖入口走 post.vue（village/index.vue:389→ROUTES.VILLAGE.POST）、兴趣圈走 circles/post-topic?circleId=（topics.vue:115）均为兄弟页，publish.vue 的 ?circleId/?target=campus 仅深链可达（PUB05/06/07 EXECUTED，参数语义正确：campus→校园圈+学校圈、未加入圈回退个人动态），全库无导航向本页传 circleId。L8 草稿链路（代码级通过）：独立存储键防污染（constants/village.ts:49）、本地+后端双写双清、入口参数优先于旧草稿（:152-170,:293-455）。L9 数据一致性：字数/可见性/图片路径判定三方同源（MP-R1-PUB-016、批次 B4、MP-R2-PUB-102）。L10 回归：静态截图对 MP-R1-PUB-016/PUBLISH-006 两处修复滞后未重拍；PUB15/16/18/19/21/31/33/34 均 harness-FAILED 无替代执行证据。",
+      "usageNotes": "理想路径：进入发布→（选目标）→写正文→（配图/话题/位置/提及/权限）→发布。实际：我的→添加故事 1 步进入（?target=friends 默认个人日常，R21 统一命名「个人动态」与需求文本一致）；写正文（≥5 字，后端标题 5-30 规则映射 :503-509）→发布→成功 Toast→400ms 返回，路径短无迷路；空内容/过短/失败 Toast 反馈齐（PUB08 EXECUTED）。发布到弹层三级分组（公域/校园私域/兴趣圈子）三路关闭（PUB22/23 EXECUTED）顺滑。卡点：①「谁可以看」点击无响应（只能靠切换目标间接改权限，与理想图预期相悖）；②话题无选择器（仅硬编码 #校园日常 或正文手打 #tag）；③提及「即将开放」。含内容的提交链路因 harness 限制在本轮未跑通（PUB10-14 退化），执行级仅证到校验层——代码路径存在但发布成功 E2E 未获证实。任意页 2 步回 tab：X→navigateBack 回「我的」1 步；冷启动栈=1 时 X→reLaunch 村口不白屏（PUB02/03 EXECUTED）。丢失保护：退出草稿弹窗+双写双清+防已发布内容复活（代码级，PUB31/33/34 执行未完成）。",
+      "functionGaps": [
+        {
+          "target": "话题 0/5：可从话题列表多选（理想图「添加话题·已选 0/5」）",
+          "current": "点击行仅切换硬编码「#校园日常」（publish.vue:702,255-260）；正文手打 #tag 可并入（:299-305）；兄弟页 circles/post-topic.vue:65-129 有预设 chips 多选",
+          "gap": "无话题选择器，能力位为假入口",
+          "fix": "移植 circles/post-topic 预设话题 chips 弹层（上限 5），保留正文 #tag 并入"
+        },
+        {
+          "target": "提及好友：可进入好友选择并回填 @提及",
+          "current": "点击仅 Toast「提及好友即将开放」（publish.vue:262-264；zh-CN.ts:1991）",
+          "gap": "占位 stub，无任何提及数据链路",
+          "fix": "短期弱化 affordance；长期接关注/喜欢列表多选，@昵称注入正文随 payload 提交"
+        },
+        {
+          "target": "谁可以看权限选择（需求文本明示）",
+          "current": "四目标轮换列表均单值、点击无变化（publish.vue:275-291），但保留 press-feedback+chevron 假可点（:722-732）；权限仅可经「发布到」间接改变",
+          "gap": "权限选择控件失效，affordance 误导",
+          "fix": "降级为只读信息行（对齐位置行）或后端补 visibility 字段后恢复真实选择"
+        },
+        {
+          "target": "位置 POI 级可选（理想=北京大学·未名湖校区+chevron）",
+          "current": "城市级只读展示（publish.vue:50-61,709-715；2026-09-06 代码注明产品决定），无缓存显示「选择位置」但不可点",
+          "gap": "无 POI 选择（范围裁剪，核心任务不受影响）",
+          "fix": "产品裁决：维持城市级（改文案+无缓存引导授权）或恢复 chooseLocation"
+        },
+        {
+          "target": "底部工具条：图片/视频·话题·位置·提及·更多（理想图+本轮需求顺序文本）",
+          "current": "整体移除（publish.vue:752 注释「按需求移除」；样式残壳 :856-859）；四项功能经图格/行项可达，「更多」无承载",
+          "gap": "结构缺省与本轮需求文本冲突（无能力净损失）",
+          "fix": "产品裁决：确认移除则删残壳样式并更新需求文本；恢复则各项锚定既有行为"
+        },
+        {
+          "target": "正文计数 0/1000（理想图）",
+          "current": "0/500（stores/village/constants.ts:12、constants/village.ts:12-16、stores/village/index.ts:439-441 三方一致，MP-R1-PUB-016/PUBLISH-012）",
+          "gap": "与理想稿数值不符（UI=校验=后端一致，属健康收敛）",
+          "fix": "更新理想稿为 0/500（推荐）或后端放宽后三方同步"
+        },
+        {
+          "target": "圈场景（发布到摄影圈）下保留话题行（理想图）",
+          "current": "v-if=\"!isCircleTarget\" 整行隐藏（publish.vue:699-707；后端 CreateTopicRequest 无 tags，PUB12 EXECUTED 证实）",
+          "gap": "圈内发帖无话题入口（数据完整性优先的有意隐藏）",
+          "fix": "后端 CreateTopicRequest 支持 tags 后移除 v-if 恢复；在此之前保持隐藏"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-req.json"
+}

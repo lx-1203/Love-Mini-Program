@@ -437,6 +437,11 @@ export async function bindPhoneViaWechat(code: string): Promise<{ phone: string 
     method: "POST",
     data: { code },
     noRetry: true,
+    // MP-R1-PAGES-LOGIN-INDEX-004：登录页「尚未登录」触发的 401 属预期态，
+    // 必须 skipAuthRefresh 让 http 层 401 分支直接短路抛给页面 catch
+    // （页面按 401 提示并展开「验证码/密码登录」表单），否则走 redirectToLogin
+    // 在登录页自身 toast「登录已过期」+ 500ms reLaunch 重载，摧毁已展开的表单。
+    skipAuthRefresh: true,
   });
   return response;
 }

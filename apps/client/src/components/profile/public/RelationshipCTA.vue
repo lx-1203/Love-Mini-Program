@@ -30,6 +30,10 @@ const likeLabel = computed(() => {
 });
 
 const followLabel = computed(() => (props.following ? "已关注" : "关注"));
+
+/** MP-R1-REQ23-001：CTA 按状态机切换——互喜(matched)时主钮切「发消息」绿钮直达会话
+ *  （需求口径：陌生=喜欢TA粉 / 互喜=发消息绿），原 matched prop 声明后从未消费 */
+const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 </script>
 
 <template>
@@ -45,14 +49,14 @@ const followLabel = computed(() => (props.following ? "已关注" : "关注"));
         <text class="relationship-cta__text relationship-cta__text--like">{{ likeLabel }}</text>
       </view>
 
-      <view class="relationship-cta__btn relationship-cta__btn--hello" hover-class="relationship-cta__btn--pressed" @tap="emit('message')">
+      <view class="relationship-cta__btn relationship-cta__btn--hello" :class="{ 'relationship-cta__btn--matched': matched }" hover-class="relationship-cta__btn--pressed" @tap="emit('message')">
         <image class="relationship-cta__bubble" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
-        <text class="relationship-cta__text">打招呼</text>
+        <text class="relationship-cta__text">{{ helloLabel }}</text>
       </view>
 
       <!-- MP-R1-OTHER-002：送心动卡入口（点击唤起 other.vue 的 WhisperComposeSheet） -->
       <view class="relationship-cta__btn relationship-cta__btn--whisper" hover-class="relationship-cta__btn--pressed" @tap="emit('whisper')">
-        <image class="relationship-cta__whisper-icon" :src="IMAGE_PATHS.ICONS_MATCH.HEART_PINK" mode="aspectFit" alt="" />
+        <image class="relationship-cta__whisper-icon" :src="IMAGE_PATHS.ICONS_MATCH.HEART" mode="aspectFit" alt="" />
         <text class="relationship-cta__text relationship-cta__text--whisper">心动卡</text>
       </view>
 
@@ -125,8 +129,17 @@ const followLabel = computed(() => (props.following ? "已关注" : "关注"));
   height: 30rpx;
 }
 
-.relationship-cta__text--whisper {
+/* MP-R1-OTHER-101：提高特异性（双类链）——原单类规则声明在基础 .relationship-cta__text
+   （:166 白色）之前且同特异性，白色后到覆盖粉色 → 白底白字不可见，「心动卡」仅剩
+   爱心图标无法辨认 */
+.relationship-cta__text.relationship-cta__text--whisper {
   color: #FF6B81;
+}
+
+/* MP-R1-REQ23-001：互喜态「发消息」绿主钮（与匹配成功页/匹配中心 CTA 状态机同口径） */
+.relationship-cta__btn--matched {
+  background: #36C99A;
+  border-color: #36C99A;
 }
 
 .relationship-cta__btn--follow {

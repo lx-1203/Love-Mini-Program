@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "历史回归员-R1-PAGES-LOGIN-INDEX (A5)",
+    "date": "2026-09-24",
+    "pages": ["pages/login/index"],
+    "method": "回归索引差分模式：以 reports/audit/baseline/regression-index.json 中 riskFiles 含 apps/client/src/pages/login/index.vue 的全部条目为核对集（IA-CONSOLE-01 / MP-R1-LOGIN-001 / MP-R1-LOGIN-002-004 / MP-R2-PAGES-LOGIN-INDEX-001 / P3-ZERO-WIRE-DECISIONS / P4-AGREEMENT-DEFAULT / T16-login 部分），逐条以本会话实际执行的 Read/grep/git diff/截图目检取证。只读核对，未改代码、未驱动开发者工具。",
+    "commandsRun": [
+      "grep -n 'type=\"password\"' apps/client/src/pages/login/index.vue → 零命中（exit=1）",
+      "grep -n ':password' apps/client/src/pages/login/index.vue → :774 :password=\"true\"",
+      "git diff -- apps/client/src/pages/login/index.vue | grep -E '^[+-].*password' → 零命中（本轮工作区改动未触及密码框）",
+      "git show HEAD:apps/client/src/pages/login/index.vue | grep -n password → :774 :password=\"true\"（HEAD=aefd8a72 与工作区一致）",
+      "grep -o '<input[^>]*>' apps/client/dist/build/mp-weixin/pages/login/index.wxml → input#login-password type=\"text\" password=\"{{true}}\"",
+      "grep -cE 'TypeError|is not defined|ReferenceError|EXCEPTION|k is not a function' reports/screenshots/round-1-interact/console-evidence-PAGES-LOGIN-INDEX.log → 0",
+      "Read（目检）reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-after.png、-13-before.png、-14b-before.png、-15b-after.png",
+      "Read reports/audit/baseline/regression-index.json（login 相关条目段）、reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json、PAGES-LOGIN-INDEX-judge.json、exec-results.json（login 相关段）、reports/audit/baseline/historical-issues.md:321"
+    ],
+    "historicalEntry": "historical-issues.md:321：MP-R2-PAGES-LOGIN-INDEX-001 | login | input type=\"password\" 非法（mp 无此值，密码明文显示）| 待修复（落盘时点工作区已修，终验未见）"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-020",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-after.png",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "历史问题 MP-R2-PAGES-LOGIN-INDEX-001（P1：input type=\"password\" 非法值致 mp 端密码明文显示）回归核对发现修复效果反证：缺陷写法（type=\"password\"）确凿未回归——源码与构建产物均为规范的 type=\"text\" + :password=\"true\" 密文写法，且本轮工作区改动未触及该行；但 R1 交互取证 op 批的截图中，密码框在值已输入（abc123）的情况下稳定渲染为明文字符而非圆点掩码（两帧独立截图 13-after / 14b-before 一致），与取证报告 checks[13]「密码框显示圆点掩码」及 judge LG25 引用「13-after（合法态掩码已证）」的文字结论直接矛盾。历史 P1 的 UI 层生效性因此不能判「已验证」：要么 automator element.input() 程序化赋值 / DevTools 模拟器（基础库 3.7.12）渲染路径不反映真实掩码行为（则本条为证据假象），要么 :password 属性在该环境下真实未生效（则历史 P1 实质仍在，真机肩窥可见明文）。本会话无法驱动真机/手动聚焦输入仲裁，故按不低于原级 P1 立此存疑，以人工复核为先导。",
+      "evidence": "修复写法在位三证：apps/client/src/pages/login/index.vue:773-774（type=\"text\" + :password=\"true\"；本会话 grep 'type=\"password\"' 零命中 exit=1）；apps/client/dist/build/mp-weixin/pages/login/index.wxml（<input id=\"login-password\" type=\"text\" password=\"{{true}}\" …>，grep -o '<input[^>]*>' 实测）；git diff 与 git show HEAD:apps/client/src/pages/login/index.vue（本轮工作区改动零触及 password 行，HEAD 与工作区一致）。现象层反证：reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-after.png 与 PAGES-LOGIN-INDEX-14b-before.png（本会话逐图目检：密码框（钥匙图标行）值 abc123 以明文字符渲染，非圆点；13-before 为空态占位符灰色可对照）。矛盾记录：reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[13] actual 称「13-after 密码框显示圆点掩码」（与其引用截图不符）；reports/audit/round-1/interact/PAGES-LOGIN-INDEX-judge.json#LG25 evidence 引用「13-after（op 批：合法态掩码已证）」。环境因素：同报告#checks[12] 自证 element.input() 为程序化赋值绕过键盘层；环境段载明 DevTools 模拟器 375x812 / 基础库 3.7.12。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.6,
+      "ideal": "任何端（真机/模拟器、真实键盘输入/程序化赋值）上密码框均以圆点掩码渲染，明文不可见；掩码生效性有 UI 截图级正证而非仅文字断言。",
+      "fix": "先人工仲裁：真机 + DevTools 手动聚焦键入密码各验一次掩码显示。若真机掩码正常 → 判 automator 程序化赋值/模拟器渲染假象，在 interact/PAGES-LOGIN-INDEX.json#checks[13] 补勘误注记并将本条降级关闭；若真机亦明文 → 历史问题 MP-R2-PAGES-LOGIN-INDEX-001 实质复发，排查 :password 属性在基础库 3.7.12 的传递（可改 type=\"safe-password\" 或补 input 双保险写法），修复后重跑含真实键入路径的掩码取证。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R2-PAGES-LOGIN-INDEX-001",
+      "page": "pages/login/index",
+      "status": "未复发（缺陷路径层确证；修复效果现象层存疑，另立 Issue MP-R1-PAGES-LOGIN-INDEX-020）",
+      "evidence": "历史缺陷写法 type=\"password\" 已不存在：本会话 grep 'type=\"password\"' apps/client/src/pages/login/index.vue 零命中（exit=1）；index.vue:773-774 为 type=\"text\" + :password=\"true\"（uni-app 规范布尔密文写法）；构建产物 dist/build/mp-weixin/pages/login/index.wxml 实测 <input id=\"login-password\" type=\"text\" password=\"{{true}}\">，编译层修复在位；git diff 证实本轮工作区改动未触及密码框行，git show HEAD 证实 HEAD（aefd8a72）同写法——自 R2 落盘以来修复未被改回。现象层保留：R1 取证截图 13-after.png/14b-before.png 目检密码框明文渲染 abc123，与取证报告「圆点掩码」文字结论矛盾（automator 程序化赋值 vs 真实键入未仲裁），已按 P1 立 Issue MP-R1-PAGES-LOGIN-INDEX-020 跟进人工复核。缺证说明：缺一次真机/手动聚焦输入的掩码观测以终裁现象层。"
+    },
+    {
+      "id": "IA-CONSOLE-01",
+      "page": "pages/login（login watch immediate TypeError）",
+      "status": "未复发",
+      "evidence": "代码修复在位：apps/client/src/pages/login/index.vue:110-134——stopSessionForwardWatch 声明为可空句柄，immediate 同步回调内经 :124 stopSessionForwardWatch?.() 可选调用（历史缺陷「k is not a function」的直接路径即 immediate 首帧同步回调调用未完成赋值的句柄）；onUnmounted :172 调用时句柄必已赋值。运行时证据：本会话 grep -cE 'TypeError|is not defined|ReferenceError|EXCEPTION|k is not a function' reports/screenshots/round-1-interact/console-evidence-PAGES-LOGIN-INDEX.log = 0 命中；judge#notes6 载明 op 批 console 289 行中错误模式命中全部为设计内 Sentry captureException（wechat 502 / phone-login 401），无 TypeError/is not defined。"
+    },
+    {
+      "id": "MP-R1-LOGIN-001",
+      "page": "pages/login（授权拒绝后死路）",
+      "status": "未复发（页面层修复在位并经双批交互取证；MP-WEIXIN 真实后端剩余缺口由本批代码审查员以 MP-R1-PAGES-LOGIN-INDEX-004 登记，非回归）",
+      "evidence": "代码：index.vue:340-351（errMsg!=='getPhoneNumber:ok' → addBreadcrumb + showPhoneLogin=true，注释标注 MP-R1-LOGIN-001 修复）、:865-873（表单内「去注册」→goRegisterPage :225-227 navigateTo(ROUTES.REGISTER)）、:884-886（「返回微信登录」）。交互取证：interact/PAGES-LOGIN-INDEX.json#checks[7]（op07 tap 后 hasForm=true hasQuick=false，07-after.png 表单清晰可见）+ judge#LG15 VERIFIED（复跑批与 op 批双批）；取证报告 issues[0] status=已验证。例外披露：A2 代码发现 MP-R1-PAGES-LOGIN-INDEX-004（auth.ts:435-441 未设 skipAuthRefresh → http.ts redirectToLogin 500ms 后 reLaunch 重载可重置展开表单，仅 MP-WEIXIN 真实后端未登录场景），属修复闭环的剩余缺陷由代码审查渠道跟踪，页面层修复本体未被改回。"
+    },
+    {
+      "id": "MP-R1-LOGIN-002-004",
+      "page": "pages/login（双导航竞争 / 未登录 bindPhone 401 / 倒计时定时器不清理）",
+      "status": "未复发",
+      "evidence": "三项修复代码均在位：①单飞导航——loginSuccessNavigate 统一入口先置 autoForwardedToMain（index.vue:203-214）+ loginFlowActive 在途压制（:119、:296、:367、:434、:506）+ onShow/watch 共用一次性标记（:96-134）；②401 graceful——页面级 401 分支 :394-398（toast + 展开表单，不报 Sentry）在位；③定时器清理——onUnmounted :161-173 清 loginNavTimer 与 smsCountdownTimer。运行时证据：judge#LG02/LG03 VERIFIED（已登录冷启动/重复进出均单跳落 discover，console 零「routeDone with a webviewId」/「Page route 错误」，本会话 grep console-evidence log 运行时异常模式 0 命中）；LG14/LG18 防连点单 toast 单落点 VERIFIED。备注：②在 MP-WEIXIN 真实后端的 http 层副作用缺口同 MP-R1-PAGES-LOGIN-INDEX-004（A2 渠道），页面分支本体未回归。"
+    },
+    {
+      "id": "T16",
+      "page": "全局（作用域/初始化类运行时崩溃；login 相关子项=IA-CONSOLE-01）",
+      "status": "未复发（仅就 riskFiles 含 pages/login/index.vue 的子项核对）",
+      "evidence": "T16 描述列明 login 侧子项即 IA-CONSOLE-01（watch immediate TypeError）；该子项核对结论见本文件 IA-CONSOLE-01 条：修复代码 index.vue:110-134 在位 + console-evidence log 运行时错误模式 0 命中。其余子项（home/nearby TDZ 等）不在本页核对范围。"
+    },
+    {
+      "id": "P3-ZERO-WIRE-DECISIONS",
+      "page": "全局（getPhoneNumber/ContentSecurityChecker/WS connect 封存决议）",
+      "status": "证据不足",
+      "evidence": "回归索引该条目仅列 id/page/riskFiles/verification（three-zero-wire-points-still-sealed），无「三处封存点」的具体定义（哪个文件哪三处、封存态的可观测特征），本页源码中 open-type=\"getPhoneNumber\" 处于接线态（index.vue:694-705 handleGetPhoneNumber），无法据此判断与「封存决议」的关系是相符还是违例。缺：该决议的原始登记（封存点清单与判定基准）。未采信任何猜测。"
+    },
+    {
+      "id": "P4-AGREEMENT-DEFAULT",
+      "page": "pages/login、pages/register（协议默认勾选差异，仅记录）",
+      "status": "未复发（状态与记录一致，符合 verification「unchanged-as-recorded」）",
+      "evidence": "index.vue:59 agreed = ref(true)（登录页默认勾选）在位；交互取证 op00 实测 aria-checked=true（interact/PAGES-LOGIN-INDEX.json#checks[0]），op02/op04 取消/恢复切换正常（02-after 空心 / 04-after 绿勾）。该条目为「仅记录」型（两页默认态差异按记录保持即可），当前状态与登记一致，未发生回改。"
+    }
+  ],
+  "coverage": "核对集=回归索引中 riskFiles 含 apps/client/src/pages/login/index.vue 的全部 7 条（IA-CONSOLE-01、MP-R1-LOGIN-001、MP-R1-LOGIN-002-004、MP-R2-PAGES-LOGIN-INDEX-001、P3-ZERO-WIRE-DECISIONS、P4-AGREEMENT-DEFAULT、T16），其中任务给定主条目 MP-R2-PAGES-LOGIN-INDEX-001 完成源码+产物+diff+截图四层取证并立 Issue 020；5 条判未复发（附代码/取证/console 证据）；1 条判证据不足（P3-ZERO-WIRE-DECISIONS 缺封存点清单）。本会话实际执行：grep×5、git diff/show、Read 源码全文、回归索引相关段、historical-issues.md:321、exec-results.json 相关段、interact 报告与 judge 全文、console 双日志扫描、截图目检 4 张（13-after/13-before/14b-before/15b-after）+ final-verify/01-login.jpg。未运行构建/测试（任务为只读回归核对，未要求）；未驱动开发者工具/真机（A5 只读边界，掩码现象仲裁留待 Issue 020 的 fix 步骤）。"
+}

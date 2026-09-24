@@ -21,7 +21,6 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useProfileStore } from "../../../stores/profile";
 import { IMAGE_PATHS } from "../../../config/images";
-import SafeImage from "../../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic, successHaptic } from "../../../utils/haptic";
 import { resolveMediaUrl } from "../../../utils/media";
 // MP-R8-STATUS-002：注入 --statusbar（DevTools var(--statusbar, env(safe-area-inset-top)) 恒 0，标题叠印状态栏）
@@ -208,7 +207,9 @@ async function uploadPhoto(file: UniUploadFileLike, index: number): Promise<void
     uni.showToast({ title: t("profile.albumUploadSuccess"), icon: "success" });
   } catch (error) {
     const msg = error instanceof Error ? error.message : t("profile.albumUploadFailed");
-    errorMessage.value = msg;
+    // MP-R1-ALBUM-002：上传失败仅 toast + 局部提示，不写 errorMessage——
+    // 原 errorMessage 优先级最高的错误分支会把整个照片墙顶替换成错误卡，
+    // 一次瞬时失败后已加载照片全部消失（errorMessage 语义保留给首拉失败）
     errorHaptic();
     uni.showToast({ title: msg, icon: "none" });
   } finally {
@@ -419,8 +420,8 @@ onShow(() => {
       </text>
     </view>
 
-    <!-- 错误状态 -->
-    <view v-if="errorMessage" class="album-error card-base" role="alert">
+    <!-- 错误状态（MP-R1-ALBUM-002：仅首拉失败且无照片时整卡展示，保护照片墙） -->
+    <view v-if="errorMessage && photoCount === 0" class="album-error card-base" role="alert">
       <text class="album-error__title">{{ errorMessage }}</text>
       <view class="album-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleRetry">
         <text class="album-error__retry-text">{{ t("common.retry") }}</text>
@@ -429,10 +430,12 @@ onShow(() => {
 
     <!-- 空状态 -->
     <view v-else-if="photoCount === 0 && !isUploading" class="album-empty card-base">
-      <SafeImage
+      <!-- MP-R1-PROFILE-EXTRA-001：custom-class 跨组件作用域不生效导致图标零尺寸，改原生 image -->
+      <image
+        class="album-empty__icon"
         :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL"
-        custom-class="album-empty__icon"
         mode="aspectFit"
+        alt=""
       />
       <text class="album-empty__title">{{ t("profile.albumEmpty") }}</text>
       <text class="album-empty__subtitle">{{ t("profile.albumEmptyDesc") }}</text>
@@ -503,7 +506,7 @@ onShow(() => {
       <image class="album-viewer__img" :src="viewerUrls[viewerCurrent]" mode="aspectFit" />
       <view class="album-viewer__pager">
         <text
-          v-for="(item, idx) in viewerUrls"
+          v-for="(_item, idx) in viewerUrls"
           :key="idx"
           class="album-viewer__dot"
           :class="{ 'album-viewer__dot--active': idx === viewerCurrent }"
@@ -569,6 +572,9 @@ onShow(() => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  /* MP-R1-ALBUM-101：「4 / 6」计数与微信胶囊叠压——头部行已注入 --capsule-right
+     但从未消费（useMenuButtonRect 标准配方），按配方预留右侧安全距离 */
+  padding-right: calc(var(--capsule-right, 96px) + 24rpx);
   margin-bottom: var(--section-gap);
 }
 

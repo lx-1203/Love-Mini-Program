@@ -1,0 +1,266 @@
+{
+  "pageNotes": {
+    "entryPoints": "真实入口仅「附近」Tab：goCampusHub(school?) → openAppPath(ROUTES.CAMPUS.HUB)（pages/nearby/index.vue:251-254，非 Tab 页走 navigateTo navigation.ts:106-116，栈+1）。r11 执行器统一 wx.reLaunch 深链冷启动 → 页面栈=1，此时返回键 goBack 走 switchTab('/pages/nearby/index') 兜底分支（hub.vue:164-170，nearby 为 TabBar 页 config/navigation.ts:43-45）。",
+    "paramBehavior": "hub 页 ?school= 参数被有意忽略（MP-R2-CAMPUS-HUB-003：onLoad 读取 ?school= 写 selectedSchool 死状态已删除，hub.vue:134-135，全页零消费）；r11-param-map.json 的 params 表亦无 hub 条目（scripts/r11-param-map.json:24 仅在 sub 无参清单）→ 本页按无参深链设计，CH21 作参数回归守卫。注意区分：goSchool 传给下游 campus/index 的 ?school= 才是有效参数（campus/index.vue:179-199 消费）。",
+    "noPullRefresh": "本页无下拉刷新与分页：pages.json:119-121 campus/hub 无 enablePullDownRefresh；页面为页级滚动（.campus-hub min-height:100% hub.vue:364-369），无 scroll-view、无 onReachBottom/onPullDownRefresh → 不设下拉刷新/上拉分页用例，滚动覆盖见 CH22。",
+    "globalNav": "globalStyle.navigationStyle=custom（pages.json:36），页面自绘 header 并经 useMenuButtonRect 注入 --statusbar/--capsule-right（hub.vue:26、377-384），header padding-right 避让微信胶囊。",
+    "searchDebounce": "铁律要求搜索输入 300ms 防抖；本页为 v-model → computed 同步过滤（hub.vue:127-132），无防抖实现。数据源为 11 条静态 SCHOOLS（config/schools.ts:32-44），实测无性能风险，但按 R11 §5 铁律应如实记录「无防抖」事实（CH06 采集），由判定员裁量。",
+    "hotZone": "铁律热区≥88rpx：源码实测返回钮 64×64rpx（hub.vue:386-395）、搜索清除 ×40×40rpx（hub.vue:841-852）、认证错误重试 padding 8×24rpx + 24rpx 字号（hub.vue:354-362），均低于 88rpx。CH24 以运行时 boundingClientRect 实测回填，判定员按铁律裁量，不因源码预判降低判定。",
+    "certStateMatrix": "认证四态的可达性：mock 模式 fetchCertificationStatus 直接 return 保持初始 unverified（campus.ts:845-848、初始态 campus.ts:331，env.ts:205-212 开发环境默认 mock）；pending 可经认证页 mock 提交 submitCertification 达成（campus.ts:795-804）；verified 仅 real 后端 APPROVED 可达（campus.ts:851-862）。故 CH15/CH16 为 real 模式条件用例，前置不满足时如实标 UNVERIFIED。joinedSchools 按 certificationInfo.schoolName 与 SCHOOLS.name 精确匹配（hub.vue:89-96）——认证校名不在 11 校表内时 joined 仍为空态，此为既定行为非缺陷。",
+    "sideEffects": "本页全部点击均为导航/UI 态切换，无下单/发布/删除类副作用；唯二按 critical 采集：CH16（认证门禁→私域视角，权限语义）与 CH17（认证拉取失败可观测+重试，错误恢复语义）。",
+    "keyboardConfirm": "搜索输入 confirm-type=search 但未绑定 bindconfirm（hub.vue:236-244）→ 键盘确认键为无动作 no-op，CH25 守卫不崩溃。",
+    "identity": "身份 A=100158 曦风（tmp_r11_login.json）；身份 B=100159 小新生（tmp_r11_guest.json）。本页未登录态无守卫（页面自身不校验 token，仅认证状态按未认证渲染），双身份结果预期一致；以 A 为主执行即可。token 2 小时时效，过期需重签。"
+  },
+  "cases": [
+    {
+      "id": "CH01",
+      "page": "subpackages/campus/campus/hub",
+      "title": "冷启动深链首屏：默认「推荐圈子」Tab + 11 校卡片完整渲染，无错误空态闪现",
+      "tier": "normal",
+      "pre": "身份A mock 登录（r11-tour.ps1:19-36 口径；mock 模式认证状态保持初始未认证，campus.ts:845-848,331）→ wx.reLaunch('/subpackages/campus/campus/hub') 冷启动（页面栈=1）",
+      "action": "仅等待首屏渲染（无交互）；≤500ms 首拍 + 间隔 2s 复拍（卡死检测）",
+      "expected": "500ms 内渲染：header 标题「校园圈」+ 副标题「发现和加入你的校园圈子」（zh-CN.ts:3432,3439）；未认证 → 右上「去认证」绿胶囊（hub.vue:190-200）；引导卡「加入校园圈，发现更多同校的 TA」+「去认证」按钮（hub.vue:207-229）；搜索框 placeholder「搜索学校或校园圈」（zh-CN.ts:3433）；默认选中「推荐圈子」Tab 带绿色指示条（hub.vue:118,259-267）；11 张校卡（config/schools.ts:32-44）每张含：封面图 + 校名 + 灰「未认证」badge（hub.vue:103-106,690-697）+「约X 同学 · 约X 动态」统计（「约」前缀 MP-R2-CAMPUS-HUB-007，hub.vue:75-83）+ 3 头像 stack +「约X 位同学」+ 白底绿描边「申请加入」CTA（hub.vue:322-324,757-765）；不闪现「暂无推荐圈子」空态；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图（fullPage）+ getCurrentPages 栈顶 route=subpackages/campus/campus/hub + console 全量"
+    },
+    {
+      "id": "CH02",
+      "page": "subpackages/campus/campus/hub",
+      "title": "栈底返回（冷启动栈=1）：switchTab 兜底回「附近」Tab，不静默失败",
+      "tier": "navigation",
+      "pre": "同 CH01（reLaunch 冷启动，栈=1）",
+      "action": "tap .campus-hub__back（hub.vue:183-185 → goBack hub.vue:164-170）",
+      "expected": "500ms 内路由离开：getCurrentPages().length==1 且栈顶 route=pages/nearby/index（栈=1 走 uni.switchTab 分支 hub.vue:168，MP-R2-CAMPUS-HUB-006 兜底）；附近页正常渲染；console 无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "CH03",
+      "page": "subpackages/campus/campus/hub",
+      "title": "栈中返回：navigateBack 落回来源页「附近」且状态恢复",
+      "tier": "navigation",
+      "pre": "身份A 登录 → switchTab 到 /pages/nearby/index → 点「校园圈」入口进 hub（nearby/index.vue:251-254，navigateTo 栈=2）",
+      "action": "tap .campus-hub__back",
+      "expected": "500ms 内 uni.navigateBack 落回 pages/nearby/index（栈>1 分支 hub.vue:165-166）；附近页 Tab 选中态与滚动位恢复；console 无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈长度-1、栈顶=nearby）+ console"
+    },
+    {
+      "id": "CH04",
+      "page": "subpackages/campus/campus/hub",
+      "title": "Tab 切换 推荐→我加入的：未认证显示空态「暂未加入任何校园圈」",
+      "tier": "normal",
+      "pre": "同 CH01（未认证，默认推荐 Tab）",
+      "action": "tap 第一个 .campus-hub__tab「我加入的」（hub.vue:250-258）",
+      "expected": "500ms 内（铁律：Tab 切换必须有可观测反馈）：指示条移到「我加入的」、文字加粗变主色（campus-hub__tab-text--active hub.vue:540-543）；列表区显示空态文案「暂未加入任何校园圈」（未认证 joinedSchools=[] hub.vue:89-91；zh-CN.ts:3434）；无卡片渲染；console 无报错",
+      "evidence": "normal：after 截图 + 路由（仍在 hub）+ console"
+    },
+    {
+      "id": "CH05",
+      "page": "subpackages/campus/campus/hub",
+      "title": "Tab 切换 我加入的→推荐圈子：11 校列表恢复、数据不丢",
+      "tier": "normal",
+      "pre": "CH04 结束态（activeTab=joined，空态显示中）",
+      "action": "tap 第二个 .campus-hub__tab「推荐圈子」（hub.vue:259-267）",
+      "expected": "500ms 内指示条回到推荐 Tab；11 张校卡全部恢复渲染（静态 schools 数组切换不丢失，hub.vue:54-57,127-132）；badge 恢复「未认证」灰胶囊（推荐 Tab 恒未认证，hub.vue:104-106）；CTA 恢复描边「申请加入」（hub.vue:322-324,757-765）；console 无报错",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH06",
+      "page": "subpackages/campus/campus/hub",
+      "title": "搜索过滤：关键词「北京」命中北京大学；id 关键词「pku」同样命中",
+      "tier": "normal",
+      "pre": "同 CH01（推荐 Tab，11 卡全量）",
+      "action": "向 .campus-search__input 输入「北京」观察列表（hub.vue:236-244）→ 清空改输「pku」再观察",
+      "expected": "输入即过滤（v-model → filteredSchools computed，hub.vue:127-132；无 300ms 防抖实现，如实记录过滤延迟实测值）；「北京」→ 仅剩北京大学卡；「pku」→ 同样仅剩北京大学（id.includes 命中分支 hub.vue:131）；clear × 按钮随输入出现（v-if=searchKeyword hub.vue:245）；无崩溃",
+      "evidence": "normal：两次过滤后 after 截图各 1 + 路由 + console"
+    },
+    {
+      "id": "CH07",
+      "page": "subpackages/campus/campus/hub",
+      "title": "搜索清空按钮：× 一键清空并恢复全量列表",
+      "tier": "normal",
+      "pre": "CH06 结束态（输入框含「pku」，列表=1 卡，× 可见）",
+      "action": "tap .campus-search__clear（hub.vue:245）",
+      "expected": "500ms 内输入框清空（searchKeyword='' hub.vue:245）、× 消失（v-if）、列表恢复 11 张卡；console 无报错",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH08",
+      "page": "subpackages/campus/campus/hub",
+      "title": "搜索无命中 + 特殊字符：空态文案正确、无崩溃",
+      "tier": "normal",
+      "pre": "同 CH01",
+      "action": "输入不存在词「xyz123」观察 → 清空后输入特殊字符「%22'<>&@#」观察",
+      "expected": "xyz123 → 空态文案「暂无推荐圈子」（当前 Tab=recommend 的文案分支 hub.vue:272；zh-CN.ts:3435）；特殊字符 → 走纯字符串 includes 匹配（hub.vue:130-131）显示空态或正常过滤，无脚本错误、无布局破坏；console 无 TypeError",
+      "evidence": "normal：两态 after 截图各 1 + 路由 + console"
+    },
+    {
+      "id": "CH09",
+      "page": "subpackages/campus/campus/hub",
+      "title": "搜索超长输入：60 字符不破坏搜索框布局",
+      "tier": "normal",
+      "pre": "同 CH01",
+      "action": "向 .campus-search__input 输入 60 字符长串（如「超长输入测试」×10）",
+      "expected": "搜索框保持定高 76rpx 不撑破（campus-search hub.vue:810-818）；列表转空态；× 可见可点；无横向溢出/崩溃；console 无报错",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH10",
+      "page": "subpackages/campus/campus/hub",
+      "title": "点学校卡片（未认证）：navigateTo campus/index?school= 公开浏览视角",
+      "tier": "normal",
+      "pre": "同 CH01（未认证，推荐 Tab）",
+      "action": "tap 第一张 .campus-school-card（北京大学，hub.vue:276-285 → goSchool hub.vue:154-156）",
+      "expected": "500ms 内路由到 /subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6（encodeURIComponent hub.vue:155）；campus/index onLoad 解码 ?school=（index.vue:182-194）→ 校名栏显示「北京大学」；未认证视角：引导卡 + 推荐兴趣圈 + 公开浏览话题列表（viewSchool 命中渲染 index.vue:245-268,277-288），无发布 FAB（isOwnCertifiedView=false index.vue:61-63,356）；返回 hub 后 Tab/搜索状态保持；console 无报错",
+      "evidence": "normal：after（目标页）截图 + 路由链（hub→campus/index）+ console"
+    },
+    {
+      "id": "CH11",
+      "page": "subpackages/campus/campus/hub",
+      "title": "点卡内 CTA「申请加入」：与整卡同路由（无死区）",
+      "tier": "normal",
+      "pre": "同 CH01",
+      "action": "tap 推荐卡右下 .campus-school-card__cta「申请加入」（hub.vue:322-324）",
+      "expected": "500ms 内与 CH10 相同路由：campus/index?school=北京大学（CTA 无独立 handler，tap 冒泡至卡片 @tap=goSchool hub.vue:284，非死按钮）；console 无报错",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH12",
+      "page": "subpackages/campus/campus/hub",
+      "title": "header「去认证」→ 认证页",
+      "tier": "navigation",
+      "pre": "同 CH01（未认证 → header 右侧为按钮态 hub.vue:190-200）",
+      "action": "tap .campus-hub__cert-btn（goCertification hub.vue:158-160）",
+      "expected": "500ms 内 navigateTo /subpackages/campus/campus/certification（ROUTES.CAMPUS.CERTIFICATION，routes.ts:154）；栈长度 +1；console 无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "CH13",
+      "page": "subpackages/campus/campus/hub",
+      "title": "引导卡「去认证」按钮 → 认证页（与 header 按钮同路由）",
+      "tier": "navigation",
+      "pre": "同 CH01（未认证 → 引导卡为按钮态 hub.vue:215-225）",
+      "action": "tap .campus-guide__btn",
+      "expected": "500ms 内 navigateTo /subpackages/campus/campus/certification，与 CH12 同路由；console 无报错",
+      "evidence": "navigation：路由链断言 + console"
+    },
+    {
+      "id": "CH14",
+      "page": "subpackages/campus/campus/hub",
+      "title": "认证中（pending）态：引导卡变「查看进度」、joined badge「认证中」、joined 仍空",
+      "tier": "normal",
+      "pre": "mock 模式：先 reLaunch 到 /subpackages/campus/campus/certification 完整提交一次认证（mock submitCertification 置 pending，campus.ts:795-804）→ wx.reLaunch 进 hub（onShow 触发 refreshCertification hub.vue:150-152；mock 分支直接返回保持 pending campus.ts:845-848）",
+      "action": "观察 header/引导卡 → 切「我加入的」Tab 观察 badge 与列表",
+      "expected": "引导卡按钮文案=「查看进度」（isPending 分支 hub.vue:224；zh-CN.ts:3448）；header 右侧仍为「去认证」按钮（v-if=!isVerified hub.vue:191，pending≠verified）；我加入的 Tab 仍空态「暂未加入任何校园圈」（joinedSchools 要求 isVerified，hub.vue:89-91），空态 Tab 下 badge=「认证中」黄底（hub.vue:110-111,682-688）；推荐 Tab badge 恒「未认证」（hub.vue:104-106）；console 无报错",
+      "evidence": "normal：推荐/我加入的两张 after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH15",
+      "page": "subpackages/campus/campus/hub",
+      "title": "已认证（verified）态：header/引导卡变已认证徽章、joined 出现本校卡、推荐排除本校",
+      "tier": "normal",
+      "pre": "real 模式身份A（tmp_r11_login.json）且 GET /campus/certification 返回 APPROVED（mapCertificationStatus→verified，campus.ts:150-157,851-862）；若该身份非 verified，本用例如实标 UNVERIFIED（不得换身份凑数）",
+      "action": "reLaunch 进 hub 观察 header/引导卡 → 切「我加入的」Tab 观察卡片",
+      "expected": "header「去认证」按钮消失、变「已认证」浅绿徽章（v-else hub.vue:201-203,435-445）；引导卡按钮变「已认证」徽章（hub.vue:226-228,507-518）；我加入的 Tab 渲染本校卡（certificationInfo.schoolName 与 SCHOOLS.name 精确匹配 hub.vue:89-91；认证校名不在 11 校表内则仍空态，属既定行为）；本校卡 badge=「已认证」绿底白字（hub.vue:107-108,673-680）、CTA=「进入」实心绿（hub.vue:322-324,767-775）；推荐 Tab 列表不含本校（hub.vue:93）；console 无报错",
+      "evidence": "normal：两张 after 截图 + 路由 + console；前置不满足时记录 UNVERIFIED"
+    },
+    {
+      "id": "CH16",
+      "page": "subpackages/campus/campus/hub",
+      "title": "已认证本校卡「进入」→ 私域视角（分类 Tab + 发布 FAB，无公开浏览 banner）",
+      "tier": "critical",
+      "pre": "同 CH15（real 身份A verified 且本校在 SCHOOLS 表内，如「北京大学」）；前置不满足标 UNVERIFIED",
+      "action": "我加入的 Tab tap 本校卡（goSchool → campus/index?school=<本校> hub.vue:154-156）",
+      "expected": "500ms 内路由到 /subpackages/campus/campus/index?school=<本校URL编码>；isOwnCertifiedView=true（isVerified && viewSchool===本校，index.vue:61-63）→ 渲染 6 分类话题 Tab + 话题列表（index.vue:277-288）+ 右下发布 FAB（index.vue:356-358），不出现「公开浏览」banner（index.vue:271-274）；无 Toast；console 无报错",
+      "evidence": "critical：before（hub 本校卡）+ after（私域页）截图 + 路由链 + Toast 文案（无）+ console"
+    },
+    {
+      "id": "CH17",
+      "page": "subpackages/campus/campus/hub",
+      "title": "认证状态拉取失败：红色错误条出现 + 点重试恢复（MP-R2-CAMPUS-HUB-004）",
+      "tier": "critical",
+      "pre": "real 模式；制造 /campus/certification 请求失败（DevTools Network Offline 或后端停服）→ reLaunch 进 hub 触发 onShow 拉取（hub.vue:150-152）；若执行器无法注入故障，本用例如实标 UNVERIFIED",
+      "action": "观察错误条 → tap .campus-hub__cert-error-retry（hub.vue:178-180 → refreshCertification hub.vue:140-149）→ 恢复网络后再点一次重试",
+      "expected": "失败时页面顶部出现红色错误条：errorMessage 或兜底「网络错误」+ 绿色「重试」按钮（hub.vue:176-181，zh-CN common.retry/common.networkError）；断网状态下点重试 → 错误条保持（certLoadFailed 再次置位 hub.vue:144-148）；恢复网络后点重试 → 错误条消失（certLoadFailed=false hub.vue:141）、页面正常渲染；console 记录请求失败但无未捕获 TypeError",
+      "evidence": "critical：错误条 before + 恢复后 after 截图 + 路由 + Toast 文案（无）+ console；不可注入故障时标 UNVERIFIED"
+    },
+    {
+      "id": "CH18",
+      "page": "subpackages/campus/campus/hub",
+      "title": "快速连点学校卡×5：只压入 1 层、目标页不重复打开",
+      "tier": "normal",
+      "pre": "同 CH01（推荐 Tab，卡片可见）",
+      "action": "500ms 内对第一张 .campus-school-card 快速 tap×5",
+      "expected": "getCurrentPages 长度=2（仅压入 1 层 campus/index，openAppPath navigateTo navigation.ts:106-116）；目标页只出现一次；若出现多层压栈/页面栈告警由判定员按铁律记缺陷；console 无 webview limit 报错",
+      "evidence": "normal：落点 after 截图 + 路由链（栈长度断言）+ console"
+    },
+    {
+      "id": "CH19",
+      "page": "subpackages/campus/campus/hub",
+      "title": "快速连点返回×5：只回退一层、无连续弹栈错误",
+      "tier": "normal",
+      "pre": "身份A 登录 → nearby → 校园圈入口进 hub（navigateTo，栈=2）",
+      "action": "500ms 内对 .campus-hub__back 快速 tap×5",
+      "expected": "仅第 1 次生效：navigateBack 落回 nearby（hub.vue:165-166）；其余 tap 落在已切换的 nearby 页无该元素，无多次弹栈报错、无崩溃；最终栈=1 栈顶 pages/nearby/index；console 无报错",
+      "evidence": "normal：落点 after 截图 + 路由链断言 + console"
+    },
+    {
+      "id": "CH20",
+      "page": "subpackages/campus/campus/hub",
+      "title": "重复进出×3：onShow 重拉认证、首屏稳定无残留错误",
+      "tier": "normal",
+      "pre": "身份A 登录，位于 nearby Tab",
+      "action": "循环 3 次：nearby 点「校园圈」进 hub → 首屏断言 → 返回",
+      "expected": "每轮首屏完整（同 CH01 断言：默认推荐 Tab、11 卡）；每轮 onShow 触发 refreshCertification（hub.vue:150-152）无报错；每轮返回均落 nearby；3 轮 console 无累积错误；每轮 Tab 状态重置为默认推荐（activeTab 为页面内 ref 不跨进出保留，hub.vue:118，属预期行为）",
+      "evidence": "normal：每轮 after 截图（共 3）+ 每轮路由断言 + console 全量"
+    },
+    {
+      "id": "CH21",
+      "page": "subpackages/campus/campus/hub",
+      "title": "深链带 ?school= 参数：静默忽略、默认推荐 Tab（MP-R2-CAMPUS-HUB-003 回归守卫）",
+      "tier": "navigation",
+      "pre": "同 CH01",
+      "action": "wx.reLaunch('/subpackages/campus/campus/hub?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6') 冷启动",
+      "expected": "页面渲染与无参完全一致：默认「推荐圈子」Tab、11 校全量列表（?school= 死状态已删除不消费 hub.vue:134-135；列表不按「清华大学」过滤 hub.vue:127-132）；console 无报错；若出现按参数过滤/选中即为回归缺陷",
+      "evidence": "navigation：路由断言（栈顶=subpackages/campus/campus/hub）+ console；可选与 CH01 首屏截图比对"
+    },
+    {
+      "id": "CH22",
+      "page": "subpackages/campus/campus/hub",
+      "title": "滚动到底/顶：底部静态提示「更多校园圈持续接入中」完整可见",
+      "tier": "noop",
+      "pre": "同 CH01",
+      "action": "页面滚动到底 → 再回顶",
+      "expected": "底部见到静态说明文案「更多校园圈持续接入中」（非按钮、无展开箭头——MP-R1-CAMPUS-HUB-003 已移除死箭头，hub.vue:327-332；zh-CN.ts:3436）+ footer 占位（hub.vue:333）；回顶后 header/搜索框/Tab 完整；滚动过程无白屏、无报错",
+      "evidence": "noop：执行日志（scrollTop/scrollHeight + console）；可免截图"
+    },
+    {
+      "id": "CH23",
+      "page": "subpackages/campus/campus/hub",
+      "title": "封面图与头像渲染：11 校封面全命中 CAMPUS_COVER 映射，无破图",
+      "tier": "normal",
+      "pre": "同 CH01",
+      "action": "fullPage 截图检视全部卡片封面图与头像 stack",
+      "expected": "每张卡封面为对应校园实景图（CAMPUS_COVER 11 键全命中 hub.vue:36-49；素材键均存在 config/images.ts:156-167）；不出现「浅绿背景+校名」无封面分支（hub.vue:290，2026-09-12 素材补齐后不应回落 hub.vue:51-57）；头像 stack 3 张小图正常（hub.vue:311-317）；console 无图片 404/加载失败",
+      "evidence": "normal：fullPage after 截图 + 路由 + console"
+    },
+    {
+      "id": "CH24",
+      "page": "subpackages/campus/campus/hub",
+      "title": "热区量测：返回钮/搜索清除 ×/错误重试钮实测值回填（铁律 ≥88rpx）",
+      "tier": "noop",
+      "pre": "同 CH01；量测 .campus-search__clear 前先输入任意字符触发显示；量测 .campus-hub__cert-error-retry 需 CH17 故障前置",
+      "action": "对 .campus-hub__back、.campus-search__clear、.campus-hub__cert-error-retry 逐个执行 boundingClientRect 量测",
+      "expected": "如实回填实测 rpx 值：back 64×64（hub.vue:386-395）、clear ×40×40（hub.vue:841-852）、错误重试 padding 8×24rpx+24rpx 字号（hub.vue:354-362）——均低于铁律 88rpx，交判定员按 R11 §5 裁量，不因证据少降低判定标准",
+      "evidence": "noop：执行日志（各元素 rect 数值）；可免截图"
+    },
+    {
+      "id": "CH25",
+      "page": "subpackages/campus/campus/hub",
+      "title": "键盘确认键（confirm-type=search）：无绑定动作、不崩溃",
+      "tier": "noop",
+      "pre": "同 CH01",
+      "action": "聚焦 .campus-search__input 输入「北京」→ 触发键盘确认/search 键",
+      "expected": "无 bindconfirm 处理器（hub.vue:236-244 未绑定）→ 不路由、不弹层、列表维持实时过滤结果（仅北京大学）；无 console 报错",
+      "evidence": "noop：执行日志（路由不变 + console）；可免截图"
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/post-topic",
+  "generatedAt": "2026-09-24",
+  "reviewer": "A4 需求对照员",
+  "evidence": {
+    "ideal": "素材/理想效果图/发布帖子页面.png（锚定仲裁：像素级 L1-L4 锚归 village/publish——姊妹 req 文件已行使且两页信息架构非同构；本页按 reports/audit/baseline/ideal-baseline.md:101「圈场景发布=circles/post-topic」采信其功能语义半边，作为圈发帖能力位清单参照，不做像素判级。理想能力位：发布到圈卡（头像/圈内成员可见/1.2w 成员/chevron）、正文0/1000、图格（图片/视频）、添加话题0/5、添加位置、提及好友、谁可以看、发帖小贴士、底部工具条、×关闭）",
+    "staticScreenshots": [
+      "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__默认.png",
+      "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-底部.png"
+    ],
+    "execResults": "reports/audit/round-1/interact/exec-results.json (manifest=SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC, PT01-PT34: 判定 7 VERIFIED / 1 FAILED / 26 UNVERIFIED——UNVERIFIED 主因执行器候选定位失败/前置断链/mock 条件不可构造/chooseImage 不可自动化，被引元素均经截图与 wxml 证实正常渲染)",
+    "code": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/village/api.ts",
+      "apps/client/src/constants/village.ts",
+      "apps/client/src/constants/routes.ts",
+      "apps/client/src/pages.json",
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/subpackages/circles/circles/topics.vue",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java",
+      "apps/api/src/main/java/com/campuslove/api/discover/CircleController.java"
+    ],
+    "siblingArbitration": [
+      "reports/audit/round-1/findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-req.json（理想稿像素锚定 publish；Issues 101-107）",
+      "reports/audit/round-1/findings/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json（视觉审查员观察4：理想稿对应 village/post 非本页，19 稿无本页一对一锚）",
+      "reports/audit/baseline/ideal-baseline.md:101（圈场景发布=circles/post-topic 映射）"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-POSTTOPIC-301",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT02-after.png（mock 态 7 标签 chip 渲染；real 态该区块整体不存在于 DOM）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "圈内发话题生产链路真实模式下话题标签能力整体缺失：本页是发布功能族中唯一有生产入口的圈发帖页（circle-home.vue:371「去圈内发帖」、topics.vue:115，均带 circleId 恒走话题路径），而标签区 v-if=\"useMock()\"（post-topic.vue:576）使 real 用户完全看不到标签 UI；页面隐藏理由（:572-575 注释）仅引用话题路径 createTopic 请求体无 tags 字段（circle.ts:520-530、后端 CreateTopicRequest.java:246-250 确证仅 title/content/images），但同页帖子路径 payload 本就透传 tags（:361）且后端 posts DTO 支持 tags（CreatePostRequest.java:20 @Size(max=20)）——对该路径属过度隐藏（虽该路径当前在本页无生产入口，全仓 grep 无 channel= 导航）。理想图要求「# 添加话题 已选 0/5」；mock 侧上限 3 亦与理想 5 不符。同族同根因：village/publish 圈目标隐藏话题行（MP-R1-VILLAGE-PUBLISH-107）、publish 话题无选择器（-101）。当前「隐藏不承诺」防 UI 承诺≠落库，是正确行为，但能力净缺失须登记待后端破题。",
+      "evidence": "post-topic.vue:576（v-if=\"useMock()\"）、:572-575（隐藏理由注释仅引 createTopic）、:361（帖子路径 tags 已透传）、:70（MAX_TAGS=3）；stores/circle.ts:520-530（real 请求体仅 title/content/images）；apps/api/.../discover/CircleController.java:246-250（CreateTopicRequest 无 tags/favorite）；apps/api/.../village/CreatePostRequest.java:20（posts 路径 tags @Size(max=20)）；入口实证：circle-home.vue:371、topics.vue:115；全仓 grep「channel=today|channel=school|channel=activity」于 src 内 0 命中（帖子模式无生产入口）；exec PT02 VERIFIED（mock 态 7 chip 渲染）",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：圈场景「# 添加话题｜已选 0 / 5 ›」可多选话题标签",
+      "fix": "后端 CreateTopicRequest+落库增加 tags 字段（posts 路径已有 @Size(max=20) 先例可循）→ 前端移除 post-topic.vue:576 useMock() 门恢复标签区、上限 3 对齐理想 5；在此之前保持隐藏是正确行为（避免勾选即静默丢弃）",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-POSTTOPIC-302",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__默认.png（整页无位置/提及/权限任何行项）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "理想图圈发帖三能力位「添加位置 / 提及好友 / 谁可以看」在本页零实现：无任何 UI、无状态、无 payload 字段，后端两条提交路径 DTO 均无对应字段（CreateTopicRequest.java:246-250 仅 title/content/images；CreatePostRequest.java:14-28 无 location/mention，visibility 由 targetType 推导）。兄弟页 village/publish 尚有城市级只读位置行（MP-R1-VILLAGE-PUBLISH-104，注明系代码内产品决定）、提及 stub toast（-102）、谁可以看只读行（-103）；本页作为生产圈发帖入口连占位行都没有，为发布族范围裁剪的页内极端形态。圈发话语义下可见范围=圈内成员隐式成立（无泄露风险），位置/提及则为纯能力缺失。",
+      "evidence": "post-topic.vue:465-727 模板逐节通读：仅 标题/正文/发布到/标签(mock)/喜爱(mock)/关联活动(帖子模式)/图片/底部提交 八类区块，无位置/提及/权限行；后端 CreateTopicRequest.java:246-250、CreatePostRequest.java:14-28 实读无 location/mention/visibility 显式字段；姊妹页对照 findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-req.json Issues 102/103/104；理想图逐元素目验（📍添加位置 北京大学·未名湖校区 ›、@提及好友 ›、👁谁可以看 圈内成员可见 ›）",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/发布帖子页面.png：📍添加位置（POI 级可选址）、@提及好友（可进入好友选择）、👁谁可以看（权限展示/选择）三行均可用",
+      "fix": "产品族级裁决：(a) 维持裁剪→理想稿标注+本页无需补行，登记范围外；(b) 恢复→chooseLocation+DTO location、提及接关注/喜欢列表、visibility 后端显式字段，三端同步。最低成本可先行项：目标展示行补「圈内成员可见」只读 badge（circleStore 圈数据在位），满足理想稿可见范围语义",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-POSTTOPIC-303",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT33-after.png（图片区仅 + 图按钮，无视频入口）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "媒体上传仅支持图片不支持视频：理想图工具条首项为「图片/视频」，本页 uni.chooseImage（post-topic.vue:206）仅图片（MAX_IMAGES=9），后端两 DTO images 字段（@Size(max=9) List<String>）亦无视频承载。发布功能族三页（本页/publish/post）一致仅图片，属族级范围裁剪而非本页孤立缺陷；图片链路本身代码完整（隐私授权检查 :190-218、压缩、9 张上限、real 上传转换 :325-342），执行级因 chooseImage 不可自动化未覆盖（PT33/PT34 UNVERIFIED，Manifest 预授权如实标注）。",
+      "evidence": "post-topic.vue:206-217（uni.chooseImage 无视频源）、:151（MAX_IMAGES=9）、:325-342（real 上传转换）；CreatePostRequest.java:21、CircleController.java:249（均仅 @Size(max=9) List<String> images）；理想图底部工具条「图片/视频」目验；exec PT34 failureReason（uni.chooseImage 系统相册无法被 automator mock）",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "素材/理想效果图/发布帖子页面.png：「图片 / 视频」媒体能力位",
+      "fix": "族级裁决：三页统一迁移 uni.chooseMedia（图片+视频）并后端增加视频资源字段/类型标记；或理想稿标注「仅图片」裁剪",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-POSTTOPIC-304",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT08-after.png（0/500 计数正常灰，500/500 实拍）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "正文容量 0/500 vs 理想 0/1000：客户端三方自洽（页面 MAX_LENGTH=500 post-topic.vue:149 + maxlength=500 :504；store MAX_CONTENT_LENGTH=500 stores/village/constants.ts:12；常量 POST_MAX_LENGTH=500 constants/village.ts:18），UI 所见=实际提交。但后端两 DTO 实为 @Size(max=5000)（CreatePostRequest.java:18、CircleController.java:248），RealCircleService 无 500 二次校验（仅 :888 展示截断）——姊妹 req 文件（MP-R1-VILLAGE-PUBLISH-106）称 500 系「与后端规则对齐」，与本仓后端实读不符，本轮如实修正记录：500 是客户端单侧约定，后端放宽空间客观存在。PT08 实测 500/500 正常灰不误报（VERIFIED）。",
+      "evidence": "post-topic.vue:149/:504/:507-509；stores/village/constants.ts:12；constants/village.ts:18；CreatePostRequest.java:18（@Size(max=5000) content）；CircleController.java:248（@Size(max=5000) content）；RealCircleService.java:888（仅展示截断）；exec PT08 VERIFIED（500/500 截图直观证实）；对照 findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-req.json Issue 106 的「后端规则对齐」表述",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "素材/理想效果图/发布帖子页面.png：正文计数 0/1000",
+      "fix": "产品裁决：理想稿改为 0/500（与姊妹页裁定口径一致、零风险）；或客户端三方同步放宽至 1000（后端 5000 已可承接，需同步补超长用例）",
+      "status": "保留"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/circles/circles/post-topic",
+      "baseline": "素材/理想效果图/发布帖子页面.png（功能语义参照——锚定仲裁见下；像素级锚归 village/publish）；实际证据：reports/screenshots/round-1-tour/A|B/subpackages_circles_circles_post-topic__*.png（静态 10 帧，视觉审查员已逐张实审）+ reports/audit/round-1/interact/exec-results.json PT01-PT34（7 VERIFIED/1 FAILED/26 UNVERIFIED）+ post-topic.vue 1365 行逐行通读 + 后端 CreatePostRequest/CreateTopicRequest DTO 实读",
+      "structureNotes": "L1 存在/可达：通过——pages.json:109 注册、routes.ts:140 路由、深链渲染完整（PT01 EXECUTED 表单全 present 无 console 错误）。L2 骨架：头(返回/发布话题/发布)→标题→正文+0/500→发布到(带圈=只读两行 :516-519；无圈=双 chip+8 分类宫格 :520-570)→[mock:7标签+喜爱switch]→[帖子模式:关联活动 :599-634]→图片0/9→底部发布大钮；与理想稿骨架非同构（缺 位置/提及/谁可以看/小贴士/工具条 五能力位=真实功能缺口见 Issues 301-303，多出 标题/发布目标选择=双模式职责件），按锚定仲裁本页不做像素判级。L3 组件：8 张 section 卡与圈内表单页同族、chip 选中态语言一致、tag-chip 选中=品牌绿实底白字（:1032-1046）、ActivityCard 复用 village 组件；A/B 10 帧渲染一致（视觉审查员证实）。L4 文案：zh-CN.ts:3679-3717 齐全且与实拍逐字一致；「发布话题」vs 理想「发布动态」属家族分工命名非缺陷。L5 状态：头/底双钮 disabled 灰态 PT05 after.wxml 证实；超限红态 :901 因 maxlength 钳制实际不可达（PT08 500/500 正常灰）；成功 toast 分支 PT10/PT26 捕获、失败分支 real 不可构造（PT16 如实标注）。L6 交互链路：校验链 PT05/PT06 VERIFIED（toast 逐字一致）；发布成功 toast 捕获但 store 落库断言未采集；34 例中 26 UNVERIFIED（执行器候选定位失败/前置断链/mock 条件不可构造/chooseImage 不可自动化——被引元素均经截图与 wxml 证实渲染正常，属验证债非行为反证）；isSubmitting 成功不复位+栈底 navigateBack 失败组合缺陷已由交互判定员立 MP-R1-POSTTOPIC-101(P3)/102(P2)，本轮不重复。L7 入口 wiring：生产入口恒带 circleId（circle-home.vue:371、topics.vue:115）恒走话题路径；无参态（目标选择器/校园圈 createPost 兜底）与 channel 帖子模式全仓 0 生产导航入口（grep 证），仅深链/dev(:209)/showcase(:110) 可达——大块 UI 生产不可达属维护性观察不计 Issue。L8 数据链：real 话题路径请求体仅 title/content/images（circle.ts:520-530 ↔ CreateTopicRequest.java:246-250 双侧一致）；本地临时图先上传（:325-342）；无数字圈 ID real 拦截（:387-391）；双 store errorMessage 分支取用（:313-317/:414-418）。L9 一致性：字数客户端三方自洽 500（页/store/常量），后端 DTO 实为 5000——姊妹 req 文件「与后端规则对齐」表述与本仓实读不符，已修正记录（Issue 304）；图片上限页 9=后端 9 一致。L10 回归：MP-R1/R2/R3-POSTTOPIC 系列修复在位且本轮证据无反证（onLoad 取参 :449-462、上传上移 :325-342、仅失败复位 :423-425、CSS var 头部 :755-763）；视觉审查员 201（滚动头部滚出 P2）/202（删除热区 P3）与本轮功能结论无冲突。",
+      "usageNotes": "理想路径（发布到摄影圈）：进入→目标卡确认→写正文→（配图/话题/位置/提及/权限）→发布。实际生产路径：圈详情/话题列表→「去圈内发帖」→带 circleId 进入（目标锁定只读）→标题+正文→（首次）隐私授权→选图→发布→toast「发布成功」→800ms 自动返回来源页。核心任务可顺畅完成：PT10 发布成功 toast 捕获（01:57:04.5Z），生产栈深≥2 时 navigateBack 正常（本轮实测栈底失败均为 harness reLaunch 置底伪影，PT29 判定原文）；新话题回显来源页 mock 侧 store.unshift 在位、real 侧 store 断言本轮未采集（如实声明）。迷路风险低：单层表单+目标锁定免选择；但滚动后头部连返回钮滚出视口（视觉 201 P2），长文输入后仅剩系统侧滑+底部发布钮兜底。2 步回 tab：返回→圈详情（1 步）→底部 tab（2 步内达成）；本页为分包非 tab 页。卡点：①真实模式话题标签/位置/提及/权限四能力位不可用（Issues 301/302）；②跳转失败实例锁死（交互 102）；③核心链路执行级证据仅 7/34 VERIFIED，验证债大面积存在。",
+      "functionGaps": [
+        {
+          "target": "话题标签多选（理想图「# 添加话题 已选 0/5」）",
+          "current": "mock-only UI（post-topic.vue:576，7 预设 chip 上限 3）；生产真实模式零能力——话题路径后端 CreateTopicRequest 无 tags 字段（CircleController.java:246-250、circle.ts:520-530），帖子路径后端支持（CreatePostRequest.java:20）且前端已透传（:361）但本页帖子模式无生产入口（全仓 grep 0 命中）",
+          "gap": "真实用户圈内发话题不能打任何标签（mock 可用掩盖真实体验）；同族同根因见 MP-R1-VILLAGE-PUBLISH-107/-101",
+          "fix": "后端 CreateTopicRequest+落库加 tags（posts 先例 @Size(max=20)）→前端去 useMock() 门、上限对齐 5；此前保持隐藏是正确行为（Issue MP-R1-POSTTOPIC-301，保留）"
+        },
+        {
+          "target": "添加位置（理想 POI 级「北京大学·未名湖校区 ›」）",
+          "current": "零 UI 零字段；后端两 DTO 均无 location；兄弟页 publish 尚有城市级只读行（MP-R1-VILLAGE-PUBLISH-104）",
+          "gap": "能力位整体缺失（发布族范围裁剪的页内极端形态）",
+          "fix": "族级产品裁决：维持裁剪则理想稿标注；恢复则 chooseLocation+DTO location 三端同步（Issue MP-R1-POSTTOPIC-302，保留）"
+        },
+        {
+          "target": "提及好友（理想「@ 提及好友 ›」）",
+          "current": "零 UI 零链路（publish 有 stub toast，MP-R1-VILLAGE-PUBLISH-102）；后端无 mention 字段",
+          "gap": "能力位缺失",
+          "fix": "族级裁决：弱化占位或接关注/喜欢列表实现（并入 Issue MP-R1-POSTTOPIC-302，保留）"
+        },
+        {
+          "target": "谁可以看（理想「👁 圈内成员可见 ›」+目标卡 pill）",
+          "current": "零 UI；圈发话语义可见范围=圈内成员隐式成立；posts 路径 visibility 由 targetType 推导（后端无显式字段）",
+          "gap": "理想明示的权限展示缺失；目标展示亦无可见范围 badge",
+          "fix": "最低成本：目标行补「圈内成员可见」只读 badge（circleStore 数据在位）；真实选择需后端字段（并入 Issue MP-R1-POSTTOPIC-302，保留）"
+        },
+        {
+          "target": "图片/视频（理想工具条首项）",
+          "current": "仅 uni.chooseImage 图片（:206，上限 9 与后端一致）；代码链路完整（隐私授权/压缩/real 上传转换）但执行级未覆盖（PT33/34 UNVERIFIED）",
+          "gap": "无视频能力（发布族三页一致，族级裁剪）",
+          "fix": "族级裁决 uni.chooseMedia+后端视频承载，或理想稿标注仅图片（Issue MP-R1-POSTTOPIC-303，保留）"
+        },
+        {
+          "target": "正文计数 0/1000（理想图）",
+          "current": "0/500 客户端三方自洽（:149/:504、stores/village/constants.ts:12、constants/village.ts:18）；后端 DTO 实为 5000（CreatePostRequest.java:18/CircleController.java:248）",
+          "gap": "与理想稿数值不符；姊妹 req 文件「与后端规则对齐」表述与本仓实读不符（已修正记录）",
+          "fix": "理想稿改 0/500 或客户端三方放宽至 1000+超长用例（Issue MP-R1-POSTTOPIC-304，保留）"
+        },
+        {
+          "target": "发布到圈卡（理想：头像+圈内成员可见 pill+1.2w 成员+chevron）",
+          "current": "带圈进入为只读两行纯文本「发布到/圈名」（:516-519），冷启动圈名未载时回落通用词「兴趣圈」（PT01 实测，circles 加载后自愈）",
+          "gap": "目标信息展示弱（不阻塞发布，展示层裁剪）",
+          "fix": "目标行升级圈卡（头像/成员数/可见 badge），数据 circleStore.circles 在位（成员数字段需核）"
+        },
+        {
+          "target": "发帖小贴士卡+底部五项工具条（理想结构元素）",
+          "current": "均无；本页以底部发布大钮替代工具条，帮助性贴士无承载",
+          "gap": "帮助内容与快捷入口缺省；工具条四功能经主体区可达无净损失，「更多」无承载",
+          "fix": "产品裁决：建议理想稿标注裁剪；若保留贴士为纯静态卡成本低"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-req.json"
+}

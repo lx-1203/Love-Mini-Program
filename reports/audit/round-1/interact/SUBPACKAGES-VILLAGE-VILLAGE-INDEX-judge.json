@@ -1,0 +1,735 @@
+{
+  "round": "R1",
+  "judge": "A6-交互判定员",
+  "page": "subpackages/village/village/index",
+  "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+  "generatedAt": "2026-09-23",
+  "sources": {
+    "expected": "reports/audit/round-1/ops/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json (48 用例 VI01-VI48)",
+    "observed": "reports/audit/round-1/interact/exec-results.json (manifest=SUBPACKAGES-VILLAGE-VILLAGE-INDEX 共 48 条，与用例一一对应)",
+    "screenshots": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI*.png + wxml/*.wxml",
+    "tour": "reports/audit/round-1/screenshot-manifest.json → reports/screenshots/round-1-tour/{A,B}/subpackages_village_village_index__*.png",
+    "console": "reports/audit/round-1/interact/console-S05-village.log",
+    "fixtures": "tmp_r11_login.json (100158 曦风 profileCompleted=false) / tmp_r11_guest.json (100159 小新生 campusVerified=false)；两 token iat=1790080924 早于执行时刻(1790161061862ms)约 20h 已过期"
+  },
+  "methodNote": "逐用例三方对照（Manifest.expected vs A1.observed vs 截图/wxml/console）。A1 observed 中存在系统性的路由过早采集（VI09 自身路由=[village/index] 但 VI10 路由栈=[village,tools/search] 证实导航实际发生），故对「动作已发出、路由未变」的用例采用跨记录/跨帧佐证仲裁；无法佐证者一律不判 VERIFIED。背景事实（来自证据，非代码推测）：A1 两次身份登录均返回 user-1001（A1 自标 MISMATCH!），因 mock 会话层存在 token 即返回 mockLoggedInSession（profileCompleted=true、campusVerified=true，services/mocks/fixtures.ts:1383-1396,680-694），tour A/B 默认帧同样未锁定 → 身份 A 未完善 / 身份 B 未认证前提在本轮 mock 构建上不可构造；截图存在两套设备档案（9:0x-9:1x 批次与 18:5x 批次），多组截图字节级重复（VI16 前=后、VI30前=VI31前=VI31后、VI38=VI44前=VI44后、VI40=VI41）。",
+  "summary": {
+    "total": 48,
+    "VERIFIED": 5,
+    "FAILED": 1,
+    "UNVERIFIED": 42
+  },
+  "checks": [
+    {
+      "caseId": "VI01",
+      "page": "subpackages/village/village/index",
+      "operation": "身份A冷启动→LockScreen锁定态+解锁弹窗",
+      "expected": "isUnlocked=false → LockScreen 全屏（标题「完善资料，解锁完整交友功能」+主按钮+权益3条）+ UnlockGuideModal；无帖子流/错误态闪现",
+      "actual": "A1 自标 pre:login A ok userId=user-1001 MISMATCH!；dom .lock-screen/.lock-screen__title/.unlock-modal 全部 absent；路由栈顶=村口；VI01-after 帧显示完整未锁定村口（头部+5 Tab+置顶条+帖子流+发帖条）。原因：mock 会话层有 token 即返回 profileCompleted=true（fixtures.ts:1383-1396），固件 token 已过期，身份A前提在本构建不可构造（tour A 默认帧同样未锁定）。锁定态逻辑未被真实触发，无法判 VERIFIED，亦不能归罪产品。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI01(observed MISMATCH!+dom absent)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01-after.png",
+        "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png",
+        "tmp_r11_login.json(token iat=1790080924 已过期)",
+        "apps/client/src/services/mocks/fixtures.ts:1383-1396"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI02",
+      "page": "subpackages/village/village/index",
+      "operation": "解锁引导弹窗三路关闭",
+      "expected": "①「去完善」跳 setup/profile；②「暂不完善」仅关弹窗；③遮罩同②；三路 500ms 内有反馈",
+      "actual": "弹窗从未渲染（VI01 帧无 unlock-modal），三路 tap 全部 act-FAIL element not found（去完善资料/暂不完善×2）。根因同 VI01：身份A前提不可构造 → 弹窗不出现属会话层覆盖结果，非可归因产品缺陷。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI02(3×act-FAIL)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI02-after.png(未锁定态无弹窗)"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI03",
+      "page": "subpackages/village/village/index",
+      "operation": "LockScreen「×」关闭→switchTab寻觅页",
+      "expected": "栈深1走 switchTab → 栈顶=pages/discover/index",
+      "actual": "act-FAIL: .lock-screen__close 元素不存在（页面为未锁定态，LockScreen 未渲染）。前置不可构造。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI03(act-FAIL element not found)"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI04",
+      "page": "subpackages/village/village/index",
+      "operation": "LockScreen主按钮(已登录未完善)→资料页",
+      "expected": "navigateTo setup/profile，栈深2",
+      "actual": "act-FAIL: .lock-screen__btn(\"立即完善\") 不存在（未锁定态）。前置不可构造。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI04(act-FAIL)"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI05",
+      "page": "subpackages/village/village/index",
+      "operation": "LockScreen「先逛逛公开内容」→寻觅页",
+      "expected": "switchTab → 栈顶=pages/discover/index",
+      "actual": "act-FAIL: .lock-screen__btn-link 不存在（未锁定态）。前置不可构造。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI05(act-FAIL)"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI06",
+      "page": "subpackages/village/village/index",
+      "operation": "未登录LockScreen主按钮→记录待跳转+replace登录页",
+      "expected": "写 pending-login-redirect + replace 到 pages/login/index",
+      "actual": "pre:logout ok + storageRemove token 后 dom .lock-screen__btn:present（登出态 LockScreen 确实渲染，全轮唯一锁定系UI实证）；tap 已执行无错误。自身路由采集=[village/index]（过早），但下一用例 VI07 起点记录 top=pages/login/index（期间仅 storage 注入无导航动作）→ replace 到登录页成立。pending-login-redirect 存储值 A1 未读取，该子断言未取证。",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI06(dom present+act tap)",
+        "reports/audit/round-1/interact/exec-results.json#VI07(top=pages/login/index 佐证)"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI07",
+      "page": "subpackages/village/village/index",
+      "operation": "身份B冷启动默认态整页文案断言",
+      "expected": "标题「圈子」+副标题+搜索占位+5频道Tab+今日广场激活+20卡+置顶条「置顶 1 条」+发帖条占位；console 无 TypeError/NAV_FAIL",
+      "actual": "执行失败：pre:reLaunch NAV_ERROR timeout waiting for automator response，top=pages/login/index，自身截图 ERROR；console 捕获 [Global Error][uni.onUnhandledRejection] switchTab:fail timeout（S05 套件 4 次尝试同点复现）。旁证：默认态视觉在 VI01/VI20/VI23/VI24 帧中均正确（圈子/校园恋爱社区/搜索占位/5Tab/今日广场激活/置顶 1 条/在今日广场发帖...），但本用例自身链路未跑通，不判 VERIFIED。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI07(navError+console switchTab:fail timeout+截图ERROR)",
+        "reports/audit/round-1/interact/console-S05-village.log:15-18,28-31,39-42",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01-after.png(默认态旁证)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI08",
+      "page": "subpackages/village/village/index",
+      "operation": "七态时序：骨架→Success 无空态/错误态闪现",
+      "expected": "0s/0.3s/0.6s/1s 四次采样：骨架×4→帖子流，全程无 ErrorState/EmptyState",
+      "actual": "同一导航链失败（NAV_ERROR timeout，top=pages/login/index），DOM 采样全部 absent（.village-state/.post-card/.village-empty），页面根本未加载；四时刻时序无从谈起。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI08(NAV_ERROR+dom 全 absent+scrollPos=top)"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI09",
+      "page": "subpackages/village/village/index",
+      "operation": "头部搜索框→帖子搜索页",
+      "expected": "navigateTo tools/search，栈顶=搜索页，村口保留栈底",
+      "actual": "dom .village-search:present，tap 已执行。自身路由记录=[village/index]（采集早于导航完成），但跨记录三重佐证：VI10 路由栈=[subpackages/village/village/index, subpackages/tools/search/index]（村口在栈底✓）、VI10-after 帧即搜索页（用户/标签/学校 Tab+空态文案）、VI10 act-FAIL「兴趣圈」在搜索页找不到。跳转真实发生。",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI09(act tap)",
+        "reports/audit/round-1/interact/exec-results.json#VI10(route 两层栈+act-FAIL)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI10-after.png(搜索页)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI10",
+      "page": "subpackages/village/village/index",
+      "operation": "Tab切兴趣圈：宫格+话题+占位切换+30sTTL",
+      "expected": "8宫格+热门话题+精选话题+发帖条「在兴趣圈发帖...」+30s内切回不重拉",
+      "actual": "执行环境错误：起点是 VI09 遗留的搜索页（路由栈两层，VI10-after 帧即搜索页），「兴趣圈」Tab 不在页面内 → act-FAIL element not found；频道切换与 TTL 验证完全未执行。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI10(act-FAIL+route 栈)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI10-after.png"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI11",
+      "page": "subpackages/village/village/index",
+      "operation": "兴趣宫格「学习」→圈子首页?category=study",
+      "expected": "栈顶=circles/index 且 query.category=study",
+      "actual": "act-FAIL: .interest-grid__item(\"学习\") 不存在。前置（VI10 兴趣圈频道）从未达成，今日广场 DOM 无宫格。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI11(act-FAIL+pre auto-reLaunch)"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI12",
+      "page": "subpackages/village/village/index",
+      "operation": "热门话题主卡→tag-posts?tagName=女生请回答",
+      "expected": "栈顶=village/tag-posts 且 tagName 解码正确",
+      "actual": "act-FAIL: \"女生请回答\" 不存在（热门话题区未加载，前置 VI10 未达成）。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI12(act-FAIL)"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI13",
+      "page": "subpackages/village/village/index",
+      "operation": "精选话题项→topic-detail?topicId&circleId",
+      "expected": "栈顶=circles/topic-detail 双参数非空",
+      "actual": "act-FAIL: .topic-item 不存在（精选话题未加载，前置 VI10 未达成）。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI13(act-FAIL)"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI14",
+      "page": "subpackages/village/village/index",
+      "operation": "Tab切学校圈(未认证)：锁标+认证门+发帖条锁定",
+      "expected": "SchoolCircleGate（标题/描述/权益2条/去认证/模拟认证按钮）+发帖条锁定占位",
+      "actual": "双重前提失败：①执行层 tapIndex __CAND__#3(\"学校圈\") 已发出，但 VI14-after 帧激活的是「活动」Tab（#3 索引命中第4项，疑似候选索引错位或 tap 未生效）；②身份层 B campusVerified=false 不可构造（mock 会话覆盖为 campusVerified=true），认证门预期本就不可渲染。认证门相关断言全未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI14(tapIndex#3)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI14-after.png(活动Tab激活，无认证门)",
+        "reports/audit/round-1/interact/exec-results.json#VI14(pre login user-1001 MISMATCH!)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI15",
+      "page": "subpackages/village/village/index",
+      "operation": "认证门「去认证」→校园认证页",
+      "expected": "栈顶=campus/certification",
+      "actual": "act-FAIL: .school-gate__btn(\"去认证\") 不存在。页面从未进入学校圈频道（后续 wxml 全为活动频道 DOM），认证门未渲染；前提同 VI14 双重失败。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI15(act-FAIL)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.wxml(无 school-gate 标记)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI16",
+      "page": "subpackages/village/village/index",
+      "operation": "模拟认证一键通过：POST→Toast→门消失→校区过滤",
+      "expected": "Toast「模拟认证成功，已进入学校圈」→认证门消失→空态或帖流落定",
+      "actual": "act-FAIL: .school-gate__simulate 不存在；before/after 帧字节级相同（均为活动频道，无认证门）；wxml 无 school-gate 标记。前置（认证门可见）未达成，模拟认证链路未执行。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI16(act-FAIL+前后帧同字节194334B)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-before.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.wxml"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI17",
+      "page": "subpackages/village/village/index",
+      "operation": "学校圈空态「发帖」→实名门控进发帖页",
+      "expected": "栈顶=village/post",
+      "actual": "act-FAIL: .village-empty__action(\"发帖\") 不存在。前置（学校圈空态，VI16 落定）未达成。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI17(act-FAIL)"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI18",
+      "page": "subpackages/village/village/index",
+      "operation": "学校圈每日一问入口→daily-question页",
+      "expected": "栈顶=tools/daily-question/index",
+      "actual": "act-FAIL: .village-daily-entry 不存在。未确保切到学校圈频道（记录无切频道动作），且 manifest 自带豁免条款（campusName 空则标 UNVERIFIED）。前置未建立。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI18(act-FAIL)"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI19",
+      "page": "subpackages/village/village/index",
+      "operation": "学校圈附近的人banner→switchTab寻觅页",
+      "expected": "栈顶=pages/discover/index",
+      "actual": "act-FAIL: .discover-banner 不存在。前置（学校圈已认证态激活）未建立。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI19(act-FAIL×2次登录记录)"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI20",
+      "page": "subpackages/village/village/index",
+      "operation": "Tab切活动频道：推荐活动区+活动卡+活动帖流",
+      "expected": "「推荐活动」区+副标+ActivityCard full 字段+post-32 活动帖+发帖条「发帖推荐活动...」",
+      "actual": "tapIndex __CAND__#4(\"活动\") 记录已发出无报错，但 VI20-after 帧（9:11，该批次真实帧，帖时间戳 5 分钟前晚于 VI01 帧 8 分钟前）今日广场仍激活，频道未切换。同批次 VI23/VI24 Tab 点击同样无效，而深链切频道（VI25→VI26 帧）正常、批次 B 曾见 Tab 切换生效（VI14 帧活动频道）→ 证据冲突不能确诊产品缺陷，亦不能证实预期达成。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI20(tapIndex#4)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI20-after.png(今日广场未切换)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png(深链可切频道)"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI21",
+      "page": "subpackages/village/village/index",
+      "operation": "活动卡片点击→活动详情?id=",
+      "expected": "栈顶=tools/activities/detail 且 query.id 非空",
+      "actual": "dom .activity-card:present、tap 已执行；自身路由记录=[village/index]（已知采集过早现象），下一用例 VI22 pre:auto-reLaunch 重置栈，无跨记录佐证。跳转发生与否无法证实/证伪。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI21(act tap+route 单层)"],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI22",
+      "page": "subpackages/village/village/index",
+      "operation": "活动卡「报名」：Toast+按钮态+不误触详情；再点取消",
+      "expected": "①Toast「报名成功」+不跳详情；②按钮变已报名+报名数+1；③再点取消报名",
+      "actual": "①② 完整证实：Toast 逐字记录 {showToast 报名成功}；before 帧 报名(绿)+12人已报名 → after 帧 已报名(灰)+13人已报名；两帧均在村口活动频道，无路由变化（@tap.stop 阻断生效）。③取消 toggle A1 未执行第二次 tap（toast 数组仅1条、终态已报名）→ 该子步骤未取证，不计入判定核心。",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI22(toast 报名成功+route 无跳转)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-before.png(报名/12人)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.png(已报名/13人)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.wxml(activity-card__enroll--done)"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI23",
+      "page": "subpackages/village/village/index",
+      "operation": "Tab切热度榜：点赞降序20条/页+占位回退文案",
+      "expected": "fetchHotBoard 首屏20卡点赞单调不增+发帖条「在今日广场发帖...」",
+      "actual": "tapIndex __CAND__#5(\"热度榜\") 记录已发出，但 VI23-after 帧（9:12，真实帧）今日广场仍激活、置顶条仍在——热度榜未渲染，核心断言（排序/数量/占位）全未取证。证据冲突同 VI20，归入同一待复测缺陷候选。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI23(tapIndex#5)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI23-after.png(今日广场未切换)"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI24",
+      "page": "subpackages/village/village/index",
+      "operation": "频道记忆持久化：切兴趣圈→重进恢复",
+      "expected": "storage village_last_channel=interest；重进激活兴趣圈",
+      "actual": "observed 动作序列为 reLaunch→tap 兴趣圈（顺序与 manifest 相反，缺 storage 核对与重进恢复步骤）；VI24-after 帧（9:12）今日广场仍激活，兴趣圈 tap 未生效，持久化验证完全未完成。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI24(act reLaunch+tap 兴趣圈)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI24-after.png(今日广场)"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI25",
+      "page": "subpackages/village/village/index",
+      "operation": "深链?channel=activity直达+写频道记忆",
+      "expected": "激活活动Tab+推荐活动区渲染+storage=activity+无抖动",
+      "actual": "route options {channel:activity} 证实深链参数到达并进入 onLoad；自身 after 截图 ERROR。跨记录佐证：同批次唯一的频道写活动者即本用例深链，而 VI26 帧（9:13，经非法参数 reLaunch 后）显示活动频道激活且内容完整（推荐活动+4活动卡+活动帖+发帖推荐活动...占位）→ village_last_channel=activity 已持久化、深链激活生效。「无闪现抖动」需帧序列，未取证。",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI25(route options channel=activity+截图ERROR)",
+        "reports/audit/round-1/interact/exec-results.json#VI26(route channel=hotxyz)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png(活动频道已激活=记忆写入佐证)"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI26",
+      "page": "subpackages/village/village/index",
+      "operation": "深链非法?channel=hotxyz白名单兜底",
+      "expected": "忽略参数→按已存值/默认频道渲染；无报错/白屏/脏请求",
+      "actual": "VI26-after 帧（9:13）显示：激活 Tab=活动、推荐活动区+活动帖正常渲染、无白屏/错误态——非法参数确被忽略，走 expected 明列的「已存值」分支（village_last_channel=activity 来自 VI25）。注意：A1 未执行 manifest 要求的「清 village_last_channel」前置（记录无 storage 清理步骤），故未走「默认今日广场」分支；console 无错误记录（弱佐证）。",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI26(route channel=hotxyz+observed)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png(活动频道正常渲染)"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI27",
+      "page": "subpackages/village/village/index",
+      "operation": "tab=hot桥接残留参数消费",
+      "expected": "强制回今日广场+桥接 key 即读即清",
+      "actual": "pre:storageSet campus-love:pending-tab-query + reLaunch 已执行，但 after 截图 ERROR（无帧）；桥接 key 是否被清除无 storage 读取记录；激活 Tab 仅有无意义的 .tab 探针（present）。核心断言全未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI27(storageSet+截图ERROR+dom .tab:present)"],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI28",
+      "page": "subpackages/village/village/index",
+      "operation": "帖子卡点击→detail?id=",
+      "expected": "栈顶=village/detail 且 query.id=所点帖",
+      "actual": "dom .post-card:present、tap 执行两次（含一次重试）；路由记录=[village/index]，下一用例 pre:auto-reLaunch 重置栈，无跨记录佐证（对比 VI09 有 VI10 佐证、VI34 有终栈佐证）。跳转未证实。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI28(act tap×2+route 单层)"],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI29",
+      "page": "subpackages/village/village/index",
+      "operation": "作者行点击→他人主页(catchtap阻断)",
+      "expected": "栈顶=profile/other 且 userId 非空、不误入详情",
+      "actual": "dom .post-card__user:present、tap 已执行；路由记录=[village/index]，无任何跨记录佐证（下一用例 pre:auto-reLaunch）。跳转与冒泡阻断均未证实。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI29(act tap+route 单层)"],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI30",
+      "page": "subpackages/village/village/index",
+      "operation": "帖子点赞：乐观更新+动画+快击×5幂等",
+      "expected": "计数+1变粉+心形动画；再点-1；快击×5只计1次",
+      "actual": "执行器选择器错误：rapidTap(__CAND__(\"提交\"))/tap(__CAND__(\"按\")) 均未命中——与点赞按钮无关的候选词；wxml 证实 .action-btn/.action-btn__count 存在于当页 DOM（post 卡互动栏完整渲染）。动作未执行，点赞/幂等断言全未取证。before/after 帧字节相同（无任何变化）。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI30(act-FAIL 提交/按)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.wxml(action-btn x11/action-btn__count x3)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png(与before同帧)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI31",
+      "page": "subpackages/village/village/index",
+      "operation": "帖子收藏toggle：书签高亮+计数±1",
+      "expected": "计数+1书签高亮；再点恢复；失败回滚语义",
+      "actual": "同 VI30：tap(__CAND__(\"按\")) 未命中（执行器候选词错误）；wxml 证实 action-btn 在 DOM；before/after 帧与 VI30-before 三帧字节级相同。动作未执行。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI31(act-FAIL 按)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.wxml",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.png(与before同帧)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI32",
+      "page": "subpackages/village/village/index",
+      "operation": "关注chip toggle+同作者多帖同步",
+      "expected": "「+关注」→「已关注」灰底（同作者多帖同步）→再点恢复",
+      "actual": "两次 tap 记录已发出；终态证据（VI32-after 帧 + wxml follow-chip__text\">+关注<）为未关注态。该终态与「完成 toggle 循环」一致，也与「两次 tap 均未生效」一致（该批次 Tab/坐标类 tap 多发未生效，before 截图 ERROR 缺失中间态）——无法区分，中间「已关注」态无证据。同作者多帖同步完全未观察。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI32(act tap×2+dom follow-chip--active:absent+before截图ERROR)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.png(+关注未激活)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.wxml(follow-chip__text>+ 关注)"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI33",
+      "page": "subpackages/village/village/index",
+      "operation": "帖子标签chip→tag-posts?tagName=电影",
+      "expected": "栈顶=village/tag-posts 且 tagName=电影（#剥离）、不触发卡片详情",
+      "actual": "tap \"电影\" 记录已执行且无 act-FAIL，但路由终态=[village/index]；下一用例 VI34 无 reLaunch，其终栈=[village/index, tools/activities/detail?id=a-1] 仅两层——若 VI33 曾进入 tag-posts 则应为三层。证实标签 chip 点击未发生预期导航，预期未达成。警示：候选词「电影」存在歧义命中（内嵌活动卡标题「电影社线下看面」亦含该词），但该卡可导航（VI34 同卡 tap「一」即跳 a-1）而本次未跳，指向 chip 处理或点击落点问题；该批次点击异常背景下降本判定置信度。",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI33(act tap 电影+route 单层)",
+        "reports/audit/round-1/interact/exec-results.json#VI34(route 两层栈无 tag-posts)"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI34",
+      "page": "subpackages/village/village/index",
+      "operation": "卡内冒泡矩阵：图片区noop/评论预览行/评论icon",
+      "expected": "①图片区留原地；②预览行→detail；③评论icon→detail",
+      "actual": "①②③ 主断言全部 act-FAIL（候选词「览」未命中×3）；意外收获：tap \"一\" 命中 post-32 内嵌活动卡并成功跳转 activities/detail?id=a-1（路由栈两层佐证）——但不能替代用例本体。多图帖 precondition 亦未见证。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI34(act tap 一 成功+act-FAIL 览×3+route)"],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI35",
+      "page": "subpackages/village/village/index",
+      "operation": "分享icon noop 死按钮铁律实测",
+      "expected": "实测点击 500ms 内无反馈→记录死按钮缺陷（分享功能缺失）",
+      "actual": "记录为 observe-only：无任何 tap 动作记录（仅 pre:login+auto-reLaunch），分享 icon 从未被点击。铁律判定必须实测，未点不能判 FAILED 亦不能开脱。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI35(observe-only 无 act 记录+after帧202790B)"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VI36",
+      "page": "subpackages/village/village/index",
+      "operation": "置顶折叠条展开/收起+aria-expanded",
+      "expected": "展开列表+箭头切换+aria-expanded 同步",
+      "actual": "act-FAIL ×2: .pinned-bar__summary 不存在。前置（今日广场含置顶帖）未达成——当页为活动频道（after 帧+全部 wxml 均无 pinned-bar/置顶标记）。旁证：置顶条「置顶 1 条」在今日广场帧（VI01/VI20/VI23/VI24）中渲染正常，折叠交互本身未测。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI36(act-FAIL×2)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI36-after.png(活动频道)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01-after.png(置顶 1 条 旁证)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI37",
+      "page": "subpackages/village/village/index",
+      "operation": "置顶帖列表项→detail?id=post-31",
+      "expected": "栈顶=village/detail 且 id=post-31",
+      "actual": "act-FAIL: .pinned-item 不存在。前置（折叠条已展开，VI36）未达成。",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#VI37(act-FAIL)"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI38",
+      "page": "subpackages/village/village/index",
+      "operation": "回顶按钮出现/点击回顶",
+      "expected": ">600px 淡入(88rpx热区)→点击回顶并消失",
+      "actual": "执行器自相矛盾：dom 探针 .back-to-top:present 但 tap 报 element not found；manifest 要求的滚动至≈1200px 步骤无执行记录（无 pageScrollTo 记录）。after 帧（193863B）与 VI44 前/后帧字节相同。核心断言（出现阈值/热区/回顶）全未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI38(dom present vs tap not found)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI38-after.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI39",
+      "page": "subpackages/village/village/index",
+      "operation": "上拉分页：追加13帖+没有更多了+hasMore早退",
+      "expected": "触底追加13帖共33+尾标「— 没有更多了 —」+恰好1次翻页请求",
+      "actual": "act:pageScrollTo bottom 已执行、dom .load-more:present（加载指示出现过）；但核心断言全无证据：追加后帖数未读、尾标未在今日频道取证（自身 after 截图 ERROR）、请求数无 console 记录（S05 log 仅 preloadSubpackages，无网络日志）。旁证：「— 没有更多了 —」页脚在活动频道 wxml 与共享帧(165050B)中渲染正常，但非本用例频道。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI39(pageScrollTo bottom+load-more present+截图ERROR)",
+        "reports/audit/round-1/interact/console-S05-village.log(无请求日志)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI40-after.png(没有更多了 旁证)"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI40",
+      "page": "subpackages/village/village/index",
+      "operation": "下拉刷新穿透TTL真实重拉",
+      "expected": "refresherrefresh→新列表请求≥1+refresher 收起不永驻",
+      "actual": "refresher 触发成功（callMethod onPullDownRefresh ok；pre:pullDown 的 uni is not defined 为执行器旁路失败，未阻断主动作）；但强制重拉的请求增量无任何 console/网络证据（S05 log 无请求日志），refresher 复位无帧证据（after 帧为活动频道底部、与 VI41-after 字节相同）。「真实重拉」核心断言未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI40(refresherPull ok+consoleEntries 0)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI40-after.png(与VI41-after同帧)"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "VI41",
+      "page": "subpackages/village/village/index",
+      "operation": "Tab切换滚动位与数据不丢",
+      "expected": "滚1000px→切热度榜→切回恢复≈1000且不重拉",
+      "actual": "两 tap 记录已发出；但 after 帧与 VI40-after 字节级相同且显示活动频道（expected 为今日广场恢复滚动位）——帧与动作矛盾；无 scrollTop 测量、无请求核对。核心断言（滚动位恢复+数据不丢）未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI41(tap 热度榜+tap 今日广场)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI41-after.png(与VI40-after字节相同,活动频道)"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI42",
+      "page": "subpackages/village/village/index",
+      "operation": "发帖条输入占位区→实名门控进发帖页",
+      "expected": "栈顶=village/post（mock 恒过门控）",
+      "actual": "执行器矛盾：dom .composer-bar__input:present，但 input(__CAND__)/tap 均报 element not found；wxml 证实 composer-bar__input 存在于当页 DOM。动作未执行，跳转未发生。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI42(input+tap 双 act-FAIL vs dom present)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.wxml(composer-bar__input x2)"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI43",
+      "page": "subpackages/village/village/index",
+      "operation": "发帖条「发帖」按钮→发帖页",
+      "expected": "栈顶=village/post；按钮72rpx热区",
+      "actual": "同 VI42：dom present 但 tap element not found；wxml 证实 composer-bar__publish x4 存在。动作未执行。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI43(act-FAIL vs dom present)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.wxml"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI44",
+      "page": "subpackages/village/village/index",
+      "operation": "发帖主按钮防连点：快击×5只入栈1层",
+      "expected": "栈深2（源码无显式防抖，实测叠栈>2即记缺陷）",
+      "actual": "rapidTap(.composer-bar__publish) element not found（wxml 证实元素存在）——快击未执行；before/after 帧字节相同（无任何变化）。防连点主断言（本页关键 critical 之一）未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI44(rapidTap act-FAIL+前后帧同字节193863B)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.wxml"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "VI45",
+      "page": "subpackages/village/village/index",
+      "operation": "发帖成功返回刷新链：TTL穿透+审核中徽标置顶",
+      "expected": "village:post-created→force 重拉+新帖置顶带「审核中」徽标+去重",
+      "actual": "发布链路未执行：动作仅 act:wait 1500ms，从未进入发帖页、未提交新帖（无 navigateTo village/post 记录）；dom .post-card__audit:absent 与「未发帖」自洽；before 帧为活动频道（前置要求今日广场亦不符）；after 截图 ERROR。critical 断言全未取证。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI45(仅 wait+audit absent+截图ERROR)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-before.png(活动频道)",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-after.wxml(无 audit 徽标)"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "VI46",
+      "page": "subpackages/village/village/index",
+      "operation": "打开即返回+重复进出×3",
+      "expected": "3次进出路由正确、无崩溃、TTL内不重拉、无泄漏",
+      "actual": "首轮 navigateTo+navigateBack(delta1) 成功；但 repeatNav ×3 全部 navErr:Uncaught [object Object]——3 次重复进出均报未捕获错误。前置（从寻觅页进入保留来源栈）未建立（记录显示直接在村口 navigateTo 村口），错误归因（harness navigateTo 自嵌套限制 vs 产品崩溃）不可分；TTL 请求增量无 console 证据。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI46(navErr×3+console preloadSubpackages)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI46-after.png"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VI47",
+      "page": "subpackages/village/village/index",
+      "operation": "进详情返回落点：频道+滚动位恢复",
+      "expected": "返回=村口今日广场+scrollTop≈800恢复+不重拉",
+      "actual": "执行失败：act:navigateBack NAV_ERROR:Uncaught [object Object]（与 VI46 同签名，且 verification 页 VI03 亦复现同签名——疑 harness 层返回异常）；滚动 800px 前置步骤无记录（仅 pre:tap \"子\"）；scrollTop 恢复未测量；after 截图 ERROR。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI47(NAV_ERROR+截图ERROR)",
+        "reports/audit/round-1/interact/exec-results.json#SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX#VI03(同签名错位佐证)"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VI48",
+      "page": "subpackages/village/village/index",
+      "operation": "B6发帖开关关闭：发帖条隐藏+空态切换",
+      "expected": "isPostPublishOpen=false→发帖条消失；恢复后回归",
+      "actual": "配置置关步骤失败：observed 仅见 pre:pullDown {__plain:ERR uni is not defined}（疑似动作映射错位，非 evaluate 置 store）+auto-reLaunch——发帖开关从未被证实置为 false。dom .composer-bar:present 在「开关未变」前提下属正确默认行为，不能判 FAILED；开关关闭态从未构造。",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VI48(pre pullDown ERR+composer-bar present+截图ERROR)"
+      ],
+      "confidence": 0.7
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1J-VILLAGE-INDEX-001",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI07-after.png(ERROR)",
+      "category": "Function",
+      "severity": "P2",
+      "description": "村口冷启动导航链出现应用级未处理 Promise 拒绝 switchTab:fail timeout，并触发 [Global Error][uni.onUnhandledRejection] + captureException 上报；S05 套件 4 次 VI07 尝试同点复现（console-S05-village.log:5-7/16-18/29-31/40-42），导致 VI07/VI08 两条用例链路瘫痪（top 停在 pages/login/index）。manifest VI07 明确要求 console 无 NAV_FAIL 类错误，实测违反。",
+      "evidence": "exec-results.json#VI07 console 三条 error + console-S05-village.log 4 次复现 + VI08 同链路失败",
+      "sources": ["log", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "冷启动 reLaunch 进村口的导航链中 switchTab 调用应有超时兜底/重试/降级，不产生未处理拒绝；console 无全局错误。",
+      "fix": "排查村口冷启动相关 switchTab 调用点（LockScreen goBack/browsePublic、page-access/usePageAccess 重定向链），为 switchTab:fail 增加失败分支与重试；复测 VI07/VI08。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1J-VILLAGE-INDEX-002",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png",
+      "category": "Architecture",
+      "severity": "P3",
+      "description": "身份差异用例在 mock 构建上不可构造：mock 会话层「有 token 即返回 mockLoggedInSession」（profileCompleted=true、campusVerified=true，services/mocks/fixtures.ts:1383-1396 与 680-694），而 R1 固件身份 A(100158 profileCompleted=false)/B(100159 campusVerified=false) 的 token 均已过期（iat=1790080924，早于执行时刻约 20h），A1 全部登录回落 user-1001 并自标 MISMATCH!。结果：VI01-VI05（锁定态/解锁弹窗）与 VI14-VI19（学校圈认证门）共 11 条用例的前提整轮（interact+tour 双身份默认帧均未锁定）不可达，全部无法判定。",
+      "evidence": "exec-results.json 48 条中 11 条因元素缺失 act-FAIL + tour A/B 默认帧未锁定 + tmp_r11_*.json token 过期 + fixtures.ts:1383-1396",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.85,
+      "ideal": "测试身份（未完善/未认证）能在 mock 构建上真实构造出锁定态与认证门态。",
+      "fix": "二选一对齐：①mock 层支持按固件 token 的 sub 返回对应身份（解析 JWT sub=100158/100159 映射 profileCompleted/campusVerified），并保证 A1 用新鲜 token；②或修订 manifest，将锁定态用例改走「无 token 登出态」路径（VI06 已证明该路径可构造 LockScreen）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1J-VILLAGE-INDEX-003",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI23-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "缺陷候选（待复测确诊）：频道 Tab 点击 4 例（VI20 活动/VI23 热度榜/VI24 兴趣圈/VI41 热度榜→今日广场）动作均已发出（无 act-FAIL），但同批次真实帧（9:11-9:12，帖时间戳递增证明非陈旧帧）均停留在今日广场，频道未切换；同批次深链切频道正常（VI25 深链→VI26 帧活动频道+记忆持久化），另批次曾见 Tab 点击生效（VI14 帧活动 Tab 激活）。若复测确认为产品缺陷则为频道切换核心交互失效（P1）。",
+      "evidence": "VI20/VI23/VI24 after 帧均为今日广场 + VI41-after 与 VI40-after 字节相同且为活动频道 + VI26 帧证明深链切频道正常 + VI14 帧证明另一批次 Tab 点击可切换",
+      "sources": ["screenshot", "interaction"],
+      "confidence": 0.6,
+      "ideal": "点击频道 Tab 后 500ms 内激活态与内容区切换至目标频道，帧证据可见。",
+      "fix": "在单一设备档案下复测 Tab 切换（录屏+DOM 断言激活 Tab），区分「截图时序/点击落点（批次 A 设备档案不同疑致坐标偏移）」与「selectChannel 真实失效」；若复现则查 ChannelTabs 点击绑定与 selectChannel 同值守卫。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1J-VILLAGE-INDEX-004",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#VI33",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "FAILED 判定：帖子标签 chip 点击（tap \"电影\" 已执行、无 act-FAIL）未发生预期导航——路由终态=[village/index]，且下一用例 VI34（无 reLaunch）终栈仅 [village, activities/detail] 两层，排除 tag-posts 曾入栈。可能为 chip 处理缺陷，亦受该批次点击落点异常与候选词歧义（内嵌活动卡标题「电影社线下看面」同含「电影」）干扰，置信度 0.6。",
+      "evidence": "exec-results.json#VI33 route 单层 + #VI34 route 两层无 tag-posts + VI34 同帖内嵌卡 tap 可跳转（a-1）对照",
+      "sources": ["interaction"],
+      "confidence": 0.6,
+      "ideal": "点击 #电影 chip → navigateTo village/tag-posts?tagName=电影，且不触发卡片详情。",
+      "fix": "复测标签 chip 点击（改用 class 定位 .post-card 标签 chip 而非文本候选）；若复现查 PostCard open-tag emit 与 goToTagPosts 链路。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1J-VILLAGE-INDEX-005",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#VI38",
+      "category": "Function",
+      "severity": "P1",
+      "description": "A1 取证管线缺陷（非产品缺陷，但它使本页 42/48 用例不可判定，为轮内最大影响面）：①dom 探针 present 与 tap element not found 自相矛盾（VI38/VI42/VI43/VI44，wxml 证实元素均在 DOM）；②候选词错位（VI30/VI31 找「提交/按」而非点赞/收藏按钮、VI14 Tab 候选 #3 命中第4项「活动」、VI34 找「览」）；③observe-only 未执行动作（VI35）；④路由采集早于导航完成（VI09/VI06 自身路由未变但下一用例证实已跳转）；⑤after 截图 ERROR ×7（VI07/25/27/32before/39/45/47/48）；⑥前后帧字节级相同×4 组（VI16/30-31/38-44/40-41）。",
+      "evidence": "exec-results.json 各用例 observed/evidence 字段 + wxml 目录 7 份 DOM 证物 + 截图 md5 对照表（本 judge 流程实测）",
+      "sources": ["screenshot", "interaction", "log"],
+      "confidence": 0.9,
+      "ideal": "执行器以 class 精确定位、动作与断言一致、路由在导航稳定后采集、截图失败可重试且失败时标注而非复用旧帧。",
+      "fix": "修复执行器：元素定位统一走 class/ selector 并在 tap 前后各做一次存在性断言；修正 VI30/31/34 的候选词表；路由采集延后至导航稳定（或失败后重读）；截图失败重试 1 次并携带时间戳。修完后重跑本页 48 条。",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "VI01|身份A前提不可构造：固件token过期+mock会话层有token即返回profileCompleted=true（fixtures.ts:1383-1396），A1自标MISMATCH user-1001，锁定态未渲染|1",
+    "VI02|同VI01：解锁弹窗因isUnlocked=true未渲染，三路tap元素不存在|1",
+    "VI03|同VI01：.lock-screen__close不存在（未锁定态）|1",
+    "VI04|同VI01：.lock-screen__btn不存在（未锁定态）|1",
+    "VI05|同VI01：.lock-screen__btn-link不存在（未锁定态）|1",
+    "VI07|执行失败：reLaunch超时+switchTab:fail timeout未处理拒绝（4次复现），top=login，自身截图ERROR|4",
+    "VI08|同VI07导航链失败：页面未加载，DOM采样全absent|1",
+    "VI10|执行环境错误：起点为VI09遗留搜索页（路由栈两层），兴趣圈Tab不存在|1",
+    "VI11|前置VI10未达成：兴趣圈频道从未激活，宫格不存在|1",
+    "VI12|前置VI10未达成：热门话题未加载，候选不存在|1",
+    "VI13|前置VI10未达成：精选话题未加载，.topic-item不存在|1",
+    "VI14|双重前提失败：tapIndex#3命中活动Tab（帧证）+B未认证前提因mock会话覆盖不可构造|1",
+    "VI15|学校圈频道从未激活：.school-gate__btn不存在（wxml无school-gate）|1",
+    "VI16|前置认证门不可见：simulate按钮不存在，前后帧字节相同|1",
+    "VI17|前置学校圈空态未达成：.village-empty__action不存在|1",
+    "VI18|前置学校圈已认证态未建立：.village-daily-entry不存在且无切频道动作|1",
+    "VI19|前置同VI18：.discover-banner不存在|1",
+    "VI20|证据冲突：tap已发出但真实帧未显示频道切换（同批次深链切频道正常），归因不能成立|1",
+    "VI21|证据缺失：tap已执行但路由采集过早，无跨记录佐证（下用例reLaunch重置）|1",
+    "VI23|证据冲突同VI20：热度榜tap后帧仍今日广场|1",
+    "VI24|动作序列偏离且tap未生效：帧仍今日广场，storage核对与重进恢复未执行|1",
+    "VI27|证据缺失：after截图ERROR，桥接key清除与激活Tab均无读取证据|1",
+    "VI28|证据缺失：tap×2已执行但路由单层且无跨记录佐证，detail跳转未证实|1",
+    "VI29|证据缺失：同VI28，profile/other跳转未证实|1",
+    "VI30|执行器选择器错误：找「提交/按」而非点赞按钮（wxml证实action-btn在DOM），动作未执行|1",
+    "VI31|执行器选择器错误：同VI30，收藏按钮未点击|1",
+    "VI32|中间态无证据：before截图ERROR，终态未关注与「toggle完成」及「tap未生效」均自洽，无法区分|1",
+    "VI34|主体三动作全部act-FAIL（候选词「览」未命中），仅意外证实内嵌活动卡可跳转|1",
+    "VI35|动作未执行：observe-only无tap记录，死按钮铁律要求实测|1",
+    "VI36|前置未达成：当页为活动频道（帧+wxml无pinned-bar），折叠交互未测|1",
+    "VI37|前置VI36未达成：.pinned-item不存在|1",
+    "VI38|执行器矛盾：dom present但tap not found，滚动步骤未执行，回顶断言未取证|1",
+    "VI39|证据缺失：触发已执行但追加帖数/尾标/请求数均无证据，自身截图ERROR|1",
+    "VI40|证据缺失：refresher触发成功但重拉请求增量与复位无证据，after帧与VI41共享|1",
+    "VI41|证据冲突：after帧与VI40字节相同且为活动频道（expected今日广场），无scrollTop测量|1",
+    "VI42|执行器矛盾：dom present但input/tap双失败（wxml证实composer-bar__input存在）|1",
+    "VI43|执行器矛盾：同VI42，composer-bar__publish存在但tap未命中|1",
+    "VI44|执行失败：rapidTap not found，快击未执行，前后帧字节相同|1",
+    "VI45|执行不完整：发布链路未执行（仅wait 1500ms，未进发帖页），after截图ERROR|1",
+    "VI46|前置未建立+执行异常：未从寻觅页进入，repeatNav×3全部Uncaught [object Object]，归因不可分|1",
+    "VI47|执行失败：navigateBack Uncaught [object Object]（harness签名跨页复现），滚动位未取证，截图ERROR|1",
+    "VI48|前置未达成：发帖开关置关步骤失败（uni is not defined），开关关闭态从未构造，composer-bar present属正确默认|1"
+  ],
+  "notes": "判定基线：三方证据（Manifest.expected / A1.observed / 截图+wxml+console）。VERIFIED×5：VI06（登出态LockScreen主按钮→登录页，跨记录佐证）、VI09（搜索框→搜索页，三重佐证）、VI22（报名Toast+按钮态+计数12→13+无跳转，前后帧完整；③取消子步骤未执行已注明）、VI25（深链channel=activity激活+记忆写入，经VI26帧链式佐证）、VI26（非法频道参数白名单兜底落已存频道，帧证）。FAILED×1：VI33（标签chip点击未导航，issue MP-R1J-VILLAGE-INDEX-004）。其余42条UNVERIFIED，根因四大类：①mock会话层覆盖致身份前提不可构造（VI01-05/14-19，issue 002）；②A1取证管线缺陷（issue 005，含选择器错位/dom-tap矛盾/截图失败/路由过早采集）；③导航链switchTab:fail timeout（VI07/08，issue 001）；④执行环境污染与前置链断裂（VI10-13继承搜索页、VI20/23/24/41 Tab证据冲突待复测=issue 003、VI36-37/45/48前置未构造）。旁证记录：默认态全部静态文案（圈子/校园恋爱社区/搜索占位/5Tab/置顶1条/发帖条占位/回顶按钮隐藏）在今日广场帧中逐项正确；「— 没有更多了 —」页脚与置顶条渲染能力有帧/wxml实证；报名成功Toast文案逐字正确且@tap.stop未误触详情。未做任何代码级推测判VERIFIED；所有跨记录佐证均为A1 observed数据内部的链式证据。"
+}

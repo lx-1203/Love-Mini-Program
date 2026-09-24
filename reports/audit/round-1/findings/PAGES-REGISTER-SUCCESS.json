@@ -1,0 +1,82 @@
+{
+  "round": "R1",
+  "reviewer": "A3-视觉审查员（截图与证据的视觉/布局/状态审查）",
+  "generatedAt": "2026-09-23",
+  "gitSha": "aefd8a72",
+  "verifiedHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+  "pages": ["pages/register/success"],
+  "evidenceManifestCheck": {
+    "manifest": "reports/audit/round-1/screenshot-manifest.json",
+    "manifestGitSha": "aefd8a72",
+    "currentHeadShort": "aefd8a72",
+    "verdict": "一致，证据未过期，全部结论基于本 sha",
+    "workingTreeNote": "git status --porcelain 对 apps/client/src/pages/register/、config/images.ts、constants/routes.ts、composables/useMenuButtonRect.ts、dist/build/mp-weixin/pages/register/ 均 0 输出（本席实跑），success.vue 最后变更提交为 29a2b1df；工作树其余改动文件不触及本页证据链。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-008",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无——静态矩阵缺失即问题本体；替代性运行证据 reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png、RS08-after.png、A05b-13812345678.png",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "本页在 R1 标准静态巡检矩阵中 A/B 双身份均未取得任何截图（默认/滚动/交互后三态全缺）：巡检记录失败原因为「A/B 均未截：依赖注册流程态，直连重定向至 login（2 次一致）」——未登录/logout 态直连本页被应用侧登录守卫重定向至 pages/login/index，属应用侧守卫行为而非页面缺失。后果：R1 静态矩阵对本页 0 覆盖，双身份×三态的页面级静态对照（L1-L10 逐层比对的标准输入）缺位。",
+      "evidence": "①manifest 实测：reports/audit/round-1/screenshot-manifest.json（gitSha=aefd8a72，与当前 HEAD aefd8a72f2231e8df7affd09004c14c3e4e73745 一致）shots 数组经 node 过滤 page 含 register 的条目为 []，290 张全部他页；②巡检失败原因引用（ask 给定，A/B 各 2 次尝试一致）；③页面注册无缺失（反证）：apps/client/src/pages.json:49 与 apps/client/dist/build/mp-weixin/app.json 均含 pages/register/success（本席 node 实测 true），非 DEV 构建限制类问题；④交互通道已证页面本身可正常渲染：exec-results.json RS05/RS07/RS08/RS10/RS11/RS12 均 EXECUTED 且 top=pages/register/success，RS05-after.png/RS08-after.png/A05b-13812345678.png 为有效渲染截图（86505B/164062B）——故缺口仅在静态矩阵口径，不在页面可用性。",
+      "sources": ["screenshot", "log"],
+      "confidence": 1,
+      "ideal": "A/B 双身份在注册流程态（或等效已登录态带 ?phone= 直开，RS 套件已验证该路径可达）下取得本页默认/交互后至少两态静态截图并入 manifest，达到与他页同口径的页面级对照覆盖。",
+      "fix": "静态巡检脚本为本页增加前置步骤：先 login（A 或 B）→ reLaunch /pages/register/success?phone=<身份对应号段> → 截图（RS05/RS08 即此路径，已被本席在 exec-results.json 实证可行）；重跑静态矩阵补齐 A/B 双身份条目。守卫本身不放行未登录直连是预期行为，无需改页面代码。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-009",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "无——RS06 当轮截图两次尝试均超时未落盘（exec-results.json 该条 evidence 字段为 ERROR:timeout waiting for automator response 占位）；仅有 console 取证 reports/audit/round-1/interact/console-S01-auth.log",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "最新一轮交互取证（exec-results.json，gitSha=aefd8a72，updatedAt 2026-09-23T12:00）中本页 12 例（RS01-RS12）出现唯一一例 FAILED：RS06（次级出口 switchTab 用例）在 reLaunch 打开本页后，DOM 探测 .reg-success__alt 缺失、tap 报 element not found，同一秒 console 出现 [Global Error][Vue Error]（runtime-2，detail 序列化为 {}）并被 [captureException] 捕获，route 最终采样为 pages/home/index。全库 1283 条 results 中本页相关 console error 仅此一处。因 detail 为空对象无法定位错误源，且同页其余 11 例与上一轮 OP1-13 全部通过，本席按状态审查如实立案并留待复核，不作根因定性（交互判定归交互判定员）。",
+      "evidence": "①exec-results.json id=RS06：status=FAILED，observed=\"top=pages/register/success | dom: .reg-success__alt:absent .tap:present | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /pages/register/success | act:tap .reg-success__alt | act-FAIL:tap(.reg-success__alt) element not found\"，console 两条 error（07:21:27.174Z Vue Error + captureException），node 过滤确认 RS06 全库仅 1 条（无复跑成功记录）；②reports/audit/round-1/interact/console-S01-auth.log:325-326 同两条 error，且该错误在日志中仅出现于 == RS06 pages/register/success [navigation] == 段；③反证（倾向非页面确定性缺陷）：同套件 RS08 对同一选择器 measureTap 命中 size={width:120,height:16} 并 tapped 成功、RS08-after.png 为点击后首页（switchTab 生效、TabBar 正常）；上一轮 OP4 tap ok 且 A04b-repro.png 干净渲染；success.vue:21-47 实读无任何可抛运行时错误的响应式逻辑（maskedPhone ref + 静态 subLines + 静态 rows computed + 仅 navigateTo/switchTab 两函数）。",
+      "sources": ["log", "interaction", "code"],
+      "confidence": 0.5,
+      "ideal": "RS06 用例复跑 EXECUTED：.reg-success__alt 渲染在 DOM、tap 命中、switchTab 到首页、console 无 [Global Error][Vue Error]/[captureException]。",
+      "fix": "复跑 RS06 定界：若复现，抓取完整错误对象（现 detail 为 {} 需增强序列化）定位错误源；若不复现，与 OP 轮已知环境伪影（获取手机号失败弹窗 MP-R1-PAGES-REGISTER-SUCCESS-001）同类归档为环境级偶发，并在 verdict 中注明 1/12 发生率。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/register/success",
+      "observation": "干净渲染与设计包 05 成功屏逐项吻合（L1-L10 核对）：A05b（带参 ?phone=13812345678）与 RS05（无参）两轮截图实读，结构顺序均为 插图→标题「注册成功」→两行引导文案→三行清单卡→主按钮「完善我的资料 →」→次级出口「稍后再说，先随便逛逛」，与 deliverables/注册页/寻觅注册页-高保真设计稿.html:439-453（05 屏：清单三行/主按钮/次级文案）逐项一致；typography 实测吻合（标题 44rpx/800/1.2：html:700 ↔ success.vue:96-100；清单正文 28rpx/1.55：html:704 ↔ success.vue:146-149）；清单卡阴影 html:732 规格 0 8px 24px + 0 2px 8px rgba(15,23,42) 与 success.vue:123-125 的 16rpx/48rpx/4rpx/16rpx 换算全等。无参变体 tag 回退「完成」（RS05 截图实证，对应 success.vue:34）；带参变体脱敏渲染 138****5678（A05b 清单行放大裁切实证，4 星，与 success.vue:28 正则一致）。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-A05b-13812345678.png；同目录 RS05-after.png；放大裁切 tmp/r1-regsuccess-crops/a05b-row1.png（脱敏行）、a05b-tile.png/rs05-tile.png（插图区同窗对比）"
+    },
+    {
+      "page": "pages/register/success",
+      "observation": "插图资产三源核对无缺陷：页面实际渲染的 600×600 资产（src/static/assets/images/register/reg-success-illustration.jpg，dist 同名文件 12876B 与 src 字节数一致）与后端副本 apps/api/uploads/app-assets/.../reg-success-illustration.jpg MD5 相同（AAF16856ACEFBAD06A58730C6C8BDB80，本席 PowerShell 实测），即 mock/real 两模式素材同源；与理想图 素材/寻觅注册页-素材_assets/69340cfc-...jpg（1024×1024）为同一吉祥物欢呼 artwork 的不同导出裁切——渲染版吉祥物约占图块 80%，理想版约 55% 留白更多，属素材导出差异而非代码偏差（设计包 html:781 自述「吉祥物欢呼跳跃 + 爱心彩屑，径向柔光背景」与渲染一致）。先前疑似的「A05b 与 RS05 插图大小不一」经同窗裁切对比证伪：两图吉祥物占比一致，系整图显示缩放错觉。",
+      "evidence": "tmp/r1-regsuccess-crops/a05b-tile.png 与 rs05-tile.png（同 270×290 窗裁切对比）；理想图 素材/寻觅注册页-素材_assets/69340cfc-miora_text_to_image-1789186341708-0-8c365c88ce83.jpg（本席 Read 实读）；MD5/尺寸实测输出（PowerShell System.Drawing：600x600 ×2、1024x1024 ×1，MD5 相同）"
+    },
+    {
+      "page": "pages/register/success",
+      "observation": "小程序专项（safe-area/胶囊/机型/滚动）：success.vue:86 顶部 calc(var(--statusbar, env(safe-area-inset-top)) + 96rpx)、底部 env(safe-area-inset-bottom)+48rpx；实测两机型渲染均无遮挡无裁切——A05b（375×812 刘海机型，胶囊与内容无叠印）与 RS05（375×667 传统机型，内容单屏完整、无底部裁切）；单屏无滚动由 OP10（pageH=812=vpH）与 RS12（scrollPos=top）实测佐证。本页非 tab 页无 TabBar 交叠；RS08-after.png 证实次级出口 switchTab 后 TabBar 正常出现。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-A05b-13812345678.png（812 机型）、RS05-after.png（667 机型）、RS08-after.png（switchTab 后首页 TabBar）；interact/PAGES-REGISTER-SUCCESS.json checks OP10/OP12"
+    },
+    {
+      "page": "pages/register/success",
+      "observation": "环境伪影定界（均非页面缺陷，避免误报）：①OP 轮（09-20）截图底部左下角「te…」残字跨页面出现——本席裁切实比 PAGES-REGISTER-SUCCESS-01-after.png（本页）与 02-after.png（setup/profile 页）同位置均有，而 RS 轮 RS05/RS08 同位置裁切干净 → 模拟器窗口级伪影；②OP 轮「获取手机号失败」原生弹窗为跨页环境级，已由交互侧立案 MP-R1-PAGES-REGISTER-SUCCESS-001（P3 保留），本席核对 01-after.png 弹窗遮挡证据与 A05b 同页无弹窗对照成立，不重复立案。",
+      "evidence": "tmp/r1-regsuccess-crops/a05b-bottom.png（残字可见）、rs05-bottom.png（干净）、op02-bottomleft.png（他页同残字）、rs08-bottomleft.png（干净）；reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-01-after.png（弹窗遮挡）vs A05b-13812345678.png（同页无弹窗）"
+    },
+    {
+      "page": "pages/register/success",
+      "observation": "一致性维核对（含两项不立案判定，防凑数）：①i18n——本页 0 处 useI18n/$t、全部文案硬编码中文（success.vue:23/34-36/53/70/74），zh-CN.ts 无「注册成功/稍后再说/完善我的资料」key，而相邻 login 页（login/index.vue:5,31）与 5 个 tab 页均接 i18n；但 apps/client/src/i18n/index.ts:19-23 明示 mp-weixin 构建条件编译剔除 en-US、全库无 setLocale、小程序端恒 zh-CN → 小程序真实表现下无用户可见影响，且同流程 register/index.vue 同为硬编码（项目现状模式），不立案；②热区——次级出口运行时实测 120×16px（≈240×32rpx，RS08 measureTap），高度 32rpx 低于 88rpx 建议值，该问题已被代码审查 MP-R1-PAGES-REGISTER-SUCCESS-006 立案，本席仅以运行时实测补强其证据，不重复立案；主按钮 96rpx 整体热区已由 002 收口（RS07 快击 ×5 无重复入栈佐证）。",
+      "evidence": "grep 实测：success.vue useI18n 计数 0、login/index.vue:5,31、全库 145/222 vue 文件用 useI18n、i18n/index.ts:19-23；exec-results.json RS08 measureTap size={\"width\":120,\"height\":16}；interact/PAGES-REGISTER-SUCCESS.json OP6/RS07"
+    },
+    {
+      "page": "pages/register/success",
+      "observation": "行为面总览：上一轮交互取证 OP1-OP13（interact/PAGES-REGISTER-SUCCESS.json，构建 2026-09-20 01:50 与源码内容抽查一致）13 项全部「符合」（带参/无参脱敏、主按钮 navigateTo 压栈 1→2、次级出口 switchTab、连点防重、回退链、双身份 B tag0=139****9999）；最新一轮 RS01-RS12 中 11 例 EXECUTED、1 例 FAILED（RS06，见 issue 009）。证据附带说明：RS 全部条目带「login A ok userId=user-1001 MISMATCH!」标记，属取证脚本身份簿记告警；RS09/RS10 记录的 navError=Uncaught [object Object] 为 harness 在栈底裸调 navigateBack 的未捕获拒绝，页面自身源码（success.vue:40-47）无 navigateBack 调用——两者的定性归交互判定员，本席仅记录。",
+      "evidence": "reports/audit/round-1/interact/PAGES-REGISTER-SUCCESS.json（OP1-13 全符合 + issues/unverifiable/notes）；reports/audit/round-1/interact/exec-results.json（RS01-12）；success.vue:39-47 实读"
+    }
+  ],
+  "coverage": [
+    "pages/register/success 13 项举证（R11 §10.3）：①截图已看——实读 8 张：A05b-13812345678/RS05-after/RS08-after/01-after 全图 + 4 组放大裁切（a05b-tile/rs05-tile/a05b-row1/a05b-bottom/rs05-bottom/op02-bottomleft/rs08-bottomleft）；②理想图已对照——三源：素材 69340cfc jpg（1024 主视觉）、寻觅注册页-高保真设计稿.html:439-453/:700/:704/:732/:781（05 成功屏逐元素）、600×600 资产本体，L1 结构/L6 字号/L9 阴影逐项吻合，插图同 artwork 不同裁切导出（observation 2）；③滚动已测——本席未直接执行滚动操作，引用 OP10（SelectorQuery pageH=812=vpH 单屏无滚动）与 RS12（scrollPos=top），来源 exec-results/OP 文件，非本席操作已如实标注；④点击已测——本席未直接执行点击，引用 OP2/OP4/OP6（tap ok、压栈 1→2、防重）与 RS05/RS07/RS08（主按钮 present、快击×5、alt 命中 120×16 并跳首页）；⑤返回已测——引用 OP3/OP7/OP8/OP9/RS11（回退落点正确、redirectTo 语义返回=登录页）与 RS09/RS10（navError 为 harness 栈底裸调，页面无 navigateBack 调用，源码实读佐证；真机原生返回手势 DevTools 不可复现，列入 unverifiable）；⑥safe-area 已查——success.vue:86 公式 + 双机型截图实证（observation 3）；⑦TabBar 已查——本页非 tab 页无 TabBar；RS08-after 证实出口后 TabBar 正常；⑧空态已查——纯静态成功态无数据空态分支（源码 :50-75 无 v-if、OP11 输入组件 0、rows 为静态 computed）；⑨长文已查——文案固定最长 14 字/行，375 宽下清单行约 260px < 311px 可用宽（RS05 667 机型无溢出实证）；极端长 phone 参数经 onLoad :26-29 剥除非数字后长度≠11 即保持空串回退「完成」，无超长渲染路径（RS03/RS04 非法变体用例 EXECUTED 佐证）；⑩加载态已查——页面零 API 零 loading（源码实读），插图/图标为打包本地资产（check-green.svg src+dist 在盘实测）即时渲染，截图无占位/空白/闪烁残影；⑪错误态已查——页面自身无错误分支；环境级弹窗已归档 001（本席核对遮挡/干净对照成立）；RS06 单次 Vue Error 已立案 009；⑫组件一致性已查——按压反馈缺失/死样式已由 003/005 立案（不重复）；i18n 一致性实测并作出不立案判定（observation 5）；与全站主 CTA 的渐变 token 化已由 007 收口；未做本页与他页按钮的并排像素对照（无同轮双页同框素材，如实标注未执行）；⑬历史 Bug 回归已查——code-findings 001（环境弹窗伪影维持）/002（主按钮热区已修）/007（渐变 token 已修）三条收口条目经本席源码+截图复核无复发（RS/OP 双轮通过）；旧 tap 死区/渐变硬编码在当前截图与源码中均不存在。未做/不可为：真机验证（原生返回手势/真机弹窗层级/下拉触感）、毫秒级连点窗口、静态矩阵 A/B 截图（= issue 008 本体）、RS06 复跑（= issue 009 的 fix）。"
+  ]
+}

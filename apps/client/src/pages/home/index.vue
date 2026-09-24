@@ -178,7 +178,7 @@ async function rotateToday() {
       return;
     }
     likeSent.value = false;
-  } catch {
+  } catch (_e) {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
   } finally {
     rotateLoading.value = false;
@@ -223,7 +223,7 @@ async function joinCircle(circleId: number) {
       }
     }
     uni.showToast({ title: t("common.success"), icon: "success" });
-  } catch {
+  } catch (_e) {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
   } finally {
     const next = new Set(joinPendingIds.value);

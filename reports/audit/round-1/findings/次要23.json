@@ -1,0 +1,192 @@
+{
+  "round": "R1",
+  "reviewer": "视觉审查员-R1-次要23",
+  "generatedAt": "2026-09-24",
+  "evidenceManifest": {
+    "gitSha": "aefd8a72",
+    "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+    "manifestPath": "reports/audit/round-1/screenshot-manifest.json",
+    "verdict": "一致，证据有效",
+    "behaviorEvidence": "reports/audit/round-1/interact/exec-results.json（同 gitSha，本轮已读：VI01-VI14/RN01-RN12/VS01-VS08/PO01-PO21/LC01-LC07/PV01-PV06/AL01-AL12/FA01-FA08）",
+    "consoleEvidence": "reports/audit/round-1/console-evidence.log（356 行，grep 无 pin/trend-up/gift/chat/warning.svg 加载错误记录）"
+  },
+  "scope": "subpackages/profile-extra/{verification/index,verification/real-name,profile/visitors,profile/other,profile/location,profile/privacy,profile/album,profile/favorites}；静态截图逐张审查（B 轮为主、A 轮交叉复现）+ 交互执行结果核对 + 3 条历史回归终验 + 理想图他人显示主页.png L1-L3 对照",
+  "issues": [
+    {
+      "id": "MP-R1-VERIFY-INDEX-101",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__滚动-底部.png（顶部 3x 放大：reports/audit/round-1/tmp-a3/verify-scroll-top-3x.png；A 轮复现：reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__滚动-底部.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "页面滚动后内容顶入状态栏与系统文字叠印：nav-bar 为普通文档流（position:relative），滚动到底部时导航栏随页滚出视野，「专属权益」卡标题与副标题直接渲染进状态栏带内，与运营商名「●●●● WeChat」、WiFi 图标逐像素重叠，无任何状态栏遮罩/背景兜底。A、B 两轮截图同位复现。",
+      "evidence": "B 轮滚动-底部截图 y=0-70 区域：「专属权益」粗体标题基线与「●●●● WeChat 📶」同带（3x 放大图逐字可辨重叠）；A 轮 1:42 同位置同样叠印。代码：verification/index.vue:699-709 `.nav-bar{position:relative;z-index:1}`（非 fixed、非 sticky），页根无滚动后状态栏遮罩元素。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "自定义导航页滚动全程，状态栏区域要么被固定导航栏覆盖，要么有与页面背景衔接的遮罩层；正文文字任何滚动位置都不得进入状态栏带与系统时间/运营商文字叠印。",
+      "fix": "nav-bar 改 position:fixed（top:0，含 safe-top 高度）并给页面内容加等值 padding-top 补偿；或在页根加 fixed 高动 --statusbar 的遮罩 view。同型页面（visitors，见 MP-R1-VISITORS-101）应同批修。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VERIFY-INDEX-102",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__默认.png（6x 放大：reports/audit/round-1/tmp-a3/verify-icon1-6x.png；滚动-底部 6x：reports/audit/round-1/tmp-a3/verify-icon2-6x.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「认证权益」5 张卡（专属标识/信任优先/匹配加权/专属权益/互动资格）的图标全部渲染为空白浅蓝圆角方块，内部无任何字形——截图证据推翻代码审查轮 MP-R1-PROFILE-EXTRA-001 中「benefits 图标因有固定 64rpx 包裹层 .benefit-item__icon 不受影响」的豁免判断：包裹层正常渲染，但其内部 SafeImage 整体塌陷为 0×0。",
+      "evidence": "① 截图：6x 放大显示 5 个 64rpx 浅蓝方块内部完全无图形；② 交互轮 wxml 快照（round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml）证实图片节点已加载：`<image class=\"... safe-image__img benefit-item__icon-img\" src=\"/static/assets/icons/common/pin.svg\"/>` 且无 `safe-image__img--hidden` 类、aria-busy=false；宿主节点为 `<components/common/SafeImage class=\"data-v-e8531e99\">` 无任何尺寸类；③ 构建产物存在全部 SVG（dist/build/mp-weixin/static/assets/icons/common/pin.svg 等）；④ console-evidence.log 无加载错误；⑤ 根因：SafeImage 仅传 custom-class 时宿主节点无尺寸类（SafeImage.vue 无 virtualHost），组件根 .safe-image width/height:100%（SafeImage.vue:306-311）以宿主为基准→塌陷 0×0+overflow:hidden；对照 PublicHero.vue:29-37 头像同时传 class+custom-class 使宿主获得尺寸类→渲染正常（他人主页头像可见即证）。模板：index.vue:505/:556。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.9,
+      "ideal": "权益图标在浅蓝底座内以 64rpx 可见字形渲染（同页状态卡 GRAD_CAP 原生 image 即正常）。",
+      "fix": "短期：benefit 两处 SafeImage 仿 PublicHero 同时传 class=\"benefit-item__icon-img\" 并在页内 scoped 补 .benefit-item__icon-img{width:100%;height:100%}；根治：SafeImage 启用 virtualHost（defineOptions({options:{virtualHost:true}})，仓内 MatchLoading/MatchSuccess/ChatBubble 已有先例）后全仓回归排查仅传 custom-class 的调用点（含 gate-banner/visitors 空态/album 空态）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VISITORS-101",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_visitors__滚动-底部.png 与 __滚动-中部.png（A 轮同位复现：reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_visitors__滚动-底部.png，2x 放大：reports/audit/round-1/tmp-a3/visitors-scrollA-top-2x.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "访客列表滚动后（中部/底部均复现）卡片与状态栏系统文字叠印、且首卡右缘被微信胶囊按钮遮挡：滚动-中部第一张卡「许清欢/厦门大学·大3·图书推荐客」姓名与「●●●● WeChat」「2:46」逐像素重叠、时间戳被胶囊压住；滚动-底部「陆时寒/中国人民大学·大1·羽毛球」同样叠印。页头「谁看过我」随页滚出视野，无固定头、无状态栏遮罩。",
+      "evidence": "B 轮滚动-中部截图 y=0-60：卡片姓名/学校行与状态栏文字同带重叠，右侧时间戳「05-12 19:02」被胶囊截断；滚动-底部同位复现；A 轮 1:44 同位复现（2x 放大图）。exec-results.json VS07「滚动到底/顶：分组列表完整可达」仅校验滚动位置未校验状态栏叠印。",
+      "sources": ["screenshot", "interaction"],
+      "confidence": 0.95,
+      "ideal": "列表内滚（头部固定不滚出）或滚动全程状态栏区有遮罩；卡片右缘信息与胶囊按钮预留 --capsule-right 安全距离。",
+      "fix": "visitors 页改内滚布局（根节点 flex column + 确定高度，头部 flex-shrink:0，列表 scroll-view flex:1——同分包 favorites.vue 的意图结构，但注意先修 favorites 的高度链缺陷 MP-R1-FAVORITES-003 的写法差异）；或 nav 固定+内容 padding-top 补偿。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-101",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__默认.png（7x 放大：reports/audit/round-1/tmp-a3/other-whisper-7x.png；A 轮同位复现：reports/audit/round-1/tmp-a3/other-cta-A-2x.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "底部固定栏「心动卡」按钮（MP-R1-OTHER-002 补回的悄悄话入口）文字白底白字不可见，按钮实际渲染为「仅粉色爱心图标、无文字」，与相邻「喜欢」按钮的爱心图标语义冲突，用户无法辨认该入口是什么。历史回归 MP-R1-OTHER-002 的事件链虽已闭合、按钮存在且可达，但其可辨识性为零——终验只能判「部分通过」。",
+      "evidence": "① 截图 7x 放大：粉描边白底按钮内仅一个粉色爱心居中偏左，右侧大片空白无任何文字（非宽度裁切，空间充足）；A、B 两轮一致；② 代码根因：RelationshipCTA.vue:56 文本「心动卡」存在，:128-130 `.relationship-cta__text--whisper{color:#FF6B81}` 声明在 :166-170 `.relationship-cta__text{color:#FFFFFF}` 之前，同特异性后声明的白色覆盖粉色 → 白字渲染在 :119 白底上不可见。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "心动卡按钮以「图标+心动卡粉色文字」在白底粉描边按钮上清晰可辨（组件注释 :116 自己写明「区分度靠文案+图标」——文案实际不可见）。",
+      "fix": "将 `.relationship-cta__text--whisper` 规则移到 `.relationship-cta__text` 之后，或提高特异性（`.relationship-cta__btn--whisper .relationship-cta__text`）；修后核对按钮内图标与文字基线对齐。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-102",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__滚动-底部.png（2.5x 结构判读：reports/audit/round-1/tmp-a3/other-moment-struct-2x.png；A 轮同位：reports/audit/round-1/tmp-a3/other-moment-A-2x.png）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「最近动态」卡片配图渲染破损：CSS 声明为 flex 横排三图、每张 200×200rpx（PublicMoment.vue:185-196），实际渲染为纵向错位堆叠的三个残片——第一张食物图（约 68px 见方）、其下一个空白圆角框、再下一张深蓝色图片仅剩约 13px 高的残条，随后才是点赞/评论 footer。整个配图区视觉上如同碎裂 collage。A、B 两轮渲染逐像素一致，排除加载瞬态。",
+      "evidence": "① B 轮滚动-底部 y=455-600 区域：三块图形 x 起点各异（约 52/27/42 native px）且纵向堆叠、高度递减（56/50/13px），与声明 flex-row+200rpx 方形完全不符；② A 轮滚动-底部同位一致（复现证据）；③ 交互轮 PO 系列 wxml 快照均为 882 字节错误态（missingParam/loginRequired），无该卡片 DOM 可比对，故根因（样式未命中/结构嵌套错误/mock images 数据形态）未能定位——渲染事实以双轮截图为准。",
+      "sources": ["screenshot"],
+      "confidence": 0.85,
+      "ideal": "最近动态配图按声明布局横排 1-3 张 200×200rpx 圆角图（对照理想图「最近动态」三张海边照横排）。",
+      "fix": "用 DevTools 检查 .public-moment__images 的 computed display 与三张 .public-moment__img 的 computed 尺寸（核对 scoped data-v 是否命中、images 数据是否为嵌套结构导致渲染出非预期节点）；修复后以双轮同位截图回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-OTHER-103",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__默认.png（3x 放大：reports/audit/round-1/tmp-a3/other-namecard-3x.png）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "信息卡右上 CTA 与理想图偏差（L3 交互位置形态）：理想图（素材/理想效果图/他人显示主页.png）为「♥喜欢」粉浅底胶囊+「💬打招呼」绿浅底胶囊、均带文字标签；实际渲染为两个无文字圆形图标钮（粉色实心圆+白色圆）。且粉色实心爱心圆与底部「喜欢」按钮视觉重复，信息密度低于理想稿。",
+      "evidence": "截图 3x：姓名行右侧两个圆形按钮均仅含图标无文字；理想图同位置为「♥ 喜欢」「💬 打打招呼」两枚带字胶囊。代码：PublicIdentity.vue:54-61 按钮内仅 `<image>` 无 `<text>`。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "信息卡 CTA 带文字标签（喜欢/打招呼），粉浅底/绿浅底胶囊形态，与理想图 L3 一致。",
+      "fix": "PublicIdentity 两按钮补文字 label 并按理想图改胶囊底色（粉浅底 --c-tint-pink / 绿浅底 --c-tint-mint）；与底部固定栏 CTA 形成主次分层而非重复。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PRIVACY-101",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_privacy__默认.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "隐私页导航头为 8 个受审页中唯一的饱和绿渐变底+深色文字组合（privacy.vue:117-122 linear-gradient(brand-500→brand-400)），与同批 verification/real-name/visitors/album/location/favorites/other 各页浅底深字导航完全不一致；状态栏时间/电量为黑色文字直接压在品牌绿上（对照 v3.1 契约「我的=极浅绿区」的色彩节奏，此页饱和度越档）。像素采样证实绿块自 y=5 起连续延伸至状态栏下方（无割裂），故仅报跨页一致性而非叠印缺陷。",
+      "evidence": "像素采样：y=5/15/25 处 RGB≈(55,201,154) 即 #37C99A 品牌绿连续；黑色状态栏文字 y=25 x=186 采样 (0,0,0) 压绿底。对照其余 7 页截图导航均为白/极浅底+深字。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "同批设置类页面导航头风格统一（浅底深字）；若保留绿头则标题/返回/状态栏文字应为白色系并保持跨页节奏（绿 Hero 仅限匹配中心/匹配成功的契约语义）。",
+      "fix": "头部背景改 var(--c-bg-page) 浅底深字；或文字/图标/状态栏前景统一改白色并评估与 v3.1 Hero 节奏红线的冲突。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-ALBUM-101",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/album",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_album__空态.png（5x 放大：reports/audit/round-1/tmp-a3/album-capsule-5x.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "相册右上「4 / 6」计数文字顶部被微信胶囊按钮下缘叠压：计数与胶囊同处导航行右侧，文字上缘顶进胶囊圆角矩形底边（5x 放大可见「4 / 6」被胶囊底缘切压）。composable 注释明确「页面右上角元素（标题计数、筛选标签等）可能被原生胶囊菜单遮挡」并为此注入 --capsule-right 变量，本页已注入（album.vue:403）但头部样式从未消费。",
+      "evidence": "5x 放大：计数「4 / 6」顶缘与胶囊白色圆角矩形下缘重合、被压部分不可辨。代码：album.vue:405-419 .album-header（:568-573，justify-content:space-between）末位计数元素无右侧安全距离；:600-604 .album-header__count 无 padding-right/margin-right；composables/useMenuButtonRect.ts:4-14 注释给出标准配方 `padding-right: calc(var(--capsule-right, 96px) + 24px)` 全仓未被本页引用。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "计数完整可见，与胶囊按钮右缘保持安全距离（--capsule-right 配方），任何机型不与胶囊叠压。",
+      "fix": ".album-header 补 padding-right: calc(var(--capsule-right, 96px) + 24rpx)；或计数移至标题行下方独立一行。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "observation": "默认态导航干净：「恋爱认证」标题+返回键完整渲染于状态栏下方，无叠印——历史回归 MP-R1-VERIFY-INDEX-001（nav-bar 顶进状态栏）在默认态视觉终验通过（滚动态的叠印是另一问题，见 VERIFY-INDEX-101）。「空态」截图与「默认」md5 完全相同（a3b917950357b8e3c428d77fc90aaa88），该表单页默认即未认证态，语义上等同空态、不算证据缺口。黄色门控横幅内无警示图标=代码层 PROFILE-EXTRA-001① 的视觉证实（不另立 issue）。表单三字段/上传卡/三步流程卡/提交按钮渲染正常；VI04 空提交 toast「请输入学生姓名」与视觉文案一致。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__默认.png、__空态.png（md5 均为 a3b91795…）、__滚动-底部.png；exec-results.json VI01/VI04/VI14"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "observation": "页面渲染完整：状态卡（白圆 CHECK_CIRCLE 图标可见=原生 image 路径）+「未实名认证」+表单两字段+身份证正/反面两张上传卡+脱敏提示行+渐变提交钮，导航无状态栏叠印。「键盘弹起-输入后」截图输入值「巡检输入test123」已上屏但无键盘渲染（DevTools 自动化不渲染软键盘，非产品缺陷）；「空态」与「默认」md5 相同（5e272900…）同表单页语义合理。代码层 REAL-NAME-002（未认证态图标语义）在截图中视觉证实：确为绿灰勾选图标。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_real-name__默认.png、__键盘弹起-输入后.png；md5 校验输出"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "observation": "默认态正常：大标题「谁看过我」+「访客记录 · 22」计数、分组标签「更早」、10+ 张访客卡头像全部真实渲染（原生 image 固定类，对照组排除 SafeImage 全局塌陷）、姓名/学校/社团/时间戳排版整齐；计数文本距胶囊约 10px 未叠压（未达缺陷阈）。滚动后状态栏/胶囊叠印见 VISITORS-101。VS04 下拉刷新、VS06 空态卡在交互轮已执行。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_visitors__默认.png（头部 2x 放大 reports/audit/round-1/tmp-a3/visitors-header-2x.png）、__滚动-中部.png、__滚动-底部.png"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "observation": "三项历史回归终验：① MP-R2-OTHER-001（媒体裸直连）视觉通过——封面木纹大图、信息卡圆头像、生活瞬间四格、动态食物配图全部真实加载，无灰块/裂图；② MP-R1-OTHER-002（whisper 不可达）部分通过——心动卡按钮存在于固定底栏且与 like/message/follow 并列，但文字不可见致不可辨识（见 OTHER-101）；③ 他人主页无底部 Tab（push 进入）符合预期。信息结构 L1 对照理想图成立：Hero→白色信息卡（头像浮动交界处）→签名卡→兴趣标签（薄荷绿胶囊）→「我们有 3 个共同点」→生活瞬间 4 列→最近动态→底部固定栏。两处有意差异记录：a) 「共同点」区为胶囊标签流而非理想图的「彩底圆图标+标题+副题」三列——PublicCommon.vue:6-8 有 2026-09-06 改版注释说明理由，判刻意偏离不立 issue；b) Hero 沉浸式延伸至状态栏下与理想图一致，但状态栏前景为黑色（理想为白），深色照片区可读性下降，记观察。PO19「底部固定 CTA 不遮挡内容」与截图相符。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__默认.png、__滚动-中部.png、__滚动-底部.png；素材/理想效果图/他人显示主页.png；PublicCommon.vue:6-8"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/location",
+      "observation": "渲染完整无新增视觉缺陷：定位卡（当前位置/南京·附近/经纬度）+腾讯地图真实渲染（道路/地标/注记清晰、marker 可见、右下角「腾讯地图 ©2025 Tencent」署名完整）+「地图选点」绿钮+「重新定位」「返回首页」双按钮层次清楚；导航无状态栏叠印。代码层 LOCATION-001（文案硬编码）/LOCATION-002（裸 rpx）为非视觉维度，本轮不重复举证。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_location__默认.png"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/privacy",
+      "observation": "两开关默认态与交互轮 PV01 记录一致（允许推荐=关、接收信息=开，绿色 switch 品牌色）——交互判定归交互判定员，此处仅记录视觉相符；像素采样证实绿色导航头连续覆盖状态栏区（y=5 起即 #37C99A），无白绿割裂；页面内容简单无滚动/裁切问题。跨页一致性偏差见 PRIVACY-101。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_privacy__默认.png；像素采样（y=5/15/25/90 RGB 值）；exec-results.json PV01"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album",
+      "observation": "照片墙渲染正常：4 张真实照片（原生 image）+2 个虚线空位+「+」占位、「添加照片」胶囊按钮、「长按照片可删除或设为头像」提示行，导航无状态栏叠印。重大证据缺口：「空态」截图与「默认」md5 完全相同（ab24a53dc84081b2f489d23a2fbcf09f）——manifest 标注的空态从未真正渲染（photoCount=0 的专用空态卡分支 album.vue:431-447 未被捕获），该空态内的代码层缺陷 PROFILE-EXTRA-001③（120rpx 图标作用域）因此无法视觉终验，请巡检轮补拍（需清空 photoGallery 或切无相册账号）。计数被胶囊叠压见 ALBUM-101。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_album__空态.png 与 __默认.png（md5 均为 ab24a53d…）；A 轮同页同象限（时钟 1:49 vs 3:48 证明为两轮独立截图而非拷贝）"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/favorites",
+      "observation": "渲染完整无新增视觉缺陷：标题行「我的收藏（2）」+两张收藏卡——封面图（SafeImage 160rpx 固定包裹层，渲染正常，进一步佐证「class+custom-class 双传/固定包裹」模式有效）、作者头像+昵称+学校、帖子标题+摘要、收藏人数、右下「取消收藏」描边按钮，间距对齐无裁切。代码层 FAVORITES-003（scroll-view 高度链断裂）在仅 2 条数据下无法视觉复现（无需内滚），留待长列表回归。FA01 记录的深链 watchdog-timeout 属交互域，移交交互判定员。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_favorites__默认.png"
+    }
+  ],
+  "coverage": [
+    "证据校验：screenshot-manifest.json gitSha=aefd8a72 == 当前 HEAD aefd8a72f2231e8df7affd09004c14c3e4e73745；exec-results.json gitSha 同值——全部证据未过期。",
+    "审查方式：B 轮 8 页 17 张静态截图逐张审查 + A 轮同位截图交叉复现（所有 P2 级发现均双轮复现）+ 10 张本地裁切放大图（reports/audit/round-1/tmp-a3/）+ 关键疑点像素采样 + 交互轮 wxml 快照/console 日志比对 + 理想图他人显示主页.png L1-L3 对照。未运行应用（本轮为截图/证据审查，非运行轮）；点击/返回/滚动行为以双轮截图序列与 exec-results.json 为据。",
+    "verification/index：截图已看(4 态×2 轮)/理想图无对应稿(19 张无此页，如实标注)/滚动已测(滚动-中部+底部)/点击未直接测(exec VI 系列 6 FAILED 系自动化选择器问题，移交交互判定员)/safe-area 已查(默认态通过)/TabBar 不适用(push 页)/空态已查(=默认，表单页语义合理)/长文不适用/加载态已查(VI01 骨架)/错误态已查(exec)/组件一致性已查(权益图标空块=新发现)/历史回归已查(001 默认态通过)。",
+    "verification/real-name：截图已看(3 态×2 轮)/滚动未单独截图(内容一屏内，如实标注)/键盘态已查(DevTools 不渲染键盘，输入值上屏证实)/空态已查(=默认)/safe-area 已查/TabBar 不适用/一致性已查(CHECK_CIRCLE=代码层 REAL-NAME-002 视觉证实)/历史回归已查(与 index 同构 safe-top 默认态通过)。",
+    "profile/visitors：截图已看(3 态×2 轮)/滚动已测(中部+底部双轮)/空态已查(exec VS06 空态卡执行记录)/加载骨架已查(VS01)/返回已查(VS02/VS08)/safe-area 已查(默认态通过，滚动态叠印=新发现)/TabBar 不适用/头像兜底已查(全真头像，无兜底样本)/一致性已查/历史回归无本页线索。",
+    "profile/other：截图已看(3 态×2 轮)/理想图已逐段对照(L1 结构/L2 信息层级/L3 CTA 位置，共同点区为有记录刻意偏离)/滚动已测/空缺参态已查(PO02 13KB 截图)/加载失败态未获样本(PO21 FAILED 自动化问题，如实标注)/照片查看层未获样本(PO15 FAILED)/历史回归三条全部核验(002 部分+003 项即 MP-R2-OTHER-001 通过)/分享 stub 与双入口(代码层 006B)不重复报。",
+    "profile/location：截图已看(1 态×2 轮)/滚动不适用(一屏)/点击未直接测(LC02-04 FAILED 移交交互判定员)/safe-area 已查/TabBar 不适用/地图 marker 已查/一致性已查(绿钮/白钮层次与全仓按钮体系一致)。",
+    "profile/privacy：截图已看(1 态×2 轮)/像素级采样已做(绿头连续性)/开关默认态已查(与 PV01 互证)/滚动不适用/一致性已查(=新发现 PRIVACY-101)/返回已查(PV06)。",
+    "profile/album：截图已看(2 态×2 轮)/空态已查(发现证据缺口：空态从未渲染，md5 与默认相同)/滚动不适用(一屏)/safe-area 已查/胶囊安全距离已查(=新发现 ALBUM-101)/上传蒙层未获样本(AL02/AL04 FAILED 移交交互判定员)/AL08 超 10MB toast 与 AL09 取消选图交互轮已执行/一致性已查(空位虚线格与设为头像提示文案完整)。",
+    "profile/favorites：截图已看(1 态×2 轮)/滚动不适用(2 条数据，FA06 记录 scrollPos=top)/空态未获样本(如实标注)/加载骨架已查(FA01)/取消收藏按钮样式已查/一致性已查(封面 160rpx SafeImage 正常=对照组)/历史回归无本页视觉线索。",
+    "越界声明：功能目标对照未做（归需求对照员）；历史回归的代码级结论未重复推导（归历史回归员，本报告仅做视觉终验）；PO/VI/AL 系列 FAILED 用例的交互定性未展开（归交互判定员）；无问题页未声称「13 项全齐」——凡未能执行的检查项均在上述条目如实标注。",
+    "遗留待办移交：① 巡检轮补拍相册真·空态（清空 photoGallery）；② OTHER-102 建议补拉一次完整态他人主页 wxml（现有 PO 快照均为错误态 882B）；③ SafeImage 若采纳 virtualHost 根治方案，须全仓回归头像/封面/空态图标四类调用点。"
+  ]
+}

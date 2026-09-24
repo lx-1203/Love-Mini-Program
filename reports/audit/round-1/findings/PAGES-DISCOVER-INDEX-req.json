@@ -1,0 +1,167 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-01",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_discover_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "匹配度未按需求实现为右下角绿色环形进度（细环+中心百分比+「匹配度」，SVG stroke-dasharray 实现且弧长随分数变化），现行实现为实心粉圆：linear-gradient(#FF6B81→#FF8DA1) 圆盘 + 内圈半透明暗圆，无进度弧、非绿环、非 SVG。R13-ACCEPTANCE §7 已裁决「匹配度绿色环形成立但未修」，属基线挂账的结构债，本轮实测仍未清偿。",
+      "evidence": "MatchCard.vue:91-102（slot 默认实现仅文字 92% 放圆内）与 :209-257（.match-card__score-ring 用 linear-gradient 粉色圆盘，注释自认弃用 conic-gradient 后未补 SVG 环）；components/common/XunmiMatchRing.vue:44 为禁用的 conic-gradient 版且 --ring-pct 从未绑定，均不满足 R13-ACCEPTANCE §7「正确做法是 SVG stroke-dasharray 圆环」（reports/audit/baseline/ideal-baseline.md:21、:86）；tour 静态截图右下角为粉色实心圆「80% 匹配度」，与理想图绿色细环（92%）明显不符。",
+      "sources": [
+        "screenshot",
+        "code",
+        "baseline:ideal-baseline.md:86,21"
+      ],
+      "confidence": 0.95,
+      "ideal": "右下角绿色（Primary #34C98A 系）细环 SVG stroke-dasharray 进度环，弧长=matchScore%，环心大号百分比+「匹配度」小字；禁用 conic-gradient 版 XunmiMatchRing 直接接入。",
+      "fix": "在 MatchCard 内新增 SVG 环实现（circle + stroke-dasharray/dashoffset 绑定 user.matchScore，viewBox 适配 rpx），替换 .match-card__score-ring 的粉盘结构；绿色取 Primary 冻结值；对 mp-weixin 渲染做截图回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-02",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_discover_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "顶部「推荐/附近」分段右侧的空心收藏心形入口整体缺失（Function 缺失，非视觉问题）：理想图该位置为空心心形（带星点装饰）收藏入口，现行 header 分段行右侧为空白，且全页无任何收藏 TA 的能力——收藏动作不存在于 MatchCard/store，既有收藏页 subpackages/profile-extra/profile/favorites.vue 仅收帖子（post.favorites），Person 维度收藏数据链路不存在。注意需求冲突：v3.1-contract 附录红线有「saved/收藏 入口残留=0」（指清理旧 v2 残留），而 ideal-baseline.md:86 与本轮 ask 均将「右侧空心收藏心形入口」列为理想目标且 R13 判「缺收藏入口」为待修偏差——建议基线员对两处口径做一次裁决后实施。",
+      "evidence": "pages/discover/index.vue:240-285（header 仅 标题♥+筛选按钮+推荐/附近分段，无收藏入口节点）；grep 收藏|favorite|collect 于 pages/discover、components/match、components/discover、custom-tab-bar 零命中（本会话执行）；ideal-baseline.md:86「顶部…右侧空心收藏心形入口」+ 同行对照状态「缺收藏入口」；理想图寻觅匹配卡片页面.png 分段行右侧心形清晰可见而实拍空白；favorites.vue:29-46 列表项为帖子。",
+      "sources": [
+        "screenshot",
+        "code",
+        "baseline:ideal-baseline.md:86",
+        "interaction:理想图 vs 实拍对照"
+      ],
+      "confidence": 0.85,
+      "ideal": "分段行右侧（附近 tab 之后、右缘对齐筛选键）呈现空心心形入口（SVG 拆分库 03-icons/heart-outline.svg 可用），点击进入收藏列表；卡片维度的被收藏人可在其中查看/管理。",
+      "fix": "先由基线员裁决 v3.1「收藏入口残留=0」与本行理想目标的口径冲突；确认保留后在 index.vue header 分段行右侧补入口 image（heart-outline.svg 转 PNG 三态或原生 svg 兼容层），并补 Person 收藏动作（store action + storage/api）与收藏页 person 分区；无 Person 数据前至少完成入口与空态。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-03",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_discover_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "配额「今日剩余 N 次」展示缺失（Function 缺失）：理想结构要点要求页面呈现今日剩余次数，现行寻觅页任何位置都不渲染配额——store 已有 remainingCount getter（含签到额外配额与超级测试账号旁路）但本页未消费，用户仅在点击喜欢/打招呼被 Toast 拒绝时才得知次数用完（DC24 行为模式），前置告知缺位。",
+      "evidence": "pages/discover/index.vue 全文（513 行）无 remainingCount/quota 引用，模板 287-331 仅卡区+三键+空态；stores/discover/index.ts:148-159 remainingCount=max(0, dailyLimit+extraQuota-viewedCards.length) 存在；grep remainingCount 消费方仅 pages/profile/index.vue:200、components/common/MatchCountChip.vue、components/discover/CardSwiper.vue（后两者不在本页使用）；i18n「今日剩余 {n} 次」（zh-CN.ts:411 matchHub.remaining、:939 remainingToday）未接入本页；ideal-baseline.md:86「配额『今日剩余 N 次』」。",
+      "sources": [
+        "code",
+        "baseline:ideal-baseline.md:86",
+        "interaction:exec-results.json DC24"
+      ],
+      "confidence": 0.9,
+      "ideal": "页面可见处（如分段行下方或 CTA 区上方）常驻小字/胶囊「今日剩余 N 次」，数据绑定 discoverStore.remainingCount，签到加量（setExtraQuota）后实时刷新；用尽态与 quotaExhausted 空态文案同源。",
+      "fix": "在 index.vue 分段行与卡区之间加轻量配额 chip（复用/对齐 MatchCountChip 样式），storeToRefs(discoverStore).remainingCount 驱动；文案用 discover 域新增 key（如 discover.card.remaining=\"今日剩余 {n} 次\"）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-04",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_discover_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "沉浸式大图卡视口占比实测 53.9%，低于需求「≥70% 视口」（L1 结构比例偏差）：卡区高度固定 880rpx，在 375×820 实拍上为 442px/820px=53.9%（即便按 667pt 矮屏折算约 66% 仍不达标）。",
+      "evidence": "本会话对 tour 静态截图做行扫描测量：卡片上缘 y≈150、下缘 y≈592，442px/820px=53.9%（python 脚本输出留存于会话）；index.vue:480-483 .match-card-area{height:880rpx}；MatchCard.vue:121-129 卡体 100%×100% 无自适应放大；ideal-baseline.md:86「沉浸式大图卡 ≥70% 视口」。",
+      "sources": [
+        "screenshot",
+        "code",
+        "baseline:ideal-baseline.md:86"
+      ],
+      "confidence": 0.85,
+      "ideal": "卡高按视口自适应（约 70vh，扣除 header/CTA/tabBar 后不小于 70%），保持 800×1280 hero 构图裁切；CTA 行维持横排（理想图口径）并整体下沉，保证卡体主导视口。",
+      "fix": "将 .match-card-area 高度改为 calc/min-height 视口比例方案（如 min-height:70vh，max 兜底避免矮屏溢出），同步复核 padding-bottom 避让值与 MatchActions 间距；改后重拍静态截图复测占比。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-05",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-21-like-button-after.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "喜欢/打招呼成功反馈文案「已喜欢」违背 29a2b1df 冻结 v3.1 文案红线「单向喜欢文案恒为已送出心动（不显示喜欢成功）」：matching 页成功分支统一弹 discover.likeSent=「已喜欢」，打招呼路径也弹同一文案（superLiked=「已超级喜欢」未使用）。",
+      "evidence": "subpackages/discover-extra/discover/matching.vue:73 uni.showToast({title: t(\"discover.likeSent\")}) 且 :63-79 的 idle 分支不区分 action；i18n/locales/zh-CN.ts:923 \"likeSent\": \"已喜欢\"、:406 \"superLiked\": \"已超级喜欢\"（未被引用）；git show 29a2b1df:docs/design/v3.1-contract.md §6:56 与 §12:96「单向喜欢文案：已送出心动（不显示『喜欢成功』）」、附录红线:180；exec-results.json DC19/DC23 实测 toast=[{title:'已喜欢'}]。",
+      "sources": [
+        "code",
+        "log:exec-results.json DC19/DC23 toast",
+        "baseline:v3.1-contract(29a2b1df) §6/§12"
+      ],
+      "confidence": 0.9,
+      "ideal": "发送成功反馈文案=「已送出心动」（like 与 superLike 均不得出现「已喜欢/喜欢成功」字样；打招呼如需区分可用「心动已送达·等待回应」类，但主口径遵循冻结文案）。",
+      "fix": "zh-CN.ts discover.likeSent 改「已送出心动」（en 同步），matching.vue 成功分支按 action 区分文案键或统一用冻结文案；回归 DC18/DC22/DC23 toast 断言。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-REQ-06",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "reports/audit/round-1/tmp-a3/discover-edge-height-value.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "筛选抽屉各分区右侧值文本溢出屏幕被截断：身高值「120-250cm」在屏幕右缘被切半（cm 缺损），学历/感情状态右侧值（不限）仅剩贴边残影，分区头 space-between 布局的右值越出视口。",
+      "evidence": "interact 截图 2-filter-open-after.png 右缘 crop（x≥340 放大三件，存 reports/audit/round-1/tmp-a3/discover-edge-{height,edu,rel}-value.png，height crop 中 '0-250' 后接被切字形）；FilterDrawer.vue:650-658,654（filter-section__head space-between + filter-section__value）、:950-968（head/value 样式，右值无 padding-right/收缩约束）；DC30 机证 observe-only 未覆盖文本截断。",
+      "sources": [
+        "screenshot",
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "抽屉内容完整落在视口内：分区头左标题+右值均含安全内边距（右缘留 body padding 同等间距），长值可省略号或换行，不得触边截断。",
+      "fix": "排查 mp-weixin scroll-view 横向内容溢出（filter-drawer__body padding 是否被内容撑破），给 filter-section__head/value 补 box-sizing 与右侧留白（padding-right 或 max-width+ellipsis），真机/截图回归三处值文本。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/discover/index",
+      "baseline": "素材/理想效果图/寻觅匹配卡片页面.png（唯一页面级对照图）+ reports/audit/baseline/ideal-baseline.md:86（§3 理想结构要点与对照状态）+ git show 29a2b1df:docs/design/v3.1-contract.md（§04 色板/§06、§12 文案冻结/附录红线）+ 素材/组件库/理想效果图-svg拆分/（03-icons/heart-outline.svg 等）",
+      "structureNotes": "L1 结构：标题区（寻觅♥+筛选）→推荐/附近分段→大图卡→横排 CTA 三键→五 Tab（中央寻觅凸起）与理想图纵向一致 ✅；但卡高固定 880rpx，实拍测量占视口 53.9%＜70%（L1 偏差）。L2 信息层级：姓名+年龄+性别符→学校·学院→距离·在线→4 标签→❝bio 顺序一致 ✅，性别符已渲染（R13 待修项已清偿，MatchInfo.vue:14-18+资产在盘+实拍可见），姓名行多一枚认证绿勾为轻微增项。L3 交互位置：筛选右上/分段下划线/卡片点击进他人主页 ✅；CTA 横排与理想图一致（baseline 文本「右侧竖向」与理想图矛盾，按 ask 以图为准不立案）；收藏心形入口缺位（REQ-02）。L4 卡片形态：黑色渐变蒙层直叠信息、禁白卡达成 ✅，距离 chip 白底粉字、在线徽标白底绿点绿字达成（tour 截图主色 55.9% 白像素验证）✅；匹配度为实心粉圆非绿色 SVG 细环（REQ-01，L4 偏差）。L5 颜色：#FF6B81/#36C99A 与冻结 Love #FF6FA3/Primary #34C98A 全局漂移（细节层记录）。L6-L8：字体层级/间距达标，筛选键 sliders 形制与理想漏斗微差。L9 微交互：press-feedback/抽屉动画/浮岛 tabBar/筛选时隐藏 tabBar 齐备。L10 文案：成功反馈「已喜欢」违背冻结「已送出心动」（REQ-05）。——L1 与 L4 偏差 ⇒ 不达标。",
+      "usageNotes": "核心任务链可走通：浏览→喜欢/打招呼→matching→返回下一张（DC17/18/19/22/44 机证 tapped），未登录点按 Toast 拦截不强跳（DC20），登录胶囊↔登录页往返落点正确（DC25/26），卡片点击进他人主页（DC16），30s 缓存窗口与登录态 watch 重拉正常（DC09/26），本页即 tabBar 页任意时刻 1 步回 tab、筛选抽屉打开自动隐藏 tabBar（DC27 机证）。迷路/断点：①配额不可见（REQ-03），用尽只靠拒绝 Toast 事后告知（DC24）；②「收藏 TA」任务无处发起（REQ-02）；③滑动手势（DC12-15）、实名门控（DC21）、打招呼频控（DC23）未取得有效机证——swipe 为自动化工具不支持（代码级确认阈值语义 8px tap/120px swipe 与设计一致），DC21 因 harness login B 解析为 user-1001 无法构造未实名用户，DC23 toast 与预期不符且 pre 键为未解析占位符，三者均需换手段重跑而非判缺陷；④推荐/附近空态文案、错误重试、筛选控件语义的 FAILED 条目均甄别为 harness 选择器/导航错配（如 DC10 先 switchTab /pages/nearby/index 再找分段 tab），交互截图 2/15 反证抽屉与附近分段实际可用，但语义层仍未机证。证据时序警示：interact 截图 15 距离 chip 像素采样为粉底白字（旧构建渲染），与现行代码白底粉字及 tour 静态截图不符，以代码+静态图为准。",
+      "functionGaps": [
+        {
+          "target": "顶部右侧空心收藏心形入口（收藏 TA）",
+          "current": "header 分段行右侧空白，全页无收藏动作；收藏页 favorites.vue 仅收帖子，Person 收藏链路不存在",
+          "gap": "入口+Person 收藏能力双缺（Function P2，REQ-02）；与 v3.1-contract 附录「收藏入口残留=0」口径冲突待基线员裁决",
+          "fix": "裁决口径后补 heart-outline 入口+Person 收藏 store/api+收藏页 person 分区；先行落地入口与空态"
+        },
+        {
+          "target": "「今日剩余 N 次」配额展示",
+          "current": "页面无配额渲染；store.remainingCount getter 已备未消费，用尽仅 Toast 事后告知",
+          "gap": "前置配额告知缺失（Function P2，REQ-03）",
+          "fix": "分段行下方加配额 chip 绑定 remainingCount，文案接入 discover 域 i18n key，签到加量实时刷新"
+        },
+        {
+          "target": "左右滑手势=跳过/喜欢",
+          "current": "代码实现完整（SwipeContainer→useSwipeGesture，SWIPE_THRESHOLD=120px/TAP_MOVE_THRESHOLD=8px），机证 DC12-15 全部 unsupported(no element api)",
+          "gap": "手势链路未取得执行证据（自动化工具限制，非产品缺陷）",
+          "fix": "改用 touch 序列注入或真机手势脚本重跑 DC12-15，补飞出动画与副作用断言"
+        },
+        {
+          "target": "实名认证门控（未实名点喜欢→弹窗去认证/取消）",
+          "current": "代码门控在（index.vue:144→campus-gate.ts:72-93 showModal），DC21 因 harness login B 解析为 user-1001（MISMATCH）未能构造未实名用户，弹窗未出现",
+          "gap": "未取得有效执行证据",
+          "fix": "修复 harness 身份 B（未实名账号）后重跑 DC21，断言 modal 标题/去认证跳转/取消留页"
+        },
+        {
+          "target": "打招呼频控（同卡 3 次/日，第 4 次拦截）",
+          "current": "代码实现于 index.vue:158-177（greet:count:<cardId> 按日计数）；DC23 实测 toast=「已喜欢」与预期拦截文案不符，且 pre 写键记录为未解析占位符 greet:count:<栈顶卡cardId>",
+          "gap": "证据二义：无法判定产品未拦截或 harness 写键失效",
+          "fix": "以真实栈顶 cardId 解析键名重跑 DC23，断言 Toast=greetLimitReached 且不路由"
+        },
+        {
+          "target": "推荐/附近独立空态文案+错误横幅重试+筛选控件语义",
+          "current": "代码与 i18n 齐备（index.vue:69-78,201-210,288-310；zh-CN.ts:1019-1022；FilterDrawer 基础/高级 Tab、身高双滑块、学历多选、感情状态单选、籍贯联动、未来城市、关键词三态、重置/确认），DC05/06/07/28-39 FAILED 均为 harness 选择器/导航错配",
+          "gap": "语义层未取得机证（截图 2/15 反证抽屉与附近分段可用，但空态文案与控件行为未断言）",
+          "fix": "按现行页内分段结构重写 DC05/06/07/10 与筛选序列的选择器后重跑"
+        }
+      ],
+      "verdict": "不达标",
+      "file": "reports/audit/round-1/page-compare/PAGES-DISCOVER-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/PAGES-DISCOVER-INDEX-req.json"
+}

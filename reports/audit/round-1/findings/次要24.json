@@ -1,0 +1,240 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-次要24（A3 截图与证据视觉/布局/状态审查）",
+    "evidenceBase": {
+      "screenshotManifest": "reports/audit/round-1/screenshot-manifest.json",
+      "gitSha": "aefd8a72",
+      "gitShaMatchesHead": true,
+      "interactResults": "reports/audit/round-1/interact/exec-results.json（gitSha=aefd8a72 一致）",
+      "shotsReviewed": "本批 8 页共 30 张（A/B 双身份；资料编辑 6 态、课表 2 态、dnd 2 态、其余 1 态）逐张人工审看 + 程序化 A/B 像素比对"
+    },
+    "askPremiseCorrection": "任务书称「本批页面本轮没有静态截图（记 P1 缺截图）」，与证据不符：screenshot-manifest.json 中本批 8 页共 30 条 A/B 截图全部在磁盘存在且在 aefd8a72 提交之后生成（截图 mtime 2026-09-23 > commit 2026-09-22 11:24:58 +0800，manifest gitSha=aefd8a72 与当前 HEAD 一致）。任务书所附失败原因清单（dev/index、register、campus/campus/index、matching、tools/activities/detail、showcase）均非本批页面。按「观察证据制：禁止编造问题」，未记录「缺截图」P1，改为按真实存在的 30 张截图逐张审查。理想图方面：素材/理想效果图/ 的 19 张整页稿与本批 8 页（任务中心/免打扰/反馈历史/资料编辑/校园认证/时间安排/推荐偏好/兴趣选择）无页面级映射，L1-L10 整页对照不适用，页面级对照依据为 v3.1 token 契约（git show 29a2b1df:docs/design/v3.1-contract.md 链）与跨页组件一致性。",
+    "method": "逐张审看 30 张截图 + Pillow 裁剪放大/像素直方图取证 + A/B 双身份 ImageChops 像素比对 + 与同 tour 其他页（campus hub、round-1-interact/TASKS-02-after）交叉对照 + 代码行号核对（不重复 code-findings/次要24.json 已报 14 项）"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-TASKS-007",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_tasks__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "任务中心 4 个任务图标全部不可见：72rpx 淡绿容器（--c-bg-brand）内无任何图形，10 倍放大与像素直方图证实仅容器底色与白色、无描边色像素——是「完全未渲染」而非「颜色过淡」。图标经 SafeImage 包裹（tasks.vue:413-414）；同一资源 graduation-cap.svg 用普通 <image> 渲染正常（campus hub 页同 tour 截图左上灰色学士帽清晰可见，hub.vue:209），兴趣页 TagSelector 亦用普通 <image> 且 10 个标签图标全部可见（TagSelector.vue:203/236）。A/B 双身份与另一独立交互会话（round-1-interact/TASKS-02-after.png，iPhone X 视口）三处复现。与 MP-R1-TASKS-006（real 模式映射缺失致落 default 图标）正交：本批截图为 mock 态（id=profile/checkin/first-post/verify 映射正确）仍 4/4 不可见。",
+      "evidence": "截图 A/B subpackages_profile-extra_profile_tasks__默认.png；像素直方图（icon 框区域 x26-54,y170-198）：仅 (232,251,242)≈#E8FBF2 与 (255,255,255)，无图标描边色；SVG 资产存在且描边 #94A3B8（apps/client/src/static/assets/icons/common/user.svg、check-circle.svg、graduation-cap.svg）；tasks.vue:413-414（SafeImage）、:548-562（容器/图 40rpx）；SafeImage.vue:9-19、:321-323（isLoading 时 opacity:0，依赖 @load 解除）；对照 hub.vue:209 普通 image 正常",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "4 个任务项分别显示用户/对勾/心形/学士帽图标，描边色在淡绿容器上清晰可辨",
+      "fix": "排查 SafeImage 对本地 static SVG 的渲染链（isLoading 置 opacity:0 但 @load 未触发、或降级链吞图）；短期可将本页静态图标改为普通 <image>（与 hub.vue:209 同构）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DND-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__默认.png",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "历史回归项「免打扰页自绘导航顶进状态栏（safe-top 在 nav-bar 之后）」视觉终验通过：A/B 双身份默认态与数据态共 4 张截图中，系统状态栏（时间/信号/电量）区域无任何页面内容叠印，返回箭头、「免打扰」标题与系统胶囊均起于状态栏之下，safe-top 占位与 --statusbar 注入在真机渲染层生效。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_profile-extra_settings_dnd__默认.png 与 __数据态.png：状态栏条带为纯系统内容+页面底色，无控件/文字重叠；与 code-findings 中 dnd.vue:309/314/317/560-564 的修复代码一致",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "safe-top 占位先于自绘导航且高度为真实状态栏高度，导航不与系统时间/胶囊叠印",
+      "fix": "无需修复；本条为截图终验闭环，状态由「已修复待终验」更新为「已验证」",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R1-DND-003",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「紧急消息仍会通知，避免错过重要信息」同屏重复出现两次：区块标题与开关行标签引用同一 i18n key（dnd.vue:464 与 :469 均为 t('dnd.tip')，zh-CN.ts:3239），截图中灰色小字区块标题与其下卡片内行标签文字完全相同，信息冗余且读屏重复。",
+      "evidence": "截图 A/B dnd 页下部区块（约 y=565-620px 区域）：区块标题与行标签逐字相同；dnd.vue:462-477；zh-CN.ts:3239（tip 单值）",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "行标签为功能名（如「紧急消息穿透」），tip 文案作区块标题或辅助说明，各司其职",
+      "fix": "新增 dnd.allowUrgentLabel 之类的功能名 key 用于开关行标签，tip 保留为区块标题",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-FEEDBACKHIST-004",
+      "round": "R1",
+      "page": "subpackages/profile-extra/feedback/history",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_feedback_history__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「处理中」状态徽标使用 ×（CLOSE）图标，图标语义与状态文字矛盾（× 惯例表示失败/关闭，非进行中）。StatusState 将 warning tone 固定映射为 CLOSE 图标（StatusState.vue:14-20），而 processing/planned 状态映射为 warning tone（view-models/feedback.ts:8-10），截图呈「× 处理中」琥珀色徽标，易被误读为「处理失败」。",
+      "evidence": "截图 A/B feedback_history 首条记录徽标 2 倍放大 crop（tmp_fh_card_zoom.png）：「× 处理中」；StatusState.vue:13-20；view-models/feedback.ts:7-15；对照第二条「✓ 已查看」绿色徽标",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "进行中状态使用时钟/沙漏类图形或不配图标；× 仅用于失败/驳回类终态",
+      "fix": "StatusState 增加 pending tone（时钟图标）或允许 icon 覆写；feedback 的 processing/planned 改用该 tone",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-FEEDBACKHIST-005",
+      "round": "R1",
+      "page": "subpackages/profile-extra/feedback/history",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_feedback_history__默认.png",
+      "category": "UI",
+      "severity": "P4",
+      "description": "页面主标题与列表卡标题同为「反馈历史」且上下相邻同屏出现：同一 key feedback.historyTitle 同时用于 AppShell 页头标题（history.vue:267）与 SectionCard 列表卡标题（history.vue:309），zh-CN.ts:3259 单值「反馈历史」，观感重复。",
+      "evidence": "截图 A/B：页头大字「反馈历史」其下白卡首行再次为「反馈历史」；history.vue:266-271、:309；zh-CN.ts:3259",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "列表卡标题使用区分性文案（如「我的提交」「处理记录」）",
+      "fix": "新增独立 key（如 feedback.historyListTitle）用于 SectionCard 标题",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPPROFILE-004",
+      "round": "R1",
+      "page": "subpackages/setup/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__滚动-底部.png",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "页面滚动后表单内容直顶系统状态栏并叠印：全局 navigationStyle=custom（pages.json:36）且本页滚动时无吸顶导航、无状态栏高度占位/遮蔽，滚动到底部时「TA」性别字段行与系统状态栏文字（WeChat/时间/电量）直接重叠，双身份滚动-底部截图一致，字段与系统文字互相干扰不可读。与已报 MP-R1-SETUPPROFILE-001（固定 hero 返回键/标题组 88/208rpx 未补偿状态栏）同族但为独立表现（滚动内容进入状态栏 vs 固定元素定位），001 的 calc 补偿修复不解决本条。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_profile_index__滚动-底部.png 顶部 3 倍放大（tmp_scrollbottom_top_3x.png）：「☺ TA」字段行背景与「●●●●● WeChat ⋯ 3:14 100% ⚡」系统文字重叠；pages.json:36；页面无 sticky 头（模板根 .edit-page 直排）",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "滚动内容不进入状态栏可读区：顶部预留 --statusbar 高度或滚动时浮现带状态栏补偿的吸顶导航/遮蔽层",
+      "fix": "滚动容器顶部加 calc(var(--statusbar, env(safe-area-inset-top))) 占位，或监听滚动在过 hero 后显示吸顶导航（注册页同构做法）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPPROFILE-005",
+      "round": "R1",
+      "page": "subpackages/setup/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__默认.png",
+      "category": "Data",
+      "severity": "P3",
+      "description": "「我的头像」回显为森林航拍纹理（avatar-1.jpg，非人像），84px 圆内呈绿黑噪点状，观感等同破图，且与页内提示「真实头像与照片能显著提升匹配通过率」自相矛盾。mock 种子固定 avatarUrl=IMAGE_PATHS.AVATARS.AVATAR_1（stores/profile.ts:330），而 AVATARS 系列 1-4 为纹理/静物非人像（contact sheet 逐张核查）；交互会话 wxml 佐证 real 模式默认头像亦为同资产（TK02-after.wxml：src=http://127.0.0.1:8080/api/v1/media/app-assets/assets/images/avatars/avatar-1.jpg）。双身份同图（另注：A/B 两身份回显整份资料完全相同——同一头像/昵称/照片/简介，疑为 mock 种子不分身份，因无预期对照不列为缺陷，记入观察）。",
+      "evidence": "截图 A|B 默认/数据态头像 4 倍放大（tmp_profile_avatar_4x.png）；avatar-1.jpg 文件内容为森林航拍（与本图逐像素一致）；stores/profile.ts:330；config/images.ts:44；avatar-1..4 contact sheet；TK02-after.wxml src 字段",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.85,
+      "ideal": "自我资料头像默认为人像占位（DEFAULT_AVATAR），纹理/静物图不作为用户头像展示",
+      "fix": "mock 种子与后端默认头像改用 IMAGE_PATHS.DEFAULT_AVATAR 或人像系列（avatar-5/6 起为人像，亦建议整组梳理）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPPREF-002",
+      "round": "R1",
+      "page": "subpackages/setup/recommend-pref/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_recommend-pref_index__默认.png",
+      "category": "UI",
+      "severity": "P4",
+      "description": "「校园优先」卡标题与开关行标签同文案：campusPriorityTitle 与 campusPriorityLabel 同值「校园优先」（zh-CN.ts:3188/3190），SectionCard 标题（recommend-pref/index.vue:214）与行标签（:216）同卡内重复，与 dnd 页 tip 重复（MP-R1-DND-003）同模式，属系统性文案复用问题。",
+      "evidence": "截图 A/B pref 页第三张卡：卡题「校园优先」+ 行标签「校园优先」；recommend-pref/index.vue:213-219；zh-CN.ts:3188、:3190",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "行标签描述作用（如「同校用户优先推荐」），卡题为功能名",
+      "fix": "campusPriorityLabel 改为描述性文案，或行标签复用 subtitle 语义",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPSCHEDULE-002",
+      "round": "R1",
+      "page": "subpackages/setup/schedule/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_schedule_index__默认.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "偏好设置卡三行输入框无字段标签：第 1 行为地点偏好（preferredCampusArea）、第 2+ 行为可删时段（preferredTimeWindows），仅靠占位符与「是否带 × 删除钮」区分；占位符一旦填入值即不可见，截图中三行已填（图书馆和北草坪/今晚/本周）后视觉完全同质，用户无法辨识首行语义与各行用途。",
+      "evidence": "截图 A/B schedule 默认与键盘态：三行同样式输入框，仅 2/3 行右侧有 ×，无任何 label 文本；schedule/index.vue:86（地点 input 无 label、仅 placeholder/aria）、:90-103（时段 input 同构）",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.7,
+      "ideal": "每行有常显字段标签（地点/时段1/时段2）或前缀图标+分组标题区分语义",
+      "fix": "为地点行加「地点」标签、时段行加序号标签（或前缀图标），标签不随值消失",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPCAMPUS-003",
+      "round": "R1",
+      "page": "subpackages/setup/campus/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_campus_index__默认.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "「学校资料」标题旁的帮助按钮（?，tap 触发 showPrivacyInfo 弹层）可视与点击区域仅 40rpx×40rpx（=20px），远低于本项目热区标准 88rpx（≈44px），且紧贴标题文字，实际操作易漏触/误触。",
+      "evidence": "截图 A/B campus 页「学校资料 ?」区域；campus/index.vue:203-212（role=button + @tap）、:305-315（.card-header__help width/height 40rpx）",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "可点元素热区 ≥88rpx（可用透明 padding 扩击区，视觉保持 40rpx）",
+      "fix": "为 .card-header__help 增加 ::after 透明扩击区或 padding，使命中区域 ≥88rpx",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETUPCAMPUS-004",
+      "round": "R1",
+      "page": "subpackages/setup/campus/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_campus_index__默认.png",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "同一设置向导（4 步）内返回控件样式不一致：第 1 步资料编辑=白色圆形箭头钮（setup/profile hero__back），第 2 步校园认证、第 3 步时间安排/推荐偏好=浅色胶囊「‹ 返回」文字钮（AppShell show-back），第 4 步兴趣选择=无任何返回（缺失项已由 MP-R1-SETUPINTEREST-004 覆盖，不重复）。向导流内三种返回形态并存，跨页一致性维不达标。",
+      "evidence": "四页截图顶部区并排对照：subpackages_setup_profile_index__默认.png（圆形箭头）vs setup_campus/schedule/recommend-pref __默认.png（「‹ 返回」胶囊）vs setup_interest_index__默认.png（无）",
+      "sources": ["screenshot"],
+      "confidence": 0.75,
+      "ideal": "同一向导流内返回控件样式统一（同形状/同文案/同位置）",
+      "fix": "向导四步统一采用同一返回控件（建议 AppShell 返回胶囊并补齐 interest 缺失项）",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/profile-extra/profile/tasks",
+      "observation": "布局与文案渲染正确：状态栏无叠印，导航行=圆形返回钮+「任务中心」+「0/4 已完成」，积分卡「累计获得 0 积分 / 0%」带灰轨道进度条，4 个任务项（完善个人资料+50/每日签到+5/发布首条动态+20/完成校园认证+100）标题、副文案、绿色「去完成」胶囊齐全；A/B 像素比对仅状态栏时钟差异（结构一致）。缺陷：4 个任务图标不可见（MP-R1-TASKS-007）。交互旁证（判定归交互判定员）：TK02 after 截图与 wxml 采样显示签到后积分仍 0/0%、行仍「去完成」且 .task-item__check absent；TK02 的 wxml 证据文件内容为 setup/profile 页（页栈/取证错位，证据质量存疑）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_profile-extra_profile_tasks__默认.png；reports/screenshots/round-1-interact/TASKS-02-after.png；reports/audit/round-1/tmp-a3/tmp_tasks_icons_zoom.png"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/dnd",
+      "observation": "三态渲染正确：开关卡（开启免打扰+说明）、当前状态已关闭、免打扰时段 22:00/08:00 绿色数值、重复方式单选（每天选中绿点）、紧急消息开关 ON 绿色、保存按钮品牌绿；MP-R1-DND-002 视觉终验通过（状态栏无叠印）；「数据态」与「默认」像素一致（mock 默认回显相同，无差异可判）；A/B 结构一致。缺陷：tip 文案重复（MP-R1-DND-003）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_profile-extra_settings_dnd__默认.png、__数据态.png"
+    },
+    {
+      "page": "subpackages/profile-extra/feedback/history",
+      "observation": "渲染正确：返回胶囊低于状态栏、页头标题+说明、筛选 chips（全部=绿色激活实底，反馈/建议/活动提案=白底描边）、记录卡（标题/状态徽标/回复摘要/本地化时间 2026/05/18 09:18/查看详情绿链）；A/B 结构一致。缺陷：× 处理中徽标语义（MP-R1-FEEDBACKHIST-004）、卡题与页题重复（MP-R1-FEEDBACKHIST-005）。附：FH06/FH07 因附件图/错误卡元素不存在而 FAILED——本数据态下列表无附件无错误卡，属状态不可达而非可判缺陷。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_profile-extra_feedback_history__默认.png；reports/audit/round-1/tmp-a3/tmp_fh_card_zoom.png"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "observation": "六态逐张审看：hero 渐变+吉祥物插画+XUNMI·CAMPUS 眉题渲染佳；步骤条 1/4（基本信息激活绿）；照片墙 4 填 2 空+删除角标+加号槽正确；基础信息/基本资料/身份单选（在校学生选中绿框）正常；A/B 六态结构一致（像素比对仅时钟+输入值差异）。键盘态输入成功（昵称变「巡检输入test123」）但 DevTools 模拟器不渲染软键盘（工具行为，非页面缺陷）；「校验错误」态截图与默认无可见差异——错误 UI 未被捕获，属证据缺口而非页面正常证明（EP04/EP08 tap 超时旁证保存链路未成功执行，判定归交互判定员）；保存按钮灰为合法 formComplete=false 态（3 个请选择未填；注释明言置灰仍可点，index.vue:994-997）。缺陷：滚动-底部状态栏叠印（MP-R1-SETUPPROFILE-004）、头像森林纹理（MP-R1-SETUPPROFILE-005）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_profile_index__默认/数据态/校验错误/滚动-中部/滚动-底部/键盘弹起-输入后.png；reports/audit/round-1/tmp-a3/tmp_scrollbottom_top_3x.png、tmp_profile_avatar_4x.png"
+    },
+    {
+      "page": "subpackages/setup/campus/index",
+      "observation": "渲染正确：返回胶囊、步骤条 2/4（步骤1绿✓、步骤2激活、3/4灰）、学校资料三行带值（北京/北京大学/工业设计）+右侧箭头、保密说明卡、非学生跳过链接、绿色「保存并继续」；无状态栏叠印；A/B 结构一致。缺陷：? 帮助钮 40rpx 热区（MP-R1-SETUPCAMPUS-003）、向导返回控件不一致（MP-R1-SETUPCAMPUS-004）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_campus_index__默认.png"
+    },
+    {
+      "page": "subpackages/setup/schedule/index",
+      "observation": "渲染正确：返回胶囊、页头说明「这里会驱动首页『叮』推荐和可聊时间段。」、时间安排标题、偏好设置卡三行输入+×删除钮、+添加时段虚线钮、绿色「保存并进入应用」；键盘态首行输入成功（巡检输入test123；DevTools 无软键盘渲染）；无状态栏叠印；A/B 结构一致。缺陷：三行无字段标签（MP-R1-SETUPSCHEDULE-002）。SC04-06 候选元素未命中属取证脚本选择器问题，无页面缺陷证据。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_schedule_index__默认.png、__键盘弹起-输入后.png"
+    },
+    {
+      "page": "subpackages/setup/recommend-pref/index",
+      "observation": "渲染正确：返回胶囊、步骤条 3/4（1✓2✓3激活4灰）、推荐时间 chips（12:00 绿色描边选中）、推荐范围 chips（同校优先选中）、校园优先开关 ON 绿色、绿色保存；无状态栏叠印；A/B 结构一致（除时钟外仅步骤高亮微差）。缺陷：卡题与行标签重复（MP-R1-SETUPPREF-002）。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_recommend-pref_index__默认.png；reports/audit/round-1/tmp-a3/tmp_pref_steps_2x.png"
+    },
+    {
+      "page": "subpackages/setup/interest/index",
+      "observation": "渲染正确：标题选择兴趣+说明（至少 3 个）、选择你的标签卡、已选标签空态（已选 0/5+「暂未选择任何标签」浅绿占位）、10 个带图标标签 chips（阅读/运动/音乐/电影/旅行/摄影/游戏/美食/生活/舞蹈，图标经普通 <image> 全部可见——旁证任务页图标缺失非全局渲染问题）、完成选择绿色主按钮；无状态栏叠印；A/B 结构一致。无新增缺陷：无返回入口已由 code-findings MP-R1-SETUPINTEREST-004 覆盖（不重复报）；本页视觉判「无新增问题」的 13 项举证：截图已看（A/B 默认态）✓、理想图已对照（无映射稿，按 token/一致性替代，已注明）✓、滚动已测（页面单屏内无滚动区，tour 未采滚动态——内容高度不足一屏，滚动检查不适用）△、点击已测（interact IN01-06，IN03 清空元素未达为数据态无可清空对象）△、返回已测（本页无返回入口，即已报缺陷）✓、safe-area 已查（顶部无叠印、底部按钮距 home 指示条区域尚有余量）✓、TabBar 已查（非 tab 页无 tabBar，show-tab-bar=false 场景截图无 tabBar 残留）✓、空态已查（已选标签空态正常）✓、长文已查（无长文本字段）△不适用、加载态已查（无异步区块）△不适用、错误态已查（无错误分支展示区）△不适用、组件一致性已查（chips 与 TagSelector 其他页一致、按钮与向导主按钮一致）✓、历史 Bug 回归已查（SETUPINTEREST-001/004/005/006 均在 code-findings 闭环，视觉层未见新增回归）✓。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_setup_interest_index__默认.png"
+    }
+  ],
+  "coverage": [
+    "证据校验：screenshot-manifest.json gitSha=aefd8a72 与 HEAD 一致；本批 8 页 30 张 A/B 截图全部存在且生成于 aefd8a72 之后——任务书「本批无静态截图」前提不成立，未据其记 P1 缺截图，全部截图逐张审看。",
+    "证据校验：interact/exec-results.json gitSha=aefd8a72 一致；本批 89 条结果（EXECUTED 72 / FAILED 17）已通读，FAILED 项逐条核对失败原因（多为候选选择器未命中/取证超时），其中视觉相关的旁证已纳入 observations；交互成败判定留予交互判定员。",
+    "理想图对照：素材/理想效果图/ 19 张整页稿与本批 8 页无页面级映射（R11 已锚定稿均为首页/发现/匹配/圈子/村子/消息/登录类），L1-L10 整页对照不适用；对照依据为 v3.1 token 契约链（29a2b1df）与跨页组件一致性，已在各页 observation 注明。",
+    "A/B 双身份一致性：15 对截图程序化像素比对（ImageChops），除状态栏时钟与输入值差异外全部结构一致；campus/setup-profile 差异 bbox 经 40 阈值复核均为时钟数字，无双身份渲染分歧。",
+    "tasks：截图已看/A/B 一致/积分卡与任务文案逐字核对/图标像素级取证/跨页（hub、TagSelector）对照/交互截图复现（TASKS-02-after）/历史 MP-R1-TASKS-001（积分即时更新）不在本轮视觉可判范围——缺陷 1 项（P2 图标不可见）。",
+    "dnd：截图已看/A/B 一致/默认+数据态/状态栏与安全区逐像素看/开关单选控件与 token 绿核对/文案重复取证/历史 MP-R1-DND-002 视觉终验通过（已验证）——缺陷 1 项（P3 tip 重复）+ 回归闭环 1 项。",
+    "feedback/history：截图已看/A/B 一致/筛选 chips 三态中两态可见（激活/默认）/状态徽标放大取证/时间本地化格式核对/空态与错误态在本数据态不可达（如实注明）——缺陷 2 项（P3 徽标语义、P4 标题重复）。",
+    "setup/profile：六态逐张看/A/B 一致/滚动三态已测（中部/底部）/键盘态输入验证/校验错误态证据缺口如实记录/保存按钮置灰合法性核对（formComplete + 置灰仍可点注释）/头像资产溯源到文件/与 MP-R1-SETUPPROFILE-001（代码层已报）去重——新增缺陷 2 项（P2 滚动叠印、P3 头像纹理）。",
+    "setup/campus：截图已看/A/B 一致/步骤条与选择行核对/? 热区代码级取证/返回样式跨页对照/历史 MP-R1-SETUPCAMPUS-002（注释腐烂）为代码层不重复——新增缺陷 2 项（P4 热区、P4 向导返回一致性）。",
+    "setup/schedule：默认+键盘态已看/A/B 一致/输入功能视觉验证/行语义标签缺失取证（截图+代码）/SC04-06 取证脚本问题不作为页面缺陷——新增缺陷 1 项（P4 无行标签）。",
+    "setup/recommend-pref：截图已看/A/B 一致/步骤条/chips 选中态/开关 ON 态核对/文案重复取证——新增缺陷 1 项（P4 标题重复）。",
+    "setup/interest：截图已看/A/B 一致/空态/标签图标渲染/无返回入口归 code-findings 不重复/13 项举证在 observation 列明（滚动/长文/加载/错误态在本页不适用或未触发，均已注明）——无新增缺陷。",
+    "未越界声明：交互成败判定（TK02 签到后状态未变、EP04/08 tap 超时、TK07 返回钮未找到等）仅以旁证记录并留予交互判定员；功能目标对照未做；历史回归除 MP-R1-DND-002（任务书指定）外未展开。",
+    "未运行项：未运行构建/测试/模拟器复拍（A3 只读证据审查角色）；「校验错误」与「键盘弹起」两态的系统级表现（错误 UI、软键盘遮蔽）无有效截图证据，未据其下结论。"
+  ]
+}

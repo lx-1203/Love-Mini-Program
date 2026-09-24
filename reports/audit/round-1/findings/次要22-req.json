@@ -1,0 +1,166 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-SEARCH-01",
+      "round": "R1",
+      "page": "subpackages/tools/search/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-SEARCH-INDEX-SE03-after.png(ERROR:timeout waiting for automator response；运行时证据弱，以代码直证立案)",
+      "category": "Function",
+      "severity": "P2",
+      "description": "用户 Tab 输入无防抖自动搜索：300ms 防抖路径（store.setKeyword→search()）只调 /search/posts 搜帖子，用户 Tab 的 clientApi.searchUsers 仅由回车(onConfirm)/点热搜历史词条(onTapTerm)/切换Tab(onTabChange) 触发；且 keyword 非空即切结果视图，输入过程中用户列表恒为空、显示「暂无结果」空态，直到按回车。与交互矩阵 SE03 目标「用户 Tab 输入防抖 300ms 自动搜索」不符。",
+      "evidence": "apps/client/src/subpackages/tools/search/index.vue:61-63（onSearchInput 仅调 searchStore.setKeyword）、index.vue:79-101（runTabSearch 仅被 onConfirm/onTabChange/onTapTerm 调用）、stores/search.ts:95-98（防抖到期仅 this.search(true)→searchPostsApi）、search.ts:58（isSearching=keyword 非空）；运行时 SE03 status=EXECUTED 但 observed 含 .user-row:absent（exec-results.json）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "用户 Tab 下输入经 300ms 防抖后自动调用 searchUsers 并渲染结果行；标签 Tab 维持防抖搜帖子；学校 Tab 维持 computed 即时过滤。",
+      "fix": "onSearchInput 的防抖到期回调按 activeTab 分发：users→runTabSearch()（searchUsers），tags→store.search(true)，schools 无需处理；可在输入中先显示骨架而非「暂无结果」空态（usersLoading 态已有 Skeleton 可复用）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-01",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST18-after.wxml（本周安排开关已渲染；首页侧无对应区块）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「本周安排」开关为死开关：仅写 storage key campus-love:weekly-schedule-enabled，全仓无任何消费方——grep WEEKLY_SCHEDULE_ENABLED/weekly-schedule-enabled 仅命中 constants/storage-keys.ts:84 与 settings/index.vue 自身；pages/home/index.vue 无任何 schedule/课表引用。页面注释声称「开启后首页展示课表区块（已报名活动+自编辑条目）；存储键与 home 页一致」（index.vue:289-292）未兑现，开关形同虚设（同 R4-00066 移除消息通知/隐私模式开关的判例性质）。ST14 仅证明切换/持久化/Toast，「即时生效于首页」无法生效。",
+      "evidence": "apps/client/src/subpackages/profile-extra/settings/index.vue:294-313（写 WEEKLY_SCHEDULE_ENABLED）、289-292（声称首页联动的注释）；全仓 grep 无消费方（本轮执行：grep -rn WEEKLY_SCHEDULE_ENABLED src/ 仅 2 文件）；pages/home/index.vue 中 grep schedule/课表 0 命中；stores/schedule.ts 存在统一课表数据模型但未接该 key",
+      "sources": ["code", "log"],
+      "confidence": 0.85,
+      "ideal": "开关开启后首页展示「本周安排」区块（已报名活动+自编辑条目，消费 stores/schedule.ts 数据模型）；关闭则隐藏；或在该功能落地前不展示此开关。",
+      "fix": "pages/home/index.vue 读取 STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED 控制「本周安排」区块显隐并渲染 schedule 数据（已报名活动+自定义条目）；若短期不落首页课表，则按 R4-00066 判例移除该开关入口。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HEARTSIGNALS-01",
+      "round": "R1",
+      "page": "subpackages/tools/heart-signals/index",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS06-after.wxml（卡片与倒计时渲染正常；本 issue 为状态标签语义）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "mock 模式拒绝心动信号后被置 status=\"expired\"（非 declined）：页面把 expired 有意归入「已拒绝」Tab（R4-00024 合并展示），但状态标签按 status 渲染为「已过期」（getStatusLabel('expired')），用户明确拒绝的信号在「已拒绝」Tab 显示「已过期」标签，mock 口径语义失真（real 口径后端返回 declined 显示正确）。",
+      "evidence": "apps/client/src/stores/likes.ts:852（mock decline 分支 signal.status=\"expired\"）、likes.ts:858-870（real 分支走 /decline 接口）；heart-signals/index.vue:61-65（expired 并入 declined Tab）、187-195（getStatusLabel：expired→已过期标签）",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "拒绝的信号归入「已拒绝」Tab 且标签显示「已拒绝」；仅真正到期的信号显示「已过期」。",
+      "fix": "likes.ts mock decline 分支改置 status=\"declined\"（契约 likes.yaml status enum 本含 declined，页面分组与标签样式 signal-card__status-tag--declined 均已兼容）；或标签渲染层对 declined Tab 内 expired 状态复用「已拒绝」文案。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SEARCH-02",
+      "round": "R1",
+      "page": "subpackages/tools/search/index",
+      "screenshot": "none(code-audit；无静态截图)",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "学校 Tab 校园预览展开/收起箭头文案为硬编码中文字面量「收起」/「校园主页」，未走 i18n——en-US 语言环境下仍显示中文，与其余全 i18n 化页面不一致。",
+      "evidence": "apps/client/src/subpackages/tools/search/index.vue:360：{{ campusExpanded === s.name ? '收起' : '校园主页' }}（同文件其余文案均 t() 引用；en-US.ts 存在且本页其余 key 两语言齐全——本轮 i18n 抽查 35/35 通过）",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "文案走 i18n（如 search.collapse / search.campusEntry），zh-CN=收起/校园主页，en-US=Collapse/Campus Profile。",
+      "fix": "在 locales 两语言新增 key 并替换 index.vue:360 字面量。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/tools/security/index",
+      "baseline": "无理想图锚定（素材/理想效果图/ 19 张稿无一映射本页）；对照依据=交互矩阵 SC01–SC13 用例目标 + 源码 + exec-results.json",
+      "structureNotes": "L1 布局骨架：AppShell(show-back)+5 组 SectionCard（账号安全/第三方绑定/登录设备/隐私保护/危险操作），wxml 结构完整（SC01 observed .sec-item:present）。L2 信息层级：分组卡片→列表行（图标/标签/描述/箭头）两级，无跨级。L3 组件：换绑手机/修改密码/注销两层共 4 个自绘弹层（sec-modal-mask/sec-modal 三件套齐备，代码 677-843）。L4 文案：全 t() i18n，两语言 35/35 抽查通过；手机号按会话 phoneBound 展示脱敏/未绑文案（R4-00063）。L5–L10（间距/色值/圆角/字体/图标/动效像素对照）：不适用——本页无理想效果图，静态截图 0 张，不作像素判定。L1–L4 无偏差证据。",
+      "usageNotes": "理想路径：设置→隐私安全→安全中心；实际路径一致（settings/index.vue:374→ROUTES.SECURITY，ST17 所述入口在码，wxml 19 项菜单含「安全中心」）。页内 6 组操作（换绑/改密/绑定/设备下线/隐私双入口/注销两层）行级可点。返回：AppShell 自带栈=1 switchTab 首页兜底（AppShell.vue:120-142），任意深链 2 步内可回 tab（本页返回 1 步→设置→我的）。运行时：SC01/02/10/11/12/13 EXECUTED；SC03–09 因 harness __CAND__/el.input 失败无成功动作证据（wxml 证据模式反证控件在），换绑/改密两条链建议补证。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/search/index",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 SE01–SE11 + 页面自身声明（贴吧式搜索）+ 源码",
+      "structureNotes": "L1：自绘头部（返回+搜索框+取消，sticky）+三 Tab 胶囊+热搜/历史/三分组结果区，骨架齐（SE01 observed .search-input:present）。L2：未搜索态（热搜/历史/EmptyState）与结果态（users/schools/tags 三分支）互斥正确；suggest-wrap 条件 !isSearching&&posts 空（265 行）。L3：PostCard 复用（点赞/收藏/关注/详情/作者/标签/活动 7 事件全接，399-418）；Skeleton/EmptyState/ErrorState 三态齐。L4：发现 2 处硬编码中文「收起/校园主页」（360 行，立 MP-R1-SEARCH-02），其余 i18n 齐。L5–L10 不适用（无理想图/无静态截图）。L1–L4 偏差：仅 L4 两处字面量。",
+      "usageNotes": "理想路径：村口搜索栏（village/index.vue:600）或附近页热搜词深链（pages/nearby/index.vue:235→onLoad ?keyword）。实际一致；热搜 mock 恒空有 EmptyState 兜底（SE01）。核心任务「输入→出结果」在标签 Tab 通畅（防抖+回车双通道），在用户 Tab 仅回车/点词条/切 Tab 生效——输入过程中显示「暂无结果」易误导（MP-R1-SEARCH-01）。学校 Tab 校名→内联预览→人进主页两步达成。返回/取消双入口且栈=1 兜底发现页，1 步回 tab。运行时：SE01/03/06/10/11 EXECUTED；SE02/04/05/07/09 harness 失败（.search-cancel 实际存在于模板 244 行；el.input API 缺陷）。",
+      "functionGaps": [
+        {
+          "target": "用户 Tab 输入防抖 300ms 自动搜索用户（SE03 目标）",
+          "current": "防抖回调只搜帖子（stores/search.ts:95-98→searchPostsApi）；searchUsers 仅回车/点词条/切 Tab 触发（search/index.vue:61-63,79-101）；输入中恒显「暂无结果」空态",
+          "gap": "用户 Tab 自动搜索缺失，核心输入路径需额外回车动作",
+          "fix": "onSearchInput 防抖到期按 activeTab 分发 runTabSearch()；输入中用户 Tab 显示 Skeleton 而非空态"
+        },
+        {
+          "target": "全文案 i18n 化（品牌视觉/国际化契约）",
+          "current": "index.vue:360 硬编码「收起/校园主页」中文字面量",
+          "gap": "en-US 下显示中文",
+          "fix": "新增 search.collapse/search.campusEntry 两语言 key 并替换"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/heart-signals/index",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 HS01–HS11 + 契约 likes.yaml（status enum=pending/accepted/declined）+ 源码",
+      "structureNotes": "L1：页头（返回+标题+副题）+三状态 Tab（待处理带徽标）+列表/空态/骨架三态，HS02 observed .signal-tabs__item/.signal-card/.signal-card__time 全 present（两张卡+倒计时真实渲染）。L2：未完善资料→LockScreen 全屏拦截（isUnlocked 分支），与解锁态互斥正确。L3：待处理卡（头像/名/倒计时/文案/拒绝/接受/动态进度条）与已完成卡（状态标签+开聊按钮）两类齐备；倒计时 30s 刷新、无效 expiresAt 防 NaN「已过期」（P2-02）、进度条按实际 expiresAt 计算（R4-00025）。L4：全 i18n（countdownHM/expiredLabel/tabDeclined 等抽查通过）；偏差=mock 拒绝信号标签显示「已过期」（MP-R1-HEARTSIGNALS-01，源头在 likes.ts:852 mock 分支置 expired）。L5–L10 不适用。",
+      "usageNotes": "理想路径：喜欢与访客页→心动信号（discover-extra/likes/index.vue:489）；WS 新信号实时入列表（store-dispatch.ts:209-253）。实际一致。核心任务：待处理卡→接受/拒绝→迁入对应 Tab→已接受「开聊」进 chat-session?fromSignal=1&sessionId（渐进解锁面板），链路在码完整。返回栈>1 navigateBack、栈=1 switchTab 首页（73-80），1 步回 tab。运行时：HS01–05/09/11 EXECUTED；接受/拒绝/开聊三条 critical 链（HS06/07/08）因 harness __CAND__ 文本定位失败无成功动作证据——HS06-after.wxml 反证「拒绝/接受」按钮及文本完整存在，HS10 为 observe-only 未实际连击。建议 harness 修复后补证。",
+      "functionGaps": [
+        {
+          "target": "已拒绝 Tab 内信号状态标签语义正确（declined→已拒绝）",
+          "current": "mock 拒绝置 status=expired（likes.ts:852），该 Tab 内标签渲染为「已过期」（index.vue:187-195）",
+          "gap": "mock 口径用户明确拒绝的信号显示「已过期」标签（real 口径正确）",
+          "fix": "likes.ts mock decline 改置 declined（页面分组/标签样式已兼容）；或标签层对 declined Tab 复用已拒绝文案"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/activities/detail",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 AD01–AD08 + 源码",
+      "structureNotes": "L1：绿渐变头部（返回+标题）+scroll 内容（封面/示例徽标/标题+分类+状态/时间地点/介绍）+底部操作栏（分享+报名/退出），AD01 observed 徽标/标题/状态 present。L2：加载骨架→错误态+重试→内容三态互斥正确（328-388）；action-bar 与 activity 空判绑定（391）。L3：SkeletonBlock/按钮 press-feedback/H5 active 缩放齐；报名/退出双按钮按 isSignedUp 切换（402-423）。L4：全 i18n（含 storeErrors.activity.loadActivitiesFailed 错误文案）；无字面量偏差。L5–L10 不适用（无理想图）。",
+      "usageNotes": "理想路径：发现·活动列表→详情，或分享链接/助手卡片深链 ?id=。实际：深链 store 未命中→示例活动兜底+「示例」徽标（AD01 EXECUTED），栈=1 返回兜底发现·活动列表（AD02）。核心任务报名→按钮切「退出报名」+Toast+寻觅助手 card 消息落 storage（182-205）→退出恢复（257-275）；快击防重由 store enrollingActivityIds 并发守卫（activity.ts:252-262）。分享=复制 ?id= 链接（AD05 EXECUTED）+微信原生卡片/朋友圈（onShareAppMessage/onShareTimeline）。运行时：AD01/02/05/06/07/08 EXECUTED；AD03/04 tap 未命中（同批次 AD06 observed .detail-signup-btn:present 反证按钮在，automator 时机问题），建议补证。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/love-center/nearby",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 NB01–NB09 + 寻觅页同构契约（与 discover/index 同组件 CardSwiper）+ 源码",
+      "structureNotes": "L1：内容页头（返回左置+标题，R12-IND-NEARBY-LC-002）+CardSwiper 卡片区，NB01 observed .card__masked-hint:present .card__bg--masked:present（蒙面渲染实证）。L2：loading/error+重试/空态+CTA/卡片区四态互斥正确（181-216）。L3：复用寻觅 CardSwiper（masked=true），详情浮层 CardDetailOverlay 经 emit message 链（CardSwiper.vue:613,1258）透传页面 handleMessage。L4：全 i18n；无字面量偏差。L5–L10 不适用。",
+      "usageNotes": "理想路径：恋爱中心 hub→快捷入口「附近的人」（love-center/index.vue:42）。实际一致。核心任务：右滑/点赞按钮→swipeRight 真实链路（NB03 EXECUTED，.card-action--like:present），matched→chat-session；左滑本地移除推进；超赞 swipeRight(isSuper=true)（NB05 EXECUTED）；距止单 20km 与寻觅「附近」语义对齐（NEARBY_MAX_DISTANCE_KM，utils.ts:96）；空态「看全部推荐」降级 CTA 在码（196-202）。返回栈=1 兜底首页 1 步回 tab。运行时：NB01–05/07 EXECUTED；NB06/08 harness 文本定位失败（发消息/详情浮层链路在码无成功动作证据）；NB09 条件用例卡片未耗尽不可达（pre-FAIL 属预期）。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/love-center/mbti",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 MB01–MB08 + 源码",
+      "structureNotes": "L1：渐变头部（返回左置，MP-R1-LMBTI-101 胶囊避让）+scroll（4 维 chip/16 型网格/4 题卷/提交钮）+结果弹层，MB01 observed .content-header__title/.dimension-chip/.type-cell/.quiz-item 全 present。L2：web-view 分支与本地模式互斥（135-138）；弹层 role=dialog aria-modal，遮罩/面板 tap.stop 层级正确（221-229）。L3：quiz-option 选中态+aria-checked 同步可改选（182-207）；结果面板类型码+名称+逐字母建议+双按钮（229-264）。L4：全 i18n（16 型名称 types.*、adviceE…I 抽查通过）；无偏差。L5–L10 不适用。",
+      "usageNotes": "理想路径：恋爱中心 hub→恋爱测试→MBTI。实际一致。核心任务全通：作答高亮（MB02）、未答完拦截（MB03）、全答提交出结果弹层（MB04 EXECUTED，observed ISTJ:present——类型码真实渲染）、改选重测类型码随选变化（MB06 EXECUTED）、重新测试清空答案（115-119）。返回栈=1 兜底首页。运行时：MB01–04/06–08 EXECUTED；MB05 三路关闭 tap 未执行（遮罩 @tap=closeResult 代码 227 行在），建议补证。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/tools/love-center/consulting",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 CO01–CO04 + 商业化封存契约（ADR-2，与 market 三页一致）+ 源码",
+      "structureNotes": "L1：三态互斥——web-view（仅开启态且有 URL）/封存卡（AppShell+锁图标+文案）/课程列表（AppShell+scroll+3 卡）；CO01 observed .consult-sealed:present .course-card:absent（封存正确、无课程泄漏实证）。L2：封存判定在最外层 v-if 且优先于 web-view（76-88），外部付费内容封存态不透出。L3：封存卡 aria-live=polite；课程卡 title/desc/讲师/价格/报名钮齐（93-106）。L4：全 i18n（commerce.sealedTitle/sealedDesc 抽查通过）。L5–L10 不适用。",
+      "usageNotes": "理想路径：恋爱中心 hub→快捷入口（受 commerce.course 闸，love-center/index.vue:45-47）。实际一致。核心目标「缺省封存、闸开才见 ¥ 课程」达成：isCommerceOn 总闸非 true 即封、(prefixed??bare)===true 才放行、缺省封存（app-config.ts:71-85）；页面 38 行 !isCommerceOn(\"consult\") 双口径兼容。返回 AppShell 自带栈=1 兜底。运行时：CO01/CO04 EXECUTED（封存态一屏无溢出）；CO02 automator 失败；CO03 开启态为条件用例本轮闸关闭不可达（无运行时证据，记录）。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    },
+    {
+      "route": "subpackages/profile-extra/settings/index",
+      "baseline": "无理想图锚定（19 张稿无映射）；对照依据=交互矩阵 ST01–ST25 + 源码 + ST18/19/23/24 wxml 落盘证据",
+      "structureNotes": "L1：自绘导航（safe-top+nav-bar 返回/标题/占位）+6 分组（反馈/账号/社交资产/通知/隐私/缓存/关于）+退出登录+版本尾，ST18-after.wxml 实测 19 个 menu-item label 全部渲染。L2：分组→菜单行两级，清缓存行带 value（真实缓存大小 ST01 observed .menu-item__value:present）。L3：switch 双开关（本周安排/深色）、Modal 动作（清缓存/关于/退出/更新）、navigateTo/switchTabWithQuery 双跳型；钱包项受 commerce.coin 闸（ST25 EXECUTED 封存时无钱包项）。L4：全 i18n 且 zh 渲染实证（wxml 文本与 zh-CN.ts 一致：浏览记录/时间安排/恋爱认证/隐私权限设置——harness 期望词表未同步，非页面缺陷）。L5–L10 不适用。",
+      "usageNotes": "理想路径：我的→设置（ST01 身份B 进入）。实际一致。核心任务矩阵：返回双兜底（ST02/03）、反馈帮助（ST04）、分享菜单（ST05）、免打扰（ST13）、深色翻转+恢复（ST15）均 EXECUTED；清缓存 Modal 真实统计且仅清 USER_CACHE 不动登录态（127-154）；检查更新 getUpdateManager+H5 降级+定时器清理（161-228）；退出登录走 sessionStore.logout（242-261）；我的动态 switchTabWithQuery 桥带 source=my-posts（348-354）。全部跳转目标 14 处经 pages.json 73 页逐一核对已注册。本周安排开关切换/持久化/Toast 有证（ST14）但对首页无作用（死开关 MP-R1-SETTINGS-01）。返回 1 步即「我的」Tab。运行时：ST01–05/13/14/15/25 EXECUTED；ST06–12/16–24 act-FAIL 系 harness __CAND__ 文本候选失败与文案口径失配（wxml 反证 19 项入口全在），清缓存/退出登录两条 critical 链建议 harness 修复后补证。",
+      "functionGaps": [
+        {
+          "target": "「本周安排」开关开启后首页展示课表区块（已报名活动+自编辑条目）",
+          "current": "开关仅写 storage campus-love:weekly-schedule-enabled（index.vue:294-313），全仓无消费方；pages/home/index.vue 无 schedule 引用",
+          "gap": "开关无实际效果，注释声称的首页联动未兑现（形同虚设，R4-00066 判例同性质）",
+          "fix": "home 接入该 key 控制「本周安排」区块显隐（复用 stores/schedule.ts 数据模型）；或短期按判例移除该开关入口"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要22.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/次要22-req.json"
+}

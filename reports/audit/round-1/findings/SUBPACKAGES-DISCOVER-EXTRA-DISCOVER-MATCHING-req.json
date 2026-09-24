@@ -1,0 +1,108 @@
+{
+  "round": "R1",
+  "page": "subpackages/discover-extra/discover/matching",
+  "reviewer": "需求对照审查员-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING（A4，需求/理想设计→页面→组件→行为→验收逐条对照；只读代码与既有执行证据）",
+  "date": "2026-09-24",
+  "note": "与视觉审查员（MATCHING-101~106）、代码审查员（MATCHING-001~007）、discover-req 审查员（REQ-03/05）分文件且去重：REQ-01 对视觉 104/代码 004 的假百分比与硬编码标题做需求级重定性（Function P2，禁止降级）；REQ-05 文案违约由 discover-req 跟踪、本文件引用不重复。基线裁决链：git show 29a2b1df:docs/design/v3.1-contract.md §19 行07/§0/§6/§12（冻结，优先于理想稿）+ 素材/理想效果图/匹配中页面.png + 素材/SVG素材核查与补充报告.md §2.4。证据基线 gitSha=aefd8a72 与 HEAD 一致。",
+  "issues": [
+    {
+      "id": "MP-R1-MATCHING-REQ-01",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/matching",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT01-after.png（同批次 MT04/MT24 一致）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "匹配中页展示虚假算法百分比，违反冻结契约 §12『匹配中进度为视觉模拟（正在寻找适合你的 TA ● ● ●），不显示虚假算法百分比』（ask 目标行明示『不显示虚假算法百分比』）：四维匹配度 90/85/80/79 为写死常量、总进度 89%=四项均值+5，与双方真实资料零关联却以算法结果口吻渲染；且 §12 规定的进度文案未接线——冻结文案键 matching.searching（zh-CN.ts:444『正在寻找适合你的 TA』）全仓 0 引用，标题硬编码中文『正在寻找有缘的Ta...』（同文件其余用户可见文案已 i18n 化）。用户会误读为真实算法已算出 90% 匹配度，属产品诚实性需求违规。与视觉审查员 MP-R1-MATCHING-104（Consistency P3）、代码审查员 MP-R1-MATCHING-004（Consistency P3）为同一根因，本条按需求对照标准重定性（Function P2，禁止降级为视觉/一致性小项），修复可三合一。",
+      "evidence": "apps/client/src/components/match/MatchLoading.vue:49-55（PROGRESS 常量 90/85/80/79）、:58（totalPercent=均值+5=89）、:109（硬编码标题『正在寻找有缘的Ta...』）、:113-133（进度卡与总进度渲染）、:123/:129（t('matching.matchRate'/'matching.totalProgress')）；apps/client/src/i18n/locales/zh-CN.ts:438-439（『匹配度 {n}%』『缘分匹配中... {n}%』）、:444-445（matching.searching/searchingDesc 冻结文案在库）；全仓 grep matching.searching 于 src 非 i18n 文件 0 命中（本次执行）；git show 29a2b1df:docs/design/v3.1-contract.md §12 原文（本次执行取出）；exec-results.json MT01 observed『.match-loading__progress:present .match-loading__total:present』；MT01-after.png 实拍可见『匹配度 90%/85%/80%/79%』『缘分匹配中... 89%』（本次读图证实）。",
+      "sources": [
+        "code",
+        "screenshot",
+        "log"
+      ],
+      "confidence": 0.97,
+      "ideal": "进度为纯视觉模拟：标题『正在寻找适合你的 TA』+ ● ● ● 动效，无数值化假百分比；文案走 i18n（zh/en 同步）。",
+      "fix": "①删除 PROGRESS 四维百分比数字与 totalPercent 渲染（保留动效条/涟漪等纯视觉律动，或改无数值进度动效）；②标题改 t(\"matching.searching\") 并补动态省略号动效；③清理或移葬 matching.matchRate/totalProgress/dimTravel/dimMusic/dimMovie/dimLifestyle 死键（zh/en 同步，若匹配成功页仍用则保留并在该页另行评估）；④与 MP-R1-MATCHING-104/004 合并修复单。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MATCHING-REQ-02",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/matching",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT01-after.png（页面全节点：仅 back+loading，无候选卡/CTA）",
+      "category": "Architecture",
+      "severity": "P2",
+      "description": "冻结契约 §19 行07 定义的匹配中页形态『视觉进度→候选卡→❤️/×/取消；次数用尽/看完=空态；取消=返回；跳过=pass』未按契约实现：本页为 2.6s 纯过渡页（模板仅返回箭头+MatchLoading 两节点），无候选卡、无任何 CTA；流程顺序与契约相反（寻觅中心选卡→❤️/×动作→进入本页动画→自动分流结果）。『取消匹配』语义控件缺失（取消能力由 ‹ 返回承担，goBack 回寻觅中心，功能可用）；契约行07 行为列『跳过=pass』不成立——本页『跳过』为快进动画/返回双语义，pass 实际在中心卡 × 键。空态（次数用尽/看完）托管于寻觅中心页（EmptyState+配额前置门控使本页空态在正常入口不可达），本页仅有无上下文 200ms 兜底返回。取消/空态能力在流程层均存在，故不定性为 Function 缺失，而为页面职责的架构性分歧，须产品裁决后改码或先修契约（契约自身规则：任何页面改动必须先改文档再改代码）。",
+      "evidence": "apps/client/src/subpackages/discover-extra/discover/matching.vue:219-233（模板仅 matching-page__back + MatchLoading）、:63-83（watch 自动分流 matched/idle/failed）、:157-159（onLoad 即 runMatchCheck）、:198-209（跳过双语义：未播完=快进，已播完=返回）、:54-61（goBack 回寻觅中心）、:143-147（无上下文 200ms 兜底）；候选卡与 ❤️/× 实际位于 apps/client/src/pages/discover/index.vue:314（MatchCard）/:323（MatchActions）、配额门控 :124-127/:154-157、空态 :70-78/:304-308；git show 29a2b1df:docs/design/v3.1-contract.md :162（行07 原文）及 §0（匹配=Intent/发现=Browse 严格切分）；i18n matching.cancel『取消匹配』(zh-CN.ts:446)/matching.backToHub『返回匹配中心』(:455)/matching.loadFailed『暂时没有找到合适的人』(:450) 全仓 0 引用（本次 grep 执行）；exec-results.json MT06（兜底返回 top=pages/discover/index）、MT07/MT08（返回/switchTab 回中心 EXECUTED）、MT01（页面仅 back+loading 渲染）。",
+      "sources": [
+        "code",
+        "screenshot",
+        "log"
+      ],
+      "confidence": 0.9,
+      "ideal": "二选一并与契约同步：A. 按契约行07——动画结束后本页落候选卡+MatchActionButton（❤️/×）+『取消匹配』钮，配额/看完空态接入 matching.loadFailed/backToHub；B. 维持『寻觅中心选卡→匹配确认过渡页』现架构，先修订 v3.1-contract §19 行07/§0 使文档与实现一致。",
+      "fix": "路线 A：本页动画结束挂候选卡组件+MatchActionButton+取消钮，重连 cancel/backToHub/loadFailed 死键。路线 B：修订契约行07 为『过渡确认页』职责并注明空态/配额托管寻觅中心，删除或移葬死键，‹ 返回钮 aria-label 改『取消匹配，返回匹配中心』。无论何路线先改 v3.1-contract 再动代码。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MATCHING-REQ-03",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/matching",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT02-after.png（automator 未执行动作，页面停留态）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "本页 R1 执行取证关键路径未闭合，需求验收无法以机证收口：24 项中 7 项 FAILED 且全部为 action-not-performed（MT02 critical 单向喜欢全链路——候选元素『按』不存在；MT09/10 跳过快进/返回、MT11/12 连点防抖、MT20 检查前退出竞态、MT21 500ms 反馈铁律——element not found，因动画 2.6s 自动返回后 automator 已落寻觅页仍按本页元素寻址）；MT03 critical（互喜→match-success 跳转）navError=timeout 且 after 截图失败，MT05/MT14/MT15/MT19/MT23 after 截图同样 timeout。结果：单向喜欢 Toast→返回切卡、互喜→成功页跳转、superLike 路径、跳过双语义、退出竞态、即时反馈铁律本轮均只有代码层证据（matching.vue:63-83 watch 分支完整）、无执行层证实。另全部用例 pre:login 双身份 A/B 均解析为 userId=user-1001 并标 MISMATCH!，双身份证据（MT24 等）可信度受损（与 discover-req DC21 记录的 harness 身份瑕疵同源）。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json manifest=SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING 逐条（本次解析执行）：MT02 status=FAILED failureReason='action tapIndex __CAND__ failed: element not found: __CAND__(\"按\")'；MT03 observed 'navError=timeout waiting for automator response'、evidence 含 'MT03-after.png(ERROR:timeout...)'；MT09/10/11/12/20/21 均 'action-not-performed... element not found'；MT01~MT24 每条 pre 段均含 'pre:login ... userId=user-1001 MISMATCH!'；代码层分支 apps/client/src/subpackages/discover-extra/discover/matching.vue:63-83（本次通读）。",
+      "sources": [
+        "log",
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "critical/normal 交互用例全部 EXECUTED 且断言成立：单向喜欢 Toast=冻结文案→400ms 返回且卡已消费切下一张；互喜 redirectTo match-success?userId=；跳过快进/返回/连点防抖；检查前退出竞态 store 干净；A/B 双身份各自解析为不同 userId。",
+      "fix": "①MT02 候选寻址改为经寻觅中心真实卡 ❤️ 键触发（或 dev-preview+store 预置 pendingAction 后断言 watch 分支），弃用页面不存在的『按』文本选择器；②MT09-12/20/21 改用 ?dev-preview=1 驻留入口（动画不自动返回）或在 goBack 前的时间窗内完成寻址；③修复 harness 双身份 fixture（身份 B 应解析为非 user-1001 的独立账号）；④重跑 MT02/03/05/09-12/20/21 并回写 exec-results.json。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/discover-extra/discover/matching",
+      "baseline": "素材/理想效果图/匹配中页面.png（唯一页面级理想稿）+ git show 29a2b1df:docs/design/v3.1-contract.md §19 行07（:162）/§0/§6/§12（冻结需求，优先于理想稿——理想稿中百分比数字被 §12 明令否定）+ 素材/SVG素材核查与补充报告.md §2.4（:115）",
+      "structureNotes": "L1 组成：返回‹+跳过+双头像+心+涟漪/轨道+进度卡+总进度 与理想稿对应齐全（跳过叠压标题=102、顺序对调=103 他方已记）；但契约行07 要求的『候选卡→❤️/×/取消』段整体不存在，页为纯过渡页——L1 需求级偏差。L2 层级：模板序 头像→标题→副标题→进度卡→总进度，理想稿标题在最上（103 跟踪）。L3 形态：涟漪×5/双向轨道/心形缩放/漂浮爱心与理想稿组件一一对应；跳过实心绿 vs 理想白描边（106）；无候选卡/CTA 组件。L4 文案：副标题/进度卡标题/四维标签与理想稿一致；标题硬编码『正在寻找有缘的Ta...』=理想稿但≠冻结§12『正在寻找适合你的 TA ● ● ●』（matching.searching zh-CN.ts:444 在库 0 引用）；90/85/80/79/89% 为写死常量（MatchLoading.vue:49-58）被 §12 明令禁止且 MT01 截图证实在屏——L4 需求级不达标项（REQ-01）。L5 尺寸间距：本轮静态基线 0 张（101），交互截图 373×820 不做像素判定。L6 色彩：rgba(54,201,154,…) 系字面量 15+ 处≠冻结 Primary #34C98A（代码 005）。L7 素材：四维图标以吉祥物星/音符/闪光/萌芽图替代（§2.4 登记缺失项的替代实现，风格近似）。L8 动效：涟漪/轨道/心形/浮动齐备，2.6s 兜底 finish（MT18 noop 弱证据），跳过=快进设计在库但 MT09/10 未获机证。L9 状态：无空态分支（托管寻觅中心，MT06 兜底返回机证）；preview/dev-preview QA 态在库（MT01/MT14）；onUnload 复位（MT19）。L10 可达性：返回钮有 role+aria，跳过钮无 role/aria-label（MatchLoading.vue:74-76）；热区 72rpx/≈64rpx<88rpx 铁律（105+MT13）。",
+      "usageNotes": "理想路径（契约行07）：匹配中心开始→视觉进度（可取消/跳过=pass）→候选卡→❤️/×→互喜进成功页/单向已送出→返回中心。实际路径：寻觅 tab 浏览卡（×/打招呼/❤️）→点❤️/打招呼→本页 2.6s 动画（自动提交匹配确认，用户无事可做，屏上为假百分比）→matched 自动进 match-success/单向 Toast『已喜欢』自动返回并切下一张/失败 Toast 返回；‹ 任意时刻可离开（栈=1 深链 switchTab 落寻觅 tab）。核心任务『表达喜欢→得知结果→回中心』可走通，1 步回 tab（MT07/08 机证），满足 2 步内回 tab。体验风险：①跳过首击=快进、再击=离开，与契约『跳过=pass』语义冲突且无提示；②假百分比 90/85/80/79/89% 误导用户以为真实算法结果；③无『取消匹配』明确控件。执行取证缺口：7 FAILED 全部 action-not-performed、5 项 after 截图 timeout、双身份 login 均解析 user-1001 标 MISMATCH——关键路径本轮无执行层证实（REQ-03）。",
+      "functionGaps": [
+        {
+          "target": "匹配中视觉进度：文案『正在寻找适合你的TA』+ 纯视觉模拟，不显示虚假算法百分比（v3.1-contract §12 冻结）",
+          "current": "标题硬编码『正在寻找有缘的Ta...』（MatchLoading.vue:109，未 i18n）；四维 90/85/80/79 写死常量（:49-55）+总进度 89%（:58）以『匹配度 {n}%』渲染（:113-133）；MT01 dom .match-loading__progress/.match-loading__total present + MT01-after.png 实拍在屏；冻结文案键 matching.searching（zh-CN.ts:444）0 引用",
+          "gap": "展示契约明令禁止的伪造算法输出（Function P2，REQ-01；视觉 104/代码 004 以较低定性登记同一事实）",
+          "fix": "删假百分比数字渲染改纯视觉律动；标题接 t(\"matching.searching\")+● ● ● 动效；清理死键（zh/en 同步）；与 104/004 合并修复单"
+        },
+        {
+          "target": "视觉进度→候选卡→CTA ❤️/×/取消；跳过=pass（§19 行07）",
+          "current": "本页纯过渡（模板仅 back+MatchLoading，matching.vue:219-233），onLoad 即 runMatchCheck（:157-159）2.6s 后自动分流（:63-83）；❤️/× 在寻觅中心卡（discover/index.vue:314/:323）且先于本页完成，流程顺序与契约相反；『取消匹配』无控件（i18n matching.cancel/backToHub zh-CN.ts:446/:455 在库 0 引用），取消能力由 ‹ 返回承担（:54-61，MT07/08 机证）；跳过=快进/返回双语义（:198-209）≠pass",
+          "gap": "页面职责与冻结契约结构性分歧（Architecture P2，REQ-02）：功能在流程层存在但页面形态不符，须产品裁决改码或先修契约",
+          "fix": "路线A：动画结束落候选卡+MatchActionButton+取消钮，重连死键；路线B：修订契约 §19 行07/§0 为过渡确认页职责并注明中心托管；两路线均先改 v3.1-contract 再动代码"
+        },
+        {
+          "target": "状态：次数用尽/看完=空态（§19 行07）",
+          "current": "空态托管寻觅中心页（discover/index.vue:70-78 空态文案、:304-308 EmptyState、:124-127/:154-157 配额前置门控使本页空态正常入口不可达）；本页无空态分支，无上下文直达走 200ms 兜底返回（matching.vue:143-147，MT06 机证）；matching.loadFailed（zh-CN.ts:450）在库 0 引用",
+          "gap": "需求能力在流程层存在（中心托管），页面级缺失为 REQ-02 同一架构分歧的另一面，不单独立项",
+          "fix": "随 REQ-02 路线 A/B 一并裁决落地"
+        },
+        {
+          "target": "行为：喜欢=like/单向已送出/互喜→成功（§19 行07 行为列）",
+          "current": "互喜→redirectTo match-success 代码层完整（matching.vue:67-69；stores/match.ts:42-68 状态机）但 MT03 critical navError=timeout 无机证；单向成功 Toast 用 discover.likeSent=『已喜欢』（matching.vue:73；zh-CN.ts:923）≠冻结文案『已送出心动』（matching.crushSent zh-CN.ts:447 在库 0 引用）；单向全链路 MT02 critical FAILED（元素『按』不存在未执行动作）",
+          "gap": "文案违约（discover-req REQ-05 已跨页跟踪，本文件引用不重复）+ 关键行为无执行证据（REQ-03）",
+          "fix": "Toast 改 t(\"matching.crushSent\")（随 REQ-05 修复单）；按 REQ-03 fix 重跑 MT02/03/05 并回写 exec-results"
+        },
+        {
+          "target": "取消返回匹配中心（ask 目标行）",
+          "current": "‹ 返回（matching.vue:222）：栈>1 navigateBack、栈=1 switchTab 落寻觅 tab（:54-61）；MT07/MT08 EXECUTED 机证",
+          "gap": "能力满足，无缺口；仅『取消匹配』语义命名缺失归入 REQ-02",
+          "fix": "—（aria 语义可随 REQ-02 路线 B 补『取消匹配，返回匹配中心』）"
+        }
+      ],
+      "verdict": "不达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-req.json"
+}

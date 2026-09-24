@@ -1,0 +1,105 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/index",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-CAMPUS-CAMPUS-INDEX（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "evidence-basis": {
+    "manifestCheck": "reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72，与当前 HEAD（git rev-parse --short HEAD = aefd8a72，提交时间 2026-09-22 11:24:58 +0800）一致 → 静态证据未过期。manifest 全文核对：A/B 双身份均无 subpackages/campus/campus/index 任何条目（仅 hub/certification/post-topic/topic-detail）。",
+    "interactCheck": "reports/audit/round-1/interact/exec-results.json 自声明 gitSha=aefd8a72、updatedAt=2026-09-23T12:00:00Z，一致有效。CX 系列在盘帧 8 张（Sep 23 10:14–10:18 + CX15 19:18），经 md5 去重后独立帧仅 4 张：CX03、CX04、CX10(≡CX11)、CX12(≡CX14)。全部为「未认证+?school= 参数」单一场景。",
+    "staleEvidence": "reports/screenshots/round-1-interact/CAMPUSINDEX-01..10*.png（Sep 21 02:41–02:58）早于 HEAD 提交时间（Sep 22 11:24 +0800），按过期证据处理，本轮未采用、未据其下结论。",
+    "workingTreeNote": "git status 证实 subpackages/campus/campus/index.vue 相对 HEAD 零改动（帧即 HEAD 代码的渲染）；但 i18n/locales/{zh-CN,en-US}.ts 与 stores/campus.ts 存在未提交改动，Sep 23 构建的工作区与 HEAD 有漂移——按 ask 的 gitSha 规则证据仍有效，涉 i18n/store 的结论均已与 HEAD 代码交叉核对，无矛盾。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-CAMPUSINDEX-010",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-tour/ A、B 目录下本页 0 张（screenshot-manifest.json 全文核对）；本审查实际使用的替代帧：reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03/CX04/CX10/CX12-after.png",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "本页双身份静态截图零覆盖（巡检失败原因：A/B 均未截，直连落在 subpackages/campus/campus/hub，2 次一致）。根因为规格内入口守卫而非页面故障：onLoad 无 ?school= 参数即 redirectTo hub（index.vue:179-198，交互轮 CX02 无参深链 EXECUTED 复证 top=hub）。但后果是页面静态五态（默认/滚动/空/加载/错误）完全无像素证据，且交互轮在盘的 4 张独立帧全部仅为「未认证+本校参数」一个场景——已认证本校视角（isOwnCertifiedView：FAB、双请求内容区）与公开浏览视角（public-browse-banner 分支，index.vue:271-274）这两大整块 UI 从未被任何一轮捕获过，加载态/错误态同样零帧。页面主要形态处于无视觉验收状态。",
+      "evidence": "screenshot-manifest.json（gitSha=aefd8a72，本页 0 条）；exec-results.json CX02「无参深链 → onLoad 直接 redirectTo 校园圈 Hub」status=EXECUTED、route=[hub]；apps/client/src/subpackages/campus/campus/index.vue:179-198（onLoad 守卫 redirectTo hub）；cx17/cx23 截图捕获超时（ERROR:timeout waiting for automator response），错误态替代用例 CX15 落 hub（其帧实为 hub 页）。",
+      "sources": ["screenshot", "log", "code"],
+      "confidence": 1.0,
+      "ideal": "静态巡检对子包流程页按流程态取证：双身份各至少 默认/滚动/空/错误 四帧；「已认证本校视角」（FAB 在场）与「公开浏览视角」（横幅在场）必须各有一帧覆盖。",
+      "fix": "截图管线用例改为 reLaunch '/subpackages/campus/campus/index?school=' + encodeURIComponent(校名)（交互轮 CX01–CX14 已验证该路径可稳定落页）；已认证身份补「认证完成后从 hub 流程点击进入」的流程态；重跑静态五态并回填 manifest。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSINDEX-011",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03-after.png、CX04-after.png、CX10-after.png、CX12-after.png（4 张独立帧，10:14/10:15/10:16 三个时间点、两次独立 reLaunch，一致复现）",
+      "category": "UI",
+      "severity": "P1",
+      "description": "话题分类 Tab（页面主导航）在 mp-weixin 真实渲染中为纵向堆叠的全宽列表，横向滚动条形态完全失效：6 个 Tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态）各独占一行、文字居中，合计占首屏约 28%（812px 帧中约 230px），把话题列表整体推出首屏主体区。4 张独立帧全部一致，非瞬态。根因：scroll-view 宿主上的 display:flex + white-space:nowrap（index.vue:530-532）无法作用于 scroll-view 内部滚动内容层——mp-weixin 中滚动内容由微信内部包装节点承载，宿主的 display:flex 只作用于内部包装元素；子项 .category-tab 为块级 display:flex（index.vue:539-540），white-space:nowrap 对块级元素无效 → 逐行堆叠。与代码层 MP-R1-CAMPUSINDEX-005（scrollLeft 死状态，P3）同区域但更底层：005 假设横向溢出存在、报「激活 Tab 不滚入视野」；实测横向布局本身未生成、无横向溢出可言，005 的前提被本条实测推翻，其 scrollLeft 无赋值的代码事实仍归 005，本条不重复。",
+      "evidence": "CX03/CX04/CX10/CX12 四帧均见 6 Tab 纵排、激活项「课程交流」绿色渐变占满行宽；apps/client/src/subpackages/campus/campus/index.vue:279（<scroll-view scroll-x :scroll-left>）、530-537（.category-tabs{display:flex;white-space:nowrap}）、539-550（.category-tab{display:flex;flex-shrink:0}——块级子项）；对照 exec-results.json CX10（tapIndex .category-tab#2 社团招新）说明 Tab 可点但布局与设计形态不符。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "6 个分类 Tab 单行横向排列（每项 padding 18/28rpx、间距 16rpx）、可横向滚动，激活项绿色渐变高亮且随点击滚入视野；Tab 条仅占一行（≈88rpx），首屏以话题列表为主体。",
+      "fix": "二选一：① .category-tab 改 display:inline-flex（使既有 white-space:nowrap 对子项生效）；② scroll-view 内包一层 <view class=\"category-tabs__inner\"> 设 display:flex（子项保留 flex-shrink:0），宿主仅保留 padding/背景/阴影。修复后在 DevTools + 真机各截一帧确认单行形态与横向滚动，并回填 MP-R1-CAMPUSINDEX-005 的滚入视野问题。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSINDEX-012",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX04-after.png（8 枚封面渲染为窄竖条）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "未认证视角「推荐兴趣圈」8 枚封面以 flex:1×8 单行挤占（无换行、无横滚），每枚实测仅 ≈74rpx 宽 ×120rpx 高的竖条（750rpx 帧宽 − 48rpx 页边 − 7×16rpx gap 后 8 等分的必然结果），aspectFill 中心裁切把横版封面裁到只剩中缝，22rpx 标签贴底压边，帧中标签仅勉强可辨，区块视觉退化为 8 条窄色块。注：素材/理想效果图/校园圈.png 经读图核对实为 hub 学校圈列表页，本页无页面级理想稿锚定该区块形状，故按可读性与裁切失真记 P3 而非结构级偏差。",
+      "evidence": "CX04-after.png 中 8 封面为约 37px（≈74rpx）宽竖条、标签贴底；apps/client/src/subpackages/campus/campus/index.vue:858-861（.cert-recommend__grid{display:flex;gap:16rpx}，无 flex-wrap）、863-869（.cert-recommend__item{flex:1;height:120rpx}）、871-887（cover 绝对定位 100% 填充 + label 22rpx bottom:8rpx）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.7,
+      "ideal": "每枚封面呈可辨认的圆角方块（如 4 列×2 行、单枚 ≈160rpx 见方），aspectFill 裁切不至失真，22rpx 标签完整可读。",
+      "fix": ".cert-recommend__grid 加 flex-wrap:wrap，.cert-recommend__item 改 flex:none; width:calc((100% - 3 * 16rpx) / 4)（4 列 2 行）；或改单行横向 scroll-view 放大卡片。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "裸 i18n key 获截图级实锤：4 张独立帧均在未认证推荐区块标题/链接处渲染字面量『campus.index.hotCirclesTitle』『campus.index.viewMore ›』。不另立 issue（代码层 MP-R1-CAMPUSINDEX-001 已立，P1 待修复），本条将其证据从 sources:[code] 升级为 screenshot+code 双口径。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03/CX04/CX10/CX12-after.png（4 帧均可见裸 key 大字标题与右侧绿色裸 key 链接）；reports/audit/round-1/code-findings/SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json MP-R1-CAMPUSINDEX-001"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "未认证+本校参数视角默认态主链路渲染完整、无破图：头部校名『北京大学』URL 解码正确（CX03）、『%E4%8D』非法序列回退原值不崩溃（CX04）、未认证徽章、去认证引导卡、话题卡（标题/相对时间 33 分钟前/预览/作者名粉色 $pink-primary——index.vue:708-712 为 token 化设计选择，非缺陷/回复数绿色徽章）、「没有更多了」页脚、空态文案齐全，SafeImage 无加载失败占位异常。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03-after.png、CX04-after.png；apps/client/src/subpackages/campus/campus/index.vue:708-712"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "CX03 帧中推荐圈栅格整行缺失而 CX04 同位置存在：栅格每项固定高 120rpx（index.vue:868），布局上不可能塌陷，且父节点 v-if=\"!isVerified\" 依赖认证状态异步翻转——判定为认证状态返回前的捕获时序伪影（首帧渲染竞态），非稳定缺陷，不立 issue；如需收敛可给 isVerified 初始态显式 loading 骨架。",
+      "evidence": "CX03-after.png（标题行下直接是 Tab 卡）与 CX04-after.png（同位置有 8 封面行）对比；apps/client/src/subpackages/campus/campus/index.vue:257、868"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "未认证视角空态文案『该分类下还没有话题，快来发布第一个吧』引导发布，但发布 FAB 为 v-if=\"isOwnCertifiedView\"（index.vue:356），未认证视角无任何发布入口——CTA 文案与可用动作错位。属交互路径判定范畴，移交交互判定员，本文件不立 issue。",
+      "evidence": "CX04-after.png（空态文案在场、右下角无 FAB）；apps/client/src/subpackages/campus/campus/index.vue:306-309、356"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "交互帧重复（证据质量缺口）：CX10≡CX11、CX12≡CX14 字节级相同（md5 01aa62f6…/0fff51ef…）；且所有在盘帧的激活 Tab 均为「课程交流」——Tab 切换后的高亮迁移、翻页加载态（CX13 截图超时）、no-more 态均无可信独立视觉帧。CX10–CX14 的 EXECUTED 判定仅有 DOM 观察支撑，无像素佐证；该执行结论的复核归交互判定员。",
+      "evidence": "md5sum 输出（CX10-after=CX11-after=01aa62f6b3debfe0396cb9a443623a10；CX12-after=CX14-after=0fff51ef8101d474e2cba52abca7b9a8）；exec-results.json CX13/CX14/CX17/CX20/CX23 截图字段含 ERROR:timeout waiting for automator response"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "历史问题线索回归核对（视觉口径，最终判定归历史回归员）：① MP-R3-CAMPUS-INDEX-001（裸 key）——未修复，4 帧实锤（见观察 1）；② MP-R2-CAMPUSINDEX-001（scroll-view 无界高度致翻页失效）——运行时行为证据 EXECUTED：CX13 以 pageScrollTo bottom + 真实 swipe up on .topic-scroll 触发翻页、dom .loading-more:absent（加载完成后态），与代码层 MP-R1-CAMPUSINDEX-009（status=已验证）双口径一致，判已修复；如实注明：翻页后『第 11 条可见』无截图帧佐证（CX13 截图超时）；③ MP-R3-CAMPUS-INDEX-002（真机状态栏双重避让）——本轮全部帧为 DevTools 渲染（env()=0），与该问题「DevTools 不可见」的描述一致，本轮无法视觉验证，仍以代码层 MP-R1-CAMPUSINDEX-002 为准。",
+      "evidence": "exec-results.json CX13（status=EXECUTED，act:swipe up touch-seq on .topic-scroll）；CX03/CX04 帧（DevTools 状态栏、页头间距目测无叠加）；code-findings MP-R1-CAMPUSINDEX-009/002"
+    },
+    {
+      "page": "subpackages/campus/campus/index",
+      "observation": "CX15/CX16 执行均落在 hub（exec observed top=subpackages/campus/campus/hub），读图核对两张 after 帧实为 hub 页（校园圈·推荐圈子列表）——归 hub 页审查员口径，对本页错误态（CX15 目标场景）与认证徽章四态（CX16 目标场景）无证据价值；本页错误态至今零截图。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-after.png、CX16-after.png（读图均为 hub 页）；exec-results.json CX15/CX16 observed 字段"
+    }
+  ],
+  "coverage": [
+    "页面：subpackages/campus/campus/index（校园圈·话题列表）。审查口径：A3 视觉/布局/状态审查，证据=操作截图逐张读图 + exec-results 行为记录 + 页面源码行号；静态巡检轮本页 0 张截图（已按要求将缺截图立为 MP-R1-CAMPUSINDEX-010 P1）。",
+    "证据新鲜度：manifest gitSha=aefd8a72 == HEAD（git rev-parse 输出）；exec-results gitSha=aefd8a72/updatedAt 2026-09-23；CAMPUSINDEX-01..10（Sep 21，早于 HEAD 提交 Sep 22 11:24+0800）按过期处理未采用；工作区 i18n/campus store 未提交改动的漂移已如实注记，index.vue 相对 HEAD 零改动。",
+    "已看截图清单（逐张）：SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03/04/10/12/14/15/16-after.png 共 7 文件 5 独立帧；CX15/16 读图确认为 hub 页，排除出本页判定；CAMPUSINDEX-01..10 未读（过期）。",
+    "理想图对照：素材/理想效果图/校园圈.png 读图核对为 hub 学校圈列表页（对应 hub.vue），素材库 19 张中无本页（话题列表）页面级对照稿 → L1–L10 理想图逐层对照对本页不可执行；结构对照基准降级为源码设计意图（scroll-x 单行 Tab，index.vue:279）与 mp-weixin 真实渲染。此为证据缺口，非免检。",
+    "五维覆盖——UI：Tab 形态（立 011）、推荐圈栅格（立 012）、裸 key（观察 1）、作者名粉色 token（核对为设计选择）；UX 路径：空态 CTA 错位线索已移交（观察 4），热区铁律 CX20 因落 hub 实际未在本页测得（exec observed 全 absent）——本页 88rpx 热区无有效测量，如实注明；小程序维：onLoad 守卫/返回兜底（CX06 EXECUTED）/非 tab 页无 TabBar 遮挡问题/状态栏避让（DevTools 帧不可判，归代码层 002）/键盘（本页无输入框 N/A）；数据维：非法参数空态（CX04 帧）、解码校名（CX03 帧）、翻页（CX13 EXECUTED 无帧）、长文/长昵称/加载态/错误态——无帧，未验证，如实注明；一致性：话题卡与 hub 卡片同为白卡+绿 CTA 体系（CX15/16 hub 帧旁证，弱证据），作者名用 --c-romance-500 系 token 与品牌粉一致。",
+    "13 项举证核对（本页不适用『无问题』判定，仅列缺口）：截图已看（5 独立帧）/理想图已对照（无本页稿，如实注记）/滚动已测（CX13 EXECUTED 无帧）/点击已测（CX10-12 EXECUTED 帧重复）/返回已测（CX06 EXECUTED 无帧）/safe-area 已查（DevTools 不可判）/TabBar 已查（非 tab 页 N/A）/空态已查（CX04 帧 ✓）/长文已查（未测）/加载态已查（未捕获）/错误态已查（未捕获）/组件一致性已查（弱旁证）/历史 Bug 回归已查（3 条均有结论，见观察 6）。",
+    "角色边界：本文件只立视觉/证据缺陷；历史回归终判归历史回归员、CX 执行结论复核归交互判定员、功能目标对照归需求对照员；代码层 9 条（MP-R1-CAMPUSINDEX-001~009）未重复立案，其中 011 与 005 的关系已在 011 description 内划清。"
+  ]
+}

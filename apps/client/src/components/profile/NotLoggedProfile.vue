@@ -153,15 +153,19 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
 .not-logged-profile {
   min-height: 100vh;
   background: linear-gradient(180deg, #E8FBF3 0%, #EEF7F2 40%);
-  padding: 32rpx 24rpx 140rpx;
+  /* R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定
+     32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带（真机截图与时钟同高实证）；
+     对齐已登录态 MyHeader.vue:96-98 口径让位状态栏。--statusbar 已由页面根注入。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 32rpx) 24rpx 140rpx;
 }
 
-/* 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2） */
+/* 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2）
+   R12-IND-PROFILE-INDEX-001：右侧按钮组横向避让微信胶囊（约 96px 量级） */
 .nlp-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 8rpx 24rpx;
+  padding: 16rpx calc(var(--capsule-right, 7px) + 96px) 24rpx 8rpx;
 }
 
 .nlp-topbar__right {

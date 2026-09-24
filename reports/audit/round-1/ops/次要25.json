@@ -1,0 +1,844 @@
+{
+  "cases": [
+    {
+      "id": "DEV01",
+      "page": "subpackages/setup/dev/index",
+      "title": "DEV 构建冷启动直达：页面注册与首屏渲染",
+      "tier": "navigation",
+      "pre": "DEV 构建（微信开发者工具默认编译；pages.json:272-277 dev/index 仅 #ifdef DEV 注册，正式构建未注册）。身份A 登录态（r11 做法 automation_evaluate 注 token + session.bootstrap()，token 2h 时效过期需重签）任一身份 wx.reLaunch('/subpackages/setup/dev/index')。该页当前无页内入口（profile 页仅残留 .dev-entry 样式、按钮已移除，pages/profile/index.vue:3722-3735；常量 ROUTES.DEV=constants/routes.ts:216），只能直达",
+      "action": "进入后断言首屏，无点击",
+      "expected": "标题「DEV 开发者导航」+TEST 徽章（index.vue:251-254）+提示条「开发者模式 - 仅用于测试，上线前删除」(:258-263)；「超级测试账号」分组 2 项（一键登录/会员身份模拟 :265-292）；主包/设置子包/支持子包/发现子包 4 组共 23 项列表（:193-220）。对照：正式构建 reLaunch 应 fail、getCurrentPages 不含本页",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图；正式构建分支以 reLaunch fail 回调/路由断言为准"
+    },
+    {
+      "id": "DEV02",
+      "page": "subpackages/setup/dev/index",
+      "title": "头部返回 ←：返回落点=来源页",
+      "tier": "navigation",
+      "pre": "从 /pages/discover/index 经 navigateTo 进入本页（栈>1）",
+      "action": "tap .dev-header__back（index.vue:248）",
+      "expected": "uni.navigateBack（:237-240）→ 返回落点=来源页 discover；500ms 内路由变化；console 无错误",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DEV03",
+      "page": "subpackages/setup/dev/index",
+      "title": "一键登录超级测试账号：成功路径 + 连点×5 防重",
+      "tier": "critical",
+      "pre": "DEV 构建且构建环境变量 VITE_SUPER_TEST_PHONE/VITE_SUPER_TEST_PASSWORD 已注入（读取逻辑 index.vue:29-80）；本页栈顶",
+      "action": "tap「一键登录超级测试账号」行（:269-279），随后快速连点至共 5 次；等待网络回包与跳转",
+      "expected": "成功 toast「超级账号登录成功」icon success（:108-110）；约 800ms 后 replaceAppPath('/pages/discover/index')（:110-114，tab 页走 switchTab）；回本页 onShow 后行标题变「已登录超级账号」（:275 + :163-179）；superLoginBusy 锁（:100,106,118-120）使 5 次连点仅触发 1 次 loginWithPhone 请求",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量（console/网络含 loginWithPhone 请求计数=1）"
+    },
+    {
+      "id": "DEV04",
+      "page": "subpackages/setup/dev/index",
+      "title": "一键登录：未配置密码环境变量时禁用",
+      "tier": "normal",
+      "pre": "DEV 构建但 VITE_SUPER_TEST_PASSWORD 未注入（R4-00040 缺省禁用态，index.vue:101-105）；本页栈顶",
+      "action": "tap「一键登录超级测试账号」行",
+      "expected": "toast「未配置 VITE_SUPER_TEST_PASSWORD」icon none（:102-105）；无登录请求、无跳转",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DEV05",
+      "page": "subpackages/setup/dev/index",
+      "title": "会员身份模拟开关 ×2：toast 与存储同步",
+      "tier": "normal",
+      "pre": "本页栈顶；先读 storage 键 dev-vip-sim 初值（STORAGE_KEYS.VIP_SIM_ENABLED，:124-125）",
+      "action": "tap「会员身份模拟」行两次（:280-290），每次后断言",
+      "expected": "第 1 次：toast「已模拟会员身份（解锁全开）」、行标题同步（:144-159）、setStorageSync('dev-vip-sim','1')；第 2 次：toast「已恢复普通用户身份」、存储回 '0'、标题回「当前：普通用户身份」；切换即时生效无路由变化",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（含 storage 断言）"
+    },
+    {
+      "id": "DEV06",
+      "page": "subpackages/setup/dev/index",
+      "title": "非 DEV 运行时守卫（条件用例）",
+      "tier": "normal",
+      "pre": "仅当构建产物含本页而运行时 isDev=false（防御性场景，index.vue:95-99,144-148）；常规构建不可达，执行器跳过时如实标 UNVERIFIED",
+      "action": "分别 tap 一键登录行与会员模拟行",
+      "expected": "toast「超级账号登录仅限开发环境」/「会员模拟仅限开发环境」（:96-99,145-148）；无存储读写、无跳转",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DEV07",
+      "page": "subpackages/setup/dev/index",
+      "title": "分组列表 Tab 项跳转（switchTab 语义）",
+      "tier": "navigation",
+      "pre": "本页栈顶（DEV01 前置）",
+      "action": "逐个 tap 4 个 isTab 项：寻觅 / 村口 / 消息 / 我的（:196,201,204-205，isTab:true）",
+      "expected": "走 uni.switchTab 分支（:229-231）→ 路由=对应 tab 页且 dev 页出栈；无 NAV_FAIL/page not found（likes 误标 isTab 的历史坑见 :197-199 注释，本表 4 项均为主包 tabBar 页应全部可达）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console（NAV_FAIL 过滤）"
+    },
+    {
+      "id": "DEV08",
+      "page": "subpackages/setup/dev/index",
+      "title": "分组列表非 Tab 项跳转 + 返回落点与状态保留",
+      "tier": "navigation",
+      "pre": "reLaunch 直达本页（栈=1）",
+      "action": "每组抽首个非 Tab 项（基础资料 / 反馈中心 / 每日一问 / 讨论圈）tap → navigateBack，重复至覆盖 19 个非 Tab 项",
+      "expected": "navigateTo 分支（:232-234）→ getCurrentPages 长度 2、栈顶=目标页；返回落点=dev 页且列表滚动位保留（Tab 切换滚动位与数据不丢铁律）；全部项点击无 NAV_FAIL",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console（NAV_FAIL 过滤）"
+    },
+    {
+      "id": "DEV09",
+      "page": "subpackages/setup/dev/index",
+      "title": "重复进出：onShow 刷新登录态/会员态保留",
+      "tier": "normal",
+      "pre": "已完成 DEV03（超账已登录）或 DEV05（会员模拟开）",
+      "action": "进任一列表页后返回本页，重复 2 次",
+      "expected": "onShow refreshSuperState（:176-179）→「已登录超级账号」「当前：会员身份（解锁全开）」标题保持，不闪回默认态；无 console 错误",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DEV10",
+      "page": "subpackages/setup/dev/index",
+      "title": "长列表滚动到底/顶",
+      "tier": "noop",
+      "pre": "本页栈顶（23 项+4 组标题，页面级滚动）",
+      "action": "页面滚动到底再回顶；随后返回一次验证 onUnmounted 清理",
+      "expected": "全部分组可达无死区；返回时 superLoginNavTimer 清理不报错（:182-190）",
+      "evidence": "noop：执行日志（scroll 位置 / console）"
+    },
+    {
+      "id": "SC01",
+      "page": "subpackages/setup/showcase/index",
+      "title": "展示构建主入口：6 分组 44 项渲染",
+      "tier": "navigation",
+      "pre": "展示构建（VITE_SHOWCASE_MODE=true，config/showcase.ts:31-60）；正式入口=登录页展示入口 enterShowcase（游客登录后 reLaunch，pages/login/index.vue:543-561），自动化可 wx.reLaunch('/subpackages/setup/showcase/index')",
+      "action": "进入后断言 DOM（分组数与条目计数），无点击",
+      "expected": "标题「全功能展示」+副标题+SHOWCASE 徽章（:186-203 + i18n showcase.*）；说明卡（:205-214）；6 分组共 44 项（journey7/match5/home7/chat2/community13/profile10，:43-149）；isTab 项带「Tab」标（:247）；分组计数徽章渲染（:226）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图（DOM 计数断言）"
+    },
+    {
+      "id": "SC02",
+      "page": "subpackages/setup/showcase/index",
+      "title": "正式构建访问：onShow 回落发现页",
+      "tier": "navigation",
+      "pre": "正式构建（isShowcaseMode=false，showcase.ts:60 构建期常量）",
+      "action": "wx.reLaunch('/subpackages/setup/showcase/index') 后断言路由",
+      "expected": "onShow 检测非展示模式 → uni.switchTab('/pages/discover/index')（:156-162）→ getCurrentPages 栈顶=pages/discover/index，本页不驻留（正式包无展示痕迹）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "SC03",
+      "page": "subpackages/setup/showcase/index",
+      "title": "头部返回 ←：有栈/无栈两态",
+      "tier": "navigation",
+      "pre": "①展示构建从 discover navigateTo 进入（栈>1）②reLaunch 直达（栈=1）",
+      "action": "tap .sc-header__back（:187-195）各一次",
+      "expected": "①uni.navigateBack → 落点=discover；②navigateBack fail → switchTab discover（goBack :173-181）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "SC04",
+      "page": "subpackages/setup/showcase/index",
+      "title": "Tab 项跳转（switchTab）×5",
+      "tier": "navigation",
+      "pre": "展示构建本页栈顶",
+      "action": "逐个 tap isTab 项：寻觅·匹配 / 首页 / 消息 / 村口·圈子 / 我的（:65,78,93,103,137）",
+      "expected": "uni.switchTab（:165-168）→ 路由=对应主包 tab 页；无 NAV_FAIL/console TypeError",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console（NAV_FAIL 过滤）"
+    },
+    {
+      "id": "SC05",
+      "page": "subpackages/setup/showcase/index",
+      "title": "非 Tab 项跳转与返回落点（抽样 10 项）",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "每分组抽 1-2 个非 Tab 项（基础资料/校园认证/今日已看/每日一问/聊天会话/发布帖子/兴趣圈/VIP/钱包/意见反馈/隐私政策）tap 后返回",
+      "expected": "navigateTo（:169）→ 栈深+1、栈顶=目标页；返回落点=showcase 页且滚动位保留；条目 aria-label=标题（:238）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "SC06",
+      "page": "subpackages/setup/showcase/index",
+      "title": "长列表滚动到底/顶",
+      "tier": "noop",
+      "pre": "本页栈顶（6 分组 44 项长页面）",
+      "action": "滚动到底部安全区再回顶",
+      "expected": "全部分组可达；chip 首字占位与 i18n 标题一致（itemChar :151-154）；无 console 错误",
+      "evidence": "noop：执行日志（scroll 位置 / console）"
+    },
+    {
+      "id": "SC07",
+      "page": "subpackages/setup/showcase/index",
+      "title": "分组计数徽章与条目数一致性",
+      "tier": "normal",
+      "pre": "本页栈顶",
+      "action": "断言各分组 count 徽章文本（showcase.groupCount {n} 项，:226）与组内 sc-item 数量",
+      "expected": "journey 7 / match 5 / home 7 / chat 2 / community 13 / profile 10（源码 :43-149 硬编码一致）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（DOM 计数）"
+    },
+    {
+      "id": "SC08",
+      "page": "subpackages/setup/showcase/index",
+      "title": "同一条目快击 ×5（防连点现状取证）",
+      "tier": "normal",
+      "pre": "本页栈顶",
+      "action": "对同一非 Tab 项（如「意见反馈」）快速连点 5 次",
+      "expected": "不崩溃、最终路由=目标页；如实记录页面栈深度——本页直调 uni.navigateTo 无防抖（:165-171），若叠栈>1 层按「导航防连点缺失」如实记录缺陷（uni 静默叠栈上限 10 层）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（路由链含栈深）"
+    },
+    {
+      "id": "FB01",
+      "page": "subpackages/support/feedback/index",
+      "title": "冷启动进入：表单区与历史区首屏",
+      "tier": "navigation",
+      "pre": "身份A 登录态（r11 做法 automation_evaluate 注 token + session.bootstrap()，token 2h 时效过期需重签）或免登录（本页未接 usePageAccess，无守卫）；wx.reLaunch('/subpackages/support/feedback/index')；其它入口：讨论圈/活动页次按钮、dev/showcase 列表",
+      "action": "进入后断言首屏，无点击（onMounted 触发 feedbackStore.load :96-98）",
+      "expected": "AppShell 标题「反馈中心」+副标题「反馈、建议和活动提案共用一个入口。」（:420 + i18n feedback.pageTitle）；「新建提交」卡：3 类型 chip（反馈/建议/活动提案，默认选中「反馈」:422-435,72）+标题输入+内容 textarea+选填微信号+图片上传区 hint「最多 3 张，每张 ≤ 5MB」（:483-487 + i18n）+提交栏；「反馈历史」卡：「历史记录」入口+空态「暂无反馈记录」（:545-562）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "FB02",
+      "page": "subpackages/support/feedback/index",
+      "title": "类型 chip 切换（反馈/建议/活动提案）",
+      "tier": "normal",
+      "pre": "FB01 后",
+      "action": "依次 tap「建议」「活动提案」「反馈」chip（:422-435）",
+      "expected": "chip--active 高亮随点击迁移、aria-selected 同步（:427-431）；无路由变化无 toast；后续提交按 activeType 分发到 submitIssue/submitSuggestion/submitActivityProposal（:323-330）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB03",
+      "page": "subpackages/support/feedback/index",
+      "title": "三个输入框正常输入回显",
+      "tier": "normal",
+      "pre": "FB02 后，类型=反馈",
+      "action": "input#feedback-title 输入「测试反馈标题」；textarea#feedback-content 输入「测试反馈内容正文」；input#feedback-wechat 输入「test_wx_001」（:437-470）",
+      "expected": "三处 v-model 回显一致；光标不被键盘遮挡（cursor-spacing=20）；无 console 错误",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB04",
+      "page": "subpackages/support/feedback/index",
+      "title": "输入清空恢复 placeholder（表单三态·空）",
+      "tier": "normal",
+      "pre": "FB03 已有输入",
+      "action": "逐字段清空（全删）",
+      "expected": "placeholder「标题」/「选填微信号」恢复、textarea 置空（:442,451,466）；无残留校验错误条；提交按钮可用",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB05",
+      "page": "subpackages/support/feedback/index",
+      "title": "超长输入：内容 maxlength=5000 硬截断",
+      "tier": "normal",
+      "pre": "表单空",
+      "action": "标题粘贴 300 字；内容粘贴 6000 字（maxlength=FEEDBACK_CONTENT_MAX=5000，:454,66-69）",
+      "expected": "内容被截为 5000 字（textarea maxlength 硬截，DOM value.length 断言）；标题无 maxlength 限制、原样显示不崩溃不爆版",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（DOM value.length 断言）"
+    },
+    {
+      "id": "FB06",
+      "page": "subpackages/support/feedback/index",
+      "title": "特殊字符输入（emoji/HTML/引号）",
+      "tier": "normal",
+      "pre": "表单空",
+      "action": "标题输入「😀<script>alert(1)</script>' OR '1'='1」；内容输入含换行+emoji+HTML 标签混合文本",
+      "expected": "原样回显、无脚本执行（无 alert、console 无新增异常）；后续提交按纯文本传输",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB07",
+      "page": "subpackages/support/feedback/index",
+      "title": "空提交：必填校验拦截",
+      "tier": "critical",
+      "pre": "标题/内容均为空",
+      "action": "tap BottomActionBar 主按钮「提交」1 次（:538-541）",
+      "expected": "前置校验拦截：errorHaptic + toast「提交失败，请稍后重试」（:312-320）；按钮文案不变「提交中...」；无 createFeedbackIssue 等请求（console/网络计数=0）；表单不清空",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "FB08",
+      "page": "subpackages/support/feedback/index",
+      "title": "合法提交成功：清空表单+历史列表刷新",
+      "tier": "critical",
+      "pre": "类型=反馈，标题+内容已填（mock 构建 clientApi 走 mockFixtures 必成功，services/api.ts:592-600）",
+      "action": "tap「提交」1 次，等待回包",
+      "expected": "按钮变「提交中...」（:539）→ toast「提交成功」icon success（:337-341）→ 表单全清（标题/内容/微信号/attachments，:332-336）→ store 自动 load 刷新（feedback.ts:42-56）→ 新记录出现在「反馈历史」列表（标题/状态徽标「处理中」:563-581）",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "FB09",
+      "page": "subpackages/support/feedback/index",
+      "title": "提交快击 ×5：isSubmitting 锁仅提交 1 次",
+      "tier": "critical",
+      "pre": "同 FB08 前置（表单已填）",
+      "action": "快速连点提交 5 次",
+      "expected": "isSubmitting 锁（:310-311,320-321,356-357）→ 仅 1 次 createSubmission 提交（console 请求计数=1）、历史列表仅 +1 条；结束后按钮文案恢复「提交」",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量（请求计数=1）"
+    },
+    {
+      "id": "FB10",
+      "page": "subpackages/support/feedback/index",
+      "title": "图片上传成功链路（+号格）",
+      "tier": "critical",
+      "pre": "已同意小程序隐私授权（Task 0.2.4 ensurePrivacyAuthorized，:38-39,161-175）；附件<3 张；mock 构建 uploadFeedbackImage 走 mockFixtures 必成功（api.ts:1193-1197）",
+      "action": "tap「+」上传格（:516-534）→ 系统选图（automator 注入/相册选 1 张 jpg<5MB）",
+      "expected": "上传中 spinner 占位且 isUploading 锁重复点击（:84-91,152,519-525）→ toast「图片上传成功」（:252-256）→ 缩略图入格（attachments push :250-251）；提示行「最多 3 张，每张 ≤ 5MB」恒显",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量（含 uploadFeedbackImage 网络记录）"
+    },
+    {
+      "id": "FB11",
+      "page": "subpackages/support/feedback/index",
+      "title": "缩略图长按删除：确认/取消两路",
+      "tier": "critical",
+      "pre": "已有 1 张已上传缩略图",
+      "action": "①长按缩略图（@longpress :497）→ modal 点「取消」②再长按 → 点「确认」③抽查右上 × 徽标 @tap.stop（:504-514）",
+      "expected": "uni.showModal「移除」+确认/取消（:271-287）；取消 → 缩略图保留；确认 → attachments 过滤移除 + successHaptic，缩略图消失、+号格恢复",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "FB12",
+      "page": "subpackages/support/feedback/index",
+      "title": "缩略图点击全屏预览与关闭",
+      "tier": "normal",
+      "pre": "已有缩略图",
+      "action": "tap 缩略图（:493-497）→ 关闭预览",
+      "expected": "uni.previewImage 全屏（urls=全部附件、current=所点，:293-302）；关闭后表单状态不丢",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB13",
+      "page": "subpackages/support/feedback/index",
+      "title": "隐私授权拒绝拦截选图（条件用例）",
+      "tier": "normal",
+      "pre": "未同意隐私协议（清除授权态构造）；自动化无法注入授权态时如实标 UNVERIFIED",
+      "action": "tap「+」上传格",
+      "expected": "ensurePrivacyAuthorized 拒绝 → errorHaptic + toast「需同意隐私协议后才能选择图片」（:164-175 + i18n feedback.privacyImageDenied）；不弹系统选图面板",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB14",
+      "page": "subpackages/support/feedback/index",
+      "title": "超限与非法文件分支（≥3 张 / >5MB / 非法扩展）",
+      "tier": "normal",
+      "pre": "①已有 3 张附件 ②构造 >5MB 图或非 jpg/jpeg/png/webp 扩展文件（chooseImage 需 automator mock，不可注入时 UNVERIFIED）",
+      "action": "①tap「+」②选超大/非法文件",
+      "expected": "≥3 张 → toast「最多只能上传 3 张图片」+errorHaptic（:152-160）；>5MB → toast「图片大小不能超过 5MB」（:212-220）；非法扩展 → toast「图片上传失败」（:203-211）；均不入列；用户取消选图静默无 toast（:224-228）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "FB15",
+      "page": "subpackages/support/feedback/index",
+      "title": "「历史记录」入口跳转",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap「历史记录」按钮（:547-555）",
+      "expected": "navigateTo '/subpackages/profile-extra/feedback/history'（:365-381,HISTORY_PAGE_URL :93-94）；返回落点=反馈页",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "FB16",
+      "page": "subpackages/support/feedback/index",
+      "title": "提交记录列表项带参跳详情",
+      "tier": "navigation",
+      "pre": "历史列表非空（FB08 提交后或既有 mock 记录）",
+      "action": "tap 任一 submission 行（:563-581）",
+      "expected": "navigateTo '/subpackages/profile-extra/feedback/history?id={item.id}'（:387-404）；query id 与所点记录一致",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图（query 断言）"
+    },
+    {
+      "id": "FB17",
+      "page": "subpackages/support/feedback/index",
+      "title": "提交失败分支：错误 toast 且表单保留",
+      "tier": "normal",
+      "pre": "real 模式或断网/后端停服注入（mock 构建恒成功，无法注入时 UNVERIFIED）；表单已填",
+      "action": "tap「提交」",
+      "expected": "store 返回 false → toast=feedbackStore.errorMessage（兜底「提交失败，请稍后重试」，:341-349 + feedback.ts:49-52）；表单数据保留不清空；按钮恢复「提交」",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（Toast 文案取证）"
+    },
+    {
+      "id": "FB18",
+      "page": "subpackages/support/feedback/index",
+      "title": "滚动到底后 AppShell 返回",
+      "tier": "navigation",
+      "pre": "本页栈顶，历史区/表单足够长",
+      "action": "滚动到底/顶 → tap AppShell 返回键（AppShell.vue:116-145）",
+      "expected": "滚动无卡死无遮挡；返回落点=来源页（无上级时 fail 兜底 switchTab home，AppShell.vue:123-134）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DC01",
+      "page": "subpackages/discover/discussions/index",
+      "title": "冷启动：骨架 → 推荐列表渲染",
+      "tier": "navigation",
+      "pre": "身份A 登录态（r11 做法 automation_evaluate 注 token + session.bootstrap()，token 2h 时效过期需重签）或免登录（discoverPageRequirements requiresAuth:false 免登录可逛，config/page-access.ts:10-16）；wx.reLaunch('/subpackages/discover/discussions/index')",
+      "action": "进入断言首屏（onShow 触发 loadDiscussions :26-29）",
+      "expected": "AppShell 标题「讨论圈」+副标题（:70-76）；加载中 SkeletonBlock 3 行「正在加载讨论内容...」（:78-81）→ 「正在讨论」卡渲染推荐条目（StatusState warning heatLabel+标题+摘要，:90-105）；无错误态",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DC02",
+      "page": "subpackages/discover/discussions/index",
+      "title": "推荐条目点击弹窗（取消路）",
+      "tier": "normal",
+      "pre": "列表非空",
+      "action": "tap 任一 feed-row（:91-105）→ modal 点「取消」",
+      "expected": "lightHaptic + uni.showModal：标题=item.title、内容=summary+heatLabel、确认「去寻觅」/取消「取消」（:53-60 + i18n discussions.goExplore）；取消 → modal 关闭停留本页、无路由变化",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DC03",
+      "page": "subpackages/discover/discussions/index",
+      "title": "弹窗确认「去寻觅」→ 发现 tab",
+      "tier": "navigation",
+      "pre": "DC02 的 modal 已打开",
+      "action": "tap modal 确认「去寻觅」",
+      "expected": "openPath('/pages/discover/index') → tab 页 switchTab（utils/navigation.ts:63-92）→ 路由=pages/discover/index",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DC04",
+      "page": "subpackages/discover/discussions/index",
+      "title": "底部主按钮「去寻觅」",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap BottomActionBar primary（:108-115）",
+      "expected": "switchTab → 路由=pages/discover/index",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DC05",
+      "page": "subpackages/discover/discussions/index",
+      "title": "底部次按钮「反馈讨论建议」→ 反馈页",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap secondary（:110-114）",
+      "expected": "navigateTo '/subpackages/support/feedback/index'；返回落点=讨论圈且列表状态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "DC06",
+      "page": "subpackages/discover/discussions/index",
+      "title": "加载失败态与「点击重试」恢复",
+      "tier": "normal",
+      "pre": "断网/后端停服注入首拉失败（自动化不可注入时 UNVERIFIED）",
+      "action": "进入触发失败 → tap「点击重试」link（:83-85）→（恢复网络）再点一次",
+      "expected": "失败态：正文区显示 error 文案（接口 message 或「加载讨论内容失败，请稍后重试」:37-39）+toast 同文案+「点击重试」link；重试 → loading→列表恢复、error 清空（:30-43）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DC07",
+      "page": "subpackages/discover/discussions/index",
+      "title": "空数据空态（条件用例）",
+      "tier": "normal",
+      "pre": "接口返回空数组（注入手段受限时 UNVERIFIED）",
+      "action": "进入",
+      "expected": "EmptyState「暂时还没有新的讨论推荐」（:85-90 + i18n discussions.empty）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "DC08",
+      "page": "subpackages/discover/discussions/index",
+      "title": "AppShell 返回与重复进出重拉",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "返回 ←；重复进出 2 次",
+      "expected": "返回落点=来源页；每次 onShow 重新 loadDiscussions（:26-29），无错误残留/骨架永驻；console 无 TypeError",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console"
+    },
+    {
+      "id": "ACT01",
+      "page": "subpackages/discover/activities/index",
+      "title": "冷启动：列表视图默认渲染（4 条 mock 活动）",
+      "tier": "navigation",
+      "pre": "身份A 登录态（r11 做法 automation_evaluate 注 token + session.bootstrap()，token 2h 时效过期需重签）（本页 usePageAccess requiresAuth:true，:31-37；未登录时守卫放行由页面自理 composables/usePageAccess.ts）；wx.reLaunch('/subpackages/discover/activities/index')",
+      "action": "进入断言首屏（onShow fetchActivities :72-75）",
+      "expected": "标题「线下活动」+副标题；loading「正在加载活动内容...」（:342-345）→ 列表视图默认（viewMode='list' :40-41）；「列表/日历」切换（列表高亮 :364-386）；快捷筛选「全部」高亮（:397-410）；4 条 mock 活动卡（标题/分类标签/已报名数/地点/时间/感兴趣按钮，:411-459；mock 数据 a-1..a-4 stores/activity.ts:59-118，a-3 初始已报名）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "ACT02",
+      "page": "subpackages/discover/activities/index",
+      "title": "列表↔日历视图双向切换（数据不丢）",
+      "tier": "normal",
+      "pre": "ACT01 后",
+      "action": "tap「日历」（:375-384）→ 断言 → tap「列表」（:366-374）→ 断言",
+      "expected": "日历视图：当月网格+周一起始星期行+今日高亮+有活动日期圆点/标题截断10字/人数（:487-558）；切日历触发 fetchActivities（:58-66，real 模式 30s TTL 内短路如实记录 activity.ts:168-173）；切回列表：视图高亮还原、快捷筛选态与数据保留",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT03",
+      "page": "subpackages/discover/activities/index",
+      "title": "快捷筛选「今天」→ 空态（mock 数据确定性）",
+      "tier": "normal",
+      "pre": "列表视图「全部」态",
+      "action": "tap「今天」chip（:398-410）→ 断言 → tap「全部」恢复",
+      "expected": "mock scheduleText（周四/周六/周日/下周五）无「今天/今晚/今日」→ 过滤为空 → 「当前筛选下暂无活动，换个时间看看吧」（:46-54,461-464）；切回「全部」4 条恢复；real 模式按后端 scheduleText 实际命中记录",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT04",
+      "page": "subpackages/discover/activities/index",
+      "title": "快捷筛选「周末」命中 2 条",
+      "tier": "normal",
+      "pre": "列表视图",
+      "action": "tap「周末」chip",
+      "expected": "命中 a-2（周六 15:00-17:00）与 a-3（周日 10:00-12:00）共 2 条（filter 逻辑 :48-54）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT05",
+      "page": "subpackages/discover/activities/index",
+      "title": "报名（感兴趣）：状态翻转+计数+1",
+      "tier": "critical",
+      "pre": "列表视图「全部」；取未报名的 a-1（isEnrolled:false，人数 12）",
+      "action": "tap 其「感兴趣」按钮（@tap.stop 防冒泡 :449-458）",
+      "expected": "按钮 loading「...」（:456）→ 变「已感兴趣」高亮（enroll-btn--active）+toast「报名成功」（:116-125）；人数 12→13（mock isEnrolled 翻转+enrollCount/enrollmentCount 同步 +1，activity.ts:263-278）；卡片不跳详情（.stop 阻断）",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "ACT06",
+      "page": "subpackages/discover/activities/index",
+      "title": "取消报名：a-3 初始已报名态翻转",
+      "tier": "critical",
+      "pre": "a-3「周末篮球友谊赛」初始 isEnrolled:true、人数 20（activity.ts:92-103）",
+      "action": "tap a-3「已感兴趣」按钮",
+      "expected": "变「感兴趣」（描边态）+toast「已取消报名」（:122-125）；人数 20→19（-1 不低于 0，activity.ts:270-277）",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "ACT07",
+      "page": "subpackages/discover/activities/index",
+      "title": "报名快击 ×5：并发守卫仅生效 1 次",
+      "tier": "critical",
+      "pre": "取未报名的 a-4（isEnrolled:false）",
+      "action": "快速连点「感兴趣」5 次",
+      "expected": "store enrollingActivityIds 并发守卫（activity.ts:254-257）+页面 submittingId/enrolling disabled（:106-110,452-453）→ isEnrolled 仅翻转 1 次、人数 +1 恰一次；disabled 期点击不触发新请求",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量（状态/计数断言）"
+    },
+    {
+      "id": "ACT08",
+      "page": "subpackages/discover/activities/index",
+      "title": "活动卡跳转详情带参（tap 主体非按钮）",
+      "tier": "navigation",
+      "pre": "列表视图",
+      "action": "tap a-1 卡片主体（:412-421，避开报名按钮）",
+      "expected": "openAppPath('/subpackages/tools/activities/detail?id=a-1')（:142-145 + navigation.ts:53-117）→ 路由带 query id=a-1；返回落点=活动列表且筛选/视图态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图（query 断言）"
+    },
+    {
+      "id": "ACT09",
+      "page": "subpackages/discover/activities/index",
+      "title": "下拉刷新穿透 30s TTL",
+      "tier": "normal",
+      "pre": "列表视图已渲染",
+      "action": "scroll-view 下拉触发 refresherrefresh（:389-397）",
+      "expected": "refresherTriggered=true 动画 → fetchActivities(true) 绕过 30s TTL 与空列表短路（:82-91 + activity.ts:170-171 force 分支）→ finally 复位动画不永驻（:87-90）；数据重载 console 可见请求",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（请求计数）"
+    },
+    {
+      "id": "ACT10",
+      "page": "subpackages/discover/activities/index",
+      "title": "滚动到底：加载更多防抖/没有更多",
+      "tier": "normal",
+      "pre": "列表视图",
+      "action": "滚动到底触发 scrolltolower（mock hasMore=false；real 多页时重复触发 2 次）",
+      "expected": "mock：防抖后无新请求，底部「没有更多活动了」（:94-102,469-472 + i18n activities.noMore）；real：300ms 防抖单次 fetchMoreActivities 追加不重复分页（activity.ts:210-243）；onUnload 取消挂起定时器（:76-81）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（请求计数）"
+    },
+    {
+      "id": "ACT11",
+      "page": "subpackages/discover/activities/index",
+      "title": "底部「去寻觅」",
+      "tier": "navigation",
+      "pre": "本页栈顶（列表或日历视图均可）",
+      "action": "tap primary（list :477-483 / calendar :627-633）",
+      "expected": "switchTab → 路由=pages/discover/index",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "ACT12",
+      "page": "subpackages/discover/activities/index",
+      "title": "底部「提交活动提案」→ 反馈页",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap secondary（:479-482）",
+      "expected": "navigateTo '/subpackages/support/feedback/index'；返回落点=活动页",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "ACT13",
+      "page": "subpackages/discover/activities/index",
+      "title": "日历月份切换（含跨年边界）",
+      "tier": "normal",
+      "pre": "日历视图",
+      "action": "tap ‹ 两次 → › 一次（:493-504）",
+      "expected": "标题「{year}年{month}月」随点击变化（monthTitle :268-272）；跨年正确：1 月‹→上年 12 月、12 月›→次年 1 月（goToPrev/NextMonth :278-298）；每次切换选中日期清空（selectedDate=''）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT14",
+      "page": "subpackages/discover/activities/index",
+      "title": "点击有活动日期（今天）→ 选中面板",
+      "tier": "normal",
+      "pre": "日历视图当月（mock a-3 date=今天 relativeDate(0)，activity.ts:94）",
+      "action": "tap 今日格（:516-558）→ 断言 → 再点同日",
+      "expected": "格子 selected 高亮（:520-527）+面板「{m}月{d}日 / 1个活动」（:560-568）+篮球赛卡片（含感兴趣按钮可再报名）；再点同日取消选中、面板收起（toggle :303-307）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT15",
+      "page": "subpackages/discover/activities/index",
+      "title": "无活动日期空态与非本月格无效点击",
+      "tier": "normal",
+      "pre": "日历视图",
+      "action": "tap 当月无活动日 → tap 非本月灰格",
+      "expected": "无活动日：可选中，面板空态「当日暂无活动」（:616-620 空态铁律）；非本月格 isCurrentMonth=false 点击无反应（:304-305 return）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "ACT16",
+      "page": "subpackages/discover/activities/index",
+      "title": "首拉失败错误态 + 重试 + AppShell 返回",
+      "tier": "normal",
+      "pre": "断网注入首拉失败且无缓存（不可注入时 UNVERIFIED）；恢复网络",
+      "action": "断言错误态 → tap「重试」（:347-354）→ 返回 ←",
+      "expected": "错误态：store errorMessage 文案+「重试」按钮（:347-354 + activity.ts:195-197）；重试 → loading→列表渲染；返回落点=来源页；重复进出 onShow 重拉无错误残留",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "PRI01",
+      "page": "subpackages/legal/privacy/index",
+      "title": "冷启动：fallback 正文渲染（mock 构建）",
+      "tier": "navigation",
+      "pre": "mock 构建 getLegalText 走 i18n 本地 fallback（config/legal-texts.ts:100-107 注释 + 设计目标 2）；wx.reLaunch('/subpackages/legal/privacy/index')；另一入口=登录页「隐私政策」链接（pages/login/index.vue:621）",
+      "action": "进入断言（onMounted loadLegalText，LegalTextPage.vue:52-55）",
+      "expected": "AppShell 标题「隐私政策」（:160 + privacy/index.vue:16-19）；正文渲染 fallback 文案（zh-CN legal.privacyPolicy.content 长文本 pre-wrap）；版本号不展示（local-fallback 隐藏，LegalTextPage.vue:96-102）；底部「我已阅读并同意」常驻（:218-230）；loading spinner 过渡后进入 success",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "PRI02",
+      "page": "subpackages/legal/privacy/index",
+      "title": "正文长文本滚动到底/顶",
+      "tier": "noop",
+      "pre": "PRI01 后正文已渲染",
+      "action": "scroll-view 滚到底再回顶（:207-216）",
+      "expected": "全文可滚无截断（white-space:pre-wrap + word-break）；底部按钮 fixed 区不遮正文",
+      "evidence": "noop：执行日志（scroll 位置 / console）"
+    },
+    {
+      "id": "PRI03",
+      "page": "subpackages/legal/privacy/index",
+      "title": "「我已阅读并同意」返回落点",
+      "tier": "navigation",
+      "pre": "从登录页 navigateTo 进入（栈>1）",
+      "action": "tap 底部按钮（:218-230）",
+      "expected": "lightHaptic + navigateBack → 落点=登录页；栈空（冷启动直达）fail → switchTab discover（handleAcknowledge :130-148 + ROUTES.TAB.DISCOVER）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "PRI04",
+      "page": "subpackages/legal/privacy/index",
+      "title": "CMS 异常兜底与重试（条件用例）",
+      "tier": "normal",
+      "pre": "real 模式注入后端不可达（mock 恒 fallback 时 UNVERIFIED）",
+      "action": "进入观察 → 若出现 error/empty 态 tap「重试」（:181-205）",
+      "expected": "getLegalText 永不抛错：后端失败回退本地文案（legal-texts.ts 设计目标 2）；若 error/empty：文案「法律文本加载失败，请稍后重试」+重试按钮可恢复（LegalTextPage.vue:84-88,152-156,181-205）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "PRI05",
+      "page": "subpackages/legal/privacy/index",
+      "title": "AppShell 返回键",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap AppShell 返回（show-back，LegalTextPage.vue:160 + AppShell.vue:116-145）",
+      "expected": "返回落点=来源页；无上级 fail 兜底 switchTab home（AppShell.vue:123-134）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "PRI06",
+      "page": "subpackages/legal/privacy/index",
+      "title": "打开即返回 + 重复进出缓存",
+      "tier": "navigation",
+      "pre": "本页可达",
+      "action": "进入后立即 tap「我已阅读并同意」；再重复进出 2 次",
+      "expected": "无崩溃无白屏；5 分钟内存缓存内二次进入不再发 GET /v1/config/legal（legal-texts.ts 缓存策略 :98-121 与 LEGAL_TEXT_ENDPOINT）；正文稳定",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console（请求计数）"
+    },
+    {
+      "id": "AGR01",
+      "page": "subpackages/legal/agreement/index",
+      "title": "冷启动：用户协议 fallback 正文渲染",
+      "tier": "navigation",
+      "pre": "mock 构建 getLegalText 走 i18n fallback（legal-texts.ts:100-107）；wx.reLaunch('/subpackages/legal/agreement/index')；另一入口=登录页「用户协议」链接（pages/login/index.vue:616）",
+      "action": "进入断言",
+      "expected": "AppShell 标题「用户协议」（agreement/index.vue:16-19 + LegalTextPage.vue:160）；正文 fallback 文案（legal.userAgreement.content，含「本协议 v1.0.0」字样）；版本号不展示；底部「我已阅读并同意」",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "AGR02",
+      "page": "subpackages/legal/agreement/index",
+      "title": "正文长文本滚动到底/顶",
+      "tier": "noop",
+      "pre": "AGR01 后",
+      "action": "scroll-view 滚到底再回顶",
+      "expected": "全文可滚无截断；底部按钮不遮正文",
+      "evidence": "noop：执行日志（scroll 位置 / console）"
+    },
+    {
+      "id": "AGR03",
+      "page": "subpackages/legal/agreement/index",
+      "title": "「我已阅读并同意」返回落点",
+      "tier": "navigation",
+      "pre": "从登录页 navigateTo 进入（栈>1）",
+      "action": "tap 底部按钮",
+      "expected": "navigateBack → 落点=登录页；栈空 → switchTab discover（LegalTextPage.vue:130-148）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "AGR04",
+      "page": "subpackages/legal/agreement/index",
+      "title": "CMS 异常兜底与重试（条件用例）",
+      "tier": "normal",
+      "pre": "real 模式注入后端不可达（mock 恒 fallback 时 UNVERIFIED）",
+      "action": "进入观察 → 若 error/empty 态 tap「重试」",
+      "expected": "永不抛错兜底同 PRI04；error/empty 文案「法律文本加载失败，请稍后重试」+重试恢复",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "AGR05",
+      "page": "subpackages/legal/agreement/index",
+      "title": "AppShell 返回键",
+      "tier": "navigation",
+      "pre": "本页栈顶",
+      "action": "tap AppShell 返回",
+      "expected": "返回落点=来源页；无上级 switchTab home 兜底",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "AGR06",
+      "page": "subpackages/legal/agreement/index",
+      "title": "重复进出：5 分钟内存缓存命中",
+      "tier": "normal",
+      "pre": "本页可达（real 构建观察网络；mock 构建恒 fallback 无请求，console 断言口径）",
+      "action": "进入 → 返回 → 再进入（间隔 <5 分钟）",
+      "expected": "二次进入命中内存缓存不再发 /v1/config/legal（legal-texts.ts:98-121）；正文/标题稳定无闪烁；无 console 错误",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（console 请求计数）"
+    },
+    {
+      "id": "MD01",
+      "page": "subpackages/market/detail/index",
+      "title": "固化参数 ?id=1 冷启动：mock 构建封存态渲染",
+      "tier": "normal",
+      "pre": "参数固化表 r11-param-map.json：params['subpackages/market/detail/index']='?id=1'；mock 构建 getAppConfig switches 不含 commerce.enabled → isCommerceOn()=false → commerceSealed=true（services/api.ts:267-278 + stores/app-config.ts:64-69 + detail/index.vue:32-33）；wx.reLaunch('/subpackages/market/detail/index?id=1')",
+      "action": "进入断言（onLoad 记录 productId 后封存早退 :261-273）",
+      "expected": "顶部导航「商品详情」+返回键（:289-303）；封存卡：LOCK 图标+「功能封存中」+「该功能暂未开放，开放时间将另行通知」+「返回」按钮（:305-320 + i18n commerce.sealed*）；无商品大图/价格/购买栏；console 无 GET /products/1 请求（封存不发请求）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量（网络断言）"
+    },
+    {
+      "id": "MD02",
+      "page": "subpackages/market/detail/index",
+      "title": "封存态「返回」按钮（栈=1 兜底）",
+      "tier": "navigation",
+      "pre": "MD01 封存卡已渲染；reLaunch 直达（栈=1）",
+      "action": "tap 封存卡「返回」（:309-319）",
+      "expected": "goBack（:241-249）：栈=1 → switchTab('/pages/home/index') → 路由=pages/home/index；从 shop 页进入（栈>1）时则 navigateBack 回 shop",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "MD03",
+      "page": "subpackages/market/detail/index",
+      "title": "解封竞态补偿 watch：配置异步回来自动补拉",
+      "tier": "normal",
+      "pre": "封存态已在本页（productId='1' 已记录 :263-265）；执行器可注入 switches['commerce.enabled']=true 或后台开闸（不可注入时 UNVERIFIED）",
+      "action": "触发 commerceSealed 翻转（watch :277-282）",
+      "expected": "watch 命中（!sealed 且无数据且有 productId）→ 自动 loadProduct('1') → 详情渲染「校园音乐节早鸟票 ¥99 ¥129(划线) 已售 56 活动票务 库存 200」（mockCatalog id=1 :101-113）；不出现整页空白（MP-R1-次要24-1 修复回归点）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "MD04",
+      "page": "subpackages/market/detail/index",
+      "title": "未封存构建详情完整渲染（条件用例）",
+      "tier": "normal",
+      "pre": "real/展示构建且 commerce.enabled=true（mock 构建恒封存，不可达时 UNVERIFIED）；?id=1",
+      "action": "进入断言",
+      "expected": "商品大图 SafeImage+「校园音乐节早鸟票」+¥99+划线原价 ¥129+「已售 56」+「活动票务」+「库存 200」+「商品介绍」正文（:358-403 + mockCatalog :101-113）；图片裂图时 SafeImage 兜底占位不破版（兜底链铁律）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "MD05",
+      "page": "subpackages/market/detail/index",
+      "title": "「立即购买」占位交互：toast 无支付请求",
+      "tier": "critical",
+      "pre": "未封存详情已渲染（购买栏 :390-402）",
+      "action": "tap「立即购买」1 次（before/after 截图）",
+      "expected": "toast「支付功能暂未开放」（:251-259 + i18n shop.buyUnavailable）；无支付/下单网络请求发出；页面无路由变化",
+      "evidence": "critical：before + after 截图 + 路由链（getCurrentPages）+ Toast 文案 + console 全量"
+    },
+    {
+      "id": "MD06",
+      "page": "subpackages/market/detail/index",
+      "title": "购买快击 ×5",
+      "tier": "normal",
+      "pre": "同 MD05",
+      "action": "快速连点「立即购买」5 次",
+      "expected": "不崩溃、无路由变化、无请求风暴（handler 仅 toast 无副作用 :251-259）；toast 文案正确（无防抖锁、5 次 toast 互相覆盖属现状，如实记录）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "MD07",
+      "page": "subpackages/market/detail/index",
+      "title": "无参 id 进入 → 空态「返回逛逛」（未封存）",
+      "tier": "navigation",
+      "pre": "未封存构建（封存态优先级最高，无参也显示封存卡——对照口径）",
+      "action": "reLaunch('/subpackages/market/detail/index')（无 query）→ 断言 → tap「返回逛逛」",
+      "expected": "notFound 空态「商品不存在或已下架」+「该商品可能已下架，去看看其他好物吧」+「返回逛逛」按钮（:343-356 + onLoad :269-272）；tap → goBack（栈=1 → switchTab home）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "MD08",
+      "page": "subpackages/market/detail/index",
+      "title": "非法 id=999 → notFound（mock 目录仅 1-6）",
+      "tier": "normal",
+      "pre": "未封存构建",
+      "action": "reLaunch('/subpackages/market/detail/index?id=999')",
+      "expected": "mock find 失败 → notFound 空态（:213-215）；real 构建 404 → 同 notFound（:224-233）；不显示错误态重试（404 与网络错误区分正确）",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "MD09",
+      "page": "subpackages/market/detail/index",
+      "title": "导航栏返回键（栈>1/栈=1 两态）",
+      "tier": "navigation",
+      "pre": "①从 shop 页 navigateTo 进入（栈>1）②reLaunch 直达（栈=1）",
+      "action": "tap 导航栏 ←（:290-299）各一次",
+      "expected": "①navigateBack 回 shop；②栈=1 → switchTab /pages/home/index（goBack :241-249）",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图"
+    },
+    {
+      "id": "MD10",
+      "page": "subpackages/market/detail/index",
+      "title": "详情滚动与底部购买栏不遮挡",
+      "tier": "noop",
+      "pre": "未封存详情已渲染",
+      "action": "scroll-view 滚到底再回顶（:359-388）",
+      "expected": "160rpx footer 留白使商品介绍完整可读（:385-387,628-631）；fixed 购买栏不遮内容；无 console 错误",
+      "evidence": "noop：执行日志（scroll 位置 / console）"
+    },
+    {
+      "id": "MD11",
+      "page": "subpackages/market/detail/index",
+      "title": "从逛逛页商品卡进入（真实入口链路）",
+      "tier": "navigation",
+      "pre": "从 shop 页（subpackages/market/shop/index）进入；封存构建下预期为封存卡（路由断言仍成立）",
+      "action": "tap 任一商品卡（shop/index.vue:256-260 navigateTo '/subpackages/market/detail/index?id={itemId}'）",
+      "expected": "路由 query id=所点商品；未封存时详情名称/价格与所点一致；返回落点=shop",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图（query 一致性断言）"
+    },
+    {
+      "id": "MD12",
+      "page": "subpackages/market/detail/index",
+      "title": "打开即返回（onLoad 竞态与 watch 生命周期）",
+      "tier": "navigation",
+      "pre": "本页可达",
+      "action": "reLaunch '?id=1' 渲染后立即 tap「返回」（不等图片加载完）",
+      "expected": "无崩溃；页面销毁后封存补偿 watch 不误触发请求（:277-282 依赖页面存活）；路由回落正常；console 无 TypeError",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可免截图 + console"
+    }
+  ]
+}

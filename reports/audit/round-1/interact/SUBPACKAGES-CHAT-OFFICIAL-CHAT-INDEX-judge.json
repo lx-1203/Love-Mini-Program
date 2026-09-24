@@ -1,0 +1,438 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/official-chat/index",
+  "pageName": "官方/AI 聊天",
+  "judgeRole": "A6 交互判定员（证据仲裁：Manifest.expected vs A1.observed vs 截图）",
+  "evidenceSources": {
+    "manifest": "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json",
+    "execResults": "reports/audit/round-1/interact/exec-results.json（results[] 中 manifest=SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX 共 26 条）",
+    "opScreenshots": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC*.png",
+    "tourScreenshots": "reports/screenshots/round-1-tour/A|B/subpackages_chat_official-chat_index__默认|交互后.png（reports/audit/round-1/screenshot-manifest.json shots[305]）",
+    "wxmlSnapshots": "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC{12,13,24}-after.wxml"
+  },
+  "crossSourceFindings": [
+    "本例截图 7 张记录为 ERROR:timeout 且磁盘不存在：OC01/OC02/OC07/OC08/OC14/OC23/OC26（md5 清点证实仅 12 张 OC 截图落盘）。",
+    "OC15-after 与 OC16-after md5 相同（9798a2e0）；OC17-after=OC22-after=OC24-before=OC24-after（37d4fcbb）——均为失败用例的同一空基础态帧。",
+    "OC12-after.wxml 实证 .nav-left、.bubble--card、.activity-detail-link 在渲染树中真实存在 → OC04/OC06/OC19 的 'absent' DOM 探针为坏探针。",
+    "A1 全部 26 条 console 字段均为 []（含 observed 中带 navError 的 OC04）→ 'console 无 X' 类子断言全程为弱证据，仅 observed 内联 navError 标记有效。",
+    "全部用例 pre 记录 login ok 但 userId=user-1001 MISMATCH!（r1-exec.cjs:358-368 match 判定）：A(期望100158曦风)/B(期望100159小新生) 实际均解析为同一账号 user-1001，双身份前置被破坏（影响 OC03/OC26）。",
+    "巡检（round-1-tour/A）official-chat 交互后截图实拍为活动详情页（新人礼遇）→ 本页卡片跳详情链路在巡检会话中真实可达，与 A1 run 中 OC19/OC20 点击后路由不变形成冲突。",
+    "OC12-after 截图中用户头像为深色圆——经比对 src/static/assets/images/avatars/avatar-1.jpg 资产本体即暗色森林图 → 头像加载成功非裂图（resolveMediaUrl 指向 127.0.0.1:8080 媒体服务在 run 中在线）。"
+  ],
+  "checks": [
+    {
+      "caseId": "OC01",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "身份A冷启动直达（无参）：骨架过渡→英雄区+3条mock消息",
+      "expected": "onLoad 500ms 后 ready=true，.skeleton 先现后隐；英雄区「Hi~ 我是寻觅助手」+恰3条助手侧消息（101text/102card/103text 全 .msg-row--left）；首条带时间条（M月D日 HH:mm）；导航「寻觅助手」+「官方」徽章+副标题「你的恋爱小管家」；无 .state-view/错误/空态；console 无 NAV_FAIL/TypeError",
+      "actual": "A1: top=subpackages/chat/official-chat/index；dom: .skeleton:absent（单次采样，已过500ms 窗口，符合'后隐'终态但未取'先现'证据）.hero-section:present .msg-row:present .msg-row--left:present .state-view:absent .error-text:absent；route 栈顶正确；console=[]。本例 after 截图 ERROR:timeout 未落盘；以巡检 A 默认态截图（round-1-tour/A/subpackages_chat_official-chat_index__默认.png）补视觉：英雄区/3条全左/时间条'9月21日 HH:mm'/标题+官方徽章+副标题/发送禁用态均实拍一致；OC12-after.wxml 证实标题'寻觅助手'+徽章'官方'+副标题'你的恋爱小管家'+恰3条基础消息全左。未达成取证的部分：0s/0.6s/1.5s 三次采样未做，骨架'先现后隐'过渡无直接证据（不凭代码判真，仅注记）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC01",
+        "reports/audit/round-1/interact/exec-results.json#OC01（observed/route/console）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC01-after.png（缺失：ERROR:timeout，磁盘无此文件）",
+        "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png（巡检默认态：内容实拍一致）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（标题/徽章/副标题/3条基础消息文本证据）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "OC02",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "带参 accountId=official-assistant 冷启动：标题与消息加载同无参一致",
+      "expected": "query.accountId='official-assistant' 被采纳；mock 分支恒返3条；标题「寻觅助手」副标题「你的恋爱小管家」；渲染与 OC01 一致",
+      "actual": "A1: route 栈顶 options={accountId:'official-assistant'} 断言通过；dom: .nav-title:present .nav-subtitle:present .msg-row:present；console=[]。'.query:absent .accountId:absent' 为伪选择器探针（非页面类名），不计。本例截图 ERROR:timeout 未落盘；标题/副标题文本与3条消息由巡检默认态截图+OC12 wxml 同页实证一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC02",
+        "reports/audit/round-1/interact/exec-results.json#OC02（route options.accountId 断言）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC02-after.png（缺失：ERROR:timeout）",
+        "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "OC03",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "消息页真实入口：寻觅助手会话卡→navigateTo 栈深2",
+      "expected": "点助手卡 openAssistant → navigateTo，页面栈=[messages/index, official-chat/index] 栈深2，query=accountId=official-assistant，≤500ms 路由变化",
+      "actual": "A1 status=SKIPPED，observed='action-not-automatable'，无 act 记录、无截图、route 为 reLaunch 兜底产物（options={}）——真实入口链路未执行。另：身份B登录 MISMATCH（user-1001，与身份A同一账号），本例前置身份本身不成立",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC03",
+        "reports/audit/round-1/interact/exec-results.json#OC03（SKIPPED action-not-automatable，evidence=[]）",
+        "scripts/qa/r1-exec.cjs:358-368（ensureLogin match=false → MISMATCH）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC04",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "返回键（栈深2）：navigateBack 回消息页，落点=来源页",
+      "expected": "goBack 判 pages.length>1 → uni.navigateBack → 落回 /pages/messages/index 栈深1，≤500ms 路由变化",
+      "actual": "A1 记录内部矛盾无法归因：(1) 前置未成立——OC03 被跳过后 harness 以 auto-reLaunch 进本页（栈深1 而非承 OC03 的栈深2）；(2) harness 自身 navigateBack 步骤报 NAV_ERROR: Uncaught [object Object]；(3) dom 探针 .nav-left:absent 与 OC12-after.wxml 中 .nav-left 真实存在矛盾；(4) 终态 route 仍 official-chat/index，与 OC05 同一按钮在栈深1 下成功 switchTab 的结果相悖。四项互斥，判定采集会话异常（疑似 automator 页面代理失效），既不能判 VERIFIED 也不能将全部矛盾归责产品",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC04",
+        "reports/audit/round-1/interact/exec-results.json#OC04（navError/.nav-left:absent/终态route，evidence=[]无截图）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（.nav-left 存在性反证）",
+        "reports/audit/round-1/interact/exec-results.json#OC05（同按钮同探针写法下成功导航的对照）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "OC05",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "返回键（栈深1直达）：兜底 switchTab 消息 tab，无 unhandled rejection",
+      "expected": "pages.length==1 → uni.switchTab(ROUTES.TAB.CHAT=/pages/messages/index)（MP-R1-OFFICIALCHAT-003 修复点）；console 无 navigateBack fail 未处理 rejection；≤500ms 路由变化",
+      "actual": "A1: pre=reLaunch 本页（栈深1）→ act:tap .nav-left → 终态 route=pages/messages/index ✓ 兜底分支生效，修复未回退；observed 全程无 navError 标记。注：console 字段为 [] 属弱证据（全 26 条均空），以 observed 无 navError 标记为替代判据。'.nav-left:absent .length:absent' 探针与本组所有案例同样不可靠，以 route 断言为准",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC05",
+        "reports/audit/round-1/interact/exec-results.json#OC05（终态 route=pages/messages/index）",
+        "apps/client/src/subpackages/chat/official-chat/index.vue:311-319（goBack 栈深分支，仅作定位不作判定）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "OC06",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "打开即返回×3/重复进出：路由正确、消息不叠加、无累积报错",
+      "expected": "每次进出路由正确、返回落点恒为消息页；第3次进入仍恰3条 mock 消息无叠加；console 无累积 TypeError/NAV_FAIL",
+      "actual": "A1 记录自相矛盾：harness repeatNav navigateTo ×3 每次报 navErr:Uncaught [object Object]（错误挂在 harness 自身导航步骤上，同 OC04 形态）；dom 探针 .msg-row:absent 与 OC01/OC11/OC12 的 .msg-row:present 直接矛盾；终态 route=official-chat/index 与'返回落点恒为消息页'不符但源头不可归因（同 OC04 采集异常特征）；无截图、无消息计数采样。消息不叠加断言完全无有效证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC06",
+        "reports/audit/round-1/interact/exec-results.json#OC06（navErr×3/.msg-row:absent/终态route，evidence=[]无截图）",
+        "reports/audit/round-1/interact/exec-results.json#OC01/OC11/OC12（同探针返回 present 的矛盾对照）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "OC07",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "导航栏「···」按钮：Toast「会话设置敬请期待」（死按钮接线回归）",
+      "expected": "uni.showToast({title:'会话设置敬请期待', icon:'none'}) ≤500ms 可见、文案逐字一致；无路由变化；重复点击每次均有反馈（MP-R1-OFFICIALCHAT-002 不回退）",
+      "actual": "A1: act:tap .nav-right（dom .nav-right:present）→ toast 捕获 [{api:'showToast', title:'会话设置敬请期待'}] 逐字一致 ✓；终态 route 仍本页（无路由变化）✓。本例截图 ERROR:timeout 未落盘，Toast 在屏视觉以 API 级 showToast 捕获替代（文案证据强于截图）。'重复点击每次均有反馈'仅记录单次点击，重复反馈未单独取证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC07",
+        "reports/audit/round-1/interact/exec-results.json#OC07（toast title 逐字匹配+route 不变）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC07-after.png（缺失：ERROR:timeout）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "OC08",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "输入栏「+」按钮：Toast「更多功能敬请期待」",
+      "expected": "Toast「更多功能敬请期待」icon none ≤500ms；无路由变化、无面板展开",
+      "actual": "A1: act:tap .input-bar__icon--plus（dom .input-bar__icon--plus:present .plus-btn:present）→ toast 捕获 [{api:'showToast', title:'更多功能敬请期待'}] 逐字一致 ✓；终态 route 仍本页 ✓；无面板类新节点记录。截图 ERROR:timeout 未落盘（同 OC07 以 API 捕获替代）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC08",
+        "reports/audit/round-1/interact/exec-results.json#OC08（toast title 逐字匹配+route 不变）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC08-after.png（缺失：ERROR:timeout）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "OC09",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "表情键开合 EmojiPanel：32格面板展开，再点同键收起",
+      "expected": "首次点击 emojiPanelVisible=true → .emoji-panel 8列×4行32格；再点同键收起；开/收均≤500ms；无路由变化",
+      "actual": "A1: act-FAIL:input(__CAND__) el.input is not a function —— harness 在本例错误注入了与用例无关的输入步骤并中断，表情键点击从未执行；dom .emoji-panel:absent 为初始态非开合结果；after 截图实拍为面板未开的基础态。用例主动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC09",
+        "reports/audit/round-1/interact/exec-results.json#OC09（failureReason='action input __CAND__ failed: el.input is not a function'）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC09-after.png（基础态实拍，面板未开）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "OC10",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "选中表情：追加输入框、面板保持开、发送键转可用",
+      "expected": "handleEmojiSelect 追加 → inputValue='😀' 回显；面板不收起；再点续加'😀😀'；canSend=true → 发送键移除 --disabled",
+      "actual": "A1: pre:input __CAND__ 后 act-FAIL:tapIndex(.emoji-panel__item) element not found —— 面板从未展开（承 OC09 失败链路），表情格不存在可点；after 截图为基础态。用例主动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC10",
+        "reports/audit/round-1/interact/exec-results.json#OC10（failureReason='element not found: .emoji-panel__item'）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC10-after.png（基础态实拍）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "OC11",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "空输入点发送（含快击×5）：禁用态零副作用",
+      "expected": "sendMessage 首行守卫 !text return → 消息数保持3、无路由变化、无 Toast；按钮呈 .input-bar__send--disabled 禁用态",
+      "actual": "A1: act:rapidTap .input-bar__send ×5 done=5 + tap ×1 → dom .input-bar__send--disabled:present；toast=[]（无 Toast）✓；route 不变 ✓；after 截图实拍：恰3条基础消息（无新增用户气泡）、输入为空、发送键浅绿禁用态 ✓。零副作用达成",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC11",
+        "reports/audit/round-1/interact/exec-results.json#OC11（rapidTap×5/toast[]/route）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC11-after.png（3条基础消息+禁用态实拍）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "OC12",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "正常发送一条消息：右侧气泡+已读+输入清空+1.2s助手回复+滚底",
+      "expected": "≤500ms pending 用户消息右侧行（品牌绿气泡白字+「已读」）；输入即时清空；约1.2s mock 回复「收到啦～我会帮你留意合适的活动和人哦 😊」渲染左侧且 emoji 经 EmojiText 转 SVG；两条新消息均滚底至 #official-chat-bottom-anchor；总数3→4→5；mock 不发网络请求",
+      "actual": "A1: act:input .input-bar__input='你好呀，帮我推荐个活动' → tap .input-bar__send；dom .msg-row--right:present .bubble--user:present .read-receipt:present .bubble--assistant:present；route 不变；console=[]。before+after 截图+after wxml 三重实证：右气泡文本一致+'已读'标记+input value=\"\"（已清空）+发送键回禁用+助手回复'收到啦～我会帮你留意合适的活动和人哦'+😊经 EmojiText 渲染为 emoji 图片（左侧行）+scroll-view scroll-into-view='official-chat-bottom-anchor'+消息行计数 3基础+时间条+1右+1左=5 ✓；after 截图中用户消息完整可见于输入栏上方（首次滚底生效）。注：after 截图摄于回复入画前（1.2s 时序内），回复自身滚底可见性由 wxml+锚点绑定佐证而非截图；1.2s 时长未单独打点",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC12",
+        "reports/audit/round-1/interact/exec-results.json#OC12（dom 四探针+route+console）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-before.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（气泡文本/已读/清空/回复/锚点/计数全证据）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC13",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "防连点/重复提交：1.2s窗口内快击×5只提交1次",
+      "expected": "仅1条「防连点验证」用户消息+1条助手回复（sending 守卫+清空双保险）；无重复气泡；sending 复位后可再发",
+      "actual": "A1: act-FAIL:input(__CAND__) el.input is not a function —— 「防连点验证」从未输入，消息未发出，快击主场景未执行；after wxml 实证仅3条基础消息、无右行、无'防连点验证'文本；before 截图 ERROR:timeout 未落盘",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC13",
+        "reports/audit/round-1/interact/exec-results.json#OC13（failureReason el.input is not a function）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC13-after.wxml（msg-row=3、无--right、无目标文本）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC13-after.png"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "OC14",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "键盘 confirm 发送：与发送键等效且不双发",
+      "expected": "@confirm 触发 sendMessage → 用户消息上屏+输入清空+1.2s回复，仅一条用户消息不双发",
+      "actual": "A1: 仅记录 act:input .input-bar__input='confirm 通道验证'，无 confirm 事件触发记录（无 act:confirm 类步骤）；无发送后 DOM 探针（未查 .msg-row--right 等）；after 截图 ERROR:timeout 未落盘。confirm 通道是否触发发送完全无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC14",
+        "reports/audit/round-1/interact/exec-results.json#OC14（observed 仅 input 步骤，dom 仅 .input-bar__input:present，evidence 截图 ERROR）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC15",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "超长输入300字发送：word-break 折行、滚底末条完整可见（MP-R1-OFFICIALCHAT-001 回归）",
+      "expected": "max-width:70% 内 break-all 折行无横向溢出；scroll-into-view 锚点使长消息发送后末条完整可见；mock 回复照常到达",
+      "actual": "A1: act-FAIL:input(__CAND__) el.input is not a function —— 300字未输入、未发送；after 截图实拍空基础态（3条基础消息），且与 OC16-after md5 相同（9798a2e0）证实无任何新状态。回归主场景未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC15",
+        "reports/audit/round-1/interact/exec-results.json#OC15（failureReason el.input is not a function）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC15-after.png（md5=9798a2e0，与 OC16 同帧）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC16",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "特殊字符/HTML串发送：纯文本转义渲染、无注入执行",
+      "expected": "用户气泡以文本插值原文转义显示；无图片加载/脚本执行/alert；助手回复照常；emoji 系统字形直出；console 无 onerror 痕迹",
+      "actual": "A1: act-FAIL:input(__CAND__) element not found: __CAND__ —— 注入串从未输入发送；after 截图空基础态（与 OC15 同 md5）。转义渲染与注入安全主场景未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC16",
+        "reports/audit/round-1/interact/exec-results.json#OC16（failureReason='element not found: __CAND__'）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC16-after.png（md5=9798a2e0，与 OC15 同帧）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC17",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "输入后清空：发送键回禁用态、草稿不残留",
+      "expected": "trim 后长度0 → canSend=false → --disabled 类恢复；输入框 value 为空",
+      "actual": "A1: act-FAIL:input(__CAND__) el.input is not a function ×2（输入与清空两步均失败）；after 截图空基础态，与 OC22/OC24 两帧 md5 相同（37d4fcbb）。'输入→清空'往返主场景未执行（截图中的禁用态为初始空态，非清空后回归态）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC17",
+        "reports/audit/round-1/interact/exec-results.json#OC17（failureReason el.input is not a function，act-FAIL×2）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC17-after.png（md5=37d4fcbb）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC18",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "消息区滚动到底/顶：scrollTop 变化、数据不丢（内部 scroll-view）",
+      "expected": "先发3条消息撑高内容；对 .chat-scroll（内部 scroll-view）滚底再滚顶，scrollTop 随滚动可达两端；消息行不丢；无路由变化",
+      "actual": "A1: pre 未发送任何消息（前置'先发3条撑高'未执行，页面仅3条 mock 未必可滚）；act 为 pageScrollTo bottom/top（页面级滚动 API，对 100vh 弹性布局内的 scroll-view 无效——expected 明注'非页面级滚动'）；evidence 仅 'scrollPos=top' 一个终态值，无逐步 scrollTop 采样。执行方式与用例方法不符，scrollTop 可达两端与数据不丢均无有效证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC18",
+        "reports/audit/round-1/interact/exec-results.json#OC18（act:pageScrollTo bottom/top，evidence=['scrollPos=top']）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "OC19",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "活动卡片整卡点击：跳活动详情页（cardTargetUrl id=2001）",
+      "expected": "handleActivityTap → openAppPath → navigateTo 栈顶=/subpackages/tools/activities/detail?id=2001 栈深2；卡片信息完整（封面/12人已报名/城市露营计划）；≤500ms 路由变化",
+      "actual": "A1 记录内部矛盾无法归因：dom 探针 .bubble--card:absent 与 OC12-after.wxml 中 class='bubble bubble--assistant bubble--card' 真实存在直接矛盾（'.imageUrl:absent' 系伪选择器）；同记录 act:tap .bubble--card 成功执行×2（若元素真缺失应如 OC21 记 act-FAIL）；终态 route 仍本页。反证：巡检同页交互后截图（round-1-tour/A/…__交互后.png）实拍活动详情页已渲染 → 该跳转链路在巡检会话可达；目标页在 pages.json:165/186 已注册。探针坏+无截图+巡检反证三重冲突，不能凭 A1 单源判 FAILED 亦不能判 VERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC19",
+        "reports/audit/round-1/interact/exec-results.json#OC19（.bubble--card:absent vs act:tap×2 成功、终态route，evidence=[]无截图）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（bubble--card 存在性反证）",
+        "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png（巡检实拍详情页可达）",
+        "apps/client/src/pages.json:165,186（subpackages/tools 根 + activities/detail 注册）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "OC20",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "「查看详情」链接：@tap.stop 阻断冒泡，单次跳转不双触发",
+      "expected": "仅一次 navigateTo，页面栈深恰为2（无重复入栈）；目标 URL 同 OC19（/subpackages/tools/activities/detail?id=2001）",
+      "actual": "A1（observed 权威源）：dom .activity-detail-link:present（与 wxml 一致，本例探针可信）→ act:tap .activity-detail-link ×1 → 终态 route 栈顶仍 subpackages/chat/official-chat/index，未发生任何导航——预期'栈深2+跳转'未达成，亦违反'点击 500ms 内必有可观测反馈'铁律。冲突证据：巡检另一会话中该链路可达详情页（round-1-tour/A 交互后截图），目标页注册无缺（pages.json:186），故归因（产品 vs automator 会话异常）需复跑定位，confidence 相应下调。OC19 同链路因探针坏已另判 UNVERIFIED，本例探针干净、以 A1 权威 observed 判 FAILED",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC20",
+        "reports/audit/round-1/interact/exec-results.json#OC20（act:tap .activity-detail-link；终态 route=subpackages/chat/official-chat/index；evidence=[]无截图）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（.activity-detail-link 存在）",
+        "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png（巡检反证：详情页可达）",
+        "apps/client/src/utils/navigation.ts:112-126（navigateTo fail 仅回调不提示，handleActivityTap 未传 fail）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "OC21",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "「去看看」按钮（real 模式 action-buttons 消息）：跳活动列表页",
+      "expected": "onActionBtnTap('去看看') → openAppPath('/subpackages/discover/activities/index') 栈顶=该路由栈深+1",
+      "actual": "A1: act-FAIL:tap(.action-btn--primary) element not found —— 符合预期环境限制：r11 mock 包固化3条消息无 action-buttons 类型（manifest pre 明文'mock 环境无法满足时如实记 UNVERIFIED'），.action-btn--primary 缺失本身即 mock 环境的正确表现，非产品缺陷。real 模式路径无法在本次环境执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC21（pre 注明 mock 记 UNVERIFIED）",
+        "reports/audit/round-1/interact/exec-results.json#OC21（.action-btn--primary:absent）",
+        "apps/client/src/subpackages/chat/official-chat/index.vue:222-253（mock 固化3条无 action-buttons，仅作定位）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC22",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "「稍后再说」按钮（real 模式）：本地插入用户消息不发网络请求",
+      "expected": "else 分支 push 本地 user-text「好的，稍后再说～」右侧绿气泡≤500ms 滚底；不发 POST；无路由变化",
+      "actual": "A1: act-FAIL:tap(.action-btn--default) element not found —— 同 OC21，real-only 场景在 mock 包无承载元素（manifest 预设 UNVERIFIED）；after 截图空基础态（md5=37d4fcbb 与 OC17/OC24 同帧）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC22（pre 注明 mock 不可执行则 UNVERIFIED）",
+        "reports/audit/round-1/interact/exec-results.json#OC22（.action-btn--default:absent）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC22-after.png（md5=37d4fcbb）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC23",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "real 模式加载失败：错误文案+重试按钮，重试真实重拉",
+      "expected": "catch 置 errorMessage='官方消息加载失败，请重试' 且 messages 清空；错误态渲染重试按钮；点重试恢复；loading finally 复位不永驻",
+      "actual": "A1: act-FAIL:tap(.retry-btn) element not found；dom .state-view:absent .error-text:absent —— mock 模式加载恒成功（index.vue:223-257 mock 分支直接赋值不走 request），错误态在 mock 环境不可呈现（manifest pre 明文'mock 环境记 UNVERIFIED'）。本例截图 ERROR:timeout 未落盘。real 失败路径无法在本次环境执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC23（pre 注明 mock 环境记 UNVERIFIED）",
+        "reports/audit/round-1/interact/exec-results.json#OC23（.retry-btn:absent，截图 ERROR:timeout）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC24",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "real 模式发送失败：pending 移除+草稿恢复+Toast「发送失败，请重试」",
+      "expected": "失败路径：pending 移除、草稿精确恢复、Toast 逐字一致、sending 复位；请求头携带 Idempotency-Key: official-{localId}（PRODUCT-FIX 回归）",
+      "actual": "A1: act-FAIL:input(__CAND__) element not found —— 消息未输入未发送；且 mock 模式无发送失败路径（manifest pre 明文 mock 环境记 UNVERIFIED）。before/after 截图 md5 相同（37d4fcbb）证实页面零变化，Idempotency-Key 回归断言无请求可查",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC24（pre 注明 mock 环境记 UNVERIFIED）",
+        "reports/audit/round-1/interact/exec-results.json#OC24（failureReason='element not found: __CAND__'）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC24-before.png 与 -OC24-after.png（md5 同=37d4fcbb）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC25",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "real 包未登录冷启动：LockScreen 全屏拦截，聊天主体不渲染",
+      "expected": "isUnlocked=false → LockScreen 渲染（主按钮/×/先逛逛齐备）；聊天主体与输入栏不渲染；无错误/空态闪现",
+      "actual": "A1: pre:logout ok + storageRemove token + reLaunch 后 dom .lock-screen:absent .chat-body:present .input-bar:present；after 截图实拍聊天主体完整渲染。与 expected 相反，但这正是 mock 包的正确表现：isUnlocked=isLoggedIn||useMock()，mock 包 useMock()=true 恒解锁（manifest pre 明文'mock 包下无法呈现，记 UNVERIFIED'）。执行本身成功但验证对象（锁定态）在 mock 环境不可承载",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC25（pre 注明 mock 包记 UNVERIFIED）",
+        "reports/audit/round-1/interact/exec-results.json#OC25（dom .lock-screen:absent .chat-body:present）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC25-after.png（登出后聊天主体照常渲染实拍）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "OC26",
+      "page": "subpackages/chat/official-chat/index",
+      "operation": "用户消息头像兜底链与「已读」标记：双身份A/B各验一次",
+      "expected": "头像 src=resolveMediaUrl(profileStore.avatarUrl) mock 双身份均解析 avatar-1.jpg 且加载成功非裂图；「已读」标记每条用户气泡下可见",
+      "actual": "A1: 仅执行 pre:login A（且 MISMATCH：userId=user-1001≠100158；身份B登录亦解析 user-1001，与A同账号——双身份前提被身份解析破坏）；无任何发送动作，.msg-avatar/.read-receipt 探针无对象（absent 为无用户消息的正确表现）；本例截图 ERROR:timeout 未落盘。部分旁证：OC12-after wxml 实证用户头像 src=…/avatars/avatar-1.jpg 且 after 截图中头像圆正常显示（与 avatar-1.jpg 暗色森林资产本体一致，非裂图）、'已读'标记在用户气泡下方——但该证据来自身份 A 单身份会话，不构成双身份验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC26",
+        "reports/audit/round-1/interact/exec-results.json#OC26（仅 login A MISMATCH，无 act，截图 ERROR:timeout）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（头像 URL + 已读旁证）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.png（头像加载成功旁证）",
+        "apps/client/src/static/assets/images/avatars/avatar-1.jpg（暗色森林资产本体，证实非裂图）",
+        "scripts/qa/r1-exec.cjs:175-180,358-368（IDENT_DEFS 与 match 判定，A/B 期望 100158/100159）"
+      ],
+      "confidence": 0.85
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-OC-001",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC20-after.png（缺失：A1 记录 ERROR/未落盘，路由证据来自 exec-results.json#OC20）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "「查看详情」链接点击后路由未变化：A1 run 中 tap .activity-detail-link 执行后页面栈顶停留 subpackages/chat/official-chat/index，预期 navigateTo /subpackages/tools/activities/detail?id=2001 栈深2 未达成，违反「可点击元素点击后 500ms 内必须有可观测反馈」铁律。归因存在反证冲突：巡检另一会话（round-1-tour/A 交互后截图）中该链路实拍可达详情页、目标页已注册（pages.json:186）、页面 handler 已接线（index.vue:442/463）——本例判定偏向 automator 会话/分包首载异常，但按证据规则以 A1 权威 observed 判 FAILED；若复跑复现，则 handleActivityTap→openAppPath 的 navigateTo fail 为静默路径（utils/navigation.ts:112-126 fail 仅回调，handleActivityTap 未传 fail 回调，用户无任何反馈）需一并补提示。",
+      "evidence": "Manifest expected（ops/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json#OC20：栈深恰2无重复入栈）vs A1 observed（exec-results.json#OC20：act:tap .activity-detail-link ×1 → 终态 route=subpackages/chat/official-chat/index，无 act-FAIL）vs 截图（本例无截图；巡检 round-1-tour/A/subpackages_chat_official-chat_index__交互后.png 显示详情页在另会话可达；OC12-after.wxml 证实 .activity-detail-link 真实存在）",
+      "sources": ["interaction", "screenshot", "code"],
+      "confidence": 0.6,
+      "ideal": "点击「查看详情」≤500ms 内 navigateTo 至 /subpackages/tools/activities/detail?id=2001，页面栈深恰为 2，整卡 @tap 不因 @tap.stop 双触发；导航失败时给用户可见反馈而非静默。",
+      "fix": "1) 复跑 OC20（先排除 automator 会话失效/分包首载时延：点击前预触发 subpackages/tools 加载）；2) 若复现，核查 navigateTo fail errMsg（page not found / webview limit），并为 handleActivityTap 传入 openAppPath fail 回调，失败时 toast 兜底；3) 复跑通过则将本 Issue 改判为采集环境问题。",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "OC03|SKIPPED action-not-automatable（消息页助手卡点击未自动化）；另身份B登录 MISMATCH（user-1001，与身份A同账号）前置不成立|1",
+    "OC04|前置栈深2未成立（OC03跳过，harness auto-reLaunch 实为栈深1）+ harness 自身 navigateBack NAV_ERROR:Uncaught [object Object] + .nav-left:absent 探针与 OC12 wxml 矛盾 + 终态路由与 OC05 同操作成功相悖 → 采集会话异常无法归因|1",
+    "OC06|harness repeatNav navigateTo navErr×3（错误挂在 harness 导航步骤）+ .msg-row:absent 探针与 OC01/OC11/OC12 矛盾 + 无截图，消息计数断言无有效证据|1",
+    "OC09|harness 输入步骤失败（el.input is not a function）中断用例，表情键开合未执行；after 截图面板未开基础态|1",
+    "OC10|承 OC09 失败链路面板未开 → tapIndex .emoji-panel__item element not found，选中表情未执行|1",
+    "OC13|harness 输入失败（el.input is not a function）消息未发出，快击窗口主场景未执行；after wxml 仅3条基础消息|1",
+    "OC14|仅记录 input 步骤，无 confirm 触发记录与发送后 DOM 断言，截图 ERROR:timeout → confirm 通道是否生效无证据|1",
+    "OC15|harness 输入失败（el.input is not a function）300字未发送；after 截图与 OC16 同 md5（9798a2e0）空基础态|1",
+    "OC16|harness 输入失败（element not found: __CAND__）注入串未发送；after 截图空基础态|1",
+    "OC17|harness 输入失败×2（el.input is not a function）输入与清空均未执行；截图与 OC22/OC24 同 md5（37d4fcbb）|1",
+    "OC18|前置'先发3条撑高'未执行；harness 用 pageScrollTo（页面级）作用于 100vh 布局内 scroll-view 无效；证据仅 scrollPos=top 无 scrollTop 采样值|1",
+    "OC19|A1 记录自相矛盾：.bubble--card:absent vs wxml 该类存在 vs tap×2 成功；无截图；巡检交互后截图显示该链路另会话可达 → 无法归因|1",
+    "OC21|real-only：mock 固化3条无 action-buttons 消息（manifest 预设 mock 记 UNVERIFIED），.action-btn--primary 缺失为环境正确表现|1",
+    "OC22|real-only 同 OC21；after 截图空基础态（37d4fcbb）|1",
+    "OC23|real-only：mock 加载恒成功错误态不可呈现（manifest 预设 UNVERIFIED）；本例截图另 ERROR:timeout|1",
+    "OC24|real-only + harness 输入失败（element not found: __CAND__）；before/after 截图同 md5 页面零变化，Idempotency-Key 断言无请求可查|1",
+    "OC25|mock 包 isUnlocked 恒 true 无法呈现锁定态（manifest 预设 UNVERIFIED）；截图证实登出后聊天主体照常渲染|1",
+    "OC26|仅登录 A 且 MISMATCH（A/B 均解析 user-1001≠100158/100159，双身份前提被破坏）；未发送消息探针无对象；截图 ERROR:timeout|1"
+  ],
+  "notes": "裁决口径：A1 exec-results 为 observed 权威源；本例截图缺失处以 ask 指定的巡检截图（screenshot-manifest.json → round-1-tour/A|B）与同会话 wxml 快照补足第三源；凡 A1 记录内部矛盾（探针 absent 与 wxml/tap 成功互斥、伪选择器探针 .length/.imageUrl/.query）、harness 自身导航步骤报错（NAV_ERROR/navErr×3，OC04/OC06）、或环境不可承载（real-only OC21-24、mock 锁定态 OC25）一律 UNVERIFIED 不放水不冤枉。全局证据缺陷（影响所有 'console 无X' 子断言）：A1 console 字段 26/26 全为 []，含 observed 带内联 navError 的 OC04，console 过滤证据实际失效，仅 observed 内联 navError 标记可用。全局前置缺陷：A/B 双身份均解析为 user-1001（期望 100158/100159，r1-exec.cjs match=false → 'MISMATCH!'），涉及 OC03/OC26 的身份敏感断言全部失真，建议修复 qa 后端身份花名册后重跑 OC03/OC26。截图系统缺陷：7 张截图 ERROR:timeout 且未落盘、失败用例落盘帧相互重复（两组 md5 撞车），截图链路需修复。汇总：VERIFIED 7（OC01/02/05/07/08/11/12，含部分子断言注记）、FAILED 1（OC20 → MP-R1-OC-001，P2，confidence 0.6）、UNVERIFIED 18。OC12 为本页最完整证据链（before/after 截图+wxml 三重实证：右气泡/已读/清空/回复/锚点滚底/计数3→5）。执行会话跨 9-23 上午（11:06-11:12，OC11/12/25 等）与晚间（19:42-19:45，失败用例重试批）两批，exec-results 每用例仅留单条记录，尝试次数按记录记 1。"
+}

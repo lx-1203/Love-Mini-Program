@@ -197,8 +197,10 @@ const pages: PageItem[] = [
   { path: "/subpackages/discover-extra/discover/history", title: "今日已看", group: "主包" },
   // 2026-08-09 修复：likes 非 tabBar 页（pages.json tabBar.list 仅 5 个主 tab），
   // 原 isTab: true 导致点击后 uni.switchTab 报 "page not found"（switchTab 仅接受 tabBar 页）
+  // MP-R1-DEV-001：村口同款漏修——village/index 是 subpackages/village 分包页不在
+  // tabBar.list，删去 isTab 走 navigateTo
   { path: "/subpackages/discover-extra/likes/index", title: "喜欢", group: "主包" },
-  { path: "/subpackages/village/village/index", title: "村口", group: "主包", isTab: true },
+  { path: "/subpackages/village/village/index", title: "村口", group: "主包" },
   { path: "/subpackages/village/village/post", title: "发布帖子", group: "主包" },
   { path: "/subpackages/village/village/detail", title: "帖子详情", group: "主包" },
   { path: "/pages/messages/index", title: "消息", group: "主包", isTab: true },

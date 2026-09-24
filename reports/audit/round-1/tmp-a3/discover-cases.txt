@@ -1,0 +1,84 @@
+DC01 | EXECUTED | NO-PNG | normal | 游客冷启动首帧：骨架 Loading→卡片 Success，不闪错误空态，登录胶囊避让 tabBar 浮岛
+DC02 | EXECUTED | NO-PNG | normal | 已登录（身份A 100158）冷启动：卡片+三操作按钮齐全，tabBar selected=2，无登录胶囊
+DC03 | EXECUTED | NO-PNG | normal | 推荐卡片信息完整性与头像兜底链：距离胶囊/在线徽章/匹配度徽章/无照片回退 hero 主视觉
+DC04 | EXECUTED | NO-PNG | noop | 静置 Idle：无操作 30s 无循环请求、无报错（七态之 Idle）
+DC05 | FAILED | NO-PNG | normal | 推荐空态：筛选无结果时文案「推荐暂时没有新的人，去「附近」看看吧」
+DC06 | FAILED | NO-PNG | normal | 附近空态独立文案：「附近暂时没有可匹配的人，去看看推荐吧」
+DC07 | FAILED | NO-PNG | normal | 错误横幅+重试：重试必须清 30s 缓存强制重拉（MP-R2-PAGES-DISCOVER-INDEX-003/002 回归）
+DC08 | EXECUTED | NO-PNG | normal | 关闭态（match_open=false）：全页 EmptyState「匹配功能暂未开放，敬请期待」，无卡片无操作按钮
+DC09 | EXECUTED | NO-PNG | normal | onShow 缓存窗口语义：30s 内切回不重拉不丢数据，30s 后切回真实重拉
+DC10 | FAILED | NO-PNG | normal | 切「附近」分段：本地过滤 ≤20km、同校优先近→远排序、单一入口单次拉取
+DC11 | EXECUTED | NO-PNG | normal | 附近↔推荐快速互切 5 次：数据不丢、状态不乱、滚动位与请求收敛
+DC12 | EXECUTED | NO-PNG | critical | 左滑卡片=跳过（登录态副作用）：飞出动画+队列推进+pass 记录
+DC13 | EXECUTED | NO-PNG | critical | 游客左滑本地放行：不调 pass 接口、无 401、不强拉登录页
+DC14 | EXECUTED | NO-PNG | critical | 右滑卡片=喜欢（登录+实名）：路由进 matching?action=like 并携带 userId/cardId
+DC15 | EXECUTED | NO-PNG | noop | 手势阈值语义：位移 8~120px 松手=cancel 回弹无副作用；<8px=tap 语义
+DC16 | EXECUTED | NO-PNG | navigation | 点击卡片→他人主页 other?userId=<userId>；userId 缺失时守卫不跳转
+DC17 | EXECUTED | NO-PNG | critical | 跳过按钮（登录态）：与左滑同语义，500ms 内可观测反馈
+DC18 | EXECUTED | NO-PNG | critical | 喜欢主 CTA（登录+实名+额度内）：500ms 内进 matching?action=like
+DC19 | EXECUTED | NO-PNG | critical | 喜欢按钮防连点×5：300ms 内快击 5 次只进 1 次 matching（铁律：主按钮防连点）
+DC20 | EXECUTED | NO-PNG | critical | 未登录点喜欢/打招呼：Toast「请先登录后再使用该功能」，无路由变化（权限门）
+DC21 | FAILED | NO-PNG | critical | 实名认证门控：未实名点喜欢弹「完成实名认证后开启」，确认去认证/取消留页
+DC22 | EXECUTED | NO-PNG | critical | 打招呼（super-like）正常路径：进 matching?action=superLike 且 greet 计数+1
+DC23 | EXECUTED | NO-PNG | critical | 打招呼频控：同卡当日第 4 次 Toast「已向TA打过3次招呼…」且不路由
+DC24 | EXECUTED | NO-PNG | critical | 今日额度用尽门控：点喜欢/打招呼 Toast「今日推荐次数已用完」，空列表空态同源文案
+DC25 | EXECUTED | NO-PNG | navigation | 游客登录胶囊→登录页；返回落点=寻觅页且状态保持
+DC26 | EXECUTED | NO-PNG | normal | 登录态变化联动：注入 token 后 watch isLoggedIn 触发重拉，登录胶囊消失
+DC27 | EXECUTED | NO-PNG | normal | 打开筛选抽屉：全屏弹层+自定义 tabBar 隐藏，默认基础 Tab，draft 与已应用筛选同步
+DC28 | FAILED | NO-PNG | normal | 抽屉三路关闭：遮罩点击/右上关闭/确认后自动关，未确认修改不生效，tabBar 恢复
+DC29 | FAILED | NO-PNG | normal | 抽屉基础/高级 Tab 切换：内容切换、draft 互不干扰、来回 5 次不丢失
+DC30 | EXECUTED | NO-PNG | normal | 身高双滑块互斥钳制：下限不得≥上限、上限不得≤下限，显示文案同步
+DC31 | FAILED | NO-PNG | normal | 学历多选 chips：选 2 枚高亮+「已选 2」，再点取消
+DC32 | FAILED | NO-PNG | normal | 感情状态单选：点选高亮、再点同项取消、点他项互斥切换
+DC33 | EXECUTED | NO-PNG | normal | 籍贯省/市联动 multiSelector picker：确认回填「省 市」、切省重置市列、取消不改
+DC34 | SKIPPED | NO-PNG | normal | 未来城市单列 selector picker：选择回填城市名
+DC35 | FAILED | NO-PNG | normal | 关键词输入三态：placeholder/正常输入出清空钮/超长+特殊字符不崩溃
+DC36 | FAILED | NO-PNG | normal | 关键词清空按钮：一键清空输入、清空钮消失、placeholder 恢复
+DC37 | FAILED | NO-PNG | normal | 筛选重置：清空基础+高级全部 draft，emit reset → store.resetFilter → 重拉
+DC38 | FAILED | NO-PNG | normal | 筛选确认：draft→store 应用+关抽屉+按条件重拉；空筛选确认等价重置不报错
+DC39 | FAILED | NO-PNG | normal | 高级筛选控件组：性别单选/学校多选/兴趣多选/仅看在线开关 v-model 同步
+DC40 | FAILED | NO-PNG | navigation | TabBar 互切：home↔寻觅 switchTab，selected 同步、数据不丢、落点正确
+DC41 | EXECUTED | NO-PNG | normal | 打开即返回+重复进出：卡片→他人主页往返 3 次，寻觅页状态恢复
+DC42 | EXECUTED | NO-PNG | noop | 滚动到底/顶：内容避让 tabBar 浮岛，操作按钮不被遮挡
+DC43 | EXECUTED | NO-PNG | normal | 热区与 500ms 反馈扫描：全部可点元素无死按钮；筛选按钮 72rpx 热区不足按缺陷记录
+DC44 | EXECUTED | NO-PNG | critical | 跳过按钮连点×5：副作用与展示一致，无卡死无重复推进同一张
+MT01 | EXECUTED | NO-PNG | normal | dev-preview 冷启动：QA 复验入口停在匹配中页，2.6s 动画兜底结束后不跳转不 Toast
+MT02 | FAILED | NO-PNG | critical | 寻觅页喜欢进入（store 上下文）单向喜欢成功：Toast『已喜欢』→400ms 后返回寻觅页且当前卡已消费切下一张
+MT03 | EXECUTED | NO-PNG | critical | 互相喜欢 status='matched'：动画结束后 redirectTo match-success?userId=，栈中本页被替换
+MT04 | EXECUTED | NO-PNG | critical | 匹配确认接口失败 status='failed'：Toast 错误文案→600ms 后返回，原卡不被消费
+MT05 | EXECUTED | NO-PNG | critical | 超级喜欢 superLike 路径：runMatchCheck 以 isSuperLike=true 提交，成功分支文案与消费同喜欢
+MT06 | EXECUTED | NO-PNG | navigation | 无上下文直达兜底：无 query 无 store pending 时 200ms 自动返回，不留死页
+MT07 | EXECUTED | NO-PNG | navigation | 顶部返回箭头（栈>1）：点击 500ms 内 navigateBack 回来源页
+MT08 | EXECUTED | NO-PNG | navigation | 顶部返回箭头（栈=1 冷启动深链）：switchTab 落寻觅 Tab
+MT09 | FAILED | NO-PNG | normal | 动画未播完点『跳过』= 快进动画：立即触发 finish，结果分支提前出现
+MT10 | FAILED | NO-PNG | normal | 动画已播完再点『跳过』= 返回上一页（保留原语义）
+MT11 | FAILED | NO-PNG | normal | 『跳过』快击×5 防连点：finished 单次守卫，仅离开页面一次
+MT12 | FAILED | NO-PNG | normal | 返回箭头快击×5：单次 navigateBack 生效无异常
+MT13 | EXECUTED | NO-PNG | normal | 热区规格核查（铁律≥88rpx）：返回按钮 72×72rpx、跳过按钮≈64rpx 高——预期不达标
+MT14 | EXECUTED | NO-PNG | normal | preview=1 分享/演示模式：不调匹配接口零副作用，动画结束停留本页
+MT15 | EXECUTED | NO-PNG | critical | URL 直达（分享恢复/自动化）三参齐全无 store 上下文：真实发起匹配提交
+MT16 | EXECUTED | NO-PNG | normal | 头像兜底链：双方头像源全空时落 DEFAULT_AVATAR，不渲染空白圆
+MT17 | EXECUTED | NO-PNG | noop | 滚动到底/顶：页面 overflow:hidden 不可滚动，内容无裁切
+MT18 | EXECUTED | NO-PNG | noop | 动画完备性与 Loading 不永驻：2.6s 兜底必触发 finished，进度条 1.2s 到位
+MT19 | EXECUTED | NO-PNG | normal | 重复进出状态机复位（MP-R2-MATCHING-007）：preview 退出后再走真实流程无残留
+MT20 | FAILED | NO-PNG | navigation | 检查完成前退出（打开即返回竞态）：卸载后 watch 不误触发，store 干净
+MT21 | FAILED | NO-PNG | normal | 500ms 反馈铁律全元素扫描：back/skip 两可点击元素均有即时视觉反馈
+MT22 | EXECUTED | NO-PNG | navigation | r11 固化参数表偏差核查：?target=10003 不被本页读取，落入 200ms 兜底返回（现状断言+修正建议）
+MT23 | EXECUTED | NO-PNG | normal | 深链参数不齐（?preview=1 缺三参 / 仅 cardId）：不闪错误空态，200ms 兜底返回
+MT24 | EXECUTED | NO-PNG | normal | 双身份一致性：A(100158)/B(100159) 各自进入，我的头像各归其位，结构一致
+MS01 | EXECUTED | NO-PNG | normal | dev-preview=1 冷启动深链整页渲染：标题/副标题/双头像/匹配度卡/三 CTA 齐全，不闪错误空态
+MS02 | EXECUTED | NO-PNG | normal | 无参无 store 冷启动兜底：partnerName=「TA」+ 双默认头像 + 4 行默认理由，不白屏不崩溃
+MS03 | EXECUTED | NO-PNG | normal | 直达带参 ?userId=10003（store 空）：getPersonProfile 兜底拉取，TA 占位更新为真实 mock 人
+MS04 | EXECUTED | NO-PNG | normal | query.userId 与 store 残留 matchedUser 不一致：reset 后以入口参数为准，不展示旧匹配对象
+MS05 | EXECUTED | NO-PNG | navigation | 返回按钮（栈>1）：navigateBack 回来源页发现 Tab，来源页状态保留
+MS06 | EXECUTED | NO-PNG | navigation | 返回按钮（栈=1 直进）：switchTab 兜底回发现 Tab，不静默失败
+MS07 | EXECUTED | NO-PNG | normal | 右上相机按钮：Toast「截图功能即将上线」icon=none，路由不变（占位功能如实提示）
+MS08 | EXECUTED | NO-PNG | normal | 右上「···」更多按钮：Toast「分享功能即将上线」，路由不变
+MS09 | EXECUTED | NO-PNG | normal | 底部「分享喜悦」文字链：与「···」同走 handleShare Toast，不弹分享面板
+MS10 | EXECUTED | NO-PNG | critical | 主 CTA「立即聊天」：navigateTo 会话页 ?userId=10003，兜底入口不误置 chat_ready 态
+MS11 | EXECUTED | NO-PNG | critical | 主 CTA 防连点：快击「立即聊天」×5 只进入 1 层会话页
+MS12 | EXECUTED | NO-PNG | navigation | 次 CTA「继续探索」：switchTab 回发现 Tab，页面栈收敛为 tab 栈
+MS13 | EXECUTED | NO-PNG | navigation | 会话页返回落点与重复进出：返回回 match-success，partner/CTA 状态完整可复用
+MS14 | EXECUTED | NO-PNG | normal | 头像兜底链：partner 头像加载失败落 DEFAULT_AVATAR，不渲染空白圆
+MS15 | EXECUTED | NO-PNG | normal | 匹配度卡恒 4 行固定分值：90/85/80/79 + 缺项兜底文案，进度条宽度与分值一致
+MS16 | EXECUTED | NO-PNG | noop | 滚动到底/回顶：CTA margin-top:auto 锚底不脱布局，纯滚动无状态变化

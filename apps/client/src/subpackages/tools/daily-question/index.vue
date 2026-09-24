@@ -74,9 +74,15 @@ async function submitAnswer() {
 
 /**
  * 返回上一页
+ * MP-R1-C21-002/MP-R1-DQ-202：栈=1（reLaunch/深链直开）时裸 navigateBack 必 fail
+ * → unhandledRejection 且点击无反馈；补 switchTab 首页兜底（对齐 segment.vue 口径）
  */
 function goBack() {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/home/index" });
+  }
 }
 
 onMounted(async () => {
@@ -288,8 +294,12 @@ function onAnswersScrollLower(): void {
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-DQ-001：必须定高（height:100% 而非 min-height:100%）——原容器随内容增长，
+     flex:1 的 .dq-body scroll-view 失去高度约束 → 整页滚动，@scrolltolower 翻页永不触发
+     （与已修 people.vue MP-R2-PEOPLE-001 同根因；保留手动「加载更多」按钮兜底） */
+  height: 100%;
+  overflow: hidden;
   background: var(--c-gradient-page);
 }
 

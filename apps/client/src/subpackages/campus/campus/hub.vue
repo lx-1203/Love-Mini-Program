@@ -7,7 +7,7 @@
  * 点击学校：已认证本校 → 私域（campus/index?school=）；其他 → 公开浏览。
  */
 import { ref, computed } from "vue";
-import { onLoad, onShow } from "@dcloudio/uni-app";
+import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCampusStore } from "../../../stores/campus";
@@ -89,8 +89,14 @@ function statsOf(school: { id: string }): { members: string; posts: string; peer
 const joinedSchools = computed(() =>
   isVerified.value ? schools.filter((sc) => sc.name === ownSchool.value) : []
 );
-/** 推荐圈子（其他学校） */
-const recommendedSchools = computed(() => schools.filter((sc) => sc.name !== ownSchool.value));
+/** 推荐圈子（其他学校）。
+ * MP-R1-CH06-01 / MP-R1-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001/REQ-01：排除本校仅在
+ * 已认证时生效——未认证用户的 ownSchool 回退 session.campusName（注册选校即写入），
+ * 原实现无条件排除导致本校圈在本页「看不到、搜不到、进不去」（推荐 10 卡无北大、
+ * 搜索「北京」空态）；未认证时本校卡应以「未认证」badge + 公开浏览视角出现在推荐列表 */
+const recommendedSchools = computed(() =>
+  isVerified.value && ownSchool.value ? schools.filter((sc) => sc.name !== ownSchool.value) : schools
+);
 
 const isPending = computed(() => certificationStatus.value === "pending");
 const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionStore.userSession?.campusName || "");

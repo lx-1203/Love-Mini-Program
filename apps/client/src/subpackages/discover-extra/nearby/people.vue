@@ -215,8 +215,14 @@ function switchScope(next: "nearby" | "city") {
         :aria-label="item.name"
         @tap="openProfile(item.userId)"
       >
-        <!-- 2026-09-02 R5：SafeImage 兜底（图片失败 fallback 默认头像） -->
-        <SafeImage :src="item.avatar" custom-class="people-row__avatar" mode="aspectFill" :lazy-load="false" alt="" />
+        <!-- 2026-09-02 R5：SafeImage 兜底（图片失败 fallback 默认头像）
+             MP-R1-NP-001：尺寸类必须落在页面自有节点——custom-class 施加在 SafeImage
+             内层 image 上，跨组件作用域（组件未开 styleIsolation）页面 wxss 命中不了
+             → 96rpx 头像零尺寸塌陷，整列表头像不可见。外包确定尺寸 wrapper（对齐
+             likes-visitors/index.vue:394-396 模式），SafeImage 靠根 100% 填满。 -->
+        <view class="people-row__avatar-wrap">
+          <SafeImage :src="item.avatar" custom-class="people-row__avatar" mode="aspectFill" :lazy-load="false" alt="" />
+        </view>
         <view class="people-row__info">
           <view class="people-row__name-row">
             <text class="people-row__name">{{ item.name }}</text>
@@ -368,12 +374,20 @@ function switchScope(next: "nearby" | "city") {
   border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
-.people-row__avatar {
+/* MP-R1-NP-001：确定尺寸包裹层——头像 96rpx/圆形/底色由页面自有节点承载 */
+.people-row__avatar-wrap {
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
+  overflow: hidden;
   background: var(--c-neutral-100, #F0F2F5);
   flex-shrink: 0;
+}
+
+.people-row__avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
 .people-row__info {

@@ -1,0 +1,234 @@
+{
+  "cases": [
+    {
+      "id": "CX01",
+      "page": "subpackages/campus/campus/index",
+      "title": "冷启动七态时序：Loading 转圈 → Success 列表，严禁闪现错误/空态",
+      "tier": "noop",
+      "pre": "身份A（100158 曦风）mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，isLoggedIn=true 校验通过，r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6') 冷启动深链（固化参数=北京大学：mock 唯一有数据校名，campus.ts:433-438 守卫；传参方式同 hub.vue:154-156）；onMounted 以 Promise.allSettled 聚合认证+话题两请求（index.vue:208-215）",
+      "action": "启动后 0s/0.5s/1.5s 三次 DOM 采样（evaluate 取 .loading-spinner 与「正在加载话题...」文案、.topic-card 数量、错误态/空态节点存在性），不打点",
+      "expected": "首屏 loading=true 且 topics 空 → 转圈+「正在加载话题...」（index.vue:291-294）；数据就绪 → Success 态渲染 .topic-card≥1（mock 北京大学 course_exchange 有数据）；全程严禁闪现错误态/空态（冷启动深链铁律）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "noop：执行日志（三时刻 DOM 采样记录 + console 全量过滤落盘）"
+    },
+    {
+      "id": "CX02",
+      "page": "subpackages/campus/campus/index",
+      "title": "无参深链 → onLoad 直接 redirectTo 校园圈 Hub，本页不留栈不闪内容",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/index')（不带任何 query；2026-08-25 P0 设计：无 ?school= 入口应落 hub）",
+      "action": "仅观察路由与页面状态，无点击",
+      "expected": "onLoad 无 school 参数 → uni.redirectTo('/subpackages/campus/campus/hub')（index.vue:179-198）；getCurrentPages 栈顶 route=subpackages/campus/campus/hub 且栈深=1（redirectTo 替换、本页不出现在栈中）；redirectedToHub 守卫使 onShow/onMounted 不发请求（index.vue:204,209）；无本页内容/错误空态闪现",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=hub、栈深=1）；可免截图"
+    },
+    {
+      "id": "CX03",
+      "page": "subpackages/campus/campus/index",
+      "title": "school 参数 URL 解码：头部显示「北京大学」解码值，请求携带解码校名",
+      "tier": "normal",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6')（固化参数表本页自定义：北京大学，hub.vue:154-156 同款 encodeURIComponent 形态）",
+      "action": "观察头部 .school-name 文本 + console network 中 /campus/topics 请求 query",
+      "expected": "头部校名显示解码后的「北京大学」（decodeURIComponent index.vue:186-194，渲染 index.vue:236），不得显示 %E5%8C%97... 编码串（MP-R1-CAMPUSINDEX-001 修复项）；话题请求 URL school 参数为解码值再编码（campus.ts:452 encodeURIComponent(school)）；列表非空正常渲染；console 无报错",
+      "evidence": "normal：after 截图 + 路由断言 + console（含 /campus/topics 请求 URL 断言）"
+    },
+    {
+      "id": "CX04",
+      "page": "subpackages/campus/campus/index",
+      "title": "非法 % 序列参数回退原值：页面不崩溃，空态兜底",
+      "tier": "normal",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/index?school=%E4%8D')（截断的多字节 % 序列，decodeURIComponent 必抛 URIError）",
+      "action": "观察头部 .school-name、列表状态区、console 异常",
+      "expected": "decodeURIComponent 抛错被 catch → 回退使用原始值 '%E4%8D'（index.vue:188-193 try/catch），页面不崩溃不白屏；头部显示原值；话题请求以原值发出，mock 下 ≠北京大学 → 空态「该分类下还没有话题，快来发布第一个吧」（campus.ts:433-438 守卫 + index.vue:306-309 + zh-CN.ts:3524）；console 无未捕获异常",
+      "evidence": "normal：after 截图（空态可见）+ console 过滤（无 uncaught/TypeError）"
+    },
+    {
+      "id": "CX05",
+      "page": "subpackages/campus/campus/index",
+      "title": "头部返回钮（有上级栈）→ navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/hub') → 点任一学校卡 goSchool navigateTo 进本页（hub.vue:154-156，栈≥2）",
+      "action": "tap .campus-back（index.vue:224-233，role=button aria-label=返回，hover press-feedback）",
+      "expected": "500ms 内 goBack → uni.navigateBack({delta:1})（index.vue:98-105）；getCurrentPages 栈顶 route=subpackages/campus/campus/hub；本页出栈销毁",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=hub）；可免截图"
+    },
+    {
+      "id": "CX06",
+      "page": "subpackages/campus/campus/index",
+      "title": "返回钮（reLaunch 栈底直达）→ 兜底 switchTab 回首页，不白屏不卡死",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6')（页面栈仅 1 层，R11 巡检标准进入方式）",
+      "action": "tap .campus-back（index.vue:224-233）",
+      "expected": "pages.length≤1 → uni.switchTab('/pages/home/index')（index.vue:98-105 兜底分支）；getCurrentPages 栈顶 route=pages/home/index（tab 切换不新增栈层）；无白屏/无 navigateBack fail 未处理拒绝",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/home/index）；console 过滤"
+    },
+    {
+      "id": "CX07",
+      "page": "subpackages/campus/campus/index",
+      "title": "未认证引导卡「去认证」→ 认证页，返回后 onShow 重取认证状态",
+      "tier": "navigation",
+      "pre": "mock 模式恒 unverified（campus.ts:845-848 mock 分支直接 return）或 real 身份B（100159）实测未认证 → 引导卡可见（v-if=\"!isVerified\" index.vue:245）；若两身份均已认证则如实标 UNVERIFIED",
+      "action": "tap .cert-guide-card__btn（index.vue:251-253，文案「去认证」zh-CN.ts:3516）→ 在认证页返回",
+      "expected": "500ms 内 navigateTo /subpackages/campus/campus/certification（index.vue:127-129），栈顶=certification；返回本页后 onShow 触发第二次 GET /campus/certification（index.vue:203-206，MP-R2-CAMPUSINDEX-006 修复项），认证徽章文案与最新状态一致",
+      "evidence": "navigation：getCurrentPages 路由链断言；返回后 console network 断言 /campus/certification 二次请求"
+    },
+    {
+      "id": "CX08",
+      "page": "subpackages/campus/campus/index",
+      "title": "推荐兴趣圈「查看更多 ›」→ 兴趣圈列表页",
+      "tier": "navigation",
+      "pre": "未认证视角（mock）→ .cert-recommend 卡片可见（index.vue:257-268）",
+      "action": "tap .cert-recommend__more（index.vue:260，文案「查看更多 ›」）",
+      "expected": "500ms 内 goCircles → navigateTo /subpackages/circles/circles/index（index.vue:41-43）；getCurrentPages 栈顶 route=subpackages/circles/circles/index",
+      "evidence": "navigation：getCurrentPages 路由链断言；可免截图"
+    },
+    {
+      "id": "CX09",
+      "page": "subpackages/campus/campus/index",
+      "title": "推荐兴趣圈格子（8 个）→ 同落兴趣圈列表，封面无破图",
+      "tier": "navigation",
+      "pre": "未认证视角；.cert-recommend__item 共 8 个（RECOMMEND_CIRCLES 摄影/旅行/音乐/运动/美食/游戏/阅读/宠物，index.vue:30-39）",
+      "action": "抽样 tap 3 个格子（首格「摄影」、第 6 格「游戏」、末格「宠物」），每次返回后再点下一个",
+      "expected": "每格 500ms 内落 /subpackages/circles/circles/index（同 goCircles index.vue:263-266）；封面图经 resolveMediaUrl 正常加载无破图（index.vue:31-38）；无死按钮（500ms 无反馈即缺陷）",
+      "evidence": "navigation：每次 getCurrentPages 路由链断言；可免截图"
+    },
+    {
+      "id": "CX10",
+      "page": "subpackages/campus/campus/index",
+      "title": "分类 Tab 单切换：高亮迁移 + 旧列表清空重载 + viewSchool 透传",
+      "tier": "normal",
+      "pre": "身份A 已登录 → reLaunch('/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6')，默认 course_exchange 列表已渲染（activeCategory 默认值 campus.ts:320）",
+      "action": "tap 第 2 个 .category-tab「社团招新」（club_recruitment，index.vue:280-287；categoryTabs 定义 index.vue:66-73）",
+      "expected": "500ms 内 category-tab--active 高亮迁移至该 Tab（index.vue:283）；旧分类列表立即清空后再载入新分类（setActiveCategory 先 topics=[]/topicPage=1/hasMore=false，campus.ts:400-408，MP-R2-CAMPUSINDEX-002(b)）；请求携带 category=club_recruitment 且透传 school=北京大学（switchCategory 透传 viewSchool，index.vue:82-87，MP-R1-CAMPUSINDEX-002 修复项）；严禁旧分类内容挂在新 Tab 名下",
+      "evidence": "normal：after 截图（新分类列表+高亮）+ 路由断言 + console（请求 query 断言）"
+    },
+    {
+      "id": "CX11",
+      "page": "subpackages/campus/campus/index",
+      "title": "快速连切 3 个 Tab：竞态 token 保证仅最新请求落状态",
+      "tier": "normal",
+      "pre": "身份A 已登录 → 固化参数进入本页，course_exchange 列表就绪",
+      "action": "500ms 内连续 tap「课程交流」→「学习互助」→「校友动态」三个 .category-tab（campus.ts:171-178 六分类）",
+      "expected": "仅最后一次（alumni_news）请求结果允许更新状态（竞态 token 递增丢弃旧响应，campus.ts:300,420-421,456-457）；终态列表=校友动态分类且高亮一致；loading 由最新请求收敛为 false（campus.ts:472-477）；无 TypeError、无分类内容错乱",
+      "evidence": "normal：末态 after 截图 + console（3 个 /campus/topics 请求序列、无旧响应覆盖引发的报错）"
+    },
+    {
+      "id": "CX12",
+      "page": "subpackages/campus/campus/index",
+      "title": "六分类 Tab 全遍历：高亮、数据、横向滚动逐项正确",
+      "tier": "normal",
+      "pre": "身份A 已登录 → 固化参数（北京大学）进入本页",
+      "action": "依次 tap 全部 6 个 .category-tab：课程交流/社团招新/校园活动/学习互助/生活服务/校友动态（CAMPUS_CATEGORY_MAP campus.ts:171-178）；第 5、6 个 Tab 需先横向拖动 .category-tabs scroll-view（scroll-x index.vue:279）露出",
+      "expected": "每个 Tab 高亮正确迁移、每次切换清空重载对应分类（mock 各分类均有数据，见 mock-data.ts:27-142）；末两个 Tab 可横向滚动露出（tab 区可滚，铁律「Tab 切换滚动位与数据不丢」在本页语义=各 Tab 数据独立不串，滚动复位为新数据集属本页预期设计）；无空态误闪、无报错",
+      "evidence": "normal：每 Tab DOM 断言记录（active 类+列表首卡标题）+ 末 Tab after 截图 + console"
+    },
+    {
+      "id": "CX13",
+      "page": "subpackages/campus/campus/index",
+      "title": "话题列表触底翻页：真实加载下一页 + in-flight 防抖不重复请求",
+      "tier": "normal",
+      "pre": "real 模式身份A 已登录 → 固化参数进入，当前分类话题≥11 条（mock 语义 hasMore=filtered.length≥10，campus.ts:446，mock 数据不足 10 条时本条退化为 CX14 的 no-more 分支，环境不满足时如实标 UNVERIFIED）",
+      "action": "在 .topic-scroll 内持续上滑触发 @scrolltolower（index.vue:312）→ 加载期间再快速触发一次触底",
+      "expected": "触底触发 fetchCampusTopics(activeCategory, topicPage+1, viewSchool)（index.vue:167-177），第二页 append、已有卡片不重复；加载中列表尾显示 .loading-more「加载中...」（index.vue:344-347）；加载期间重复触底被 topicLoadMoreInFlight/loading 双守卫拦下、不重复发请求（index.vue:167-169 + campus.ts:169）",
+      "evidence": "normal：追加后 after 截图 + 路由断言 + console（请求 page 序列断言：无并发重复请求）"
+    },
+    {
+      "id": "CX14",
+      "page": "subpackages/campus/campus/index",
+      "title": "列表到底 no-more：提示出现，再触底零请求",
+      "tier": "normal",
+      "pre": "mock 模式身份A → 固化参数（北京大学）进入，course_exchange 仅 3 条 <10 → topicHasMore=false（campus.ts:446）",
+      "action": "上滑滚到列表底触发 scrolltolower，等待 1s 后再触发一次",
+      "expected": "列表尾显示 .no-more「没有更多了」（index.vue:348-350，zh-CN.ts:3523）；第二次触底不发任何请求（guard !topicHasMore，index.vue:169）；无死循环、无报错、Loading 不永驻",
+      "evidence": "normal：after 截图（no-more 可见）+ console（第二次触底零网络请求断言）"
+    },
+    {
+      "id": "CX15",
+      "page": "subpackages/campus/campus/index",
+      "title": "错误态与重试：topicsError 独立文案展示，重试同口径带 viewSchool 重拉",
+      "tier": "normal",
+      "pre": "身份A 已登录 → 固化参数进入后，经 DevTools 断网（或 automation 拦截 /campus/topics 令其失败）→ 重进本页使首屏请求失败 → topicsError/errorMessage 非空且 topics 空（campus.ts:466-471 独立字段 MP-R2-CAMPUSINDEX-007）",
+      "action": "观察错误态 → 恢复网络 → tap .campus-state__btn「重试」（index.vue:300-302）",
+      "expected": "错误态显示错误文案+重试按钮（index.vue:297-303）；点重试 500ms 内出现 loading 反馈并按同口径透传 viewSchool 重拉（retryCampusTopics index.vue:89-92）；恢复后列表渲染、错误态消失；Loading 不永驻",
+      "evidence": "normal：错误态截图 + 恢复后截图 + console（失败与重试成功请求序列）"
+    },
+    {
+      "id": "CX16",
+      "page": "subpackages/campus/campus/index",
+      "title": "头部认证徽章四态文案映射 + 校名兜底链（含不可达分支记录）",
+      "tier": "normal",
+      "pre": "四态分别预置：unverified=mock 基线可直接测；verified/pending/rejected 需 real 侧认证数据（GET /campus/certification 返回 APPROVED/PENDING/REJECTED 映射，campus.ts:150-157,856），无法预置的态如实标 UNVERIFIED",
+      "action": "各态下观察 .cert-badge 文案与背景类（certStatusClass/certStatusText index.vue:134-161）；另记录校名兜底链 viewSchool→certificationInfo.schoolName→defaultSchool（index.vue:236）",
+      "expected": "徽章文案四态=已认证/审核中/未通过/未认证（zh-CN.ts:3509-3512），背景类随态切换；校名兜底链：本页因无参必重定向（CX02），viewSchool 恒存在，defaultSchool「广州大学」段（zh-CN.ts:3513）实际不可达——如实记录为不可达分支观察项，不判缺陷",
+      "evidence": "normal：可达态各一张 after 截图 + console；不可达态仅执行日志说明"
+    },
+    {
+      "id": "CX17",
+      "page": "subpackages/campus/campus/index",
+      "title": "公开浏览视角（已认证+非本校）：banner 出现、FAB/引导卡消失、列表照常",
+      "tier": "normal",
+      "pre": "real 模式身份A 已认证（certificationStatus=verified）→ 固化参数 ?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6（清华大学≠本校）→ isVerified && !isOwnCertifiedView（index.vue:61-63,271）；mock 恒 unverified 无法进入该分支，mock 环境执行时如实标 UNVERIFIED",
+      "action": "观察页面结构存在性（banner/引导卡/推荐圈/FAB/Tab/列表）",
+      "expected": "显示 .public-browse-banner「公开浏览」+描述（index.vue:271-274，zh-CN.ts:3517-3518）；Tab+话题列表照常渲染（template v-if=\"isVerified || viewSchool\" index.vue:277）；FAB 不渲染（v-if=\"isOwnCertifiedView\" index.vue:356）；引导卡与推荐圈不渲染（!isVerified 为假）；清华大学话题数据按后端实际返回渲染（空则显示空态，不判错）",
+      "evidence": "normal：after 截图 + DOM 存在性断言记录 + console"
+    },
+    {
+      "id": "CX18",
+      "page": "subpackages/campus/campus/index",
+      "title": "FAB 发布钮 → 发布页携带当前分类 category",
+      "tier": "navigation",
+      "pre": "real 模式身份A 已认证，且进入参数使用其本校校名（viewSchool===certificationInfo.schoolName 使 isOwnCertifiedView=true，index.vue:61-63）→ .campus-fab 可见；先切到「校园活动」Tab 使 activeCategory=campus_activity",
+      "action": "tap .campus-fab（index.vue:356-358，104rpx 悬浮钮）",
+      "expected": "500ms 内 navigateTo /subpackages/campus/campus/post-topic?category=campus_activity（encodeURIComponent，index.vue:118-122）；发布页 onLoad 消费 category（post-topic.vue:61-66）默认选中「校园活动」（MP-R2-CAMPUSINDEX-002(a) 修复项）；栈顶=post-topic",
+      "evidence": "navigation：getCurrentPages 路由链断言 + 发布页分类选中态 DOM 断言；可免截图"
+    },
+    {
+      "id": "CX19",
+      "page": "subpackages/campus/campus/index",
+      "title": "FAB 快速连点×5：发布页入栈≤1，无重复进出",
+      "tier": "navigation",
+      "pre": "同 CX18 的 FAB 可见前置（real 身份A 已认证本校视角）",
+      "action": "1s 内快击 .campus-fab ×5（主按钮防连点/重复进出铁律）",
+      "expected": "getCurrentPages 中 route=subpackages/campus/campus/post-topic 实例计数≤1（navigateTo 无框架级防抖，>1 即重复入栈缺陷如实记录）；无报错；最终停留发布页",
+      "evidence": "navigation：getCurrentPages 栈内容断言（post-topic 计数）+ console 过滤"
+    },
+    {
+      "id": "CX20",
+      "page": "subpackages/campus/campus/index",
+      "title": "点击热区≥88rpx 铁律测量：全部可点元素 boundingClientRect",
+      "tier": "normal",
+      "pre": "mock 模式身份A → 固化参数（北京大学）进入（未认证视角可量 back/引导钮/推荐圈/Tab/卡片；已认证视角补量 FAB）",
+      "action": "evaluate 对可点元素逐一取 boundingClientRect：.campus-back、.cert-guide-card__btn、.cert-recommend__more、.cert-recommend__item、.category-tab×6、.campus-state__btn、.topic-card、.campus-fab",
+      "expected": "铁律热区≥88rpx；实测预期：.campus-back 64×64rpx（index.vue:407-409）、.cert-guide-card__btn 高≈68rpx（padding 16rpx+26rpx 字号，index.vue:507-514）、.category-tab 高≈72rpx（padding 18rpx，index.vue:544）低于 88rpx → 如实记「热区不足」缺陷候选（判定员裁定）；.campus-fab 104rpx（index.vue:791-792）、.cert-recommend__item 120rpx（index.vue:868）合规",
+      "evidence": "normal：DOM 测量记录（逐元素宽高 rpx 换算）+ after 截图"
+    },
+    {
+      "id": "CX21",
+      "page": "subpackages/campus/campus/index",
+      "title": "重复进出×3：hub→本页往返，栈深不累积、状态每次恢复",
+      "tier": "navigation",
+      "pre": "身份A 已登录 → wx.reLaunch('/subpackages/campus/campus/hub')（mock 或 real 均可，hub 是规范入口 hub.vue:154-156）",
+      "action": "「学校卡进入本页 → 返回 hub」循环 ×3",
+      "expected": "每次进入正常走 loading→success（onMounted 全量重拉 index.vue:208-215，onShow 重取认证 index.vue:203-206）；每次返回落点恒为 hub（goBack pages>1 分支 index.vue:98-105）；页面栈深每次返回后还原（无累积）；console 无报错累积",
+      "evidence": "navigation：每轮 getCurrentPages 路由链断言记录 + console 汇总过滤"
+    },
+    {
+      "id": "CX22",
+      "page": "subpackages/campus/campus/index",
+      "title": "列表滚动往返：数据不丢失、无白屏、回顶首卡可见",
+      "tier": "noop",
+      "pre": "身份A 已登录 → 固化参数（北京大学）进入，列表就绪且条数足够滚动",
+      "action": "在 .topic-scroll 内滚到中部（记录 scrollTop≈600px）停留 1s → 滚回顶部",
+      "expected": "滚动顺滑无白屏/无闪空；列表数据不丢失不重排；回顶后首卡完整可见；scroll-view 有界高度内滚动（MP-R2-CAMPUSINDEX-001 修复项：容器 height:100%+overflow:hidden，index.vue:378-389），页面级不跟滚",
+      "evidence": "noop：执行日志（scroll 位置记录 + console）"
+    },
+    {
+      "id": "CX23",
+      "page": "subpackages/campus/campus/index",
+      "title": "未认证基线视图完整性：引导卡+推荐圈+Tab+列表同屏，头像兜底链",
+      "tier": "normal",
+      "pre": "mock 模式身份A → 固化参数（北京大学）进入（恒 unverified，campus.ts:845-848）",
+      "action": "全页 DOM 结构断言 + after 截图；检查首屏话题卡作者区",
+      "expected": "同屏可见：引导卡（「完成学生认证，解锁校园专区」/「去认证」zh-CN.ts:3514-3516）+ 推荐圈 8 格（index.vue:30-39）+ 6 分类 Tab + 北京大学话题列表；FAB 与公开浏览 banner 均不出现；头像兜底链：匿名帖显示「匿名校友」且不渲染头像（index.vue:328-336 v-if + 三元，zh-CN.ts:3522），非匿名帖经 SafeImage 渲染（MP-R1-CAMPUSINDEX-003 鉴权代理修复项）；相对时间格式正常（formatCampusTime→utils/time campus.ts:308-310）",
+      "evidence": "normal：after 截图 + DOM 断言记录 + console 过滤"
+    }
+  ]
+}

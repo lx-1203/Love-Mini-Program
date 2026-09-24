@@ -157,7 +157,8 @@ function handleRetry(): void {
 </script>
 
 <template>
-  <AppShell :title="t(`${i18nPrefix}.title`)" :show-tab-bar="false" show-back>
+  <!-- MP-R1-APPSHELL-101：传 fixed 吸顶（滚动时正文不入状态栏区） -->
+  <AppShell :title="t(`${i18nPrefix}.title`)" :show-tab-bar="false" show-back fixed>
     <view class="legal-page">
       <!-- 顶部标题区 -->
       <view class="legal-header">

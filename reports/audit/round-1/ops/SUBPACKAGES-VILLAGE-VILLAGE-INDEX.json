@@ -1,0 +1,484 @@
+{
+  "cases": [
+    {
+      "id": "VI01",
+      "page": "subpackages/village/village/index",
+      "title": "身份A 冷启动村口：资料未完善 → LockScreen 全屏锁定态 + 解锁引导弹窗，不闪错误/空态",
+      "tier": "normal",
+      "pre": "身份A（100158 曦风，tmp_r11_login.json：profileCompleted=false）mock 登录（JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，校验 isLoggedIn=true）→ wx.reLaunch('/subpackages/village/village/index') 冷启动直达（token 2 小时时效，超时需重签）",
+      "action": "启动后 0s/0.5s/1s 三次 DOM 采样（.lock-screen 存在性、.lock-screen__title 文案、.unlock-modal 可见性），不打点",
+      "expected": "isUnlocked=sessionStore.isProfileComplete=false（session.ts:401-413，仅判 profileCompleted）→ 渲染 LockScreen（index.vue:579-582 v-if=!isUnlocked）全屏：标题「完善资料，解锁完整交友功能」（已登录未完善分支 LockScreen.vue:38）、主按钮「立即完善」、权益清单 3 条、底部提示「资料越完善，匹配越精准，曝光机会越多」；同时 A 持 token 而 profileCompleted=false → profile-guard LOCKED_PAGES 含村口（profile-guard.ts:14-20）→ onShow 经 usePageAccess 触发 UnlockGuideModal（usePageAccess.ts:116-130，App.vue:275 全局挂载）；全程无帖子流/无错误态闪现（冷启动铁律）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "normal：after 截图（锁定态全景，含弹窗）+ 路由（getCurrentPages 栈顶=subpackages/village/village/index）+ console 全量过滤"
+    },
+    {
+      "id": "VI02",
+      "page": "subpackages/village/village/index",
+      "title": "解锁引导弹窗三路关闭：「去完善」跳资料页 /「暂不完善」与遮罩仅关弹窗不跳转",
+      "tier": "normal",
+      "pre": "身份A 已按 VI01 进入村口，UnlockGuideModal 处于展开态",
+      "action": "① tap「去完善资料」主按钮（UnlockGuideModal.vue:122-131）→ 观察路由；重进恢复弹窗后 ② tap「暂不完善」（UnlockGuideModal.vue:134-142）；再次恢复后 ③ tap 遮罩层（UnlockGuideModal.vue:99 handleMaskClick）",
+      "expected": "① confirm → unlockGuideStore.confirm()（unlock-guide.ts:116-120）关弹窗 + openAppPath('/subpackages/setup/profile/index')，getCurrentPages 栈顶=subpackages/setup/profile/index；② cancel → unlockGuideStore.hide 仅关弹窗（unlock-guide.ts:71-75），路由不变仍在村口锁定态；③ 遮罩与②同效；三路均有 500ms 内可观测反馈（弹窗消失为 DOM 变化），无死按钮",
+      "evidence": "normal：每路 after 截图 + 路由断言（①栈顶=setup/profile，②③栈顶不变）+ console"
+    },
+    {
+      "id": "VI03",
+      "page": "subpackages/village/village/index",
+      "title": "LockScreen「×」关闭：reLaunch 栈深 1 → 兜底 switchTab 回寻觅页",
+      "tier": "navigation",
+      "pre": "身份A 已按 VI01 进入村口（wx.reLaunch 直达，页面栈 1 层），先「暂不完善」关掉解锁弹窗",
+      "action": "tap .lock-screen__close（LockScreen.vue:128-139）",
+      "expected": "goBack()：getCurrentPages().length>1 ? navigateBack : switchTab(ROUTES.TAB.DISCOVER)（LockScreen.vue:94-100）→ 栈深 1 走 switchTab('/pages/discover/index')，落地寻觅 Tab 页，不白屏不卡死；getCurrentPages 栈顶 route=pages/discover/index",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/discover/index）；console 无 navigateBack fail 未处理报错"
+    },
+    {
+      "id": "VI04",
+      "page": "subpackages/village/village/index",
+      "title": "LockScreen 主按钮（已登录未完善身份A）→ 跳资料完善页",
+      "tier": "navigation",
+      "pre": "身份A 已按 VI01 进入村口锁定态（loggedIn=true 分支）",
+      "action": "tap .lock-screen__btn 主按钮「立即完善」（LockScreen.vue:215-221）",
+      "expected": "onPrimary() loggedIn=true 分支 → openAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE)（LockScreen.vue:80-87）= navigateTo('/subpackages/setup/profile/index')，保留村口在栈底；getCurrentPages 栈顶=subpackages/setup/profile/index 且栈深 2",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=subpackages/setup/profile/index）"
+    },
+    {
+      "id": "VI05",
+      "page": "subpackages/village/village/index",
+      "title": "LockScreen「先逛逛公开内容」→ switchTab 回寻觅页",
+      "tier": "navigation",
+      "pre": "身份A 已按 VI01 进入村口锁定态",
+      "action": "tap .lock-screen__btn-link（LockScreen.vue:222-224）",
+      "expected": "browsePublic() → uni.switchTab(ROUTES.TAB.DISCOVER)（LockScreen.vue:103-105）落地寻觅页；getCurrentPages 栈顶 route=pages/discover/index（tab 切换不新增栈层）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/discover/index）"
+    },
+    {
+      "id": "VI06",
+      "page": "subpackages/village/village/index",
+      "title": "未登录态 LockScreen 主按钮 → 记录待跳转 + replace 到登录页（登录成功自动回资料页）",
+      "tier": "navigation",
+      "pre": "清登录态（automation_evaluate 执行 wx.removeStorageSync('token') 及会话相关存储后重进）→ wx.reLaunch('/subpackages/village/village/index')；此时 LockScreen 走未登录分支（LockScreen.vue:35 loggedIn=false），page-access 免登录放行（page-access.ts:25-30 + usePageAccess.ts:75-81 无 token 直接 return）",
+      "action": "tap .lock-screen__btn 主按钮「立即登录并完善」（LockScreen.vue:215-221）",
+      "expected": "onPrimary() 未登录分支 → setPendingLoginRedirect('/subpackages/setup/profile/index') 写入 campus-love:pending-login-redirect（navigation.ts:191-197）+ replaceAppPath(ROUTES.LOGIN)（LockScreen.vue:81-84）→ 栈顶=pages/login/index（replace 不增栈层）；wx.getStorageSync('campus-love:pending-login-redirect')='/subpackages/setup/profile/index'；无 token 时不发受保护请求（loadChannelData 守卫 index.vue:218，real 模式 401 雪崩防护；mock 模式放行）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/login/index）+ storage 断言（pending-login-redirect 值）+ console"
+    },
+    {
+      "id": "VI07",
+      "page": "subpackages/village/village/index",
+      "title": "身份B 冷启动默认态：头部+5频道Tab+今日广场帖子流+置顶折叠条+发帖条，各文案逐字断言",
+      "tier": "normal",
+      "pre": "身份B（100159 小新生，tmp_r11_guest.json：profileCompleted=true → isUnlocked=true；campusVerified=false）mock 登录后 wx.reLaunch('/subpackages/village/village/index')；先清 storage key village_last_channel（storage-keys.ts:66）保证默认频道=今日广场（index.vue:97-110 getLastChannel 无存值回退 today）",
+      "action": "启动落定后整页 DOM 采样（头部标题/副标题、搜索框占位、Tab 项数与激活项、帖子卡数、置顶折叠条文案、发帖条占位、回顶按钮存在性）",
+      "expected": "标题「圈子」+副标题「校园恋爱社区」（zh-CN.ts:1814-1815）；搜索框占位「搜索感兴趣的人、标签和学校」（index.vue:603，zh-CN.ts:2818）；ChannelTabs 渲染 5 项：今日广场/兴趣圈/学校圈/活动/热度榜（channels.ts:39-82，zh-CN.ts:2114-2118），今日广场激活（下划线指示条 64rpx，ChannelTabs.vue:151-153），学校圈 Tab 右上带锁标（B 未认证 channelLockedIds=[school]，index.vue:133-134 + ChannelTabs.vue:53-59）；帖子流首屏 20 张卡（mock 33 帖按 PAGE_SIZE=20 切片，stores/village/constants.ts:29 + index.ts:263-268）；置顶折叠条「置顶 1 条」（post-31 isPinned，mock-data.ts:902 + PinnedPostsBar.vue:49，zh-CN.ts:2137）；发帖条占位「在今日广场发帖...」（index.vue:410 default 分支 + zh-CN.ts:2132）；回顶按钮不显示（scrollTop<600）；无错误/空态；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（整页）+ 路由断言 + console"
+    },
+    {
+      "id": "VI08",
+      "page": "subpackages/village/village/index",
+      "title": "七态时序：首次进频道 loading 骨架屏 → Success 帖子流，严禁空态/错误态闪现",
+      "tier": "noop",
+      "pre": "身份B mock 登录；清 village:feed:today TTL 标记与 storage（保证 fetchPosts 实际发起，index.vue:220 isCacheFresh 短路规避）后 wx.reLaunch 冷启动",
+      "action": "启动后 0s/0.3s/0.6s/1s 四次 DOM 采样（.village-state 骨架、.post-card 数量、.village-empty、ErrorState 存在性）+ console 全量采集，不打点",
+      "expected": "posts 空且 loading=true → Skeleton list×4（index.vue:772-774）；数据就绪 → 帖子流渲染，骨架消失；loading 期间不渲染 EmptyState（index.vue:793 注释「loading 中不显示，避免空态闪现」）；全程不出现 ErrorState；已有帖子后再拉不闪骨架（village store index.ts:217-222 hasExistingPosts 不置 loading）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "noop：执行日志（四时刻 DOM 采样记录 + console 过滤）"
+    },
+    {
+      "id": "VI09",
+      "page": "subpackages/village/village/index",
+      "title": "头部搜索框 → 帖子搜索页",
+      "tier": "navigation",
+      "pre": "身份B 已在村口默认态（VI07）",
+      "action": "tap .village-search（index.vue:594-604）",
+      "expected": "openAppPath(ROUTES.SEARCH)（index.vue:600）→ navigateTo('/subpackages/tools/search/index')（routes.ts:59）；getCurrentPages 栈顶=subpackages/tools/search/index，村口保留栈底",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=subpackages/tools/search/index）"
+    },
+    {
+      "id": "VI10",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 切到兴趣圈：8 分类宫格+热门话题+精选话题渲染，发帖条占位随频道切换，30s TTL 不重拉",
+      "tier": "normal",
+      "pre": "身份B 已在村口今日广场态",
+      "action": "tap 第 2 个频道 Tab「兴趣圈」（ChannelTabs.vue:38-49 → index.vue:200-202 onChannelChange → selectChannel）→ 落定后 DOM 采样；等待 5s 再切走切回一次观察 console 请求",
+      "expected": "selectChannel 同值守卫+单事件驱动（index.vue:185-198，MP-R1-VILLAGE-INDEX-101 注释 180-184）：Tab 激活态与下划线指示条移至兴趣圈；内容区渲染 8 宫格（学习/运动/音乐/电影/旅行/游戏/美食/阅读，index.vue:269-278）+ 热门话题区（mock 主卡 #女生请回答 1.3万浏览 + 右侧 4 小卡 #校园日常/#找搭子/#表白墙/#恋爱问答，HotTopicsSection.vue:80-90 mock 分支 300ms 延迟）+ 精选话题列表（circleStore.fetchFeaturedTopics，index.vue:224-233 interest-hub 分支）；无帖子流/无空态（interest-hub 频道 displayPosts=[] 且空态仅渲染于非 interest 频道，index.vue:151+770）；发帖条占位变「在兴趣圈发帖...」（index.vue:403-404 + zh-CN.ts:2133）；village:feed:interest 写新鲜度标记（仅成功后，index.vue:231）；30s 内切回不重复发请求（isCacheFresh 短路 index.vue:220）；console 无报错",
+      "evidence": "normal：after 截图（兴趣圈整页）+ 路由断言（仍在村口）+ console（含请求次数核对）"
+    },
+    {
+      "id": "VI11",
+      "page": "subpackages/village/village/index",
+      "title": "兴趣宫格分类项 → 圈子首页（携带 category 参数）",
+      "tier": "navigation",
+      "pre": "身份B 已切到兴趣圈频道（VI10）",
+      "action": "tap 宫格第 1 项「学习」（.interest-grid__item 首项，index.vue:707-723）",
+      "expected": "goToInterestCircle('study') → openAppPath('/subpackages/circles/circles/index?category=study')（index.vue:280-282，ROUTES.CIRCLES.INDEX=routes.ts:131）；getCurrentPages 栈顶=subpackages/circles/circles/index 且 onLoad query.category=study；其余 7 项同构（可抽查第 2 项 sports→category=sports）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=subpackages/circles/circles/index + query.category=study）"
+    },
+    {
+      "id": "VI12",
+      "page": "subpackages/village/village/index",
+      "title": "热门话题主卡 → 标签帖子页（tagName 编码传参）",
+      "tier": "navigation",
+      "pre": "身份B 已切到兴趣圈频道（VI10，热门话题已加载）",
+      "action": "tap 左侧主话题大卡「#女生请回答」（HotTopicsSection.vue:126-141）",
+      "expected": "goTagPosts('女生请回答') → openAppPath('/subpackages/village/village/tag-posts?tagName=%E5%A5%B3%E7%94%9F%E8%AF%B7%E5%9B%9E%E7%AD%94')（HotTopicsSection.vue:71-73，encodeURIComponent）；getCurrentPages 栈顶=subpackages/village/village/tag-posts 且 query.tagName=女生请回答",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/tag-posts + query.tagName 解码=女生请回答）"
+    },
+    {
+      "id": "VI13",
+      "page": "subpackages/village/village/index",
+      "title": "精选话题项 → 话题详情页（topicId+circleId 双参数）",
+      "tier": "navigation",
+      "pre": "身份B 已切到兴趣圈频道且精选话题列表非空（currentTopics.length>0，index.vue:727）",
+      "action": "tap .topic-item 首项（index.vue:732-764）",
+      "expected": "goToTopicDetail(topic) → openAppPath('/subpackages/circles/circles/topic-detail?topicId=<id>&circleId=<circleId>')（index.vue:284-286）；getCurrentPages 栈顶=subpackages/circles/circles/topic-detail 且双参数非空（注：r11-param-map.json 固化表对 circles/topic-detail 用 ?id=37，本页源码实际传 topicId+circleId 两参，执行时以源码参数名为断言口径）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=circles/topic-detail + query.topicId/circleId 非空）"
+    },
+    {
+      "id": "VI14",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 切到学校圈（B 未校园认证）：Tab 锁标+认证门整卡渲染+发帖条锁定态",
+      "tier": "normal",
+      "pre": "身份B（campusVerified=false）已在村口",
+      "action": "tap 第 3 个频道 Tab「学校圈」（带锁标，ChannelTabs.vue:53-59）→ 落定后 DOM 采样（认证门标题/权益点/两按钮/发帖条锁图标与占位）",
+      "expected": "isSchoolChannel && !isCampusVerified → 渲染 SchoolCircleGate（index.vue:630-635）：标题「学校认证聊天圈」+描述「仅限本校同学进入…」（SchoolCircleGate.vue:43-44，zh-CN.ts:2124-2125）+ 2 条权益点 + 主按钮「去认证」+ 次按钮「模拟认证一键通过（演示）」（SchoolCircleGate.vue:70-71，dev 构建 isDev=true（config/env.ts:112-136）且 useMock()=true（dev 默认 apiMode=mock，env.ts:205-222）双条件可见；若环境不满足则该按钮不存在，如实取证）；不渲染每日一问/附近的人/帖子流（index.vue:639 v-if=isSchoolChannel 在 v-else 内）；发帖条 locked=true → 锁图标+占位「完成校园认证后在校园圈发帖」（index.vue:399-400 + ChannelComposerBar.vue:48-55，zh-CN.ts:2135）",
+      "evidence": "normal：after 截图（认证门整卡+发帖条锁定态）+ 路由断言（仍在村口）+ console"
+    },
+    {
+      "id": "VI15",
+      "page": "subpackages/village/village/index",
+      "title": "认证门「去认证」→ 校园认证页",
+      "tier": "navigation",
+      "pre": "身份B 已切到学校圈频道显示认证门（VI14）",
+      "action": "tap .school-gate__btn「去认证」（SchoolCircleGate.vue:58-67）",
+      "expected": "emit go-certification → goToCampusCertification() → openAppPath('/subpackages/campus/campus/certification')（index.vue:289-291，ROUTES.CAMPUS.CERTIFICATION=routes.ts:154）；getCurrentPages 栈顶=subpackages/campus/campus/certification",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=campus/certification）"
+    },
+    {
+      "id": "VI16",
+      "page": "subpackages/village/village/index",
+      "title": "模拟认证一键通过：POST simulate → Toast 成功文案 → 认证门消失 → 校园帖流按校区过滤落定",
+      "tier": "critical",
+      "pre": "身份B 已切到学校圈频道显示认证门且「模拟认证」按钮可见（VI14 条件：isDev && useMock()）",
+      "action": "① tap 按钮前截 before（认证门在屏）；② tap .school-gate__simulate（SchoolCircleGate.vue:70-80）；③ 等 Toast 消失后截 after + DOM 采样（认证门存在性、每日一问入口、帖子流/空态）",
+      "expected": "simulateVerify()（index.vue:298-313）：POST /campus/certification/simulate 成功 → sessionStore.refreshSession() → Toast「模拟认证成功，已进入学校圈」（icon success，zh-CN.ts:2130）；isCampusVerified 变 true → 认证门消失；watch(isCampusVerified) 触发 fetchPosts(cat-campus)（index.vue:547-551）→ 校园帖流按同校过滤（village/utils.ts:282-289）：B 运行时 campusName 为空（tmp_r11_guest.json campusName=null）→ 列表空 → 空态「学校圈还没有新动态」（index.vue:473 + zh-CN.ts:2122）+「发帖」按钮；若 mock 会话刷新后 campusName 非空则展示每日一问入口+附近的人 banner+校园帖流——两种落定均符合源码语义，按实际取证不得出现认证门残留；接口失败 → Toast「模拟认证失败，请重试」（index.vue:310 + zh-CN.ts:2131）且认证门保留，如实记录",
+      "evidence": "critical：before+after 截图 + 路由断言（仍在村口）+ Toast 文案逐字记录 + console（含 /campus/certification/simulate 请求与错误）"
+    },
+    {
+      "id": "VI17",
+      "page": "subpackages/village/village/index",
+      "title": "学校圈空态「发帖」按钮 → 经实名门控进发帖页",
+      "tier": "navigation",
+      "pre": "学校圈频道处于空态（VI16 落定为空列表：EmptyState +「发帖」按钮，index.vue:793-810；B 为 mock 模式 ensureCertified 恒过，campus-gate.ts:34）",
+      "action": "tap .village-empty__action「发帖」（index.vue:799-809）",
+      "expected": "handleEmptyAction() → handlePublish() → ensureCertified('realname') 通过（mock 恒 true）→ openAppPath(ROUTES.VILLAGE.POST)（index.vue:385-390 + 481-483）= navigateTo('/subpackages/village/village/post')（routes.ts:84）；getCurrentPages 栈顶=subpackages/village/village/post",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/post）"
+    },
+    {
+      "id": "VI18",
+      "page": "subpackages/village/village/index",
+      "title": "学校圈（已认证）每日一问入口 → 每日一问页",
+      "tier": "navigation",
+      "pre": "身份B 学校圈已认证态（VI16 后或 evaluate 置 campusVerified=true）且 campusName 非空（渲染每日一问入口，index.vue:639-662；若 B campusName 为空导致入口不渲染，则本条如实标 UNVERIFIED并改用已认证演示身份）",
+      "action": "tap .village-daily-entry（index.vue:640-647）",
+      "expected": "openAppPath(ROUTES.DAILY_QUESTION)（index.vue:646）→ navigateTo('/subpackages/tools/daily-question/index')（routes.ts:158）；onShow 时已登录会预拉今日一问（index.vue:517-519）；getCurrentPages 栈顶=subpackages/tools/daily-question/index",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=tools/daily-question/index）"
+    },
+    {
+      "id": "VI19",
+      "page": "subpackages/village/village/index",
+      "title": "学校圈（已认证）附近的人 banner → switchTab 寻觅页",
+      "tier": "navigation",
+      "pre": "身份B 学校圈已认证态（同 VI18 前置）",
+      "action": "tap .discover-banner（index.vue:664-671）",
+      "expected": "goToDiscover() → openAppPath(ROUTES.TAB.DISCOVER)（index.vue:415-417）→ uni.switchTab('/pages/discover/index')；getCurrentPages 栈顶 route=pages/discover/index（tab 切换不增栈层）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=pages/discover/index）"
+    },
+    {
+      "id": "VI20",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 切到活动频道：「推荐活动」区+活动卡+活动帖流渲染，发帖条占位随频道变化",
+      "tier": "normal",
+      "pre": "身份B 已在村口（可从任意频道切出；activity-feed 首次进入且 activities 空时会补拉 activityStore.fetchActivities，index.vue:252-254）",
+      "action": "tap 第 4 个频道 Tab「活动」→ 落定后 DOM 采样（分区标题、活动卡字段、活动帖卡）",
+      "expected": "分区标题「推荐活动」+副标「点击卡片报名或查看详情」（index.vue:688-691，zh-CN.ts:2120-2121）；ActivityCard full 模式渲染：封面、标题、状态标签（进行中/已结束/预告，ActivityCard.vue:44-56）、时间/地点/N人已报名三 meta（ActivityCard.vue:100-113）；活动帖流渲染 cat-activity 帖（mock 1 帖 post-32 内嵌活动卡+评论预览，mock-data.ts:906-934）；发帖条占位「发帖推荐活动...」（index.vue:407-408 + zh-CN.ts:2136）；活动帖流拉取走 fetchPosts(cat-activity)（index.vue:245-251）；console 无报错",
+      "evidence": "normal：after 截图（活动频道整页）+ 路由断言 + console"
+    },
+    {
+      "id": "VI21",
+      "page": "subpackages/village/village/index",
+      "title": "活动卡片点击 → 活动详情页（?id=参数）",
+      "tier": "navigation",
+      "pre": "身份B 已切到活动频道（VI20，活动卡已渲染）",
+      "action": "tap .activity-card 卡身（非报名按钮区，ActivityCard.vue:73-80）",
+      "expected": "openDetail → emit open-detail → openActivityDetail(id) → openAppPath('/subpackages/tools/activities/detail?id=<活动id>')（index.vue:316-318，ROUTES.ACTIVITY_DETAIL=routes.ts:201；r11-param-map.json 固化参考 id=11）；getCurrentPages 栈顶=subpackages/tools/activities/detail 且 query.id 非空",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=tools/activities/detail + query.id 非空）"
+    },
+    {
+      "id": "VI22",
+      "page": "subpackages/village/village/index",
+      "title": "活动卡「报名」：Toast 成功+按钮态切换，且不误触卡片跳详情；再点取消报名",
+      "tier": "critical",
+      "pre": "身份B 已切到活动频道（VI20）；截 before（报名按钮初始态「报名」+当前报名数）",
+      "action": "① tap .activity-card__enroll「报名」（ActivityCard.vue:122-132，@tap.stop）；② Toast 后截 after + 读按钮态与报名数；③ 再点一次观察 toggle",
+      "expected": "① enroll @tap.stop 阻断冒泡（ActivityCard.vue:129，MP-R1-VILLAGE-INDEX-102 注释 62-69）不跳活动详情；handleEnrollActivity → activityStore.enrollActivity 成功 → Toast「报名成功」（index.vue:320-326，zh-CN.ts:737）；② 按钮变「已报名」灰底态（.activity-card__enroll--done，ActivityCard.vue:126+255-257）+ 报名数 +1（若 store 同步）；③ 再点 → Toast「已取消报名」（zh-CN.ts:738）按钮回「报名」；失败分支 → Toast「操作失败，请重试」（index.vue:327-330，zh-CN.ts:739）如实记录；不发生路由变化",
+      "evidence": "critical：before+after 截图 + 路由断言（无跳转）+ Toast 文案逐字记录（两条）+ console（含 enroll 请求/错误）"
+    },
+    {
+      "id": "VI23",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 切到热度榜：fetchHotBoard 按点赞降序 20 条/页；发帖条占位回退今日广场文案（源码无 hot 分支）",
+      "tier": "normal",
+      "pre": "身份B 已在村口",
+      "action": "tap 第 5 个频道 Tab「热度榜」→ 落定后 DOM 采样（帖卡数量与首帖点赞数、发帖条占位）",
+      "expected": "loadChannelData 走 hot-board 分支 fetchHotBoard(1)（index.vue:235-244）→ mock 按点赞数降序排列（village store index.ts:351-359），首屏 20 张卡（PAGE_SIZE=20）且序列点赞单调不增；发帖条占位显示「在今日广场发帖...」（composerPlaceholder switch 无 hot 分支落 default，index.vue:402+410——源码事实如实断言，文案是否算缺陷由判定员裁）；console 无报错",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "VI24",
+      "page": "subpackages/village/village/index",
+      "title": "频道记忆持久化：切频道后重进页面恢复上次频道（village_last_channel）",
+      "tier": "normal",
+      "pre": "身份B 已在村口今日广场态；记录当前 storage village_last_channel 基线",
+      "action": "① tap 切到「兴趣圈」；② wx.getStorageSync('village_last_channel') 核对；③ miniProgram.reLaunch('/subpackages/village/village/index') 冷启动重进；④ DOM 采样激活 Tab",
+      "expected": "① selectChannel 内 saveLastChannel('interest')（index.vue:193 + 112-118）；② storage 值=interest；③④ 重进 onLoad 前getLastChannel 读回 interest（index.vue:97-110）→ 激活 Tab=兴趣圈且渲染宫格+话题，非今日广场；非法/缺失存值回退 today 不崩（index.vue:102-109 try/catch）",
+      "evidence": "normal：after 截图（重进后激活兴趣圈）+ 路由断言 + storage 断言 + console"
+    },
+    {
+      "id": "VI25",
+      "page": "subpackages/village/village/index",
+      "title": "带参深链 ?channel=activity 直达活动频道并写入频道记忆",
+      "tier": "normal",
+      "pre": "身份B mock 登录；先清 village_last_channel；页面参数取源码固化枚举（onLoad 校验 channel ∈ CHANNEL_CONFIGS 五值，index.vue:486-492；无 DB 依赖）→ wx.reLaunch('/subpackages/village/village/index?channel=activity')",
+      "action": "冷启动落定后 DOM 采样（激活 Tab、活动区渲染、storage village_last_channel）",
+      "expected": "onLoad query.channel=activity 通过白名单校验 → currentChannelId='activity' + saveLastChannel（index.vue:488-491）→ 激活 Tab=活动，「推荐活动」区+活动帖流渲染；storage village_last_channel=activity；无闪现今日广场内容再切换的抖动（onLoad 先于首帧消费参数）",
+      "evidence": "normal：after 截图 + 路由断言（含完整 deep-link URL）+ storage 断言 + console"
+    },
+    {
+      "id": "VI26",
+      "page": "subpackages/village/village/index",
+      "title": "深链非法 ?channel=xxx 白名单兜底：忽略参数按已存/默认频道渲染",
+      "tier": "normal",
+      "pre": "身份B mock 登录；village_last_channel 已清（默认 today）→ wx.reLaunch('/subpackages/village/village/index?channel=hotxyz')",
+      "action": "落定后 DOM 采样（激活 Tab、帖子流）",
+      "expected": "CHANNEL_CONFIGS.some(c=>c.id==='hotxyz')=false → 忽略参数（index.vue:488 条件不成立）→ 频道=已存值/默认今日广场（index.vue:97-110）→ 激活 Tab=今日广场+帖子流渲染；无 JS 报错、无空白屏、不发 cat-hotxyz 之类脏请求",
+      "evidence": "normal：after 截图 + 路由断言（含完整 URL）+ console"
+    },
+    {
+      "id": "VI27",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 桥接残留参数消费：tab=hot/mine 强制映射回今日广场防残留",
+      "tier": "normal",
+      "pre": "身份B mock 登录；automation_evaluate 预写桥接存储 wx.setStorageSync('campus-love:pending-tab-query', {path:'/subpackages/village/village/index', query:{tab:'hot'}})（PENDING_TAB_QUERY_KEY，navigation.ts:127）→ wx.reLaunch('/subpackages/village/village/index')",
+      "action": "落定后 DOM 采样（激活 Tab）+ 读桥接 key 是否被清除",
+      "expected": "onShow consumeTabQuery() 按路径匹配消费（index.vue:500-501 + navigation.ts:249-255）→ bridged.tab==='hot' 命中 → currentChannelId 强制 'today' + saveLastChannel('today')（index.vue:501-504）；激活 Tab=今日广场（不落入已不存在的 hot/mine 旧语义残留）；桥接 key 被清除（consumePendingTabQuery 即读即清，navigation.ts:162）；console 无报错",
+      "evidence": "normal：after 截图 + 路由断言 + storage 断言（桥接 key 已清）+ console"
+    },
+    {
+      "id": "VI28",
+      "page": "subpackages/village/village/index",
+      "title": "帖子卡整体点击 → 帖子详情页（setCurrentPost + ?id= 直达）",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场帖子流（VI07），取首张 .post-card",
+      "action": "tap .post-card 卡身空白区（正文区，PostCard.vue:116-123 根 @tap）",
+      "expected": "emit open-detail → goToDetail(post.id)（index.vue:362-367）：villageStore.setCurrentPost(postId) + openAppPath('/subpackages/village/village/detail?id=<postId>')（routes.ts:86；r11-param-map.json 固化参考 detail?id=1）→ getCurrentPages 栈顶=subpackages/village/village/detail 且 query.id=所点帖 id（携带 id 防详情页数据未落定闪 EmptyState，MP-R1-DETAIL-006 注释 364-365）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/detail + query.id 与所点帖一致）"
+    },
+    {
+      "id": "VI29",
+      "page": "subpackages/village/village/index",
+      "title": "帖子卡作者行点击 → 他人主页（catchtap 阻断，不误入帖子详情）",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场帖子流",
+      "action": "tap .post-card__user 作者信息行（PostCard.vue:125-158，@tap.stop）",
+      "expected": "emit open-author → goToAuthorProfile(author.userId)（index.vue:369-373）→ openUserProfile('/subpackages/profile-extra/profile/other?userId=<authorId>')（navigation.ts:303-309，空值/undefined/null 拦截不跳转）；@tap.stop 阻断冒泡不触发卡片根 open-detail；getCurrentPages 栈顶=subpackages/profile-extra/profile/other 且 query.userId=作者 id（r11-param-map.json 固化参考 userId=100152）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=profile/other + query.userId 非空且≠detail）"
+    },
+    {
+      "id": "VI30",
+      "page": "subpackages/village/village/index",
+      "title": "帖子点赞：乐观更新+计数±1+心形动画；快击×5 幂等守卫只计 1 次",
+      "tier": "critical",
+      "pre": "身份B 在今日广场，取一张 isLiked=false 的帖子卡；截 before（点赞计数基线）",
+      "action": "① tap 点赞按钮（PostCard.vue:266-273，@tap.stop handleLike）；② 300ms 内连拍 after（动画窗口）；③ 再点一次取消；④ 换一帖快击×5 后读最终计数",
+      "expected": "① 计数 +1、数字变粉加粗（.action-btn__count--liked）+ 心形 300ms 放大动画（like-burst，PostCard.vue:74-88+652-660）；mock 模式即时 toggle（village store index.ts:548-559），real 模式乐观更新→服务端权威校正→失败回滚+Toast「点赞失败，请重试」（index.ts:574-591 + index.vue:334-341，zh-CN.ts:1911）；③ 再点计数 -1 恢复基线；④ 快击×5：同帖 in-flight 幂等守卫（index.ts:542-545 likingPostIds）使并发请求只提交 1 次，最终计数=基线±1 而非 ±5；全程无路由变化、无重复 Toast 轰炸",
+      "evidence": "critical：before+after 截图 + 路由断言（无跳转）+ Toast 文案（若触发失败分支）+ console（含连点日志）"
+    },
+    {
+      "id": "VI31",
+      "page": "subpackages/village/village/index",
+      "title": "帖子收藏 toggle：书签高亮+计数±1；失败回滚语义",
+      "tier": "critical",
+      "pre": "身份B 在今日广场，取一张 isFavorite=false 的帖子卡；截 before",
+      "action": "① tap 收藏按钮（PostCard.vue:279-286，@tap.stop）；② 截 after；③ 再点一次取消",
+      "expected": "① 计数 +1、书签高亮（.action-btn--collected）；mock 即时 toggle（village store index.ts:626-636），real 乐观更新→FavoriteResponse 权威校正→失败回滚（index.ts:638-668）+ 失败 Toast「收藏操作失败」（index.vue:343-350，zh-CN.ts:1833）；③ 再点恢复基线；无路由变化；快击不重复计数（favoritingPostIds 幂等守卫 index.ts:620-623）",
+      "evidence": "critical：before+after 截图 + 路由断言（无跳转）+ Toast 文案（若触发）+ console"
+    },
+    {
+      "id": "VI32",
+      "page": "subpackages/village/village/index",
+      "title": "关注 chip toggle：+关注→已关注样式切换，同作者多帖状态同步",
+      "tier": "critical",
+      "pre": "身份B 在今日广场，找一张 isFollowed=false 的帖子卡；截 before；确认该作者在流内是否有第二张帖（有则一并观察）",
+      "action": "① tap .follow-chip「+ 关注」（PostCard.vue:159-169，@tap.stop）；② 截 after；③ 再点取消",
+      "expected": "① chip 变「已关注」灰底灰字（.follow-chip--active，PostCard.vue:423-436）；mock 模式该作者全部帖子 isFollowed 同步置 true（village store index.ts:693-707），real 走 follow/unfollow API 失败回滚+Toast「关注失败，请重试」（index.vue:352-359，zh-CN.ts:1912）；③ 再点恢复「+ 关注」；@tap.stop 不触发卡片进详情；无路由变化",
+      "evidence": "critical：before+after 截图 + 路由断言（无跳转）+ Toast 文案（若触发）+ console"
+    },
+    {
+      "id": "VI33",
+      "page": "subpackages/village/village/index",
+      "title": "帖子标签 chip → 标签帖子页（# 前缀剥离编码传参）",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场，找一张带 tags 的帖子卡（如 post-32 tags=[电影,活动]，mock-data.ts:913）",
+      "action": "tap 标签 chip「#电影」（PostCard.vue:220-230，@tap.stop emit open-tag）",
+      "expected": "goToTagPosts(tag)：startsWith('#') 剥离后 openAppPath('/subpackages/village/village/tag-posts?tagName=电影')（index.vue:375-378）；getCurrentPages 栈顶=subpackages/village/village/tag-posts 且 query.tagName=电影（无 # 残留）；不触发卡片根跳详情",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/tag-posts + query.tagName=电影）"
+    },
+    {
+      "id": "VI34",
+      "page": "subpackages/village/village/index",
+      "title": "卡内冒泡阻断矩阵：图片区点击不进详情；评论预览行与评论 icon 点击进详情",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场：找一张多图帖（图片区）与一张带 recentComments 的帖（如 post-32，mock-data.ts:923-933）",
+      "action": "① tap 图片九宫格任一格（PostCard.vue:177-201 @tap.stop noop）；② tap 评论区预览行（PostCard.vue:233-252 @tap open-detail）；③ tap 底部评论 icon（PostCard.vue:261-264）",
+      "expected": "① 图片区 noop 阻断冒泡：路由不变（仍在村口）——若发生跳详情则为冒泡阻断失效缺陷；② 预览行 → 详情页 detail?id=<postId>；③ 评论 icon → 详情页同参；三处点击 500ms 内均有明确结果（①留原地/②③进详情）",
+      "evidence": "navigation：每步 getCurrentPages 路由链断言（①栈顶不变；②③栈顶=village/detail）"
+    },
+    {
+      "id": "VI35",
+      "page": "subpackages/village/village/index",
+      "title": "帖子卡分享 icon：源码为 noop 无反馈——按 500ms 死按钮铁律实测判定",
+      "tier": "normal",
+      "pre": "身份B 在今日广场帖子流",
+      "action": "tap 底部互动栏分享 icon（sparkles，PostCard.vue:275-277，@tap.stop=\"noop\"）；点后 500ms 内连续两次 DOM 采样+读路由+console",
+      "expected": "源码事实：handler 为 noop 占位（PostCard.vue:67 + 275），无路由/DOM/Toast/震动反馈——按 R11 §5 铁律「任何可点击元素点击后 500ms 内必须有可观测反馈」此元素构成死按钮候选：实测确认无任何反馈即记录缺陷（分享功能缺失），判定员裁定；不得因源码注释开脱",
+      "evidence": "normal：after 截图（与 before 同帧对比无变化）+ 路由断言（不变）+ console（无事件日志佐证 noop）"
+    },
+    {
+      "id": "VI36",
+      "page": "subpackages/village/village/index",
+      "title": "置顶帖折叠条展开/收起：列表显隐+箭头方向切换，aria-expanded 同步",
+      "tier": "normal",
+      "pre": "身份B 在今日广场（含置顶帖 post-31 → 折叠条「置顶 1 条」渲染，mock-data.ts:902 + PinnedPostsBar.vue:37-51）；截 before",
+      "action": "① tap .pinned-bar__summary 折叠条（PinnedPostsBar.vue:39-51）；② 截 after；③ 再 tap 一次收起",
+      "expected": "① 展开列表渲染（.pinned-bar__list：置顶徽章+标题「本周圈子公告…」+摘要+箭头 ›，PinnedPostsBar.vue:54-72）；折叠条箭头变 —（PinnedPostsBar.vue:50 三元）；aria-expanded=true；②③ 再点收起列表消失、箭头回 ›；内容流不被折叠条挤压错位；无路由变化",
+      "evidence": "normal：before+after 截图（展开/收起两态）+ 路由断言（不变）+ console"
+    },
+    {
+      "id": "VI37",
+      "page": "subpackages/village/village/index",
+      "title": "置顶帖列表项点击 → 帖子详情页",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场且置顶折叠条已展开（VI36 后）",
+      "action": "tap .pinned-item 首项（PinnedPostsBar.vue:55-71 → emit open → goToDetail）",
+      "expected": "open(post-31) → detail?id=post-31（PinnedPostsBar.vue:31-33 + index.vue:362-367）；getCurrentPages 栈顶=subpackages/village/village/detail 且 query.id=post-31",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/detail + query.id=post-31）"
+    },
+    {
+      "id": "VI38",
+      "page": "subpackages/village/village/index",
+      "title": "回到顶部：滚动 >600px 出现按钮（88rpx 热区）→ 点击回顶并消失",
+      "tier": "normal",
+      "pre": "身份B 在今日广场（流长足够滚动 >600px：33 帖分页保证）",
+      "action": "① scroll-view 滚动至 scrollTop≈1200（记录 showBackToTop）；② tap .back-to-top（index.vue:856-866）；③ 读 scrollTop 与按钮存在性",
+      "expected": "① top>600 → 按钮淡入（back-to-top-fade-in 动画，index.vue:456-461+1350-1362），热区 88×88rpx（index.vue:1341-1343 满足 ≥88rpx 铁律）；② handleBackToTop → scrollTopValue=0 + 按钮隐藏（index.vue:464-467）；③ scroll-view 回到顶部且按钮消失；返回/切频道后滚动记忆不受影响",
+      "evidence": "normal：after 截图（按钮出现+回顶后两帧）+ 路由断言 + console（scrollTop 日志）"
+    },
+    {
+      "id": "VI39",
+      "page": "subpackages/village/village/index",
+      "title": "上拉分页：滚到底追加第 2 页 13 帖，加载完展示「— 没有更多了 —」；hasMore=false 后滚动不再触发",
+      "tier": "normal",
+      "pre": "身份B 在今日广场首屏（20 帖，mock 总 33 帖 → hasMore=true）",
+      "action": "① scroll-view 滚动触底（@scrolltolower，index.vue:626）→ 等 isLoadingMore 旋转指示出现与消失（.load-more spinner，index.vue:830-833）；② 继续触底直至无新页；③ 再触底一次确认早退",
+      "expected": "① onLoadMore → villageStore.loadMore → fetchPosts(filters,false) 追加 13 帖（共 33，hasMore=false，village store index.ts:263-268 + 397-410；加载期间 loading/spinner 显示且不重复触发）；② 尾部显示「— 没有更多了 —」（index.vue:834-836，zh-CN.ts:1880）；③ hasMore=false 后 onLoadMore 首行守卫早退（index.vue:435），无重复请求无卡死；失败分支保留已加载项并回退 page（index.ts:401-409）如实记录",
+      "evidence": "normal：after 截图（追加后列表尾部含没有更多了）+ 路由断言 + console（请求数：恰好 1 次翻页请求）"
+    },
+    {
+      "id": "VI40",
+      "page": "subpackages/village/village/index",
+      "title": "下拉刷新：强制穿透 30s TTL 真实重拉，refresher 收起不永驻",
+      "tier": "normal",
+      "pre": "身份B 在今日广场且距上次加载 <30s（TTL 窗口内，index.vue:220）——此窗口内普通 onShow 不重拉，唯下拉刷新 force=true 可穿透",
+      "action": "① 记 console 当前请求数基线；② scroll-view 下拉触发 @refresherrefresh（index.vue:625）→ 等 isRefreshing 收起；③ 对比 console 请求增量和 refresher-triggered 状态",
+      "expected": "onRefresh → loadChannelData(current, force=true)（index.vue:423-432，MP-R1-VILLAGE-INDEX-104：TTL 窗口内仍真实重拉）→ console 出现新的帖子列表请求；finally stopPullDownRefresh + isRefreshing=false → 下拉动画收起（Loading 不永驻铁律）；markFresh 仅在成功后重写（失败不写可立即重试，index.vue:223+250-251）；无路由变化、列表不闪空",
+      "evidence": "normal：after 截图（刷新完成后）+ 路由断言 + console（刷新请求增量≥1 且 refresher 复位）"
+    },
+    {
+      "id": "VI41",
+      "page": "subpackages/village/village/index",
+      "title": "Tab 切换滚动位与数据不丢：今日广场滚 1000px → 切热度榜 → 切回恢复滚动位且不重拉",
+      "tier": "normal",
+      "pre": "身份B 在今日广场（VI39 分页已加载或首屏均可）",
+      "action": "① 滚动至 scrollTop≈1000 并记录；② tap 切「热度榜」；③ tap 切回「今日广场」；④ 读 scroll-view 实际 scrollTop 与帖子数量，对比 console 请求",
+      "expected": "② selectChannel 保存 today 滚动位（index.vue:188-190）+ 热度榜渲染；③ 切回恢复 scrollTop≈1000（index.vue:195-196）且帖子流保留不重拉（30s TTL isCacheFresh 短路 index.vue:220；console 无新增列表请求）；Tab 激活态正确往返；数据零丢失（铁律：Tab 切换滚动位与数据不丢）",
+      "evidence": "normal：after 截图（切回后位置）+ 路由断言 + console（scrollTop 值 + 无重复请求）"
+    },
+    {
+      "id": "VI42",
+      "page": "subpackages/village/village/index",
+      "title": "底部发帖条输入框占位区点击 → 经实名门控进发帖页",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场（发帖条 isPostPublishOpen 默认开，index.vue:847-853；B mock 模式 ensureCertified 恒过 campus-gate.ts:34）",
+      "action": "tap .composer-bar__input 占位输入区（ChannelComposerBar.vue:40-56）",
+      "expected": "handleTap locked=false → emit publish → handlePublish → ensureCertified('realname') 通过 → openAppPath(ROUTES.VILLAGE.POST)（ChannelComposerBar.vue:29-35 + index.vue:385-390）= navigateTo('/subpackages/village/village/post')；getCurrentPages 栈顶=subpackages/village/village/post；real 模式未实名者应弹认证引导 Modal（campus-gate.ts:85-95）不跳转——当前双身份均为 mock 恒过，该分支如无法构造则如实标 UNVERIFIED",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/post）"
+    },
+    {
+      "id": "VI43",
+      "page": "subpackages/village/village/index",
+      "title": "底部发帖条「发帖」按钮点击 → 同入口进发帖页",
+      "tier": "navigation",
+      "pre": "身份B 在今日广场（返回自 VI42 后）",
+      "action": "tap .composer-bar__publish「发帖」按钮（ChannelComposerBar.vue:57-67）",
+      "expected": "同一 handleTap → publish → '/subpackages/village/village/post'；getCurrentPages 栈顶=subpackages/village/village/post；按钮 72rpx 高（ChannelComposerBar.vue:126-136）满足热区铁律",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=village/post）"
+    },
+    {
+      "id": "VI44",
+      "page": "subpackages/village/village/index",
+      "title": "发帖主按钮防连点：快击×5 只入栈 1 层发帖页",
+      "tier": "critical",
+      "pre": "身份B 在今日广场，返回到村口且页面栈基线=1 层（村口）",
+      "action": "500ms 内对 .composer-bar__publish 连续快速 tap×5（automator 快击）→ 落定后读 getCurrentPages 长度与栈顶",
+      "expected": "按防连点铁律：只提交 1 次 → 栈深 2（村口+发帖页）；源码事实：handlePublish 无显式防抖（index.vue:385-390），openAppPath 仅在栈≥10 时 redirectTo 兜底（navigation.ts:100-104）——若实测叠栈>2 层即记缺陷（主按钮防连点缺失）；console 无异常",
+      "evidence": "critical：after 截图 + 路由断言（getCurrentPages 长度与栈链逐层记录）+ console"
+    },
+    {
+      "id": "VI45",
+      "page": "subpackages/village/village/index",
+      "title": "发帖成功返回刷新链：village:post-created 事件穿透 TTL 重拉，新帖带「审核中」徽标置顶",
+      "tier": "critical",
+      "pre": "身份B 在今日广场 → 经发帖条进 village/post 页（VI42 链路）→ 在发帖页提交一篇合法新帖（内容「R1 用例测试帖 <时间戳>」）→ 成功后返回村口（post 页成功时 uni.$emit('village:post-created')，index.vue:257-260+567 注册）",
+      "action": "① 返回前记录村口帖子数与首帖 id；② 发布成功返回村口；③ 截 after + 读首帖内容与徽标",
+      "expected": "onPostCreated → loadChannelData(current, force=true) 穿透 30s TTL 强制重拉（index.vue:258-260）；新帖经 selfPendingPosts.unshift 置顶展示并带「审核中」徽标（.post-card__audit，PostCard.vue:257-258；store index.ts:166+511-513）；displayPosts 按 id 去重不双份（index.vue:154-165）；旧帖数据不丢失；console 无报错（卸载时 $off+dispose 不泄漏，index.vue:553-564）",
+      "evidence": "critical：before+after 截图 + 路由断言（返回后栈顶=village/index）+ Toast 文案（发帖页成功 Toast 如出现）+ console（强制重拉请求）"
+    },
+    {
+      "id": "VI46",
+      "page": "subpackages/village/village/index",
+      "title": "打开即返回 + 重复进出×3：无崩溃、TTL 内不重复全量拉、资源清理无泄漏告警",
+      "tier": "normal",
+      "pre": "身份B 在寻觅页作为来源（navigateTo 进村口保留来源栈）",
+      "action": "循环 3 次：navigateTo 村口 → 落定即 navigateBack（打开即返回）；第 3 次进入后停留 2s 再返回；全程采 console",
+      "expected": "每次进入/返回路由正确（栈顶在村口与来源页间切换）；快速返回不崩、无白屏；onShow 内 TTL 短路使 30s 内重复进入不重复发全量列表请求（console 请求数：首轮后增量≈0，index.vue:220）；onUnload 触发 villageStore.dispose + $off（index.vue:553-564）无定时器/事件泄漏告警；来源页状态未被破坏",
+      "evidence": "normal：末次 after 截图 + 路由链断言（3 次进出每次记录）+ console（请求增量与异常过滤）"
+    },
+    {
+      "id": "VI47",
+      "page": "subpackages/village/village/index",
+      "title": "进详情后返回落点恢复：频道与滚动位保持，不重置到顶部",
+      "tier": "normal",
+      "pre": "身份B 在今日广场，滚动至 scrollTop≈800 → tap 帖子卡进详情（VI28 链路）",
+      "action": "详情页 tap 返回（navigateBack）→ 回村口后 50ms+ 采样 scroll-view scrollTop、激活 Tab、首帖内容",
+      "expected": "返回落点=村口且仍为今日广场；onHide 已存滚动位（index.vue:525-531）→ onShow 恢复定时器 50ms 后 scrollTopValue≈800（index.vue:507-515）；帖子流数据保留（TTL 内不重拉）；未出现重置到顶部/频道跳变/数据丢失（返回落点铁律）",
+      "evidence": "normal：after 截图（返回后位置）+ 路由链断言 + console（scrollTop 值 + 无重复请求）"
+    },
+    {
+      "id": "VI48",
+      "page": "subpackages/village/village/index",
+      "title": "B6 发帖开关关闭（post_publish_open=false）：发帖条隐藏、空态文案切换且无发帖按钮",
+      "tier": "normal",
+      "pre": "身份B 在今日广场；automation_evaluate 将 appConfigStore 发帖开关置关（evaluate 修改 store/或 mock 配置源 post_publish_open=false 后下拉刷新使配置生效，index.vue:70-72）",
+      "action": "配置生效后 DOM 采样（.composer-bar 存在性、帖子流/空态文案）",
+      "expected": "ChannelComposerBar v-if=isPostPublishOpen=false → 底部发帖条消失（index.vue:847-853）；若频道帖子为空 → EmptyState message 切为「发帖暂未开放」且不渲染发帖按钮（index.vue:795-810 v-if=isPostPublishOpen）；已开关状态恢复正常渲染；配置恢复开启后发帖条回归；console 无报错",
+      "evidence": "normal：after 截图（关闭态，若空态可达则两态各一张）+ 路由断言 + console"
+    }
+  ]
+}

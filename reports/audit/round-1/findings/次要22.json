@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "reviewer": "次要22（A3 / 视觉审查员：截图与证据的视觉/布局/状态审查）",
+    "round": "R1",
+    "date": "2026-09-24",
+    "gitShaCheck": "reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72 == HEAD aefd8a72f2231e8df7affd09004c14c3e4e73745，manifest 证据有效；reports/audit/round-1/interact/exec-results.json 虽标 gitSha=aefd8a72，但其截图证据与 HEAD 源码渲染结果不符（见 MP-R1-MBTI-301），按证据规则对该集中的截图/DOM 观察按过期处理，不得据其下结论",
+    "method": "逐张审查 reports/screenshots/round-1-tour/ 下本批 8 页全部 27 张静态截图（A/B 双身份，已用 stat 核验在盘）+ 4 张交互取证截图抽验 + sharp 4x/3x 局部裁切放大 8 张（reports/audit/round-1/tmp-a3/v22-*.png）+ 对照源码定位（每项 Issue 均落到 file:line）；未运行开发者工具/真机，未改任何业务文件",
+    "screenshotPremiseCorrection": "任务书称「本批页面本轮没有静态截图」与证据不符：screenshot-manifest.json 及磁盘实际含本批 8 页中 7 页的 A/B 截图共 27 张（security×6、search×2、heart-signals×2、activities/detail×1、nearby×2、mbti×2、consulting×2、settings×6），仅 activities/detail 缺 A 身份（manifest :1376-1380 仅 B），已按要求单独立 P1。缺截图 P1 只立了真实缺失的 1 项，未按错误前提虚构 8 项",
+    "idealImageNote": "素材/理想效果图/ 19 张整页稿逐一核对，均无本批 8 页的页面级映射（清单见 coverage），故本批未做 L1-L10 逐级理想图对照，仅做品牌视觉总谱与跨页一致性对照，如实声明",
+    "scope": [
+      "subpackages/tools/security/index",
+      "subpackages/tools/search/index",
+      "subpackages/tools/heart-signals/index",
+      "subpackages/tools/activities/detail",
+      "subpackages/tools/love-center/nearby",
+      "subpackages/tools/love-center/mbti",
+      "subpackages/tools/love-center/consulting",
+      "subpackages/profile-extra/settings/index"
+    ],
+    "summary": "P1×2（activities/detail A 身份截图缺失；交互取证截图集与 HEAD 源码渲染不符属过期证据，基于它的交互判定需在当前构建重跑）、P2×1（搜索页「取消」常驻入口与微信胶囊矩形相交，输入条有胶囊避让而取消键没有）、P3×3（security/settings 滚动态内容与状态栏字形叠印，两页同根因=头部非 sticky；heart-signals 已过期信号仍渲染激活的拒绝/接受且 store 无过期守卫）、P4×2（security 设备行「当前设备」badge 与描述同文案重复；settings 页脚版本号硬编码于 i18n 绕过 R4-00207 单一版本源）。回归线索 3 条：MP-R1-LMBTI-101 经 tour 截图目视闭环（返回键已左置不碰胶囊）；MP-R1-LNEARBY-201 获截图实证（「附近的人」标题渲染在胶囊正下方，与代码层几何推算一致）；MP-R2-SEARCH-001 本轮无任何结果态截图，视觉侧无法复核（代码层已修口径不变）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-ACTDETAIL-301",
+      "round": "R1",
+      "page": "subpackages/tools/activities/detail",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_tools_activities_detail__默认.png（仅 B；A 无对应文件）",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "本页 A 身份静态截图缺失：screenshot-manifest.json :1376-1380 仅登记 B 身份 1 张，磁盘 stat 核验 A 路径不存在。失败原因（任务书提供）：?id=11 直连被流程态守卫重定向落在 pages/discover/index（tour-R1.log 19:14:54 official-chat 点击 [class*=share] 可流程内进入本页，属入口守卫而非页面故障）。A 身份下的页面视觉表现（分享态/已报名态差异、双身份一致性）本轮无证据，视觉审查对该页只覆盖了 B 单身份。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json :1376-1380（activities/detail 仅 B 一条）；任务书失败清单同项；对照 manifest :617-619（heart-signals A/B 双份）证明同批其余页均有双身份；B 默认图已审（cover/标题/报名中徽标/时间地点/介绍/底部 分享+立即报名 渲染正常，导航栏白字标题清晰，返回键 chevron 在半透明白圆上对比度偏低仅记录不立案）。",
+      "sources": ["screenshot", "log"],
+      "confidence": 0.9,
+      "ideal": "本批 8 页均有 A/B 双身份静态截图；activities/detail 需经流程内入口（官方聊天 share 卡片或活动列表）以 A 身份进入后补截默认态，如条件允许补报名成功态。",
+      "fix": "交互取证脚本对本页改走流程内导航（official-chat → share → detail）或先落 activities 列表页再 navigateTo detail?id=11，绕过直连守卫后补 A 身份截图并更新 manifest。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MBTI-301",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/mbti（波及整个 reports/screenshots/round-1-interact/ 截图证据集）",
+      "screenshot": "reports/screenshots/round-1-interact/MBTI-03-after.png（对照有效截图 reports/screenshots/round-1-tour/A/subpackages_tools_love-center_mbti__默认.png）",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "交互取证截图集与 HEAD(aefd8a72) 源码的渲染结果不符，属过期构建产物，但其 exec-results.json 仍标 gitSha=aefd8a72——证据指纹失真。铁证一：MBTI-03-after.png 头部为「标题居中、无可见返回键」，该形态只可能来自修复前 CSS（git e4f3d6bd mbti.vue:276-283 .content-header{justify-content:center}+返回键绝对定位右上被胶囊遮住）；而 HEAD 工作区（与 HEAD 无 diff，git diff HEAD --stat tools/ 与 settings/ 均为空）mbti.vue:139-146 是[返回键][标题]同行、:284-290 flex-start 左对齐、返回键无条件渲染，tour 截图（返回键左置+标题左对齐）才与之一致。铁证二：NEARBY-01-before.png 内容实为 pages/home/index 首页（TabBar 五项），与文件名 NB01（love-center/nearby）页面映射断裂。铁证三：HS03/HS04 观察到 .page-header__back:absent、MB07 观察到 .content-header__back:absent，与 tour 截图中两页返回键清晰可见直接矛盾（核对过的心动信号页返回键在所有已提交版本模板中均无条件渲染）。因此该集中基于截图/DOM 的观察（含大量 act-FAIL）不可作为本批页面的行为证据，交互判定若引用了该集需在当前构建重跑。",
+      "evidence": "reports/audit/round-1/interact/MBTI-03-after.png 377×814 头部裁切图 reports/audit/round-1/tmp-a3/v22-mbti-interact-header.png（标题居中无返回键）vs git show e4f3d6bd:apps/client/src/subpackages/tools/love-center/mbti.vue :276-283（justify-content:center）vs 工作区 mbti.vue:139-146/:284-290（左对齐+无条件返回键，git diff HEAD 该文件为空）；reports/screenshots/round-1-interact/NEARBY-01-before.png（首页内容+TabBar）；exec-results.json HS03/HS04/MB07 的 :absent 观察 vs tour A/B heart-signals、mbti 截图中返回键可见；另 interact 截图状态栏为 9:52/9:18 无 WeChat 运营商字样，与 tour 的 1:35 等模拟器状态栏亦不同。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.85,
+      "ideal": "交互取证截图与 DOM 证据由当前 gitSha 构建产出，文件名↔页面映射正确，exec-results.json 的 gitSha 指纹可追溯且与截图内容一致。",
+      "fix": "以当前源码重新构建 dist 后在双身份下重跑本批 8 页交互取证（重截 round-1-interact 全集并修正命名映射），exec-results.json 重新落 gitSha；重跑前任何引用该集的交互结论按过期证据搁置。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SEARCH-301",
+      "round": "R1",
+      "page": "subpackages/tools/search/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_search_index__默认.png（B 同）；放大件 reports/audit/round-1/tmp-a3/v22-search-rightedge.png",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "搜索页常驻「取消」按钮与微信胶囊矩形相交：A/B 双身份默认态截图中，绿色「取消」文字上缘均被胶囊白色胶囊体裁切（4x 放大件清晰可见字形顶部被胶囊圆角矩形压住）。头部行 padding-top 仅为 statusBarHeightPx+16rpx（search/index.vue:217），整个 flex 行落在胶囊垂直带（项目自证胶囊 top≈statusbar+4px、高 32px）内；R12-IND-SEARCH-001 的胶囊避让 margin-right: calc(var(--capsule-right,7px)+96px) 只加在 .search-box（:459-461），行内排在 .search-box 之后的 .search-cancel（:244-246 模板、:490-494 样式，仅 flex-shrink:0）落在行末最右 24rpx 内边距处，横向恰在胶囊水平带（距右缘 7~94px）内。真机上胶囊位于原生最上层：取消上半被遮、其上半区域的点击归胶囊——常驻返回/取消入口被系统性遮挡。",
+      "evidence": "search/index.vue:217（padding-top 仅让开状态栏）、:244-246（取消键模板无避让）、:459-461（避让仅 search-box）、:490-494（.search-cancel 无 margin/right 留白）；截图 A/B 默认态右缘 y≈60-73 处「取消」顶部被胶囊裁切（放大件 v22-search-rightedge.png）；胶囊参数引用项目内注释 mbti.vue:141（87×32px、距右缘 7px）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "「取消」完整可见可点：或右移让出 calc(var(--capsule-right,7px)+96px) 避让（同 .search-box 口径），或整行下移至胶囊带之下（padding-top 加 44px 胶囊高度），任何机型不与胶囊矩形相交。",
+      "fix": "search/index.vue .search-cancel 增加 margin-right: calc(var(--capsule-right, 7px) + 96px - 24rpx) 级别的避让，或把取消键移出胶囊带（头部 paddingTop 增加 44px），与 R12-IND-SEARCH-001 的输入条避让口径对齐。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SECURITY-301",
+      "round": "R1",
+      "page": "subpackages/tools/security/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_security_index__滚动-中部.png（B 同、滚动-底部 同）；放大件 reports/audit/round-1/tmp-a3/v22-security-scrolltop.png",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "滚动态页面大标题「安全中心」滚入状态栏区与系统字形叠印：A/B 双身份滚动-中部截图中，加粗大标题「安全中心」直接压在「●●●●● WeChat」运营商字样上，两层黑字互相干扰不可读；滚动-底部态换成年「未绑定手机号」等行内容被屏幕顶缘裁切并压状态栏。根因：本页经 AppShell 布局但未传 fixed（security/index.vue:510 仅 :title/:subtitle/show-back），AppShell 为原生页面滚动（AppShell.vue:251-258 min-height 方案、头部无 sticky/fixed，:229 的状态栏占位随内容滚出），navigationStyle=custom 下状态栏字形直接叠印在滚动内容上，且无任何渐变遮罩/ scrim。",
+      "evidence": "security/index.vue:510（AppShell 未传 fixed）；AppShell.vue:251-258（.shell 仅 min-height，原生滚动）、:226-230（safe-top 占位在文档流内会滚走）；截图 A/B 滚动-中部 顶部「安全中心」与状态栏字形叠印（放大件 v22-security-scrolltop.png）、滚动-底部 首行内容被顶缘裁切；对照组 mbti.vue:284-306 头部为页面外固定渐变带+内部 scroll-view（flex:1;height:0）无此问题。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "滚动全程状态栏区无内容叠印：AppShell 头部 sticky（position:sticky;top:0 配不透明背景）或内容区改内部 scroll-view 定高链（同 mbti 口径），二选一。",
+      "fix": "给 AppShell 增加 headerSticky 能力（.shell__header position:sticky;top:0;z-index+不透明背景）并在 security 页启用；或将本页迁入 mbti 式固定头部+scroll-view 布局。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-301",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_index__滚动-中部.png（B 同）；放大件 reports/audit/round-1/tmp-a3/v22-settings-scrolltop.png",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "设置页滚动态内容与状态栏字形叠印：A/B 双身份滚动-中部截图中，「恋爱认证」行（含粉色图标）被屏幕顶缘裁切半行并直接压在「●●●●● WeChat」状态栏字形上；滚动态导航栏（返回键+「设置」标题）整体滚出屏幕，右上胶囊悬浮压在菜单卡片上。根因：.safe-top 占位（settings/index.vue:436）与 .nav-bar（:703-713 position:relative 非 sticky，背景不透明白）都在原生页面滚动的文档流内；:434-435 注释只防了「静态时顶到 y=0」的叠印，未处理滚动态。",
+      "evidence": "settings/index.vue:434-436（safe-top 占位）、:439-445（nav-bar 模板）、:703-713（.nav-bar position:relative 无 sticky/fixed）；截图 A/B 滚动-中部 顶部「恋爱认证」行与状态栏叠印（放大件 v22-settings-scrolltop.png）、滚动-底部 顶部「通知设置」节标题上方内容已被裁切；与 MP-R1-SECURITY-301 同根因（security 走 AppShell、settings 自绘 nav-bar，两页均非 sticky）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "滚动全程导航栏钉在状态栏之下（safe-top+nav-bar 组合 position:sticky;top:0），状态栏区永不与内容叠印。",
+      "fix": "settings/index.vue 将 .safe-top 与 .nav-bar 包进一个 position:sticky;top:0;z-index:10 的容器（背景不透明），或整体迁入固定头部+scroll-view 布局。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HEARTSIGNALS-301",
+      "round": "R1",
+      "page": "subpackages/tools/heart-signals/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_heart-signals_index__默认.png（B 同）；放大件 reports/audit/round-1/tmp-a3/v22-hs-card1.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "待处理列表中已过期信号的状态标签与操作语义矛盾：A/B 双身份默认态「待处理 2」页签下两张卡片（苏晴/叶知秋）均同时渲染红字「已过期」倒计时文案和可点击的「拒绝/接受」按钮。模板对 pending 卡片无条件渲染操作按钮（heart-signals/index.vue:326-333 无任何过期条件分支），而倒计时逻辑已能判定过期并显示「已过期」（:93-100 expiresAt 无效或已过即置 expiredLabel）；store 的 acceptHeartSignal 亦无过期守卫（stores/likes.ts:819-828，mock 分支直接 signal.status=\"accepted\"）——用户可以对界面明示「已过期」的信号执行接受并成功转为 accepted，页面自身的过期分组契约（:51-64 expired 仅作历史兜底、与 declined 合并展示）也被绕过。",
+      "evidence": "heart-signals/index.vue:93-100（getCountdown 过期判定显示「已过期」）、:310-333（pending 卡片模板：expiredLabel 与 decline/accept 按钮无矛盾处理，按钮无条件渲染）、:51-64（expired 状态信号的分组兜底设计）；stores/likes.ts:819-828（acceptHeartSignal 无过期校验）；截图 A/B 默认态两卡片「已过期」+激活按钮同框（放大件 v22-hs-card1.png）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "「已过期」卡片不再渲染激活的拒绝/接受 CTA（按钮隐藏或置灰禁用），或过期 pending 信号自动归入已拒绝/过期分组展示，标签与可用动作语义一致。",
+      "fix": "pendingSignals 渲染时按 expiresAt 判过期：过期卡片隐藏/禁用 .signal-card__actions（对齐页内 :51-64 的 expired 兜底契约）；如产品允许过期后仍可操作，则改为不在过期卡片上显示「已过期」标签，二选一消除矛盾。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SECURITY-302",
+      "round": "R1",
+      "page": "subpackages/tools/security/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_tools_security_index__默认.png（B 同）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "登录设备行「当前设备」badge 与描述行同文案重复：A/B 双身份截图中该行为「HUAWEI Mate 80 [当前设备] / 当前设备」——绿色 badge 与副标题是完全相同的四个字，信息量为零且观感像渲染错误。来源是本地兜底列表把 lastActive 也填成「当前设备」（security/index.vue:135 lastActive: t(\"security.currentDevice\")），而模板在 isCurrent 时又渲染 badge（:598），desc 再拼 lastActive（:600）。",
+      "evidence": "security/index.vue:135（兜底 lastActive=当前设备）、:597-600（badge :598 与 desc :600 同屏渲染）、:222-224（real 模式 lastActive=formatDeviceTime 不重复，问题仅限兜底/mock 态）；截图 A/B 默认态登录设备区。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "isCurrent 行 badge「当前设备」+desc 展示活跃时间/位置（real 口径），兜底态 desc 不重复 badge 文案（可显示「—」或系统版本等补充信息）。",
+      "fix": "buildInitialDevices 的兜底项 lastActive 改为空串或机型补充信息；desc 渲染处对空值隐藏分隔符（:600 已有 location 空值处理可复用）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SETTINGS-302",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_index__滚动-底部.png（B 同）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "设置页页脚版本「校园恋爱 v1.0.0」把版本号硬编码进 i18n 文案（zh: 校园恋爱 v1.0.0 / en: Campus Love v1.0.0），绕过 R4-00207 确立的单一版本源 config/app.ts resolveAppVersion()（VITE_APP_VERSION 注入，与 manifest versionName 对齐）。应用升版（如 v1.1.0）后此页脚必然仍是 v1.0.0，与「检查更新」弹窗引用的动态版本（settings/index.vue:174 versionLatestContent 同样硬编码 v1.0.0，同病）出现两套版本来源。App 名（校园恋爱）与 config/i18n 全局一致，命名本身不立案。",
+      "evidence": "zh-CN.ts:3858（footerVersion: \"校园恋爱 v1.0.0\"）、:3848（versionLatestContent 内嵌 当前版本：v1.0.0）；en-US.ts:3825（Campus Love v1.0.0）；config/app.ts:9-19（R4-00207 单一版本源注释+resolveAppVersion）；settings/index.vue:683（footer 渲染 t('settings.footerVersion')）；截图 A/B 滚动-底部页脚（放大件 v22-settings-footer.png）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "页脚与更新弹窗的版本号统一来自 config/app.ts 的 appVersion（i18n 文案改为占位符如 \"校园恋爱 {version}\"，渲染处插值），升级只改构建注入。",
+      "fix": "zh/en 两个 locale 的 footerVersion/versionLatestContent 改占位符，settings/index.vue:683 与 checkUpdate 弹窗文案处用 t(key, { version: appVersion }) 插值（appVersion 自 config/app.ts 引入）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/tools/security/index",
+      "observation": "A/B 双身份 默认/滚动-中部/滚动-底部 共 6 张逐一已看：默认态头部（返回胶囊钮+眉题+大标题）、账号安全/第三方绑定/登录设备/隐私保护四卡片、危险操作注销行渲染完整，微信/Apple 绑定行图标与徽标正常，未发现空态/长文/加载态异常；滚动态发现状态栏叠印（已立 SECURITY-301）与设备行文案重复（SECURITY-302）。三个写操作弹层（换手机号/改密/注销）在本轮任何截图中均未出现（interact 集 SC02-SC09 act-FAIL，且该集已判过期），弹层视觉表现本轮无证据，如实声明为未覆盖项。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_security_index__默认.png 等 6 张；v22-security-scrolltop.png；interact 集 SC 条目仅文本证据 reports/audit/round-1/interact/exec-results.json"
+    },
+    {
+      "page": "subpackages/tools/search/index",
+      "observation": "A/B 默认态 2 张已看：搜索条（返回圆钮+放大镜+占位文案）、「用户/标签/学校」三页签（用户态绿色胶囊高亮）、空态放大镜插画+引导文案渲染正常，无热搜/历史（空数据符合默认态）；发现「取消」被胶囊裁切（已立 SEARCH-301）。本轮无输入后/结果态截图（interact 集 SE03/SE10 输入动作无截图产出），结果列表/校园分组视觉表现未覆盖；MP-R2-SEARCH-001（头像裸路径）因无结果态截图无法视觉复核，维持代码层已修口径。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_search_index__默认.png；v22-search-rightedge.png；exec-results.json SE 条目"
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "observation": "A/B 默认态 2 张已看：粉色渐变头部+返回键、「待处理(2)/已接受/已拒绝」页签、信号卡（头像/昵称/倒计时标签/心动文案/拒绝+接受按钮/倒计时进度条）渲染完整；tour 截图中返回键清晰存在，与过期 interact 集的 .page-header__back:absent 观察矛盾（佐证 MBTI-301 证据失真）；发现已过期信号仍带激活 CTA（已立 HEARTSIGNALS-301）。TabBar 无（非 tab 页）符合预期；底部大片留白为列表内容不足，非布局断裂。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_heart-signals_index__默认.png；v22-hs-card1.png"
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "observation": "仅 B 默认态 1 张已看：绿色导航（白字「活动详情」清晰、返回键半透明白圆内 chevron 对比度偏低——放大件目视可辨，属观感项不立案）、封面图+「报名中」角标、「新人礼遇」卡（时间/地点行）、活动介绍卡、底部「分享+立即报名」bar 渲染完整，封面与卡片间无裁切。A 身份无截图（已立 ACTDETAIL-301）。滚动/报名态视觉未覆盖（interact 集已判过期，AD07 的 scroll 证据不可靠）。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_tools_activities_detail__默认.png；v22-actdetail-nav.png、v22-actdetail-back.png"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "observation": "A/B 默认态 2 张已看：卡片浏览主体（遮罩卡「互为喜欢解锁头像」提示、????匿名昵称、21岁/北京大学/已认证徽标、距离/在线、兴趣标签、简介+展开、80% 匹配徽标、跳过/超级喜欢/喜欢三圆钮）渲染完整。截图实证代码层 MP-R1-LNEARBY-201：「附近的人」标题渲染于右上角胶囊正下方被其遮挡（4x 放大件 v22-nearby-topright.png，「附近的人」字形压在胶囊下缘）——不重复立案，证据补强。超级喜欢钮为橙底+蓝星（config/images.ts:389-390 注释明示 超级喜欢=消息蓝 #4D8DFF，属既定设计，记录为观察不立案）。历史回归 MP-R1-LNEARBY-101（滑动断链）视觉侧无反证：tour 中卡片/按钮/错误态结构在位；滑动全流程行为归交互判定员，且需在过期证据集重跑后终验。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_love-center_nearby__默认.png；v22-nearby-topright.png、v22-nearby-actions.png；config/images.ts:384-391"
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "observation": "A/B 默认态 2 张已看：固定绿色渐变头部、返回键位于标题左侧（4x 放大件核对：返回键+左对齐标题与胶囊无相交）——历史回归 MP-R1-LMBTI-101 经本轮 tour 截图目视闭环，与代码层「已修复待终验」一致；16 型速览网格（4 维度芯片+16 格）、简化测试 4 题选项、底部「提交并查看结果」按钮渲染完整，MBTI-03-after（interact）中 3 题选中态高亮亦正常，但该集整体已判过期（MBTI-301）。结果弹层（mbti-result-panel）本轮无有效截图，视觉未覆盖。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_love-center_mbti__默认.png；v22-mbti-top.png；对照 v22-mbti-interact-header.png"
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "observation": "A/B 默认态 2 张已看：封存态一致——「返回」胶囊钮+「恋爱咨询课程」大标题+锁形插画「功能封存中/该功能暂未开放，开放时间将另行通知」卡片，与代码层 commerceSealed 缺省封存口径一致；无多余入口、无残缺文案。页面短无滚动、无 TabBar、无空态异常。interact 集 CONSULTING-01~07R 截图因证据集过期未采信。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_tools_love-center_consulting__默认.png"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "observation": "A/B 双身份 默认/滚动-中部/滚动-底部 共 6 张逐一已看：默认态 nav-bar（‹+居中「设置」）、帮助/账号管理/社交资产/通知设置四组菜单（图标、箭头、本周安排与深色模式 switch 关态）渲染完整；滚动态发现状态栏叠印（已立 SETTINGS-301）；页脚「校园恋爱 v1.0.0」版本硬编码（已立 SETTINGS-302）；「关于」组含 用户协议/隐私政策/检查更新/关于我们，无重复隐私入口（MP-R2-SETTINGS-001 修复在位视觉吻合）；「退出登录」红字按钮与页脚排版正常。switch 关态轨道为浅灰白、在白卡上对比度偏低但可辨，记录为观察不立案。",
+      "evidence": "reports/screenshots/round-1-tour/{A,B}/subpackages_profile-extra_settings_index__默认.png 等 6 张；v22-settings-scrolltop.png、v22-settings-footer.png、v22-settings-footer-B.png"
+    },
+    {
+      "page": "（跨页/证据链）",
+      "observation": "证据缓存校验：screenshot-manifest.json gitSha=aefd8a72 与 HEAD 一致，27 张本批截图逐一在盘（stat 核验大小非 0）——任务书「本批没有静态截图」前提被证据推翻，缺截图仅 activities/detail A 身份一项真实成立；exec-results.json 的 gitSha 指纹与其实际截图内容不符（过期构建），该集按规则全部按过期处理。ideal 图核对：素材/理想效果图/ 全部 19 张文件名逐一核对，无本批 8 页映射（首页/匹配/消息/圈子/村口/登录/等待等），本批无页面级理想对照依据，仅品牌视觉总谱与跨页一致性对照。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json（gitSha 字段 + 本批 27 条 shots）；ls 素材/理想效果图/ 输出；exec-results.json gitSha 字段 vs v22-mbti-interact-header.png"
+    }
+  ],
+  "coverage": [
+    "subpackages/tools/security/index：截图已看（A/B×3 态共 6 张+放大件）；理想图无映射（如实声明）；滚动已测（tour 含滚动-中部/底部，发现叠印）；点击已测（interact 集过期不可采信，弹层态无有效截图=未覆盖项）；返回已测（默认态返回钮在位，滚动态随头部滚出=叠印问题一部分）；safe-area 已查（默认态头部让开状态栏，滚动态失守）；TabBar 已查（非 tab 页无 TabBar，正确）；空态已查（设备列表兜底单设备在位）；长文已查（副标题/描述均单行省略正常）；加载态已查（无骨架/ loading 残留）；错误态已查（无错误态截图，interact 集过期）；组件一致性已查（SectionCard/箭头/徽标与 settings 页菜单行同构）；历史 Bug 回归已查（无本页历史线索；代码层 LNEARBY-201 为本页头部几何，截图实证见 nearby 页）。列 Issue：SECURITY-301/302。",
+    "subpackages/tools/search/index：截图已看（A/B 默认共 2 张+放大件）；理想图无映射；滚动已测（默认态无内容可滚，tour 未提供滚动态=覆盖缺口如实声明）；点击已测（interact 集过期不可采信）；返回已测（返回圆钮在位、「取消」键被胶囊裁切=SEARCH-301）；safe-area 已查（padding-bottom: env(safe-area-inset-bottom) 在码，:425-429）；TabBar 已查（非 tab 页，正确）；空态已查（空态插画+文案正常）；长文/加载/错误态未覆盖（无结果态截图）；组件一致性已查（页签胶囊与全站 tab 口径一致）；历史 Bug 回归已查（MP-R2-SEARCH-001 无结果态截图无法视觉复核，如实声明）。列 Issue：SEARCH-301。",
+    "subpackages/tools/heart-signals/index：截图已看（A/B 默认 2 张+放大件）；理想图无映射；滚动已测（列表短无滚动态截图，代码层滚动容器问题已在代码层 HEARTSIGNALS-203 立案，不重复）；点击已测（interact 集过期不可采信）；返回已测（返回键在位且与过期集的 :absent 观察矛盾，佐证 MBTI-301）；safe-area 已查（头部 padding-top 让开状态栏）；TabBar 已查（非 tab 页，正确）；空态已查（本态有数据，空态未截图=未覆盖）；长文已查（文案单行正常）；加载态已查（无 loading 残留）；错误态已查（无错误态截图）；组件一致性已查（页签/卡片/按钮与全站绿色主 CTA 口径一致，接受钮=品牌绿、拒绝钮=中性灰）；历史 Bug 回归已查（无本页历史线索）。列 Issue：HEARTSIGNALS-301。",
+    "subpackages/tools/activities/detail：截图已看（仅 B 默认 1 张+2 放大件）；理想图无映射；滚动已测（tour 无滚动态；interact AD07 已过期不可采信=未覆盖）；点击已测（interact 集过期=未覆盖）；返回已测（返回键在位，chevron 对比度偏低仅记录）；safe-area 已查（底部 footer 为白底 bar，未见小黑条压内容）；TabBar 已查（非 tab 页，正确）；空态/长文/加载/错误态未覆盖（单态截图）；组件一致性已查（导航绿带+白字标题与 mbti 头部同口径）；历史 Bug 回归已查（无本页历史线索；A 身份截图缺失=ACTDETAIL-301）。列 Issue：ACTDETAIL-301。",
+    "subpackages/tools/love-center/nearby：截图已看（A/B 默认 2 张+2 放大件）；理想图无映射（附近的首页.png 为 pages/nearby 非本页）；滚动已测（卡片浏览页无页级滚动）；点击已测（interact 集过期不可采信，NB03/04/05 的 tap 观察搁置）；返回已测（返回键在位；标题「附近的人」被胶囊遮挡=代码层 LNEARBY-201 的截图实证，不重复立案）；safe-area 已查（卡片下缘与操作钮区间距正常）；TabBar 已查（非 tab 页，正确）；空态已查（本态有数据，空态/看全部 CTA 未截图=未覆盖）；长文已查（简介长文+展开链接在位）；加载态已查（无 loading 残留）；错误态已查（无错误态截图）；组件一致性已查（CardSwiper 与 discover 卡同组件）；历史 Bug 回归已查（MP-R1-LNEARBY-101 视觉无反证，行为终验待过期集重跑；LNEARBY-201 截图实证）。无新 Issue（问题均在代码层已立，本轮补截图证据）。",
+    "subpackages/tools/love-center/mbti：截图已看（A/B 默认 2 张+放大件 2）；理想图无映射；滚动已测（tour 默认态外无滚动截图；interact MB08 已过期不可采信；代码层确认 content-scroll flex:1;height:0 定高链在位）；点击已测（interact 集过期不可采信）；返回已测（返回键左置与胶囊无相交——MP-R1-LMBTI-101 视觉闭环）；safe-area 已查（头部渐变带让开状态栏）；TabBar 已查（非 tab 页，正确）；空态已查（16 型网格+4 题在位无空缺）；长文已查（类型名/描述无溢出）；加载态已查（无 loading 残留）；错误态已查（无错误态截图）；组件一致性已查（绿色头部与全站 Hero 口径一致）；历史 Bug 回归已查（LMBTI-101 闭环）。列 Issue：MBTI-301（证据集失真，波及全集）。",
+    "subpackages/tools/love-center/consulting：截图已看（A/B 默认 2 张）；理想图无映射；滚动已测（封存态页面短于视口无滚动）；点击已测（封存态唯一可点为返回，interact 集过期不可采信）；返回已测（返回胶囊钮在位）；safe-area 已查（头部让开状态栏）；TabBar 已查（非 tab 页，正确）；空态已查（封存态即本页唯一态，锁卡文案完整）；长文已查（无长文）；加载/错误态已查（无残留）；组件一致性已查（大标题+卡片与 security 头部口径一致）；历史 Bug 回归已查（MP-R1-CONSULTING-001 封存口径代码层在位，视觉吻合）。无 Issue。",
+    "subpackages/profile-extra/settings/index：截图已看（A/B×3 态共 6 张+放大件 3）；理想图无映射；滚动已测（滚动-中部/底部均审，发现叠印 SETTINGS-301）；点击已测（interact 集过期不可采信，「推荐给好友」死入口已在代码层 SETTINGS-201 立案不重复）；返回已测（nav-bar 返回键在位，滚动态滚出=301 一部分）；safe-area 已查（safe-top 占位静态有效、滚动失守）；TabBar 已查（非 tab 页，正确）；空态已查（菜单全量渲染无空组）；长文已查（菜单文案无溢出）；加载/错误态已查（无残留/无错误态截图）；组件一致性已查（menu 行/图标/箭头/switch 与全站口径一致；页脚版本=SETTINGS-302）；历史 Bug 回归已查（MP-R2-SETTINGS-001 重复隐私入口已删视觉吻合；MP-R1-SETTINGS-003 我的动态语义修正未在截图直接可见，代码层口径维持）。列 Issue：SETTINGS-301/302。"
+  ]
+}

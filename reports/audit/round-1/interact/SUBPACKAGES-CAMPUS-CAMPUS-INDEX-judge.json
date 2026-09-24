@@ -1,0 +1,386 @@
+{
+  "checks": [
+    {
+      "caseId": "CX01",
+      "page": "subpackages/campus/campus/index",
+      "operation": "冷启动七态时序观察（0s/0.5s/1.5s 三时刻 DOM 采样）",
+      "expected": "首屏 loading 转圈+「正在加载话题...」→ Success 渲染 .topic-card≥1；全程严禁闪现错误态/空态；console 无 NAV_FAIL/TypeError/is not defined",
+      "actual": "A1 仅落盘末态单样本：.loading-spinner:absent .topic-card:present（success 已证实）+ console=[]（干净）。Manifest evidence 层要求的「三时刻 DOM 采样记录」未交付：loading 相位存在性与「严禁闪现错误/空态」负向断言无时序证据（单末态样本无法排除中途闪现）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX01（observed: dom .loading-spinner:absent .topic-card:present; console: []; evidence: ['scrollPos=top']——无三时刻采样）",
+        "reports/audit/round-1/interact/console-S07-campus-matching.log（158 行中 0 条 NAV_FAIL/TypeError/is not defined）",
+        "apps/client/src/subpackages/campus/campus/index.vue:291-294（loading 态模板，证实采样目标存在）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX02",
+      "page": "subpackages/campus/campus/index",
+      "operation": "无参深链 → redirectTo 校园圈 Hub",
+      "expected": "onLoad 无 school → uni.redirectTo('/subpackages/campus/campus/hub')；栈顶=hub 且栈深=1（本页不留栈）；redirectedToHub 守卫不发请求；无本页内容/错误空态闪现",
+      "actual": "reLaunch 无参进入后路由链=[{route:'subpackages/campus/campus/hub'}]——栈顶=hub、栈深=1、本页不在栈中（redirectTo 替换语义）；observe-only 无动作；console=[] 无报错。三方一致（Manifest.expected = A1.observed = 平行线 OP01 同结论「符合」）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX02（top=subpackages/campus/campus/hub; route:[{route:'subpackages/campus/campus/hub',options:{}}]）",
+        "apps/client/src/subpackages/campus/campus/index.vue:197-198（redirectedToHub + redirectTo hub）",
+        "reports/audit/round-1/interact/次要14.json#OP01（landedOn=campus/campus/hub，verdict=符合）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "CX03",
+      "page": "subpackages/campus/campus/index",
+      "operation": "?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6 URL 解码渲染",
+      "expected": "头部校名显示解码后「北京大学」（不得显示 %E5%8C%97... 编码串）；话题请求 URL school 参数为解码值；列表非空正常渲染；console 无报错",
+      "actual": "after 截图头部清晰显示「北京大学」+ 未认证徽章，列表渲染 2 张 course_exchange 话题卡（高数B期末复习资料分享/数据结构实验报告模板）；console=[] 无报错。MP-R1-CAMPUSINDEX-001（decode 修复）回归通过。缺口：/campus/topics 请求 URL 断言未采集（console 过滤不含网络层记录）。附带发现推荐圈标题原始 key（另行立 Issue MP-R1-CAMPUSINDEX-002，不属本用例断言面）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03-after.png（113492B：头部「北京大学」解码值 + 2 张话题卡）",
+        "reports/audit/round-1/interact/exec-results.json#CX03（dom: .school-name:present; console: []）",
+        "apps/client/src/subpackages/campus/campus/index.vue:186-194（decodeURIComponent try/catch）、:236（渲染 viewSchool）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "CX04",
+      "page": "subpackages/campus/campus/index",
+      "operation": "非法 % 序列参数（%E4%8D）回退原值",
+      "expected": "decodeURIComponent 抛 URIError 被 catch → 回退原值显示；页面不崩溃不白屏；话题请求以原值发出 → 空态「该分类下还没有话题，快来发布第一个吧」；console 无未捕获异常",
+      "actual": "after 截图头部显示原值「%E4%8D」、正文空态文案「该分类下还没有话题，快来发布第一个吧」完整可见、页面结构完整未崩溃；console=[] 无 uncaught。全部可达断言与预期一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX04-after.png（102096B：%E4%8D 头部 + 空态 + 推荐圈 8 格封面正常）",
+        "reports/audit/round-1/interact/exec-results.json#CX04（dom: .school-name:present; console: []）",
+        "apps/client/src/subpackages/campus/campus/index.vue:188-193（catch 回退 decoded=raw）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "CX05",
+      "page": "subpackages/campus/campus/index",
+      "operation": "头部返回钮（hub→学校卡进入，栈≥2）→ navigateBack",
+      "expected": "tap .campus-back → 500ms 内 navigateBack(delta:1)；栈顶=hub；本页出栈销毁",
+      "actual": "前置未建立：Manifest.pre 要求「reLaunch hub → 点学校卡 navigateTo 进本页（栈≥2）」，A1 以兜底 auto-reLaunch 直连本页且未带 ?school 参数 → 页面按 CX02 设计 redirectTo hub → 终态栈顶=hub、.campus-back 不存在（hub 无此元素）→ act-FAIL element not found，tap 从未执行。场景不成立，非应用判定失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX05（top=hub; dom: .campus-back:absent; act-FAIL:tap(.campus-back) element not found）",
+        "scripts/qa/r1-exec.cjs:1311-1319（兜底逻辑：栈顶≠用例页 → reLaunch('/'+mc.page) 不带 query）",
+        "apps/client/src/subpackages/campus/campus/index.vue:180-198（无参 onLoad redirectTo hub，设计行为）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX06",
+      "page": "subpackages/campus/campus/index",
+      "operation": "返回钮（reLaunch 栈底直达）→ 兜底 switchTab 回首页",
+      "expected": "pages.length≤1 → uni.switchTab('/pages/home/index')；终态栈顶=pages/home/index；无白屏/无未处理拒绝",
+      "actual": "入口正确（带 ?school）且 act:tap .campus-back 上报成功（无 act-FAIL），但终态 route=[index with school] 未落 pages/home/index，post-action 探针 .campus-back:absent 自相矛盾。仲裁：同会话 tap 派发系统性失效（hub 页 CH10/11/12 点学校卡/CTA/认证钮同样 tapped 成功而路由零变化；S06–S08 三个分包套件 0 例 tap 产生路由变化，S01–S05 套件正常），事件未达应用，属执行环境失效；平行线 OP09 对同一交互（无栈直开返回键→switchTab 首页）实测 landedOn=pages/home/index「符合」。不判应用 FAILED，判执行失效 UNVERIFIED，需重跑",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX06（act:tap .campus-back 成功；route 终态 [{route:'subpackages/campus/campus/index',options:{school...}}]；dom: .campus-back:absent）",
+        "reports/audit/round-1/interact/exec-results.json#CH10/CH11/CH12（hub 页三处 tap 上报成功、路由均停留 hub——同会话 tap 失效模式）",
+        "reports/audit/round-1/interact/次要14.json#OP09（同交互 landedOn=pages/home/index verdict=符合）；apps/client/src/subpackages/campus/campus/index.vue:98-105（goBack 兜底）；apps/client/src/pages.json tabBar.list[0]=pages/home/index（switchTab 目标合法）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "CX07",
+      "page": "subpackages/campus/campus/index",
+      "operation": "未认证引导卡「去认证」→ 认证页 + 返回后 onShow 重取",
+      "expected": "tap .cert-guide-card__btn → navigateTo certification，栈顶=certification；返回后 onShow 二次 GET /campus/certification",
+      "actual": "双重前置未建立：① A1 兜底 auto-reLaunch 未带 ?school → 重定向回 hub，.cert-guide-card__btn 不存在，act-FAIL element not found，tap 未执行；② login B 上报 userId=user-1001 与声明身份 100159 MISMATCH（r1-exec.cjs:339 match 判定）。场景不成立。平行线 OP07 同交互（tap 正常会话）landedOn=subpackages/campus/campus/certification「符合」",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX07（top=hub; dom: .cert-guide-card__btn:absent; pre:login B ok userId=user-1001 MISMATCH!; act-FAIL）",
+        "scripts/qa/r1-exec.cjs:339（match = userId===def.userId，MISMATCH 出处）",
+        "reports/audit/round-1/interact/次要14.json#OP07（同交互 verdict=符合）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX08",
+      "page": "subpackages/campus/campus/index",
+      "operation": "推荐兴趣圈「查看更多 ›」→ 兴趣圈列表",
+      "expected": "tap .cert-recommend__more → 500ms 内 navigateTo /subpackages/circles/circles/index，栈顶=circles index",
+      "actual": "前置未建立：无参 auto-reLaunch → hub 重定向，.cert-recommend__more 不存在，act-FAIL element not found，tap 未执行。平行线 OP06 同交互 landedOn=subpackages/circles/circles/index「符合」",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX08（top=hub; dom: .cert-recommend__more:absent; act-FAIL）",
+        "reports/audit/round-1/interact/次要14.json#OP06（同交互 verdict=符合）",
+        "apps/client/src/subpackages/campus/campus/index.vue:260（推荐圈更多钮渲染位置）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX09",
+      "page": "subpackages/campus/campus/index",
+      "operation": "推荐兴趣圈格子（摄影/游戏/宠物抽样）→ 兴趣圈列表",
+      "expected": "每格 500ms 内落 /subpackages/circles/circles/index；封面无破图；无死按钮",
+      "actual": "前置未建立：落 hub 后 __CAND__(\"摄影\") 不存在，act-FAIL element not found，三个格子均未点到。平行线 OP03 旁证 8 格与封面在页上正常存在（recommendItems:8）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX09（top=hub; act-FAIL:tap __CAND__ element not found: __CAND__(\"摄影\")）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX04-after.png（旁证：8 格封面加载无破图）",
+        "reports/audit/round-1/interact/次要14.json#OP03（recommendItems:8）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX10",
+      "page": "subpackages/campus/campus/index",
+      "operation": "分类 Tab 单切换（→社团招新）高亮迁移+清空重载+viewSchool 透传",
+      "expected": "500ms 内 category-tab--active 迁移至社团招新；旧列表清空重载 club_recruitment；请求携带 category=club_recruitment&school=北京大学；严禁旧内容挂新 Tab",
+      "actual": "入口正确（带 ?school）且 act:tapIndex .category-tab#2(\"社团招新\") 上报 tapped，但 after 截图显示高亮仍停留「课程交流」、列表仍为课程交流 2 卡（高数B/数据结构）——UI 零变化。仲裁：store 切换先置 activeCategory 再拉数据（campus.ts:400-408），若事件到达高亮必迁移；高亮未动=事件未派发，同会话 tap 系统性失效（见 CX06）；平行线 OP04 同交互实测列表刷新为 club_recruitment（首卡「摄影社团招新啦！」）「符合」。判执行失效 UNVERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX10-after.png（113507B：高亮停留课程交流、列表未变）",
+        "reports/audit/round-1/interact/exec-results.json#CX10（act:tapIndex .category-tab#2(\"社团招新\") tapped；console: [] 无请求序列）",
+        "reports/audit/round-1/interact/次要14.json#OP04（同交互 cards:2 firstTitle=摄影社团招新啦！ verdict=符合）；reports/screenshots/round-1-interact/CAMPUSINDEX-04-after.png（社团招新高亮+社团列表实证）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "CX11",
+      "page": "subpackages/campus/campus/index",
+      "operation": "500ms 内快速连切 3 Tab（竞态 token）",
+      "expected": "仅最后一次（alumni_news）请求结果落状态；终态列表=校友动态且高亮一致；loading 收敛 false；无 TypeError/分类错乱",
+      "actual": "act:tap .category-tab 上报成功但 after 截图与基线完全相同（课程交流高亮+原列表）——连切未发生；console=[] 无 3 个 /campus/topics 请求序列证据。同会话 tap 失效；平行线 OP10 同交互实测连切后 activeCategory=study_help、列表=campus-topic-7/8，竞态 token 保护「符合」",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX11-after.png（与 CX10 基线同画面：课程交流高亮）",
+        "reports/audit/round-1/interact/exec-results.json#CX11（act:tap .category-tab；console: []）",
+        "reports/audit/round-1/interact/次要14.json#OP10（快速连点 3 tab 后 activeCategory=study_help、竞态保护正确 verdict=符合）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "CX12",
+      "page": "subpackages/campus/campus/index",
+      "operation": "六分类 Tab 全遍历（含横向滚动露出末两 Tab）",
+      "expected": "每 Tab 高亮正确迁移、各分类清空重载（mock 各分类均有数据）；无空态误闪、无报错",
+      "actual": "act:tap .category-tab 上报成功但末态截图仍为课程交流基线——遍历未发生；逐 Tab DOM 断言记录（active 类+首卡标题）未落盘。同会话 tap 失效（同 CX10/11）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX12-after.png（末态=课程交流基线）",
+        "reports/audit/round-1/interact/exec-results.json#CX12（act:tap .category-tab；dom: .category-tab:present .category-tabs:present）",
+        "apps/client/src/subpackages/campus/campus/index.vue:279-288（tabs scroll-x 结构）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "CX13",
+      "page": "subpackages/campus/campus/index",
+      "operation": "话题列表触底翻页 + in-flight 防抖",
+      "expected": "触底 fetch page+1 第二页 append 不重复；加载中显示 .loading-more；重复触底被双守卫拦截零重复请求",
+      "actual": "环境不满足：mock 北京大学 course_exchange 仅 2-3 条（<10，截图可见 2 卡+「没有更多了」）→ topicHasMore=false，翻页分支不可达（Manifest.pre 自述「mock 数据不足 10 条时退化为 no-more 分支，环境不满足时如实标 UNVERIFIED」条件成立）。act pageScrollTo+swipe 已执行但 dom 仅有 .loading-more:absent（无 before/after 卡片数对比），append 无证据；after 截图超时失败（ERROR:timeout waiting for automator response）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX13（dom: .topic-scroll:present .loading-more:absent；evidence 截图 ERROR:timeout）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX14-after.png（旁证同分类仅 2 卡+没有更多了 → 无更多页可拉）",
+        "apps/client/src/subpackages/campus/campus/index.vue:167-177（onLoadMoreTopic 守卫与 page+1 透传）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX14",
+      "page": "subpackages/campus/campus/index",
+      "operation": "列表到底 no-more 提示 + 二次触底零请求",
+      "expected": "列表尾显示 .no-more「没有更多了」；第二次触底不发任何请求；无死循环、Loading 不永驻",
+      "actual": "部分证实：dom .no-more:present + after 截图列表尾「没有更多了」清晰可见 ✓（且为常驻态，非 Loading 永驻）。未证实：swipe 上滑上报 unsupported(no element api)（scroll-view 手势不可合成），scrolltolower 从未触发，「第二次触底零请求」断言未执行，console=[] 无网络记录佐证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX14-after.png（113546B：列表尾「没有更多了」可见）",
+        "reports/audit/round-1/interact/exec-results.json#CX14（dom: .no-more:present；act:swipe up unsupported(no element api)；console: []）",
+        "apps/client/src/subpackages/campus/campus/index.vue:348-350（no-more 渲染条件 !topicHasMore）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX15",
+      "page": "subpackages/campus/campus/index",
+      "operation": "错误态展示 + 重试按钮（断网/拦截后重进→重试）",
+      "expected": "topicsError 独立错误文案+重试按钮可见；点重试 500ms 内 loading 反馈并同口径透传 viewSchool 重拉；恢复后列表渲染错误态消失",
+      "actual": "场景未建立：① Manifest.pre 要求经 DevTools 断网或 automation 拦截 /campus/topics 令首屏请求失败——exec 证据中无任何拦截/断网动作；② 兜底 auto-reLaunch 未带 ?school → 重定向回 hub，.campus-state__btn 不存在 act-FAIL。after 截图（194015B，19:18 补拍批次）实为 hub 学校列表页——错误态从未出现。主跑+补拍共 2 次均同因",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-after.png（194015B：实拍为校园圈 hub 页，非本页错误态）",
+        "reports/audit/round-1/interact/exec-results.json#CX15（top=hub; dom: .campus-state__btn:absent; act-FAIL:tap(.campus-state__btn) element not found:(\"重试\")）",
+        "apps/client/src/subpackages/campus/campus/index.vue:297-303（错误态+重试钮模板，仅 topicsError 时渲染）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX16",
+      "page": "subpackages/campus/campus/index",
+      "operation": "认证徽章四态文案映射 + 校名兜底链",
+      "expected": "徽章四态=已认证/审核中/未通过/未认证（背景类随态切换）；校名兜底链观察（defaultSchool「广州大学」段如实记录不可达）",
+      "actual": "无参 auto-reLaunch → hub 重定向，本页未上屏，.cert-badge/.schoolName 探针均 absent（在 hub 上测得，无意义）；verified/pending/rejected 三态未预置（需 real 认证数据）；unverified 可达态亦未在本页观测。after 截图实为 hub 页。defaultSchool 不可达分支：按 Manifest 预期仅作执行日志说明——index.vue:236 viewSchool 恒存在时兜底链后段不可达，与 CX02 重定向设计自洽，未判缺陷",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX16-after.png（173195B：实拍为 hub 页）",
+        "reports/audit/round-1/interact/exec-results.json#CX16（top=hub; dom: .cert-badge:absent .schoolName:absent）",
+        "apps/client/src/subpackages/campus/campus/index.vue:134-161（四态映射函数）、:236（校名兜底链）；apps/client/src/i18n/locales/zh-CN.ts:3509-3513（四态文案+defaultSchool）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX17",
+      "page": "subpackages/campus/campus/index",
+      "operation": "公开浏览视角（已认证+非本校 清华大学）banner/FAB/引导卡结构断言",
+      "expected": "显示 .public-browse-banner；Tab+列表照常；FAB 不渲染；引导卡与推荐圈不渲染",
+      "actual": "双重前置未建立：① real 已认证身份未建立（login A userId=user-1001 MISMATCH，mock 恒 unverified）；② 兜底 auto-reLaunch 未带 ?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6 → 重定向回 hub，.public-browse-banner:absent 系 hub 上测得（无意义）。after 截图超时失败。平行线 OP08 旁证 verified 视角分支结构可控（引导卡/banner 消失、FAB 出现）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX17（top=hub; dom: .public-browse-banner:absent; pre:login A ok userId=user-1001 MISMATCH!；evidence 截图 ERROR:timeout）",
+        "apps/client/src/subpackages/campus/campus/index.vue:271-274,356（banner 与 FAB 的互斥渲染条件）",
+        "reports/audit/round-1/interact/次要14.json#OP08（verified 视角结构断言旁证）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX18",
+      "page": "subpackages/campus/campus/index",
+      "operation": "FAB 发布钮 → post-topic 携带当前分类 category",
+      "expected": "tap .campus-fab → navigateTo post-topic?category=campus_activity（先切校园活动 Tab）；发布页消费 category 默认选中",
+      "actual": "前置未建立：isOwnCertifiedView 需 real 已认证本校视角，login MISMATCH + 兜底 auto-reLaunch 落 hub，.campus-fab 不存在，act-FAIL，tap 未执行。平行线 OP08 同交互（注入 verified 后）实测点 FAB 成功跳 post-topic「符合」",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX18（top=hub; dom: .campus-fab:absent; act-FAIL:tap(.campus-fab)）",
+        "reports/audit/round-1/interact/次要14.json#OP08 与 fix2 E 复测（fabExists=true、点击 landedOn=post-topic verdict=符合）",
+        "apps/client/src/subpackages/campus/campus/index.vue:118-122,356-358（goToPostTopic 透传 activeCategory）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX19",
+      "page": "subpackages/campus/campus/index",
+      "operation": "FAB 快速连点×5 防重复入栈",
+      "expected": "post-topic 入栈实例计数≤1；无重复进出；最终停留发布页",
+      "actual": "双重执行失败：① .campus-fab 不存在（同 CX18 前置未建立）rapidTap act-FAIL；② 兜底 repeatNav 使用未解析占位符 __CASE_PAGE__ 导航 ×2 报 navErr:Uncaught [object Object]×2。防连点断言从未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX19（act-FAIL:rapidTap(.campus-fab)；act:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught×2；top=hub）",
+        "scripts/qa/r1-exec.cjs:494,576,993（__CASE_PAGE__ 占位符生成与解析路径）",
+        "reports/audit/round-1/interact/次要14.json#OP08（FAB 可点性旁证）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX20",
+      "page": "subpackages/campus/campus/index",
+      "operation": "点击热区≥88rpx 铁律测量（8 类可点元素 boundingClientRect）",
+      "expected": "逐元素宽高 rpx 换算记录；campus-back 64rpx / guide-btn≈68rpx / category-tab≈72rpx 预期低于 88rpx 记缺陷候选；fab 104rpx / recommend-item 120rpx 合规",
+      "actual": "测量零交付：无参 auto-reLaunch → hub，全部 8 类目标元素探针 absent（.campus-back/.cert-guide-card__btn/.cert-recommend__more/.cert-recommend__item/.category-tab/.campus-state__btn 全 absent），无任何 boundingClientRect 数据落盘；after 截图超时失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX20（dom 全部 absent；evidence 截图 ERROR:timeout）",
+        "apps/client/src/subpackages/campus/campus/index.vue:407-409,507-514,544,791-792,868（Manifest 引用的热区样式行，未获运行时证实）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX21",
+      "page": "subpackages/campus/campus/index",
+      "operation": "重复进出×3（hub→学校卡→本页→返回 hub）",
+      "expected": "每轮 loading→success 正常重拉；每次返回落点恒 hub；栈深不累积；console 无报错累积",
+      "actual": "动作被降级：Manifest 要求经学校卡进出循环，A1 解析为 repeatNav navigateTo __CASE_PAGE__ ×3（解析为无参直连本页）→ 3 次全部 navErr:Uncaught [object Object]（无参 onLoad redirectTo hub 与 navigateTo 竞争所致），学校卡进出循环从未发生，无逐轮路由链记录。执行失效",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX21（act:repeatNav navigateTo __CASE_PAGE__ x3 navErr×3；route 终态 [hub]）",
+        "apps/client/src/subpackages/campus/campus/index.vue:197-198（无参重定向，navErr 根因）",
+        "scripts/qa/r1-exec.cjs:490-494（循环→repeatNav 占位符降级逻辑）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX22",
+      "page": "subpackages/campus/campus/index",
+      "operation": "列表滚动往返（scrollTop≈600 → 回顶）数据不丢",
+      "expected": "滚动顺滑无白屏；数据不丢失不重排；回顶首卡可见；scroll-view 有界滚动页面级不跟滚",
+      "actual": "无参 auto-reLaunch → hub，.topic-scroll:absent，滚动目标不存在；act pageScrollTo top 与 wait 执行于 hub 页；仅落 scrollPos=top。本页滚动往返未发生",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX22（top=hub; dom: .topic-scroll:absent; evidence: scrollPos=top）",
+        "apps/client/src/subpackages/campus/campus/index.vue:312-313（topic-scroll 容器）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "CX23",
+      "page": "subpackages/campus/campus/index",
+      "operation": "未认证基线视图完整性（引导卡+推荐圈 8 格+6 Tab+列表+头像兜底）",
+      "expected": "同屏可见引导卡文案/推荐圈 8 格/6 Tab/北京大学话题列表；FAB 与 banner 不出现；匿名帖显示「匿名校友」不渲染头像；相对时间正常",
+      "actual": "无参 auto-reLaunch → hub，本页未上屏，零 DOM 断言落盘；after 截图超时失败。平行线 OP03 旁证（tap 正常会话、raw 中文校名进入）：cards:2/tabs:6/certGuide:true/recommendItems:8/fab:false——基线结构在健康会话下成立，但头像兜底链与匿名文案未见专项断言，本用例仍以 A1 结果记 UNVERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#CX23（top=hub; observe-only 无 dom 记录；evidence 截图 ERROR:timeout）",
+        "reports/audit/round-1/interact/次要14.json#OP03（基线结构旁证）",
+        "apps/client/src/subpackages/campus/campus/index.vue:245-268,328-336（引导卡/推荐圈/匿名头像兜底模板）"
+      ],
+      "confidence": 0.5
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-CAMPUSINDEX-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "推荐兴趣圈区标题与「查看更多」在中文环境显示原始 i18n key（campus.index.hotCirclesTitle / campus.index.viewMore）。根因：提交 29a2b1df（2026-09-22 09:53，round-2 audit fixes）将 index.vue 硬编码文案改为 t('campus.index.*')，但两个 key 被加进 campus.postTopic 块（zh-CN.ts:3549-3550、en-US.ts:3470-3471），campus.index 块（zh-CN.ts:3508-3526）缺 key，t() 回退显示 key 路径。9-21 平行线截图 CAMPUSINDEX-04-after.png 尚显示正常「热门兴趣圈/查看更多」，9-23 A1 全部 6 张本页截图均复现原始 key——29a2b1df 引入的回归",
+      "evidence": "apps/client/src/subpackages/campus/campus/index.vue:259-260 消费 t('campus.index.hotCirclesTitle')/t('campus.index.viewMore')；zh-CN.ts:3549-3550 与 en-US.ts:3470-3471 两 key 实际位于 postTopic 块（其前驱键 imagePickLabel/privacyRequired 均为 postTopic 专用）；截图 CX03/CX04/CX10/CX11/CX12/CX14-after.png 均见原始 key；CAMPUSINDEX-04-after.png（9-21，改动前）显示正常文案",
+      "sources": [
+        "screenshot",
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "中文环境显示「热门兴趣圈」与「查看更多 ›」，英文环境显示 Hot circles / View more",
+      "fix": "将 \"hotCirclesTitle\": \"热门兴趣圈\" 与 \"viewMore\": \"查看更多\" 从 campus.postTopic 块移入 campus.index 块（zh-CN.ts:3508-3526 与 en-US.ts 对应 index 块）；补一条 t 键路径与消费方一致的静态检查",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSINDEX-003",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index（波及 S06–S08 全部分包套件）",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX10-after.png",
+      "category": "Architecture",
+      "severity": "P1",
+      "description": "R1 交互执行会话（r1-exec.cjs，S06 circles-campus / S07 campus-matching / S08 match-chat 批次）tap 派发系统性失效：元素可寻址（tap 不报 element not found、act 上报成功）但事件零到达应用——本页 4/4 次「成功 tap」（CX06 back、CX10 tapIndex、CX11/12 tab）均零状态变化；hub 页 CH10/11/12（学校卡/CTA/认证钮）同模式；S06–S08 三套件 0 例 tap 产生路由变化/ toast，而 S01–S05（login/home/nearby/messages/village）tap 正常（19 例路由变化、126 例 toast）。导致本页 23 例中 14 例交互类用例无效（判 UNVERIFIED 而非 FAILED 的根因）；次要14.json 平行执行线证明同一批交互（OP04 Tab 切换/OP06/OP07/OP08 FAB/OP09 返回兜底/OP10 竞态）在健康会话下全部「符合」",
+      "evidence": "exec-results.json#CX06/CH10/CH11/CH12（tap 成功上报+路由零变化）；#CX10/CX11/CX12（tapIndex 上报成功+截图高亮/列表零变化）；对比次要14.json OP04/OP06/OP07/OP08/OP09/OP10 全部符合；scripts/qa/r1-exec.cjs:1023-1026（el.tap() 无事件到达检测）",
+      "sources": [
+        "screenshot",
+        "log"
+      ],
+      "confidence": 0.9,
+      "ideal": "tap 派发后应用侧产生可观测状态变化；tap 无效时应识别并重试或标记，而非记 EXECUTED",
+      "fix": "重启开发者工具/新建自动化会话后重跑 S06–S08 三套件；r1-exec.cjs 增加 tap 生效性自检（tap 后 ≤1s 断言路由/DOM/请求任一变化，零变化自动重试 1 次并降级标记 UNVERIFIED-tap-dead）",
+      "status": "待修复"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-judge.json",
+  "unverifiable": [
+    "CX01|三时刻 DOM 采样未落盘，仅末态单样本（success 已证实），loading→success 时序与严禁闪现负向断言无时序证据|1",
+    "CX05|前置未建立：兜底 auto-reLaunch 未带 ?school 触发设计内重定向回 hub，返回钮不存在，tap 未执行|1",
+    "CX06|tap 上报成功但事件未达应用（同会话 S06–S08 tap 系统性失效，hub CH10/11/12 同模式；平行线 OP09 同交互符合），终态未落 pages/home/index|1",
+    "CX07|前置未建立（无参入口落 hub）+ login B 身份 MISMATCH(user-1001≠100159)，引导卡不存在 tap 未执行|1",
+    "CX08|前置未建立：落 hub 后 .cert-recommend__more 不存在，tap 未执行|1",
+    "CX09|前置未建立：落 hub 后推荐圈格子不存在（__CAND__(\"摄影\") not found），三格抽样未执行|1",
+    "CX10|tapIndex 上报成功但事件未达应用，截图高亮/列表零变化（平行线 OP04 同交互符合）|1",
+    "CX11|同会话 tap 失效连切未发生，3 请求竞态序列无 console 证据（平行线 OP10 同交互符合）|1",
+    "CX12|同会话 tap 失效，六 Tab 遍历未发生，逐 Tab DOM 断言未落盘|1",
+    "CX13|mock 数据不足 10 条（2-3 条，hasMore=false）翻页分支不可达（Manifest 自述退化条件成立），append 无证据，after 截图超时|1",
+    "CX14|no-more 展示已证实（DOM+截图），但 swipe 手势不可合成（unsupported no element api），二次触底零请求断言未执行|1",
+    "CX15|断网/拦截前置未执行 + 无参入口落 hub，错误态从未出现，after 截图实为 hub 页|2",
+    "CX16|无参入口落 hub，徽章未渲染；verified/pending/rejected 三态未预置，可达态亦未在本页观测|1",
+    "CX17|real 已认证身份未建立（login MISMATCH）+ 无参入口落 hub，banner 场景未建立，截图超时|1",
+    "CX18|已认证本校视角未建立（身份 MISMATCH + 落 hub），FAB 不存在 tap 未执行（平行线 OP08 同交互符合）|1",
+    "CX19|同 CX18 前置未建立 + repeatNav 未解析占位符 __CASE_PAGE__ 导航 Uncaught×2，防连点断言未执行|1",
+    "CX20|无参入口落 hub，8 类可点元素全部缺席，boundingClientRect 测量零条目，截图超时|1",
+    "CX21|动作降级为 repeatNav 无参直连 ×3 全部 Uncaught 导航错误，学校卡进出循环从未发生|1",
+    "CX22|无参入口落 hub，.topic-scroll 不存在，滚动往返未在本页执行|1",
+    "CX23|无参入口落 hub，零 DOM 断言落盘，截图超时（基线结构由平行线 OP03 旁证，但非本用例 A1 证据）|1"
+  ],
+  "notes": "仲裁口径：① A1（exec-results.json，git aefd8a72）为 observed 权威，Manifest SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json 为 expected 权威，round-1-interact 截图为第三方证据。② 本页 23 例：VERIFIED 3（CX02/03/04，均为无 tap 依赖的观察类）、UNVERIFIED 20、FAILED 0——无一起可归因应用的预期未达成：交互类用例全部失效于两个执行侧根因（兜底 auto-reLaunch 不带 query 触发设计内 hub 重定向，r1-exec.cjs:1311-1319；S06–S08 会话 tap 派发失效），二者均有跨套件证据与平行执行线（次要14.json OP01-OP10 全部符合）反证应用侧无恙，故按铁律判执行失效 UNVERIFIED 而非放水 VERIFIED 或误判 FAILED。③ 附带实锤应用缺陷 1 枚：MP-R1-CAMPUSINDEX-002（i18n key 作用域错位回归，29a2b1df 引入，6 张截图复现，前后期截图对照定界引入点）。④ login 身份 MISMATCH（userId=user-1001≠100158/100159）系 mock session.bootstrap 恒注入满配 user-1001 所致，波及所有声明双身份的用例前置，已并入各 UNVERIFIED 原因。⑤ 遗留建议：S06–S08 需以健康会话重跑后本判定方可升级；CX13 翻页、CX16 四态、CX17 公开浏览需 real 包/数据预置方可实证。⑥ 判定过程未驱动开发者工具，仅读取 exec-results、截图（9 张亲验）、console 落盘、r1-exec.cjs、index.vue、campus.ts 间接引用、pages.json、zh-CN/en-US locale 及 git 历史（git diff/show/log -S）。"
+}

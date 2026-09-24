@@ -1,0 +1,127 @@
+{
+  "round": "R1",
+  "reviewer": "A4 需求对照审查员（req）",
+  "page": "subpackages/chat/official-chat/index",
+  "generatedAt": "2026-09-24",
+  "evidenceBasis": {
+    "pageCode": "apps/client/src/subpackages/chat/official-chat/index.vue（全量读取）",
+    "entryCode": "apps/client/src/pages/messages/index.vue:191-192(openAssistant)/:401(assistant-card @tap)",
+    "backend": "apps/api/src/main/java/com/campuslove/api/official/OfficialAccountController.java:49-99、OfficialChatService.java:37-116、RealOfficialAccountService.java:33-91、OfficialMessageView.java",
+    "contract": "apps/client/src/services/generated/api-types-supplement.ts:628(messageType='text'|'card')/:639(cardActivity)",
+    "execResults": "reports/audit/round-1/interact/exec-results.json（manifest=SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX 共 26 条 OC01-OC26）",
+    "judge": "reports/audit/round-1/interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-judge.json（VERIFIED 7/FAILED 1/UNVERIFIED 18）",
+    "screenshots": [
+      "素材/理想效果图/消息.png 右半（本页唯一页面级理想稿）",
+      "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+      "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png（实拍=活动详情页）",
+      "reports/screenshots/round-1-interact/OFFICIAL-CHAT-12-after.png",
+      "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml（本轮 python 解析计数）"
+    ],
+    "baseline": "素材/理想效果图/19 张中无本页专属稿；以消息.png 右半幅（寻觅助手会话页）为页面级对照依据 + 素材/组件库/理想效果图-svg拆分/12-chat（bubble-self 渐变 #6FD4AA→#36C99A、activity-card、input-bar）"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-101",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "素材/理想效果图/消息.png（右半：末条助手消息气泡内「去看看/稍后再说」双按钮） vs reports/screenshots/round-1-interact/OFFICIAL-CHAT-01-after.png（实拍 3 条消息无按钮）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "理想稿明确的「去看看/稍后再说」按钮消息形态（messageType=action-buttons）全链路无生产者，用户永远不可达：页面渲染分支与点击处理器齐备（index.vue:213-214 isButtonMsg、:470-477 .msg-buttons、:158-171 onActionBtnTap），但客户端生成契约仅声明 'text' | 'card'（api-types-supplement.ts:628），后端双向会话回复硬编码 messageType=\"text\"（OfficialChatService.java:108-116 toView），real/mock 广播服务均不产 action-buttons（本轮 grep apps/api 与 apps/client 两侧，action-buttons 仅命中本页自身 3 处），mock 固化 3 条消息亦无按钮（index.vue:222-253）。OC21/OC22 因此 element not found（judge 判 UNVERIFIED：环境正确表现）。即理想稿叙事中的按钮交互在 mock 与 real 两种模式下均为死渲染分支。",
+      "evidence": "读码：index.vue:38-42（本地类型扩展含 action-buttons）/index.vue:213-214/:470-477/:158-171；api-types-supplement.ts:628；OfficialChatService.java:105-116（toView 硬编码 \"text\"）；grep 'action-buttons' apps/client/src 与 apps/api/src（仅本页 3 命中）；exec-results.json#OC21/#OC22（.action-btn--primary/.action-btn--default element not found）；理想图消息.png 右半按钮组实拍对照",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "助手在下发推荐/邀请类消息时可携带按钮卡：渲染「去看看（品牌绿主按钮）→ /subpackages/discover/activities/index」与「稍后再说（描边按钮）→ 本地插入用户消息不发请求」，与理想稿末段消息一致；契约（api-types-supplement 与后端 OfficialMessageView 生态）应允许该形态或有明确的产品裁剪决定。",
+      "fix": "三选一并落决定：① 后端为运营配置/规则回复增加 action-buttons 消息生产（OfficialMessageView 扩展 + 客户端契约同步）；② mock 固化消息补一条 action-buttons 承载演示；③ 产品确认裁剪该形态，则删除 index.vue:470-477 死分支与 OC21/OC22 用例，避免死代码与用例空转。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-102",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "素材/理想效果图/消息.png（右半第 3 段：「太好了！已经帮你报名成功啦✅…」助手确认消息） vs reports/screenshots/round-1-interact/OFFICIAL-CHAT-01-after.png（实拍无该消息）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "P8-2.3「报名成功→寻觅助手会话回流确认消息」在 real 模式断链：生产者活动详情页报名成功两条路径都写本地通知（tools/activities/detail.vue:241 真实报名成功、:252 示例活动，均调 appendAssistantActivityNotify，detail.vue:182-205），但消费者只存在于本页 useMock() 分支（index.vue:254-259，assistant-notify.ts:7 自述「mock 模式专用契约」）。real 用户报名成功后：寻觅助手会话不出现任何确认消息（理想稿第 3 段不可达），本地 storage 积压通知永不清空。理想稿叙事（报名后助手确认+提醒）仅 mock 可见。",
+      "evidence": "读码：detail.vue:182-205/241/252；index.vue:221（if (useMock()) 分支）与 :254-259（consumeAssistantActivityNotifies 仅在 mock 分支内）；assistant-notify.ts:7（「mock 模式专用契约」注释）/32-40/50-60；后端无报名→官方消息的写入（OfficialChatService 仅用户发送时生成回复；grep @Scheduled 无活动提醒/回流任务）",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.8,
+      "ideal": "报名成功后，寻觅助手会话在 real 模式也应出现报名确认助手消息（后端在 enroll 成功事务内写 official_chat_messages 一条 assistant direction 消息，GET messages 合并即得；或前端在 real 分支消费本地通知），且消费后清空、不重复展示。",
+      "fix": "首选后端方案：activities enroll 成功后由服务端写一条 assistant 会话消息（复用 OfficialChatService 落库），天然随 GET /official-accounts/{code}/messages 合并返回；过渡方案：real 分支加载后同样 consumeAssistantActivityNotifies 并 append 到消息流（注意与后端合并流的排序与去重）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-103",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-interact/OFFICIAL-CHAT-01-after.png（第 3 条消息文案「…活动开始前一天我会提醒你~」）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "助手文案向用户承诺「活动开始前一天我会提醒你」（mock 消息 index.vue:249；real 规则回复 OfficialChatService.java:85 同句），但全仓无任何提醒实现：后端 @Scheduled 仅 TempChatCleanup/JwtToken清理/MQ/RateLimit/HotScore/VIP自动续费（本轮 grep 全量），无活动开课前/前一天的扫描任务；客户端无订阅消息/本地通知预约。用户按承诺等待提醒将落空。",
+      "evidence": "读码：index.vue:249、OfficialChatService.java:82-103（:85 含承诺文案）；grep '@Scheduled' apps/api/src/main/java（6 处均与本承诺无关）；grep 提醒/remind 后端仅命中文案与无关实体；客户端无 uni.requestSubscribeMessage 调用（本轮 grep reminder/remind 无活动提醒实现）",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "要么实现提醒（后端定时任务扫描次日开始的已报名活动→写官方助手会话消息或订阅消息），要么将文案改为不承诺提醒的表述，二者取一。",
+      "fix": "短期改文案（mock 消息与 OfficialChatService.java:85 去掉承诺句）；中期补 @Scheduled 每日任务：扫描 start_time 在 [now+24h, now+25h) 的报名记录，向 official_chat_messages 写 assistant 提醒消息（随既有合并链路自然送达）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-104",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "页面定位为「官方/AI 聊天」，但助手回复能力为规则化关键词匹配（6 类关键词：报名/喜欢/访客/签到/你好/谢谢 + 兜底话术，OfficialChatService.java:82-103），无模型接入：仓库内 AGNES 配置仅绑定 AI 视频生成（AiVideoConfig.java:12-17、application.yml:284-289），聊天链路未引用；代码注释自述「后续可替换为 AGNES 接入」。与「AI 聊天」的能力预期存在差距，是否本期目标需产品裁决（故 P3 记录而非 P2 缺陷）。",
+      "evidence": "读码：OfficialChatService.java:14-17（类注释「规则化」）/:82-103（关键词表）；AiVideoConfig.java:12-17（AGNES 仅 ai.video 用途）；application.yml:284-289；本轮 grep agnes 在聊天/official 包 0 命中",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "寻觅助手回复具备一定的意图理解与个性化（接 LLM 或扩展规则引擎），或产品明确「AI」仅指助手人格包装、规则化回复即为验收口径。",
+      "fix": "产品裁决：若 AI 为目标，按 OfficialChatService 预留注释接入模型（app.agnes.api-base 已有配置位，需新增 chat 用配置与超时/降级到现有规则回复的兜底）；若非，删除/修改页面命名中的「AI」表述，管理预期。",
+      "status": "保留"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/chat/official-chat/index",
+      "baseline": "素材/理想效果图/消息.png 右半（寻觅助手会话页整页稿；19 张中无本页专属稿，本图为唯一页面级对照依据）+ 素材/组件库/理想效果图-svg拆分/12-chat（气泡/活动卡/输入栏组件规格）+ 素材/参考图/寻觅品牌视觉设计系统图谱.png（品牌绿 #36C99A 系）",
+      "structureNotes": "L1 区块构成：导航（返回/标题+官方徽章/副标题/···）✓、绿色英雄区（吉祥物+问候+两行介绍）✓、居中时间条 ✓、消息流（助手左吉祥物头像/用户右头像+已读）✓、输入栏 ✓、表情面板（增能）✓；缺理想稿「去看看/稍后再说」按钮消息形态（无生产者，Issue -101）。L2 区块顺序：与理想一致 ✓。L3 三处布局偏差：①英雄区理想横排（吉祥物左+文案右）实际竖排居中；②活动卡理想图左文右实际图上文下；③输入栏理想[键盘][输入框][表情][+]实际[表情][+][输入框][发送]（发送键为有据增强）。L4：官方徽章理想浅绿底胶囊实际白底绿描边（index.vue:614-626）；用户气泡理想渐变 #6FD4AA→#36C99A 实际品牌绿实色（:796-800）；「已读」理想气泡左侧同行实际气泡下方（:496）。L5 文案一致；L6-L10 骨架过渡/错误重试/禁用态/防连点/幂等键为增能，real 异常态运行证空白。按「L1-L4 偏差即不达标」口径结构项不达标（1 项 L1 缺失+3 处 L3+3 处 L4），但无整段缺失、无区块错序。",
+      "usageNotes": "核心任务「消息页助手卡进页→读历史→发消息→收回复→点活动卡看详情→返回」链路完整：发送 OC12 VERIFIED（本轮解析 OC12-after.wxml：right 行=1、bubble--user=1、read-receipt=1、含「你好呀/收到啦」、scroll-into-view=official-chat-bottom-anchor）；返回兜底 OC05 VERIFIED（栈深1 → pages/messages/index，2 步内回 tab 达标、不迷路）；卡→详情巡检会话实拍可达（交互后截图=详情页），但 A1 会话 OC20 未跳转（A6 已立 MP-R1-OC-001）且落地内容与卡片文案错位（视觉已立 -011）；冷启动滚动停留顶部损害「读到最新」（视觉已立 -010 P1）。运行证缺口（环境所致 judge 同判 UNVERIFIED）：入口点击 OC03、未登录锁定 OC25（mock 恒解锁）、表情面板 OC09/OC10、confirm 发送 OC14、real 失败重试 OC23/发送失败回滚 OC24、双身份 OC03/OC26（A/B 均解析 user-1001 前置失真）。另：A6 引用截图路径名与磁盘不符（judge 记 7 张 ERROR:timeout 未落盘，实际以 OFFICIAL-CHAT-*.png 命名落盘 43 张，本轮 ls 实测），下轮引用需改名。",
+      "functionGaps": [
+        {
+          "target": "T6/T8 按钮消息形态：理想稿「去看看/稍后再说」可渲染可点击（去看看→活动列表；稍后再说→本地插入用户消息）",
+          "current": "渲染分支与处理器在（index.vue:158-171/213-214/470-477），但契约仅 'text'|'card'（api-types-supplement.ts:628）、后端 toView 硬编码 \"text\"（OfficialChatService.java:108-116）、广播服务无该形态、mock 固化 3 条无按钮；OC21/OC22 element not found",
+          "gap": "全链路无生产者，两种模式下均为死渲染分支，理想稿按钮交互不可达",
+          "fix": "见 Issue -101：后端/mock 补生产者，或产品裁剪后删死分支与用例"
+        },
+        {
+          "target": "T11 报名成功回流：报名成功后寻觅助手会话出现确认消息（理想稿第 3 段）",
+          "current": "生产者 detail.vue:241/:252 写本地通知，消费者仅在 useMock() 分支（index.vue:254-259）；assistant-notify.ts:7 自述 mock 专用",
+          "gap": "real 模式报名后无任何助手确认消息，本地积压通知永不清空",
+          "fix": "见 Issue -102：后端 enroll 成功写 official_chat_messages，或 real 分支消费本地通知"
+        },
+        {
+          "target": "T11 延伸 「活动开始前一天我会提醒你」提醒能力",
+          "current": "mock 消息（index.vue:249）与 real 规则回复（OfficialChatService.java:85）均含承诺文案；@Scheduled 六处均无活动提醒任务，客户端无订阅消息",
+          "gap": "承诺能力无实现，用户等待提醒落空",
+          "fix": "见 Issue -103：改文案或补每日定时提醒任务"
+        },
+        {
+          "target": "页面定位「官方/AI 聊天」的 AI 回复能力",
+          "current": "规则化关键词匹配 6 类+兜底（OfficialChatService.java:82-103）；AGNES 配置仅用于 AI 视频（AiVideoConfig.java:12-17），聊天未接模型",
+          "gap": "与「AI」命名的能力预期有差距（是否本期目标待产品裁决，故 P3）",
+          "fix": "见 Issue -104：接入模型或修正命名/预期"
+        },
+        {
+          "target": "证据缺口（非产品缺陷，不入 Issue）：real 模式 LockScreen（OC25）、加载失败重试（OC23）、发送失败回滚+幂等键重试（OC24）、表情面板（OC09/OC10）、confirm 发送（OC14）、入口点击（OC03）的运行时验证",
+          "current": "代码路径均在（index.vue:48/358、280-282/386-390、146-151/132-139、70-83/543、350-351；messages/index.vue:191-192），本轮环境（mock 包+harness 输入失效+身份 MISMATCH）无法承载",
+          "gap": "上述路径本轮零运行证据，均记 not run",
+          "fix": "修复 r1-exec 身份花名册与 input 动作后，在 real 包补跑 OC03/OC09/OC10/OC14/OC23-OC26"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-req.json"
+}

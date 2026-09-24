@@ -1,0 +1,38 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-SUCCESS-R01",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "成功页解锁声明与实际守卫状态不符，且解锁键与 DEV_PAGE_MAP 规格错位。success.vue:35 清单行声明「可开始匹配、加兴趣圈、发消息=已解锁」，但 profile-guard.ts:14-20 的 LOCKED_PAGES 含 ROUTES.TAB.CHAT（=/pages/messages/index 消息，routes.ts:41）与 ROUTES.TAB.VILLAGE（村口/讨论圈，routes.ts:34）；usePageAccess.ts:116-130 在 profileCompleted=false 时触发 unlockGuideStore.show 并 return，由 App.vue:276-284 全局弹出 UnlockGuideModal 拦截。新注册用户 profileCompletion 远低于阈值 50（RealAuthService.java:1237-1244「profileCompleted = profileCompletion >= 50」，注册仅建号未填资料），点消息 Tab 必被弹窗拦截——「发消息已解锁」为假声明。规格侧 DEV_PAGE_MAP-流程基准.md:26/31 规定「实名必须（阻塞核心入口）；实名成功立即允许进入首页/附近/匹配/消息」，实现中首页/附近/匹配无任何实名门槛（page-access.ts:11-16 discover requiresAuth:false），消息却按「资料完善≥50」锁定——解锁模型整体与规格不一致（本页即 ask 所述「成功页即解锁点」的语义落点）。",
+      "evidence": "success.vue:33-37（rows[1] 文案+「已解锁」tag）；profile-guard.ts:14-20/29-35（LOCKED_PAGES+FEATURE_NAME_MAP「消息」「村口/讨论圈」）；usePageAccess.ts:116-130（resolveProfileGuard 拦截→show modal→return）；App.vue:275-283（UnlockGuideModal 全局挂载）；routes.ts:34/41（TAB.VILLAGE / TAB.CHAT=/pages/messages/index）；apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java:1237-1244（阈值 50，新注册必然未达）；register/index.vue:351-360（注册签发 JWT 后 redirectTo 本页，此时 profileCompletion 未填）；素材/注册/个人资料填写/01-注册登录/DEV_PAGE_MAP-流程基准.md:26,31（实名必须阻塞核心入口；实名成功立即解锁首页/附近/匹配/消息）",
+      "sources": ["code", "material"],
+      "confidence": 0.85,
+      "ideal": "注册成功页如实呈现解锁状态；按 DEV_PAGE_MAP：核心入口以「实名成功」为解锁键，实名后首页/附近/匹配/消息立即放行；未达解锁条件时页面文案给出真实状态引导（如「完善资料并实名后解锁」），而非「已解锁」假状态",
+      "fix": "二选一并保持文案/守卫/规格三方一致：① 文案对齐守卫（最小改）：success.vue rows[1] 拆分——「可开始匹配」保留已解锁，「加兴趣圈、发消息」tag 改「完善资料后解锁」；② 守卫对齐规格（推荐）：解锁键从 profileCompleted 迁移到实名状态（userSession 增实名字段或复用 guards/campus-gate.ts isRealnameVerified），实名成功立即放行 LOCKED_PAGES 中消息/村口，注册成功页文案与该状态联动；同时补齐 DEV_PAGE_MAP「实名阻塞核心入口」的门槛或在产品层废止该规格并留档",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/register/success",
+      "baseline": "素材/寻觅注册页-素材_assets/69340cfc-miora_text_to_image-1789186341708-0-8c365c88ce83.jpg（reg-success 主视觉，唯一页面级对照依据）+ 素材/注册/个人资料填写/01-注册登录/DEV_PAGE_MAP-流程基准.md（认证规则/解锁点）+ reports/audit/baseline/ideal-baseline.md:83（注册成功插图+引导进入主流程；成功页即解锁点）",
+      "structureNotes": "L1 骨架：独立全屏页、custom 导航无返回键（pages.json:35 globalStyle），redirectTo 进入/系统返回落登录页。L2 顺序：插图→标题「注册成功」→两行引导文案→解锁清单卡→主 CTA→次级出口，与 ask「插图→引导文案→进入主流程按钮」一致（清单卡为设计包 05 成功屏插入层级，不破坏顺序）。L3 组件：打包插图 static/assets/images/register/reg-success-illustration.jpg 与理想素材 69340cfc 目视比对同图源（寻觅芽欢呼+爱心+薄荷底）；CTA 96rpx 全宽绿渐变、@tap 已修到 view（success.vue:67-71）。L4 内容：phone 脱敏为真实入参（OP1 DOM tag0=138****8888 / OP5 无参回退「完成」/ OP13 身份B 139****9999，interaction-matrix.md:376/380/386），无假数据。L5 色彩：CTA var(--c-brand,#36c99a) 绿渐变、页底 #eef7f2，非 v3.1 Hero 红线页，无冲突（fallback 与冻结 Token 差异归视觉审查员）。L6 i18n：中文硬编码，与 register/index 同模式。L7 状态：单成功态，无参深链回退已处理。L8 交互：主 CTA→setup/profile 向导实证（OP2 route=subpackages/setup/profile/index 栈1→2）；次级→switchTab home 实证（OP4 分时采样 + RS08-after 终态 home + A04b-repro 干净截图；RS06 的 FAILED 经 judge 仲裁为 automator 执行失败非死按钮）；主按钮无代码防抖（OP6/RS7 未复现重复压栈，风险低未立项）；次级出口热区 120×16px<88rpx 已由 interaction judge 立 005（P3），不重复。L9 数据：仅 phone 入参，不读写 store。L10 适配：--statusbar 注入（success.vue:13-15）；单屏无滚动（OP10 pageH=812=vpH）；无下拉刷新（OP12+pages.json）。证据边界：本轮 R1 exec 12 条中 10 条 UNVERIFIED（automator 截图超时，judge 004 Architecture P2 已立）；本轮本页截图均被 harness 登录预置的「获取手机号失败」弹窗遮盖（页面源码无 uni.show* 调用，OP12 srcHasToastLike=false），干净证据为 RS05-after/RS08-after/A04b-repro。L1-L4 无不达标项。",
+      "usageNotes": "理想路径（DEV_PAGE_MAP 流程）：注册成功→主按钮进完善资料 12 步（基础资料→实名→…），或「稍后再说」1 跳进首页 tab。实际：两出口均验证工作（OP2、OP4/A04b-repro 落 home 且五 tab 可用）；本页 1 跳即回 tab 区，任意页 2 步回 tab 满足，无死端、迷路风险低。风险点：①「已解锁」声明误导——按声明点消息 Tab 会遇 UnlockGuideModal（见 Issue R01）；②冷启动深链+系统返回在栈底（RS09 记 NAV_ERROR: Uncaught [object Object]，与早期 OP8「ok:true 无跳转无崩溃」冲突，低置信建议复跑，未立项）；③CTA 主次与 ask 字面「CTA：进入首页」倒挂（主=完善资料、次=首页 1 跳可达），但与 ideal-baseline.md:83「引导进入主流程」及 DEV_PAGE_MAP 流程一致，功能无缺失，建议产品确认留档，不计缺陷。",
+      "functionGaps": [
+        {
+          "target": "成功页即解锁点：注册/实名成功立即解锁首页/附近/匹配/消息（DEV_PAGE_MAP-流程基准.md:26,31；ask 页面目标）",
+          "current": "首页/附近/匹配可达（无门槛）；消息 Tab 与村口/讨论圈被 profile-guard LOCKED_PAGES 锁定至 profileCompleted（≥50，RealAuthService.java:1243），新注册用户必被 UnlockGuideModal 拦截；成功页却声明「发消息已解锁」（success.vue:35）；实名门槛未在任何核心入口落地（page-access.ts discover requiresAuth:false）",
+          "gap": "解锁键错位：规格=实名成功解锁，实现=资料完善≥50 解锁；页面解锁文案与守卫状态不一致，误导新注册用户（Function P2，见 Issue MP-R1-PAGES-REGISTER-SUCCESS-R01，confidence 0.85，代码静态推证 5 文件互证，无新注册用户执行 trace 故不满 1.0）",
+          "fix": "① 文案对齐守卫（最小改）：rows[1] 拆行、消息/圈 tag 改「完善资料后解锁」；或 ② 守卫对齐规格（推荐）：解锁键迁移至实名状态（复用 campus-gate isRealnameVerified 或 userSession 增实名字段），实名成功放行消息/村口，页面文案联动；同时对「实名阻塞核心入口」规格做落地或废止决策并留档"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/PAGES-REGISTER-SUCCESS.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/PAGES-REGISTER-SUCCESS-req.json"
+}

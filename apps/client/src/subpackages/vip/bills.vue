@@ -91,6 +91,13 @@ onPullDownRefresh(async () => {
   uni.stopPullDownRefresh();
 });
 
+// MP-R1-BILLS-001/MP-R1-C26REQ-001：onShow 误嵌在 goBack() 函数体内（Vue3 事件回调里
+// getCurrentInstance()=null → injectHook 不注册），「进入即加载/重进刷新」永不生效，
+// 恒显「暂无账单」假空态。移回 setup 顶层注册；并补首次进入加载（此前 :164 只剩孤儿注释）。
+onShow(() => {
+  if (featureFlags.membershipEnabled) void loadBills();
+});
+
 /** 格式化金额（分 → 元） */
 function formatAmount(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -148,20 +155,13 @@ function statusLabel(status: string): string {
 /** 返回上一页 */
 function goBack() {
   lightHaptic();
-  // MP-R2-次要22-010：onShow 刷新账单（store 缓存短路兜底，vip 页开通/兑换后进入可见新数据）
-onShow(() => {
-  if (featureFlags.membershipEnabled) void loadBills();
-});
-
-// MP-R2-次要22-008：栈底兜底
+  // MP-R2-次要22-008：栈底兜底
   if (getCurrentPages().length > 1) {
     uni.navigateBack({ delta: 1 });
   } else {
     uni.switchTab({ url: "/pages/profile/index" });
   }
 }
-
-// 初始化加载
 
 </script>
 

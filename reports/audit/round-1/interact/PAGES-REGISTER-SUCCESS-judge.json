@@ -1,0 +1,259 @@
+{
+ "round": "R1",
+ "page": "pages/register/success",
+ "pageName": "注册成功页",
+ "judgedAt": "2026-09-23",
+ "ssot": {
+  "manifest": "reports/audit/round-1/ops/PAGES-REGISTER-SUCCESS.json",
+  "observed": "reports/audit/round-1/interact/exec-results.json (manifest=PAGES-REGISTER-SUCCESS, 12 条, suite=S01-auth, git=aefd8a72)",
+  "screenshots": "reports/screenshots/round-1-interact/ (本轮 RS 系列仅 RS05-after.png 86505B 与 RS08-after.png 164062B 真实产出；RS01/02/03/04/07/10 六条证据条目均标注 ERROR:timeout waiting for automator response 且文件不存在)",
+  "supplement": "reports/audit/round-1/interact/PAGES-REGISTER-SUCCESS.json (2026-09-20 早期跑 OP1-OP9+supp，仅作旁证不作本轮判据)"
+ },
+ "checks": [
+  {
+   "caseId": "RS01",
+   "page": "pages/register/success",
+   "operation": "无参冷启动深链 reLaunch，双拍卡死检测",
+   "expected": "完整渲染无错误空态：插图472rpx/标题「注册成功」/两行副标题/清单3行tag=完成·已解锁·建议/主按钮/次级出口；顶栈=本页；console 无 NAV_FAIL/TypeError/is not defined",
+   "actual": "路由断言达成：exec-results route=[{route:pages/register/success}]（observed 开头 top=pages/discover/index 为用例开始时采样，末尾 route 采样为本页，按 A1 字段时序不矛盾）；console 仅 preloadSubpackages info，无错误。但 action 要求的首帧+2s 复拍双拍全部 ERROR:timeout waiting for automator response，截图文件未产出，卡死检测未完成。渲染细节旁证：本轮 RS05-after.png（同页同无参状态，2026-09-23 05:31）显示插图/标题/副标题/3行tag(完成/已解锁/建议)/主按钮/次级出口完整理想渲染",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS01",
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png(同态旁证)",
+    "reports/audit/round-1/interact/console-S01-auth.log"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "RS02",
+   "page": "pages/register/success",
+   "operation": "带参 ?phone=13888888888 脱敏展示",
+   "expected": "清单行1 tag=「138****8888」，行1文本不变，其余同 RS01，console 无报错",
+   "actual": "route=[本页]✓ console 干净✓；但决定性的 tag 文本无本轮证据：唯一截图证据条目标注 ERROR:timeout，文件不存在，亦无 DOM 文本采样记录；且 act 记录为 reLaunch /pages/register/success (param-map)——本页经查不在 scripts/r11-param-map.json params 表（register 相关键=0），该后缀语义无法对证（本轮执行器脚本不在仓库），参数是否原样到达页面无法确认。旁证：9/20 早期跑 OP1 DOM 实测 tag0=138****8888（同页同参），不构成本轮判据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS02",
+    "reports/audit/round-1/interact/exec-results.json#RS02.evidence(ERROR:timeout)",
+    "scripts/r11-param-map.json(register 键=0)",
+    "reports/audit/round-1/interact/PAGES-REGISTER-SUCCESS.json#OP1(旁证)"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RS03",
+   "page": "pages/register/success",
+   "operation": "phone 非法变体×3（10位/12位/纯字母）回退「完成」",
+   "expected": "三变体各自冷启动，行1 tag 均回退「完成」，无报错；每变体 after 截图×3",
+   "actual": "执行不完整：A1 仅记录 1 次 act:reLaunch（无参形态，param-map 后缀），三个非法变体（?phone=1388888888 / 138888888888 / abcdef）均无独立执行记录、无任何变体截图（evidence 条目 ERROR:timeout）、无 tag 文本采样。无法验证回退行为",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS03"
+   ],
+   "confidence": 0.2
+  },
+  {
+   "caseId": "RS04",
+   "page": "pages/register/success",
+   "operation": "带参 ?phone=138%2D8888%2D8888 清洗后脱敏",
+   "expected": "分隔符清洗后 tag=「138****8888」，其余同 RS01，console 无报错",
+   "actual": "route=[本页]✓ console 干净✓；tag 文本无本轮证据：截图证据条目 ERROR:timeout 文件不存在，无 DOM 文本采样；pre 阶段确有带参 reLaunch /pages/register/success?phone=138%2D8888%2D8888 记录，但 act 的 (param-map) 后缀使最终到达形态无法对证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RS05",
+   "page": "pages/register/success",
+   "operation": "tap .reg-success__btn → navigateTo 资料向导",
+   "expected": "500ms 内路由变为 /subpackages/setup/profile/index，栈长+1，顶栈=目标页，console 无 NAV_FAIL/TypeError",
+   "actual": "点击动作未执行：observed 为 observe-only，无任何 act:tap 记录；dom 检查仅确认 .reg-success__btn:present(\"完善我的资料 →\")（按钮存在且文案正确）；本轮 after 截图（RS05-after.png，86505B 真实文件）仍为注册成功页而非 setup/profile——路由未变化。无法区分「tap 未被执行」与「tap 无响应」，预期路由变化无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS05",
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "RS06",
+   "page": "pages/register/success",
+   "operation": "tap .reg-success__alt → switchTab 首页",
+   "expected": "500ms 内 uni.switchTab 至 /pages/home/index，tabBar 页栈重置",
+   "actual": "A1 自标 FAILED：act-FAIL:tap(.reg-success__alt) element not found；仲裁修正：源码确认该元素真实存在（success.vue:74 <text class=\"reg-success__alt\" @tap=\"goBrowse\">），本轮 RS08 对同元素成功量得 rect 并经其截图证明点击可真实到达 home（非死按钮）——element not found 属 automator 查询层执行失败而非页面缺陷，A1 的 FAILED 标签按「执行失败→UNVERIFIED」修正。route=[pages/home/index] 因 tap 未生效无法归因于本用例动作。另：本用例时段（07:21:27）console 出现 [Global Error][Vue Error] runtime-2 + captureException（console-S01-auth.log:325-326），归因不明，单列 Issue MP-R1-PAGES-REGISTER-SUCCESS-006",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS06",
+    "reports/audit/round-1/interact/console-S01-auth.log:325-326",
+    "apps/client/src/pages/register/success.vue:74",
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS08-after.png(RS08 到达 home 旁证)"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "RS07",
+   "page": "pages/register/success",
+   "operation": "主按钮快击×5 防连点",
+   "expected": "仅 1 次 navigateTo 生效，/subpackages/setup/profile/index 入栈 1 次（栈长=2），无多实例无报错",
+   "actual": "观察结果与 expected 完全不符且无法定性：act:rapidTap .reg-success__btn x5 done=5 后 route 仍=[pages/register/success]（栈长=1，未入栈任何 profile）；源码 goSetupProfile 无防抖守卫（success.vue:40-42 直接 uni.navigateTo），若 5 次 tap 真实派发应入栈 5 层（9/20 OP6 证明秒级 tap 均生效入栈）。唯一截图证据 ERROR:timeout 文件不存在，无法判断是 tap 未真实派发、还是 route 采样滞后（本轮已证 route 采样存在滞后：RS08 实际到达 home 而 route 字段仍记本页）。证据不足以判 FAILED 亦不足以判 VERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS07",
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS08-after.png(route 采样滞后实例)",
+    "apps/client/src/pages/register/success.vue:40-42"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RS08",
+   "page": "pages/register/success",
+   "operation": "次级出口热区测量+点击生效",
+   "expected": "点击生效 500ms 内 switchTab 至 home；热区实测如实记录，低于铁律 88rpx 下限必须按缺陷上报，不得降级为通过",
+   "actual": "点击生效：本轮 RS08-after.png 显示页面已真实到达 home 首页（今日推荐/恋爱进度/关系动态/tabBar 完整渲染）——次级出口 switchTab 生效，A1 的 route 字段仍记本页系采样滞后（截图为终态决定性证据）。热区违规：A1 实测 .reg-success__alt size={width:120,height:16}(px)=240×32rpx，高度 32rpx 远低于铁律 88rpx（=44px）下限，与源码一致（success.vue:179-183 纯 26rpx 文本无 padding）。按 Manifest 明确要求记缺陷 Issue MP-R1-PAGES-REGISTER-SUCCESS-005。500ms 时限因无时间线采样无法确认，但点击反馈确凿发生",
+   "verdict": "FAILED",
+   "evidence": [
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS08-after.png",
+    "reports/audit/round-1/interact/exec-results.json#RS08(act:measureTap size={width:120,height:16})",
+    "apps/client/src/pages/register/success.vue:179-183"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "RS09",
+   "page": "pages/register/success",
+   "operation": "栈底 navigateBack 行为",
+   "expected": "栈底无可退页：不白屏、不报错、停留本页；宿主若实现为退出/无操作则如实记录并判异",
+   "actual": "达成：navigateBack 执行后 route 仍=[pages/register/success]（停留本页✓），页面 console 无错误、无崩溃（后续用例正常续跑，无白屏迹象✓）。执行层记录 NAV_ERROR: Uncaught [object Object]——为栈底 navigateBack 调用的失败信号（宿主无操作的可观测形态），页面层无错误输出。宿主无操作行为按 Manifest 要求如实记录并记 Issue MP-R1-PAGES-REGISTER-SUCCESS-007（判异）。旁证：9/20 OP8 同场景 navigateBack ok:true 栈深 1→1 无崩溃，与本轮行为一致",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS09",
+    "reports/audit/round-1/interact/PAGES-REGISTER-SUCCESS.json#OP8(旁证)"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "RS10",
+   "page": "pages/register/success",
+   "operation": "重复进出 setup→返回落点与状态恢复",
+   "expected": "tap btn 进 setup/profile → back 回本页状态完整 → 再 tap btn 二次进入；三步路由链断言；每步 500ms 反馈",
+   "actual": "执行与 Manifest action 不符：A1 实际执行为 reLaunch → navigateBack(NAV_ERROR) → tap .reg-success__btn，缺失「进入 setup/profile」「返回后状态校验」「二次进入」全部关键步骤；route 始终=本页，无 setup/profile 路由记录；唯一截图证据 ERROR:timeout 文件不存在。往返落点与状态恢复无任何本轮证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS10"
+   ],
+   "confidence": 0.2
+  },
+  {
+   "caseId": "RS11",
+   "page": "pages/register/success",
+   "operation": "redirectTo 语义：返回落点=登录页",
+   "expected": "构造 [login,register]→redirectTo success 得 [login,success]→navigateBack 落点=/pages/login/index（非 register）",
+   "actual": "无法建立判定：pre 阶段确有 navigateTo /pages/register/index + redirectTo /pages/register/success?phone=13888888888 + act:redirectTo + act:navigateBack delta1 记录，但 route 采样=[pages/register/success, subpackages/setup/profile/index]——与 expected 落点 [login] 完全不符且莫名混入 setup/profile（可能是 harness 残留/采样异常，本轮 RS08 已证 route 采样滞后不可靠）。无任何 login 页渲染/路由证据，redirectTo 替换语义与返回落点无法验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS11"
+   ],
+   "confidence": 0.2
+  },
+  {
+   "caseId": "RS12",
+   "page": "pages/register/success",
+   "operation": "单屏滚动边界与无下拉刷新",
+   "expected": "两次 scrollTop 数值记录；下拉无刷新动画；内容无裁切",
+   "actual": "执行失败：act:pullDown 返回 {\"__plain\":\"ERR uni is not defined\"}（下拉手势未真实执行）；act:pageScrollTo 仅一次采样且 evidence 仅 scrollPos=top 一条（Manifest 要求底部+顶部两次 scrollTop 数值）。「无下拉刷新动画」「无裁切」均无有效证据。旁证：RS05-after 截图显示次级出口下方留白充足、单屏无裁切（部分支持「无裁切」子项，不构成完整判定）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RS12",
+    "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png(无裁切旁证)"
+   ],
+   "confidence": 0.3
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-PAGES-REGISTER-SUCCESS-004",
+   "round": "R1",
+   "page": "pages/register/success",
+   "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png",
+   "category": "Architecture",
+   "severity": "P2",
+   "description": "本轮 A1 取证通道系统性不稳定：12 条用例中 6 条截图证据标注「ERROR:timeout waiting for automator response」且文件未产出（RS01/02/03/04/07/10），RS06 的 tap 因 element not found 执行失败、RS12 的 pullDown 因 uni is not defined 执行失败；route 字段采样滞后（RS08 实际到达 home 而 route 仍记本页）致导航类断言不可靠。直接导致 10/12 用例 UNVERIFIED，本页交互验收实际未完成。另 observed 中身份为 userId=user-1001，与 Manifest 指定 mock 身份 A(100158) 不符（MISMATCH，本页不读会话故对本页逻辑影响有限，但涉及 home 后续守卫行为的归因）",
+   "evidence": "exec-results.json RS 系列全部 12 条 evidence 字段与 observed；截图目录实际仅 RS05/RS08 两文件（ls 核实）；RS08 route 字段与 RS08-after.png 终态矛盾",
+   "sources": [
+    "screenshot",
+    "log"
+   ],
+   "confidence": 0.95,
+   "ideal": "12 条用例全部产出真实截图/路由链/DOM 三源证据，route 字段在导航动作完成后稳定采样",
+   "fix": "修复 automator screenshot 超时（加大重试/重建 automator 会话）后对本页 10 条 UNVERIFIED 用例整体重跑；route 采样改为动作后轮询至稳定再取链",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-PAGES-REGISTER-SUCCESS-005",
+   "round": "R1",
+   "page": "pages/register/success",
+   "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS05-after.png",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "次级出口「稍后再说，先随便逛逛」点击热区不足：A1 实测 .reg-success__alt boundingClientRect size={width:120,height:16}px（=240×32rpx），高度 32rpx 低于交互铁律 88rpx（=44px）下限逾 6 成。点击功能本身生效（RS08-after 截图证明 switchTab 到达 home），但触达面积过小易误触/漏触",
+   "evidence": "exec-results.json#RS08 act:measureTap size={width:120,height:16}；success.vue:179-183（.reg-success__alt 仅 margin-top:32rpx+font-size:26rpx，无 padding）；交互铁律热区≥88rpx",
+   "sources": [
+    "screenshot",
+    "code",
+    "log"
+   ],
+   "confidence": 0.9,
+   "ideal": "次级出口可点击热区≥88rpx（高≥44px），触达面积与视觉文案匹配或按规范外扩",
+   "fix": "为 .reg-success__alt 增加纵向 padding（上下各≥31rpx 使总高≥88rpx）并以等值负 margin 补偿视觉位移，或改为 view 容器承载点击区域",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-PAGES-REGISTER-SUCCESS-006",
+   "round": "R1",
+   "page": "pages/register/success",
+   "screenshot": "（无截图，console 证据）",
+   "category": "Function",
+   "severity": "P3",
+   "description": "RS06 用例时段（2026-09-23T07:21:27）页面侧捕获 [Global Error][Vue Error] runtime-2 并触发 captureException 上报，与该用例 tap(.reg-success__alt) element not found 同时发生。源码确认目标元素存在且 RS08 同元素可量测可点击，错误归因不明（可能是执行层 pre redirectTo 操作、页面渲染竞态或 automator 交互触发），需复测定位；若为页面真实渲染错误则影响线上错误率",
+   "evidence": "reports/audit/round-1/interact/console-S01-auth.log:325-326；exec-results.json#RS06.console",
+   "sources": [
+    "log"
+   ],
+   "confidence": 0.5,
+   "ideal": "本页交互全程 console 无 Vue Error",
+   "fix": "在干净会话中单独复现：reLaunch 本页后依次执行 pre redirectTo/tap .reg-success__alt，对照 console 定位错误源；确认是否与 subpackages preload 竞态相关",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-PAGES-REGISTER-SUCCESS-007",
+   "round": "R1",
+   "page": "pages/register/success",
+   "screenshot": "（无截图，navigation 档）",
+   "category": "MiniProgram",
+   "severity": "P4",
+   "description": "栈底 navigateBack 宿主行为=无操作（页面停留本页、不白屏、页面层无错误），符合预期停留语义；但执行层记录 NAV_ERROR: Uncaught [object Object]（uni.navigateBack 调用失败的未捕获信号）。按 Manifest「宿主行为如实记录并判异」要求记录。对真实用户无影响面（栈底系统返回不经过该 API promise）",
+   "evidence": "exec-results.json#RS09（route 停留本页 + NAV_ERROR 记录 + 页面 console 为空）；9/20 OP8 同场景 navigateBack ok:true 栈深 1→1 旁证",
+   "sources": [
+    "log"
+   ],
+   "confidence": 0.65,
+   "ideal": "栈底返回无操作且无任何层级未捕获异常",
+   "fix": "保留观察：若后续轮次在真实返回手势路径复现异常再升级；无需页面代码改动",
+   "status": "保留"
+  }
+ ],
+ "unverifiable": [
+  "RS01|要求的首帧+2s复拍双拍截图均 ERROR:timeout waiting for automator response 文件未产出，卡死检测未完成|1",
+  "RS02|脱敏 tag 文本无本轮截图/DOM 双证据（截图超时），act (param-map) 后缀语义无法对证（本页不在 r11-param-map.json）|1",
+  "RS03|三个非法变体仅执行 1 次无参 reLaunch，变体执行与截图证据全缺|1",
+  "RS04|截图超时+参数最终形态无法对证，清洗脱敏无文本级证据|1",
+  "RS05|无 act:tap 执行记录，route 与本轮截图均显示未离开本页，点击动作未被执行|1",
+  "RS06|tap element not found（automator 查询层执行失败，与源码及 RS08 实测矛盾），导航归因无法建立|1",
+  "RS07|快击后 route 仍本页栈长1 与 expected 栈长2 不符，截图缺失无法在 tap 派发失败/route 采样滞后间定性|1",
+  "RS10|实际执行步骤与 Manifest action 不符，缺进入 profile/返回落点/二次进入全部证据，截图超时|1",
+  "RS11|route 采样混入 setup/profile 且无 login 落点证据，redirectTo 替换语义无法验证|1",
+  "RS12|pullDown 执行报 ERR uni is not defined，scrollTop 仅 top 单次采样，两次数值与下拉动画证据全缺|1"
+ ],
+ "notes": "判定口径：SSOT=ops Manifest expected vs exec-results.json（2026-09-23 跑，git=aefd8a72）vs 本轮真实截图；reports/audit/round-1/interact/PAGES-REGISTER-SUCCESS.json 为 2026-09-20 早期跑（OP1-OP9），仅作旁证不作判据。screenshot-manifest.json（305 shots）经查无任何 register 条目，本页无巡检截图交叉源。关键仲裁：①RS08 截图（终态=home）推翻 A1 route 字段的「仍在本页」记录，判定 A1 route 采样滞后，据此 RS06/RS07/RS11 的 route 异常均不能单独作为页面缺陷定论；②RS06 A1 自标 FAILED 修正为 UNVERIFIED（元素源码存在 success.vue:74 + RS08 同元素可点击，非死按钮，属执行失败）；③RS08 热区 32rpx<88rpx 按 Manifest 明确要求判 FAILED 记缺陷，不降级为通过；④本轮执行身份 userId=user-1001 与 Manifest A(100158) MISMATCH（A1 observed 如实记录，本页不读会话，影响有限）。10/12 UNVERIFIED 的主因是取证通道超时（Issue 004），非页面行为达标证据。"
+}

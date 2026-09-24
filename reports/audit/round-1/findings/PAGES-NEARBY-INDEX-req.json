@@ -1,0 +1,185 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-901",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "5宫格第5入口「我的人脉」功能目标页全库不存在，且落点为村口帖子列表（与分区⑤「全部」同落点），标签承诺的关系功能缺失并误导导航。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:391-398 第5宫格 label=t('nearby.myConnections')（zh-CN.ts:374「我的人脉」）但 @tap=goAllPosts；index.vue:315-317 goAllPosts→openAppPath('/subpackages/village/village/index')；constants/routes.ts 全文无 connections/人脉路由；pages.json 73 个页面 grep connect|contact|network|follow|friend|relation 零命中；exec-results N08 标题「含『我的人脉』落点复核」但 observed 仅 tapped=[1,2,3]，第5项未被自动化覆盖。",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.9,
+      "ideal": "理想图第5宫格「我的人脉」点击应进入人脉/关系页（关注、粉丝、互关等人脉列表）。",
+      "fix": "新建人脉页承接（可复用用户关系数据：village follow 关系或 user relations API，列关注/粉丝/互关三段）；短期若不建页，须将入口改标「附近动态」消除语义欺骗——但按理想图应补页而非改名。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-902",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "校园圈入口卡状态chip恒为「公开浏览」，未接入「已加入/去认证」双态；campus store 的认证四态已存在但本页零消费，用户无法从附近页感知校园认证/加入状态。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:484-486 恒渲染 t('nearby.campusBrowse')（zh-CN.ts:371「公开浏览」）；stores/campus.ts:181/274/331 已定义 certificationStatus('unverified'|'pending'|'verified'|'rejected')、:344-345 isVerified getter，nearby/index.vue 无任何 import/消费；理想图校园圈卡 chip=「已加入」（北大大佬圈）/「去认证」（清华摄影社等）。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "校园圈入口卡按用户认证状态显示「已加入」（可直达进入）或「去认证」（直达校园认证流）。",
+      "fix": "消费 campus store certificationStatus：verified→「已加入」chip 并进 hub 对应校圈；unverified/pending/rejected→「去认证」chip 跳 subpackages/campus/campus/certification；同时保留现有 campusBrowse 作为无 campus 语义的兜底态。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-903",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-N02-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "未登录冷启动直达附近页被 401→redirectToLogin 强踢登录页（toast「登录已过期，请重新登录」+top=pages/login/index），页面内已实现的未登录登录引导卡（分区⑤）路径实测不可达——与页面守卫注释自称「mock 未登录应放行停留」的设计意图矛盾。根因触发端点未能定位。",
+      "evidence": "exec-results N02 observed：pre(logout ok + storageRemove token)→reLaunch /pages/nearby/index→top=pages/login/index，toast=[{title:'登录已过期，请重新登录'}]；该文案=apiErrors.unauthorized（zh-CN.ts:3882），由 services/http.ts:468-486 redirectToLogin（401→清token+toast+reLaunch LOGIN）发出（触发点 :521/:695）；页面守卫 canFetchProtected（index.vue:66-68）注释（:60-64）称 mock 模式应放行；reports/audit/round-1/console-evidence.log（356 行）无 401 记录，根因端点未定位。",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.55,
+      "ideal": "未登录用户可停留在附近页浏览公开内容，分区⑤显示「去登录」引导卡（index.vue:527-539 已实现该意图，N35 证实按钮跳登录可用）。",
+      "fix": "排查 mock 未登录 401 来源（app 级 bootstrap 或受保护 mock 端点鉴权仿真）；对未登录 mock 请求短路返回公开空态，或收敛 canFetchProtected 口径使未登录不发起会触发 401 的请求；修复后以 N02 同前置复测 top 应停留 pages/nearby/index。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-904",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "顶部形态偏离理想：整行搜索输入框替代右侧放大镜图标（R13 已挂账待修）；标题「附近」与定位小字前缺绿色定位针图标。搜索功能本身可用（R16 修复后 N05/N06 证实），属形态偏差非功能缺失。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:350-361 nearby-home__search-box 整行输入框（placeholder「搜索附近内容」）；:343-348 标题行仅 text+发动态胶囊，无定位针 image；截图首屏顶部为整行搜索框；理想图《附近的首页》头部=绿针+「附近」…放大镜图标+绿色发动态胶囊，无整行搜索框，定位小字前亦带小绿针。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.95,
+      "ideal": "右上仅放大镜图标（点击进搜索），标题左侧绿色定位针，定位小字前带小绿针；无整行搜索框。",
+      "fix": "移除整行输入框改放大镜图标按钮（复用 goSearch 进搜索页）；从 SVG 主库（素材/组件库/理想效果图-svg拆分/）取定位针图标补标题与小字前。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-905",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "热门兴趣圈卡尺寸仅约理想 1/2（150×200rpx vs 理想约 170×290rpx 竖版大海报），且默认态第 5 卡被右缘裁切露出一截（「支…」），观感与理想 4 卡完整 4 联排不符。R13 已挂账待修。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:743-753 .circle-mini width:150rpx;height:200rpx（R21 注释自述 166→150 收窄以保证 4 卡落视口，但引入高度不足与末卡裁切两个新偏差）；截图默认态可见第 5 卡右缘裁切；理想图 4 张约 170×290px 竖版海报卡完整落视口（底部深渐变+白字已在）。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "竖版大海报卡约 170×290rpx、底部深渐变+白字，4 张完整落视口且无第 5 卡残影。",
+      "fix": "改 width:170rpx;height:290rpx，收敛 gap/padding（:736-741 circle-scroll__list）使 4 卡+「全部」恰满一屏；或按 (750rpx-页边距-3×gap)/4 计算 flex-basis、高度按 0.586 宽高比推算。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-906",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "校园区退化为整宽横排列表行（浅绿底+校名徽标+公开浏览chip），理想为 4 联竖版封面卡（封面+校名+同学数+已加入/去认证chip）；且现状以 campusPublicHint 文案替代「同学数」数据展示。R13 已挂账待修。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:462-489 campus-entry 横排行结构（v-for schoolEntries，:480-483 desc=t('nearby.campusPublicHint') 即「公开可看 · 认证学校后可加入专属校园圈」，非同学数）；截图校园圈首行「北京大学…公开浏览」整宽行；理想图=4 联竖版封面卡（北京大学学霸圈 3.2k 位同学/已加入，清华大学摄影社 2.1k 位同学/去认证等）。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "4 联竖版封面卡：竖版封面图+校名+「N 位同学」+已加入/去认证 chip。",
+      "fix": "重排为竖版卡横向 4 联排（复用 905 的联排算法）；同学数需数据源（schools config 扩展或 campus hub 统计接口），chip 双态见 902。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-907",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "理想右下角绿色➕FAB 缺失；发动态功能由头部胶囊承接（N03/N04 证实可达），功能不缺失，属状态元素形态偏差。",
+      "evidence": "apps/client/src/pages/nearby/index.vue:335-570 模板无 FAB 元素，仅 :345-347 头部发动态胶囊；截图无 FAB；理想图右下角绿色圆形➕悬浮按钮叠于动态卡区之上。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "右下角绿色➕悬浮按钮作为发动态快捷入口。",
+      "fix": "补 FAB（fixed 定位、bottom 避让 tabBar，点击 goToPublishPost 复用现有跳转）；或产品确认以头部胶囊为终态后关单并记偏差放行。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-908",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "category": "Data",
+      "severity": "P3",
+      "description": "定位小字恒为「北京大学 · 附近」式兜底，无理想「北京大学 · 3km」的距离粒度——buildLocationText 无距离分支，定位成功也不产出距离。",
+      "evidence": "apps/client/src/utils/location.ts:132-136 buildLocationText 仅输出 `${city|campusName} · 附近`，无距离参数分支；index.vue:98/:103 调用处仅传 city+campusName；截图副标题「北京大学 · 附近」；理想图「北京大学 · 3km」。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "定位小字展示「学校/城市 · 距离(km)」，无定位时才兜底「附近」。",
+      "fix": "initLocation 拿到坐标后计算与本校/关注者聚集地的 Haversine 距离或消费后端推荐接口返回的 distance 字段，拼接进 homeSubtitle；保留现有「附近」兜底。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/nearby/index",
+      "baseline": "素材/理想效果图/附近的首页.png（唯一页面级对照依据）+ 本轮 ask 理想描述；辅助 Token 链 git show 29a2b1df:docs/design/v3.1-contract.md（附近=白底红线）。注：报告/像素级对比还原报告.md 不含本页章节（其 4 页为匹配卡/首页/他人主页/我的主页），L1-L4 以理想图逐要素目测为准。",
+      "structureNotes": "L1 分区构成：理想5区（头部/5宫格/热门兴趣圈/校园圈/附近动态）全在，另多①附近的人双行卡（R11 放行增强）与④活动（v3 冻结）；实际头部多整行搜索框、理想图本身无分段Tab（ask 描述与图不符，以图为准）。L2 顺序：与图一致（5宫格→兴趣圈→校园圈→动态）。L3 组件形态 4 处偏差（红线区）：搜索框整行 vs 放大镜图标✗、兴趣圈卡 150×200rpx vs 约170×290rpx✗、校园圈横排行 vs 4联竖版封面卡✗、缺绿➕FAB✗、标题/小字缺绿色定位针✗（计5处形态项）。L4 内容元素：兴趣圈卡渐变+白字名称+人数✓；校园圈缺同学数✗、chip恒「公开浏览」vs 已加入/去认证双态✗；动态卡作者行/关注chip/图文/赞评藏✓。L5 色彩：发动态胶囊绿✓、白底红线✓；5宫格图标线性浅色 vs 理想多彩填充（细节）。L6 文案：主文案✓，宫格2「热门兴趣圈」/宫格4「附近活动」与图「兴趣圈/活动」措辞级差异。L7 数据：人数 w/千分位✓；校园缺同学数✗；定位小字无距离✗。L8 状态：骨架/错误优先/空态三态✓（N31-33）；未登录引导卡在码但实测被踢登录页（N02）✗。L9 交互：press-feedback+aria 全覆盖✓；点赞/收藏/幂等/回滚实测✓（N23/24/26/27）；关注芯片与卡体跳转因 automator 不穿透自定义组件未证实（N18-22/25/28，非缺陷证据）。L10 全局：tabBar 5项+选中态=附近✓、状态栏/胶囊避让✓、Tab3「寻觅」vs 图「匹配」为 v3.1 全站命名（像素报告:580 已记，不属本页）。L1-L4 结论：L3 五处、L4 两处偏差→不达「达标」。死代码：.nearby-tabs CSS（:1016-1055）与 i18n tabPeople 等键残留无模板引用。",
+      "usageNotes": "核心任务均可完成且多数经自动化证实：发动态（N03/N04 快击×5 无重复压栈）、搜索带词/空值进搜索页（N05/N06）、附近的人/同城的人分流 scope 参数被 people.vue:53-57 消费（N09/N10）、圈列表/圈主页（N11/N12）、校园/活动/村口「全部」（N13/N15/N17）、点赞收藏幂等与失败回滚（N23/24/26/27）、未登录引导卡按钮去登录（N35）、定位上报+城市持久化（N41）、登录补拉（N42）、30s TTL 往返不重拉/过期重拉（N37/38）。迷路点3个：①「我的人脉」落入村口帖子列表与⑤「全部」同落点（901）；②点具体学校卡 hub 不消费 school 参数未定位该校（N14）；③未登录冷启动被踢登录页、引导卡不可达（N02/903）。任意落地页均为 navigateTo 子包页可返回，附近本身即 tab，2 步回 tab 达标。未证实项：下拉刷新 N29/N30 脚本报 ERR uni is not defined 未真正执行；N07/N36/N39/N40 harness 占位符/落点错误，不计页面证据。",
+      "functionGaps": [
+        {
+          "target": "5宫格「我的人脉」进入人脉/关系页（关注/粉丝/互关）",
+          "current": "@tap=goAllPosts 落点村口帖子列表（index.vue:391-398/:315-317）；全库 73 页无人脉页（pages.json grep 零命中）",
+          "gap": "功能目标页缺失+落点语义错误，与分区⑤「全部」重复",
+          "fix": "新建人脉页承接（复用 village follow 关系或 relations API）；短期不建页须改标「附近动态」但按理想图应补页（MP-R1-PAGES-NEARBY-INDEX-901，P1）"
+        },
+        {
+          "target": "校园圈入口卡按状态显示「已加入/去认证」chip",
+          "current": "chip 恒 t('nearby.campusBrowse')「公开浏览」（index.vue:484-486）；campus store 四态 certificationStatus+isVerified（stores/campus.ts:181/344-345）零消费",
+          "gap": "状态感知能力缺失（数据在库未接线）",
+          "fix": "消费 campus store 认证态：verified→已加入，否则去认证跳 certification（MP-R1-PAGES-NEARBY-INDEX-902，P2）"
+        },
+        {
+          "target": "未登录可停留附近页浏览公开内容+登录引导卡",
+          "current": "未登录冷启动实测被 401→redirectToLogin 踢登录页（N02 observed top=pages/login/index+toast 登录已过期）；引导卡路径不可达",
+          "gap": "设计意图（index.vue:66-68 注释）与实测链路矛盾，根因端点未定位",
+          "fix": "排查 mock 未登录 401 来源，未登录短路公开空态或收敛 canFetchProtected 口径，修复后复测 N02（MP-R1-PAGES-NEARBY-INDEX-903，P2）"
+        },
+        {
+          "target": "顶部放大镜图标式搜索入口（无整行搜索框）",
+          "current": "整行输入框带关键词绑定可用（N05/N06），形态偏离理想",
+          "gap": "形态偏差（功能不缺），R13 已挂账",
+          "fix": "改放大镜图标按钮复用 goSearch，补标题/小字定位针（MP-R1-PAGES-NEARBY-INDEX-904，P2/UI）"
+        },
+        {
+          "target": "热门兴趣圈 4 张约 170×290rpx 竖版海报卡完整落视口",
+          "current": "150×200rpx（约理想 1/2），默认态第 5 卡右缘裁切",
+          "gap": "尺寸/比例偏差+末卡残影，R13 已挂账",
+          "fix": "170×290rpx+收敛 gap 使 4 卡满一屏（MP-R1-PAGES-NEARBY-INDEX-905，P2/UI）"
+        },
+        {
+          "target": "校园圈 4 联竖版封面卡（校名+同学数+双态chip）",
+          "current": "整宽横排行，无同学数（desc 用 campusPublicHint 文案）",
+          "gap": "布局形态退化+数据项缺失，R13 已挂账",
+          "fix": "重排竖版 4 联排+接入同学数数据源（MP-R1-PAGES-NEARBY-INDEX-906，P2/UI）"
+        },
+        {
+          "target": "右下角绿色➕FAB 发动态快捷入口",
+          "current": "无 FAB，发动态由头部胶囊承接（N03/N04 可达）",
+          "gap": "状态元素缺失（功能不缺）",
+          "fix": "补 FAB 或产品确认头部胶囊为终态后放行（MP-R1-PAGES-NEARBY-INDEX-907，P3/UI）"
+        },
+        {
+          "target": "定位小字含距离粒度（北京大学 · 3km）",
+          "current": "恒「北京大学 · 附近」兜底（utils/location.ts:132-136 无距离分支）",
+          "gap": "数据粒度缺失",
+          "fix": "定位成功后计算/消费距离字段拼入 homeSubtitle（MP-R1-PAGES-NEARBY-INDEX-908，P3/Data）"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/PAGES-NEARBY-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/PAGES-NEARBY-INDEX-req.json"
+}

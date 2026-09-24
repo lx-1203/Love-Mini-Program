@@ -26,16 +26,18 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 const campusStore = useCampusStore();
 
 /** 2026-08-21：未认证推荐兴趣圈（复用封面素材）
- * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈改用 Style A AI 生成图（与 ideal 方形场景风格一致） */
+ * 第五轮 QA 一致性收敛：游戏/阅读/宠物三圈改用 Style A AI 生成图（与 ideal 方形场景风格一致）
+ * MP-R1-CAMPUSINDEX-001：圈名入 i18n（nameKey），:key 用稳定 id——原硬编码中文在
+ * en-US 环境与页面其余英文文案混排，且以中文作 :key 不稳定 */
 const RECOMMEND_CIRCLES = [
-  { name: "摄影", cover: resolveMediaUrl("/static/assets/images/covers/circle-photo.png") },
-  { name: "旅行", cover: resolveMediaUrl("/static/assets/images/covers/circle-travel.png") },
-  { name: "音乐", cover: resolveMediaUrl("/static/assets/images/covers/circle-music.png") },
-  { name: "运动", cover: resolveMediaUrl("/static/assets/images/covers/circle-sports.png") },
-  { name: "美食", cover: resolveMediaUrl("/static/assets/images/covers/circle-food.png") },
-  { name: "游戏", cover: resolveMediaUrl("/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png") },
-  { name: "阅读", cover: resolveMediaUrl("/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png") },
-  { name: "宠物", cover: resolveMediaUrl("/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png") },
+  { id: "photography", nameKey: "campus.index.circleNames.photography", cover: resolveMediaUrl("/static/assets/images/covers/circle-photo.png") },
+  { id: "travel", nameKey: "campus.index.circleNames.travel", cover: resolveMediaUrl("/static/assets/images/covers/circle-travel.png") },
+  { id: "music", nameKey: "campus.index.circleNames.music", cover: resolveMediaUrl("/static/assets/images/covers/circle-music.png") },
+  { id: "sports", nameKey: "campus.index.circleNames.sports", cover: resolveMediaUrl("/static/assets/images/covers/circle-sports.png") },
+  { id: "food", nameKey: "campus.index.circleNames.food", cover: resolveMediaUrl("/static/assets/images/covers/circle-food.png") },
+  { id: "gaming", nameKey: "campus.index.circleNames.gaming", cover: resolveMediaUrl("/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png") },
+  { id: "reading", nameKey: "campus.index.circleNames.reading", cover: resolveMediaUrl("/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png") },
+  { id: "pets", nameKey: "campus.index.circleNames.pets", cover: resolveMediaUrl("/static/assets/images/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png") },
 ];
 
 function goCircles() {
@@ -46,7 +48,9 @@ const {
   activeCategory,
   topics,
   loading,
-  errorMessage,
+  // errorMessage 由认证/活动等共享消费，本页错误槽已改绑 topicsError
+  // （MP-R1-CAMPUSINDEX-003：错误展示/重试与认证状态解耦）
+  topicsError,
   certificationStatus,
   certificationInfo,
   isVerified,
@@ -260,9 +264,9 @@ onMounted(async () => {
         <text class="cert-recommend__more" @tap="goCircles">{{ t('campus.index.viewMore') }} ›</text>
       </view>
       <view class="cert-recommend__grid">
-        <view v-for="item in RECOMMEND_CIRCLES" :key="item.name" class="cert-recommend__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goCircles">
+        <view v-for="item in RECOMMEND_CIRCLES" :key="item.id" class="cert-recommend__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goCircles">
           <image class="cert-recommend__cover" :src="item.cover" mode="aspectFill" alt="" />
-          <text class="cert-recommend__label">{{ item.name }}</text>
+          <text class="cert-recommend__label">{{ t(item.nameKey) }}</text>
         </view>
       </view>
     </view>
@@ -294,9 +298,12 @@ onMounted(async () => {
       </view>
 
       <!-- 错误状态 -->
-      <view v-else-if="errorMessage && topics.length === 0" class="campus-state" role="status" aria-live="polite">
+      <!-- MP-R1-CAMPUSINDEX-003：错误槽改绑 topicsError（话题列表专属）——原绑共享
+           errorMessage 会把认证状态拉取失败的文案渲染进话题错误槽，且该槽「重试」
+           只重拉话题，文案与动作错位（store 串扰路径见 campus.ts fetchCertificationStatus） -->
+      <view v-else-if="topicsError && topics.length === 0" class="campus-state" role="status" aria-live="polite">
         <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
-        <text class="campus-state__text">{{ errorMessage }}</text>
+        <text class="campus-state__text">{{ topicsError }}</text>
         <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="retryCampusTopics">
           <text class="campus-state__btn-text">{{ t('campus.index.retry') }}</text>
         </view>
@@ -537,7 +544,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .category-tab {
-  display: flex;
+  /* MP-R1-CAMPUSINDEX-011：必须 inline-flex——mp-weixin 中 scroll-view 宿主的
+     display:flex/white-space:nowrap 作用于内部包装节点而非子项，块级子项会
+     逐行堆叠成纵向全宽列表（真机截图实证）。改 inline-level 后宿主
+     white-space:nowrap 对子项生效，恢复单行横向排列。 */
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 8rpx;

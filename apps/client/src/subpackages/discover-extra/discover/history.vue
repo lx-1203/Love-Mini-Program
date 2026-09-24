@@ -111,9 +111,16 @@ async function handleRewind(cardId: string) {
   }
 }
 
-/** 返回上一页 */
+/** 返回上一页
+ * MP-R1-C21-001/MP-R1-DISCOVER-HISTORY-202：栈=1（reLaunch/分享卡直开）时裸
+ * navigateBack 必 fail → unhandledRejection + 死按钮；补 switchTab 寻觅 Tab 兜底
+ * （对齐 segment.vue:51-59 / people.vue:142-149 口径） */
 function goBack() {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: "/pages/discover/index" });
+  }
 }
 
 onMounted(() => {

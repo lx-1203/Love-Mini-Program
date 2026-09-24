@@ -211,9 +211,11 @@ function openActivity(activityId: number | string) {
       />
     </view>
 
-    <!-- 关联活动卡（2026-08-08 频道化重构：帖子内直接发活动链接） -->
+    <!-- 关联活动卡（2026-08-08 频道化重构：帖子内直接发活动链接）
+         MP-R1-PAGES-NEARBY-INDEX-012：补 @enroll 转发——内嵌 ActivityCard 的「报名」
+         按钮此前 emit 无监听（no-op 死按钮）；复用 open-activity 链路跳活动详情 -->
     <view v-if="post.activity" class="post-card__activity" @tap.stop="noop">
-      <ActivityCard :activity="post.activity" compact @open-detail="openActivity" />
+      <ActivityCard :activity="post.activity" compact @open-detail="openActivity" @enroll="openActivity" />
     </view>
 
     <!-- 标签 -->

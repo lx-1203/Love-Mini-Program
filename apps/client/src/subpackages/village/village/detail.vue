@@ -271,9 +271,16 @@ onUnload(() => {
 
 /**
  * 返回上一页
+ * MP-R1-J20-001/MP-R1-REQ20-001/MP-R1-DETAIL-202：栈=1（分享卡/深链直开）时
+ * 裸 navigateBack 必 fail（cannot navigate back at first page）→ unhandledRejection
+ * 上报且点击无反馈；对齐 tag-posts.vue/history.vue 口径，栈底 reLaunch 村口列表兜底。
  */
 function goBack() {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/village/village/index" });
+  }
 }
 
 /** 举报原因选项（与产品约定，覆盖常见违规场景） */
@@ -1431,9 +1438,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 2026-08-31 滚动断层修复：height:100% 会把根元素钉在一屏高——
-     长评论页无法上下滚动、超屏区域露出系统白底断层。改 min-height 让内容自然撑高。 */
-  min-height: 100%;
+  /* 2026-08-31 滚动断层修复曾改 min-height——但 min-height 让容器随内容增长，
+     flex:1 的 .detail-body scroll-view 失去高度约束 → 整页 window 滚动，
+     滚动后 .detail-header（含返回键）滚出视口、正文顶入状态栏
+     （MP-R1-DETAIL-201，真机截图实证）。改定高 + 溢出隐藏（对齐
+     campus/campus/index.vue MP-R2-CAMPUSINDEX-001 修复模式）：
+     scroll-view 恢复内部滚动，长评论仍可滚（在 scroll-view 内），头部常驻。 */
+  height: 100%;
+  overflow: hidden;
   background: $bg-page;
   /* ===== 2026-08-27 修复：帖子详情页强制浅色主题（对齐理想图 素材/理想效果图/帖子.png） =====
      页面默认跟随系统/设置深色模式（page[data-theme=dark] 覆盖 --c-* token），

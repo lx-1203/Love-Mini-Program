@@ -12,6 +12,10 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { openAppPath, openUserProfile } from "../../../utils/navigation";
 import { resolveMediaUrl } from "../../../utils/media";
+// MP-R1-HISTORY-201：注入 --statusbar/--capsule-right——本页是同批唯一没有
+// 状态栏/胶囊避让的页面，返回键顶入状态栏、清空记录钮与微信胶囊叠印
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 // 2026-08-09：返回键图标需要 IMAGE_PATHS
 import { IMAGE_PATHS } from "../../../config/images";
 import {
@@ -138,7 +142,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <view class="history-page">
+  <view class="history-page" :style="menuStyleVars">
     <!-- 2026-08-09：返回键（常驻，navigationStyle: custom 无系统返回栏） -->
     <view
       class="history-back press-feedback"
@@ -178,7 +182,7 @@ onUnmounted(() => {
       class="history-list"
       scroll-y
       refresher-enabled
-      :refresher-triggered="isRefreshing"
+      :refresher-triggered="loadingHistory"
       @refresherrefresh="onRefresh"
       @scrolltolower="onLoadMore"
     >
@@ -275,6 +279,10 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .history-page {
   min-height: 100vh;
+  /* MP-R1-HISTORY-201：navigationStyle=custom 下整页自 y=0 布局，返回键顶入状态栏、
+     工具栏按钮进入胶囊带；下移一个状态栏 + 20px，让首行内容落在胶囊之下 */
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
+  box-sizing: border-box;
   background: var(--c-bg-page, #f5f6fa);
 }
 

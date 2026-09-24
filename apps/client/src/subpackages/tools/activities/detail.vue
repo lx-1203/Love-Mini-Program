@@ -86,6 +86,21 @@ function buildSampleActivities(): ActivityItem[] {
       status: "open",
       coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
     },
+    {
+      // MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-011：补官方聊天卡片指向的
+      // id=2001「城市露营计划」——此前该 id 不在数据源，详情页回退展示第一个示例
+      // 「新人礼遇」，卡片标题/时间/地点与目标页完全不符（双身份截图实证）
+      id: "2001",
+      title: t("activities.sample.cityCamp.title"),
+      location: t("activities.sample.cityCamp.location"),
+      scheduleText: t("activities.sample.cityCamp.time"),
+      date: "",
+      enrollCount: 12,
+      description: t("activities.sample.cityCamp.desc"),
+      isEnrolled: false,
+      status: "open",
+      coverImage: IMAGE_PATHS.ACTIVITIES.ACTIVITY_SPORTS,
+    },
   ];
 }
 

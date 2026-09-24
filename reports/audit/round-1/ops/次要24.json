@@ -1,0 +1,754 @@
+{
+  "cases": [
+    {
+      "id": "TK01",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "冷启动直开无参：标题「任务中心」+积分卡+4 任务项渲染，骨架过渡不闪错",
+      "tier": "navigation",
+      "pre": "身份A（100158 曦风 ← tmp_r11_login.json）与身份B（100159 小新生 ← tmp_r11_guest.json）双身份各跑一次：mock 登录（automation_evaluate 注入 wx.setStorageSync('token',JWT) 后调 session.bootstrap()，evaluate 校验 isLoggedIn，r11-tour.ps1:19-36 做法；token 2h 时效）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 0.5s/2s 两次 DOM 采样：.tasks-header__title 文本、.tasks-summary（积分卡）、.task-item 数量、SkeletonBlock 存在性；getCurrentPages 链",
+      "expected": "标题=「任务中心」（zh-CN.ts:1686）；任务项 4 条（localTasks tasks.vue:115-148：完善资料/每日签到/发布首条动态/完成校园认证）；real 模式首拉期间先骨架（tasks.vue:399-401）后过渡为列表或回退本地列表；完成数文案「{done}/4 已完成」（tasks.vue:382，zh-CN.ts:1688）；冷启动严禁闪错误空态（铁律）；console 无 NAV_FAIL/TypeError/is not defined（r11-tour.ps1:113-137 口径）",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "TK02",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "点击「每日签到」未完成任务：完成签到 Toast「签到成功！+5 积分」+勾选态+积分卡/进度条即时更新",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')；前置断言该任务当前为未完成（.task-item 内状态文本=「去完成」）",
+      "action": "点击第 2 个 .task-item（每日签到行，aria-label 含任务名）；before/after 各截图；采样 .task-item__status-text 与 .tasks-summary__label/.tasks-summary__percent",
+      "expected": "500ms 内出现 Toast「签到成功！+5 积分」（icon success，tasks.vue:269-284 调 clientApi.checkIn() 后 checkinDone=true 驱动重算，zh-CN.ts:1701）；该行状态变勾选态「已完成」（.task-item__check 出现，tasks.vue:424-436）；积分卡「累计获得」数值 +5、进度条宽度同步增大（tasks.vue:214-237，MP-R1-TASKS-001 修复即验此点）；仅 1 次签到请求（mock 走 clientApi.checkIn）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "TK03",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "签到快击×5 与完成后重复点击：仅 1 次签到提交，后续点击只 Toast「已完成」",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 TK01）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')；接 TK02 后同页继续（签到已完成态），或重进页面复现",
+      "action": "对每日签到 .task-item 快速连点 5 次（间隔<200ms）；随后再点 2 次；采样 Toast 与网络记录",
+      "expected": "5 连点期间只发生 1 次签到提交：首次成功置 checkinDone=true（tasks.vue:269-284），其余 4 次与后续 2 次命中 done 分支仅 Toast「已完成」（tasks.vue:265-268，zh-CN.ts:1699），无重复签到请求（防连点铁律）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "TK04",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "点击「完善个人资料」任务：openAppPath 跳资料编辑页并携带 ?entry=edit",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01）；前置该任务未完成（未完善资料身份直接满足）",
+      "action": "点击第 1 个 .task-item（完善资料行）；0.5s 后取 getCurrentPages 链",
+      "expected": "500ms 内路由跳转 /subpackages/setup/profile/index?entry=edit（task.path tasks.vue:123，openAppPath→navigateTo utils/navigation.ts:53）；栈顶路径=subpackages/setup/profile/index；目标页为编辑模式（隐藏进度条，setup/profile/index.vue:53-57,654）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；可不截图"
+    },
+    {
+      "id": "TK05",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "点击「发布首条动态」任务：跳 village 首页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')",
+      "action": "点击「发布首条动态」.task-item（path=/subpackages/village/village/index，tasks.vue:137）；取路由链",
+      "expected": "500ms 内栈顶=subpackages/village/village/index（openAppPath navigateTo）；来源页保留在栈中可返回；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "TK06",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "点击「完成校园认证」任务：跳校园认证页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')",
+      "action": "点击「完成校园认证」.task-item（path=/subpackages/campus/campus/certification，tasks.vue:146）；取路由链",
+      "expected": "500ms 内栈顶=subpackages/campus/campus/certification；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "TK07",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "返回键：深链栈=1 时 switchTab 回首页 Tab，栈>1 时 navigateBack 落来源页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')",
+      "action": "场景1：reLaunch 直达后点 .tasks-header__back；场景2（可选）：从「我的」navigateTo 进入后点返回；各取路由链",
+      "expected": "场景1：栈长=1 时点击后 switchTab 至 /pages/home/index（tasks.vue:226-233），栈顶=pages/home/index；场景2：navigateBack 回「我的」页且滚动位/状态保留（返回落点=来源页铁律）；返回键 64rpx 热区（tasks.vue:466-477，<88rpx 记录为缺陷候选）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言（两场景各一份）+ console 过滤；可不截图"
+    },
+    {
+      "id": "TK08",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "onShow 状态同步：签到完成后退出重进，签到任务保持已完成不重置",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 TK01）；先完成一次签到（同 TK02），switchTab 离开后再 reLaunch 重进",
+      "action": "重进后采样第 2 个 .task-item 状态文本与勾选图标、积分卡数值",
+      "expected": "onShow 拉取签到状态 status.checkedInToday===true → checkinDone=true（tasks.vue:338-354，R4-00151 字段名）；签到任务仍显示「已完成」，积分卡数值包含签到 5 分，不回退为「去完成」；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "TK09",
+      "page": "subpackages/profile-extra/profile/tasks",
+      "title": "整页滚动浏览：任务列表滚动到底/顶无卡死、元素无错位",
+      "tier": "noop",
+      "pre": "双身份 mock 登录（同 TK01）→ wx.reLaunch('/subpackages/profile-extra/profile/tasks')",
+      "action": "页面滚动到底再回顶，记录 scroll 位置与 console",
+      "expected": "滚动平滑无报错；顶部标题/积分卡与任务项渲染正常无重叠；console 无异常",
+      "evidence": "执行日志（scroll 位置/console 采样）即可；A/B 双身份各一份"
+    },
+    {
+      "id": "DND01",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "冷启动直开：loading→content 三态过渡，GET /api/dnd 回显表单默认值",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/profile-extra/settings/dnd')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 0.5s/2s 采样：.spinner/.state-wrap（loading）、.switch checked、.time-row__value 文本、.radio-row__indicator--active 数量；getCurrentPages 链",
+      "expected": "先 spinner+「加载中...」（dnd.vue:331-334）后过渡到内容态（loadSetting dnd.vue:90-117 成功置 content）；回显 enabled/startTime/endTime/repeatMode/allowUrgent（默认 22:00/08:00/每天/穿透开，dnd.vue:52-59）；严禁闪错误空态；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "DND02",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "总开关切换：状态行「已开启/已关闭」即时变化",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）→ wx.reLaunch('/subpackages/profile-extra/settings/dnd')；等待内容态渲染完成",
+      "action": "点击总开关 switch（.switch-row 内首个 switch）两次（开→关）；采样 .status-row__value 文本与 class",
+      "expected": "每次切换 500ms 内 .status-row__value 文本在「已开启/已关闭」间切换（statusText dnd.vue:124-128,299-301），开启时带 status-row__value--on 品牌色类（dnd.vue:368-374）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND03",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "重复方式切自定义：星期网格出现；切回每天：网格消失且已选星期清空",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）→ wx.reLaunch('/subpackages/profile-extra/settings/dnd')；等待内容态",
+      "action": "点击「自定义」.radio-row → 采样；点击周一 chip → 再点「每天」.radio-row → 采样 .weekday-grid 存在性与表单状态",
+      "expected": "选自定义后 v-if 渲染 .weekday-grid 七个 chip（dnd.vue:438-459）；切回非自定义时网格消失且 customWeekdays 清空（dnd.vue:172-180）；再次进自定义无残留选中项；每次点击 500ms 内有选中态反馈（radio-row__indicator--active）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND04",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "自定义星期多选/去选：chip 高亮切换、按周一→周日排序写入表单",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；先切到自定义模式",
+      "action": "依次点周三、周一 chip；采样 .weekday-item--active 数量与顺序；再点周三取消；保存成功后重新进页采样回显",
+      "expected": "选中态高亮类 weekday-item--active（dnd.vue:443-457）；handleWeekdayToggle 排序后写入（dnd.vue:187-201：选中集 sort 后 join(',')）；保存成功再进页时选中项按存储回显（dnd.vue:104-110）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND05",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "时间选择器：修改开始/结束时间后显示值即时更新",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；等待内容态",
+      "action": "触发开始时间 picker change（mode=time，值 23:30）与结束时间 picker change（值 07:30）；采样 .time-row__value 文本",
+      "expected": "两行 .time-row__value 分别变为 23:30/07:30（handleStartTimeChange/handleEndTimeChange dnd.vue:146-165）；picker 行点击 500ms 内有可观测反馈（弹起选择器）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND06",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "校验-自定义未选星期保存：Toast「请至少选择一个星期」且不发起 PUT",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；切到自定义模式且不选任何星期",
+      "action": "点击 .save-btn；采样 Toast 与网络记录",
+      "expected": "validateForm 返回 customWeekdaysRequired → errorHaptic + Toast「请至少选择一个星期」（dnd.vue:212-227,238-245；zh-CN dnd.customWeekdaysRequired）；无 PUT /api/dnd 请求发出；页面停留本页；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND07",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "校验-开始时间=结束时间：Toast「结束时间必须大于开始时间」且不发起 PUT",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；内容态下将开始与结束时间改为相同值（如 22:00/22:00）",
+      "action": "点保存 .save-btn；采样 Toast 文案与网络记录",
+      "expected": "startTime===endTime → Toast「结束时间必须大于开始时间」（dnd.vue:223-225；zh-CN dnd.invalidTimeRange）；无 PUT 请求；注：源码仅校验相等、不校验先后（跨天时段允许，dnd.vue:206-208 注释），判定不得扩大化；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND08",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "合法表单保存成功：PUT /api/dnd → Toast「设置已保存」+响应回写；快击×5 仅 1 次 PUT",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 DND01）；内容态下构造合法表单（非自定义或已选≥1 星期，开始≠结束）",
+      "action": "before 截图；对 .save-btn 快速连点 5 次（间隔<200ms）；after 截图；采样 Toast、网络请求计数、按钮文案",
+      "expected": "isSaving 防重入仅 1 次 PUT（dnd.vue:238-239）；成功后 successHaptic + Toast「设置已保存」（dnd.vue:256-266；zh-CN dnd.saveSuccess）；表单以响应值回写（dnd.vue:257-264）；请求期间按钮显示「处理中...」半透明禁用态（dnd.vue:481-491）；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "DND09",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "保存失败：Toast 展示错误信息，按钮恢复可点（Loading 不永驻）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；合法表单；执行器注入网络故障（代理断网/拦截 PUT 失败），无法注入则标 UNVERIFIED",
+      "action": "注入故障后点 .save-btn；采样 Toast、按钮态；恢复网络后再点一次",
+      "expected": "catch 分支 errorHaptic + Toast 展示错误信息或「保存失败，请重试」（dnd.vue:267-272；zh-CN dnd.saveFailed）；finally 恢复 isSaving=false 按钮可再点（dnd.vue:272-274），不出现永驻 Loading；恢复后重试保存成功；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND10",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "加载失败错误态：错误信息+「重试」按钮点击后重新拉取",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 DND01）；执行器注入 GET /api/dnd 失败（断网代理），无法注入则标 UNVERIFIED",
+      "action": "进入错误态后点 .retry-btn；采样 .state-text、重试后页面态",
+      "expected": "pageState=error 展示 errorMessage + 重试按钮（dnd.vue:337-347）；handleRetry 重新 loadSetting（dnd.vue:293-296）恢复后回到内容态；401 场景由 http 拦截器统一处理不与本页冲突（dnd.vue:88 注释）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "DND11",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "title": "返回键深链栈=1：switchTab 兜底回「我的」Tab",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 DND01）→ wx.reLaunch('/subpackages/profile-extra/settings/dnd')",
+      "action": "reLaunch 直达后点 .nav-bar__back；取路由链",
+      "expected": "栈长=1 时点击后 switchTab /pages/profile/index（dnd.vue:281-288，MP-R1-DND-001）；栈顶=pages/profile/index；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "FH01",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "冷启动直开无参：AppShell 标题「反馈历史」+筛选条渲染，有数据显示列表/无数据显示空态",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/profile-extra/feedback/history')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 0.5s/2s 采样：.filter-chip 数量与文案、.record 数量或 EmptyState 存在性、.error-card 存在性；getCurrentPages 链",
+      "expected": "筛选条 4 chip：全部/反馈/建议/活动提案（history.vue:64-69,273-285；zh-CN.ts feedbackHistory 命名空间）；onShow 拉取列表（history.vue:260-262）——有记录渲染 .record 列表（标题+StatusState 徽标+本地化时间 history.vue:309-387,201-203），无记录渲染 EmptyState「暂无反馈记录/提交反馈后将在此处显示」（history.vue:301-306；zh-CN.ts:3261-3262）；严禁错误态误显为空态（MP-R1-FEEDBACKHIST-001：错误走 .error-card 而非空态）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "FH02",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "筛选 Tab 切换：chip 激活态迁移+列表按类型过滤+展开态重置；重复点同 chip 短路",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 FH01）；账号存在多种类型反馈记录（若无多条记录则过滤断言放宽为空态正确，如实标注）",
+      "action": "点「反馈」chip → 采样；点「建议」chip → 采样；再点「建议」chip 一次；采样网络请求次数",
+      "expected": "每次切换 chip 高亮 filter-chip--active 迁移（history.vue:129-135）、expandedId 重置收起详情（history.vue:132）、按 type 过滤重拉（filteredSubmissions history.vue:90-94）；switchFilter 同值短路不发请求（history.vue:130）；Tab 切换滚动位与数据不丢（铁律）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH03",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "点击记录展开详情：懒加载 content/附件/最新回复，hint 变「收起」；再点收起",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 FH01）；至少 1 条反馈记录（无记录则本条标 UNVERIFIED/SKIP 如实记录）",
+      "action": "点第 1 条 .record__header → 采样详情区与 .record__expand-hint；再点同一条 → 采样",
+      "expected": "首次展开出现 detail-loading 后渲染详情（反馈内容 content、附件宫格、最新回复，history.vue:339-384）并触发 getSubmissionDetail 请求；hint 文本「查看详情」→「收起」（history.vue:332-334）；再点同一记录收起且不再发请求（expandedId=null history.vue:147-151）；500ms 内有展开反馈（铁律）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH04",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "单展开互斥与详情缓存：展开另一条时旧条收起；二次展开命中缓存不再请求",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 FH01）；≥2 条反馈记录（不足则标 UNVERIFIED）",
+      "action": "展开记录 A → 展开记录 B → 采样；收起 B 后再展开 B；采样网络记录",
+      "expected": "expandedId 单值互斥：展开 B 时 A 收起（history.vue:77,145-172）；B 的详情第二次展开直接用 detailCache 不再发 getSubmissionDetail（history.vue:155-156）；列表刷新成功后缓存清空（loadList 成功置空 detailCache history.vue:116-117）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH05",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "深链 ?id=N：300ms 后自动展开指定记录（参数取实测列表存活 id）",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 FH01）；执行时先经列表接口取存活记录 id（r11-param-map.json params 表无本页固化参数，参数语义源自源码 history.vue:210-227）→ wx.reLaunch('/subpackages/profile-extra/feedback/history?id={id}')",
+      "action": "reLaunch 后等待 >300ms 采样展开态：expandedId 对应 .record__detail 存在、hint=「收起」；getCurrentPages 链",
+      "expected": "onLoad 读 options.id → 300ms 定时器触发 toggleExpand(numId)（history.vue:221-224）自动展开该记录详情；id 无效（NaN/≤0）不展开不报错（history.vue:216-218）；页面快速返回时定时器被 onUnmounted 清理不炸页（history.vue:52-57）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH06",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "点击附件图片：uni.previewImage 全屏预览",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 FH01）；存在带附件的记录（无则标 UNVERIFIED）",
+      "action": "展开带附件记录后点击 .attachment-img；采样预览层出现",
+      "expected": "handleAttachmentTap 调 uni.previewImage({urls,current}）全屏预览（history.vue:180-184）；预览可关闭返回列表状态不变；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH07",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "列表加载失败：错误卡+「重试」按钮，点击重拉恢复",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 FH01）；执行器注入列表请求失败（断网代理/拦截），无法注入则标 UNVERIFIED",
+      "action": "进入错误态采样 .error-card；点 .error-card__retry；采样恢复态",
+      "expected": "store.errorMessage 映射到页面错误卡（MP-R1-FEEDBACKHIST-001 修复：失败不再伪装空态，history.vue:108-114,288-298）；点重试 handleRetry 重新 loadList（history.vue:189-192）成功后错误卡消失列表恢复；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "FH08",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "AppShell 返回：navigateBack 落来源页；深链栈=1 兜底 switchTab 首页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 FH01）→ wx.reLaunch('/subpackages/profile-extra/feedback/history')",
+      "action": "场景1：reLaunch 直达后点 AppShell 返回键；场景2（可选）：从设置页 navigateTo 进入后返回；取路由链",
+      "expected": "AppShell show-back 返回键（history.vue:266-271）；栈=1 时 navigateBack fail 兜底 switchTab /pages/home/index（AppShell.vue:120-141）；栈>1 时返回来源页且状态保留；console 无异常",
+      "evidence": "getCurrentPages 路由链断言（两场景各一份）+ console 过滤；可不截图"
+    },
+    {
+      "id": "FH09",
+      "page": "subpackages/profile-extra/feedback/history",
+      "title": "长列表滚动到底/顶：记录无错位、滚动平滑",
+      "tier": "noop",
+      "pre": "双身份 mock 登录（同 FH01）；记录数>屏高（不足则缩短断言为整页滚动可用）",
+      "action": "滚动到底再回顶，记录 scroll 位置与 console",
+      "expected": "滚动无卡死报错；筛选条随页面滚动（非吸顶则如实记录）；详情展开态在滚动后保持；console 无异常",
+      "evidence": "执行日志（scroll 位置/console 采样）即可；A/B 双身份各一份"
+    },
+    {
+      "id": "EP01",
+      "page": "subpackages/setup/profile/index",
+      "title": "带参 ?entry=edit 冷启动直开：编辑模式隐藏进度条、表单回显既有资料",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')（参数为源码参数：onLoad options.entry==='edit' setup/profile/index.vue:53-57，任务页跳入即此形态 tasks.vue:123；r11-param-map.json params 表无本页条目）",
+      "action": "reLaunch 后 1s/2.5s 采样：.card__progress 存在性、各 field 输入值（昵称/简介/年级/称呼/身高回显）、保存按钮文案；getCurrentPages 链",
+      "expected": "entryMode=edit（index.vue:53-57）：v-if 隐藏 .card__progress（index.vue:653-655）；onMounted profileStore.load 回填 nickname/bio/grade/pronouns/height/学历/感情状态/籍贯/未来城市/理想型（index.vue:468-516）；保存按钮文案=「保 存」（submitSaveEdit，index.vue:1005-1013）；冷启动不闪错误；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "EP02",
+      "page": "subpackages/setup/profile/index",
+      "title": "无参直开（wizard 模式）：显示注册进度条步骤 1，按钮「保存并继续」",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index')（无参）",
+      "action": "采样 .card__progress 内 SetupProgress 渲染与步骤文案、保存按钮文案",
+      "expected": "entryMode=wizard：SetupProgress current-step=1（index.vue:654-655）；按钮文案=「保存并继续」（submitSave，index.vue:1005-1013）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；可不截图"
+    },
+    {
+      "id": "EP03",
+      "page": "subpackages/setup/profile/index",
+      "title": "修改昵称后保存成功：PUT /profile/basic 全量携带必填 4 项+diff 可选项 → Toast「保存成功」→600ms 后返回；快击×5 仅 1 次 PUT",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "before 截图；昵称 input 追加「测」字；点 .submit-btn 快速连点 5 次（间隔<200ms）；after 截图；采样 Toast、PUT 请求体、路由链",
+      "expected": "isSubmitting 锁使 5 连点仅 1 次 PUT（index.vue:536-538）；请求体 nickname/bio/grade/pronouns 恒全量、height 恒带（2026-09-12 修复 index.vue:595-609），可选字段仅变更项；成功 Toast「保存成功」（index.vue:615；zh-CN setup.profile.saveSuccess）+ session 刷新；600ms 后 entry=edit → navigateBack 回来源页（navigateAfterSave index.vue:519-534）；按钮期间 spinner+「保存中...」（index.vue:1004-1013）；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "EP04",
+      "page": "subpackages/setup/profile/index",
+      "title": "空表单保存：逐字段拦截——「请输入昵称」Toast+昵称行内红框抖动，无 PUT",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')；昵称为空（若回填非空先清空昵称输入）",
+      "action": "清空昵称后点 .submit-btn；采样 .field--error/.shake 类、.field-error 文本、Toast、网络记录",
+      "expected": "首个校验失败即返回：Toast「请输入昵称」+ errors.nickname 行内错误块 + field--error 红框 + shake 抖动类（index.vue:542-547,746-749）；未发起 PUT；随后输入 1 字符即清行内错误（clearError @input index.vue:96-98,741）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP05",
+      "page": "subpackages/setup/profile/index",
+      "title": "昵称/简介输入边界：maxlength 截断、特殊字符与 emoji 存活、清空再填三态",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "昵称输入 40 字符（超出 30）→ 采样值长度；bio 清空后提交→恢复；bio 输入含 emoji+HTML 特殊串 <img src=x>「'&; → 采样回显",
+      "expected": "昵称 maxlength=30 截断输入（index.vue:737,246）；bio maxlength=160 截断（index.vue:766,247）；bio 清空提交 → 「请输入简介」拦截（index.vue:554-559）；特殊字符/emoji 原样回显无异常渲染（v-model 纯文本）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP06",
+      "page": "subpackages/setup/profile/index",
+      "title": "年级/身高 picker 选择：回显文案更新、行内错误清除",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')；先触发过身高错误态（空身高提交一次）",
+      "action": "年级 picker change 选「大三」；身高 picker change 选 idx=20（160cm）；采样 .field__pick-text 回显与错误块",
+      "expected": "gradeLabel/heightLabel 回显更新（onGradeChange/onHeightChange index.vue:222-243）；身高存数值 140+idx=160（index.vue:239）；选择后 clearError 清除对应行内错误（index.vue:228,240）；picker 打开 500ms 内有弹层反馈；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP07",
+      "page": "subpackages/setup/profile/index",
+      "title": "扩展字段填写：学历/感情状态 picker 与籍贯省/市/未来城市/理想型输入（maxlength+特殊字符）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "学历 picker 选「本科」、感情状态选「从未恋爱」；籍贯省输入 35 字符采样长度；理想型 textarea 输入 emoji+200+ 字符采样长度",
+      "expected": "educationLevel/relationshipStatus 回显中文 label（onEducationLevelChange/onRelationshipStatusChange index.vue:447-466）；籍贯省/市/未来城市 maxlength=30 截断（index.vue:899,920,937）；理想型 maxlength=200 截断（index.vue:959）；全部字段 @focus 品牌色光环 field--focus（index.vue:100-110）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP08",
+      "page": "subpackages/setup/profile/index",
+      "title": "身份切换：radio 选中态迁移+本地持久化 campus-love:user-identity",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "点「非学生」identity-option → 采样选中类与 wx.getStorageSync('campus-love:user-identity')；再点「学生」→ 采样",
+      "expected": "选中态 identity-option--selected/--radio--checked 迁移（index.vue:973-992）；onIdentityChange 即时 saveIdentity 持久化（index.vue:122-127；identity.ts:37-45，key 见 storage-keys.ts:78）；同值重复点击短路不重写（index.vue:123）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP09",
+      "page": "subpackages/setup/profile/index",
+      "title": "照片墙删除：点已占槽→确认弹窗→确认后 DELETE → Toast「已删除」槽位变空",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')；账号照片墙≥1 张（无照片则标 UNVERIFIED）",
+      "action": "before 截图；点第 1 个 .photo-grid__slot → 采样 showModal 内容；点确认 → after 截图 + 采样槽位图与网络记录",
+      "expected": "弹窗标题「照片墙」内容「确定删除这张照片吗？」确认色 #E5454D（onPhotoSlotTap index.vue:332-351；zh-CN deletePhotoConfirm）；确认后 removePhotoAtIndex → DELETE /profile/photos/{index}（index.vue:398-409）→ Toast「已删除」（zh-CN photoDeleted）；对应槽位变 + 空位；取消则不删除；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "EP10",
+      "page": "subpackages/setup/profile/index",
+      "title": "照片墙空槽/头像上传：actionSheet 与隐私授权链路（自动化选图受限则断言至弹层层并标 UNVERIFIED）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "点头像 .media-avatar → 采样 actionSheet 两项（从相册选择/拍一张）→ 取消；点第 1 个空 .photo-grid__slot → 采样（触发隐私授权/chooseImage）",
+      "expected": "头像点击弹 actionSheet 两项（onAvatarTap index.vue:276-285；zh-CN avatarAlbum/avatarCamera），取消无副作用；空槽仅允许按顺序上传：点第 3 槽而仅 0 张时归一化到第 1 槽（index.vue:346-349）；选图取消（fail cancel）静默无错误 Toast（index.vue:308-313,373-378）；isMediaUploading 期间重复点击被忽略（index.vue:277,333）；系统相册无法自动化时，断言止于授权/选图弹层出现并标 UNVERIFIED；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP11",
+      "page": "subpackages/setup/profile/index",
+      "title": "无变更保存：Toast「资料无变更」不发 PUT，仍按模式导航返回",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')；不做任何修改直接保存",
+      "action": "点 .submit-btn 一次；采样 Toast、网络记录、路由链",
+      "expected": "buildDiffPayload 为空 → Toast「资料无变更」（index.vue:589-593；zh-CN noChange）且无 PUT；600ms 后仍 navigateBack（navigateAfterSave 无变更同样触发 index.vue:590-592）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP12",
+      "page": "subpackages/setup/profile/index",
+      "title": "保存失败态：Toast 错误信息、按钮恢复可点、表单值不丢",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）；构造合法表单；执行器注入 PUT 失败（断网代理），无法注入则标 UNVERIFIED",
+      "action": "注入故障后点 .submit-btn；采样 Toast、按钮态、表单值；恢复后重试",
+      "expected": "catch 显示后端 message 或「保存失败，请稍后重试」（index.vue:617-619；zh-CN saveFailed）；finally 恢复 isSubmitting=false（index.vue:620-622）按钮可再点、输入框解除 disabled；表单已填值保留不丢；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP13",
+      "page": "subpackages/setup/profile/index",
+      "title": "必填齐备按钮高亮：formComplete 联动 submit-btn--disabled 视觉态",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 EP01）；先清空任一必填项",
+      "action": "逐项补齐昵称/简介/年级/称呼/身高，每次补齐后采样 .submit-btn 类",
+      "expected": "五项齐备后 formComplete=true → 移除 submit-btn--disabled 高亮（index.vue:253-261,997）；按钮置灰仍可点并给出定位提示（对齐注册页设计 index.vue:252 注释）——未齐时点击走到对应字段错误分支（同 EP04）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "EP14",
+      "page": "subpackages/setup/profile/index",
+      "title": "返回键：hero 返回 navigateBack 落来源页；栈=1 兜底 switchTab 首页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "场景1：从「我的」进入后点 .hero__back；场景2：reLaunch 直达后点 .hero__back；取路由链",
+      "expected": "栈>1 navigateBack 回来源页；栈=1 switchTab /pages/home/index（goBack index.vue:60-68）；返回不弹保存确认属现有行为，未保存修改静默丢弃——如需拦截属改进项如实记录；console 无异常",
+      "evidence": "getCurrentPages 路由链断言（两场景各一份）+ console 过滤；可不截图"
+    },
+    {
+      "id": "EP15",
+      "page": "subpackages/setup/profile/index",
+      "title": "长表单滚动到底/回顶：字段无错位、focus 光环正常",
+      "tier": "noop",
+      "pre": "双身份 mock 登录（同 EP01）→ wx.reLaunch('/subpackages/setup/profile/index?entry=edit')",
+      "action": "滚动到底（理想型字段）再回顶，记录 scroll 位置与 console",
+      "expected": "滚动平滑；表单卡/照片墙/字段渲染无重叠错位；console 无异常",
+      "evidence": "执行日志（scroll 位置/console 采样）即可；A/B 双身份各一份"
+    },
+    {
+      "id": "CA01",
+      "page": "subpackages/setup/campus/index",
+      "title": "冷启动直开：三级选择器占位、主按钮置灰、进度条步骤 2、回显既有校园资料",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/setup/campus/index')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 1s/2.5s 采样：.field__text 占位文案（请选择城市/学校/专业）、.bar__primary disabled 类、SetupProgress 步骤、既有回显值；getCurrentPages 链",
+      "expected": "三字段占位「请选择城市/学校/专业」（campus/index.vue:216-268；zh-CN setup.campus.placeholder*）；三项未选完按钮 disabled 置灰（isComplete campus/index.vue:67-69 + BottomActionBar disabled 传递 campus/index.vue:282-286，BottomActionBar.vue:48-53）；SetupProgress current-step=2（campus/index.vue:198）；已有 campusProfile 且值在选项内时回显（campus/index.vue:117-134）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "CA02",
+      "page": "subpackages/setup/campus/index",
+      "title": "城市→学校→专业三级联动：换城市清空学校与专业、换学校清空专业",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 CA01）；等待学校列表加载（后端 /config/campuses 失败回退本地 SCHOOLS，schools.ts:120-134）",
+      "action": "城市 picker change 选「北京」→ 学校 picker change 选「北京大学」→ 专业 picker change 任选 → 换城市为「上海」→ 采样三字段值",
+      "expected": "选城市后学校选项仅该城市高校（getSchoolsByCity schools.ts:103-105）；换城市联动清空 campusName/department（onCityChange campus/index.vue:77-84）；换学校清空 department（campus/index.vue:87-93）；专业选项随学校目录（缺省回退通用目录 schools.ts:108-110）；每次选择 500ms 内回显反馈；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "CA03",
+      "page": "subpackages/setup/campus/index",
+      "title": "三项选完主按钮高亮→保存成功：Toast「保存成功」+按场景路由（新用户→时间安排页）；快击×5 仅 1 次提交",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 CA01）；账号无 campusProfile（注册流程场景；已有则本条走 CA05 断言）",
+      "action": "before 截图；依次选城市/学校/专业至按钮高亮；点主按钮快击 5 次；after 截图 + 采样路由链与 Toast",
+      "expected": "isComplete 后移除 disabled 高亮（campus/index.vue:67-69）；saving 锁使 5 连点仅 1 次 saveCampusProfile 提交（campus/index.vue:153-159）；成功 Toast「保存成功」（campus/index.vue:163；zh-CN setup.campus.saveSuccess）；无历史校园资料 → replaceAppPath 时间安排页（campus/index.vue:169，P0-35 完成度链路）；栈顶=subpackages/setup/schedule/index；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "CA04",
+      "page": "subpackages/setup/campus/index",
+      "title": "未选完时点保存：disabled 按钮拦截无 Toast 无请求；兜底 Toast「请完整选择城市、学校与专业」",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 CA01）；至少留一个字段未选",
+      "action": "点置灰主按钮（disabled 拦截）；再以执行器直接调页面 save 链路或选完 2/3 项验证兜底 Toast；采样网络记录",
+      "expected": "disabled=true 时 BottomActionBar 不 emit primary 且 button 原生 disabled（BottomActionBar.vue:48-53）——无 Toast 无请求；若绕过 disabled 到达 save 函数，isComplete=false 兜底 Toast「请完整选择城市、学校与专业」（campus/index.vue:155-157；zh-CN errIncomplete）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "CA05",
+      "page": "subpackages/setup/campus/index",
+      "title": "补认证场景保存：已有 campusProfile 时保存后 replace 回「我的」页而非下一步",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 CA01）；账号已有 campusProfile（100158/100159 若无，先经同链路 saveCampusProfile 构造后重进本页；无法构造则标 UNVERIFIED）",
+      "action": "三项选完点保存；采样路由链与 Toast",
+      "expected": "isReauthScenario()=true → Toast 成功后 replaceAppPath /pages/profile/index（campus/index.vue:149-151,164-166，R4-00044）；栈顶=pages/profile/index；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console；A/B 双身份各一份"
+    },
+    {
+      "id": "CA06",
+      "page": "subpackages/setup/campus/index",
+      "title": "跳过入口：注册流程点「非学生？跳过此步，稍后认证」→ replace 时间安排页；补认证场景→我的页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 CA01）→ wx.reLaunch('/subpackages/setup/campus/index')",
+      "action": "点 .skip-bar；取路由链（补认证场景分支复测一次）",
+      "expected": "无 campusProfile → replaceAppPath 时间安排页（campus/index.vue:184-192，P0-35）；有 campusProfile → replace /pages/profile/index；500ms 内路由变化；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "CA07",
+      "page": "subpackages/setup/campus/index",
+      "title": "隐私说明「?」弹窗：标题/内容/「我知道了」单确认键（三路关闭语义中仅确认一路）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 CA01）→ wx.reLaunch('/subpackages/setup/campus/index')",
+      "action": "点 .card-header__help → 采样 showModal 标题与内容 → 点「我知道了」关闭",
+      "expected": "弹窗标题「认证信息说明」+ 隐私内容文案 + 仅确认按钮「我知道了」（showPrivacyInfo campus/index.vue:106-113；zh-CN privacyTitle/privacyContent/privacyConfirm）；无取消路由；关闭后页面状态不变；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "CA08",
+      "page": "subpackages/setup/campus/index",
+      "title": "AppShell 返回：返回来源页，已选未保存值是否保留按实际行为如实记录",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 CA01）；从「我的」/向导 navigateTo 进入",
+      "action": "点 AppShell 返回键；取路由链",
+      "expected": "栈>1 navigateBack 回来源页；栈=1 兜底 switchTab 首页（AppShell.vue:120-141）；本页无草稿持久化，已选未保存值返回即丢（如实记录）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "CA09",
+      "page": "subpackages/setup/campus/index",
+      "title": "保存失败态：Toast 错误信息、按钮恢复（Loading 不永驻）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 CA01）；三项选完；执行器注入保存接口失败，无法注入则标 UNVERIFIED",
+      "action": "注入故障后点保存；采样 Toast 与按钮态；恢复后重试",
+      "expected": "catch Toast 后端 message 或「保存失败，请稍后重试」（campus/index.vue:171-174）；finally 恢复 saving=false（campus/index.vue:174-176）；重试可成功；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "SC01",
+      "page": "subpackages/setup/schedule/index",
+      "title": "冷启动直开：标题「时间安排」+常去区域回显、时段列表按已有数据渲染",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/setup/schedule/index')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 1s/2.5s 采样：.field（常去区域值）、.time-window-field 数量、「＋ 添加时段」按钮；getCurrentPages 链",
+      "expected": "onMounted 拉取 scheduleProfile 回显（schedule/index.vue:32-35）；无历史数据时段列表为空且不预填示例值（R4-00045/46 schedule/index.vue:23-30）；「＋ 添加时段」常显；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "SC02",
+      "page": "subpackages/setup/schedule/index",
+      "title": "空表单保存：Toast「请输入偏好地点」无 PUT",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 SC01）；清空常去区域（或初始为空）",
+      "action": "直接点保存（BottomActionBar 主按钮）；采样 Toast 与网络记录",
+      "expected": "preferredCampusArea 空 → Toast「请输入偏好地点」（schedule/index.vue:55-58；zh-CN setup.schedule.locationRequired）；无保存请求；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "SC03",
+      "page": "subpackages/setup/schedule/index",
+      "title": "只填地点无时段保存：Toast「请至少添加一个时间窗口」无 PUT",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 SC01）；地点已填、时段列表为空或全空串",
+      "action": "常去区域填「东门图书馆」；时段留空；点保存；采样 Toast 与网络记录",
+      "expected": "有效时段过滤后为 0 → Toast「请至少添加一个时间窗口」（schedule/index.vue:60-64；zh-CN timeWindowRequired）；空白串时段不计为有效（filter w.trim() schedule/index.vue:60）；无保存请求；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "SC04",
+      "page": "subpackages/setup/schedule/index",
+      "title": "添加/删除时段：动态增减输入框，删至 1 条时删除按钮消失",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 SC01）→ wx.reLaunch('/subpackages/setup/schedule/index')",
+      "action": "点「＋ 添加时段」×3 → 采样输入框数；在两条上各填值；点第 2 条删除按钮 → 采样；逐条删至剩 1 → 采样删除按钮存在性",
+      "expected": "每次点击 500ms 内新增一行（addTimeWindow schedule/index.vue:40-42）；length>1 才显示删除按钮（v-if schedule/index.vue:105）；删除精确移除目标行（removeTimeWindow schedule/index.vue:45-47）；已填值行删除后其余值保留；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "SC05",
+      "page": "subpackages/setup/schedule/index",
+      "title": "合法保存成功：PUT 日程 → redirect 推荐偏好页；快击×5 仅 1 次 PUT",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 SC01）；地点+≥1 个非空时段",
+      "action": "before 截图；填地点「东门图书馆」+时段「今晚」；点保存快击 5 次；after 截图 + 路由链 + 请求计数",
+      "expected": "saving 防重入仅 1 次 PUT（MP-R2-SCHEDULE-001 schedule/index.vue:50-53,66-71）；成功后 replaceAppPath 推荐偏好页（schedule/index.vue:71，P0-35 完成度链路）；栈顶=subpackages/setup/recommend-pref/index；courseBlocks 不随提交（schedule/index.vue:23-29 注释，以空数组提交符合契约）；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "SC06",
+      "page": "subpackages/setup/schedule/index",
+      "title": "时段输入边界：maxlength=60 截断、特殊字符 emoji 存活、清空后不计有效",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 SC01）；已添加 1 条时段",
+      "action": "时段输入 70 字符采样长度；改输特殊串 <script>alert(1)</script>🎉 采样回显；清空后点保存采样 Toast",
+      "expected": "maxlength=60 截断（schedule/index.vue:100）；特殊字符原样回显无脚本执行；清空后保存被 SC03 同款校验拦截；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "SC07",
+      "page": "subpackages/setup/schedule/index",
+      "title": "AppShell 返回：落来源页/兜底首页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 SC01）→ wx.reLaunch('/subpackages/setup/schedule/index')",
+      "action": "点 AppShell 返回键；取路由链",
+      "expected": "栈>1 navigateBack；栈=1 兜底 switchTab 首页（AppShell.vue:120-141）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "SC08",
+      "page": "subpackages/setup/schedule/index",
+      "title": "保存失败态：Toast 错误信息、可重试（Loading 不永驻）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 SC01）；合法表单；执行器注入保存失败，无法注入则标 UNVERIFIED",
+      "action": "注入故障后保存；采样 Toast 与按钮；恢复后重试",
+      "expected": "catch Toast 后端 message 或「保存失败，请稍后重试」（schedule/index.vue:72-75；zh-CN setup.schedule.saveFailed）；finally 恢复 saving=false（schedule/index.vue:76-78）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "RP01",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "冷启动直开：loading→GET /recommendations/preferences/me 回显→表单三区渲染",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/setup/recommend-pref/index')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 0.5s/1s/2.5s 采样：loading 文案、.option-item--active 分布（时间/范围）、toggle-switch--on 态；getCurrentPages 链",
+      "expected": "loading 卡「正在获取推荐偏好设置...」（recommend-pref/index.vue:163-167）→ 成功后表单渲染；已登录拉取回显 dailyNotifyTime/scope/campusPriority（fetchPreferences recommend-pref/index.vue:75-105，P0-03 路径 /me）；默认值 12:00/campus_first/开（recommend-pref/index.vue:49-53）；进度条按身份：学生步骤 3/4、非学生 2/3（recommend-pref/index.vue:27-30）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "RP02",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "推荐时间四选一：单选高亮迁移",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 RP01）；等待表单渲染",
+      "action": "依次点 10:00 → 18:00 chip；采样 .option-item--active 位置",
+      "expected": "点击 500ms 内高亮迁移至所点项（@tap dailyNotifyTime=opt.value recommend-pref/index.vue:181-193），同时仅一项激活；option-item--active 品牌描边+底色（recommend-pref/index.vue:289-296）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "RP03",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "推荐范围三选一：单选互斥（同校优先/同城/不限）",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 RP01）；等待表单渲染",
+      "action": "点「同城」再点「不限」；采样激活项",
+      "expected": "每次点击单选高亮迁移（recommend-pref/index.vue:198-211，scopeOptions 66-70）；scope 值存 campus_first/city/unlimited；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "RP04",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "校园优先整行点击取反：点文案区与点开关均生效",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 RP01）；等待表单渲染",
+      "action": "点 .toggle-row 文字区两次；采样 .toggle-switch--on 与滑块位置",
+      "expected": "整行 @tap 取反 campusPriority（recommend-pref/index.vue:215-220）；开关态 toggle-switch--on 与滑块 left 位移动画（recommend-pref/index.vue:326-344）；热区按整行计满足 88rpx 铁律；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "RP05",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "保存成功：PUT /recommendations/preferences/me → Toast「保存成功」→ replace 寻觅页；快击×5 仅 1 次 PUT",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 RP01）；表单已渲染",
+      "action": "before 截图；改时间与范围后点保存快击 5 次；after 截图 + 路由链 + PUT 请求体采样",
+      "expected": "saving 锁仅 1 次 PUT（recommend-pref/index.vue:115-117）；请求体 preferredTime/scope/campusPriority（recommend-pref/index.vue:126-135）；成功 Toast「保存成功」（recommend-pref/index.vue:138；zh-CN recommendPref.saveSuccess）→ replaceAppPath /pages/discover/index（recommend-pref/index.vue:140）；栈顶=pages/discover/index；未登录（无 userId）跳过 PUT 仍 Toast 成功并进寻觅（recommend-pref/index.vue:122-138 分支）；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "RP06",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "加载失败错误态：「加载失败」卡+「重新加载」按钮点击重拉",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 RP01）；执行器注入 GET 失败（断网代理），无法注入则标 UNVERIFIED",
+      "action": "进入错误态采样 .retry-btn；点击后采样恢复态",
+      "expected": "error=true 渲染错误卡「获取偏好设置时出现问题，请重试」+ 重新加载按钮（recommend-pref/index.vue:170-175；review #28 修复：错误态不再死代码）；retry() 重新 fetchPreferences（recommend-pref/index.vue:108-110）成功后错误卡消失；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "RP07",
+      "page": "subpackages/setup/recommend-pref/index",
+      "title": "AppShell 返回：落来源页/兜底首页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 RP01）→ wx.reLaunch('/subpackages/setup/recommend-pref/index')",
+      "action": "点 AppShell 返回键；取路由链",
+      "expected": "栈>1 navigateBack 回来源页；栈=1 兜底 switchTab 首页（AppShell.vue:120-141）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + console 过滤；可不截图"
+    },
+    {
+      "id": "IN01",
+      "page": "subpackages/setup/interest/index",
+      "title": "冷启动直开：仅「兴趣」一组标签可见（其余 3 组隐藏）、既有 interestTags 回显选中",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 TK01 做法）→ wx.reLaunch('/subpackages/setup/interest/index')（r11-param-map.json sub 表含该页，无固化参数）",
+      "action": "reLaunch 后 1s/2.5s 采样：.tag-selector__group 数量与标题、已选 chips 数、计数文案 n/5；getCurrentPages 链",
+      "expected": "TagSelector groups=['interest'] 仅渲染 1 组（interest/index.vue:84，MP-R1-SETUPINTEREST-003；TagSelector.vue:55-58 visibleGroups 过滤）；onLoad getBasicProfile 回显 interestTags（interest/index.vue:20-30）；标题「选择兴趣」+副题「…至少 3 个」（zh-CN interestSelect.title/subtitle）；兴趣组 max=5（profile-tags.ts interest 组 max:5）；console 无异常",
+      "evidence": "getCurrentPages 路由链断言 + 采样日志 + console 过滤；A/B 双身份各一份；可不截图"
+    },
+    {
+      "id": "IN02",
+      "page": "subpackages/setup/interest/index",
+      "title": "标签选中：chip 高亮+顶部已选区 chip+计数 n/5 更新",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 IN01）；等待回显完成",
+      "action": "点 2 个未选 .tag-chip → 采样激活类、已选区 .tag-selector__chips、.tag-selector__selected-count",
+      "expected": "每次点击 500ms 内 chip 高亮 tag-chip--selected（TagSelector.vue:224-238）并出现在顶部已选区（TagSelector.vue:195-207）；计数「已选 n/5」同步（TagSelector.vue:181-183）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "IN03",
+      "page": "subpackages/setup/interest/index",
+      "title": "已选 chip 移除与清空：点顶部 chip 移除单个；「清空」全清并显空态提示",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 IN01）；已选≥1 个标签",
+      "action": "点顶部已选区某 chip → 采样；点「清空」→ 采样已选区与计数",
+      "expected": "removeTag 精确移除目标值（TagSelector.vue:119-131）；clearAll 置空 modelValue（TagSelector.vue:136-139）显示空态提示（TagSelector.vue:208-210）且「清空」按钮隐藏（v-if totalCount>0 TagSelector.vue:185）；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "IN04",
+      "page": "subpackages/setup/interest/index",
+      "title": "选满 5 个后再点：Toast「已达最大选择数」选中数不变",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 IN01）；先选满 5 个兴趣标签",
+      "action": "点第 6 个未选 chip；采样 Toast 与选中计数",
+      "expected": "toggleTag 超 max 拦截 Toast「已达最大选择数」（TagSelector.vue:102-109；zh-CN tagSelector.maxReached zh-CN.ts:3008）；计数保持 5/5；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "IN05",
+      "page": "subpackages/setup/interest/index",
+      "title": "选 3 个保存成功：GET 全量合并→PUT 仅改 interestTags→Toast「已保存」→600ms 后返回；快击×5 仅 1 次保存",
+      "tier": "critical",
+      "pre": "双身份 mock 登录（同 IN01）；已选≥3 个兴趣",
+      "action": "before 截图；点保存 .interest-save 快击 5 次；after 截图 + 路由链 + 请求采样（保存请求体含 interestTags 且其余字段与 GET 全量一致）",
+      "expected": "saving 防重入仅 1 次保存（MP-R2-INTEREST-001 interest/index.vue:33-40）；saveBasicProfile 为全量 PUT 语义——先 getBasicProfile 合并再提交避免清空其余资料（MP-R1-SETUPINTEREST-002 interest/index.vue:42-53）；成功 Toast「已保存」（zh-CN interestSelect.saved）；600ms 后栈>1 navigateBack、栈=1 switchTab /pages/profile/index（interest/index.vue:57-63）；console 无异常",
+      "evidence": "before + after 截图 + 路由链 + Toast 文案原文 + console（含网络请求记录）；A/B 双身份各一份"
+    },
+    {
+      "id": "IN06",
+      "page": "subpackages/setup/interest/index",
+      "title": "少于 3 个点保存：Toast「至少选择 3 个兴趣」无保存请求",
+      "tier": "normal",
+      "pre": "双身份 mock 登录（同 IN01）；已选 1-2 个（或 0 个）",
+      "action": "点保存；采样 Toast 与网络记录",
+      "expected": "interests.length<3 → Toast「至少选择 3 个兴趣」（interest/index.vue:35-39；zh-CN interestSelect.minThree zh-CN.ts:471）；无 GET 合并与 PUT 发出；console 无异常",
+      "evidence": "after 截图 + 路由链 + console 过滤；A/B 双身份各一份"
+    },
+    {
+      "id": "IN07",
+      "page": "subpackages/setup/interest/index",
+      "title": "打开即返回：本页无自定义返回键，系统返回/navigateBack 落来源页",
+      "tier": "navigation",
+      "pre": "双身份 mock 登录（同 IN01）；场景2 从「我的」navigateTo 进入",
+      "action": "场景1 reLaunch 直达后执行 miniProgram.navigateBack()；场景2 点系统返回；取路由链",
+      "expected": "页面无自绘返回键（interest/index.vue:76-89 模板仅标题/选择器/保存）——返回依赖系统胶囊/手势，自动化以 navigateBack 模拟；栈=1 深链时页内无返回路径，仅保存成功路径有 switchTab 兜底（interest/index.vue:58-62）；返回后来源页状态保留；「深链直开无页内返回键」记录为可用性缺陷候选；console 无异常",
+      "evidence": "getCurrentPages 路由链断言（两场景各一份）+ console 过滤；可不截图"
+    }
+  ]
+}

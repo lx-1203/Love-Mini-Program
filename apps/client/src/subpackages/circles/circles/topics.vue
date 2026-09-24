@@ -291,9 +291,15 @@ function switchTab(tab: "feed" | "hot" | "works" | "members" | "activities") {
 
 /**
  * 返回上一页
+ * MP-R1-J20-003/MP-R1-REQ20-007：置顶圈规条点击——栈=1（深链直开）时裸 navigateBack
+ * 必 fail 构成死按钮；补栈底 reLaunch 兜底（落点语义待产品确认，现保守回兴趣圈列表）
  */
 function goCircleDetail(_id: string) {
-  uni.navigateBack();
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/circles/circles/index" });
+  }
 }
 
 function goBack() {
@@ -619,8 +625,11 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-TOPICS-101：必须定高（height:100% 而非 min-height:100%）——原容器随内容
+     增长，flex:1 的 .topics-list scroll-view 失去高度约束 → 整页滚动，
+     @scrolltolower 话题翻页与 refresher 永不触发（对齐 campus/index 定高修复模式） */
+  height: 100%;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
   overflow: hidden;
 }

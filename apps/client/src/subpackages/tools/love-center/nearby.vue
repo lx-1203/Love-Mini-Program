@@ -227,8 +227,12 @@ function handleMessage(userId: string) {
 
 .content-header {
   display: flex;
+  /* MP-R1-LNEARBY-201：去 space-between——模板仅剩 [返回键, 标题] 两个子节点，
+     space-between 把标题推到最右缘（右内边距仅 20rpx、无胶囊避让），按项目自证
+     胶囊几何（87×32px、距右缘 7px、top≈statusbar+4px）标题整条落在胶囊矩形内被
+     真机遮挡。改左对齐 + gap（对齐 mbti.vue 修复后形态） */
   align-items: center;
-  justify-content: space-between;
+  gap: var(--sp-4);
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-4)) var(--sp-5) var(--sp-3);
   flex-shrink: 0;
 }

@@ -1,0 +1,229 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "A4-需求对照员（次要24）",
+    "scope": "需求与功能目标对照（8 页：tasks/dnd/feedback-history/setup-profile/campus/schedule/recommend-pref/interest）",
+    "gitSha": "aefd8a72",
+    "generatedAt": "2026-09-24T00:00:00.000Z",
+    "evidence": {
+      "exec": "reports/audit/round-1/interact/exec-results.json#S17-c24a,S18-c24b",
+      "judge": "reports/audit/round-1/interact/次要24-judge.json（14 VERIFIED / 1 FAILED / 60 UNVERIFIED）",
+      "tourScreenshots": "reports/screenshots/round-1-tour/A|B/",
+      "idealImages": "素材/理想效果图/ 实测 19 张，均无本 8 页页面级理想稿（baseline 以页面声明功能目标+交互 manifest 预期为对照）"
+    }
+  },
+  "issues": [
+    {
+      "id": "MP-R1-REQ24-SCHEDULE-001",
+      "round": "R1",
+      "page": "subpackages/setup/schedule/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_schedule_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「课表/日程设置」的课表（courseBlocks）半边职责零实现：courseBlocks 字段在表单中声明但模板无任何录入/展示 UI，保存恒以空数组提交后端；页面自述「时间安排页（课表导入，可选工具）」中的课表导入不存在，实际仅剩 常去区域+时间窗口 两个自由文本能力。",
+      "evidence": "schedule/index.vue:26-30 form 含 courseBlocks 字段；:24-25 注释自认「courseBlocks 未在模板渲染，不随 {...form} 提交后端（以空数组提交）」；:52-79 save() 仅校验 preferredCampusArea/preferredTimeWindows；巡检截图（A 默认态）页面仅 3 文本输入+添加时段+保存，无课表 UI；SC01 VERIFIED 亦仅 .field:present。",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.9,
+      "ideal": "路由语义「课表/日程设置」应具备课表录入能力（按 weekday/start/end 增删课表行，随 ScheduleProfile 提交），或产品侧收敛职责：页面文案/路由命名去掉「课表」语义，明确本页只做时间安排。",
+      "fix": "二选一：① 补课表录入 UI（周×时段网格或行编辑器，读写 form.courseBlocks 并随保存提交，与后端 ScheduleProfile.courseBlocks 契约对齐）；② 移除 courseBlocks 死字段并更名页面职责为「时间安排」，同步修正文件头注释与向导文案。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ24-INTEREST-001",
+      "round": "R1",
+      "page": "subpackages/setup/interest/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_setup_interest_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "兴趣选择页无任何返回/跳过出口：模板仅 标题区+TagSelector+保存按钮，无返回键、无跳过；全局 navigationStyle=custom（pages.json:36）无系统返回栏；本页不在注册向导链，主动进入唯一入口 我的→兴趣选择。不选满 3 个保存就无法从本页回到「我的」（仅剩系统手势），构成导航死路。",
+      "evidence": "interest/index.vue:75-89 模板无返回控件（对照同包 campus/schedule/recommend-pref 均有 AppShell show-back、dnd 有自绘 nav-bar__back）；pages.json:36 globalStyle navigationStyle=custom；入口 pages/profile/index.vue:840；交互 manifest IN07 标题自认「本页无自定义返回键」；巡检截图 A/B 顶部左侧空白无返回控件。",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "主动进入的设置页应有屏上返回键，不保存也可返回来源页（任意页 2 步内回 tab 的导航底线）。",
+      "fix": "顶部标题行左侧加返回键：goBack() 栈>1 navigateBack、栈=1 switchTab /pages/profile/index（与保存成功后的兜底 interest/index.vue:57-63 同语义）；如保留「可跳过」语义可并列「跳过」文字钮。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ24-DND-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "保存按钮无完成态去抖：快击×5 触发 5 轮完整保存（5 条「设置已保存」Toast，311ms 内），验收「快击×5 仅 1 次 PUT」未达成。现有 isSaving 守卫只挡在途请求（dnd.vue:239,246），mock API 毫秒级返回使每击都重新走完 校验→PUT→回写→Toast 全流程；真实弱网下虽不并发，但仍会连续多次 PUT 与连续弹成功 Toast。",
+      "evidence": "exec-results.json#S17-c24a/DND08 toast=[设置已保存×5, ts 1790141243632/700/779/860/943]；次要24-judge.json DND08=FAILED conf 0.65（5 次成功 Toast=handleSave 完整走完 5 轮）；dnd.vue:238-246 守卫仅覆盖在途。",
+      "sources": ["interaction", "code"],
+      "confidence": 0.7,
+      "ideal": "一次保存意图（含快击）仅产生一次 PUT 与一次成功反馈；按钮保存中置灰且成功后短冷却内忽略重复提交。",
+      "fix": "保存成功/失败后保持 isSaving（或独立 cooldown 标志）约 600-800ms 再释放，或成功 Toast 展示期间忽略 handleSave；同步修正该验收口径为「在途仅 1 次 PUT + 完成后短窗去抖」。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/profile-extra/profile/tasks",
+      "baseline": "无页面级理想稿（素材/理想效果图 19 张无此页）；对照=页面声明功能目标（tasks.vue 头注释+3-J real 链路）+ 交互 manifest TK01-TK09 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：自绘状态栏占位+页头（返回键/标题/完成数）+积分卡+任务列表，巡检截图 A/B 与 TK01 VERIFIED 一致，无错位。L2 区块：积分卡（已获积分+百分比+进度条）与 4 任务项层级清晰（tasks.vue:366-441）。L3 组件：任务项=图标容器+标题+积分+描述+状态胶囊（去完成/已完成/领取三态 tasks.vue:207-211,423-436）；返回键存在（:371-380），TK07 的 element not found 系按文字「我的」过滤的伪缺陷（按钮仅图标）。L4 内容：文案齐备（zh-CN.ts:1686-1702）；副作用记录：taskCenterDesc「赚取交友币」与条目「积分」单位口径不一（P4，归文案/视觉线）；任务图标不渲染已由视觉线立 MP-R1-TASKS-007，本线不复判。L5-L10：不做像素断言（无理想稿）。",
+      "usageNotes": "实际路径：我的→任务中心 1 步可达（pages/profile/index.vue:841）；返回 navigateBack、深链栈=1 兜底 switchTab 首页 tab（tasks.vue:226-233），任意时刻 1 步回 tab ✓。核心任务（看任务→签到→跳转对应页）链路代码完整；但 TK02-TK06 点击类执行全部证据窗口失效（automator 截图 ERROR:timeout、wxml 抓到错页 DOM），签到反馈与跳转实际体验本轮未能证实，存在迷路风险未知。",
+      "functionGaps": [
+        {
+          "target": "点击未完成任务跳转对应功能页（TK04-TK06）",
+          "current": "代码有完整映射与 openAppPath（tasks.vue:83-96,286-288,301-303）；执行 route 停留 tasks，未取证",
+          "gap": "执行证据缺失（automator 事件派发不可区分），非代码缺口",
+          "fix": "下轮以网络日志/路由监听复测跳转三类目标页"
+        },
+        {
+          "target": "first-post/verify 任务完成态",
+          "current": "mock 分支恒 false（tasks.vue:106-107 注释自认）；real 模式由后端 RealTaskService 进度覆盖（apps/api RealTaskService.java:31-34 四 code 全有真实进度源）",
+          "gap": "仅演示模式受限，产品链路完整",
+          "fix": "无需修复；如下线 mock 分支可一并清理"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/profile-extra/settings/dnd",
+      "baseline": "无页面级理想稿；对照=功能6声明（dnd.vue 头注释）+ manifest DND01-DND11 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：safe-top→自绘导航→loading/error/content 三态→safe-bottom，MP-R1-DND-002 已终验无状态栏叠印。L2 分组：总开关/时段/重复方式/自定义星期(CUSTOM 条件渲染 :438)/紧急穿透/保存钮，与声明功能一一对应。L3 组件：switch 原生组件+品牌色（:39）、time picker、radio 指示、星期 4 列 flex 网格（mp 兼容 :794-820）。L4 文案：customWeekdaysRequired/invalidTimeRange/saveSuccess 均有专属 i18n（zh-CN.ts:3232-3235）；dnd.tip 标题与行标签重复已由视觉线立 MP-R1-DND-003。DND01 VERIFIED 回显 22:00/08:00/每天。L5-L10 不做像素断言。",
+      "usageNotes": "实际路径：我的→设置→免打扰 2 步；返回 navigateBack、兜底 switchTab「我的」（:281-288）✓。核心任务（开关→时段→重复→保存）路径顺畅；DND06 observed「设置已保存」系前置未切自定义（默认 EVERYDAY 合法保存），校验分支未触达非缺陷；DND08 快击×5=5 轮完整保存（立 P2）；错误态/重试因无法注入故障未取证（代码 :293-296,337-347 在）。",
+      "functionGaps": [
+        {
+          "target": "快击保存仅 1 次 PUT（DND08 验收）",
+          "current": "5 条成功 Toast（exec toast ts ×5）；isSaving 仅挡在途",
+          "gap": "完成态无去抖/冷却，验收未达成 → Issue MP-R1-REQ24-DND-001（P2）",
+          "fix": "成功后 600-800ms 冷却或 Toast 期间保持锁定"
+        },
+        {
+          "target": "自定义未选星期/起止相等校验（DND06/DND07）",
+          "current": "validateForm 两规则在码（:212-227）；执行未触达（前置未构造）",
+          "gap": "未取证，非代码缺口",
+          "fix": "下轮先 tap radio 第 4 项再保存复测"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/profile-extra/feedback/history",
+      "baseline": "无页面级理想稿；对照=功能10声明（history.vue 头注释）+ manifest FH01-FH09 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：AppShell（标题+返回）→筛选条→错误卡/空态/列表三分支（:265-388）。L2：筛选 4 chip 在上、列表卡在下，空态与错误互斥（v-if/v-else-if 链）。L3：filter-chip、record（header+detail 折叠区）、attachment 宫格、StatusState 徽标；StatusState warning=×图标语义矛盾已由视觉线立 MP-R1-FEEDBACKHIST-004。L4：时间经 formatDateTime 本地化（:201-203），主/卡标题重复已由视觉线立 MP-R1-FEEDBACKHIST-005。FH01/FH03/FH09 VERIFIED：4 chip 渲染、无数据空态、展开详情（内容+最新回复+「收起」hint+互斥）、滚动无卡死。",
+      "usageNotes": "实际路径：我的→设置→反馈历史，或反馈中心→历史记录 2 步内；AppShell show-back 返回 ✓。核心任务（筛选→展开看详情→看回复）FH03 实证可完成；附件预览/错误重试/合法 id 深链因数据与故障注入不可构造未取证（代码 :145-172,180-184,210-251 在）。",
+      "functionGaps": [
+        {
+          "target": "附件图片全屏预览（FH06）",
+          "current": "uni.previewImage 在码（:180-184）；测试账号无带附件记录，元素不存在属前置缺失",
+          "gap": "未取证",
+          "fix": "种子数据注入带附件记录后复测"
+        },
+        {
+          "target": "深链 ?id=N 自动展开（FH05）",
+          "current": "执行以字面量 ?id={id} 打开→NaN 命中防御分支（与 :216-218 一致，不报错）",
+          "gap": "合法 id 路径未取证",
+          "fix": "以实测列表存活 id 替换参数模板复测"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/setup/profile/index",
+      "baseline": "无页面级理想稿；对照=注册页设计包声明（MP-R6-EDITPAGE 头注释）+ manifest EP01-EP15 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：hero 全出血插图+渐隐+白卡骑压（-64rpx），滚动态状态栏叠印已由视觉线立 MP-R1-SETUPPROFILE-004。L2 分区：媒体（头像+照片墙）→基础信息→基本资料扩展→身份→主按钮，cap 分节清晰（:652-1014）。L3 组件：字段=图标+input/textarea/picker+chevron，行内错误+抖动+光环三态（:84-110,722-848）；照片墙 6 槽（:416-422,693-713）。L4 文案：必填错误文案齐备（errHeightRequired=请选择身高 zh-CN.ts:3098，EP03 实证）。EP01/EP02/EP15 VERIFIED：entry=edit 隐藏进度条 ✓、wizard 显示第 1/4 步 ✓、滚动无错位。",
+      "usageNotes": "实际路径：编辑=我的→编辑资料（?entry=edit）保存后返回；向导=保存→campus/schedule 分流（:130-135）。EP03 的 6 条「请选择身高」证明必填拦截链路生效（身高未选不发 PUT）；保存 happy path 因 picker 不可自动化未取证。EP04-EP10/EP14 全部 automator watchdog/NAV_ERROR/stale（hero__back、photo-grid__slot 类名在码 :634/:697，EP03-after 截图实证照片墙存在）——无一代码级缺口。EP03 快击×5 得 6 条 Toast（6>5）异常登记待复测。",
+      "functionGaps": [
+        {
+          "target": "保存成功链路（PUT→Toast→600ms 返回）",
+          "current": "代码 :584-616 完整（diff+全量必填+refreshSession）；exec 未取证",
+          "gap": "picker/输入自动化不可达",
+          "fix": "下轮用预置完整资料的账号直接改昵称保存复测"
+        },
+        {
+          "target": "快击保存反馈次数（EP03：×5 点击 6 条 Toast）",
+          "current": "6>5 异常（exec toast ×6）",
+          "gap": "疑似点击重复派发或采样窗口重叠，证据不足",
+          "fix": "单独复测计数；如复现则按提交锁粒度排查"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/setup/campus/index",
+      "baseline": "无页面级理想稿；对照=注册流程第 2 步声明（头注释）+ manifest CA01-CA09 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：AppShell+SetupProgress(2/4)+表单卡+价值提示卡+跳过条+底部主按钮，CA01/CA07 巡检截图与源码一致。L2：学校资料卡（标题+?帮助）→三行 picker→价值卡→skip-bar→BottomActionBar。L3：三级 selector picker（城市→学校→专业，range-key 联动 :216-268）、? 帮助钮（热区 40rpx 偏小已由视觉线立 MP-R1-SETUPCAMPUS-003）。L4：CA07 VERIFIED——原生 showModal「认证信息说明…唯一按钮我知道了」完整实证（zh-CN.ts:3156）。",
+      "usageNotes": "实际路径：向导 profile 保存→campus；或首页完善清单（view-models/home.ts:89-95 campusCompleted=false）；跳过→时间安排（注册流）或我的（补认证 :184-192）✓ 2 步内回 tab。CA02/CA03/CA05 联动/保存/场景路由 observe-only 未取证（picker 不可自动化）；CA06 dom stale 与 act 自相矛盾；CA08 navBack API 打 tab 页伪异常。无代码级缺口。",
+      "functionGaps": [
+        {
+          "target": "三级联动清空语义（CA02）与保存场景路由（CA03/CA05）",
+          "current": "代码 :77-101,:149-192 完整；执行未取证",
+          "gap": "picker change 不可自动化",
+          "fix": "下轮以 uni.pickertInput 模拟或种子账号走保存链复测"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/setup/schedule/index",
+      "baseline": "无页面级理想稿；对照=路由语义「课表/日程设置」+页面自述「时间安排页（课表导入，可选工具）」+ manifest SC01-SC08 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：AppShell（返回+副题「这里会驱动首页推荐和可聊时段」+标题）→偏好设置卡（地点输入+时段行列表+添加钮+保存钮），SC01 VERIFIED。L2：保存钮置于 SectionCard 内部（:126）而非页级 BottomActionBar，与同向导 campus/recommend-pref 不一致（结构记录）。L3：时段行=输入+删除钮（>1 条才显示 :104-113）、虚线添加钮。L4：SC01 证实新账号无示例预填（R4-00045/46 生效，SC05 找「东门图书馆」为 manifest 预期过期非缺陷）。**L2 功能性结构缺口：courseBlocks（课表）零渲染零入口（:24-25 自认），保存恒空数组 → Issue MP-R1-REQ24-SCHEDULE-001。**",
+      "usageNotes": "实际路径：向导 campus 保存→schedule；我的→设置→时间安排设置（settings/index.vue:358）；保存→replace 推荐偏好 ✓。核心任务（填地点+时段→保存解锁）链路完整；巡检截图 A 显示旧账号回显历史数据正常。SC02/SC03 校验、SC04 增删未执行（observe-only/input 不可达，代码 :40-64 在）。",
+      "functionGaps": [
+        {
+          "target": "课表录入/导入（路由与页面自述的「课表」职责）",
+          "current": "courseBlocks 恒空数组提交（:24-30,52-79），无 UI",
+          "gap": "功能缺失 → Issue MP-R1-REQ24-SCHEDULE-001（P2）",
+          "fix": "补课表行编辑器或收敛职责更名"
+        },
+        {
+          "target": "时段增删与保存校验（SC02-SC04）",
+          "current": "代码 :40-64 完整；执行未取证",
+          "gap": "observe-only 未执行",
+          "fix": "下轮复测"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/setup/recommend-pref/index",
+      "baseline": "无页面级理想稿；对照=功能5声明（头注释）+ manifest RP01-RP07 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：AppShell+SetupProgress(学生 3/4)→时间四选一→范围三选一→校园优先开关→底部保存，RP01 VERIFIED（三区渲染+默认高亮+进度步正确）。L2：loading/error/表单三态分支（:162-228），错误卡+重新加载非死代码（review #28 修复 :97-105）。L3：option-item 胶囊单选（--active 高亮 :186,203）、自绘 toggle-switch（:215-220）。L4：campusPriorityTitle 与行标签同文案已由视觉线立 MP-R1-SETUPPREF-002。",
+      "usageNotes": "实际路径：向导最后一步→保存→replace 寻觅页 ✓（完成引导闭环）；返回 AppShell ✓。RP03 tap 同城/不限后 after 截图仍同校优先高亮——证据冲突不可归因（A6）；RP04 dom stale；RP05/RP06 未执行或正常态。未登录保存跳过 PUT 仅提示后进寻觅（:122-136），游客语义合理。无代码级缺口。",
+      "functionGaps": [
+        {
+          "target": "范围单选迁移与开关取反（RP03/RP04）",
+          "current": "代码 :186-220 单选互斥+整行取反完整；执行证据冲突",
+          "gap": "点击派发与产品失效不可区分",
+          "fix": "下轮复测并采样激活类名"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/setup/interest/index",
+      "baseline": "无页面级理想稿；对照=v3.1 契约 11/14（注册引导可跳过；主动进入必须 ≥3 才能保存）+ manifest IN01-IN07 预期",
+      "file": "reports/audit/round-1/page-compare/次要24.md",
+      "structureNotes": "L1 布局：标题区→TagSelector→保存钮，IN01 VERIFIED（仅兴趣 1 组、组计数 0/5、空态提示）。L2 结构偏差：页头「选择兴趣/选择你的兴趣，让匹配更懂你（至少 3 个）」与 TagSelector 自带头「选择你的标签/选择最能代表你的标签…」同屏双重标题+双 0/5 计数（巡检截图可见），语义重复（P3 级，归 UI 线记录）；**且无返回/跳过控件 → 功能缺口 Issue MP-R1-REQ24-INTEREST-001**。L3：tag-chip 选中态+顶部已选区可点移除+清空钮（totalCount>0 时 :185）。L4：minThree/maxReached/clearAll 文案齐备（zh-CN.ts:471,3006-3009）。",
+      "usageNotes": "实际路径：我的→兴趣选择 1 步进入；但**无屏上出口**——不保存（需≥3）无法回「我的」，仅剩系统手势，2 步回 tab 底线在此页不成立（IN07 标题自认无自定义返回键）。核心任务（选≥3→保存→返回）代码链完整（全量合并防清空 :42-53、防重入 :33-34、兜底返回 :57-63）；IN03 清空钮缺失属前置缺失（0 选时按设计隐藏）；IN02/IN04-IN06 未执行。",
+      "functionGaps": [
+        {
+          "target": "返回/跳过出口",
+          "current": "模板 :75-89 无返回控件；navigationStyle=custom（pages.json:36）",
+          "gap": "功能缺失 → Issue MP-R1-REQ24-INTEREST-001（P2）",
+          "fix": "标题行加返回键（goBack 兜底 switchTab profile tab）"
+        },
+        {
+          "target": "保存链路（≥3 校验→GET 合并→PUT→返回）（IN05/IN06）",
+          "current": "代码 :32-72 完整；执行未取证",
+          "gap": "observe-only 未执行",
+          "fix": "下轮复测"
+        }
+      ],
+      "verdict": "基本达标"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/次要24-req.json"
+}

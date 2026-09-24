@@ -1,0 +1,220 @@
+======== FH01 | 冷启动直开无参：AppShell 标题「反馈历史」+筛选条渲染，有数据显示列表/无数据显示空态
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | observe-only | dom: .filter-chip:present .record:absent .error-card:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history
+fail: None
+toast: []
+======== FH02 | 筛选 Tab 切换：chip 激活态迁移+列表按类型过滤+展开态重置；重复点同 chip 短路
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:tap "反馈" | act:tap "建议"
+fail: None
+toast: []
+======== FH03 | 点击记录展开详情：懒加载 content/附件/最新回复，hint 变「收起」；再点收起
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | dom: .record__header:absent .record__expand-hint:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:tap .record__header
+fail: None
+toast: []
+======== FH04 | 单展开互斥与详情缓存：展开另一条时旧条收起；二次展开命中缓存不再请求
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history
+fail: None
+toast: []
+======== FH05 | 深链 ?id=N：300ms 后自动展开指定记录（参数取实测列表存活 id）
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | dom: .record__detail:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | pre:reLaunch /subpackages/profile-extra/feedback/history?id={id} | 
+fail: None
+toast: []
+======== FH06 | 点击附件图片：uni.previewImage 全屏预览
+status: FAILED | obs: top=subpackages/profile-extra/feedback/history | action-not-performed(see act-FAIL) | dom: .attachment-img:absent .previewImage:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act-FAIL:
+fail: action tap .attachment-img failed: element not found: .attachment-img
+toast: []
+======== FH07 | 列表加载失败：错误卡+「重试」按钮，点击重拉恢复
+status: FAILED | obs: top=subpackages/profile-extra/feedback/history | action-not-performed(see act-FAIL) | dom: .error-card:absent .error-card__retry:absent .errorMessage:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedba
+fail: action tap .error-card__retry failed: element not found: .error-card__retry
+toast: []
+======== FH08 | AppShell 返回：navigateBack 落来源页；深链栈=1 兜底 switchTab 首页
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | pre:reLaunch /subpackages/profile-extra/feedback/history | act:reLaunch /subpackages/profile-extr
+fail: None
+toast: []
+======== FH09 | 长列表滚动到底/顶：记录无错位、滚动平滑
+status: EXECUTED | obs: top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:pageScrollTo bottom | act:pageScrollTo top
+fail: None
+toast: []
+======== EP01 | 带参 ?entry=edit 冷启动直开：编辑模式隐藏进度条、表单回显既有资料
+status: FAILED | obs: top=subpackages/setup/profile/index | action-not-performed(see act-FAIL) | dom: .card__progress:absent .load:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not f
+fail: action input __CAND__ failed: element not found: __CAND__
+toast: []
+======== EP02 | 无参直开（wizard 模式）：显示注册进度条步骤 1，按钮「保存并继续」
+status: EXECUTED | obs: top=subpackages/setup/profile/index | observe-only | dom: .card__progress:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index | pre-FAIL:input
+fail: None
+toast: []
+======== EP03 | 修改昵称后保存成功：PUT /profile/basic 全量携带必填 4 项+diff 可选项 → Toast「保存成功」→600ms 后返回；快击×5 仅 1 次 PUT
+status: EXECUTED | obs: top=subpackages/setup/profile/index | dom: .submit-btn:present .profile:absent .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index
+fail: None
+toast: [{'api': 'showToast', 'title': '请选择身高', 'ts': 1790141766916}, {'api': 'showToast', 'title': '请选择身高', 'ts': 1790141767011}, {'api': 'showToast', 'title': '请选择身高', 'ts': 1790141767250}, {'api': 'showToast', 'title': '请选择身高', 'ts': 1790141767435}, {'api': 'showToast', 'title': '请选择身高', 'ts': 1790141767542}, {'api': 'showToast', 'title': '请选择身高', 'ts': 1790141767893}]
+======== EP04 | 空表单保存：逐字段拦截——「请输入昵称」Toast+昵称行内红框抖动，无 PUT
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .submit-btn:absent .field--error:absent .shake:absent .field-error:absent .nickname:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extr
+fail: action tap .submit-btn failed: watchdog-timeout act-tap 25000ms
+toast: []
+======== EP05 | 昵称/简介输入边界：maxlength 截断、特殊字符与 emoji 存活、清空再填三态
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setu
+fail: action input __CAND__ failed: element not found: __CAND__
+toast: []
+======== EP06 | 年级/身高 picker 选择：回显文案更新、行内错误清除
+status: EXECUTED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | observe-only | dom: .field__pick-text:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpac
+fail: None
+toast: []
+======== EP07 | 扩展字段填写：学历/感情状态 picker 与籍贯省/市/未来城市/理想型输入（maxlength+特殊字符）
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setu
+fail: action input __CAND__ failed: element not found: __CAND__
+toast: []
+======== EP08 | 身份切换：radio 选中态迁移+本地持久化 campus-love:user-identity
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setu
+fail: action tap __CAND__ failed: watchdog-timeout act-tap 25000ms
+toast: []
+======== EP09 | 照片墙删除：点已占槽→确认弹窗→确认后 DELETE → Toast「已删除」槽位变空
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .photo-grid__slot:absent #E5454D:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for auto
+fail: action tapIndex .photo-grid__slot failed: watchdog-timeout act-tapIndex 25000ms
+toast: []
+======== EP10 | 照片墙空槽/头像上传：actionSheet 与隐私授权链路（自动化选图受限则断言至弹层层并标 UNVERIFIED）
+status: FAILED | obs: top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .media-avatar:absent .photo-grid__slot:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting fo
+fail: action tapIndex .photo-grid__slot failed: element not found: .photo-grid__slot
+toast: []
+======== EP11 | 无变更保存：Toast「资料无变更」不发 PUT，仍按模式导航返回
+status: EXECUTED | obs: top=subpackages/setup/profile/index | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element
+fail: None
+toast: []
+======== EP12 | 保存失败态：Toast 错误信息、按钮恢复可点、表单值不丢
+status: EXECUTED | obs: top=subpackages/setup/profile/index | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry | act:tap .submit-btn
+fail: None
+toast: []
+======== EP13 | 必填齐备按钮高亮：formComplete 联动 submit-btn--disabled 视觉态
+status: EXECUTED | obs: top=subpackages/setup/profile/index | observe-only | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry
+fail: None
+toast: []
+======== EP14 | 返回键：hero 返回 navigateBack 落来源页；栈=1 兜底 switchTab 首页
+status: FAILED | obs: top=subpackages/setup/profile/index | dom: .hero__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element 
+fail: action tap .hero__back failed: element not found: .hero__back
+toast: []
+======== EP15 | 长表单滚动到底/回顶：字段无错位、focus 光环正常
+status: EXECUTED | obs: top=subpackages/setup/profile/index | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry
+fail: None
+toast: []
+======== CA01 | 冷启动直开：三级选择器占位、主按钮置灰、进度条步骤 2、回显既有校园资料
+status: EXECUTED | obs: top=subpackages/setup/campus/index | observe-only | dom: .field__text:absent .bar__primary:absent .campus:absent .placeholder:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index
+fail: None
+toast: []
+======== CA02 | 城市→学校→专业三级联动：换城市清空学校与专业、换学校清空专业
+status: EXECUTED | obs: top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index
+fail: None
+toast: []
+======== CA03 | 三项选完主按钮高亮→保存成功：Toast「保存成功」+按场景路由（新用户→时间安排页）；快击×5 仅 1 次提交
+status: EXECUTED | obs: top=subpackages/setup/campus/index | observe-only | dom: .campus:absent .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index
+fail: None
+toast: []
+======== CA04 | 未选完时点保存：disabled 按钮拦截无 Toast 无请求；兜底 Toast「请完整选择城市、学校与专业」
+status: EXECUTED | obs: top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index
+fail: None
+toast: []
+======== CA05 | 补认证场景保存：已有 campusProfile 时保存后 replace 回「我的」页而非下一步
+status: EXECUTED | obs: top=subpackages/setup/campus/index | navError=timeout waiting for automator response | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index NAV_ERROR: timeout waiting for automator response | pre:lo
+fail: None
+toast: []
+======== CA06 | 跳过入口：注册流程点「非学生？跳过此步，稍后认证」→ replace 时间安排页；补认证场景→我的页
+status: EXECUTED | obs: top=subpackages/setup/campus/index | dom: .skip-bar:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:reLaunch /subpackages/setup/campus/index | act:tap .skip-bar
+fail: None
+toast: []
+======== CA07 | 隐私说明「?」弹窗：标题/内容/「我知道了」单确认键（三路关闭语义中仅确认一路）
+status: FAILED | obs: top=subpackages/setup/campus/index | navError=timeout waiting for automator response | dom: .card-header__help:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:reLaunch /subpackages/setup/campu
+fail: action tap __CAND__ failed: element not found: __CAND__("我知道了")
+toast: []
+======== CA08 | AppShell 返回：返回来源页，已选未保存值是否保留按实际行为如实记录
+status: EXECUTED | obs: top=subpackages/setup/campus/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:navigateTo /subpackages/setup/campus/index | pre:switchTab /pages/profile/index
+fail: None
+toast: []
+======== CA09 | 保存失败态：Toast 错误信息、按钮恢复（Loading 不永驻）
+status: EXECUTED | obs: top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index
+fail: None
+toast: []
+======== SC01 | 冷启动直开：标题「时间安排」+常去区域回显、时段列表按已有数据渲染
+status: EXECUTED | obs: top=subpackages/setup/schedule/index | observe-only | dom: .field:present .time-window-field:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index
+fail: None
+toast: []
+======== SC02 | 空表单保存：Toast「请输入偏好地点」无 PUT
+status: EXECUTED | obs: top=subpackages/setup/schedule/index | observe-only | dom: .schedule:absent .locationRequired:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index
+fail: None
+toast: []
+======== SC03 | 只填地点无时段保存：Toast「请至少添加一个时间窗口」无 PUT
+status: EXECUTED | obs: top=subpackages/setup/schedule/index | observe-only | dom: .trim:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index
+fail: None
+toast: []
+======== SC04 | 添加/删除时段：动态增减输入框，删至 1 条时删除按钮消失
+status: FAILED | obs: top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:input(__CAND__) elemen
+fail: action input __CAND__ failed: element not found: __CAND__
+toast: []
+======== SC05 | 合法保存成功：PUT 日程 → redirect 推荐偏好页；快击×5 仅 1 次 PUT
+status: FAILED | obs: top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:tap(__CAND__) element not found: __CAND__("东门图书馆")
+fail: action tap __CAND__ failed: element not found: __CAND__("东门图书馆")
+toast: []
+======== SC06 | 时段输入边界：maxlength=60 截断、特殊字符 emoji 存活、清空后不计有效
+status: FAILED | obs: top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:input(__CAND__) 
+fail: action input __CAND__ failed: element not found: __CAND__
+toast: []
+======== SC07 | AppShell 返回：落来源页/兜底首页
+status: EXECUTED | obs: top=subpackages/setup/schedule/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | pre:reLaunch /subpackages/setup/schedule/index | act:navigateBack undefined NAV_E
+fail: None
+toast: []
+======== SC08 | 保存失败态：Toast 错误信息、可重试（Loading 不永驻）
+status: EXECUTED | obs: top=subpackages/setup/schedule/index | observe-only | dom: .schedule:absent .saveFailed:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index
+fail: None
+toast: []
+======== RP01 | 冷启动直开：loading→GET /recommendations/preferences/me 回显→表单三区渲染
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | observe-only | dom: .option-item--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index
+fail: None
+toast: []
+======== RP02 | 推荐时间四选一：单选高亮迁移
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | observe-only | dom: .option-item--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index
+fail: None
+toast: []
+======== RP03 | 推荐范围三选一：单选互斥（同校优先/同城/不限）
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | act:tap "同城" | act:tap "不限"
+fail: None
+toast: []
+======== RP04 | 校园优先整行点击取反：点文案区与点开关均生效
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | dom: .toggle-row:absent .toggle-switch--on:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | act:tap .toggle-row
+fail: None
+toast: []
+======== RP05 | 保存成功：PUT /recommendations/preferences/me → Toast「保存成功」→ replace 寻觅页；快击×5 仅 1 次 PUT
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | observe-only | dom: .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index
+fail: None
+toast: []
+======== RP06 | 加载失败错误态：「加载失败」卡+「重新加载」按钮点击重拉
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | observe-only | dom: .retry-btn:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index
+fail: None
+toast: []
+======== RP07 | AppShell 返回：落来源页/兜底首页
+status: EXECUTED | obs: top=subpackages/setup/recommend-pref/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | pre:reLaunch /subpackages/setup/recommend-pref/index | act:navigateBa
+fail: None
+toast: []
+======== IN01 | 冷启动直开：仅「兴趣」一组标签可见（其余 3 组隐藏）、既有 interestTags 回显选中
+status: EXECUTED | obs: top=subpackages/setup/interest/index | observe-only | dom: .tag-selector__group:present .title:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index
+fail: None
+toast: []
+======== IN02 | 标签选中：chip 高亮+顶部已选区 chip+计数 n/5 更新
+status: EXECUTED | obs: top=subpackages/setup/interest/index | observe-only | dom: .tag-chip:present .tag-selector__chips:present .tag-selector__selected-count:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index
+fail: None
+toast: []
+======== IN03 | 已选 chip 移除与清空：点顶部 chip 移除单个；「清空」全清并显空态提示
+status: FAILED | obs: top=subpackages/setup/interest/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index | act-FAIL:tap(__CAND__) element not found: __CAND__("清空")
+fail: action tap __CAND__ failed: element not found: __CAND__("清空")
+toast: []
+======== IN04 | 选满 5 个后再点：Toast「已达最大选择数」选中数不变
+status: EXECUTED | obs: top=subpackages/setup/interest/index | observe-only | dom: .maxReached:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index
+fail: None
+toast: []
+======== IN05 | 选 3 个保存成功：GET 全量合并→PUT 仅改 interestTags→Toast「已保存」→600ms 后返回；快击×5 仅 1 次保存
+status: EXECUTED | obs: top=subpackages/setup/interest/index | observe-only | dom: .interest-save:present .saved:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index
+fail: None
+toast: []
+======== IN06 | 少于 3 个点保存：Toast「至少选择 3 个兴趣」无保存请求
+status: EXECUTED | obs: top=subpackages/setup/interest/index | observe-only | dom: .length:absent .minThree:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index
+fail: None
+toast: []
+======== IN07 | 打开即返回：本页无自定义返回键，系统返回/navigateBack 落来源页
+status: EXECUTED | obs: top=subpackages/setup/interest/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index | pre:navigateTo /subpackages/setup/interest/index | pre:switchTab /pages/profile/i
+fail: None
+toast: []

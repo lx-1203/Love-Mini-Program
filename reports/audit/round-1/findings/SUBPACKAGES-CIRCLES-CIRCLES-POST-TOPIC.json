@@ -1,0 +1,107 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/post-topic",
+  "reviewer": "A3 视觉审查员（截图与证据的视觉/布局/状态审查，未改动任何业务文件）",
+  "date": "2026-09-23",
+  "evidenceCache": {
+    "manifest": "reports/audit/round-1/screenshot-manifest.json",
+    "gitSha": "aefd8a72",
+    "gitShaMatchedHead": true,
+    "verifiedCommand": "git rev-parse HEAD → aefd8a72f2231e8df7affd09004c14c3e4e73745；manifest.gitSha=aefd8a72 一致，证据按当前代码有效处理",
+    "buildMode": "build:mp-weixin:mock"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-POSTTOPIC-201",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-中部.png; reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-底部.png; reports/audit/round-1/tmp-a3/crop-top-滚动-中部.png; reports/audit/round-1/tmp-a3/crop-top-滚动-底部.png; 对照组 reports/audit/round-1/tmp-a3/crop-top-campus.png",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "整页 window 滚动取代 scroll-view 内部滚动：滚动后自定义导航头（返回 + 发布话题 + 头部发布钮）整体滚出视口不可达，表单内容无任何遮蔽地顶入状态栏区——滚动-底部帧中「话题标题」灰字与系统状态栏（●●●●● WeChat / 1:19 / 100%）同行直接叠印、几乎不可读；滚动-中部帧中头部内容行本身已被状态栏文字压过（发布钮几乎没入「100%」电量字下）。用户滚动输入长文后返回钮不可见不可点（仅剩系统侧滑手势与底部发布钮兜底），滚动中视觉层级被破坏。同轮 A3 对 village/village/index 的同型缺陷（同根因 min-height:100% + flex:1）已判 P1（该页头部带搜索/频道 Tab，功能性更重）；本页头部功能可由底部发布钮与系统手势部分兜底，按 P2 记录。",
+      "evidence": "截图证据：A/B 双身份滚动-中部/滚动-底部 4 张全部无头部（B 与 A 一致）；crop-top-滚动-底部.png 显示「话题标题」与状态栏文字同行叠印；crop-top-滚动-中部.png 显示头部行被状态栏覆盖。代码根因（本轮实读）：apps/client/src/subpackages/circles/circles/post-topic.vue:750 `.post-page { min-height: 100% }`——flex 容器仅 min-height 时高度随内容增长，:823-824 `.post-body { flex: 1 }` 失去高度约束 → scroll-view 不限高、整页滚动；头部 :469 为普通 in-flow view（非 fixed/sticky），随页滚走。姊妹页 campus/campus/post-topic 滚动-底部（reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png 顶部裁片）同型缺陷同帧复现，属包内共性模式而非孤例。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "自定义导航头常驻视口（返回/发布任意滚动位置可达），scroll-view 内部滚动，任何滚动位置状态栏区无内容叠印（同项目内已收敛页面的固定头 + 内滚口径）。",
+      "fix": "post-topic.vue:750 `.post-page` 由 min-height:100% 改 height:100%（page 元素已全局 height:100%，App.vue），使 :824 flex:1 的 .post-body 获得确定高度恢复内部滚动、头部常驻；或保持结构改用头部 position:fixed + scroll 容器 padding-top 让位。修复后复验滚动-中部/底部：头部仍在、状态栏区无内容。姊妹页 campus/post-topic 同步排查（同型缺陷已在截图复现）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-POSTTOPIC-202",
+      "round": "R1",
+      "page": "subpackages/circles/circles/post-topic",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT28-after.png; reports/audit/round-1/tmp-a3/pt28-remove-zoom3.png",
+      "category": "UX",
+      "severity": "P3",
+      "description": "删除/关闭类操作热区远低于 88rpx（44px）标准：①图片缩略图删除 ×（生产可达的图片上传区）：40×40rpx = 20×20px，仅为标准的 45%；②已选活动卡下方「移除关联」：22rpx 文字 + 6/20rpx padding ≈ 高 34rpx（17px），且右贴屏幕边缘（PT28 帧实测距右缘约 8px），误触邻区风险高；③活动弹层右上 ×（仅 dev/showcase 可达分支）：32×32rpx = 16×16px。三者均为破坏性/退出性操作，热区过小在真机上易造成「点不中」与误触（紧邻的图片缩略图本身可点）。",
+      "evidence": "截图证据：PT28-after.png 中「移除关联」渲染为右缘小号灰字（pt28-remove-zoom3.png 放大件）。代码证据（本轮实读）：post-topic.vue:1115-1127 `.image-item__remove { width: 40rpx; height: 40rpx; top/right 8rpx }`；:1261-1266 `.activity-remove { padding: 6rpx 20rpx }` + :1268-1271 文字 22rpx；:1308-1312 `.activity-picker__close { width/height 32rpx; padding: 4rpx 12rpx }`。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "破坏性/退出操作热区 ≥88rpx（44px），可在视觉不变前提下以透明 padding/hit 扩展实现；贴边元素与屏幕边缘保持 ≥24rpx 间距。",
+      "fix": "三处增加透明扩展热区（如 ::after inset 负值 或 padding 提到 24rpx+ 且背景透明），「移除关联」右缘加 margin-right ≥24rpx；视觉样式不变。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "「缺静态截图」前提核实为不成立：ask 称本批页面本轮没有静态截图并要求记 P1，但证据清单 manifest（gitSha=aefd8a72，与当前 HEAD 逐一相符）与磁盘均证实本页静态截图存在且完整——round-1-tour 下 A/B 双身份各 5 张（默认/滚动-中部/滚动-底部/键盘弹起-输入后/交互后，共 10 张）逐一存在（50~53KB/张）并已逐张实审。ask 附带的失败原因清单（dev/register/register-success/campus-index/matching/tools-activities-detail/showcase）无一指向本页。按观察证据制不编造「缺截图」P1，如实记录前提不符。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json（gitSha=aefd8a72，本页 10 条 shots 记录）+ 磁盘逐一 fs 核验存在；git rev-parse HEAD 输出 aefd8a72f2231e8df7affd09004c14c3e4e73745"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "默认态结构完整且双身份一致：绿色渐变自定义头（返回 pill + 居中「发布话题」+ 右侧发布钮）→ 标题输入卡 → 内容卡（placeholder「分享你的想法...」+ 右下 0/500 计数）→ 发布到（两枚 target-chip，校园圈默认高亮）→ 话题标签 7 枚（脱单/学习/组队/树洞/分享/求助/吐槽 + 「最多选择 3 个」）→ 喜爱 switch → 添加图片 0/9。A/B 两身份逐帧一致（仅状态栏时钟不同），无身份分支差异。头部发布钮被微信胶囊叠压（白色「发布」字样自胶囊左下角露出）——以截图证实代码层 MP-R1-POSTTOPIC-001；对照组 campus/post-topic 头部裁片中「发布」完整位于胶囊左侧可点。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_circles_circles_post-topic__默认.png；放大件 reports/audit/round-1/tmp-a3/crop-top-默认.png（发布钮没入胶囊下）与 tmp-a3/crop-top-campus.png（姊妹页对照）"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "双身份证据实质单身份：interact 全部 34 例 observed 均带「pre:login A ok userId=user-1001 MISMATCH!」标记（scripts/qa/r1-exec.cjs:890，match=false 即会话 userId 与期望身份 A=100158/B=100159 不符）；screenshot-matrix.md 亦载 tour boot 自检 logged-in userId=user-1001。本页为无用户态差异的表单页（A/B 帧逐像素一致），证据可用性不受影响，但「双身份」覆盖在本页为名义双身份，如实标注。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json（PT01-PT34 全部条目 MISMATCH! 标记）；reports/audit/round-1/screenshot-matrix.md 第二节 boot 自检原文；scripts/qa/r1-exec.cjs:358-368/890"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "理想图归属澄清（防错配）：素材/理想效果图/发布帖子页面.png（标题「发布动态」、左上 × 关闭、发布到圈卡带头像/圈内成员可见 pill/1.2w 成员、0/1000 计数、三图网格、添加话题/添加位置/提及好友/谁可以看四行、发帖小贴士卡、底部五宫格工具栏）与本仓 village/village/post.vue 的实现逐项对应（post.vue:7-8 结构注释、:606 发布到卡片、:786 添加话题、:798 添加位置），并非本页理想稿；19 张理想稿中无本页一对一锚定（同「等待页面.png」类未锚定情形）。故本页未做 L1-L10 硬对照，留需求对照员/产品确认锚定，避免拿错稿产出伪偏差。",
+      "evidence": "素材/理想效果图/发布帖子页面.png 逐元素目视 vs apps/client/src/subpackages/village/village/post.vue:7-8/:606/:786/:798 实读对应"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "数据极值视觉通过：①500 字边界（PT08）：计数器「500/500」正常灰显未误报超限红、textarea 文字密排无溢出（末行随内滚裁切属 scroll 正常行为）；②特殊字符（PT09）：标题「🌸<img src=x onerror=alert(1)>」按字面渲染、无脚本执行、无崩溃、布局无破坏；③空提交（PT05）/仅标题（PT06）分别 toast「请输入标题」「请输入内容」由 showToast 捕获为证。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT08-after.png（500/500）、PT09-after.png（特殊字符）；exec-results.json PT05/PT06 toast 数组"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "弹层遮罩实测生效（排除一处疑似）：活动选择弹层打开帧（PT27）与同机位无弹层帧（PT28）同坐标像素对比，背景 (255,255,255)→(127,128,127)、约 45% 压暗，与遮罩 var(--c-overlay-bg, rgba(0,0,0,0.45)) 兜底值一致——缩略图目视「背景未变暗」的印象被像素证据否定，不立项。弹层内列表 4 条、行结构（名称+时间·地点+chevron）完整，× 关闭钮偏小问题并入 MP-R1-POSTTOPIC-202。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-PT27-after.png vs PT28-after.png 同坐标采样 (60,545)/(60,250)/(180,70)/(60,740)；放大件 reports/audit/round-1/tmp-a3/pt27-picker-zoom.png"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "键盘与返回的取证边界（如实标注不可验项）：「键盘弹起-输入后」帧（A/B）实际不含软键盘（DevTools automator 注入输入不弹键盘），cursor-spacing=20（:490/:508）与 :show-confirm-bar=false（:512）仅代码核对，真机键盘避让未验；返回行为 PT29/PT30 的 navigateBack:fail cannot navigate back at first page 为 harness reLaunch 置底的伪影（头部返回钮自身随页滚走的问题已由 MP-R1-POSTTOPIC-201 覆盖）；A/B「交互后」帧与「默认」逐像素一致、无选中标签残留，tour 交互动作定义在仓库内不可考（未找到生成脚本），不据此立项，留交互判定员。",
+      "evidence": "reports/screenshots/round-1-tour/A|B/subpackages_circles_circles_post-topic__键盘弹起-输入后.png（无键盘）；post-topic.vue:490/:508/:512；exec-results.json PT29/PT30 console"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "safe-area 与底部发布钮：全局 page 级 padding-top/padding-bottom env 兜底在位（App.vue:336-337），DevTools（env=0）滚动-底部帧中发布钮下方实测余量 ≈20-25px 正常不贴边；真机 home-indicator（env>0）行为 DevTools 截图无法体现、未验。刘海南双倍避让已由代码层 MP-R1-POSTTOPIC-002 跟踪，不重复。",
+      "evidence": "reports/audit/round-1/tmp-a3/crop-bottom-a.png（底部放大）；apps/client/src/App.vue:336-337 实读"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "observation": "历史回归视觉侧复核：MP-R2-POSTTOPIC-001（本地临时路径直出 createPost）与 MP-R3-POSTTOPIC-001（catch 引用 try 内常量致锁死）经 A2 代码层判已修；本轮视觉证据无反证——PT10/PT26 发布成功 toast「发布成功」均被捕获（isSubmitting 锁死会使成功路径不可达），全部截图未见裂图帧。运行时逐项回归归历史回归员，此处仅记录视觉侧无矛盾。",
+      "evidence": "exec-results.json PT10/PT26 toast=[发布成功]；tour A/B 全部 10 帧目视无裂图；reports/audit/round-1/code-findings/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json regressionChecks"
+    }
+  ],
+  "coverage": [
+    "截图已看：本页静态 10 张（A/B × 默认/滚动-中部/滚动-底部/键盘弹起-输入后/交互后，manifest 逐一列载、磁盘逐一核验存在）逐张目视审查；另审 interact 帧 7 张（PT02/06-before/08/09/27/28/33）+ 自制放大裁片 8 张（A 默认/滚动-中部/滚动-底部顶部、campus 默认/campus 滚动-底部、PT27 弹层、PT28 移除关联×2、底部安全区），全部为本轮 gitSha=aefd8a72 证据。",
+    "理想图已对照：素材/理想效果图/发布帖子页面.png 逐元素核对→判定其对应 village/post.vue 而非本页（观察4），本页在 19 张理想稿中无一对一锚定→未硬对照、未据错稿立项；品牌视觉总谱（寻觅品牌视觉设计系统图谱.png）下本页头部渐变/绿色主 CTA/浅绿卡底与 v3.1 冻结色系观感一致，token 级裁决已有 A2 覆盖（20+ var 逐一定义核对），未发现新增裸 hex 异常。",
+    "滚动已测：滚动-中部/底部双身份 4 帧 + 顶部裁片叠印验证 → MP-R1-POSTTOPIC-201。",
+    "点击已测（读证）：interact 34 例全量读取——EXECUTED 19（PT01/02/05/06/07/08/09/10/11/13/20/26/27/28/29/30/31/32/33）、FAILED 14（PT03/04/12/14/15/16/17/18/19/22/23/24/25/34，主因 candidate 文案元素未找到与截图超时）、SKIPPED 1（PT21 不可自动化）；执行层判定归交互判定员。",
+    "返回已测（读证）：PT29（来源页 circle-home→本页→返回）与 PT30（栈底直达）navError 均为 harness 首页伪影；头部返回钮滚动不可达已立 201；系统侧滑手势不在 DevTools 取证范围，如实标注。",
+    "safe-area 已查：App.vue:336-337 全局兜底 + 滚动-底部实测余量正常（观察8）；刘海南场景未验已标注。",
+    "TabBar 已查：本页为分包非 tab 页（pages.json:109 注册于 subpackages），无 TabBar 遮挡问题；各帧截图亦无 tabbar 渲染。",
+    "空态已查：表单空态即默认态（PT01 三时刻采样无错误空态闪现）；活动弹层「暂无可用活动」空态分支无截图帧（PT27 实为 4 条非空数据），如实标注未验。",
+    "长文已测：PT08 500 字边界（观察5）。",
+    "加载态已查：PT20 loading→列表 ≤10 条执行成功但截图落盘 ERROR:timeout 无帧，仅 observed 文本佐证，视觉样式未验、如实标注。",
+    "错误态已查：PT14-17（帖子模式标题拦截/未选分类/发布失败/slug 拦截）全部在执行层 FAILED（candidate 未找到），失败 toast 视觉帧未捕获——留交互判定员；隐私拒绝 PT33 无 toast 帧亦如实标注。",
+    "组件一致性已查：与姊妹页 campus/campus/post-topic 头部逐像素对照（返回 pill/居中标题/右侧发布钮结构同族；发布钮-胶囊位置差异即代码层 001，本批以截图证实）；target-chip/tag-chip/section-card 样式与圈内其余表单页同族一致。",
+    "历史 Bug 回归已查：MP-R2-POSTTOPIC-001/MP-R3-POSTTOPIC-001 视觉侧无反证（观察9）；运行时回归归历史回归员。13 项举证中「空态-活动列表分支」「加载态视觉」「错误态视觉」「真机键盘/真机 safe-area」4 个子项因本轮证据缺失或环境限制未能完成，均如实标注而非判无问题。"
+  ]
+}

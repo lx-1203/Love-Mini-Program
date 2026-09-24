@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-次要25（A3 截图与证据的视觉/布局/状态审查）",
+    "evidenceBase": {
+      "gitSha": "aefd8a72（manifest 与 exec-results 双确认一致，证据未过期）",
+      "staticTour": "reports/screenshots/round-1-tour/A/（本组 7 页 14 张逐张已看；setup/dev 与 setup/showcase 在 manifest 305 张中 0 条目，磁盘亦不存在，ask 指定的 subpackages_setup_showcase_index__默认.png 不存在）",
+      "interact": "reports/audit/round-1/interact/exec-results.json（1283 条，gitSha=aefd8a72）+ reports/screenshots/round-1-interact/（SHOWCASE-01/02、SC07/SC08、SETUPDEV-01、ACT02-16、FB02-17、MD01-08、DISCUSSIONS/PRIVACY/AGREEMENT 相关截图抽样已看）",
+      "idealRef": "素材/理想效果图/ 19 张中无本组 8 页对应稿（讨论圈/活动/反馈/法务/商城均无页面级理想图）；token 裁决按 29a2b1df:docs/design/v3.1-contract.md 执行"
+    },
+    "method": "14 张 tour A 截图逐张审查 + 12 张交互截图内容核验 + PowerShell System.Drawing 像素采样（品牌绿验证）+ 8 页关联源码（AppShell/StatusState/EmptyState/LegalTextPage/feedback/activities/discussions/market-detail）交叉定位；不重复代码审查员已报的 12 条（code-findings/次要25.json），只补其遗漏"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-APPSHELL-101",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index + subpackages/discover/activities/index + subpackages/legal/privacy/index + subpackages/legal/agreement/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__滚动-中部.png、__滚动-底部.png、reports/screenshots/round-1-tour/A/subpackages_discover_activities_index__滚动-中部.png、__滚动-底部.png、reports/screenshots/round-1-tour/A/subpackages_legal_privacy_index__滚动-中部.png、__滚动-底部.png、reports/screenshots/round-1-tour/A/subpackages_legal_agreement_index__滚动-底部.png、reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-ACTIVITIES-INDEX-ACT14-after.png",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "四页滚动后页面头部（返回 pill/标语/大标题）整体随内容滚出视口，正文文本滚入状态栏安全区并与系统状态栏文字直接叠印：feedback 滚动-中部截图中「反馈、建议和活动提案共用一个入口。」与 \"WeChat 1:55\" 重叠；activities 滚动-底部截图中「列表/日历」切换胶囊滚入状态栏与电量 \"100%\" 重叠；privacy/agreement 滚动态正文文字直接压在状态栏文字上。根因：AppShell 头部为普通 in-flow 元素（.shell__header 无 position:fixed/sticky），且组件的 fixed prop 是死 prop——shellClass 注入 'is-fixed' 类但样式表全文无 .is-fixed 规则，传了也不生效。AppShell 自身注释（headerStyle 处「否则自定义导航与状态栏叠印」）只解决了静止态偏移，滚动态未兜住。真机同样成立（系统状态栏绘制在页面视口之上）。",
+      "evidence": "截图：四页 7 张滚动态截图均可见内容与状态栏文字重叠（默认态均正常，头部在状态栏下方正确偏移）。代码：apps/client/src/components/layout/AppShell.vue:71（'is-fixed' 注入）与 :293-298（.shell__header 无任何 position 声明，grep is-fixed 全文件仅 :71 一处）；feedback/index.vue:420、activities/index.vue:336-341、LegalTextPage.vue:160（三处 AppShell 调用均未传 fixed，传了也无效）；ACT14-after.png 中列表/日历 toggle 已进入状态栏区。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "自定义导航页滚动时顶部应有固定/吸底头部承载返回与标题（背景延伸进状态栏区且不透明），或头部滚出后状态栏区有遮罩，正文文字不得与系统状态栏文字叠印。",
+      "fix": "① AppShell 补 .is-fixed 实现（.shell__header position:fixed + 状态栏高度 padding + 不透明背景 + body 对应 padding-top）；或 ② 四页头部改 sticky；同时给 fixed prop 落样式或删除该死 prop 防再误用。四页同根因，一处修复四处生效。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MARKET-101",
+      "round": "R1",
+      "page": "subpackages/market/detail/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-DETAIL-INDEX-MD04-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "商品「不存在/已下架」空态的副标题文案从未按设计渲染：页面传的是 :desc，而 EmptyState 组件声明的 prop 名是 description，desc 为无效透传被丢弃 → descriptionText 走预设兜底，恒显示通用文案「这里空空如也」。i18n 里专门写的引导文案「该商品可能已下架，去看看其他好物吧」（zh）/'This product may be gone. Explore other goodies instead.'（en）成死配置。MD04 交互截图实际渲染的正是兜底文案，证据闭合。",
+      "evidence": "apps/client/src/subpackages/market/detail/index.vue:345 <EmptyState :title=\"t('shop.detailNotFound')\" :desc=\"t('shop.detailNotFoundDesc')\" />；apps/client/src/components/common/EmptyState.vue:29（props 仅 description，无 desc）与 :79-82（descriptionText = props.description || presetSubMap...）；i18n zh-CN.ts:3315 detailNotFoundDesc。截图 MD04-after.png 副标题为「这里空空如也」而非 detailNotFoundDesc 文案。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "空态副标题显示 shop.detailNotFoundDesc 引导文案（告知已下架并引导去逛其他商品），而非与「商品不存在或已下架」语义重复的通用空文案。",
+      "fix": "market/detail/index.vue:345 将 :desc 改为 :description。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCUSSIONS-101",
+      "round": "R1",
+      "page": "subpackages/discover/discussions/index + subpackages/support/feedback/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_discover_discussions_index__默认.png、reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__滚动-底部.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "StatusState 组件 warning tone 的图标映射为 CLOSE（× 关闭图标），导致两页出现语义错位的标签：讨论圈话题热度标签渲染为「× 412 人收藏」「× 热度上升」（收藏数/热度上升与关闭叉语义相反，应为收藏/火焰/上升类图标）；反馈历史「处理中」渲染为「× 处理中」，且与「✓ 已查收」并排时 ×/✓ 被读成失败/成功对，而「处理中」实际是进行时态（应撞钟/时钟类图标）。用户对标签含义产生直接误读。",
+      "evidence": "apps/client/src/components/common/StatusState.vue:12-18（iconSrc 映射 warning: ICONS_COMMON.CLOSE）；discussions/index.vue:101 <StatusState tone=\"warning\" :label=\"item.heatLabel\" />；feedback/index.vue:574-577 状态标签经 toSubmissionStatusTone 输出 warning→「处理中」。截图 discussions 默认图两枚话题标签均带 × 前缀；feedback 滚动-底部图「× 处理中」与「✓ 已查收」同列。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "warning/进行中语义配中性或进行时图标（时钟、火焰、上升趋势），× 仅用于失败/关闭语义；至少「热度上升」「人收藏」不应出现关闭叉。",
+      "fix": "StatusState 增加 tone 图标细分（如 warning→时钟/火焰 SVG，或新增 'info'/'flame' tone），discussions 热度标签与 feedback 处理中改用对应 tone；config/images.ts 若无现成图标则补一枚 24px 线性图标对齐现有图标规格。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TOKEN-101",
+      "round": "R1",
+      "page": "全局 token（以本批 feedback/activities 按钮与选中 chip 为采样证据，影响全部页面）",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__默认.png、reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-SHOWCASE-INDEX-SC08-after.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "品牌主色实现值与冻结契约不一致：v3.1 契约（ask 指定裁决链，git show 29a2b1df:docs/design/v3.1-contract.md）冻结 Primary = #34C98A（:21，:42 TabBar 激活态同为 #34C98A），而实现为 #36C99A——theme/design-variables.scss:15 $brand-500、theme/tokens.ts:22 及 :96/:104/:107-108（success/action/nearbyExplore/verified 全部 #36C99A）、design-variables.scss:163 $gradient-brand 亦同。三处裁决链值互不一致（v2 #34C38F → v3.1 冻结 #34C98A → DESIGN_GUIDE.md:38 #34C38F），实现与三者均不同。像素采样与实现值吻合：feedback 提交按钮 #3BCB9D~#46CFA1、选中 chip #2CC695（含压缩/抗锯齿偏差，落在 #36C99A 邻域）。蓝通道 Δ16 属可感知级偏差，且契约明文「写入 tokens.ts 与 scss 双源」未兑现契约值。",
+      "evidence": "git show 29a2b1df:docs/design/v3.1-contract.md 第 21/42 行 vs apps/client/src/theme/design-variables.scss:15 与 apps/client/src/theme/tokens.ts:22；像素采样（PowerShell GetPixel）：提交按钮中段 #46CFA1、反馈 chip #2CC695、TabBar heart 图标区均值 RGB(74,208,163)。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "Primary 色值与 v3.1 冻结契约 #34C98A 一致（或由设计侧正式修订契约并留痕），tokens.ts 与 design-variables.scss 双源同步。",
+      "fix": "二选一：① design-variables.scss/tokens.ts 全局 #36C99A→#34C98A（16 处，含渐变端点核对）；② 若 #36C99A 为后定稿，修订 v3.1-contract.md 并在 token 注释留豁免依据。因影响全 App，建议单独立项统一处理。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-FEEDBACK-101",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__默认.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "反馈内容 textarea（必填主输入区，页面最大输入框）无 placeholder：同表单的标题 input 有「标题」、微信号 input 有「选填微信号」，唯独内容大空框无任何填写提示（i18n feedback 命名空间也无 placeholderContent key）。首屏用户面对约 300rpx 高的空白框不知道该填什么、是否必填。",
+      "evidence": "feedback/index.vue:449-459（textarea 仅 aria-label + sr-only label，无 :placeholder；对照 :441-447 标题 input :placeholder=\"t('feedback.placeholderTitle')\"）；zh-CN.ts:3282-3285（feedback 命名空间只有 placeholderTitle/placeholderContactWechat，无 placeholderContent）；截图默认态内容区完全空白无提示文字。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "内容 textarea 显示 placeholder（如「详细描述你的问题或建议…」），与标题/微信号输入框的提示规格一致。",
+      "fix": "新增 i18n key feedback.placeholderContent（zh/en），textarea 加 :placeholder=\"t('feedback.placeholderContent')\"。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MARKET-102",
+      "round": "R1",
+      "page": "subpackages/market/detail/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_detail_index__默认.png、reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-DETAIL-INDEX-MD04-after.png",
+      "category": "UX",
+      "severity": "P4",
+      "description": "本页核心热区低于全仓已确立的 88rpx 标准：空态/封存态主按钮（返回、返回逛逛、重试共用 .product-state__btn）min-height:80rpx；左上导航返回钮 .nav-bar__back 仅 64×64rpx（32px）。对照 AppShell 返回钮已按「修复 P2（触摸目标过小）」标准修到 ≥88rpx 并留注释，本页同场景控件掉标；64rpx 返回钮在封存态/空态是页面唯一返回手段，误触率升高。两态截图中按钮视觉尺寸亦印证偏小。",
+      "evidence": "market/detail/index.vue:498-500（.product-state__btn min-height:80rpx）、:430-437（.nav-bar__back width/height 64rpx）；对照 AppShell.vue:315-316（88rpx 标准注释与实现）；截图封存态「返回」与 notFound 态「返回逛逛」按钮实测高度约 40px/2x 图。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "可点击主操作热区 ≥88×88rpx（44px），与 AppShell 已修复的返回钮标准一致。",
+      "fix": ".product-state__btn min-height 提至 88rpx；.nav-bar__back 放大到 88×88rpx（图标 40rpx 不变，nav-bar 高度可同步 +8rpx）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/setup/dev/index",
+      "observation": "本页在本轮全部证据中从未渲染：静态巡检 manifest（305 张，gitSha=aefd8a72）0 条目；交互 10 用例（DEV01-10）观测点全部停在 subpackages/setup/interest/index（DEV01 observed：top=interest | navError=Uncaught [object Object]，DEV02-06 均 action-not-performed）；SETUPDEV-01-after.png 与 SUBPACKAGES-SETUP-DEV-INDEX-DEV04-after.png 实际内容为「我的」页/资料页。原因判定为构建设计行为而非缺陷：pages.json 经 #ifdef DEV 注册本页，tour/interact 构建为 build:mp-weixin:mock（非 dev-debug 平台），页面未注册 → reLaunch 失败。视觉五维（UI/UX/小程序/数据/一致性）本页完全无证据可审，不判「无问题」也不编造缺陷；源码维已由代码审查员覆盖（MP-R1-DEV-001/002/003）。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json（setup/dev 0 hits）；reports/audit/round-1/interact/exec-results.json DEV01-10；reports/screenshots/round-1-interact/SETUPDEV-01-after.png（内容为「我的」页）；pages.json:272-277（#ifdef DEV 注册）"
+    },
+    {
+      "page": "subpackages/setup/showcase/index",
+      "observation": "ask 指定的静态截图 subpackages_setup_showcase_index__默认.png 在磁盘与 manifest 中均不存在（find 全树无 showcase/setup_dev 命中）；全部 round-1 交互证据中该页从未渲染——SC01/SC02 observed top=pages/discover/index（reLaunch 后被 onShow 回落），SHOWCASE-01-before/after、SHOWCASE-02-after、SUBPACKAGES-SETUP-SHOWCASE-INDEX-SC08-after.png 四张截图内容均为回落后的「寻觅·匹配」发现页；SC03/SC08 因元素不存在失败、SC07 截图 capture timeout。回落本身是展示构建守卫的预期设计（SC02「正式构建访问回落发现页」EXECUTED 判定通过）。页面本体视觉（6 分组 44 项、accent 渐变、chipBg）无本轮截图可审，不据旧轮截图（r10/r11 目录）下结论；源码维结论以代码审查员 SHOWCASE-001/002 为准。",
+      "evidence": "reports/screenshots/round-1-interact/SHOWCASE-01-after.png 与 SC08-after.png（均为发现页内容）；exec-results.json SC01-SC08；screenshot-manifest.json setup/showcase 0 hits；find reports/screenshots -iname \"*showcase*\"（仅 r10/r11 旧轮与本轮 interact 命中）"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "observation": "4 张 tour A 截图逐张核对：首屏表单完整（类型 chip 三枚、选中态实底绿/未选中浅绿底对比清晰、标题/微信号 placeholder 正常、上传格+提交按钮齐全），历史区空态占位「提交反馈后將在此处显示」+「历史记录」入口可见，列表项标题/摘要/时间戳/状态标签排版整齐无截断；键盘弹起-输入后截图标题回显「巡检输入test123」正常（devtools 不渲染软键盘属模拟器行为，cursor-spacing=20 已配置）；两条滚动态截图暴露状态栏叠印（→MP-R1-APPSHELL-101）与「× 处理中」标签（→MP-R1-DISCUSSIONS-101）；输入区无 placeholder（→MP-R1-FEEDBACK-101）。其余维度未见新缺陷。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__默认.png、__滚动-中部.png、__滚动-底部.png、__键盘弹起-输入后.png；reports/screenshots/round-1-interact/SUBPACKAGES-SUPPORT-FEEDBACK-INDEX-FB02-after.png（chip 态）、FB11-after.png（输入回显）"
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "observation": "默认态截图核对：页面头部（返回/标语/标题）正确偏移状态栏下方；「正在讨论」卡两条话题（标题+摘要+热度标签）与「下一步」卡（反馈讨论建议/去寻觅双按钮）渲染完整，内容一屏内无滚动，故无滚动态截图可查叠印（该页 AppShell 未传 show-tab-bar=false 的底部留白已由代码审查员 DISCUSSIONS-001 覆盖）；热度标签 × 前缀语义错位记为 MP-R1-DISCUSSIONS-101。加载骨架（SkeletonBlock）/错误重试/空态三态代码在位但本轮无有效视觉证据（DISCUSSIONS-01-before.png 内容实为 feedback 页，harness 证据命名与页面错位，不作依据）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_discover_discussions_index__默认.png；discussions/index.vue:76-101（三态与标签绑定）；exec-results.json DC01（EXECUTED，top=discussions）"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "observation": "默认+滚动-中部+滚动-底部 3 张 tour 截图与 ACT03/05/06/07/09/10/14 交互截图核对：列表 4 张活动卡信息层级一致（标题/已报名计数/简介/地点行/时间行/报名按钮），「感兴趣」（描边）与「已感兴趣」（浅绿实底）双态对比清晰，「没有更多活动了」收尾提示正常，「下一步」卡双按钮齐全；滚动态列表/日历切换胶囊滚入状态栏区（→MP-R1-APPSHELL-101）。日历视图、今天筛选空态、首拉错误态三态均无有效视觉证据（ACT02/ACT15/ACT16 截图 capture timeout，ACT03-after 为切回「全部」后的列表），不据其下结论。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_discover_activities_index__默认.png、__滚动-中部.png、__滚动-底部.png；round-1-interact/SUBPACKAGES-DISCOVER-ACTIVITIES-INDEX-ACT03-after.png、ACT10-after.png、ACT14-after.png；exec-results.json ACT01-16（含 capture ERROR 标注）"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "observation": "3 张截图逐张核对：fallback 正文完整渲染 10 节（信息收集/使用/共享/存储/用户权利/Cookie/第三方 SDK/未成年人/更新/联系），长文排版行高正常无截断（PRI02 滚动到底/顶 EXECUTED 佐证滚动可达）；卡片头含版本 pill 与「最后更新」双日期；底部「我已阅读并同意」按钮在滚动态常驻可见。观察项（不计缺陷）：① fallback 文案含占位客服热线「400-xxx-xxxx」与示例邮箱 campuslovex.example.com——mock/fallback 构建的设计内容，CMS 失败兜底场景会露出，建议产品确认；② AppShell 大标题「隐私政策」与卡片标题「隐私政策」百像素内重复出现（页面级双标题）。滚动态正文与状态栏文字叠印（→MP-R1-APPSHELL-101）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_legal_privacy_index__默认.png、__滚动-中部.png、__滚动-底部.png；LegalTextPage.vue:160-231（结构）；exec-results.json PRI01/PRI02"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "observation": "默认+滚动-底部 2 张截图核对：与 privacy 同构（LegalTextPage 复用），正文 11 节完整、版本/更新日期、底部接受按钮常驻、滚动态同样存在状态栏叠印（并入 MP-R1-APPSHELL-101）。tour A 目录缺「滚动-中部」状态（manifest 中 B 身份有 3 态、A 仅 2 态），A 证据覆盖不全如实记录；同属 fallback 文案的占位热线观察项与 privacy 相同。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_legal_agreement_index__默认.png、__滚动-底部.png；screenshot-manifest.json（A 侧 agreement 仅 默认/滚动-底部 两态，B 侧三态）；exec-results.json AGR01/AGR02"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "observation": "封存态默认图（MD01 EXECUTED 佐证 .sealed:present）与 MD04 交互截图（notFound 态）逐项核对：两态均为居中图标+主标题+副标题+主按钮的干净布局，页面无内容滚动故无叠印问题；导航栏（白底、居中标题「商品详情」、左圆 chevron）与本组 AppShell 页的「←返回」pill 是两种导航样式——属不同页面语境的形态差异，记录为观察不计缺陷。发现的缺陷：notFound 副标题恒为兜底文案（:desc 死 prop → MP-R1-MARKET-101）与热区掉标（→MP-R1-MARKET-102）。未封存完整详情态（图片/价格/购买栏）本轮无任何有效视觉证据（MD04 条件未达成、MD05-07 失败、MD09 SKIPPED），该态的图片 fallback 链与购买栏遮挡留白未获视觉验证，如实标注。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_market_detail_index__默认.png（封存态）；reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-DETAIL-INDEX-MD01-after.png、MD04-after.png；exec-results.json MD01/MD04/MD05-09"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/setup/dev/index",
+      "checks": "13 项举证不适用：本页无任何本轮有效视觉证据（截图已看=无、理想图已对照=无本页理想稿、滚动/点击/返回/空态/长文/加载/错误态均因页面未注册不可达）。按「观察证据制」如实产出不可达观察，不判无问题、不编造缺陷；13 项中仅「历史 Bug 回归」可间接确认（DEV 页相关缺陷已由代码审查员 DEV-001/002/003 记录）。证据缺口已上报（showcase/dev 双页静态+交互证据缺失）。",
+      "verdict": "无视觉证据，不判定"
+    },
+    {
+      "page": "subpackages/setup/showcase/index",
+      "checks": "同 dev：13 项举证不适用（页面本体未渲染过任何一张本轮截图；四张交互截图内容均为回落后的发现页）。回落守卫行为本身已验证通过（SC02）。页面本体视觉维度零证据，不判定；不使用 r10/r11 旧轮截图（过期证据）。",
+      "verdict": "无视觉证据，不判定"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "checks": "截图已看（tour A×4+interact×3）✓；理想图已对照=无本页理想稿（19 张无对应）如实记录 ✓；滚动已测（中部/底部两态截图）✓；键盘=devtools 不渲染软键盘，输入回显已核 ✓；空态已查（历史区占位文案）✓；长文已查（maxlength=5000 代码层+FB05 条目）✓；加载态=store onMounted 加载无独立骨架（轻页可接受，记录）；错误态=上传失败 toast 代码在位、无视觉证据如实标注；safe-area=滚动态叠印已报 P2；TabBar=show-tab-bar=false 正确无预留遮挡 ✓；组件一致性已查（SectionCard/chip/StatusState 与 discussions 同源）✓；历史 Bug 回归归历史回归员。发现缺陷 3 条（1 共享叠印+1 本页 placeholder+1 共享图标）。",
+      "verdict": "有缺陷，已报"
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "checks": "截图已看（默认态；无滚动态——内容一屏内）✓；理想图=无本页理想稿 ✓；点击/返回归交互判定员；空态/加载/错误三态代码在位但无有效视觉证据（DISCUSSIONS-01-before 实为 feedback 页，如实标注）⚠；safe-area/TabBar=代码层已由 DISCUSSIONS-001 覆盖；组件一致性已查（SectionCard/BottomActionBar/StatusState）✓。发现缺陷 1 条（共享图标语义）。",
+      "verdict": "有缺陷，已报"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "checks": "截图已看（tour×3+interact×7）✓；滚动已测（默认/中部/底部）✓；空态/日历/错误态三态截图 capture timeout 无有效视觉证据，不据其下结论 ⚠；长文=卡片文案均短、无截断 ✓；加载态=下拉刷新 TTL 行为 ACT09 EXECUTED（视觉无独立 loading 截图）⚠；safe-area=滚动态叠印已并入 P2；TabBar=show-tab-bar=false ✓；一致性=卡片结构 4 张逐一对齐、按钮双态对比清晰 ✓。发现缺陷 1 条（共享叠印）。",
+      "verdict": "有缺陷，已报"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "checks": "截图已看×3 ✓；滚动已测（PRI02 EXECUTED+两态截图）✓；长文已查（10 节完整渲染）✓；空态=不适用（长文页）；加载/错误态=LegalTextPage 内置 spinner/重试代码在位、无视觉证据如实标注 ⚠；safe-area=滚动态叠印已报；点击/返回=「我已阅读」落点归交互判定员（PRI03 FAILED 在案）；一致性=与 agreement 同构 ✓。观察项 2 条（占位热线、双标题）不计缺陷。",
+      "verdict": "共享缺陷已报（叠印）"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "checks": "截图已看×2（A 侧缺滚动-中部态，B 侧三态——A 证据覆盖不全如实记录）⚠；滚动已测（底部态+AGR02）✓；长文已查（11 节完整）✓；safe-area=滚动态叠印并入 P2；一致性=与 privacy 完全同构 ✓；其余同 privacy。",
+      "verdict": "共享缺陷已报（叠印）"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "checks": "截图已看（封存态默认图+MD01/MD04 交互图）✓；空态已查（notFound 态视觉+文案缺陷已报）✓；错误态=notFound/sealed 两态有视觉证据、loading/error 态无截图（如实标注）⚠；滚动=封存态无内容滚动、未封存态 scroll-view 无视觉证据 ⚠；safe-area=封存/空态居中布局无遮挡；未封存态购买栏 fixed+160rpx 留白仅代码层确认（代码审查员已核）；一致性=导航样式与 AppShell 页差异记为观察；图片 fallback 链（halfBodyPhotoUrl→photoGallery→avatarUrl→默认）不适用本页（商品图走 SafeImage，未封存态无视觉证据）⚠。发现缺陷 2 条。",
+      "verdict": "有缺陷，已报"
+    }
+  ]
+}

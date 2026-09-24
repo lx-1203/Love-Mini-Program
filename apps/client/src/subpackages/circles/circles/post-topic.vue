@@ -315,6 +315,8 @@ async function submitTopic() {
   // 且 circleStore 残留错误会张冠李戴地展示给用户
   villageStore.errorMessage = null;
   circleStore.errorMessage = null;
+  // catch 分支需按失败来源取 store 文案，故声明在 try 之外
+  let campusPostFallback = false;
   isSubmitting.value = true;
   try {
     // MP-R2-POSTTOPIC-001：上传转换上移到分支判断之前（与 campus/post-topic.vue 同构）——
@@ -341,7 +343,7 @@ async function submitTopic() {
     // 校园圈无显式 circleId 时走 posts 流（与学校圈频道一致）：
     // 圈子话题后端仅支持数字兴趣圈 ID（@PathVariable Long），
     // slug "campus-circle" 会触发 MissingPathVariableException → 500
-    const campusPostFallback =
+    campusPostFallback =
       !isPostMode.value && publishTarget.value === "campus" && !circleId.value.trim();
     // 2026-08-08 频道化重构：帖子模式（今日广场/学校圈/活动）→ 走 posts 流，发布后圈子页可见
     if (isPostMode.value || campusPostFallback) {
@@ -366,7 +368,15 @@ async function submitTopic() {
       if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
       postSuccessNavTimer = setTimeout(() => {
         postSuccessNavTimer = null;
-        uni.navigateBack();
+        // MP-R1-POSTTOPIC-102：navigateBack 失败（栈底：冷启动深链/reLaunch 直达发布）
+        // 时复位 isSubmitting 并提示——否则发布钮永久吞点击，核心发布功能对该页面
+        // 实例永久失效且无任何反馈
+        uni.navigateBack({
+          fail: () => {
+            isSubmitting.value = false;
+            uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "none" });
+          },
+        });
       }, POST_TOPIC_NAV_DELAY_MS);
       return;
     }
@@ -406,7 +416,13 @@ async function submitTopic() {
     if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = setTimeout(() => {
       postSuccessNavTimer = null;
-      uni.navigateBack();
+      // MP-R1-POSTTOPIC-102：同上——栈底 navigateBack fail 时复位提交态并提示
+      uni.navigateBack({
+        fail: () => {
+          isSubmitting.value = false;
+          uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "none" });
+        },
+      });
     }, POST_TOPIC_NAV_DELAY_MS);
   } catch (_e) {
     // MP-R2-POSTTOPIC-006：按提交分支取对应 store 的 errorMessage
@@ -744,8 +760,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-POSTTOPIC-201/002：必须定高（height:100% 而非 min-height:100%）——
+     原容器随内容增长，flex:1 的 .post-body scroll-view 失去高度约束 → 整页滚动：
+     自定义导航头（返回/发布）滚出视口、表单内容顶入状态栏与系统文字叠印
+     （双身份滚动截图实证）。定高后恢复内滚、头部常驻。 */
+  height: 100%;
+  overflow: hidden;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 
@@ -755,8 +776,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   justify-content: space-between;
   /* MP-R1-POSTTOPIC-007：padding-top 走 --statusbar CSS var 链（与 campus/post-topic 同构，
-     替代原模板内联 statusBarHeightPx + 10px 与 App.vue page 级 env padding 的双重叠加） */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 24rpx;
+     替代原模板内联 statusBarHeightPx + 10px 与 App.vue page 级 env padding 的双重叠加）
+     MP-R1-POSTTOPIC-001：右侧预留胶囊安全区——全局 navigationStyle:custom 下「发布」
+     主 CTA 横向完全落在胶囊 x 带（右缘 7~94px）内、纵向被覆盖约 23~26px，Android
+     真机上按钮 2/3 被胶囊遮住不可点（与 campus/post-topic.vue:446 同口径） */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) calc(var(--capsule-right, 7px) + 104px) 24rpx 32rpx;
   background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%);
 }
 

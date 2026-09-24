@@ -1,0 +1,1227 @@
+{
+ "round": "R1",
+ "manifest": "reports/audit/round-1/ops/次要23.json",
+ "generatedAt": "2026-09-23",
+ "role": "A6 交互判定员（证据仲裁）· 次要23",
+ "sources": [
+  "reports/audit/round-1/ops/次要23.json（expected 权威）",
+  "reports/audit/round-1/interact/exec-results.json（observed 权威，gitSha aefd8a72，round R1）",
+  "reports/screenshots/round-1-interact/（操作截图与 wxml 快照）",
+  "reports/audit/round-1/screenshot-manifest.json + reports/screenshots/round-1-tour/A|B（巡检交叉参照）"
+ ],
+ "summary": {
+  "total": 88,
+  "VERIFIED": 13,
+  "FAILED": 0,
+  "UNVERIFIED": 75
+ },
+ "checks": [
+  {
+   "caseId": "VI01",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "登录态首拉渲染（observe-only）",
+   "expected": "标题「恋爱认证」+左返回；未认证状态卡(icon+desc)；门控横幅「未认证用户仅可浏览…」；无状态跳变；console 无 TypeError",
+   "actual": "top=verification/index，observe-only；VI01-after.png 实拍：导航「恋爱认证」+返回键、未认证状态卡(毕业帽icon+「完成校园身份认证 解锁专属权益与信任标识」)、黄色门控横幅文案逐字一致、认证权益网格(专属标识/信任优先/匹配加权/专属权益)全部渲染；console 数组为空（无 TypeError 记录）；骨架防跳变为过程量，单帧截图不可证（记入缺口）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI01-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__默认.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "VI02",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "tap .nav-bar__back 栈内返回",
+   "expected": "getCurrentPages>1 → uni.navigateBack(delta:1)，500ms 内落回设置页、栈减 1",
+   "actual": "observed：pre:navigateTo 后 act:navigateBack delta1 + act:tap .nav-bar__back，但终态 route=[verification/index]，无任何「落点=设置页」的路由快照；开局 dom 探针报 .nav-bar__back:absent 与 wxml 实渲染（nav-bar__back 存在）矛盾；无截图。落点未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI02",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "VI03",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "深链栈=1 tap 返回键兜底",
+   "expected": "栈=1 → uni.switchTab(/pages/profile/index) 落「我的」Tab，非死点",
+   "actual": "observed：pre:reLaunch 后 harness navigateBack 报 NAV_ERROR: Uncaught [object Object]（栈=1 预期现象），随后 act:tap .nav-bar__back；终态 route=[verification/index]，无 switchTab 落 profile Tab 的路由证据；dom 探针 .nav-bar__back:absent 与 wxml 矛盾。兜底是否触发未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI03",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.wxml"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "VI04",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "tap .action-btn 空表单提交",
+   "expected": "toast「请输入学生姓名」，500ms 内反馈；不发上传与 POST；状态仍 unverified",
+   "actual": "observed：act:tap .action-btn → showToast title=「请输入学生姓名」，与 expected 文案逐字一致；route 不变（停留在认证页）；console 无请求记录；after 截图采集超时（ERROR:timeout waiting for automator response，文件未落盘）为唯一缺口",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI04"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "VI05",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "渐进填写：填姓名/学号/学校后逐次提交",
+   "expected": "依次 toast「请输入学号」→「请输入学校名称」→「请上传学生证照片」；均无提交请求",
+   "actual": "observed：仅执行 act:input #verification-student-name=\"自动化输入-VI05\" 一步，三次提交 tap 未执行，toast=[]（三条预期 Toast 均未采集）；动作链不完整，expected 无法对照",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI05-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI06",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "选图+三项合法完整提交",
+   "expected": "选图 toast「学生证已上传」+预览卡；提交 Loading→状态卡「审核中」+toast「提交成功，等待审核」",
+   "actual": "observed：act-FAIL:input el.input is not a function（执行器 input API 故障）→ act:tap .upload-card → act-FAIL:tap 候选「提交」element not found；但 VI06-after.wxml 实证页面处于未认证表单态且「提交认证申请」按钮（action-btn）在渲染——查询失败属执行器缺陷；提交流程未执行，状态未变化",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI07",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "500ms 内快击提交 ×5",
+   "expected": "submitting 守卫+mask 双保险，仅 1 次提交流程；按钮置灰「提交中...」",
+   "actual": "observed：act-FAIL:rapidTap 候选「提交按钮」element not found；wxml 证明按钮在渲染（同 VI06）；快击未执行，POST 计数无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI07",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI08",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "real 会话重复提交 409",
+   "expected": "后端 409 → toast「已有申请审核中，请耐心等待」；无 Loading 永驻",
+   "actual": "observed：act-FAIL:input 候选 element not found + tap 候选「提交」未命中；pre「real 会话且已有 pending/approved 申请」未建立（manifest 明示无此账号则如实标 UNVERIFIED）；409 场景未触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI08",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI09",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "选图取消/隐私拒绝",
+   "expected": "取消 → toast「已取消选择」；隐私拒绝 → toast「需同意隐私协议后才能选择图片」；状态不变",
+   "actual": "observed：act-FAIL:tap 候选「图」「传」element not found；.upload-card 在 wxml 渲染（查询缺陷）；原生选图取消与隐私拒绝分支均未触发，两条 Toast 未采集",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI09"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI10",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "输入边界：超长截断+特殊字符",
+   "expected": "maxlength 截断 20/20/30；emoji/<script> 原样保留不崩；提交被图片校验拦截",
+   "actual": "observed：act-FAIL:input 候选 element not found；三个输入框（placeholder 请输入真实姓名/学号/学校全称）在 wxml 渲染；边界输入未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI10"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI11",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "verified 态权益网格与 mock 专属按钮可见性",
+   "expected": "权益 5 项网格；「重新认证」「删除认证」仅 mock 渲染；real approved 无两按钮",
+   "actual": "observed：observe-only，无任何 dom 存在性断言采集；pre verified 态未达成（VI06 断链，页面实际为未认证态）；证据截图采集超时（文件未落盘）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI11"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "VI12",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "重新认证/删除认证确认弹窗",
+   "expected": "modal「确定要重新提交认证申请吗？」确认→回 unverified+表单清空；删除 confirmColor #E5454D 取消/确认分支",
+   "actual": "observed：act-FAIL:tap(#E5454D)（色值被用作选择器，非法）×3 element not found「重新认证」；pre mock verified 态未达成，页面为未认证态、按钮确不存在；弹窗流程未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI12",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI13",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "pending 态展示与 onShow 重拉/定时器清理",
+   "expected": "pending-card「审核中」；onShow 重拉；mock 模拟按钮→「认证已通过」；onUnmounted 清定时器",
+   "actual": "observed：act-FAIL:tap 候选「模拟审核通过」element not found；VI13-after.png 实拍页面仍为「未认证」态——pre pending（VI06 达成）断链；pending UI/轮询/清理全部未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI13",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI13-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VI14",
+   "page": "subpackages/profile-extra/verification/index",
+   "operation": "页面滚动到底再回顶",
+   "expected": "五个分区全部可达无遮挡；回顶后输入与状态保持",
+   "actual": "observed：act:pageScrollTo bottom → act:pageScrollTo top，evidence scrollPos=top；noop 层级证据（执行日志）满足 manifest 采集要求",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VI14"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN01",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "登录态首拉+成年门禁预检（observe-only）",
+   "expected": "标题「实名认证」+返回；未实名状态卡；骨架防跳变；成年人表单态（姓名/身份证输入+正反面上传卡+隐私说明+提交）",
+   "actual": "observed：top=real-name observe-only；RN01-after.png 实拍：标题+返回键、状态卡「未实名认证」(icon+desc)、填写实名信息表单（真实姓名/身份证号输入）、身份证正面/背面点击上传卡、隐私说明行、绿色「提交认证申请」按钮——成年人表单态全要素渲染；无 minor-banner（门禁判为成年，符合）；console 空",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN01-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_real-name__默认.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "RN02",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "深链栈=1 返回兜底 navigateTo 认证页",
+   "expected": "栈=1 → uni.navigateTo(verification/index) 落恋爱认证页",
+   "actual": "observed：pre:reLaunch 后 harness navigateBack NAV_ERROR（栈=1），act:tap .nav-bar__back（dom present）执行；但本例终态 route=[real-name]，兜底落点（verification/index）未出现在本例路由证据；navError=Uncaught [object Object] 归因不明。备注：RN03→RN04 的跨例 route 链 [real-name, index] 间接显示该兜底会触发，但本例自身无终态证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN02"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "RN03",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "栈内返回 navigateBack 落回来源页",
+   "expected": "栈≥2 → uni.navigateBack(delta:1) 落回来源页",
+   "actual": "observed：pre:navigateTo 后又 pre:auto-reLaunch（把栈重置为 1），pre「栈≥2」未真实建立；act:tap .nav-bar__back 实际触发的是栈=1 兜底分支（RN04 route 链出现 [real-name, index] 佐证）；「落回来源页」未按声明分支取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN03"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "RN04",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "空提交 toast「请输入真实姓名」",
+   "expected": "tap .action-btn → toast「请输入真实姓名」；不发请求；状态不变",
+   "actual": "observed：执行串页——栈残留 [real-name, verification/index]（RN03 兜底 navigateTo 所致），本例无 pre 重置，tap .action-btn 落在认证页，采集到的 toast=「请输入学生姓名」（VI04 行为，非本页文案）；route 链 [real-name, index] 证实页面错位；expected 的实名页空提交未被执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN04",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN04-after.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "RN05",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "身份证短号拒绝/合法号放行",
+   "expected": "①「12345」提交 → toast「请输入正确的身份证号」；②18 位合法号提交 → toast「请上传身份证正面照片」",
+   "actual": "observed：仅执行 act:input #real-name-id-card-no=\"12345\"（RN05-after.png 实拍输入已落地），两次提交 tap 未执行，toast=[]；校验链未触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN05-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN06",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "正反面缺失链",
+   "expected": "①直接提交拦正面 toast；②传正面后提交拦背面 toast；正面卡选中变预览+「图片已上传」",
+   "actual": "observed：act-FAIL:tap 候选「面」element not found；RN06-after.png 与 RN01 截图证实正/背面上传卡在渲染（查询缺陷）；选图与两次提交均未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN06-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN07",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "完整提交实名认证成功",
+   "expected": "Loading「提交中...」→ 状态卡「审核中」+ toast「提交成功，等待审核」；表单区换 pending-card",
+   "actual": "observed：act-FAIL:tap 候选「按」element not found；pre（姓名+合法号+正反双图）未达成——仅 RN05 残留身份证号 12345，无姓名无图；RN07-after.wxml 为未实名表单态；提交流程未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN07-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN07-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN08",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "提交防连点快击 ×5",
+   "expected": "submitting 守卫+mask，仅 1 次提交流程；按钮置灰「提交中...」",
+   "actual": "observed：act-FAIL:rapidTap 候选「提交按钮」element not found；pre 表单齐备未达成；快击未执行，请求计数无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN08",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN08-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN09",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "real 重复提交 409",
+   "expected": "409 → toast「已有申请审核中，请耐心等待」；无 Loading 永驻",
+   "actual": "observed：act-FAIL:input 候选 element not found；pre「real 会话+已有申请」未建立（manifest 明示无此账号则如实标 UNVERIFIED）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN09",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN09-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN10",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "身份证输入边界",
+   "expected": "19 位截断为 18；17 位+X 过格式校验；姓名 maxlength=20、特殊字符不崩",
+   "actual": "observed：act-FAIL:input 候选 element not found；边界输入未执行（RN10-after 为表单静态截图）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN10",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN10-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN11",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "未成年人门禁（real 条件）",
+   "expected": "minor-banner + 输入 disabled + 表单 opacity 0.6 + 提交 toast「未满 18 周岁暂不支持实名认证」",
+   "actual": "observed：act-FAIL:tap 候选「提交」element not found；pre「real 会话且 birthDate 缺失或<18」未建立（manifest 明示无此类账号则如实标 UNVERIFIED）；RN11-after 为成年表单态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN11",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN11-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "RN12",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "operation": "verified 态脱敏回显",
+   "expected": "状态卡「已实名认证」+ verified-card 真实姓名+掩码身份证号（前6后4）；无表单区",
+   "actual": "observed：RN12-after.png 实拍为「未实名认证」状态卡+完整表单态（身份证号输入框残留 RN05 的 12345）——expected 的 verified 回显未渲染；pre「real approved 账号」不存在（manifest 明示无则如实标 UNVERIFIED）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#RN12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-REAL-NAME-RN12-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "VS01",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "进入访客页首屏（observe-only）",
+   "expected": "骨架 4 行→今日/昨日/更早分组；「谁看过我」+「访客 · N」计数；无头像首字占位；时间文案三态；console 无 TypeError",
+   "actual": "observed：top=visitors observe-only；VS01-after.png 实拍：标题「谁看过我」+「访客记录·22」计数、更早分组头、访客卡（头像/姓名/学校·年级·社团/时间 05-21 21:45 等 MM-DD HH:mm 格式）列表渲染（本批 mock 数据均为更早时段，故仅更早组）；console 数组空",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS01-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_visitors__默认.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "VS02",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "返回键两分支",
+   "expected": "①栈内 navigateBack 落来源页；②栈=1 兜底 switchTab 落首页",
+   "actual": "observed：两 pre 均记录、act:navigateBack 报 NAV_ERROR: Uncaught [object Object]；终态 route=[visitors]，两分支落点均无路由证据；无截图",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS02"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "VS03",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "点击访客卡跳他人主页",
+   "expected": "500ms 内 openAppPath → profile/other?userId=<访客id>；非数字 id 兜底拼参；卡片点击不再无反应",
+   "actual": "observed：act-FAIL:tap 候选「客」element not found（VS01 截图证实访客卡在渲染——执行器查询缺陷）；VS03-after 截图采集超时（未落盘）；跳转未执行、query 无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS03"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VS04",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "下拉刷新真实重拉",
+   "expected": "loading 置位重拉 fetchVisitors；finally stopPullDownRefresh 收起；console 有 /matches/visitors 记录",
+   "actual": "observed：act:refresherPull「no scroll-view」→ callMethod onPullDownRefresh ok（直调 handler 绕过原生下拉）；console 数组空（无请求记录）、dom 探针 .stopPullDownRefresh:absent 无意义；「真实重拉+收起」未取证；VS04-after 为列表静态截图",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS04",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS04-after.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "VS05",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "错误态与重试恢复",
+   "expected": "错误卡展示→tap 重试重新 loadVisitors→恢复后列表渲染",
+   "actual": "observed：act-FAIL:tap 候选「重试」element not found；pre「断网/后端不可达」未注入——VS05-after.png 实拍为正常列表态（与 VS01 同态），错误卡与重试按钮确不存在属前置缺失，非应用缺陷证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS05-after.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "VS06",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "空态卡与计数隐藏",
+   "expected": "空态卡「暂无访客记录」+副文案+图标；头部计数不渲染；无骨架残留",
+   "actual": "observed：observe-only 且无清空 store 前置动作记录；VS06-after.png 实拍仍为 22 条列表态+计数——pre「清空 likes store visitors」未执行，空态断言无效",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-VISITORS-VS06-after.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "VS07",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "滚动到底再回顶",
+   "expected": "三组卡片完整可达无白屏；回顶状态保持",
+   "actual": "observed：act:pageScrollTo bottom → top，evidence scrollPos=top；noop 层级日志证据满足采集要求（实际数据仅更早一组，跨三组前置未严格成立）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS07"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "VS08",
+   "page": "subpackages/profile-extra/profile/visitors",
+   "operation": "打开即返回+重复进出 ×2",
+   "expected": "每次进入重新 fetchVisitors；无崩溃无骨架永驻；返回落点=来源页",
+   "actual": "observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重复进出未成功完成）；证据截图采集超时（未落盘）；「无崩溃」无反证但重入链路未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VS08"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "PO01",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "固化参数深链进入+访客上报（observe-only）",
+   "expected": "ProfileShell public 模式渲染 Hero/Identity/Bio/兴趣/瞬间/动态；real 触发 POST /matches/visit；console 无 401/TypeError",
+   "actual": "observed：observe-only，pre:auto-reLaunch 后 pre-FAIL:input element not found: .other；证据截图采集超时（未落盘）；执行器带参失败：PO01 pre-FAIL（input element not found: .other）+ 同套件 PO05/06/07/10/11 wxml 及 PO02/06/07/09/10/12/13/20 截图均为「链接缺少用户参数，请从列表页重新进入」错误态，资料态从未建立；巡检 tour B other__默认 证实带参时页面完整渲染（Hero/头像/昵称/标签/共同点/瞬间/CTA/FAB），佐证为执行器参数注入缺陷而非页面缺陷",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO01",
+    "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__默认.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PO02",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "深链缺 userId 错误态",
+   "expected": "errorMessage「链接缺少用户参数，请从列表页重新进入」；无重试按钮；无 ··· 菜单；不发请求",
+   "actual": "observed：PO02-after.png 实拍页面居中渲染「链接缺少用户参数，请从列表页重新进入」逐字一致；无重试按钮、无页面级 ···（右上 ··· 为系统胶囊）；dom 探针 .missingUserParam:absent 系选择器误用（i18n 键名当类名），与截图不矛盾；route=other",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO02",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO02-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PO03",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "返回键两分支",
+   "expected": "①navigateBack 落来源；②栈=1 兜底 switchTab 落首页",
+   "actual": "observed：act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[other]，两分支落点均无路由证据；无截图",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO03"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "PO04",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "头部 ··· ActionSheet 三项与取消",
+   "expected": "showActionSheet 举报/拉黑/关注（已关注变取消关注）；取消无副作用",
+   "actual": "observed：status=SKIPPED，observed=action-not-automatable（原生 ActionSheet 不可自动化），未做任何尝试",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO04"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PO05",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "喜欢单点+快击 ×5",
+   "expected": "POST /matches/like 单次；toast「已喜欢，等待回应」；relation.liked 翻转 CTA 变「已喜欢」；liking 防重入",
+   "actual": "observed：act-FAIL:rapidTap 候选「提交」+ tap 候选「喜欢」element not found；PO05-after.wxml 实证页面为缺参错误态、CTA 未渲染（执行器带参失败：PO01 pre-FAIL（input element not found: .other）+ 同套件 PO05/06/07/10/11 wxml 及 PO02/06/07/09/10/12/13/20 截图均为「链接缺少用户参数，请从列表页重新进入」错误态，资料态从未建立）；like 请求与状态翻转未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO05",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO05-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO06",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "重复点喜欢去重",
+   "expected": "已喜欢未匹配静默去重无请求；matched 不再弹匹配框",
+   "actual": "observed：act-FAIL:rapidTap 候选「喜欢」element not found；PO06-after.wxml 为缺参错误态；去重链路未执行；pre（PO05 已喜欢态）亦未达成",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO06",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO06-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO06-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO07",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "匹配成功弹窗两分支",
+   "expected": "modal「匹配成功/你们互相喜欢了…」；确认→chat-session?userId=；取消留本页",
+   "actual": "observed：act-FAIL:tap 候选「去聊天」「再看看」element not found；pre「互为喜欢」未建立且页面为缺参错误态（PO07-after.png/wxml 证实）；modal 未触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO07-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO07-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO08",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "打招呼实名门控两分支",
+   "expected": "已实名→chat-session?userId=100152；未实名→showModal 引导跳实名页",
+   "actual": "observed：act-FAIL:tap 候选「打招呼」element not found（缺参错误态无 CTA）；两分支均未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO08"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO09",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "心动卡弹层四路",
+   "expected": "弹层开（悄悄话/写给{昵称}/textarea/200 交友币/余额行）；空提交拦截 toast；遮罩关；×关；未登录 toast 拦截",
+   "actual": "observed：act-FAIL:tap 候选「心动卡」「发送悄悄话」「动」×3 element not found（缺参错误态无 CTA）；PO09-after 为缺参页截图；弹层未开启",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO09-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO10",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "心动卡发送+防连点+超长截断",
+   "expected": "sendWhisper 幂等送达 toast「已送达，优先展示给 TA」；快击仅 1 次扣费；maxlength=60 截断",
+   "actual": "observed：act-FAIL:rapidTap「发送」/input 候选/tap「发送悄悄话」element not found；PO10-after.wxml 为缺参错误态；发送链路未执行（manifest 预留的 handleSend 无防重入守卫疑点亦无从实测）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO10",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO10-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO10-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO11",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "关注/取关切换+快击 ×5",
+   "expected": "followUser→toast「已关注」+按钮态翻转；unfollow→「已取消关注」；followBusy 防重",
+   "actual": "observed：act-FAIL:rapidTap「提交」/tap「关注」「已关注」element not found；PO11-after.wxml 为缺参错误态；follow 链路未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO11",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO11-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO11-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PO12",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "拉黑二次确认",
+   "expected": "modal 确认→POST block→toast「已拉黑」；取消无请求",
+   "actual": "observed：status=SKIPPED action-not-automatable（原生 modal 不可自动化）；PO12-before.png 为缺参错误态，未做尝试",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO12-before.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO13",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "举报理由 ActionSheet",
+   "expected": "四项理由 ActionSheet→reportTarget→toast「举报成功」",
+   "actual": "observed：status=SKIPPED action-not-automatable；PO13-before.png 为缺参错误态，未做尝试",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO13",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO13-before.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO14",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "更多操作 BottomSheet 四路",
+   "expected": "FAB ⋯ 开弹层三项；分享占位 toast「分享入口待接入」+先关闭；遮罩可关；× 关；tabBar 隐藏/恢复",
+   "actual": "observed：act-FAIL:tap 候选「分享给好友」×3 element not found（缺参错误态 FAB 未渲染）；弹层未开启",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO14"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO15",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "生活瞬间照片全屏查看",
+   "expected": "tap 照片→全屏查看层大图；点击关闭清空 photoViewerSrc",
+   "actual": "observed：act-FAIL:tap 候选「照」×3 element not found（缺参错误态无 photos/ PublicGallery）；查看层未打开",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO15"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO16",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "最近动态帖卡跳详情",
+   "expected": "openAppPath village/detail?id=<postId>；postId 空不跳转",
+   "actual": "observed：act-FAIL:tap 候选「子」element not found（缺参错误态无动态卡）；跳转未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO16"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PO17",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "Hero 头像点击死按钮取证",
+   "expected": "按 500ms 反馈铁律应有反馈；代码事实 tapAvatar 三层 emit 但 other.vue 未绑定@tap-avatar，预期无反应，如实记录交判定员",
+   "actual": "observed：act-FAIL:tap 候选 element not found——缺参错误态下 Hero 头像根本未渲染，死按钮取证未能执行；代码层疑点（emit 链无绑定）保留为候选，因无实机点击证据且禁止凭代码推测，不作 FAILED 立案",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO17"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PO18",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "取消匹配入口可达性取证",
+   "expected": "GovernanceMenu visible 恒 false，预期 UI 无入口可达；如实记录交判定员",
+   "actual": "observed：status=SKIPPED action-not-automatable（遍历类动作），未做尝试；且页面为缺参错误态、matched 前置未建立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO18"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PO19",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "滚动到底/顶 CTA 不遮挡",
+   "expected": "底部 RelationshipCTA+spacer 下全部内容可滚动查看；回顶状态保持",
+   "actual": "observed：act:pageScrollTo bottom→top、scrollPos=top 已执行，但 pre「资料完整渲染态」未达成（缺参错误态无底部 CTA， spacer 断言对象不存在）；noop 断言无效",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO19"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "PO20",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "打开即返回+重复进出 ×2",
+   "expected": "无崩溃；每次 onLoad 重新取参取；无残留弹层；返回落点=来源页",
+   "actual": "observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重入未完成）；PO20-after.png（13935B）为缺参错误态；前置带参进入未建立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO20",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-PO20-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PO21",
+   "page": "subpackages/profile-extra/profile/other",
+   "operation": "鉴权失败 401 错误态与重试",
+   "expected": "errorMessage=loginRequired 类文案；retryable=true 渲染重试按钮；点击重试再请求",
+   "actual": "observed：act-FAIL:tap 候选「重试」element not found；pre「注入过期/无效 token」未执行（PO21-after 截图采集超时；同套件带参从未成功，页面实际渲染的是缺参错误态——该态按设计无重试按钮，与 PO02 行为一致）；401 场景未建立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PO21"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "LC01",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "进入位置设置首屏（observe-only）",
+   "expected": "标题「我的位置」+返回；定位卡（位置文本+经纬度行+校区行）；map+marker+callout；console 无 TypeError",
+   "actual": "observed：top=location observe-only，LC01 自身截图采集超时；同套件 LC03-after.png（13:09）与巡检 A/B location__默认 实拍完整证实：标题+返回、定位卡「当前位置 南京·附近」、经度 113.2644 · 纬度 23.1292、所属校区 北京大学、腾讯地图底图+定位 pin marker+气泡；差异注记：气泡实测文案为「附近」，非 expected 字面「当前位置」——代码 location.vue marker.callout content=addressText||city||\"当前位置\"，当前位置仅为兜底，判 manifest 措辞与代码设计不符、非应用缺陷；console 空",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_location__默认.png",
+    "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_location__默认.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "LC02",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "tap「重新定位」",
+   "expected": "按钮变「定位中...」；成功刷新坐标+reportLocation；失败复位无 Loading 永驻",
+   "actual": "observed：act-FAIL:tap 候选「重新定位」element not found；LC03-after 截图证实按钮在渲染（执行器查询缺陷）；定位流程与按钮态切换未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC02",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC02-after.wxml"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "LC03",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "tap「地图选点」",
+   "expected": "chooseLocation 选点回填坐标+物理地址行+marker 移动+上报；取消→toast「未获取到选点结果…」",
+   "actual": "observed：act-FAIL:tap .chooseLocation element not found「地图选点」（页面无该类名——选择器错误；按钮在 LC03-after 截图渲染）；LC03-after.png 实拍定位卡仍为定位结果、无物理地址行，选点器未触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-LC03-after.wxml"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "LC04",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "tap「返回首页」",
+   "expected": "openAppPath(ROUTES.TAB.HOME) 落首页 Tab",
+   "actual": "observed：act-FAIL:tap 候选「返回首页」element not found（按钮在 LC03-after 截图渲染）；无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC04"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "LC05",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "返回键两分支",
+   "expected": "①navigateBack 落来源；②栈=1 reLaunch 首页",
+   "actual": "observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[location]，落点无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC05"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "LC06",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "地图拖动/缩放（noop）",
+   "expected": "底图跟随移动缩放；marker 与定位卡数据不变",
+   "actual": "observed：observe-only，无任何拖动/缩放手势执行记录（原生 map 手势不可自动化），evidence 仅 scrollPos=top；expected 的动作未发生，无日志可证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC06"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "LC07",
+   "page": "subpackages/profile-extra/profile/location",
+   "operation": "打开即返回+重复进出 ×2",
+   "expected": "每次 onLoad 重新 loadLocation；无崩溃无「定位中...」永驻；返回落点=来源页",
+   "actual": "observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重入未完成）；证据截图采集超时（未落盘）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#LC07"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "PV01",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "进入隐私设置默认态（observe-only）",
+   "expected": "标题「隐私权限」+返回；允许推荐给本校学生=关、接收同校信息=开；每项含标题+desc",
+   "actual": "observed：top=privacy observe-only，PV01 自身截图采集超时；同套件 PV05-after.png（13:10，间隔秒级）与巡检 A/B privacy__默认 实拍证实：「隐私权限设置」标题+返回、开关1 允许推荐给本校学生=关（含 desc）、开关2 接收同校信息=开（含 desc）——与 store 默认态完全一致",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-PRIVACY-PV05-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_privacy__默认.png",
+    "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_privacy__默认.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PV02",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "开关1 开→关→开",
+   "expected": "每次 change 翻转+toast「已在本机保存」；setAllowSameSchoolRecommend 写入",
+   "actual": "observed：status=SKIPPED action-not-automatable（switch 组件不可自动化），未做尝试",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV02"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PV03",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "开关2 切换",
+   "expected": "翻转+toast「已在本机保存」；setReceiveSameSchoolInfo 持久化",
+   "actual": "observed：status=SKIPPED action-not-automatable，未做尝试",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV03"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PV04",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "返回重进持久化一致",
+   "expected": "重进后两开关与退出前一致；storage PRIVACY_SETTINGS 与 UI 一致",
+   "actual": "observed：dom 探针 .setStorageSync:absent（storage 断言未以 evaluate 方式采集）、act:navigateBack NAV_ERROR、证据截图采集超时（未落盘）；storage 与 UI 一致性无任何证据；且 PV02/03 未执行、开关从未被切换，前置亦不成立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV04"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "PV05",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "快击开关1 ×5",
+   "expected": "最终态=初始态取反奇数次；toast 连续；无卡死",
+   "actual": "observed：act-FAIL:rapidTap 候选 element not found（switch 元素查询失败，PV05-after 截图证实两开关在渲染）；快击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-PRIVACY-PV05-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "PV06",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "operation": "返回键两分支",
+   "expected": "①navigateBack 落来源；②栈=1 switchTab 落「我的」",
+   "actual": "observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[privacy]，落点无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PV06"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "AL01",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "进入相册：网格态/空态",
+   "expected": "①6 格网格（已传在前空位在后）+计数 n/6+添加按钮+长按提示；②清空后空态卡+添加按钮",
+   "actual": "observed：top=album observe-only，自身截图采集超时；状态①由同套件 AL05-before.png（13:12，4/6 网格、4 张已传在前+2 空位+号占位、添加照片按钮、长按照片可删除或设为头像提示、计数 4/6）与巡检 A/B album__默认 完整证实；状态②对照未执行，且巡检 album__空态 实拍亦为 4/6 网格（空态前置在巡检侧同样未达成）；console 空。①成立、②缺证",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-before.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_album__默认.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_album__空态.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "AL02",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "tap 空位格上传",
+   "expected": "隐私授权→选图→该格精确蒙层+spinner「上传中」→successHaptic+toast「照片上传成功」+计数+1",
+   "actual": "observed：act-FAIL:tap 候选「位」element not found；AL05-after.wxml 证实 album-cell--empty 空位格在渲染（执行器查询缺陷）；上传链路未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL02",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL02-after.wxml"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "AL03",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "相册已满守卫",
+   "expected": "filled 格 tap 走预览；hasEmptySlot=false 添加按钮隐藏；守卫 toast「相册已满（最多 6 张）」",
+   "actual": "observed：top=pages/login/index、终态 route=pages/discover/index、AL03-after.png 实拍为「寻觅」发现页——S16 会话在 FA01 前后劣化（登录态丢失→登录页→自动前进），相册页未到达；且实测相册 4/6 未满，「已满 6 张」前置在执行前即不成立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL03-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "AL04",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "上传中防连点",
+   "expected": "isUploading 守卫 return，不触发 chooseImage、无并发上传；蒙层仅当前格",
+   "actual": "observed：act-FAIL:rapidTap 候选「其它空位」element not found；pre「上传进行中」未达成（AL02 上传未执行）；快击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL04"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "AL05",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "长按设为头像",
+   "expected": "ActionSheet「设为头像/删除」；设为头像本地重排或真实上传→toast「头像已更新」；失败回退闭环",
+   "actual": "observed：act-FAIL:longpress 候选 element not found + tap 候选「设为头像」未命中；AL05-before/after 截图证实网格照片在渲染（automator 长按未达目标）；ActionSheet 未触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL05-after.wxml"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "AL06",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "删除照片二次确认",
+   "expected": "modal 取消无变化；确认→toast「已删除」+格子清空+计数-1；删空回落空态",
+   "actual": "observed：act-FAIL:longpress 候选 element not found；删除链路未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL06-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL06-after.wxml"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "AL07",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "照片预览双路",
+   "expected": "/static/ 走自建查看层（黑底+圆点分页，不走 uni.previewImage）；网络 URL 走 previewImage；遮罩关闭",
+   "actual": "observed：dom 探针 .previewImage:absent + act-FAIL:tap .previewImage element not found——页面 wxml 中照片格类名为 album-cell，无 .previewImage 类（选择器臆造）；查看层未打开，双路均未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL07"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "AL08",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "超 10MB 大图拒绝",
+   "expected": "size 校验拦截→toast photoSizeLimit 文案；不发起上传、格子不填充",
+   "actual": "observed：act 链 mockWxMethod chooseImage(huge)→tap .album-add-btn→wait→restore，采集到 showToast title=「图片大小不能超过 10MB」与 expected（PHOTO_SIZE_LIMIT 拦截 toast）一致；AL08-after.png 实拍网格仍 4/6、无格子填充；不上传成立",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL08",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL08-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "AL09",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "取消选图静默",
+   "expected": "errMsg cancel→静默 return，无 toast、无崩溃、状态不变",
+   "actual": "observed：act 链 mockWxMethod chooseImage(cancel)→tap .album-add-btn→wait→restore；toast=[]（无 toast，符合静默预期）、status=EXECUTED 无异常；after 截图采集超时（未落盘）为缺口",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL09"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "AL10",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "返回键两分支",
+   "expected": "①navigateBack 落来源；②栈=1 switchTab 落首页",
+   "actual": "observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[album]，落点无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL10"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "AL11",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "滚动到底/顶",
+   "expected": "网格/添加按钮/长按提示全部可达；回顶状态保持",
+   "actual": "observed：act:pageScrollTo bottom→top，evidence scrollPos=top；noop 层级日志证据满足采集要求",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL11"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "AL12",
+   "page": "subpackages/profile-extra/profile/album",
+   "operation": "onShow 重拉+打开即返回+重复进出 ×2",
+   "expected": "onShow 重拉 fetchProfile；无崩溃无蒙层残留；返回落点=来源页",
+   "actual": "observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重入未完成）；AL12-after.png 实拍相册页正常（无蒙层残留）但 onShow 重拉无请求证据；「他页改动照片后返回」动作未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#AL12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-ALBUM-AL12-after.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "FA01",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "进入收藏页首屏",
+   "expected": "骨架 3 行→收藏列表（封面/作者/标题/内容/收藏数）+「我的收藏（N）」；空态卡对照；console 无 TypeError",
+   "actual": "observed：本例自身执行失败——pre:login MISMATCH! 后 reLaunch 报 NAV_ERROR watchdog-timeout 15000ms、auto-nav ERR，终态 top=pages/login/index、FA01-after.png 实拍为「寻觅」发现页，收藏页未到达未断言；旁证：同套件 FA03-before/FA04-after（13:16）显示收藏页稍后可达且「我的收藏（2）」+两张卡片完整渲染，判定为瞬时导航/会话故障而非页面缺陷",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA01-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-before.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "FA02",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "tap 收藏卡跳详情",
+   "expected": "setCurrentPost+navigateTo village/detail?id=<id>",
+   "actual": "observed：pre:auto-nav ERR timeout + act-FAIL:tap 候选「卡」element not found；top 记录 pages/discover/index（会话漂移）；跳转未执行、query 无证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA02"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "FA03",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "tap「取消收藏」",
+   "expected": "toast「已取消收藏」+卡片移除+计数-1；@tap.stop 不跳详情；清空回落空态",
+   "actual": "observed：act-FAIL:tap 候选「取消收藏」element not found；FA03-before.png 实拍两张收藏卡右下「取消收藏」胶囊清晰在渲染（执行器查询缺陷）；toggle 未执行，FA03-after 截图采集超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-before.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA03-after.wxml"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "FA04",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "取消收藏失败分支",
+   "expected": "catch→toast error.message 或「操作失败」；卡片保留不静默还原",
+   "actual": "observed：act-FAIL:tap 候选「取消收藏」element not found；pre「断网/后端 500」未注入（FA04-after 实拍为正常 2 卡列表态）；失败分支未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA04",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA04-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA04-after.wxml"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "FA05",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "返回键两分支",
+   "expected": "①navigateBack 落来源；②fail 回调 reLaunch 落「我的」",
+   "actual": "observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[favorites]，落点无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA05"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "FA06",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "scroll-view 滚动到底/顶",
+   "expected": "全部卡片可达；无上拉分页意外加载；回顶状态保持",
+   "actual": "observed：act:pageScrollTo bottom→top 已执行，但 top=pages/discover/index、终态 route=discover（会话劣化后滚动发生在错误页面上）；evidence scrollPos=top 不构成收藏页滚动证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA06"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "FA07",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "onShow 真实重拉同步新收藏",
+   "expected": "详情页收藏新帖→返回本页 onShow fetchPosts({},true)→新收藏出现计数同步；重复进出 ×2",
+   "actual": "observed：「去详情页收藏新帖」动作未执行；act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重入未完成）；FA07-after.png 实拍收藏页「我的收藏（2）」正常渲染（2 卡无变化，与新收藏未发生一致）；重拉同步未取证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-FAVORITES-FA07-after.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "FA08",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "operation": "打开即返回",
+   "expected": "无崩溃无骨架永驻；返回落点=来源页（我的 Tab）",
+   "actual": "observed：act:navigateBack NAV_ERROR: Uncaught [object Object]；证据截图采集超时（未落盘）；落点无路由证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#FA08"
+   ],
+   "confidence": 0.6
+  }
+ ],
+ "issues": [],
+ "unverifiable": [
+  "VI02|observed：pre:navigateTo 后 act:navigateBack delta1 + act:tap .nav-bar__back，但终态 route=[veri|1",
+  "VI03|observed：pre:reLaunch 后 harness navigateBack 报 NAV_ERROR: Uncaught [object Object]（栈=1 预期现|1",
+  "VI05|observed：仅执行 act:input #verification-student-name=\"自动化输入-VI05\" 一步，三次提交 tap 未执行，toast=[]（三条|1",
+  "VI06|observed：act-FAIL:input el.input is not a function（执行器 input API 故障）→ act:tap .upload-card|1",
+  "VI07|observed：act-FAIL:rapidTap 候选「提交按钮」element not found；wxml 证明按钮在渲染（同 VI06）；快击未执行，POST 计数无证据|1",
+  "VI08|observed：act-FAIL:input 候选 element not found + tap 候选「提交」未命中；pre「real 会话且已有 pending/approv|1",
+  "VI09|observed：act-FAIL:tap 候选「图」「传」element not found；.upload-card 在 wxml 渲染（查询缺陷）；原生选图取消与隐私拒绝分支|1",
+  "VI10|observed：act-FAIL:input 候选 element not found；三个输入框（placeholder 请输入真实姓名/学号/学校全称）在 wxml 渲染；边|1",
+  "VI11|observed：observe-only，无任何 dom 存在性断言采集；pre verified 态未达成（VI06 断链，页面实际为未认证态）；证据截图采集超时（文件未落盘）|1",
+  "VI12|observed：act-FAIL:tap(#E5454D)（色值被用作选择器，非法）×3 element not found「重新认证」；pre mock verified 态未|1",
+  "VI13|observed：act-FAIL:tap 候选「模拟审核通过」element not found；VI13-after.png 实拍页面仍为「未认证」态——pre pending|1",
+  "RN02|observed：pre:reLaunch 后 harness navigateBack NAV_ERROR（栈=1），act:tap .nav-bar__back（dom pre|1",
+  "RN03|observed：pre:navigateTo 后又 pre:auto-reLaunch（把栈重置为 1），pre「栈≥2」未真实建立；act:tap .nav-bar__back|1",
+  "RN04|observed：执行串页——栈残留 [real-name, verification/index]（RN03 兜底 navigateTo 所致），本例无 pre 重置，tap .|1",
+  "RN05|observed：仅执行 act:input #real-name-id-card-no=\"12345\"（RN05-after.png 实拍输入已落地），两次提交 tap 未执行，|1",
+  "RN06|observed：act-FAIL:tap 候选「面」element not found；RN06-after.png 与 RN01 截图证实正/背面上传卡在渲染（查询缺陷）；选图|1",
+  "RN07|observed：act-FAIL:tap 候选「按」element not found；pre（姓名+合法号+正反双图）未达成——仅 RN05 残留身份证号 12345，无姓名无|1",
+  "RN08|observed：act-FAIL:rapidTap 候选「提交按钮」element not found；pre 表单齐备未达成；快击未执行，请求计数无证据|1",
+  "RN09|observed：act-FAIL:input 候选 element not found；pre「real 会话+已有申请」未建立（manifest 明示无此账号则如实标 UNVE|1",
+  "RN10|observed：act-FAIL:input 候选 element not found；边界输入未执行（RN10-after 为表单静态截图）|1",
+  "RN11|observed：act-FAIL:tap 候选「提交」element not found；pre「real 会话且 birthDate 缺失或<18」未建立（manifest 明|1",
+  "RN12|observed：RN12-after.png 实拍为「未实名认证」状态卡+完整表单态（身份证号输入框残留 RN05 的 12345）——expected 的 verified 回|1",
+  "VS02|observed：两 pre 均记录、act:navigateBack 报 NAV_ERROR: Uncaught [object Object]；终态 route=[visito|1",
+  "VS03|observed：act-FAIL:tap 候选「客」element not found（VS01 截图证实访客卡在渲染——执行器查询缺陷）；VS03-after 截图采集超时（未|1",
+  "VS04|observed：act:refresherPull「no scroll-view」→ callMethod onPullDownRefresh ok（直调 handler 绕过原|1",
+  "VS05|observed：act-FAIL:tap 候选「重试」element not found；pre「断网/后端不可达」未注入——VS05-after.png 实拍为正常列表态（与 |1",
+  "VS06|observed：observe-only 且无清空 store 前置动作记录；VS06-after.png 实拍仍为 22 条列表态+计数——pre「清空 likes store|1",
+  "VS08|observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [objec|1",
+  "PO01|observed：observe-only，pre:auto-reLaunch 后 pre-FAIL:input element not found: .other；证据截图采集超|1",
+  "PO03|observed：act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[other]，两分支落点均无路由证据|1",
+  "PO04|observed：status=SKIPPED，observed=action-not-automatable（原生 ActionSheet 不可自动化），未做任何尝试|1",
+  "PO05|observed：act-FAIL:rapidTap 候选「提交」+ tap 候选「喜欢」element not found；PO05-after.wxml 实证页面为缺参错误态、|1",
+  "PO06|observed：act-FAIL:rapidTap 候选「喜欢」element not found；PO06-after.wxml 为缺参错误态；去重链路未执行；pre（PO05|1",
+  "PO07|observed：act-FAIL:tap 候选「去聊天」「再看看」element not found；pre「互为喜欢」未建立且页面为缺参错误态（PO07-after.png/w|1",
+  "PO08|observed：act-FAIL:tap 候选「打招呼」element not found（缺参错误态无 CTA）；两分支均未执行|1",
+  "PO09|observed：act-FAIL:tap 候选「心动卡」「发送悄悄话」「动」×3 element not found（缺参错误态无 CTA）；PO09-after 为缺参页截图；|1",
+  "PO10|observed：act-FAIL:rapidTap「发送」/input 候选/tap「发送悄悄话」element not found；PO10-after.wxml 为缺参错误态|1",
+  "PO11|observed：act-FAIL:rapidTap「提交」/tap「关注」「已关注」element not found；PO11-after.wxml 为缺参错误态；follow|1",
+  "PO12|observed：status=SKIPPED action-not-automatable（原生 modal 不可自动化）；PO12-before.png 为缺参错误态，未做尝试|1",
+  "PO13|observed：status=SKIPPED action-not-automatable；PO13-before.png 为缺参错误态，未做尝试|1",
+  "PO14|observed：act-FAIL:tap 候选「分享给好友」×3 element not found（缺参错误态 FAB 未渲染）；弹层未开启|1",
+  "PO15|observed：act-FAIL:tap 候选「照」×3 element not found（缺参错误态无 photos/ PublicGallery）；查看层未打开|1",
+  "PO16|observed：act-FAIL:tap 候选「子」element not found（缺参错误态无动态卡）；跳转未执行|1",
+  "PO17|observed：act-FAIL:tap 候选 element not found——缺参错误态下 Hero 头像根本未渲染，死按钮取证未能执行；代码层疑点（emit 链无绑定）|1",
+  "PO18|observed：status=SKIPPED action-not-automatable（遍历类动作），未做尝试；且页面为缺参错误态、matched 前置未建立|1",
+  "PO19|observed：act:pageScrollTo bottom→top、scrollPos=top 已执行，但 pre「资料完整渲染态」未达成（缺参错误态无底部 CTA， spa|1",
+  "PO20|observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [objec|1",
+  "PO21|observed：act-FAIL:tap 候选「重试」element not found；pre「注入过期/无效 token」未执行（PO21-after 截图采集超时；同套件带|1",
+  "LC02|observed：act-FAIL:tap 候选「重新定位」element not found；LC03-after 截图证实按钮在渲染（执行器查询缺陷）；定位流程与按钮态切换未执|1",
+  "LC03|observed：act-FAIL:tap .chooseLocation element not found「地图选点」（页面无该类名——选择器错误；按钮在 LC03-after|1",
+  "LC04|observed：act-FAIL:tap 候选「返回首页」element not found（按钮在 LC03-after 截图渲染）；无路由证据|1",
+  "LC05|observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[loc|1",
+  "LC06|observed：observe-only，无任何拖动/缩放手势执行记录（原生 map 手势不可自动化），evidence 仅 scrollPos=top；expected 的动作|1",
+  "LC07|observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [objec|1",
+  "PV02|observed：status=SKIPPED action-not-automatable（switch 组件不可自动化），未做尝试|1",
+  "PV03|observed：status=SKIPPED action-not-automatable，未做尝试|1",
+  "PV04|observed：dom 探针 .setStorageSync:absent（storage 断言未以 evaluate 方式采集）、act:navigateBack NAV_ER|1",
+  "PV05|observed：act-FAIL:rapidTap 候选 element not found（switch 元素查询失败，PV05-after 截图证实两开关在渲染）；快击未执行|1",
+  "PV06|observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[pri|1",
+  "AL02|observed：act-FAIL:tap 候选「位」element not found；AL05-after.wxml 证实 album-cell--empty 空位格在渲染（执|1",
+  "AL03|observed：top=pages/login/index、终态 route=pages/discover/index、AL03-after.png 实拍为「寻觅」发现页——S1|1",
+  "AL04|observed：act-FAIL:rapidTap 候选「其它空位」element not found；pre「上传进行中」未达成（AL02 上传未执行）；快击未执行|1",
+  "AL05|observed：act-FAIL:longpress 候选 element not found + tap 候选「设为头像」未命中；AL05-before/after 截图证实网|1",
+  "AL06|observed：act-FAIL:longpress 候选 element not found；删除链路未执行|1",
+  "AL07|observed：dom 探针 .previewImage:absent + act-FAIL:tap .previewImage element not found——页面 wx|1",
+  "AL10|observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[alb|1",
+  "AL12|observed：act:navigateBack NAV_ERROR + act:repeatNav 两次 navigateTo 均 navErr:Uncaught [objec|1",
+  "FA01|observed：本例自身执行失败——pre:login MISMATCH! 后 reLaunch 报 NAV_ERROR watchdog-timeout 15000ms、aut|1",
+  "FA02|observed：pre:auto-nav ERR timeout + act-FAIL:tap 候选「卡」element not found；top 记录 pages/disco|1",
+  "FA03|observed：act-FAIL:tap 候选「取消收藏」element not found；FA03-before.png 实拍两张收藏卡右下「取消收藏」胶囊清晰在渲染（执行器|1",
+  "FA04|observed：act-FAIL:tap 候选「取消收藏」element not found；pre「断网/后端 500」未注入（FA04-after 实拍为正常 2 卡列表态）|1",
+  "FA05|observed：pre:reLaunch 后 act:navigateBack NAV_ERROR: Uncaught [object Object]；终态 route=[fav|1",
+  "FA06|observed：act:pageScrollTo bottom→top 已执行，但 top=pages/discover/index、终态 route=discover（会话劣化|1",
+  "FA07|observed：「去详情页收藏新帖」动作未执行；act:repeatNav 两次 navigateTo 均 navErr:Uncaught [object Object]（重入未|1",
+  "FA08|observed：act:navigateBack NAV_ERROR: Uncaught [object Object]；证据截图采集超时（未落盘）；落点无路由证据|1"
+ ],
+ "notes": "88/88 用例完成三方对照（Manifest.expected vs A1.observed vs 截图/wxml）。VERIFIED 13 / FAILED 0 / UNVERIFIED 75。无 FAILED 立案：所有可采到的应用行为证据（VI01 首屏、VI04/AL08 Toast、RN01/VS01/PO02/PV 默认态/LC/AL 页面渲染、AL09 静默、4 个 scroll noop）均与 expected 一致；其余 75 例全部因 A1 执行侧故障无法取证，无一例构成应用缺陷的实证。系统性执行故障（建议 A1 复测时修复，非产品缺陷）：① PO 套件参数注入失败——PO01 pre-FAIL 后全页 21 例均运行在『链接缺少用户参数』错误态（wxml+截图证实），巡检 tour B 证实带参时页面完整渲染；② 模糊候选查询大面积失准——wxml/截图证明按钮在渲染（如认证页『提交认证申请』、收藏页『取消收藏』、位置页『重新定位/地图选点/返回首页』）仍报 element not found，另有 #E5454D（色值）、.missingUserParam（i18n 键）、.previewImage（臆造类名）等非法选择器，及 el.input is not a function API 故障；③ 会话劣化——S16 套件 FA01 前后登录态丢失（top=login→自动前进 discover），AL03/FA01/FA02/FA06 在错误页面上执行；④ 大量证据截图『ERROR:timeout waiting for automator response』未落盘；⑤ 全局 navError=Uncaught [object Object] 与 repeatNav navErr×2 为 harness 导航调用统一报错形态，无法区分应用失败，凡依赖它的导航落点一律 UNVERIFIED；⑥ pre:login 标注 userId=user-1001 MISMATCH!（与身份A 预期不符）。前置缺失类：VI06→VI11/VI12/VI13 verified/pending 态断链、RN09/RN11/RN12 manifest 自带『无此账号则如实标 UNVERIFIED』条款、VS05/VS06/AL03/FA04 错误态/空态/已满前置未注入。保留候选（证据不足未立案，建议复测）：PO17 Hero 头像 tapAvatar 三层 emit 但 other.vue 未绑定（代码疑点，实机点击未达成）；PO10 handleSend 无 sending 防重入首行守卫（manifest 自带注记，未实测）；LC01 callout 气泡实测文案『附近』与 expected 字面『当前位置』不符——代码 location.vue marker.callout content=addressText||city||'当前位置' 为兜底设计，判 manifest 措辞问题，不立案；巡检侧 album『空态』截图实为 4/6 网格（空态前置未达成），归巡检判定员复核。"
+}

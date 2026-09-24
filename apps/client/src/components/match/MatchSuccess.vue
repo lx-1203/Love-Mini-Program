@@ -98,7 +98,9 @@ function getScoreIcon(index: number): string {
         </view>
         <view class="match-success__heart">
           <view class="match-success__heart-circle">
-            <image class="match-success__heart-circle-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+            <!-- MP-R1-SUBPACKAGES-...-MATCH-SUCCESS-101：白色心形变体——原粉色 SVG
+                 在粉渐变圆底上通道差≤15（对比度≈1:1），理想图主视觉为白心 -->
+            <image class="match-success__heart-circle-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED_WHITE" mode="aspectFit" alt="" />
           </view>
         </view>
         <view class="match-success__avatar-wrap">
@@ -152,7 +154,7 @@ function getScoreIcon(index: number): string {
         <text class="match-success__secondary-text">{{ t('matchSuccess.explore') }}</text>
       </view>
       <view class="match-success__share" hover-class="match-success__share--pressed" @tap="emit('share')">
-        <image class="match-success__share-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SHARE" mode="aspectFit" alt="" /><text class="match-success__share-text">分享喜悦</text>
+        <image class="match-success__share-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SHARE" mode="aspectFit" alt="" /><text class="match-success__share-text">分享喜悦</text>
       </view>
     </view>
   </view>

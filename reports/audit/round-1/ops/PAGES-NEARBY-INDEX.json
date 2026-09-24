@@ -1,0 +1,434 @@
+{
+  "cases": [
+    {
+      "id": "N01",
+      "page": "pages/nearby/index",
+      "title": "冷启动（mock 登录态）首屏完整渲染：五区聚合 + 自定义 tabBar 选中态=附近",
+      "tier": "normal",
+      "pre": "身份 A（100158）/B（100159）双身份各跑一次：automation_evaluate 注入 wx.setStorageSync('token', JWT)（storage key 'token'，constants/storage-keys.ts:32）+ session.bootstrap()（r11-tour.ps1:19-36 同款 mock 登录做法）→ miniProgram.reLaunch('/pages/nearby/index')（本页为 tabBar 第 2 项，pages.json:404），等待首帧+数据渲染",
+      "action": "无输入，仅探测渲染（.nearby-home__title / .nearby-home__publish / .nearby-home__search-input / .nearby-entry×5 / .people-entry×2 / .circle-mini / .campus-entry×4 / .activity-entry / .post-card）",
+      "expected": "停留附近页 getCurrentPages=[pages/nearby/index]；标题「附近」（zh-CN.ts:334）+右上「发动态」胶囊（index.vue:345）+搜索框 placeholder「搜索附近内容」（zh-CN.ts:376）；五功能入口 5 个（index.vue:366-399）；分区①附近的人/同城的人两张入口卡（index.vue:402-425）；分区②横滑 ≤8 张兴趣圈卡（mockCircles 10 圈取前 8，index.vue:85、circle/mock-data.ts:58-142）；分区③ 4 条校园条目且本校置顶（index.vue:71-78）；分区④ ≤3 条活动（index.vue:494）；分区⑤ ≤3 张 PostCard（index.vue:550）；自定义 tabBar 选中态=索引 1（index.vue:44 useTabBar(1)，pages.json:404-408）；无白屏、无错误空态残留，console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链）+ console（r11 通道：simulator_screenshot + get_simulator_console）"
+    },
+    {
+      "id": "N02",
+      "page": "pages/nearby/index",
+      "title": "未登录冷启动不发受保护请求：静态空态 + 分区⑤登录引导卡，无 401 雪崩",
+      "tier": "normal",
+      "pre": "real 模式（或 mock 构建清空会话且不调 bootstrap，注意 mock 下 bootstrap 强制 mockUserSession.loggedIn=true，stores/session.ts:39-41,616-619）：wx.removeStorageSync('token') 后 reLaunch('/pages/nearby/index')，不注入任何身份",
+      "action": "等待首帧，探测 .nearby-home__empty-text 与 .nearby-login-guide；监听 console/network 请求",
+      "expected": "canFetchProtected()=false（index.vue:66-68）→ 不发起 /circles /posts /activities 受保护请求（无 401、无 redirectToLogin 强跳）；分区②显示静态「暂无热门兴趣圈」（zh-CN.ts:393，index.vue:433-435）、④「附近暂无活动」（zh-CN.ts:373）；分区⑤渲染登录引导卡「请先登录后再使用该功能」+「去登录」按钮（index.vue:527-539，zh-CN.ts:3883/1024）；无错误态文案",
+      "evidence": "normal：after 截图 + 路由断言 + console（网络请求清单为判定依据）"
+    },
+    {
+      "id": "N03",
+      "page": "pages/nearby/index",
+      "title": "「发动态」胶囊 → 发帖页",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap .nearby-home__publish（index.vue:345 → goToPublishPost index.vue:310-312）",
+      "expected": "navigateTo /subpackages/village/village/post，getCurrentPages=[pages/nearby/index, subpackages/village/village/post]；返回后落点=附近页",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可不截图"
+    },
+    {
+      "id": "N04",
+      "page": "pages/nearby/index",
+      "title": "「发动态」快击×5 只进一页（无重复压栈）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "500ms 内连续 tap .nearby-home__publish 5 次",
+      "expected": "仅 push 1 个 subpackages/village/village/post 页面实例（getCurrentPages 长度=2），console 无 routeDone with a webviewId / page route 竞争报错",
+      "evidence": "navigation：路由断言 + console，可不截图"
+    },
+    {
+      "id": "N05",
+      "page": "pages/nearby/index",
+      "title": "搜索输入关键词 + 键盘确认 → 带参进搜索页自动搜索",
+      "tier": "normal",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "input .nearby-home__search-input 值「摄影」（R16 起绑 searchKeyword，index.vue:94,352-360），触发 confirm（confirm-type=search）",
+      "expected": "输入过程不发任何请求（confirm-only，无需防抖通道）；confirm 后 navigateTo /subpackages/tools/search/index?keyword=%E6%91%84%E5%BD%B1（index.vue:233-236），搜索页读 keyword 自动搜索（search/index.vue:48-50）；getCurrentPages 栈含搜索页",
+      "evidence": "normal：after 截图（搜索页结果态）+ 路由断言 + console"
+    },
+    {
+      "id": "N06",
+      "page": "pages/nearby/index",
+      "title": "搜索框空值确认 → 仍进搜索页（无 keyword 参数）",
+      "tier": "normal",
+      "pre": "接 N01 登录态，搜索框为空",
+      "action": "不输入直接对 .nearby-home__search-input 触发 confirm",
+      "expected": "kw 为空 → openAppPath(ROUTES.SEARCH) 无 query（index.vue:233-236）；落 /subpackages/tools/search/index（无 ?keyword），搜索页不报错正常渲染",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "N07",
+      "page": "pages/nearby/index",
+      "title": "搜索输入清空/超长/特殊字符：编码正确不崩页",
+      "tier": "normal",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "分三次输入并 confirm：①超长 500 字符中文串；②特殊字符「#摄影&= ?旅行 100%」；③emoji「📷🎬」；每次 confirm 后返回并清空输入框",
+      "expected": "三次均 navigateTo /subpackages/tools/search/index?keyword=<encodeURIComponent 后值>（index.vue:235），路由不抛错；搜索页正常渲染无 TypeError；返回附近页后 v-model 清空生效（输入框 placeholder 恢复）",
+      "evidence": "normal：after 截图（每组 1 张）+ 路由断言 + console"
+    },
+    {
+      "id": "N08",
+      "page": "pages/nearby/index",
+      "title": "五功能入口逐个跳转（含「我的人脉」落点复核）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页；每次跳转后返回复位再点下一个",
+      "action": "page.$$('.nearby-entry') 按序 tap（index.vue:367-398）：第1附近的人→第2热门兴趣圈→第3校园圈→第4附近活动→第5我的人脉",
+      "expected": "①附近的人→/subpackages/discover-extra/nearby/people?scope=nearby；②热门兴趣圈→/subpackages/circles/circles/index；③校园圈→/subpackages/campus/campus/hub（无参）；④附近活动→/subpackages/discover/activities/index（SUBPACKAGE_ROUTES.DISCOVER_FEED.ACTIVITIES，routes.ts:246）；⑤「我的人脉」→/subpackages/village/village/index（goAllPosts，index.vue:315-317，与分区⑤「全部」同 handler）——入口文案为「我的人脉」而落点是村口帖子列表，文案/落点一致性交判定员复核；五个落点均正确入栈、返回落点=附近页",
+      "evidence": "navigation：路由断言（5 次各自 getCurrentPages 链），可不截图"
+    },
+    {
+      "id": "N09",
+      "page": "pages/nearby/index",
+      "title": "分区①「附近的人」入口卡 → people?scope=nearby",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 第 1 个 .people-entry（index.vue:404 → goPeople('nearby') index.vue:239-241）",
+      "expected": "navigateTo /subpackages/discover-extra/nearby/people?scope=nearby；列表页 scope 默认态=「附近的人」（people.vue:57 消费 scope 参数），标题/Tab 与 scope 一致",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N10",
+      "page": "pages/nearby/index",
+      "title": "分区①「同城的人」入口卡 → people?scope=city",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 第 2 个 .people-entry（index.vue:414 → goPeople('city')）",
+      "expected": "navigateTo /subpackages/discover-extra/nearby/people?scope=city；列表页 scope=「同城的人」（people.vue:57），与 N09 落点同页不同态",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N11",
+      "page": "pages/nearby/index",
+      "title": "分区②「全部」→ 圈子列表页",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 分区②头部 .nearby-section__more（NearbySection.vue:5-15 emit more → goCircleList index.vue:247-249）",
+      "expected": "navigateTo /subpackages/circles/circles/index，「全部」文案（zh-CN.ts:396）渲染于分区②标题右侧",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N12",
+      "page": "pages/nearby/index",
+      "title": "兴趣圈卡片 → 圈子主页 circle-home?circleId=<id>",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区②已渲染横滑卡片",
+      "action": "tap 第 1 个 .circle-mini（index.vue:439-447 → goCircleDetail(circle.id) index.vue:244-246）",
+      "expected": "mock 身份：/subpackages/circles/circles/circle-home?circleId=circle-photo（mockCircles 首圈，circle/mock-data.ts:58）；real 身份按固化表 ?circleId=8（scripts/r11-param-map.json params.circle-home）；circle-home 消费 circleId 匹配圈子（circle-home.vue:49,80）正常渲染圈子主页；返回落点=附近页",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N13",
+      "page": "pages/nearby/index",
+      "title": "分区③「全部」→ 校园圈 Hub（无参）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 分区③头部 .nearby-section__more（index.vue:463 → goCampusHub() 无参 index.vue:252-254）",
+      "expected": "navigateTo /subpackages/campus/campus/hub（url 不带 ?school=），Hub 渲染学校列表",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N14",
+      "page": "pages/nearby/index",
+      "title": "校园条目 → hub?school=<校名>（hub 不消费 school 参数，如实断言现状）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态；记录会话 campusName（无则本校为空 → 首条=SCHOOLS[0] 北京大学，schools.ts:33）",
+      "action": "tap 第 1 个 .campus-entry（index.vue:464-488 → goCampusHub(school.name)）",
+      "expected": "navigateTo /subpackages/campus/campus/hub?school=<URL 编码校名>；注意 hub 已删除 ?school= 参数消费（hub.vue:133-135，MP-R2-CAMPUS-HUB-003 注释），落点为学校列表不预选该校——按现状如实断言落点 URL 与页面渲染，「带参不生效」疑点交判定员裁量",
+      "evidence": "navigation：路由断言（含完整 query），可不截图"
+    },
+    {
+      "id": "N15",
+      "page": "pages/nearby/index",
+      "title": "分区④「全部」→ 活动列表页",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 分区④头部 .nearby-section__more（index.vue:492 → goActivityList index.vue:257-259）",
+      "expected": "navigateTo /subpackages/discover/activities/index（SUBPACKAGE_ROUTES.DISCOVER_FEED.ACTIVITIES，routes.ts:246）",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N16",
+      "page": "pages/nearby/index",
+      "title": "活动条目 → 活动详情 ?id=<id>",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区④已渲染 ≥1 条活动（activityStore.activities.slice(0,3)，index.vue:494）",
+      "action": "tap 第 1 个 .activity-entry（index.vue:493-501 → goActivityDetail(String(activity.id)) index.vue:260-262）",
+      "expected": "navigateTo /subpackages/tools/activities/detail?id=<store 内首条活动 id>（real 固化 ?id=11，scripts/r11-param-map.json）；详情页正常渲染；返回落点=附近页",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N17",
+      "page": "pages/nearby/index",
+      "title": "分区⑤「全部」→ 村口帖子列表",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，停留附近页",
+      "action": "tap 分区⑤头部 .nearby-section__more（index.vue:525 → goAllPosts index.vue:315-317）",
+      "expected": "navigateTo /subpackages/village/village/index；返回落点=附近页且分区⑤数据/滚动位保持",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N18",
+      "page": "pages/nearby/index",
+      "title": "PostCard 卡体点击 → 帖子详情 ?id=<postId>",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区⑤已渲染 ≥1 张 PostCard（circlePosts.slice(0,3)，index.vue:550-560）",
+      "action": "tap 第 1 张 .post-card 卡体空白区（PostCard.vue:116-123 根节点 @tap emit open-detail → onPostDetail index.vue:265-267）",
+      "expected": "navigateTo /subpackages/village/village/detail?id=<post.id>（real 固化 ?id=1，scripts/r11-param-map.json）；返回落点=附近页",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N19",
+      "page": "pages/nearby/index",
+      "title": "PostCard 作者行 → 他人主页 ?userId=<userId>（空 userId 守卫不跳转）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard",
+      "action": "tap 第 1 张卡的 .post-card__user 头像/昵称区（PostCard.vue:126-131 @tap.stop emit open-author → onPostAuthor → openUserProfile index.vue:268-270）；另以 automation_evaluate 直接调 openUserProfile('undefined') 复验守卫",
+      "expected": "navigateTo /subpackages/profile-extra/profile/other?userId=<author.userId>（mock 形如 user-3016，village/mock-data.ts:54；real 固化 ?userId=100152）；守卫：userId 为 null/空串/字面量 undefined/null 时不发起跳转、页面不动（navigation.ts:303-309）；返回落点=附近页",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N20",
+      "page": "pages/nearby/index",
+      "title": "帖子标签 → 标签帖子列表 ?tagName=<tag>",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，选一张含 .post-card__tag 的卡（post.tags 非空才渲染，PostCard.vue:220-230）",
+      "action": "tap 该卡第 1 个 .post-card__tag（@tap.stop emit open-tag → onPostTag index.vue:302-304）",
+      "expected": "navigateTo /subpackages/village/village/tag-posts?tagName=<URL 编码标签>（real 固化 ?tagName=%E6%91%84%E5%BD%B1，scripts/r11-param-map.json）；标签页正常渲染；返回落点=附近页。若当前 3 帖均无标签则如实标 UNVERIFIED（数据依赖）",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N21",
+      "page": "pages/nearby/index",
+      "title": "帖内关联活动卡 → 活动详情 ?id=<activityId>",
+      "tier": "navigation",
+      "pre": "接 N01 登录态；仅当 post.activity 非空才渲染活动卡（PostCard.vue:215-217）",
+      "action": "tap 卡内 .post-card__activity 上的 ActivityCard（open-detail → openActivity → emit open-activity → onPostActivity index.vue:305-307）",
+      "expected": "navigateTo /subpackages/tools/activities/detail?id=<post.activity.id>（@tap.stop 阻断冒泡，不触发卡体进详情）；返回落点=附近页。若当前 3 帖均无关联活动则如实标 UNVERIFIED（数据依赖）",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N22",
+      "page": "pages/nearby/index",
+      "title": "评论按钮与评论预览行 → 帖子详情（两处同落点）",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard",
+      "action": "①tap .post-card__actions 第 1 个 .action-btn（评论，PostCard.vue:261-264）；返回后 ②tap .comment-preview 首行（PostCard.vue:233-251）",
+      "expected": "两处均 emit open-detail → navigateTo /subpackages/village/village/detail?id=<post.id>（@tap.stop 均阻断冒泡）；返回落点=附近页",
+      "evidence": "navigation：路由断言（2 次），可不截图"
+    },
+    {
+      "id": "N23",
+      "page": "pages/nearby/index",
+      "title": "点赞：动画 + 计数/红心即时变化，无失败 toast",
+      "tier": "critical",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard；截 before 图记录目标帖点赞数/isLiked 初态",
+      "action": "tap .post-card__actions 第 2 个 .action-btn（点赞，PostCard.vue:266-273 → handleLike → emit like → onPostLike index.vue:275-281）",
+      "expected": "≤500ms 内可观测反馈：未赞→赞时 icon 300ms like-burst 动画（PostCard.vue:77-88,652-660）+ action-btn--liked / count--liked 样式（计数变红）+ 计数 +1；mock 走 toggleMockPostLike（nearbyPosts 同引用同步，village/index.ts:553-559），real 走乐观更新→POST /api/posts/{id}/like→服务端权威校正（village/index.ts:563-592）；全程无 toast；再点一次回落（toggle 语义）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案（应为无）+ console"
+    },
+    {
+      "id": "N24",
+      "page": "pages/nearby/index",
+      "title": "收藏：收藏态样式 + 计数变化",
+      "tier": "critical",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard；截 before 图记录收藏数/isFavorite 初态",
+      "action": "tap .post-card__actions 第 4 个 .action-btn（收藏，PostCard.vue:279-286 → emit favorite → onPostFavorite index.vue:283-289）",
+      "expected": "≤500ms 内 action-btn--collected 样式生效 + 收藏计数 ±1（toggle）；mock 走 toggleMockPostFavorite（village/index.ts:626-636），real 走乐观更新+FavoriteResponse 权威校正（639-668）；失败才 toast「收藏操作失败」（index.vue:287，zh-CN.ts:1833）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "N25",
+      "page": "pages/nearby/index",
+      "title": "关注芯片：「+ 关注」→「已关注」且同作者多帖同步",
+      "tier": "critical",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard；截 before 图记录芯片初态",
+      "action": "tap 第 1 张卡 .follow-chip（PostCard.vue:159-169 @tap.stop emit follow → onPostFollow index.vue:291-297）",
+      "expected": "≤500ms 内芯片文案「+ 关注」→「已关注」（zh-CN.ts:1849-1850）+ follow-chip--active 灰底样式（PostCard.vue:161,423-426）；该作者全部帖子的 isFollowed 同步翻转（posts+nearbyPosts 合并更新，village/index.ts:682-732）；失败才 toast「关注失败，请重试」（zh-CN.ts:1912）；再点一次回到「+ 关注」",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "N26",
+      "page": "pages/nearby/index",
+      "title": "点赞快击×5：幂等守卫只提交 1 次",
+      "tier": "critical",
+      "pre": "real 模式（网络可计数）接 N01 登录态；记录目标帖初态",
+      "action": "500ms 内连续 tap 同一张卡的点赞 .action-btn 5 次",
+      "expected": "likingPostIds in-flight 幂等守卫使并发请求直接跳过（village/index.ts:543-545,563,596-598）：like 接口请求数=1；终态与单次点击一致（计数 ±1、无错乱），无重复 toast、无状态抖动残留",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console（含 network 请求数）"
+    },
+    {
+      "id": "N27",
+      "page": "pages/nearby/index",
+      "title": "点赞失败回滚：乐观更新撤销 + 错误 toast",
+      "tier": "critical",
+      "pre": "real 模式故障注入（停后端/强置 5xx）+ 登录态；截 before 图记录初态。注意 mock 模式无网络调用、无失败路径（village/index.ts:553-559），mock 下本条不可执行须如实标注",
+      "action": "tap 点赞 .action-btn 一次，等待接口失败",
+      "expected": "乐观置红后回滚 rollbackLike 恢复原计数/原 isLiked（village/index.ts:588-592），toast「点赞失败，请重试」（showErrorToast，index.vue:279，zh-CN.ts:1911，duration 2s 后消失不永驻）；收藏/关注失败同口径（回滚 + 「收藏操作失败」/「关注失败，请重试」，village/index.ts:664-668,733-736）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "N28",
+      "page": "pages/nearby/index",
+      "title": "分享按钮 noop：死按钮铁律复核",
+      "tier": "normal",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard",
+      "action": "tap .post-card__actions 第 3 个 .action-btn（分享，PostCard.vue:275-277 @tap.stop=\"noop\"，handler 为空操作 PostCard.vue:67）",
+      "expected": "按源码现状：无路由变化、无 DOM 变化、无 Toast、无震动——按 R11 §5「点击后 500ms 内必须有可观测反馈」铁律判定为死按钮缺陷候选，是否豁免交判定员裁量；执行器如实记录四类反馈均无的证据",
+      "evidence": "normal：after 截图 + 路由断言 + console（证明无任何反馈发生）"
+    },
+    {
+      "id": "N29",
+      "page": "pages/nearby/index",
+      "title": "下拉刷新：并行重拉全部数据源，动画正常停止",
+      "tier": "normal",
+      "pre": "接 N01 登录态，页面已渲染数据（enablePullDownRefresh=true，pages.json:59-61）",
+      "action": "automation_evaluate 执行 uni.startPullDownRefresh()（触发 onPullDownRefresh index.vue:139-158），等待完成",
+      "expected": "并行 fetchCircles + loadCirclePosts(true) + loadActivities(true)（force 绕过 30s TTL 与空列表短路，index.vue:144-147）；完成后 stopPullDownRefresh 动画停止（finally，index.vue:157）；无 store 错误时不弹 toast；页面数据仍完整渲染",
+      "evidence": "normal：after 截图 + 路由断言 + console（含请求发起记录）"
+    },
+    {
+      "id": "N30",
+      "page": "pages/nearby/index",
+      "title": "下拉刷新失败路径：统一 toast「附近的人加载失败」且动画不卡死",
+      "tier": "normal",
+      "pre": "real 模式故障注入（任一 store 拉取失败）+ 登录态",
+      "action": "automation_evaluate 执行 uni.startPullDownRefresh()，等待 Promise.all 落定",
+      "expected": "circleStore.errorMessage / villageStore.nearbyError / activityStore.errorMessage 任一非空 → toast「附近的人加载失败」（icon none，index.vue:148-156，zh-CN.ts:359）；stopPullDownRefresh 在 finally 中必然执行、下拉动画不永驻（index.vue:157）；store 内部吞错不 rethrow 的死 catch 路径不会漏 toast（MP-R2-PAGES-NEARBY-INDEX-002 注释）",
+      "evidence": "normal：after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "N31",
+      "page": "pages/nearby/index",
+      "title": "Loading 骨架：分区②④⑤三处 SkeletonBlock 且不永驻",
+      "tier": "normal",
+      "pre": "清 store 数据（automation_evaluate 重置或冷启动）后 reLaunch 进入，抓加载中间帧",
+      "action": "数据到达前探测 .nearby-home__empty 内 SkeletonBlock（index.vue:430-431 / 512-513 / 540-541），数据到达后再探测一次",
+      "expected": "loading 且列表空时渲染 2 行骨架（variant=list）；数据到达后骨架消失、替换为真实卡片，骨架不永驻；骨架期无错误文案同屏",
+      "evidence": "normal：after 截图（骨架帧+数据帧各 1）+ 路由断言 + console"
+    },
+    {
+      "id": "N32",
+      "page": "pages/nearby/index",
+      "title": "Error 态优先于空态：错误文案可见而非伪装「暂无」",
+      "tier": "normal",
+      "pre": "real 模式故障注入使 store 拉取失败 + 登录态（MP-R2-PAGES-NEARBY-INDEX-003 修复回归项）",
+      "action": "触发拉取后探测分区②④⑤的 .nearby-home__empty-text 文本",
+      "expected": "有 errorMessage 且列表空 → 显示 store 错误信息（分区② index.vue:434、④ 517、⑤ 544-545）而非「暂无热门兴趣圈/附近暂无活动/附近暂时没有动态」；错误态可直接重试（失败不写 lastNearbyFetchAt 时间戳，index.vue:222-224）",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "N33",
+      "page": "pages/nearby/index",
+      "title": "Empty 态文案：三处空态各归其位",
+      "tier": "normal",
+      "pre": "构造空数据：real 空库/城市过滤无结果（mock 种子恒非空，不可构造的维度如实标 UNVERIFIED）+ 登录态",
+      "action": "数据拉取完成后逐区探测 .nearby-home__empty-text",
+      "expected": "②「暂无热门兴趣圈」（zh-CN.ts:393）；④「附近暂无活动」（zh-CN.ts:373）；⑤「附近暂时没有动态，去兴趣圈看看吧」（zh-CN.ts:392）；分区③校园条目来自本地 SCHOOLS 恒非空、无空态分支（index.vue:463-489），不适用；均非错误文案、无骨架残留",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "N34",
+      "page": "pages/nearby/index",
+      "title": "头像兜底链：空 avatar / 加载失败显示姓名首字符",
+      "tier": "normal",
+      "pre": "接 N01 mock 登录态（mock 帖作者 avatar 均为空串，village/mock-data.ts:54,63,71,79,87,95）",
+      "action": "探测 PostCard 头像位 .user-avatar 内渲染结果（PostCard.vue:133-142：avatar 非空走 image，否则 text.user-avatar__char）",
+      "expected": "显示作者名首字符文本徽标（如「林」），无破图/无空白圆；另对有 avatar 的帖（real 身份）断言图片正常加载，加载失败（@error onImageError）亦回落首字符",
+      "evidence": "normal：after 截图 + 路由断言 + console（无图片 404 未处理报错）"
+    },
+    {
+      "id": "N35",
+      "page": "pages/nearby/index",
+      "title": "未登录登录引导卡「去登录」→ 登录页",
+      "tier": "navigation",
+      "pre": "N02 未登录态（分区⑤渲染引导卡）",
+      "action": "tap .nearby-login-guide__btn（index.vue:529-538 → goLogin → openAppPath(ROUTES.LOGIN) index.vue:228-230）",
+      "expected": "navigateTo /pages/login/index（login 非 tab 页走 navigateTo，navigation.ts:106）；getCurrentPages=[pages/nearby/index, pages/login/index]；返回落点=附近页且未登录态保持",
+      "evidence": "navigation：路由断言，可不截图"
+    },
+    {
+      "id": "N36",
+      "page": "pages/nearby/index",
+      "title": "滚动到底/回顶：无状态变化、无卡死",
+      "tier": "noop",
+      "pre": "接 N01 登录态，数据已渲染",
+      "action": "对 .nearby-home__scroll scroll-view（index.vue:340）滚动到底部，再回顶部，各记录 scrollTop",
+      "expected": "无路由变化、无数据重拉（本页无 onReachBottom/上拉分页，模板 scroll-view 恒渲染同批数据）、无 console 报错；回顶后 scrollTop=0",
+      "evidence": "noop：执行日志（scroll 位置/console）"
+    },
+    {
+      "id": "N37",
+      "page": "pages/nearby/index",
+      "title": "Tab 切换来回：数据与滚动位不丢、30s TTL 内不重拉",
+      "tier": "normal",
+      "pre": "接 N01 登录态，滚动至页面中部并记录位置；清零请求计数",
+      "action": "switchTab 到首页再切回附近页，重复 2 轮",
+      "expected": "每轮 onShow 选中态恢复=1（useTabBar(1)，index.vue:44）；数据保持（store 共享不随页面卸载清空，index.vue:160-162）；TTL 守卫生效：距上次拉取 <30s 时 onShow 的 loadCirclePosts/loadActivities 不发起新请求（index.vue:129-137,212-218，请求计数增量=0）；滚动位恢复",
+      "evidence": "normal：after 截图 + 路由断言 + console（网络请求计数）"
+    },
+    {
+      "id": "N38",
+      "page": "pages/nearby/index",
+      "title": "TTL 过期后 onShow 真实重拉",
+      "tier": "normal",
+      "pre": "接 N01 登录态，记录上次拉取时间；等待/推进 >30s（NEARBY_POSTS_TTL_MS=30_000，index.vue:203）",
+      "action": "switchTab 离开再切回附近页",
+      "expected": "TTL 过期 → onShow 触发 loadCirclePosts 实际重拉（请求计数增量=1，index.vue:212-221 守卫放行）；数据正常刷新、无骨架闪烁（已有数据静默替换）",
+      "evidence": "normal：after 截图 + 路由断言 + console（网络请求计数）"
+    },
+    {
+      "id": "N39",
+      "page": "pages/nearby/index",
+      "title": "重复进出：circle-home 进/返×3 落点与状态恢复",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，记录分区②⑤数据快照与滚动位",
+      "action": "tap 首个 .circle-mini 进圈子主页 → navigateBack，重复 3 次",
+      "expected": "每次返回落点=附近页且栈正确（长度=1）；点赞/收藏/关注状态与进入前一致（store 共享）；重复进出无内存泄漏类报错、无重复压栈",
+      "evidence": "navigation：路由断言（3 次链）+ console，可不截图"
+    },
+    {
+      "id": "N40",
+      "page": "pages/nearby/index",
+      "title": "打开即返回：进详情 <1s 立即 back，栈状态正常",
+      "tier": "navigation",
+      "pre": "接 N01 登录态，分区⑤已渲染 PostCard",
+      "action": "tap 卡体进 detail 后立即（<1s）navigateBack，重复 3 次",
+      "expected": "每次均成功回到附近页（无 routeDone with a webviewId / 页面卡死）；目标页即销毁无残留请求报错；栈长度恒=1",
+      "evidence": "navigation：路由断言 + console，可不截图"
+    },
+    {
+      "id": "N41",
+      "page": "pages/nearby/index",
+      "title": "定位成功：副标题更新 + nearby:city 持久化 + 城市变化强制重拉",
+      "tier": "normal",
+      "pre": "接 N01 登录态；模拟器注入定位授权（scope.userLocation）与坐标（城市与 currentCity 初值不同）",
+      "action": "reLoad 进入页面等待 initLocation 完成（index.vue:100-122）",
+      "expected": "副标题 homeSubtitle 更新为「<城市> · <学校>」形态（buildLocationText，index.vue:103）；wx.getStorageSync('nearby:city')=该城市（index.vue:115，STORAGE_KEYS.NEARBY_CITY storage-keys.ts:70）；城市变化触发 loadCirclePosts(true) force 重拉绕过 TTL（index.vue:110-120）；坐标上报 reportLocation 不阻塞页面（void+catch，index.vue:107）；定位拒绝/失败时副标题保留 campus 兜底、不闪错误态",
+      "evidence": "normal：after 截图 + 路由断言 + console（含 storage 读取与请求记录）"
+    },
+    {
+      "id": "N42",
+      "page": "pages/nearby/index",
+      "title": "登录态变化补拉：watch(isLoggedIn) force 刷新三数据源",
+      "tier": "normal",
+      "pre": "real 模式未登录态（N02 前置）停在本页；console 记录当前请求基线",
+      "action": "automation_evaluate 注入 token + session.bootstrap()（登录动作，r11-tour.ps1:19-36 同款），等待 watch 触发",
+      "expected": "isLoggedIn 翻转 true → watch 回调 force 重拉 fetchCircles + loadActivities(true) + loadCirclePosts(true)（index.vue:180-189），绕过「列表非空即跳过」与 TTL；分区②④⑤由空态/引导卡切换为数据渲染，无需下拉刷新；分区⑤登录引导卡消失",
+      "evidence": "normal：before + after 截图（引导卡→数据）+ 路由断言 + console（请求记录）"
+    },
+    {
+      "id": "N43",
+      "page": "pages/nearby/index",
+      "title": "热区测量：互动栏 action-btn 与功能入口 ≥88rpx（铁律）",
+      "tier": "normal",
+      "pre": "接 N01 登录态，页面渲染完成",
+      "action": "automation_evaluate 读取 .post-card__actions .action-btn 与 .nearby-entry 的 boundingClientRect 尺寸",
+      "expected": "铁律要求可点热区≥88rpx；.nearby-entry__icon 为 88rpx 圆形（index.vue:1080-1087）达标；.post-card__actions .action-btn 源码为 padding 4rpx + icon 36rpx（PostCard.vue:625-635），几何高度约 44rpx 低于铁律——如实记录实测值作为热区不足缺陷候选交判定员裁量",
+      "evidence": "normal：after 截图 + 路由断言 + console（实测尺寸数值）"
+    }
+  ]
+}

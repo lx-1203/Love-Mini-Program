@@ -1,0 +1,94 @@
+{
+  "round": "R1",
+  "page": "pages/register/index",
+  "pageName": "注册页",
+  "reviewer": "视觉审查员-R1-PAGES-REGISTER-INDEX（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "evidenceBaseline": {
+    "manifestGitSha": "aefd8a72",
+    "manifestCheck": "reports/audit/round-1/screenshot-manifest.json 实读 gitSha=aefd8a72，与当前 HEAD 一致，证据未过期；共 305 shots，其中 pages/register/index 0 张（python 实证 hits=0）",
+    "freshEvidence": [
+      "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG01-after.png（2026-09-23 05:21 落盘，105237B，HEAD 默认态，373×820）",
+      "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG09-after.png（同批次，手机号 3-4-4 格式化态）",
+      "reports/audit/round-1/interact/exec-results.json（gitSha=aefd8a72，updatedAt=2026-09-23T12:00Z，REG01-REG32）"
+    ],
+    "staleEvidenceHandling": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-01~22 编号系列（文件时间 2026-09-20 07:28-07:30）早于 29a2b1df（2026-09-22 09:53，该提交改过本页 statusbar/上报/状态复位逻辑，git diff 83dbeff7..29a2b1df 实证 47+/14-）。本审查不据其下结论，仅作旧构建佐证（与交互判定员 A6 同一口径）；29a2b1df 对本页样式的改动仅色值转 var() 与两处 top:calc(var(--statusbar,...))（DevTools --statusbar=0 时渲染等价），故旧批次布局类留档仍有参照价值，但一律标注为旧构建佐证",
+    "reg08Note": "REG08-after.png 实拍落在 subpackages/legal/agreement/index（用例内页面上下文漂移），不作为注册页表单态像素证据"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-013",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "无（本页在静态巡检中 0 张留档；唯一 HEAD 默认态像素为交互批次 reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG01-after.png）",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "本页双身份（A/B）静态截图全部缺失：直连 reLaunch 被应用侧会话守卫重定向至 pages/login/index（logout 后亦然，2 次尝试一致）。导致本页无默认/滚动-中部/滚动-底部/弹层态/校验错误/键盘弹起等任何静态巡检像素留档，理想图 L1-L10 逐级对照缺静态载体；本轮视觉结论只能依赖交互批次 3 张新鲜截图（REG01/08/09，其中 REG08 实拍已漂移至协议页）+ 代码几何推演。滚动可达性（REG29 仅 observe-only DOM 佐证 scrollPos=top）、键盘弹起态、错误态在 HEAD 均无像素证据。 nuance：交互批次 REG01 以冷启动 auto-reLaunch 直开成功完整渲染（exec-results.json#REG01，截图在案），说明守卫拦截与巡检会话态（登录态上下文）相关，冷启动未登录路径可复现采集。",
+      "evidence": "① reports/audit/round-1/screenshot-manifest.json（本轮实读全量 305 shots，python 过滤 'register' 命中 0）；② 巡检失败原因（巡检员清单原文）：「pages/register/index：A/B 均未截：直连被守卫重定向至 pages/login/index（logout 后亦然，2 次尝试一致，应用侧守卫行为）」；③ 对照 exec-results.json#REG01（pre:auto-reLaunch pages/register/index 成功，REG01-after.png 105237B 在盘）证明冷启动路径可截。",
+      "sources": ["screenshot", "log"],
+      "confidence": 1.0,
+      "ideal": "本页在双身份静态巡检中至少留档 4 态：默认（空表单）、滚动-底部（安全说明+去登录出口）、校验错误（行内红框+Toast）、键盘弹起（cursor-spacing=120 生效态），作为理想图对照与后续轮次回归基线。",
+      "fix": "静态巡检采集路径改为「logout 冷启动 + auto-reLaunch 直开」（与 REG01 同路径，已证可达）；若巡检框架必须走登录态 A/B 身份，则为注册类守卫页添加采集白名单或预清理 storage 的采集前钩子。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-014",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG01-after.png（HEAD 新鲜，缺陷几何可直接量测）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "状态栏高度补偿把 hero 标题组下推后，副标题「用手机号注册，开始遇见同频的人」与表单卡间距仅剩约 1px（DevTools 实测贴线），状态栏更高的真机上副标题下半将被卡片遮盖。机制：hero 高度固定 480rpx（index.vue:777）、卡片 margin-top:-64rpx（index.vue:859）→ 卡片顶恒为 416rpx=208px，不随状态栏变化；而标题组 top=calc(var(--statusbar, env(safe-area-inset-top)) + 208rpx)（index.vue:827），--statusbar 由 uni.getSystemInfoSync().statusBarHeight 注入（useStatusBarHeight.ts:13-15，真机即真实状态栏高度）→ 状态栏每高 1px，副标题下移 1px 而卡片顶不动。实测（python 像素扫描 REG01-after.png，373×820）：副标题墨迹底 y≈206px、卡片白底顶 y=207px（与代码 416rpx=208px 预期吻合），即模拟器 statusBarHeight≈41px 注入时已零间距；44px 真机（iPhone X 级）副标题行盒越界约 3px，47-54px 机型（iPhone 14/15 Pro 级）越界约 6-13px，25rpx（12.5px）行高的副标题下半被卡片遮盖。这正是 useStatusBarHeight.ts:5-7 注释所述「状态栏叠印」类 P0 的镜像场景：补偿加在了不需要它的标题组上（208rpx=104px 定位在设计稿 375×812 构图中已天然避开 ≤44px 状态栏约 60px）。",
+      "evidence": "① 像素实测：REG01-after.png 副标题墨迹行 y=198-206（python 暗像素扫描 x=20-190 逐行计数）、卡片顶白行 y=207——间距 1px；② 代码：apps/client/src/pages/register/index.vue:777（hero height 480rpx）、:827（hero__txt top calc(var(--statusbar)+208rpx)）、:859（card margin -64rpx 40rpx 0）、:848-853（hero__sub 25rpx×1.55）；③ 注入源：apps/client/src/composables/useStatusBarHeight.ts:13-15（statusBarHeight 直通注入）；④ 29a2b1df diff（83dbeff7..29a2b1df）证实 top:calc(var(--statusbar)…) 为 round-2 新增，2026-09-20 旧批次截图（PAGES-REGISTER-INDEX-01-after.png，同机位副标题-卡片间距明显更大）可作前后对照佐证。限制声明：本轮无真机截图，44-54px 机型越界量为代码几何推演值；DevTools 已实测到零间距贴线为直接像素证据。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.78,
+      "ideal": "任何状态栏高度下副标题与卡片顶保持设计稿间距（375×812 稿约 31px，DevTools 现状仅 1px）：标题组定位不随 --statusbar 无界下推，真机副标题完整可见无裁切。",
+      "fix": "hero__txt 恢复设计定值 top: 208rpx（208rpx=104px 已避开 ≤44px 状态栏，无需补偿；R2-002 的补偿对该元素属过度应用），hero__back 保留 calc(var(--statusbar)+88rpx)（返回键必须避开状态栏，该处补偿正确）；或改 hero 高度为 calc(var(--statusbar, 0px) + 480rpx) 使卡片随状态栏整体下移。修复后需在 44px 状态栏模拟器（iPhone X）与真机各截一帧回归。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/register/index",
+      "observation": "HEAD 默认态完整渲染且与理想素材同族（L1 结构/L2 信息层级/L4 卡片尺寸一致）：REG01-after.png 目验——hero 插画（萌芽吉祥物抱粉心+校园背景，与素材/寻觅注册页-素材_assets/b5163cb0 主视觉及 apps/client/src/static/assets/images/register/reg-hero-illustration.jpg 同图源构图）、左上白底圆形返回键、XUNMI·CAMPUS 眉题+「创建账号」+副标题、账号信息卡（手机号/验证码+获取按钮/密码×2 带明文切换）、基础身份卡（昵称/出生日期+「需满 18 周岁」hint）、置灰「注 册」主按钮、协议行未勾选、安全说明、「已有账号？去登录」全部在位，与 v3.1-contract §14「注册阶段引导可跳过」及设计规范字段清单一致。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG01-after.png（105237B，2026-09-23 落盘）；对照 素材/寻觅注册页-素材_assets/b5163cb0-miora_text_to_image-1789186272177-0-dd3e85895457.jpg 与 apps/client/src/static/assets/images/register/reg-hero-illustration.jpg（本轮均实读目验）"
+    },
+    {
+      "page": "pages/register/index",
+      "observation": "手机号输入态渲染正确：REG09-after.png 目验 17 位超长输入被截断格式化为「138 8888 8888」（3-4-4），行内清除图标出现，无溢出无换行破坏 96rpx 字段高度。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG09-after.png（HEAD 新鲜批次）；exec-results.json#REG09（value 实测 11 位）"
+    },
+    {
+      "page": "pages/register/index",
+      "observation": "品牌色 token 谱系核对（不作为缺陷）：页面全链渲染 --c-brand=#36C99A（CTA 渐变/获取验证码按钮/协议链接/去登录/聚焦边框），与 v3.1-contract.md:21 冻结值 Primary #34C98A 存在偏差；但注册页自身设计规范已明文裁决该差异——deliverables/注册页/寻觅注册页-设计规范.md:95「主色（青藤绿）#34C38F → #36C99A 采用工程值，两色肉眼难辨，避免全站二色并存」，且 theme/design-variables.scss:15 $brand-500 与 theme/tokens.ts:180 双源一致。属有书面依据的既裁事项，非本页执行偏差，不立 Issue。",
+      "evidence": "git show 29a2b1df:docs/design/v3.1-contract.md:21（#34C98A）vs deliverables/注册页/寻觅注册页-设计规范.md:95（裁决原文）vs apps/client/src/theme/design-variables.scss:15 与 apps/client/src/theme/tokens.ts:180（均 #36C99A，本轮实读）"
+    },
+    {
+      "page": "pages/register/index",
+      "observation": "置灰主按钮白字对比度实测约 1.28:1（#FFFFFF on #DCE5E2，逐通道相对亮度计算），低于常规可读标准——但该态为设计规范 §205 明文规定「disabled：#DCE5E2 纯色/白字/无阴影」，且 WCAG 1.4.3 豁免非活动控件；REG01-after.png 中「注 册」字样仍可辨认。符合设计稿，不立 Issue，仅留档供后续设计演进参考。",
+      "evidence": "apps/client/src/pages/register/index.vue:1104-1107（.submit-btn--disabled background var(--c-status-disabled,#dce5e2)）+ :1097-1102（__text color #ffffff）；deliverables/注册页/寻觅注册页-设计规范.md:205；REG01-after.png 底部目验"
+    },
+    {
+      "page": "pages/register/index",
+      "observation": "证据时效与分工边界：① 编号 01-22 截图（2026-09-20）为旧构建佐证（pre-29a2b1df），未据其下结论；② 小控件热区<88rpx（hero__back 68 / field__clear 32 / field__eye 40 / agree__chk 32 rpx）已由交互判定员立 MP-R1-PAGES-REGISTER-INDEX-002（Interaction P3）、代码审查员立 MP-R1-PAGES-REGISTER-INDEX-008（Interaction P4），本审查不重复；③ 代码审查员 12 项（001-012）已核对清单避免重复，其中 005（裸 #ffffff token 缺口）已覆盖 UI token 层缺口类问题。",
+      "evidence": "reports/audit/round-1/interact/PAGES-REGISTER-INDEX-judge.json issues[0]（id -002）；reports/audit/round-1/code-findings/PAGES-REGISTER-INDEX.json issues 001-012（本轮实读全量）；文件时间戳 ls -la 实测（01-after=2026-09-20 07:28 vs REG01-after=2026-09-23 05:21）"
+    }
+  ],
+  "coverage": [
+    "pages/register/index —— 13 项举证式核对说明（本页有 2 个 Issue，非「无问题」页，仍逐项列明核对路径）：",
+    "1. 截图已看：REG01/REG09（HEAD 新鲜）逐张目验+局部 3x 放大；REG08 实拍漂移至协议页已识别并排除；编号 01-22（旧构建）抽验 01-after 用于 29a2b1df 前后对照。",
+    "2. 理想图已对照：素材 b5163cb0 主视觉 + reg-hero-illustration.jpg 实读比对 REG01（L1 结构/构图同族）；ask 注明 R13「无整页理想稿」，L5-L10 以设计规范 token 表 + 代码为准（规范：deliverables/注册页/寻觅注册页-设计规范.md 实读 §65/72/95/164/176/190/194/205）。",
+    "3. 滚动已测（受限）：REG29 observe-only（scrollPos=top，safety-note/to-login DOM present 证可达），HEAD 无滚动-中/底部像素留档——归入 Issue 013 缺口，未据旧批次替代。",
+    "4. 点击已测（交互判定员职责域）：REG04/05/06/07/16/17/18/23/24/28 已执行，A6 仲裁多数 UNVERIFIED（执行侧故障），视觉侧不复判。",
+    "5. 返回已测（交互判定员职责域）：REG03/04/30 均 UNVERIFIED（.hero__back 快照竞态），A6 已仲裁，不重复。",
+    "6. safe-area 已查：底部 env(safe-area-inset-bottom)+24rpx（index.vue:770）在案；顶部 --statusbar 补偿查出 Issue 014（副标题-卡片零间距/真机裁切）。",
+    "7. TabBar 已查：pages.json 实读——register 非 tabBar 页（'tabBar' 首现处为注释块，list 与 register 无关），无 TabBar 遮挡问题。",
+    "8. 空态已查：本页默认即空表单态（REG01），渲染完整无错误空态。",
+    "9. 长文已查：REG09（17 位手机号截断）HEAD 像素在案；昵称 20 字/emoji（REG14）与生日回显（REG15）仅有 DOM 证词+旧批次像素，如实标注证据层级。",
+    "10. 加载态已查：submit-btn--loading/sms-btn spinner 样式在码（index.vue:1109-1120/1043-1050），HEAD 无运行态像素（未触发成功链路，A6 亦判 REG25 UNVERIFIED）——归入 013 缺口如实说明。",
+    "11. 错误态已查：行内错误+抖动+Toast 三件套有 DOM 证词（REG16/19/20/21/22）与旧批次像素（02-after-toast 等），HEAD 新鲜错误态像素因截图 timeout 未落盘——部分依赖旧批次佐证，如实标注。",
+    "12. 组件一致性已查：字段体系（96rpx 高/24rpx 圆角/36rpx 图标/焦点描边）与登录页同一设计语言（设计规范同一族）；未逐 token 并排 login 工作区版本（login/index.vue 有未提交修改，超出本页范围）。",
+    "13. 历史 Bug 回归已查：A2 代码审查 MP-R1-PAGES-REGISTER-INDEX-001（R21 captureException 噪音回归）已核为「已修复待终验」，本审查不重复；R13 判定（素材/参考图/拆分图标_参考_* 禁作页面级对照）已遵守，本页对照仅用 b5163cb0 主视觉素材。",
+    "未做/不可做（如实声明）：真机（44px+ 状态栏）实拍验证——本轮环境无真机通道，Issue 014 的越界量为代码几何推演；DEV 构建专属页面（subpackages/setup/dev）不属本页范围。"
+  ]
+}

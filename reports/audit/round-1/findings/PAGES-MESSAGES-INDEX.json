@@ -1,0 +1,143 @@
+{
+  "round": "R1",
+  "page": "pages/messages/index",
+  "reviewer": "A3 视觉审查员（截图与证据视觉/布局/状态审查；代码层 A2 findings 024 之前序号已被占用，本文件从 024 续号）",
+  "generatedAt": "2026-09-23",
+  "evidenceManifest": {
+    "gitSha": "aefd8a72",
+    "matchesCurrent": true,
+    "checkedAt": "2026-09-23",
+    "note": "reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72 与当前 HEAD 一致，本轮全部证据按新代码有效处理。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-024",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png（放大件 reports/audit/round-1/tmp-a3/quickcards.png）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "快捷通知卡「去看看/去回复」按钮样式与卡片内部布局偏离理想图：①按钮为实心绿渐变+白字+绿色投影（L8 颜色/风格偏差，理想为浅绿底小胶囊+绿字的轻量描边风）；②按钮 align-self:flex-start 落左下（理想图 CTA 在卡片右下）；③图标圆与标题/副标纵向堆叠（理想图为图标居左、文案居右的横排结构，L1 偏差）。代码注释自称「对齐 2026-08-27 理想图修复」，与当前冻结链路的理想图（素材/理想效果图/消息.png）冲突，应按现行理想图收敛。",
+      "evidence": "实拍放大件 tmp-a3/quickcards.png：两枚饱和绿色实心胶囊、白字、居左；理想图 素材/理想效果图/消息.png 快捷卡区（放大件 tmp-a3/ideal-quick.png）：浅绿底、绿字、居右、图标左文案右横排。代码：apps/client/src/pages/messages/index.vue:740 `background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-600) 100%)`、:735 `align-self: flex-start`、:747 文字 --c-neutral-0 白色、:682-694 quick-card 为 flex-column（图标在上）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/消息.png：浅绿底绿字小胶囊、卡片右下对齐、图标圆与标题/副标横排。",
+      "fix": "index.vue:734-748 快捷卡按钮改浅绿 tint 底（如 var(--c-brand-50)）+绿字（var(--c-text-brand)）、去渐变投影，align-self 改 flex-end；卡片内部改横排（icon-wrap 与 body 同行），对齐理想图结构。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-025",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png（放大件 reports/audit/round-1/tmp-a3/rows.png vs tmp-a3/ideal-rows.png）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「互相关注」关系标签渲染为蓝色（status-mutual：底 rgba(77,141,255,.12)、字 #4D8DFF），实拍叶知秋行标签为浅蓝；而理想图消息.png 中小雨的「互相关注」为中性灰底灰字，任务简报记的第三种口径是 #3CC99A 绿——三种来源互相冲突，但当前蓝色与「理想图（页面级唯一对照依据）」和「任务简报」均不符。其余三态（聊天中绿/暧昧中粉/刚认识灰）与理想图一致。",
+      "evidence": "实拍 tmp-a3/rows.png：叶知秋标签浅蓝底蓝字「互相关注」；理想 tmp-a3/ideal-rows.png：小雨标签浅灰底灰字「互相关注」；任务简报理想描述记「互相关注#3CC99A」（与理想图也冲突，需产品定口径）。代码：apps/client/src/pages/messages/index.vue:1089-1094 `.status-mutual{background:rgba(77,141,255,.12)} .status-mutual .chat-item__status-text{color:var(--c-text-link,#4D8DFF)}`。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "以素材/理想效果图/消息.png 为准：中性灰底灰字；若产品裁定走简报口径则应为 #3CC99A 绿。两种理想口径都不是当前的蓝。",
+      "fix": "与产品确认口径后改 .status-mutual 一处底/字色（index.vue:1089-1094）；同步在 v3.1 契约补该芯片色冻结值，消除三源冲突。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-026",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "（空态实拍缺失——A/B 两组「空态」截图均为默认态字节副本，见 027；本条按代码层核实）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "空态缺「推荐认识的人」兜底模块且无任何去路：页面理想规格明确「空态=推荐认识的人兜底、骨架加载」，现实现空态仅吉祥物图+「还没有新的缘分/去附近看看吧」两行纯文本——无推荐人选列表，且 desc 无 @tap、「去附近看看吧」是不可点的死文案，用户在空态下没有任何行动出口（只能自行切 tab）。",
+      "evidence": "apps/client/src/pages/messages/index.vue:363-369 空态模板仅 `IMAGE_PATHS.MASCOT.DEFAULT` + 「还没有新的缘分」+「去附近看看吧」，整块无 tap 绑定、无推荐人组件；对照任务简报理想描述「状态：空态=推荐认识的人兜底」。行为侧旁证：exec-results.json idx230（MSG07）空态从未被触发（pre-FAIL），空态视觉从未取证。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "空态显示推荐认识的人兜底列表/入口（至少给「去附近看看」可点去路），配合骨架加载。",
+      "fix": "空态模板接入推荐人选数据（如 people/nearby 推荐 3 人小卡）或把「去附近看看吧」改为可点按钮跳 ROUTES 下 nearby；按理想规格补推荐兜底模块后重拍空态截图。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-027",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__空态.png、reports/screenshots/round-1-tour/A/pages_messages_index__交互后.png",
+      "category": "Consistency",
+      "severity": "P2",
+      "description": "证据缺陷：本页「空态」「交互后」两张状态截图与「默认」逐字节相同（A 组三张 MD5 均为 b2b7019ff747cc24ff116f8bcbc239cc，B 组三张均为 2e42b497aae589c21df2edcc5a016b5f）——空态/骨架/错误态/交互后四种状态在本轮 tour 中从未被真实捕获，与文件名标注的状态不符。行为证据同向印证：MSG06 骨架 absent（加载过快）、MSG07 空态 pre-FAIL（.dashboard 输入元素不存在）、MSG08 错误态 act-FAIL（tap 目标不存在）均未真正进入目标状态。空态与错误态的页面级视觉表现在本轮无任何截图证据。",
+      "evidence": "本轮执行：python hashlib 对六张截图 MD5 比对（A 组三张同值 b2b7019f…、B 组三张同值 2e42b497…）；reports/audit/round-1/interact/exec-results.json idx229（MSG06 .uni-skeleton:absent）、idx230（MSG07 .empty-chat:absent + pre-FAIL:input element not found: .dashboard）、idx231（MSG08 act-FAIL:tap(__CAND__) element not found）。",
+      "sources": ["screenshot", "log"],
+      "confidence": 1.0,
+      "ideal": "每张状态截图对应真实独立页面状态；空态=空态渲染、交互后=操作后可见变化，哈希互异。",
+      "fix": "重拍：空态需先清空 sessions+warmPeople 数据源（mock 注入空数组或独立空态身份）再截图；错误态需断网/坏 token 触发 ErrorState；骨架态需延迟首屏后抓帧。补拍前，本页「空态/错误态已查」不能计为通过。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-028",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png（放大件 reports/audit/round-1/tmp-a3/assistant.png）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "寻觅助手卡未读徽章两处细节偏离理想图：①数字恒带「+」后缀——模板在 Math.min(计数,99) 后拼接字面量「+」，未读=6 时渲染「6+」（实拍如此），理想图为精确数字红点（图中为「2」）；微信语义仅 100+ 才显示 99+；②徽章锚定在吉祥物头像右上角，理想图未读点位于卡片内容区右侧（活动文案行的行末）。",
+      "evidence": "实拍放大件 tmp-a3/assistant.png：粉色徽章文本「6+」压在头像右上；代码：apps/client/src/pages/messages/index.vue:408-410 `{{ Math.min(messagesStore.totalUnreadCount + messagesStore.unreadNotificationCount, 99) }}+`（加号为模板字面量，无条件拼接）、:778-792 .assistant-card__badge `position:absolute; top:-6rpx; right:-6rpx`（锚在 avatar-wrap 上）；理想图 素材/理想效果图/消息.png 助手卡右下「2」精确数字点。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "徽章显示精确未读数（>99 才显示 99+），位置贴合理想图卡片右侧未读点。",
+      "fix": "index.vue:409 改为 `{{ unreadTotal > 99 ? '99+' : unreadTotal }}`（去掉无条件 +）；位置可保留头像锚定（现无活动区时更合理），若恢复活动区块则迁移至理想图位。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/messages/index",
+      "observation": "默认态整体结构与理想图层级一致且信息顺序正确：Header（消息+绿苗+副标）→快捷双卡等宽半屏→寻觅助手官方卡（官方标+未读徽章+箭头）→最近聊天列表（头像+昵称+关系标签+预览+相对时间+免打扰图标）。「正在升温」「活动推荐」两区块因 mock dashboard 无 assistant/warmPeople 数据按 011 修复约定整体隐藏（v-if 守卫），非缺块缺陷。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png；index.vue:425/439/535 v-if 守卫；mock stores/messages/mock-data.ts 无 assistant/warmPeople 注入。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "历史 004（时间列永不显示）视觉证实已修复：列表右侧时间列真实渲染（00:55 / 昨天 / 00:28 / 周一 / 周日，B 组为 01:58 / 昨天 / 01:31 / 昨天 / 周日），无 NaN、无空串；陈默行免打扰图标+时间同排显示（003 修复视觉证实）。",
+      "evidence": "tmp-a3/rows.png 放大可读；index.vue:518 formatTime(session.lastMessageSentAt)；utils/time.ts:384-433 formatChatListTime（diffDays=0→HH:mm，1→昨天，<7→星期）。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "历史 010 视觉证实已修复：自定义导航头部不与模拟器状态栏（1:08/100%电池）及右上胶囊叠印，搜索圆钮位于胶囊正下方留白处；019（缺「+」发起会话入口）视觉证实仍在：header 右侧仅搜索一枚按钮。",
+      "evidence": "tmp-a3/header.png：胶囊与搜索钮无重叠、右侧仅 1 枚圆形按钮；index.vue:342-346 header__right 仅 toggleSearch。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "列表排序非乱序：实拍顺序=置顶组（夏言📌暧昧中）→高意向组（叶知秋 mutual_follow/88）→普通组（陈默 chatting/32、星河、顾言），组内按 lastMessageSentAt 降序。陈默「聊天中」排叶知秋（昨天）之后不违反排序规则——chatting 不在高意向状态白名单且其 relationship.score=32<51（index.vue:122-131），mock 数据核实无误。与理想图的差异仅在「分组置顶」这一文档化的产品决策（2026-09-20 pinned 修复注释），留需求对照员裁决。",
+      "evidence": "tmp-a3/rows.png（夏言行名后可见置顶图钉）；mock-data.ts:19/36/56（pinned:true、score:32、mutual_follow/88）；stores/messages.ts:609-611 时间降序；index.vue:120-141。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "行级未读粉色角标（理想图 2/1 红点）在实拍中全部为 0：mock 数据带 unreadCount 2/1/1/5，但 onShow 即 markAllSessionsRead 红点闭环自动清零，角标只在进入页面前存在（tabBar 层）。这与理想图「页内可见未读数」存在产品级冲突，属既定设计（index.vue:260/276 注释），不判缺陷，留需求对照员裁决；行级角标渲染链本身存在（index.vue:520-522）但本轮无截图可验证其视觉。",
+      "evidence": "tmp-a3/rows.png 五行均无角标；mock-data.ts:19/53/65/72 unreadCount=2/1/1/5；index.vue:274-278 onShow→markAllSessionsRead；助手卡 6+ 徽章=通知未读合计，链路自洽。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "R13-DATA-3894「全链路验收测试消息 2026-09-12」在 mock 构建五会话预览中未出现（预览均为 [语音]/[图片]/普通文本）——该残留属真实后端库行（代码层已证仓库无种子来源），mock 截图无法证实/证伪其真实环境表现，维持代码层「待修复（等授权删双表）」结论不变。",
+      "evidence": "tmp-a3/rows.png 各行预览文案；stores/messages/mock-data.ts:14-81 五会话预览值；reports/audit/round-1/code-findings/PAGES-MESSAGES-INDEX.json R13-DATA-3894。"
+    },
+    {
+      "page": "pages/messages/index",
+      "observation": "四态关系标签颜色与代码定义一一对应（聊天中=绿、暧昧中=粉、互相关注=蓝、刚认识=灰），字体 20rpx/浅底圆角 8rpx，与理想图芯片形制一致；仅互相关注色相偏离（另立 025）。tabBar 五 tab、消息 tab 绿色高亮、中心寻觅凸起钮，与全 app 自定义 tabBar 口径一致（理想图中心为平面「匹配」tab，属全局导航设计差异，非本页缺陷）。",
+      "evidence": "tmp-a3/rows.png + tmp-a3/tabbar.png；index.vue:1077-1104 status-* 四组样式；index.vue:286-304 标签映射。"
+    }
+  ],
+  "coverage": [
+    "pages/messages/index（R1 视觉审查，证据基线 gitSha=aefd8a72 一致）：",
+    "✅ 截图已看：A 组三张+B 组默认逐张审看，关键区域（头部/快捷卡/助手卡/五行列表/tabBar）3x 放大复核（reports/audit/round-1/tmp-a3/*.png）。",
+    "✅ 理想图已对照：素材/理想效果图/消息.png 左屏逐区对比（L1 结构：区块顺序一致；L3 交互位置：CTA 侧/搜索+加号入口偏差已记 024/019；L4 尺寸：双卡等宽半屏一致；L8 颜色：按钮实心vs浅绿、互相关注蓝vs灰已记 024/025）。",
+    "✅ 滚动已测：行为证据 MSG09（exec-results.json idx232）pageScrollTo bottom/top EXECUTED，top-scrim 显隐 present、chat-item present；页面 padding-bottom 预留 tabBar（index.vue:575）。",
+    "⚠️ 点击已测（部分）：行为证据 MSG02/03/04/08 FAILED（未登录三键在 mock 构建不可达——NotLoggedWaiting v-if 排除 mock，属环境限制非回归；错误态 tap 目标未找到），MSG05 默认态全模块 present EXECUTED；hover 反馈为 class 方案（--hover 类，index.vue:645/695/759/906/965/1034）。",
+    "✅ 返回已查（口径适配）：本页为 tabBar 页，无返回栈语义；任意页 2 步回 tab 的口径不适用本页自身。",
+    "✅ safe-area 已查：header padding 注入 --statusbar/--capsule-right（index.vue:594-598）+实拍无状态栏叠印；底部 calc(112rpx+safe-area+16rpx) 预留。",
+    "✅ TabBar 已查：五 tab 渲染、消息态高亮、最后一条会话不被遮挡（MSG09 + padding-bottom）。",
+    "❌ 空态已查（证据缺失）：空态截图为默认态字节副本（027），MSG07 未触发成功——空态视觉未取证，仅代码层核实（且发现缺推荐兜底，026）。",
+    "⚠️ 长文已查（代码层）：预览行 ellipsis 三件套齐备（index.vue:1105-1111），50/100 字极值未做视觉实测。",
+    "❌ 加载态已查（证据缺失）：骨架 list×5 代码存在（index.vue:357-359），MSG06 观测 absent（首屏过快），无骨架截图。",
+    "❌ 错误态已查（证据缺失）：MSG08 触发失败，ErrorState 视觉未取证（重试穿透缓存逻辑已由代码层 008 核实）。",
+    "⚠️ 组件一致性已查（本页内）：关系标签/未读徽章/官方徽章三组件页内自洽；与 chat-session/likes 页的跨页芯片对比未在本轮展开（一致性维跨页并排留待汇总轮）。",
+    "✅ 历史 Bug 回归已查：004 视觉证实修复、010 视觉证实修复、019 视觉证实仍在、005 mock 下不可达（代码层已证接线完整）、R13-DATA-3894 mock 不可见维持待修、006..018 P2 簇按代码层 findings 复核不重复报。",
+    "未基于新代码验证的项：无——manifest gitSha 与当前一致，本轮所有结论基于 aefd8a72 工作区代码与同基线截图。"
+  ]
+}

@@ -387,6 +387,8 @@ export default {
     "campusCircles": "校园圈",
     "campusPublicHint": "公开可看 · 认证学校后可加入专属校园圈",
     "campusBrowse": "公开浏览",
+    "campusJoined": "已加入",
+    "campusVerify": "去认证",
     "nearbyPosts": "附近动态",
     "myConnections": "我的人脉",
     "postsEmpty": "附近暂时没有动态，去兴趣圈看看吧",
@@ -767,6 +769,12 @@ export default {
         "time": "七夕当天 18:30-21:00",
         "location": "湖畔草坪",
         "desc": "七夕特别企划：在星空下认识心动的人，游戏与表白墙等你来解锁。"
+      },
+      "cityCamp": {
+        "title": "城市露营计划",
+        "time": "周六 14:00-18:00",
+        "location": "中央公园 2.3km",
+        "desc": "和兴趣相近的同学一起去城市公园露营：天幕、野餐与破冰小游戏，名额有限先到先得。"
       }
     }
   },
@@ -816,7 +824,7 @@ export default {
       "loading": "正在加载附近的同学…",
       "loadFailed": "加载失败，请重试",
       "empty": "暂时没有附近的同学",
-    "seeAll": "看看全部推荐",
+      "seeAll": "看看全部推荐",
       "likeHint": "匹配成功，去打个招呼吧",
       "matched": "匹配成功",
       "messageHint": "点击卡片查看主页后可发起聊天",
@@ -937,7 +945,6 @@ export default {
     "superLikeFailed": "超级喜欢失败，请重试",
     "remainingTimes": "{n} 次",
     "remainingToday": "今日剩余 {n} 次",
-    "nearby": "附近",
     "sameSchool": "同校",
     "sameCity": "同城",
     "filterNearby": "附近",
@@ -1128,8 +1135,7 @@ export default {
     "menuNotInterested": "不感兴趣",
     "menuNotInterestedDesc": "减少此类推荐",
     "menuReport": "举报",
-    "menuReportDesc": "提交违规内容举报",
-    "recommend": "推荐"
+    "menuReportDesc": "提交违规内容举报"
   },
   "matchGuide": {
     "subtitle": "你和 {name} 互相喜欢了对方",
@@ -1186,17 +1192,16 @@ export default {
     "send": "发送",
     "avatarMenuAria": "头像操作",
     "peerFallbackName": "对方",
+    "startChatAria": "发起会话",
     "patMessage": "你拍了拍{name}",
     "viewProfile": "看主页",
     "pat": "拍一拍",
     "muteLocalOnly": "已为本机开启免打扰（当前会话不支持同步）",
     "imageTempUnsupported": "临时会话暂不支持发送图片",
     "imagePartialFailed": "已发送 {ok} 张，{fail} 张失败",
-    "loadFailed": "加载失败，请重试",
     "sessionSubtitle": "与匹配对象的消息",
     "emptyTitle": "暂无聊天消息",
     "emptyDesc": "去寻觅页面匹配新朋友，开始聊天吧",
-    "send": "发送",
     "voice": "语音",
     "pinned": "置顶",
     "online": "在线",
@@ -1685,6 +1690,7 @@ export default {
     "voiceDeleted": "语音状态已删除",
     "voiceChooseFailed": "选择语音失败",
     "voiceNotSupported": "当前环境不支持语音录制",
+    "voicePlayFailed": "语音播放失败，请重试",
     "voiceReRecord": "重录",
     "voiceReRecordAria": "重新录制语音",
     "taskCenter": "任务中心",
@@ -1919,7 +1925,7 @@ export default {
       "report": "举报",
       "message": "私信",
       "statsView": "浏览",
-      "statsShare": "转发",
+      "statsShare": "分享",
       "statsComment": "评论",
       "statsLike": "赞",
       "commentsTitle": "全部评论",
@@ -2694,6 +2700,7 @@ export default {
     "interactionMessages": "互动消息",
     "emptyTitle": "暂无消息",
     "emptyDesc": "去寻觅页面匹配新朋友",
+    "emptyExploreAria": "去附近看看",
     "likeNotice": "喜欢通知",
     "commentNotice": "评论通知",
     "followNotice": "关注通知",
@@ -3526,7 +3533,19 @@ export default {
       "anonymousAuthor": "匿名校友",
       "loadingMore": "加载中...",
       "noMore": "没有更多了",
-      "emptyTopics": "该分类下还没有话题，快来发布第一个吧"
+      "emptyTopics": "该分类下还没有话题，快来发布第一个吧",
+      "hotCirclesTitle": "热门兴趣圈",
+      "viewMore": "查看更多",
+      "circleNames": {
+        "photography": "摄影",
+        "travel": "旅行",
+        "music": "音乐",
+        "sports": "运动",
+        "food": "美食",
+        "gaming": "游戏",
+        "reading": "阅读",
+        "pets": "宠物"
+      }
     },
     "postTopic": {
       "errTitle": "请输入标题",
@@ -3549,9 +3568,7 @@ export default {
       "imagePickLabel": "上传图片",
       "imagePickHint": "添加图片",
       "maxImages": "最多上传{n}张图片",
-      "privacyRequired": "需同意隐私协议后才能选择图片",
-      "hotCirclesTitle": "热门兴趣圈",
-      "viewMore": "查看更多"
+      "privacyRequired": "需同意隐私协议后才能选择图片"
     },
     "topicDetail": {
       "replySuccess": "回复成功",

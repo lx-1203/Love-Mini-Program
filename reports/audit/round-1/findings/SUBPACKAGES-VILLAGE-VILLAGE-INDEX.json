@@ -1,0 +1,115 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/index",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-VILLAGE-VILLAGE-INDEX（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "evidenceCache": {
+    "manifest": "reports/audit/round-1/screenshot-manifest.json",
+    "manifestGitSha": "aefd8a72",
+    "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+    "gitShaMatch": true,
+    "execResultsGitSha": "aefd8a72",
+    "freshness": "截图 mtime 2026-09-23 01:11 晚于 index.vue 末改（2026-09-22 17:22）与 zh-CN.ts（18:56），证据未过期",
+    "note": "ask 称「本批页面本轮没有静态截图」，但 manifest 第 702-715/1472-1485 行列出本页 6 张截图且磁盘实存（154037~214421 字节，逐一核验 OK）——按实证审图，不为本页虚立「缺截图」问题；失败原因清单中的 7 页（dev/register/register-success/campus/matching/activities-detail/showcase）均非本页。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-VILLAGE-INDEX-201",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__滚动-中部.png; reports/screenshots/round-1-tour/A/subpackages_village_village_index__滚动-底部.png; reports/audit/round-1/findings/evidence-MP-R1-VILLAGE-INDEX-201-statusbar-overlap-zoom.png",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "整页 window 滚动取代 scroll-view 内部滚动：滚动后头部（标题+搜索+5 频道 Tab）完全滚出视口不可达，feed 内容直接顶入状态栏/胶囊投影区——滚动-中部截图帖子图片直达屏幕最顶、贴在胶囊下方；滚动-底部截图上一帖操作栏（1 天前 · 27/76/76/25）与系统状态栏（1:10 / 100% 电量）同行渲染、文字互相叠压几乎不可读（放大裁剪件已归档）。搜索/切频道/置顶条在任意滚动位置均不可用，须先滚回顶部。",
+      "evidence": "截图证据：A/B 双身份滚动-中部与滚动-底部 4 张全部无头部、内容压状态栏（B 同 A）。代码根因（本轮实读）：apps/client/src/subpackages/village/village/index.vue:879 `.village-page { min-height: 100% }`——flex 容器用 min-height 时高度随内容增长，:959-962 `.channel-feed { flex: 1; overflow-y: auto }` 失去高度约束 → scroll-view 不限高、整页滚动；:881 `overflow: hidden` 使 :891 `position: sticky; top: 0` 的最近滚动容器变为永不滚动的 .village-page，sticky 失效、头部随页面滚走。此与同轮代码审查 coverage「App.vue page{height:100%} 定高 + channel-feed 内部滚动而非页面级滚动；头部 sticky 在滚动容器外等效固定」的结论矛盾，按观察证据制以小程序真实表现（截图）为准。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "任何滚动位置：头部（标题+搜索+频道 Tab）固定在胶囊之下保持可见可点；feed 仅在 scroll-view 内部滚动，内容永不进入状态栏与胶囊投影区。",
+      "fix": "index.vue:879 将 .village-page 的 min-height:100% 改为 height:100%（页面为 custom 导航且 App.vue page 已定高 100%，改后 flex:1 的 .channel-feed 恢复受限高度、内部滚动生效）；或头部改 fixed 定位并给 scroll-view 预留等高 padding-top。修复后回归两张滚动截图场景（滚到中部/底部截图核对头部在位、无状态栏叠印）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-202",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png; reports/audit/round-1/findings/evidence-MP-R1-VILLAGE-INDEX-202-header-squeeze-zoom.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "【R13 判定复核：仍在】标题+副标题+搜索挤一行。首屏头部单行内并排：品牌标题「圈子」（fs-5xl/800 级大字）+副标题「校园恋爱社区」+搜索框，搜索框被压缩至约 41% 屏宽（155/373px，受 max-width:320rpx 与左侧标题组挤占），placeholder「搜索感兴趣的人、标签和…」截断显示省略号；与本页理想内容顺序「顶部搜索+发帖」独立整行不符。",
+      "evidence": "A/B 默认态截图头部行 + 3.3 倍放大裁剪件（_subtitle_zoom3 归档）：标题组占行宽约 47%，搜索框起点 x≈158/373，placeholder 尾部「…」截断可见；代码 apps/client/src/subpackages/village/village/index.vue:587-605（.village-header__top 单行 flex 同时容纳 title-wrap 与 village-search）、:929-940（.village-search flex:1 + max-width:320rpx + margin-left）。副标题文案「校园恋爱社区」与 i18n zh-CN.ts:1815 一致（放大核对，排除文案错位）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "搜索框独占一行全宽胶囊（高 ≥64rpx、无截断），品牌标题行独立（或按 v3.1 §三 圈子/动态广场结构：搜索行 → 入口行 → Feed）。",
+      "fix": "头部拆两行：第一行标题+副标题，第二行全宽搜索（保留 :904 的胶囊避让 padding-right 与 --statusbar 顶留白）；或将标题组缩小降级、搜索提为整行主入口。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-203",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png; reports/screenshots/round-1-tour/A/subpackages_village_village_index__滚动-中部.png; 素材/理想效果图/帖子.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "【R13 判定复核：仍在】帖子卡结构与理想图规范相反（ask 指定素材/理想效果图/帖子.png 为本页帖子卡结构对照）。逐层对照：L2 信息层级——理想把相对时间放昵称次行（「摄影圈 · 30 分钟前」），实际把时间沉底到动作栏最左，次行改为个人参数（94年 · 北京 · 年薪30w+ · 985硕士）；L3 交互位置——理想动作栏为「点赞(红心带计数,最左) / 评论 / 分享(最右)」，实际为「相对时间(最左) / 评论 / 点赞 / 分享 / 收藏」，点赞从第一位移到第三位；L7 图标——理想分享为箭头形分享图标，实际为星芒形 SPARKLES 图标且为死控件（INDEX-108 已另案，不重复计）；结构缺项——理想卡头有绿色学校徽标 pill（北京大学+盾形图标）、卡尾有位置 chip（北京大学-未名湖校区 · 距你 1.2km），实际无学校徽标（校友 pill 仅示同校身份）无位置行。整页主 feed 每张卡均受影响。",
+      "evidence": "A默认/滚动-中部截图帖子卡与理想图帖子.png 逐元素对照（头像行构成/次行内容/动作栏组成与排序/图标形态）；代码 components/village/PostCard.vue:256（<text class=\"post-card__time\">{{ formatRelativeTime(post.createdAt) }}</text> 位于底部动作栏而非昵称次行）；截图实测动作栏顺序：时间→评论 32→点赞 128→分享→收藏 42。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "帖子卡按 帖子.png 结构：头像+昵称+学校徽标 pill+「圈子名 · 相对时间」次行+右侧关注钮+正文+图组+位置行+「点赞/评论居左、分享居右」动作栏。",
+      "fix": "PostCard 重排：相对时间移入昵称次行（与圈子名并列）；动作栏改「点赞、评论居左，分享居右」并将 SPARKLES 换为分享箭头图标；数据含学校字段时渲染绿色学校徽标 pill、含位置字段时渲染位置 chip（与理想图对齐；与 INDEX-108 分享行为修复联动）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "默认态双身份一致且结构完整：头部（圈子+校园恋爱社区+搜索）→5 频道 Tab（今日广场选中态绿色下划线+填充图标）→「置顶 1 条」折叠条→帖子流（头像+昵称+校友 pill+参数行+正文+配图+话题 chip+动作栏）→底部发帖条（在今日广场发帖…+绿色发帖钮）。A/B 两身份渲染逐像素级一致（同 mock 数据），无身份分支差异。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png 与 B 同名帧对照；i18n zh-CN.ts:1814-1815 文案一致"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "【回归通过·MP-R1-VILLAGE-002 / INDEX-112 终验视觉证据】搜索框右端未伸入胶囊区：默认态下头部整行起画于胶囊底缘之下（胶囊 y≈17-38，搜索行 y≈57-77，纵向已错行），横向搜索框右缘 x≈332/373 与胶囊左缘 x≈283 无投影冲突；112px 预留在所截机型上有效。归档供「已修复待终验」转终验证据。",
+      "evidence": "reports/screenshots/round-1-tour/A、B …__默认.png 头部区放大核对；index.vue:902-904 padding-right 计算在位"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "【回归通过·R13「绝对日期」线索】全部帖子时间均为相对格式（11分钟前 / 4小时前 / 5小时前 / 7小时前 / 1 天前），未出现绝对日期串；PostCard.vue:256 实证 formatRelativeTime 在用。该 R13 判定项已修复。",
+      "evidence": "reports/screenshots/round-1-tour/A …__默认/滚动-中部/滚动-底部.png 三态全部时间字段目视核对；PostCard.vue:256"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "【支撑既有发现·不重复立项】mock 图文不符族在首屏用户可见：图书馆自习区帖配水珠微距图（默认态第 2 卡）、学咖啡拉花帖配海岸悬崖图（滚动-中部橙子卡）、雨天泡茶看书帖配风暴海岸礁石图（滚动-底部叶青卡）、走遍中国西部帖配欧式城堡图（滚动-底部夏言卡）。与代码审查 MP-R3-VILLAGE-INDEX-001（15 对清单）同族，视觉证据补充归档，不另立项。",
+      "evidence": "reports/screenshots/round-1-tour/A 三张静态截图帖子卡图文并读；对照 reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json MP-R3-VILLAGE-INDEX-001"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "活动频道版式正常：推荐活动区头+副题、活动卡（封面图+标题+状态 chip「预告/进行中(橙)/已报名(置灰)」+时间·地点·人数元信息行+绿色报名钮）层级清晰；底部发帖条占位随频道切换为「发帖推荐活动…」。INDEX-102 修复的行为旁证：VI22 实测点「报名」弹「报名成功」toast 且路由停留本页（.activity-card__enroll--done 出现），未误触详情跳转。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI14-after.png、VI22-before/after.png；exec-results.json VI22 toast:[报名成功] route 停留 village/index"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "【视觉证据缺口·如实标注】以下状态在本批证据中未被真实捕获，视觉层不验证：①学校圈认证门——VI14 截图实为活动频道（Tab 绿色下划线在「活动」），VI15/16/17 选择器未命中与之一致；②热度榜——VI23 截图仍是今日广场；③LockScreen 锁定态——VI01 记录声称锁定态但截图为普通页面且 dom .lock-screen:absent；④回到顶部按钮、骨架屏、空态、错误态、下拉刷新中态、发帖开关关闭态——对应截图证据字段为 ERROR:timeout 或元素未命中。上述均留待交互判定员/下轮补证。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01/VI14/VI23-after.png 目视比对；exec-results.json 对应条目 dom/evidence 字段"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "observation": "安全区与非 Tab 页核对：底部发帖条固定且与 home indicator 之间保留安全区留白（page-bottom-safe），滚动-底部帧末卡完整可见无遮挡；本页已移出 TabBar（pages.json tabBar.list 无 village），顶部无原生导航栏与 TabBar 遮挡问题，与 routes.ts「社区二级页」定位一致。",
+      "evidence": "reports/screenshots/round-1-tour/A …__滚动-底部.png 底部区；pages.json tabBar.list"
+    }
+  ],
+  "coverage": [
+    "截图已看：本页 6 张静态（A/B × 默认/滚动-中部/滚动-底部，manifest 702-715/1472-1485 行，磁盘逐一核验存在）+ 4 张交互帧（VI01/VI14/VI22/VI23/VI38），全部逐张目视审查。",
+    "理想图已对照：素材/理想效果图/帖子.png（ask 指定的帖子卡结构依据）逐元素对照→偏差记 MP-R1-VILLAGE-INDEX-203；本页无一对一理想图，内容顺序对照 ask 给定理想描述（顶部搜索+发帖→三入口→Feed）→搜索行挤压记 202；频道结构差异（现实 5 频道 Tab vs 理想描述「三入口关注/同城/发现」）属产品结构演进且 R13 判定未列为偏差，如实记录此处不立项、留需求对照员裁决。",
+    "滚动已测：滚动-中部/底部双身份 4 帧已审→发现 201（页面级滚动+头部滚走+状态栏叠印）。",
+    "点击已测：本页 48 条交互记录全量读取（exec-results.json manifest=SUBPACKAGES-VILLAGE-VILLAGE-INDEX，EXECUTED 25/FAILED 23）；判定权在交互判定员，我仅取截图态作视觉证据（VI22 报名态正常、VI14/VI23/VI01 实际画面与记录声称频道不符已如实标注）。",
+    "返回已测：视觉层未获有效证据（VI47 证据字段 ERROR:timeout），如实标注未验证。",
+    "safe-area 已查：发帖条底部安全区留白可见（滚动-底部帧），通过。",
+    "TabBar 已查：本页非 Tab 页（pages.json 无 village），无 TabBar 遮挡问题；头部胶囊避让在默认态有效（见观察 2）。",
+    "空态已查：mock 数据下空态未出现，VI48（发帖开关关闭态）截图 ERROR:timeout——空态视觉未验证，如实标注。",
+    "长文已查：本批帧内帖子正文均为 1-3 行中短文案，500/1000 字长文与多图九宫格极限态未被捕获，如实标注未验证（北鸟卡 2 图并排为多图唯一实样，渲染正常）。",
+    "加载态已查：骨架屏（VI08）证据缺失（top=login、无截图），未验证；下拉刷新中态（VI40）截图存在但未逐帧审（refresher 收起态正常）。",
+    "错误态已查：无错误态截图证据，未验证，如实标注。",
+    "组件一致性已查：页面白底+绿色 accent 选中态符合 v3.1 节奏红线（村口=白底非 Hero 区）；发帖条占位随频道切换、状态 chip（预告/进行中/已报名）与全站语义色一致；PostCard/ActivityCard/ChannelTabs/ChannelComposerBar 与其他 village 子页（detail/history/post）共用组件未见风格分裂。",
+    "历史 Bug 回归已查（7 条线索逐一核对）：MP-R1-VILLAGE-002/INDEX-112 修复在位（默认态截图终验证据归档，观察 2）；INDEX-101 代码已修+VI24 频道记忆/VI41 滚动恢复 EXECUTED 旁证（但频道切换截图态与记录不符，视觉终验缺口已标注）；INDEX-102 修复在位（VI22 行为旁证）；MP-R1-VILLAGE-INDEX-103/MP-R3-VILLAGE-INDEX-001 图文不符仍在（视觉确认，观察 4，不重复立项）；MP-R2-VILL-013 同族在案同上；MP-R3-VILLAGE-INDEX-002 热度榜替换语义代码在案（热度榜视觉态未被捕获，无法截图补证，维持代码审查结论）。R13 三判定：标题挤一行仍在（202）、帖子卡结构相反仍在（203）、绝对日期已修复（观察 3）。",
+    "未执行项（A3 边界）：未运行开发者工具/模拟器、未重新构建、未修改任何业务代码；仅归档 2 张放大裁剪证据件（findings/evidence-MP-R1-VILLAGE-INDEX-201/202-*.png）。"
+  ]
+}

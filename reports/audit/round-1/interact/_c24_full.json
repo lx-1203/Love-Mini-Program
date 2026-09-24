@@ -1,0 +1,1812 @@
+[
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK01",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "navigation",
+  "title": "冷启动直开无参：标题「任务中心」+积分卡+4 任务项渲染，骨架过渡不闪错",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | observe-only | dom: .tasks-header__title:present .tasks-summary:present .task-item:present .ps1:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 14755
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK02",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "critical",
+  "title": "点击「每日签到」未完成任务：完成签到 Toast「签到成功！+5 积分」+勾选态+积分卡/进度条即时更新",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | dom: .task-item:present .task-item__status-text:present .tasks-summary__label:present .tasks-summary__percent:present .checkIn:absent .task-item__check:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tapIndex .task-item#2 tapped",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.wxml"
+  ],
+  "durationMs": 44856
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK03",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "normal",
+  "title": "签到快击×5 与完成后重复点击：仅 1 次签到提交，后续点击只 Toast「已完成」",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:rapidTap __CAND__ x5 done=5",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 37372
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK04",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "navigation",
+  "title": "点击「完善个人资料」任务：openAppPath 跳资料编辑页并携带 ?entry=edit",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | dom: .task-item:present .path:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tapIndex .task-item#1 tapped",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 15488
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK05",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "navigation",
+  "title": "点击「发布首条动态」任务：跳 village 首页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | navError=timeout waiting for automator response | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tap .task-item",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 23555
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK06",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "navigation",
+  "title": "点击「完成校园认证」任务：跳校园认证页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | dom: .task-item:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:tap .task-item",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 24386
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK07",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "navigation",
+  "title": "返回键：深链栈=1 时 switchTab 回首页 Tab，栈>1 时 navigateBack 落来源页",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | dom: .tasks-header__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:reLaunch /subpackages/profile-extra/profile/tasks | act:navigateTo /subpackages/profile-extra/profile/tasks",
+  "failureReason": "action tap .tasks-header__back failed: element not found: .tasks-header__back(\"我的\")",
+  "route": [
+   {
+    "route": "pages/profile/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T05:22:34.296Z][info] \"preloadSubpackages: subpackages/setup, subpackages/vip, subpackages/market\"",
+   "[2026-09-23T05:22:34.300Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 60385
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK08",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "normal",
+  "title": "onShow 状态同步：签到完成后退出重进，签到任务保持已完成不重置",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | observe-only | dom: .task-item:present .checkedInToday:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK08-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 21114
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "TK09",
+  "page": "subpackages/profile-extra/profile/tasks",
+  "tier": "noop",
+  "title": "整页滚动浏览：任务列表滚动到底/顶无卡死、元素无错位",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/profile/tasks | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/profile/tasks | act:pageScrollTo bottom | act:pageScrollTo top",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/profile/tasks",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 20624
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND01",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "navigation",
+  "title": "冷启动直开：loading→content 三态过渡，GET /api/dnd 回显表单默认值",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | observe-only | dom: .spinner:absent .state-wrap:absent .switch:present .time-row__value:present .radio-row__indicator--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 18392
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND02",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "总开关切换：状态行「已开启/已关闭」即时变化",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .switch-row:present .status-row__value:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .switch-row",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND02-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 35280
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND03",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "重复方式切自定义：星期网格出现；切回每天：网格消失且已选星期清空",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .radio-row:present .weekday-grid:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .radio-row",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND03-after.png(61593B)"
+  ],
+  "durationMs": 35103
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND04",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "自定义星期多选/去选：chip 高亮切换、按周一→周日排序写入表单",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | observe-only | dom: .weekday-item--active:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND04-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27529
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND05",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "时间选择器：修改开始/结束时间后显示值即时更新",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | observe-only | dom: .time-row__value:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND05-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27494
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND06",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "校验-自定义未选星期保存：Toast「请至少选择一个星期」且不发起 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .customWeekdaysRequired:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .save-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141167420
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND06-after.png(61584B)"
+  ],
+  "durationMs": 30014
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND07",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "校验-开始时间=结束时间：Toast「结束时间必须大于开始时间」且不发起 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | observe-only | dom: .save-btn:present .invalidTimeRange:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T05:26:29.622Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T05:26:29.625Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND07-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27357
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND08",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "critical",
+  "title": "合法表单保存成功：PUT /api/dnd → Toast「设置已保存」+响应回写；快击×5 仅 1 次 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:rapidTap .save-btn x5 done=5",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141243632
+   },
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141243700
+   },
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141243779
+   },
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141243860
+   },
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141243943
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-before.png(61600B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.wxml"
+  ],
+  "durationMs": 39979
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND09",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "保存失败：Toast 展示错误信息，按钮恢复可点（Loading 不永驻）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .save-btn:present .saveFailed:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:tap .save-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "设置已保存",
+    "ts": 1790141274880
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND09-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 30473
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND10",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "normal",
+  "title": "加载失败错误态：错误信息+「重试」按钮点击后重新拉取",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | action-not-performed(see act-FAIL) | dom: .retry-btn:absent .state-text:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | act-FAIL:tap(.retry-btn) element not found: .retry-btn",
+  "failureReason": "action tap .retry-btn failed: element not found: .retry-btn",
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND10-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 34096
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "DND11",
+  "page": "subpackages/profile-extra/settings/dnd",
+  "tier": "navigation",
+  "title": "返回键深链栈=1：switchTab 兜底回「我的」Tab",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/dnd | dom: .nav-bar__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/settings/dnd | pre:reLaunch /subpackages/profile-extra/settings/dnd | act:reLaunch /subpackages/profile-extra/settings/dnd",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/dnd",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 42310
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH01",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "navigation",
+  "title": "冷启动直开无参：AppShell 标题「反馈历史」+筛选条渲染，有数据显示列表/无数据显示空态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | observe-only | dom: .filter-chip:present .record:absent .error-card:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 19854
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH02",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "normal",
+  "title": "筛选 Tab 切换：chip 激活态迁移+列表按类型过滤+展开态重置；重复点同 chip 短路",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:tap \"反馈\" | act:tap \"建议\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH02-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 30234
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH03",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "normal",
+  "title": "点击记录展开详情：懒加载 content/附件/最新回复，hint 变「收起」；再点收起",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | dom: .record__header:absent .record__expand-hint:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:tap .record__header",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH03-after.png(59384B)"
+  ],
+  "durationMs": 29024
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH04",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "normal",
+  "title": "单展开互斥与详情缓存：展开另一条时旧条收起；二次展开命中缓存不再请求",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH04-after.png(47785B)"
+  ],
+  "durationMs": 33037
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH05",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "navigation",
+  "title": "深链 ?id=N：300ms 后自动展开指定记录（参数取实测列表存活 id）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | dom: .record__detail:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | pre:reLaunch /subpackages/profile-extra/feedback/history?id={id} | act:wait 300ms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {
+     "id": "{id}"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 32645
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH06",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "normal",
+  "title": "点击附件图片：uni.previewImage 全屏预览",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/feedback/history | action-not-performed(see act-FAIL) | dom: .attachment-img:absent .previewImage:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act-FAIL:tap(.attachment-img) element not found: .attachment-img",
+  "failureReason": "action tap .attachment-img failed: element not found: .attachment-img",
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH06-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 34479
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH07",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "normal",
+  "title": "列表加载失败：错误卡+「重试」按钮，点击重拉恢复",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/feedback/history | action-not-performed(see act-FAIL) | dom: .error-card:absent .error-card__retry:absent .errorMessage:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act-FAIL:tap(.error-card__retry) element not found: .error-card__retry",
+  "failureReason": "action tap .error-card__retry failed: element not found: .error-card__retry",
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH07-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 32188
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH08",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "navigation",
+  "title": "AppShell 返回：navigateBack 落来源页；深链栈=1 兜底 switchTab 首页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | pre:reLaunch /subpackages/profile-extra/feedback/history | act:reLaunch /subpackages/profile-extra/feedback/history",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 49128
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "FH09",
+  "page": "subpackages/profile-extra/feedback/history",
+  "tier": "noop",
+  "title": "长列表滚动到底/顶：记录无错位、滚动平滑",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/feedback/history | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/profile-extra/feedback/history | act:pageScrollTo bottom | act:pageScrollTo top",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/feedback/history",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 23090
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP01",
+  "page": "subpackages/setup/profile/index",
+  "tier": "navigation",
+  "title": "带参 ?entry=edit 冷启动直开：编辑模式隐藏进度条、表单回显既有资料",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | action-not-performed(see act-FAIL) | dom: .card__progress:absent .load:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 31905
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP02",
+  "page": "subpackages/setup/profile/index",
+  "tier": "navigation",
+  "title": "无参直开（wizard 模式）：显示注册进度条步骤 1，按钮「保存并继续」",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | observe-only | dom: .card__progress:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index | pre-FAIL:input element not found: .entry",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T05:34:53.186Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T05:34:53.192Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 27338
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP03",
+  "page": "subpackages/setup/profile/index",
+  "tier": "critical",
+  "title": "修改昵称后保存成功：PUT /profile/basic 全量携带必填 4 项+diff 可选项 → Toast「保存成功」→600ms 后返回；快击×5 仅 1 次 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | dom: .submit-btn:present .profile:absent .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141766916
+   },
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141767011
+   },
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141767250
+   },
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141767435
+   },
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141767542
+   },
+   {
+    "api": "showToast",
+    "title": "请选择身高",
+    "ts": 1790141767893
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.png(183712B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.wxml"
+  ],
+  "durationMs": 61854
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP04",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "空表单保存：逐字段拦截——「请输入昵称」Toast+昵称行内红框抖动，无 PUT",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .submit-btn:absent .field--error:absent .shake:absent .field-error:absent .nickname:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action tap .submit-btn failed: watchdog-timeout act-tap 25000ms",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP04-after.png(8780B)"
+  ],
+  "durationMs": 248809
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP05",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "昵称/简介输入边界：maxlength 截断、特殊字符与 emoji 存活、清空再填三态",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP05-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 117924
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP06",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "年级/身高 picker 选择：回显文案更新、行内错误清除",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | observe-only | dom: .field__pick-text:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP06-after.png(8799B)"
+  ],
+  "durationMs": 123066
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP07",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "扩展字段填写：学历/感情状态 picker 与籍贯省/市/未来城市/理想型输入（maxlength+特殊字符）",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP07-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 115731
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP08",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "身份切换：radio 选中态迁移+本地持久化 campus-love:user-identity",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action tap __CAND__ failed: watchdog-timeout act-tap 25000ms",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP08-after.png(8811B)"
+  ],
+  "durationMs": 161854
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP09",
+  "page": "subpackages/setup/profile/index",
+  "tier": "critical",
+  "title": "照片墙删除：点已占槽→确认弹窗→确认后 DELETE → Toast「已删除」槽位变空",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .photo-grid__slot:absent #E5454D:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action tapIndex .photo-grid__slot failed: watchdog-timeout act-tapIndex 25000ms",
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP09-before.png(8757B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP09-after.png(8811B)"
+  ],
+  "durationMs": 203623
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP10",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "照片墙空槽/头像上传：actionSheet 与隐私授权链路（自动化选图受限则断言至弹层层并标 UNVERIFIED）",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | navError=timeout waiting for automator response | action-not-performed(see act-FAIL) | dom: .media-avatar:absent .photo-grid__slot:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre:reLaunch /subpackages/setup/profile/index?entry=edit NAV_ERROR: timeout waiting for automator response | pre-FAIL:input watchdog-timeout preD-input 60000ms",
+  "failureReason": "action tapIndex .photo-grid__slot failed: element not found: .photo-grid__slot",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP10-after.png(217097B)"
+  ],
+  "durationMs": 127477
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP11",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "无变更保存：Toast「资料无变更」不发 PUT，仍按模式导航返回",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP11-after.png(183686B)"
+  ],
+  "durationMs": 45955
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP12",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "保存失败态：Toast 错误信息、按钮恢复可点、表单值不丢",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP12-after.png(183686B)"
+  ],
+  "durationMs": 34725
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP13",
+  "page": "subpackages/setup/profile/index",
+  "tier": "normal",
+  "title": "必填齐备按钮高亮：formComplete 联动 submit-btn--disabled 视觉态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | observe-only | dom: .submit-btn:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-PROFILE-INDEX-EP13-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 35473
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP14",
+  "page": "subpackages/setup/profile/index",
+  "tier": "navigation",
+  "title": "返回键：hero 返回 navigateBack 落来源页；栈=1 兜底 switchTab 首页",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/profile/index | dom: .hero__back:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry",
+  "failureReason": "action tap .hero__back failed: element not found: .hero__back",
+  "route": [
+   {
+    "route": "pages/profile/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 50091
+ },
+ {
+  "suite": "S17-c24a",
+  "manifest": "次要24",
+  "id": "EP15",
+  "page": "subpackages/setup/profile/index",
+  "tier": "noop",
+  "title": "长表单滚动到底/回顶：字段无错位、focus 光环正常",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/profile/index | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre:reLaunch /subpackages/setup/profile/index?entry=edit | pre-FAIL:input element not found: .entry",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/profile/index",
+    "options": {
+     "entry": "edit"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 33921
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA01",
+  "page": "subpackages/setup/campus/index",
+  "tier": "navigation",
+  "title": "冷启动直开：三级选择器占位、主按钮置灰、进度条步骤 2、回显既有校园资料",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | observe-only | dom: .field__text:absent .bar__primary:absent .campus:absent .placeholder:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 21529
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA02",
+  "page": "subpackages/setup/campus/index",
+  "tier": "normal",
+  "title": "城市→学校→专业三级联动：换城市清空学校与专业、换学校清空专业",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA02-after.png(60311B)"
+  ],
+  "durationMs": 31105
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA03",
+  "page": "subpackages/setup/campus/index",
+  "tier": "critical",
+  "title": "三项选完主按钮高亮→保存成功：Toast「保存成功」+按场景路由（新用户→时间安排页）；快击×5 仅 1 次提交",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | observe-only | dom: .campus:absent .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA03-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA03-after.png(60100B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA03-after.wxml"
+  ],
+  "durationMs": 45479
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA04",
+  "page": "subpackages/setup/campus/index",
+  "tier": "normal",
+  "title": "未选完时点保存：disabled 按钮拦截无 Toast 无请求；兜底 Toast「请完整选择城市、学校与专业」",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA04-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 33579
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA05",
+  "page": "subpackages/setup/campus/index",
+  "tier": "critical",
+  "title": "补认证场景保存：已有 campusProfile 时保存后 replace 回「我的」页而非下一步",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | navError=timeout waiting for automator response | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index NAV_ERROR: timeout waiting for automator response | pre:login A ok userId=user-1001 MISMATCH!",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA05-before.png(60217B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA05-after.png(60064B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA05-after.wxml"
+  ],
+  "durationMs": 44391
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA06",
+  "page": "subpackages/setup/campus/index",
+  "tier": "navigation",
+  "title": "跳过入口：注册流程点「非学生？跳过此步，稍后认证」→ replace 时间安排页；补认证场景→我的页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | dom: .skip-bar:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:reLaunch /subpackages/setup/campus/index | act:tap .skip-bar",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 47281
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA07",
+  "page": "subpackages/setup/campus/index",
+  "tier": "normal",
+  "title": "隐私说明「?」弹窗：标题/内容/「我知道了」单确认键（三路关闭语义中仅确认一路）",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/campus/index | navError=timeout waiting for automator response | dom: .card-header__help:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:reLaunch /subpackages/setup/campus/index NAV_ERROR: timeout waiting for automator response | act:tap .card-header__help",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"我知道了\")",
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA07-after.png(69547B)"
+  ],
+  "durationMs": 54665
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA08",
+  "page": "subpackages/setup/campus/index",
+  "tier": "navigation",
+  "title": "AppShell 返回：返回来源页，已选未保存值是否保留按实际行为如实记录",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index | pre:navigateTo /subpackages/setup/campus/index | pre:switchTab /pages/profile/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 60377
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "CA09",
+  "page": "subpackages/setup/campus/index",
+  "tier": "normal",
+  "title": "保存失败态：Toast 错误信息、按钮恢复（Loading 不永驻）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/campus/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/campus/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/campus/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-CAMPUS-INDEX-CA09-after.png(60165B)"
+  ],
+  "durationMs": 30067
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC01",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "navigation",
+  "title": "冷启动直开：标题「时间安排」+常去区域回显、时段列表按已有数据渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/schedule/index | observe-only | dom: .field:present .time-window-field:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 26901
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC02",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "normal",
+  "title": "空表单保存：Toast「请输入偏好地点」无 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/schedule/index | observe-only | dom: .schedule:absent .locationRequired:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC02-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 29841
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC03",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "normal",
+  "title": "只填地点无时段保存：Toast「请至少添加一个时间窗口」无 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/schedule/index | observe-only | dom: .trim:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 31704
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC04",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "normal",
+  "title": "添加/删除时段：动态增减输入框，删至 1 条时删除按钮消失",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC04-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 41804
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC05",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "critical",
+  "title": "合法保存成功：PUT 日程 → redirect 推荐偏好页；快击×5 仅 1 次 PUT",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"东门图书馆\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"东门图书馆\")",
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC05-before.png(39705B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC05-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC05-after.wxml"
+  ],
+  "durationMs": 46688
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC06",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "normal",
+  "title": "时段输入边界：maxlength=60 截断、特殊字符 emoji 存活、清空后不计有效",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/schedule/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC06-after.png(39682B)"
+  ],
+  "durationMs": 37375
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC07",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "navigation",
+  "title": "AppShell 返回：落来源页/兜底首页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/schedule/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index | pre:reLaunch /subpackages/setup/schedule/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T06:15:50.511Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T06:15:50.515Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 24398
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "SC08",
+  "page": "subpackages/setup/schedule/index",
+  "tier": "normal",
+  "title": "保存失败态：Toast 错误信息、可重试（Loading 不永驻）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/schedule/index | observe-only | dom: .schedule:absent .saveFailed:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/schedule/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/schedule/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC08-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 30153
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP01",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "navigation",
+  "title": "冷启动直开：loading→GET /recommendations/preferences/me 回显→表单三区渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | observe-only | dom: .option-item--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 19982
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP02",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "normal",
+  "title": "推荐时间四选一：单选高亮迁移",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | observe-only | dom: .option-item--active:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP02-after.png(62230B)"
+  ],
+  "durationMs": 28500
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP03",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "normal",
+  "title": "推荐范围三选一：单选互斥（同校优先/同城/不限）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | act:tap \"同城\" | act:tap \"不限\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP03-after.png(62389B)"
+  ],
+  "durationMs": 29753
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP04",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "normal",
+  "title": "校园优先整行点击取反：点文案区与点开关均生效",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | dom: .toggle-row:absent .toggle-switch--on:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | act:tap .toggle-row",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP04-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 31408
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP05",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "critical",
+  "title": "保存成功：PUT /recommendations/preferences/me → Toast「保存成功」→ replace 寻觅页；快击×5 仅 1 次 PUT",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | observe-only | dom: .saveSuccess:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP05-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP05-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP05-after.wxml"
+  ],
+  "durationMs": 40652
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP06",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "normal",
+  "title": "加载失败错误态：「加载失败」卡+「重新加载」按钮点击重拉",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | observe-only | dom: .retry-btn:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP06-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 29246
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "RP07",
+  "page": "subpackages/setup/recommend-pref/index",
+  "tier": "navigation",
+  "title": "AppShell 返回：落来源页/兜底首页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/recommend-pref/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/recommend-pref/index | pre:reLaunch /subpackages/setup/recommend-pref/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/recommend-pref/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 27785
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN01",
+  "page": "subpackages/setup/interest/index",
+  "tier": "navigation",
+  "title": "冷启动直开：仅「兴趣」一组标签可见（其余 3 组隐藏）、既有 interestTags 回显选中",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | observe-only | dom: .tag-selector__group:present .title:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 18411
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN02",
+  "page": "subpackages/setup/interest/index",
+  "tier": "normal",
+  "title": "标签选中：chip 高亮+顶部已选区 chip+计数 n/5 更新",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | observe-only | dom: .tag-chip:present .tag-selector__chips:present .tag-selector__selected-count:present | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN02-after.png(43946B)"
+  ],
+  "durationMs": 30603
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN03",
+  "page": "subpackages/setup/interest/index",
+  "tier": "normal",
+  "title": "已选 chip 移除与清空：点顶部 chip 移除单个；「清空」全清并显空态提示",
+  "status": "FAILED",
+  "observed": "top=subpackages/setup/interest/index | action-not-performed(see act-FAIL) | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"清空\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"清空\")",
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 31235
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN04",
+  "page": "subpackages/setup/interest/index",
+  "tier": "normal",
+  "title": "选满 5 个后再点：Toast「已达最大选择数」选中数不变",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | observe-only | dom: .maxReached:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN04-after.png(43812B)"
+  ],
+  "durationMs": 29146
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN05",
+  "page": "subpackages/setup/interest/index",
+  "tier": "critical",
+  "title": "选 3 个保存成功：GET 全量合并→PUT 仅改 interestTags→Toast「已保存」→600ms 后返回；快击×5 仅 1 次保存",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | observe-only | dom: .interest-save:present .saved:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN05-before.png(43812B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN05-after.png(43812B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN05-after.wxml"
+  ],
+  "durationMs": 40087
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN06",
+  "page": "subpackages/setup/interest/index",
+  "tier": "normal",
+  "title": "少于 3 个点保存：Toast「至少选择 3 个兴趣」无保存请求",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | observe-only | dom: .length:absent .minThree:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-SETUP-INTEREST-INDEX-IN06-after.png(43922B)"
+  ],
+  "durationMs": 26730
+ },
+ {
+  "suite": "S18-c24b",
+  "manifest": "次要24",
+  "id": "IN07",
+  "page": "subpackages/setup/interest/index",
+  "tier": "navigation",
+  "title": "打开即返回：本页无自定义返回键，系统返回/navigateBack 落来源页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/setup/interest/index | navError=Uncaught [object Object] | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/profile-extra/profile/tasks | pre:reLaunch /subpackages/setup/interest/index | pre:navigateTo /subpackages/setup/interest/index | pre:switchTab /pages/profile/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/setup/interest/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T06:23:22.157Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T06:23:22.164Z][info] \"preloadSubpackages: success\"",
+   "[2026-09-23T06:23:46.057Z][info] \"preloadSubpackages: subpackages/setup, subpackages/vip, subpackages/market\"",
+   "[2026-09-23T06:23:46.071Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 49433
+ }
+]

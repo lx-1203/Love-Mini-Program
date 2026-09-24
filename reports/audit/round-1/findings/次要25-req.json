@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "A4-需求对照员（次要25）",
+    "scope": "需求与功能目标对照（8 页：setup/dev、setup/showcase、support/feedback、discover/discussions、discover/activities、legal/privacy、legal/agreement、market/detail）",
+    "gitSha": "aefd8a72",
+    "generatedAt": "2026-09-24T00:00:00.000Z",
+    "evidence": {
+      "exec": "reports/audit/round-1/interact/exec-results.json（gitSha=aefd8a72 一致；本 8 页用例 DEV01-10/SC01-08/FB01-18/DC01-08/ACT01-16/PRI01-06/AGR01-06/MD01-12 共 74 条逐条已读）",
+      "buildMode": "build:mp-weixin:mock（reports/audit/round-1/screenshot-manifest.json buildMode 字段；非 dev-debug/showcase 平台）",
+      "tourScreenshots": "reports/screenshots/round-1-tour/A/（本组 7 页 14 张逐张已看；setup/dev 与 setup/showcase 0 条目）",
+      "interactScreenshots": "reports/screenshots/round-1-interact/（MD01 封存态、FB02/03/08、ACT 默认等已看）",
+      "idealImages": "素材/理想效果图/ 实测 19 张，均无本 8 页页面级理想稿；baseline=页面声明功能目标（源码头注释+路由语义+preloadRule 注释）+交互 manifest 预期+v3.1 契约 Token 链",
+      "buildArtifacts": "dist/build/{mp-weixin,mp-weixin-qa,mp-weixin-dev-4}/app.json 三份实测：subpackages/setup 均无 dev/index",
+      "crossRef": "与视觉线（findings/次要25.json）、代码线（code-findings/次要25.json）分文件；他线已立问题本线仅引用不复判"
+    },
+    "verdictSummary": {
+      "达标": ["support/feedback", "discover/activities", "legal/privacy", "legal/agreement", "market/detail"],
+      "基本达标": ["setup/showcase"],
+      "不达标": ["setup/dev（DEV 条件无激活链路）", "discover/discussions（生产零入口孤岛页）"]
+    }
+  },
+  "issues": [
+    {
+      "id": "MP-R1-REQ25-DEV-001",
+      "round": "R1",
+      "page": "subpackages/setup/dev/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-DEV-INDEX-DEV04-after.png（实拍内容为资料页，非 dev 页；静态巡检 305 张本页 0 条目）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「仅 DEV 构建注册」的注册半边从未成立：#ifdef DEV 条件在全链路上无激活路径，开发调试页在任何构建产物中都不存在。DEV 条件唯一来源是 package.json 的 uni-app 自定义平台 dev-debug（define.DEV=true），需 uni -p dev-debug 构建才激活，但全部 10 个构建/开发脚本均使用 --platform mp-weixin/h5，全仓无任何 dev-debug 调用点；dist/build 三份产物（mp-weixin/mp-weixin-qa/mp-weixin-dev-4）的 subpackages/setup 注册表实测均为 6 页、均无 dev/index；manifest.json:15-17 注释宣称「dev:h5 / dev:mp-weixin 经 --script dev-debug 注入」与实际脚本不符；profile 页 dev 入口按钮已删除（仅剩孤儿样式 .dev-entry）。后果：页面功能（超级测试账号一键登录/会员模拟/全页导航）在开发工作流中不可用，R1 交互为该页准备的 10 个用例（DEV01-10）全数落空（top 恒停在 interest 页，navError=Uncaught [object Object]）。",
+      "evidence": "apps/client/package.json:50-62（dev-debug 平台定义）对比 :19-28（全部脚本无 -p dev-debug）；apps/client/src/pages.json:272-277（#ifdef DEV 注册）；apps/client/src/manifest.json:15-17（与脚本脱钩的注释）；dist/build/mp-weixin-dev-4/app.json 实测输出（subpackages/setup 无 dev/index，虽名为 dev 产物）；exec-results.json DEV01 observed：top=subpackages/setup/interest/index | navError=Uncaught [object Object]，DEV02-06 action-not-performed（.dev-header__back/一键登录超级测试账号 element not found）；pages/profile/index.vue:3722-3737（孤儿样式，无模板引用）；源码侧功能本身完整：dev/index.vue:95-121（一键登录+isDev 守卫+防重）、:144-159（VIP 模拟）、:229-235（isTab 分支）。",
+      "sources": ["code", "interaction", "log"],
+      "confidence": 0.95,
+      "ideal": "页面声明目标（dev/index.vue:1-7 注释+pages.json:272 注释）：DEV 构建（dev-debug 平台）中路由注册、入口可达（profile 入口或启动直达），供开发/测试快速跳转与超级账号登录；生产构建完全剔除（此半边已成立，无泄漏）。",
+      "fix": "① 新增脚本接通激活链路：package.json scripts 增加 \"dev:mp-weixin:debug\": \"node scripts/prepare-static.mjs --dev && uni -p dev-debug\"（或在 dev:mp-weixin 加 --script dev-debug），并验证产物 app.json 出现 dev/index；② 修正 manifest.json:15-17 注释与实际脚本一致；③ 恢复 profile 页 dev 入口（v-if=isDev）或在 dev-debug 构建以启动参数直达；④ 接通后补跑 DEV01-10 交互取证（村口条目死链见 MP-R1-DEV-001 一并修）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ25-SHOWCASE-001",
+      "round": "R1",
+      "page": "subpackages/setup/showcase/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/（本页 0 实拍：mock 构建访问即回落 discover，SC02 EXECUTED 证实守卫生效）；死链判定基于代码与注册表比对",
+      "category": "Function",
+      "severity": "P2",
+      "description": "全功能展示页 49 个条目中「村口」（/subpackages/village/village/index）被标 isTab:true 走 uni.switchTab，而 pages.json tabBar.list 仅 5 个 tab（home/nearby/discover/messages/profile），village/index 是 subpackages/village 分包页不在其中——switchTab 必败且无 fail 回调，展示版点击「村口」无任何响应。展示页核心目标「演示者一键跳转体验全部页面」存在 1 个哑钮。与代码审查线 MP-R1-SHOWCASE-001（P1）同根因同修，本线按需求面定 P2（仅展示构建受影响、48/49 条目可用），合并处理不重复修。",
+      "evidence": "apps/client/src/subpackages/setup/showcase/index.vue:103（村口条目 isTab: true）、:164-171（navigate：isTab→uni.switchTab，无 fail 回调）；apps/client/src/pages.json:396-427（tabBar.list 实测 5 项，无 village）；本轮 python 校验脚本输出：showcase 49 项中 isTab-but-not-tab 恰为 ['/subpackages/village/village/index'] 一项；SC04 SKIPPED 观测（isTab 项清单含「村口·圈子（:103）」）与代码一致。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "展示页全部条目可跳转：tab 页 switchTab、非 tab 页（含村口）navigateTo，49/49 有效。",
+      "fix": "showcase/index.vue:103 村口条目删去 isTab: true（走 navigateTo）；与 dev 页 ：201 同步修（MP-R1-DEV-001）；顺手把 utils/navigation.ts 的 openAppPath（已含 isTabPath 判断）替换两页手写分支（MP-R1-DEV-002）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ25-DISCUSS-001",
+      "round": "R1",
+      "page": "subpackages/discover/discussions/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_discover_discussions_index__默认.png（页面本身渲染正常：2 条推荐+去寻觅/反馈讨论建议双按钮）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "讨论圈是生产构建中的孤岛页面：全仓检索（含路由常量消费者核查）没有任何生产入口指向本页——routes.ts:245 的 DISCUSSIONS 常量定义后无任何文件使用；寻觅 tab 主页、首页 banners（home-banners.ts 仅 activities）、nearby、official-chat、社区组件均无讨论圈链接；仅存的引用是 dev 页（该页本身无构建激活）与 showcase 页（仅展示构建）。普通用户在正式包中永远无法到达讨论圈，「讨论圈」这一需求功能目标对最终用户未实现。对比同分包的活动页有 4 处生产入口（home-banners:70/79、SocialProgressIndicator:128、official-chat:160/301、tools/activities/detail:283）；pages.json:352-360 preloadRule 注释明示意图「用户在寻觅页很可能下一步进入讨论圈或活动列表」而预加载了本分包——入口缺失与设计意图直接矛盾。页面自身实现完整（列表/弹窗/双按钮/三态均有 DC01/03/07/08 EXECUTED 证据），故缺陷定在可达性而非页面内功能。",
+      "evidence": "grep -rn 'discover/discussions' 与 'DISCUSSIONS'（apps/client/src，排除 tests/i18n）输出仅：constants/routes.ts:245（定义，无消费者）、setup/dev/index.vue:218、setup/showcase/index.vue:114；pages/discover/index.vue 无任何 discussions 引用；config/home-banners.ts:70/:79 仅 activities；pages/nearby/index.vue:258 仅 ACTIVITIES；apps/client/src/pages.json:352-360（preloadRule 注释的设计意图）；对照链路：activities 页 ：482/:632 与 discussions 页 ：113 均可跳反馈页，反向无回链。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "讨论圈作为发现子包功能对用户可达：按 preloadRule 设计意图，寻觅 tab（或首页社区流）提供 1 步入口进入讨论圈；任意页 2 步内回 tab（本页有 show-back+去寻觅，进入后返回链路无问题，缺的是进来的路）。",
+      "fix": "在寻觅页（pages/discover/index）合适区块（如社区/话题入口排）或首页 CommunityFeed 增加「讨论圈」入口，openAppPath(ROUTES.DISCOVER_FEED.DISCUSSIONS)（routes.ts:241-246 常量已备）；补一条 DC 链路交互用例验证入口→页面→返回闭环。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/setup/dev/index",
+      "baseline": "无页面级理想稿（19 张理想图无此页）；对照=页面声明功能目标（dev/index.vue:1-7 头注释 + pages.json:272-277 #ifdef DEV 注册注释 + 超级测试账号体系 2026-08-07 注释）+ 交互 manifest DEV01-10 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：开发调试导航页（DEV 构建）——源码实现完整但目标构建不存在，L1 偏差。L2 骨架：品牌渐变头（返回/标题/TEST 徽标）+警示条+超级账号组+分组列表+安全区（:243-320），代码级核实无缺失，但 0 实拍可证。L3 组件：dev-item 列表项（标题/路径/箭头/Tab 标）+isTab 左边条高亮（:301-313,:475-479）。L4 功能：一键登录（isDev 守卫+环境变量凭据+防重+定时器清理 :95-121,:185-190）、VIP 模拟（:144-159）、22 项导航（:193-235）、onShow 刷新（:176-179）全部在码；执行侧 0 用例有效（DEV01-10 全部不可达页面）。L5 状态：不适用（工具页）。L6 交互：press-feedback/hover 齐备。L7 token：全 var(--c-*) 无硬编码色（:324-335）。L8 数据：sessionStore.isSuperTestAccount+STORAGE_KEYS.VIP_SIM_ENABLED（:125,:165）。L9 可达性：profile 入口已删（孤儿样式 :3722-3737），任何构建无入口。L10 构建注册：#ifdef DEV 无激活链路，三份产物 app.json 实测均无本页——决定性偏差。",
+      "usageNotes": "理想路径：DEV 构建→（profile 入口或直达）→调试页→一键登录/模拟会员/跳任意页。实际路径：不存在——reLaunch/navigateTo 均 NAV_ERROR（automator 与产物双重证实），开发者目前只能靠无调试页的普通构建。2 步回 tab：页面内部有返回+Tab 项 switchTab（设计上满足），但整页不可达故不成立。",
+      "functionGaps": [
+        {
+          "target": "仅 DEV 构建注册且 DEV 构建可达（调试导航/超级账号登录/会员模拟）",
+          "current": "生产剔除成立，但 DEV 激活链路缺失：无任何脚本使用 dev-debug 平台，三份产物 app.json 均无 dev/index，profile 入口已删",
+          "gap": "功能目标整体未实现：DEV01-10 十个用例 0 有效执行，视觉/交互证据 0",
+          "fix": "新增 uni -p dev-debug 构建脚本 + 恢复入口 + 修正 manifest.json 脱钩注释（MP-R1-REQ25-DEV-001）"
+        },
+        {
+          "target": "22 项页面清单全部可跳转",
+          "current": "村口条目 isTab:true → switchTab 死链（与 showcase 同根因）",
+          "gap": "1/22 哑钮（生产不可达暂无实际影响，接通后即暴露）",
+          "fix": "见代码审查线 MP-R1-DEV-001（本线不重复立）"
+        }
+      ],
+      "verdict": "不达标"
+    },
+    {
+      "route": "subpackages/setup/showcase/index",
+      "baseline": "无页面级理想稿；对照=页面头注释（:1-6 仅展示构建主入口）+ SC01-08 manifest 预期（SC01 期望 6 分组 44 项，代码实际 7 分组 49 项，清单漂移记录在案）",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：展示构建全功能入口+正式构建无痕回落——回落半边有 SC02 EXECUTED 铁证（top=pages/discover/index），展示半边本轮无产物无实拍。L2 骨架：品牌蓝渐变头（返回/双行标题/SHOWCASE 徽标）+说明卡+7 分组卡（:184-259），代码核实完整。L3 组件：sc-item（chip 首字+标题+Tab 标+描述+箭头）+分组计数徽章（:226，SC07 的 .groupCount:absent 系选择器错位，实际类 sc-group__count :410）。L4 功能：49 项中 48 项路由有效（python 比对 pages.json 注册表），1 项村口 isTab 死链。L5 状态：onShow 守卫即状态（非展示构建回落）。L6 交互：hover-class+aria-label 齐备（:235-239）。L7 token：分组 accent 硬编码 hex 渐变（:48,:63 等，视觉线 MP-R1-SHOWCASE-002 已立 P3，引用）。L8 数据：静态清单无后端。L9 可达性：仅 showcase 构建（.env.mp-weixin-showcase VITE_SHOWCASE_MODE=true 已核、脚本在、产物缺）。L10 构建：pages.json 无条件注册（正确——靠运行时 isShowcaseMode 守卫回落）。",
+      "usageNotes": "理想路径：展示构建启动→本页→按分组一键体验 49 页。实际路径（本轮可证部分）：mock/正式构建访问即回落发现页（SC02），演示链路未取证。2 步回 tab：goBack 无栈兜底 switchTab discover（:174-181），tab 项本身 5 个中 4 个真 tab 可直达——村口死链使其在展示版内不可达（functionGaps 已立）。",
+      "functionGaps": [
+        {
+          "target": "一键跳转体验全部页面（49/49 有效）",
+          "current": "村口条目 isTab:true → uni.switchTab 对非 tab 页必败、无 fail 回调",
+          "gap": "1/49 哑钮（MP-R1-REQ25-SHOWCASE-001，与 MP-R1-SHOWCASE-001 同案合并修）",
+          "fix": "村口条目删 isTab:true 走 navigateTo"
+        },
+        {
+          "target": "展示构建主入口首屏渲染（6 分组 44 项→现 7 分组 49 项）",
+          "current": "本轮无 showcase 产物、0 实拍；manifest 期望与代码清单漂移（6/44 vs 7/49）",
+          "gap": "目标态未取证 + 用例期望未同步",
+          "fix": "跑 build:mp-weixin:showcase 出包补 SC01/SC03/SC07/SC08 取证，并同步 manifest 分组计数"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/support/feedback/index",
+      "baseline": "无页面级理想稿；对照=页面头注释功能9+功能10（:1-21）+ FB01-18 manifest 预期 + 后端契约 SubmissionRequest（content≤5000，R4-00118）",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：反馈/建议/活动提案统一提交入口+历史查询——达成。L2 骨架：AppShell（标题+副标题+show-back）+新建提交卡（chips/三输入/上传区/提交钮）+反馈历史卡（入口+列表）(:420-583)，默认态截图逐块对应。L3 组件：chip×3（role=tab+aria-selected :422-435）、input/textarea（id+label+aria-errormessage :437-470）、上传格（+号/Spinner/缩略图+删除钮 :488-535）、EmptyState、提交记录行（状态胶囊 StatusState :574-577）。L4 内容：文案全 i18n；时间本地化 formatSubmissionTime（:414-416）。L5 状态：errorMessage 错误条（role=alert :472-480）、isUploading/isSubmitting、空历史 EmptyState（:558-562）。L6 交互：必填拦截/成功清表单/失败保留/快击锁均有 EXECUTED 证据（FB07/08/09/17）。L7 token：全 var(--c-*)。L8 数据：store.submitIssue/Suggestion/ActivityProposal 成功后 await this.load() 刷新历史（stores/feedback.ts:42-100 实读核实），clientApi 上传链在码。L9 可达性：生产入口=活动页底部「提交活动提案」（activities :482/:632）；帮助页走 feedback/history 分支；反馈中心本体入口偏深但功能可达。L10 平台：@tap/hover-class/无 backdrop blur 合规；MP 分支 navigateTo fail 静默（:368-375，代码线 MP-R1-FEEDBACK-002 已立）。",
+      "usageNotes": "理想路径：活动页/讨论圈→反馈页→选类型→填写→（传图）→提交→历史可查。实际路径：FB02/03/07/08/09/15/17 EXECUTED 证实类型切换/输入/校验/提交/刷新/防连点/失败分支全通；图传四用例 SKIPPED 系系统选图不可自动化（未执行，非缺陷）；H5 端上传因 blob: 扩展名校验必败（代码线 MP-R1-FEEDBACK-001 P2 已立，mp-weixin 主端不受影响）。不迷路：单页双卡纵向布局，提交后历史就地刷新；2 步回 tab：AppShell show-back→来源页（活动页为寻觅系）✓。",
+      "functionGaps": [
+        {
+          "target": "图片上传成功链路（≤3 张/≤5MB/白名单/隐私授权/预览/删除确认）",
+          "current": "mp-weixin 链路代码完整（:150-265）；执行侧 FB10/12/13/14 SKIPPED 未取证；H5 端 isValidImageExt 对 blob: URL 必败（MP-R1-FEEDBACK-001）",
+          "gap": "自动化不可达未取证 + H5 端功能缺陷（他线已立）",
+          "fix": "下轮手动/注入式补上传取证；H5 修复按 MP-R1-FEEDBACK-001"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/discover/discussions/index",
+      "baseline": "无页面级理想稿；对照=页面声明目标（:49-53 注释：推荐条目无独立详情页，弹窗确认后进寻觅）+ preloadRule 设计意图（pages.json:352-360）+ DC01-08 manifest 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：讨论推荐聚合+导流寻觅/反馈——页面内达成，页面外（可达性）不成立。L2 骨架：AppShell（标题+副标题+current-tab=likes+show-back）+正在讨论卡（推荐列表）+下一步卡（双按钮）(:70-116)，默认态截图逐块对应。L3 组件：feed-row（热度 StatusState+标题+摘要 :92-104）、SkeletonBlock（loading :79-81）、retry-link（:82-85）、EmptyState（:86-90）、BottomActionBar（:109-114）。L4 内容：条目=契约四字段 id/title/summary/heatLabel（:20,:35）；热度标签图标语义错位（× 收藏/× 热度上升，视觉线 MP-R1-DISCUSSIONS-101 已立 P3，引用）。L5 状态：loading/error+重试/empty 三态齐备（:79-90）。L6 交互：条目 showModal 确认去寻觅（:54-67，DC03 EXECUTED）；取消路 DC02 失败系原生 modal 不可自动化。L7 token：retry-link 用 --c-brand-500 兜底 #36C99A（:152-155，与 v3.1 Primary #34C98A 相近但走旧值，视觉线口径）。L8 数据：clientApi.getDiscussionRecommendations（mock 2 条，截图证实）。L9 可达性：生产零入口（DISCUSSIONS 常量无消费者；寻觅页/home-banners/nearby/official-chat 均无链接）——决定性偏差。L10 平台：usePageAccess 无鉴权门槛（requiresAuth=false，config/page-access.ts:11-17）。",
+      "usageNotes": "理想路径：寻觅 tab→讨论圈→看推荐→去寻觅/反馈。实际路径：进都不进——正式包无任何入口，仅 dev（无构建）/showcase（展示包）可跳；DC01/03/07/08 EXECUTED 证明「一旦到达则功能完好」（直接 reLaunch 场景）。2 步回 tab：页内 show-back+去寻觅按钮 ✓（但整体不成立）。",
+      "functionGaps": [
+        {
+          "target": "讨论圈功能对用户可达（寻觅页 1 步入口，与活动页对等）",
+          "current": "生产构建零入口：DISCUSSIONS 路由常量无任何消费者，仅 dev/showcase 条目引用",
+          "gap": "孤岛页面，需求功能目标对最终用户未实现（MP-R1-REQ25-DISCUSS-001）",
+          "fix": "寻觅页或首页社区流加入口 openAppPath(ROUTES.DISCOVER_FEED.DISCUSSIONS)，补入口链路用例"
+        }
+      ],
+      "verdict": "不达标"
+    },
+    {
+      "route": "subpackages/discover/activities/index",
+      "baseline": "无页面级理想稿；对照=页面头注释（:1-5 双视图）+ v3 Nearby 冻结注释（:43 快捷筛选 全部/今天/周末）+ ACT01-16 manifest 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：线下活动聚合（列表+日历双视图、报名意向）——达成。L2 骨架：AppShell+状态盒（loading/error+重试/空）+视图切换杆+列表（筛选/卡片/加载更多/底部双按钮）或日历（月导航/星期行/网格/当日面板/底部双按钮）（:335-637），默认态截图逐块对应（页头/切换/三筛选/4 卡）。L3 组件：quick-filter（role=tab :398-410）、activity-row（标题/分类标签/人数/描述/地点/时间/感兴趣钮 :412-459，日历内复用 :570-615）、calendar-cell（高亮/圆点/标题截断/人数 :516-558）。L4 内容：分类标签走 i18n activities.category.*；筛选空提示（:462-464）；没有更多（:470-472）。L5 状态：无缓存 loading/错误重试/空态三态（:343-360）+筛选空+当日空（:618-620）。L6 交互：报名翻转+计数+防连点+失败区分（ACT05/06/07 EXECUTED）；视图切换数据不丢（ACT02 EXECUTED）；刷新穿透 TTL（ACT09 EXECUTED）。L7 token：分类标签 color-mix()（MP-R1-ACTIVITIES-002 已立，引用）；视图切换激活色 --c-brand-700。L8 数据：activityStore fetch/fetchMore/enroll（stores/activity.ts 实读：分页契约 hasMore=data.length>=pageSize）。L9 可达性：生产 4 入口（home-banners:70/79、SocialProgressIndicator:128、official-chat:160/301、activities/detail:283）——讨论圈的反面教材。L10 平台：@tap.stop 防冒泡（:454）、scroll-view refresher 标准用法。",
+      "usageNotes": "理想路径：首页 banner/附近→活动列表→筛选→感兴趣→（日历看分布）→详情。实际路径：ACT01-10/14 EXECUTED 全通；卡跳详情 ACT08 失败系候选文本「卡」定位问题（:421 与详情页回跳 :283 链路在码）；ACT13 月份切换 SKIPPED 不可自动化（:279-298 跨年边界在码）。不迷路：双视图同杆切换、底部常驻去寻觅/提案；2 步回 tab：AppShell show-back→寻觅系来源 ✓。",
+      "functionGaps": [
+        {
+          "target": "快捷筛选（今天/周末）按语义过滤",
+          "current": "以中文子串匹配展示文案 scheduleText（:50-52）——英文 locale 或措辞变更即失效",
+          "gap": "实现脆弱（代码线 MP-R1-ACTIVITIES-001 P3 已立，本线引用；当前 mock 中文数据下 ACT03/04 实测通过）",
+          "fix": "按结构化日期/时间窗过滤而非文案子串"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/legal/privacy/index",
+      "baseline": "无页面级理想稿；对照=提审合规页目标（页面头注释 :1-10）+ LegalTextPage 组件声明功能（:1-25）+ PRI01-06 manifest 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：隐私政策展示（合规必备）——达成。L2 骨架：AppShell（标题+show-back）+标题区（标题/版本/更新时间）+三态区+scroll-view 正文+底部确认栏（LegalTextPage :159-233），巡检三张实拍（默认/滚动-中部/滚动-底部）正文完整。L3 组件：legal-state 三态（spinner/错误+重试钮）、legal-footer 确认钮（:219-230）。L4 内容：CMS 优先+i18n fallback（zh-CN:4639 accept=我已阅读并同意、:3845 privacyPolicyContent）；fallback 不显示版本号防误导（:100）。L5 状态：loading/error/empty/success 四态（:176-216）。L6 交互：确认=轻触反馈+navigateBack（栈空兜底 switchTab discover :131-148）；重试=重新拉取（:153-156）；PRI03-06 失败均为候选定位/原生层问题（按钮文本与截图一致）。L7 token：全 var(--c-*)。L8 数据：getLegalText 5min 缓存+mock 跳过后端+失败回退+fallback 不写缓存（legal-texts.ts:125,:189-195 实读核实）。L9 可达性：登录前 login:621（LG08 EXECUTED 落地 legal 分包）；登录后 settings:110-119+:399（我的→设置→关于→隐私政策）。L10 平台：MP/H5 双分支 navigateBack（:133-147）。",
+      "usageNotes": "理想路径：登录页勾选文案/设置页关于→隐私政策→阅读→我已阅读并同意→原路返回。实际路径：PRI01/02/06 EXECUTED（fallback 渲染/长文滚动/缓存重入）；确认返回 PRI03 未取证（automator 候选限制，代码与截图证实按钮存在）。不迷路：单页纵向，底部确认常驻。2 步回 tab：设置链路 我的(1)→设置(2)→本页，返回逐级可达；确认键兜底直达 discover tab ✓。",
+      "functionGaps": [],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/legal/agreement/index",
+      "baseline": "无页面级理想稿；对照=与 privacy 同构目标（LegalTextType.USER_AGREEMENT）+ AGR01-06 manifest 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：用户协议展示（合规必备）——达成。L2-L7 与 privacy 完全同构（20 行声明式封装 :15-20，共用 LegalTextPage，见 privacy 节逐级核实）。L8 数据：getLegalText(USER_AGREEMENT) 同缓存池（5min，legal-texts.ts）。L9 可达性：登录前 login:616（LG07 EXECUTED）；登录后 settings:110-114+:393。L10 平台：同构。",
+      "usageNotes": "理想路径：登录页《用户协议》/设置页关于→阅读→确认返回。实际路径：AGR01/02/06 EXECUTED（fallback 渲染/滚动/缓存重入）；AGR03-05 失败为候选定位问题（按钮文本/位置经代码 :219-230 与截图证实）。2 步回 tab：同 privacy ✓。",
+      "functionGaps": [],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/market/detail/index",
+      "baseline": "无页面级理想稿；对照=页面头注释 3-H 目标（:1-9）+ ADR-2 商业化封存决策（:28-31 注释）+ MD01-12 manifest 预期",
+      "file": "reports/audit/round-1/page-compare/次要25.md",
+      "structureNotes": "L1 目标：商品详情+购买占位（封存态优先）——达成（封存为本轮 mock 构建主导态，MD01 实拍=锁+功能封存中+返回，与 :306-320 逐块对应）。L2 骨架：安全区+导航栏（返回/标题）+五态链（sealed/loading/error/notFound/product）+商品大图/名称/价格/销量/库存/介绍+底部购买栏（:285-405）。L3 组件：nav-bar__back（:290-300）、EmptyState 空态（:345，:desc prop 错位致兜底文案，视觉线 MP-R1-MARKET-101 已立 P3，引用）、product-buybar（:390-402）。L4 内容：mock 走 i18n titleKey/descKey（6 项目录与 shop/种子对齐 :102-169）、real 走后端 name/description（:171-183）。L5 状态：sealed（最高优先 :306）/loading（:323）/error+重试（:329-341）/notFound+返回逛逛（:344-356）/product（:359-403）五态完备。L6 交互：购买=封存拦截→占位 toast（:252-259，无支付请求，ADR-2 设计行为）；返回=栈>1 navigateBack/栈=1 switchTab home（:242-249）。L7 token：全 var(--c-*)+SVG 图标（LOCK_SVG/BACK，禁 emoji 合规）。L8 数据：mock find/real GET /products/{id}、404→notFound、其余→error（:189-239）；封存竞态补偿 watch（:278-282，MD03 EXECUTED）。L9 可达性：逛逛页商品卡→?id= 带参（shop:260，MD11 EXECUTED 真实链路）。L10 平台：onLoad 先记 productId 再判封存（:261-273，防补偿 watch 失效）。",
+      "usageNotes": "理想路径：逛逛→商品卡→详情→（封存态：看锁卡+返回 / 解封态：看详情+购买占位 toast）。实际路径：MD01/03/04/08/10/11 EXECUTED（封存渲染/竞态补偿/解封渲染/非法 id/滚动/入口链路）；MD02/05/06/07/12 失败均为 automator 候选定位问题——「返回」「立即购买」「返回逛逛」在代码（:318/:400/:354）与 MD04 截图及 zh-CN:3316 中均存在。2 步回 tab：返回键兜底 switchTab home 1 步 ✓。",
+      "functionGaps": [
+        {
+          "target": "空态引导文案（该商品可能已下架，去看看其他好物吧）",
+          "current": ":desc 透传无效（EmptyState prop 名为 description）→ 恒显通用兜底文案",
+          "gap": "文案死配置（视觉线 MP-R1-MARKET-101 P3 已立，本线引用）",
+          "fix": "EmptyState 传参改 :description"
+        }
+      ],
+      "verdict": "达标"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/page-compare/次要25.md"
+}

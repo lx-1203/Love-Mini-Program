@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "round": "R1",
+    "auditor": "A5 历史回归审查员（索引差分模式：只核对 riskFiles 与本轮改动/证据相关条目，不全量重读）",
+    "date": "2026-09-24",
+    "page": "subpackages/village/village/publish（村口·发布帖子）",
+    "indexSource": "reports/audit/baseline/regression-index.json",
+    "differential": {
+      "workingTreeChangesThisRound": [
+        "apps/client/src/subpackages/village/village/publish.vue —— 本轮工作区无改动（git status --porcelain 为空；HEAD 版本即 29a2b1df/5e2d050c 修复批产物）",
+        "apps/client/src/stores/circle.ts（MP-R2-PUB-002 riskFile）—— 本轮有改动，但 git diff 仅 formatCircleTime 收敛到 utils/time（R13），circles/isJoined/fetchCircles(299-316)/errorMessage 全部未触碰，对渠道弹层兴趣圈子组无影响"
+      ],
+      "conclusion": "本轮无任何定向改动触及已修复路径；逐条核对未发现「已修被改回」。历史残留（裸 hex/双页重复/loading 口径/死参数等）为历轮未修项，非本轮回归，均已由本批代码发现 reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json 立项，不重复立项。"
+    },
+    "evidenceSources": [
+      "source: publish.vue 867 行全读 + CreatePostRequest.java / VillagePostService.java / stores/village/api.ts / constants/village.ts / post.vue / fixtures.ts 定点核对",
+      "exec: reports/audit/round-1/interact/exec-results.json（SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH 37 例：18 EXECUTED / 19 FAILED，FAILED 全部为采集脚本 __CAND__ 选择器未解析或 el.input is not a function 的工具缺陷，无一是应用行为缺陷证据）",
+      "screenshot: reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png（0/500 计数、南京·自动定位、目标卡与可见性一致）、PUB26-after.png（个人日常+仅喜欢/关注的人可见 同屏一致）",
+      "code-findings: reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json"
+    ]
+  },
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R2-PUB-002",
+      "page": "subpackages/village/village/publish",
+      "status": "未复发",
+      "evidence": "三级分组+懒加载+三态修复全部在位（publish.vue 本轮无改动）：①三级分组 publish.vue:622「公域 · 所有人可见」/628「校园私域 · 同校可见」/645「兴趣圈子 · 圈内成员可见」；②懒加载 watch(targetOpen) 108-112 → ensureCirclesLoaded 92-104；③三态=加载中 634-636 / 失败+重试 638-643 / 空态 659-661；joinedCircles=82。riskFile stores/circle.ts 本轮 diff 仅 formatCircleTime→utils/time（R13），fetchCircles(299-316)/circles/isJoined/errorMessage 未触碰。运行时证据：exec-results PUB22 EXECUTED（tap .publish-to__card 弹层打开、遮罩点击关闭成功）。注：三态子路径的运行时复验 PUB26 因采集脚本 __CAND__(\"重试加载\") 未解析 FAILED，本轮仅代码层证据可确认三态在位。"
+    },
+    {
+      "id": "MP-R1-PUBLISH-001",
+      "page": "subpackages/village/village/publish",
+      "status": "未复发（主体修复在位；死参数残留属历轮未修，已由本批 MP-R1-PUBLISH-107 立项 P3，不重复立项）",
+      "evidence": "危险面已修：publish.vue:271-291 cycleVisibility 按目标单值收敛（general 仅 [\"public\"]，272-274 注释引本条），UI 承诺=服务端推导；后端 VillagePostService.java:284-296 deriveVisibility general→public_/campus→school/circle→interest/friends→friends 与之一致；restoreDraft 427-433 按 targetType 重算 legalVisibility。运行时：PUB11 EXECUTED（campus 发布请求体 targetType=campus / visibility=school）。残留核实：后端 CreatePostRequest.java:14-28 确无 visibility 字段，客户端仍发送死参数（publish.vue:552 + stores/village/api.ts:237 visibility: data.visibility，被 Jackson 静默丢弃）——该残留为修复方案留下的维护性债（A2 本批已立项 MP-R1-PUBLISH-107 P3），非「已修被改回」。"
+    },
+    {
+      "id": "MP-R2-VILL-013",
+      "page": "subpackages/village/village",
+      "status": "未复发（晚霞对修复在位）；同族批量不符为历轮已知残留，非本轮回归",
+      "evidence": "晚霞对：fixtures.ts:674-676 文案已改「傍晚的光线太适合拍照了。」配 portraits/p6.jpg（人像街拍语义），注释 MP-R1-VILLAGE-INDEX-103 记录改文案对齐画面；grep 热饮/奶茶 在 fixtures.ts 仅命中 whisper 文案(:397)与话题 label(:839)，无帖图错配残留。本页（publish）同族存活实例=目标卡圈子头像恒 CIRCLE_COVERS.DEFAULT 不用所选圈子 icon（publish.vue:603；circle.ts:26 CircleItem.icon 定义存在未用）——本批代码发现 MP-R1-PUBLISH-111 已立项 P4，属历轮未修非复发。"
+    },
+    {
+      "id": "MP-R2-PUB-101",
+      "page": "subpackages/village/village/publish",
+      "status": "未复发（修复在位）；同族新路径病灶（loadTarget 回退不复位 visibility）由本批 MP-R1-PUBLISH-101 另行立项 P1，非本条复发",
+      "evidence": "friends 分支在位：publish.vue:413-418（注释引 MP-R2-PUB-101）+ 425-433 按 targetType 重算 legalVisibility（general:public/campus:school/circle:interest/friends:friends）。运行时：PUB32 EXECUTED（草稿恢复：本地快照回显+临时路径过滤+可见性按目标重算）；PUB26-after 截图显示目标卡「个人日常/日常·仅互相喜欢或关注我的人可见」与「谁可以看=仅喜欢/关注的人可见」同屏一致（历史矛盾态未重现）；PUB07 EXECUTED（入口参数优先于旧草稿，friends 语义强制回设）。同族新病灶核实：loadTarget 回退分支 publish.vue:179-189 复位 targetType=general 但不复位 visibility——该路径在本条修复前即如此（非改回），本批 A2 已立项 MP-R1-PUBLISH-101。"
+    },
+    {
+      "id": "R1-PUBLISH-002..014",
+      "page": "subpackages/village/village/publish",
+      "status": "未复发（已修子项全部在位；未修残留为历轮未修非回归，已由本批 MP-R1-PUBLISH-102/103/109 立项）",
+      "evidence": "已修子项逐一核实：①watch deep=false→已修：publish.vue:460 getter 摊平 () => [...images.value]；②定时器三路径→已修：cancelDraftTimers 337-346 + flushDraftSave 353-360（「保留」路径 476 调用）+ onUnmounted 578-581；③双页存储键→已修：publish.vue:24 用 PUBLISH_DRAFT_STORAGE_KEY(constants/village.ts:49 village:publish-draft)，post.vue:30 用 POST_DRAFT_STORAGE_KEY(:43 village:post-draft)，两键分离；④friends 语义覆写→已修：restoreDraft 435-445 强制回设 + PUB07 EXECUTED；⑤nearby:city 恒北京市→已修：写入方 pages/nearby/index.vue:115 setStorageSync(NEARBY_CITY)，publish.vue:53-61 读缓存、无缓存不再宣称「自动定位」(714 显示「选择位置」)，运行时截图 PUB22-after/PUB26-after 实拍「南京 · 自动定位」上屏（缓存城市生效）；⑥错误文案数据源→已修：566-571 e.message→store errorMessage→i18n 兜底 + PUB14 EXECUTED。残留未修子项（历轮未修，非改回）：⑦loading 断档残留形态（532-535 hideLoading→showToast→return 再穿 535/573 finally；成功 544/556 toast 后 573 finally hideLoading）→本批 MP-R1-PUBLISH-109 P3；⑧裸 hex（761/772-773/788-790/809/811/816/819/832-841/847/856/864 等）→本批 MP-R1-PUBLISH-102 P2；⑨双页重复（publish 867 行+post 1615 行并存）→本批 MP-R1-PUBLISH-103 P2。差分：publish.vue 本轮工作区零改动，不存在本轮改回。运行时面（EXECUTED）：PUB01 首屏/PUB02-03 关闭两路径/PUB05 campus 联动/PUB06 circleId 回退/PUB08 空态拦截/PUB11-14 请求体与失败路径/PUB13 防连点/PUB22-23 弹层开闭/PUB27 加图/PUB35 发布成功旧草稿不复活/PUB36-37 滚动与重复进出。"
+    }
+  ],
+  "notRun": [
+    "渠道弹层三态（加载中/失败+重试/空态）本轮无运行时复验：exec PUB26 因采集脚本 __CAND__(\"重试加载\") 选择器未解析 FAILED，未生成有效应用行为证据；三态判定仅基于代码（publish.vue:634-661）。",
+    "发布成功/失败路径的 loading-toast 闪失（MP-R1-PUBLISH-109）为平台相关表现，本轮未做真机实测（历史遗留 P3，非回归范畴）。",
+    "未运行 tsc/vitest/构建（回归职责为只读差分核对，未改任何代码）。"
+  ]
+}

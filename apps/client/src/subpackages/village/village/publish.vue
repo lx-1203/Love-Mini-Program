@@ -181,11 +181,17 @@ async function loadTarget() {
       targetType.value = "general";
       targetId.value = null;
       targetCircle.value = null;
+      // MP-R1-PUBLISH-101/MP-R1-PUB-018：目标回退 general 时同步复位可见范围——
+      // 后端按 targetType 推导可见性（general→public 全平台公开），残留「兴趣圈/
+      // 学校圈」文案会静默放大实际可见范围（UI 承诺窄、落库宽）
+      visibility.value = "public";
     }
   } catch (_e) {
     targetType.value = "general";
     targetId.value = null;
     targetCircle.value = null;
+    // MP-R1-PUBLISH-101/MP-R1-PUB-018：同上，回退分支同步复位可见范围
+    visibility.value = "public";
   }
 }
 
@@ -264,31 +270,10 @@ function openMentionPicker() {
 }
 /**
  * 2026-09-03（审查报告 P3-7）：可见范围轮换与后端 visibility 枚举强联动。
- * 原实现轮换 legacy 值 circle_members/private（后端 Post.Visibility 仅
- * public_/school/interest），payload 携带非法值有 400 风险。
- * 按发布目标约束合法集合：公开广场→公开/学校圈；学校圈→学校圈；兴趣圈→圈内。
+ * MP-R1-VILLAGE-PUBLISH-103：「谁可以看」行已降级为只读信息行（轮换列表均为单值、
+ * 点击永远不改值，保留可点假象违反交互铁律）；cycleVisibility 死代码随之移除，
+ * 可见范围由「发布到」目标经 legalVisibility 推导（loadTarget/restoreDraft 同步复位）。
  */
-function cycleVisibility() {
-  // MP-R1-PUBLISH-001：general 目标不再提供「学校圈」轮换项——后端 CreatePostRequest
-  // 无 visibility 字段、可见范围由 targetType 推导（general→public_），UI 承诺的
-  // 「学校圈」会被服务端静默变成全平台公开。UI 所见 = 服务端落库，故只保留「公开」。
-  const order: string[] =
-    targetType.value === "general"
-      ? ["public"]
-      : targetType.value === "campus"
-        ? ["school"]
-        : targetType.value === "friends"
-          ? ["friends"]
-          : ["interest"];
-  // noUncheckedIndexedAccess：数组索引访问为 string|undefined，先收敛再赋值
-  const first = order[0];
-  if (first && !order.includes(visibility.value)) {
-    visibility.value = first;
-    return;
-  }
-  const next = order[(order.indexOf(visibility.value) + 1) % order.length];
-  if (next) visibility.value = next;
-}
 
 /* ---------- 草稿：本地 + 后端双写 ---------- */
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -442,6 +427,9 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
   if (entryCircleId != null && !Number.isNaN(entryCircleId)) {
     targetType.value = "circle";
     targetId.value = entryCircleId;
+    // MP-R1-PUB-018：entryCircleId 回设在 legalVisibility 重算之后，必须同步重算——
+    // 否则残留草稿的「学校圈」visibility 与 circle 目标同屏矛盾（UI 承诺窄、落库宽）
+    visibility.value = "interest";
   }
   // 草稿为圈子目标时同样校验是否仍为「已加入」圈子（否则回退到个人动态）
   if (isCircleTarget.value || images.value.length > 0) void loadTarget();
@@ -718,17 +706,14 @@ onUnmounted(() => {
           <text class="publish-row__label">提及好友</text>
           <text class="publish-row__arrow">›</text>
         </view>
-        <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真） -->
-        <view
-          class="publish-row"
-          :class="{ 'press-feedback': targetType !== 'friends' }"
-          role="button"
-          @tap="targetType !== 'friends' && cycleVisibility()"
-        >
+        <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真）
+             MP-R1-VILLAGE-PUBLISH-103：cycleVisibility 四目标轮换列表均为单值（点击永远
+             不改值），保留 press-feedback/chevron 构成「可点假象」——降级为只读信息行，
+             可见范围随「发布到」目标推导（对齐「添加位置」行的只读形态） -->
+        <view class="publish-row">
           <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
           <text class="publish-row__label">谁可以看</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
-          <text v-if="targetType !== 'friends'" class="publish-row__arrow">›</text>
         </view>
       </view>
 

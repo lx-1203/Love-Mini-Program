@@ -1,0 +1,800 @@
+[
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG01",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "冷启动深链直开注册页：完整渲染且协议默认不勾选",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | observe-only | dom: .route:absent .agree__chk:present | pre:auto-reLaunch pages/register/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG01-after.png(105237B)"
+  ],
+  "durationMs": 18550
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG02",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "从登录页「去注册」入口进入（navigateTo，栈深 2）",
+  "status": "EXECUTED",
+  "observed": "top=pages/login/index | pre:reLaunch /pages/login/index | act:navigateTo /pages/register/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/login/index",
+    "options": {}
+   },
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 17084
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG03",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "栈深场景点返回按钮 → navigateBack 落回登录页",
+  "status": "FAILED",
+  "observed": "top=pages/register/index | dom: .hero__back:absent .length:absent | pre:reLaunch /pages/login/index | pre:navigateTo /pages/register/index | act:navigateBack delta1 | act-FAIL:tap(.hero__back) element not found: .hero__back",
+  "failureReason": "action tap .hero__back failed: element not found: .hero__back",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T07:19:37.941Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T07:19:37.941Z][info] \"preloadSubpackages: success\"",
+   "[2026-09-23T07:19:49.438Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T07:19:49.439Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 24306
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG04",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "直开（栈深 1）点返回按钮 → reLaunch 到登录页",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .hero__back:absent .length:absent .LOGIN:absent .route:absent | pre:auto-reLaunch pages/register/index | act:tap .hero__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 18955
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG05",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "底部「去登录」链接返回登录页",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .to-login__link:absent | pre:reLaunch /pages/login/index | pre:navigateTo /pages/register/index | act:tap .to-login__link",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/login/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 16411
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG06",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "点《用户协议》链接：跳分包协议页且不改变勾选状态",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .agree__link:absent .agree__chk:absent | pre:auto-reLaunch pages/register/index | pre:tap .agree__chk | act:tap .agree__link | act:navigateTo /subpackages/legal/agreement/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/legal/agreement/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG06-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 25050
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG07",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "点《隐私政策》链接：跳分包隐私页",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .agree__link:present(\"《用户协议》\") | pre:auto-reLaunch pages/register/index | act:tap .agree__link",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 10405
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG08",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "手机号输入：数字过滤 + 3-4-4 自动格式化",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:absent | act:input __CAND__=\"自动化输入-REG08\" | act-FAIL:inputSeq(__CAND__) element not found: __CAND__",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/legal/agreement/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG08-after.png(183829B)"
+  ],
+  "durationMs": 12107
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG09",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "手机号超长输入截断为 11 位",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present | pre:auto-reLaunch pages/register/index | act:input .field__input=\"1388888888812345\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG09-after.png(106317B)"
+  ],
+  "durationMs": 18479
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG10",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "清空按钮：清手机号并复位错误与「已注册」出口",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__clear:absent .ghost-btn:absent | pre:input .field__input=\"13888888888\" | act:tap .field__clear",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG10-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 11942
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG11",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "验证码输入：非数字过滤 + 6 位截断",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present | act:inputSeq __CAND__ [\".field__input\",\"\",\"1234567890\",\"12ab\"]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG11-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 12867
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG12",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "密码强度条实时三档 + 明文/密文切换",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present .field__eye:present .strength:absent | act:inputSeq __CAND__ [\".field__input\",\"abc12345\",\"Abc123!@#$\",\"12345678\"] | act:tap .field__eye | act:tap .field__eye",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG12-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 13323
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG13",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "确认密码不一致行内报错，改一致后错误清除",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present .field--error:absent | pre:input .field__input=\"abc12345\" | act:input .field__input=\"abc123456\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG13-after.png(104633B)"
+  ],
+  "durationMs": 11661
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG14",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "昵称输入：特殊字符/emoji 可输入，超 20 字截断",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present | act:input .field__input=\"🌸小风同学_A1\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG14-after.png(103279B)"
+  ],
+  "durationMs": 11428
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG15",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "出生日期 picker 选择回显（成年日期）",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__picker:present(\"2008-06-01\") .field__pick-text:present(\"2008-06-01\") | act:trigger .field__picker change {\"value\":\"2008-06-01\"}",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG15-after.png(104318B)"
+  ],
+  "durationMs": 11522
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG16",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "手机号无效时点「获取验证码」：行内错误+抖动+Toast，不发请求",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .sms-btn:present(\"获取验证码\") | pre:input .field__input=\"123\" | act:tap .sms-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "请先输入正确的手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG16-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 11963
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG17",
+  "page": "pages/register/index",
+  "tier": "critical",
+  "title": "合法手机号发送验证码：发送成功 Toast + 60s 倒计时",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .field__input:present .sms-btn:present(\"获取验证码\") .mockCode:absent | act:tap .sms-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "请先输入正确的手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG17-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG17-after.png(109112B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\PAGES-REGISTER-INDEX-REG17-after.wxml"
+  ],
+  "durationMs": 21387
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG18",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "倒计时期间重复点击验证码按钮：不重发",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .sms-btn:present(\"获取验证码\") | act:tap .sms-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "请先输入正确的手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG18-after.png(109112B)"
+  ],
+  "durationMs": 11400
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG19",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "空表单直接点注册：首错定位手机号",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG19-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 11761
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG20",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "验证码/密码非法组合提交：逐项首错定位（表单「非法」态）",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG20-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 11788
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG21",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "生日未选/未成年生日提交拦截（客户端 18 岁预检）",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") .field__picker:present(\"2009-01-01\") | act:trigger .field__picker change {\"value\":\"2009-01-01\"} | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG21-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 12027
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG22",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "全表单合法但未勾协议提交：协议区抖动拦截（空提交终态）",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") .agree__chk:present | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG22-after.png(108906B)"
+  ],
+  "durationMs": 11222
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG23",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "协议勾选框切换：勾上/取消",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .agree__chk:present | act:tap .agree__chk | act:tap .agree__chk",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG23-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 12009
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG24",
+  "page": "pages/register/index",
+  "tier": "critical",
+  "title": "注册主按钮快击×5：createButtonGuard 防连点只提交 1 次",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present | pre:auto-reLaunch pages/register/index | pre-FAIL:input el.input is not a function | act:rapidTap __CAND__ x5 done=5",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请输入手机号",
+    "ts": 1790148040751
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG24-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG24-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\PAGES-REGISTER-INDEX-REG24-after.wxml"
+  ],
+  "durationMs": 29850
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG25",
+  "page": "pages/register/index",
+  "tier": "critical",
+  "title": "合法全表单注册成功：签发 JWT 并 redirectTo 注册成功页",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") .route:absent | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG25-before.png(108906B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG25-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\PAGES-REGISTER-INDEX-REG25-after.wxml"
+  ],
+  "durationMs": 22121
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG26",
+  "page": "pages/register/index",
+  "tier": "critical",
+  "title": "已注册手机号重复注册：行内错误+「用这个手机号登录」出口出现，已填内容不清空",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .submit-btn:present(\"注 册\") .ghost-btn:absent | pre-FAIL:input el.input is not a function | act:tap .submit-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "title": "手机号格式不正确，请输入 11 位手机号"
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG26-before.png(108993B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG26-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\PAGES-REGISTER-INDEX-REG26-after.wxml"
+  ],
+  "durationMs": 12547
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG27",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "「用这个手机号登录」次级出口返回登录页",
+  "status": "FAILED",
+  "observed": "top=pages/register/index | dom: .ghost-btn:absent | pre-FAIL:input element not found: __CAND__ | act:reLaunch /pages/login/index | act:navigateTo /pages/register/index | act-FAIL:tap(.ghost-btn) element not found: .ghost-btn",
+  "failureReason": "action tap .ghost-btn failed: element not found: .ghost-btn",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   },
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T07:21:00.830Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T07:21:00.831Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 23453
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG28",
+  "page": "pages/register/index",
+  "tier": "critical",
+  "title": "B6 后台关闭注册开关：Toast 提示后 800ms 自动退回登录页",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | observe-only | pre:reLaunch /pages/register/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG28-before.png(105212B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG28-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\PAGES-REGISTER-INDEX-REG28-after.wxml"
+  ],
+  "durationMs": 29409
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG29",
+  "page": "pages/register/index",
+  "tier": "noop",
+  "title": "页面滚动到底/回顶：底部说明与去登录出口可达",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | observe-only | dom: .safety-note:present(\"注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密\") .to-login:present(\"已有账号？去登录\")",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 1537
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG30",
+  "page": "pages/register/index",
+  "tier": "navigation",
+  "title": "打开即返回：进入后立即点返回无卡死",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | dom: .hero__back:absent | act:tap .hero__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 12073
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG31",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "重复进出注册页：状态复位、定时器无残留叠加",
+  "status": "EXECUTED",
+  "observed": "top=pages/login/index | navError=Uncaught [object Object] | pre:reLaunch /pages/login/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/login/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG31-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19289
+ },
+ {
+  "suite": "S01-auth",
+  "manifest": "PAGES-REGISTER-INDEX",
+  "id": "REG32",
+  "page": "pages/register/index",
+  "tier": "normal",
+  "title": "小控件点击热区测量（R11 §5 铁律：热区≥88rpx）",
+  "status": "EXECUTED",
+  "observed": "top=pages/register/index | observe-only | dom: .hero__back:present .field__clear:absent .field__eye:present .agree__chk:present | pre-FAIL:input element not found: __CAND__ | pre:auto-reLaunch pages/register/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "pages/register/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\PAGES-REGISTER-INDEX-REG32-after.png(105182B)"
+  ],
+  "durationMs": 17999
+ }
+]

@@ -1,0 +1,266 @@
+{
+  "page": "subpackages/discover-extra/discover/match-success",
+  "pageName": "匹配成功",
+  "round": "R1",
+  "role": "A6 交互判定员（证据仲裁）",
+  "generatedAt": "2026-09-23T14:30:00+08:00",
+  "sources": {
+    "manifest": "reports/audit/round-1/ops/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json（MS01–MS16，expected 权威）",
+    "execResults": "reports/audit/round-1/interact/exec-results.json（S08-match-chat 批次 MS01–MS16 条目，2026-09-23 执行，observed 权威之一）",
+    "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json（OP01–OP15 批次，2026-09-20 干净会话 r2/r3/r4 补拍，observed 权威之二）",
+    "screenshots": "reports/screenshots/round-1-interact/（OP 系列与 MS04/MS07/MS10/MS14 系列，均逐一目验）",
+    "codeSpotCheck": [
+      "apps/client/src/subpackages/discover-extra/discover/match-success.vue:53-118（onLoad dev-preview/userId 分支、loadFallbackPartner 未命中 return、goChat/goBack/handleShare）",
+      "apps/client/src/components/match/MatchSuccess.vue:42-61（scoreIcons、defaultScores=[90,85,80,79]、DEFAULT_REASON_LABELS、displayReasons 恒 4 行补全）",
+      "apps/client/src/stores/match.ts:71-90（setMatchedUser 唯一写入口、markChatReady 仅 matched→chat_ready、reset 清 matchedUser）",
+      "apps/client/src/services/api.ts:964-973（getPersonProfile mock 按 fixtures id 匹配 ?? null）",
+      "apps/client/src/services/mocks/fixtures.ts:177-676（推荐人 id=4001–4009，无 10003）"
+    ]
+  },
+  "batchReliability": "两批 A1 证据源可信度不同，仲裁口径：(1) OP 批次（09-20，tmp/*.mjs + r2/r3/r4 干净会话补拍）多轮复现、双通道 toast 钩子、实拍帧齐全，为可信 observed；(2) S08 批次（09-23，exec-results.json 内 16 条）存在系统性自动化通道故障信号——每条 pre:login 均 MISMATCH、dom 探测使用非 DOM 类名（.getPersonProfile/.userId/.pageScrollTo 等，absent 属无效探测）、11/16 截图 timeout、MS05/MS13 NAV_ERROR、MS07/MS08 tap 时页面不在目标页（dom .success-nav__btn:absent + MS07-after.png 实拍为寻觅 Tab + route 字段=pages/discover/index）、MS10/MS11 tap 后 wxml 快照仍停 match-success（未跳转）——与 A1 findingsFile 记录的『轮1 自动化通道假死』同型，其失败信号不作为产品缺陷依据，成功信号（MS09 toast hook、MS06/MS12 落地路由、MS15 选择器 present、MS16 scrollPos=top）作为佐证。本页判定均不凭代码推测：每条 VERIFIED 均有至少一批次的实测证据支撑。",
+  "checks": [
+    {
+      "caseId": "MS01",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "dev-preview=1 冷启动深链整页渲染（无参输入，栈=1）",
+      "expected": "500ms 内渲染标题「匹配成功」+副标题「你和 星野 互相喜欢上了」+「快去打个招呼吧~」+双头像+心形脉冲+匹配度卡恒 4 行+三 CTA+顶部 nav 三钮；全程不闪错误空态；console 无 NAV_FAIL/TypeError",
+      "actual": "一致。S08 批次：route 栈顶=match-success?dev-preview=1，dom 探测 .match-success__title/.subtitle/.avatar/.score-item/.primary/.secondary 全部 present（act:wait 500ms 后），截图通道 timeout；OP 批次（干净会话）：element.text 实测 title=匹配成功、subtitle=你和 星野 互相喜欢上了、scoreTitle=我们正在分享你们的共同点、primary/secondary/share 三 CTA 齐全，match store status=idle matchedUser=null，consoleIssues=0。实拍三帧佐证：MS14-after.png（09-23 无遮挡全要素）、OP04b-after1-toast-r4.png（09-20 无遮挡）、OP01-after.png（19:55 首拍，底部叠加微信定位授权原生弹窗——A1 已记录的轮1 环境噪声，非页面缺陷）。不闪错误空态 ✓",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS01 条目（route+dom present+wait 500ms）",
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP01（element.text 全命中+store idle+consoleIssues=0）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after1-toast-r4.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP01-after.png"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "MS02",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "无参无 store 冷启动兜底（无 query 直进，partnerName=TA）",
+      "expected": "不白屏：副标题「你和 TA 互相喜欢上了」+双默认头像+4 行默认标签 90/85/80/79+默认理由兜底渲染；无 loading 永驻/错误 Toast",
+      "actual": "未按用例前置取得渲染证据。S08 批次：pre 序列末尾确有一次无参 reLaunch（route 快照 options:{} 落地 match-success ✓），但 dom 仅探测 .partnerDefaultName（非页面 DOM 类名，absent 无效）与 .avatar:present，未探测任何文案，截图 timeout——无渲染内容证据；且其身份B 登录实测 userId=user-1001 与身份A 相同（observed 原文 login B ok userId=user-1001 MISMATCH!），『无 store 残留』前提未按 Manifest 达成。OP 批次未执行无参场景。等效渲染态（partner=null → TA+默认头像+4 行默认标签）有双源实拍（MS04-after.png 09-23、OP12b-after-r3.png 09-20），但入口均为 ?userId=…（未命中/无效 id）分支，非无参 onLoad 分支。不判 VERIFIED（入口分支未被该场景执行）、不判 FAILED（无任何预期未达成的实测，等效渲染态均符合 expected 描述）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS02 条目（无参 reLaunch + 无效 dom 探测 + 截图 timeout + login B MISMATCH）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS04-after.png（等效 partner=null 渲染态实拍）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP12b-after-r3.png（等效 TA 兜底渲染实拍）"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "MS03",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "直达带参 ?userId=10003 兜底拉取真实 mock 人",
+      "expected": "getPersonProfile('10003') 命中后 partner 更新为 10003 资料：副标题插值真实姓名、右头像切换、reasons 按其数据生成、匹配卡仍 4 行、无报错",
+      "actual": "Manifest 参数前置失效：10003 不存在于 mock fixtures（fixtures.ts 推荐人 id=4001–4009；api.ts:964-973 按 id 匹配 ?? null）。S08 批次按 Manifest 参数实测：MS04-after.png 与 MS10-after.png（09-23）实拍 ?userId=10003 落地后副标题「你和 TA 互相喜欢上了」+右头像 DEFAULT_AVATAR+4 行默认标签——未命中兜底生效（产品行为正确、无崩溃，但 expected『10003 真实人渲染』按字面不可达成）。兜底拉取机制本身由 OP 批次以替代参数实测：OP11（?userId=4008，r2/r3 复现）OP11b-after-r3.png 实拍副标题「你和 周岚 互相喜欢上了」+右头像换真实照片+4 行真实理由（同城距离 2.4km 90%/都喜欢电影 85%/都喜欢摄影 80%/都喜欢咖啡 79%）。判 UNVERIFIED：按 Manifest 指定参数无法复现 expected（用例参数表错误，非产品缺陷）；不立产品 Issue",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "apps/client/src/services/mocks/fixtures.ts:177-676（推荐人 id 4001–4009，无 10003）",
+        "apps/client/src/services/api.ts:964-973（mock 按 id 匹配 ?? null）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS04-after.png（?userId=10003 → TA 兜底实拍）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP11b-after-r3.png（?userId=4008 → 周岚渲染实拍，机制等价验证）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "MS04",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "query.userId 与 store 残留 matchedUser 不一致时 reset 以入口参数为准",
+      "expected": "注入残留 matchedUser(userId=999) 后带 ?userId=10003 进入：不展示旧对象，reset 后按参数重拉，store 复核 matchedUser=null",
+      "actual": "两批次均未执行注入场景。S08 批次 observed 为 observe-only，无 setMatchedUser 注入动作记录，dom 探测的 .userId/.reset/.get/.matchedUser 均非页面 DOM 类名（absent 无效），仅有 ?userId=10003 的 reLaunch 与实拍（MS04-after.png，渲染 TA——但因 10003 不在 fixtures，无法区分『reset 后重拉未命中』与『从未有残留』，不构成 MS04 场景证据）；OP 批次无此场景。onLoad 不一致 reset 分支在源码存在（match-success.vue:74-77，本次抽查确认），但铁律禁止凭代码推测判 VERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS04 条目（observe-only、无注入动作、无效 dom 探测）",
+        "apps/client/src/subpackages/discover-extra/discover/match-success.vue:74-77（不一致 reset 分支源码，仅作佐证不作判定依据）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "MS05",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "返回按钮（栈>1）navigateBack 回来源页发现 Tab",
+      "expected": "500ms 内路由返回：栈顶回 pages/discover/index（栈长=1），来源页状态保留，无 Toast/白屏/报错",
+      "actual": "一致（以 OP 批次干净会话为准）。OP09（r2）：reLaunch discover → navigateTo match-success（navSettled=true）→ tap 第 1 个 .success-nav__btn → after=pages/discover/index，路径轮询断言达成；OP13 三轮进出 out 均=pages/discover/index 佐证返回链干净可重复。S08 批次同用例编程 navigateBack 报 NAV_ERROR 且 .success-nav__btn:absent（其自动化通道故障，与 MS07/MS10 同批次 tap 失效一致），不采信为产品行为。来源页卡组状态保留无专门出场后断言（navigation tier 允许免截图，以路由链断言为主），confidence 相应下调",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP09/OP13（路径轮询 after=pages/discover/index）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP09-mid-in.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP13b-round1-out-r3.png",
+        "reports/audit/round-1/interact/exec-results.json MS05 条目（NAV_ERROR，通道故障不采信）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "MS06",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "返回按钮（栈=1 直进）switchTab 兜底回发现 Tab",
+      "expected": "500ms 内栈顶=pages/discover/index，发现 Tab 正常渲染，不静默失败",
+      "actual": "两批一致。OP08（r2/r3 两轮复现）：reLaunch 直进（栈=1）→ tap navbtns[0] → after=pages/discover/index（栈=1），OP08b-after-r3.png 实拍寻觅 tab（卡片流+底部 tab 高亮）正常渲染；S08 批次：tapIndex .success-nav__btn#1 tapped → route 快照=pages/discover/index ✓。switchTab 兜底分支实测生效，无静默失败",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP08（r2/r3 两轮 + OP08b-after-r3.png）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP08b-after-r3.png",
+        "reports/audit/round-1/interact/exec-results.json MS06 条目（route=pages/discover/index）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "MS07",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "右上相机按钮 Toast「截图功能即将上线」icon=none，路由不变",
+      "expected": "500ms 内 Toast 文案恰为「截图功能即将上线」icon=none；路由不变；Toast 自动消失；console 无报错",
+      "actual": "一致（以 OP 批次为准）。OP03 干净会话 3 轮（r2/r3/r4）复现：[PROBE]toast console 钩子 {\"title\":\"截图功能即将上线\",\"icon\":\"none\"} + r4 wx.showToast 钩子双通道实测一致；OP03b-after2-gone-r4.png 证实 Toast 自动消失且页面停留 match-success（路由不变）；可视样式以同机制的 OP04b-after1-toast-r4.png 实拍帧为参照（icon=none 半透明黑底居中）。S08 批次 toast=[] 且 MS07-after.png 实拍为寻觅 Tab、dom .success-nav__btn:absent——tap 时页面不在 match-success（其 pre reLaunch 未生效的通道故障，与同批次 MS06 先 switchTab 回 discover 的上下文吻合），不构成对 expected 的反驳。相机 toast 自身无可视帧（双钩子数据+同机制参照帧为据），confidence 略降",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP03（双通道钩子+消失帧）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP03b-after2-gone-r4.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after1-toast-r4.png（同机制 toast 可视参照帧）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS07-after.png（S08 批次实拍寻觅 Tab，通道故障佐证）",
+        "reports/audit/round-1/interact/exec-results.json MS07 条目（toast=[]、route=pages/discover/index）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "MS08",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "右上「···」更多按钮 Toast「分享功能即将上线」，路由不变",
+      "expected": "500ms 内 Toast 文案恰为「分享功能即将上线」icon=none；路由不变、无弹层；Toast 自动消失",
+      "actual": "一致（以 OP 批次为准）。OP04 干净会话：[PROBE]toast 与 wx.__lastToast 双通道一致 {title:分享功能即将上线, icon:none}；OP04b-after1-toast-r4.png 实拍屏幕中央「分享功能即将上线」半透明黑底 toast（本次仲裁目验确认，无 icon、内容不被遮挡面过大）；OP04b-after2-gone-r4.png 证实已消失；页面停留 match-success（路由不变）。S08 批次 toast=[]+实拍 discover，同 MS07 通道故障模式，不采信",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP04（双通道+可视帧）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after1-toast-r4.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after2-gone-r4.png",
+        "reports/audit/round-1/interact/exec-results.json MS08 条目（toast=[]，通道故障）"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "MS09",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "底部「分享喜悦」文字链与「···」同走 handleShare Toast",
+      "expected": "500ms 内 Toast「分享功能即将上线」；路由不变；无分享面板误弹；Toast 自动消失",
+      "actual": "两批一致，互为独立佐证。S08 批次（09-23）：toast 钩子捕获 {api:showToast, title:分享功能即将上线, ts:1790131524745}，route 快照=match-success?dev-preview=1（路由不变 ✓），dom .match-success__share:present（virtualHost 子组件内元素命中）；OP 批次（09-20）：page.$ pierce 命中并 tap 成功，双通道文案一致，OP05b-after2-gone.png 证实 Toast 消失、页面停留，无分享面板。按压态 opacity:0.7 反馈无专门取证（次要子项）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS09 条目（toast hook 实录 + route 不变）",
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP05（双通道+消失帧）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP05b-after2-gone.png"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "MS10",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "主 CTA「立即聊天」跳转会话页（critical）",
+      "expected": "500ms 内栈顶=subpackages/chat/chat-session/index 且 options.userId=入口参数，会话页正常打开不空态崩溃；兜底入口不误置 chat_ready 态；console 无 NAV_FAIL/TypeError",
+      "actual": "核心行为一致（以 OP 批次干净会话为准）。OP06（r2）：tap .match-success__primary → currentPage=subpackages/chat/chat-session/index?userId=dev-preview（options.userId=入口参数 ✓），OP06b-after2.png 实拍会话页完整渲染：「你们已互相配成功，打个招呼开启聊天吧~」+2 个推荐开场 chips+「会话刚建立，还没有消息。」+输入栏（本次仲裁目验确认，非空态崩溃）；OP10/OP13 佐证该跳转可重复。证据边界：①S08 批次（?userId=10003）tap 后 wxml 快照仍停 match-success（reports/screenshots/round-1-interact/wxml/…MS10-after.wxml 为本页 DOM），tap 未生效，属该批次通道故障，且 10003 不在 fixtures（同 MS03），该参数组合的会话页渲染不可验证；②『tap 后 store status=idle 复核』无 tap 后实测（OP01 实测过同页 idle 初态、markChatReady 仅 matched 态生效为源码佐证，非实测）；③OP06 参数值为 dev-preview 非 10003，参数透传正确性另由 OP11（4008→query.userId=4008）独立佐证。无 NAV_FAIL/JS error",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP06（跳转+query.userId=入口参数+会话页渲染）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP06b-after2.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP11b-after-r3.png（参数透传佐证）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS10-after.wxml（S08 tap 未生效佐证）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "MS11",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "主 CTA 防连点：快击「立即聊天」×5 只进入 1 层会话页（critical）",
+      "expected": "过滤 route=chat-session 的栈层数=1（只提交 1 次），栈不超限，无 webview count limit 报错；若实测压入多层即为缺陷",
+      "actual": "一致（以 OP 批次为准）。OP10（09-20 干净会话 r2）：5 次 tap 间隔约 150ms 全部 ack → 终态 currentPage=subpackages/chat/chat-session/index?userId=dev-preview（单会话页），OP10b-after.png 实拍单层会话页无叠层异常（本次仲裁目验确认），页面级 JS error=0；期间 1 条微信框架级路由日志「routeDone with a webviewId 58 that is not the current page」为 DevTools 快速导航竞态内部日志，无用户可见影响，同意 A1 不计 Issue。S08 批次该用例 observe-only 未执行连点（observed 无 act 行、截图双 timeout）。源码 goChat 无防连点锁（match-success.vue:107-112，本次抽查确认）——按 Manifest『如实判定不降低标准』，实测单层即通过；层数=1 结论依赖 A1 路径轮询数据+实拍双重证据",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP10（终态单会话页+无叠层+JS error=0）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP10b-after.png",
+        "reports/audit/round-1/interact/exec-results.json MS11 条目（observe-only 未执行）",
+        "apps/client/src/subpackages/discover-extra/discover/match-success.vue:107-112（goChat 无防连点锁，佐证）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "MS12",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "次 CTA「继续探索」switchTab 回发现 Tab",
+      "expected": "500ms 内 getCurrentPages=[pages/discover/index]，发现 Tab selected 正确、卡组状态保留，无 Toast",
+      "actual": "两批一致。OP07（r2+r3 复拍）：pageBefore=match-success?dev-preview=1 → after=pages/discover/index，OP07b-after-r3.png 实拍寻觅页（卡片流+底部「寻觅」tab 高亮，本次仲裁目验确认 selected 正确）；S08 批次：act:tap .match-success__secondary → route 快照=pages/discover/index ✓。switchTab 清空非 tab 栈后落地 tab 栈语义达成；「卡组状态保留」未做逐项断言（tab 高亮与卡片流渲染有实拍）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP07（前后路由轮询+r3 实拍）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP07b-after-r3.png",
+        "reports/audit/round-1/interact/exec-results.json MS12 条目（route=pages/discover/index）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "MS13",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "会话页返回落点与重复进出（返回回 match-success 后复进）",
+      "expected": "会话页返回落回 match-success，partner 仍为拉取资料、双头像/四行理由完整；再次 tap 立即聊天成功复进",
+      "actual": "无干净执行证据。S08 批次：act:navigateBack NAV_ERROR『Uncaught [object Object]』、act:repeatNav navigateTo ×2 均 navErr、tap primary 后 wxml 快照仍为本页——该批次导航通道全面故障，无有效观测；OP 批次的 OP13 覆盖的是寻觅↔match-success 进出 ×3，未覆盖 chat-session 返回→match-success→复进的 MS13 链条。返回落点=来源页的状态恢复（fallbackPartner ref 存续、复进成功）因此无任何批次实测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS13 条目（NAV_ERROR + repeatNav navErr×2 + wxml 停本页）",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS11-after.wxml（S08 批次 tap 后仍为本页 DOM）",
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP13（仅覆盖寻觅↔本页进出）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "MS14",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "头像兜底链：partner 头像加载失败 @error 落 DEFAULT_AVATAR",
+      "expected": "注入 avatar=/uploads/__not_exist_404__.jpg 的 matchedUser 后，右头像经 onPartnerAvatarError 落 DEFAULT_AVATAR，不渲染空白圆",
+      "actual": "两批次均未执行 404 注入场景。S08 批次 observed 为 observe-only，无 setMatchedUser 注入动作记录；MS14-after.png（09-23 10:46）经目验实为 dev-preview=1 常规渲染（副标题「你和 星野」+双 AVATAR_1 纹理头像+浪漫兜底 4 行），非 404 场景；OP 批次无此场景。@error 兜底分支（MatchSuccess.vue:107 三元 + resolveMediaUrl 兜底，源码在）未获实测，铁律禁止凭代码推测判 VERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json MS14 条目（observe-only，无注入动作）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png（实为 dev-preview 常规渲染，非 404 场景）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "MS15",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "匹配度卡恒 4 行固定分值 90/85/80/79 + 缺项兜底文案",
+      "expected": "恒 4 行：都喜欢日落/都爱听民谣/喜欢同一种浪漫/生活方式（第 4 行兜底）；分值恰 90/85/80/79（非 95%）；图标 跑步/音乐/书本/美食；卡片标题「我们正在分享你们的共同点」；fill 宽度=分值%",
+      "actual": "一致（双源无遮挡实拍+选择器探测）。文案与分值：MS14-after.png（09-23，dev-preview=1 场景）与 OP04b-after1-toast-r4.png（09-20，同场景）双源实拍均清晰显示 4 行=「都喜欢日落 匹配度90%/都爱听民谣 85%/喜欢同一种浪漫 80%/生活方式 79%」（本次仲裁逐行目验，与 expected 文案逐字一致，最后一项非 95%），行首图标依次为跑步小人/音符/书本/碗筷 emoji，卡片标题「我们正在分享你们的共同点」；fill 宽度目视递减与分值一致（90% 行近满宽、79% 行最短）。S08 批次 .match-success__score-item/.match-success__score-fill 均 present（恒渲染 4 行结构确认，MS15 自身截图 timeout 由 MS14-after 同场景帧补证）。真实数据场景同构验证：OP11b（4008）实拍 4 行真实理由且分值同为 90/85/80/79。fill 宽度无 evaluate 数值读取（目视+present 为据），confidence 略降；源码佐证 defaultScores=[90,85,80,79]（MatchSuccess.vue:43-44）与 displayReasons 恒 4 行补全（:50-61）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png（4 行文案+分值+图标无遮挡实拍）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP04b-after1-toast-r4.png（第二源同场景实拍）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP11b-after-r3.png（真实数据场景 4 行同分值）",
+        "reports/audit/round-1/interact/exec-results.json MS15 条目（score-item/score-fill present）",
+        "apps/client/src/components/match/MatchSuccess.vue:42-61（defaultScores 与恒 4 行补全源码佐证）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "MS16",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "operation": "滚动到底/回顶：CTA 锚底不脱布局（noop）",
+      "expected": "滚动全程布局不撕裂：actions 区锚底、顶部 nav fixed；无滚动触发加载/Toast/路由变化；回顶后首屏与 MS01 一致",
+      "actual": "一致（两批互补）。OP15：坐标实测「分享喜悦」y=670 h=37 → 内容底缘 707 < windowHeight=812，页面单屏无可滚动空间（与 MatchSuccess.vue actions margin-top:auto 单屏锚底布局设计一致），OP15b-before.png 整页实拍（本次仲裁目验：actions 锚底、nav 悬浮）；S08 批次：act:pageScrollTo bottom → top 实际执行，回顶后 scrollPos=top（无位移残留），全程无 Toast/路由变化、console 干净；其 pre:pullDown 报『uni is not defined』为 S08 脚本在页面上下文探测下拉刷新的错误（本页 pages.json 未启用 enablePullDownRefresh，Manifest pre 同此确认，非页面缺陷）。『滚动全程不撕裂』因单屏无滚动位移未发生，以锚底布局坐标+scrollPos=top 为据",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json OP15（坐标实测单屏 + OP15b-before.png）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-OP15b-before.png",
+        "reports/audit/round-1/interact/exec-results.json MS16 条目（pageScrollTo bottom→top + scrollPos=top）"
+      ],
+      "confidence": 0.8
+    }
+  ],
+  "issues": [],
+  "unverifiable": [
+    "MS02|S08 批次无参 reLaunch 后仅无效选择器探测（.partnerDefaultName 非 DOM 类名）且截图 timeout，身份B 登录实测与身份A 同为 user-1001（MISMATCH，前置未达成）；OP 批次未覆盖无参场景；等效渲染态（TA+默认头像+4 行默认标签）有 MS04-after/OP12b 双源实拍但入口分支不同，无参 onLoad 分支无实测|2",
+    "MS03|Manifest 指定 userId=10003 不在 mock fixtures（fixtures.ts 推荐人仅 4001–4009，api.ts 未命中返回 null），S08 按 Manifest 参数实拍为 TA 兜底（MS04-after.png），expected『10003 真实人渲染』按字面不可达成——用例参数表错误非产品缺陷；兜底拉取机制经 OP11 替代参数 4008 实测通过（周岚渲染）|2",
+    "MS04|两批次均未执行 setMatchedUser 注入旧对象+不一致 userId 进入场景：S08 observe-only 无注入动作、dom 探测选择器无效；OP 批次无此场景；onLoad 不一致 reset 分支仅源码在，按铁律不判 VERIFIED|2",
+    "MS13|会话页返回→match-success→复进链无干净证据：S08 批次 navigateBack/repeatNav 全部 NAV_ERROR（通道故障，tap 后 wxml 仍停本页），OP 批次 OP13 仅覆盖寻觅↔本页进出，chat-session 返回落点与 partner 状态恢复、二次复进均未实测|2",
+    "MS14|404 头像注入场景未执行：S08 observe-only 无注入动作（MS14-after.png 实为 dev-preview 常规渲染非 404 场景），OP 批次无此场景；@error→DEFAULT_AVATAR 兜底链仅源码在，按铁律不判 VERIFIED|2"
+  ],
+  "notes": "仲裁方法：逐用例三方对照（Manifest.expected / A1 双批次 observed / 截图目验）。本页存在两批 A1 证据：①OP 批次（09-20，tmp 脚本+r2/r3/r4 干净会话补拍，findingsFile 15 项全符合）②S08 批次（09-23，exec-results.json 内 MS01–MS16）。S08 批次存在系统性自动化通道故障（登录 MISMATCH、无效 dom 选择器、11/16 截图 timeout、NAV_ERROR×2、MS07/MS08 tap 时页面不在目标页、MS10/MS11 tap 未生效），其失败信号不作为产品缺陷依据，成功信号（MS09 toast hook、MS06/MS12 路由、MS15 present、MS16 scrollPos）作佐证。判定结果：11 VERIFIED / 0 FAILED / 5 UNVERIFIED（MS02/MS03/MS04/MS13/MS14，均属执行覆盖缺口或 Manifest 参数表错误，非产品缺陷）。重点裁定：①『userId=10003 为存活 mock 人』系 Manifest 前置假设错误（fixtures 仅 4001–4009），S08 实拍 TA 兜底证明产品对无效 id 行为正确，不立 Issue；②S08 批次 MS07-after.png 实拍寻觅 Tab 与 OP03『路由不变』的冲突，经 dom .success-nav__btn:absent 与 suite 上下文（MS06 先 switchTab 回 discover）裁定为 S08 导航未生效，采信 OP03 三轮双通道证据；③OP10 框架级 routeDone webviewId 日志同意 A1 不计缺陷；④历史回归 MP-R3-MSUCCESS-001/002（nav 侵入状态栏/胶囊碰撞）经 OP02 数值核验（返回钮 y=59≥47、右上钮右缘 264.2<胶囊 left 281）+ 全部实拍帧无叠印，修复保持有效。A1 findingsFile 所列不适用项（本页无输入框/无 Tab/无弹窗/无下拉刷新/真实分享截图能力为占位 Toast）经 Manifest 与源码核对确认成立，继承不重复计数。建议后续：以有效 fixture id（如 4008）补测 MS02/MS03/MS04/MS13/MS14 五条缺口。未运行任何写操作，未驱动开发者工具，仅只读取证。",
+  "findingsFile": "reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-judge.json"
+}

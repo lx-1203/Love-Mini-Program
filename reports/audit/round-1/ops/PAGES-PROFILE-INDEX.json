@@ -1,0 +1,714 @@
+{
+  "cases": [
+    {
+      "id": "PFI01",
+      "page": "pages/profile/index",
+      "title": "未登录冷启动落「我的」→ LockScreen 完整渲染（无 401 雪崩）",
+      "tier": "normal",
+      "pre": "未登录前置：automation_evaluate 清除 token 与会话 storage（wx.removeStorageSync('token')）→ wx.reLaunch('/pages/profile/index')。判定源：isUnlocked=isLoggedIn（apps/client/src/pages/profile/index.vue:419），未登录渲染 NotLoggedProfile（index.vue:1645）",
+      "action": "冷启动进入，断言首屏，无点击",
+      "expected": "渲染 NotLoggedProfile 锁定页：顶部 ‹ 返回 + 应用中心 + 设置图标（NotLoggedProfile.vue:36-69）、「点击登录」头部、资料完整度 0%、4 列统计全 0 占位、我的故事/我的互动骨架、底部「登录」按钮；不渲染 ProfileShell/语音/背景编辑/推荐好友/发帖 FAB；onShow 门禁（index.vue:1580 getToken()&&!useMock() 早退）保证无受保护请求：console 无 401、无「登录已过期」toast、无 reLaunch 强踢登录页、无错误空态闪现",
+      "evidence": "normal：after 截图（simulator_screenshot）+ 路由链（automation_evaluate getCurrentPages）+ console 全量落 console-evidence-{A|B}.log（断言无 401/TypeError）"
+    },
+    {
+      "id": "PFI02",
+      "page": "pages/profile/index",
+      "title": "未登录 ‹ 返回按钮 → navigateBack，无上级栈兜底回首页",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态，停留 LockScreen",
+      "action": "tap .nlp-topbar__btn 第 1 个（aria-label=返回，NotLoggedProfile.vue:37-46）",
+      "expected": "goBack：uni.navigateBack({delta:1})；本页为 Tab 栈底无上级时 catch 兜底 uni.switchTab('/pages/home/index')，再失败 reLaunch 首页（NotLoggedProfile.vue:7-13）；500ms 内有路由反馈，最终落 pages/home/index",
+      "evidence": "navigation：getCurrentPages 路由链断言（落点 home），可免截图"
+    },
+    {
+      "id": "PFI03",
+      "page": "pages/profile/index",
+      "title": "未登录「点击登录」头部 → 登录页",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态",
+      "action": "tap .nlp-header（NotLoggedProfile.vue:72-78）",
+      "expected": "emit goLogin → goLogin() uni.navigateTo('/pages/login/index')（index.vue:773-775）；栈顶 route=pages/login/index",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI04",
+      "page": "pages/profile/index",
+      "title": "未登录「去完善」按钮 → 收敛为登录引导",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态",
+      "action": "tap .nlp-completion__btn（@tap.stop，NotLoggedProfile.vue:90-92）",
+      "expected": "同 goLogin → /pages/login/index（未登录时「去完善」不进资料流程而进登录页，与 2026-08-07 链路一致）；500ms 内路由变化",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI05",
+      "page": "pages/profile/index",
+      "title": "未登录故事卡×3 + 添加故事 → 登录页",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态",
+      "action": "依次 tap .nlp-story（生活日常/旅行足迹/我的心愿）与 .nlp-story--add（添加故事）（NotLoggedProfile.vue:111-121），每次返回后测下一个",
+      "expected": "每张卡均触发 goLogin → /pages/login/index；无任何点击落空（死按钮检查：每点必有路由反馈）",
+      "evidence": "navigation：路由链断言（4 次动作各断言一次落点）"
+    },
+    {
+      "id": "PFI06",
+      "page": "pages/profile/index",
+      "title": "未登录我的互动 4 行 → 登录页",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态",
+      "action": "依次 tap .nlp-interaction（喜欢我的人/我的匹配/我喜欢的人/最近访客，NotLoggedProfile.vue:129-143）",
+      "expected": "4 行均触发 goLogin → /pages/login/index；行按压态（nlp-interaction 行点击区域整行）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI07",
+      "page": "pages/profile/index",
+      "title": "未登录应用中心/设置图标 → 登录页",
+      "tier": "navigation",
+      "pre": "同 PFI01 未登录态",
+      "action": "依次 tap .nlp-topbar__right 内两个 .nlp-topbar__btn（MOBILE 图标=应用中心、SETTINGS 图标=设置，NotLoggedProfile.vue:47-67）",
+      "expected": "两个图标均触发 goLogin → /pages/login/index（注意：未登录态设置图标不进设置页而是登录引导，为既有刻意行为）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI08",
+      "page": "pages/profile/index",
+      "title": "游客深链他人态 ?userId=4001 → 停留 LockScreen 且零受保护请求（权限门禁）",
+      "tier": "critical",
+      "pre": "未登录前置（清 token）→ wx.reLaunch('/pages/profile/index?userId=4001')（4001=mock 推荐池存活 id，apps/client/src/services/mocks/fixtures.ts:177 起；card.userId=String(id) index.vue:317-319）",
+      "action": "冷启动深链断言，无点击",
+      "expected": "loadOtherProfile 游客门禁：!isLoggedIn 直接 return（index.vue:305-309）→ 不发起 GET /recommendations/4001/profile；页面停留 LockScreen（不渲染他人态主体）；console 无 401、无「登录已过期」、无 reLaunch 强踢登录页（2026-08-13 修复回归）；Toast 无",
+      "evidence": "critical：after 截图 + 路由链（栈顶仍 profile/index）+ console 全量（核心断言：零 401 记录）"
+    },
+    {
+      "id": "PFI09",
+      "page": "pages/profile/index",
+      "title": "本人态首屏渲染与首拉数据",
+      "tier": "normal",
+      "pre": "身份A（100158 曦风）登录：tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，evaluate 校验 isLoggedIn=true（失败重试 1 次）→ wx.reLaunch('/pages/profile/index')",
+      "action": "等待 onShow 首拉完成（fetchProfile/fetchProgress/loadMyDailies×3 重试/loadMyPosts×3/likesStore.fetchLikes，index.vue:1580-1605），断言首屏",
+      "expected": "ProfileShell mode=mine → MyProfile 渲染：MyHeader（头像/昵称/在线标/认证点/编辑资料）、资料完整度卡（服务端 profileCompletion 优先，index.vue:428-434）、四格统计（我喜欢/喜欢我的/我赞/访客，非恒 0——fetchLikes 补齐，index.vue:1585-1589）、我的故事区（故事卡+添加日常）、我的相册、我的帖子、我的互动 4 行、更多功能 4 格；下方本人态附加功能区（语音介绍/编辑背景图/推荐给好友）；右下 FAB「发动态」可见（post_publish_open 默认开，app-config.ts:45）；console 无 TypeError",
+      "evidence": "normal：after 截图 + 路由链 + console（NAV_FAIL/TypeError/is not defined 过滤为空）"
+    },
+    {
+      "id": "PFI10",
+      "page": "pages/profile/index",
+      "title": "MyHeader 分享图标 → toast「分享功能即将上线」",
+      "tier": "normal",
+      "pre": "身份A 登录本人态（同 PFI09）",
+      "action": "tap .my-header__icon 第 1 个（▦ 文本，aria-label=分享，MyHeader.vue:48-50）",
+      "expected": "handleShare → 500ms 内 toast「分享功能即将上线」（icon:none，MyHeader.vue:22-24）；无路由变化",
+      "evidence": "normal：after 截图（含 toast）+ 路由链 + console"
+    },
+    {
+      "id": "PFI11",
+      "page": "pages/profile/index",
+      "title": "MyHeader 设置图标 → 设置页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-header__icon 第 2 个（齿轮，MyHeader.vue:51-53）",
+      "expected": "handleSettings → uni.navigateTo('/subpackages/profile-extra/settings/index')（MyHeader.vue:18-20）；栈顶 settings/index；navigateBack 返回落本页",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI12",
+      "page": "pages/profile/index",
+      "title": "点头像 → BottomSheet 头像菜单弹出（tabBar 自动隐藏）",
+      "tier": "normal",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-header__avatar（MyHeader.vue:56）→ 链路 tapAvatar → handleAvatarTap 本人态分支置 avatarMenuVisible=true（index.vue:860-875）",
+      "expected": "500ms 内 BottomSheet 从底部滑入，列 4 项：查看大图/从相册选择/拍照/取消（index.vue:2072-2093，i18n profile.avatarMenuView/Album/Camera + common.cancel）；弹层打开期间自定义 tabBar 自动隐藏（BottomSheet.vue:50-55 watch → setTabBarHidden）",
+      "evidence": "normal：after 截图（弹层开）+ 路由链 + console"
+    },
+    {
+      "id": "PFI13",
+      "page": "pages/profile/index",
+      "title": "头像菜单「查看大图」→ previewImage + 弹层关闭",
+      "tier": "normal",
+      "pre": "PFI12 弹层已开；身份A 头像存在",
+      "action": "tap .avatar-menu__item 第 1 项（index.vue:881-891 index===0 分支）",
+      "expected": "弹层关闭且 tabBar 恢复显示；uni.previewImage 拉起大图（URL 经 resolveMediaUrl 拼 apiRoot+token，index.vue:886-888）；模拟器原生预览浮层不可断言时，以「弹层关闭 + console 无错」为最小通过口径并将预览浮层标 UNVERIFIED",
+      "evidence": "normal：after 截图 + 路由链 + console"
+    },
+    {
+      "id": "PFI14",
+      "page": "pages/profile/index",
+      "title": "头像菜单「取消」→ 关闭无副作用",
+      "tier": "normal",
+      "pre": "PFI12 弹层已开",
+      "action": "tap .avatar-menu__item 第 4 项（cancel，index.vue:898-900）",
+      "expected": "弹层关闭、tabBar 恢复；无 previewImage/chooseImage 触发、无 Toast、无路由变化",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI15",
+      "page": "pages/profile/index",
+      "title": "头像菜单遮罩点击关闭（三路关闭之一）",
+      "tier": "normal",
+      "pre": "PFI12 弹层已开",
+      "action": "tap .bottom-sheet-mask（BottomSheet.vue:73，maskClosable 默认 true，BottomSheet.vue:43）",
+      "expected": "弹层关闭、tabBar 恢复；与「取消」项（PFI14）构成双路关闭，均 500ms 内反馈",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI16",
+      "page": "pages/profile/index",
+      "title": "头像菜单「从相册选择」→ 隐私门 + chooseImage（上传链路入口）",
+      "tier": "critical",
+      "pre": "PFI12 弹层已开；身份A 登录",
+      "action": "tap .avatar-menu__item 第 2 项（index===1 → chooseAvatarImage('album')，index.vue:892-894）",
+      "expected": "弹层先关闭；ensurePrivacyAuthorized 隐私门（index.vue:917-927）：未授权 → toast「需同意隐私协议后才能选择图片」并中止；已授权 → 拉起 wx.chooseImage(count:1, compressed, album)；自动化环境无法真实选图，止步于选择器唤起/授权提示即为可观测反馈，选图后的上传链路（uploadAvatarFile → toast「头像已更新」）标 UNVERIFIED 待劫持/手工补采",
+      "evidence": "critical：before（弹层开）+after 截图 + 路由链 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI17",
+      "page": "pages/profile/index",
+      "title": "头像菜单「拍照」→ chooseImage(camera) 上传成功后「头像已更新」",
+      "tier": "critical",
+      "pre": "PFI12 弹层已开",
+      "action": "tap .avatar-menu__item 第 3 项（index===2 → chooseAvatarImage('camera')，index.vue:895-897）",
+      "expected": "同 PFI16 门禁逻辑，sourceType=['camera']；上传成功路径（劫持/手工）：uploadAvatarFile → successHaptic + toast「头像已更新」（success）+ 头像即时刷新 + 审核角标「头像审核中」出现（avatarAuditStatus=pending，index.vue:956-972, 1922-1928）；失败 → toast 错误消息且头像不变",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI18",
+      "page": "pages/profile/index",
+      "title": "头像快击×5 → 仅弹一个菜单（防重复弹层）",
+      "tier": "normal",
+      "pre": "身份A 登录本人态",
+      "action": "500ms 内连点 .my-header__avatar 5 次",
+      "expected": "状态布尔幂等：仍只有一个 BottomSheet 实例可见，无重复叠层/闪烁/卡死；console 无异常；点击均有按压反馈",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI19",
+      "page": "pages/profile/index",
+      "title": "「编辑资料」→ 资料编辑页（entry=edit 模式）",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-header__edit（MyHeader.vue:84-87）",
+      "expected": "onProfileShellEdit → goToProfileSetup → openAppPath('/subpackages/setup/profile/index?entry=edit')（index.vue:1110-1114）；栈顶 setup/profile 且 options.entry=edit（MP-R6-EDITPAGE：保存后应返回本页而非投递注册向导）；500ms 内路由反馈",
+      "evidence": "navigation：路由链断言（含 entry 参数）"
+    },
+    {
+      "id": "PFI20",
+      "page": "pages/profile/index",
+      "title": "资料完整度卡整卡点击 → 同编辑入口",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-completion（MyCompletion.vue:12-25，含「去完善」按钮区域）",
+      "expected": "emit complete → onProfileShellComplete → goCompleteProfile → goToProfileSetup，与 PFI19 同落点 setup/profile?entry=edit（index.vue:783-785, 1120-1122）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI21",
+      "page": "pages/profile/index",
+      "title": "统计格「访客」→ 访客页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-stats__col 第 4 列（访客，MyStats.vue:14）",
+      "expected": "statTap('visitor') → onProfileShellStatTap map → openAppPath ROUTES.PROFILE.VISITORS=/subpackages/profile-extra/profile/visitors（index.vue:808-820；MP-R2-PROFILE-007 口径：访客不落 likes 页）；栈顶 visitors",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI22",
+      "page": "pages/profile/index",
+      "title": "统计格「我喜欢/喜欢我的/我赞」→ 喜欢页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态；每次进入子页后 navigateBack 复位再测下一格",
+      "action": "依次 tap .my-stats__col 第 1/2/3 列（iLike/likedMe/praised，MyStats.vue:11-13）",
+      "expected": "三格均落 ROUTES.LIKES.INDEX=/subpackages/discover-extra/likes/index（index.vue:810-815）；每格 500ms 内路由反馈",
+      "evidence": "navigation：路由链断言（3 次动作分别断言）"
+    },
+    {
+      "id": "PFI23",
+      "page": "pages/profile/index",
+      "title": "「添加日常」虚线卡 → 发布页 friends 模式",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .story-add（MyStory.vue:80-90）",
+      "expected": "addStory → openAppPath(ROUTES.VILLAGE.PUBLISH+'?target=friends') = /subpackages/village/village/publish?target=friends（index.vue:805-807, routes.ts:82）；栈顶 publish 且 options.target=friends",
+      "evidence": "navigation：路由链断言（含 target 参数）"
+    },
+    {
+      "id": "PFI24",
+      "page": "pages/profile/index",
+      "title": "我的故事卡 → 对应日常帖子详情",
+      "tier": "navigation",
+      "pre": "身份A 登录且 /posts/my-dailies 返回≥1 条（无数据时本条改验空态并转 PFI27）",
+      "action": "tap .story-card 第 1 张（MyStory.vue:63-79）",
+      "expected": "storyPhoto(0) → 命中 profileStore.myDailies[0] → openAppPath('/subpackages/village/village/detail?id=<daily.id>')（index.vue:787-794）；id 与所点卡数据一致；daily 缺失的防御分支兜底落 ROUTES.VILLAGE.HISTORY（village/history）",
+      "evidence": "navigation：路由链断言（含 id 参数与数据一致性）"
+    },
+    {
+      "id": "PFI25",
+      "page": "pages/profile/index",
+      "title": "我的相册缩略图 → 恋爱相册页",
+      "tier": "navigation",
+      "pre": "身份A 登录且 photoGallery≥1 张",
+      "action": "tap .album-thumb 第 1 张（MyStory.vue:102-115）",
+      "expected": "tapAlbum → openAppPath(ROUTES.PROFILE.ALBUM)=/subpackages/profile-extra/profile/album（index.vue:798-800；MP-R7-PROFILE-005 回归点：原 ROUTES.ALBUM 为 undefined 点击无效）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI26",
+      "page": "pages/profile/index",
+      "title": "我的帖子卡 → 帖子详情",
+      "tier": "navigation",
+      "pre": "身份A 登录且 myPosts≥1 篇",
+      "action": "tap .post-card 第 1 张（MyStory.vue:127-160）",
+      "expected": "openPost(post.id) → /subpackages/village/village/detail?id=<postId>（MyStory.vue:49-52）；postId 为空的防御分支点击不跳转且不报错",
+      "evidence": "navigation：路由链断言（含 id 参数）"
+    },
+    {
+      "id": "PFI27",
+      "page": "pages/profile/index",
+      "title": "故事/相册/帖子三区空态文案",
+      "tier": "normal",
+      "pre": "身份A（或干净测试身份）无日常、无照片墙、无帖子",
+      "action": "断言渲染，无点击",
+      "expected": "相册空态「还没有相册照片，去相册上传一张吧～」（MyStory.vue:116-118）；帖子空态「还没有发布帖子，去村口分享你的第一篇吧～」（MyStory.vue:162-164）；故事区恒显示「添加日常」虚线卡常驻入口（MyStory.vue:80-90）；无白屏、无 JS 错误（空态≠错误态）",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI28",
+      "page": "pages/profile/index",
+      "title": "互动行「最近访客」→ 访客页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-interaction__row 第 4 行（最近访客，index.vue:753-758）",
+      "expected": "interactionTap('visitors') → ROUTES.PROFILE.VISITORS=/subpackages/profile-extra/profile/visitors（index.vue:821-831），与统计格访客落点一致（MP-R2-PROFILE-007）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI29",
+      "page": "pages/profile/index",
+      "title": "互动行「喜欢我的人/我的匹配/我喜欢的人」→ 喜欢页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态；每次返回复位",
+      "action": "依次 tap .my-interaction__row 第 1/2/3 行（index.vue:753-758）",
+      "expected": "三行均落 ROUTES.LIKES.INDEX=/subpackages/discover-extra/likes/index；行值显示与 likesStore 实时列表长度一致（index.vue:690-693）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI30",
+      "page": "pages/profile/index",
+      "title": "更多功能「我的收藏」→ 收藏页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-more__cell 第 1 格（我的收藏，index.vue:760-766）",
+      "expected": "moreTap('favorites') → /subpackages/profile-extra/profile/favorites（index.vue:837-849）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI31",
+      "page": "pages/profile/index",
+      "title": "更多功能「谁看过我」→ 访客页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-more__cell 第 2 格（谁看过我）",
+      "expected": "moreTap('visitors') → /subpackages/profile-extra/profile/visitors，与统计/互动访客落点三方一致",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI32",
+      "page": "pages/profile/index",
+      "title": "更多功能「恋爱相册」→ 相册页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-more__cell 第 3 格（恋爱相册）",
+      "expected": "moreTap('album') → /subpackages/profile-extra/profile/album，与相册缩略图落点一致",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI33",
+      "page": "pages/profile/index",
+      "title": "更多功能「隐私设置」→ 设置页",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-more__cell 第 4 格（隐私设置）",
+      "expected": "moreTap('privacy') → /subpackages/profile-extra/settings/index（index.vue:843；落点为设置首页，与 MyHeader 齿轮一致）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI34",
+      "page": "pages/profile/index",
+      "title": "语音介绍区初始态 CTA 展示",
+      "tier": "normal",
+      "pre": "身份A 登录本人态且 voiceStatusUrl 为空（未录制）",
+      "action": "滚动至 ProfileShell 下方「语音介绍」区断言渲染",
+      "expected": "标题「语音介绍」+「仅语音 · 无视频」标注 + 时长提示；显示「录制语音状态」CTA（麦克风图标，aria-label=录制语音状态，index.vue:1679-1708）；无语音预览卡",
+      "evidence": "normal：after 截图 + console（可与 PFI35 的 before 复用）"
+    },
+    {
+      "id": "PFI35",
+      "page": "pages/profile/index",
+      "title": "录制语音 → 录音态计时（或环境不支持降级提示）",
+      "tier": "critical",
+      "pre": "身份A 登录本人态、无语音（PFI34 状态）",
+      "action": "tap 语音介绍区 .video-cta（.media-section 第 1 个，index.vue:1690-1708）",
+      "expected": "轻振动后 500ms 内进入录音态：toast「录音中，点击停止」（profile.voiceRecording）+ 图标录音高亮 + 计时标签「0″→1″…」每秒递增（startRecordingTicker，index.vue:1284-1322, 1234-1244）；模拟器 RecorderManager 不可用时降级 toast「当前环境不支持语音录制」（profile.voiceNotSupported）——两分支任一均为合法可观测反馈；console 无未捕获异常",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI36",
+      "page": "pages/profile/index",
+      "title": "过短录音（<1s）丢弃不上传",
+      "tier": "critical",
+      "pre": "PFI35 录音态进行中",
+      "action": "开始后 1 秒内 tap 同一 CTA 停止（mgr.stop()，index.vue:1287-1295）",
+      "expected": "onStop 回调 duration<1000ms → toast「录音时间过短，请重试」（profile.voiceTooShort，index.vue:1260-1266）且不上传、不产生语音卡、界面回到未录制 CTA 态；录音态计时停止",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI37",
+      "page": "pages/profile/index",
+      "title": "语音播放/暂停切换",
+      "tier": "normal",
+      "pre": "身份A 已有语音状态（voiceStatusUrl 存在；mock 模式为 mock:// 演示 URL）",
+      "action": "tap .voice-preview__play（index.vue:1712-1721）；播放中再次 tap",
+      "expected": "mock:// → 播放态：图标切暂停 + 12 根波形条高亮，3s 后自动复位（VOICE_DEMO_PLAY_MS，index.vue:1352-1362）；播放中再点立即停止复位；真实 URL 走 InnerAudioContext（onEnded/onStop/onError 复位，index.vue:1370-1389）；时长标签格式 m:ss",
+      "evidence": "normal：双拍截图（播放态/复位态）+ console"
+    },
+    {
+      "id": "PFI38",
+      "page": "pages/profile/index",
+      "title": "「重录」入口 → 进入录音态",
+      "tier": "normal",
+      "pre": "身份A 已有语音状态",
+      "action": "tap .voice-preview__delete 第 1 个（文本=重录，aria-label=重新录制语音，index.vue:1734-1743）",
+      "expected": "停止播放后进入录音态（同 PFI35 反馈：toast「录音中，点击停止」+ 计时归零递增）；播放与录音不并发（handleRecordVoice 先 stopVoicePlayback，index.vue:1302-1303）",
+      "evidence": "normal：after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI39",
+      "page": "pages/profile/index",
+      "title": "「删除」语音 → 确认弹窗出现",
+      "tier": "normal",
+      "pre": "身份A 已有语音状态",
+      "action": "tap .voice-preview__delete 第 2 个（文本=删除，aria-label=删除语音状态，index.vue:1744-1753）",
+      "expected": "uni.showModal：标题「提示」、内容「确定删除当前语音状态吗？」、确认=删除（红色 confirmColor）、取消=取消（index.vue:1393-1416）；先停止播放/录音再弹窗",
+      "evidence": "normal：after 截图（弹窗）+ console"
+    },
+    {
+      "id": "PFI40",
+      "page": "pages/profile/index",
+      "title": "删除语音确认 → 语音卡移除（删除副作用）",
+      "tier": "critical",
+      "pre": "PFI39 弹窗已出",
+      "action": "tap modal「删除」确认",
+      "expected": "profileStore.clearVoiceStatus → 语音卡消失、回到「录制语音状态」CTA + toast「语音状态已删除」（success，index.vue:1410-1414）；再次进入页面语音仍为已删除（状态持久）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI41",
+      "page": "pages/profile/index",
+      "title": "删除语音取消 → 无变化",
+      "tier": "normal",
+      "pre": "PFI39 弹窗已出（重新触发）",
+      "action": "tap modal「取消」",
+      "expected": "弹窗关闭；语音卡保留、无 Toast、无状态变化",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI42",
+      "page": "pages/profile/index",
+      "title": "「编辑背景图」入口 → 隐私门 + chooseImage（防重入）",
+      "tier": "critical",
+      "pre": "身份A 登录本人态；滚动至「编辑背景图」区（.media-section 第 2 个）",
+      "action": "tap 该区 .video-cta（index.vue:1765-1785）；上传进行中重复 tap",
+      "expected": "隐私门通过 → 拉起 chooseImage(album+camera)；未授权 → toast「需同意隐私协议后才能选择图片」中止（index.vue:1437-1448）；isUploading 期间重复点击直接 return（防重入，index.vue:1438）不叠加选择器；自动化止步于唤起/授权提示，上传链路转 PFI43；用户取消选图（errMsg 含 cancel）不报错（index.vue:1462-1467）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI43",
+      "page": "pages/profile/index",
+      "title": "背景图上传成功 → 「背景已更新」+ 新背景淡入",
+      "tier": "critical",
+      "pre": "chooseImage 返回被劫持为本地 tempFilePath（或手工选图）",
+      "action": "完成选图触发 uploadBackground",
+      "expected": "上传中：相机图标切 spinner + 文案「上传中...」+ 背景蒙层（index.vue:1775-1784, 2003-2008）；成功：toast「背景已更新」（success）+ 背景图 300ms 淡入（bgLoaded watch 复位后 @load 置真，index.vue:1476-1492, 405-407）；失败：toast 错误消息且保留旧背景；Loading 不永驻（finally 复位 isUploading，index.vue:1487-1491）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "PFI44",
+      "page": "pages/profile/index",
+      "title": "「推荐给好友」→ 邀请弹窗三态（POST /invites 副作用）",
+      "tier": "critical",
+      "pre": "身份A 登录本人态；滚动至「推荐给好友」区（.media-section 第 3 个）；real 模式（useMock()=isMockMode，stores/helpers/use-mock.ts），mock 模式此按钮仅 showShareMenu 无弹窗——两种模式分别取证",
+      "action": "tap 该区 .video-cta（index.vue:1789-1802）",
+      "expected": "real：500ms 内弹出邀请弹窗（invite-mask）→ loading「邀请码生成中...」→ 成功显示邀请码 +「复制邀请码」+ 分享文案（含 code）+ 已获积分（>0 时显示「已通过邀请获得 n 积分」）；POST /invites 失败 → 显示「邀请码生成失败，请重试」+「重试」按钮（index.vue:1052-1093, 2101-2118）。mock：仅 uni.showShareMenu 成功回调、无弹窗——亦为合法反馈",
+      "evidence": "critical：before+after 截图 + network/console（POST /invites + GET /invites/rewards）+ 状态文案"
+    },
+    {
+      "id": "PFI45",
+      "page": "pages/profile/index",
+      "title": "「复制邀请码」→ 剪贴板 + toast",
+      "tier": "normal",
+      "pre": "PFI44 弹窗成功态（inviteCode 非空）",
+      "action": "tap .invite-modal__copy（index.vue:2123-2132）",
+      "expected": "setClipboardData 写入邀请码 → success 回调 toast「邀请码已复制」（success，index.vue:1096-1105）；inviteCode 为空时点击无动作（防御分支 index.vue:1097）",
+      "evidence": "normal：after 截图（toast）+ console"
+    },
+    {
+      "id": "PFI46",
+      "page": "pages/profile/index",
+      "title": "邀请弹窗两路关闭（遮罩/关闭按钮）",
+      "tier": "normal",
+      "pre": "PFI44 弹窗已开；测完一路后重新打开",
+      "action": "① tap .invite-mask 面板外区域（index.vue:2095 @tap）② 重开后 tap .invite-modal__btn--cancel「关闭」（index.vue:2139-2149）",
+      "expected": "两路均关闭弹窗（面板内点击 @tap.stop 不误关，index.vue:2096）；无路由变化、无残留遮罩",
+      "evidence": "normal：每路 after 截图 + console"
+    },
+    {
+      "id": "PFI47",
+      "page": "pages/profile/index",
+      "title": "邀请弹窗错误态「重试」→ 重新请求",
+      "tier": "normal",
+      "pre": "PFI44 失败态（注入断网/接口 500）",
+      "action": "tap .invite-modal__retry（aria-label=重试，index.vue:2106-2118）",
+      "expected": "重新 openInviteModal：error 清空 → loading 态 → 按当次请求结果落成功码或错误文案；弹窗不重复叠层",
+      "evidence": "normal：after 截图 + console/network"
+    },
+    {
+      "id": "PFI48",
+      "page": "pages/profile/index",
+      "title": "FAB「发动态」→ 拉长动画后进发帖页",
+      "tier": "normal",
+      "pre": "身份A 登录本人态；post_publish_open 未关闭（默认开，app-config.ts:45）",
+      "action": "tap .global-fab（touchstart→touchend，GlobalPublishFab.vue:82-99）",
+      "expected": "按压缩放 0.92 → 圆形拉长为「发动态」圆角矩形（300ms ease）→ 跳 ROUTES.VILLAGE.POST=/subpackages/village/village/post（GlobalPublishFab.vue:53-66；index.vue:1419-1422, routes.ts:84）；返回本页时 FAB 复原圆形（onShow 重置，GlobalPublishFab.vue:69-74）",
+      "evidence": "normal：after 截图 + 路由链 + console"
+    },
+    {
+      "id": "PFI49",
+      "page": "pages/profile/index",
+      "title": "FAB 快击×5 → 只提交 1 次路由（主按钮防连点）",
+      "tier": "critical",
+      "pre": "身份A 登录本人态，FAB 可见",
+      "action": "500ms 内连点 .global-fab 5 次",
+      "expected": "防连点拦截：isExpanded=true 期间 triggerExpandAndNavigate 直接 return（GlobalPublishFab.vue:54）→ 仅第 1 次触发跳转，village/post 只入栈一次，无重复页面/路由抖动/卡死",
+      "evidence": "critical：before+after 截图 + 路由链（栈长断言）+ console"
+    },
+    {
+      "id": "PFI50",
+      "page": "pages/profile/index",
+      "title": "VIP 卡默认封存不渲染；商业化开启后点击进 VIP 页",
+      "tier": "normal",
+      "pre": "① 默认配置（switches={}，app-config.ts:23）身份A 本人态；②（可选第二段）evaluate 注入 switches commerce.enabled=true（且非 VIP）后重进本页",
+      "action": "① 断言 VIP 卡不存在 ② tap .vip-card（index.vue:1807-1818）",
+      "expected": "① 默认 VIP 开通卡与昵称行 VIP 徽章均不渲染（isCommerceOn('vip') 需 commerce.enabled===true，app-config.ts:67-70）；② 开启后 VIP 卡显示，tap → openAppPath('/subpackages/vip/index')（index.vue:1147-1150）；已是 VIP 时卡隐藏（!isVip 条件）",
+      "evidence": "normal：两段 after 截图 + 路由链（②段）+ console"
+    },
+    {
+      "id": "PFI51",
+      "page": "pages/profile/index",
+      "title": "认证名牌行任一枚 → 认证成就半屏面板",
+      "tier": "normal",
+      "pre": "身份A 登录本人态（名牌在昵称行下方：18+/实名/学历）",
+      "action": "tap .cert-badge 任一枚（@tap.stop → openCertSheet，index.vue:1964-1968, 504-506；CertBadgeRow.vue:64-75）",
+      "expected": "500ms 内 CertDetailSheet 半屏滑入：标题+三卡（18+ 恒「已获得」；实名/学历按 idCardVerified/认证状态）+ 认证方式/可信度/审核标准行 + 学历三层核验微标（已获得时）+ 底部隐私承诺（CertDetailSheet.vue:119-216）；未获得项半透明+「待认证」角标",
+      "evidence": "normal：after 截图（面板开）+ console"
+    },
+    {
+      "id": "PFI52",
+      "page": "pages/profile/index",
+      "title": "认证面板两路关闭（遮罩/×）+ 关闭中防抖",
+      "tier": "normal",
+      "pre": "PFI51 面板已开",
+      "action": "① tap .cert-sheet-mask（CertDetailSheet.vue:127）② 重开后 tap .cert-sheet__close ×（CertDetailSheet.vue:133-143）；关闭动画期间快速再点",
+      "expected": "两路均经 200ms 出场动画后关闭（requestClose，CertDetailSheet.vue:57-65）；closing 期间重复点击被拦截不叠层；遮罩底部内容区点击 @tap.stop 不误关（CertDetailSheet.vue:129）",
+      "evidence": "normal：每路 after 截图 + console"
+    },
+    {
+      "id": "PFI53",
+      "page": "pages/profile/index",
+      "title": "面板内实名「去认证」→ 实名认证页",
+      "tier": "navigation",
+      "pre": "PFI51 面板已开；身份A 未实名（basicProfile.idCardVerified≠true → 实名卡显示去认证）",
+      "action": "tap 实名卡 .cert-item__go（CertDetailSheet.vue:193-203）",
+      "expected": "goCertify('realname') → openAppPath(ROUTES.REAL_NAME_CERTIFICATION)=/subpackages/profile-extra/verification/real-name（CertDetailSheet.vue:108-110, routes.ts:176）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI54",
+      "page": "pages/profile/index",
+      "title": "面板内学历「去认证」未实名 → 拦截 toast",
+      "tier": "normal",
+      "pre": "PFI51 面板已开；身份A 未实名",
+      "action": "tap 学历卡 .cert-item__go",
+      "expected": "前置拦截：toast「请先完成实名认证」（profile.certRealNameFirst，CertDetailSheet.vue:104-106），不发生路由跳转；已实名身份同操作则落 /subpackages/campus/campus/certification（routes.ts:154）",
+      "evidence": "normal：after 截图（toast）+ 路由链（断言未跳转）+ console"
+    },
+    {
+      "id": "PFI55",
+      "page": "pages/profile/index",
+      "title": "未认证「去认证」CTA（VerificationBadge）→ 校园认证页",
+      "tier": "navigation",
+      "pre": "身份A 登录且 campusProfile.verificationStatus≠verified（level=none → 昵称行渲染「去认证」CTA，index.vue:448-463, 1951-1957）",
+      "action": "tap VerificationBadge 去认证胶囊",
+      "expected": "handleVerificationClick → 轻振动 → openAppPath('/subpackages/campus/campus/certification')（index.vue:513-516, routes.ts:154）；已认证身份则显示「已认证」徽章无 CTA（仅本人态显示 CTA，showVerificationCta）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI56",
+      "page": "pages/profile/index",
+      "title": "无头像首次进入 → 上传引导气泡 3s 自动消失（一次性）",
+      "tier": "normal",
+      "pre": "身份A 无头像 + evaluate 清 storage 键 profile_avatar_upload_hint_shown（index.vue:979）→ 切 Tab 离开再回本页触发 onShow → fetchProfile.then(maybeShowAvatarHint)",
+      "action": "进入后静置观察 0s/3.5s 双拍",
+      "expected": "头像下方气泡「上传真实头像，匹配率提升80%」出现（index.vue:983-995, 1937-1941），3s 后自动消失；storage 置位后再次进出不再弹（一次性语义）；已有头像则永不弹",
+      "evidence": "normal：0s/3.5s 双拍截图 + console"
+    },
+    {
+      "id": "PFI57",
+      "page": "pages/profile/index",
+      "title": "页面纵向滚动到底/顶 + 故事卡横向滚动",
+      "tier": "noop",
+      "pre": "身份A 登录本人态，内容足够超一屏",
+      "action": "纵向滚动到底再回顶；横向拖动 .story-cards__scroll（scroll-x，MyStory.vue:61-92）至末尾",
+      "expected": "内容完整渲染无截断/重叠；FAB 固定右下不随滚动位移（position:fixed，GlobalPublishFab.vue:104-113）；横向可滑出被遮蔽的故事卡；滚动本身不触发状态变化与请求风暴",
+      "evidence": "noop：执行日志（滚动位置采样 + console）即可，免截图"
+    },
+    {
+      "id": "PFI58",
+      "page": "pages/profile/index",
+      "title": "Tab 切走再切回 → 滚动位与数据保留 + 轻量刷新",
+      "tier": "normal",
+      "pre": "身份A 登录本人态，滚动至页面中部并记录统计数值",
+      "action": "自定义 tabBar 切「消息」→ 再切「我的」",
+      "expected": "返回本页：滚动位与数据保留（Tab 页不销毁）；自定义 tabBar 选中态恢复「我的」（useTabBar(4)，index.vue:119-120）；再次 onShow 仅轻量刷新（refreshMyDailiesWithRetry(1)/refreshMyPostsWithRetry(1)/fetchLikes，index.vue:1565-1572），不重置 profileRequestedOnce 触发全量首拉",
+      "evidence": "normal：after 截图 + 路由链 + console（观察请求次数）"
+    },
+    {
+      "id": "PFI59",
+      "page": "pages/profile/index",
+      "title": "他人态深链 ?userId=4001（推荐池）→ 对方视图完整渲染",
+      "tier": "normal",
+      "pre": "身份A 登录 → wx.reLaunch('/pages/profile/index?userId=4001')（mock 推荐池 id 4001-4009，fixtures.ts:177-405；页面经 options.userId 读参，index.vue:246-257）",
+      "action": "冷启动深链断言",
+      "expected": "isOwnProfile=false → 他人态分支渲染：对方头像/昵称/标签/背景（otherProfile 公开视图驱动，杜绝误显查看者本人数据，index.vue:286, 524-547）+ 匹配标签胶囊 + 照片墙≤6 张 +「打个招呼」按钮 + 顶部分享/设置/匹配 chip；不渲染编辑资料/资料完整度/语音区/背景编辑/推荐好友/FAB/VIP；头像框按对方身份佩戴；加载期纯色背景兜底不闪错误空态（index.vue:2312-2323）",
+      "evidence": "normal：after 截图 + 路由链（options.userId=4001）+ console"
+    },
+    {
+      "id": "PFI60",
+      "page": "pages/profile/index",
+      "title": "他人态深链 ?userId=user-3001 → mockAuthors 回退分支",
+      "tier": "normal",
+      "pre": "身份A 登录 → wx.reLaunch('/pages/profile/index?userId=user-3001')（P0-26 回退池，stores/village/mock-data.ts:128 起）",
+      "action": "冷启动深链断言",
+      "expected": "命中 mockAuthors 回退（index.vue:347-376）：渲染作者「小鹿」昵称/头像/兴趣标签；bio/images/背景为空的字段以占位渲染（无头像图时落首字符/默认头像兜底链），页面不白屏不崩",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI61",
+      "page": "pages/profile/index",
+      "title": "他人态深链 ?userId=10003（real 存活 id）→ 成功视图或占位兜底不崩",
+      "tier": "normal",
+      "pre": "real 模式身份A → wx.reLaunch('/pages/profile/index?userId=10003')（固化表 r11-param-map.json chat-session 同源存活 id）",
+      "action": "冷启动深链断言",
+      "expected": "GET /recommendations/10003/profile 成功 → 对方公开视图渲染；失败/无公开视图 → catch 分支 otherProfile=null（index.vue:387-395）→ 他人态骨架仍渲染（占位头像/纯色背景/打个招呼按钮），不白屏、不闪现查看者本人数据、console 无未捕获 TypeError",
+      "evidence": "normal：after 截图 + console/network"
+    },
+    {
+      "id": "PFI62",
+      "page": "pages/profile/index",
+      "title": "他人态「打个招呼」→ 聊天会话页（带 userId）",
+      "tier": "normal",
+      "pre": "PFI59 他人态（userId=4001）；未登录场景另验（PFI08 态下按钮不可达，由 LockScreen 拦截）",
+      "action": "tap .greet-btn（aria-label=打个招呼，index.vue:2016-2019）",
+      "expected": "successHaptic → openAppPath(ROUTES.CHAT.SESSION+'?userId=4001') = /subpackages/chat/chat-session/index?userId=4001（index.vue:1129-1142, routes.ts:104）；500ms 内路由；登录态兜底分支：未登录时 toast「请先登录后再使用该功能」（apiErrors.loginRequired，zh-CN.ts:3883）不裸跳",
+      "evidence": "normal：after 截图 + 路由链（含 query.userId）+ console"
+    },
+    {
+      "id": "PFI63",
+      "page": "pages/profile/index",
+      "title": "他人态点头像 → 大图预览（不弹操作菜单）",
+      "tier": "normal",
+      "pre": "PFI59 他人态且对方 avatarUrl 非空",
+      "action": "tap .avatar-wrap（index.vue:1888-1893）",
+      "expected": "他人态分支：uni.previewImage 单图预览（resolveMediaUrl 绝对化，index.vue:862-873）；不弹 BottomSheet 菜单（与本人态区分）；avatarUrl 为空时静默 return 不报错",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PFI64",
+      "page": "pages/profile/index",
+      "title": "他人态下 tabBar 主动切回「我的」→ 复位本人态（MP-R1-PROFILE-207）",
+      "tier": "navigation",
+      "pre": "PFI59 他人态（userId=4001）",
+      "action": "tabBar 切「消息」→ 再点「我的」Tab（触发 onTabItemTap 置 tabReentered，index.vue:213-220）",
+      "expected": "onShow 检测 tabReentered → targetUserId 清空 + otherProfile/otherBgUrl 复位 → 渲染本人态（本人头像昵称/编辑资料/FAB 齐备，index.vue:1546-1555）；无「停留他人主页且无返回本人出口」缺陷复现",
+      "evidence": "navigation：路由链 + after 截图（本人态判定）；console"
+    },
+    {
+      "id": "PFI65",
+      "page": "pages/profile/index",
+      "title": "他人态 → 聊天 → navigateBack 返回 → 仍保持他人态",
+      "tier": "navigation",
+      "pre": "PFI59 他人态 → 经 PFI62 进入 chat-session 页",
+      "action": "聊天页执行 navigateBack",
+      "expected": "返回落本页且仍为他人态（userId=4001 保持、对方资料不复位；navigateBack 不触发 onTabItemTap，index.vue:214-216 契约注释）；onShow 走 loadOtherProfile(4001) 重新拉取无残留",
+      "evidence": "navigation：路由链 + after 截图（他人态判定）"
+    },
+    {
+      "id": "PFI66",
+      "page": "pages/profile/index",
+      "title": "他人态右上角设置图标 → 设置页",
+      "tier": "navigation",
+      "pre": "PFI59 他人态",
+      "action": "tap .profile-settings（aria-label=通用设置，index.vue:1852-1862）",
+      "expected": "openSettings → 轻振动 → openAppPath(ROUTES.SETTINGS.INDEX)=/subpackages/profile-extra/settings/index（index.vue:1008-1012, routes.ts:168）",
+      "evidence": "navigation：路由链断言"
+    },
+    {
+      "id": "PFI67",
+      "page": "pages/profile/index",
+      "title": "他人态 MatchCountChip → 寻觅页（tab）",
+      "tier": "navigation",
+      "pre": "PFI59 他人态",
+      "action": "tap .match-count-chip（MatchCountChip.vue:62-77）",
+      "expected": "handleTap → openAppPath('/pages/discover/index')（Tab 页自动 switchTab，MatchCountChip.vue:55-58）→ 落寻觅 Tab；chip 数字与 discover store remainingCount 一致（index.vue:200）",
+      "evidence": "navigation：路由链断言（栈顶 discover）"
+    },
+    {
+      "id": "PFI68",
+      "page": "pages/profile/index",
+      "title": "他人态右上角分享（open-type=share）→ 分享载荷带 userId",
+      "tier": "normal",
+      "pre": "PFI59 他人态（userId=4001）",
+      "action": "tap .profile-share（原生 button open-type=share，index.vue:1844-1851）",
+      "expected": "唤起微信转发面板；onShareAppMessage（index.vue:1498-1507）返回 title=「快来认识 {对方昵称}，在校园恋爱遇见心动的 TA」、path='/pages/profile/index?userId=4001'（他人态带参；本人态 path 无参）；模拟器不支持转发面板时以 evaluate 断言 onShareAppMessage 返回值为准，不可断言处标 UNVERIFIED",
+      "evidence": "normal：after 截图 + console（分享回调）"
+    },
+    {
+      "id": "PFI69",
+      "page": "pages/profile/index",
+      "title": "打开即返回（编辑资料进 → 立即 back）落点与状态恢复",
+      "tier": "navigation",
+      "pre": "身份A 登录本人态",
+      "action": "tap .my-header__edit 进 setup/profile?entry=edit 后立即 navigateBack",
+      "expected": "返回落本页（Tab 栈底）；自定义 tabBar「我的」选中保持；页面数据/滚动位恢复，无重复 onShow 全量首拉（profileRequestedOnce 已置位）",
+      "evidence": "navigation：路由链断言 + after 截图（可选）"
+    },
+    {
+      "id": "PFI70",
+      "page": "pages/profile/index",
+      "title": "发帖返回 onShow 轻量刷新 → 新帖即时出现",
+      "tier": "normal",
+      "pre": "身份A 登录本人态，记录「我的帖子」篇数 N",
+      "action": "经 FAB/添加日常进入发布页发 1 帖（发布动作由 village 发布页用例覆盖）→ 返回本页",
+      "expected": "返回触发 onShow → refreshMyPostsWithRetry(1) → 帖子计数 N+1 且新帖卡片出现在列表顶部（index.vue:1535-1542, 1565-1569）；我的故事/四格统计同步轻量刷新；若发帖失败则计数不变且无崩溃",
+      "evidence": "normal：before+after 截图 + console"
+    },
+    {
+      "id": "PFI71",
+      "page": "pages/profile/index",
+      "title": "身份B（100159 小新生）登录回归 → 数据隔离",
+      "tier": "normal",
+      "pre": "身份B 登录：tmp_r11_guest.json JWT(100159) 同 r11 流程注入 + session.bootstrap() → wx.reLaunch('/pages/profile/index')",
+      "action": "断言首屏渲染",
+      "expected": "昵称/头像/统计四格/我的帖子/互动数据均为身份B 视图，无身份A（100158）数据残留；功能入口齐备（编辑资料/语音/背景/推荐好友/FAB）；七态无 Error 态，console 无 401/TypeError",
+      "evidence": "normal：after 截图 + 路由链 + console 落 console-evidence-B.log"
+    }
+  ]
+}

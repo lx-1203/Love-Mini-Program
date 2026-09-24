@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "A4-需求对照员",
+    "scope": "pages/login/index 功能目标对照（与视觉审查员分文件）",
+    "gitSha": "aefd8a72",
+    "generatedAt": "2026-09-24",
+    "evidence": {
+      "execResults": "reports/audit/round-1/interact/exec-results.json (manifest=PAGES-LOGIN-INDEX, 34 例: EXECUTED 25 / FAILED 9)",
+      "screenshots": [
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG01-after.png",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG16-after.png",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-00-base.png"
+      ],
+      "code": "apps/client/src/pages/login/index.vue",
+      "idealArt": [
+        "素材/理想效果图/登录页.png",
+        "素材/理想效果图/登录页面.png"
+      ]
+    },
+    "note": "R13『01/05/16 三图相同』复核：round-1-interact 现存 01-after(e483d33c…)/05-after(a85bdc83…)/16-after(cc7ea739…) MD5 互异，原判定在该目录不成立；但全部实拍中不存在表单展开态画面，表单链路证据缺口成立（与视觉线 101 印证）"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-201",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG16-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "手机号验证码/密码登录链路在微信端唯一入口是 getPhoneNumber 授权回调的失败分支（授权拒绝/404/401 才自动展开表单；手动入口已于 R11 按用户要求删除）。本轮 R1 自动化中该链路 15 例（LG11/LG22/LG23-LG29/LG31）全部 FAILED（element not found: #login-phone / .form-btns .btn-primary——用例缺 logout 前置，已登录态被自动前进 discover），LG15/16 点击『手机号登录』后实拍无任何状态变化。整条手机号表单链路（表单展开/输入校验/登录成败/『去注册』入口）零正向执行证据；且 DevTools/自动化下 open-type=getPhoneNumber 回调不触发，该钮在测试环境为死点。",
+      "evidence": "code: apps/client/src/pages/login/index.vue:693-705（#ifdef MP-WEIXIN 仅 open-type=getPhoneNumber）、:707-710（注释记录 R11 删除手动『手机号登录』入口）、:349/:387/:396（拒绝/404/401 → showPhoneLogin=true）；interaction: exec-results.json LG16 observed『top=pages/login/index … act:tap .btn-phone-quick』无 toast 无路由变化，LG23-29 failureReason『element not found』；screenshot: PAGES-LOGIN-INDEX-LG16-after.png（154003B，与默认态 LG01 同画面，表单未展开）",
+      "sources": ["code", "interaction", "screenshot"],
+      "confidence": 0.65,
+      "ideal": "『手机号登录』次钮可达成手机号登录任务：快捷授权成功直接登录；授权拒绝/失败后表单必达，验证码/密码登录与『去注册』入口在实机与自动化下均可走通并取得正向证据。",
+      "fix": "①微信端快捷视图补低调『验证码登录』文字兜底入口（或提供 mock getphonenumber 回调注入），消除测试环境死点；②修复自动化编排：LG11-31 表单用例补 pre:logout 前置（当前已登录态被 onShow/watch 自动前进 discover 致元素不存在），重跑取得表单展开→校验→登录成败→注册入口全链路正向证据；③真机（企业证书 appid）补拍快捷授权成功与拒绝两分支实拍。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/login/index",
+      "baseline": "素材/理想效果图/登录页.png（任务锚定主参考；实测为纯插画主视觉稿）+ 素材/理想效果图/登录页面.png（整页 UI 变体，逐元素对照依据）",
+      "file": "reports/audit/round-1/page-compare/PAGES-LOGIN-INDEX.md",
+      "structureNotes": "L1 页面级：品牌→插画→slogan→CTA→协议行顺序与理想变体一致，无底部导航，L1 无偏差。L2 区块级：五区块齐全，另有 B6 关闭横幅与 dev/showcase 条件入口（生产隐藏，非偏差）。L3 元素级：寻觅+嫩芽 SVG、微信绿气泡 SVG、三按钮文案/层级、圆形绿勾 checkbox、绿色协议链接逐元素一致（zh-CN.ts:2153-2208）。L4 布局关系：hero→CTA→协议行符合任务给定顺序，协议行置按钮区卡内拉开间距(index.vue:1366-1375)。L5 字型层级 40rpx/800 主句+30rpx/700 绿副句+灰说明(:1050-1077)对应理想图。L6 色彩走 var(--c-brand)，实拍 #36C99A vs v3.1 冻结 #34C98A 偏差已由视觉线 103 立项不重复。L7 胶囊钮 --r-xl+浮动阴影一致。L8 --sp 栅格间距。L9 press-feedback 按压态；漂浮爱心为插画内落叶元素非独立动画层，视觉细节不立项。L10 状态：关闭态/默认态/错误态有执行证据，按钮 loading 真绑定（MP-R2-…-007 修复），表单展开态无任何执行/实拍证据（→Issue 201）。『年满18』不在登录行文案：由注册出生日期+后端 MINOR_NOT_ALLOWED(index.vue:50-51,:464-467)+《用户协议》正文第2条(zh-CN.ts:4637)承担，理想图协议行同样无 18+ 字样（表述缺口视觉线 105 已立）。",
+      "usageNotes": "核心任务『进入小程序』三路均通：稍后再看 1 步落 discover（LG17 EXECUTED，toast『已进入体验模式，先逛逛吧』）；已登录任意时刻打开登录页自动前进 discover（LG02/03 EXECUTED，单次导航无双跳）；微信一键登录失败有明确文案且停留（LG13/14 EXECUTED，成功路径需真实微信凭证环境，本轮 mock 后端 502 环境受限）；LockScreen 引流 pendingLoginRedirect 消费落资料完善页（LG04 EXECUTED）。不迷路；登录后落 discover（tab），后续任意页 2 步内回 tab 体系。挫点：手机号表单登录微信端无直接入口、DevTools 下快捷授权回调不触发为死点、表单链路 15 例自动化全 FAILED（→Issue 201）；『去注册』入口在表单视图内——与理想图（无注册入口）一致且新用户主路径为独立注册页（REG02 EXECUTED），不算缺陷。",
+      "functionGaps": [
+        {
+          "target": "手机号验证码/密码登录链路可达且可验证（理想：手机号登录次钮可完成手机号登录任务）",
+          "current": "微信端唯一表单入口为 getPhoneNumber 回调失败分支；R1 自动化 15 例全 FAILED（缺 logout 前置+回调不触发），LG16 实拍点击后无状态变化",
+          "gap": "表单展开/输入校验/登录成败/注册入口整链路零正向执行证据；测试环境下该按钮为死点",
+          "fix": "补『验证码登录』兜底入口或 mock 授权回调；自动化表单用例补 logout 前置重跑；真机补拍两分支"
+        }
+      ],
+      "verdict": "基本达标"
+    }
+  ]
+}

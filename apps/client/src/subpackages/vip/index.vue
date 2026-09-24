@@ -25,7 +25,7 @@ import { createButtonGuard } from "../../utils/debounce";
 import { captureException, addBreadcrumb } from "../../services/sentry";
 import { isMockMode } from "../../services/env";
 // Task 33：路由路径常量化，避免硬编码字符串
-import { ROUTES } from "../../constants/routes";
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 // P1-08：会员功能开关（false 时本页禁用所有购买/续费交互且不发起后端请求）
 import { featureFlags } from "../../config/feature-flags";
 // R4-00116：switch 激活色 / 金色系统一从 designTokens 取色（与 scss --c-gold 双源同步）
@@ -387,6 +387,12 @@ function goBills() {
   uni.navigateTo({ url: ROUTES.VIP.BILLS });
 }
 
+/** MP-R1-C26REQ-003：打开服务协议页（自动续费协议暂并入同页承载） */
+function openServiceAgreement() {
+  lightHaptic();
+  uni.navigateTo({ url: SUBPACKAGE_ROUTES.LEGAL.AGREEMENT });
+}
+
 /** 页面挂载时拉取自动续费状态 */
 onMounted(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
@@ -501,12 +507,15 @@ onMounted(() => {
       </view>
     </view>
 
-    <!-- 用户协议 -->
+    <!-- 用户协议
+         MP-R1-C26REQ-003：原两处 agreement__link 均为纯文本死链——付费开通页协议
+         不可达属合规断裂。「服务协议」接站内协议页（与注册/设置页同口径）；
+         自动续费协议暂无独立承载页，跳同页（后续扩展 LegalTextType 再拆分） -->
     <view class="agreement">
       <text class="agreement__text">{{ t('vip.agreementPrefix') }}</text>
-      <text class="agreement__link">{{ t('vip.serviceAgreement') }}</text>
+      <text class="agreement__link press-feedback" role="button" @tap="openServiceAgreement">{{ t('vip.serviceAgreement') }}</text>
       <text class="agreement__text">·</text>
-      <text class="agreement__link">{{ t('vip.autoRenewAgreement') }}</text>
+      <text class="agreement__link press-feedback" role="button" @tap="openServiceAgreement">{{ t('vip.autoRenewAgreement') }}</text>
     </view>
 
     <!-- 自动续费开关 -->

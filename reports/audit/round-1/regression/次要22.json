@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "reviewer": "历史回归员-R1-次要22（A5）",
+    "round": "R1",
+    "date": "2026-09-24",
+    "method": "索引差分模式：读 reports/audit/baseline/regression-index.json 按 riskFiles/verification 对本页 3 条历史条目逐一核对；证据 = 源码 Read/grep + 本轮 git diff + reports/audit/round-1/interact/exec-results.json（1283 条结果过滤）+ reports/screenshots/round-1-interact/ 截图目视（MBTI/NB01/NB03 共 3 张）。未改代码、未跑开发者工具。未复核 A2 层 code-findings/次要22.json 之外的全量条目（按任务仅核对指定的 3 条页面相关历史条目）。",
+    "summary": "3 条历史条目全部未复发（0 复发 / 0 证据不足）：MP-R1-LNEARBY-101（nearby 滑动链路）代码快照参数在位且交互取证 NB03/04/05 通过、无「卡片不存在或已被处理」toast、截图证明卡片推进；MP-R1-LMBTI-101（返回键压胶囊）代码已改流内 flex 行且截图目视无重叠；MP-R2-SEARCH-001（两处头像裸直连）两处均经 resolveMediaUrl 重写，本轮 utils/media.ts 的 diff 为增量分支不改既有语义。本轮 git 改动文件与本 3 条 riskFiles 交集仅 utils/media.ts（已核，无回归）。issues 为空——无复发即无 Regression Issue 需登记。",
+    "roundDiffIntersection": "git status 本轮改动文件与 3 条 riskFiles（nearby.vue / mbti.vue / search/index.vue / stores/discover）无交集，唯一依赖交集为 apps/client/src/utils/media.ts（MP-R2-SEARCH-001 的 resolver 依赖）：git diff -U2 显示 +18 行，仅在 resolveMediaUrl 内新增 /static/assets/images/avatars|people → 后端 app-assets 分支（带 apiBaseUrl 取不到时回退本地路径的守卫），既有 /uploads 鉴权代理与默认值语义未动，属增强非回归。"
+  },
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-LNEARBY-101",
+      "page": "subpackages/tools/love-center/nearby",
+      "status": "未复发",
+      "evidence": "代码：nearby.vue:99-107 左滑传本地快照 swipeLeft(cardId, snapshot)、右滑 swipeRight(cardId,false,本地card)，:111 matched 分支 userId 取本地 card?.userId，:119/:143/:155-157 removeLocalCard 同步推进本地队列；stores/discover/actions/swipe.ts:38-44/68-69 swipeLeft 增 cardSnapshot 入参且存在检查优先消费快照，:162/182-183 swipeRight 增 callerSnapshot，:235-241/256 _doSwipeRight 快照兜底（注释点名 MP-R1-LNEARBY-101）。运行时：exec-results.json idx943 NB03 EXECUTED（tap .card-action--like → toast「已喜欢」，无错误类名）、idx944 NB04 EXECUTED（skip 推进）、idx945 NB05 EXECUTED（超赞）；对全量 1283 条结果扫描「卡片不存在或已被处理」，nearby 页 0 命中（仅 discover-extra/discover/matching MT03/MT15 出现，非本页、非本条目范围）。截图：NB01-after.png（首张 21岁/距离1.2km）与 NB03-after.png（点赞后推进到 22岁/距离3.4km）对比证明卡片推进。本轮改动：git diff -- apps/client/src/subpackages/tools apps/client/src/stores/discover 为空（滑动链路相关文件本轮未被触碰）。"
+    },
+    {
+      "id": "MP-R1-LMBTI-101",
+      "page": "subpackages/tools/love-center/mbti",
+      "status": "未复发",
+      "evidence": "代码：mbti.vue:139-145 返回键与标题同处 .content-header 弹性行（返回键在前、标题随后）；:284-296 .content-header 为普通 flex 行 + .content-header__back 64rpx 流内元素，grep「absolute」全文件仅 :283 历史注释 1 处（记载原右上角 absolute 返回键问题），无任何 absolute 定位返回键。运行时：exec-results.json idx950 MB01 EXECUTED（.content-header__title:present + 16 型网格/4 题卷完整渲染）。截图：SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB01-after.png 目视核对——返回键为左上角圆形键（绿色头部行内、标题左侧），微信胶囊（●●●/◎）在右上角，二者完全无重叠。本轮改动：git diff mbti.vue 为空。"
+    },
+    {
+      "id": "MP-R2-SEARCH-001",
+      "page": "subpackages/tools/search/index",
+      "status": "未复发",
+      "evidence": "代码：search/index.vue:331 用户结果头像 :src=\"resolveMediaUrl(u.avatarUrl) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)\"、:375 校园预览头像同模式；全文件仅此两处 avatar 绑定（:657/:735 为样式），其余 image 均为 IMAGE_PATHS 静态图标（:220/:223/:238/:270）；:15-16 import { IMAGE_PATHS } / { resolveMediaUrl } 在位；utils/media.ts:129 resolveMediaUrl 导出仍在。本轮依赖改动核查：git diff -U2 -- apps/client/src/utils/media.ts 为 +18 行，仅在 resolveMediaUrl 内新增 avatars/people 目录走后端 app-assets 的分支（:218-235 区域，含 apiBaseUrl 缺失回退本地路径守卫），不改既有鉴权代理语义——对本条目属增强非回归。运行时：exec-results.json SE03 EXECUTED（用户 Tab 搜索结果行渲染成功，无头像加载报错）。视觉证据缺失说明：round-1-interact 截图目录无 SEARCH-SE 系列文件，头像渲染无截图可目视；但本条目历史问题为「裸 image 直连相对路径」的代码层缺陷，源码证据已充分定性。"
+    }
+  ],
+  "coverage": [
+    "核对范围与命令：① reports/audit/baseline/regression-index.json（288 条）python 过滤 8 个页面关键词，确认任务指定的 3 条为本页需核对条目及其 verification 钩子（lnearby-swipe-advances-card / lmbti-back-btn-clear-of-capsule / search-avatars-via-media-resolver）；② exec-results.json（gitSha aefd8a72，1283 条）python 过滤 page∈8 页共 29+ 条目，NB01-NB09/MB01-MB08/CO01-CO04/AD01-AD08/SC01-SC13/SE01-SE11/HS01-HS11/ST01-ST25 状态逐一过目，重点取 NB03/04/05、MB01、SE03；③ 「卡片不存在或已被处理」全量扫描仅 discover-extra/matching（MT03/MT15）命中——该页不在本批次页面清单内，不属本条目回归判定范围，仅备注留给对应页面负责人；④ 源码核对 grep+Read：nearby.vue:94-157、swipe.ts:38-69/162-183/235-256、mbti.vue:139-145/283-315、search/index.vue:15-16/220-375/657/735、utils/media.ts:129/215-235；⑤ 截图目视 3 张：MBTI-MB01-after、NEARBY-NB01-after、NEARBY-NB03-after；⑥ git diff：tools 子包、stores/discover、mbti/nearby/search 页面均为空改动，utils/media.ts +18 行（增量分支，已逐行读 diff）。未运行项：未执行开发者工具/真机交互（本轮证据以 R1 交互批次落盘结果为准）、未跑测试套件与构建（任务未要求）；search 头像无截图目视（目录无 SE 系列截图），已在对应条目标注。结论口径：3 条均「未复发」，无 Regression Issue 需登记，issues=[]；终验关闭建议沿用 A2 层登记的 MP-R1-LNEARBY-202/MP-R1-LMBTI-201/MP-R1-SEARCH-201（已修复待终验）。"
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-次要20（A3，截图/行为证据的视觉·布局·状态审查）",
+    "scope": "subpackages/village: detail/tag-posts/history；subpackages/circles: topics/topic-detail/circle-home；subpackages/campus: topic-detail/certification",
+    "date": "2026-09-24",
+    "evidence_manifest": {
+      "gitSha": "aefd8a72",
+      "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+      "consistent": true,
+      "buildMode": "build:mp-weixin:mock",
+      "note": "manifest gitSha 与当前 HEAD 一致，round-1-tour(A/B) 34 张与 round-1-interact 行为证据均按有效证据采用。工作区存在未提交修改（circle-home.vue / history.vue / village index 等 6 个本批文件为 M 状态），截图与行为证据基于 aefd8a72 提交；引用代码行号以当前工作区文件为准，已逐条与截图表现互证无冲突。"
+    },
+    "duplicates_policy": "代码审查员-R1-次要20（A2）已报 31 项全部不重复上报；其标注需运行时复核的三项（scroll-view 无界、@tap.self、sticky 吸顶）中以截图运行时证据可证实的（CIRCLEHOME-103 sticky 顶入状态栏）在 observation 附证，仍不重复立条。",
+    "not_run": "未在本会话运行小程序/未真机复现（审查基于巡检产出的 34 张静态截图、exec-results.json 111 条行为记录、交互截图与源码）；键盘弹起、真机 safe-area、手势返回未实测。topics 页与两个 topic-detail 页巡检只产出了空态/默认截图，正常内容态的视觉审查未覆盖（无素材）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-DETAIL-201",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__滚动-中部.png；__滚动-底部.png（B 身份同表现：reports/screenshots/round-1-tour/B/subpackages_village_village_detail__滚动-底部.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "页面级滚动时自定义导航栏随内容滚走，正文/帖子图片直接顶入系统状态栏并与状态栏文字（运营商/时间/电量）叠印：滚动-中部截图正文首行「认真 but，希望能遇到那个对的人…」与「WeChat 1:14」叠在一起不可读；滚动-底部截图帖子图片延伸到状态栏后面。默认态头部避让正常（padding 含 --statusbar），一滚动即穿帮。A/B 双身份 4 张滚动截图表现一致。",
+      "evidence": "detail.vue:1466-1477 .detail-header 为文档流 flex 容器（无 position:fixed/sticky，仅 z-index:10）；detail.vue:754-772 模板中头部与 <scroll-view class=\"detail-body\" scroll-y> 平级；A2 已证 .detail-body flex:1 而父容器 min-height:100% 可增长（scroll-view 被拉伸 → 页面级滚动）。A2 coverage 将 detail 的 scroll-view 无界归为「页面级滚动决策」未列缺陷，但该决策下头部未做任何吸顶/滚动渐显补偿，视觉后果是状态栏叠印+返回键不可达，A2 未覆盖此视觉后果。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "自定义导航页滚动时头部保持吸顶（fixed + 内容 padding-top 补偿），或滚动渐显头部；任何滚动位置正文/图片不得进入状态栏区域。",
+      "fix": "将 .detail-header 改 position:fixed 吸顶（含 --statusbar 高度），.detail-body 增加 padding-top 补偿；或将页面改回真正有界的 scroll-view 内滚（对齐 campus/campus/index.vue:383-390 修复模式）。修复后需真机验证滚动全程状态栏无可读性冲突。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CERT-201",
+      "round": "R1",
+      "page": "subpackages/campus/campus/certification",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_certification__滚动-中部.png；__滚动-底部.png（B 身份同表现：reports/screenshots/round-1-tour/B/subpackages_campus_campus_certification__滚动-底部.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "与 MP-R1-DETAIL-201 同族：滚动后「学生认证」头部（含返回键）随内容滚走，表单内容顶入状态栏叠印——滚动-中部截图「与同龄同学互动讨论」「参与校园话题讨论」与状态栏「WeChat 1:26」叠印；滚动-底部截图「请输入你的学校全称」输入框 placeholder 顶到状态栏旁。默认态头部渐变+避让正常。A/B 双身份一致。",
+      "evidence": "certification.vue:471-477 .cert-header 文档流 flex（无 fixed/sticky，仅 z-index: var(--z-header)）；certification.vue:269 模板头部与 :277 <scroll-view class=\"cert-body\" scroll-y> 平级；:466 .cert-page min-height:100%（scroll-view 无界 → 页面级滚动，同 MP-R1-TAGPOSTS-102 几何）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "认证表单滚动时头部吸顶，表单内容不进入状态栏区域。",
+      "fix": "同 MP-R1-DETAIL-201 方案：.cert-header fixed 吸顶 + .cert-body padding-top 补偿，或 .cert-page 改 height:100% 定高让 scroll-view 内滚。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HISTORY-201",
+      "round": "R1",
+      "page": "subpackages/village/village/history",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_history__默认.png（放大件：reports/audit/round-1/findings/次要20-evidence/history-top-3x.png；B 身份同表现：reports/screenshots/round-1-tour/B/subpackages_village_village_history__默认.png）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "本批 8 页中唯一缺失状态栏/胶囊避让的页面（grep --statusbar/--capsule 0 命中，其余 7 页全部有）：① 左上返回键自页面 y=0 渲染，整体顶入状态栏，与运营商文字「●●●●● WeChat 📶」叠印（放大件清晰可见）；② 工具栏右侧「清空记录」红色按钮与微信胶囊按钮（···⊙）叠印，文字被胶囊遮盖近半且侵入胶囊热区。A/B 双身份一致。",
+      "evidence": "history.vue 全文 grep statusbar/capsule 0 命中；对照同批 7 页全有避让：topics.vue:633-635、certification.vue:475、detail.vue:1470、circle-home.vue:674/1192、campus/topic-detail.vue:331、circles/topic-detail.vue:449、tag-posts.vue:459；history.vue:137-145 模板 .history-back 直接作为 .history-page 首个子节点渲染，:276-292 .history-page/.history-back 样式均无 padding-top/statusbar 注入。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "返回键整体位于状态栏之下（对齐 topics.vue:633-635 的 var(--statusbar)+20px 模式）；工具栏操作按钮避开胶囊区域（--capsule-right+104px 右侧预留）。",
+      "fix": "history.vue 引入 useMenuButtonRect 注入 --statusbar/--capsule-right（照抄 tag-posts.vue:74-76 两行），.history-page 加 padding-top: calc(var(--statusbar) + 20px)，.history-toolbar 右侧 padding-right 预留胶囊宽度。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DETAIL-202",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD27-after.png（空态「返回广场」按钮复用同一无守卫 goBack）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "detail 页 goBack 为裸 uni.navigateBack，无栈底兜底：栈=1（分享卡/深链直开）点击头部返回键触发 navigateBack:fail cannot navigate back at first page，经 uni.onUnhandledRejection 抛全局错误并 captureException 上报，用户困在页内。行为证据 VD02（EXECUTED）console 实录该错误三元组。「帖子不存在」空态的「返回广场」按钮（@action=goBack）复用同一函数——深链打开已删帖是常见入口，点返回同样困死。同批其余 7 页中 6 页已有 getCurrentPages 守卫（A2 证实），campus/topic-detail 同遗漏已被 A2 报（CAMPUSTOPIC-102），本页遗漏 A2 未报。",
+      "evidence": "detail.vue:275-277 `function goBack() { uni.navigateBack(); }`（无 getCurrentPages 判断）；detail.vue:756 头部返回键 @tap=goBack、:1246 EmptyState @action=goBack；exec-results.json VD02 console=['[error] {}','[Global Error][uni.onUnhandledRejection] {\"errMsg\":\"navigateBack:fail cannot navigate back at first page.\"}','[captureException] {\"errMsg\":\"navigateBack:fail...\"}']；对照已守卫实现 history.vue:41-48。",
+      "sources": ["code", "log", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "栈>1 navigateBack；栈=1 reLaunch 到村口首页（同项目守卫模板 history.vue:41-48）。",
+      "fix": "goBack 加 getCurrentPages().length>1 判断，否则 uni.reLaunch({ url: '/subpackages/village/village/index' })。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-TAGPOSTS-201",
+      "round": "R1",
+      "page": "subpackages/village/village/tag-posts",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_tag-posts__默认.png（空态同款：__空态.png；B 身份同表现）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "mock 模式标签聚合页数据源不含主 feed：带「#摄影」标签的帖子在村口广场存在（北岛帖），但点入 #摄影 聚合页恒渲染「暂无帖子/该标签下还没有内容」空态（A/B 双身份截图）。列表级断链与 A2 已报的 TAGPOSTS-101（详情断链）叠加，mock 模式标签聚合功能完全不可用：即使列表有数据点进去也是「帖子不存在」。",
+      "evidence": "tag-posts.vue:227-232 getMockTagPosts 仅过滤 mockTagPosts 数组；stores/village/mock-data.ts:51-98 mockTagPosts 6 条 tags 全集为 #校园日常/#表白墙/#找搭子/#兴趣分享/#求助/#技术交流/#校友动态/#生活记录（无 #摄影）；mock-data.ts:389 主 feed 北岛帖 tags 含 #摄影（全 mock 数据唯一 #摄影 来源）；截图标题「#摄影」+ 空态与该数据状态吻合。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "标签聚合页应聚合全部带该标签的帖子（含主 feed mockPostsRaw），广场可见的 #摄影 帖在聚合页可见。",
+      "fix": "getMockTagPosts 改为 mockTagPosts 与 mockPostsRaw（或 mockPosts）合并过滤（注意浅拷贝，沿用 stores/village/index.ts:1083-1087 同引用双 toggle 教训）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DETAIL-203",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__默认.png（B 身份同表现）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "「全部评论（32）」计数与实际可读评论 2 条不一致，且无任何加载更多入口：mock 帖子 post-1 计数字段 comments=32，但 mockComments 仅 comment-1/comment-2 两条属于 post-1；R16 短页逻辑（返回条数 < pageSize 视为末页）使「加载更多」被隐藏，用户看到的评论区永久只有 2 条，其余 30 条不可达。生成逻辑 mockPosts.slice(4) 只覆盖 post-5 起，同族「计数>条数」遍布全部 mock 帖。",
+      "evidence": "detail 默认截图「全部评论（32）」标题下仅渲染阿泽/橙子两条，其后直接是「你可能还想认识」推荐区，无加载更多按钮；mock-data.ts:313 comments: 32；mock-data.ts:1023-1039 post-1 评论 2 条；mock-data.ts:1064-1080 生成逻辑 slice(4) 起；detail.vue:192-194 短页置 noMoreComments=true 隐藏加载更多。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "评论计数与列表条数一致；或计数大于可加载条数时「加载更多」持续可见直至追平。",
+      "fix": "mock 口径二选一：① post-1 计数改 2 与数据一致（全 mock 计数按实有条数重写）；② mockComments 补足与计数一致的条数（短页逻辑依赖真实总数 total 字段而非条数近似则更稳）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DETAIL-204",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__默认.png（对照 素材/理想效果图/帖子.png；B 身份同表现）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "理想图 L1-L4 对照：R13 判定的 5 项结构/交互位置偏差经本轮截图逐项核实全部仍在。① 作者行缺圈子归属：理想作者名下第二行「摄影圈 · 30 分钟前」，实现仅「复旦大学徽标 15 分钟前」；② 话题标签位置：实现把 #话题 chips 独立成行插在图片下方，理想图无该独立行；③ 位置无胶囊无距离：理想「📍北京大学·未名湖校区」浅绿胶囊+「· 距你 1.2km」，实现仅纯绿文字「📍北京大学」；④ 动作文案「转发」≠理想「分享」；⑤ 底部输入条多出「发送」钮（理想输入条仅 @/表情/图片图标无发送钮）。",
+      "evidence": "逐项对照截图与理想图帖子.png：作者行 y≈150 无圈子字段；#这是一条520交友宣言/#诚登征友 chips 在图片下 y≈455；📍北京大学 y≈480 纯文字；右下「转发」y≈518；底部「发送」绿钮。内容顺序（正文→图→标签→位置→赞评→评论→输入条）与理想一致性本身无冲突，偏差集中在元素形态与文案。",
+      "sources": ["screenshot"],
+      "confidence": 0.8,
+      "ideal": "对齐 素材/理想效果图/帖子.png：作者行含「圈子名 · 相对时间」；话题标签并入正文流或按理想位置；位置为胶囊样式并带距离字段；动作钮为「分享」；输入条无独立发送钮（键盘发送键承担）。",
+      "fix": "① currentPost 补圈子归属字段并在作者行渲染；② 位置行改胶囊样式+距离文案；③ 「转发」改 t('common.share') 类分享文案；④ 移除底部独立发送钮或与理想核对后保留（若产品坚持保留需在理想图层面确认豁免）；②③ 为纯样式/文案改动。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CIRCLEHOME-201",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png（对照 素材/理想效果图/圈子详情，摄影圈参考.png；B 身份同表现）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "理想图 L1/L2 主视觉偏差（R13 已判待修的余项，本轮截图证实仍未修）：理想为深色 hero 封面（摄影师人像）上直接叠白字圈信息（名称/热门徽标/简介/数据/好友头像）+半透明标签 chips 叠 hero，白色大圆角面板自 Tab 栏起；实现为浅色 hero（相机静物）+独立白色圆角卡片承载全部圈信息（黑字）+白底灰 chips 行。信息层级与理想不符，「深色封面沉浸感」缺失。另核实：R13 记录的「标签chips消失」已不成立——chips（摄影技巧/风景拍摄/人像写真/城市漫游）已在截图呈现。",
+      "evidence": "对照截图与理想图：理想 hero 区高度约为屏高 27% 且圈信息/chips 全部白字叠印其上；实现 hero 仅约 21% 高、圈信息全部在 hero 下方白色圆角卡内。实现 Tab 白面板无顶部大圆角过渡（理想 ≈24px 圆角叠 hero 下缘）。",
+      "sources": ["screenshot"],
+      "confidence": 0.8,
+      "ideal": "深色 hero 封面（circle-cover-photography）+白字圈信息叠印+chips 半透明叠 hero+白色圆角面板承载 Tab 以下内容（R11 全通过的理想图 :17 基准）。",
+      "fix": "info-card 改绝对定位叠 hero 下缘（白字+渐变遮罩），chips 改半透明底白字叠 hero，白面板上移至 Tab 并加顶部圆角；hero 封面换深色调摄影图。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CIRCLEHOME-202",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png（__滚动-中部.png 中第二卡同样可见；B 身份同表现）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "圈内动态图文语义不符（MP-R2-VILL-013 同族回归，但数据源在 circle-home.vue 组件内置 feedItems，A2 的 VILLMOCK-101 只覆盖 stores/village/mock-data.ts 村口族）：① f1 阿辰「周末去爬山拍到了云海，太震撼了！」三图为 蓝色云海占位图/黑白海浪礁石/雾中栈桥——2/3 与文案不符（代码注释自认 post-2 为「暗色云雾海岸」勉强凑数）；② f2 光影捕手「夕阳下的校园，氛围感拉满～」（#人像写真）三图为相机/唱片机/旅行箱圈封面插画——零人物零校园零夕阳，完全不符。理想图同位置为云海山脉×3 与夕阳人像×3。",
+      "evidence": "circle-home.vue:139-156 f1 images=[post-placeholder.jpg, post-2.jpg, post-8.jpg]，:148 注释「post-5 海岸悬崖山感不足，换 post-2 暗色云雾海岸（更贴近『爬山云海』语义）」；:157-172 f2 images=IMAGE_PATHS.CIRCLE_COVERS.PHOTO/MUSIC/TRAVEL（相机/音乐/旅行封面）配「人像写真」文案；截图三图内容与上述文件一一对应（A2 曾实读 post-2.jpg=阴天海边礁石浪花）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "动态配图与文案语义一致：爬山云海帖配山脉云海图（理想图为云海×3），人像写真帖含人物/校园夕阳元素；圈封面插画不应用作动态内容图。",
+      "fix": "feedItems 内置数据按文案重配：f1 三图统一云海/山景素材，f2 换人像/校园黄昏素材；并排查 f3+（老鹰视觉 #器材交流 配图含食物照——滚动-底部截图中第二图为食物，与「新镜头使用感受」同样不符）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/village/village/detail",
+      "observation": "默认态视觉整体健康：作者行（头像/昵称/复旦大学徽标/相对时间/关注钮）、单图、赞评计数、全部评论+最热排序切换、楼中楼评论卡（阿泽/橙子+回复入口+右侧心形计数）、底部 fixed 输入条（说点什么…+@/表情/图片）均正常渲染；巡检帖子 id=1《520诚友帖》配电车人像图与交友文案语义匹配——历史线索 MP-R2-VILL-013 在巡检所用帖子上未见复现（其批量图文不符 A2 已以 VILLMOCK-101 立条，本条为截图侧回归记录）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__默认.png；__数据态.png 同版（A/B 双身份一致）"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "observation": "历史 P1 线索 MP-R1-DETAIL-001（全屏查看层样式孤立 </style> 后被解析器丢弃）回归通过：本会话亲跑 node compiler-sfc parse（vue 3.4.21，命令与输出见 coverage），parse errors:0、style blocks:1、.image-viewer 与 .image-viewer__img 规则均在 style 块内、</style> 后无任何内容。与 A2 的 DETAIL-101「已修复」结论一致。",
+      "evidence": "命令输出（本会话运行）：parse errors: 0 | style blocks: 1 | has .image-viewer rule: true | has .image-viewer__img rule: true | </style> count: 1 | trailing content: \"\""
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "observation": "空态路径视觉正常：#摄影 渐变头部（返回钮与胶囊无叠印，--statusbar/--capsule-right 避让在位 tag-posts.vue:74-76/459）、书签图标空态、文案层级清晰；缺参直开有「缺少标签参数」toast+返回兜底（行为证据 VT03，设计行为非缺陷）。缺陷在数据链路（MP-R1-TAGPOSTS-201/101）而非视觉。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_tag-posts__默认.png；exec-results.json VT03 toast=[缺少标签参数] top 落回 village/index"
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "observation": "列表卡渲染健康：作者/标题/摘要/赞·阅·评数据行/相对时间均正常，6 条 mock 记录滚动可达；清空确认弹窗、下拉刷新（VH06 EXECUTED）行为正常。除 MP-R1-HISTORY-201 外，A2 已报的 HISTORY-102（末条初始裁切一半）在本轮默认截图中同样可见，作为其截图侧佐证（不重复立条）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_history__默认.png（第 6 条小鹿卡在视口底部被裁约半）；exec-results.json VH06 refresherPull ok"
+    },
+    {
+      "page": "subpackages/circles/circles/topics",
+      "observation": "空态场景视觉正常：绿色 hero 头部避让（--statusbar/--capsule-right，topics.vue:633-635）生效，「话题列表」标题/编辑/···钮与胶囊无叠印；五 Tab（动态/精华/活动/作品墙/成员）与 circle-home 文案一致（放大核对为「作品墙」，与理想图一致）；置顶【圈规】条正常渲染；「暂无话题/来发第一个话题吧/去发布」空态完整。行为证据：下拉刷新 CT12 EXECUTED、无参 toast「兴趣圈 ID 无效」守卫（CT03，巡检未传参所致）。A2 的 TOPICS-101/102（scroll-view 无界/Tab 混入）无数据态截图可复核，未验证，不采纳也不否证。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_topics__默认.png；exec-results.json CT12/CT03"
+    },
+    {
+      "page": "subpackages/circles/circles/topic-detail",
+      "observation": "「话题不存在」空态渲染完整（搜索图标/标题/副文案/返回钮），与 campus/topic-detail 空态同构；两页空态 CTA 按钮放大对比均为实心品牌绿 #36C99A 白字圆角钮，跨页一致（取样 (54,201,154)）。行为证据 CD12：tap「返回」EXECUTED（circles 版 goBack 有守卫，A2 coverage 证实）。巡检无正常内容态截图，正文/回复区视觉未覆盖。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_topic-detail__默认.png；reports/audit/round-1/findings/次要20-evidence/ 下放大对比已核（tmp 文件已清理，结论记录于此）；exec-results.json CD12"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "observation": "多项理想图要点已达成：底部固定「加入圈子」大钮+右下铅笔 FAB 并存与理想图非成员态画法一致（理想图同样两者并存，非缺陷）；「热门」徽标、好友头像 3 张不同脸（MP-R1-CIRCLEHOME-003 修复在位）、置顶规约条有文案（非空绿带）、Tab 吸顶时机正常。运行时证据支持 A2 的 CIRCLEHOME-103（sticky top:0 侵入状态栏）：滚动-底部截图中吸顶 Tab 栏文字「精华/活动/作品辑…」与状态栏「WeChat/100%」完全叠印（A2 已立条，本条提供运行时截图佐证，置信度可自 0.55 上调）。行为证据 CH03/CH04/CH12 EXECUTED（hero 分享钮在位、加入双入口在位、加入快击×5 全响应无防连点——防连点属交互判定员职责仅记录）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__滚动-底部.png（Tab 与状态栏叠印）；exec-results.json CH03/CH04/CH12"
+    },
+    {
+      "page": "subpackages/campus/campus/topic-detail",
+      "observation": "「话题不存在」空态完整（与 circles 版一致），绿粉渐变头部避让正常（campus/topic-detail.vue:21-22/331 statusbar 注入在位），标题「话题详情」白字居中与胶囊无叠印；行为证据 XT11：tap「返回」EXECUTED。巡检无正常内容态截图，回复流/匿名切换等视觉未覆盖（相关功能缺陷 A2 已报 CAMPUSTOPIC-101/102/103）。附带记录：交互截图 SUBPACKAGES-CAMPUS-CAMPUS-CERTIFICATION-XC03-after.png 实际内容为发现页（寻觅推荐卡），截图与目标页不符，该批 certification 输入四态交互验证未获有效视觉证据，不作结论。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_topic-detail__默认.png；exec-results.json XT11；reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-CERTIFICATION-XC03-after.png（内容异常记录）"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "observation": "表单默认态结构完整：为什么要认证要点卡/学校名称/专业/学生证照片虚线上传框/学信网验证码（选填）/学信网截图/「提交审核」大钮/底部隐私声明，token 化视觉与品牌绿一致；行为证据 XC10：提交钮快击×5 done=5（为 A2 CERT-101 无重入守卫提供行为佐证，不重复立条）。滚动缺陷见 MP-R1-CERT-201。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_certification__默认.png；__滚动-底部.png（提交审核钮+隐私说明）；exec-results.json XC10"
+    }
+  ],
+  "coverage": [
+    "subpackages/village/village/detail（13 项举证）：截图已看（默认/数据态/滚动-中部/滚动-底部 A+B 共 8 张+VD 系列 6 张交互截图）；理想图已对照（帖子.png，L1-L5 逐项，产出 DETAIL-204 五项偏差）；滚动已测（巡检滚动截图两页位，暴露 DETAIL-201）；点击已测/返回已测（行为证据 VD01/02/04/05/12/16/19/21/22/25/27——VD02 暴露 goBack 无守卫 DETAIL-202，VD 系列 FAILED 均因巡检用无参 route 打开渲染空态，属巡检脚本问题非产品缺陷，已甄别）；safe-area 已查（默认态头部避让正常，滚动态失效即 DETAIL-201）；TabBar 已查（本页非 tab 页，底部输入条 fixed 正常不遮内容尾部）；空态已查（VD27 截图「帖子不存在/返回广场」完整）；长文已查（正文两行+评论列表正常）；加载态已查（VD01 dom .detail-skeleton:absent 内容直出）；错误态已查（VD27）；组件一致性已查（空态/输入条与项目组件库一致）；历史 Bug 回归已查（MP-R1-DETAIL-001 亲跑 compiler-sfc 通过；MP-R2-VILL-013 巡检帖未见复现）。未覆盖：全屏图片查看层运行态（无交互截图，编译层已证）、键盘弹起。",
+    "subpackages/village/village/tag-posts（13 项举证）：截图已看（默认/空态 A+B 4 张+VT03 交互截图）；理想图已对照（*：无本页专属理想图，按 19 张整页稿无锚定如实记录）；滚动已测（无滚动截图——列表恒空无内容可滚，本身即缺陷 TAGPOSTS-201 的表现）；点击已测（VT03/VT05 行为证据：缺参 toast 守卫正常、卡片点击路径存在但被列表断链阻断）；返回已测（tag-posts.vue:244-256 守卫在位，A2 证实）；safe-area 已查（头部避让在位截图无叠印）；TabBar 已查（非 tab 页 N/A）；空态已查（截图完整）；长文已查（N/A 空列表）；加载态已查（代码 600ms mock 延迟+骨架，无截图）；错误态已查（缺参 toast）；组件一致性已查（空态图标/文案与 village 族一致）；历史 Bug 回归已查（TAGPOSTS-001/002/006 修复在位——1 基分页注释、goBack 守卫、?id= 直达）。",
+    "subpackages/village/village/history（13 项举证）：截图已看（默认 A+B 2 张+放大裁切件+VH06 行为证据）；理想图已对照（无本页专属理想图，如实记录）；滚动已测（无滚动截图，但默认态已暴露 A2 HISTORY-102 的末条裁切，作佐证）；点击已测（VH01-VH09 中 VH06 EXECUTED，清空弹窗/卡片点击存在）；返回已测（goBack 守卫在位 history.vue:41-48）；safe-area 已查（暴露 MP-R1-HISTORY-201：返回键叠状态栏、清空记录叠胶囊）；TabBar 已查（非 tab 页）；空态已查（代码 EmptyState @action 接线，无空态截图如实注明）；长文已查（6 条记录正常）；加载态已查（loadingHistory 骨架在位）；错误态已查（@error 占位逻辑在位）；组件一致性已查（工具栏/卡片风格与 village 族一致，唯 token 拼错 A2 已报）；历史 Bug 回归已查（HISTORY-001 reLaunch 兜底在位）。",
+    "subpackages/circles/circles/topics（13 项举证）：截图已看（默认 A+B 2 张）；理想图已对照（无本页专属理想图；Tab 文案与 circle-home/理想图互证为「作品墙」）；滚动已测（无滚动截图，A2 TOPICS-101 静态推断未复核，如实标注未验证）；点击已测（CT03/CT10/CT11/CT12/CT14/CT16——EXECUTED 仅 CT12 下拉刷新；FAILED 均为巡检无参/选择器问题已甄别）；返回已测（守卫在位 A2 证实）；safe-area 已查（头部避让在位截图无叠印）；TabBar 已查（非 tab 页）；空态已查（截图完整+CT16 空态路径）；长文已查（N/A 空态）；加载态已查（N/A）；错误态已查（无参 toast「兴趣圈 ID 无效」守卫正常）；组件一致性已查（置顶条/Tab/空态与 circle-home 同款）；历史 Bug 回归已查（joinCircle 失败 toast 修复在位 A2 证实）。",
+    "subpackages/circles/circles/topic-detail（13 项举证）：截图已看（默认 A+B 2 张+CD 系列 5 张交互截图）；理想图已对照（无本页专属理想图）；滚动已测（无滚动截图；A2 CTOPIC-102 回复栏非 fixed 静态推断未复核，如实标注）；点击已测（CD03-CD12：CD12 返回 EXECUTED，其余 FAILED 为无参空态下选择器不可达，已甄别）；返回已测（CD12 通过+守卫在位）；safe-area 已查（头部避让在位）；TabBar 已查（非 tab 页）；空态已查（截图完整）；长文已查（N/A 空态）；加载态已查（N/A）；错误态已查（空态即错误态，渲染正确）；组件一致性已查（与 campus 版空态逐像素对照一致，按钮色值取样相同）；历史 Bug 回归已查（回复分页游标正确 A2 证实）。",
+    "subpackages/circles/circles/circle-home（13 项举证）：截图已看（默认/数据态/滚动-中部/滚动-底部 A+B 共 8 张+CH 系列 5 张交互截图）；理想图已对照（圈子详情，摄影圈参考.png L1-L10 逐项：结构偏差产出 CIRCLEHOME-201，动态卡图文产出 CIRCLEHOME-202，FAB 并存/作品墙文案/置顶条核实为一致不报）；滚动已测（滚动-中部/底部截图：暴露 sticky 吸顶叠印，佐证 A2 CIRCLEHOME-103）；点击已测（CH03/CH04/CH07/CH10/CH11/CH12——加入双入口/分享钮在位）；返回已测（守卫在位 A2 证实）；safe-area 已查（hero 按钮 --statusbar 避让在位，底部 fixed 栏+placeholder 正常）；TabBar 已查（非 tab 页）；空态已查（未知圈空态代码在位 CH11 选择器未达）；长文已查（动态卡长文案正常）；加载态已查（骨架防误判 R10-P1-001 在位）；错误态已查（real 空数据分支在位）；组件一致性已查（Tab/置顶条/topics 同款）；历史 Bug 回归已查（MP-R1-CIRCLEHOME-001/003/004 修复在位——置顶条有文案、好友头像三张不同、原生分享按钮）。",
+    "subpackages/campus/campus/topic-detail（13 项举证）：截图已看（默认 A+B 2 张+XT 系列 6 张交互截图）；理想图已对照（无本页专属理想图）；滚动已测（无滚动截图；A2 CAMPUSTOPIC-101 静态推断未复核）；点击已测（XT04-XT11：XT11 返回 EXECUTED，回复提交类 FAILED 为无参空态所致已甄别）；返回已测（XT11 通过）；safe-area 已查（头部避让在位）；TabBar 已查（非 tab 页）；空态已查（截图完整）；长文已查（N/A 空态）；加载态已查（N/A）；错误态已查（空态渲染正确）；组件一致性已查（与 circles 版空态一致）；历史 Bug 回归已查（R10-P1-003 statusbar 注释在位）。未覆盖：正常内容态全部视觉（巡检未产出该场景截图）。",
+    "subpackages/campus/campus/certification（13 项举证）：截图已看（默认/滚动-中部/滚动-底部 A+B 共 6 张+XC 系列 4 张交互截图）；理想图已对照（无本页专属理想图，按表单完整性核对）；滚动已测（暴露 MP-R1-CERT-201 头部滚走+状态栏叠印）；点击已测（XC10 提交快击 EXECUTED；XC03-XC08 输入/上传类 FAILED 且 XC03 交互截图内容错位为发现页，已如实标注证据无效）；返回已测（goBack 守卫在位 A2 证实）；safe-area 已查（默认态头部避让正常，滚动态失效即 CERT-201）；TabBar 已查（非 tab 页）；空态已查（表单页无空态概念，选填标注清晰）；长文已查（超长输入行为未获有效证据，如实标注）；加载态已查（提交 loading 在位）；错误态已查（N/A 无截图）；组件一致性已查（渐变头/白卡/大钮与 campus 族一致）；历史 Bug 回归已查（实名门槛/幂等键/隐私授权 A2 证实在位）。",
+    "横切说明：① 本轮全部结论基于 manifest gitSha=aefd8a72（=当前 HEAD）的巡检证据与当前工作区源码互证；工作区 6 个本批文件有未提交 M 状态，引用行号已逐条与截图表现核对无冲突。② A2 已报 31 项均未重复立条；A2 请求运行时复核的 sticky 项已由滚动-底部截图证实并在 observation 附证。③ 撤销的候选疑点（避免编造）：tab「作品辑」系缩略图误读（放大为「作品墙」与理想一致）、非成员 FAB 并存与理想图一致、两 topic-detail 空态按钮色值一致——三者均不成立为缺陷。④ 未运行小程序/未真机：键盘、真机 safe-area、手势返回未实测；topics/tag-posts/campus topic-detail/circles topic-detail 的正常内容态无截图素材，相关视觉未审查。"
+  ]
+}

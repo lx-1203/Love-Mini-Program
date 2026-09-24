@@ -1,0 +1,25 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/post-topic（兴趣圈·发帖）",
+  "mode": "索引差分回归（A5 历史回归员，只读：清单/代码/证据，未改代码、未碰开发者工具）",
+  "generatedAt": "2026-09-24",
+  "indexSource": "reports/audit/baseline/regression-index.json",
+  "scope": "仅回归索引中本页面相关历史条目（MP-R2-POSTTOPIC-001、MP-R3-POSTTOPIC-001）；未全量重读索引",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R2-POSTTOPIC-001",
+      "page": "subpackages/circles/circles/post-topic",
+      "status": "未复发",
+      "evidence": "源码（本轮实读 post-topic.vue）：上传转换在分支判断之前统一执行——:325-342 `localTopicImages = images.value.filter((img) => !isUploadedMediaUrl(img))`，非 mock 时逐图 `await clientApi.uploadPostImage({ name: 'post-topic-<ts>-<n>.jpg', path: img })` 后 `submitImages = uploaded`（:327-342），行内注释 :322-324 即「MP-R2-POSTTOPIC-001：上传转换上移到分支判断之前」；帖子模式/campus 兜底的 `villageStore.createPost({... images: submitImages ...})`（:356-363）与话题模式 `circleStore.createTopic(..., images: submitImages, ...)`（:398-404）均消费上传后结果，本地临时路径不再直出。依赖在位（本轮 grep 实跑）：apps/client/src/utils/media.ts:88 `export function isUploadedMediaUrl`、apps/client/src/services/api.ts:878 `async uploadPostImage`。运行时旁证：reports/audit/round-1/interact/exec-results.json PT13「校园圈兜底发布成功（createPost cat-campus）」status=EXECUTED、console 无错误。限制：带图场景需驱动原生 chooseImage 相册弹窗，automator 无法自动化（R21 不可自动化清单），带图上传的运行时取证不可得——本条判定基于源码结构（createPost 的 images 参数即 submitImages，real 模式下其元素必经 uploadPostImage），证据链中如实标注。"
+    },
+    {
+      "id": "MP-R3-POSTTOPIC-001",
+      "page": "subpackages/circles/circles/post-topic",
+      "status": "未复发",
+      "evidence": "源码（本轮实读 post-topic.vue）：`campusPostFallback` 已提升为函数级 let——:318-319 `// catch 分支需按失败来源取 store 文案，故声明在 try 之外` + `let campusPostFallback = false;`（try 之外），:346-347 try 内赋值；catch（:413-426）按 `isPostMode || campusPostFallback` 取 villageStore/circleStore.errorMessage（:416-418），失败 toast 无条件展示（:419-422），`isSubmitting.value = false` 失败复位（:425）。该缺陷本质是作用域 ReferenceError，源码结构可直接判定不再存在。git 证据（本轮实跑 `git diff HEAD -- apps/client/src/subpackages/circles/circles/post-topic.vue`）：本轮工作区改动仅 3+/1-，恰为该修复本身（const→提升为 try 外 let），是加修复而非撤修复；MP-R2 上传块未被触及。交叉印证：reports/audit/round-1/code-findings/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json regressionChecks 两条 verdict 均「已修复（本轮代码层验证）」，其行号与当前工作区一致。运行时限制：exec-results.json PT16（失败 toast+isSubmitting 复位可重试）status=FAILED，但 failureReason 为自动化选择器失败 `action tap __CAND__ failed: element not found: __CAND__(\"发布\")`（action-not-performed），业务断言未执行——不构成业务回归证据，也不构成运行时通过证据；失败路径的运行时逐项复验仍缺失，判定基于源码作用域证据。"
+    }
+  ],
+  "runtimeEvidenceNote": "reports/audit/round-1/interact/exec-results.json 中本页 22 项（PT01-PT22）里与两条历史条目直接相关的运行时项：PT13（campus 兜底 createPost 发布）EXECUTED；PT16（失败反馈+复位）FAILED（automator 选词失败，业务断言未执行）。其余 PT 项属本轮新审计范畴，不属本回归核对范围。",
+  "notDone": ["带图发布（chooseImage 相册/拍照）的运行时回归取证——automator 无法驱动原生相册弹窗（R21 不可自动化清单），仅完成源码层验证", "发布失败路径的运行时逐项复验——PT16 因自动化选择器失败未能执行业务断言，未重跑（A5 不驱动开发者工具）"]
+}

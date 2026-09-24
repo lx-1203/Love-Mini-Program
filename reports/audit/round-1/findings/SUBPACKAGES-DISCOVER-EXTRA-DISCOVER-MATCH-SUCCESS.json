@@ -1,0 +1,192 @@
+{
+  "round": "R1",
+  "page": "subpackages/discover-extra/discover/match-success",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS（A3，截图/证据视觉审查；不重复代码层 001-011）",
+  "date": "2026-09-23",
+  "evidenceValidation": {
+    "manifestGitSha": "aefd8a72",
+    "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+    "interactExecGitSha": "aefd8a72",
+    "verdict": "一致，证据未过期",
+    "notes": [
+      "ask 给定的静态截图路径 reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_match-success__默认.png 在磁盘不存在：A 目录 match-success 仅存在「交互后」一张；「默认」登记并存在于 round-1-tour/B/。审查基准改用 B/默认。",
+      "tour A 与 tour B 的 match-success__交互后 两张截图内容均为「发现页筛选抽屉」（寻觅/推荐/附近+全部筛选面板+TabBar），非本页画面——两轮交互后截屏均错拍，本页 tour 级有效证据仅 B/默认 一张；交互行为证据改依 round-1-interact/ MS 系列（MS01-MS16，2026-09-23，exec-results.json gitSha=aefd8a72）。",
+      "B/默认 构建包含工作树未提交改动（MatchSuccess.vue 分享图标 ICONS_SOCIAL.SHARE 修复已可见渲染），与本次审查读到的代码状态一致。"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-101",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png；reports/audit/round-1/findings/_tmp_crops_MS/avatars.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "主视觉「心形碰撞」的白色心形丢失：中心 120rpx 粉色渐变圆（#FF6B81→#FF4D6D）内的心形图标渲染为同色系粉，粉底粉心肉眼几乎不可辨。根因：heart-filled.svg 固定 fill/stroke=#FF6B81，代码白色意图 .match-success__heart-circle-icon{color:#ffffff} 对 mp <image> 不生效（CSS color 不能给图片染色）。像素实测：图标区 (255,103,126)/(255,96,121) vs 圆底 (255,99,124)/(255,88,116)，通道差 ≤15，对比度≈1:1。理想图中粉圆中心为清晰白色心形，是整页主视觉符号。代码层 001-011 未覆盖此渲染缺陷（004 只处理底部分享图标的键名）。",
+      "evidence": "reports/audit/round-1/findings/_tmp_crops_MS/avatars.png 显示粉圆内仅隐约可见同色心形轮廓；像素取样 B/默认 (187,265)=(255,103,126)、(187,258)=(255,96,121) 对比圆底 (165,265)=(255,99,124)——心形与底色同色。代码：apps/client/src/static/assets/icons/common/heart-filled.svg 第2行 fill=\"#FF6B81\" stroke=\"#FF6B81\"；apps/client/src/components/match/MatchSuccess.vue:298-302（color:#ffffff 意图）、:286-296（圆底渐变 #FF6B81→#FF4D6D）。理想图 素材/理想效果图/匹配成功页面.png 粉圆中心为白色心形。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "粉圆中心为白色心形（理想图主视觉），与粉色圆底高对比、一眼可辨。",
+      "fix": "为该位置引入白色填充变体（新增 heart-filled-white.svg，或 CSS mask 染色方案），替换 MatchSuccess.vue:101 的 heart-filled 直引；勿复用现有粉色 SVG。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-102",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/title.png",
+      "category": "UI",
+      "severity": "P4",
+      "description": "标题两侧爱心同根因染色失效：代码意图右心绿色 #36C99A（MatchSuccess.vue:206-208 .match-success__title-heart--right{color:#36C99A}），实际两颗均渲染 SVG 自带粉色 #FF6B81——与 -101 同根因（CSS color 对 <image> 无效）。理想图右侧为绿色爱心（左侧为粉+绿心丛）。",
+      "evidence": "reports/audit/round-1/findings/_tmp_crops_MS/title.png 3x 放大：左、右爱心均呈粉色，无绿色心。代码 MatchSuccess.vue:196-208（左右心分别定义 #FF9DB5/#36C99A，均未生效）；heart-filled.svg fill=#FF6B81。理想图 素材/理想效果图/匹配成功页面.png 标题右侧为绿色心。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "标题右侧爱心绿色（#36C99A 系），与理想图一致。",
+      "fix": "随 -101 一并引入绿色心形变体（或 mask 染色）供 title-heart--right 引用；粉色左心可保留现有 SVG。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-103",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/nav.png；reports/audit/round-1/findings/_tmp_crops_MS/backbtn_8x.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "漂浮爱心装饰叠进左上返回钮：float-heart--1（top:120rpx left:40rpx，40rpx）落点正好在返回白圆钮（72rpx，fixed padding-top=--statusbar+24rpx，left 24rpx）内部，8x 截图可见浅粉心形占据钮中心、返回字符 ‹ 叠印在心形之上——装饰元素侵入可点控件。V-02 调整注释（MatchSuccess.vue:461「避免遮挡标题/头像/匹配卡」）漏了 nav 钮。附带：返回字符用 U+2039「‹」（40rpx 字号下深色核心实测仅约 3x6px，chevron bbox (28,68)-(30,73)），比理想图粗黑大箭头明显弱，叠加爱心后返回可供性进一步被稀释。",
+      "evidence": "reports/audit/round-1/findings/_tmp_crops_MS/backbtn_8x.png（B/默认 x[6,56] y[40,95] 8x）：白圆内浅粉爱心 + ‹ 叠印；像素实测 (253,224,228) 粉色块 85px 落在 x[12,48]×y[45,90] 钮区内，返回圆钮白域 x[14,45]@y72。代码 MatchSuccess.vue:462（--1 top:120rpx left:40rpx）与 apps/client/src/subpackages/discover-extra/discover/match-success.vue:197（nav padding）、:202-212（72rpx 钮）。理想图 nav 区无装饰爱心、返回为粗黑箭头。MS14-after 同样复现。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "nav 区（返回钮/右上钮）及周边无装饰元素侵入；返回箭头为粗黑清晰 chevron（理想图样式）。",
+      "fix": "float-heart--1 下移/左移出返回钮区（如 top≥160rpx 或左侧半出血），返回图标从字符 ‹ 换为 SVG 箭头加粗；V-02 校验清单补「nav 钮区」。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-104",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/nav_right_zoom.png；reports/audit/round-1/findings/_tmp_crops_MS/r06_c01_zoom.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "右上「截图」钮渲染的是微信 Logo，不是相机/取景框图标：match-success.vue:149 引用 IMAGE_PATHS.LOGIN_SPLIT['r06_c01']（文件 登录页_r06_c01.png，实测内容为绿色微信双气泡 Logo——登录页参考图切件），代码注释却称「素材库 r06_c01 相机图标」。6x 放大确凿：绿双气泡微信标。理想图该位置为深色取景框/扫描角标。功能语义为「截图（即将上线）」却展示微信 Logo，构成错误可供性诱导（用户会以为跳微信/客服）。",
+      "evidence": "reports/audit/round-1/findings/_tmp_crops_MS/nav_right_zoom.png（B/默认 x[175,280] y[45,110] 6x）：左钮内绿色微信双气泡；源素材质检 apps/client/src/static/assets/images/login-split/登录页_r06_c01.png（76x64，放大 r06_c01_zoom.png 确认为微信 Logo）。代码 match-success.vue:120（注释「相机图标」）与 :149（LOGIN_SPLIT['r06_c01']）。理想图 素材/理想效果图/匹配成功页面.png 右上为深色取景框图标。aria-label=「截图」（:146）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "右上钮为深色取景框/相机图标（理想图），与「截图」语义一致。",
+      "fix": "替换 :149 为真实相机/取景框 SVG（自 SVG 主库或按理想图重绘），废弃 r06_c01 该处引用；同步更正 :120 注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-105",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/scorecard_top.png；reports/audit/round-1/findings/_tmp_crops_MS/scorecard_bot.png；reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "计分行「图标-文案」语义错位，且由行号硬编码导致、对真实数据同样错配：scoreIcons=[RUN,MUSIC,BOOK,FOOD] 按行序固定（MatchSuccess.vue:43），标签却可变（默认「旅行爱好/音乐品味/电影偏好/生活方式」:50，或后端 tags）。实拍默认态：第1行跑步图标配「旅行爱好」、第3行书本图标配「电影偏好」、第4行咖啡杯图标配「生活方式」；MS14 数据态：跑步图标配「都喜欢日落」、书本图标配「喜欢同一种浪漫」。理想图为语义一一对应（慢跑爱好→跑者/音乐品味→音符/电影偏好→摄影机/生活方式→提袋）。兄弟页匹配中心同款四行卡（同标题句式、同标签）用旅行/音符/影视/绿植语义图标——本页与其不一致。",
+      "evidence": "_tmp_crops_MS/scorecard_top.png、scorecard_bot.png：行1 黑色跑者+「旅行爱好」、行3 书本+「电影偏好」、行4 咖啡杯+「生活方式」；MS14-after.png：跑者+「都喜欢日落」、书本+「喜欢同一种浪漫」。代码 MatchSuccess.vue:43（scoreIcons 硬编码）、:57（text 可为默认或后端 src.text）。理想图 素材/理想效果图/匹配成功页面.png 四行语义对应。对照截图 SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT24-after.png（匹配中心同标签卡）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "图标跟随标签语义（理想图：跑者/音符/摄影机/提袋）；默认四行与图标对齐（旅行→旅行包、电影→摄影机、生活方式→提袋/绿植）。",
+      "fix": "图标改为按 reason.type/标签关键词映射（或默认四行换用与标签匹配的 SVG），删除按 index 取 scoreIcons 的写法；与匹配中心页图标语义对齐。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-106",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/scorecard_top.png；reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT24-after.png",
+      "category": "UI",
+      "severity": "P4",
+      "description": "计分行图标风格与理想图不符：理想图为浅色圆角 chip 底+品牌彩图标（行1 浅绿chip+绿跑者，行2-4 浅chip+绿音符/青摄影机/红提袋）；本页渲染为无底裸图标且近黑/蓝灰线条。同项目匹配中心页同款卡已实现「浅底圆 chip+彩色图标」样式（MT24 截图），本页未对齐——同一卡式跨页两套风格。",
+      "evidence": "_tmp_crops_MS/scorecard_top.png：行1/行2 图标无底色、深黑线条；理想图 素材/理想效果图/匹配成功页面.png 计分行图标带浅色圆角 chip 且彩色；MT24-after.png 匹配中心同卡 chip 样式实拍。样式源 MatchSuccess.vue:342-346（__score-icon 无背景规则）。",
+      "sources": ["screenshot"],
+      "confidence": 0.8,
+      "ideal": "计分行图标带浅色圆角 chip 底、图标品牌彩色（与理想图及匹配中心页一致）。",
+      "fix": "为 __score-icon 增加 chip 容器（浅色底圆角方块）并换用彩色语义 SVG，可复用匹配中心页图标素材。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-107",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/bottom.png；reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "整页纵向节奏与理想图不符：CTA 区未锚底、页底约 150px 全空。像素实测（B/默认，373x820）：「分享喜悦」文字 y=646-655，其下 y660-820 为纯背景（bottom 裁切全空）；理想图（852x1846，÷2.272 折 375 宽）分享行距页底仅约 25-40pt。头像带纵向中心与理想图基本一致（实测中心 y272 vs 理想 275.8pt），偏差集中在下半屏：计分卡顶 y339 vs 理想 401.8pt（-63pt）、卡高 188px vs 理想 238pt、头像实测直径 96px（含白边）vs 理想约 118pt（约-19%）、主按钮高 42px vs 理想 48pt。代码意图是 CTA 锚底（MatchSuccess.vue:379 margin-top:auto；:2-3 注释「CTA 锚底/高度链成立」），实拍未成立——:host{min-height:100%}/min-height 百分比链在 mp-weixin 未撑满视口（机制推断），庆祝页下半约 1/5 视口空置，主视觉被削弱。",
+      "evidence": "像素扫描：B/默认 中轴绿色簇 (529,545)/(556,571)=主按钮、(646,655)=分享文字；白域 339-527=计分卡；头像列扫 d=90（x90/x282 两列一致，含边约 96）；理想图头像列扫 d=112.2/111.8pt、计分卡白行 913-1454px→401.8-640.0pt、主按钮 1455-1564px→h=48pt、次按钮白底行 699.9-746.9pt；bottom.png（y660-820）纯背景无内容。代码 MatchSuccess.vue:379（margin-top:auto）、:163-166（:host 规则）、:237-238（192rpx 头像）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "CTA 组锚定页底（分享行距底约 25-40pt），头像约 112-118pt，计分卡与行距按理想图节奏分布，整页无大面积空置带。",
+      "fix": "修复高度链：页面根与组件改用确定视口高（100vh 或 page-meta flex 链），使 actions margin-top:auto 真正锚底；头像提至约 224-236rpx；计分卡行距/padding 对齐理想图。改后刘海/非刘海各截一张复验（与代码层 010 联动）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-108",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/cta.png",
+      "category": "UI",
+      "severity": "P4",
+      "description": "下半区三处渲染色与理想图不符（L8 渲染差异维度，区别于代码层 007 的 token 纪律问题）：① 次按钮「继续探索」理想图为白底填充（理想中轴白行 699.9-746.9pt 实证），实际无 background（MatchSuccess.vue:398-403 仅 border）露出渐变底呈淡绿；② 「分享喜悦」文字理想图为浅灰紫（实测约 #9194A2），实际品牌绿 #36C99A 加粗（:424-428），视觉权重被抬高；③ 提示行「快去打个招呼吧~」理想图为深灰蓝（实测约 #595C6B），实际绿 #36C99A（:219-224）。",
+      "evidence": "_tmp_crops_MS/cta.png：继续探索按钮透底、分享喜悦绿字；理想图取样 hint=(89,92,107)、share=(145,148,162)、次按钮白底行 700-747pt；代码 MatchSuccess.vue:398-403（无 background）、:424-428（share-text #36C99A font-weight:600）、:219-224（hint #36C99A）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "次按钮白底；分享文字浅灰紫常规字重；提示行深灰蓝——均按理想图。",
+      "fix": "次按钮补 background:#fff；share-text 与 hint 改灰系（可走 --c-text-tertiary 类 token，与代码层 007 的 token 收敛批次合并执行）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-109",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops_MS/title.png；reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "副标题文案与理想图不一致：实际「你和 {name} 互相喜欢上了」（zh-CN.ts:459 matchSuccess.matchedWith），理想图为「你和 星野 互相喜欢了彼此」。B/默认（TA 兜底名）与 MS14（星野）两态一致复现「互相喜欢上了」。标题恒为「匹配成功」红线合规（无「已送出心动」混淆）✓，仅副语措辞偏差。",
+      "evidence": "_tmp_crops_MS/title.png：第二行「你和 TA 互相喜欢上了」；MS14-after.png：「你和 星野 互相喜欢上了」；理想图 素材/理想效果图/匹配成功页面.png：「你和 星野 互相喜欢了彼此」；文案源 apps/client/src/i18n/locales/zh-CN.ts:459。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "副标题措辞与理想图一致：「你和 {name} 互相喜欢了彼此」。",
+      "fix": "更新 zh-CN/en-US 两语言包 matchedWith 措辞（en 同步核对语感）。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "observation": "B/默认（有效基准截图，gitSha=aefd8a72 构建链）整页渲染健康度核对：标题「匹配成功」绿色 #36C99A 系（标题带饱和色主簇 (48,192,144)，与代码及理想图绿标题一致；初审小图误判粉色已被像素取证纠正）；标题-副语-双头像-粉心-四行计分卡-立即聊天-继续探索-分享喜悦 结构齐全且顺序与理想图 L1 一致；头像直径 96px（=192rpx 代码值）、心形圆 60px（=120rpx）、计分卡四行 90/85/80/79 与进度条宽度一致、主按钮 x[25,348] 全宽铺满与理想图（30.8-343.8pt）一致；顶部 nav 三钮无状态栏/胶囊叠印（历史回归 MP-R3-MSUCCESS-001/002 视觉复核通过）；非 tab 页无 TabBar 遮挡问题。缺陷集中在：主视觉白心丢失（101）、装饰叠钮（103）、微信Logo误用（104）、图标语义/风格（105/106）、纵向节奏（107）及 L8/L6 细节（102/108/109）。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png + reports/audit/round-1/findings/_tmp_crops_MS/{nav,title,avatars,scorecard_top,scorecard_bot,cta,bottom}.png 像素取证"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "observation": "证据链缺陷（如实标注，非页面缺陷）：tour A 与 tour B 的 match-success__交互后 截图内容均为发现页筛选抽屉（非本页），两轮交互后截屏均错拍；且 ask 给定的 A/…__默认.png 路径不存在（默认 截图在 B 目录）。本页 tour 级有效证据仅 B/默认；后续轮次的「交互后」取证需重拍。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_match-success__交互后.png 与 .../B/...__交互后.png 均显示寻觅/推荐/附近+全部筛选面板+TabBar；ls 实证 A 目录无 __默认.png"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "observation": "行为证据核对（exec-results.json，gitSha=aefd8a72 一致）：本页 MS01-MS16 共 16 例全部 EXECUTED，覆盖 dev-preview 直达渲染（MS01）、无参兜底 TA+默认头像（MS02）、带参兜底（MS03/04）、返回分流（MS05/06）、右上两钮 toast（MS07/08）、分享喜悦 toast=「分享功能即将上线」（MS09 实录 toast title）、立即聊天跳转与防连点（MS10/11）、继续探索 switchTab（MS12）、会话往返（MS13）、头像兜底（MS14）、四行固定分值（MS15）、滚动往返（MS16）。交互判定（MS05/MS13 的 navError 等）归交互判定员，本审查仅作证据引用。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json（results 内 manifest=SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS 共 16 条，status 均 EXECUTED）"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "observation": "数据态视觉核对：MS14-after（partner=星野、真实 tags）渲染正常，但坐实 -105 的图标-文案错配在数据态同样发生（「都喜欢日落」配跑者、「喜欢同一种浪漫」配书本）；头像双圆均加载（dev-preview 本地图）无空白圆，-002 修复链路在该态视觉无异常。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-MS14-after.png"
+    }
+  ],
+  "coverage": [
+    "截图已看：B/默认 全图 + nav/title/avatars/scorecard_top/scorecard_bot/cta/bottom 七区裁切放大（3x-8x）+ MS14-after/MT24-after 交互与对照截图；A/交互后、B/交互后 已看（均为错拍内容，如实标注）。",
+    "理想图已对照：素材/理想效果图/匹配成功页面.png 按 L1结构/L2层级/L3交互位置/L4尺寸/L5间距/L6 Typography/L7 Icon/L8颜色/L9阴影/L10微细逐层比对（L1 结构顺序一致；L3 CTA 位置偏差=-107；L4 头像/卡尺寸偏差=-107；L7 图标偏差=-105/106；L8 颜色偏差=-101/102/108；L6 文案偏差=-109）。",
+    "滚动已测：MS16 pageScrollTo bottom/top 已执行（本页内容短于视口，滚动无状态变化）；底部空置带为像素实测（bottom.png）。",
+    "点击已测：MS06/07/08/09/10/11/12 点击用例均 EXECUTED（返回、右上两钮、分享喜悦、立即聊天×5 防连点、继续探索），toast/路由留证。",
+    "返回已测：MS05（栈>1 navigateBack）/MS06（栈=1 switchTab 兜底）已执行；落点与 navError 细节归交互判定员。",
+    "safe-area 已查：B/默认 顶部 nav 三钮无状态栏叠印、右钮未触胶囊（截图 + OP02 几何引用）；代码层 010 双通道隐患归代码审查，不在本报告重复。",
+    "TabBar 已查：本页非 tab 页，截图确认无 TabBar，无遮挡问题。",
+    "空态已查：本页为庆祝页无空态设计，恒渲染成功态；partner 缺失渲染伪成功页的缺陷已由代码层 009 立案，本报告不重复。",
+    "长文已查（未取得直接证据）：未跑长昵称/50字用例（无对应截图）；代码层 subtitle max-width:560rpx 可换行（MatchSuccess.vue:216），如实标注为未基于截图验证。",
+    "加载态已查：页面无 loading UI（代码层 008 死代码 loading ref 佐证），onLoad 即渲染；本页视觉无骨架/占位需求冲突，未另立案。",
+    "错误态已查：头像 @error 兜底链在码（MatchSuccess.vue:13-18）且 MS14 实证默认头像路径；接口失败伪成功=代码层 009 已立案，不重复。",
+    "组件一致性已查：与匹配中心页（MT24-after）同构四行卡并排对照——本页图标语义与风格均不一致（-105/106）；nav 白圆钮风格两页一致；Toast 为全局 uni.showToast（MS09 实录），与他页同制。",
+    "历史 Bug 回归已查：MP-R3-MSUCCESS-001/002（状态栏/胶囊叠压）视觉复核通过（B/默认 nav 区无叠印）；代码层 001 已验证几何，本页未见回归。",
+    "证据缓存校验：screenshot-manifest.json gitSha=aefd8a72=当前 HEAD=exec-results.json gitSha，证据未过期；ask 给定 A/默认 路径不存在与 A/B 交互后错拍已如实标注（evidenceValidation.notes）。"
+  ]
+}

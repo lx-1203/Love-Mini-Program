@@ -1,0 +1,404 @@
+{
+  "cases": [
+    {
+      "id": "MSG01",
+      "page": "pages/messages/index",
+      "title": "未登录冷启动直开：NotLoggedWaiting 等待态完整渲染，不闪现错误空态",
+      "tier": "normal",
+      "pre": "wx.removeStorageSync('token') + wx.removeStorageSync('refresh_token') 清登录态（apiMode=real，非 mock 构建后 useMock()=false，index.vue:64/330 判定走 NotLoggedWaiting 分支）→ miniProgram.reLaunch('pages/messages/index')，等待首帧",
+      "action": "无输入，仅等待渲染；元素探测 .not-logged__bg / .not-logged__title / .not-logged__subtitle / .not-logged__features（4 icon 行）/ .not-logged__btn--primary / .not-logged__btn--secondary / .not-logged__btn--ghost（NotLoggedWaiting.vue:42-111）",
+      "expected": "停留消息页（getCurrentPages=[pages/messages/index]，tabBar 页不跳登录页——usePageAccess 对无 token 未登录一律放行，usePageAccess.ts:66-69），整页显示 NotLoggedWaiting：主标题+副标+4 个 icon 行+解锁提示+3 按钮（微信一键登录/手机号登录/稍后再看）全部可见；不出现空白、Skeleton、ErrorState 或「还没有新的缘分」空态；冷启动深链严禁闪现错误空态；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链）+ console（r11 通道：simulator_screenshot + get_simulator_console）"
+    },
+    {
+      "id": "MSG02",
+      "page": "pages/messages/index",
+      "title": "未登录态「微信一键登录」→ 跳登录页",
+      "tier": "navigation",
+      "pre": "同 MSG01 未登录前置，reLaunch('pages/messages/index') 渲染 NotLoggedWaiting",
+      "action": "tap .not-logged__btn--primary（NotLoggedWaiting.vue:79-89 → emit goLogin → index.vue:66-68 goLogin → openAppPath('/pages/login/index')）",
+      "expected": "500ms 内路由变化：navigateTo('/pages/login/index')，getCurrentPages 末位=pages/login/index；无报错、无死按钮",
+      "evidence": "navigation：路由断言（getCurrentPages 链），可不截图；console 采一次"
+    },
+    {
+      "id": "MSG03",
+      "page": "pages/messages/index",
+      "title": "未登录态「手机号登录」→ 跳登录页（死按钮修复回归）",
+      "tier": "navigation",
+      "pre": "同 MSG01 未登录前置渲染 NotLoggedWaiting（该按钮此前 emit goPhoneLogin 无监听者点击零响应，MP-R1-PAGES-MESSAGES-INDEX-005 修复补 @go-phone-login 监听，index.vue:328-330）",
+      "action": "tap .not-logged__btn--secondary（NotLoggedWaiting.vue:90-99 → emit goPhoneLogin → index.vue:71-73 goPhoneLogin → openAppPath('/pages/login/index')）",
+      "expected": "500ms 内路由变化：navigateTo('/pages/login/index') 且登录页含手机号登录表单入口；回归断言：点击必须有可观测反馈（不得复现零响应死按钮）",
+      "evidence": "navigation：路由断言（getCurrentPages 链）+ console"
+    },
+    {
+      "id": "MSG04",
+      "page": "pages/messages/index",
+      "title": "未登录态「稍后再看」→ switchTab 回首页",
+      "tier": "navigation",
+      "pre": "同 MSG01 未登录前置渲染 NotLoggedWaiting",
+      "action": "tap .not-logged__btn--ghost（NotLoggedWaiting.vue:100-109 → goLater → openAppPath(ROUTES.TAB.HOME)，routes.ts:36 = /pages/home/index，tabBar 页走 switchTab，navigation.ts:63-93）",
+      "expected": "500ms 内 switchTab 成功：getCurrentPages=[pages/home/index]，首页正常渲染；不得报 can not navigateTo a tabbar page",
+      "evidence": "navigation：路由断言（getCurrentPages 链）+ console"
+    },
+    {
+      "id": "MSG05",
+      "page": "pages/messages/index",
+      "title": "身份 A 登录态冷启动直开：content 全模块完整渲染",
+      "tier": "normal",
+      "pre": "r11 同款 mock 登录（automation_evaluate 注入 wx.setStorageSync('token', 当日重签有效 JWT——tmp_r11_login.json 旧 token exp 2026-09-22T14:42Z 已过期须重签）+ 调 session.bootstrap()，evaluate 校验 isLoggedIn=true）→ miniProgram.reLaunch('pages/messages/index')，等待首屏数据完成",
+      "action": "无输入，等待 loadPage（index.vue:268-273 onLoad → bootstrap+fetchLikes）完成后探测 .header__title / .header__icon-btn / .quick-cards / .assistant-card / .section（最近聊天）/ .chat-item",
+      "expected": "依次渲染 Header（标题 t('chat.headerTitle')+小苗图标+副标+搜索圆钮）、QuickActionCards（「有人喜欢你」必现，:374）、寻觅助手卡（官方徽章+「你的恋爱小管家」）、最近聊天列表（有会话时 .chat-item 渲染，含头像/昵称/预览/时间）；数据驱动区块（正在升温 :439、活动推荐 :535、第二张快捷卡 :386）按后端数据有则显无则隐，不出现编造数据；无白屏/骨架残留；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图（fullPage）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG06",
+      "page": "pages/messages/index",
+      "title": "七态之 Loading：无数据首载显示 Skeleton list×5",
+      "tier": "normal",
+      "pre": "登录态；automation_evaluate 清空 store 展示数据（messagesStore.sessions=[]、dashboard=null）+ wx.removeStorageSync 后 removeCache('messages:bootstrap') 穿透 TTL（index.vue:179）→ reLaunch('pages/messages/index')",
+      "action": "在首屏请求在途窗口（pageLoading=true 且 orderedSessions/warmPeople 均空，index.vue:153-157）内探测 .uni-skeleton（Skeleton variant=\"list\" count=5，index.vue:357-359）并截图",
+      "expected": "加载期显示整块列表骨架（5 行），不显示旧内容或错误态；数据到达后骨架消失切 content；若执行器未能捕获在途窗口（响应过快），该判定记 UNVERIFIED 如实标注，不得降低标准",
+      "evidence": "normal：after 截图（Skeleton 窗口）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG07",
+      "page": "pages/messages/index",
+      "title": "七态之 Empty：无任何会话与升温数据时显示「还没有新的缘分」空态",
+      "tier": "normal",
+      "pre": "优先用无会话数据的身份直开；否则 automation_evaluate 运行时注入：messagesStore.sessions=[]、messagesStore.dashboard=null、loading* 全 false（pageState 判 empty 条件：privateSessions 与 warmPeople 均空，index.vue:162）",
+      "action": "探测 .empty-chat / .empty-chat__img / .empty-chat__title / .empty-chat__desc（index.vue:363-369）",
+      "expected": "显示吉祥物图 +「还没有新的缘分」+「去附近看看吧」；不渲染 QuickCards/助手卡/最近聊天等默认插槽内容；不误入 error 态；console 无异常",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG08",
+      "page": "pages/messages/index",
+      "title": "七态之 Error：首屏加载失败显示 ErrorState，重试穿透缓存重载",
+      "tier": "normal",
+      "pre": "登录态；开发者工具切换离线/停后端使 /messages/conversations 等首屏请求失败，且 store 无任何可展示数据（sessions=[]、warmPeople=[]）→ pageState=error（index.vue:161）",
+      "action": "探测 ErrorState（type=\"network\"，index.vue:360-362）后 tap 其重试按钮（@retry → handleRetry，index.vue:175-181）→ 恢复网络",
+      "expected": "失败时整页显示网络错误态与重试入口（error-text 取 messagesStore.errorMessage）；点重试后 500ms 内有反馈：removeCache('messages:bootstrap') + bootstrap(true) 强制重拉（回归断言：不得因 isCacheFresh 30s TTL 早退卡死错误态，MP-R1-PAGES-MESSAGES-INDEX-008/009），恢复后切回 content；console 无未捕获异常",
+      "evidence": "normal：after 截图（error 态 + 恢复后各一张）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG09",
+      "page": "pages/messages/index",
+      "title": "滚动到底再回顶：状态栏遮罩显隐 + 末条会话不被 tabBar 遮挡",
+      "tier": "noop",
+      "pre": "身份 A 登录态且会话数足以超出单屏（MSG05 前置延续）",
+      "action": "miniProgram.pageScrollTo 或 swipe 将页面滚到底部（scrollTop>10），再滚回顶部；记录 onPageScroll scrollTop 与 .messages-page__top-scrim opacity（index.vue:47-54, 578-587）",
+      "expected": "滚动后遮罩 opacity 0→1（内容不滑入状态栏与系统时间叠印，R5(INDEP-004) 回归），回顶后 160ms 过渡回 0；底部 padding-bottom=calc(112rpx+safe-area+16rpx)（index.vue:568-576，MP-R2-002 回归）保证最后一条 .chat-item 完整可滚出、不被自定义 tabBar 遮挡；无数据状态变化",
+      "evidence": "noop：执行日志（scrollTop 数值前后对比 + console）；可附滚动前后截图各 1 张不强制"
+    },
+    {
+      "id": "MSG10",
+      "page": "pages/messages/index",
+      "title": "下拉刷新：force 穿透 TTL 真实重拉，动画不永驻且不整页闪骨架",
+      "tier": "normal",
+      "pre": "身份 A 登录态 content 态（pages.json:63-64 本页 enablePullDownRefresh=true；onPullDownRefresh → await loadPage(true) 后 stopPullDownRefresh，index.vue:279-284）",
+      "action": "在页面顶部执行下拉刷新手势（automator miniProgram.callWxMethod('startPullDownRefresh') 或模拟 swipe-down），观察加载动画与列表内容",
+      "expected": "下拉动画出现且在数据链路完成后才收起（Loading 不永驻）；刷新期间保留现有内容，不整页切骨架再切回（内容不闪烁，MP-R1-PAGES-MESSAGES-INDEX-006 回归）；刷新后列表为服务端最新数据（force=true 穿透 30s TTL，stores/messages.ts:544-557），本地 pinned/muted 运行期态保留（stores/messages.ts:588-613）；console 无异常",
+      "evidence": "normal：after 截图（刷新中 + 刷新完成各 1 张）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG11",
+      "page": "pages/messages/index",
+      "title": "搜索开关：点 Header 搜索钮展开搜索栏（热区≥88rpx 铁律核查）",
+      "tier": "normal",
+      "pre": "身份 A 登录态 content 态",
+      "action": "tap .header__icon-btn（@tap=toggleSearch，index.vue:343）；量测该按钮渲染尺寸（wxml 72rpx×72rpx，index.vue:636-640）",
+      "expected": "500ms 内 .search-bar 展开（v-if searchActive，index.vue:350-354），输入框 placeholder=「搜索聊天记录...」；热区核查：72rpx<88rpx 低于交互铁律热区下限——如实记录为缺陷候选交判定员；hover 态 opacity 0.6 生效（header__icon-btn--hover）",
+      "evidence": "normal：after 截图（展开态）+ 路由断言 + console（附量测尺寸日志）"
+    },
+    {
+      "id": "MSG12",
+      "page": "pages/messages/index",
+      "title": "搜索输入正常关键字：列表即时过滤",
+      "tier": "normal",
+      "pre": "MSG11 展开搜索栏；取运行时会话列表中某真实对方的昵称子串（或某条 lastMessagePreview 子串）作为关键字",
+      "action": "input .search-bar__input 输入关键字（v-model=searchKeyword，过滤逻辑 index.vue:143-151：partnerName/lastMessagePreview 不区分大小写 includes）",
+      "expected": "列表切换为 filteredSessions：仅剩昵称或预览命中关键字的会话，结果数≤全量数；过滤即时生效（computed 响应式，无整页刷新）；console 无异常",
+      "evidence": "normal：after 截图（过滤后列表）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG13",
+      "page": "pages/messages/index",
+      "title": "搜索无结果：显示「未找到匹配的聊天」",
+      "tier": "normal",
+      "pre": "MSG11 展开搜索栏",
+      "action": "input .search-bar__input 输入必然无命中的串（如「zzz不存在的会话999」）",
+      "expected": "会话区显示 section__empty「未找到匹配的聊天」（index.vue:526-531）；不显示「暂无聊天记录」（该文案仅非搜索态空列表用，:530 三元）；页面其余区块不崩溃",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG14",
+      "page": "pages/messages/index",
+      "title": "搜索清空（× 按钮）：恢复全量列表",
+      "tier": "normal",
+      "pre": "MSG12/13 过滤态（searchKeyword 非空）",
+      "action": "tap .search-bar__clear「×」（@tap=clearSearch → searchKeyword=''，index.vue:171-173）",
+      "expected": "输入框清空且 500ms 内列表恢复为 orderedSessions 全量；不清空搜索栏本身（仅收起才关栏）",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG15",
+      "page": "pages/messages/index",
+      "title": "搜索输入超长串与特殊字符：不崩溃不过滤错乱",
+      "tier": "normal",
+      "pre": "MSG11 展开搜索栏",
+      "action": "input .search-bar__input 分三段输入：①200+ 字符超长串；②特殊字符 <script>%'\"\\\\ 与正则元字符 .*+?[]()；③emoji 串（❤️🌿💬）；每段后观察列表",
+      "expected": "三种输入均不抛 TypeError/不白屏；过滤按纯子串 includes 处理（无正则解析——index.vue:143-151 实现不含 RegExp 构造，特殊字符不会导致崩溃或全量命中错乱）；超长串不撑破 .search-bar 布局（flex:1 输入框内滚动）",
+      "evidence": "normal：after 截图（至少超长与特殊字符两态）+ 路由断言 + console（必须无新增 TypeError）"
+    },
+    {
+      "id": "MSG16",
+      "page": "pages/messages/index",
+      "title": "收起搜索栏：关键字自动复位，列表恢复全量",
+      "tier": "normal",
+      "pre": "MSG12 过滤态（searchKeyword 非空、searchActive=true）",
+      "action": "再 tap .header__icon-btn（toggleSearch 关闭分支：searchActive=false 时 searchKeyword 置空，index.vue:166-169）",
+      "expected": ".search-bar 500ms 内收起消失；关键字被清空（复位语义），列表恢复 orderedSessions 全量而非残留过滤结果；再点搜索钮重新打开时输入框为空",
+      "evidence": "normal：after 截图（收起后）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG17",
+      "page": "pages/messages/index",
+      "title": "「有人喜欢你」快捷卡 → 批量已读 + 跳喜欢与访客页",
+      "tier": "critical",
+      "pre": "身份 A 登录态 content 态；记录进入前未读通知基线（evaluate messagesStore.notifications 中 type∈like/visitor/interaction_match 的未读数）",
+      "action": "tap .quick-card（首个，@tap=goLikes，index.vue:374；goLikes 先 void markTypeRead(['like','visitor','interaction_match']) 再 openAppPath(ROUTES.LIKES.VISITORS_LIKES)，index.vue:195-198）",
+      "expected": "500ms 内路由变化 navigateTo('/subpackages/discover-extra/likes-visitors/index')（routes.ts:76）；副作用断言：markTypeRead 已将该三类未读通知置已读（mock 本地置位/real 逐个调已读接口，stores/messages.ts:1179-1190），返回本页后助手卡角标计数相应减少；文案与计数一致（「N 人喜欢了你」取 dashboard.todayHeart.likedMeCount ?? likesStore.likedBy.length，index.vue:79-80，不显示编造数字）",
+      "evidence": "critical：before + after 截图 + 路由断言（getCurrentPages 链）+ 返回后角标状态 + console（含 markTypeRead 网络请求记录）"
+    },
+    {
+      "id": "MSG18",
+      "page": "pages/messages/index",
+      "title": "「正在等待回复」卡（waitingReplyCount>0）→ 去回复打开最近会话",
+      "tier": "normal",
+      "pre": "身份 A 登录态且 waitingReplyCount>0（卡片 v-if :386；计数取 dashboard.todayHeart.waitingReplyCount ?? max(0, likes-likes.likedBy.length-mutualLikes)，index.vue:80）；若该身份无此卡则用运行时注入置 waitingReplyCount 或如实跳过并标 UNVERIFIED",
+      "action": "tap 第二张 .quick-card（@tap=goReply，index.vue:202-209：取 privateSessions[0] → openSession → navigateTo chat-session?sessionId=<首会话id>；无会话时回退 goLikes）",
+      "expected": "500ms 内路由变化：有会话时 getCurrentPages 末位=subpackages/chat/chat-session/index 且 query.sessionId=列表第一条私聊会话 id（语义=「打开最近一个进行中的会话」，不得误跳喜欢页——2026-09-04 修复回归）；无会话回退分支走 /subpackages/discover-extra/likes-visitors/index；卡片文案「N 个聊天正在继续」与计数一致",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链 + 目标页 options.query）+ console"
+    },
+    {
+      "id": "MSG19",
+      "page": "pages/messages/index",
+      "title": "waitingReplyCount=0：第二张卡隐藏且首卡通栏不铺满",
+      "tier": "normal",
+      "pre": "身份 A 登录态；构造/选择 waitingReplyCount=0 的数据态（evaluate 置 dashboard.todayHeart.waitingReplyCount=0 或选无待回复身份）",
+      "action": "探测 .quick-cards 内卡片数量与第一张 .quick-card 渲染宽度（max-width: calc(50% - 10rpx)，index.vue:685-687）",
+      "expected": "「正在等待回复」卡不渲染（v-if=false）；仅存的「有人喜欢你」卡限宽半屏、不通栏铺满（R13 回归）；无布局抖动",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG20",
+      "page": "pages/messages/index",
+      "title": "寻觅助手卡 → 官方号会话页（accountId=official-assistant）",
+      "tier": "navigation",
+      "pre": "身份 A 登录态 content 态",
+      "action": "tap .assistant-card（@tap=openAssistant → openAppPath(ROUTES.MESSAGES.OFFICIAL_CHAT + '?accountId=official-assistant')，index.vue:191-193, 401）",
+      "expected": "500ms 内 navigateTo('/subpackages/chat/official-chat/index?accountId=official-assistant')（routes.ts:98），目标页正常打开非 404；返回落点=本页",
+      "evidence": "navigation：路由断言（getCurrentPages 链 + query.accountId）+ console"
+    },
+    {
+      "id": "MSG21",
+      "page": "pages/messages/index",
+      "title": "未读角标闭环：助手卡角标显示，进入本页 onShow 后会话未读清零",
+      "tier": "normal",
+      "pre": "身份 A 登录态；保证存在未读（若有未读会话或未读通知；构造：evaluate 向 messagesStore.sessions 注入一条 unreadCount>0 的会话或以来自对方的新消息为准）",
+      "action": "观察 .assistant-card__badge（v-if=totalUnreadCount+unreadNotificationCount>0，index.vue:408-410）→ 离开本页（switchTab 其他 tab）→ switchTab 返回本页触发 onShow（loadPage + markAllSessionsRead，index.vue:274-278）→ 再观察角标与各 .chat-item__unread-badge",
+      "expected": "进入前角标显示合计未读（>99 封顶显示「99+」，Math.min(:409)）；返回后 500ms 内完成红点闭环：所有数字 id 会话 unreadCount 本地清零（stores/messages.ts:1330-1335，badge→进入→清除）、会话行 .chat-item__unread-badge 消失；免打扰会话不计入总角标（totalUnreadCount 过滤 muted，stores/messages.ts:520-522）；角标随数据消失而非常驻",
+      "evidence": "normal：before + after 截图（进入前后角标对比）+ 路由断言 + console（含 markConversationRead 请求留痕）"
+    },
+    {
+      "id": "MSG22",
+      "page": "pages/messages/index",
+      "title": "助手卡活动区数据驱动：有数据显示 N 场活动，无数据整块隐藏",
+      "tier": "normal",
+      "pre": "身份 A 登录态；分别覆盖两种数据态：①dashboard.assistant 非空；②evaluate 置 messagesStore.dashboard.assistant=[]（assistantActivityCount ?? 0，index.vue:83-85）",
+      "action": "探测 .assistant-card__activity 是否渲染及其文案（「今天附近有 N 场活动适合你参加」:429 + 首条活动标题 :432-434）",
+      "expected": "态①：显示活动计数行与首条标题行，N=dashboard.assistant 实际长度；态②：整块 v-if 隐藏——回归断言：不得出现编造的「2 场活动」或硬编码露营文案（MP-R1-PAGES-MESSAGES-INDEX-011）",
+      "evidence": "normal：两态各 after 截图 1 张 + 路由断言 + console"
+    },
+    {
+      "id": "MSG23",
+      "page": "pages/messages/index",
+      "title": "「正在升温 · 更多 ›」→ 跳喜欢与访客页",
+      "tier": "navigation",
+      "pre": "身份 A 登录态且 warmPeople 非空（区块渲染，index.vue:439）；无数据时本条跳过并标 UNVERIFIED",
+      "action": "tap .section__more「更多 ›」（@tap=goLikes，index.vue:442 → markTypeRead + openAppPath(likes-visitors)）",
+      "expected": "500ms 内 navigateTo('/subpackages/discover-extra/likes-visitors/index')；返回落点=本页",
+      "evidence": "navigation：路由断言（getCurrentPages 链）+ console"
+    },
+    {
+      "id": "MSG24",
+      "page": "pages/messages/index",
+      "title": "升温头像点击 → chat-session?userId=<person.userId>",
+      "tier": "navigation",
+      "pre": "同 MSG23（warmPeople 非空，渲染前 4 个 .warm-item，index.vue:446）",
+      "action": "tap 任一 .warm-item（@tap=openWarmPerson(person) → openAppPath(CHAT.SESSION?userId=encodeURIComponent(item.userId))，index.vue:211-213）",
+      "expected": "500ms 内 navigateTo('/subpackages/chat/chat-session/index?userId=<对应userId>')，userId 与所点头像 person.userId 一致（与固化表 chat-session?userId=10003 同型参数）；返回落点=本页",
+      "evidence": "navigation：路由断言（getCurrentPages 链 + query.userId）+ console"
+    },
+    {
+      "id": "MSG25",
+      "page": "pages/messages/index",
+      "title": "warmPeople 为空：「正在升温」区块整体隐藏",
+      "tier": "normal",
+      "pre": "身份 A 登录态；evaluate 置 messagesStore.dashboard.warmPeople=[]（页面不再有硬编码假用户回退——小林/小雨等已移除，index.vue:105-110）",
+      "action": "探测页面内「正在升温」标题与 .warm-list 是否存在",
+      "expected": "区块 v-if 整体隐藏（index.vue:439），不显示任何捏造用户；后续区块（最近聊天）位置正常无空洞；真实数据口径回归断言",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG26",
+      "page": "pages/messages/index",
+      "title": "最近聊天排序与标识：置顶全局最前 + pin 图标 + 关系状态标签映射",
+      "tier": "normal",
+      "pre": "身份 A 登录态且有≥2 条私聊会话（若 DB 仅 1 条，evaluate 构造含 pinned=true 与不同 relationship.status 的会话列表注入 store 后比对）",
+      "action": "读取渲染列表顺序（.chat-item 顺序 × partnerName）与各标识元素（.chat-item__pin-icon :493-497、.chat-item__status :498-500）",
+      "expected": "排序=置顶组 → highIntent 组（score≥51 或 status∈ambiguous/mutual_follow）→ 普通（orderedSessions，index.vue:120-141），组内按 lastMessageSentAt 降序（2026-09-20 置顶修复回归：置顶后列表必须重排且 pin 图标可见）；状态标签文案按映射表：chatting=聊天中/just_met=刚认识/mutual_follow=互相关注/ambiguous=暧昧中/其他=新朋友（index.vue:286-304）；官方号会话不混入该列表（privateSessions 过滤 isOfficial，index.vue:112）",
+      "evidence": "normal：after 截图（fullPage 含完整列表）+ 路由断言 + console（附读取到的顺序清单）"
+    },
+    {
+      "id": "MSG27",
+      "page": "pages/messages/index",
+      "title": "点击会话 → chat-session?sessionId=<id>；返回落点本页且红点清零",
+      "tier": "critical",
+      "pre": "身份 A 登录态，取运行时列表第一条 .chat-item 的会话 id（evaluate store privateSessions[0].id）；记录其 unreadCount 基线",
+      "action": "tap 该 .chat-item（@tap=openSession → openAppPath(CHAT.SESSION?sessionId=encodeURIComponent(id))，index.vue:215-217, 477）→ 在会话页返回（navigateBack）",
+      "expected": "500ms 内 navigateTo('/subpackages/chat/chat-session/index?sessionId=<id>')，query 与所点会话一致（不得跳错人——partnerId 映射修复回归，stores/messages.ts:254-284）；返回后落点=本页（getCurrentPages 末位=pages/messages/index）且 onShow 重载（loadPage+markAllSessionsRead，index.vue:274-278）：所点会话 unreadCount=0、红点消失，滚动位与列表状态恢复不重置",
+      "evidence": "critical：before + after 截图（列表 before 含红点 / 返回后 after）+ 路由断言（跳转+返回两段 getCurrentPages + query）+ console"
+    },
+    {
+      "id": "MSG28",
+      "page": "pages/messages/index",
+      "title": "长按会话 → ActionSheet 选「置顶/取消置顶」：列表重排 + pin 图标；失败仅 toast",
+      "tier": "critical",
+      "pre": "身份 A 登录态，选一条非置顶 .chat-item 记录 partnerName 与当前位置",
+      "action": "longpress 该 .chat-item（@longpress=onSessionLongpress，index.vue:478）→ 对 uni.showActionSheet 弹层（itemList 首项「置顶/取消置顶」，index.vue:224-231）tap 第 1 项；再验证弹层取消路径（tap 取消/蒙层关闭无副作用）",
+      "expected": "长按 500ms 内 ActionSheet 弹出且恰为 4 项；选置顶后 500ms 内可观测反馈：setSessionPinned 提交（PUT /messages/conversations/{id}/pin，stores/messages.ts:1205-1214），该会话移动至列表第一位并出现 .chat-item__pin-icon（2026-09-20 修复回归）；取消路径关闭弹层且列表无变化；接口失败分支：仅 uni.showToast 操作失败提示，不得整页切 ErrorState（MP-R1-008 回归，toastOpError index.vue:184-189）",
+      "evidence": "critical：before + after 截图（置顶前后列表对比）+ 路由断言（仍在本页）+ Toast 文案留痕 + console（含 pin 请求）"
+    },
+    {
+      "id": "MSG29",
+      "page": "pages/messages/index",
+      "title": "长按选「标为未读」：红点恢复显示",
+      "tier": "critical",
+      "pre": "身份 A 登录态，选一条已读（unreadCount=0）会话",
+      "action": "longpress → tap ActionSheet 第 2 项「标为未读」（markSessionUnread，index.vue:232；stores/messages.ts:1292-1297 本地 unreadCount=max(1,原值)）",
+      "expected": "500ms 内该会话行出现 .chat-item__unread-badge 显示「1」；助手卡总角标同步 +1（除非 muted）；助手卡活动数据不变；此操作仅本地态（无后端同步，stores/messages.ts:1288-1291 TODO 注释），不发起 pin/mute 类请求",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast/状态留痕 + console"
+    },
+    {
+      "id": "MSG30",
+      "page": "pages/messages/index",
+      "title": "长按选「免打扰/恢复提醒」：muted 图标切换且菜单文案随态",
+      "tier": "critical",
+      "pre": "身份 A 登录态，选一条 muted=false 会话",
+      "action": "longpress → 确认 ActionSheet 第 3 项文案为「免打扰」（muted 三元 :225）→ tap 提交（setSessionMuted(id,true)，index.vue:233-237；real 走 PUT mute 成功才改本地，stores/messages.ts:1244-1261）→ 再次长按同会话确认文案变「恢复提醒」→ tap 恢复",
+      "expected": "免打扰后 500ms 内该行时间区出现 .chat-item__muted-icon（index.vue:512-517）；总角标不再计入该会话未读（stores/messages.ts:520-522）；二次长按菜单项文案=「恢复提醒」；恢复后图标消失；接口失败：不改本地态 + toast「操作失败」（ok=false 分支 :235），不整页 error",
+      "evidence": "critical：before + after 截图（免打扰与恢复各一组）+ 路由断言 + Toast 文案留痕 + console（含 mute 请求与失败分支留痕）"
+    },
+    {
+      "id": "MSG31",
+      "page": "pages/messages/index",
+      "title": "长按选「删除会话」：确认弹窗后列表移除；取消保留",
+      "tier": "critical",
+      "pre": "身份 A 登录态，选一条可删除会话记录 partnerName；优先选身份 A 自建/低价值会话（删除有副作用，real 模式调 DELETE /messages/conversations/{id}，stores/messages.ts:1337-1357）",
+      "action": "longpress → tap 第 4 项「删除会话」→ uni.showModal「确定删除该会话？」先 tap 取消 → 重复长按再 tap 确认（index.vue:238-245）",
+      "expected": "取消路径：弹窗关闭、会话保留、无请求；确认路径：deleteSession 成功后 500ms 内该会话从列表消失、总数减一；失败分支仅 toast 不整页 error；删除后返回/刷新列表该会话不再出现（mock 非首载过滤 runtime.has，stores/messages.ts:633-645）",
+      "evidence": "critical：before + after 截图（取消态 + 删除后各一组）+ 路由断言 + Toast 文案留痕 + console（含 DELETE 请求）"
+    },
+    {
+      "id": "MSG32",
+      "page": "pages/messages/index",
+      "title": "头像/昵称/预览兜底链：空与加载失败回退默认，不出现破图",
+      "tier": "normal",
+      "pre": "身份 A 登录态；evaluate 注入/选取 partnerAvatar=''（或指向 404 地址触发 @error）且 partnerName=''、lastMessagePreview='' 的会话",
+      "action": "观察该会话行渲染：.chat-item__avatar src、昵称 text、预览 text；对 404 头像等待 @error 回调（onAvatarError → avatarFailedIds，index.vue:317-321, 480-486）",
+      "expected": "头像回退 IMAGE_PATHS.DEFAULT_AVATAR（src 切换后不再请求原 404 地址，console 无新增图片 404）；昵称显示「未知用户」（:491）；预览显示「暂无消息」（:508）；行高与布局不塌陷",
+      "evidence": "normal：after 截图（兜底态行）+ 路由断言 + console（无新增 net::ERR/TypeError）"
+    },
+    {
+      "id": "MSG33",
+      "page": "pages/messages/index",
+      "title": "会话行未读角标上限：unreadCount>99 显示 99+",
+      "tier": "normal",
+      "pre": "身份 A 登录态；evaluate 注入 unreadCount=150 的会话（或选存量大计数会话）",
+      "action": "观察该行 .chat-item__unread-badge 文本（:520-522 三元 >99 → '99+'）",
+      "expected": "角标显示「99+」而非 150（宽度被 min-width+padding 容纳不溢出行）；随 MSG21 onShow 清零闭环后角标消失",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG34",
+      "page": "pages/messages/index",
+      "title": "快速连点×5 会话行：仅一次导航，页面栈不重复压入",
+      "tier": "critical",
+      "pre": "身份 A 登录态 content 态，记录当前 getCurrentPages 栈深",
+      "action": "对同一条 .chat-item 快速连续 tap×5（间隔<200ms）",
+      "expected": "防连点断言：最终 chat-session 至多入栈 1 层（跳转进行中重复 tap 应被路由层消化/失败无副作用），栈深≤记录值+1；不得出现多层重复压栈、栈溢出（webview count limit）或目标页重复渲染；导航失败时页面无白屏（openAppPath 层有 fail 兜底 redirectTo 防栈满，navigation.ts:96-116）；console 无 Page route 错误刷屏",
+      "evidence": "critical：before + after 截图 + 路由断言（getCurrentPages 链长度与内容）+ console（路由错误过滤）"
+    },
+    {
+      "id": "MSG35",
+      "page": "pages/messages/index",
+      "title": "重复进出+打开即返回：状态恢复不丢、数据不重复",
+      "tier": "critical",
+      "pre": "身份 A 登录态；先记录基线：会话总数、置顶态、搜索态关闭、滚动位（滚动至中部记录 scrollTop）",
+      "action": "循环 3 次：tap 首条 .chat-item 进会话页 → 立即返回（打开即返回）；随后再完整进出 1 次",
+      "expected": "每次返回落点=本页；列表数据不重复（.chat-item 数量=基线，无重复 key 告警）；置顶/pinned 图标、免打扰图标、搜索关闭态与滚动位保持（状态恢复铁律）；onShow 重载未引发整页骨架闪烁（有数据时 pageState 恒 content，index.vue:153-164）；console 无重复订阅/TypeError",
+      "evidence": "critical：before + after 截图（末次返回后）+ 路由断言（每轮返回后 getCurrentPages）+ console"
+    },
+    {
+      "id": "MSG36",
+      "page": "pages/messages/index",
+      "title": "tabBar 切换往返：选中态 index=3，切走再切回状态与数据不丢",
+      "tier": "navigation",
+      "pre": "身份 A 登录态 content 态；自定义 tabBar（pages.json:391 custom:true；本页 useTabBar(3)，index.vue:37）",
+      "action": "tap tabBar「首页」→ tap「消息」返回；再依次切「附近」「寻觅」「我的」并回「消息」；记录每次 getCurrentPages 与选中态",
+      "expected": "每次 500ms 内切换成功（custom-tab-bar switchTab 走绝对路径，custom-tab-bar/index.js:133-151）；回消息页后选中高亮=消息（selected=3）；onShow 重载但滚动位与列表内容保留（Tab 切换滚动位与数据不丢铁律）；30s 内重复切换命中 bootstrap TTL 秒开（stores/messages.ts:546-549），无整页骨架闪烁",
+      "evidence": "navigation：路由断言（每步 getCurrentPages）+ console；可附往返后 1 张截图"
+    },
+    {
+      "id": "MSG37",
+      "page": "pages/messages/index",
+      "title": "冷启动深链 reLaunch 直开 + dev-user=1：不闪现错误空态",
+      "tier": "critical",
+      "pre": "清 token 后 miniProgram.reLaunch('pages/messages/index?dev-user=1')（页面级兜底 applyDevUserFromQuery 在 loadPage 登录锁判断前注入 mock 会话，index.vue:268-273；utils/dev-user.ts:63-76）",
+      "action": "冷启动直开带参页面，等待首帧与 loadPage 完成，连续截图首帧与 2s 后两帧",
+      "expected": "isLoggedIn 变 true（enterDevUserDemo 注入 user-1001），直进登录态 content 布局而非 NotLoggedWaiting；首帧不得闪现 ErrorState/「还没有新的缘分」错误空态（冷启动深链严禁闪现错误空态铁律）；不携带 dev-user 时行为完全不变（对照 MSG01）；console 无异常",
+      "evidence": "critical：before（首帧）+ after（稳定帧）截图 + 路由断言 + console"
+    },
+    {
+      "id": "MSG38",
+      "page": "pages/messages/index",
+      "title": "会话时间显示：当天/昨天/本周/更早分段与非法串 NaN 防护",
+      "tier": "normal",
+      "pre": "身份 A 登录态；选取 lastMessageSentAt 分别为当天/昨天/更早的会话；evaluate 注入一条 lastMessageSentAt='not-a-date' 的会话",
+      "action": "读取各行 .chat-item__time 文本（formatTime → formatChatListTime，index.vue:306-315；utils/time.ts:384）",
+      "expected": "时间按 formatChatListTime 单一实现分段渲染（当天/昨天/本周/更早+i18n），无「NaN/NaN」——非法时间串 Number.isNaN 防护返回空串（MP-R1-PAGES-MESSAGES-INDEX-004 回归）；时间排序仍正确（非法串按 0 处理不破坏降序，stores/messages.ts:609-612）",
+      "evidence": "normal：after 截图（含非法串行）+ 路由断言 + console"
+    },
+    {
+      "id": "MSG39",
+      "page": "pages/messages/index",
+      "title": "活动推荐卡点击：有 targetUrl 跳转；空 targetUrl 死按钮风险核查",
+      "tier": "normal",
+      "pre": "身份 A 登录态且 dashboard.assistant 非空（区块渲染 :535）；记录首卡 targetUrl 值",
+      "action": "tap 首张 .activity-rec-card（@tap=openActivity(act.targetUrl)：targetUrl 非空才 openAppPath，index.vue:219-221, 540-546）；若数据中存在 targetUrl 为空的卡，另测其一",
+      "expected": "targetUrl 非空：500ms 内路由跳转至 targetUrl 指向页；targetUrl 为空：当前实现点击无路由变化——仅 hover 态 opacity 0.85（activity-rec-card--hover）；按「任何可点击元素必须有可观测反馈」铁律如实标注该分支为死按钮缺陷候选交判定员，不得因实现如此而豁免",
+      "evidence": "normal：after 截图（点击后）+ 路由断言（跳转或未跳转如实记录）+ console"
+    },
+    {
+      "id": "MSG40",
+      "page": "pages/messages/index",
+      "title": "活动卡图标分支：emoji 文本走 text 渲染、URL 走 image，页面域不 404",
+      "tier": "normal",
+      "pre": "身份 A 登录态；evaluate 构造 dashboard.assistant 三条：icon='❤️'（emoji 文本）、icon='/static/...合法路径'（URL）、icon=''（空 → placeholder）",
+      "action": "观察各卡图标渲染节点（isIconUrl 正则 /^(https?:\\/\\/|\\/|\\.\\.?\\/|wxfile:|data:)/，index.vue:102-104；模板三分支 :547-549）与网络请求",
+      "expected": "emoji 卡渲染 .activity-rec-card__icon--emoji 文本（48rpx 居中），不以 <image src='pages/messages/❤️'> 发出页面域相对请求（2026-09-06 修复回归：console 无 pages/messages/❤️ net::ERR_404）；URL 卡走 image 正常加载；空 icon 显示灰底 placeholder；三卡布局不塌陷",
+      "evidence": "normal：after 截图（三态并存）+ 路由断言 + console（必须无新增图片 404）"
+    }
+  ]
+}

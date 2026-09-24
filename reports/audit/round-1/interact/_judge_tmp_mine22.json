@@ -1,0 +1,2196 @@
+[
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC01",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "身份B 冷启动直达安全中心：五组卡片完整渲染 + 手机号脱敏文案，不闪错误",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | observe-only | dom: .sec-item:present .phoneBound:absent .phoneBoundMask:absent .phoneNotBound:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC01-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 19897
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC02",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "点「手机号」行打开换绑弹层：空表单两输入框 + 取消/确认按钮",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | dom: .sec-item:present .sec-modal-mask:absent .sec-modal__title:absent .sec-modal__input:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act:tap .sec-item",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC02-after.png(73613B)"
+  ],
+  "durationMs": 19561
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC03",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "换绑手机号非法输入两段校验：非 1[3-9] 号段报格式错，合法号段空密码报密码必填",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .sec-modal__error:absent .test:absent .phoneFormatError:absent .phonePasswordRequired:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.sec-modal__error) element not found: .sec-modal__error(\"确认\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"确认\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC03-after.png(66222B)"
+  ],
+  "durationMs": 29656
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC04",
+  "page": "subpackages/tools/security/index",
+  "tier": "critical",
+  "title": "换绑手机号合法提交（mock 演示闭环）：弹层关闭 + 演示提示 Toast，不调真实接口",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .showToast:absent .phoneChangeHint:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"确认\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC04-before.png(66222B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC04-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC04-after.wxml"
+  ],
+  "durationMs": 35787
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC05",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "点「修改密码」行打开弹层 + 空表单提交 → 新密码长度错误文案（空提交分支）",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | dom: .sec-item:present .sec-modal__error:absent .passwordLengthError:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:input(__CAND__) el.input is not a function | act:tap .sec-item | act-FAIL:tap(.sec-modal__error) element not found: .sec-modal__error(\"确认\")",
+  "failureReason": "action input __CAND__ failed: el.input is not a function",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC05-after.png(73488B)"
+  ],
+  "durationMs": 22734
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC06",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "修改密码非法序列：两次输入不一致 → mismatch；补旧密码前的各段校验逐条命中",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .passwordMismatch:absent .oldPasswordRequired:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"确认\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"确认\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC06-after.png(66127B)"
+  ],
+  "durationMs": 22603
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC07",
+  "page": "subpackages/tools/security/index",
+  "tier": "critical",
+  "title": "修改密码合法提交（mock）：弹层关 + 成功 Toast + 不清 token 不跳登录（real 才吊销重登）",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .passwordUpdated:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre-FAIL:input element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"确认\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"确认\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC07-before.png(66127B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC07-after.png(65982B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC07-after.wxml"
+  ],
+  "durationMs": 35991
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC08",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "两个表单弹层三路关闭之遮罩/取消：点击均关弹层且路由不变",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .sec-modal-mask:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:tap(.sec-modal-mask) element not found: .sec-modal-mask(\"取消\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消\")",
+  "failureReason": "action tap .sec-modal-mask failed: element not found: .sec-modal-mask(\"取消\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC08-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 25492
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC09",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "第三方微信绑定行按登录方式分支：wechat→二次确认 Modal，非 wechat→演示提示 Toast",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/security/index | action-not-performed(see act-FAIL) | dom: .showModal:absent .thirdPartyDemoHint:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act-FAIL:tap(.showModal) element not found: .showModal | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action tap .showModal failed: element not found: .showModal",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC09-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 25632
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC10",
+  "page": "subpackages/tools/security/index",
+  "tier": "navigation",
+  "title": "「隐私权限设置」跳转 profile/privacy 并返回落回安全中心",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | navError=Uncaught [object Object] | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 11091
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC11",
+  "page": "subpackages/tools/security/index",
+  "tier": "navigation",
+  "title": "「隐私政策」跳转 legal/privacy 并返回落回安全中心",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 10363
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC12",
+  "page": "subpackages/tools/security/index",
+  "tier": "critical",
+  "title": "注销账号两层弹层：错误确认文字报 mismatch，正确「注销」在 mock 下仅演示提示不真注销",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | dom: .deleteTypeWord:absent .deleteTypeMismatch:absent .deleteTodo:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | act:tap \"注销账号\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC12-before.png(66110B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC12-after.png(66110B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC12-after.wxml"
+  ],
+  "durationMs": 31849
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SC13",
+  "page": "subpackages/tools/security/index",
+  "tier": "normal",
+  "title": "登录设备组（mock）：仅当前设备一条且无「下线」按钮；real 分支 kick 流程为条件用例",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/security/index | observe-only | dom: .sec-item:present .sec-item__kick:absent .getDeviceInfo:absent .isCurrent:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SECURITY-INDEX-SC13-after.png(66124B)"
+  ],
+  "durationMs": 19564
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE01",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "身份B 冷启动直达搜索页：输入框自动聚焦 + mock 热搜/历史双空 → EmptyState 兜底，不闪错误",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/search/index | observe-only | dom: .search-input:present .length:absent .init:absent .emptyHint:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE01-after.png(25671B)"
+  ],
+  "durationMs": 30663
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE02",
+  "page": "subpackages/tools/search/index",
+  "tier": "navigation",
+  "title": "返回键与「取消」双入口：栈=1 深链时兜底 switchTab 发现页",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-back:absent .search-cancel:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | pre:reLaunch /subpackages/tools/search/index",
+  "failureReason": "action tap .search-cancel failed: element not found: .search-cancel",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:15:10.322Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:15:10.323Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 41691
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE03",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "用户 Tab 输入防抖 300ms 自动搜索（mock searchUsers 按昵称/学校过滤）并渲染结果行",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-input:present .setKeyword:absent .searchUsers:absent .user-row:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | act:input .search-input=\"自动化输入-SE03\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:15:31.687Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:15:31.687Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27524
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE04",
+  "page": "subpackages/tools/search/index",
+  "tier": "navigation",
+  "title": "用户结果行点击 → 跳他人主页携带 userId，返回落回搜索页且结果保留",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | action-not-performed(see act-FAIL) | dom: .user-row:absent .userId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | act-FAIL:tap(.user-row) element not found: .user-row",
+  "failureReason": "action tap .user-row failed: element not found: .user-row",
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 20628
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE05",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "三 Tab（用户/标签/学校）切换：高亮态迁移 + 关键字保留不丢",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-tab:present .trim:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | pre-FAIL:input el.input is not a function",
+  "failureReason": "action input __CAND__ failed: el.input is not a function",
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE05-after.png(24607B)"
+  ],
+  "durationMs": 28510
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE06",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "标签 Tab 搜索（mock 帖子恒空）→ noResult 空态，无结果计数尾巴与分页残留",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/search/index | observe-only | dom: .result-meta:absent .load-more:absent .search:present .resultCount:absent .noResult:absent .length:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE06-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27507
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE07",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "学校 Tab：输入校名出学校行 → 点击展开校园主页内联预览 → 再点收起",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | action-not-performed(see act-FAIL) | dom: .school-row:absent .campus-preview:absent .campusNoUsers:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE07-after.png(24643B)"
+  ],
+  "durationMs": 34836
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE08",
+  "page": "subpackages/tools/search/index",
+  "tier": "navigation",
+  "title": "校园预览内用户头像点击 → 他人主页（有数据分支）",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | action-not-performed(see act-FAIL) | dom: .campus-person:absent .userId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | act-FAIL:tapIndex(.campus-person) element not found: .campus-person",
+  "failureReason": "action tapIndex .campus-person failed: element not found: .campus-person",
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 21144
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE09",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "清空按钮：关键字清空回热搜/历史视图 + 100ms 后重新聚焦",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-clear-img:absent .clear:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | pre-FAIL:input el.input is not a function",
+  "failureReason": "action input __CAND__ failed: el.input is not a function",
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE09-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 28398
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE10",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "特殊字符/超长/emoji 输入：不崩溃、正常回显与提交、无 XSS 渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-input:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | act:input .search-input=\"自动化输入-SE10\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE10-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27557
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "SE11",
+  "page": "subpackages/tools/search/index",
+  "tier": "normal",
+  "title": "空关键字回车/确认：onConfirm trim 守卫直接 return，不触发搜索不跳转",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/search/index | dom: .search-input:present .trim:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/search/index | pre:input __CAND__=\"自动化输入-SE11\"",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/search/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-SEARCH-INDEX-SE11-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 28846
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS01",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "normal",
+  "title": "身份A（资料未完善）冷启动直达：LockScreen 锁定态 + 服务端权威完成度，不闪信号列表",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | observe-only | dom: .heart-signals-page:absent .isProfileComplete:absent .basicProfile:absent .profileCompletion:absent .load:present .fetchHeartSignals:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS01-after.png(98867B)"
+  ],
+  "durationMs": 26989
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS02",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "normal",
+  "title": "身份B 冷启动直达：待处理 Tab 默认 + 徽标2 + 两张卡片 + 过期信号倒计时显示「已过期」",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | observe-only | dom: .signal-tabs__item:present .signal-card:present .signal-card__time:present .fetchHeartSignals:absent .expiredLabel:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS02-after.png(98867B)"
+  ],
+  "durationMs": 27762
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS03",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "navigation",
+  "title": "返回键（栈>1）：navigateBack 回来源页且状态恢复",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | dom: .page-header__back:absent .length:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/tools/heart-signals/index | pre:switchTab /pages/profile/index | pre:auto-reLaunch subpackages/tools/heart-signals/index | act:tap .page-header__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:20:44.487Z][info] \"preloadSubpackages: subpackages/setup, subpackages/vip, subpackages/market\"",
+   "[2026-09-23T04:20:44.493Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 37366
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS04",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "navigation",
+  "title": "深链栈=1 返回兜底：switchTab 落首页 Tab",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | dom: .page-header__back:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index | act:tap .page-header__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 20589
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS05",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "normal",
+  "title": "三状态 Tab 切换：待处理/已接受/已拒绝各自空态文案与分组正确",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | dom: .signal-tabs__item:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index | act:tap .signal-tabs__item",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS05-after.png(98828B)"
+  ],
+  "durationMs": 28545
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS06",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "critical",
+  "title": "接受心动信号（mock）：成功 Toast + 卡片移出待处理并入已接受 Tab",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/heart-signals/index | action-not-performed(see act-FAIL) | dom: .acceptHeartSignal:absent .acceptSuccess:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"接受\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"接受\")",
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS06-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS06-after.png(98225B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS06-after.wxml"
+  ],
+  "durationMs": 44145
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS07",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "critical",
+  "title": "拒绝心动信号（mock）：Toast + 移出待处理，declined 口径归入「已拒绝」Tab",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/heart-signals/index | action-not-performed(see act-FAIL) | dom: .rejectSuccess:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"拒绝\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"拒绝\")",
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:22:52.766Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:22:52.766Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS07-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS07-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS07-after.wxml"
+  ],
+  "durationMs": 43656
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS08",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "critical",
+  "title": "已接受信号「开聊」：mock 临时会话创建成功并跳聊天页携带 fromSignal=1&sessionId",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/heart-signals/index | action-not-performed(see act-FAIL) | dom: .startFromSignal:absent .chatFailed:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"开聊\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"开聊\")",
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS08-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS08-after.png(98351B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS08-after.wxml"
+  ],
+  "durationMs": 29425
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS09",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "navigation",
+  "title": "信号卡片头点击 → 跳对应用户主页（fromUserId 透传）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | dom: .signal-card__header:present .fromUserId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index | act:tap .signal-card__header",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 18084
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS10",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "critical",
+  "title": "接受按钮快击×5：仅一次状态变更，不重复 Toast/不串卡",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | observe-only | pre:repeatNav navigateTo __CASE_PAGE__ x2 navErr:Uncaught [object Object],navErr:Uncaught [object Object] | pre:auto-reLaunch subpackages/tools/heart-signals/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS10-before.png(98970B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS10-after.png(98320B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-HEART-SIGNALS-INDEX-HS10-after.wxml"
+  ],
+  "durationMs": 36280
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "HS11",
+  "page": "subpackages/tools/heart-signals/index",
+  "tier": "noop",
+  "title": "重复进出×3（onShow 重拉）+ 30s 倒计时刷新：mock 深拷贝复原数据，console 无错",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/heart-signals/index | observe-only | dom: .signal-card__time:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/heart-signals/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/heart-signals/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=bottom"
+  ],
+  "durationMs": 17989
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD01",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "normal",
+  "title": "冷启动深链 ?id=11：骨架 → store 未命中 → 示例活动兜底（新人礼遇+示例徽标）不闪错误空态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | observe-only | dom: .detail-cover__badge:present .detail-title:present .detail-status:present .find:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD01-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27740
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD02",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "navigation",
+  "title": "返回键深链栈=1：openAppPath 兜底跳发现·活动列表页",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | dom: .detail-header__back:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11 | pre:reLaunch /subpackages/tools/activities/detail",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 27833
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD03",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "critical",
+  "title": "报名示例活动（本地闭环）：按钮切「退出报名」+ 报名成功 Toast + 助手消息落 storage",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/activities/detail | action-not-performed(see act-FAIL) | dom: .detail-signup-btn:absent .detail-quit-btn:absent .signupSuccess:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11 | act-FAIL:tap(.detail-signup-btn) element not found: .detail-signup-btn",
+  "failureReason": "action tap .detail-signup-btn failed: element not found: .detail-signup-btn",
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {}
+   },
+   {
+    "route": "subpackages/discover/activities/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD03-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD03-after.png(92178B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD03-after.wxml"
+  ],
+  "durationMs": 35891
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD04",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "critical",
+  "title": "退出报名：恢复「立即报名」按钮 + 退出成功 Toast",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/activities/detail | action-not-performed(see act-FAIL) | dom: .detail-quit-btn:absent .quitSignupSuccess:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11 | act-FAIL:tap(.detail-quit-btn) element not found: .detail-quit-btn",
+  "failureReason": "action tap .detail-quit-btn failed: element not found: .detail-quit-btn",
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD04-before.png(199759B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD04-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD04-after.wxml"
+  ],
+  "durationMs": 41682
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD05",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "normal",
+  "title": "「分享」按钮复制小程序内链接：剪贴板内容含 ?id= 且 Toast 提示已复制",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | dom: .detail-share-btn:present .getClipboardData:absent .setClipboardData:absent .linkCopied:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11 | act:tap .detail-share-btn",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "链接已复制，发到微信即可直达活动详情",
+    "ts": 1790137667251
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD05-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 26719
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD06",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "critical",
+  "title": "报名按钮快击×5（示例活动本地闭环）：仅一次报名语义，助手消息不重复堆积",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | observe-only | dom: .detail-signup-btn:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD06-before.png(199707B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD06-after.png(199707B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD06-after.wxml"
+  ],
+  "durationMs": 35518
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD07",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "noop",
+  "title": "详情 scroll-view 滚动到底/顶：介绍区完整可读无遮挡",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | dom: .detail-scroll:present .detail-footer-space:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11 | act:pageScrollTo bottom",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 19051
+ },
+ {
+  "suite": "S13-c22a",
+  "manifest": "次要22",
+  "id": "AD08",
+  "page": "subpackages/tools/activities/detail",
+  "tier": "normal",
+  "title": "打开即返回 + 重复进出×3：报名态与助手消息无重复残留",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/activities/detail | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/activities/detail?id=11",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/activities/detail",
+    "options": {
+     "id": "11"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-ACTIVITIES-DETAIL-AD08-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 26407
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB01",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "normal",
+  "title": "身份B 冷启动直达附近的人：loading → 蒙面卡片渲染（?化名字/模糊头像/解锁提示条）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | observe-only | dom: .nearby-loading:absent .card__masked-hint:present .card__bg--masked:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB01-after.png(200746B)"
+  ],
+  "durationMs": 27145
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB02",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "navigation",
+  "title": "返回键深链栈=1：switchTab 落首页 Tab 兜底",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | dom: .content-header__back:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | pre:reLaunch /subpackages/tools/love-center/nearby",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 34749
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB03",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "critical",
+  "title": "点赞（like 按钮）：真实链路 swipeRight → 成功 Toast + 卡片推进下一张",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | dom: .card-action--like:present .swipeRight:absent .nearby:present .liked:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | act:tap .card-action--like",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "已喜欢",
+    "ts": 1790137847340
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB03-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB03-after.png(210398B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB03-after.wxml"
+  ],
+  "durationMs": 36905
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB04",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "normal",
+  "title": "跳过（skip 按钮/左滑）：本地移除卡片推进，无网络副作用 Toast",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | dom: .card-action--skip:present .swipeLeft:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | act:tap .card-action--skip",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB04-after.png(210420B)"
+  ],
+  "durationMs": 27693
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB05",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "critical",
+  "title": "超级喜欢（star 按钮）：swipeRight(isSuper=true) 真实链路 → 匹配则跳聊天或推进",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | dom: .card-action--super:present .matched:absent .nearby:present .likeHint:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | act:tap .card-action--super",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB05-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB05-after.png(210240B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB05-after.wxml"
+  ],
+  "durationMs": 38161
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB06",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "critical",
+  "title": "发消息（详情浮层）：进入 chat-session?userId= 且会话懒创建链路可达",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/nearby | action-not-performed(see act-FAIL) | dom: .userId:absent .userIdInvalid:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发消息\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"发消息\")",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB06-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB06-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB06-after.wxml"
+  ],
+  "durationMs": 39750
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB07",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "normal",
+  "title": "CardSwiper 方向语义：右滑=喜欢、左滑=跳过（手势与按钮同语义）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/nearby | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB07-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 27877
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB08",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "normal",
+  "title": "卡片点击详情浮层开合：信息展示与关闭路径可用",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/nearby | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | act-FAIL:tap(__CAND__) element not found: __CAND__(\"卡\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"卡\")",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB08-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 29863
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "NB09",
+  "page": "subpackages/tools/love-center/nearby",
+  "tier": "normal",
+  "title": "空态降级 CTA「看全部推荐」（条件用例）：卡片耗尽后重拉全量推荐",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/nearby | action-not-performed(see act-FAIL) | dom: .nearby-empty:absent .nearby-empty__cta:absent .nearby:present .empty:absent .seeAll:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/nearby | pre-FAIL:input element not found: .length",
+  "failureReason": "action tap .nearby-empty__cta failed: element not found: .nearby-empty__cta",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/nearby",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-NEARBY-NB09-after.png(200725B)"
+  ],
+  "durationMs": 30998
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB01",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "normal",
+  "title": "身份B 冷启动直达 MBTI：mbtiUrl 为空走本地模式 → 头部/16 型网格/4 题卷完整渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | observe-only | dom: .content-header__title:present .dimension-chip:present .type-cell:present .quiz-item:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB01-after.png(94690B)"
+  ],
+  "durationMs": 27576
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB02",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "normal",
+  "title": "选项点选高亮：选中态样式与 aria-checked 同步，可改选",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB02-after.png(94663B)"
+  ],
+  "durationMs": 26610
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB03",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "normal",
+  "title": "未答完提交：Toast「请先完成」拦截，不弹结果层（空提交三态之空）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | dom: .quiz-submit:present .mbti-result-mask:absent .mbti:absent .pleaseComplete:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | act:tap .quiz-submit",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请完成所有题目",
+    "ts": 1790138124342
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 28839
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB04",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "critical",
+  "title": "全部作答提交（如全选 B=ISTJ 口径）：结果弹层类型码=所选字母组合+名称+4 条恋爱建议",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | dom: .quiz-submit:present .mbti-result-panel:absent .charAt:absent .mbti:absent .types:absent .ISTJ:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | act:tap .quiz-submit",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请完成所有题目",
+    "ts": 1790138162811
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB04-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB04-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB04-after.wxml"
+  ],
+  "durationMs": 38906
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB05",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "normal",
+  "title": "结果弹层三路关闭：遮罩/「关闭」仅关弹层，「重新测试」关弹层并清空答案",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/mbti | action-not-performed(see act-FAIL) | dom: .mbti-result-mask:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | act-FAIL:tap(.mbti-result-mask) element not found: .mbti-result-mask(\"关闭\")",
+  "failureReason": "action tap .mbti-result-mask failed: element not found: .mbti-result-mask(\"关闭\")",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB05-after.png(94689B)"
+  ],
+  "durationMs": 40810
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB06",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "normal",
+  "title": "改选重测：全选 A（ENFP 口径）→ 结果类型码随选择正确变化",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | dom: .quiz-submit:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | act:tap .quiz-submit",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "请完成所有题目",
+    "ts": 1790138230995
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-MBTI-MB06-after.png(94689B)"
+  ],
+  "durationMs": 26619
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB07",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "navigation",
+  "title": "返回键深链栈=1：switchTab 落首页兜底",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | dom: .content-header__back:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | pre:reLaunch /subpackages/tools/love-center/mbti",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:37:32.269Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:37:32.270Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 36351
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "MB08",
+  "page": "subpackages/tools/love-center/mbti",
+  "tier": "noop",
+  "title": "content-scroll 滚动到底/顶：16 型网格与试卷完整可达无遮挡",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/mbti | dom: .content-scroll:present .content-footer-space:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/mbti | act:pageScrollTo bottom",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/mbti",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=bottom"
+  ],
+  "durationMs": 19350
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "CO01",
+  "page": "subpackages/tools/love-center/consulting",
+  "tier": "normal",
+  "title": "身份B 冷启动直达情感咨询：commerce 总闸 DB seed 为 FALSE → 封存卡（锁+文案），无 ¥ 课程与报名按钮",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/consulting | observe-only | dom: .consult-sealed:present .course-card:absent .isCommerceOn:absent .sealedTitle:absent .sealedDesc:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/consulting | pre-FAIL:input element not found: .enabled",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/consulting",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-CONSULTING-CO01-after.png(23416B)"
+  ],
+  "durationMs": 35949
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "CO02",
+  "page": "subpackages/tools/love-center/consulting",
+  "tier": "navigation",
+  "title": "封存态 AppShell 返回键：深链栈=1 时回退可用",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/consulting | navError=Uncaught [object Object] | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/consulting | pre:reLaunch /subpackages/tools/love-center/consulting",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/consulting",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 29561
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "CO03",
+  "page": "subpackages/tools/love-center/consulting",
+  "tier": "normal",
+  "title": "（条件用例）commerce.consult 开启：3 门课程卡渲染 + 报名 Toast 演示闭环",
+  "status": "FAILED",
+  "observed": "top=subpackages/tools/love-center/consulting | action-not-performed(see act-FAIL) | dom: .course-card:absent .consulting:absent .signupSuccess:absent | act-FAIL:tap(__CAND__) element not found: __CAND__(\"报名\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"报名\")",
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/consulting",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-TOOLS-LOVE-CENTER-CONSULTING-CO03-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 13961
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "CO04",
+  "page": "subpackages/tools/love-center/consulting",
+  "tier": "noop",
+  "title": "封存卡滚动/无溢出检查：一屏内完整呈现，无横向溢出",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/tools/love-center/consulting | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/tools/love-center/consulting | pre-FAIL:input element not found: .enabled",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/love-center/consulting",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=bottom"
+  ],
+  "durationMs": 21557
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST01",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "身份B 从「我的」进入设置：分组/菜单/开关完整渲染 + 缓存大小真实统计非占位",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | dom: .menu-item:present .menu-item__value:present .getStorageInfo:absent .currentSize:absent .coin:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST01-after.png(54673B)"
+  ],
+  "durationMs": 29862
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST02",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "返回键（栈>1）：navigateBack 回「我的」且设置项状态保留",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | dom: .nav-bar__back:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 28512
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST03",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "返回键深链栈=1兜底：switchTab 落「我的」Tab",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | dom: .nav-bar__back:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/settings/index | act:tap .nav-bar__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22707
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST04",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「反馈与帮助」跳 feedback/history 并返回落点正确",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22720
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST05",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "「推荐给好友」触发系统分享菜单：无崩溃、页面状态不变",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | dom: .showShareMenu:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST05-after.png(54550B)"
+  ],
+  "durationMs": 30925
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST06",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「编辑资料」跳 setup/profile 资料完善页",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"编辑资料\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"编辑资料\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22433
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST07",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「认证」跳 verification/index",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"认证\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"认证\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22971
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST08",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「我的动态」switchTab 桥接跳本人主页（storage 传 source=my-posts）",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | dom: .path:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"我的动态\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"我的动态\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 28166
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST09",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「访客」跳 profile/visitors 并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"访客\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"访客\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 26280
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST10",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「浏览历史」跳 village/history 并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"浏览历史\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"浏览历史\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:44:14.037Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:44:14.037Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 22687
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST11",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「相册」跳 profile/album 并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"相册\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"相册\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 23274
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST12",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「日程设置」跳 setup/schedule 并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"日程设置\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"日程设置\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 23588
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST13",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「免打扰」跳 settings/dnd 并返回",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 21301
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST14",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "「本周安排」开关：切换即时生效 + storage 持久化 + Toast 文案随状态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST14-after.png(54638B)"
+  ],
+  "durationMs": 27872
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST15",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "深色模式开关：theme 翻转 + Toast + 全页配色变化，再切回复原",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | dom: .toggleTheme:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST15-after.png(54638B)"
+  ],
+  "durationMs": 28653
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST16",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「隐私权限」跳 profile/privacy 并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"隐私权限\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"隐私权限\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22624
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST17",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「安全中心」入口跳 tools/security（与 SC 页衔接闭环）",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"安全中心\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"安全中心\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 22862
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST18",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "critical",
+  "title": "清除缓存确认流：Modal 展示当前大小 → 确认 → Loading→成功 Toast + 大小刷新，登录态保留",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"理\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"理\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST18-before.png(54608B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST18-after.png(54608B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST18-after.wxml"
+  ],
+  "durationMs": 46399
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST19",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "critical",
+  "title": "清除缓存 Modal 取消：无任何删除副作用",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | dom: .confirm:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"取消\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST19-before.png(54608B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST19-after.png(54682B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST19-after.wxml"
+  ],
+  "durationMs": 43168
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST20",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "「检查更新」：mp 环境走 getUpdateManager，Loading 不永驻并以 Modal 收尾",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"检查更新\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"检查更新\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST20-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 34477
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST21",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "「关于我们」Modal 展示与关闭",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"关于我们\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"关于我们\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST21-after.png(54657B)"
+  ],
+  "durationMs": 47213
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST22",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "navigation",
+  "title": "「用户协议」「隐私政策」双跳转：legal 分包两页均可达并返回",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"用户协议\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"用户协议\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 26283
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST23",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "critical",
+  "title": "退出登录确认流：Modal → 确认 → sessionStore.logout 清态跳登录页（建议整批用例末位执行）",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"按\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST23-before.png(54660B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST23-after.png(54660B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST23-after.wxml"
+  ],
+  "durationMs": 47339
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST24",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "critical",
+  "title": "退出登录 Modal 取消：留在设置页无任何状态变化",
+  "status": "FAILED",
+  "observed": "top=subpackages/profile-extra/settings/index | action-not-performed(see act-FAIL) | dom: .confirm:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"取消\")",
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST24-before.png(54558B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST24-after.png(54558B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST24-after.wxml"
+  ],
+  "durationMs": 44099
+ },
+ {
+  "suite": "S14-c22b",
+  "manifest": "次要22",
+  "id": "ST25",
+  "page": "subpackages/profile-extra/settings/index",
+  "tier": "normal",
+  "title": "钱包入口商业化闸结构断言：commerce.coin 封存时社交资产组无钱包项",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/profile-extra/settings/index | observe-only | dom: .menu-item:present .coinBalance:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/tools/security/index | pre:login B ok userId=user-1001 MISMATCH! | pre:navigateTo /subpackages/profile-extra/settings/index | pre-FAIL:input element not found: .enabled",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/tools/security/index",
+    "options": {}
+   },
+   {
+    "route": "subpackages/profile-extra/settings/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T04:52:26.173Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T04:52:26.173Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-SETTINGS-INDEX-ST25-after.png(54637B)"
+  ],
+  "durationMs": 33959
+ }
+]

@@ -1,0 +1,217 @@
+{
+  "round": "R1",
+  "reviewer": "次要23 · 需求对照员（A4）· profile-extra 8 页",
+  "gitSha": "aefd8a72",
+  "evidence": {
+    "execResults": "reports/audit/round-1/interact/exec-results.json（本席相关 63 条：EXECUTED 27 / FAILED 31 / SKIPPED 5，逐条核对）",
+    "interactShots": "reports/screenshots/round-1-interact/（含 wxml/ 落盘，PO05/VI06 wxml 为取证关键）",
+    "staticShots": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_{verification_index,verification_real-name,profile_visitors,profile_other,profile_location,profile_privacy,profile_album,profile_favorites}__*.png",
+    "ideal": "素材/理想效果图/他人显示主页.png（本席逐块目验）+ git show 29a2b1df:docs/design/profile-product-logic.md §4",
+    "code": "apps/client/src/subpackages/profile-extra/{verification/index.vue,verification/real-name.vue,profile/*.vue} + components/profile/public/* + pages/profile/index.vue + constants/routes.ts + stores/{profile,likes}.ts + pages.json（均本席通读）",
+    "caveat": "交互 harness 对文本候选选择器（__CAND__）与深链参数存在系统性失配：PO05 wxml 实证深链缺 userId 落「链接缺少用户参数」错误态致 CTA 从未渲染，PO05-PO11/PO14-PO17/PO21 的 FAILED 为取证环境缺参而非页面缺陷；RN04 捕获 toast「请输入学生姓名」属认证中心页文案（zh-CN.ts:3373），harness 落错页，不能作为实名页空提交证据（实名页应为「请输入真实姓名」zh-CN.ts:3419）。相关功能链路已在源码层逐条核实并标注「代码核验、无运行时证据」。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-REQ23-001",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png（底部恒四钮：喜欢/打招呼/心动卡/关注，互喜态无差异）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "他人主页底部 CTA 无状态机切换：需求口径「CTA按状态机切换（陌生=喜欢TA粉/互喜=发消息绿）」未实现。RelationshipCTA 声明 matched prop（RelationshipCTA.vue:8、默认值 :14）但模板/计算属性从未使用，PublicProfile.vue:81-83 传入 :matched=\"profile.relation.matched\" 后被丢弃；互喜用户仍见「喜欢」主按钮，点击只落「已喜欢，等待回应/等待回应」toast（other.vue:165-171），无「发消息」绿钮切换。",
+      "evidence": "①代码：apps/client/src/components/profile/public/RelationshipCTA.vue:8 声明 matched、全文（共 179 行）无第二处引用（本席 grep 验证仅 :8/:14 两处）；②other.vue:66-68 isMatched computed 仅写入 DTO.relation.matched（:101-112）供展示；③ask 规范「CTA按状态机切换（陌生=喜欢TA粉/互喜=发消息绿）」；④exec#PO05-PO07 FAILED 为缺参取证缺口，本条以代码层证据成立。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "matched=true 时底部主钮切「发消息」绿填充直达会话，喜欢钮退化为次要态或隐藏；与匹配成功页/匹配中心 CTA 状态机同口径",
+      "fix": "RelationshipCTA.vue 模板消费 matched：互喜态将 --hello（打招呼）升为主钮文案「发消息」或新增 --matched 主钮，隐藏/弱化 --like；点击仍走 emit('message')",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ23-002",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "无（exec#PO18 SKIPPED：遍历页面找不到取消匹配入口）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「取消匹配」功能完整实现但入口不可达（死功能）：other.vue:274-292 handleUnmatch（modal 二次确认 → likesStore.unlikeUser → 刷新）绑定在 ProfileShell @unmatch → PublicProfile @unmatch → GovernanceMenu @unmatch，但 GovernanceMenu 的 visible 由 PublicProfile.vue:45 governanceVisible=ref(false) 初始化且全文件无置 true 路径（仅 closeGovernance 置 false），组件永不出现在 DOM；页面右上 ··· ActionSheet（other.vue:294-308）仅举报/拉黑/关注三项，无取消匹配。互喜用户在本页无法解除匹配。",
+      "evidence": "①代码：components/profile/public/PublicProfile.vue:45（ref(false)）/:48（仅置 false）/:89-96（:visible=\"governanceVisible\"），本席 grep 全文件仅 3 处；②other.vue:296-297 ActionSheet itemList=[举报,拉黑,关注/取消关注] 无取消匹配；③exec#PO18 SKIPPED「action-not-automatable: 遍历页面寻找取消匹配入口并尝试触发」即取证时已确认入口不存在；④GovernanceMenu.vue:28-30 取消匹配项 v-if=\"matched\" 永不可见。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "已匹配用户可从他人主页触达取消匹配：···ActionSheet 增加「取消匹配」项（matched 时显示，红色危险态）直达 handleUnmatch，或修复 GovernanceMenu 的开启链路",
+      "fix": "最小改动：other.vue openGovernanceMenu 的 itemList 在 isMatched 时追加「取消匹配」，tapIndex 分支调用 handleUnmatch()；GovernanceMenu 死代码或接 ··· 事件或移除",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ23-003",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png（Hero 左下大头像，可点击无响应）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "Hero 大头像为死按钮：PublicHero.vue:27-39 头像容器 @tap=\"emit('tapAvatar')\"，PublicProfile.vue:66 @tap-avatar=\"emit('tapAvatar')\"、ProfileShell.vue:97 @tap-avatar=\"emit('tapAvatar')\" 全链路转发，但 other.vue 对 ProfileShell 未绑定 @tap-avatar（:400-418 仅 retry/like/message/whisper/report/block/unmatch/follow/open-post/tap-photo），点击头像无任何反馈。exec#PO17 以「死按钮取证」立项 FAILED。",
+      "evidence": "①代码：本席 grep other.vue 全文 \"tap-avatar|tapAvatar\" 0 命中；PublicHero.vue:27（emit 源头）；②链路：PublicProfile.vue:39 emits 声明 → :66 转发；ProfileShell.vue:52 → :97 转发；③exec#PO17 FAILED（element not found：harness 亦无法定位有效行为）、标题即「tapAvatar 全链路 emit 但页面未绑定（死按钮取证）」。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "头像点击应有明确行为（查看大图 uni.previewImage 为最小合理态，参照 pages/profile/index.vue:860-873 自己主页头像点击已实现查看大图）或移除可点击态/hover 反馈避免误导",
+      "fix": "other.vue 在 <ProfileShell> 增加 @tap-avatar 处理：取 profileForRender.basic.avatar 经 resolveMediaUrl 后 uni.previewImage；若产品确认无此需求则 PublicHero 头像去掉 press-feedback/@tap 死绑定",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ23-004",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png（我们有3个共同点=音乐/美食/电影三枚胶囊标签）vs 素材/理想效果图/他人显示主页.png（3 项横排：彩底圆图标+标题+副题）",
+      "category": "Consistency",
+      "severity": "P2",
+      "description": "「我们有 N 个共同点」组件形态与理想图 L4 级偏差：理想图为 3 项横排卡片（彩底圆图标 + 主标题「都喜欢旅行」+ 副题「通过 12 个国家」）；现实现为 InterestTag 胶囊标签横向流（PublicCommon.vue:9-18，2026-09-06 标签化改版，注释自述「原图标方案在素材缺失时退化为爱心图标」故有意改版），副题数据模型缺失（relation.commonInterests 为 string[]，types/profile 无 title/subtitle/icon 结构），MAX_VISIBLE=8 截断。区块标题与横向排布保留，数量语义保留。",
+      "evidence": "①理想图：素材/理想效果图/他人显示主页.png 共同点区 3 项横排（彩底圆图标+标题+副题，本席目验）；②代码：components/profile/public/PublicCommon.vue:9-18（tags computed + InterestTag 渲染 :28-33）、:11 MAX_VISIBLE=8；③数据模型：git show 29a2b1df:docs/design/profile-product-logic.md §5 relation.commonInterests；ask 规范「3项横排（彩底圆图标+标题+副题）」；④静态截图实证现形态。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "恢复理想图 3 项横排卡（彩底圆图标+主标题+副题）；后端 DTO 需扩展 commonInterests 为 {icon,title,subtitle}[] 或由标签名本地映射图标/文案",
+      "fix": "短期：前端按标签名映射彩底图标+副作文案本地渲染 3 项横排（素材/组件库/理想效果图-svg拆分/ 有现成图标）；长期：后端 commonInterests 结构化。若维持标签化改版需产品裁决并在设计契约留档（现注释已留档但无裁决记录）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ23-005",
+      "round": "R1",
+      "page": "subpackages/profile-extra/profile/other",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png vs 素材/理想效果图/他人显示主页.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "CTA 形态与理想图多处偏差（功能均在、仅形态不同）：①信息卡右上理想为「喜欢」粉描边文字药丸+「打招呼」绿填充文字药丸，现实现为两枚 40px 图标圆钮（粉圆白心/白圆绿气泡，PublicIdentity.vue:54-61、:177-203）；②底部理想为三按钮（喜欢粉浅底/打招呼绿主钮最宽/关注白描边绿星），现为四按钮——多出「心动卡」白底粉描边钮（RelationshipCTA.vue:53-57，MP-R1-OTHER-002 注释自述有意补回给 whisper 入口）；③底部「喜欢」理想为粉浅底粉字，现为粉渐变填充白字（:103-108）。绿 FAB「更多操作」浮钮亦为理想图外新增（other.vue:429-431）。",
+      "evidence": "①理想图本席目验（信息卡右上两枚文字药丸；底部三钮，喜欢=浅粉底粉心粉字）；②代码：PublicIdentity.vue:54-61（图标圆钮）、RelationshipCTA.vue:35-68（四钮）、:103-108（粉渐变）、:116-121（心动卡钮，注释 MP-R1-OTHER-002）；③静态截图实证（心动卡钮仅见图标未见文字，宽度受四钮挤压）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "信息卡右上=「喜欢」粉描边+「打招呼」绿填充文字药丸；底部=喜欢（粉浅底）/打招呼（绿主钮最宽）/关注（白描边绿星）三钮；心动卡入口另置（如并入「更多」菜单）",
+      "fix": "若产品确认回归理想图：PublicIdentity 两圆钮改文字药丸；RelationshipCTA 移除 --whisper 钮（心动卡入口迁入 openGovernanceMenu 或信息卡），--like 改粉浅底粉字。若维持现状（心动卡入口补回为 MP-R1-OTHER-002 已裁决项）需在设计契约留档豁免",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ23-006",
+      "round": "R1",
+      "page": "subpackages/profile-extra/verification/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__滚动-中部.png + reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-PROFILE-VERIFICATION-INDEX-VI01-after.png（权益图标全部为空蓝方块，两环境一致）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "恋爱认证中心「认证权益」5 项图标与未认证门控横幅警示图标不渲染：benefit-item__icon 容器（64rpx 浅蓝圆角块）内为空白，gate-banner 左侧 40rpx 警示图标同样缺失；图标经 SafeImage 渲染（:488 gate-banner、:505/:556 benefit-item，custom-class=\"benefit-item__icon-img\"），静态 tour 与交互取证两套独立截图一致复现。同页状态卡图标已于 R10-P4 改原生 image 修复（:479-480 注释自述「SafeImage custom-class 跨组件作用域不生效导致图标零尺寸」），但权益区/横幅未同步该修复模式。图标 SVG 文件本身存在（static/assets/icons/common/{pin,check-circle,check-fail,pending,graduation-cap,trend-up}.svg 本席 ls 验证）。",
+      "evidence": "①截图：reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__滚动-中部.png（5 个空蓝方块+「专属标识/信任优先/匹配加权/专属权益/互动资格」文字）与 interact VI01-after.png 同形态（两独立环境一致）；②代码：verification/index.vue:474-490（gate-banner SafeImage）、:499-510/:550-561（benefit SafeImage custom-class）对照 :479-480（状态卡已改原生 image 的 R10-P4 注释）；③同页状态卡图标（原生 image）渲染正常，排除 SVG 路径/文件问题。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "认证权益 5 项图标与门控横幅警示图标按设计稿可见（权益卡=图标+标题+描述三行结构）",
+      "fix": "照 R10-P4 既有修复模式将 gate-banner 与 benefit-item 的 SafeImage 换为原生 <image>（或给 SafeImage 传入确定尺寸的 style），并回归两套截图",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/profile-extra/verification/index",
+      "baseline": "认证中心（恋爱认证）：状态机四态+权益+流程+表单+学生证上传+real 提交/409+pending 轮询；素材/理想效果图 无本页专属整页稿，以 ask 功能目标为基线",
+      "structureNotes": "L1 路由/入口 ✅（pages.json:206-207；设置页 settings/index.vue:326 进入，2 跳内）；L2 状态卡（骨架防跳变 :474-484）→门控横幅（:487-490）→权益 5 项（:119-126）→流程三步卡（:564-580）→表单（:590-635）→上传卡（:644-666）→提交钮（:670-678）✅，verified/pending 态独立区块（:493-541）✅；L4 四态分支+驳回原因+表单预填（:290-311）✅；L5 ⚠️ 权益/横幅图标不渲染（MP-R1-REQ23-006，双截图实证）；L6 骨架/空态/loading mask ✅；L7 real 链路 409/isUploadedMediaUrl/轮询 ✅（代码核验）；L8 状态卡 emoji 图标已原生 image 化（R10-P4）✅；L10 role=status/aria-live、label for=id 无障碍 ✅。",
+      "usageNotes": "路径：我的→设置→恋爱认证，顺畅；空提交即时拦截 toast（VI04 EXECUTED 实证「请输入学生姓名」）；长表单滚动到底/顶可达（VI14）；深链栈=1 返回兜底回我的 Tab（VI02/VI03）；提交成功/409/防连点/选图取消本轮无运行时证据（VI06-VI13 harness 失配，wxml 证明提交钮在 DOM）——仅代码核验。",
+      "functionGaps": [
+        {
+          "target": "认证权益 5 项图标+门控横幅警示图标可见",
+          "current": "SafeImage 渲染为空白（benefit :505/:556、gate-banner :488），状态卡同型问题已用原生 image 修复（:479-480）",
+          "gap": "图标缺失（MP-R1-REQ23-006，UI P2）",
+          "fix": "换原生 <image>（R10-P4 既有模式）并回归截图"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/verification/real-name",
+      "baseline": "实名认证（B1-2）：成年门禁+姓名/身份证校验+正反面+防重+real 409+脱敏回显+轮询+返回闭环",
+      "structureNotes": "L1 路由 ✅（pages.json:208-210；入口 CertDetailSheet.vue:109 + campus-gate.ts:92 + certification.vue:218）；L2 状态卡→minor 横幅（:436-438）→表单（:474-508，disabled=!isAdult）→正反面双卡（:517-565）→隐私说明→提交钮（:576-584）✅；L4 成年门禁三层（banner/禁用/提交首拦 :180-183）+身份证正则 :172 + verified 脱敏回显 :441-455 ✅；L6 骨架/loading ✅；L7 双图上传换 URL+409（:230-280）代码核验 ✅；L10 label/for+aria ✅。",
+      "usageNotes": "从认证中心/认证徽章弹层/校园认证页可达；返回栈=1 navigateTo 认证中心保持流程闭环（RN02/RN03 EXECUTED）；RN01 状态首拉、RN05 身份证输入命中、RN12 脱敏回显 EXECUTED；空提交/完整提交/409/防连点/未成年分支无运行时证据（RN06-RN11 harness 失配；RN04 落错页证据无效，见卷首声明）——代码核验齐备。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/visitors",
+      "baseline": "我的·访客：骨架→今日/昨日/更早分组列表+计数+点击进他人主页+空/错态+下拉刷新",
+      "structureNotes": "L1 路由 ✅（pages.json:211-216，enablePullDownRefresh 配套）；L2 头部（返回+标题+「访客·N」:245-260）→骨架/错误/空态/列表四态（:263-284）→分组列表（:287+）✅；L4 分组派生 :116-147、时间格式化 :159-168、mock id NaN 兜底 :207-215 ✅；L7 数据源与「喜欢与访客」页同源 /matches/visitors（P1-13）✅。",
+      "usageNotes": "VS01 EXECUTED（骨架→分组列表+计数渲染，截图 111KB）；点击访客卡直达他人主页带 userId；下拉刷新+onMounted 首拉；栈=1 返回兜底 switchTab 首页；本轮无 FAILED 用例，无迷路点。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/other",
+      "baseline": "素材/理想效果图/他人显示主页.png + profile-product-logic §4（Hero→信息卡→签名→兴趣标签→共同点3项横排→生活瞬间4列→最近动态Feed→底部固定三按钮；CTA 状态机；无底部Tab）",
+      "structureNotes": "L1 push 页无 Tab ✅（pages.json:218；PO01 EXECUTED 访客上报 other.vue:150-160）；L2 八区块与理想图/§4 组装序一致 ✅（PublicProfile.vue:65-97；静态截图逐块可见）；L3 头部返回+···（other.vue:375-398）、头像浮动交界（PublicHero :82-97 bottom:-40rpx + PublicIdentity margin-top:-72rpx）✅；L4 ✗ 共同点 3 项横排→胶囊标签流（MP-R1-REQ23-004）、✗ 底部 3 钮→4 钮（+心动卡，MP-R1-REQ23-005）；L5 信息卡右上文字药丸→图标圆钮、喜欢粉浅底→粉渐变、基本信息顺序 年龄·城市·学校 vs 理想 年龄·学校·城市（PublicIdentity.vue:19-27）；L6 缺参/加载/错误+重试（missingParam 时 retryable=false 无重试钮，PO05 wxml 实证「链接缺少用户参数」文案）✅；L7 喜欢/打招呼/心动卡/关注/举报/拉黑/访客上报/401 区分/帖子卡跳转/照片全屏层函数层齐备（other.vue:162-357）✅，但 CTA 状态机缺失（REQ23-001）、取消匹配不可达（REQ23-002）、头像死按钮（REQ23-003）；L8 底部 CTA/共同点/绿FAB 偏差（REQ23-004/005）；L10 role=button/aria-label 覆盖良好 ✅。",
+      "usageNotes": "理想路径（访客页/匹配卡/聊天气泡→他人主页→喜欢/打招呼→匹配 modal→去聊天）代码闭环；实际取证：PO01/02/03/19/20 EXECUTED（渲染/缺参指引/返回兜底/滚动/重复进出），PO05-PO17/PO21 因 harness 深链缺 userId 落错误态全数 FAILED（PO05 wxml 实证）——交互闭环本轮无运行时证据，仅代码核验；迷路点：互喜用户见「喜欢」钮无「发消息」主钮（REQ23-001）；任意页 2 步回 tab ✅（栈=1 switchTab 首页 PO03）。",
+      "functionGaps": [
+        {
+          "target": "CTA 按状态机切换（互喜=发消息绿）",
+          "current": "matched prop 声明未用（RelationshipCTA.vue:8），互喜仍显「喜欢」钮",
+          "gap": "状态机缺失（MP-R1-REQ23-001，P2）",
+          "fix": "模板消费 matched，互喜态主钮切「发消息」"
+        },
+        {
+          "target": "取消匹配入口可达（治理菜单）",
+          "current": "handleUnmatch 已实现（other.vue:274-292）但 GovernanceMenu visible 恒 false（PublicProfile.vue:45）、···ActionSheet 三项无取消匹配",
+          "gap": "死功能（MP-R1-REQ23-002，P2）",
+          "fix": "···ActionSheet matched 时追加「取消匹配」项或修复 GovernanceMenu 开启链路"
+        },
+        {
+          "target": "Hero 头像点击行为",
+          "current": "tapAvatar 全链 emit、other.vue 未绑定（grep 0 命中）",
+          "gap": "死按钮（MP-R1-REQ23-003，P2）",
+          "fix": "绑定 uni.previewImage 查看大图或移除点击态"
+        },
+        {
+          "target": "共同点 3 项横排（彩底圆图标+标题+副题）",
+          "current": "InterestTag 胶囊流（PublicCommon.vue:9-18，2026-09-06 有意改版），副题/图标数据模型缺失",
+          "gap": "L4 结构偏差（MP-R1-REQ23-004，P2）",
+          "fix": "本地映射图标+副题恢复横排卡，或后端结构化+产品裁决"
+        },
+        {
+          "target": "CTA 形态（信息卡右上文字药丸；底部三钮；喜欢粉浅底）",
+          "current": "图标圆钮；四钮含心动卡；喜欢粉渐变（代码注释称有意）",
+          "gap": "L4/L5 形态偏差（MP-R1-REQ23-005，P3）",
+          "fix": "产品裁决后回归理想图或在契约留档豁免"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/location",
+      "baseline": "位置设置：定位首拉+坐标/城市/校区+重新定位（上报）+真实地图 marker+地图选点回填+返回首页+返回兜底",
+      "structureNotes": "L1 路由 ✅（pages.json:220-222；入口 home/index.vue:264-268 顶部定位按钮）；L2 头部→位置卡（当前位置/经纬度/所属校区/物理地址 :134-152）→地图区（原生 map+选点行 :156-180）→操作区（重新定位/返回首页 :182-189）✅；L4 marker callout 兜底 :42-58、H5 降级占位 :169-173 ✅；L7 chooseLocation 回填+reportLocation(true)（:78-102）代码核验 ✅；L10 aria-label 全覆盖 ✅。",
+      "usageNotes": "首页定位按钮直达；LC01（首拉渲染）/LC05（返回兜底）/LC06（地图视图操作）/LC07（无 loading 永驻）EXECUTED；LC02/LC03/LC04 FAILED 为 harness 文本候选失配（按钮 aria-label/类名 .location-map__pick 在代码中存在），重新定位/地图选点/返回首页无运行时证据——代码核验；地图选点失败有 toast 指引，无迷路点。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/privacy",
+      "baseline": "隐私设置：两开关（推荐给本校默认关/接收同校默认开）+切换 toast「已在本机保存」+本机持久化+返回兜底",
+      "structureNotes": "L1 路由 ✅（pages.json:223-225）；L2 头部（品牌绿渐变+返回）→开关卡两行（:80-103，标题+描述+原生 switch）✅；L4 默认值与 Phase Feedback5 口径一致（stores/profile.ts:169-170）✅；L7 storage 持久化（:177-187 loadPersistedPrivacy + :336-337 回填）✅；L8 MP-R1-PRIVACY-001 文案如实「已在本机保存」不伪造同步 ✅。",
+      "usageNotes": "⚠️ 入口语义绕行：我的页 moreItems「隐私设置」实际落综合设置 settings/index（pages/profile/index.vue:842），本页再由 settings/index.vue:369 / tools/security/index.vue:428 进入——可达但比标签多一跳，建议入口直达或改标签；PV01（默认态）/PV04（持久化一致）/PV06（返回兜底 switchTab 我的）EXECUTED；PV02/PV03 SKIPPED（不可自动化）、PV05 FAILED（harness 失配）——切换翻转链路代码核验。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/album",
+      "baseline": "我的相册：6 格照片墙+计数 n/6+上传链（隐私授权/10MB/防连点/蒙层）+长按设头像/删除二次确认+预览双路+空态+onShow 重拉",
+      "structureNotes": "L1 路由 ✅（pages.json:226-228；入口 pages/profile/index.vue:799 ROUTES.PROFILE.ALBUM）；L2 头部（返回+标题+计数 :405-420）→错误/空态/网格三态（:423-483）→添加钮（:486-494）→长按提示（:497-499）→全屏查看层（:502-513）✅；L4 6 格常渲染+filled/empty 分流（:450-483）✅；L7 上传链 :139-218、设头像真实下载重传+本地重排兜底 :254-310、删除二次确认 :317-347、预览双路 :360-382 代码核验 ✅；L8 静态截图与代码一致（4/6、空位+、添加钮、长按提示）✅。",
+      "usageNotes": "AL01/AL03（默认/已满态）/AL08（10MB toast「图片大小不能超过 10MB」实证）/AL09（取消静默）/AL10-AL12（返回/滚动/onShow 重拉）EXECUTED；上传蒙层/长按菜单/预览双路无运行时证据（AL02/04/05/06/07 harness 失配）——代码核验；入口从我的页相册缩略图直达，返回兜底回首页。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/favorites",
+      "baseline": "收藏：标题计数+骨架/空态+卡片→村口帖子详情（带id）+取消收藏（@tap.stop+成功/失败 toast）+onShow 重拉+返回兜底",
+      "structureNotes": "L1 路由 ✅（pages.json:229-231；入口 pages/profile/index.vue:843）；L2 头部（返回+「我的收藏（N）」:3-15）→骨架/空态/列表三态（:17-54）✅；L4 卡片=封面+作者行+标题+摘要+收藏数+取消收藏钮（:28-52）与静态截图一致 ✅；L7 unfavorite try/catch 双 toast（:88-99，MP-R2-FAVORITES-001）✅；L8 无偏差。",
+      "usageNotes": "静态截图实证列表渲染（2 卡完整）；FA05（返回兜底 reLaunch 我的）/FA06（滚动可达）/FA07（onShow 重拉）/FA08（无残留）EXECUTED；FA01 判 EXECUTED 但 reLaunch watchdog 超时（同轮三次成功打开同页，瞬态）；取消收藏/卡片跳转无运行时证据（FA02-FA04 harness 失配，实际类 .favorite-card__unfav）——代码核验；⚠️ unfavorite 复用 toggleFavorite 语义（:91）重复触发理论可反向加收藏（列表即时收缩，触发面窄，不立案）。",
+      "functionGaps": [],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要23.md"
+    }
+  ]
+}

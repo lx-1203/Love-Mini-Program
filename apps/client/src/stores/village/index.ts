@@ -56,6 +56,7 @@ import {
   mockPostHistory,
   mockPosts,
   mockSimilarAuthors,
+  mockTagPosts,
 } from "./mock-data";
 import {
   clearPostHistoryApi,
@@ -353,14 +354,19 @@ export const useVillageStore = defineStore("village", {
           const sorted = [...mockPosts].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
           const start = (page - 1) * PAGE_SIZE;
           const pageItems = sorted.slice(start, start + PAGE_SIZE);
-          this.posts = pageItems;
+          // MP-R3-VILLAGE-INDEX-002：热度榜上拉加载为「追加」而非「替换」——
+          // page>1 时拼接前一页（与 fetchPosts 的 reset/追加语义对齐），
+          // 否则加载第 2 页后第 1 页 20 条整体消失。
+          this.posts = page === 1 ? pageItems : [...this.posts, ...pageItems];
           this.page = page;
           this.hasMore = start + PAGE_SIZE < sorted.length;
           return;
         }
         const data = await getHotBoardApi(page, PAGE_SIZE, controller.signal);
         if (controller.signal.aborted) return;
-        this.posts = data.items.map(mapToPostItem);
+        const realItems = data.items.map(mapToPostItem);
+        // MP-R3-VILLAGE-INDEX-002：real 分支同样按页追加
+        this.posts = page === 1 ? realItems : [...this.posts, ...realItems];
         this.page = page;
         this.hasMore = data.items.length >= PAGE_SIZE;
       } catch (error) {
@@ -1075,11 +1081,16 @@ export const useVillageStore = defineStore("village", {
         // 修复（2026-08-26 P10）：mock 下优先从 mockPosts 直接解析，兼容
         // 从首页社区动态等未先加载帖子列表的入口直入详情，避免报"帖子不存在"。
         // 首页社区动态用数字 id（"7"），村庄帖子 id 为 "post-N"，做 "N → post-N" 兼容映射。
+        // MP-R1-TAGPOSTS-101：候选追加 mockTagPosts——标签聚合页（mock-tag-post-N）
+        // 点进详情此前不在候选内，恒报「帖子不存在」。
         const candidates = [postId, postId.startsWith("post-") ? "" : `post-${postId}`];
         const found =
           mockPosts.find((p) => p.id === postId) ??
+          mockTagPosts.find((p) => p.id === postId) ??
           this.posts.find((p) => p.id === postId) ??
-          (candidates.map((id) => mockPosts.find((p) => p.id === id)).find(Boolean) ?? null);
+          (candidates
+            .map((id) => mockPosts.find((p) => p.id === id) ?? mockTagPosts.find((p) => p.id === id))
+            .find(Boolean) ?? null);
         // MP-R1-DETAIL-001（2026-09-20）：必须浅拷贝。found 与 posts 列表项/mockPosts
         // 元素是同一对象引用，若直接赋给 currentPost，likePost/toggleFavorite 的 mock
         // 分支会对"列表项 + currentPost"各 toggle 一次，同引用下两次相互抵消，

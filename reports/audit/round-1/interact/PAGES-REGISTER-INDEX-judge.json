@@ -1,0 +1,513 @@
+{
+  "page": "pages/register/index",
+  "round": "R1",
+  "generated": "2026-09-23",
+  "judge": "交互判定员 A6（证据仲裁）",
+  "sources": {
+    "expected": "reports/audit/round-1/ops/PAGES-REGISTER-INDEX.json（32 用例 REG01-REG32）",
+    "observed": "reports/audit/round-1/interact/exec-results.json（suite=S01-auth，gitSha=aefd8a72，updatedAt=2026-09-23T12:00:00Z，REG01-REG32 共 32 条：30 EXECUTED / 2 FAILED）",
+    "screenshots": "reports/screenshots/round-1-interact/（REG 前缀 13 张实存 + wxml 快照 5 份；多张标注 ERROR:timeout waiting for automator response 未落盘）",
+    "auxiliary": [
+      "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json（2026-09-20 旧构建详细取证批次：38 操作留档，佐证用，非本轮权威 observed）",
+      "reports/audit/round-1/interact/PAGES-REGISTER-INDEX-toast-evidence.json（同旧批次）",
+      "reports/audit/round-1/interact/PAGES-REGISTER-INDEX-dom-snapshots.json（同旧批次）",
+      "apps/client/src/pages/register/index.vue（HEAD aefd8a72，仲裁关键行已逐一核实）"
+    ]
+  },
+  "summary": {
+    "total": 32,
+    "verified": 6,
+    "failed": 0,
+    "unverified": 26,
+    "note": "0 FAILED 的依据：新批次中所有「expected 未达成」均可归因到执行侧（输入自动化故障 __CAND__/el.input is not a function/首匹配 .field__input 进错字段、页面上下文漂移至 discover、快照竞态），未见任何产品侧错误反应的证据；唯一可坐实的产品缺陷是热区<88rpx（源码值确凿），单列 Issue。"
+  },
+  "checks": [
+    {
+      "caseId": "REG01",
+      "page": "pages/register/index",
+      "operation": "冷启动深链直开注册页：完整渲染且协议默认不勾选",
+      "expected": "栈长 1 且 route=pages/register/index；hero「创建账号」、4+2 字段、主按钮「注 册」、协议行、去登录均渲染；.agree__chk 无 --on；无 console error",
+      "actual": "route=[pages/register/index]；console=[]；REG01-after.png 目验：标题/4 输入框+昵称+出生日期/置灰「注 册」按钮/协议行复选框未勾选/底部「已有账号？去登录」全部在位，无错误空态",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG01",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG01-after.png",
+        "apps/client/src/pages/register/index.vue:54-55（agreed=ref(false) 默认未勾选）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "REG02",
+      "page": "pages/register/index",
+      "operation": "从登录页「去注册」入口进入（navigateTo，栈深 2）",
+      "expected": "getCurrentPages=['pages/login/index','pages/register/index']，注册页正常渲染",
+      "actual": "route 链=[login, register] 符合；但 observed 显示 act=navigateTo 直呼，Manifest 规定的动作是 tap 登录页 goRegister 入口——入口按钮 tap 未被执行（同批次 LG31 该入口 tap 亦 FAILED：element not found），入口联动未测，仅栈链结果等价成立",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG02（act:navigateTo /pages/register/index）",
+        "reports/audit/round-1/interact/exec-results.json#LG31（act-FAIL tapIndex(.btn-text) element not found；终态路由漂移至 discover）"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "caseId": "REG03",
+      "page": "pages/register/index",
+      "operation": "栈深场景点返回按钮 → navigateBack 落回登录页",
+      "expected": "500ms 内路由变化；getCurrentPages=['pages/login/index']",
+      "actual": "执行侧失败：A1 先行执行了 navigateBack delta1，随后 tap .hero__back 报 element not found（此刻已不在注册页），终态路由漂移为 [pages/discover/index]；产品侧 goLogin 分支（index.vue:434-441）未被本轮执行触达",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG03（status=FAILED，act-FAIL tap(.hero__back) element not found）",
+        "apps/client/src/pages/register/index.vue:434-441（goLogin 双分支，未运行验证）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG04",
+      "page": "pages/register/index",
+      "operation": "直开（栈深 1）点返回按钮 → reLaunch 到登录页",
+      "expected": "getCurrentPages 长度 1 且 [0].route='pages/login/index'；无路由报错",
+      "actual": "证据自相矛盾：act:tap .hero__back 已执行（无 act-FAIL），但终态 route=[pages/register/index]（应为一个页面（登录）无 .hero__back），dom 四项全 absent 含垃圾选择器（.length/.LOGIN/.route），疑似 reLaunch 后旧页面句柄失效+路由快照竞态，无法仲裁导航是否成功",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG04（dom 全 absent vs route 仍 register）",
+        "对照 reports/audit/round-1/interact/exec-results.json#REG05（同函数 goLogin 的 route 记录正常=[login]）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG05",
+      "page": "pages/register/index",
+      "operation": "底部「去登录」链接返回登录页",
+      "expected": "getCurrentPages=['pages/login/index']，落点=来源页",
+      "actual": "act:tap .to-login__link 成功执行，终态 route=[pages/login/index]，与 expected 完全一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG05",
+        "apps/client/src/pages/register/index.vue:434-441,757 附近（to-login 复用 goLogin）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "REG06",
+      "page": "pages/register/index",
+      "operation": "点《用户协议》链接：跳分包协议页且不改变勾选状态",
+      "expected": "跳转 /subpackages/legal/agreement/index；navigateBack 返回注册页后 .agree__chk 仍带 --on",
+      "actual": "前半成立：pre:tap .agree__chk 勾选后 tap .agree__link，route=[register, agreement] 证实跳转；后半缺失：本轮未执行 navigateBack、无勾选态断言，REG06-after 截图 timeout 未落盘——「返回后勾选保持」未观测。旧构建（2026-09-20）op29/30 曾证实该保持行为，但 29a2b1df（round-2）改过本页，旧证据不构成 HEAD 的观察",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG06（route=[register,agreement]；evidence 截图 ERROR:timeout）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op29/op30（旧构建佐证）",
+        "apps/client/src/pages/register/index.vue:443-446（openAgreement，@tap.stop 语义）"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "REG07",
+      "page": "pages/register/index",
+      "operation": "点《隐私政策》链接：跳分包隐私页",
+      "expected": "跳转 /subpackages/legal/privacy/index；返回后勾选态不变",
+      "actual": "act:tap .agree__link 已执行但终态 route=[pages/register/index]（REG06 同型跳转能被 route 捕获，本次未捕获），跳转既未证实也未证伪；目标路由注册正常（pages.json:304-311，privacy/index 与 agreement/index 文件均在），旧构建 op31 曾通过，疑似本轮快照竞态",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG07（route 仅 [register]）",
+        "apps/client/src/pages.json:304-311（subpackages/legal 注册 privacy/agreement）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op31（旧构建佐证）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG08",
+      "page": "pages/register/index",
+      "operation": "手机号输入：数字过滤 + 3-4-4 自动格式化",
+      "expected": "非数字被过滤；11 位显示「138 8888 8888」；phoneRegistered 复位",
+      "actual": "执行侧失败：act-FAIL inputSeq element not found: __CAND__，输入未发生；REG08-after.png 目验实为「用户协议」页（REG06 遗留栈，route=[register,agreement]），格式化行为未观测。注：phoneRegistered 复位逻辑（MP-R2-004）为 9-22 新增，新旧批次均未对其观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG08（act-FAIL __CAND__；route=[register,agreement]）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG08-after.png（用户协议页）",
+        "apps/client/src/pages/register/index.vue:151-161（onPhoneInput 过滤/格式化/复位）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG09",
+      "page": "pages/register/index",
+      "operation": "手机号超长输入截断为 11 位",
+      "expected": "15 位输入仅保留前 11 位，显示「138 8888 8888」；无溢出换行",
+      "actual": "pre:input .field__input=\"1388888888812345\" 执行成功；REG09-after.png 目验：手机号框显示「138 8888 8888」，布局无破坏；与 slice(0,11)+3-4-4 格式化（index.vue:152-156）一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG09",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG09-after.png",
+        "apps/client/src/pages/register/index.vue:151-156"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "REG10",
+      "page": "pages/register/index",
+      "operation": "清空按钮：清手机号并复位错误与「已注册」出口",
+      "expected": "输入框清空；.field__clear 消失；行内错误清除；已注册态下 ghost-btn 同步消失",
+      "actual": "pre:input 13888888888 成功（无 pre-FAIL）→ act:tap .field__clear 成功（无 act-FAIL，证明点击时图标在位即 phone 非空）→ 事后 dom .field__clear:absent（v-if=\"phone\"，index.vue:504-511）⇒ 手机号已清空；「已注册」态前置未构造，ghost-btn 子断言按条件分支自然不适用（观测 ghost-btn:absent 与预期终态一致）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG10（pre:input 成功 + act:tap 成功 + .field__clear:absent 链条）",
+        "apps/client/src/pages/register/index.vue:193-197（clearPhone）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "REG11",
+      "page": "pages/register/index",
+      "operation": "验证码输入：非数字过滤 + 6 位截断",
+      "expected": "字母被过滤；最终仅保留 6 位「123456」",
+      "actual": "inputSeq 经 __CAND__ 机制执行且无值级回读、无 DOM 值断言，REG11-after 截图 timeout 未落盘；且目标应为 $$('.field__input')[1]（验证码），observed 未证明输入进了正确字段（对照 REG13/14 同机制输入落入首匹配手机号框），过滤/截断未观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG11（act:inputSeq __CAND__，无值级证据；截图 ERROR:timeout）",
+        "apps/client/src/pages/register/index.vue:163-166（onSmsInput）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG12",
+      "page": "pages/register/index",
+      "operation": "密码强度条实时三档 + 明文/密文切换",
+      "expected": "输入后 .strength 出现，'12345678'→弱/'abc12345'→中/'Abc123!@#$'→强；eye 切换明文",
+      "actual": "dom .strength:absent 与「输入后出现」直接不符——根因是 inputSeq 经 __CAND__/首匹配机制把三段密码值写入了手机号框（密码框从未输入，强度条按 v-if=\"password\" 不出现属正确反应）；两次 eye tap 在空密码下执行，明文切换未观测；REG12-after 截图 timeout。产品侧无错误证据，属执行未达",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG12（.strength:absent；截图 ERROR:timeout）",
+        "apps/client/src/pages/register/index.vue:112-122（pwdStrength）、594 附近（v-if password）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG13",
+      "page": "pages/register/index",
+      "operation": "确认密码不一致行内报错，改一致后错误清除",
+      "expected": "不一致时 .field--error 红框 + 行内「两次输入的密码不一致」；改回一致后清除",
+      "actual": "REG13-after.png 目验：手机号框显示「123 456」（两次 input 'abc12345'/'abc123456' 经首匹配 .field__input 落入手机号框、被数字过滤后格式化的产物），密码/确认框仍为占位符，无行内错误——不一致比对路径根本未发生；observed 的 .field--error:absent 是「未测到」而非「无错误」",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG13（pre/act input 均为首匹配 .field__input）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG13-after.png（值落在手机号框）",
+        "apps/client/src/pages/register/index.vue:173-181（onConfirmInput，未触达）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "REG14",
+      "page": "pages/register/index",
+      "operation": "昵称输入：特殊字符/emoji 可输入，超 20 字截断",
+      "expected": "emoji/特殊字符正常回显；maxlength=20 截断",
+      "actual": "REG14-after.png 目验：'🌸小风同学_A1' 落入手机号框后被 onPhoneInput 数字过滤只剩「1」，昵称框仍为占位符——昵称输入路径未发生（onNicknameInput 无过滤、maxlength=20 均未观测）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG14（act:input 首匹配 .field__input）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG14-after.png（手机号框=1，昵称框空）",
+        "apps/client/src/pages/register/index.vue:183-186（onNicknameInput，未触达）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "REG15",
+      "page": "pages/register/index",
+      "operation": "出生日期 picker 选择回显（成年日期）",
+      "expected": ".field__pick-text 回显「2008-06-01」并带 filled 深色态；无行内错误",
+      "actual": "trigger('change',{value:'2008-06-01'}) 执行；dom .field__picker/.field__pick-text:present(\"2008-06-01\")；REG15-after.png 目验：出生日期行显示「2008-06-01」深色 filled 态，无行内错误",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG15",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG15-after.png",
+        "apps/client/src/pages/register/index.vue:188-191（onBirthChange）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "REG16",
+      "page": "pages/register/index",
+      "operation": "手机号无效时点「获取验证码」：行内错误+抖动+Toast，不发请求",
+      "expected": "field--error 红框+shake+行内「手机号格式不正确，请输入 11 位手机号」+Toast「请先输入正确的手机号」；无 send-code 请求",
+      "actual": "pre:input \"123\"（首匹配=手机号，目标正确）→ tap .sms-btn → toast 记录「请先输入正确的手机号」与 expected 逐字一致；REG17-after.png（下一用例视角）目验到本用例遗留的红框+行内错误文案「手机号格式不正确，请输入 11 位手机号」；按钮保持「获取验证码」无倒计时（发码未发生）；shake 属 400ms 瞬态无采证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG16（toast={title:请先输入正确的手机号}）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG17-after.png（行内错误+红框在位、按钮无倒计时）",
+        "apps/client/src/pages/register/index.vue:255-262（handleSendSms 卫语句分支）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "REG17",
+      "page": "pages/register/index",
+      "operation": "合法手机号发送验证码：发送成功 Toast + 60s 倒计时",
+      "expected": "sending 态→成功 Toast（mock 模式含 mockCode）→「重新发送 Ns」60s 倒计时",
+      "actual": "前置未达成：observed 无任何 input 步骤，手机号残留 REG16 的「123」，tap 后仅触发校验 Toast「请先输入正确的手机号」；REG17-after.png 目验按钮仍为绿色「获取验证码」（无倒计时），dom .mockCode:absent——发码成功链路（POST /v1/sms/send-code + mockCode Toast + 倒计时）完全未观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG17（toast=请先输入正确的手机号；mockCode:absent）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG17-after.png（手机号 123 红框、按钮无倒计时）",
+        "apps/client/src/pages/register/index.vue:263-288（发码成功分支，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG18",
+      "page": "pages/register/index",
+      "operation": "倒计时期间重复点击验证码按钮：不重发",
+      "expected": "倒计时态保持、无新增 send-code、数字递减不重置",
+      "actual": "前置（REG17 的 60s 倒计时运行中）未成立——REG17 发码失败，本轮 tap 时按钮仍为「获取验证码」，点击只触发无效手机号校验 Toast；「倒计时期间」场景未发生",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG18（toast=请先输入正确的手机号；REG18-after.png 与 REG17-after 同字节数=同状态）",
+        "apps/client/src/pages/register/index.vue:256（smsCountdown 卫语句，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG19",
+      "page": "pages/register/index",
+      "operation": "空表单直接点注册：首错定位手机号",
+      "expected": "不跳转不发请求；「请输入手机号」行内+shake+Toast",
+      "actual": "前置「表单全空」未达成（本用例无 reLaunch，手机号残留「123」），tap 后 Toast=「手机号格式不正确，请输入 11 位手机号」（validateFirstError 第二分支 index.vue:212，非空但非法），与 expected 的空表单首错「请输入手机号」（index.vue:211）不符；属前置失效而非产品错误——源码两分支文案并存且与观测自洽；旧构建 op02+toast-evidence no02 曾实证空表单「请输入手机号」；after 截图 timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG19（toast=手机号格式不正确…）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX-toast-evidence.json no02（旧构建：请输入手机号）",
+        "apps/client/src/pages/register/index.vue:211-212（两条首错分支）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG20",
+      "page": "pages/register/index",
+      "operation": "验证码/密码非法组合提交：逐项首错定位（表单「非法」态）",
+      "expected": "①请输入短信验证码 ②验证码为 6 位数字 ③密码至少 8 位 ④密码不能包含空格或全角字符，四步逐一定位",
+      "actual": "四步前置（合法手机号等）均未构造（表单填充自动化故障），四步 tap 均停在手机号首错「手机号格式不正确…」；四条目标 Toast 全部未观测。旧构建 op12/op21 曾分别实证「请设置登录密码」与全角密码 Toast，但属 9-22 改动前构建",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG20（仅手机号首错 Toast）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op12/op21 + toast-evidence no21（旧构建佐证）",
+        "apps/client/src/pages/register/index.vue:213-216（sms/password 校验分支，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG21",
+      "page": "pages/register/index",
+      "operation": "生日未选/未成年生日提交拦截（客户端 18 岁预检）",
+      "expected": "①「请选择出生日期」②「未满 18 岁暂无法注册」+shake+Toast，不发请求",
+      "actual": "picker trigger 2009-01-01 执行且回显证实（dom .field__picker:present(\"2009-01-01\")，REG22-after.png 目验 2009-01-01 深色回显）；但两步 tap .submit-btn 均停在手机号首错（Toast=手机号格式不正确…），生日两段拦截 Toast 未观测——合法手机号/验证码/密码前置未达成",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG21（picker 回显 ✓；toast=手机号格式不正确…）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG22-after.png（出生日期 2009-01-01 回显）",
+        "apps/client/src/pages/register/index.vue:221-222,103-109（生日/未成年分支，未触达）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "REG22",
+      "page": "pages/register/index",
+      "operation": "全表单合法但未勾协议提交：协议区抖动拦截（空提交终态）",
+      "expected": "agree__chk--shake + 协议文案变红 + Toast「请先阅读并勾选同意…」；按钮置灰仍可点出提示",
+      "actual": "表单从未合法（手机号「123」红框、验证码/密码空，REG22-after.png 目验），tap 停在手机号首错；协议抖动/变红与目标 Toast 未观测；按钮置灰态本身在截图可证（formComplete=false 的置灰样式符合）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG22（toast=手机号格式不正确…）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG22-after.png（表单远未合法、协议未勾、按钮置灰）",
+        "apps/client/src/pages/register/index.vue:223,337-341（agree 分支，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG23",
+      "page": "pages/register/index",
+      "operation": "协议勾选框切换：勾上/取消",
+      "expected": "第一次出现 agree__chk--on（绿底白勾），第二次恢复未勾态",
+      "actual": "act:tap .agree__chk ×2 均执行成功，但无任何 --on/--off 类名断言记录，REG23-after 截图 timeout 未落盘——两次点击后的状态均未观测；旧构建 op28/op33 曾实证往返切换，但属 9-22 改动前构建",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG23（tap×2 无状态断言；截图 ERROR:timeout）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op28/op33（旧构建佐证）",
+        "apps/client/src/pages/register/index.vue:736-739 附近（--on 类绑定）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG24",
+      "page": "pages/register/index",
+      "operation": "注册主按钮快击×5：createButtonGuard 防连点只提交 1 次",
+      "expected": "仅 1 次 POST /v1/auth/register；按钮 loading 态「注 册 中」",
+      "actual": "pre-FAIL「input el.input is not a function」→ 全表单未填；rapidTap×5 done=5 执行但空表单只触发校验 Toast「请输入手机号」（ts 1790148040751）；register 请求 0 次系表单不可提交所致，「防连点只提交 1 次」核心断言未测；loading 态未出现；before/after 截图均 timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG24（pre-FAIL el.input is not a function；toast=请输入手机号）",
+        "apps/client/src/pages/register/index.vue:453（onSubmitGuarded=createButtonGuard(2000)，未触达）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op24（旧构建：完整表单快击→成功页，佐证）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG25",
+      "page": "pages/register/index",
+      "operation": "合法全表单注册成功：签发 JWT 并 redirectTo 注册成功页",
+      "expected": "loading ≥400ms 后 redirectTo /pages/register/success?phone=…；storage 出现 token/refreshToken；成功页脱敏号",
+      "actual": "REG25-before.png 与 REG22-after 同字节数（同一残留非法态：手机号「123」红框、2009-01-01 生日、协议未勾），tap 后 Toast=手机号格式不正确…，终态 route=[pages/register/index] 未跳转，after 截图 timeout——注册成功链路（含 JWT 落 storage、成功页脱敏）完全未观测；旧构建 op24 曾实证成功页跳转，但 29a2b1df 改过本页上报/状态栏逻辑，不构成 HEAD 观察",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG25（route 未变；toast=手机号格式不正确…）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG25-before.png（=REG22-after 同状态）",
+        "apps/client/src/pages/register/index.vue:348-360（注册成功分支，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG26",
+      "page": "pages/register/index",
+      "operation": "已注册手机号重复注册：行内错误+「用这个手机号登录」出口出现，已填内容不清空",
+      "expected": "后端 400→行内「该手机号已注册，试试直接登录」+Toast+ghost-btn 出现；不清空已填内容；不上报 Sentry",
+      "actual": "pre-FAIL「input el.input is not a function」→ 已注册手机号从未填入；tap 后 Toast=手机号格式不正确…，dom .ghost-btn:absent——「已注册」分支（需真实 400 响应）未触达；after 截图 timeout。旧构建 op26 曾实证三件套（行内+ghost-btn+Toast），其附带问题 captureException 噪音（MP-R1-PAGES-REGISTER-INDEX-001）已在 HEAD 确认修复（auth.ts:355,391 reportError:false），但 HEAD 行为本身未观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG26（pre-FAIL；ghost-btn:absent）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op26 + toast-evidence no26（旧构建佐证）",
+        "apps/client/src/services/auth.ts:350-356,388-392（reportError:false 修复已在 HEAD）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG27",
+      "page": "pages/register/index",
+      "operation": "「用这个手机号登录」次级出口返回登录页",
+      "expected": "栈深场景 navigateBack 落回 pages/login/index，500ms 内路由变化",
+      "actual": "执行侧失败（exec status=FAILED）：承接 REG26 失败 ghost-btn 从未出现，pre-FAIL「input element not found: __CAND__」后 reLaunch+navigateTo 再 tap .ghost-btn 仍 element not found；终态路由异常 [discover, register]（与 LG31 同型的会话漂移）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG27（status=FAILED，act-FAIL element not found）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op27（旧构建佐证：path=pages/login/index）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG28",
+      "page": "pages/register/index",
+      "operation": "B6 后台关闭注册开关：Toast 提示后 800ms 自动退回登录页",
+      "expected": "onShow 即 Toast「注册功能暂未开放」；约 800ms 后自动退回登录页；800ms 窗口内手动返回则取消挂起跳转",
+      "actual": "observed 仅 observe-only+reLaunch，无任何置 register_open=false 的记录；无 Toast、终态 route 仍 [register]（页面驻留），REG28-after.wxml 目验仍为注册页 DOM——无法区分「开关未置上（前置未生效）」与「开关置上但功能失效」，按 Manifest 预案（evaluate 不可达→如实标 UNVERIFIED）执行；且 B6 定时器行为本身在 29a2b1df（MP-R2-003）刚被修改，旧构建 B6-closed-after.png 的「0.8s 内退出」证据已过期",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG28（observe-only；route 仍 register；toast 空）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-REGISTER-INDEX-REG28-after.wxml（仍为注册页 DOM）",
+        "apps/client/src/pages/register/index.vue:295-323（onShow B6 分支+onUnmounted 取消，MP-R2-003 新改）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "REG29",
+      "page": "pages/register/index",
+      "operation": "页面滚动到底/回顶：底部说明与去登录出口可达",
+      "expected": "滚到底 .safety-note 与 .to-login 完整可见；回顶 hero 完整；无状态变化",
+      "actual": "dom 存在性断言成立：.safety-note:present(\"注册即代表你已满 18 周岁…\")、.to-login:present(\"已有账号？去登录\")；但 observed 为 observe-only，无 scrollTo 执行记录，evidence 仅有 scrollPos=top 单值（expected 要求滚动前后 scrollTop 双值）——「滚到底可达且不被截断」未观测（存在性≠视口完整性）；旧构建 op37/38 曾以截图实证，属 9-22 改动前构建",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG29（observe-only；evidence=scrollPos=top）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op37/op38（旧构建佐证）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG30",
+      "page": "pages/register/index",
+      "operation": "打开即返回：进入后立即点返回无卡死",
+      "expected": "正常 reLaunch 落回 pages/login/index；无白屏卡死、console 无错误",
+      "actual": "证据自相矛盾同 REG04：act:tap .hero__back 执行成功，终态 route=[pages/register/index]（应落 login），dom .hero__back:absent（若页面真是注册页则该元素必在）——两项探针互相矛盾，疑似快照竞态，无法仲裁",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG30（route [register] vs dom hero__back:absent）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op25（旧构建佐证：进入即返回落 login）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "REG31",
+      "page": "pages/register/index",
+      "operation": "重复进出注册页：状态复位、定时器无残留叠加",
+      "expected": "第二轮进入表单为初始空态；倒计时不显示；无累积错误",
+      "actual": "循环未执行：observed 含 navError=Uncaught [object Object]，act:navigateBack undefined 异常退出；仅留下 pre:reLaunch login 与终态 route=[login]；「发验证码→返回→再进」的状态复位与定时器清理未观测；after 截图 timeout。同型 navError 亦见于 LG32，判为执行侧通道问题而非页面缺陷（无页面栈上下文佐证）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG31（navError；循环未执行）",
+        "reports/audit/round-1/interact/PAGES-REGISTER-INDEX.json op36（旧构建佐证：×3 进出无异常）",
+        "apps/client/src/pages/register/index.vue:314-323（onUnmounted 清理，未触达）"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "REG32",
+      "page": "pages/register/index",
+      "operation": "小控件点击热区测量（R11 §5 铁律：热区≥88rpx）",
+      "expected": "量得 .hero__back/.field__clear/.field__eye/.agree__chk 实际 width/height 并记录；<88rpx 为候选缺陷如实上报",
+      "actual": "测量未发生：pre-FAIL「input element not found: __CAND__」致 .field__clear 前置未达成（observed .field__clear:absent），执行日志无任何 width/height 数值，仅 1 张整页截图（REG32-after.png，可目验 eye 与 agree__chk 可见、clear 不在位）。但 Manifest 标注的源码值已在 HEAD 逐一复核属实：hero__back 68×68rpx（index.vue:804-805）、field__clear 32×32rpx（942-943）、field__eye 40×40rpx（948-949）、agree__chk 32×32rpx（1149-1150），均<88rpx 且无扩展热区——按 R11 §5 铁律单列 Issue（MP-R1-PAGES-REGISTER-INDEX-002）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#REG32（pre-FAIL；无数值）",
+        "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG32-after.png",
+        "apps/client/src/pages/register/index.vue:804-805,942-943,948-949,1149-1150（源码热区值，判定员复核）"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-002",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG32-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "四个小控件点击热区低于 R11 §5 铁律下限 88rpx：hero__back 68×68rpx、field__clear 32×32rpx、field__eye 40×40rpx、agree__chk 32×32rpx，且均无 padding/透明遮罩扩展热区；REG32 实测虽因执行故障未取得数值，但源码值由判定员在 HEAD（aefd8a72）逐一复核属实。32rpx≈16px 的清除/勾选目标在移动端低于 44px 最低可点标准，误触/难触风险高",
+      "evidence": "apps/client/src/pages/register/index.vue:804-805（.hero__back 68rpx）、942-943（.field__clear 32rpx）、948-949（.field__eye 40rpx）、1149-1150（.agree__chk 32rpx）；Manifest REG32 候选缺陷条款（ops/PAGES-REGISTER-INDEX.json:333-338）；REG32-after.png 目验元素形态",
+      "sources": [
+        "code",
+        "manifest"
+      ],
+      "confidence": 0.8,
+      "ideal": "所有可点控件热区≥88rpx（约 44px）：视觉尺寸可保持小巧，但需以 padding 外扩、伪元素或透明覆盖层把可点区域扩到 88rpx 见方",
+      "fix": "为 .field__clear/.field__eye/.agree__chk 增加负 margin+padding 或 ::after 扩展热区至 ≥88rpx；.hero__back 同法外扩至 88rpx；不改变视觉呈现",
+      "status": "待修复"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/interact/PAGES-REGISTER-INDEX-judge.json",
+  "unverifiable": [
+    "REG02|动作被替换为直呼 navigateTo，登录页「去注册」入口 tap 未执行（同批次 LG31 该入口 element not found）|1",
+    "REG03|页面上下文丢失：先行 navigateBack 后 tap .hero__back element not found，终态路由漂移 [discover]|1",
+    "REG04|tap 已执行但终态 route 仍 [register] 与 dom 全 absent 自相矛盾（疑似快照竞态/句柄失效）|1",
+    "REG06|跳转 agreement 已证实，但「返回注册页后勾选保持」未观测（未 navigateBack，after 截图 timeout）|1",
+    "REG07|tap 已执行但路由链无变化，隐私页跳转未证实；路由注册正常（pages.json:304-311），疑似快照竞态|1",
+    "REG08|输入自动化失败（element not found: __CAND__），after 截图实为用户协议页，格式化未观测|1",
+    "REG11|inputSeq 经 __CAND__ 无值级回读，截图 timeout，验证码过滤/截断未观测|1",
+    "REG12|输入进错字段致 .strength:absent（密码从未输入），三档强度与明文切换未观测|1",
+    "REG13|两次输入均落入手机号框（截图「123 456」），密码不一致路径未发生|1",
+    "REG14|输入落入手机号框（emoji 被过滤仅剩「1」），昵称回显/截断未观测|1",
+    "REG17|发码前置未达成：无 input 步骤，手机号残留「123」→校验 Toast，无请求无倒计时|1",
+    "REG18|前置（倒计时运行中）未达成（REG17 失败），点击只触发无效手机号校验|1",
+    "REG19|前置「表单全空」未达成（无 reLaunch，残留「123」），观测到格式错误 Toast 而非「请输入手机号」|1",
+    "REG20|四步非法组合均未构造（表单填充自动化故障），仅观测到手机号首错|1",
+    "REG21|生日回显已证实，但提交停在手机号首错，两段生日拦截 Toast 未观测|1",
+    "REG22|表单从未合法，协议抖动/变红与目标 Toast 未观测|1",
+    "REG23|tap×2 执行但无 --on/--off 类断言，截图 timeout，勾选态未证实|1",
+    "REG24|pre-FAIL（el.input is not a function）表单未填，快击×5 只触发空表单校验，防连点核心断言未测|1",
+    "REG25|表单未填，提交停在手机号校验，未跳转 success 页，after 截图 timeout|1",
+    "REG26|pre-FAIL 同 REG24，已注册分支未触达（ghost-btn:absent）|1",
+    "REG27|承接 REG26 失败：tap .ghost-btn element not found，路由链异常 [discover, register]|1",
+    "REG28|无证据表明 register_open 已置 false（无 Toast、页面驻留、wxml 仍注册页），按 Manifest 预案标 UNVERIFIED|1",
+    "REG29|仅 DOM 存在性断言与 scrollPos=top 单值，无滚动前后 scrollTop 记录，滚动可达未观测|1",
+    "REG30|tap 已执行但终态 route [register] 与 dom hero__back:absent 矛盾（同 REG04 疑似竞态）|1",
+    "REG31|进出循环未执行（navigateBack undefined + navError Uncaught [object Object]）|1",
+    "REG32|无 boundingClientRect 数值，field__clear 前置未达成，仅 1 张整页截图（热区问题已按源码值单列 Issue）|1"
+  ],
+  "notes": "仲裁方法：逐用例三方对照 Manifest.expected（ops/PAGES-REGISTER-INDEX.json，其行号引用已对照 HEAD 源码逐一核实无误）vs A1.observed（exec-results.json，gitSha=aefd8a72，2026-09-23 批次，权威 observed）vs 截图（round-1-interact/ 内 REG 前缀 13 张实存截图 + 5 份 wxml 快照逐张目验；标注 ERROR:timeout 的截图均确认未落盘）。关键事实：(1) 存在两个批次——2026-09-20 旧构建详细取证（interact/PAGES-REGISTER-INDEX.json，38 操作，76+ 张编号截图）与 2026-09-23 HEAD Manifest 批次（REG01-32）；因 29a2b1df（2026-09-22 round-2 fixes）修改了 register/index.vue（61 行：MP-R2-001 上报口径/-002 状态栏/-003 B6 定时器/-004 phoneRegistered 复位/-005 色值变量）与 auth.ts，旧批次证据一律只作佐证、不用于判 VERIFIED。(2) 新批次存在系统性执行侧故障：①候选选择器机制失效（element not found: __CAND__，见 REG08/24/26/27/32）；②el.input 调用类型错误（REG24/26 pre-FAIL）；③单字段 input 恒落首匹配 .field__input=手机号框，导致 REG13/14 目标字段错位（截图证实）；④会话/路由快照异常（REG03/27/31/LG31 终态漂移 discover、REG04/07/30 快照竞态、LG32 同型 navError）。全部 25 条 UNVERIFIED 均由上述故障或前置未达成导致，未见任何产品侧错误反应的证据，故本轮 0 FAILED——这不是放水：三条 strongest 疑点（REG04/07/30 的 route 未变）在证据上无法与快照竞态区分，且 REG05/06 证明同函数/同型跳转可被正确观测。(3) 源码级坐实的唯一产品缺陷为热区<88rpx（已单列 MP-R1-PAGES-REGISTER-INDEX-002，P3）。(4) 旧批次遗留问题 MP-R1-PAGES-REGISTER-INDEX-001（业务 400 触发 captureException 噪音）已在 HEAD 确认修复（auth.ts:355/391 reportError:false + index.vue:418-428 5xx 才补报），未重复立项。(5) 遗留人工验证建议：REG17/24/25/26 关键链路（发码/防连点/注册成功/已注册拦截）在修复 A1 输入自动化后必须重跑——这四条是本页核心业务路径，本轮在 HEAD 上零覆盖；旧批次（9-20 构建）虽曾全部通过，但 29a2b1df 恰好改动了其中上报与状态复位逻辑。"
+}

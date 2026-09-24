@@ -124,8 +124,6 @@ const currentChannel = computed(() => getChannelConfig(currentChannelId.value) ?
 const isSchoolChannel = computed(() => currentChannelId.value === "school");
 /** 是否活动频道 */
 const isActivityChannel = computed(() => currentChannelId.value === "activity");
-/** 是否今日广场频道（置顶折叠条） */
-const isTodayChannel = computed(() => currentChannelId.value === "today");
 /** 是否兴趣圈频道（宫格 + 话题） */
 const isInterestChannel = computed(() => currentChannelId.value === "interest");
 
@@ -878,7 +876,12 @@ onShareAppMessage(() => ({
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100%;
+  /* MP-R1-VILLAGE-INDEX-201：必须定高（height:100% 而非 min-height:100%）——
+     min-height 让容器随内容增长，flex:1 的 .channel-feed scroll-view 失去高度约束
+     → 整页 window 滚动：头部（标题/搜索/频道 Tab）滚出视口不可达、:891 的 sticky
+     最近滚动容器变为永不滚动的 .village-page 而失效、feed 内容顶入状态栏与胶囊
+     投影区（双身份滚动截图实证）。定高后恢复 scroll-view 内部滚动。 */
+  height: 100%;
   background: #ffffff; /* R16：纯白背景 */
   overflow: hidden;
 }

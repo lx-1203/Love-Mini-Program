@@ -1,0 +1,344 @@
+==== VI01 [EXECUTED] tier=normal dur=19971
+observed: top=subpackages/village/village/index | observe-only | dom: .lock-screen:absent .lock-screen__title:absent .unlock-modal:absent .isProfileComplete:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/village/village/index
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI01-after.png(186224B)"]
+==== VI02 [FAILED] tier=normal dur=20095
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .confirm:absent .hide:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tap(__CAND__) element not found: __CAND__("去完善资料") | act-FAIL:tap(__CAND__) element not found: __CAND__("暂不完善") | act-FAIL:tap(__CAND__) element not found: __CAND__("暂不完善")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("去完善资料")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI02-after.png(194331B)"]
+==== VI03 [FAILED] tier=navigation dur=12009
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__close:absent .length:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index | act-FAIL:tap(.lock-screen__close) element not found: .lock-screen__close
+FAILREASON: action tap .lock-screen__close failed: element not found: .lock-screen__close
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI04 [FAILED] tier=navigation dur=4917
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__btn:absent | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(.lock-screen__btn) element not found: .lock-screen__btn("立即完善")
+FAILREASON: action tap .lock-screen__btn failed: element not found: .lock-screen__btn("立即完善")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI05 [FAILED] tier=navigation dur=4964
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .lock-screen__btn-link:absent | pre:login A ok userId=user-1001 MISMATCH! | act-FAIL:tap(.lock-screen__btn-link) element not found: .lock-screen__btn-link
+FAILREASON: action tap .lock-screen__btn-link failed: element not found: .lock-screen__btn-link
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI06 [EXECUTED] tier=navigation dur=9472
+observed: top=subpackages/village/village/index | dom: .lock-screen__btn:present | pre:logout ok | pre:storageRemove token | pre:reLaunch /subpackages/village/village/index | act:tap .lock-screen__btn
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI07 [EXECUTED] tier=normal dur=53490
+observed: top=pages/login/index | navError=timeout waiting for automator response | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index NAV_ERROR: timeout waiting for automator response | pre:auto-nav ERR timeout waiting for automator response | act:pageScrollTo top ERR:timeout waiting for automator response
+route: [{"route":"pages/login/index","options":{}}]
+consoleEntries: 3
+console: ["[2026-09-23T01:02:25.616Z][error] {}","[2026-09-23T01:02:25.630Z][error] \"[Global Error][uni.onUnhandledRejection]\" {\"errMsg\":\"switchTab:fail timeout\"}","[2026-09-23T01:02:25.630Z][error] \"[captureException]\" {\"errMsg\":\"switchTab:fail timeout\"} {\"source\":\"uni.onUnhandledRejection\"}"]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI07-after.png(ERROR:timeout waiting for automator response)"]
+==== VI08 [EXECUTED] tier=noop dur=62385
+observed: top=pages/login/index | navError=timeout waiting for automator response | observe-only | dom: .village-state:absent .post-card:absent .village-empty:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index NAV_ERROR: timeout waiting for automator response | pre:auto-nav ERR timeout waiting for automator response
+route: [{"route":"pages/login/index","options":{}}]
+consoleEntries: 0
+evidence: ["scrollPos=top"]
+==== VI09 [EXECUTED] tier=navigation dur=2821
+observed: top=subpackages/village/village/index | dom: .village-search:present | pre:login B ok userId=user-1001 MISMATCH! | act:tap .village-search
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI10 [FAILED] tier=normal dur=11296
+observed: top=subpackages/tools/search/index | dom: .fetchFeaturedTopics:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tapIndex(__CAND__) element not found: __CAND__("兴趣圈") | act:wait 5000ms
+FAILREASON: action tapIndex __CAND__ failed: element not found: __CAND__("兴趣圈")
+route: [{"route":"subpackages/village/village/index","options":{}},{"route":"subpackages/tools/search/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI10-after.png(30891B)"]
+==== VI11 [FAILED] tier=navigation dur=11913
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .interest-grid__item:absent .category:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tapIndex(.interest-grid__item) element not found: .interest-grid__item("学习")
+FAILREASON: action tapIndex .interest-grid__item failed: element not found: .interest-grid__item("学习")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI12 [FAILED] tier=navigation dur=5082
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .tagName:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__("女生请回答")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("女生请回答")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI13 [FAILED] tier=navigation dur=4904
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .topic-item:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.topic-item) element not found: .topic-item
+FAILREASON: action tap .topic-item failed: element not found: .topic-item
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI14 [EXECUTED] tier=normal dur=3591
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#3("学校圈") tapped
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI14-after.png(194366B)"]
+==== VI15 [FAILED] tier=navigation dur=4856
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .school-gate__btn:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.school-gate__btn) element not found: .school-gate__btn("去认证")
+FAILREASON: action tap .school-gate__btn failed: element not found: .school-gate__btn("去认证")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI16 [FAILED] tier=critical dur=7255
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .school-gate__simulate:absent .refreshSession:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.school-gate__simulate) element not found: .school-gate__simulate
+FAILREASON: action tap .school-gate__simulate failed: element not found: .school-gate__simulate
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-before.png(194334B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.png(194334B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI16-after.wxml"]
+==== VI17 [FAILED] tier=navigation dur=4053
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .village-empty__action:absent | act-FAIL:tap(.village-empty__action) element not found: .village-empty__action("发帖")
+FAILREASON: action tap .village-empty__action failed: element not found: .village-empty__action("发帖")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI18 [FAILED] tier=navigation dur=4743
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .village-daily-entry:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.village-daily-entry) element not found: .village-daily-entry
+FAILREASON: action tap .village-daily-entry failed: element not found: .village-daily-entry
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI19 [FAILED] tier=navigation dur=5399
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .discover-banner:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.discover-banner) element not found: .discover-banner
+FAILREASON: action tap .discover-banner failed: element not found: .discover-banner
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI20 [EXECUTED] tier=normal dur=11471
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#4("活动") tapped
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI20-after.png(185906B)"]
+==== VI21 [EXECUTED] tier=navigation dur=10955
+observed: top=subpackages/village/village/index | dom: .activity-card:present | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .activity-card
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 2
+console: ["[2026-09-23T10:57:13.057Z][info] \"preloadSubpackages: subpackages/discover\"","[2026-09-23T10:57:13.057Z][info] \"preloadSubpackages: success\""]
+evidence: []
+==== VI22 [EXECUTED] tier=critical dur=20643
+observed: top=subpackages/village/village/index | dom: .activity-card__enroll:present .enrollActivity:absent .activity-card__enroll--done:present | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .activity-card__enroll
+route: [{"route":"subpackages/village/village/index","options":{}}]
+toast: [{"api":"showToast","title":"报名成功","ts":1790161061862}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-before.png(193947B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.png(193403B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI22-after.wxml"]
+==== VI23 [EXECUTED] tier=normal dur=12345
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tapIndex __CAND__#5("热度榜") tapped
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI23-after.png(186004B)"]
+==== VI24 [EXECUTED] tier=normal dur=19527
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:reLaunch /subpackages/village/village/index | act:tap "兴趣圈"
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI24-after.png(186027B)"]
+==== VI25 [EXECUTED] tier=normal dur=19055
+observed: top=subpackages/village/village/index | observe-only | dom: .channel:present | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index?channel=activity
+route: [{"route":"subpackages/village/village/index","options":{"channel":"activity"}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI25-after.png(ERROR:timeout waiting for automator response)"]
+==== VI26 [EXECUTED] tier=normal dur=18980
+observed: top=subpackages/village/village/index | observe-only | dom: .some:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index?channel=hotxyz
+route: [{"route":"subpackages/village/village/index","options":{"channel":"hotxyz"}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png(202790B)"]
+==== VI27 [EXECUTED] tier=normal dur=19219
+observed: top=subpackages/village/village/index | observe-only | dom: .tab:present | pre:login B ok userId=user-1001 MISMATCH! | pre:storageSet campus-love:pending-tab-query | pre:reLaunch /subpackages/village/village/index
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI27-after.png(ERROR:timeout waiting for automator response)"]
+==== VI28 [EXECUTED] tier=navigation dur=3339
+observed: top=subpackages/village/village/index | dom: .post-card:present .setCurrentPost:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap .post-card | act:tap .post-card
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI29 [EXECUTED] tier=navigation dur=18466
+observed: top=subpackages/village/village/index | dom: .post-card__user:present .userId:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:tap .post-card__user
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI30 [FAILED] tier=critical dur=10520
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .action-btn__count--liked:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:rapidTap(__CAND__) element not found: __CAND__("提交") | act-FAIL:tap(__CAND__) element not found: __CAND__("按")
+FAILREASON: action rapidTap __CAND__ failed: element not found: __CAND__("提交")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-before.png(193446B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png(193445B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.wxml"]
+==== VI31 [FAILED] tier=critical dur=7760
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .action-btn--collected:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(__CAND__) element not found: __CAND__("按")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("按")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-before.png(193446B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.png(193446B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI31-after.wxml"]
+==== VI32 [EXECUTED] tier=critical dur=22865
+observed: top=subpackages/village/village/index | dom: .follow-chip:present .follow-chip--active:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap .follow-chip | act:tap .follow-chip
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-before.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.png(202772B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI32-after.wxml"]
+==== VI33 [EXECUTED] tier=navigation dur=2854
+observed: top=subpackages/village/village/index | dom: .tagName:absent | pre:login B ok userId=user-1001 MISMATCH! | act:tap "电影"
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI34 [FAILED] tier=navigation dur=11365
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tap "一" | act-FAIL:tap(__CAND__) element not found: __CAND__("览") | act-FAIL:tap(__CAND__) element not found: __CAND__("览") | act-FAIL:tap(__CAND__) element not found: __CAND__("览")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("览")
+route: [{"route":"subpackages/village/village/index","options":{}},{"route":"subpackages/tools/activities/detail","options":{"id":"a-1"}}]
+consoleEntries: 0
+evidence: []
+==== VI35 [EXECUTED] tier=normal dur=18774
+observed: top=subpackages/village/village/index | observe-only | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI35-after.png(202790B)"]
+==== VI36 [FAILED] tier=normal dur=15413
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .pinned-bar__summary:absent .pinned-bar__list:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act-FAIL:tap(.pinned-bar__summary) element not found: .pinned-bar__summary | act-FAIL:tap(.pinned-bar__summary) element not found: .pinned-bar__summary
+FAILREASON: action tap .pinned-bar__summary failed: element not found: .pinned-bar__summary
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI36-after.png(193885B)"]
+==== VI37 [FAILED] tier=navigation dur=4741
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .pinned-item:absent | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.pinned-item) element not found: .pinned-item
+FAILREASON: action tap .pinned-item failed: element not found: .pinned-item
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI38 [FAILED] tier=normal dur=5796
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .back-to-top:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.back-to-top) element not found: .back-to-top
+FAILREASON: action tap .back-to-top failed: element not found: .back-to-top
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI38-after.png(193863B)"]
+==== VI39 [EXECUTED] tier=normal dur=13057
+observed: top=subpackages/village/village/index | dom: .load-more:present .loadMore:absent | pre:login B ok userId=user-1001 MISMATCH! | act:pageScrollTo bottom
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI39-after.png(ERROR:timeout waiting for automator response)"]
+==== VI40 [EXECUTED] tier=normal dur=13790
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | pre:pullDown {"__plain":"ERR uni is not defined"} | act:refresherPull: scroll-view trigger refresherrefresh,callMethod onPullDownRefresh ok
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI40-after.png(165050B)"]
+==== VI41 [EXECUTED] tier=normal dur=12406
+observed: top=subpackages/village/village/index | pre:login B ok userId=user-1001 MISMATCH! | act:tap "热度榜" | act:tap "今日广场"
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI41-after.png(165050B)"]
+==== VI42 [FAILED] tier=navigation dur=7379
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__input:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.composer-bar__input) element not found: .composer-bar__input
+FAILREASON: action input __CAND__ failed: element not found: __CAND__
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI43 [FAILED] tier=navigation dur=4792
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__publish:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:tap(.composer-bar__publish) element not found: .composer-bar__publish("发帖")
+FAILREASON: action tap .composer-bar__publish failed: element not found: .composer-bar__publish("发帖")
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI44 [FAILED] tier=critical dur=7206
+observed: top=subpackages/village/village/index | action-not-performed(see act-FAIL) | dom: .composer-bar__publish:present | pre:login B ok userId=user-1001 MISMATCH! | act-FAIL:rapidTap(.composer-bar__publish) element not found: .composer-bar__publish
+FAILREASON: action rapidTap .composer-bar__publish failed: element not found: .composer-bar__publish
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-before.png(193863B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.png(193863B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI44-after.wxml"]
+==== VI45 [EXECUTED] tier=critical dur=30912
+observed: top=subpackages/village/village/index | dom: .unshift:absent .post-card__audit:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/village/village/index | act:wait 1500ms
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-before.png(202830B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-after.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI45-after.wxml"]
+==== VI46 [EXECUTED] tier=normal dur=40086
+observed: top=subpackages/village/village/index | dom: .dispose:absent | pre:login B ok userId=user-1001 MISMATCH! | pre:auto-reLaunch subpackages/village/village/index | act:navigateTo /subpackages/village/village/index | act:navigateBack delta1 | act:repeatNav navigateTo __CASE_PAGE__ x3 navErr:Uncaught [object Object],navErr:Uncaught [object Object],navErr:Uncaught [object Object] | act:wait 2000ms
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 2
+console: ["[2026-09-23T01:20:04.711Z][info] \"preloadSubpackages: subpackages/discover\"","[2026-09-23T01:20:04.711Z][info] \"preloadSubpackages: success\""]
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI46-after.png(202803B)"]
+==== VI47 [EXECUTED] tier=normal dur=13089
+observed: top=subpackages/village/village/index | navError=Uncaught [object Object] | pre:login B ok userId=user-1001 MISMATCH! | pre:tap "子" | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI47-after.png(ERROR:timeout waiting for automator response)"]
+==== VI48 [EXECUTED] tier=normal dur=19477
+observed: top=subpackages/village/village/index | observe-only | dom: .composer-bar:present | pre:login B ok userId=user-1001 MISMATCH! | pre:pullDown {"__plain":"ERR uni is not defined"} | pre:auto-reLaunch subpackages/village/village/index
+route: [{"route":"subpackages/village/village/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI48-after.png(ERROR:timeout waiting for automator response)"]
+==== VI01 [EXECUTED] tier=normal dur=19448
+observed: top=subpackages/profile-extra/verification/index | observe-only | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/profile-extra/verification/index
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI01-after.png(57783B)"]
+==== VI02 [EXECUTED] tier=navigation dur=25769
+observed: top=subpackages/profile-extra/verification/index | dom: .nav-bar__back:absent .length:absent | pre:navigateTo /subpackages/profile-extra/verification/index | act:navigateBack delta1 | act:tap .nav-bar__back
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI03 [EXECUTED] tier=navigation dur=19295
+observed: top=subpackages/profile-extra/verification/index | navError=Uncaught [object Object] | dom: .nav-bar__back:absent | pre:reLaunch /subpackages/profile-extra/verification/index | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .nav-bar__back
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: []
+==== VI04 [EXECUTED] tier=normal dur=19782
+observed: top=subpackages/profile-extra/verification/index | dom: .action-btn:present | pre:auto-reLaunch subpackages/profile-extra/verification/index | act:tap .action-btn
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+toast: [{"api":"showToast","title":"请输入学生姓名","ts":1790139253061}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI04-after.png(ERROR:timeout waiting for automator response)"]
+==== VI05 [EXECUTED] tier=normal dur=11742
+observed: top=subpackages/profile-extra/verification/index | dom: #verification-student-name:present #verification-student-id:present #verification-school-name:present | act:input #verification-student-name="自动化输入-VI05"
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI05-after.png(57796B)"]
+==== VI06 [FAILED] tier=critical dur=24503
+observed: top=subpackages/profile-extra/verification/index | dom: .upload-card:present | act-FAIL:input(__CAND__) el.input is not a function | act:tap .upload-card | act-FAIL:tap(__CAND__) element not found: __CAND__("提交")
+FAILREASON: action input __CAND__ failed: el.input is not a function
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-before.png(57796B)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI06-after.wxml"]
+==== VI07 [FAILED] tier=critical dur=24773
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:rapidTap(__CAND__) element not found: __CAND__("提交按钮")
+FAILREASON: action rapidTap __CAND__ failed: element not found: __CAND__("提交按钮")
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-before.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI07-after.wxml"]
+==== VI08 [FAILED] tier=critical dur=26984
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__("提交")
+FAILREASON: action input __CAND__ failed: element not found: __CAND__
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-before.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-after.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI08-after.wxml"]
+==== VI09 [FAILED] tier=normal dur=17200
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__("图") | act-FAIL:tap(__CAND__) element not found: __CAND__("传")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("图")
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI09-after.png(ERROR:timeout waiting for automator response)"]
+==== VI10 [FAILED] tier=normal dur=13611
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__
+FAILREASON: action input __CAND__ failed: element not found: __CAND__
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI10-after.png(ERROR:timeout waiting for automator response)"]
+==== VI11 [EXECUTED] tier=normal dur=11570
+observed: top=subpackages/profile-extra/verification/index | observe-only
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI11-after.png(ERROR:timeout waiting for automator response)"]
+==== VI12 [FAILED] tier=critical dur=30634
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | dom: #E5454D:absent | act-FAIL:tap(#E5454D) element not found: #E5454D("重新认证") | act-FAIL:tap(#E5454D) element not found: #E5454D("重新认证") | act-FAIL:tap(#E5454D) element not found: #E5454D("重新认证")
+FAILREASON: action tap #E5454D failed: element not found: #E5454D("重新认证")
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-before.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-after.png(ERROR:timeout waiting for automator response)","D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI12-after.wxml"]
+==== VI13 [FAILED] tier=normal dur=13763
+observed: top=subpackages/profile-extra/verification/index | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__("模拟审核通过")
+FAILREASON: action tap __CAND__ failed: element not found: __CAND__("模拟审核通过")
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-PROFILE-EXTRA-VERIFICATION-INDEX-VI13-after.png(57787B)"]
+==== VI14 [EXECUTED] tier=noop dur=3211
+observed: top=subpackages/profile-extra/verification/index | act:pageScrollTo bottom | act:pageScrollTo top
+route: [{"route":"subpackages/profile-extra/verification/index","options":{}}]
+consoleEntries: 0
+evidence: ["scrollPos=top"]

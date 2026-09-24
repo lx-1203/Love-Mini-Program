@@ -1,0 +1,29 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/chat-session/index",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX（A5，索引差分模式：只核对 ask 给出的 2 条页面相关历史条目，只读清单/代码/证据，不改代码、不碰开发者工具）",
+  "date": "2026-09-24",
+  "note": "逐条差分结论：两条历史条目修复本体均在当前工作树验证在场，均未复发。R13-CHAT-409 的核心修复（幂等键+净化器）经 git diff HEAD 确认为工作树未提交状态（git log -S \"idem-conv\" 零命中）；MP-R2-001 的布尔契约修复已随 29a2b1df 入库。运行时局限如实记录：本轮交互用例（exec-results.json，45 例中 33 例 FAILED 均为 element not found 取证失败）未真正跑通发送/二次进入流，409 delta 与连续同文案错误两条 verification 键（chat-session-second-entry-no-409 / chat-consecutive-same-error-still-surfaced）无运行时覆盖——回归结论建立在代码层证据上，运行时复测留给终验轮。未复发，不生成 Regression Issue。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "R13-CHAT-409",
+      "page": "subpackages/chat/chat-session/index",
+      "status": "未复发",
+      "evidence": "代码层三道防线本轮逐一实读在场：① 幂等键唯一化 apps/client/src/stores/messages.ts:885-896——createSession POST /messages/conversations 携带按调用唯一键 `idem-conv-${userBId}-${Date.now()}-${random}`，注释自述 409 IDEMPOTENT_CONFLICT 成因（get-or-create 端点不得用稳定键）；② 页面双净化器 apps/client/src/subpackages/chat/chat-session/index.vue:94-101（friendlyPageError 正则含 Idempotency|幂等|重复请求|拦截|冲突）与 index.vue:723-730（onLoad createSession catch 技术串→chat.createSessionFailedShort）；③ 发送链路同源修复已在 HEAD：messages.ts:961-970 随机 msg 幂等键+[PRODUCT-FIX] header→headers 键名修正、features/chat/transport.ts:90 temp 链路 `tmp-` 随机键。git 取证（本轮实跑）：`git log -S \"idem-conv\" -- apps/client/src/stores/messages.ts` 零命中 + `git diff HEAD -- stores/messages.ts chat-session/index.vue` 恰好 +9/+9 行且 diff 内容与上述 ①② 逐行对应——修复本体在工作树、尚未提交入库。运行时证据（reports/audit/round-1/interact/exec-results.json 全量扫描）：本页 45 例 toast/console 无任何 409/Idempotency/幂等/重复请求技术串（唯一命中 CS18 的「拦截」系用例标题「发送拦截」用词，非错误串）；CS05（登录态 userId=10003 深链首进）EXECUTED 整页完整渲染，静态截图 reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png 无错误态。局限：verification 键 chat-session-second-entry-no-409 无运行时覆盖——CS43（重复进出×3）在 input 步骤 element not found FAILED，CS05 截图 automator 超时，409 delta=0 未在本轮复测。结论：修复未回退（未复发）；因修复未提交+409 delta 未复测，维持「已修复待终验」口径，终验轮需真机复测同一 userId 二次进入。"
+    },
+    {
+      "id": "MP-R2-CHAT-CHAT-SESSION-INDEX-001",
+      "page": "subpackages/chat/chat-session/index",
+      "status": "未复发",
+      "evidence": "「errorMessage 文案差分检测」已彻底移除，替换为确定性信号，本轮实读在场：① store 布尔契约 apps/client/src/stores/chat/actions/messaging.ts:55-64、115-124——sendText 返回 Promise<boolean>，成功 true / 失败写 errorMessage+false，注释直接引用本缺陷号；② 页面消费 apps/client/src/subpackages/chat/chat-session/index.vue:1129-1138——`const ok = await chatStore.sendText(...)`，`if (!ok)` toast+return（保留草稿），不再依赖文案变化；③ temp 加载失败判定 index.vue:621-628 改 `!chatStore.activeSession`（确定性信号，注释自述原差分在同文案时误判成功→假空会话）。残留扫描（本轮实跑 grep）：index.vue+messaging.ts 中 prevError/previousError/errorMessage !==/errorMessage ===/lastError 零命中——无差分检测回归残留。git 取证：messaging.ts 与 index.vue 该两段均已在 HEAD（不在未提交 diff 内），`git log -S \"MP-R2-CHAT-CHAT-SESSION-INDEX-001\"` 命中 29a2b1df（round-2 audit fixes）——修复已提交入库，无回退。局限：verification 键 chat-consecutive-same-error-still-surfaced 无运行时覆盖——发送流用例 CS16-CS21 全部在 input/tap 步骤 element not found FAILED，未真正发出消息，连续同文案场景未被执行。结论：原缺陷本体未复发（代码层高置信 0.9）；运行时验证未覆盖，如实留给终验轮。注：A2 本轮另立的 activeSession 残留盲区（MP-R1-...-001）与拍一拍未消费返回值（MP-R1-...-004）属新发现缺陷，非本条目回归，不在此立案。"
+    }
+  ],
+  "coverage": [
+    "索引差分范围：regression-index.json 全 288 条中筛出本页面相关 11 条（T3/T4/T7/MP-R2-CHAT-001/MP-R1-CHAT-SESSION-001/002/MP-R4-CHAT-001/INDEP-002/R13-CHAT-409/MP-R2-CHAT-CHAT-SESSION-INDEX-001/MP-R1-CHAT-CHAT-SESSION-INDEX-001-005/006-012），按 ask 指定仅深核 R13-CHAT-409（P0，回归重点）与 MP-R2-CHAT-CHAT-SESSION-INDEX-001（P1）两条；其余条目未在本次 ask 范围内不展开。",
+    "源码实读：messages.ts:875-984（createSession/sendMessage 幂等键与契约）、chat-session/index.vue:85-114/600-740/1115-1166（净化器、onLoad catch、loadSessionData 判定、发送消费）、stores/chat/actions/messaging.ts:50-124（sendText 布尔契约）、features/chat/transport.ts:90（temp 随机键）。",
+    "命令实跑：git log -S \"idem-conv\" / git log -S \"MP-R2-CHAT-CHAT-SESSION-INDEX-001\" / git diff HEAD（+9/+9 行逐行比对）；grep 差分检测残留模式零命中；exec-results.json 全量 toast/console 技术串扫描（本页零命中）。",
+    "证据文件：reports/audit/round-1/interact/exec-results.json（本页 45 例，12 EXECUTED / 33 FAILED，失败均为取证 element not found）；reports/audit/round-1/code-findings/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json（A2 代码审查稿，其 R13-409/MP-R2-001 两条回归核对结论与本次独立复核一致）；静态截图 reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png（页面正常渲染无错误态）；交互截图 reports/screenshots/round-1-interact/（本页 CS01-CS45，CS05/CS43 截图 automator 超时未落盘）。",
+    "未执行/受限项（如实记录）：未驱动开发者工具复测 409 delta 与连续同文案发送失败（A5 只读约束+本轮交互取证未跑通发送流）；未执行页面单测（A2 已记录 Node v16.13.1 与 vitest 2.1.9 不兼容，本轮未复跑）；CS08（sessionId=99999999 渲染破冰引导+空会话）其 verification 键 chat-failure-no-fake-empty-session 属索引条目 MP-R1-CHAT-CHAT-SESSION-INDEX-001-005，不在本次 ask 两条目范围内，不立案不展开。"
+  ]
+}

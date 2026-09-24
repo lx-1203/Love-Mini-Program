@@ -94,7 +94,7 @@ const { t } = useI18n();
 const friendlyPageError = computed(() => {
   const raw = messagesStore.errorMessage;
   if (!raw) return "";
-  if (/timeout|network|abort|status|HTTP|\d{3}/i.test(raw)) {
+  if (/timeout|network|abort|status|HTTP|Idempotency|\d{3}|幂等|重复请求|拦截|冲突/i.test(raw)) {
     return t("chat.loadFailed");
   }
   return raw;
@@ -118,6 +118,11 @@ const targetUserId = ref<string | null>(null);
 /** R4：userId 深链进入时的对方昵称兜底（避免标题回退为通用「聊天」） */
 const deepLinkPartnerName = ref("");
 const pageErrorMessage = ref<string | null>(null);
+// MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105：temp 深链加载失败标记——
+// 失效 temp 会话时 currentSession=null → isTempSession 恒 false → temp-banner/
+// temp-action-row 的 v-if 永不渲染，tempSessionUnavailable 禁用态成死分支。
+// 置位后仍渲染降级横幅与禁用按钮（点击有「会话不存在」toast）。
+const tempLoadFailed = ref(false);
 const tempCountdown = ref("");
 
 /* ========== 2026-08-31 待办：草稿保持（更多面板开合/重进页面不清空草稿） ==========
@@ -429,8 +434,12 @@ function queryScrollHeight(): Promise<number> {
     const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
     query
       .select(".chat-scroll")
-      .fields({ size: true }, (res) => {
-        // res 可能为 null / NodeInfo / NodeInfo[]，取 scrollHeight 数值
+      // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-003：必须 scrollOffset——
+      // fields({size:true}) 只返回 width/height，scrollHeight 恒 undefined → resolve(0)；
+      // 连锁失效：scrollContentHeight 恒 0 → nearBottom 永不更新（上翻浏览历史仍被强滚底、
+      // 「有新消息」提示条永不出现）、上拉加载视口补偿失效。scroll-view 用 scrollOffset
+      // 才携带 scrollHeight/scrollTop。
+      .fields({ scrollOffset: true }, (res) => {
         const info = Array.isArray(res) ? res[0] : res;
         resolve(info?.scrollHeight ?? 0);
       })
@@ -497,17 +506,20 @@ function jumpToLatest() {
 
 /** 返回上一页（自定义导航栏） */
 function goBack() {
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-106：栈=1（分享卡/推送深链直开）时
+  // fail 被静默吞掉 → 用户被困会话页、无任何反馈；补 switchTab 消息 Tab 兜底
+  // （对齐 LockScreen.vue:94-98 口径）
   // #ifdef MP-WEIXIN
   uni.navigateBack({
     delta: 1,
     fail: () => {
-      // 无上一页时静默处理
+      uni.switchTab({ url: "/pages/messages/index" });
     },
   });
   // #endif
   // #ifndef MP-WEIXIN
   uni.navigateBack({ delta: 1 }).catch(() => {
-    // 返回失败时静默处理
+    uni.switchTab({ url: "/pages/messages/index" });
   });
   // #endif
 }
@@ -619,11 +631,14 @@ async function loadSessionData(): Promise<void> {
     // currentMessages 清为 [] 渲染成「0 气泡+破冰引导」的假空会话），置页面错误态
     // 让「会话不存在或已失效」真实到达用户。
     await chatStore.loadSession(sessionId.value);
-    // MP-R2-CHAT-CHAT-SESSION-INDEX-001：以 activeSession 是否就绪判定失败
-    // （确定性信号；原「errorMessage 文案差分」在重进同一失效深链时因文案相同误判成功，
-    //  sync 把 currentMessages 清成 [] 渲染假空会话）
-    if (!chatStore.activeSession) {
+    // MP-R2-CHAT-CHAT-SESSION-INDEX-001 + MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001：
+    // 以「activeSession 就绪且 id 与 URL 一致」判定失败（确定性信号；原「errorMessage 文案
+    // 差分」在重进同一失效深链时因文案相同误判成功，sync 把 currentMessages 清成 [] 渲染
+    // 假空会话）。id 比对防 real 模式 loadSession 失败后残留上一个会话被误用：
+    // 继续操作会把消息发进与当前界面无关的另一个真实会话（sendText 目标取 activeSession.id）。
+    if (!chatStore.activeSession || chatStore.activeSession.id !== sessionId.value) {
       pageErrorMessage.value = chatStore.errorMessage || t("chat.sessionNotExist");
+      tempLoadFailed.value = true;
       return;
     }
     syncChatStoreMessagesToMessagesStore();
@@ -637,6 +652,15 @@ async function loadSessionData(): Promise<void> {
 
   // Task 1.1.6：等待 messagesStore 数据加载完成，避免页面渲染空消息列表
   await messagesStore.fetchSessionMessages(sessionId.value);
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-201/-104：失败门（与 temp 分支同法）——
+  // 失效数字 sessionId 此前在 mock 分支恒静默返回空数组且 errorMessage 为 null，
+  // 渲染「破冰引导+空会话文案+可用输入栏」的假空会话诱导用户对不存在的会话发言；
+  // messages.ts mock 分支已补未知会话置 errorMessage，此处据此置页面错误态，
+  // 使 showMatchGreeting 门控与输入栏分支生效。
+  if (messagesStore.errorMessage) {
+    pageErrorMessage.value = messagesStore.errorMessage;
+    return;
+  }
 }
 
 onLoad(async (query) => {
@@ -721,7 +745,12 @@ onLoad(async (query) => {
         pageErrorMessage.value = t("chat.createSessionFailed");
       }
     } catch (e) {
-      pageErrorMessage.value = e instanceof Error ? e.message : t("chat.createSessionFailedShort");
+      const raw = e instanceof Error ? e.message : "";
+      // 后端技术性错误串（幂等冲突 / HTTP 码）不外露给用户，与 friendlyPageError 同口径
+      pageErrorMessage.value =
+        raw && !/timeout|network|abort|status|HTTP|Idempotency|\d{3}|幂等|重复请求|拦截|冲突/i.test(raw)
+          ? raw
+          : t("chat.createSessionFailedShort");
     }
     return;
   }
@@ -855,7 +884,9 @@ const isSessionClosed = computed(() => {
  * 在 activeSession 为空时直接 return）。
  */
 const tempSessionUnavailable = computed(
-  () => isTempSession.value && !chatStore.activeSession
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105：temp 深链失效（tempLoadFailed）时
+  // currentSession=null → isTempSession 恒 false，禁用判定成死分支；并入失败标记
+  () => (isTempSession.value || tempLoadFailed.value) && !chatStore.activeSession
 );
 
 /** 发送按钮是否可高亮（输入框非空且会话未结束） */
@@ -1768,17 +1799,26 @@ function closeAvatarMenu() {
 async function handleAvatarPat() {
   avatarMenuVisible.value = false;
   if (!sessionId.value) return;
-  try {
-    const name = pageTitle.value || t("chat.peerFallbackName");
-    if (isTempSession.value) {
-      // MP-R2-CHAT-CHAT-SESSION-INDEX-008：拍一拍文案 i18n 化
-        await chatStore.sendText(t("chat.patMessage", { name }));
-      syncChatStoreMessagesToMessagesStore();
-    } else {
-      await messagesStore.sendMessage(sessionId.value, "你拍了拍" + name);
+  const name = pageTitle.value || t("chat.peerFallbackName");
+  if (isTempSession.value) {
+    // MP-R2-CHAT-CHAT-SESSION-INDEX-008：拍一拍文案 i18n 化
+    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：消费 boolean 返回值——失败 toast
+    // 提示且不再无条件 sync（原失败被吞，用户以为拍一拍成功）；仅成功路径同步消息
+    const ok = await chatStore.sendText(t("chat.patMessage", { name }));
+    if (!ok) {
+      uni.showToast({ title: chatStore.errorMessage || t("chat.sendFailed"), icon: "none" });
+      return;
     }
-  } catch (error) {
-    captureException(error, { source: "chat.avatar-pat", sessionId: sessionId.value });
+    syncChatStoreMessagesToMessagesStore();
+  } else {
+    try {
+      await messagesStore.sendMessage(sessionId.value, "你拍了拍" + name);
+    } catch (error) {
+      // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：private 分支失败补 toast
+      //（原仅 captureException 上报，与同页主发送链路失败有 toast 的口径不一）
+      captureException(error, { source: "chat.avatar-pat", sessionId: sessionId.value });
+      uni.showToast({ title: t("chat.sendFailed"), icon: "none" });
+    }
   }
 }
 function handleAvatarProfile() {
@@ -1806,8 +1846,10 @@ defineExpose({ noop });
       @avatar-pat="handleAvatarPat"
     />
 
-    <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处） -->
-    <view v-if="isTempSession" class="temp-banner">
+    <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处）
+         MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105：失效 temp 深链（tempLoadFailed）
+         也渲染降级横幅，不再整块消失 -->
+    <view v-if="isTempSession || tempLoadFailed" class="temp-banner">
       <text class="temp-banner__text">
         {{ tempSessionEnded ? t("chat.sessionEndedLabel") : t("chat.tempBannerText") }}
       </text>
@@ -2048,8 +2090,10 @@ defineExpose({ noop });
         <!-- 表情面板：点击表情追加到输入框草稿（2026-08-09 微信 1:1 新增） -->
         <EmojiPanel v-if="emojiPanelVisible" @select="handleEmojiSelect" />
 
-        <!-- 临时会话操作按钮（保留同意交换/结束会话入口；会话未加载时禁用并提示） -->
-        <view v-if="isTempSession" class="temp-action-row">
+        <!-- 临时会话操作按钮（保留同意交换/结束会话入口；会话未加载时禁用并提示）
+             MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105：失效 temp 深链（tempLoadFailed）
+             也渲染整组禁用按钮，点击有「会话不存在或已失效」toast，不再静默消失 -->
+        <view v-if="isTempSession || tempLoadFailed" class="temp-action-row">
           <view
             class="temp-action-btn temp-action-btn--secondary press-feedback"
             :class="{ 'temp-action-btn--disabled': tempSessionUnavailable }"

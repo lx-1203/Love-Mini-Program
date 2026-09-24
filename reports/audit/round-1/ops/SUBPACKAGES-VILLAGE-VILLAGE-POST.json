@@ -1,0 +1,353 @@
+{
+  "pageNotes": {
+    "routeNameMismatch": "任务给的页名「村口·帖子详情」与源码不符：subpackages/village/village/post 实为发布动态页（post.vue:2-3 头注释、headerTitle=发布动态 zh-CN.ts:1972）；帖子详情页是 ROUTES.VILLAGE.DETAIL=/subpackages/village/village/detail（constants/routes.ts:85-86）。本清单按实际源码（发布表单页）设计用例。",
+    "paramMapMismatch": "r11-param-map.json 固化参数 post:?id=1 与源码不符：onLoad 只解析 query.circleId 与 query.target（post.vue:178-189），id 参数被静默忽略。用例 VP01/VP03 等以无参或 ?circleId=8/?target=campus 进入；执行器若按固化表带 ?id=1 亦无害（被忽略），但断言不得依赖 id。",
+    "entryPoints": "真实入口：村口 index 底部发帖条 handlePublish→openAppPath(ROUTES.VILLAGE.POST)（village/index.vue:384-390，B4 实名认证门控 ensureCertified('realname')，guards/campus-gate.ts:72）；另 nearby/index.vue:311、setup/showcase/index.vue:104、setup/dev/index.vue:202。r11 执行器统一 wx.reLaunch 深链冷启动，页面栈=1，故页内 leave() 会走 reLaunch 回村口分支（post.vue:464-472）。",
+    "noPullRefresh": "本页无下拉刷新：pages.json:83-85 village/post 无 enablePullDownRefresh，页面 scroll-view 无 refresher（post.vue:605），不设下拉刷新用例。",
+    "globalNav": "globalStyle.navigationStyle=custom（pages.json:37），页面自绘 post-header 并 JS 注入 statusBarHeight（post.vue:37-41,582）。",
+    "automationNotes": "uni.chooseImage 系统相册在 automator 内不可直接驱动，VP24/VP25 建议以草稿预置（wx.setStorageSync('village:post-draft',{...images:['https://...已上传URL']}) 后重进）驱动九宫格分支；草稿恢复仅保留 isUploadedMediaUrl 的远端 URL（post.vue:317-318,389，utils/media.ts:88）。",
+    "identity": "身份 A=100158 曦风（tmp_r11_login.json）；身份 B=100159 小新生（tmp_r11_guest.json）。发布类用例以 A 为主；token 2 小时时效，过期需重签。"
+  },
+  "cases": [
+    {
+      "id": "VP01",
+      "page": "subpackages/village/village/post",
+      "title": "冷启动深链进入：表单首屏完整渲染，无错误空态闪现",
+      "tier": "normal",
+      "pre": "身份A mock 登录（r11-tour.ps1:19-36 口径）→ wx.reLaunch('/subpackages/village/village/post') 冷启动（页面栈=1）",
+      "action": "仅等待首屏渲染（无交互）",
+      "expected": "500ms 内出现：post-header「发布动态」标题 + X 关闭钮 + 灰色「发布」胶囊（post.vue:582-603，canSubmit=false 时 .post-header__submit--disabled 灰底 post.vue:1086-1089）；发布到卡片=「个人动态/默认公开 · 所有人可见」（post.vue:635-638,156-166）；标题输入 placeholder=填写标题会有更多赞哦～、正文 placeholder=分享你的故事、心情或寻找那个TA...（zh-CN.ts:1977）；「发帖小贴士」可见（post.vue:837）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图 + getCurrentPages 栈顶 route=subpackages/village/village/post + console 全量"
+    },
+    {
+      "id": "VP02",
+      "page": "subpackages/village/village/post",
+      "title": "空表单点击「发布」→ 拦截 Toast「请输入内容」",
+      "tier": "critical",
+      "pre": "同 VP01，空表单",
+      "action": "tap .post-header__submit（post.vue:594-602）",
+      "expected": "Toast「请输入内容」（t('village.contentRequired')，zh-CN.ts:1874，post.vue:479-482）；不发起 createPost/createTopic 请求；不路由；表单不清空；发布钮保持灰色 disabled 样式但可点击命中拦截分支",
+      "evidence": "critical：before+after 截图 + 路由（仍在 post）+ Toast 文案 + console（无发布请求发出）"
+    },
+    {
+      "id": "VP03",
+      "page": "subpackages/village/village/post",
+      "title": "仅填标题发布（个人动态目标）：成功 Toast + 清表单 + 草稿清除 + 800ms 返回",
+      "tier": "critical",
+      "pre": "同 VP01；先 wx.removeStorageSync('village:post-draft') 保证无旧草稿",
+      "action": "标题输入「自动化测试标题R1」→ tap .post-header__submit（post.vue:594-602）",
+      "expected": "Toast「已提交，审核通过后展示」（t('village.postSuccess')，zh-CN.ts:1864，post.vue:554）；表单清空（title/content/images/topics/location 复位，post.vue:546-553，suppressDraftSave 防空快照写回 post.vue:544-547）；storage key village:post-draft 被删除（clearDraft post.vue:415-426，constants/village.ts:43）；约 800ms（POST_SUBMIT_NAVIGATE_BACK_MS，constants/village.ts:52）后 leave()：栈=1 → uni.reLaunch 回 /subpackages/village/village/index（post.vue:556-561,464-472）；mock 模式下村口 feed 顶部出现新帖（villageStore.posts.unshift，stores/village/index.ts:492-494）",
+      "evidence": "critical：before+after（含返回后村口页）截图 + 路由链（post→village/index）+ Toast 文案 + console + storage 断言（getStorageSync('village:post-draft')===''）"
+    },
+    {
+      "id": "VP04",
+      "page": "subpackages/village/village/post",
+      "title": "仅填正文发布：标题回退正文首行截 50 字",
+      "tier": "critical",
+      "pre": "同 VP01；无旧草稿",
+      "action": "正文输入两行「第一行标题内容R1\\n第二行正文」→ tap .post-header__submit",
+      "expected": "发布成功 Toast 同 VP03；提交 payload title=第一行标题内容R1（首行），content=全文（title 回退逻辑 post.vue:512-513：无标题时取 content.trim().split('\\n')[0].slice(0,50)）；返回村口后 feed 新帖卡标题为该首行而非大段全文",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案 + console（断言请求/新帖卡 title 字段）"
+    },
+    {
+      "id": "VP05",
+      "page": "subpackages/village/village/post",
+      "title": "发布钮快速连点×5：只提交 1 次",
+      "tier": "critical",
+      "pre": "同 VP01；无旧草稿",
+      "action": "标题+正文各填入合法内容后，500ms 内对 .post-header__submit 快速 tap×5（post.vue:478 submitting 守卫）",
+      "expected": "仅 1 次提交（mock：villageStore.posts 仅 +1 条该内容新帖；real：仅 1 个 POST /api/posts）；无「请输入内容」误导 Toast（守卫在 canSubmit 判定之前，post.vue:476-482 注释 MP-R2-POST-004）；Toast「已提交，审核通过后展示」只出现一次；800ms 后正常返回",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案 + console（网络请求数=1）"
+    },
+    {
+      "id": "VP06",
+      "page": "subpackages/village/village/post",
+      "title": "草稿 500ms 防抖落盘 + 冷启动重进恢复",
+      "tier": "critical",
+      "pre": "同 VP01；先清 village:post-draft",
+      "action": "输入标题「草稿标题R1」与正文「草稿正文R1」→ 静置≥600ms（防抖 POST_DRAFT_SAVE_DEBOUNCE_MS=500，constants/chat.ts:51）→ wx.reLaunch 冷启动重进本页",
+      "expected": "静置后 getStorageSync('village:post-draft') 含 title/content/targetType:'general'/visibility:'public'（snapshotDraft post.vue:315-329）；重进后表单自动恢复标题与正文（restoreDraft post.vue:351-413）；发布到卡片仍为个人动态",
+      "evidence": "critical：before（输入后）+after（恢复后）截图 + 路由 + console + storage 内容断言"
+    },
+    {
+      "id": "VP07",
+      "page": "subpackages/village/village/post",
+      "title": "有内容时点 X 关闭：弹层「保留」分支同步落盘并返回",
+      "tier": "critical",
+      "pre": "同 VP01；输入标题「退出保留R1」（dirty 判定 post.vue:432）；先清旧草稿",
+      "action": "tap .post-header__close（post.vue:583-592）→ 在 showModal 点「保留」",
+      "expected": "弹出 modal「是否保留草稿？」/「你还有未发布的内容，是否保留以便下次继续编辑？」，按钮 保留/放弃（zh-CN.ts:1992-1995，post.vue:437-441）；点保留后草稿立即同步落盘（不等防抖定时器，post.vue:443-455）→ 返回来源页（栈=1 时 reLaunch 村口）；重进后表单恢复「退出保留R1」",
+      "evidence": "critical：before+modal+after+重进恢复 共 4 截图 + 路由链 + modal 按钮文案 + console + storage 断言"
+    },
+    {
+      "id": "VP08",
+      "page": "subpackages/village/village/post",
+      "title": "有内容时点 X 关闭：弹层「放弃」分支清除草稿并返回",
+      "tier": "critical",
+      "pre": "同 VP01；输入正文「退出放弃R1」；先有已知草稿内容",
+      "action": "tap .post-header__close → 在 showModal 点「放弃」",
+      "expected": "点放弃后 uni.removeStorageSync('village:post-draft')（clearDraft post.vue:456-459）→ 返回来源页；重进本页为全新空表单（无草稿恢复）",
+      "evidence": "critical：before+after+重进后 截图 + 路由链 + modal 文案 + console + storage 断言（key 已删）"
+    },
+    {
+      "id": "VP09",
+      "page": "subpackages/village/village/post",
+      "title": "打开即返回（空表单 X）：无弹层直接返回",
+      "tier": "navigation",
+      "pre": "同 VP01；确认表单为空且无草稿",
+      "action": "tap .post-header__close",
+      "expected": "不弹 modal（dirty=false 直接 leave，post.vue:432-436）；路由离开本页：栈=1 → uni.reLaunch('/subpackages/village/village/index')（post.vue:467-471）；getCurrentPages 栈顶 route=subpackages/village/village/index",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "VP10",
+      "page": "subpackages/village/village/post",
+      "title": "重复进出×3：状态不残留、草稿链路自洽",
+      "tier": "normal",
+      "pre": "同 VP01；清旧草稿",
+      "action": "循环 3 次：reLaunch 进入本页 → 第1次输入「进出R1」后 X+保留退出；第2次进入验证恢复后 X+放弃退出；第3次进入验证空表单后 X 退出",
+      "expected": "第2次进入恢复「进出R1」；第3次进入为空表单（放弃已删草稿）；三次进出均成功路由、无 console 报错/内存泄漏告警；发布钮状态随内容正确切换",
+      "evidence": "normal：每轮 after 截图（共3） + 每轮路由断言 + console 全量"
+    },
+    {
+      "id": "VP11",
+      "page": "subpackages/village/village/post",
+      "title": "发布到卡片：开启目标选择弹层（三级分组）",
+      "tier": "normal",
+      "pre": "同 VP01",
+      "action": "tap .post-to__card（post.vue:609-615，targetOpen 翻转）",
+      "expected": "500ms 内弹出底部弹层「选择发布到」，三级分组：公域·所有人可见（个人动态）/ 校园私域·同校可见（校园圈）/ 兴趣圈子·圈内成员可见（circleStore.circles 前 8 个，post.vue:644-711，分组标题 post.vue:650/669/689，slice(0,8) post.vue:691）；当前项带 ✓ 图标",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP12",
+      "page": "subpackages/village/village/post",
+      "title": "目标选「校园圈」：卡片联动 + 可见范围归位 school",
+      "tier": "normal",
+      "pre": "同 VP01；先打开目标弹层（VP11 状态）",
+      "action": "tap 校园圈选项（chooseCampus post.vue:251-258）",
+      "expected": "弹层关闭；发布到卡片名称=「校园圈」（t('circle.postTopicTargetCampus')，zh-CN.ts:3708，post.vue:155）、副标题=「校园圈 · 所有校园成员可见」（post.vue:165）；「谁可以看」meta 变「学校圈」（visibility='school' 联动，post.vue:255-257,170-175）；话题入口保留（campus 走 createPost 透传 tags，post.vue:533-537）",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP13",
+      "page": "subpackages/village/village/post",
+      "title": "目标选回「个人动态」：卡片联动 + 可见范围归位 public",
+      "tier": "normal",
+      "pre": "同 VP12（当前目标=校园圈）",
+      "action": "tap .post-to__card → tap 个人动态选项（chooseGeneral post.vue:242-249）",
+      "expected": "弹层关闭；卡片回「个人动态/默认公开 · 所有人可见」；「谁可以看」meta 回「所有人可见」（visibility='public'）；个人动态选项带 ✓",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP14",
+      "page": "subpackages/village/village/post",
+      "title": "目标弹层遮罩点击关闭",
+      "tier": "navigation",
+      "pre": "同 VP11（弹层开启）",
+      "action": "tap .post-target-sheet 遮罩区（非面板，post.vue:644）",
+      "expected": "弹层关闭（targetOpen=false），表单目标保持不变；路由不变",
+      "evidence": "navigation：元素存在性断言（.post-target-sheet 消失）+ 路由断言 + console；可免截图"
+    },
+    {
+      "id": "VP15",
+      "page": "subpackages/village/village/post",
+      "title": "添加话题弹层：热门话题点选 toggle 与计数",
+      "tier": "normal",
+      "pre": "同 VP01（general 目标，话题入口可见）",
+      "action": "tap 添加话题行（post.vue:777-789）→ 依次 tap 热门 chip「校园日常」「晚自习」→ 再 tap「校园日常」取消",
+      "expected": "弹层「添加话题」含 10 个热门话题 chip（HOT_TOPICS post.vue:81），点选变实心绿（--on post.vue:1528-1534）、复点取消；头部计数「已选 1/5」（POST_MAX_CUSTOM_TAGS=5，constants/village.ts:30）；正文区出现对应 #chip（post.vue:829-834）；「添加话题」行 meta 计数同步（post.vue:787）",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP16",
+      "page": "subpackages/village/village/post",
+      "title": "话题选满 5 个后第 6 个 chip：超限行为核查（疑似无反馈）",
+      "tier": "normal",
+      "pre": "同 VP01；先选满 5 个热门话题",
+      "action": "打开话题弹层 → tap 第 6 个热门 chip（toggleTopic post.vue:307-312）",
+      "expected": "计数保持 5/5、第 6 话题不加入；注意源码超限分支为静默 else-if（post.vue:311，无 Toast）——按交互铁律「点击 500ms 内必须有可观测反馈」，实测若 chip 点击无任何视觉反馈（chip 有 hover-class press-feedback，post.vue:927）记「死按钮/无反馈」缺陷候选，交判定员裁定",
+      "evidence": "normal：before+after 截图 + 路由 + console（如实记录有无反馈，不做有利推断）"
+    },
+    {
+      "id": "VP17",
+      "page": "subpackages/village/village/post",
+      "title": "自定义话题：添加成功 + 重复添加 Toast + 超长截断",
+      "tier": "normal",
+      "pre": "同 VP01；话题弹层已开",
+      "action": "自定义输入框输入「#摄影日常」→ tap「添加」；再输入「摄影日常」→ tap「添加」；再输入 20 字长文本验证 maxlength=16 截断",
+      "expected": "第一次：去 # 前缀生成 chip「#摄影日常」（post.vue:100-113）、弹层关闭、输入框清空；第二次：Toast「该话题已添加」且弹层不关（post.vue:103-105）；输入框输入在第 16 字截断（maxlength=16 post.vue:940）；空输入点「添加」无变化（raw 为空 return，post.vue:101）",
+      "evidence": "normal：每次 after 截图（≤3） + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VP18",
+      "page": "subpackages/village/village/post",
+      "title": "已选话题 chip 的 × 移除",
+      "tier": "normal",
+      "pre": "同 VP01；已选话题「#晚自习」",
+      "action": "tap 正文区话题 chip 上的 ×（post.vue:832 topics.splice）",
+      "expected": "chip 立即消失、计数回 0/5；无 Toast；路由不变",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP19",
+      "page": "subpackages/village/village/post",
+      "title": "圈子目标下话题入口隐藏（rows 行 + 底部工具栏）",
+      "tier": "normal",
+      "pre": "reLaunch '/subpackages/village/village/post?circleId=8'（circle 8 为 DB 存活圈，r11-param-map.json circle-home 条目）；身份A",
+      "action": "观察附加功能行与底部工具栏；tap .post-to__card 打开目标弹层核对当前选中",
+      "expected": "进入即目标=兴趣圈：发布到卡片显示圈名 + 「圈内成员可见」角标（post.vue:636,149-157）；「添加话题」行（v-if=!isCircleTarget post.vue:778）与底部工具栏「话题」钮（post.vue:872）均不渲染；可见范围默认 interest「兴趣圈」（selectTarget 语义 post.vue:236-238）",
+      "evidence": "normal：after 截图 + 路由（含 query）+ console + 元素存在性断言（话题入口不存在）"
+    },
+    {
+      "id": "VP20",
+      "page": "subpackages/village/village/post",
+      "title": "位置弹层：常用位置点选 / 自定义输入使用 / 清除当前位置",
+      "tier": "normal",
+      "pre": "同 VP01",
+      "action": "tap 添加位置行（post.vue:790-801）→ tap chip「校园·图书馆」；重开 → 自定义输入「星巴克·大学城店」tap「使用」；重开 → tap「清除当前位置」（post.vue:1001-1003）",
+      "expected": "点 chip：位置生效、弹层关、「添加位置」行 meta=校园·图书馆（pickLocation post.vue:116-119，chip 高亮 post.vue:971）；自定义：customLocation 生效弹层关（addCustomLocation post.vue:121-127，maxlength=30 post.vue:985）；进入弹层时自定义输入框预填当前位置（post.vue:795）；清除：meta 回「选择或输入位置」且弹层头部不再显示当前值；空输入点「使用」无变化（post.vue:122-123）",
+      "evidence": "normal：每步 after 截图（≤3） + 路由 + console"
+    },
+    {
+      "id": "VP21",
+      "page": "subpackages/village/village/post",
+      "title": "提及好友：正文末尾插入 @ + Toast",
+      "tier": "normal",
+      "pre": "同 VP01；正文先输入「今天和你」",
+      "action": "tap 提及好友行（post.vue:802-813）；再 tap 底部工具栏「提及」钮（post.vue:892-901）",
+      "expected": "每次点击：正文末尾追加「 @」（去尾随空白后插入，insertMention post.vue:130-133）+ Toast「已在正文末尾插入 @，请输入昵称」；两次点击后正文=今天和你 @ @；行与工具栏两入口行为一致",
+      "evidence": "normal：after 截图 + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VP22",
+      "page": "subpackages/village/village/post",
+      "title": "谁可以看弹层：按目标约束的选项集与勾选联动",
+      "tier": "normal",
+      "pre": "身份A 分别以三种目标各进入一次：无参（general）/?target=campus（campus）/?circleId=8（circle）",
+      "action": "每种目标下 tap「谁可以看」行（post.vue:814-825）查看选项并点选（general 下点「学校圈可见」再点回「所有人可见」）",
+      "expected": "general：2 项（所有人可见/学校圈可见，post.vue:88-92）；campus：仅 1 项 学校圈可见（post.vue:93-95）；circle：仅 1 项 圈子成员可见（post.vue:96）；当前项带 ✓，点选后弹层关、行 meta 同步（visibilityText post.vue:170-175）；campus/circle 下唯一项点击仍可确认不报错",
+      "evidence": "normal：general 点选 after 截图 + campus/circle 各 1 张弹层截图 + 路由 + console"
+    },
+    {
+      "id": "VP23",
+      "page": "subpackages/village/village/post",
+      "title": "四个弹层关闭路径核查（三路关闭规格）",
+      "tier": "navigation",
+      "pre": "同 VP01；目标/话题/位置/可见范围弹层各开一次",
+      "action": "对 .post-target-sheet / .post-sheet（话题/位置/可见范围）分别 tap 遮罩；检查各面板有无 X 关闭钮",
+      "expected": "遮罩点击均可关闭（post.vue:644/915/960/1008）；选择选项后自动关闭；核查：四个弹层均无显式 X 关闭按钮，仅遮罩+选择两路关闭——按铁律「弹层三路关闭」记规格偏差候选，交判定员裁定；路由全程不变",
+      "evidence": "navigation：每弹层关闭后元素存在性断言 + 路由断言 + console；可免截图（弹层开启态可复用 VP11/VP15/VP20/VP22 截图）"
+    },
+    {
+      "id": "VP24",
+      "page": "subpackages/village/village/post",
+      "title": "添加图片：九宫格 +1 与第 10 张上限 Toast",
+      "tier": "normal",
+      "pre": "身份A；自动化环境 uni.chooseImage 需 mock（见 pageNotes.automationNotes）；先以草稿预置 8 张已上传 URL 图片进入",
+      "action": "tap 九宫格「＋」钮（post.vue:760-769 chooseImage）；mock 返回 2 张后再次 tap，直至满 9 张后再 tap",
+      "expected": "未满 9 张：每次选图后九宫格数量增加（批量压缩质量 80 失败回退原图，post.vue:276-299）；满 9 张：「＋」钮消失（v-if images.length<POST_MAX_IMAGES post.vue:761）且底部工具栏「图片」钮点击 → Toast「最多上传9张图片」（t('village.post.maxImagesError',{n:9})，zh-CN.ts:1980，post.vue:262-265）；隐私授权失败分支 Toast「需同意隐私协议后才能选择图片」（post.vue:266-271，zh-CN.ts:1984）",
+      "evidence": "normal：选图后 + 满额后 截图（≤3） + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VP25",
+      "page": "subpackages/village/village/post",
+      "title": "移除已选图片（草稿预置已上传 URL 驱动）",
+      "tier": "normal",
+      "pre": "wx.setStorageSync('village:post-draft',{targetType:'general',targetId:null,title:'图测R1',content:'',images:['https://cdn.example.com/a.jpg'],topics:[],location:'',visibility:'public'}) 后 reLaunch 进入（restoreDraft post.vue:386-389 仅保留 isUploadedMediaUrl 的 URL）",
+      "action": "tap 第一张缩略图右上角 × （post.vue:750-758 removeImage）",
+      "expected": "对应缩略图立即从九宫格移除、其余不变（splice post.vue:302-304）；「＋」钮重新出现；草稿防抖后 storage 内 images 同步为空数组",
+      "evidence": "normal：before+after 截图 + 路由 + console + storage 断言"
+    },
+    {
+      "id": "VP26",
+      "page": "subpackages/village/village/post",
+      "title": "输入边界：标题 20 字截断 / 正文 500 字上限 / 计数器",
+      "tier": "normal",
+      "pre": "同 VP01",
+      "action": "标题粘贴 30 字文本；正文粘贴 600 字文本（textarea maxlength=500）",
+      "expected": "标题截断为 20 字（TITLE_MAX_LENGTH=20 post.vue:48,721），计数显示 20/20（post.vue:725-727）；正文截断为 500 字（POST_MAX_LENGTH=500 constants/village.ts:18,737），计数 500/500 且不标红（isOverLimit 仅 >500 才红，post.vue:140-141,741）——注：UI 输入无法超限，contentTooLong Toast（post.vue:483-486）为防御分支不可达，不设独立用例；输入中文/emoji 正常回显",
+      "evidence": "normal：after 截图（标题+正文各1） + 路由 + console"
+    },
+    {
+      "id": "VP27",
+      "page": "subpackages/village/village/post",
+      "title": "特殊字符/emoji/多行正文发布成功且首行截取正确",
+      "tier": "critical",
+      "pre": "同 VP01；清旧草稿",
+      "action": "正文输入 `<script>alert(1)</script>🎉测试\\n第二行@人` → tap .post-header__submit",
+      "expected": "发布成功 Toast「已提交，审核通过后展示」；payload title=`<script>alert(1)</script>🎉测试`（首行，script 标签作为纯文本不执行）；返回后村口 feed 新帖渲染为转义文本、无脚本执行、无 console 新增 TypeError",
+      "evidence": "critical：before+after（含 feed 页）截图 + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VP28",
+      "page": "subpackages/village/village/post",
+      "title": "输入后全部清空：发布钮回落 disabled 态",
+      "tier": "normal",
+      "pre": "同 VP01；标题已输入「临时」",
+      "action": "清空标题（输入框删空）",
+      "expected": "发布钮即时回灰色 disabled 样式（.post-header__submit--disabled，canSubmit=false post.vue:143-145）；此时点击 → Toast「请输入内容」（VP02 分支）；输入框内 placeholder 重新显示",
+      "evidence": "normal：after 截图 + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VP29",
+      "page": "subpackages/village/village/post",
+      "title": "圈子目标发布链路：?circleId=8 → createTopic",
+      "tier": "critical",
+      "pre": "reLaunch '/subpackages/village/village/post?circleId=8'（身份A）",
+      "action": "填标题「圈内发帖R1」→ tap .post-header__submit",
+      "expected": "提交走 circleStore.createTopic（post.vue:515-521，POST /api/circles/8/topics，stores/circle.ts:473-520）；成功 Toast「已提交，审核通过后展示」；表单清空+草稿删除+约 800ms 后返回（同 VP03 收尾）；注意 createTopic 请求体不含 tags（MP-R2-POST-001，post.vue:774-776），所选话题在圈子路径被隐藏入口拦截（VP19）",
+      "evidence": "critical：before+after（含返回后）截图 + 路由链 + Toast 文案 + console（请求 URL 断言 /circles/8/topics）"
+    },
+    {
+      "id": "VP30",
+      "page": "subpackages/village/village/post",
+      "title": "入口参数覆盖旧草稿：?target=campus 归位口径",
+      "tier": "normal",
+      "pre": "预置旧草稿 {targetType:'circle',targetId:1,title:'旧草稿R1',content:'x',images:[],topics:[],location:'',visibility:'interest'} → reLaunch '/subpackages/village/village/post?target=campus'",
+      "action": "观察发布到卡片与谁可以看 meta",
+      "expected": "草稿正文/标题恢复，但目标被入口参数覆盖为 campus：卡片=「校园圈」、targetId/targetCircle 清空、visibility 强制 school（MP-R2-POST-003 完整归位，post.vue:399-404）——不得出现「campus 目标+兴趣圈可见」矛盾组合；旧草稿的 circle 目标与 interest 可见性被清除",
+      "evidence": "normal：after 截图 + 路由（含 query）+ console + 表单状态断言"
+    },
+    {
+      "id": "VP31",
+      "page": "subpackages/village/village/post",
+      "title": "无效 circleId=99999：卡片兜底「兴趣圈帖子」不伪装个人动态",
+      "tier": "normal",
+      "pre": "reLaunch '/subpackages/village/village/post?circleId=99999'（身份A；该圈不存在，loadTarget 解析 null post.vue:223-231）",
+      "action": "观察发布到卡片",
+      "expected": "卡片名称显示「兴趣圈帖子」（MP-R1-POST-101 兜底 post.vue:151-157）而非「个人动态」，副标题=默认公开 · 所有人可见（isCircleTarget 无 targetCircle 时不走成员数分支 post.vue:160-167）；提交仍走 createTopic 分支；console 无未捕获异常",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP32",
+      "page": "subpackages/village/village/post",
+      "title": "滚动到底/顶：吸底工具栏不遮挡内容",
+      "tier": "noop",
+      "pre": "同 VP01",
+      "action": "scroll-view 滚动到底部，再滚回顶部",
+      "expected": "底部 fixed 工具栏（post.vue:1451-1463）全程吸底；滚到底时最后内容（发帖小贴士/附加功能行）因 post-body__bottom-space 预留 200rpx+安全区（post.vue:1445-1448）不被遮挡可完整查看；滚回顶部标题输入可见；无白屏/跳变",
+      "evidence": "noop：执行日志（scrollTop 起止值/console）即可；可免截图"
+    },
+    {
+      "id": "VP33",
+      "page": "subpackages/village/village/post",
+      "title": "发布失败分支：错误 Toast 文案（real 断网/500；mock 注入异常）",
+      "tier": "critical",
+      "pre": "身份A；real 模式断网或后端 500（或 mock 下拦截 createPost 抛错）；填合法标题正文",
+      "action": "tap .post-header__submit",
+      "expected": "Toast 显示真实失败原因：general/campus 路径取 villageStore.errorMessage、circle 路径取 circleStore.errorMessage，均空时兜底「发布失败」（post.vue:562-572，MP-R1-POST-102）；不路由、表单不清空（草稿保留）、submitting 复位（finally post.vue:573-575）后发布钮恢复可点",
+      "evidence": "critical：before+after 截图 + 路由（仍在 post）+ Toast 文案 + console（错误堆栈）"
+    },
+    {
+      "id": "VP34",
+      "page": "subpackages/village/village/post",
+      "title": "热区实测：X 关闭钮 64rpx＜88rpx 铁律核查",
+      "tier": "noop",
+      "pre": "同 VP01",
+      "action": "读取 .post-header__close 渲染尺寸（post.vue:1062-1068 width/height:64rpx）与 .post-header__submit 尺寸",
+      "expected": "如实记录实测值：X 钮 64rpx×64rpx，低于铁律热区≥88rpx → 记规格偏差候选交判定员（hover 反馈 press-feedback 存在 post.vue:584-586）；发布胶囊 padding 12×40rpx+28rpx 文字 ≥88rpx 高；不臆断修复",
+      "evidence": "noop：执行日志（元素 boundingClientRect 数据/console）即可"
+    }
+  ]
+}

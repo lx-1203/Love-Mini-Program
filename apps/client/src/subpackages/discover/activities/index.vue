@@ -338,6 +338,7 @@ defineExpose({ toggleEnroll });
     :subtitle="t('activities.sectionSubtitle')"
     :show-tab-bar="false"
     show-back
+    fixed
   >
     <!-- 加载中（无缓存） -->
     <view v-if="activityStore.loading && !activityStore.activities.length" class="status-box">

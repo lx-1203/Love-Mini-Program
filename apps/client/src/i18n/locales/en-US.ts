@@ -270,6 +270,8 @@ export default {
     campusCircles: "Campus Circles",
     campusPublicHint: "Public to browse · Private after verification",
     campusBrowse: "Browse",
+    campusJoined: "Joined",
+    campusVerify: "Verify",
     nearbyPosts: "Nearby Posts",
     /* 2026-08-25 P0: 5th quick entry label (spec 4.4) */
     myConnections: "My connections",
@@ -676,6 +678,12 @@ export default {
         location: "Lakeside Lawn",
         desc: "A special Qixi event: meet someone you like under the stars, with games and a confession wall to unlock.",
       },
+      cityCamp: {
+        title: "City Camping Plan",
+        time: "Sat 14:00-18:00",
+        location: "Central Park, 2.3km",
+        desc: "Go camping in the city park with like-minded students: canopies, picnic and icebreaker games. Limited spots, first come first served.",
+      },
     },
   },
 
@@ -733,6 +741,7 @@ export default {
       loading: "Loading campus friends…",
       loadFailed: "Failed to load, please retry",
       empty: "No campus friends nearby yet",
+      seeAll: "See all recommendations",
       likeHint: "It's a match! Say hi",
       matched: "Matched",
       messageHint: "Open the profile to start a chat",
@@ -818,7 +827,6 @@ export default {
     remainingTimes: "{n} times",
     /* 2026-08-07 design: remaining count in header row */
     remainingToday: "{n} left today",
-    nearby: "Nearby",
     sameSchool: "Same School",
     sameCity: "Same City",
     /* 2026-08-07 design: "Nearby" filter chip */
@@ -1088,13 +1096,13 @@ export default {
     send: "Send",
     avatarMenuAria: "Avatar actions",
     peerFallbackName: "them",
+    startChatAria: "Start a chat",
     patMessage: "You patted {name}",
     viewProfile: "View profile",
     pat: "Pat",
     muteLocalOnly: "Muted on this device (session sync unsupported)",
     imageTempUnsupported: "Temp sessions don't support images yet",
     imagePartialFailed: "Sent {ok}, {fail} failed",
-    loadFailed: "Load failed, tap to retry",
     breakQuestion: {
       commonInterests: "You both like",
       recommendedOpener: "Suggested opener",
@@ -1102,7 +1110,6 @@ export default {
     sessionSubtitle: "Messages with your matches",
     emptyTitle: "No chat messages yet",
     emptyDesc: "Match new friends on Discover to start chatting",
-    send: "Send",
     voice: "Voice",
     pinned: "Pinned",
     online: "Online",
@@ -1630,6 +1637,7 @@ export default {
     voiceDeleted: "Voice status deleted",
     voiceChooseFailed: "Failed to choose voice",
     voiceNotSupported: "Voice recording is not supported here",
+    voicePlayFailed: "Failed to play voice, please try again",
     /* 2026-08-09: Re-record entry on recorded voice card */
     voiceReRecord: "Re-record",
     voiceReRecordAria: "Re-record voice",
@@ -2520,6 +2528,7 @@ export default {
     interactionMessages: "Interactions",
     emptyTitle: "No messages yet",
     emptyDesc: "Match new friends on Discover",
+    emptyExploreAria: "Explore people nearby",
     likeNotice: "Likes",
     commentNotice: "Comments",
     followNotice: "Follows",
@@ -3445,6 +3454,19 @@ export default {
       noMore: "No more",
       /* R4-00108: Empty list state copy */
       emptyTopics: "No topics in this category yet. Be the first to post one!",
+      /* MP-R1-CAMPUSINDEX-001: keys moved here from postTopic block (wrong namespace) */
+      hotCirclesTitle: "Hot circles",
+      viewMore: "View more",
+      circleNames: {
+        photography: "Photography",
+        travel: "Travel",
+        music: "Music",
+        sports: "Sports",
+        food: "Food",
+        gaming: "Gaming",
+        reading: "Reading",
+        pets: "Pets"
+      }
     },
     /* post-topic.vue */
     postTopic: {
@@ -3468,9 +3490,7 @@ export default {
       imagePickLabel: "Upload Images",
       imagePickHint: "Add Image",
       maxImages: "Up to {n} images",
-      privacyRequired: "Please agree to the privacy policy before picking images",,
-      hotCirclesTitle: "Hot circles",
-      viewMore: "View more"
+      privacyRequired: "Please agree to the privacy policy before picking images"
     },
     /* topic-detail.vue */
     topicDetail: {

@@ -1,0 +1,576 @@
+{
+ "round": "R1",
+ "page": "subpackages/campus/campus/post-topic",
+ "manifest": "reports/audit/round-1/ops/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+ "observedSource": "reports/audit/round-1/interact/exec-results.json (manifest=SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC, 38/38 cases present, suite S07-campus-matching, gitSha aefd8a72)",
+ "screenshotDirs": [
+  "reports/screenshots/round-1-interact/",
+  "reports/screenshots/round-1-interact/wxml/"
+ ],
+ "judgedAt": "2026-09-23",
+ "summary": {
+  "total": 38,
+  "verified": 2,
+  "failed": 0,
+  "unverified": 36
+ },
+ "verdictRules": "一致→VERIFIED；预期未达成且属应用缺陷→FAILED（立 Issue）；执行失败/证据缺失/前置未构造/记录内部矛盾→UNVERIFIED。跨用例佐证仅采用同轮运行的实际采集物（wxml dump、md5 比对、其他用例截图），不采用纯代码推测。",
+ "checks": [
+  {
+   "caseId": "PT01",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "冷启动深链直达（无参）落页默认态",
+   "expected": "路由=subpackages/campus/campus/post-topic；高亮分类=课程交流；标题/内容空、计数0/500；header「发布」置灰；全程无错误/空态闪现；console 无 NAV_FAIL/TypeError",
+   "actual": "A1: route=[{route:'subpackages/campus/campus/post-topic',options:{}}]；dom .category-option--selected/.title-input/.content-input/.content-count/.submit-text 全 present；console=[] 无错误。用例自身首帧截图未采集（evidence=[]，目录无 PT01 png）——但默认选中项=课程交流、值空、0/500、.post-header__submit--disabled 由同轮运行 6 次同入口（无参 reLaunch）冷启动的 wxml dump（md5 4ff80bc2…：仅课程交流带 --selected、value 空、0/500、发布置灰）及 PT07/PT09/PT23/PT37 冷启动截图交叉佐证，均无错误/空态",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT01",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT07-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT09-after.png"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PT02",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "冷启动带参深链 ?category=study_help",
+   "expected": "「学习互助」唯一高亮（.category-option--selected）；其余默认同 PT01；无崩溃",
+   "actual": "A1: route options={category:'study_help'} ✓、.category-option--selected:present、console=[]；但选中项文本未断言、无截图、无 wxml——『高亮=学习互助』无直接证据，仅能证明存在选中态且路由参数正确",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT02"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT03",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "空参深链 ?category= 回退默认",
+   "expected": "cat.trim() 判空不赋值 → 高亮=课程交流；页面渲染同 PT01",
+   "actual": "A1: route options={category:''} ✓；dom 采集为『.trim:absent .length:present』——系 evaluate 表达式解析碎片而非节点断言；无选中项文本、无截图；回退默认分类未证实",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT03"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT04",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "非法 category=__proto__ 探针 + 点「校园活动」复验可交互",
+   "expected": "页面正常渲染、6 chip 均无选中态；点「校园活动」500ms 内正常高亮；console 无 TypeError",
+   "actual": "A1: 深链 ?category=__proto__ 未执行（route options={}，无该 act 记录），探针未发生；tap「校园活动」=__CAND__ 文本定位失败 element not found（wxml 证实该 chip 真实存在、文本在 .category-option__text 子节点）；截图 PT04-after.png 为默认态（课程交流高亮，恰 1 个选中）——用例核心探针未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT04",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT04-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT05",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "campus/index 点「发布」透传当前 Tab 分类",
+   "expected": "落页路由带 ?category=study_help；本页学习互助高亮；getCurrentPages 链=2 层",
+   "actual": "A1 status=SKIPPED，observed=action-not-automatable（campus/index 发布入口无法自动化定位），链路未执行，0 条 dom/路由/截图证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT05"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT06",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "header「取消」返回 campus/index 且来源页状态保持",
+   "expected": "落点=campus/index；来源页 Tab/滚动位/数据保持；未发布不产生新帖",
+   "actual": "A1: 前置链路被执行器 auto-reLaunch（r1-exec.cjs:1316）替代——页面栈被重置为 1 层（campus/index 不在栈内）；tap「校友动态」pre-FAIL；tap 取消触发 goBack→uni.navigateBack 报 'navigateBack:fail cannot navigate back at first page'（console 全局错误×2：onUnhandledRejection+captureException），页面停留原地；返回落点无法按用例设计验证（前置未构造）。发现的 goBack 无 fail 兜底缺陷另立 Issue MP-R1-CAMPUSPOSTTOPIC-101",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT06",
+    "apps/client/src/subpackages/campus/campus/post-topic.vue:269-271",
+    "scripts/qa/r1-exec.cjs:1316"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT07",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "分类 6 选 1 依次点选（选中态唯一、非死按钮）",
+   "expected": "每次点击 500ms 内 DOM 变化；任意时刻恰 1 个 --selected 且=最后点中项；无路由/Toast",
+   "actual": "A1: 仅执行 1 次 act:tap .category-option（类选择器取首个=课程交流，本已选中，末态与初态重合，无法区分生效与无反馈）；六步依次点选协议未执行；末态截图仅见课程交流 1 个高亮；无 Toast/路由变化 ✓ 但『选中迁移唯一性』未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT07-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT08",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "分类 chip 热区量测 ≥88rpx",
+   "expected": "6 个 .category-option boundingClientRect 高/宽原始数据落盘；高度≥88rpx",
+   "actual": "A1: evidence 仅 scrollPos=top，无任何 rect 数据；dom 仅 .category-option:present；热区规格未量测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT08"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT09",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "标题正常输入「校运会志愿者招募」：回显+按钮仍置灰",
+   "expected": "值回显；canSubmit 仍 false → .post-header__submit--disabled 与 .bottom-submit__btn--disabled 均在",
+   "actual": "A1: act:input .title-input=\"校运会志愿者招募\" 已执行；dom 两 disabled class 均 present（canSubmit=false ✓）；截图回显标题文本、内容空 0/500、header 与底部按钮均置灰、计数 0/500；路由不变、console 无错——三源一致",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT09-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT10",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "标题超长输入 60 字：maxlength=50 截断",
+   "expected": "v-model 值恒 ≤50；无越界字符；页面不崩",
+   "actual": "A1: 未按用例输入 60 字——实际 act:input __CAND__=\"自动化输入-PT10\"（12 字，远低于阈值），maxlength 截断行为与值长度断言日志均未产生；截图仅一般态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT10",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT10-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT11",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "标题特殊字符/emoji/脚本串输入",
+   "expected": "原样存储回显、脚本不执行、DOM 不破坏、console 无错、清空后可继续操作",
+   "actual": "A1: act:input .title-input=\"🎉<script>alert(1)</script>&am…\" 已执行（observed 日志内输入串截断于 &am，全串是否写入不可知）；console=[] 无报错 ✓、dom .title-input:present 页面未崩 ✓；但 after 截图采集超时缺失、回显原样性未断言、清空后续操作未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT11"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "PT12",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "标题全清空：canSubmit 回落置灰",
+   "expected": "按钮 500ms 内回置灰；点发布 → Toast「请输入标题」",
+   "actual": "A1: 未见清空动作（r1-exec.cjs:611 对『清空标题』应发 input 空串）——observed 仅 act:input .title-input=\"自动化输入-PT12\"（填入而非清空），dom 无按钮 class 断言、无 Toast；清空回落链路未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT12-after.png",
+    "scripts/qa/r1-exec.cjs:611"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT13",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "内容计数 499→500 封顶、不进红色超限态",
+   "expected": "计数依次 499/500→500/500；计数保持灰；500 字时按钮可亮",
+   "actual": "A1: 未按用例输入 499/501 字符——实际 act:input __CAND__=\"自动化输入-PT13\"（短文本）；.content-count:present 与 .content-count--over:absent 仅证明红色超限态未出现（初始态本来就不会出现）；499→500 封顶与按钮联动未观测；截图采集超时缺失",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT13"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT14",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "内容清空：计数回 0、按钮联动置灰",
+   "expected": "计数 0/500；按钮置灰",
+   "actual": "A1: 未执行清空——observed 仅 act:input .content-input=\"自动化输入-PT14\"（填入短文本），无计数/按钮 class 断言；联动回落未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT14",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT14-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT15",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "scroll-view 滚到底再回顶：状态不丢",
+   "expected": "底部发布按钮完整可见；回顶后标题/内容/计数/图片/话题全保持",
+   "actual": "A1: 仅单向 act:pageScrollTo bottom（evidence scrollPos=bottom、dom .bottom-submit:present ✓ 底部按钮区存在）；未回顶、无两次 scrollTop 采样与字段值比对；pre 的填标题+500 字+选图+选 2 话题全部未执行，『状态不丢』无从验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT15"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT16",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "空提交 tap header 发布钮：Toast「请输入标题」",
+   "expected": "Toast「请输入标题」；无请求/无新帖/不路由；无残留 Loading",
+   "actual": "A1: act-FAIL tap __CAND__(\"布\") element not found——动作未执行，Toast 无从触发；截图（72125B）与 wxml 证明 header 发布钮真实存在且可见（文案「发布」位于子节点 .submit-text，文本候选定位未穿透），无 Toast 残留；空表单守卫的正向证据见 PT21（底部按钮路径实测触发「请输入标题」）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT16",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT16-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml",
+    "reports/audit/round-1/interact/exec-results.json#PT21"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT17",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "仅标题提交：Toast「请输入内容」",
+   "expected": "Toast「请输入内容」；零副作用",
+   "actual": "A1: act-FAIL tap __CAND__(\"布\") element not found；标题填充前置亦未见执行；动作未发生，Toast 无从触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT17",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT17-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT18",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "合法表单 header 发布成功（mock）全链路",
+   "expected": "500ms 内文案变「发布中」；Toast「发布成功」；约 800ms 返回 campus/index；学习互助 Tab 顶部恰 1 条新帖",
+   "actual": "A1: act-FAIL tap __CAND__(\"发布\") element not found——发布动作未执行；表单填充前置未执行（wxml 六份 dump（PT18/19/20/21/24/38-after.wxml）md5 全等=4ff80bc29343ca60dc6af72344036aa3，内容恒为空表单：标题空、0/500、0/6、已选 0/3），发布成功链路与回流置顶完全未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT18",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-before.png"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT19",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "主按钮防连点×5 + 成功窗口重入",
+   "expected": "仅 1 次 createCampusTopic；窗口内补击零效果；回流恰 1 条新帖",
+   "actual": "A1: act-FAIL rapidTap __CAND__(\"发布\") element not found——连击未发生；表单前置未执行（wxml 同上空态）；防连点守卫未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT19",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-after.wxml"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT20",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "发布失败路径：Toast=errorMessage/「发布失败」+按钮复位",
+   "expected": "Toast 文案=campusStore.errorMessage 或「发布失败」；isSubmitting 复位可重试；不路由",
+   "actual": "A1: 两次 tap __CAND__(\"发布\") 均 element not found——动作未执行；失败注入（mockWxMethod request reject）未见执行记录（用例自注明无法注入时标 UNVERIFIED）；dom .errorMessage:absent 为初始空态自然值；失败路径未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT20",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT20-after.wxml"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT21",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "底部主按钮提交（bottom 变体）成功链路",
+   "expected": "全链路同 PT18（发布→发布中...→发布成功→返回置顶）；进行中文案为 bottom 变体",
+   "actual": "A1: act:pageScrollTo bottom + act:tap .bottom-submit__btn 已执行，500ms 内 showToast「请输入标题」（ts 1790130409550）——证明底部按钮非死按钮且空表单守卫在 bottom 路径生效（正向佐证 MP-R1-CAMPUSPOST-001 修复）；但因表单填充前置（标题+500 字内容）未执行（wxml 空态），expected 的发布成功链路无法观测；不判 FAILED：应用对实际表单态的反应符合 post-topic.vue:181-184 规格",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT21",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT21-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT21-after.png"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "PT22",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "打开即返回：零副作用",
+   "expected": "返回 campus/index；topics 数不变；console 无错",
+   "actual": "A1: act-FAIL input __CAND__ element not found + act-FAIL tap __CAND__(\"取消\") element not found——输入与返回动作均未执行（「取消」文案位于 .back-icon 子节点，文本定位未命中）；打开即返回协议未执行；无截图落盘（记录标 timeout）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT22"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT23",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "重复进出：表单态不残留",
+   "expected": "再进为全新空态：标题/内容空、0/500、匿名关、话题未选、图片 0；分类=透传值",
+   "actual": "A1: 仅 observe-only + pre:auto-reLaunch 直达本页——PT05 链路进入、填表、取消、再点发布入口的完整协议未执行；截图（61583B）与 wxml 显示空态但不能证明『不残留上次输入』语义（从未有上次输入）；分类透传值未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT23",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT23-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT24",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "选图成功 1 张：缩略图+计数 1/6",
+   "expected": "500ms 内出现 .image-item、计数 1/6；隐私检查先于 chooseImage；console 可见 chooseImage 调用",
+   "actual": "A1: act:tap .image-upload 已执行，但 pre 要求的 mockWxMethod('chooseImage' 成功) 未见注入记录；结果零变化实锤——before/after 截图 md5 全等（d492d9a8454e31b759d3581d5a108773）、after-wxml 同为 0/6 无 .image-item、无 Toast、console=[]（连 chooseImage 调用日志都未捕获）；异步原生选图在自动化环境无 mock 时无法完成，缩略图未出现属环境性未达成，不能据此判应用缺陷，亦不能判通过",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT24",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT24-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT25",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "删除已选图：× 移除、计数回落",
+   "expected": "图格消失、计数回 0/6、加号格重现",
+   "actual": "A1: 前置（PT24 选图成功）未达成——dom .image-item__remove:absent（无图可删），tap .image-item__remove element not found；删除动作未执行；截图采集超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT25"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "选图用户取消：静默无 Toast",
+   "expected": "cancel 分支无任何 Toast；图片墙不变；console 有 fail 日志无未捕获错误",
+   "actual": "A1: pre 的 fail-cancel mock 未注入；tap 加号格=__CAND__(\"号\") 文本定位失败（加号格文案为「+/添加图片」，无『号』字可命中）——动作未执行；after 截图与 PT27 完全相同（md5 a0d284e3…，均为默认空态）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT26",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT26-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT27",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "选图真实失败（auth deny）：Toast 明示",
+   "expected": "Toast「选择图片失败，请检查相册/相机权限」；图片墙不变",
+   "actual": "A1: pre 的 fail auth deny mock 未注入；tap 加号格同 PT26 定位失败——动作未执行；失败 Toast 分支未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT27",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT27-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "隐私授权拒绝：Toast 且不拉起选图",
+   "expected": "Toast「需同意隐私协议后才能选择图片」；chooseImage 不被调用",
+   "actual": "A1: 隐私检查 reject 的 mock 未注入（用例自注明无法构造时记 UNVERIFIED）；tap 加号格=__CAND__(\"号\") 定位失败——动作未执行；截图采集超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT28"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT29",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "满图 6/6：加号格隐藏",
+   "expected": "第 6 张后 .image-upload 不再渲染；计数 6/6",
+   "actual": "A1: pre-FAIL input element not found: .PHOTO_GALLERY_MAX（执行器把常量名误作选择器）；分批补满 6 张的 mock chooseImage 未执行；observed-only 显示 .image-upload 仍 present（0/6 态）；满图态未构造；截图采集超时",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT29"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT30",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "热门话题选中/再点取消",
+   "expected": "选中：已选区出现+计数已选1/3+chip 高亮+震动；取消：全回落+空态文案；每步 500ms 反馈",
+   "actual": "A1: tap __CAND__(\"校园日常\") 与 __CAND__(\"选\") 均 element not found——热门 chip 位于子组件 TopicSelector 内（wxml 证实 #校园日常 等 12 chip 真实渲染），文本候选定位未穿透组件边界；选中/取消流程未执行；无截图落盘",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT30",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "选满 3 个点第 4 个：Toast「最多选择 3 个话题」",
+   "expected": "Toast maxReached 文案；已选仍 3 个、计数 3/3",
+   "actual": "A1 status=SKIPPED，observed=action-not-automatable（tap 第 4 个热门 chip 无法自动化），前置选中 3 个亦未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT31"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "PT32",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "话题搜索：过滤→无结果态→清空恢复",
+   "expected": "「表白」→仅剩表白墙；「zzzz不存在」→未找到相关话题；清空→恢复 12 个全集",
+   "actual": "A1: dom 探测 .topic-selector__search-input:present 与随后 act-FAIL input(.topic-selector__search-input) element not found 自相矛盾（子组件内 input 的自动化 input API 不可达，探测走 wxml 通道）；三步输入均未发生，过滤行为未观测；after 截图为未滚动空态",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT32",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT32-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT33",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "创建新话题成功：自动选中+输入框清空",
+   "expected": "已选区新增 #R1测试话题、计数 +1、创建框清空",
+   "actual": "A1: dom 探测 .topic-selector__create-input:present 但 act-FAIL input element not found + tap __CAND__(\"创建\") element not found（「创建」文本在 .topic-selector__create-btn-text 子节点）——创建流程未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT33",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT33-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT34",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "空名创建：Toast「输入新话题名称」",
+   "expected": "Toast=createTopicPlaceholder 文案；已选/计数不变",
+   "actual": "A1: pre-FAIL input __CAND__ element not found + act-FAIL tap __CAND__(\"创建\") element not found——动作未执行；Toast 未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT34",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT34-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT35",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "重名创建：Toast「该话题已存在」",
+   "expected": "Toast createTopicExists 文案；无重复 chip",
+   "actual": "A1: act-FAIL input __CAND__ + tap __CAND__(\"创建\") 均 element not found——动作未执行；重名 Toast 未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT35",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT35-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT36",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "已选 chip 移除+清空一键清+按钮显隐",
+   "expected": "逐个移除计数递减；清空后空态恢复、清空按钮 500ms 内隐藏",
+   "actual": "A1: 前置『已选 2 个话题』未达成（选中流程未执行），tap __CAND__(\"清空\") element not found——移除/清空协议未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT36",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT36-after.png"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT37",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "匿名开关切换 3 次：checked 反馈+品牌色",
+   "expected": "每次切换 500ms 内 checked 变化；开关色=品牌色 #36C99A",
+   "actual": "A1: observe-only，未执行任何开关切换动作；dom 片段『.color:present .brand:absent』系表达式解析碎片非节点断言；截图（61610B）未滚动至开关区（开关不在首屏）；切换行为未观测（wxml 仅证初始 checked=\"false\" color=\"#36C99A\"）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT37",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT37-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml"
+   ],
+   "confidence": 0.85
+  },
+  {
+   "caseId": "PT38",
+   "page": "subpackages/campus/campus/post-topic",
+   "operation": "全功能组合发布（匿名+话题+配图）回流断言",
+   "expected": "发布成功返回；author=匿名校友；内容拼 #话题；images=1；归入校园活动 Tab 置顶；恰 1 条",
+   "actual": "A1: act-FAIL tap __CAND__(\"发布\") element not found——发布未执行；PT05 链路、分类切换、匿名开关、选图、选话题、填表前置全部未执行（before/after 截图 72129B/72130B 近同、wxml 空表单态）；组合回流断言完全未观测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#PT38",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT38-after.png"
+   ],
+   "confidence": 0.9
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-CAMPUSPOSTTOPIC-101",
+   "round": "R1",
+   "page": "subpackages/campus/campus/post-topic",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT16-after.png（页面正常态；PT06 无截图落盘，主证为 console 错误日志）",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "「取消」返回（goBack）为裸 uni.navigateBack()，无 fail 回调、无栈深回退：冷启动深链/分享链接直达本页（页面栈=1，即本清单 PT01-PT04 的标准入口形态，真实转发场景同构）时点「取消」无任何界面反馈——不导航、无 Toast，用户被滞留表单页（仅剩胶囊菜单可退出），并触发 uni.onUnhandledRejection 全局错误上报（captureException 二次上报），生产侧产生错误噪音",
+   "evidence": "exec-results.json#PT06 console：[Global Error][uni.onUnhandledRejection] {\"errMsg\":\"navigateBack:fail cannot navigate back at first page.\"} + [captureException] 同错误（2026-09-23T02:22:12.744/.745Z，observed 头部 navError=Uncaught [object Object]）；源码 post-topic.vue:269-271 function goBack(){ uni.navigateBack(); } 无 fail 分支、:278 @tap=\"goBack\"；同页成功发布路径 navigateBack（:255）亦无 fail 兜底",
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.9,
+   "ideal": "任意入口形态下点「取消」均有确定落点与反馈：栈深>1 时 navigateBack 回来源页；栈深=1 时回退至 campus hub（/subpackages/campus/campus/index）或首页；失败静默兜底不再产生 unhandledRejection",
+   "fix": "goBack 内先取 getCurrentPages().length：≤1 时 reLaunch 至 /subpackages/campus/campus/index（或 switchTab 首页），否则 navigateBack 并挂 fail 回调做同样回退；成功发布路径的 800ms navigateBack（post-topic.vue:253-256）同步加固；建议与 circles/post-topic、village/post 等同构页统一封装",
+   "status": "待修复"
+  }
+ ],
+ "unverifiable": [
+  "PT02|路由参数已证但选中项文本/截图/wxml 均未采集，『学习互助唯一高亮』无直接证据|1",
+  "PT03|dom 采集为表达式碎片（.trim/.length），选中项文本与截图缺失|1",
+  "PT04|?category=__proto__ 深链未执行（route options={}），tap 校园活动文本定位失败；探针未发生|1",
+  "PT05|SKIPPED action-not-automatable：campus/index 发布入口无法自动化定位|1",
+  "PT06|前置链路被执行器 auto-reLaunch 替代致栈深=1，navigateBack 平台性失败；返回落点无法按用例设计验证（缺陷已立 Issue MP-R1-CAMPUSPOSTTOPIC-101）|1",
+  "PT07|六步点选仅执行 1 步且目标为已选中首 chip，末态与初态重合，选中迁移唯一性未观测|1",
+  "PT08|无任何 boundingClientRect 数据落盘，热区≥88rpx 未量测|1",
+  "PT10|未按用例输入 60 字（实际 12 字短文本），maxlength 截断与长度断言未产生|1",
+  "PT11|特殊串已输入且 console 无错，但 after 截图超时缺失、回显原样性未断言、输入串在日志中截断|1",
+  "PT12|清空动作未执行（实际为填入新值），按钮回落置灰与 Toast 分支未观测|1",
+  "PT13|499/501 字符序列未输入，计数封顶未观测；--over:absent 仅为初始态自然值|1",
+  "PT14|内容清空未执行（实际为填入短文本），计数回 0 与按钮联动未观测|1",
+  "PT15|仅单向滚到底，未回顶、无状态保持采样；填表/选图/选话题前置未执行|1",
+  "PT16|tap header 发布钮文本定位失败（文案在 .submit-text 子节点），动作未执行，Toast 无从触发|1",
+  "PT17|同 PT16 定位失败且标题填充前置未执行，动作未发生|1",
+  "PT18|critical：表单填充前置未执行（wxml 六份 dump 恒空态）+tap 发布定位失败，成功链路未观测|1",
+  "PT19|critical：rapidTap 目标定位失败，防连点守卫未验证|1",
+  "PT20|critical：tap 未执行且失败注入未做（用例自注明无法注入时标 UNVERIFIED）|1",
+  "PT21|底部按钮 tap 成功且空表单守卫 Toast 正确，但表单前置未执行致『发布成功链路』不可观测；应用对实际态反应符合规格故不判 FAILED|1",
+  "PT22|input 与 tap 取消均 element not found（取消文案在 .back-icon 子节点），打开即返回协议未执行|1",
+  "PT23|仅 auto-reLaunch observe-only，填表→取消→再进协议未执行，『不残留』语义无从验证|1",
+  "PT24|chooseImage 成功 mock 未注入：before/after 截图 md5 全等、wxml 仍 0/6、无 Toast、console 未捕获 chooseImage 调用——环境性未达成，不能判应用缺陷亦不能判通过|1",
+  "PT25|前置（有已选图）未达成，.image-item__remove 不存在，删除动作无法执行|1",
+  "PT26|fail-cancel mock 未注入+加号格文本定位失败（无『号』字可命中），动作未执行|1",
+  "PT27|fail auth deny mock 未注入+同上定位失败，失败 Toast 分支未观测|1",
+  "PT28|隐私 reject mock 未注入（用例自注明无法构造时记 UNVERIFIED）+动作未执行|1",
+  "PT29|补满 6 张的 mock 分批 success 未执行（执行器误以常量名 .PHOTO_GALLERY_MAX 为选择器），满图态未构造|1",
+  "PT30|热门 chip 位于子组件 TopicSelector 内，__CAND__ 文本定位未穿透组件边界，选中/取消未执行|1",
+  "PT31|SKIPPED action-not-automatable：第 4 个热门 chip 无法自动化|1",
+  "PT32|dom 探测 present 与 input API element not found 自相矛盾（子组件 input 不可达），三步过滤未执行|1",
+  "PT33|create-input 同上不可达+『创建』文本在子节点定位失败，创建流程未执行|1",
+  "PT34|前置输入失败+『创建』定位失败，空名创建 Toast 未观测|1",
+  "PT35|input/tap 定位失败，重名创建 Toast 未观测|1",
+  "PT36|已选 2 话题前置未达成+『清空』定位失败，移除/清空协议未执行|1",
+  "PT37|未执行任何开关切换（observe-only），dom 片段为表达式碎片，截图未含开关区|1",
+  "PT38|critical：全部前置未执行+tap 发布定位失败，组合回流断言未观测|1"
+ ],
+ "notes": "判定方法：三方对照（Manifest.expected / A1.exec-results.observed / 截图+wxml+console）。关键执行器语义经源码核实（scripts/qa/r1-exec.cjs）：:846/:1280 __CAND__=按 label 在候选选择器中解析文本，:1316 栈顶≠用例页时记录 pre:auto-reLaunch。本轮系统性采集局限（影响 34 条 UNVERIFIED 的归因，非产品缺陷结论）：a) 文本候选定位无法穿透自定义组件边界与子节点文本——header「发布」在 .submit-text 子节点（PT16-PT20/PT38）、「取消」在 .back-icon 子节点（PT22）、TopicSelector 内 12 个热门 chip/「创建」按钮（PT30-PT36）、加号格「+/添加图片」（PT26-PT28）：截图与 wxml 均证明目标元素真实存在且可见，全部 act-FAIL 属采集器定位缺口而非死按钮；b) 表单填充前置在关键用例普遍未执行——PT18/19/20/21/24/38 六份 after-wxml md5 全等（4ff80bc2…，恒为空表单态：标题空/0/500/0/6/已选0/3/发布置灰），故 PT18-PT21、PT24、PT29、PT38 的成功链路类 expected 均不可观测；c) 数值/清空类用例被降级为短文本输入（PT10 应输 60 字实输 12 字、PT12/PT14 应清空实为填入、PT13 应输 499/501 实输短文本），边界行为未触达；d) mock 注入类前置（chooseImage 成功/取消/失败、隐私拒绝、发布失败）均无执行记录（PT20/PT24/PT26-PT29），多张截图 md5 全等（PT24 before/after、PT26=PT27）实锤零变化；e) dom 断言流水混入表达式解析碎片（.trim/.length/.color/.brand），不构成节点断言；部分截图记录标 timeout 但磁盘有旧帧（如 PT04），已用 md5+记录双核对。正向佐证：PT21 底部按钮路径 500ms 内 Toast「请输入标题」，证实 MP-R1-CAMPUSPOST-001（空表单不静默）修复在 bottom 入口同样生效、底部按钮非死按钮；PT01/PT09 为本轮仅有的两例三源一致判 VERIFIED（PT01 缺自身首帧截图，以同轮 6 次同入口冷启动 wxml+截图交叉佐证降置信至 0.75）。唯一产品缺陷：goBack 裸 navigateBack 在栈深=1（冷启动深链/分享直达）时零反馈+全局错误上报，已立 MP-R1-CAMPUSPOSTTOPIC-101（P2，待修复）。round-1-tour 巡检 screenshot-manifest 含 11 条本页巡检条目，可作后续复验的旁证来源。"
+}

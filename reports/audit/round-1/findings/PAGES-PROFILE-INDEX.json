@@ -1,0 +1,184 @@
+{
+  "round": "R1",
+  "page": "pages/profile/index（我的，tabBar）",
+  "reviewer": "A3 visual reviewer（截图与证据的视觉/布局/状态审查）",
+  "generatedAt": "2026-09-23",
+  "evidenceManifest": {
+    "gitSha": "aefd8a72",
+    "matchedHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+    "manifestPath": "reports/audit/round-1/screenshot-manifest.json",
+    "verdict": "证据缓存与当前 HEAD 一致，全部证据按新鲜采信",
+    "shotsReviewed": [
+      "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png",
+      "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+      "reports/screenshots/round-1-tour/A/pages_profile_index__交互后.png",
+      "reports/screenshots/round-1-tour/B/pages_profile_index__默认.png",
+      "reports/screenshots/round-1-tour/B/pages_profile_index__滚动-中部.png",
+      "reports/screenshots/round-1-tour/B/pages_profile_index__滚动-底部.png",
+      "reports/screenshots/round-1-tour/B/pages_profile_index__交互后.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-00-base.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-01-before.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-02-before.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-ISSUE-FAB-zoom.png"
+    ],
+    "zoomCropsProduced": [
+      "reports/audit/round-1/findings/tmp-voice-crop.png（语音介绍 header 3x）",
+      "reports/audit/round-1/findings/tmp-top-crop.png（登录态顶栏 3x）",
+      "reports/audit/round-1/findings/tmp-fab-crop.png（FAB 区 3x）",
+      "reports/audit/round-1/findings/tmp-gap-crop.png（更多功能→语音卡间距 3x）"
+    ],
+    "idealReferences": [
+      "素材/理想效果图/已经填完资料的个人主页.png",
+      "素材/理想效果图/未登录个人主页.png"
+    ]
+  },
+  "note": "A2 代码层 16 项（MP-R1-PROFILE-201/202/215~226、R12-IND-PROFILE-INDEX-001）已通读且不重复提报；本轮产出 6 条视觉发现（含 1 条对 R12-IND-PROFILE-INDEX-001 的截图确认）。历史线索核对：MP-R1-PROFILE-201 视觉层不复现（相册/头像正常加载，帖子卡无图系 mock 无 images 字段）；MP-R1-PROFILE-202 视觉层成立（语音/背景/邀请卡在滚动-底部可见可辨）；R12-IND-PROFILE-INDEX-001 截图确认未修复；203..214 簇视觉层无新增复发（VIP 卡未显示属 commerce 开关门禁，非颠倒回归；自定义 tabBar 无 backdrop-filter 白斑）。MP-R1-PROFILE-219（他人态胶囊几何）要求的截图复核未做：round-1 证据中无 pages/profile/index 他人态截图（interact #271 reLaunch?userId=4001 未留截图），如实标注。",
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-001",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png（放大件 reports/audit/round-1/findings/tmp-voice-crop.png）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「语音介绍」卡 header 三个元素挤同一 flex 行发生三处折行：标题「语音介绍」折成「语音介/绍」，chip「仅语音 · 无视频」折成「仅语音·无视/频」（药丸内断词），提示语「最长 60 秒，让 TA 听到真实的你」尾字「你」孤行。同页「编辑背景图」header 因仅一个子元素单行正常，对照证明是行容器宽度分配问题而非文案过长。",
+      "evidence": "放大裁剪 tmp-voice-crop.png（373px 宽截图 3x）清晰可见三处折行；代码：pages/profile/index.vue:1680-1688 section-header__left 内同排放 title + voice-only-tag + count-hint 三子元素；index.vue:3425-3429 .section-header__left { display:flex; align-items:baseline; gap:var(--sp-3) } 无 flex-wrap、子元素无 white-space:nowrap/flex-shrink:0——375 宽下标题(~56px)+chip(~92px)+提示(~170px)+2×gap 超出卡内容宽(~311px)，三项同时被压缩换行；文案源 i18n/locales/zh-CN.ts:1653-1655。A/B 两轮滚动-底部截图同样呈现，非偶发。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "标题与 chip 各自单行完整显示（对照理想图整页稿的 section header 节奏），长提示语不与标题争宽。",
+      "fix": ".section-header__left 加 flex-wrap:wrap；.section-header__title 与 .voice-only-tag__text 加 white-space:nowrap + flex-shrink:0；提示语（voiceStatusHint）移到 header 下方独立成行（或缩短文案）。纯样式改动。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-002",
+      "round": "R1",
+      "page": "pages/profile/index（未登录态）",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "R12-IND-PROFILE-INDEX-001（未登录态头部图标与状态栏叠印）的截图确认，代码层提报后本轮首次拿到未登录态视觉证据：带刘海设备帧截图中「应用中心(MOBILE 图标)/设置(齿轮)」两枚 64rpx 圆钮与时钟 13:46 几乎同高（约 y25-50），整体落在状态栏/刘海带内，微信胶囊（y≈55-80）反而低于图标行——真机上状态栏文字/电量图标会与按钮叠印。同页登录态 MyHeader 已按 --statusbar 让位，唯未登录组件漏配，同页两态标准不一。",
+      "evidence": "PAGES-PROFILE-INDEX-25-guest-other.png 顶栏：‹ 返回在左、两枚图标在右且与时钟同行；对照登录态放大件 tmp-top-crop.png：登录态图标行与胶囊同排、横向留 ~20px 间隙、无叠印。代码（A2 已证，本轮复核一致）：components/profile/NotLoggedProfile.vue:153-157 根 padding 32rpx 无 --statusbar/env(safe-area-inset-top) 消费；:35-66 nlp-topbar 首元素无让位；对照 mine/MyHeader.vue:96-98 有让位。pages.json:36 全局 navigationStyle:custom。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "未登录态 topbar 首行下移状态栏高度（calc(var(--statusbar, env(safe-area-inset-top)) + N rpx)），任何机型不与状态栏/胶囊叠印，与登录态同标准。",
+      "fix": "与 R12-IND-PROFILE-INDEX-001 合并修复：NotLoggedProfile.vue 根 padding-top 与 .nlp-topbar 增加状态栏让位，右侧按钮组增加胶囊横向避让（参照 MyHeader.vue:103-111）。",
+      "status": "待修复",
+      "note": "代码层已提报（历史号 R12-IND-PROFILE-INDEX-001，A2 置信 0.8）；本条为其截图确认证据，修复时合并，不构成重复缺陷。"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-003",
+      "round": "R1",
+      "page": "pages/profile/index（未登录态）",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "未登录态与理想图（素材/理想效果图/未登录个人主页.png）L1/L2 对照两处结构性偏差：①四格统计实况为「关注/粉丝/获赞/匹配」，理想图未登录稿与登录态实况均为「我喜欢/喜欢我的/我赞/访客」——且 NotLoggedProfile.vue:16 注释自称「与已登录 MyStats 对齐关注/粉丝/获赞/匹配」而登录态 MyStats.vue:11-14 实为另一套，注释与事实互相矛盾；②实况头部为「点击登录 ›」列表行，无理想图中的头像占位圈与右上「编辑资料」胶囊。",
+      "evidence": "截图四格：关注(USER 绿)/粉丝(GROUP 蓝)/获赞(THUMBS_UP 橙)/匹配(HEART_FILLED 粉) 全 0（NotLoggedProfile.vue:16-20）；理想图同位置为 我喜欢(紫心)/喜欢我的(粉人)/我赞(橙赞)/访客(蓝眼) 0 占位；登录态截图 A 默认.png 统计亦为后者（MyStats.vue:11-14）；理想图头部含灰头像圈+「编辑资料」白胶囊，实况无。两轮巡检均无未登录 tour 截图，此为 interact 留档唯一视觉证据。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "未登录统计四格与理想图/登录态同构（我喜欢/喜欢我的/我赞/访客，0 占位）；头部结构对照理想图（头像占位+点击登录+编辑资料）或经产品确认列表行形态后更新理想锚。",
+      "fix": "NotLoggedProfile.vue:16-20 四格 label/icon 换为 iLike/likedMe/praised/visitor 口径并修正失真注释；头部是否补头像占位/编辑资料属产品决策——若维持现状请理想图侧确认豁免。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-004",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png（B 轮同）",
+      "category": "Data",
+      "severity": "P3",
+      "description": "「我的互动」四行中「我的匹配」行右侧计数完全空白（其余三行 22/2/104 正常显示）：0 值被 v-if 整体隐藏，用户无法区分「0 匹配」与「数据未加载」。理想图两稿该位置恒显示计数（登录稿「16人/28人」、未登录稿 0 值显示「0人」），0 占位是理想口径。",
+      "evidence": "components/profile/mine/MyInteraction.vue:46 `<text v-if=\"item.value\" class=\"my-interaction__value\">` —— value=0 falsy 不渲染；数据源 pages/profile/index.vue:755 `value: likesStore.mutualLikes.length`（mock 下 0）；截图「我的匹配」行仅图标+标签+箭头。对照理想图未登录个人主页.png 我的互动四行均显示「0人」。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "计数恒显示（含 0），与理想图「0人」占位口径一致。",
+      "fix": "MyInteraction.vue:46 改 `v-if=\"item.value !== undefined && item.value !== null\"`（0 显示 0）；如需「人」后缀与 MP-R1-PAGES-PROFILE-INDEX-005 一并处理。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-005",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "「我的互动」行构成与理想图偏差：理想图每行为「彩色小图标+标签+3 枚头像预览堆叠+N人+箭头」，实况为「彩色大图标圆+标签+裸数字+箭头」——头像预览堆未实现、计数无「人」后缀。行位置/数量/箭头一致，属 L3/L6 级偏差（非 L1-L4 结构性）。",
+      "evidence": "A 滚动-中部截图四行均为 icon 圆+label+数字（如 喜欢我的人 22 ›）；理想图 已经填完资料的个人主页.png 我的互动区首行「喜欢我的人」带 3 枚女性头像堆叠+「16人」+›；任务理想描述「我的互动4行（头像预览堆+箭头）」。头像数据源存在（likesStore.likedBy/visitors 列表项含头像字段）。",
+      "sources": ["screenshot"],
+      "confidence": 0.7,
+      "ideal": "行尾按理想图补头像预览堆叠与「N人」计数格式。",
+      "fix": "MyInteraction.vue 行尾增加 Avatar 堆叠（最多 3 枚，数据取对应 store 列表前 3 项头像）+ 计数渲染「{{ value }}人」；纯展示改动，无头像数据时回退现图标形态。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-006",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png（放大件 reports/audit/round-1/findings/tmp-gap-crop.png）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "「更多功能」卡与「语音介绍」卡之间存在约 120rpx（实测 ~61px@373px 宽）无内容空带，约为本页卡片节距（--sp-6=24rpx）的 5 倍，滚动时呈现明显断档。成因：mine/MyProfile.vue:69 根节点 padding-bottom:120rpx 原为 ProfileShell 尾部预留，MP-R1-PROFILE-202 修复把语音/背景/邀请卡移到 shell 之后后，该 padding 落在两块内容中间成为死间距。",
+      "evidence": "tmp-gap-crop.png（3x）：更多功能卡底缘→语音卡顶缘间纯背景空带实测 ~61px；代码：components/profile/mine/MyProfile.vue:69 `padding-bottom: 120rpx`；index.vue:2955-2964 .media-section margin-top:0；token 表 theme/design-variables.scss:499 --sp-6:24rpx。判缺陷置信中等：不排除该间距被误认为有意留白，但 FAB 是 fixed 于视口底部（GlobalPublishFab.vue:112），此中段间距无避让功能。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.6,
+      "ideal": "区块间距遵循页内 24rpx 节奏，无中段大空带。",
+      "fix": "MyProfile.vue:69 padding-bottom 收敛为 var(--sp-6)（或 0，由页面级 page-bottom-safe 统一管底距）；需视觉回归确认不引起首屏高度变化副作用。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/profile/index",
+      "observation": "登录态默认屏 L1-L4 与理想图 已经填完资料的个人主页.png 一致：资料完整度卡（85%+去完善绿胶囊）→4 格等宽统计→我的故事（虚线添加卡）→我的相册（横滑）→我的互动→更多功能 顺序齐备；统计四格标签（我喜欢/喜欢我的/我赞/访客）与图标配色（紫/粉/橙/蓝）和理想图一致；底部 5 Tab（首页/附近/寻觅凸起心形/消息/我的）与理想图一致。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png vs 素材/理想效果图/已经填完资料的个人主页.png 逐区对照"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "登录态顶栏分享/设置两图标与微信胶囊同排但无叠印：3x 放大件中图标右缘与胶囊左缘横向间隙 ~20px，编辑资料白胶囊位于图标行下方无遮挡——登录态胶囊避让合格（未登录态不合格，见 Issue 002）。",
+      "evidence": "reports/audit/round-1/findings/tmp-top-crop.png（A 默认 x150-373/y30-100 3x）"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "MP-R1-PROFILE-201（配图裸连 /api/v1/media/** 白图）视觉层不复现：相册 4 张缩略图与页头头像均正常加载显示；我的帖子 3 卡无图系 mock 数据本身无 images 字段（stores/profile.ts:195-217 三条均无 images），非加载失败，白图回归不成立。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png（相册 3 张可见+帖子 3 卡）+ stores/profile.ts:195-217"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "MP-R1-PROFILE-202（语音/背景/邀请 UI 不可达）视觉层确认已修复：滚动-底部截图中语音介绍卡（已录制态：播放钮+12 柱波形+0:42+重录/删除双胶囊）、编辑背景图卡、推荐给好友卡依次可见且形态完整。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png + tmp-voice-crop.png"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "A/B 双巡检本页 8 张截图逐对完全一致（仅状态栏时钟 1:08/1:09 与 2:11/2:12 差异）：本轮 A、B 两 identity boot 自检均为 logged-in userId=user-1001，双身份在本轮等价，截图全同为预期，非页面缺陷。",
+      "evidence": "8 张 tour 截图逐对目视比对 + reports/audit/round-1/screenshot-matrix.md §二（boot-verify-A/B 均为 user-1001）"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "交互后截图与默认态无视觉差异（A/B 均是）：本轮交互（tap 头像/统计/故事卡等）未改变首屏视觉状态，符合预期（无态变交互）。",
+      "evidence": "A pages_profile_index__默认.png vs A pages_profile_index__交互后.png（B 同）逐像素目视比对"
+    },
+    {
+      "page": "pages/profile/index",
+      "observation": "历史证据 ISSUE-FAB-zoom.png（绿 FAB 被白色面板盖住下半）为已修复项 MP-R1-PROFILE-001 的历史留档：现行全部截图中 FAB 完整位于 tabBar 上方无遮挡（bottom: calc(env*2+200rpx)，GlobalPublishFab.vue:112，z-index:1000），该回归不成立。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-ISSUE-FAB-zoom.png vs A 滚动-底部/中部现行 FAB 形态 + components/common/GlobalPublishFab.vue:104-128"
+    }
+  ],
+  "coverage": [
+    "截图已看：round-1-tour A/B 双轮 × 默认/滚动-中部/滚动-底部/交互后共 8 张逐张审查；round-1-interact 本页 97 张中按 MD5 去重后抽验 00-base/01-before/02-before/25-guest-other/ISSUE-FAB-zoom 共 5 张；关键区域 4 处 PowerShell 3x 放大裁剪复核（语音 header/登录态顶栏/FAB/区间距）。",
+    "理想图已对照：已经填完资料的个人主页.png（登录态 L1 结构/L2 层级/L3 交互位置/L4 卡片尺寸/L8 配色通过，L3/L6 偏差见 Issue 005）+ 未登录个人主页.png（未登录态 L1/L2 偏差见 Issue 003、状态栏叠印见 Issue 002）；素材/参考图/拆分图标_参考_* 未作页面级对照（R13 判定：仅 26×26~356×35 图标裁切件，禁用）。",
+    "滚动已测：滚动-中部（相册/帖子/互动区）与滚动-底部（更多功能/语音/背景/邀请区）两态审查；顶部滚动裁切（最近访客行半行入状态栏带）属正常滚动中态，非 sticky/fixed 缺陷。",
+    "点击已测：本层未亲自执行模拟器点击（无 devtools 会话）；以 reports/audit/round-1/interact/exec-results.json S04-profile #264-303（登出/登录/头像菜单/语音录制播放删除/统计/故事/相册/帖子/互动/更多/编辑跳转全部 act 记录）与 round-1-interact 97 张操作截图为行为证据，交互正误判定归交互判定员。",
+    "返回已测：本页为 tabBar 页无系统返回；未登录态 topbar ‹ 返回钮在 25-guest-other 可见（落位缺陷见 Issue 002）；深链他人态（interact #271 reLaunch?userId=4001）无截图留档——未验证。",
+    "safe-area 已查：登录态 MyHeader.vue:96-98 消费 --statusbar 让位正常（截图无叠印）；未登录态缺失即 Issue 002；页面底部 page-bottom-safe（index.vue:1641）与 FAB 双倍 env 兜底（GlobalPublishFab.vue:112）截图无遮挡。",
+    "TabBar 已查：5 Tab 齐全（首页/附近/寻觅/消息/我的），中央寻觅凸起心形完整，FAB 与 TabBar 无重叠，滚动-底部最后一条内容（推荐给好友卡）在 TabBar 上方完整可见。",
+    "空态已查：我的故事空态=仅虚线添加卡（无日常数据）；未登录 0 占位齐全；「我的匹配」0 值空白为缺陷（Issue 004）；相册 4 张/帖子 3 篇非空态。",
+    "长文已查：未验证——mock 数据文案均短（bio 21 字/帖子 20-24 字），长昵称/500 字极端态在本轮截图集中无留档。",
+    "加载态已查：未验证——骨架屏代码在位（ProfileShell.vue:71-73 LoadingSpinner + 骨架），本轮截图集无加载中间态留档。",
+    "错误态已查：未验证——error/retry UI 代码在位（ProfileShell.vue:74-79），本轮截图集无错误态留档。",
+    "组件一致性已查：统计/互动图标配色登录-未登录两态对照完成（未登录统计 schema 不一致见 Issue 003）；按钮/卡片圆角与阴影跨区块一致；字面色值/token 违反簇已由 A2 MP-R1-PROFILE-221 提报不重复；与理想图的 tabBar/统计配色一致。",
+    "历史 Bug 回归已查：MP-R1-PROFILE-201 视觉层不复现（observation 3）；MP-R1-PROFILE-202 视觉层成立（observation 4）；R12-IND-PROFILE-INDEX-001 截图确认未修复（Issue 002）；R1-PROFILE-203..214 簇视觉层无新增复发（VIP 卡未显示属 commerce 开关门禁非颠倒回归；targetUserId 复位/分享假实现/空 catch 属代码层已报；自定义 tabBar 无 backdrop-filter 白斑）；ISSUE-FAB-zoom 为已修复项 MP-R1-PROFILE-001 历史证据（observation 7）；MP-R1-PROFILE-219 他人态胶囊几何因无本页他人态截图——未验证，留交互判定员/终验。",
+    "数据极值已查：0 值（Issue 004）；85% 完成度魔数由 A2 MP-R1-PROFILE-225 提报不重复；无头像/缺字段态 mock 未覆盖未验证；图片 fallback 链视觉层正常（相册/头像直显）。"
+  ]
+}

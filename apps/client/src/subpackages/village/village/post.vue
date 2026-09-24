@@ -69,6 +69,33 @@ const targetId = ref<number | null>(null);
 const targetCircle = ref<CircleItem | null>(null);
 const targetOpen = ref(false);
 
+// MP-R1-POST-202：移植 publish.vue ensureCirclesLoaded——fetchCircles 无应用级
+// 预加载，直入本页时 circleStore.circles 为空，「兴趣圈子」分组挂
+// v-if="circles.length>0" 被静默隐藏且无加载/失败/空态；弹层打开时懒加载一次
+const circlesLoading = ref(false);
+const circlesLoadFailed = ref(false);
+async function ensureCirclesLoaded(): Promise<void> {
+  if (circleStore.circles.length > 0 || circlesLoading.value) return;
+  circlesLoading.value = true;
+  circlesLoadFailed.value = false;
+  try {
+    await circleStore.fetchCircles();
+  } catch (_e) {
+    /* store 内部已吞错，errorMessage 判定在下方 */
+  } finally {
+    circlesLoading.value = false;
+    if (circleStore.errorMessage) circlesLoadFailed.value = true;
+  }
+}
+function retryLoadCircles(): void {
+  void ensureCirclesLoaded();
+}
+watch(targetOpen, (open) => {
+  if (open && circleStore.circles.length === 0) {
+    void ensureCirclesLoaded();
+  }
+});
+
 /* ---------- 2026-09-05 R17：话题/位置/可见范围选择弹层（全部可编辑） ---------- */
 const topicSheetOpen = ref(false);
 const locationSheetOpen = ref(false);
@@ -487,8 +514,12 @@ async function submitPublish() {
   submitting.value = true;
   try {
     // real 模式先上传本地图片换取远端 URL；mock 沿用本地路径
+    // MP-R1-POST-201：本地/已上传判定统一走 isUploadedMediaUrl（同文件草稿链路
+    // :318/:389 已用）——裸 /^https?:\/\// 会把 DevTools/iOS 模拟器临时路径
+    // （http://tmp/xxx、http://usr/xxx）误判为「已上传」而跳过 /media/upload，
+    // 导致后端落库 http://tmp/* 死链（同 publish.vue MP-R2-PUB-102 修复口径）
     let finalImages = images.value;
-    const localImages = images.value.filter((img) => !/^https?:\/\//.test(img));
+    const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
     if (localImages.length > 0 && !useMock()) {
       uni.showLoading({ title: t("village.post.uploadingImages") });
       try {
@@ -497,7 +528,7 @@ async function submitPublish() {
           const r = await clientApi.uploadPostImage({ name: `post-image-${Date.now()}.jpg`, path: img });
           urls.push(r.url);
         }
-        finalImages = [...images.value.filter((img) => /^https?:\/\//.test(img)), ...urls];
+        finalImages = [...images.value.filter((img) => isUploadedMediaUrl(img)), ...urls];
       } catch (_e) {
         uni.hideLoading();
         uni.showToast({ title: t("village.post.imageUploadFailed"), icon: "none" });
@@ -685,7 +716,20 @@ async function submitPublish() {
               />
             </view>
 
-            <template v-if="circleStore.circles.length > 0">
+            <!-- MP-R1-POST-202：加载中/失败/空态（原 v-if 静默隐藏「兴趣圈子」分组） -->
+            <template v-if="circlesLoading">
+              <text class="post-target-sheet__desc post-target-sheet__hint">兴趣圈子加载中…</text>
+            </template>
+            <template v-else-if="circlesLoadFailed">
+              <text class="post-target-sheet__desc post-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
+              <view class="post-target-sheet__option press-feedback" role="button" @tap="retryLoadCircles">
+                <text class="post-target-sheet__name">重试加载</text>
+              </view>
+            </template>
+            <template v-else-if="circleStore.circles.length === 0">
+              <text class="post-target-sheet__desc post-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
+            </template>
+            <template v-else>
               <text class="post-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
               <view
                 v-for="circle in circleStore.circles.slice(0, 8)"
@@ -1227,6 +1271,13 @@ async function submitPublish() {
   font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #9AA39F);
   flex: 1;
+}
+/* MP-R1-POST-202：弹层内加载中/失败/空态提示行（对齐 publish-target-sheet__hint） */
+.post-target-sheet__hint {
+  display: block;
+  padding: 24rpx 8rpx;
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-tertiary, #9AA39F);
 }
 .post-target-sheet__check {
   width: 32rpx;

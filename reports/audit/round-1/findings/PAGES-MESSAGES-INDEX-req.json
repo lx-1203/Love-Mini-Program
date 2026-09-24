@@ -1,0 +1,173 @@
+{
+  "round": "R1",
+  "reviewer": "A4-req",
+  "page": "pages/messages/index",
+  "generatedAt": "2026-09-24",
+  "evidenceBasis": {
+    "ideal": "素材/理想效果图/消息.png（唯一页面级对照依据）",
+    "staticShots": [
+      "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "reports/screenshots/round-1-tour/A/pages_messages_index__空态.png（与默认.png cmp 字节级相同，空态未真实触发）"
+    ],
+    "execResults": "reports/audit/round-1/interact/exec-results.json MSG01-MSG40（12 FAILED）",
+    "code": "apps/client/src/pages/messages/index.vue（工作区）及 utils/time.ts、theme/design-variables.scss、pages.json、stores/messages.ts、apps/api RealPrivateMessageService.java"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-101",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "测试残留消息「全链路验收测试消息2026-09-12」外露在最近聊天预览位，待清理（数据侧）。本轮复核：全仓 grep 该字符串仅命中 reports 基线文档（apps/client/src、apps/api 零命中），属运行时数据库残留（private_messages id=3894，conv 461），非代码带入；前端原样渲染 lastMessagePreview、后端会话列表预览取反范式列，故必须双表清理（消息行+会话预览列）。与代码侧 R13-DATA-3894 同源，需求侧按任务书「外露待修」保持开放。",
+      "evidence": "本轮执行 grep -rn 全链路验收测试消息：apps/ 与全仓受控文件仅命中 reports/audit/baseline/*、reports/audit/2026-09-22-r13-goal/*；渲染链 apps/client/src/pages/messages/index.vue:502-507 <EmojiText :text=\"session.lastMessagePreview\"> ← stores/messages.ts:272 ← apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java:574 ← entity/PrivateConversation.java:42 @Column(name=\"last_message_preview\")；reports/audit/baseline/historical-issues.md:82（删除不可逆停在等授权）。本轮未连库，行级现状未实查。",
+      "sources": ["code", "log"],
+      "confidence": 0.9,
+      "ideal": "消息列表预览位只出现真实用户消息，无任何审计/巡检测试文案",
+      "fix": "授权后双表清理：DELETE private_messages id=3894 并同步 UPDATE private_conversations(id=461).last_message_preview（取该会话最新真实消息重算）；清理后按基线要求以 SQL+页面实拍双证回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-102",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "头部右侧缺「+（发起会话）」入口，仅剩放大镜：消息页无法主动找人开聊，需求给定的功能入口整体缺失。代码侧已记 MP-R1-PAGES-MESSAGES-INDEX-019(P3 UI)，按需求侧『功能缺失 category=Function、禁止降级为视觉问题』定性为 Function P2。",
+      "evidence": "apps/client/src/pages/messages/index.vue:342-346 header__right 仅一枚 toggleSearch 钮；git show HEAD:apps/client/src/pages/messages/index.vue :343-347 相同；静态实拍 A/默认.png 头部右侧仅 🔍 一钮；素材/理想效果图/消息.png 头部右上为 放大镜+加号 双钮；reports/audit/baseline/ideal-baseline.md:87『放大镜 + 加号（发起会话）』且 R13 即记明显偏差。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.95,
+      "ideal": "消息头部右侧两钮：放大镜（搜索）+ 加号（发起会话，选择对象后进 chat-session?userId=）",
+      "fix": "header__right 增补 + 钮：跳选择联系人页或复用 ROUTES.CHAT.SESSION?userId= 直开；与现有搜索钮同规格（72rpx 圆钮、hover 态）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-103",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__空态.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "空态缺「推荐认识的人」兜底：现空态仅吉祥物+『还没有新的缘分/去附近看看吧』两句文案，无任何可点击的推荐人内容，与任务书 target『空态=推荐认识的人兜底』及 ideal-baseline.md:87 不符；新用户空态成为死胡同。",
+      "evidence": "apps/client/src/pages/messages/index.vue:363-369 #empty 模板仅 empty-chat__img/title/desc 三元素；exec-results MSG07 仅验证文案空态（EXECUTED）；reports/screenshots/round-1-tour/A/pages_messages_index__空态.png 与 默认.png cmp 字节级相同——巡检未真实触发空态，空态兜底能力无实拍证据。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "无会话且无升温数据时，空态区下移呈现『推荐认识的人』横排（复用发现/推荐数据源），点击可进主页/开聊",
+      "fix": "#empty 分支接入推荐认识的人数据源（discover 推荐 API 或 dashboard.recommend），渲染 3-4 枚头像卡兜底；无推荐数据时保留现文案。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-104",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "Consistency",
+      "severity": "P2",
+      "description": "关系标签「互相关注」渲染为蓝色 #4D8DFF 系（--c-text-link），规格要求绿色 #3CC99A：三态标签中唯一硬冲突（聊天中≈#3CC99A 绿✓、暧昧中≈#FF6891 粉✓）。",
+      "evidence": "apps/client/src/pages/messages/index.vue:1089-1094 .status-mutual{background:rgba(77,141,255,.12)} 文本色 var(--c-text-link, #4D8DFF)；getStatusClass 映射 mutual_follow→status-mutual（:296-304）；静态实拍 A/默认.png『叶知秋 互相关注』标签实拍为蓝底蓝字；任务书 target『互相关注#3CC99A』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "互相关注标签 = 绿色系 #3CC99A（浅绿底+绿字），与聊天中同族",
+      "fix": "status-mutual 底改 rgba(60,201,154,0.12)、文字改 var(--c-text-success,#3CC99A)；顺带按代码侧 MP-R1-017 将该组裸色值收敛为 token。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-105",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「去看看/去回复」按钮为实心绿渐变+白字+投影，与唯一页面级对照依据 消息.png 的『浅绿描边小胶囊+绿字，非实心渐变』直接矛盾；代码注释自称『对齐 2026-08-27 理想图修复』，与现行裁决链冲突，需按 消息.png 归一。",
+      "evidence": "apps/client/src/pages/messages/index.vue:734-748 .quick-card__btn{background:linear-gradient(135deg,#36C99A→#2AAE83);box-shadow…} __btn-text 白色；静态实拍 A/默认.png 两卡按钮实心绿胶囊白字；素材/理想效果图/消息.png 两按钮为浅绿描边胶囊+绿字；任务书 target 明示『非实心渐变』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "去 replica：浅绿描边（或极浅绿底）小胶囊 + 品牌绿文字，无渐变无投影",
+      "fix": ".quick-card__btn 改 background:transparent/浅绿 tint + border 1rpx #3CC99A 系，文字 var(--c-text-brand)；删除渐变与投影。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-106",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "页面底色为浅绿 #EEF7F2 非白底，违反 v3.1 契约『发现/附近/消息白底』节奏红线与 消息.png 主视觉；白卡片浮于浅绿底上图底关系与理想图相反。",
+      "evidence": "apps/client/src/pages/messages/index.vue:570 .messages-page{background:var(--c-bg-page,#EEF7F2)}；浅色 token 实值 apps/client/src/theme/design-variables.scss:119 $bg-page:#EEF7F2（:359 注入 --c-bg-page；tokens.scss:228 #0E1116 为 dark 覆写块）；静态实拍 A/默认.png 整页浅绿底；任务书 target『主视觉：白底』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "消息页整页白底，白卡以描边/浅阴影分层（同 消息.png）",
+      "fix": "页面级覆写背景为 #FFFFFF（勿动全局 --c-bg-page，避免波及 dark 适配与他页）；滚动遮罩 .messages-page__top-scrim 渐变同步改白。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-107",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "「正在升温」非横滑：静态 flex 行 + slice(0,4) 硬截断，无 scroll-view/横向滚动；warmPeople>4 时第 5 人起从该模块不可达。功能部分实现（≤4 人时形态与理想一致），定 P3。",
+      "evidence": "apps/client/src/pages/messages/index.vue:444-460 v-for person in warmPeople.slice(0, 4)；.warm-list{display:flex;gap:24rpx}（:894-898）无 overflow/scroll-view；任务书 target『正在升温横滑』；默认巡检数据下该区整体隐藏（:439 v-if）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "横滑带：scroll-view scroll-x 展示全部升温对象，滑动查看第 5 人及以后",
+      "fix": "warm-list 改 <scroll-view scroll-x>，移除 slice(0,4)（或仅作渲染上限改分页加载）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-MESSAGES-INDEX-108",
+      "round": "R1",
+      "page": "pages/messages/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-05-after.png（判定为旧轮残留图，不采信）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "本页 R1 交互执行证据存在系统性缺陷：①buildMode=build:mp-weixin:mock 下 useMock()=true 使 isUnlocked 恒真，未登录等待态结构性不可渲染，MSG01-04 必然失败/误报——MSG01 dom 断言 .not-logged__* 全部 absent 却标 EXECUTED（与用例标题『等待态完整渲染』矛盾）；②MSG05/11/17/19 等证据截图 saveFile 超限保存失败，interact 目录现存 05-after.png 含当前代码不存在的「+」头钮与搜索词『不存在xyz』，判定旧轮残留；③巡检空态截图与默认截图字节相同，空态从未在巡检真实触发。上述不影响产品功能定性，但削弱本轮通过结论的证据力，需整改后重跑。",
+      "evidence": "exec-results.json：MSG01 observed『dom: .not-logged__bg:absent … .not-logged__btn--primary:absent』status=EXECUTED；MSG02-04 FAILED element not found；MSG05/11 evidence 字段带『ERROR:saveFile:fail exceeded the maximum size of the file storage limit』；screenshot-manifest.json buildMode=build:mp-weixin:mock；本轮 cmp 实测 A/…__空态.png 与 默认.png identical；index.vue:64 isUnlocked=isLoggedIn||useMock()。",
+      "sources": ["log", "screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "未登录态用例在非 mock 构建执行；每条用例证据落盘成功且与代码状态可互证；空态/默认态截图内容可区分",
+      "fix": "未登录 MSG01-04 改非 mock 构建重跑；修正 MSG01 判定（dom 全 absent 应判 FAIL）；清理 interact 目录旧轮残留图并按 manifest 重新落盘；巡检空态场景注入数据清空前置。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/messages/index",
+      "baseline": "素材/理想效果图/消息.png（唯一页面级对照依据）+ 任务书页面 target + reports/audit/baseline/ideal-baseline.md:87 + v3.1 契约「消息白底」（29a2b1df 裁决链）",
+      "file": "reports/audit/round-1/page-compare/PAGES-MESSAGES-INDEX.md",
+      "structureNotes": "L1 页面框架 ✓：单页纵向滚动 + 自定义头 + 自定义五段 tabBar（pages.json:396-427 list 5 项 custom:true；本页 useTabBar(3)，index.vue:37）。L2 版块顺序 ✓：Header→快捷双卡→寻觅助手（官方标✓ index.vue:415-417、未读点✓ :408-410）→正在升温→最近聊天（→活动推荐数据驱动后置），与理想一致；偏差①整页底色 #EEF7F2 非白底（:570 + design-variables.scss:119，P2-106）②默认数据下「正在升温」整块缺席（:439 v-if 数据驱动，保留）。L3 元素齐缺 ✗：头部仅搜索钮缺「+发起会话」（:342-346，P2-102）；空态缺「推荐认识的人」兜底（:363-369，P2-103）。L4 组件样式规格 ✗：「去看看/去回复」实心绿渐变白字≠浅绿描边胶囊+绿字（:734-748，P2-105）；互相关注标签蓝 #4D8DFF≠#3CC99A（:1089-1094，实拍叶知秋标签蓝色，P2-104）。L1-L4 存在多处偏离→不达标。L5 文案基本✓（微差：卡1描述『N 人喜欢了你』vs 理想『3 个人想认识你』）；L6 信息格式 ✓ 相对时间分型（当天 HH:mm/昨天/周几/日期，utils/time.ts:384-433，实拍 00:55/昨天/周一/周日）；tab3 文案「寻觅」vs 理想「匹配」为品牌定名偏差（保留）。已修核实：「单卡通栏已修」= 工作区未提交修改 max-width:calc(50% - 10rpx)（git diff HEAD 仅 2 hunk，:684-686；MSG19 EXECUTED）。",
+      "usageNotes": "核心任务「看未读→进会话→回复→返回红点清零」顺畅：MSG27/MSG35/MSG34 EXECUTED，onShow 未读闭环在（index.vue:274-278）。断点①：无法从消息页主动发起会话（无 + 入口，P2-102），新会话依赖对方先行动作，需求路径不通。断点②：空态冷启动只有『去附近看看吧』文案，无推荐人兜底（P2-103）。回 tab 成本：本页即 tabBar index3，chat-session/likes/official-chat 返回均落本页，任意页 2 步内回 tab ✓。迷路点：长按菜单双关文案（代码侧 MP-R1-022 已记）；未登录等待态在 mock 构建下无有效执行证据（P3-108）。搜索过滤/长按置顶免打扰删除/下拉刷新功能代码在（:143-151/:223-248/:279-284），MSG12-15/28-31/36/39 的 FAILED 属执行层限制（前置态丢失、原生 ActionSheet、自定义 tabBar 选择器），MSG16/25/26/38 等 EXECUTED 侧证功能在。",
+      "functionGaps": [
+        {
+          "target": "头部右侧放大镜+加号（发起会话）（消息.png；ideal-baseline.md:87）",
+          "current": "仅放大镜一枚钮（index.vue:342-346；实拍 A/默认.png 单钮）",
+          "gap": "「发起会话」入口整体缺失，消息页无法主动找人开聊",
+          "fix": "header__right 增补 + 钮→选择联系人/ROUTES.CHAT.SESSION?userId=（P2-102）"
+        },
+        {
+          "target": "空态=推荐认识的人兜底（任务书 target；ideal-baseline.md:87）",
+          "current": "空态仅吉祥物+『还没有新的缘分/去附近看看吧』（index.vue:363-369）",
+          "gap": "无推荐认识的人内容兜底，空态为死胡同",
+          "fix": "#empty 接入推荐数据源渲染 3-4 枚头像卡，无数据时保留现文案（P2-103）"
+        },
+        {
+          "target": "正在升温横滑（消息.png；任务书 target）",
+          "current": "静态 flex + slice(0,4)，无横向滚动（index.vue:444-460/:894-898）",
+          "gap": ">4 人时第 5 人起不可达；无横滑交互形态",
+          "fix": "scroll-view scroll-x 替换并放开截断（P3-107）"
+        },
+        {
+          "target": "消息预览位仅真实用户消息（数据卫生，任务书明示待修）",
+          "current": "「全链路验收测试消息2026-09-12」数据库残留外露（private_messages id=3894 + conv 461 预览列）",
+          "gap": "双表残留均未清理（等授权）",
+          "fix": "授权后删消息行+重算 last_message_preview，SQL+实拍双证（P1-101）"
+        }
+      ],
+      "verdict": "不达标"
+    }
+  ]
+}

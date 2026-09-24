@@ -462,8 +462,13 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-CERT-201：必须定高（height:100% 而非 min-height:100%）——原容器随内容
+     增长，.cert-body scroll-view 失去高度约束 → 整页滚动，「学生认证」头部（含
+     返回键）随内容滚走、表单顶入状态栏叠印（双身份滚动截图实证）。定高恢复内滚、
+     头部常驻（对齐 campus/index 定高修复模式）。 */
+  height: 100%;
+  overflow: hidden;
   background: #ffffff; /* R16：纯白背景 */
 }
 

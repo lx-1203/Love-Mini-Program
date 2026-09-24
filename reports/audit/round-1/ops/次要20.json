@@ -1,0 +1,1114 @@
+{
+  "cases": [
+    {
+      "id": "VD01",
+      "page": "subpackages/village/village/detail",
+      "title": "冷启动深链 ?id=1 双身份直开：不闪错误空态，帖子内容/评论区正常渲染",
+      "tier": "navigation",
+      "pre": "身份A（100158 曦风 ← tmp_r11_login.json）与身份B（100159 小新生 ← tmp_r11_guest.json）各跑一次：mock 登录（automation_evaluate 注入 wx.setStorageSync('token',JWT) 后调 session.bootstrap()，evaluate 校验 isLoggedIn=true，r11-tour.ps1:19-36 做法；token 2h 时效）→ wx.reLaunch('/subpackages/village/village/detail?id=1')（固化参数 r11-param-map.json；detail.vue:672-675 读 query.id）",
+      "action": "reLaunch 后 0s/0.5s/1s 三次 DOM 采样：.post-content 文本、.author-inline__name、.comments-section、EmptyState 存在性；console 采集",
+      "expected": "currentPost 渲染作者行/正文/互动栏；有列表缓存时首帧立即渲染（detail.vue:680-687），无缓存时显示骨架 .detail-skeleton（detail.vue:1223-1238）后过渡到内容，均不得闪现「帖子不存在」EmptyState（冷启动铁律）；评论区出现加载态或列表（fetchComments detail.vue:687-697）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "getCurrentPages 路由链（顶=subpackages/village/village/detail）+ 0s/0.5s/1s DOM 采样日志 + console 过滤（NAV_FAIL/TypeError/is not defined，r11-tour.ps1:113-137）；A/B 双身份各一份"
+    },
+    {
+      "id": "VD02",
+      "page": "subpackages/village/village/detail",
+      "title": "顶部返回键：栈内返回来源页；栈=1 深链直开无兜底（缺陷疑点）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 先 wx.reLaunch('/subpackages/village/village/index') 再 navigateTo detail?id=1（栈=2）",
+      "action": "tap .detail-header__back（detail.vue:756）",
+      "expected": "goBack=uni.navigateBack（detail.vue:275-277）→ 返回村口列表且列表滚动位/数据保留（返回落点铁律）；变体：wx.reLaunch 直开 detail?id=1（栈=1）再点返回——代码无栈底兜底（对比 tag-posts.vue:250-256 / history.vue:41-48 的 reLaunch 兜底），点击将无处可退，若 500ms 内无任何反馈即记「死按钮/导航无响应」缺陷",
+      "evidence": "getCurrentPages 路由链前后对比（navigation tier 可不截图）+ console"
+    },
+    {
+      "id": "VD03",
+      "page": "subpackages/village/village/detail",
+      "title": "作者关注/取关：乐观更新按钮态切换，失败 Toast 回滚提示",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（mock 帖子作者非当前用户，isOwnPost=false 才渲染关注按钮 detail.vue:806-818/421-425）",
+      "action": "tap .author-inline__follow ×1，观察后请再 tap ×1（取关）；另快击 ×2 验证重复触发",
+      "expected": "点击后按钮文案「关注」↔「已关注」立即切换（currentPost.isFollowed，mock 分支更新该作者全部帖子态 village/index.ts:682-700）；再点回退；接口失败时 Toast t('village.followFailed')（detail.vue:427-436），UI 态回滚",
+      "evidence": "before+after 截图（.author-inline 区域）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VD04",
+      "page": "subpackages/village/village/detail",
+      "title": "帖子点赞：红心实/空切换+计数±1，快击×5 幂等只 toggle 一次",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "tap 行内互动栏第一个 .post-actions-inline__item（aria-label=点赞，detail.vue:884-901）；随后 500ms 内快击 ×5",
+      "expected": "单点：isLiked 翻转，图标 HEART_FILLED↔HEART_OUTLINE（detail.vue:894-899），likes 计数 ±1（mock toggle village/index.ts:533-560）；快击×5：幂等守卫 likingPostIds 使并发请求跳过（village/index.ts:544-547），计数净变化 ±1 不叠加；失败时 Toast t('village.likeFailed')（detail.vue:410-413）",
+      "evidence": "before+after 截图（.post-actions-inline）+ 路由 + Toast 文案（如有失败）+ console"
+    },
+    {
+      "id": "VD05",
+      "page": "subpackages/village/village/detail",
+      "title": "评论数按钮聚焦输入框（原死按钮 R16 修复回归）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "tap 行内互动栏第二个 .post-actions-inline__item（aria-label=评论数，detail.vue:902-912）",
+      "expected": "focusCommentInput 置 commentInputFocused=true（detail.vue:99-106），底部输入框 input :focus 生效弹起键盘（DOM focus 属性变化），无路由变化、无 Toast",
+      "evidence": "after 截图（底部输入栏聚焦态）+ 路由 + console"
+    },
+    {
+      "id": "VD06",
+      "page": "subpackages/village/village/detail",
+      "title": "长按正文/顶部···菜单弹出 ActionSheet：复制内容/举报",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "longpress .post-body（detail.vue:823）；再 tap .detail-header__menu（···，detail.vue:761-770）各触发一次；分别选「复制内容」与「举报」，最后再触发一次点取消",
+      "expected": "uni.showActionSheet 弹出两项【复制内容/举报】（detail.vue:295-319）；选复制 → uni.setClipboardData 写入正文，失败才 Toast copyFailed（detail.vue:306-311）；选举报 → PostReportDialog 弹出（showReportDialog=true，detail.vue:389-392）；取消 → 静默关闭无副作用",
+      "evidence": "after 截图（ActionSheet / 举报弹窗各一张）+ 路由 + console"
+    },
+    {
+      "id": "VD07",
+      "page": "subpackages/village/village/detail",
+      "title": "帖子举报弹窗提交：成功关闭弹窗，失败 Toast 错误文案",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1 → 经 VD06 打开 PostReportDialog（detail.vue:1408-1412）",
+      "action": "在弹窗内选择原因并提交（PostReportDialog 组件内部表单）；再空选/取消各一次",
+      "expected": "提交成功：submitted 事件 → 弹窗关闭（handleReportSubmitted detail.vue:398-400）；提交失败：组件内错误 Toast；取消：弹窗关闭、无请求发出（reportStore.reportTarget 不调用）",
+      "evidence": "before+after 截图（弹窗开/关）+ 路由 + Toast 文案 + console（举报接口请求可见）"
+    },
+    {
+      "id": "VD08",
+      "page": "subpackages/village/village/detail",
+      "title": "帖子图片全屏查看层：点图开、点遮罩关（弹层关闭）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（该帖含图片；若无图片本例 UNVERIFIED 如实标注）",
+      "action": "tap 第一个 .post-image-wrap（detail.vue:831-852）→ 大图层出现后 tap .image-viewer 遮罩（detail.vue:1319-1328）",
+      "expected": "openImageViewer 显示全屏大图（imageViewerVisible=true，resolveMediaUrl 重写鉴权路径 detail.vue:84-90）；点击遮罩关闭并清空 src（closeImageViewer detail.vue:92-95）；无路由变化",
+      "evidence": "after 截图（查看层开启态一张；关闭后可不截）+ 路由 + console"
+    },
+    {
+      "id": "VD09",
+      "page": "subpackages/village/village/detail",
+      "title": "话题标签跳转标签聚合页：tagName 去#并 encodeURIComponent",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（帖子含 tags；无 tags 则 UNVERIFIED）",
+      "action": "tap 第一个 .post-tag（detail.vue:864-872）",
+      "expected": "goToTagPosts → openAppPath('/subpackages/village/village/tag-posts?tagName=<去#编码>')（detail.vue:373-376），getCurrentPages 顶为 tag-posts 且标题「#标签名」",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "VD10",
+      "page": "subpackages/village/village/detail",
+      "title": "转发弹窗三路关闭：遮罩 tap / X / 取消",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1 → tap 分享按钮打开弹窗（.post-actions-inline__item--share，detail.vue:913-923 → openShareModal :602-606）",
+      "action": "依次三次打开弹窗，分别：tap .share-modal-overlay 遮罩、tap .share-modal__close（X）、tap .share-modal__btn--cancel（detail.vue:1337-1399）",
+      "expected": "三路均关闭弹窗且 shareComment 重置为空（closeShareModal detail.vue:614-617）；弹层内容 catchtap 阻断冒泡不误关（detail.vue:1345）",
+      "evidence": "第三路关闭后的 after 截图一张（确认弹窗已关）+ 路由 + console"
+    },
+    {
+      "id": "VD11",
+      "page": "subpackages/village/village/detail",
+      "title": "转发确认：附加评论提交成功 Toast，isSharing loading 防连点",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1 → 打开转发弹窗",
+      "action": "textarea 输入「转发测试<时间戳>」（maxlength=200，detail.vue:1363-1372，字数计数 n/200 联动）→ tap .share-modal__btn--confirm；立即快击 ×3",
+      "expected": "confirmShare 调 villageStore.sharePost（detail.vue:622-639）：成功后弹窗关闭 + Toast t('village.detail.shareSuccess')；提交中按钮文案变「转发中」且 isSharing 守卫（:1387-1397 class share-modal__btn--loading），快击只发 1 次请求；失败 Toast errorMessage/shareFailed",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（share 请求 1 次）"
+    },
+    {
+      "id": "VD12",
+      "page": "subpackages/village/village/detail",
+      "title": "评论排序切换：最热↔最新，本地重排数据不丢",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（评论区已加载 ≥2 条点赞数不同的评论）",
+      "action": "tap .comments-sort（detail.vue:934-944）两次",
+      "expected": "文案在「最热/最新」间切换 + ∨ 图标；sortedComments 按 likes 降序 / createdAt 降序重排（detail.vue:65-73），评论总数不变；无路由变化、无请求（纯前端排序）；toggle 触发 lightHaptic（detail.vue:76）",
+      "evidence": "after 截图（切换后排序态）+ 路由 + console"
+    },
+    {
+      "id": "VD13",
+      "page": "subpackages/village/village/detail",
+      "title": "评论提交（合法）：输入→发送→Toast 成功+列表新增+输入清空",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1，记录提交前评论计数",
+      "action": "input.v-model=commentContent 输入「自动化评论<时间戳>😊」→ tap .input-bar__send（detail.vue:1296-1306）",
+      "expected": "submitComment → commentPost 成功：Toast t('village.commentSuccess') icon=success（detail.vue:462），输入框与图片附件清空、replyingTo 重置、noMoreComments 复位（detail.vue:457-461），评论列表出现新评论且总数 +1；store 层 per-post 防抖（COMMENT_DEBOUNCE_MS，village/index.ts:750-790）",
+      "evidence": "before+after 截图（输入态/提交后列表）+ 路由 + Toast 文案 + console（comment 请求 1 次）"
+    },
+    {
+      "id": "VD14",
+      "page": "subpackages/village/village/detail",
+      "title": "评论空提交：空串/纯空格均被拦截，按钮禁用态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "不输入直接 tap .input-bar__send；再输入「   」纯空格 tap 发送（detail.vue:444 trim 守卫）",
+      "expected": "两种情况均不发起请求、无 Toast、无列表变化；发送按钮呈 .input-bar__send--disabled 灰态（detail.vue:1296-1306）",
+      "evidence": "after 截图（禁用态+未新增评论）+ 路由 + console（无请求发出）"
+    },
+    {
+      "id": "VD15",
+      "page": "subpackages/village/village/detail",
+      "title": "评论超长/特殊字符：超限 Toast 文案，emoji/HTML 字符安全提交",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "输入超过 MAX_CONTENT_LENGTH 的长文本 → 发送；清空后输入「<script>alert(1)</script> &#emoji🎉🔥 测试」→ 发送",
+      "expected": "超长：store 抛 commentContentTooLong（village/index.ts:762-765）→ 页面 Toast 该文案（detail.vue:463-467），列表不新增；特殊字符：正常提交成功或按后端校验 Toast，正文原样转义渲染无脚本执行（XSS 观察点）；console 无 TypeError",
+      "evidence": "after 截图（超长 Toast 一张 + 特殊字符提交结果一张）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VD16",
+      "page": "subpackages/village/village/detail",
+      "title": "表情面板：开关切换、点选追加到输入框",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "tap 表情图标（.input-bar__icon aria-label=表情，detail.vue:1288-1290）→ tap .emoji-panel__item 任一表情（detail.vue:1310-1316）→ 再 tap 表情图标收起",
+      "expected": "首次点击面板展开（emojiPanelVisible=true，30 个常用表情渲染 detail.vue:482-486）；点选表情追加至 commentContent 输入框末尾（appendEmoji detail.vue:507-509）；再点图标面板收起（toggleEmojiPanel detail.vue:499-504）；无路由变化",
+      "evidence": "after 截图（面板展开+输入框含表情）+ 路由 + console"
+    },
+    {
+      "id": "VD17",
+      "page": "subpackages/village/village/detail",
+      "title": "@ 提及按钮：插入 @ 并聚焦，表情面板联动收起",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1，先展开表情面板",
+      "action": "tap @ 图标（aria-label=提及某人，detail.vue:1284-1286）",
+      "expected": "输入框末尾插入「@」并置 commentInputFocus=true 弹键盘（insertMention detail.vue:492-496），表情面板同步收起",
+      "evidence": "after 截图 + 路由 + console"
+    },
+    {
+      "id": "VD18",
+      "page": "subpackages/village/village/detail",
+      "title": "评论图片：选择上传/预览/移除，超 3 张 Toast 上限",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1；执行器需 mock uni.chooseImage 返回 tempFilePaths（无法 mock 则本例如实标 UNVERIFIED）",
+      "action": "tap 图片图标（aria-label=添加图片，detail.vue:1292-1294）→ mock 返回 1 张 → 观察 .input-bar__thumbs 缩略图 → tap 缩略图移除 ×（detail.vue:1260-1267）；再 mock 一次返回 4 张验证上限",
+      "expected": "上传经 clientApi.uploadPostImage（/media/upload）换 URL（detail.vue:512-547），上传中 showLoading「上传中...」不永驻；缩略图可全屏预览（previewCommentImage）与移除；已有 3 张时再点 Toast「最多 3 张图片」（detail.vue:513-515）",
+      "evidence": "after 截图（缩略图态一张）+ 路由 + Toast 文案 + console（upload 请求）"
+    },
+    {
+      "id": "VD19",
+      "page": "subpackages/village/village/detail",
+      "title": "评论点赞：爱心实/空切换+计数，失败 Toast",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（评论列表已加载）",
+      "action": "tap 第一条评论的 .comment-heart（detail.vue:1014-1025）→ 再 tap 一次取消；楼中楼回复的爱心同样各点一次",
+      "expected": "likeComment 成功：comment.isLiked 翻转 + 图标 HEART_FILLED↔HEART_OUTLINE + likes 计数变化（village/index.ts:887）；失败 Toast t('village.likeFailed')（detail.vue:590-597）且状态回滚",
+      "evidence": "before+after 截图（评论爱心区域）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VD20",
+      "page": "subpackages/village/village/detail",
+      "title": "楼中楼回复模式：回复按钮→提示条+placeholder 变化+聚焦；取消清空",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（存在根评论）",
+      "action": "tap 根评论 .comment-reply-btn（detail.vue:1001-1011）→ 观察 .reply-mode-bar → tap 提示条右侧取消 ×（detail.vue:1253-1258）；再进入回复模式后直接输入并发送",
+      "expected": "startReply：replyingTo 置为该评论，提示条「回复 @昵称」+ 输入框 placeholder 同步 + 聚焦弹键盘（detail.vue:564-567/116-120）；取消（cancelReply detail.vue:580-584）：提示条消失且已输入内容清空；回复模式发送：提交携带 parentId（根评论 id，detail.vue:450），成功后新回复挂入该根评论楼中楼",
+      "evidence": "before+after 截图（回复提示条/楼中楼新增）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VD21",
+      "page": "subpackages/village/village/detail",
+      "title": "楼中楼展开/收起：>3 条回复默认收起，可展开全部",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1；需存在回复数>3 的根评论（无此数据则如实标 UNVERIFIED）",
+      "action": "tap .comment-replies__toggle（detail.vue:1094-1108）展开 → 再 tap 收起",
+      "expected": "收起态文案「展开 X 条回复」（X=总数-3）且 visibleReplies 只显示 3 条（detail.vue:220-228）；展开后显示全部、文案变「收起」；数据不变、无路由变化",
+      "evidence": "after 截图（展开态）+ 路由 + console"
+    },
+    {
+      "id": "VD22",
+      "page": "subpackages/village/village/detail",
+      "title": "头像点击进他人大主页（作者/评论者/楼中楼/相似作者）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": "分别 tap：作者头像 .author-inline__avatar（detail.vue:779）、评论头像 .comment-avatar（:961-975）、相似作者头像 .similar-author-avatar（:1149-1167）",
+      "expected": "goToUserProfile → openUserProfile → openAppPath('/subpackages/profile-extra/profile/other?userId=<作者id>')（detail.vue:207-212；navigation.ts:303-309）；userId 为空时不跳转（守卫）；getCurrentPages 顶为 profile/other",
+      "evidence": "getCurrentPages 路由链断言（三处各一条记录）+ console"
+    },
+    {
+      "id": "VD23",
+      "page": "subpackages/village/village/detail",
+      "title": "相似作者关注/取关：isFollowed 同步按钮态",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（相似作者列表已加载 detail.vue:1136-1216）",
+      "action": "tap .action-btn--follow（detail.vue:1190-1202）→ 再 tap 一次",
+      "expected": "handleFollowSimilarAuthor 成功后列表内该作者 isFollowed 翻转、文案「关注」↔「已关注」（detail.vue:644-655）；失败 console.error（无 Toast——如实记录为与主关注按钮不一致的观察点）",
+      "evidence": "before+after 截图（相似作者卡）+ 路由 + Toast 文案（如有）+ console"
+    },
+    {
+      "id": "VD24",
+      "page": "subpackages/village/village/detail",
+      "title": "相似作者「私信」→ 聊天会话（已有会话带 sessionId，否则 userId）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1（相似作者列表已加载）",
+      "action": "tap .action-btn--message（detail.vue:1203-1212）",
+      "expected": "sendMessageToSimilarAuthor：存在 private 会话时跳 chat-session?sessionId=<id>，否则 ?userId=<作者id>（detail.vue:660-669）；getCurrentPages 顶为 chat-session/index",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "VD25",
+      "page": "subpackages/village/village/detail",
+      "title": "发送按钮快击×5：防重入只提交 1 条评论（核心页加项）",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1，记录评论数",
+      "action": "输入合法评论后 500ms 内快击 .input-bar__send ×5",
+      "expected": "isSubmitting 重入守卫（detail.vue:445）+ store per-post 防抖（village/index.ts:779-790）下仅 1 条新评论、请求仅 1 次；输入框提交后清空",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（请求计数=1）"
+    },
+    {
+      "id": "VD26",
+      "page": "subpackages/village/village/detail",
+      "title": "打开即返回 + 重复进出×3：无崩溃，来源页状态恢复（核心页加项）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 村口列表滚动到中部后 tap 帖子进 detail?id=1",
+      "action": "进入后立即 tap 返回；重复「进详情→返回」×3",
+      "expected": "每次返回落点=村口列表且滚动位/数据保留；detail onUnload 触发 villageStore.dispose 清理定时器（detail.vue:268-270），重复进出无内存泄漏报错、无 TypeError；第 3 次进入内容仍正常渲染",
+      "evidence": "getCurrentPages 路由链（每轮进出各一条）+ console"
+    },
+    {
+      "id": "VD27",
+      "page": "subpackages/village/village/detail",
+      "title": "无 id 参数直开且无缓存：Toast 帖子不存在 + EmptyState 兜底",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/village/village/detail')（无 query.id，清空 currentPost 场景 detail.vue:702-708）",
+      "action": "等待渲染后 tap EmptyState 的 action 按钮「返回村口」（detail.vue:1241-1247）",
+      "expected": "clearCurrentPost + Toast t('village.detail.postNotExist')（detail.vue:704-707），页面渲染 EmptyState(type=no-data)（不白屏、不闪骨架）；点 action 触发 goBack；无参数但有 store 残留 currentPost 时直接渲染该帖并拉评论（detail.vue:710-717）",
+      "evidence": "after 截图（空态）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VD28",
+      "page": "subpackages/village/village/detail",
+      "title": "详情页滚动到底/顶：评论加载更多按钮（real 模式）与底部输入栏遮挡检查",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch detail?id=1",
+      "action": ".detail-body scroll-view 滚动到底再回顶（mock 模式 commentHasMore 恒 false 不渲染「加载更多」detail.vue:166-170；real 模式且总数>已加载时按钮可见 detail.vue:1119-1132）",
+      "expected": "长内容可滚到底（最后一条评论不被 fixed 输入栏遮挡，padding-bottom 140rpx 预留 detail.vue:1599-1603）；回顶正常；滚动无报错（noop 无状态变化）",
+      "evidence": "执行日志（scrollTop 起点/终点）+ console；可不截图"
+    },
+    {
+      "id": "VT01",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "冷启动深链 ?tagName=摄影 双身份：标题与帖子列表正常，不闪错误态",
+      "tier": "navigation",
+      "pre": "身份A/B（tmp_r11_login.json / tmp_r11_guest.json）mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/village/village/tag-posts?tagName=%E6%91%84%E5%BD%B1')（固化参数 r11-param-map.json；onLoad decodeURIComponent tag-posts.vue:258-263）",
+      "action": "0s/0.5s/1s DOM 采样 .tag-header__title 与 .post-card 数量",
+      "expected": "标题渲染「#摄影」（tag-posts.vue:296）；mock 分支 600ms 延迟后渲染过滤后列表（mockTagPosts 按 tags 包含匹配 tag-posts.vue:131-143/227-232），加载期先显示 spinner 不闪错误态；console 无 NAV_FAIL/TypeError",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤；A/B 各一份"
+    },
+    {
+      "id": "VT02",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "返回键：栈内 navigateBack；栈=1 reLaunch 村口兜底",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('/subpackages/village/village/tag-posts?tagName=%E6%91%84%E5%BD%B1')（栈=1）",
+      "action": "tap .tag-header__back（tag-posts.vue:292）",
+      "expected": "goBack 守卫：栈=1 时 uni.reLaunch('/subpackages/village/village/index')（tag-posts.vue:250-256，MP-R1-TAGPOSTS-002）→ 落村口首页而非静默失败；栈>1 场景（从详情标签进入）则 navigateBack 回来源页",
+      "evidence": "getCurrentPages 路由链前后对比 + console"
+    },
+    {
+      "id": "VT03",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "帖子点赞：mock 本地翻转/real 走 store+本页同步，失败 Toast",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch tag-posts?tagName=%E6%91%84%E5%BD%B1（列表已渲染）",
+      "action": "tap 第一张卡片的点赞 .action-btn（aria-label=点赞，tag-posts.vue:387-398）→ 再 tap 取消",
+      "expected": "mock 分支本地翻转 isLiked + likes ±1（tag-posts.vue:35-39），红心实/空图标切换、计数联动；real 分支走 villageStore.likePost 成功后同步本页状态（:40-45），失败 Toast error.message/t('village.likeFailed')（:46-52）；本页列表与 store 列表独立，点赞互不串扰",
+      "evidence": "before+after 截图（卡片互动栏）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VT04",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "分享按钮：showShareMenu + Toast 提示文案",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch tag-posts?tagName=%E6%91%84%E5%BD%B1",
+      "action": "tap 分享 .action-btn（aria-label=分享，tag-posts.vue:399-409）",
+      "expected": "handleSharePost 调 uni.showShareMenu（mp 端开启转发菜单）+ Toast t('village.tagPosts.shareHint') 含作者名（tag-posts.vue:56-71，duration=TOAST_DURATION.NORMAL_MS 不永驻）；无路由变化",
+      "evidence": "after 截图（Toast 文案）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "VT05",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "卡片/评论按钮进详情：携带 ?id= 直达",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch tag-posts?tagName=%E6%91%84%E5%BD%B1",
+      "action": "tap 第一张 .post-card（tag-posts.vue:332-336）进详情后返回；再 tap 同卡片评论按钮（@tap.stop，:376-386）",
+      "expected": "goToDetail：setCurrentPost + openAppPath('/subpackages/village/village/detail?id=<postId>')（tag-posts.vue:237-242，MP-R1-DETAIL-006 带 id 防误判空态）；getCurrentPages 顶为 detail；评论按钮不触发卡片双重跳转（tap.stop）",
+      "evidence": "getCurrentPages 路由链断言（两次进入各一条）+ console"
+    },
+    {
+      "id": "VT06",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "下拉刷新：真实重拉重置列表与页码",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch tag-posts?tagName=%E6%91%84%E5%BD%B1（列表已渲染）",
+      "action": "scroll-view 下拉触发 refresherrefresh（tag-posts.vue:301-308）",
+      "expected": "isRefreshing=true → loadPosts(true) 重置 page=1、列表重载（tag-posts.vue:122-201/206-209），刷新动画结束后 refresher-triggered 复位；列表内容与刷新前一致（mock 数据不变）；无重复追加",
+      "evidence": "after 截图（刷新后列表）+ 路由 + console（请求 1 次）"
+    },
+    {
+      "id": "VT07",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "滚动到底上拉加载：无更多时显示「没有更多」",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch tag-posts?tagName=%E6%91%84%E5%BD%B1",
+      "action": "scroll-view 滚动到底触发 scrolltolower（tag-posts.vue:307）×2",
+      "expected": "onLoadMore 守卫（isLoadingMore/loading/hasMore tag-posts.vue:214-218）；mock 仅 6 条 < PAGE_SIZE=20 → hasMore=false，渲染「没有更多」文案（:419-421），无 spinner 永驻；重复触发不再发请求",
+      "evidence": "执行日志（scroll 位置、isLoadingMore 状态）+ console；可不截图"
+    },
+    {
+      "id": "VT08",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "缺 tagName 深链：Toast 缺参 + 600ms 后自动返回",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/village/village/tag-posts')（无参数，tag-posts.vue:265-268）",
+      "action": "等待 Toast 与 600ms 自动 goBack",
+      "expected": "Toast t('village.tagPostsMissingParam') icon=none；标题显示占位 tagFallbackTitle 不渲染裸「#」（:296）；600ms 后 goBack（栈=1 时 reLaunch 村口 index）；不发空请求",
+      "evidence": "after 截图（Toast/占位标题）+ 路由（reLaunch 落点）+ Toast 文案 + console"
+    },
+    {
+      "id": "VH01",
+      "page": "subpackages/village/village/history",
+      "title": "冷启动直达浏览历史：列表/计数渲染，双身份不闪错误态",
+      "tier": "navigation",
+      "pre": "身份A/B mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/village/village/history')（onLoad fetchPostHistory(true) history.vue:126-128；mock 走内置数据 village/index.ts:1023-1050）",
+      "action": "0s/0.5s/1s DOM 采样 .history-loading/.history-item 数量/.history-toolbar",
+      "expected": "加载态 spinner → 列表渲染（按 viewedAt 倒序）+ 顶部「共 N 条」计数与「清空」按钮（history.vue:155-167）；空历史时 EmptyState；全程无白屏/错误态闪现；console 无 NAV_FAIL/TypeError",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤；A/B 各一份"
+    },
+    {
+      "id": "VH02",
+      "page": "subpackages/village/village/history",
+      "title": "返回键：栈内 navigateBack；栈=1 reLaunch 村口兜底",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('/subpackages/village/village/history')（栈=1）",
+      "action": "tap .history-back（history.vue:143-152）",
+      "expected": "goBack 守卫：栈=1 → reLaunch('/subpackages/village/village/index')（history.vue:41-48，MP-R1-HISTORY-001）不静默失败；栈>1 → navigateBack 回来源页",
+      "evidence": "getCurrentPages 路由链前后对比 + console"
+    },
+    {
+      "id": "VH03",
+      "page": "subpackages/village/village/history",
+      "title": "清空浏览记录：确认弹窗三路关闭，确认后 DELETE+Toast+空态",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch /subpackages/village/village/history（historyPosts.length>0）",
+      "action": "tap .history-clear 打开弹窗（history.vue:157-166）→ 先 tap「取消」与遮罩（@tap.self :245）各关一次 → 再打开并 tap「清空」确认（:259-268）；确认后 500ms 内快击确认按钮 ×3",
+      "expected": "取消/遮罩：弹窗关闭、列表不变、无请求；确认：clearing 守卫（:97）下只调 1 次 clearPostHistory（DELETE /api/v1/posts/history，mock 清空数组 village/index.ts:1052-1071）→ 弹窗关闭 + Toast t('village.history.cleared')（history.vue:100-103）→ 列表变空态 EmptyState（:236-242）；失败 Toast clearFailed 且弹窗不关",
+      "evidence": "before+after 截图（列表/弹窗/空态）+ 路由 + Toast 文案 + console（DELETE 请求 1 次）"
+    },
+    {
+      "id": "VH04",
+      "page": "subpackages/village/village/history",
+      "title": "浏览记录卡片进详情：携带 ?id= 直达",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch history（列表已渲染）",
+      "action": "tap 第一条 .history-item（history.vue:185-191）进详情后返回",
+      "expected": "goToDetail：setCurrentPost + openAppPath detail?id=<postId>（history.vue:114-118）；getCurrentPages 顶为 detail；返回后 onShow 静默刷新列表（见 VH08）",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "VH05",
+      "page": "subpackages/village/village/history",
+      "title": "记录头像点击进他人大主页（冒泡阻断）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch history",
+      "action": "tap 第一条记录的 .history-item__avatar（@tap.stop，history.vue:193-205）",
+      "expected": "goToUserProfile → profile/other?userId=（history.vue:121-124）；不触发卡片跳详情（tap.stop）；userId 缺失时不跳转",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "VH06",
+      "page": "subpackages/village/village/history",
+      "title": "下拉刷新：refresher-triggered 绑定 loadingHistory",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch history（列表已渲染）",
+      "action": "下拉触发 refresherrefresh（history.vue:180-183）",
+      "expected": "onRefresh → fetchPostHistory(true) 重置列表（history.vue:72-78），刷新动画随 loadingHistory 结束复位；mock 数据不变、无重复追加",
+      "evidence": "after 截图 + 路由 + console（请求 1 次）"
+    },
+    {
+      "id": "VH07",
+      "page": "subpackages/village/village/history",
+      "title": "滚动到底上拉加载更多",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch history",
+      "action": "scroll-view 滚到底触发 scrolltolower（history.vue:183）×2",
+      "expected": "onLoadMore 守卫（isLoadingMore/loadingHistory/hasMore history.vue:81-93）；real 分页无新增时 hasMore=false 显示「没有更多」文案（:229-231）；mock 无分页接口重复触发不发异常请求",
+      "evidence": "执行日志（scroll 位置、hasMore 状态）+ console；可不截图"
+    },
+    {
+      "id": "VH08",
+      "page": "subpackages/village/village/history",
+      "title": "详情返回 onShow 静默刷新：新增浏览记录回显",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch history → 记录首条标题 → tap 进 detail?id=1 → 返回",
+      "action": "返回后观察列表 1s 内变化",
+      "expected": "onShow 静默 loadHistory(true)（history.vue:130-133，不显示全屏 loading），返回落点=history 且列表含刚浏览的帖子（详情浏览埋点后回显）；无重复条目",
+      "evidence": "after 截图（返回后列表）+ 路由链 + console"
+    },
+    {
+      "id": "VH09",
+      "page": "subpackages/village/village/history",
+      "title": "空态 EmptyState action → 跳村口首页",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 先经 VH03 清空记录（或 mock 无历史数据）→ 停留在 history 空态（history.vue:236-242）",
+      "action": "tap EmptyState action 按钮「回村口看看」",
+      "expected": "openAppPath('/subpackages/village/village/index')（history.vue:241）；getCurrentPages 顶为村口首页",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CT01",
+      "page": "subpackages/circles/circles/topics",
+      "title": "冷启动深链 ?circleId=8：圈名回填、hero 与话题列表渲染",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/circles/circles/topics?circleId=8')（topics.vue:308-333：fetchCircles 后按 id 匹配回填圈名再 fetchTopics；mock 数字 id 归一 resolveMockCircleId :132-151）",
+      "action": "0s/0.5s/1s DOM 采样 .topics-header__title、.circle-hero、.topic-card 数量",
+      "expected": "标题从「话题列表」回填为圈名（如摄影圈）；hero 渲染成员数（千分位/1.2w 格式 topics.vue:229-234）+动态数+「等 N 位朋友已加入」；列表渲染该圈话题；无白屏/错误态闪现；console 无 NAV_FAIL/TypeError",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console"
+    },
+    {
+      "id": "CT02",
+      "page": "subpackages/circles/circles/topics",
+      "title": "返回键：栈内 navigateBack；栈=1 reLaunch 兴趣圈首页兜底",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('/subpackages/circles/circles/topics?circleId=8')（栈=1）",
+      "action": "tap .topics-header__back（topics.vue:344）",
+      "expected": "goBack 守卫（MP-R2-NAV-001）：栈=1 → reLaunch('/subpackages/circles/circles/index')（topics.vue:299-306）；栈>1 → navigateBack 回来源页且来源页状态保留",
+      "evidence": "getCurrentPages 路由链前后对比 + console"
+    },
+    {
+      "id": "CT03",
+      "page": "subpackages/circles/circles/topics",
+      "title": "加入/退出圈子：hero 与底部两入口联动，失败 Toast",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8（记录初始 isJoined 与成员数）",
+      "action": "tap hero 右侧 .circle-hero__join（topics.vue:419-429）→ 观察 → 再 tap 退出；用底部 .circle-bottom__join（:592-602）重复一轮",
+      "expected": "两入口共用 toggleJoin（topics.vue:211-224）：mock joinCircle 经数字 id 归一更新 circle-photo 态（circle.ts:326-374）→ 按钮文案「加入圈子」↔「已加入」+ 样式 circle-hero__join--joined/circle-bottom__join--joined + memberCount ±1 两处同步；失败 Toast e.message/t('apiErrors.operationFailed')（MP-R1-CIRCLES-001 补偿 toast :217-223）；无路由变化",
+      "evidence": "before+after 截图（hero 与底部栏各一）+ 路由 + Toast 文案 + console（join/leave 请求）"
+    },
+    {
+      "id": "CT04",
+      "page": "subpackages/circles/circles/topics",
+      "title": "五 Tab 切换：动态/精华/活动/作品墙/成员，数据与滚动位不丢",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8（话题列表已加载）",
+      "action": "依次 tap 5 个 .circle-tab（动态→精华→活动→作品墙→成员，topics.vue:432-445/275-281），每个 tab 停留观察后切回动态",
+      "expected": "激活态下划线 circle-tab--active 跟随；精华=按回复数降序重排（:195-199）、作品墙=仅带图话题（:121-124）、成员=成员数+活跃作者头像组（:550-562，无成员时显示空文案）、活动=首次进入拉 fetchActivities 并展示 ≤5 条（:272-290/564-574）；切回动态后列表数据不丢、滚动位保持（Tab 铁律）；置顶圈规条仅动态/精华显示（:475）",
+      "evidence": "getCurrentPages 路由链（无跳转，仍在 topics）+ 每个 tab 一张 after 截图（可合并为首尾两张）+ console（activities 请求仅首次）"
+    },
+    {
+      "id": "CT05",
+      "page": "subpackages/circles/circles/topics",
+      "title": "话题卡片进详情：topicId+circleId 双参数",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap 第一张 .topic-card（topics.vue:493-548）",
+      "expected": "goToDetail → openAppPath('/subpackages/circles/circles/topic-detail?topicId=<id>&circleId=<圈id>')（topics.vue:97-99）；getCurrentPages 顶为 circles topic-detail",
+      "evidence": "getCurrentPages 路由链断言（含 query 参数名）+ console"
+    },
+    {
+      "id": "CT06",
+      "page": "subpackages/circles/circles/topics",
+      "title": "话题作者头像 → 他人大主页（冒泡阻断）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap 卡片内 .topic-card__avatar（@tap.stop，topics.vue:523-536）",
+      "expected": "goToAuthorProfile → openUserProfile → profile/other?userId=（topics.vue:106-109）；不触发卡片跳详情；userId 空不跳",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CT07",
+      "page": "subpackages/circles/circles/topics",
+      "title": "「认识TA」按钮 → 他人大主页",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap 卡片底部 .topic-card__meet（topics.vue:545-547）",
+      "expected": "meetAuthor → openUserProfile（topics.vue:267-270，v3 冻结：不直接 like/建聊天）；getCurrentPages 顶为 profile/other；tap.stop 不触发卡片跳转",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CT08",
+      "page": "subpackages/circles/circles/topics",
+      "title": "置顶圈规条点击：当前实现为 navigateBack（导航落点疑点）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8（栈=1）",
+      "action": "tap .topic-rule 置顶条（topics.vue:475-479）",
+      "expected": "代码现状：goCircleDetail(_id)=uni.navigateBack（topics.vue:295-297）——栈=1 时无处可退、500ms 内无反馈即记死按钮缺陷；栈>1 时返回上一页而非任何「圈详情」页，若产品语义为跳圈主页则判导航落点错误（判定员按此记录）；无 Toast",
+      "evidence": "after 截图 + 路由链（点击前后）+ console"
+    },
+    {
+      "id": "CT09",
+      "page": "subpackages/circles/circles/topics",
+      "title": "右上「写话题」图标 → 发布页（携带 circleId）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap .topics-header__icon-btn（aria-label=写话题，topics.vue:350-359）",
+      "expected": "goToPostTopic → openAppPath('/subpackages/circles/circles/post-topic?circleId=8')（topics.vue:114-116）；getCurrentPages 顶为 circles post-topic",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CT10",
+      "page": "subpackages/circles/circles/topics",
+      "title": "右上 ··· ActionSheet：仅「写话题」一项（收敛后无死选项）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap ··· 按钮（aria-label=更多，topics.vue:360-369）→ ActionSheet 中 tap「写话题」→ 再触发一次点遮罩取消",
+      "expected": "uni.showActionSheet 弹出且 itemList 仅【写话题】（MP-R2-TOPICS-001 收敛，无举报/分享死选项 topics.vue:257-265）；选中 → 跳 post-topic?circleId=8；取消 → 静默",
+      "evidence": "after 截图（ActionSheet）+ 路由链 + console"
+    },
+    {
+      "id": "CT11",
+      "page": "subpackages/circles/circles/topics",
+      "title": "底部 FAB → 发布页",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "tap .circle-bottom__fab（topics.vue:603-612）",
+      "expected": "goToPostTopic → post-topic?circleId=8；getCurrentPages 顶为 post-topic",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CT12",
+      "page": "subpackages/circles/circles/topics",
+      "title": "下拉刷新：fetchTopics(page=1) 真实重拉",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8（列表已渲染）",
+      "action": "下拉触发 refresherrefresh（topics.vue:465-473）",
+      "expected": "onRefresh：isRefreshing=true → fetchTopics(circleId,1) 重置列表与 topicPage（topics.vue:70-78）→ 动画复位；列表内容一致、无重复追加；stopPullDownRefresh 调用不永驻",
+      "evidence": "after 截图 + 路由 + console（请求 1 次）"
+    },
+    {
+      "id": "CT13",
+      "page": "subpackages/circles/circles/topics",
+      "title": "滚动到底上拉分页：hasMore 守卫与「到底」文案",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8",
+      "action": "滚动到底触发 scrolltolower ×2（topics.vue:472）",
+      "expected": "onLoadMore 守卫（isLoadingMore/loading/topicHasMore topics.vue:83-91）；有下一页时追加且 isLoadingMore spinner 结束；无下一页时渲染「到底」文案（:582-584）且不再发请求",
+      "evidence": "执行日志（scroll 位置、topicHasMore）+ console；可不截图"
+    },
+    {
+      "id": "CT14",
+      "page": "subpackages/circles/circles/topics",
+      "title": "活动 Tab 行 → 活动详情（数据条件：活动非空）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=8 → 切到「活动」tab（activityStore.activities 已拉取；空列表则本例 UNVERIFIED）",
+      "action": "tap 第一条 .detail-activity（topics.vue:565-574）",
+      "expected": "goToActivityDetail → openAppPath('/subpackages/tools/activities/detail?id=<id>')（topics.vue:282-284）；getCurrentPages 顶为 activities/detail；空列表时仅显示空文案不崩溃",
+      "evidence": "after 截图 + 路由链 + console"
+    },
+    {
+      "id": "CT15",
+      "page": "subpackages/circles/circles/topics",
+      "title": "缺 circleId 深链：Toast 圈子ID无效，hero 不渲染",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/circles/circles/topics')（无参数，topics.vue:329-332）",
+      "action": "等待 Toast 与页面稳定",
+      "expected": "Toast t('storeErrors.circle.circleIdInvalid') icon=none；不发 fetchTopics；circle=null 时 hero/底部栏不渲染（v-if circle，:374/591）；不白屏",
+      "evidence": "after 截图 + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "CT16",
+      "page": "subpackages/circles/circles/topics",
+      "title": "空态 EmptyState action → 写话题（数据条件：圈无话题）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topics?circleId=<无话题的圈>（或构造空结果；有话题则 UNVERIFIED）",
+      "action": "tap EmptyState action 按钮（topics.vue:482-490）",
+      "expected": "goToPostTopic → post-topic?circleId=<当前圈id>；动态/精华/作品墙三个 tab 空态文案区分（works 用 worksEmptyTitle）；getCurrentPages 顶为 post-topic",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CD01",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "冷启动深链 ?id=37 双身份（固化参数名 id 亦被接受）",
+      "tier": "navigation",
+      "pre": "身份A/B mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/circles/circles/topic-detail?id=37')（固化参数 r11-param-map.json；onLoad 兼容 topicId ?? id，topic-detail.vue:212-228）",
+      "action": "0s/0.5s/1s DOM 采样 .topic-title、.replies-list/.replies-empty、EmptyState 存在性",
+      "expected": "fetchTopicDetail+fetchReplies(topicId=37) 渲染标题/正文/作者/回复（:219-224）；replyPage 游标重置；不闪「话题不存在」；console 无 NAV_FAIL/TypeError；A/B 各一份",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤"
+    },
+    {
+      "id": "CD02",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "返回键：clearCurrentTopic + navigateBack；栈=1 reLaunch 兜底",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('/subpackages/circles/circles/topic-detail?id=37')（栈=1）；另从 topics 进入（栈=2）再测一次",
+      "action": "tap .detail-header__back（topic-detail.vue:263）",
+      "expected": "goBack 先 clearCurrentTopic 再退（topic-detail.vue:145-153）：栈>1 返回 topics 且来源页数据保留；栈=1 reLaunch circles/index 不静默失败；再次进入话题数据重新拉取（无残留）",
+      "evidence": "getCurrentPages 路由链前后对比（两组）+ console"
+    },
+    {
+      "id": "CD03",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复提交（合法）：Toast 成功+输入清空+回复列表 +1",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37，记录 replyCount 与 replies.length",
+      "action": "input.v-model=replyContent 输入「自动化回复<时间戳>🎉」→ tap .reply-btn（topic-detail.vue:421-429）",
+      "expected": "submitReply → replyToTopic 成功（mock 以当前用户生成 ReplyItem，circle.ts:646-…）：Toast t('circle.topicDetailReplySuccess') icon=success（topic-detail.vue:92）、输入框清空、回复列表新增一条且 replyCount +1（:317-320 服务端计数）、isSubmitting 复位",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（reply 请求 1 次）"
+    },
+    {
+      "id": "CD04",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复空提交：空串/纯空格拦截 + 按钮禁用态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37",
+      "action": "不输入 tap .reply-btn；再输入「   」tap；键盘 confirm 各触发一次",
+      "expected": "submitReply trim 守卫直接 return（topic-detail.vue:86），无请求、无 Toast、列表不变；按钮呈 .reply-btn--disabled 灰态（:423/:889-893 pointer-events:none）",
+      "evidence": "after 截图（禁用态）+ 路由 + console（无请求）"
+    },
+    {
+      "id": "CD05",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复超长/特殊字符：错误 Toast 或成功，无脚本执行",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37",
+      "action": "输入超长文本（>500 字）发送；清空后输入「<img src=x onerror=alert(1)> 🔥测试」发送",
+      "expected": "超长：store/后端校验失败 → Toast errorMessage 或 t('circle.topicDetailReplyFailed')（topic-detail.vue:93-98），列表不变；特殊字符：提交后正文原样文本渲染无脚本执行（XSS 观察点）；console 无 TypeError",
+      "evidence": "after 截图（两张结果）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "CD06",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "发送快击×5：isSubmitting 防重入只提交 1 条",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37，记录回复数",
+      "action": "输入合法回复后 500ms 内快击 .reply-btn ×5",
+      "expected": "isSubmitting 守卫（topic-detail.vue:88）下仅 1 条新回复、1 次请求；提交中按钮文案「发送中」（:428）",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（请求计数=1）"
+    },
+    {
+      "id": "CD07",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "打招呼：实名门控（B4）通过后跳会话页并预填破冰文案",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37（存在非本人回复；mock 模式 ensureCertified 恒通过 campus-gate.ts:46-49）",
+      "action": "tap 非本人回复的 .reply-say-hello（topic-detail.vue:354-361）",
+      "expected": "sayHello：ensureCertified('realname')（topic-detail.vue:110）→ 通过 → openAppPath chat-session?userId=<回复者>&prefillMessage=<破冰文案>&quoteContext=<话题/回复上下文 JSON>（:107-130）；会话页输入框预填「围绕话题标题」的文案；real 模式未实名时改弹引导弹窗不跳转（campus-gate.ts:73-80）",
+      "evidence": "before+after 截图（列表/会话页预填）+ 路由链（含 query 参数名）+ Toast 文案 + console"
+    },
+    {
+      "id": "CD08",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "长按正文举报：ActionSheet 原因 → Modal 描述 → 举报提交",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37",
+      "action": "longpress .topic-content（topic-detail.vue:294）→ ActionSheet 选第一个原因 → Modal 可跳过或填描述 → 提交；重复流程一次但取消 ActionSheet",
+      "expected": "完整流程：reportStore.reportTarget('TOPIC', topicId, reason, description?) 成功 → Toast t('circle.topicDetailReportSubmitted')（topic-detail.vue:203-205）；取消 ActionSheet 静默退出（:180-183）无请求；失败 Toast 错误文案",
+      "evidence": "before+after 截图（ActionSheet/Toast）+ 路由 + Toast 文案 + console（report 请求 1 次）"
+    },
+    {
+      "id": "CD09",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "作者/回复者头像点击：跳 /pages/profile/index（tab 页路径疑点）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37",
+      "action": "分别 tap 作者头像 .author-avatar（topic-detail.vue:274-285）与回复者头像 .reply-avatar（:334-345）",
+      "expected": "goToAuthorProfile → openAppPath('/pages/profile/index?userId=<id>')（topic-detail.vue:137-140）——该路径为主包「我的」tab 页（对比 topics.vue:106-109 应为 profile-extra/profile/other）；openAppPath 对 tab 页走 switchTab+storage 桥接（navigation.ts:63-83）：若落点为自己的 profile tab 且 userId 语义丢失，判导航落点错误缺陷；每处 500ms 内须有路由反馈",
+      "evidence": "getCurrentPages 路由链（两处各一条）+ console"
+    },
+    {
+      "id": "CD10",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复分页「加载更多」（数据条件：replyCount > 已加载）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37 且该话题 replyCount > 首页 pageSize（mock 一次性全量时按钮不渲染 → 如实标 UNVERIFIED；topic-detail.vue:47-49）",
+      "action": "tap .replies-more（topic-detail.vue:372-384）→ 快击 ×2",
+      "expected": "loadMoreReplies：fetchReplies(page+1) 追加且 replyPage 递增（:54-65）；加载中文案切换「加载中」；无更多后按钮消失；快击被 isLoadingMore 守卫合并",
+      "evidence": "before+after 截图（回复列表尾部）+ 路由 + Toast 文案（失败时 topicDetailLoadMoreFailed）+ console"
+    },
+    {
+      "id": "CD11",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "加载失败错误态：EmptyState(network)+重试按钮",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → 构造 fetchTopicDetail 失败（无效 id + errorMessage 置位，或断网注入；MP-R1-TOPICDETAIL-001 topic-detail.vue:230-239/392-398）",
+      "action": "tap EmptyState 的「重试」action",
+      "expected": "错误态文案=errorMessage（与「话题不存在」区分）+ type=network；retryLoad 清 errorMessage 并重拉详情+回复（:234-239）；恢复后正常渲染；重试仍失败则维持错误态不白屏",
+      "evidence": "after 截图（错误态/恢复后各一）+ 路由 + Toast 文案 + console（错误与重试请求）"
+    },
+    {
+      "id": "CD12",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "缺参/无效 id：Toast 话题ID无效 +「话题不存在」空态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/circles/circles/topic-detail')（无参数）与 ('…?topicId=999999999')（不存在 id）各一次",
+      "action": "等待渲染；空态页 tap「返回」action（goBack，topic-detail.vue:401-407）",
+      "expected": "缺参：Toast t('storeErrors.circle.topicIdInvalid')（:226）→ loading 结束后 EmptyState no-data「话题不存在」+ 返回按钮；无效 id：fetch 失败走错误态（CD11）或空态；点返回 reLaunch circles/index（栈=1）；不白屏",
+      "evidence": "after 截图（两种空态各一）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "CD13",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "详情滚动到底/顶：内容+回复长列表滚动（底部回复栏遮挡检查）",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch topic-detail?id=37",
+      "action": ".detail-body scroll-view 滚到底再回顶",
+      "expected": "长回复可滚到底、最后一条不被 fixed .detail-footer 遮挡（body-footer 占位 topic-detail.vue:387-389）；回顶正常；无状态变化、无报错",
+      "evidence": "执行日志（scrollTop 起点/终点）+ console；可不截图"
+    },
+    {
+      "id": "CH01",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "冷启动深链 ?circleId=8 双身份：骨架→内容，严禁闪「圈子不存在」",
+      "tier": "navigation",
+      "pre": "身份A/B mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/circles/circles/circle-home?circleId=8')（固化参数 r11-param-map.json；R10-P1-001 circlesFetchSettled 冷启动保护 circle-home.vue:88-94/271-304）",
+      "action": "0s/0.5s/1s/2s DOM 采样：SkeletonBlock、.circle-notfound、.info-name、.feed-card 数量",
+      "expected": "fetch 未落定时渲染骨架（:421-425）而非「圈子不存在」空态；落定后 mock 命中或回退演示圈渲染 hero+信息卡+feed（mock 回退 displayFeed :265-269）；全程不闪 .circle-notfound；console 无 NAV_FAIL/TypeError；A/B 各一份",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤"
+    },
+    {
+      "id": "CH02",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "hero 返回按钮：栈内返回；栈=1 openAppPath 兴趣圈首页",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('…/circle-home?circleId=8')（栈=1）；另从 topics 进入再测一次",
+      "action": "tap .hero-btn（chevron 返回，circle-home.vue:431-434）",
+      "expected": "goBack：栈>1 navigateBack 回来源页；栈=1 openAppPath(ROUTES.CIRCLES.INDEX)（:332-339）落兴趣圈列表，不静默失败",
+      "evidence": "getCurrentPages 路由链前后对比（两组）+ console"
+    },
+    {
+      "id": "CH03",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "hero 分享按钮（open-type=share）：触发原生分享卡（MP-R1-CIRCLEHOME-004 回归）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8",
+      "action": "tap .hero-btn--share（button open-type=share，circle-home.vue:438-441）",
+      "expected": "触发 onShareAppMessage 分享卡：title=圈名、path=HOME?circleId=<id>（:307-310）——不再是无事件死按钮；自动化环境原生分享面板可能无法采集（如实标注），至少断言按钮可点、console 无异常、无路由变化",
+      "evidence": "after 截图 + 路由 + console；原生分享面板若不可自动化，UNVERIFIED 部分如实标注"
+    },
+    {
+      "id": "CH04",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "加入圈子（info-join）：按钮态切换+底部栏联动切换为「圈内发帖」",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（初始未加入；若已加入先退出）",
+      "action": "tap .info-join（circle-home.vue:476-480）→ 观察底部栏 → 再 tap 退出恢复",
+      "expected": "toggleJoin 成功（mock joinCircle 归一数字 id，circle.ts:326-374）：文案「加入圈子」↔「已加入」；底部栏未加入时显示 .bottom-join、已加入切换为 .bottom-post「圈内发帖」（:583-588）；失败 Toast e.message（:351-357，MP-R1-CIRCLES-001）",
+      "evidence": "before+after 截图（信息卡+底部栏）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "CH05",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "五 Tab 切换：动态/精华/活动/作品墙/成员（非动态 tab 空态占位）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（动态 feed 已渲染）",
+      "action": "依次 tap 5 个 .tab-item（circle-home.vue:492-503），每个停留观察后切回动态并滚动",
+      "expected": "激活下划线 .tab-indicator 跟随；成员 tab 文案拼接成员数（tabLabel :400-405）；featured/activities/works/members 均显示 tab-empty 占位（:574-576，与 topics 页不同——本页无对应数据源）；切回动态 feed 数据不丢；无路由变化",
+      "evidence": "getCurrentPages 路由链 + 首尾两张 after 截图 + console"
+    },
+    {
+      "id": "CH06",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "动态卡片点击 → 话题详情（MP-R1-CIRCLEHOME-002 去白名单回归）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（feed 有卡片：真实话题或 mock 演示卡）",
+      "action": "tap 第一张 .feed-card（circle-home.vue:517）",
+      "expected": "openFeedDetail：非空 id 直接跳 TOPIC_DETAIL?topicId=<id>（:389-392），不再被「纯数字 id」白名单拦截；getCurrentPages 顶为 circles topic-detail；卡片内点赞按钮点击不触发跳转（tap 目标分离）",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CH07",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "动态点赞：本地翻转 liked/likes（响应式回归 MP-R1-CIRCLEHOME-001）",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8",
+      "action": "tap 第一张卡 .feed-action 点赞（circle-home.vue:550-559）→ 再 tap 取消",
+      "expected": "toggleLike（:377-380）：liked 翻转 → 图标 LIKE_FILLED↔LIKE、计数 ±1、文字 feed-action-text--active 变色；realFeed 为响应式 ref，点赞后重渲染即时（此前 computed 重映射导致点赞不变的缺陷回归观察点）；无请求（本地态，TODO 后端）",
+      "evidence": "before+after 截图（点赞区域）+ 路由 + console"
+    },
+    {
+      "id": "CH08",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "死按钮侦测：动态卡「评论」action 与 more 图标无点击反馈",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8",
+      "action": "tap 卡片评论 .feed-action（circle-home.vue:560-563）与右上 .feed-more 图标（:530）各一次，观察 500ms",
+      "expected": "两元素均未绑定 @tap（源码 circle-home.vue:530/560-563 无 handler）——点击 500ms 内无路由/DOM/Toast/震动任一反馈，按 R11§5 铁律记「死按钮」缺陷（评论 icon 疑似应跳详情或聚焦）；本例为缺陷确认用例，预期观测结果=无反馈",
+      "evidence": "after 截图 + 路由链（确认无变化）+ console（无新增事件）"
+    },
+    {
+      "id": "CH09",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "「查看全部话题」→ topics 话题列表",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（动态 tab）",
+      "action": "tap .topics-link（circle-home.vue:568-571）",
+      "expected": "goToTopics → openAppPath(ROUTES.CIRCLES.TOPICS?circleId=<id>)（:363-365）；getCurrentPages 顶为 topics 且标题=圈名",
+      "evidence": "getCurrentPages 路由链断言 + console"
+    },
+    {
+      "id": "CH10",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "底部 FAB /（已加入时）圈内发帖 → 发布页",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8；分别在未加入（.bottom-join+fab）与已加入（.bottom-post+fab，CH04 后）两种状态下各测一次",
+      "action": "tap .bottom-fab（circle-home.vue:589-591）；已加入态再 tap .bottom-post（:586-588）",
+      "expected": "均 goToPostTopic → post-topic?circleId=<id>（:370-372）；未加入态 .bottom-join 点击走 toggleJoin（加入，见 CH04）；getCurrentPages 顶为 post-topic",
+      "evidence": "getCurrentPages 路由链断言（两组）+ console"
+    },
+    {
+      "id": "CH11",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "未知圈/缺参分支：mock 回退演示圈，real 渲染「圈子不存在」空态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('…/circle-home')（无 circleId）；apiMode=real 时另用无效 id=?circleId=nonexistent 验证",
+      "action": "观察渲染分支；real 空态下 tap「返回」按钮（.circle-notfound__btn，circle-home.vue:415-417）",
+      "expected": "mock：isUnknownCircle 恒 false → 回退 FALLBACK_CIRCLE 摄影演示圈渲染（:64-81/265-269），不空屏；real：缺参或落定后未命中 → 「圈子不存在或已解散」空态（:410-419），返回按钮 goBack 落兴趣圈列表；real 冷启动拉取期间先骨架不提前判未知（:88-94）",
+      "evidence": "after 截图（各自分支一态）+ 路由链 + console"
+    },
+    {
+      "id": "CH12",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "加入按钮快击×5：无防连点守卫（疑点确认）",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（未加入态）",
+      "action": "500ms 内快击 .info-join ×5，随后观察成员数与按钮态",
+      "expected": "预期（铁律：主按钮防连点只提交 1 次）；代码现状：toggleJoin 无 isSubmitting/幂等守卫（circle-home.vue:344-358），mock 下快击会反复 join/leave 翻转 isJoined 与 memberCount ±5——若观测到态翻转即记防连点缺陷并记录最终态；console 记录每次调用",
+      "evidence": "before+after 截图（最终态）+ 路由 + Toast 文案（失败时）+ console（调用计数）"
+    },
+    {
+      "id": "CH13",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "页面滚动到底/顶：sticky Tab 栏吸顶与底部固定栏遮挡检查",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch circle-home?circleId=8（feed ≥3 张卡片）",
+      "action": "页面滚动到底再回顶",
+      "expected": ".tabs position:sticky 吸顶（circle-home.vue:863-872）；底部 .bottom-bar 固定不遮挡 topics-link（bottom-placeholder 占位 :578-580）；回顶正常无报错",
+      "evidence": "执行日志（scrollTop）+ console；可不截图"
+    },
+    {
+      "id": "XT01",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "冷启动深链 ?topicId=153 双身份：话题/匿名兜底/回复渲染",
+      "tier": "navigation",
+      "pre": "身份A/B mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/campus/campus/topic-detail?topicId=153')（参数名以页面为准：onLoad 只读 query.topicId，campus/topic-detail.vue:90-101；153 为固化表中的存活 id r11-param-map.json；应用内入口 campus/index.vue:112 同用 ?topicId=）",
+      "action": "0s/0.5s/1s DOM 采样 .topic-title、.category-tag、.reply-item 数量、EmptyState",
+      "expected": "fetchCampusTopicDetail+fetchCampusReplies(153,1) 渲染分类标签（CAMPUS_CATEGORY_MAP）、作者（匿名帖显示「匿名校友」getDisplayName :80-83）、正文/配图、回复列表或空态；不闪错误空态；console 无 NAV_FAIL/TypeError；A/B 各一份",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤"
+    },
+    {
+      "id": "XT02",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "固化表参数名变体 ?id=153：页面不识别 → 缺参 Toast（参数映射缺陷确认）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('/subpackages/campus/campus/topic-detail?id=153')（r11-param-map.json 固化写法）",
+      "action": "等待 Toast 与页面稳定",
+      "expected": "onLoad 只读 query.topicId（campus/topic-detail.vue:92），?id=153 落缺参分支 → Toast t('storeErrors.campus.topicIdInvalid')（:99）+「话题不存在」EmptyState（:262-268）——即按固化表直开拿不到内容；判定员记录为 param-map 与页面参数名不一致缺陷（circles 版兼容 id 而本版不兼容）；不白屏",
+      "evidence": "after 截图（Toast/空态）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "XT03",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "返回键：clearCurrentTopic+navigateBack（无栈底兜底疑点）",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('…/campus/topic-detail?topicId=153')（栈=1）；另从 campus index 进入（栈=2）再测",
+      "action": "tap .detail-header__back（campus/topic-detail.vue:141）",
+      "expected": "goBack=clearCurrentTopic+uni.navigateBack（:71-74）：栈>1 返回 campus index 且列表状态恢复；栈=1 时无 reLaunch 兜底（对比 circles 版 topic-detail.vue:148-152）→ 无处可退且 500ms 内无反馈即记死按钮/导航缺陷",
+      "evidence": "getCurrentPages 路由链前后对比（两组）+ console"
+    },
+    {
+      "id": "XT04",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "匿名开关+匿名回复提交：文案切换，回复者显示「匿名校友」",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153",
+      "action": "tap .anonymous-toggle（campus/topic-detail.vue:282-290）→ 输入「匿名回复测试<时间戳>」→ tap .reply-btn 发送",
+      "expected": "开关点击：文案 匿名↔实名 切换 + anonymous-toggle--active 高亮（:284-289），无路由变化；提交携带 isAnonymousReply=true（submitReply :46-66）→ 成功 Toast t('campus.topicDetail.replySuccess')、列表新增回复且作者显示「匿名校友」（getDisplayName :80-83）",
+      "evidence": "before+after 截图（开关态/新回复）+ 路由 + Toast 文案 + console（reply 请求带 anonymous 标记）"
+    },
+    {
+      "id": "XT05",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "实名回复提交（合法）：Toast 成功+列表+1+输入清空",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153（匿名开关关闭）",
+      "action": "输入「自动化回复<时间戳>🔥」→ tap .reply-btn（:291-299）",
+      "expected": "replyToCampusTopic(isAnonymous=false) 成功：Toast t('campus.topicDetail.replySuccess') icon=success（:57）、输入清空、回复列表 +1、replyCount 联动（:200）、isSubmitting 复位",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（请求 1 次）"
+    },
+    {
+      "id": "XT06",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "回复空提交：守卫拦截+按钮禁用态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153",
+      "action": "不输入/输入纯空格各 tap .reply-btn 一次；键盘 confirm 一次",
+      "expected": "trim 守卫直接 return（:47）无请求无 Toast；按钮 .reply-btn--disabled（:293）pointer-events:none",
+      "evidence": "after 截图 + 路由 + console（无请求）"
+    },
+    {
+      "id": "XT07",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "回复超长/特殊字符：错误 Toast 或安全渲染",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153",
+      "action": "输入 >500 字发送；再输入「<script>alert(1)</script> ✓✔❤ 特殊字符」发送",
+      "expected": "超长：Toast errorMessage 或 t('campus.topicDetail.replyFailed')（:58-62）列表不变；特殊字符：原样文本渲染无脚本执行（XSS 观察点）；console 无 TypeError",
+      "evidence": "after 截图（两张）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "XT08",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "发送快击×5：isSubmitting 防重入只 1 条（核心页加项）",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153，记录回复数",
+      "action": "输入合法内容后 500ms 内快击 .reply-btn ×5",
+      "expected": "isSubmitting 守卫（:49）下仅 1 条回复、1 次请求；提交中按钮文案「发送中」（:298）",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（请求计数=1）"
+    },
+    {
+      "id": "XT09",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "回复分页：scrolltolower 加载下一页，空页置 hasMore=false",
+      "tier": "noop",
+      "pre": "身份B mock 登录 → reLaunch campus/topic-detail?topicId=153（回复多于一个分页页时有效；不足则 UNVERIFIED）",
+      "action": ".detail-body scroll-view 滚到底触发 onLoadMoreReplies（campus/topic-detail.vue:149/:104-115）×2",
+      "expected": "下一页有数据则追加且 replyPage 递增；无新增时 repliesHasMore=false 不再请求（:110-114）；loading 守卫防重复",
+      "evidence": "执行日志（scroll 位置、replyPage/repliesHasMore）+ console；可不截图"
+    },
+    {
+      "id": "XT10",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "加载失败错误态：EmptyState(network)+重试（review #18 回归）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → 构造 fetchCampusTopicDetail 失败（无效 topicId+errorMessage 置位或断网注入；campus/topic-detail.vue:117-122/252-259）",
+      "action": "tap EmptyState「重试」action",
+      "expected": "错误态与「话题不存在」区分（文案=errorMessage，type=network）；retryLoad 重拉详情+回复（:117-122）；恢复后正常渲染，仍失败维持错误态不白屏",
+      "evidence": "after 截图（错误态/恢复后）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "XT11",
+      "page": "subpackages/campus/campus/topic-detail",
+      "title": "话题不存在空态：返回按钮 goBack",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → wx.reLaunch('…/campus/topic-detail?topicId=999999999')（不存在 id；或无参数）",
+      "action": "等待空态渲染 → tap「返回」action（campus/topic-detail.vue:262-268）",
+      "expected": "EmptyState no-data（campus.topicDetail.notExistText）+ action 触发 goBack；栈=1 时受 XT03 所述无兜底影响（如实记录）；不白屏",
+      "evidence": "after 截图 + 路由链 + console"
+    },
+    {
+      "id": "XC01",
+      "page": "subpackages/campus/campus/certification",
+      "title": "冷启动直达校园认证：门槛加载+认证状态卡渲染（双身份）",
+      "tier": "navigation",
+      "pre": "身份A/B mock 登录（r11-tour.ps1:19-36 做法）→ wx.reLaunch('/subpackages/campus/campus/certification')（onMounted loadRealNameGate+fetchCertificationStatus，certification.vue:253-256；mock 实名门槛恒放行 :70-73）",
+      "action": "0s/0.5s/1s DOM 采样 .gate-banner、.status-card、.form-section、.verified-info",
+      "expected": "gateLoading 期间不闪横幅；mock 放行后无 gate-banner（real 未实名才显示 :303-308）；按 certificationStatus 渲染：unverified 无状态卡仅表单（:280-298/:301）、pending/verified/rejected 显示对应状态卡（CERT_STATUS_MAP：未认证/审核中/已认证/未通过 campus.ts:184-189）；不白屏；console 无 NAV_FAIL/TypeError",
+      "evidence": "getCurrentPages 路由链 + DOM 采样日志 + console 过滤；A/B 各一份"
+    },
+    {
+      "id": "XC02",
+      "page": "subpackages/campus/campus/certification",
+      "title": "返回键：栈内 navigateBack；栈=1 switchTab home 兜底",
+      "tier": "navigation",
+      "pre": "身份B mock 登录 → 直发 wx.reLaunch('/subpackages/campus/campus/certification')（栈=1）；另从 campus hub 进入（栈=2）再测",
+      "action": "tap .cert-header__back（certification.vue:270）",
+      "expected": "goBack：栈>1 navigateBack 回来源页；栈=1 uni.switchTab('/pages/home/index')（certification.vue:205-212，MP-R2-NAV-001 口径）落首页 tab 不静默失败",
+      "evidence": "getCurrentPages 路由链前后对比（两组）+ console"
+    },
+    {
+      "id": "XC03",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学校名称输入：正常/清空/超长/特殊字符四态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（certificationStatus 为 unverified/rejected 显示表单；verified 态表单隐藏则 UNVERIFIED）",
+      "action": "input.v-model=schoolName（certification.vue:327-332）依次输入「清华大学」→ 全清空 → 60 字长文本 → 「<>&oupper uppercase\"'清北 ✓」；每次后读取输入框值",
+      "expected": "v-model 双向同步（值随输入变化、清空归空）；超长可输入（前端未截断——如有 maxlength 截断则记录实际行为）；特殊字符原样保存无脚本执行；无 Toast/路由变化",
+      "evidence": "after 截图（含特殊字符态一张）+ 路由 + console"
+    },
+    {
+      "id": "XC04",
+      "page": "subpackages/campus/campus/certification",
+      "title": "专业输入：正常/清空/超长/特殊字符四态",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（表单可见）",
+      "action": "input.v-model=major（certification.vue:338-343）依次「计算机科学与技术」→ 清空 → 60 字 → 「💻软件工程 ✓」",
+      "expected": "同 XC03：双向同步、清空归空、超长/特殊字符行为如实记录；无报错",
+      "evidence": "after 截图 + 路由 + console"
+    },
+    {
+      "id": "XC05",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学信网验证码输入（选填）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（表单可见）",
+      "action": "input.v-model=chsiCode（certification.vue:382-387）输入「验证码 ABC123」→ 清空",
+      "expected": "选填字段：空值可正常提交（不阻断）；输入值双向同步；无 Toast/路由变化",
+      "evidence": "after 截图 + 路由 + console"
+    },
+    {
+      "id": "XC06",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学生证照片上传/重传/移除（隐私授权守卫）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（表单可见）；执行器需 mock uni.chooseImage 返回 tempFilePaths（无法 mock 则如实 UNVERIFIED）",
+      "action": "tap .upload-area（certification.vue:353-357）→ mock 选图 → 观察 .upload-preview → tap「重新上传」（:366-368）→ 再 tap 移除 ×（:369-371）",
+      "expected": "chooseImage 前经 ensurePrivacyAuthorized（:113-122，拒绝时 Toast privacyRequiredImage）；选图后 studentCardUrl 置值切换预览态；重传再次拉起选择；移除清空回到上传区；real 模式提交时才上传换 URL（:165-172）",
+      "evidence": "after 截图（预览态一张）+ 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "XC07",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学信网学历截图上传/重传/移除（选填 B1-3）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（表单可见）；需 mock uni.chooseImage",
+      "action": "tap 学信网 .upload-area（certification.vue:397-401，走 chooseImages 统一封装含 5MB 校验 :90-103）→ 重传 → 移除（:410-414）",
+      "expected": "选图回填 chsiScreenshotUrl 预览；超 5MB 被 chooseImages 拦截 Toast；移除清空；选填不阻断提交",
+      "evidence": "after 截图 + 路由 + Toast 文案 + console"
+    },
+    {
+      "id": "XC08",
+      "page": "subpackages/campus/campus/certification",
+      "title": "空提交（表单三态-空）：逐项 Toast 缺失字段",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → reLaunch certification（表单可见，mock 实名放行）",
+      "action": "全部留空 tap .submit-btn（certification.vue:421-431）→ 只填学校 tap → 再填专业 tap → 不传图片 tap",
+      "expected": "按校验顺序依次 Toast：errSchoolName → errMajor → errStudentCard（certification.vue:147-158，一次只报第一个缺失项）；均不发起提交请求、无状态变化；real 未实名时优先 Toast realNameRequiredBanner 且表单禁用（:142-145）",
+      "evidence": "after 截图（最后一个 Toast）+ 路由 + Toast 文案（逐次记录）+ console（无提交请求）"
+    },
+    {
+      "id": "XC09",
+      "page": "subpackages/campus/campus/certification",
+      "title": "合法提交（mock）：状态转「审核中」+Toast 成功+状态卡刷新",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch certification（unverified/rejected 表单态）",
+      "action": "填学校「清华大学」+专业「计算机」+ mock 选学生证图 → tap .submit-btn",
+      "expected": "submitCert：real 先 /media/upload 换 URL（:165-172）→ submitCertification 成功 mock 置 certificationStatus='pending'（campus.ts:799-809）→ Toast t('campus.certification.submitSuccess') icon=success（:191）→ fetchCertificationStatus 重拉（:190）→ 表单切换为「审核中」状态卡（status-card--pending，certification.vue:285-298）",
+      "evidence": "before+after 截图（表单/状态卡）+ 路由 + Toast 文案 + console（upload+POST 请求）"
+    },
+    {
+      "id": "XC10",
+      "page": "subpackages/campus/campus/certification",
+      "title": "提交快击×5：isSubmitting+禁用态只提交 1 次（核心页加项）",
+      "tier": "critical",
+      "pre": "身份B mock 登录 → reLaunch certification，表单已填齐（XC09 前置）",
+      "action": "500ms 内快击 .submit-btn ×5",
+      "expected": "isSubmitting 守卫（:160）+ .submit-btn--disabled class（:423）下仅 1 次提交请求；按钮文案「提交中...」（:429）；状态只变更一次",
+      "evidence": "before+after 截图 + 路由 + Toast 文案 + console（提交请求计数=1）"
+    },
+    {
+      "id": "XC11",
+      "page": "subpackages/campus/campus/certification",
+      "title": "实名门槛横幅（real 模式未实名）：去实名→返回自动解禁",
+      "tier": "normal",
+      "pre": "身份B 且 apiMode=real、BasicProfile.idCardVerified=false 时可执行（mock 模式恒放行横幅不渲染 → 如实标 UNVERIFIED/N-A；certification.vue:69-84）",
+      "action": "tap .gate-banner__btn「去实名认证」（certification.vue:305-307）→ 在 real-name 页完成/返回",
+      "expected": "横幅展示引导文案；点击 navigateTo /subpackages/profile-extra/verification/real-name（:217-219）；返回本页 onShow 重拉门槛（MP-R1-CERT-101 :261-263）→ 已实名则横幅消失、表单与提交按钮解禁；未实名时提交按钮置灰 submit-btn--disabled 且点击被拦截（:142-145）",
+      "evidence": "after 截图（横幅态/返回后解禁态）+ 路由链 + Toast 文案 + console"
+    },
+    {
+      "id": "XC12",
+      "page": "subpackages/campus/campus/certification",
+      "title": "已认证态（verified）：表单隐藏，展示学校/专业信息卡",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → 构造/选择 certificationStatus='verified' 的账号状态（fetchCertificationStatus 返回 verified；不可构造则 UNVERIFIED）",
+      "action": "观察页面结构",
+      "expected": "状态卡 status-card--verified「已认证」+ verifiedDesc（certification.vue:291-293）；表单与门槛横幅均不渲染（:301 template v-if 仅 unverified/rejected）；verified-info 卡显示 schoolName/major（:443-455），缺失字段显示「-」",
+      "evidence": "after 截图（已认证整页）+ 路由 + console"
+    },
+    {
+      "id": "XC13",
+      "page": "subpackages/campus/campus/certification",
+      "title": "重复进出：提交后退出重进状态保持（核心页加项）",
+      "tier": "normal",
+      "pre": "身份B mock 登录 → 完成 XC09 提交（pending）→ 返回上级页 → 再次 reLaunch certification ×2",
+      "action": "每次进入观察状态卡",
+      "expected": "onMounted 每次重拉 fetchCertificationStatus（:253-256）→ 状态保持「审核中」不回退表单态；重复进出无崩溃、无重复提交请求（仅状态查询）；从 real-name 返回场景由 onShow 重拉门槛（:261-263）状态一致",
+      "evidence": "getCurrentPages 路由链（每轮）+ after 截图一张 + console"
+    }
+  ]
+}

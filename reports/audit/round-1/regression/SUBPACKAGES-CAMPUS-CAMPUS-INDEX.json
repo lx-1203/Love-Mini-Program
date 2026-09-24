@@ -1,0 +1,60 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/index",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-CAMPUS-CAMPUS-INDEX（A5，索引差分模式，只读）",
+  "date": "2026-09-24",
+  "method": "按 regression-index.json 本页 3 条指定条目（MP-R2-CAMPUSINDEX-001 / MP-R3-CAMPUS-INDEX-001 / MP-R3-CAMPUS-INDEX-002）做 riskFiles 差分：逐条实读现码（index.vue 全文 889 行、App.vue 全文、useMenuButtonRect.ts、useStatusBarHeight.ts、stores/campus.ts 分页段、zh-CN.ts/en-US.ts campus 段、theme/global.scss 头部、check-statusbar-offset.mjs 全文）。实跑 1 项只读静态守卫：node scripts/check-statusbar-offset.mjs（无 --fix）。交互证据取本轮 reports/audit/round-1/interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-judge.json（23 例：3 VERIFIED / 20 UNVERIFIED）与 exec-results.json 原始记录（#CX03:13300 段、#CX13:13585、#CX14:13610）；截图亲验 2 张（CX03-after 原始 key 复现、CAMPUSINDEX-04-after 改动前正常文案对照）。git 取证：git log -S hotCirclesTitle 定位引入提交 29a2b1df。未运行开发者工具、未改代码（A5 只读边界）；静态截图 0 张，涉及真机 env() 的判定以代码链路 + 本轮实跑守卫输出为准并注明运行时实测缺口。",
+  "issues": [
+    {
+      "id": "MP-R1-REG-CAMPUSINDEX-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX03-after.png（本轮亲验：推荐圈卡标题渲染字面量『campus.index.hotCirclesTitle』、右上『campus.index.viewMore ›』；对照 reports/screenshots/round-1-interact/CAMPUSINDEX-04-after.png（9-21 改动前）同位置显示『热门兴趣圈』『查看更多 ›』）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【已复发：历史 MP-R3-CAMPUS-INDEX-001（未认证视角渲染 i18n 裸 key）未见修复落地——修复把键补进了错误命名空间，渲染效果与原缺陷一致，非本轮新改坏】页面消费 t('campus.index.hotCirclesTitle')/t('campus.index.viewMore')（index.vue:259-260），但两语言包中这两条键都位于 campus.postTopic 块内：zh-CN.ts 的 campus.index 段（:3508-3526）止于 emptyTopics 不含这两键，键实际在 postTopic 段（:3527-3551）内 :3549-3550；en-US.ts 同构（index 段 :3427-3446 止于 emptyTopics，键在 postTopic 段 :3448-3472 内 :3470-3471）。i18n/index.ts:41 legacy:false、:50 fallbackLocale:'zh-CN'，键在两包同路径均缺失 → vue-i18n 原样返回 key：未认证用户『推荐兴趣圈』卡标题渲染为『campus.index.hotCirclesTitle』、『查看更多』渲染为『campus.index.viewMore ›』。引入点定界：git log -S hotCirclesTitle -- zh-CN.ts 唯一命中提交 29a2b1df（round-2 audit fixes，2026-09-22），该提交将 index.vue 硬编码文案改为 t('campus.index.*') 却把键落在 postTopic——改动前截图 CAMPUSINDEX-04-after.png 文案正常、本轮 6 张 after 截图（CX03/04/10/11/12/14）全部复现原始 key（judge#MP-R1-CAMPUSINDEX-002 同口径实锤）。与交互判卷文件的判卷独立复核一致。",
+      "evidence": "代码（本轮实读）：apps/client/src/subpackages/campus/campus/index.vue:259-260（t 消费 campus.index.*）；apps/client/src/i18n/locales/zh-CN.ts:3508-3526（campus.index 段无 hotCirclesTitle/viewMore）、:3527-3551（postTopic 段）内 :3549-3550；apps/client/src/i18n/locales/en-US.ts:3427-3446（index 段）、:3448-3472（postTopic 段）内 :3470-3471；apps/client/src/i18n/index.ts:41,50（legacy:false + fallbackLocale:'zh-CN'，双包缺键回 key 字符串）。git：git log --oneline -S hotCirclesTitle -- apps/client/src/i18n/locales/zh-CN.ts → 29a2b1df（round-2 audit fixes）。截图（本轮亲验 2 张）：CX03-after.png 原始 key 复现；CAMPUSINDEX-04-after.png（改动前）『热门兴趣圈/查看更多 ›』正常。交互判卷：reports/audit/round-1/interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-judge.json issues[0]（MP-R1-CAMPUSINDEX-002，同根因，6 张截图清单）。",
+      "sources": ["screenshot", "code", "log"],
+      "confidence": 0.95,
+      "ideal": "未认证视角推荐圈卡显示『热门兴趣圈』『查看更多 ›』（en-US：Hot circles / View more），键归位 campus.index 命名空间且两包同源。",
+      "fix": "zh-CN.ts 与 en-US.ts 将 hotCirclesTitle、viewMore 两条键从 campus.postTopic 块移入 campus.index 块（zh-CN.ts:3508-3526 段内、en-US.ts 对应 index 段；postTopic 段内若无其他消费方则删除）；可加静态检查防键路径与消费方漂移。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REG-CAMPUSINDEX-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "无（真机 env() 行为 DevTools 不可见；本轮静态截图 0 张、交互取证均为 DevTools 会话 env=0，无真机截图可用）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【已复发：历史 MP-R3-CAMPUS-INDEX-002（真机状态栏双重避让）代码链路完整保留，未见修复落地】双重避让三要素现码俱在：① 页头自带避让 .campus-header padding-top = calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx)（index.vue:395）；② --statusbar 仅注入在 .campus-page 节点（index.vue:23 useMenuButtonRect + :219 :style=\"menuStyleVars\"；useMenuButtonRect.ts:49-52 styleVars 含 --statusbar:Npx，值取 uni.getSystemInfoSync().statusBarHeight，useStatusBarHeight.ts:11-17）；③ App.vue 全局 page 级避让仍在：page { padding-top: var(--statusbar, env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom); height:100% }（App.vue:334-337，本轮通读该规则不在任何条件编译内）。CSS 自定义属性只向下继承，page 根取不到 .campus-page 上的内联定义 → page 级回退 env(safe-area-inset-top)：真机刘海屏该值≈状态栏高，与页头 statusBarHeight+20rpx 相加，总顶部避让≈2×状态栏+20rpx，页头整体下移一个状态栏；DevTools env()=0 故不可见。page 根唯一精确取值通道是 useStatusBarHeight.ts:26 usePageMetaStyle（<page-meta :page-style>），本轮 grep 'page-meta|usePageMetaStyle' 于 subpackages/campus/ 零命中——未接线。静态守卫盲区本轮实跑证实：node scripts/check-statusbar-offset.mjs → 『check-statusbar-offset: 555 files, 0 errors, 0 warns → PASS』（EXIT=0）——守卫三规则（裸 env()/自造变量名/用而无注入源）均不校验『page 级 env 回退与页头 var(--statusbar) 相加』，与历史结论『静态守卫查不出』一致。附带几何问题同历史条目：global.scss:1-3 border-box 仅覆盖 view/text/image，page 为 content-box，App.vue:334-337 height:100%+双 padding 在刘海屏产生约 statusbar+safe-bottom 的页面级余量滚动，本页 .campus-page{height:100%;overflow:hidden}（index.vue:386-387）锁视口设计可被整体拖动。运行时实测缺口如实声明：本轮无真机证据，'campus-realdevice-no-double-statusbar-offset' 未执行，本判定基于完整确定性代码链路（与代码审查员 A2 issue 002 独立同结论），confidence 0.8。",
+      "evidence": "代码（本轮实读）：apps/client/src/subpackages/campus/campus/index.vue:395（页头避让）、:23+:219（--statusbar 仅注入 .campus-page）、:386-387（定高+overflow:hidden）；apps/client/src/App.vue:334-337（page height:100% + padding-top var(--statusbar, env()) + padding-bottom env()，无条件编译包裹）；apps/client/src/composables/useMenuButtonRect.ts:47-52；apps/client/src/composables/useStatusBarHeight.ts:11-17,26（--statusbar 唯一 page 级通道在 page-meta 串）；apps/client/src/theme/global.scss:1-3（border-box 不含 page）。执行（本轮实跑）：grep -rn \"page-meta\\|usePageMetaStyle\" apps/client/src/subpackages/campus/ → 零命中（exit 1）；cd apps/client && node scripts/check-statusbar-offset.mjs（无 --fix，只读）→ 'check-statusbar-offset: 555 files, 0 errors, 0 warns → PASS'，EXIT=0。",
+      "sources": ["code", "log"],
+      "confidence": 0.8,
+      "ideal": "刘海真机页头避让恰为一个状态栏 + 20rpx，page 无余量滚动；DevTools 与真机表现一致或差异可知。",
+      "fix": "二选一收敛（与全局导航页统一口径）：A. 本页页头去掉独立状态栏避让（index.vue:395 padding-top 改 20rpx，避让交给 App.vue page 级）；或 B. 本页接入 <page-meta :page-style=\"usePageMetaStyle()\"> 使 page 级取到精确 --statusbar 且页头不再叠加。page 余量滚动给 App.vue page 规则补 box-sizing:border-box 或改 min-height 方案。并建议给 check-statusbar-offset.mjs 增补『页内 var(--statusbar 避让与 App.vue page 级 padding 并存』检测规则，收敛守卫盲区。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R2-CAMPUSINDEX-001",
+      "page": "subpackages/campus/campus/index",
+      "status": "未复发",
+      "evidence": "原缺陷路径（scroll-view 无有界高度 → scrolltolower 永不触发）在现码已不存在，有界高度链闭合（本轮逐行实读）：App.vue:334 page{height:100%} → index.vue:383-387 .campus-page{height:100%; overflow:hidden}（MP-R2-CAMPUSINDEX-001 修复注释仍在）→ index.vue:632-634 .topic-scroll{flex:1}；@scrolltolower=onLoadMoreTopic（index.vue:312），handler 三重防抖（loading/topicHasMore/in-flight，index.vue:167-177）并请求 page+1 透传 viewSchool；store 分页完整：campus.ts:293 TOPIC_PAGE_SIZE=10、:418-477 fetchCampusTopics（page>1 push 追加 :443/:462、竞态 token :420/:431/:457、topicHasMore=≥10 条判定 :446/:465）。运行时实证缺口如实声明：索引 verification 项 'campus-index-scrolltolower-paginates-past-10' 本轮未跑通——judge#CX13 UNVERIFIED（mock 北京大学 course_exchange 仅 2-3 条<10，topicHasMore=false 翻页分支不可达，after 截图 ERROR:timeout；exec-results.json:13585 段）、judge#CX14 部分证实（.no-more:present DOM+截图可见，但 swipe unsupported(no element api)，scrolltolower 从未触发；exec-results.json:13610 段）。故本条按『原缺陷结构已不在』判未复发（confidence 0.8，代码层）；『10 条之后帖子持续可见』的行为级复核需 real 模式/预置 ≥11 条数据后留终验。"
+    },
+    {
+      "id": "MP-R3-CAMPUS-INDEX-001",
+      "page": "subpackages/campus/campus/index",
+      "status": "已复发",
+      "evidence": "见 issue MP-R1-REG-CAMPUSINDEX-001。核心：页面消费 campus.index.hotCirclesTitle/viewMore（index.vue:259-260），键实际在两语言包 campus.postTopic 段（zh-CN.ts:3549-3550、en-US.ts:3470-3471），campus.index 段缺键（zh-CN.ts:3508-3526）→ 未认证视角渲染原始 key；截图 CX03-after 亲验复现、CAMPUSINDEX-04-after（改动前）正常，引入提交 29a2b1df。"
+    },
+    {
+      "id": "MP-R3-CAMPUS-INDEX-002",
+      "page": "subpackages/campus/campus/index",
+      "status": "已复发",
+      "evidence": "见 issue MP-R1-REG-CAMPUSINDEX-002。核心：页头避让（index.vue:395）+ App.vue page 级 env() 回退避让（App.vue:336）+ --statusbar 仅注入 .campus-page（index.vue:23/:219，本子包 page-meta 零接线）三要素并存，真机刘海屏总避让≈2×状态栏+20rpx；本轮实跑静态守卫 555 files 0 errors PASS，证实守卫查不出；真机运行时实测留终验（本轮静态截图 0 张）。"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/regression/SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json"
+}

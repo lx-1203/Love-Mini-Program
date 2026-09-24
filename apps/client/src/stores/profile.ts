@@ -156,10 +156,12 @@ const mockVipStatus: VipStatus = {
 /**
  * infra R2-00050: mock 语音状态占位地址。
  * 原值指向无效外域 example.com（会触发无效网络请求），改为本地占位路径；
- * 本地暂无音频资源，播放演示将静默失败，待接入真实语音资源后替换。
+ * MP-R1-PROFILE-003：改为 mock:// 协议占位——原 "/static/assets/mock/voice-status.mp3"
+ * 资产不存在且非 mock:// 前缀，演示分支永不命中，播放走 InnerAudioContext 真实播放
+ * 必失败并 toast「录音失败」误导用户。mock://demo 命中页面演示分支（3s 波形动效）。
  */
 const mockVoiceStatusUrl =
-  "/static/assets/mock/voice-status.mp3";
+  "mock://demo";
 
 /** infra R2-00052: mock 语音状态时长（秒）——原 42 魔法数字具名化 */
 const MOCK_VOICE_STATUS_DURATION_SECONDS = 42;

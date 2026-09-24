@@ -1,0 +1,164 @@
+{
+  "cases": [
+    {
+      "id": "MS01",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "dev-preview=1 冷启动深链整页渲染：标题/副标题/双头像/匹配度卡/三 CTA 齐全，不闪错误空态",
+      "tier": "normal",
+      "pre": "身份A mock 登录（automation_evaluate 注入 tmp_r11_login.json 的 token 后调 session.bootstrap()，evaluate 校验 isLoggedIn=true 失败重试 1 次，r11-tour.ps1:19-36 口径；token 为 2h 时效 HS512 JWT，过期当日重签）→ wx.reLaunch('/subpackages/discover-extra/discover/match-success?dev-preview=1')（页面栈=1；dev-preview 由 onLoad 识别并注入 fallbackPartner「星野」，match-success.vue:53-64）",
+      "action": "无输入，仅等待渲染（≤500ms 首拍 + 间隔 2s 复拍做卡死检测）；探测 .match-success__title、.match-success__subtitle、.match-success__avatar ×2、.match-success__score-item ×4、.match-success__primary/.match-success__secondary/.match-success__share（组件 virtualHost，MatchSuccess.vue:4，选择器需 match-success >>> 深选择器或坐标兜底）",
+      "expected": "500ms 内渲染：绿色大标题「匹配成功」（zh-CN.ts:458）+ 副标题「你和 星野 互相喜欢上了」（matchedWith 插值 partnerName，zh-CN.ts:459）+ 提示「快去打个招呼吧~」（zh-CN.ts:460）；左右双 192rpx 圆头像（左=身份A profileStore.avatarUrl 经 resolveMediaUrl，右=星野 AVATAR_1，match-success.vue:28-42）+ 中间心形脉冲 + 双 ripple 动画；匹配度卡标题「我们正在分享你们的共同点」（zh-CN.ts:466）恒 4 行（MatchSuccess.vue:51-61）；底部锚底「立即聊天」主 CTA +「继续探索」次 CTA +「分享喜悦」文字链（MatchSuccess.vue:133-157）；顶部 nav 左返回 ‹ + 右相机 r06_c01 +「···」（match-success.vue:129-162）；全程不闪现错误/空态白屏（铁律：冷启动深链严禁闪现错误空态）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图（fullPage）+ 路由断言（getCurrentPages 栈顶 route=subpackages/discover-extra/discover/match-success）+ console 全量"
+    },
+    {
+      "id": "MS02",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "无参无 store 冷启动兜底：partnerName=「TA」+ 双默认头像 + 4 行默认理由，不白屏不崩溃",
+      "tier": "normal",
+      "pre": "身份B（tmp_r11_guest.json）mock 登录同 MS01 口径 → 先 wx.reLaunch('/subpackages/discover-extra/discover/match-success?dev-preview=1') 后返回，确保 match store 无残留（或 evaluate 置 p._s.get('match').reset()，r11-tour.ps1:23-24 pinia 访问口径）→ wx.reLaunch('/subpackages/discover-extra/discover/match-success')（无任何 query，match-success.vue:73-78 userId 为空不触发兜底拉取，matchedUser 为 null → partner=null）",
+      "action": "无输入，仅等待渲染并探测内容",
+      "expected": "页面正常渲染不白屏：partnerName 兜底为「TA」（discover.partnerDefaultName，zh-CN.ts:932；match-success.vue:167 ?? 兜底）→ 副标题「你和 TA 互相喜欢上了」；双头像均落 DEFAULT_AVATAR（partner.avatar/photo 为空串 resolveMediaUrl 返回空 → IMAGE_PATHS.DEFAULT_AVATAR 兜底，match-success.vue:38-42；config/images.ts:41）；匹配度卡仍恒 4 行默认标签「旅行爱好/音乐品味/电影偏好/生活方式」90/85/80/79%（MatchSuccess.vue:50-61 缺项补全）；reasons 为空时由 buildMatchReasons 浪漫兜底（view-models/match.ts:92-102）+ 默认标签混合渲染，无空白匹配卡；无 loading 永驻、无错误 Toast；console 无 TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MS03",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "直达带参 ?userId=10003（store 空）：getPersonProfile 兜底拉取，TA 占位更新为真实 mock 人",
+      "tier": "normal",
+      "pre": "身份A mock 登录同 MS01 → match store 置空（evaluate 调 reset()）→ wx.reLaunch('/subpackages/discover-extra/discover/match-success?userId=10003')（10003 取自既有固化表 scripts/r11-param-map.json——matching?target=10003 与 chat-session?userId=10003 同源存活 mock 人 id；本页不在 12 带参固化表内，userId 为源码支持的 onLoad 参数，match-success.vue:69-78）",
+      "action": "无输入，等待兜底加载完成（loadFallbackPartner → clientApi.getPersonProfile('10003')，match-success.vue:81-92；mock 走 fixtures 按 id 匹配，services/api.ts:964-973）",
+      "expected": "拉取期间短暂显示占位「TA」+ 默认头像（loading ref 未绑定模板无骨架 UI，match-success.vue:25 声明仅内部用；此闪现非错误空态，≤1s 内消失）；拉取成功后 partner 更新为 10003 的 mock 资料：副标题插值真实姓名、右侧头像切为该人 avatar/photo（经 resolveMediaUrl 统一媒体出口）、reasons 按其 isSameSchool/distanceText/tags 生成（view-models/match.ts:57-105）；匹配度卡仍 4 行；无报错 Toast、loading 不永驻；console 无 TypeError/is not defined",
+      "evidence": "normal：after 截图（等待拉取完成后）+ 路由断言 + console"
+    },
+    {
+      "id": "MS04",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "query.userId 与 store 残留 matchedUser 不一致：reset 后以入口参数为准，不展示旧匹配对象",
+      "tier": "normal",
+      "pre": "身份A mock 登录同 MS01 → evaluate 注入残留：p._s.get('match').setMatchedUser({userId:'999', id:'999', name:'旧对象', avatar:'', photo:'', tags:[]})（setMatchedUser 为唯一写入口，stores/match.ts:71-74）→ wx.reLaunch('/subpackages/discover-extra/discover/match-success?userId=10003')",
+      "action": "无输入，等待 onLoad 分支执行与兜底拉取完成（String(matchedUser.userId)='999' !== '10003' → matchStore.reset() 后走 loadFallbackPartner('10003')，match-success.vue:66-78）",
+      "expected": "页面不展示「旧对象」：reset 清空残留后按入口参数 10003 重新拉取，副标题/头像/理由全部为 10003 的资料；evaluate 复核 p._s.get('match').matchedUser 为 null（reset 清 matchedUser，stores/match.ts:82-89，loadFallbackPartner 不回写 store）；无双对象文案拼接、无路由报错；console 无 TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言 + console + evaluate 读取 store 状态的执行日志"
+    },
+    {
+      "id": "MS05",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "返回按钮（栈>1）：navigateBack 回来源页发现 Tab，来源页状态保留",
+      "tier": "navigation",
+      "pre": "身份A mock 登录同 MS01 → wx.reLaunch('/pages/discover/index') → navigateTo '/subpackages/discover-extra/discover/match-success?dev-preview=1'（页面栈=2，走 navigateBack 分支 match-success.vue:112-114）",
+      "action": "tap 第 1 个 .success-nav__btn（左上 ‹ 返回钮，aria-label=common.back，match-success.vue:130-139 → goBack match-success.vue:110-118）",
+      "expected": "500ms 内路由返回：getCurrentPages 栈顶回 pages/discover/index（栈长=1），发现 Tab 卡组/Tab selected 保持进入前状态（返回落点=来源页且状态恢复铁律）；无 Toast、无白屏；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "MS06",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "返回按钮（栈=1 直进）：switchTab 兜底回发现 Tab，不静默失败",
+      "tier": "navigation",
+      "pre": "身份A mock 登录同 MS01 → wx.reLaunch('/subpackages/discover-extra/discover/match-success?dev-preview=1') 冷启动（页面栈=1，goBack 走 else 分支 uni.switchTab，match-success.vue:115-117）",
+      "action": "tap 第 1 个 .success-nav__btn（左上 ‹ 返回钮）",
+      "expected": "500ms 内路由切换：getCurrentPages 栈顶=pages/discover/index（switchTab TAB.DISCOVER='/'+'pages/discover/index'，constants/routes.ts:30；openAppPath 同口径 tab 判定，utils/navigation.ts:25-28）；发现 Tab 正常渲染（分享/深链冷启动兜底不产生死页）；console 无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "MS07",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "右上相机按钮：Toast「截图功能即将上线」icon=none，路由不变（占位功能如实提示）",
+      "tier": "normal",
+      "pre": "同 MS01（dev-preview=1 冷启动，栈=1）",
+      "action": "tap 第 2 个 .success-nav__btn（右上相机图标 r06_c01，aria-label=截图，match-success.vue:140-150 → handleScreenshot match-success.vue:121-123）",
+      "expected": "500ms 内出现 Toast：文案恰为「截图功能即将上线」、icon=none（不遮内容）；路由不变（栈顶仍为 match-success）；按钮有 press-feedback 按压反馈（hover-class，App.vue 全局 press-feedback 样式）；Toast 自动消失不永驻；console 无报错",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console（Toast 文案以截图/console 记录为准）"
+    },
+    {
+      "id": "MS08",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "右上「···」更多按钮：Toast「分享功能即将上线」，路由不变",
+      "tier": "normal",
+      "pre": "同 MS01（dev-preview=1 冷启动，栈=1）",
+      "action": "tap 第 3 个 .success-nav__btn（右上「···」，aria-label=更多，match-success.vue:151-160 → handleShare match-success.vue:106-108）",
+      "expected": "500ms 内出现 Toast：文案恰为「分享功能即将上线」、icon=none；路由不变、无弹层展开；Toast 自动消失；console 无报错",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console"
+    },
+    {
+      "id": "MS09",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "底部「分享喜悦」文字链：与「···」同走 handleShare Toast，不弹分享面板",
+      "tier": "normal",
+      "pre": "同 MS01（dev-preview=1 冷启动，栈=1）",
+      "action": "tap .match-success__share（底部「分享喜悦」+ SHARE 图标，MatchSuccess.vue:154-156 → emit('share') → handleShare match-success.vue:106-108；virtualHost 需深选择器）",
+      "expected": "500ms 内出现 Toast「分享功能即将上线」（与 MS08 同文案，铁律 Toast 文案正确）；按压态 opacity:0.7 反馈（MatchSuccess.vue:420-422）；路由不变；无 onShareAppMessage 面板误弹；console 无报错",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console"
+    },
+    {
+      "id": "MS10",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "主 CTA「立即聊天」：navigateTo 会话页 ?userId=10003，兜底入口不误置 chat_ready 态",
+      "tier": "critical",
+      "pre": "身份A mock 登录同 MS01 → match store 置空 → wx.reLaunch('/subpackages/discover-extra/discover/match-success?userId=10003') 并等待兜底拉取完成（partner.userId='10003'）；tap 前先截 before 图",
+      "action": "tap .match-success__primary「立即聊天」（MatchSuccess.vue:134-143 → emit('chat') → goChat match-success.vue:94-100：markChatReady() + openAppPath('/subpackages/chat/chat-session/index?userId=' + encodeURIComponent('10003'))，routes.ts:104）",
+      "expected": "500ms 内路由跳转：getCurrentPages 栈顶=subpackages/chat/chat-session/index 且 options.userId='10003'（openAppPath 对非 tab 页走 navigateTo push，utils/navigation.ts:100-116）；会话页以 10003 对象正常打开不空态崩溃；evaluate 复核 match store：兜底入口 status='idle'（markChatReady 仅在 matched 态转 chat_ready，stores/match.ts:76-80，兜底路径不误置聊天就绪态）；返回后 match-success 仍可复进（见 MS13）；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "critical：before + after 截图 + 路由断言（getCurrentPages 链含目标 query）+ Toast/界面文案 + console 全量"
+    },
+    {
+      "id": "MS11",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "主 CTA 防连点：快击「立即聊天」×5 只进入 1 层会话页",
+      "tier": "critical",
+      "pre": "同 MS10（?userId=10003 兜底就绪，栈=1，before 图已采）",
+      "action": "对 .match-success__primary 连续快速 tap 5 次（间隔 <200ms，无等待路由完成）",
+      "expected": "铁律主按钮防连点：getCurrentPages 过滤 route=subpackages/chat/chat-session/index 的层数=1（只提交 1 次），最终停在会话页且栈不超限（页面栈上限 10 层，utils/navigation.ts:96-104 兜底 redirectTo 不应被触发）；源码 goChat 无防连点标志/Loading 锁（match-success.vue:94-100 直接连续 openAppPath），若实测压入多层会话页即为缺陷，如实判定不降低标准；console 无 webview count limit 报错",
+      "evidence": "critical：before + after 截图 + 路由断言（逐层 getCurrentPages 链）+ console（navigateTo 次数以执行日志为准）"
+    },
+    {
+      "id": "MS12",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "次 CTA「继续探索」：switchTab 回发现 Tab，页面栈收敛为 tab 栈",
+      "tier": "navigation",
+      "pre": "身份A mock 登录同 MS01 → wx.reLaunch('/pages/discover/index') → navigateTo '/subpackages/discover-extra/discover/match-success?dev-preview=1'（栈=2，使 switchTab 前后栈变化可断言）",
+      "action": "tap .match-success__secondary「继续探索」（MatchSuccess.vue:144-153 → emit('explore') → keepExploring match-success.vue:102-104：uni.switchTab TAB.DISCOVER）",
+      "expected": "500ms 内路由切换：getCurrentPages=[pages/discover/index]（switchTab 清空非 tab 栈）；发现 Tab selected 正确、卡组状态保留；无 Toast；console 无报错",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图"
+    },
+    {
+      "id": "MS13",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "会话页返回落点与重复进出：返回回 match-success，partner/CTA 状态完整可复用",
+      "tier": "navigation",
+      "pre": "延续 MS10 现场（match-success?userId=10003 → 已 tap 立即聊天进入会话页，栈=[..., match-success, chat-session]）",
+      "action": "会话页执行返回（navigateBack 或左上返回）→ 落回 match-success 后再次 tap .match-success__primary（重复进出）",
+      "expected": "第一次返回：getCurrentPages 栈顶=subpackages/discover-extra/discover/match-success（返回落点=来源页），partner 仍为 10003 资料（fallbackPartner 为页面内 ref 存续 + onLoad 不再重拉 userId 相同对象），双头像/四行理由完整，无错误空态闪现（本页无 onShow 重置逻辑，match-success.vue:45 仅有 onLoad）；第二次 tap 立即聊天：再次进入 chat-session?userId=10003 成功，无路由报错；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "navigation：每次跳转的 getCurrentPages 路由链断言 + console；重复进出后补 1 张 after 截图佐证状态恢复"
+    },
+    {
+      "id": "MS14",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "头像兜底链：partner 头像加载失败落 DEFAULT_AVATAR，不渲染空白圆",
+      "tier": "normal",
+      "pre": "身份A mock 登录同 MS01 → evaluate 注入 p._s.get('match').setMatchedUser({userId:'10003', id:'10003', name:'兜底测试', avatar:'/uploads/__not_exist_404__.jpg', photo:'', tags:[]})（服务端原始路径经 resolveMediaUrl 重写为鉴权代理 URL 后 404，utils/media.ts /uploads/ 前缀重写口径）→ navigateTo '/subpackages/discover-extra/discover/match-success?userId=10003'（userId 与注入对象一致不触发 reset）",
+      "action": "无输入，等待 <image> @error 触发（onPartnerAvatarError，MatchSuccess.vue:16-18）后探测头像 src",
+      "expected": "右侧 partner 头像不空白：加载失败后 src 落 IMAGE_PATHS.DEFAULT_AVATAR（MatchSuccess.vue:107 三元兜底 partnerAvatarFailed || 空 || DEFAULT_AVATAR；match-success.vue:38-42 resolveMediaUrl 失败亦落 DEFAULT_AVATAR，MP-R1-...-002 统一媒体出口口径）；左侧身份A 头像正常；无 Broken 图标/灰块占位残留；console 仅允许媒体 404 类网络日志，无 TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "MS15",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "匹配度卡恒 4 行固定分值：90/85/80/79 + 缺项兜底文案，进度条宽度与分值一致",
+      "tier": "normal",
+      "pre": "同 MS01（dev-preview=1：星野对象无 tags/无 distanceText/非同校，reasons 走浪漫兜底 3 条 + 默认标签补 1 条，view-models/match.ts:92-102 + MatchSuccess.vue:50-61）",
+      "action": "无输入，读取 4 个 .match-success__score-item 的文案与 .match-success__score-fill 宽度样式",
+      "expected": "恒渲染 4 行（2026-08-25 P1 规格永不缺行）：第 1-3 行文案为「都喜欢日落」「都爱听民谣」「喜欢同一种浪漫」，第 4 行兜底「生活方式」；右侧分值恰为 匹配度 90% / 85% / 80% / 79%（defaultScores，MatchSuccess.vue:44-45，最后一项不是 95%）；每行 fill 宽度=对应分值%（90%/85%/80%/79%，width 过渡 0.8s 后稳定）；图标依次为 跑步/音乐/书本/美食 emoji（scoreIcons，MatchSuccess.vue:43）；卡片标题「我们正在分享你们的共同点」；console 无报错",
+      "evidence": "normal：after 截图（等 0.8s 过渡完成后拍）+ 路由断言 + console（文案/宽度以 evaluate 读取结果为准）"
+    },
+    {
+      "id": "MS16",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "滚动到底/回顶：CTA margin-top:auto 锚底不脱布局，纯滚动无状态变化",
+      "tier": "noop",
+      "pre": "同 MS01（dev-preview=1 冷启动；本页 pages.json 无 enablePullDownRefresh，pages.json:137-143，无下拉刷新项）",
+      "action": "miniProgram.pageScrollTo(9999) 滚到底 → 记录 scrollTop → pageScrollTo(0) 回顶；期间无任何 tap",
+      "expected": "滚动全程布局不撕裂：actions 区（立即聊天/继续探索/分享喜悦）始终锚底（margin-top:auto，MatchSuccess.vue:378-383），顶部 nav fixed 悬浮不随滚动消失（position:fixed，match-success.vue:189-200）；无因滚动触发的加载/Toast/路由变化（纯展示页）；回顶后首屏与 MS01 一致；console 无滚动相关报错",
+      "evidence": "noop：执行日志（两次 scrollTop 数值 + console）即可，可免截图"
+    }
+  ]
+}

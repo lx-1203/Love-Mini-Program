@@ -298,6 +298,21 @@ function focusMainContent(): void {
   margin-bottom: 28rpx;
 }
 
+/* MP-R1-APPSHELL-101：fixed prop 落样式（此前 shellClass 注入 is-fixed 但样式表
+   无任何规则，传了也不生效）。is-fixed 时头部吸顶（sticky 保留布局位、无遮挡补偿
+   问题），背景延伸进状态栏区——滚动时正文不得与系统状态栏文字叠印。
+   注意：外层 .shell--standard 等变体自身带 28rpx 水平内边距，吸顶行内补水平负边距
+   使背景铺满整行宽度。 */
+.is-fixed .shell__header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin-left: -28rpx;
+  margin-right: -28rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 28rpx 20rpx;
+  background: var(--c-bg-page, #EEF7F2);
+}
+
 .shell__header-main {
   display: flex;
   flex-direction: column;

@@ -27,7 +27,6 @@ import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
-import SafeImage from "../../../components/common/SafeImage.vue";
 // R4-00058: 签到任务接入真实 GET/POST /check-in 链路
 import { clientApi } from "../../../services/api";
 // R4-00059: 资料完善任务完成态从真实 session 派生，不再硬编码 done=true
@@ -411,7 +410,10 @@ onShow(async () => {
         @tap="handleTaskTap(task)"
       >
         <view class="task-item__icon">
-          <SafeImage :src="taskIcon(task.id)" custom-class="task-item__icon-img" mode="aspectFit" />
+          <!-- MP-R1-TASKS-007：4 个任务图标经 SafeImage 全部零尺寸不可见（10 倍放大与
+               像素直方图证实未渲染）——custom-class 跨组件作用域不命中内层 image，
+               改原生 image 直引（对齐 campus hub.vue:209，本地 SVG 加载稳定） -->
+          <image class="task-item__icon-img" :src="taskIcon(task.id)" mode="aspectFit" alt="" />
         </view>
         <view class="task-item__content">
           <view class="task-item__title-row">

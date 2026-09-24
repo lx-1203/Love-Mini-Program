@@ -1,0 +1,148 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/chat-session/index",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX（A3，截图与证据的视觉/布局/状态审查；不越界功能目标对照/历史回归/交互判定）",
+  "date": "2026-09-23",
+  "note": "证据缓存校验：reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72 与 ask 要求一致（已核对，证据未过期）；交互证据 exec-results.json gitSha=aefd8a72、updatedAt=2026-09-23T12:00:00.115Z。理想图对照依据：git show 29a2b1df:docs/design/message-v3-spec.md §2.2/§3/§8（本页无理想图）+ v3.1-contract.md 冻结 token。代码层 12 条发现（code-findings 同名文件）未重复；ask 给出的两条历史线索（R13-CHAT-409、MP-R2-CHAT-CHAT-SESSION-INDEX-001）运行时回归核对结论见 coverage 与观察 O6：本轮无 409 专项复测记录，如实标注未验证。本轮交互用例 CS15-CS45 均以缺参 route（options={}，CS44 为未插值字面量 {id}）执行，核心交互（发送/长按/表情/图片/免打扰/拍一拍）未获有效运行时证据，相关判断留给交互判定员。",
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-201",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "失效数字 sessionId 深链渲染「假空会话」且伪造关系数据：sessionId=99999999 深链进入后，页面显示完整可用的会话 UI——顶部「聊天 ♡ 认识 1 天 / 离线」+「你们已互相匹配成功，打个招呼开启聊天吧~」+ 2 条破冰 chips +「会话刚建立，还没有消息。」+ 共同爱好标签 + 推荐开场卡 + 可用输入栏，无任何错误文案（对照 CS09 失效 temp 深链则正确到达「会话不存在或已失效」双区错误态）。「认识 1 天」来自 relationDays 兜底 ?? 1、「互相匹配成功」为静态 greeting——对不存在的会话伪造关系亲密数据。运行时 dom 观察（exec-results CS08）：.meta-copy--padded:absent .match-greeting:present，与用例自身标题「错误态真实到达，不渲染假空会话」相悖（observe-only 未判失败，故 status=EXECUTED）。根因链：mock 分支对未知 sessionId 返回成功空数组不置 errorMessage（stores/messages.ts:715-723，:718 `mockMessages[sessionId] ? [...] : []`）→ 页面 private 数字分支 loadSessionData 拉取后无失败判定（index.vue:639，对照 temp 分支 621-628 有 `!chatStore.activeSession` 门）→ 错误横幅仅在 errorMessage 非空时渲染（index.vue:1876-1881 v-if/v-else-if），mock 恒不触发。与代码层 MP-R1-001 不重复：001 是 real 模式 activeSession 残留旧会话；本条是 mock 未知 id 成功空返回 + private 分支缺失败门 + 关系数据伪造的运行时视觉证据。",
+      "evidence": "截图 CS08-after.png（51970B，2026-09-23 10:50）：完整空会话 UI、零错误文案；对照 CS09-after.png（20440B）：失效 temp 深链「会话不存在或已失效」顶部+底部双区；exec-results.json CS08 observed「.meta-copy--padded:absent .match-greeting:present」；代码：apps/client/src/stores/messages.ts:715-723（mock 未知 id 成功空数组）、apps/client/src/subpackages/chat/chat-session/index.vue:639（private 分支无失败门）、1876-1881（错误横幅条件）、915（relationDays ?? 1 兜底）",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.78,
+      "ideal": "任何失效/不存在 sessionId（数字、conv-、temp 三类一视同仁）深链都到达「会话不存在或已失效」错误态（同 CS09），不渲染假空会话、不伪造认识天数/匹配成功等关系数据；mock 环境行为与 real 对齐。",
+      "fix": "① messages.ts mock 分支：未知 sessionId 置 errorMessage=t('storeErrors.messages.sessionNotExist') 而非静默空数组（与 real 404 路径对齐）；② 页面 loadSessionData private 分支（index.vue:639 后）补失败门：fetchSessionMessages 完成后若 !currentMessages.length 且 messagesStore.errorMessage 非空则置 pageErrorMessage 返回；③ 空会话 greeting/认识天数仅在会话真实存在（createSession 成功或 sessions 列表命中）时渲染。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-202",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "ChatHeader 组件模板硬编码中文「认识 {{ relationDays }} 天」绕过 i18n：en-US 用户在该页头部可见中文。zh-CN.ts:622 已有 chat.daysLabel「天」等键但组件未消费，全组件无任何 t() 调用。与代码层 006 不重复（006 覆盖 index.vue:1783 拍一拍消息体、index.vue:626/session.ts:214 错误文案，未含 ChatHeader）。ChatHeader 仅本页使用（全仓 grep 唯一消费方 chat-session/index.vue），影响面即本页。",
+      "evidence": "apps/client/src/components/chat/ChatHeader.vue:68 `<text class=\"chat-header__days\">认识 {{ relationDays }} 天</text>`（硬编码中文）；apps/client/src/i18n/locales/zh-CN.ts:622（daysLabel 键存在未被引用）；grep RelationshipTag/ChatHeader 使用范围实跑记录见 coverage",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "用户可见文案全部经 i18n：zh「认识 {n} 天」/en「Known for {n} days」双语键同步，组件按 locale 渲染。",
+      "fix": "ChatHeader 增加 i18n 引入，模板改 {{ t('chat.knownDaysPrefix') }}{{ relationDays }}{{ t('chat.daysLabel') }} 或新增组合键 chat.knownDays=\"认识 {days} 天\"/\"Known for {days} days\"，zh/en 同步登记。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-203",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "ChatHeader 头部关系徽标硬编码旧调色板色值字面量，且与 v3.1 冻结契约 token 漂移：① :166 .chat-header__days color:#FF6B81——v3.1 冻结 Love=#FF6FA3（29a2b1df:docs/design/v3.1-contract.md:22「Love #FF6FA3（喜欢/匹配结果/情绪）」，ask 指定 token 裁决链终点）；#FF6B81 是项目 token 体系 romance-500 旧值（theme/design-variables.scss:41），亦非 message-v3-spec §3 的 Love #FF6891，三个「Love 粉」互不一致；② :124 .chat-header__avatar-text color:#36C99A——冻结 Primary=#34C98A（v3.1-contract），#36C99A 为 design-variables.scss:15 brand-500 旧值；③ 全部为字面量，未走 var(--color-romance)/var(--color-primary)（styles/tokens.scss 已提供语义别名），token 重调/暗色模式均不传播。渲染证据：CS08-after 头部「认识 1 天」粉字与头像兜底「聊」绿字。注：token 基础层（design-variables）与冻结契约的系统性漂移属全仓问题，本条仅立页面可操作的 ChatHeader 硬编码项，系统性漂移提请设计 token 归口单独立项。",
+      "evidence": "apps/client/src/components/chat/ChatHeader.vue:124（#36C99A）、166（#FF6B81）、155/172/184（#222222/#999999/#666666 字面量）；git show 29a2b1df:docs/design/v3.1-contract.md:22（Love #FF6FA3）、:27（Primary #34C98A 上下文）；apps/client/src/theme/design-variables.scss:15（$brand-500 #36C99A）、41（$romance-500 #FF6B81）；apps/client/src/styles/tokens.scss:38-60（语义别名已存在未被引用）；截图 CS08-after 头部徽标渲染色",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "头部徽标色全部消费 var(--color-romance)/var(--color-primary) 语义 token，值符合 v3.1 冻结契约（Love #FF6FA3 / Primary #34C98A）；token 基础层与契约一致。",
+      "fix": "ChatHeader.vue:166 改 var(--color-romance)、:124 改 var(--color-primary)（styles/tokens.scss 别名已就绪）；token 基础层 $brand-500/$romance-500 与 v3.1 冻结值的系统性对齐另立全仓 token 专项（本页不越界裁决）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-204",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/audit/round-1/findings/_tmp_crops/CS45-after_top2x.png",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "CS45-after.png（刘海屏设备帧，378x814）捕获一帧状态栏叠印+头部残缺：返回箭头‹与系统时间 19:41 同一水平线、头像顶入状态栏区域（实测 padding-top≈20px 而非刘海机 ≈44px）、标题行整体缺失（仅「离线」，无「聊天 ♡ 认识1天」）、页面自身 header 行与原生胶囊按钮行错位（··· 与胶囊不在一排）。同设备同状态帧 CS13-after（19:31）/CS15-after 渲染正常（箭头 y≈65px、标题完整、与胶囊对齐），说明为非确定性瞬态帧而非稳定缺陷。代码侧存疑：useStatusBarHeight 为同步 uni.getSystemInfoSync()（composables/useStatusBarHeight.ts:13-17），ChatHeader.vue:52 `Math.max(statusBarHeightPx, 20)` 的 20px 兜底不应在刘海机触发——本帧成因未能代码定位（疑首帧渲染/转场中途截图或同步取值为 0 的设备态），单帧证据不足以上升 P2。",
+      "evidence": "放大裁切 reports/audit/round-1/findings/_tmp_crops/CS45-after_top2x.png：箭头与时间同行、头像顶入状态栏、标题行缺失、胶囊错位；对照 _tmp_crops/CS13-after_top2x.png 同设备正常帧；apps/client/src/components/chat/ChatHeader.vue:52（paddingTop Math.max(sbh,20)）；apps/client/src/composables/useStatusBarHeight.ts:13-17（同步注入）；exec-results CS45：pre:pageScrollTo bottom + act-FAIL:tap(.unread-hint)，route options={} 缺参",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "任何帧（含进入首帧/转场帧）header padding-top 恒 ≥ 状态栏高度，与原生胶囊对齐，标题行不残缺；无叠印闪帧。",
+      "fix": "终验轮复测定性：① 若复现为首帧竞态，将 statusBarHeight 兜底从 20px 改为 env(safe-area-inset-top) 与 20px 取大（CSS 侧），或 page-meta --statusbar 静态注入先行；② 若仅自动化转场截帧伪影则降级关闭。建议交互判定员/终验轮以连续录屏复核每次进入的前 2 帧。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-205",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "spec §2.2 关系状态区要求 RelationshipTag + SuggestedAction 双组件，本页仅实现 SuggestedAction 侧（破冰 chips），四档关系状态标签（刚认识/聊天中/暧昧中/互相关注，§3 定义配色 #8A9694/#3CC99A/#FF6891/#3CC99A）在会话页零渲染：页面全文 grep just_met/chatting/ambiguous/mutual_follow 零命中，relationship 数据仅消费 relationDays（index.vue:915）；数据模型 RelationshipInfoView.status 四档已就绪（services/generated/api-types-supplement.ts:650-658），同构的状态标签已在消息列表项落地（交互证据 CS33-after.png 可见 暧昧中 粉/互相关注 蓝/刚认识 灰 标签）——会话页未接入。影响：spec §1「恋爱关系推进中心」的核心信息（当前关系阶段）在推进动作发生的会话页恰恰不可见，用户仅能从消息列表回推。终裁归需求对照员；视觉证据侧本页头部仅有「认识 N 天」天数徽标，无状态标签。",
+      "evidence": "ideal 依据：git show 29a2b1df:docs/design/message-v3-spec.md §2.2（关系状态区=RelationshipTag+SuggestedAction）、§3（四档状态配色）、§8（components/relationship/RelationshipTag 组件清单）；数据就绪：apps/client/src/services/generated/api-types-supplement.ts:650-658（status 四档）；页面缺失：apps/client/src/subpackages/chat/chat-session/index.vue:915（relationship 仅取 relationDays）、grep just_met|chatting|ambiguous|mutual_follow 零命中；对照 CS33-after.png 消息列表已渲染同类状态标签；截图 tour 默认态头部无状态标签",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.7,
+      "ideal": "会话页关系状态区渲染四档 RelationshipTag（配色按 §3），与消息列表标签视觉同构；无关系数据时按 §9 优雅兜底不空屏。",
+      "fix": "① 将消息列表的状态标签组件提取/复用至 ChatHeader 标题行（天数徽标旁）或关系状态区 greeting 处，消费 session.relationship.status；② 无 relationship 数据时隐藏标签（不伪造）；配色与 v3.1 token 对齐（见 203）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-206",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "对方昵称兜底口径不一致：巡检/深链路径（?userId=10003）头部标题回退通用「聊天」（CS08-after 实测），消息列表进入路径显示「对方」（tour 默认截图实测）——同为缺省昵称场景两种兜底文案并存。R4 修复注释自述目标恰是「避免标题回退为通用『聊天』」（index.vue:118、709-717 兜底链：session.partnerName → getPersonProfile().name → 空），实测兜底链在 mock 下落空：getPersonProfile mock 从推荐 fixtures 按 id 匹配（services/api.ts:964-967），fixtures 无 10003 → 返回 null → 标题落 t(\"chat.conversationTitle\")/chatTitle（index.vue:872-880）。demo 数据覆盖限制为主，代码兜底链本身在位，故记 P4 优化项。",
+      "evidence": "截图 CS08-after.png 头部「聊天」vs tour 默认截图头部「对方」；apps/client/src/subpackages/chat/chat-session/index.vue:118（R4 注释）、709-717（partnerName→profile 兜底链）、872-880（标题三级兜底）；apps/client/src/services/api.ts:964-967（mock 按 fixtures id 匹配返回 null）",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.6,
+      "ideal": "同一缺省昵称场景全页统一兜底文案（「对方」或「聊天」二选一），mock fixtures 覆盖深链常用 id 使演示环境标题显示真实昵称。",
+      "fix": "① 统一两处兜底为同一 i18n 键；② mock 推荐 fixtures 补 10003 等深链常用 id（name/avatar），或在 createSession mock 分支回填 partnerName。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "默认态（tour A 组）四区结构与 message-v3-spec §2.2 逐区对应：顶部导航（返回‹+头像+对方+♡认识1天粉徽标+离线+···+原生胶囊）、关系状态区（「你们已互相匹配成功…」greeting+2 条破冰 chips）、消息流空态（「会话刚建立，还没有消息。」居中灰字，非空屏白板）、恋爱输入区（表情+加号+输入框+发送置灰钮）。语音按钮缺失经代码核实为产品决策非缺陷（index.vue:1220-1224「按产品要求下线语音录制/发送」，微信隐私保护指引原因）。chips 绿描边浅薄荷底、发送钮禁用灰绿、粉徽标 Love 色系与品牌谱系相符（色值漂移见 203）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__默认.png + apps/client/src/subpackages/chat/chat-session/index.vue:1220-1224"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "缺参错误态（无 sessionId 直开）在两种设备档位下渲染一致：错误文案「缺少会话标识，请从聊天列表或匹配结果进入。」顶部+底部双区展示（index.vue:1876+1971），输入栏不渲染，header 完整（CS07 SE 档 10:49；CS13/CS15 刘海档 19:30-19:31），无布局溢出或裁切。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS07-after.png、CS13-after.png、CS15-after.png"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "temp 失效深链（session-100158-100159-deadbeef）错误态正确到达：「会话不存在或已失效」顶部+底部双区展示、无假会话渲染——证明 temp 分支 `!chatStore.activeSession` 失败门（index.vue:621-628，MP-R2-001 修复本体）在 mock 运行时生效；与数字分支 CS08 假空会话（201）形成同页两分支行为对照。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS09-after.png"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "fromSignal=1 渐进解锁面板渲染完整：白卡「已互动 0 条消息 / 0% 进度条 / 五档位（地区年岁学校=绿勾已解锁，兴趣爱好2/照片3/语音状态4/主页5 灰序号）/ 再互动 5 条解锁「兴趣爱好」」（index.vue:217-231 档位规则一致）。证据局限：该用例 route sessionId={id} 为脚本占位符未插值，面板叠于「会话不存在或已失效」错误态之上（toast「暂无法获取对方信息」）——CS44 截图受脚本参数污染，不能据其断言真实信号会话场景的面板表现。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS44-after.png + exec-results.json CS44 route options {\"fromSignal\":\"1\",\"sessionId\":\"{id}\"}"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "破冰 chips 文案问号渲染宽度存疑但不立 Issue：3x 放大（_tmp_crops/CS08_chips_3x.png）中「最近过得怎么样?」「平时喜欢去哪里逛?」的 ？窄于同句全角「，」「！」，疑似半角；但源码 zh-CN.ts:4554-4555 为全角「？」，模拟器字体度量差异不能排除——按观察证据制（禁止无证据推测）记观察不上报。",
+      "evidence": "reports/audit/round-1/findings/_tmp_crops/CS08_chips_3x.png vs apps/client/src/i18n/locales/zh-CN.ts:4554-4555"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "observation": "证据卫生与局限（如实记录）：① reports/screenshots/round-1-interact/ 混有 2026-09-20 21:2x 旧轮孤儿截图 CHAT-CHAT-SESSION-INDEX-01..49（无 SUBPACKAGES 前缀），未被本轮 exec-results.json 任何条目引用，已按过期证据处理未采信；② 本轮 45 用例中 CS15-CS45 均以缺参 route（options={}）执行致 element-not-found 连锁失败，核心交互（发送/长按菜单/表情/图片/转发/免打扰/拍一拍/结束会话）无有效运行时证据；CS32/36/41/43 无截图（evidence 空数组或 ERROR:timeout）；③ R13-CHAT-409（二次进会话 409）本轮无专项复测条目（exec-results 全文 409 命中均为其他页/字段误匹配），409 delta=0 仍为上轮结论，本轮未基于新代码验证；④ 消息流多消息态（对方白底左/自己薄荷绿右/时间条/活动卡内嵌/长文/图片气泡）tour 仅空会话默认态，无逐条截图可对照 spec §2.2 消息流描述——留待终验轮补。",
+      "evidence": "ls -la 文件时间戳（CHAT-* 2026-09-20 vs SUBPACKAGES-CS* 2026-09-23）；exec-results.json CS15-CS45 route options 均为 {}；409 全文检索输出"
+    }
+  ],
+  "coverage": [
+    "证据缓存校验：screenshot-manifest.json gitSha=aefd8a72=ask 要求值✓；exec-results.json gitSha=aefd8a72、updatedAt 2026-09-23✓——本轮全部结论基于未过期证据。",
+    "静态截图已看：tour 默认态 1 张逐区审查（L1 结构✓四区齐备/L2 信息层级—RelationshipTag 缺失→205/L3 交互位置✓破冰 chips 与输入区位置合spec/L4-L10 空会话态下无可比卡片流；色值漂移→203）；交互截图逐张已看 CS06/07/08/09/13/15/33/44/45 共 9 张 + 2 张 2x/3x 放大裁切。",
+    "理想图对照：本页无理想图（ask 明示），按 git show 29a2b1df:docs/design/message-v3-spec.md §2.2 四区结构+§3 token+§8 组件清单执行；29 张整页稿无本页锚定图，素材/参考图拆分图标件按 R13 判定未作页面级对照。",
+    "滚动已测：CS10（scrollPos=top）/CS11（observe-only .chat-scroll:present）状态 EXECUTED 但无有效滚动截图/滚动位置序列证据——滚动三行为（贴底滚底/历史浏览新消息提示条 CS45 act-FAIL/上拉视口保持）实机表现未验证，不计通过。",
+    "点击/返回已测：CS41/CS42 状态 EXECUTED（act:tap .chat-header__back 执行）但无截图，返回落点/未读红点恢复归交互判定员复核，本审查不越界判定。",
+    "safe-area 已查：SE 档截图无 home indicator 无法视觉复核底部 inset；代码层双重 inset 已由代码审查 005 立项（本审查不重复）；顶部状态栏叠印 CS45 单帧→204。",
+    "TabBar 已查：本页非 tab 页无 TabBar，全部截图确认无 TabBar 遮挡问题✓。",
+    "空态已查：默认空会话态「会话刚建立，还没有消息。」居中非空屏✓（tour+CS08）；greeting/chips/推荐开场兜底链完整✓。",
+    "长文已查：消息流多消息/长文/500-1000 字极端态无有效截图证据（CS16-22 缺参连锁失败），未验证——如实标注。",
+    "加载态已查：CS06 dom 观察 .uni-skeleton:absent（骨架未在采样帧出现，永驻性无法证伪）；加载态视觉未验证。",
+    "错误态已查：缺参（CS07/13/15）✓双区一致；temp 失效（CS09）✓；数字失效（CS08）✗假空会话→201；fromSignal 无效参（CS44）✓面板渲染但证据受脚本污染。",
+    "组件一致性已查：ChatHeader 仅本页消费（grep 实跑）→202/203 影响面即本页；状态标签与消息列表同类组件不同实现→205；「聊天」vs「对方」兜底口径→206。",
+    "历史 Bug 回归已查：R13-CHAT-409 代码层修复本体在位（代码审查员已核对 idem-conv 唯一键+净化器），本轮无运行时 409 复测（未验证，需 Layer B/终验）；MP-R2-001 布尔契约在 temp 主链路生效（CS09 错误态正确到达佐证），其派生残留（001/004）归代码审查条目。",
+    "未执行/越界声明：未运行任何构建/单测（视觉审查不适用）；未读取其他轮次审计结论当答案；功能目标对照、交互成败判定、历史回归终裁分别归需求对照员/交互判定员/历史回归员。",
+    "产出物：本 findings JSON + 3 张证据裁切（reports/audit/round-1/findings/_tmp_crops/：CS45-after_top2x.png、CS13-after_top2x.png、CS08_chips_3x.png）。"
+  ]
+}

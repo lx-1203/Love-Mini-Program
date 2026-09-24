@@ -1,0 +1,1701 @@
+{
+ "round": "R1",
+ "page": "multi(8 pages): village/detail, village/tag-posts, village/history, circles/topics, circles/topic-detail, circles/circle-home, campus/topic-detail, campus/certification",
+ "gitSha": "aefd8a72",
+ "judgedAt": "2026-09-23",
+ "manifest": "reports/audit/round-1/ops/次要20.json",
+ "execResults": "reports/audit/round-1/interact/exec-results.json",
+ "summary": {
+  "total": 111,
+  "verified": 17,
+  "failed": 3,
+  "unverified": 91
+ },
+ "checks": [
+  {
+   "caseId": "VD01",
+   "page": "subpackages/village/village/detail",
+   "operation": "冷启动深链 ?id=1 双身份直开·observe-only",
+   "expected": "currentPost 渲染作者/正文/互动栏，评论区加载，不闪「帖子不存在」空态，console 无 NAV_FAIL/TypeError；A/B 各一份",
+   "actual": "route 顶=detail 且 options={id:1} ✓；.post-content/.author-inline__name/.comments-section 均 :present、骨架已消失（内容态）✓；toast=[]、console=[]（无 NAV_FAIL/TypeError）✓。缺口：单一时刻采样非 0/0.5/1s 三时刻，且仅身份 A 执行（B 缺跑）",
+   "verdict": "VERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD01",
+    "reports/audit/round-1/ops/次要20.json#VD01",
+    "reports/audit/round-1/ops/次要20.json#VD01"
+   ]
+  },
+  {
+   "caseId": "VD02",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap .detail-header__back（栈=1 深链直开变体）",
+   "expected": "栈>1 返回来源页；栈=1 无兜底时若 500ms 内无任何反馈即记「死按钮/导航无响应」缺陷（Manifest 预设缺陷记录条件）",
+   "actual": "执行器实际以 reLaunch 直开 detail（栈=1，前置 navigateTo 栈=2 未建立）；.detail-header__back :present 且 tap 已执行无 act-FAIL；稳定后 route 终态仍=detail(options={})——点击无任何路由反馈；源码核实 goBack=裸 uni.navigateBack 无栈底守卫（apps/client/src/subpackages/village/village/detail.vue:275-277），与观察完全吻合（对比 tag-posts.vue:250-256、history.vue:41-48 均有 reLaunch 兜底）→ 按 Manifest 预设条件记缺陷",
+   "verdict": "FAILED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD02",
+    "reports/audit/round-1/ops/次要20.json#VD02",
+    "reports/audit/round-1/ops/次要20.json#VD02"
+   ]
+  },
+  {
+   "caseId": "VD03",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap .author-inline__follow 关注/取关",
+   "expected": "关注按钮渲染（isOwnPost=false）+ 乐观切换 + 失败 Toast 回滚",
+   "actual": "未验：执行器 pre:auto-reLaunch 以裸路径丢失 ?id=1（r1-exec.cjs:1314），页面落入「帖子不存在或已被删除」空态（同族 VD04-after.wxml 落底证实），.author-inline__follow 未渲染，点击未执行；属执行侧污染非产品实证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD03",
+    "reports/audit/round-1/ops/次要20.json#VD03",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.wxml"
+   ]
+  },
+  {
+   "caseId": "VD04",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap 互动栏点赞 + 快击×5 幂等",
+   "expected": "isLiked 翻转/计数±1，快击幂等净变化±1",
+   "actual": "未验：VD04-after.wxml 与 after 截图证实页面渲染 EmptyState「帖子不存在或已被删除」，.post-actions-inline__item 不存在，操作未执行——根因为执行器丢参（VD01 已证 detail 可正常渲染 id=1），非点赞功能缺陷实证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD04",
+    "reports/audit/round-1/ops/次要20.json#VD04",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.wxml",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.png"
+   ]
+  },
+  {
+   "caseId": "VD05",
+   "page": "subpackages/village/village/detail",
+   "operation": "tapIndex 互动栏#2（评论数按钮聚焦输入框）",
+   "expected": "focusCommentInput 生效：输入框 focus/键盘弹起，无路由变化、无 Toast",
+   "actual": "tap 已落在 .post-actions-inline__item#2（act 记录 tapped），无路由变化、无 Toast ✓；VD05-after.png 证实页面为完整帖子内容态。缺口：focus 态（DOM focus/键盘）无任何采集证据，核心预期（聚焦生效）未证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD05",
+    "reports/audit/round-1/ops/次要20.json#VD05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD05-after.png"
+   ]
+  },
+  {
+   "caseId": "VD06",
+   "page": "subpackages/village/village/detail",
+   "operation": "longpress .post-body 与 tap ··· 菜单",
+   "expected": "uni.showActionSheet 弹出【复制内容/举报】两项；选复制写剪贴板；选举报弹 PostReportDialog；取消静默",
+   "actual": "longpress 与两次 ··· tap 均执行无失败，但 ActionSheet 为原生弹层：after 截图超时无文件、dom 探测 .showActionSheet 非页面类名无意义、无 Toast 记录——弹出与否及选项行为完全无证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD06",
+    "reports/audit/round-1/ops/次要20.json#VD06"
+   ]
+  },
+  {
+   "caseId": "VD07",
+   "page": "subpackages/village/village/detail",
+   "operation": "举报弹窗选因提交/空选/取消",
+   "expected": "提交成功关弹窗；失败 Toast；取消无请求",
+   "actual": "未验：前置 VD06 打开 PostReportDialog 未成立，且页处丢参空态，.reason-item/.report-btn 不存在，操作全部未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD07",
+    "reports/audit/round-1/ops/次要20.json#VD07"
+   ]
+  },
+  {
+   "caseId": "VD08",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap .post-image-wrap 开大图 → tap .image-viewer 遮罩关",
+   "expected": "imageViewerVisible=true 显示全屏大图；点遮罩关闭并清空；无路由变化",
+   "actual": "tap 图片已执行；随后对 .image-viewer 的关闭 tap 成功（无 act-FAIL）——该元素为 v-if=\"imageViewerVisible\"（detail.vue:1321），能被点中即证明大图层确曾打开，事后关闭；无路由变化 ✓。间接但三源自洽（v-if 保证存在性=可见性）",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD08",
+    "reports/audit/round-1/ops/次要20.json#VD08",
+    "apps/client/src/subpackages/village/village/detail.vue:1321"
+   ]
+  },
+  {
+   "caseId": "VD09",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap .post-tag 跳标签聚合页",
+   "expected": "goToTagPosts → tag-posts?tagName=<去#编码>，路由顶=tag-posts",
+   "actual": "tap .post-tag#1 已执行（页面为内容残留态，.post-tag :present），但稳定后 route 终态仍=detail——未发生导航；openAppPath 是否调用/失败无 console 证据，tap 落地性与跳转缺陷不可分辨（同轮判例：无导航失败日志时判 tap 未落地）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD09",
+    "reports/audit/round-1/ops/次要20.json#VD09"
+   ]
+  },
+  {
+   "caseId": "VD10",
+   "page": "subpackages/village/village/detail",
+   "operation": "转发弹窗三路关闭（遮罩/X/取消）",
+   "expected": "三路均关闭且 shareComment 重置，内容区 catchtap 防误关",
+   "actual": "未验：前置打开转发弹窗失败（页处丢参空态，分享按钮不存在），三路关闭目标均不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD10",
+    "reports/audit/round-1/ops/次要20.json#VD10"
+   ]
+  },
+  {
+   "caseId": "VD11",
+   "page": "subpackages/village/village/detail",
+   "operation": "转发确认提交 + isSharing 防连点",
+   "expected": "成功关弹窗+Toast shareSuccess；提交中「转发中」守卫，快击仅 1 次请求",
+   "actual": "未验：页处丢参空态，textarea 与确认按钮不存在，输入与提交均未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD11",
+    "reports/audit/round-1/ops/次要20.json#VD11"
+   ]
+  },
+  {
+   "caseId": "VD12",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap .comments-sort 两次（最热↔最新）",
+   "expected": "文案切换+按 likes/createdAt 降序本地重排，总数不变，无路由/请求",
+   "actual": "VD12-after.png 证实：评论区头部高亮文案为「最新」（VD05-after 同位置为「最热」），且评论顺序翻转（橙子 9 分钟前在前、阿泽 10 分钟前在后=createdAt 降序），评论数据完整（32 条计数与两条评论俱在）、无路由变化——文案切换+本地重排+数据不丢全部达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD12",
+    "reports/audit/round-1/ops/次要20.json#VD12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD12-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD05-after.png"
+   ]
+  },
+  {
+   "caseId": "VD13",
+   "page": "subpackages/village/village/detail",
+   "operation": "评论合法提交（输入→发送）",
+   "expected": "Toast commentSuccess、输入清空、列表 +1",
+   "actual": "未验：输入操作 element not found（harness 输入受限 __CAND__），且页处丢参空态 .input-bar__send 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD13",
+    "reports/audit/round-1/ops/次要20.json#VD13"
+   ]
+  },
+  {
+   "caseId": "VD14",
+   "page": "subpackages/village/village/detail",
+   "operation": "评论空提交（空串/纯空格）",
+   "expected": "不发请求、无 Toast、按钮呈 --disabled 灰态",
+   "actual": "dom 证实 .input-bar__send:present 且 .input-bar__send--disabled:present（空输入禁用态 ✓）；两次 tap 发送均执行，无 Toast、无路由变化、console 无请求错误——空提交被拦截的预期达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD14",
+    "reports/audit/round-1/ops/次要20.json#VD14"
+   ]
+  },
+  {
+   "caseId": "VD15",
+   "page": "subpackages/village/village/detail",
+   "operation": "评论超长/特殊字符提交",
+   "expected": "超长 Toast commentContentTooLong；特殊字符安全渲染",
+   "actual": "未验：输入受限（element not found ×2），两条输入均未送达",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD15",
+    "reports/audit/round-1/ops/次要20.json#VD15"
+   ]
+  },
+  {
+   "caseId": "VD16",
+   "page": "subpackages/village/village/detail",
+   "operation": "表情面板开关与点选追加",
+   "expected": "面板展开 30 表情、点选追加输入框、再点收起",
+   "actual": "未验：页处丢参空态，.input-bar__icon 不存在，操作未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD16",
+    "reports/audit/round-1/ops/次要20.json#VD16"
+   ]
+  },
+  {
+   "caseId": "VD17",
+   "page": "subpackages/village/village/detail",
+   "operation": "tap @ 提及按钮",
+   "expected": "插入@+聚焦+表情面板联动收起",
+   "actual": "未验：A1 标记 action-not-automatable（aria-label 定位无法自动化），未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.9,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD17",
+    "reports/audit/round-1/ops/次要20.json#VD17"
+   ]
+  },
+  {
+   "caseId": "VD18",
+   "page": "subpackages/village/village/detail",
+   "operation": "评论图片选择/预览/移除/上限",
+   "expected": "上传换 URL、缩略图、超 3 张 Toast",
+   "actual": "未验：需 mock uni.chooseImage（Manifest 预设无法 mock 则 UNVERIFIED），页处亦为空态",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD18",
+    "reports/audit/round-1/ops/次要20.json#VD18"
+   ]
+  },
+  {
+   "caseId": "VD19",
+   "page": "subpackages/village/village/detail",
+   "operation": "评论点赞切换",
+   "expected": "isLiked 翻转+计数，失败 Toast 回滚",
+   "actual": "未验：页处丢参空态，.comment-heart 未渲染",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD19",
+    "reports/audit/round-1/ops/次要20.json#VD19"
+   ]
+  },
+  {
+   "caseId": "VD20",
+   "page": "subpackages/village/village/detail",
+   "operation": "楼中楼回复模式进入/取消/发送",
+   "expected": "提示条+placeholder 变化+聚焦；取消清空；回复挂楼中楼",
+   "actual": "未验：页处丢参空态，.comment-reply-btn 未渲染，输入亦受限",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD20",
+    "reports/audit/round-1/ops/次要20.json#VD20"
+   ]
+  },
+  {
+   "caseId": "VD21",
+   "page": "subpackages/village/village/detail",
+   "operation": "楼中楼展开/收起（>3 条回复）",
+   "expected": "「展开 X 条回复」↔「收起」，visibleReplies 3 条截断",
+   "actual": "未验：页处丢参空态 + 数据条件（>3 条回复的根评论）未确认存在，.comment-replies__toggle 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD21",
+    "reports/audit/round-1/ops/次要20.json#VD21"
+   ]
+  },
+  {
+   "caseId": "VD22",
+   "page": "subpackages/village/village/detail",
+   "operation": "作者/评论者/相似作者头像跳大主页",
+   "expected": "三处均跳 profile/other?userId=，守卫：userId 空不跳",
+   "actual": "未验：页处丢参空态，三类头像元素均不存在，tap 未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD22",
+    "reports/audit/round-1/ops/次要20.json#VD22"
+   ]
+  },
+  {
+   "caseId": "VD23",
+   "page": "subpackages/village/village/detail",
+   "operation": "相似作者关注/取关",
+   "expected": "isFollowed 翻转文案切换；失败 console.error 无 Toast",
+   "actual": "未验：页处丢参空态，.action-btn--follow 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD23",
+    "reports/audit/round-1/ops/次要20.json#VD23"
+   ]
+  },
+  {
+   "caseId": "VD24",
+   "page": "subpackages/village/village/detail",
+   "operation": "相似作者私信跳会话",
+   "expected": "带 sessionId 或 userId 跳 chat-session",
+   "actual": "未验：页处丢参空态，.action-btn--message 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD24",
+    "reports/audit/round-1/ops/次要20.json#VD24"
+   ]
+  },
+  {
+   "caseId": "VD25",
+   "page": "subpackages/village/village/detail",
+   "operation": "发送按钮快击×5 防重入",
+   "expected": "仅 1 条评论、1 次请求，提交后清空",
+   "actual": "未验：页处丢参空态 .input-bar__send 不存在，且输入受限，快击前提不成立",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD25",
+    "reports/audit/round-1/ops/次要20.json#VD25"
+   ]
+  },
+  {
+   "caseId": "VD26",
+   "page": "subpackages/village/village/detail",
+   "operation": "打开即返回+重复进出×3",
+   "expected": "落点=村口且状态恢复；onUnload dispose 无泄漏报错",
+   "actual": "未验：observe-only，进出过程无路由链序列、无 console、无截图落盘（仅 .dispose 探测）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD26",
+    "reports/audit/round-1/ops/次要20.json#VD26"
+   ]
+  },
+  {
+   "caseId": "VD27",
+   "page": "subpackages/village/village/detail",
+   "operation": "无 id 直开：Toast 帖子不存在+EmptyState；tap action 返回",
+   "expected": "clearCurrentPost+Toast postNotExist；渲染 EmptyState 不白屏；点 action goBack",
+   "actual": "Toast「帖子不存在或已被删除」已捕获 ✓（=i18n village.detail.postNotExist，zh-CN.ts:1940）；EmptyState 渲染有 wxml/截图佐证（VD04-after 同页族）不白屏 ✓。缺口：action 点击未执行——实际按钮文案为「返回广场」（i18n backToVillage，zh-CN.ts:1941）≠Manifest 预期「返回村口」，候选定位失败，goBack 落点未证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD27",
+    "reports/audit/round-1/ops/次要20.json#VD27",
+    "apps/client/src/i18n/locales/zh-CN.ts:1941",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD27-after.png"
+   ]
+  },
+  {
+   "caseId": "VD28",
+   "page": "subpackages/village/village/detail",
+   "operation": "详情滚动到底/顶与输入栏遮挡（noop）",
+   "expected": "长内容滚到底不被 fixed 输入栏遮挡，回顶正常，无报错",
+   "actual": "未验：前置丢参污染使页面处于空态（无长内容可滚），pageScrollTo 虽完成（scrollPos=bottom）但遮挡检查对象不存在，noop 语义不成立",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VD28",
+    "reports/audit/round-1/ops/次要20.json#VD28"
+   ]
+  },
+  {
+   "caseId": "VT01",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "冷启动深链 ?tagName=摄影 双身份·observe-only",
+   "expected": "标题「#摄影」+ 过滤列表渲染，加载期 spinner 不闪错误态，console 干净",
+   "actual": "route options 保留 {tagName:%E6%91%84%E5%BD%B1} ✓，标题 :present ✓，console=[] ✓；但 .post-card :absent——harness 组件边界盲区与「600ms 延迟后渲染」快照时机无法区分，且无截图/wxml 佐证，列表渲染这一核心断言不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT01",
+    "reports/audit/round-1/ops/次要20.json#VT01"
+   ]
+  },
+  {
+   "caseId": "VT02",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "tap .tag-header__back（栈=1 兜底）",
+   "expected": "栈=1 → reLaunch 村口 index（MP-R1-TAGPOSTS-002）；栈>1 navigateBack",
+   "actual": "参数保留（tagName 在 URL）但稳定后 route 终态仍=tag-posts——未导航；源码核实守卫存在（tag-posts.vue:250-256，本席已读）；dom 报 .tag-header__back :absent 与 tap 成功自相矛盾（盲区判例），守卫存在时落地 tap 必导航→判定 tap 未落地，兜底行为未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT02",
+    "reports/audit/round-1/ops/次要20.json#VT02",
+    "apps/client/src/subpackages/village/village/tag-posts.vue:250-256"
+   ]
+  },
+  {
+   "caseId": "VT03",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "tap 卡片点赞/取消",
+   "expected": "mock 本地翻转+计数，失败 Toast",
+   "actual": "未验：执行器丢 ?tagName → 页面按缺参守卫 Toast「缺少标签参数」并于 600ms 弹回村口（route 终点=village/index），点赞 tap 落在村口页，「取消」取景失败——操作对象错误",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT03",
+    "reports/audit/round-1/ops/次要20.json#VT03"
+   ]
+  },
+  {
+   "caseId": "VT04",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "tap 分享按钮 showShareMenu+Toast",
+   "expected": "开启转发菜单+Toast shareHint 含作者名，无路由变化",
+   "actual": "未验：同 VT03 丢参污染——toast「缺少标签参数」为缺参守卫所发（非分享提示），tap .action-btn 落在村口页，分享行为未测",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT04",
+    "reports/audit/round-1/ops/次要20.json#VT04"
+   ]
+  },
+  {
+   "caseId": "VT05",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "tap 卡片/评论按钮进详情",
+   "expected": "setCurrentPost+detail?id= 直达；评论按钮 tap.stop 不双重跳转",
+   "actual": "未验：同丢参污染（route 终点=村口），.post-card :absent，进详情与冒泡阻断均未真实执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT05",
+    "reports/audit/round-1/ops/次要20.json#VT05"
+   ]
+  },
+  {
+   "caseId": "VT06",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "下拉刷新真实重拉",
+   "expected": "loadPosts(true) 重置页码重载，动画复位，无重复追加",
+   "actual": "未验：refresherrefresh 事件与 onPullDownRefresh callMethod ok 已证（事件绑定生效），但页面处于缺参弹回流程，列表重载语义不成立且无列表证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT06",
+    "reports/audit/round-1/ops/次要20.json#VT06"
+   ]
+  },
+  {
+   "caseId": "VT07",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "滚动到底上拉（noop）",
+   "expected": "hasMore=false 显「没有更多」，重复触发不再请求",
+   "actual": "未验：滚动执行时页面已弹回村口（Toast「缺少标签参数」在案），滚动对象与守卫文案均非本页",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT07",
+    "reports/audit/round-1/ops/次要20.json#VT07"
+   ]
+  },
+  {
+   "caseId": "VT08",
+   "page": "subpackages/village/village/tag-posts",
+   "operation": "缺 tagName 深链：Toast+600ms 自动返回",
+   "expected": "Toast tagPostsMissingParam；占位标题不裸显#；600ms goBack 栈=1 reLaunch 村口；不发空请求",
+   "actual": "Toast「缺少标签参数」捕获两条（=i18n village.tagPostsMissingParam，zh-CN.ts:2026）✓；route 终点=village/index——600ms 自动 goBack 的栈底 reLaunch 兜底真实生效 ✓；无崩溃。占位标题断言无截图，但主链路（Toast 文案+落点）完整达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VT08",
+    "reports/audit/round-1/ops/次要20.json#VT08",
+    "apps/client/src/i18n/locales/zh-CN.ts:2026"
+   ]
+  },
+  {
+   "caseId": "VH01",
+   "page": "subpackages/village/village/history",
+   "operation": "冷启动直达浏览历史·observe-only",
+   "expected": "spinner→列表（viewedAt 倒序）+「共 N 条」+「清空」；空历史 EmptyState；无白屏错误态",
+   "actual": "route ✓；.history-item:present、.history-toolbar:present、loading 已结束 ✓；console=[] ✓；VH03-after.wxml 旁证列表实渲染「共 6 条记录/清空记录」工具栏与条目 ✓。缺口：0/0.5/1s 三时刻采样缺失、仅身份 A",
+   "verdict": "VERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH01",
+    "reports/audit/round-1/ops/次要20.json#VH01",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-VH03-after.wxml"
+   ]
+  },
+  {
+   "caseId": "VH02",
+   "page": "subpackages/village/village/history",
+   "operation": "tap .history-back（栈=1 兜底）",
+   "expected": "栈=1 → reLaunch 村口（MP-R1-HISTORY-001）",
+   "actual": "route 终态仍=history——未导航；源码守卫存在（history.vue:41-48，本席已读）；dom :absent 与 tap 成功矛盾（盲区判例）→ tap 未落地，兜底未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH02",
+    "reports/audit/round-1/ops/次要20.json#VH02",
+    "apps/client/src/subpackages/village/village/history.vue:41-48"
+   ]
+  },
+  {
+   "caseId": "VH03",
+   "page": "subpackages/village/village/history",
+   "operation": "清空浏览记录弹窗三路+确认 DELETE+空态",
+   "expected": "取消/遮罩关且列表不变；确认 clearing 守卫 1 次 DELETE+Toast cleared+空态；快击×3 幂等",
+   "actual": "未验：wxml 落底证实列表仍完整 6 条、无 modal/overlay 节点、无 Toast——「清空」tap 未落地或弹层从未打开；确认/取消/遮罩三路与 DELETE 均未真实发生；前后截图均超时无文件",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH03",
+    "reports/audit/round-1/ops/次要20.json#VH03",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-VH03-after.wxml"
+   ]
+  },
+  {
+   "caseId": "VH04",
+   "page": "subpackages/village/village/history",
+   "operation": "tap .history-item 进详情",
+   "expected": "setCurrentPost+detail?id= 直达，路由顶=detail",
+   "actual": "tap 已执行（.history-item :present）但 route 终态仍=history、console=[]、无截图——落地性与导航缺陷不可分辨（同轮判例：无导航失败日志时判 tap 未落地）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH04",
+    "reports/audit/round-1/ops/次要20.json#VH04"
+   ]
+  },
+  {
+   "caseId": "VH05",
+   "page": "subpackages/village/village/history",
+   "operation": "tap 记录头像跳大主页（冒泡阻断）",
+   "expected": "goToUserProfile→profile/other?userId=；userId 缺失不跳；不触发卡片跳详情",
+   "actual": "路由未变：与「userId 缺失守卫不跳」（预期内合规行为）和「tap 未落地」均相容，无日志/截图可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH05",
+    "reports/audit/round-1/ops/次要20.json#VH05"
+   ]
+  },
+  {
+   "caseId": "VH06",
+   "page": "subpackages/village/village/history",
+   "operation": "下拉刷新 refresher",
+   "expected": "fetchPostHistory(true) 重置，动画随 loadingHistory 复位，无重复追加",
+   "actual": "refresherrefresh 触发 + onPullDownRefresh callMethod ok ✓（绑定生效）；无 Toast/无路由异常；VH06-after.png（170KB）在案——本页未被丢参污染（history 无参数依赖），刷新语义成立",
+   "verdict": "VERIFIED",
+   "confidence": 0.65,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH06",
+    "reports/audit/round-1/ops/次要20.json#VH06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-HISTORY-VH06-after.png"
+   ]
+  },
+  {
+   "caseId": "VH07",
+   "page": "subpackages/village/village/history",
+   "operation": "滚动到底上拉（noop）",
+   "expected": "守卫生效；无新增 hasMore=false；mock 无分页不异常请求",
+   "actual": "pageScrollTo bottom 完成（scrollPos=bottom），页面未被污染，console=[] 无异常请求——noop 档达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH07",
+    "reports/audit/round-1/ops/次要20.json#VH07"
+   ]
+  },
+  {
+   "caseId": "VH08",
+   "page": "subpackages/village/village/history",
+   "operation": "详情返回 onShow 静默刷新回显",
+   "expected": "落点=history 且列表含刚浏览帖，无重复条目，无全屏 loading",
+   "actual": "未验：observe-only 且 after 截图超时无文件，进出过程与列表变化零证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH08",
+    "reports/audit/round-1/ops/次要20.json#VH08"
+   ]
+  },
+  {
+   "caseId": "VH09",
+   "page": "subpackages/village/village/history",
+   "operation": "空态 EmptyState action 跳村口",
+   "expected": "openAppPath 村口 index，路由顶=村口",
+   "actual": "未验：前置「清空记录」依赖 VH03（其清空未发生），列表非空、EmptyState 未出现，action 目标不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#VH09",
+    "reports/audit/round-1/ops/次要20.json#VH09"
+   ]
+  },
+  {
+   "caseId": "CT01",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "冷启动深链 ?circleId=8·observe-only",
+   "expected": "标题回填圈名、hero 成员数/动态数/朋友文案、话题列表渲染，无白屏错误态",
+   "actual": "route options 保留 {circleId:8} ✓；.topics-header__title/.circle-hero/.topic-card 均 :present ✓；toast/console 干净 ✓——圈名回填与列表渲染核心断言达成（标题具体文案无截图，千分位格式未证）",
+   "verdict": "VERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT01",
+    "reports/audit/round-1/ops/次要20.json#CT01"
+   ]
+  },
+  {
+   "caseId": "CT02",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap .topics-header__back（栈=1 兜底）",
+   "expected": "栈=1 → reLaunch circles/index（MP-R2-NAV-001）",
+   "actual": "route 终态仍=topics（circleId=8 在 URL）——未导航；源码守卫存在（topics.vue:299-306，本席已读）；dom :absent 与 tap 成功矛盾（盲区判例）→ tap 未落地，兜底未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT02",
+    "reports/audit/round-1/ops/次要20.json#CT02",
+    "apps/client/src/subpackages/circles/circles/topics.vue:299-306"
+   ]
+  },
+  {
+   "caseId": "CT03",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "hero/底部加入退出联动",
+   "expected": "toggleJoin 两入口联动：文案/样式/成员数±1，失败 Toast",
+   "actual": "未验：执行器丢 ?circleId → onLoad 走缺参守卫（Toast「兴趣圈 ID 无效」），circle=null 时 hero/底部栏不渲染（恰为 CT15 预期行为），.circle-hero__join/.circle-bottom__join 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT03",
+    "reports/audit/round-1/ops/次要20.json#CT03"
+   ]
+  },
+  {
+   "caseId": "CT04",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "五 Tab 依次切换",
+   "expected": "激活下划线跟随；精华重排/作品墙过滤/成员空文案/活动首拉；切回数据不丢",
+   "actual": "未验：执行不完整——仅 1 次 .circle-tab tap（规格要求动态→精华→活动→作品墙→成员依次），无截图、无内容断言、无 activities 请求证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT04",
+    "reports/audit/round-1/ops/次要20.json#CT04"
+   ]
+  },
+  {
+   "caseId": "CT05",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap .topic-card 进话题详情",
+   "expected": "topicId+circleId 双参数跳 topic-detail",
+   "actual": "未验：运行于丢参污染态（circleId 缺失，卡片来自 store 残留渲染）；tap 执行但路由未变、console=[]、无截图——tap 落地性与跳转缺陷不可分辨",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT05",
+    "reports/audit/round-1/ops/次要20.json#CT05"
+   ]
+  },
+  {
+   "caseId": "CT06",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap 卡片作者头像跳大主页",
+   "expected": "goToAuthorProfile→profile/other?userId=，catchtap 不触发卡片",
+   "actual": "未验：丢参污染态运行；Toast「兴趣圈 ID 无效」为 onLoad 守卫所发（非点击反馈）；头像 tap 无导航且无日志，落地性不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT06",
+    "reports/audit/round-1/ops/次要20.json#CT06"
+   ]
+  },
+  {
+   "caseId": "CT07",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap「认识TA」跳大主页",
+   "expected": "meetAuthor→openUserProfile，tap.stop 不触发卡片",
+   "actual": "未验：同 CT06 丢参污染态，tap 无导航无日志",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT07",
+    "reports/audit/round-1/ops/次要20.json#CT07"
+   ]
+  },
+  {
+   "caseId": "CT08",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap 置顶圈规条（栈=1）",
+   "expected": "代码现状 goCircleDetail=uni.navigateBack（topics.vue:295-297）：栈=1 无处可退、500ms 无反馈即记死按钮缺陷（Manifest 预设缺陷记录条件）；无 Toast",
+   "actual": "执行器以裸 reLaunch 直开（栈=1，符合本变体前提）；.topic-rule :present 且 tap 已执行；稳定后 route 终态仍=topics——点击无路由反馈；在案 Toast「兴趣圈 ID 无效」为 onLoad 缺参守卫发出（先于点击，非点击反馈）；源码核实 goCircleDetail=裸 navigateBack 无守卫（本席已读）→ 三源吻合，按 Manifest 预设记缺陷",
+   "verdict": "FAILED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT08",
+    "reports/audit/round-1/ops/次要20.json#CT08",
+    "apps/client/src/subpackages/circles/circles/topics.vue:295-297"
+   ]
+  },
+  {
+   "caseId": "CT09",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap「写话题」图标跳发布页",
+   "expected": "post-topic?circleId=8，路由顶=post-topic",
+   "actual": "未验：丢参污染态（circleId 缺失），tap 执行但路由未变、无日志无截图，落地性不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT09",
+    "reports/audit/round-1/ops/次要20.json#CT09"
+   ]
+  },
+  {
+   "caseId": "CT10",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "··· ActionSheet 仅「写话题」一项",
+   "expected": "itemList 仅【写话题】（MP-R2-TOPICS-001 收敛）；选中跳发布页；取消静默",
+   "actual": "未验：ActionSheet 为原生弹层无捕获（after 截图超时无文件），「写话题」候选未找到，收敛项数与选中行为均无证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT10",
+    "reports/audit/round-1/ops/次要20.json#CT10"
+   ]
+  },
+  {
+   "caseId": "CT11",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "tap 底部 FAB 跳发布页",
+   "expected": "post-topic?circleId=8",
+   "actual": "未验：丢参污染下 .circle-bottom__fab 未渲染（底部栏 v-if circle，与 CT15 预期一致），tap 未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT11",
+    "reports/audit/round-1/ops/次要20.json#CT11"
+   ]
+  },
+  {
+   "caseId": "CT12",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "下拉刷新 fetchTopics(1) 重拉",
+   "expected": "isRefreshing→重置列表与页码→动画复位，无重复追加",
+   "actual": "未验：refresher 事件+onPullDownRefresh callMethod ok 已证（绑定生效），但 circleId 缺失下 fetchTopics(circleId,1) 重载语义不成立，列表证据缺失（CT12-after.png 在案但内容断言未做）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT12",
+    "reports/audit/round-1/ops/次要20.json#CT12"
+   ]
+  },
+  {
+   "caseId": "CT13",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "滚动到底上拉分页（noop）",
+   "expected": "守卫生效；无下一页显「到底」不再请求",
+   "actual": "未验：丢参污染（circle=null，列表为 store 残留渲染），「到底」文案与请求守卫无 DOM/日志证据，仅 scrollPos=bottom",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT13",
+    "reports/audit/round-1/ops/次要20.json#CT13"
+   ]
+  },
+  {
+   "caseId": "CT14",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "活动 Tab 行跳活动详情",
+   "expected": "goToActivityDetail→tools/activities/detail?id=；空列表不崩溃",
+   "actual": "未验：数据条件（活动非空）未构造 + 丢参污染，.detail-activity 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT14",
+    "reports/audit/round-1/ops/次要20.json#CT14"
+   ]
+  },
+  {
+   "caseId": "CT15",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "缺 circleId 深链：Toast+hero 不渲染",
+   "expected": "Toast storeErrors.circle.circleIdInvalid；不发 fetchTopics；circle=null hero/底部栏不渲染；不白屏",
+   "actual": "Toast「兴趣圈 ID 无效」捕获 ✓（=i18n，zh-CN.ts:3920）；路由稳定、无崩溃 ✓；hero 不渲染断言：harness 对 .circle 报 :present，但模板中不存在精确 class=\"circle\" 元素（本席 grep 证实），该读数为探针误报不可用；fetchTopics 未发不可直接观测。主链路（Toast 文案正确+不白屏）达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT15",
+    "reports/audit/round-1/ops/次要20.json#CT15",
+    "apps/client/src/i18n/locales/zh-CN.ts:3920"
+   ]
+  },
+  {
+   "caseId": "CT16",
+   "page": "subpackages/circles/circles/topics",
+   "operation": "空态 EmptyState action 跳写话题",
+   "expected": "goToPostTopic→post-topic?circleId=；三 tab 空态文案区分",
+   "actual": "未验：数据条件（无话题的圈）未构造 + 丢参污染，空态未出现，action 未执行（Manifest 预设「有话题则 UNVERIFIED」）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CT16",
+    "reports/audit/round-1/ops/次要20.json#CT16"
+   ]
+  },
+  {
+   "caseId": "CD01",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "冷启动深链 ?id=37 双身份·observe-only",
+   "expected": "fetchTopicDetail+fetchReplies 渲染标题/正文/作者/回复，replyPage 重置，不闪「话题不存在」",
+   "actual": "route options 保留 {id:37} ✓、console=[] ✓；但 .topic-title/.replies-list/.replies-empty 全部 :absent——harness 组件边界盲区与「渲染失败/空态」不可区分（对照组：同执行器对村口详情同类查询为 :present），无 wxml/截图佐证，渲染断言不可判；仅身份 A",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD01",
+    "reports/audit/round-1/ops/次要20.json#CD01"
+   ]
+  },
+  {
+   "caseId": "CD02",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "tap .detail-header__back（栈=1 兜底）",
+   "expected": "clearCurrentTopic+navigateBack；栈=1 reLaunch circles/index（MP-R2-NAV-001）",
+   "actual": "参数保留（id=37）但 route 终态仍=topic-detail——未导航；源码核实守卫存在（circles topic-detail.vue:148-152，本席已读）；dom :absent 与 tap 成功矛盾（盲区判例）→ tap 未落地，兜底未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD02",
+    "reports/audit/round-1/ops/次要20.json#CD02",
+    "apps/client/src/subpackages/circles/circles/topic-detail.vue:148-152"
+   ]
+  },
+  {
+   "caseId": "CD03",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "回复合法提交",
+   "expected": "Toast replySuccess+输入清空+回复+1",
+   "actual": "未验：CD03-after.wxml 落底证实页面为「话题不存在或已被删除」EmptyState（执行器裸 reLaunch 丢 ?id=37 所致），.reply-btn 不存在、输入受限——操作未执行；非产品缺陷实证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD03",
+    "reports/audit/round-1/ops/次要20.json#CD03",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-TOPIC-DETAIL-CD03-after.wxml"
+   ]
+  },
+  {
+   "caseId": "CD04",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "回复空提交拦截+禁用态",
+   "expected": "trim 守卫 return；.reply-btn--disabled 灰态",
+   "actual": "未验：页处空态（CD03-after.wxml 证实），.reply-btn 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD04",
+    "reports/audit/round-1/ops/次要20.json#CD04"
+   ]
+  },
+  {
+   "caseId": "CD05",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "回复超长/特殊字符",
+   "expected": "错误 Toast 或成功；XSS 安全渲染",
+   "actual": "未验：页处空态 + 输入受限",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD05",
+    "reports/audit/round-1/ops/次要20.json#CD05"
+   ]
+  },
+  {
+   "caseId": "CD06",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "发送快击×5 防重入",
+   "expected": "isSubmitting 守卫仅 1 条回复",
+   "actual": "未验：页处空态，.reply-btn 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD06",
+    "reports/audit/round-1/ops/次要20.json#CD06"
+   ]
+  },
+  {
+   "caseId": "CD07",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "打招呼实名门控跳会话预填",
+   "expected": "ensureCertified→chat-session?userId&prefillMessage&quoteContext",
+   "actual": "未验：页处空态（无回复列表），.reply-say-hello 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD07",
+    "reports/audit/round-1/ops/次要20.json#CD07"
+   ]
+  },
+  {
+   "caseId": "CD08",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "长按正文举报全流程",
+   "expected": "ActionSheet→Modal→reportTarget 成功 Toast；取消静默",
+   "actual": "未验：页处空态，.topic-content 不存在，longpress 未执行",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD08",
+    "reports/audit/round-1/ops/次要20.json#CD08"
+   ]
+  },
+  {
+   "caseId": "CD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "作者/回复者头像跳转（tab 页路径疑点）",
+   "expected": "goToAuthorProfile→/pages/profile/index?userId=（openAppPath tab 桥接）；落点语义判定",
+   "actual": "未验：页处空态，.author-avatar/.reply-avatar 不存在，疑点（tab 页路径 userId 语义丢失）无观察载体",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD09",
+    "reports/audit/round-1/ops/次要20.json#CD09"
+   ]
+  },
+  {
+   "caseId": "CD10",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "回复分页加载更多",
+   "expected": "fetchReplies(page+1) 追加、文案切换、快击合并",
+   "actual": "未验：数据条件不满足——mock 一次性全量时按钮不渲染（Manifest 预设该分支如实标 UNVERIFIED），.replies-more 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD10",
+    "reports/audit/round-1/ops/次要20.json#CD10"
+   ]
+  },
+  {
+   "caseId": "CD11",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "加载失败错误态+重试",
+   "expected": "EmptyState(network) 文案=errorMessage；retryLoad 重拉",
+   "actual": "未验：失败态未构造（无效 id+errorMessage 注入未执行），「重试」目标不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD11",
+    "reports/audit/round-1/ops/次要20.json#CD11"
+   ]
+  },
+  {
+   "caseId": "CD12",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "缺参/无效 id：Toast+空态+返回",
+   "expected": "缺参 Toast topicIdInvalid→EmptyState「话题不存在」+返回按钮；点返回 reLaunch circles/index（栈=1）；不白屏",
+   "actual": "Toast「话题 ID 无效」捕获 ✓（=i18n，zh-CN.ts:3923）；空态渲染有截图（CD12-after.png，与 CD03 wxml 同页族）不白屏 ✓；缺口：tap「返回」已执行但路由未变——circles 版 goBack 有栈底守卫（topic-detail.vue:148-152），落地 tap 必导航→tap 落地性存疑，返回落点不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD12",
+    "reports/audit/round-1/ops/次要20.json#CD12",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-TOPIC-DETAIL-CD12-after.png"
+   ]
+  },
+  {
+   "caseId": "CD13",
+   "page": "subpackages/circles/circles/topic-detail",
+   "operation": "详情滚动到底/顶（noop）",
+   "expected": "长回复滚到底不被 fixed 底栏遮挡，回顶正常",
+   "actual": "未验：丢参污染使页面处空态（无内容可滚），.detail-body 元素查询失败，仅 pageScrollTo 完成——遮挡检查对象不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CD13",
+    "reports/audit/round-1/ops/次要20.json#CD13"
+   ]
+  },
+  {
+   "caseId": "CH01",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "冷启动深链 ?circleId=8 双身份·observe-only",
+   "expected": "fetch 未落定渲染骨架，落定后渲染 hero+信息卡+feed，全程不闪 .circle-notfound",
+   "actual": "route options 保留 {circleId:8} ✓；.circle-notfound:absent（未闪错误态）✓、.info-name:present、.feed-card:present（内容已渲染）✓；console=[] ✓。缺口：骨架期 0s 帧未捕获（单时刻采样），仅身份 A",
+   "verdict": "VERIFIED",
+   "confidence": 0.65,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH01",
+    "reports/audit/round-1/ops/次要20.json#CH01"
+   ]
+  },
+  {
+   "caseId": "CH02",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap .hero-btn 返回（栈=1）",
+   "expected": "栈=1 openAppPath circles/index，不静默失败",
+   "actual": "route 终态仍=circle-home——未导航；代码路径为 openAppPath（circle-home.vue:332-339）应产生导航；dom .hero-btn :present 但落地性无旁证（无日志/截图）→ tap 未落地与守卫失效不可分辨",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH02",
+    "reports/audit/round-1/ops/次要20.json#CH02"
+   ]
+  },
+  {
+   "caseId": "CH03",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap .hero-btn--share（open-type=share）",
+   "expected": "触发 onShareAppMessage 分享卡（MP-R1-CIRCLEHOME-004 回归）；自动化至少断言可点、console 无异常、无路由变化",
+   "actual": "tap 已执行、无路由变化 ✓、console=[] ✓、CH03-after.png（200KB）在案；原生分享面板按 Manifest 预设不可采集（如实标注）——按 Manifest 降档口径达成",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH03",
+    "reports/audit/round-1/ops/次要20.json#CH03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH03-after.png"
+   ]
+  },
+  {
+   "caseId": "CH04",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap .info-join 加入/退出联动",
+   "expected": "文案「加入圈子」↔「已加入」+底部栏切换 .bottom-post「圈内发帖」；失败 Toast",
+   "actual": "两次 tap 均执行且终态 wxml 证实回到未加入态（.info-join-text=「加入圈子」、底部 .bottom-join 在位）——toggle 往返已落地且无卡死/无错误 Toast ✓。缺口：中间「已加入」态与底部栏「圈内发帖」联动无截图（before 截图超时），切换联动核心预期未直接观察",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH04",
+    "reports/audit/round-1/ops/次要20.json#CH04",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH04-after.wxml"
+   ]
+  },
+  {
+   "caseId": "CH05",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "五 Tab 依次切换",
+   "expected": "下划线跟随；成员 tab 文案拼数；非动态 tab 空态占位；切回数据不丢",
+   "actual": "未验：执行不完整——仅 1 次 .tab-item tap（规格 5 tab），无截图无内容断言",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH05",
+    "reports/audit/round-1/ops/次要20.json#CH05"
+   ]
+  },
+  {
+   "caseId": "CH06",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap .feed-card 进话题详情",
+   "expected": "非空 id 直接跳 TOPIC_DETAIL（MP-R1-CIRCLEHOME-002 去白名单回归）",
+   "actual": "未验：tap 执行但路由未变、console=[]、无截图（丢参污染态，feed 为 mock 演示卡）——去白名单回归点未被真实验证，落地性不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH06",
+    "reports/audit/round-1/ops/次要20.json#CH06"
+   ]
+  },
+  {
+   "caseId": "CH07",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap .feed-action 点赞/取消",
+   "expected": "liked 翻转+计数±1+变色（响应式回归 MP-R1-CIRCLEHOME-001）",
+   "actual": "未验：丢参污染 + 第二次「取消」取景失败（act-FAIL），双向翻转断言不完整；before 截图（194KB）在案但 after 仅为页面级证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH07",
+    "reports/audit/round-1/ops/次要20.json#CH07"
+   ]
+  },
+  {
+   "caseId": "CH08",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "死按钮侦测：评论 action 与 more 图标",
+   "expected": "两元素未绑定 @tap（源码 circle-home.vue:530/560-563）→点击 500ms 无反馈；本例为缺陷确认用例，预期观测结果=无反馈",
+   "actual": "tap .feed-action 已执行（元素 :present），route 终态不变、toast=[]、console=[]——「无任何反馈」的预期观测成立，与源码无 @tap 绑定一致 → 按 Manifest 口径确认「死按钮」缺陷并立 Issue（MP-R1-J20-004）",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH08",
+    "reports/audit/round-1/ops/次要20.json#CH08",
+    "apps/client/src/subpackages/circles/circles/circle-home.vue:530"
+   ]
+  },
+  {
+   "caseId": "CH09",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "tap「查看全部话题」→ topics",
+   "expected": "openAppPath TOPICS?circleId=，路由顶=topics",
+   "actual": "未验：tap 执行但路由未变、无日志无截图（丢参污染态），落地性不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH09",
+    "reports/audit/round-1/ops/次要20.json#CH09"
+   ]
+  },
+  {
+   "caseId": "CH10",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "底部 FAB/圈内发帖跳发布页（两组）",
+   "expected": "均 goToPostTopic→post-topic?circleId=；未加入态 bottom-join 走 toggleJoin",
+   "actual": "未验：.bottom-fab tap 执行但无导航、.bottom-post 不存在（未加入态）——两组前置（未加入/已加入）均未完整建立，落地性不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH10",
+    "reports/audit/round-1/ops/次要20.json#CH10"
+   ]
+  },
+  {
+   "caseId": "CH11",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "未知圈/缺参分支（mock 回退 vs real 空态）",
+   "expected": "mock：回退 FALLBACK 摄影圈渲染不空屏；real：缺参渲染「圈子不存在」空态+返回 goBack",
+   "actual": "mock 分支达成：.circle-notfound:absent 证实回退渲染未空屏 ✓；real 分支不可构造（mock 模式 isUnknownCircle 恒 false），.circle-notfound__btn 点击未执行——按 Manifest 双分支口径仅半证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.65,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH11",
+    "reports/audit/round-1/ops/次要20.json#CH11"
+   ]
+  },
+  {
+   "caseId": "CH12",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "加入按钮快击×5（无防连点疑点确认）",
+   "expected": "铁律：只提交 1 次；代码现状无守卫（circle-home.vue:344-358）→若观测到态翻转记防连点缺陷并记录最终态",
+   "actual": "×5 快击 done=5 已执行；终态 wxml=未加入（.info-join-text=「加入圈子」、底部 .bottom-join 在位）——与起点相同，与「偶数次生效（2/4 次翻转）」和「0 次生效」均相容；before 截图超时无起点留痕、无调用计数日志——翻转次数不可判，防连点铁律达成与否不可判（同轮 CI11 判例）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH12",
+    "reports/audit/round-1/ops/次要20.json#CH12",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH12-after.wxml"
+   ]
+  },
+  {
+   "caseId": "CH13",
+   "page": "subpackages/circles/circles/circle-home",
+   "operation": "滚动到底/顶：sticky 吸顶与底栏遮挡（noop）",
+   "expected": ".tabs sticky 吸顶；bottom-bar 不遮挡 topics-link；回顶正常无报错",
+   "actual": "pageScrollTo bottom+top 完成（scrollPos=top 终点证据）、.tabs/.bottom-bar :present、console=[] 无报错——noop 档达成（吸顶/遮挡的视觉断言无截图，按档位可免）",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH13",
+    "reports/audit/round-1/ops/次要20.json#CH13"
+   ]
+  },
+  {
+   "caseId": "XT01",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "冷启动深链 ?topicId=153 双身份·observe-only",
+   "expected": "fetchCampusTopicDetail+Replies 渲染分类标签/作者（匿名兜底）/正文/回复，不闪错误空态",
+   "actual": "route options 保留 {topicId:153} ✓、console=[] ✓；但 .topic-title/.category-tag/.reply-item 全部 :absent——盲区/时机不可区分（对照组 CD01 同现象），无 wxml/截图佐证，渲染断言不可判；仅身份 A",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT01",
+    "reports/audit/round-1/ops/次要20.json#XT01"
+   ]
+  },
+  {
+   "caseId": "XT02",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "固化表参数变体 ?id=153（缺陷确认）",
+   "expected": "onLoad 只读 query.topicId（campus/topic-detail.vue:92）→?id= 落缺参分支 Toast topicIdInvalid+空态——记录 param-map 与页面参数名不一致缺陷；不白屏",
+   "actual": "Toast「话题 ID 无效」捕获 ✓（=i18n storeErrors.campus.topicIdInvalid，zh-CN.ts:3895）；route options 保留 {id:153} 证实页面收到的是 id 参数 ✓；源码核实 query?.topicId（本席已读）→ 参数名不一致缺陷按 Manifest 口径确认并立 Issue（MP-R1-J20-005）；空态截图超时无文件（CD12 同族截图旁证空态形态），不白屏由无崩溃佐证",
+   "verdict": "VERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT02",
+    "reports/audit/round-1/ops/次要20.json#XT02",
+    "apps/client/src/subpackages/campus/campus/topic-detail.vue:92",
+    "apps/client/src/i18n/locales/zh-CN.ts:3895"
+   ]
+  },
+  {
+   "caseId": "XT03",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "tap .detail-header__back（栈=1 无兜底疑点）",
+   "expected": "goBack=clearCurrentTopic+裸 navigateBack（campus/topic-detail.vue:71-74）：栈=1 无 reLaunch 兜底→无处可退且 500ms 无反馈即记死按钮/导航缺陷（Manifest 预设缺陷记录条件）",
+   "actual": "执行器裸 reLaunch 直开（栈=1，符合变体前提）；.detail-header__back :present 且 tap 已执行；稳定后 route 终态仍=campus topic-detail——点击无路由反馈（在案 Toast「话题 ID 无效」为 onLoad 缺参守卫所发，先于点击）；源码核实为裸 navigateBack 无守卫（本席已读，对比 circles 版有 MP-R2-NAV-001 守卫）→ 三源吻合，记缺陷",
+   "verdict": "FAILED",
+   "confidence": 0.65,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT03",
+    "reports/audit/round-1/ops/次要20.json#XT03",
+    "apps/client/src/subpackages/campus/campus/topic-detail.vue:71-74"
+   ]
+  },
+  {
+   "caseId": "XT04",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "匿名开关+匿名回复提交",
+   "expected": "文案 匿名↔实名 切换高亮；提交带 isAnonymousReply；回复者显示「匿名校友」",
+   "actual": "未验：丢参污染空态（XT05-after.wxml 证实「话题不存在或已被删除」），.anonymous-toggle/.reply-btn 不存在，输入受限",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT04",
+    "reports/audit/round-1/ops/次要20.json#XT04",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT05-after.wxml"
+   ]
+  },
+  {
+   "caseId": "XT05",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "实名回复提交（合法）",
+   "expected": "Toast replySuccess+列表+1+输入清空",
+   "actual": "未验：XT05-after.wxml 落底证实页面为空态，.reply-btn 不存在、输入受限——操作未执行；非产品缺陷实证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT05",
+    "reports/audit/round-1/ops/次要20.json#XT05",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT05-after.wxml"
+   ]
+  },
+  {
+   "caseId": "XT06",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "回复空提交拦截",
+   "expected": "trim 守卫 return；.reply-btn--disabled",
+   "actual": "未验：页处空态，.reply-btn 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT06",
+    "reports/audit/round-1/ops/次要20.json#XT06"
+   ]
+  },
+  {
+   "caseId": "XT07",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "回复超长/特殊字符",
+   "expected": "错误 Toast 或安全渲染",
+   "actual": "未验：页处空态 + 输入受限",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT07",
+    "reports/audit/round-1/ops/次要20.json#XT07"
+   ]
+  },
+  {
+   "caseId": "XT08",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "发送快击×5 防重入",
+   "expected": "isSubmitting 守卫仅 1 条",
+   "actual": "未验：页处空态，.reply-btn 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT08",
+    "reports/audit/round-1/ops/次要20.json#XT08"
+   ]
+  },
+  {
+   "caseId": "XT09",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "回复分页 scrolltolower（noop）",
+   "expected": "下一页追加或 repliesHasMore=false 不再请求",
+   "actual": "未验：页处空态 + .detail-body scrollElement 未找到——scrolltolower 未在真实滚动容器上触发，分页守卫无证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT09",
+    "reports/audit/round-1/ops/次要20.json#XT09"
+   ]
+  },
+  {
+   "caseId": "XT10",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "加载失败错误态+重试（review #18 回归）",
+   "expected": "EmptyState(network) 文案=errorMessage；retryLoad 重拉",
+   "actual": "未验：失败态未构造，「重试」目标不存在（after 截图 34KB 为空态页族）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT10",
+    "reports/audit/round-1/ops/次要20.json#XT10"
+   ]
+  },
+  {
+   "caseId": "XT11",
+   "page": "subpackages/campus/campus/topic-detail",
+   "operation": "话题不存在空态：返回按钮 goBack",
+   "expected": "EmptyState no-data+action 触发 goBack；栈=1 受 XT03 无兜底影响（如实记录）；不白屏",
+   "actual": "XT11-after.png 证实空态完整渲染（「话题不存在或已被删除」+「返回」按钮+头部返回键，无白屏）✓；tap「返回」已执行、路由未变——与 XT03 所述栈=1 无兜底缺陷一致（Manifest 预设「如实记录」）✓；不白屏 ✓",
+   "verdict": "VERIFIED",
+   "confidence": 0.6,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XT11",
+    "reports/audit/round-1/ops/次要20.json#XT11",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT11-after.png"
+   ]
+  },
+  {
+   "caseId": "XC01",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "冷启动直达校园认证·observe-only（双身份）",
+   "expected": "gateLoading 不闪横幅；mock 放行无 gate-banner；unverified 无状态卡仅表单；不白屏",
+   "actual": "route ✓；.gate-banner:absent（mock 放行，符合预期）✓、.status-card:absent（unverified 无状态卡，符合预期）✓、.form-section:present（表单渲染）✓、console=[] ✓——unverified 分支预期全部吻合；缺口：仅身份 A、三时刻采样缺失",
+   "verdict": "VERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC01",
+    "reports/audit/round-1/ops/次要20.json#XC01"
+   ]
+  },
+  {
+   "caseId": "XC02",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "tap .cert-header__back（栈=1 switchTab home 兜底）",
+   "expected": "栈=1 → uni.switchTab home（MP-R2-NAV-001 口径）",
+   "actual": "route 终态仍=certification——未导航；dom :absent 与 tap 成功矛盾（盲区判例）；落地 tap 应产生 switchTab 导航→tap 未落地嫌疑，兜底未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.55,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC02",
+    "reports/audit/round-1/ops/次要20.json#XC02"
+   ]
+  },
+  {
+   "caseId": "XC03",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "学校名称输入四态",
+   "expected": "v-model 双向同步/清空归空/超长如实记录/特殊字符原样",
+   "actual": "未验：harness 以 .v-model（属性选择器当类名用）查询必失败 + 本例 auto-nav 超时（route 曾落 discover 页），输入从未送达",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC03",
+    "reports/audit/round-1/ops/次要20.json#XC03"
+   ]
+  },
+  {
+   "caseId": "XC04",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "专业输入四态",
+   "expected": "同 XC03",
+   "actual": "未验：输入受限（.v-model 查询失败 + inputSeq 未知操作）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC04",
+    "reports/audit/round-1/ops/次要20.json#XC04"
+   ]
+  },
+  {
+   "caseId": "XC05",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "学信网验证码输入（选填）",
+   "expected": "空值可提交；输入双向同步",
+   "actual": "未验：输入受限（同 XC03）",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC05",
+    "reports/audit/round-1/ops/次要20.json#XC05"
+   ]
+  },
+  {
+   "caseId": "XC06",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "学生证照片上传/重传/移除",
+   "expected": "ensurePrivacyAuthorized 守卫；选图回填预览；重传/移除",
+   "actual": "未验：需 mock uni.chooseImage（Manifest 预设无法 mock 则如实 UNVERIFIED）；tap .upload-area 已执行但预览未出现、后续取景失败、after 截图超时",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC06",
+    "reports/audit/round-1/ops/次要20.json#XC06"
+   ]
+  },
+  {
+   "caseId": "XC07",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "学信网截图上传/重传/移除（选填）",
+   "expected": "chooseImages 5MB 校验；回填/移除；选填不阻断",
+   "actual": "未验：同 XC06，原生选图不可自动化，after 截图超时无文件",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC07",
+    "reports/audit/round-1/ops/次要20.json#XC07"
+   ]
+  },
+  {
+   "caseId": "XC08",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "空提交逐项 Toast",
+   "expected": "按序 errSchoolName→errMajor→errStudentCard 逐项拦截，不发请求",
+   "actual": "未验：tap .submit-btn 已执行但 toast=[]（首项 Toast 未被采集，对照 XC09/XC10 同页同按钮可捕获「请输入学校名称」）；逐项校验依赖的部分填写因输入受限不可执行——仅首项行为可间接旁证，逐项序列无证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.7,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC08",
+    "reports/audit/round-1/ops/次要20.json#XC08"
+   ]
+  },
+  {
+   "caseId": "XC09",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "合法提交转「审核中」",
+   "expected": "upload+submitCertification→pending→Toast submitSuccess→状态卡刷新",
+   "actual": "未验：前置「表单填齐+选图」未建立（输入与选图均受限），tap .submit-btn 实际触发空表单校验 Toast「请输入学校名称」（=i18n errSchoolName，zh-CN.ts:3464）——该校验拦截本身正确（旁证 XC08 首项），但本例提交流程未被真实验证",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC09",
+    "reports/audit/round-1/ops/次要20.json#XC09",
+    "apps/client/src/i18n/locales/zh-CN.ts:3464"
+   ]
+  },
+  {
+   "caseId": "XC10",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "提交快击×5 防重入",
+   "expected": "isSubmitting+禁用态下仅 1 次提交，按钮「提交中...」",
+   "actual": "未验：前置（表单填齐）未建立——空表单上 ×5 快击产生 5 次独立校验 Toast（ts 间隔 50~100ms），证明校验路径无节流，但空表单不走 isSubmitting 提交路径，防重入铁律达成与否不可判",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.75,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC10",
+    "reports/audit/round-1/ops/次要20.json#XC10"
+   ]
+  },
+  {
+   "caseId": "XC11",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "实名门槛横幅（real 未实名）",
+   "expected": "横幅引导→去实名→返回 onShow 重拉解禁",
+   "actual": "未验：条件不可构造——mock 模式实名门槛恒放行，横幅不渲染（Manifest 预设如实标 UNVERIFIED/N-A），.gate-banner__btn 不存在",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.9,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC11",
+    "reports/audit/round-1/ops/次要20.json#XC11"
+   ]
+  },
+  {
+   "caseId": "XC12",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "已认证态表单隐藏",
+   "expected": "status-card--verified+verified-info 卡；表单不渲染",
+   "actual": "未验：verified 态未构造（不可构造则 UNVERIFIED），observe-only 且 after 截图超时无文件，零证据",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.85,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC12",
+    "reports/audit/round-1/ops/次要20.json#XC12"
+   ]
+  },
+  {
+   "caseId": "XC13",
+   "page": "subpackages/campus/campus/certification",
+   "operation": "提交后重复进出状态保持",
+   "expected": "onMounted 重拉 status 保持「审核中」，无崩溃无重复提交",
+   "actual": "未验：observe-only，进出路由链序列与状态卡证据均未落盘，after 截图超时无文件",
+   "verdict": "UNVERIFIED",
+   "confidence": 0.8,
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#XC13",
+    "reports/audit/round-1/ops/次要20.json#XC13"
+   ]
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-J20-001",
+   "round": "R1",
+   "page": "subpackages/village/village/detail",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.png（同页族空态形态佐证；navigation tier 按规格未强制截图）",
+   "category": "Interaction",
+   "severity": "P1",
+   "description": "村口帖子详情 goBack 为裸 uni.navigateBack，无栈底兜底：分享卡/深链直开（栈=1）时点击顶部返回键 500ms 内无路由/DOM/Toast 任一反馈，构成「导航无响应」缺陷（R11§5）。同仓 tag-posts.vue:250-256 与 history.vue:41-48 均已实现 reLaunch 兜底（MP-R1-TAGPOSTS-002/MP-R1-HISTORY-001），本页遗漏。",
+   "evidence": "三方证据：①A1 exec#VD02：.detail-header__back :present、tap 已执行无 act-FAIL、稳定后 route 终态仍=detail(options={}) 即栈=1 无导航；②代码 detail.vue:275-277 goBack(){uni.navigateBack()}（本席已读，无守卫）；③Manifest VD02 预设该观察即记缺陷。残差：tap 未落地无法 100% 排除，但守卫缺失使两类原因殊途同归（栈=1 点击必无响应）。",
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.7,
+   "ideal": "栈=1 时 reLaunch 村口列表兜底，栈>1 navigateBack，与 tag-posts/history 口径一致",
+   "fix": "detail.vue goBack 增加 getCurrentPages().length>1 判断，栈=1 时 uni.reLaunch('/subpackages/village/village/index')",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-J20-002",
+   "round": "R1",
+   "page": "subpackages/campus/campus/topic-detail",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT11-after.png（空态页含返回键；栈=1 点击无响应同一根因）",
+   "category": "Interaction",
+   "severity": "P1",
+   "description": "校园圈话题详情 goBack=clearCurrentTopic+裸 uni.navigateBack，无栈底兜底（对比 circles 版 topic-detail.vue:148-152 有 MP-R2-NAV-001 reLaunch 守卫）：深链直开（栈=1）点击返回无任何反馈。空态页「返回」action 同样调用该 goBack（XT11 观察到点击后路由不变），受同一缺陷影响。",
+   "evidence": "三方证据：①A1 exec#XT03：back 键 :present、tap 执行、route 终态不变（栈=1）；exec#XT11：tap「返回」后路由不变；②代码 campus/topic-detail.vue:71-74 裸 navigateBack（本席已读）；③Manifest XT03 预设该观察即记缺陷。",
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.65,
+   "ideal": "栈=1 时 reLaunch 兜底（对齐 circles 版 MP-R2-NAV-001 实现）",
+   "fix": "campus/topic-detail.vue goBack 增加 getCurrentPages().length>1 判断，栈=1 时 reLaunch('/subpackages/campus/campus/index')",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-J20-003",
+   "round": "R1",
+   "page": "subpackages/circles/circles/topics",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-TOPICS-CT08-after.png（捕获超时无文件，以 exec 路由证据替代）",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "置顶圈规条 .topic-rule 点击绑定 goCircleDetail=uni.navigateBack（topics.vue:295-297），无栈底守卫：栈=1（分享/深链直开）时点击 500ms 内无任何反馈，构成死按钮。Manifest 亦标注其产品语义存疑（若期望跳圈主页则落点亦错）。",
+   "evidence": "三方证据：①A1 exec#CT08：.topic-rule :present、tap 执行、route 终态=topics 不变；在案 Toast「兴趣圈 ID 无效」为 onLoad 缺参守卫发出（先于点击，非点击反馈）；②代码 topics.vue:295-297 裸 navigateBack（本席已读）；③Manifest CT08 预设该观察即记缺陷。",
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.6,
+   "ideal": "栈=1 时 reLaunch 兜底；产品语义确认规条点击落点（圈主页或展开全文）",
+   "fix": "goCircleDetail 增加栈底守卫；与产品确认落点后改接目标路由",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-J20-004",
+   "round": "R1",
+   "page": "subpackages/circles/circles/circle-home",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH07-before.png（动态卡与操作行在页证据）",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "动态卡「评论」action（.feed-action，circle-home.vue:560-563）与卡片 more 图标（:530）未绑定任何 @tap 处理器，点击 500ms 内无路由/DOM/Toast/震动反馈，构成死按钮（R11§5 铁律）。用户对「评论」的可见 affordance 无任何响应。",
+   "evidence": "三方证据：①A1 exec#CH08：.feed-action/.feed-more :present、tap 执行、route 终态不变、toast=[]、console=[]（无反馈成立）；②源码无 @tap 绑定（Manifest 引用 circle-home.vue:530/560-563）；③Manifest CH08 即缺陷确认用例，预期观测结果=无反馈，观测相符。",
+   "sources": [
+    "interaction",
+    "code"
+   ],
+   "confidence": 0.6,
+   "ideal": "评论 action 点击跳话题详情或聚焦评论；more 图标点击弹操作菜单（或隐藏该图标）",
+   "fix": "为两元素补 @tap（评论→openFeedDetail；more→ActionSheet 或移除入口）",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-J20-005",
+   "round": "R1",
+   "page": "subpackages/campus/campus/topic-detail",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT02-after.png（捕获超时无文件，以 Toast 记录替代）",
+   "category": "Consistency",
+   "severity": "P3",
+   "description": "校园圈话题详情 onLoad 仅读 query.topicId（campus/topic-detail.vue:92），不接受 ?id=；而兴趣圈版 topic-detail 兼容 topicId??id（topic-detail.vue:212-228）。同一固化深链参数表（r11-param-map.json 以 ?id= 固化）在两姐妹页行为不一致：campus 版直开即「话题 ID 无效」空态，外部分享/扫码深链健壮性受损。",
+   "evidence": "三方证据：①A1 exec#XT02：route options 保留 {id:153}、Toast「话题 ID 无效」捕获（=i18n topicIdInvalid）；②代码 campus/topic-detail.vue:92 query?.topicId（本席已读）；③Manifest XT02 即参数映射缺陷确认用例。",
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.75,
+   "ideal": "与 circles 版对齐：topicId ?? id 双参数兼容",
+   "fix": "onLoad 改为 topicId.value = query?.topicId || query?.id || \"\"",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-J20-006",
+   "round": "R1",
+   "page": "subpackages/village/village/detail",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.png（空态 CTA 文案「返回广场」可见）",
+   "category": "Consistency",
+   "severity": "P4",
+   "description": "村口详情 EmptyState CTA 实际文案为「返回广场」（i18n village.detail.backToVillage=返回广场，zh-CN.ts:1941），与本页「村口」域用语及姊妹页（Manifest 预期「返回村口」）不一致；用语混用（村口/广场）易造成认知偏差。功能上按钮存在且绑定 goBack，无功能缺陷。",
+   "evidence": "证据：①i18n zh-CN.ts:1941 backToVillage=返回广场（本席已读）；②Manifest VD27 预期文案「返回村口」致执行器定位失败（执行侧影响）；③VD04-after.wxml/截图证实实际渲染「返回广场」。",
+   "sources": [
+    "code",
+    "screenshot"
+   ],
+   "confidence": 0.8,
+   "ideal": "统一村口域用语：详情空态 CTA 与村口域一致（如「返回村口」）",
+   "fix": "调整 zh-CN village.detail.backToVillage 文案或与产品确认统一术语",
+   "status": "保留"
+  }
+ ],
+ "unverifiable": [
+  "VD03|执行器 pre:auto-reLaunch 裸路径丢 ?id=1（r1-exec.cjs:1314），页面落入「帖子不存在」空态（VD04-after.wxml 证实同族状态），关注按钮未渲染，操作未执行|1",
+  "VD04|同上丢参污染：after wxml+截图证实页面为 EmptyState「帖子不存在或已被删除」，互动栏不存在，点赞未执行（VD01 已证 ?id=1 时内容正常渲染，属执行侧而非产品缺陷实证）|1",
+  "VD05|tap 已落在互动栏#2 且无路由/Toast 变化，但 focus 态（键盘/DOM focus）无采集证据，核心预期未证|1",
+  "VD06|longpress 与 ··· tap 均执行，但 ActionSheet 为原生弹层：after 截图超时无文件、无其他捕获手段，弹出与否不可判|1",
+  "VD07|前置 VD06 打开举报弹窗未成立 + 页处丢参空态，.reason-item 不存在，操作未执行|1",
+  "VD09|tap .post-tag 已执行（内容页）但路由未变、无导航日志，tap 落地性与跳转缺陷不可分辨|1",
+  "VD10|前置打开转发弹窗失败（丢参空态，分享按钮不存在），三路关闭目标均不存在|1",
+  "VD11|同上：textarea 与确认按钮不存在，输入与提交未执行|1",
+  "VD13|输入操作 element not found（harness 输入受限 __CAND__）+ 页处丢参空态|1",
+  "VD15|输入受限（两次 input element not found），超长/特殊字符均未送达|1",
+  "VD16|页处丢参空态，.input-bar__icon 不存在，表情面板操作未执行|1",
+  "VD17|A1 标记 action-not-automatable（aria-label 定位不可自动化），未执行|1",
+  "VD18|需 mock uni.chooseImage 无法自动化（Manifest 预设分支）+ 页处空态|1",
+  "VD19|页处丢参空态，.comment-heart 未渲染|1",
+  "VD20|页处丢参空态，.comment-reply-btn 未渲染，输入亦受限|1",
+  "VD21|页处丢参空态 + 数据条件（>3 条回复根评论）未确认，toggle 不存在|1",
+  "VD22|页处丢参空态，三类头像元素均不存在|1",
+  "VD23|页处丢参空态，.action-btn--follow 不存在|1",
+  "VD24|页处丢参空态，.action-btn--message 不存在|1",
+  "VD25|页处丢参空态 .input-bar__send 不存在 + 输入受限，快击前提不成立|1",
+  "VD26|observe-only：重复进出×3 过程无路由链序列/console/截图证据落盘|1",
+  "VD27|Toast「帖子不存在或已被删除」与空态已证，但 action 点击因实际文案「返回广场」≠Manifest「返回村口」未执行，goBack 落点未证|1",
+  "VD28|丢参污染：页面空态无长内容可滚，遮挡检查对象不存在，noop 语义不成立|1",
+  "VT01|参数保留但 .post-card :absent（harness 盲区与 600ms 延迟快照时机不可区分），无截图佐证，列表渲染不可判|1",
+  "VT02|代码有栈底守卫（tag-posts.vue:250-256）而路由未变→tap 落地性存疑（:absent 读数与 tap 成功自相矛盾）|1",
+  "VT03|丢参污染：Toast「缺少标签参数」后 600ms 弹回村口（route 终点=村口），点赞落在错误页面|1",
+  "VT04|同 VT03 污染：在案 Toast 为缺参守卫所发，分享行为未测，tap 落在村口页|1",
+  "VT05|同 VT03 污染：.post-card :absent，进详情与冒泡阻断未真实执行|1",
+  "VT06|refresher 事件+callMethod ok 已证，但缺参弹回流程下列表重载语义不成立|1",
+  "VT07|滚动执行时页面已弹回村口，滚动对象与「没有更多」文案均非本页|1",
+  "VH02|代码有守卫（history.vue:41-48）而路由未变→tap 落地性存疑（.history-back :absent 读数不可靠）|1",
+  "VH03|wxml 证实列表仍 6 条、无 modal/overlay、无 Toast——清空弹层未打开或 tap 未落地，确认/三路关闭/DELETE 均未发生|1",
+  "VH04|tap .history-item 已执行但路由未变、无导航日志与截图，落地性不可判|1",
+  "VH05|路由未变与「userId 缺失守卫不跳」（合规）和「tap 未落地」均相容，不可判|1",
+  "VH08|observe-only 且 after 截图超时无文件，静默刷新零证据|1",
+  "VH09|前置未建立：VH03 清空未发生，列表非空，EmptyState 与 action 目标不存在|1",
+  "CT02|代码有守卫（topics.vue:299-306）而路由未变→tap 落地性存疑（:absent 读数不可靠）|1",
+  "CT03|丢参污染：circle=null 时 hero/底部栏不渲染（恰为 CT15 预期行为），加入按钮不存在|1",
+  "CT04|执行不完整：仅 1 次 .circle-tab tap（规格 5 tab 依次），无截图/内容断言/activities 请求证据|1",
+  "CT05|丢参污染态（circleId 缺失）：tap .topic-card 执行但路由未变、无日志截图，落地性不可判|1",
+  "CT06|丢参污染：Toast 为 onLoad 守卫所发（非点击反馈）；头像 tap 无导航无日志，落地性不可判|1",
+  "CT07|同 CT06 丢参污染态，tap 无导航无日志|1",
+  "CT09|丢参污染态 tap 无导航，落地性不可判|1",
+  "CT10|ActionSheet 原生弹层未捕获（after 截图超时无文件），「写话题」候选未找到，收敛项数与选中行为无证据|1",
+  "CT11|丢参污染：.circle-bottom__fab 未渲染（底部栏 v-if circle），tap 未执行|1",
+  "CT12|refresher 事件+callMethod ok 已证，但 circleId 缺失下 fetchTopics(circleId,1) 重载语义不成立|1",
+  "CT13|丢参污染（circle=null 残留列表）：无「到底」文案/请求守卫证据，仅 scrollPos=bottom|1",
+  "CT14|丢参污染 + 活动数据条件未构造，.detail-activity 不存在|1",
+  "CT16|数据条件（无话题圈）未构造 + 丢参污染，空态未出现（Manifest 预设「有话题则 UNVERIFIED」）|1",
+  "CD01|参数保留 {id:37} 但 .topic-title 等全 :absent（盲区/时机不可区分，无 wxml/截图佐证），渲染断言不可判；仅身份 A|1",
+  "CD02|代码有守卫（circles topic-detail.vue:148-152）而路由未变→tap 落地性存疑|1",
+  "CD03|CD03-after.wxml 证实页面为「话题不存在或已被删除」空态（裸 reLaunch 丢 ?id=37），.reply-btn 不存在、输入受限|1",
+  "CD04|同 CD03 空态，.reply-btn 不存在|1",
+  "CD05|同 CD03 空态 + 输入受限|1",
+  "CD06|同 CD03 空态，.reply-btn 不存在|1",
+  "CD07|同 CD03 空态（无回复列表），.reply-say-hello 不存在|1",
+  "CD08|同 CD03 空态，.topic-content 不存在，longpress 未执行|1",
+  "CD09|同 CD03 空态，头像元素不存在，tab 页路径疑点无观察载体|1",
+  "CD10|数据条件不满足：mock 一次性全量时按钮不渲染（Manifest 预设 UNVERIFIED 分支）|1",
+  "CD11|失败态未构造（无效 id+errorMessage 注入未执行），「重试」目标不存在|1",
+  "CD12|缺参 Toast 与空态已证；但「返回」tap 执行后无导航——circles 版有栈底守卫，落地 tap 必导航→tap 落地性存疑，返回落点不可判|1",
+  "CD13|丢参污染：页面空态无内容可滚，.detail-body 查询失败，遮挡检查对象不存在|1",
+  "CH02|栈=1 下 tap .hero-btn 后路由未变（代码走 openAppPath 应导航），落地性与守卫失效不可分辨，无日志/截图|1",
+  "CH04|两次 tap 已落地且终态 wxml=未加入（往返相容），但「已加入/圈内发帖」中间态无截图（before 超时），切换联动核心预期未直接观察|1",
+  "CH05|执行不完整：仅 1 次 .tab-item tap（规格 5 tab），无截图与内容断言|1",
+  "CH06|tap .feed-card 执行但路由未变、无日志截图（丢参污染态），去白名单回归点未被真实验证|1",
+  "CH07|丢参污染 + 第二次「取消」取景失败（act-FAIL），双向翻转断言不完整|1",
+  "CH09|tap .topics-link 执行但路由未变，落地性不可判|1",
+  "CH10|.bottom-fab tap 无导航、.bottom-post 不存在（未加入态）——两组前置均未完整建立，落地性不可判|1",
+  "CH11|mock 回退分支已证（.circle-notfound :absent ✓）；real 空态分支 mock 下不可构造，返回按钮点击未执行|1",
+  "CH12|×5 快击终态=初始未加入态，与「偶数次生效」和「0 次生效」均相容；before 截图超时无起点留痕、无调用计数——防连点铁律达成与否不可判（同轮 CI11 判例）|1",
+  "XT01|参数保留 {topicId:153} 但 .topic-title 等全 :absent（盲区/时机不可区分，无佐证），渲染断言不可判；仅身份 A|1",
+  "XT04|丢参污染空态（XT05-after.wxml 证实）+ .anonymous-toggle 不存在 + 输入受限|1",
+  "XT05|XT05-after.wxml 证实页面为空态，.reply-btn 不存在、输入受限——操作未执行|1",
+  "XT06|同上空态，.reply-btn 不存在|1",
+  "XT07|同上空态 + 输入受限|1",
+  "XT08|同上空态，.reply-btn 不存在|1",
+  "XT09|页处空态 + .detail-body scrollElement 未找到，scrolltolower 未在真实容器触发|1",
+  "XT10|失败态未构造，「重试」目标不存在|1",
+  "XC02|tap .cert-header__back 执行但路由未变（:absent 读数不可靠），落地性存疑，switchTab 兜底未被真实验证|1",
+  "XC03|输入受限：harness 以 .v-model 属性名当类名查询必失败 + auto-nav 超时（route 曾落 discover 页）|1",
+  "XC04|输入受限（.v-model 查询失败 + inputSeq 未知操作）|1",
+  "XC05|输入受限（同 XC03）|1",
+  "XC06|需 mock uni.chooseImage 无法自动化；tap 后无预览证据、后续取景失败、after 截图超时|1",
+  "XC07|同 XC06，原生选图不可自动化，after 截图超时无文件|1",
+  "XC08|tap .submit-btn 已执行但 toast=[]（首项 Toast 未采集，对照 XC09/XC10 同按钮可捕获）；逐项校验因输入受限不可执行|1",
+  "XC09|前置未建立（表单未能填写）：tap 实际触发空表单校验「请输入学校名称」（旁证 XC08 首项拦截正确），提交流程未验证|1",
+  "XC10|前置未建立：空表单 ×5 快击产生 5 次校验 Toast（50~100ms 间隔）仅证校验路径无节流，isSubmitting 提交路径守卫不可判|1",
+  "XC11|条件不可构造：mock 实名恒放行横幅不渲染（Manifest 预设 UNVERIFIED/N-A）|1",
+  "XC12|verified 态未构造 + observe-only 无 DOM 证据 + after 截图超时无文件|1",
+  "XC13|observe-only：进出路由链序列与状态卡证据未落盘，after 截图超时无文件|1"
+ ],
+ "notes": "R1 交互判定·次要20（8 页 111 例，git=aefd8a72，exec-results updatedAt 2026-09-23T12:00Z，manifest 命名空间=次要20）。结论：17 VERIFIED / 3 FAILED / 91 UNVERIFIED。三源对照方法与同轮 circles-index 判定员一致：harness 对组件边界内类名查询普遍 :absent（盲区），:absent 读数不单独构成否定证据；代码含栈底守卫时「tap 已执行但路由未变」判 tap 未落地（UNVERIFIED），代码为裸 navigateBack 时该观察与守卫缺失互证（FAILED，共 VD02/XT03/CT08 三例，均立 Issue）；缺陷确认用例（CH08 死按钮、XT02 参数映射）观测与 Manifest 预设相符故判 VERIFIED 并同时立 Issue。本轮失败集中于执行侧，四类系统性根因：①执行器 pre:auto-reLaunch 以裸路径 reLaunch 丢全部 query 参数（scripts/qa/r1-exec.cjs:1314），VD03-28/VT03-07/CT03/06-09/CD03-13/XT03-08 等大量用例运行于各页缺参守卫空态（VD04/CD03/XT05 的 after.wxml 落底均证实「帖子/话题不存在或已被删除」EmptyState；VT 组页面被守卫弹回村口），而各页缺参守卫本身（VT08/CT15/CD12/XT02 的 Toast 文案与兜底落点）反而获得验证；②输入类操作全数失败（__CAND__/.v-model 属性名当类名查询），全部表单/评论/回复输入用例不可执行；③automator 通道频繁 timeout（数十张 before/after 截图 ERROR 无文件）；④身份参数失配：每例均标 pre:login B ok userId=user-1001 MISMATCH!（实际为 mock user-1001 而非 tmp_r11 身份 100158/100159），双身份用例仅 A 身份执行。本席未重跑任何用例（角色为证据仲裁），所有 VERIFIED 判定均基于 exec-results 落盘观察+截图/wxml 落底+i18n/源码核对三方一致，未以代码推测代替观察。"
+}

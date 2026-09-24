@@ -1,0 +1,604 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/publish",
+  "judgedAt": "2026-09-23",
+  "expectedSource": "reports/audit/round-1/ops/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json (PUB01-PUB37)",
+  "observedSource": "reports/audit/round-1/interact/exec-results.json (suite S05-village, gitSha aefd8a72, 2026-09-23, PUB01-PUB37 共 37 条)",
+  "corroboratingSource": "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json (2026-09-20 旧构建 OP01-OP34+B1-01..04，R1 修复提交 5e2d050c/b3d31fcd/29a2b1df 之前) + reports/screenshots/round-1-interact/ 双轮截图 + reports/audit/round-1/screenshot-manifest.json (round-1-tour A/B 各 5 帧)",
+  "verdictPolicy": "VERIFIED 仅当 2026-09-23 当前构建执行(exec-results.json)+截图自身证据满足 Manifest.expected；动作级执行失败(__CAND__ 文本候选未命中 / el.input is not a function / 截图超时 / staging 未实施)→UNVERIFIED；当前构建实机证据与 expected 直接矛盾→FAILED。旧构建(09-20)证据仅作旁证写入 actual，不据之判 VERIFIED。禁止凭源码推测判 VERIFIED。",
+  "checks": [
+    {
+      "caseId": "PUB01",
+      "page": "subpackages/village/village/publish",
+      "operation": "深链直入（无参）首屏完整渲染，0s/1s 双采样不点击",
+      "expected": "首屏完整表单：标题「发布动态」、发布按钮禁用态、发布到卡=个人动态/默认公开·所有人可见、计数 0/500、添加图片块、4 行项、小贴士；无错误 Toast/空态/白屏闪现；console 无 TypeError",
+      "actual": "exec-results PUB01：route 栈顶=subpackages/village/village/publish ✓；DOM 采样 .publish-header__title/.publish-to__card/.publish-content__input/.publish-content__count/.publish-image--add 全部 present（.publish-page:absent 为根类名采样异常）✓；console 0 条（无 TypeError）✓；toast 空 ✓。但：after 截图捕获失败（ERROR:timeout waiting for automator response）；登录身份 userId=user-1001 与 Manifest 身份 A=100158 不符（执行器自标 MISMATCH!，每条用例均带此标记）；计数 0/500 文本未采样。当前构建同会话 PUB05/06/07-after 截图（reports/screenshots/round-1-interact/）佐证 0/500 计数+禁用按钮+完整表单存在，但非本用例无参直入帧（状态残留 friends）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB01",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB01-after.png(ERROR:timeout，文件未落盘)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB05-after.png（旁证：当前构建 0/500+完整表单）"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "PUB02",
+      "page": "subpackages/village/village/publish",
+      "operation": "空内容点 .publish-header__close 关闭",
+      "expected": "无「是否保留草稿？」modal；500ms 内返回来源页，栈顶=subpackages/village/village/index；来源页状态保留",
+      "actual": "exec-results PUB02：pre 村口 index→navigateTo publish，act:tap .publish-header__close 成功，终态 route=[subpackages/village/village/index] ✓；toast 空（无 modal 记录，content 空 dirty=false 直返路径）✓。起点 DOM 采样 .publish-header__close:absent 与后续 tap 成功矛盾，判为采样时序异常，以 tap 成功+路由链为准。频道/滚动位状态保留未单独断言。旧构建 OP27 同链路已证（27-after 村口帧）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB02",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-27-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PUB03",
+      "page": "subpackages/village/village/publish",
+      "operation": "冷启动深链（栈=1）点 X → 兜底 reLaunch 村口",
+      "expected": "无 modal→leave()→栈长=1 走 uni.reLaunch 村口 index；500ms 内栈顶=subpackages/village/village/index；无白屏无报错",
+      "actual": "exec-results PUB03：pre:reLaunch publish（栈=1 成立），pre-FAIL:input element not found: .length（前置步骤异常），act:tap .publish-header__close 成功，但终态 route=[subpackages/village/village/publish]——栈顶未落到村口 index。与 expected 矛盾或为导航后采样时序过早/执行器双 publish 页栈干扰，证据不足以裁定；无截图。旧构建无栈=1 用例可旁证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB03"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB04",
+      "page": "subpackages/village/village/publish",
+      "operation": "?target=friends 入口（profile 添加故事链路）：个人日常+可见性锁定",
+      "expected": "目标卡=个人日常+副标题「日常·仅互相喜欢或关注我的人可见」；谁可以看=「仅喜欢/关注的人可见」且无 › 箭头；tap 该行无变化（锁定）；onLoad query.target=friends",
+      "actual": "exec-results PUB04 FAILED：pre 真实入口 tap「添加故事」未命中（element not found）→ auto-reLaunch 兜底进入 publish 但丢失 ?target=friends 参数；act tap「谁可以看」文本候选 __CAND__(\"看\") 未命中，轮换锁定未取证。锁定 UI 态本身另由 PUB07-after 实证（同构建）：目标卡=个人日常/日常·仅互相喜欢或关注我的人可见、谁可以看=仅喜欢/关注的人可见、行尾无 › 箭头（与 PUB05/06 的有箭头行形成对照）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB04",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB04-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB07-after.png（旁证锁定态）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB05",
+      "page": "subpackages/village/village/publish",
+      "operation": "?target=campus 入口：目标卡=校园圈+谁可以看=学校圈",
+      "expected": "目标卡=「校园圈/校园圈·所有校园成员可见」；谁可以看=「学校圈」且有 › 箭头；tap 后轮换池仅['school']文案仍「学校圈」",
+      "actual": "exec-results PUB05：navigateTo publish?target=campus，observe-only，after 截图实证（已读图）：目标卡=「校园圈」+副标题「校园圈 · 所有校园成员可见」✓、谁可以看=「学校圈」✓ 且行尾有 › 箭头 ✓、计数 0/500、发布按钮禁用态，与 expected 文案逐字一致。子步「tap 谁可以看后仍学校圈」未执行（无 act 记录）；campus 轮换池单值未在实机复核",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB05",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB05-after.png",
+        "apps/client/src/subpackages/village/village/publish.vue:278-279（campus 池['school']，仅作旁注不作为判据）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "PUB06",
+      "page": "subpackages/village/village/publish",
+      "operation": "?circleId=8 入口：未加入回退个人动态（不悬挂未加入圈）",
+      "expected": "分支②（未加入/不存在）：targetType 回退 general→目标卡=个人动态/默认公开·所有人可见；两分支共同不变量：无错误 Toast、无越权可见性组合（PUB21 明示 general 下出现「学校圈」即缺陷——后端 CreatePostRequest 无 visibility 字段，可见范围由 targetType 推导 general→public_，UI 承诺「学校圈」会被服务端静默变成全平台公开）",
+      "actual": "FAILED（分支②回退本身发生但不变量破坏）：after 截图实证（已读图）目标卡=「个人动态/默认公开 · 所有人可见」的同时「谁可以看=学校圈」——general+school 同屏矛盾，UI 所见与后端落库口径（general→public_ 全平台公开）相悖，用户误以为仅同校可见。无错误 Toast、无崩溃（toast 空、console 0 错）。根因（源码定位）：publish.vue:433 先按 legalVisibility 重算 visibility，:442-445 entryCircleId 在重算之后回设 targetType='circle' 却不重算 visibility；publish.vue:180-184 loadTarget 回退 general 分支亦不重算 visibility → 残留 school。旧构建 OP20（general 轮换出学校圈）为同一可见性治理缺陷的修复前表现，MP-R1-PUBLISH-001 修复（cycleVisibility 池收敛，publish.vue:271-291）未覆盖入口/回退路径",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB06-after.png（同帧：个人动态/默认公开·所有人可见 + 谁可以看=学校圈）",
+        "reports/audit/round-1/interact/exec-results.json#PUB06",
+        "apps/client/src/subpackages/village/village/publish.vue:180-184",
+        "apps/client/src/subpackages/village/village/publish.vue:433-445",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP20（旁证，旧构建）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "PUB07",
+      "page": "subpackages/village/village/publish",
+      "operation": "general 草稿 + ?target=friends → 参数优先强制个人日常语义",
+      "expected": "textarea 回显预置草稿正文；目标卡=个人日常、谁可以看=仅喜欢/关注的人可见（入口参数在恢复草稿后强制回设）；谁可以看行无箭头",
+      "actual": "exec-results PUB07：navigateTo publish?target=friends，observe-only。前置「预置 village:publish-draft 草稿」未实施（observed 无 storageSet 记录）→ 草稿回显+参数优先半边未执行。after 截图实证（已读图）：目标卡=「个人日常/日常 · 仅互相喜欢或关注我的人可见」、谁可以看=「仅喜欢/关注的人可见」、行尾无 › 箭头、计数 0/500——friends 锁定 UI 语义全部达成，但无草稿共存场景",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB07",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB07-after.png"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "PUB08",
+      "page": "subpackages/village/village/publish",
+      "operation": "空内容点 .publish-header__submit",
+      "expected": "500ms 内 Toast「请输入内容」（icon none）；停留本页路由不变；console 无创建请求；按钮禁用样式",
+      "actual": "exec-results PUB08：toast hook 捕获 {api:showToast, title:\"请输入内容\"} ✓（文案与 t('village.contentRequired') 一致）；route 终态栈顶=publish 未跳转 ✓；console 0 条（无创建请求）✓。after 截图为 Toast 消退后帧（hook 文本记录为准，比截图更可靠）；页面目标状态为上一用例 friends 残留，但空态校验与目标无关。按钮禁用态见 PUB05-08 同构建截图",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB08（toast 数组）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB08-after.png",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP12（旁证，旧构建 hook+截图同文案）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "PUB09",
+      "page": "subpackages/village/village/publish",
+      "operation": "正文 1-4 字点发布 → Toast 正文至少 5 个字再发布哦",
+      "expected": "500ms 内 Toast「正文至少 5 个字再发布哦」；停留本页；无创建请求；输入保留",
+      "actual": "exec-results PUB09 FAILED：act-FAIL input(__CAND__) el.input is not a function——「好啊」2 字未能注入，随后 tap submit 实际触发的是空态 Toast「请输入内容」（hook 实录），最小长度场景未成立。旧构建 OP13 已证该 Toast（13-after 截图实锤+hook 同文案+3/1000 回显），当前构建未复核",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB09（failure: el.input is not a function；toast=请输入内容）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-13-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB10",
+      "page": "subpackages/village/village/publish",
+      "operation": "合法 general 发布成功：Loading→Toast→400ms 返回→草稿双清",
+      "expected": "Loading「发布中...」→成功 Toast「已提交，审核通过后展示」→400ms 返回来源页；请求体 title=前30字/content/categoryId=interest/targetType=general；草稿本地+后端双清；Loading 不永驻",
+      "actual": "exec-results PUB10 FAILED：act-FAIL input el.input is not a function——「自动化验收测试帖子内容」未注入，tap submit 走空态 Toast「请输入内容」，成功发布链路（含请求体断言、草稿双清、400ms 返回）在当前构建整体未执行。before/after 截图均为空表单帧。旧构建 OP15 已证成功链（hook success Toast+返回村口+草稿已清）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB10（failure + toast=请输入内容）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-15-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB11",
+      "page": "subpackages/village/village/publish",
+      "operation": "校园圈目标发布：请求体 targetType=campus/visibility=school",
+      "expected": "弹层选校园圈后发布，请求体 targetType=campus、visibility=school；后端放行→成功 Toast+返回 / 拒绝→后端 message 停留；UI 不崩溃、Loading 不永驻",
+      "actual": "exec-results PUB11：pre-FAIL×2（input el.input 失败 + 「校园圈」选项 tap __CAND__ 未命中）→ 校园圈目标未选中、正文未输入，tap submit 走空态 Toast「请输入内容」。campus 发布场景未成立，请求体断言未取得。旧构建亦未覆盖 campus 发布（OP03 仅选择不提交）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB11（pre-FAIL×2）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB12",
+      "page": "subpackages/village/village/publish",
+      "operation": "圈子目标发布：createTopic 请求体仅 title/content/images（无 tags）",
+      "expected": "「添加话题」行不存在（v-if=!isCircleTarget）；POST /circles/{id}/topics 请求体仅 {title,content,images}；成功 Toast→400ms 返回；「已选 n/5」全程不渲染",
+      "actual": "exec-results PUB12：pre-FAIL input el.input 失败→圈子目标与正文均未成立，tap submit 空态 Toast。createTopic 请求体断言（无 tags）未取得；话题行隐藏断言未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB12（pre-FAIL input）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB13",
+      "page": "subpackages/village/village/publish",
+      "operation": "主按钮防连点：快击发布×5 仅提交 1 次",
+      "expected": "仅第 1 次生效（submitting 短路）；创建请求恰好 1 次；期间按钮禁用样式；成功后仅 1 条新帖",
+      "actual": "exec-results PUB13：pre-FAIL input（正文未注入）→ act 仅单次 tap submit（×5 快击协议未执行）→ 空态 Toast「请输入内容」。守卫机制当前构建未取证；旧构建 OP33 以 ×2 快击+300ms 网络延迟实证 createPost 调用次数=1、submitting 守卫生效",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB13",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP33（旁证，旧构建 ×2 守卫）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB14",
+      "page": "subpackages/village/village/publish",
+      "operation": "发布失败：错误 Toast+留页+submitting 复位可重试+草稿不清",
+      "expected": "失败 Toast 展示后端 message 或「发布失败」；停留本页；输入保留；草稿仍在；submitting 复位可重试；Loading 不永驻",
+      "actual": "exec-results PUB14：无 mockWxMethod 失败注入 staging 记录；input 失败正文未注入；两次 tap submit（间隔 236ms）均为空态 Toast「请输入内容」。失败注入场景未成立，草稿保留/复位重试分支未取证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB14（toast×2 均 请输入内容，pre-FAIL input）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB15",
+      "page": "subpackages/village/village/publish",
+      "operation": "字数计数三段：常态→剩 50 警示色→超长截断 500/500",
+      "expected": "100/500 常态色；460/500 含 publish-content__count--warning 警示色；600 字注入被 maxlength=500 截断恒 500/500，无 501",
+      "actual": "exec-results PUB15 FAILED：act-FAIL inputSeq unknown op inputSeq + input(__CAND__) element not found——三段计数场景整体未执行。计数制式：当前构建 PUB05/06/07/08/22/23/27-after 截图（已读图）均显示 x/500 制式，MP-R1-PUB-016（旧构建 600/1000 可输入、提交才报 500 错）已在源码修复（publish.vue:17-19 从 stores/village 导入 MAX_CONTENT_LENGTH=500 同源，:673 :maxlength、:681 计数绑定），当前构建计数上限显示已终验一致；警示色与 500 截断两子项未在实机取证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB15（failure: unknown op inputSeq / element not found）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB05-after.png（当前构建 0/500 计数制式）",
+        "apps/client/src/subpackages/village/village/publish.vue:17-19,673,681（修复落地，仅作旁注）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-10-after.png（旁证旧构建偏差 600/1000）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB16",
+      "page": "subpackages/village/village/publish",
+      "operation": "清空输入：计数归 0/500 + 发布按钮回禁用",
+      "expected": "计数回 0/500 常态色；canSubmit=false 按钮禁用样式（浅绿底深绿字）；此时点发布走空态 Toast；无崩溃",
+      "actual": "exec-results PUB16 FAILED：pre-FAIL 与 act-FAIL input(__CAND__) element not found——「将被清空的内容」未注入，清空场景未执行。旧构建 OP11 已证清空→归零→按钮回浅绿禁用态（11-after）。当前构建 0/500 计数与禁用按钮终态见 PUB05-after 等截图",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB16",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-11-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB17",
+      "page": "subpackages/village/village/publish",
+      "operation": "特殊字符/emoji/HTML 注入串：回显、计数、提交不炸",
+      "expected": "原样回显无 XSS/模板异常；计数一致；tap 发布出成功或校验 Toast 之一；console 无 TypeError",
+      "actual": "exec-results PUB17 FAILED：act-FAIL input(__CAND__) element not found + tap「发布」候选未命中——注入串未输入、未提交。旧构建 OP8 已证同类混合串（HTML 标签/引号/反斜杠/emoji/#标签）回显无异常、草稿 tags 合并、console error=0，但提交分支当时亦未 tap",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB17",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP08（旁证，旧构建输入半边）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB18",
+      "page": "subpackages/village/village/publish",
+      "operation": "添加话题 toggle（1/5↔0/5）+ 正文 #tag 并入上限 5",
+      "expected": "tap 添加话题行→已选 1/5；再 tap→0/5；正文 6 个 #tag 并入后请求体 tags.length≤5；已选计数只反映 topics 数组",
+      "actual": "exec-results PUB18 FAILED：input 未命中 + tap(#tag) 选择器误用（element not found: #tag(\"添加话题\")）×2——①②③ 全部未在当前构建执行。旧构建 OP16/17/18 已证 toggle 1/5↔0/5（含 6 连点偶数归零），OP08/OP14 已证正文 #tag 并入草稿快照（buildMergedTopics），但发布请求体 tags 断言两轮均未取得",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB18",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-16-after.png（旁证，旧构建 1/5）",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP14（旁证，tags 合并）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB19",
+      "page": "subpackages/village/village/publish",
+      "operation": "提及好友行 → Toast「提及好友即将开放」",
+      "expected": "500ms 内 Toast「提及好友即将开放」（icon none）；无路由变化；Toast 自动消退",
+      "actual": "exec-results PUB19 FAILED：act-FAIL tap __CAND__(\"提及好友\") element not found。但 PUB05-after 截图（已读图，同构建同会话）中「提及好友」行清晰可见存在——执行器文本候选解析失效（候选串被误切分），非页面元素缺失；Toast 未触发取证。旧构建 OP19 已证（hook 同文案 icon none+页面停留）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB19",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB05-after.png（「提及好友」行可见，证明候选失败属执行器侧）",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP19（旁证，旧构建）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB20",
+      "page": "subpackages/village/village/publish",
+      "operation": "位置行两场景：无缓存=选择位置 / 有缓存=城市·自动定位（行不可点）",
+      "expected": "场景①（清 nearby:city）显示「选择位置」；场景②（设 北京市）显示「北京市 · 自动定位」；行无 @tap，tap 无反馈属预期设计",
+      "actual": "exec-results PUB20 FAILED：两场景缓存 staging 均未实施，act-FAIL tap __CAND__(\"该\") 未命中。旧构建 OP21 已证场景②变体：「北京市 · 自动定位」显示（21-after）、tap 后 path 不变无 toast 无错误（不可点语义成立）；场景①「选择位置」文案两轮均未取证。当前构建 PUB05/06/07-after 截图位置行显示「南京 · 自动定位」（定位城市随环境，文案结构一致）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB20",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-21-after.png（旁证，旧构建场景②）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB06-after.png（当前构建位置行帧）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB21",
+      "page": "subpackages/village/village/publish",
+      "operation": "谁可以看轮换按目标约束：general/campus/circle 单值不轮出；friends 锁定",
+      "expected": "general 两次 tap 仍「所有人可见」（轮换池['public']，MP-R1-PUBLISH-001；无可见反馈的死按钮问题据 R11 §5 裁定）；campus 仍学校圈；circle 仍兴趣圈；friends 无箭头无响应；无越权轮换值（general 下出现「学校圈」即缺陷——服务端静默公开）",
+      "actual": "exec-results PUB21 FAILED：act-FAIL tap __CAND__(\"谁可以看\") element not found——四场景轮换协议全部未执行，tap 层死按钮/单值语义未取证。但「general 下出现学校圈」这一越权组合已在当前构建被 PUB06-after 截图实证（?circleId=8 回退 general 后残留 school）→ 另立 Issue MP-R1-PUB-018（P1）。轮换 tap 语义本身留待重验（friends 锁定态见 PUB07-after：无箭头）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB21",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB06-after.png（越权组合实证，转 MP-R1-PUB-018）",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP20（旁证，旧构建修复前轮换出学校圈）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB22",
+      "page": "subpackages/village/village/publish",
+      "operation": "发布到弹层打开（三级分组）+ 遮罩点击关闭（三路关闭·之一）",
+      "expected": "底部弹层「选择发布到」+ 三级分组（公域/校园私域/兴趣圈子）+ 当前目标 ✓；tap 遮罩 500ms 内弹层自 DOM 消失；无滚动穿透异常",
+      "actual": "exec-results PUB22：起点 DOM .publish-target-sheet:absent（弹层初始关闭 ✓）；act:tap .publish-to__card 成功（弹层必已开启，否则后续 tap .publish-target-sheet 不会命中）→ act:tap .publish-target-sheet 成功 → 终态 .publish-target-sheet:absent + after 截图（已读图）弹层已关闭 ✓。三级分组结构由同构建 PUB23-after 截图实证（已读图）：「选择发布到」+公域·所有人可见（个人动态）+校园私域·同校可见（校园圈）+兴趣圈子·圈内成员可见（音乐 已加入 8,123 成员/美食 已加入 7,240 成员）+遮罩灰化 ✓。子项①：当前目标 ✓ 勾选帧未取得（会话状态残留 friends，弹层选项中无对应项，旧构建 OP02-after 有 general ✓ 勾选旁证）；子项②：automator 固定元素中心 tap 无法区分遮罩空白区与 panel 区（panel @tap.stop 不关闭）两子路径；滚动穿透未断言",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB22",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png（关闭态）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB23-after.png（同构建三级分组开态）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-02-after.png（旁证，旧构建 ✓ 勾选）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "PUB23",
+      "page": "subpackages/village/village/publish",
+      "operation": "发布到卡再点 toggle 关闭弹层（三路关闭·之二）",
+      "expected": "弹层开启态再 tap .publish-to__card → 500ms 内弹层自 DOM 消失；目标卡文案不变；第三次 tap 可重开（toggle 双向）",
+      "actual": "exec-results PUB23：pre-FAIL tap __CAND__(\"到\") 后 act:tap .publish-to__card 成功一次——PUB23-after 截图（已读图）为弹层开启态（三级分组+遮罩），即仅证得「卡片打开弹层」单方向；「开启态点卡片关闭」与「再点重开」两步未执行（弹层开启态下无后续 tap 记录，终态采样 .publish-to__card:present 不含 sheet 关闭断言）。卡片 toggle 关闭方向新旧两轮均未单独取证（旧构建 OP06 关闭走的是弹层容器 tap）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB23",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB23-after.png（开态帧，仅证打开方向）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB24",
+      "page": "subpackages/village/village/publish",
+      "operation": "弹层选校园圈 → 选择即关闭+目标联动+重开见 ✓（三路关闭·之三）",
+      "expected": "点选项 500ms 内弹层关闭+目标卡变校园圈/副标题+谁可以看变学校圈；重开弹层校园圈行 ✓、个人动态行勾选消失",
+      "actual": "exec-results PUB24 FAILED：pre-FAIL tap __CAND__(\"到\") + act-FAIL tap __CAND__(\"校园圈\")×2 未命中——弹层未开启/选项未选中，三路之三全链未执行。旧构建 OP03/OP04 已证同链路（03-after：sheetGone+卡片校园圈+谁可以看学校圈；04-after：重选个人动态恢复），当前构建未复核。campus 终态本身另有 PUB05-after（?target=campus 入口）同帧佐证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB24",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-03-after.png（旁证，旧构建联动）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB25",
+      "page": "subpackages/village/village/publish",
+      "operation": "弹层选已加入圈子 → 圈名/tag/成员数短格式/话题行隐藏",
+      "expected": "500ms 内弹层关闭；目标卡=圈名+绿 tag「圈内成员可见」+成员数短格式+封面；谁可以看=兴趣圈；「添加话题」行消失；重开该圈行 ✓",
+      "actual": "exec-results PUB25 FAILED：act-FAIL tap __CAND__(\"子\") 未命中（「兴趣圈子」候选被误切分）——选择未发生，全链未取证。PUB23-after 截图（同构建）证实弹层内已加入圈子在列（音乐 已加入 8,123 成员/美食 已加入 7,240 成员）；选择后终态由旧构建 OP05 旁证（05-after：卡片音乐+圈内成员可见+8,123 成员+谁可以看兴趣圈）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB25",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB23-after.png（已加入圈子在列）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-05-after.png（旁证，旧构建终态）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB26",
+      "page": "subpackages/village/village/publish",
+      "operation": "弹层兴趣圈子分组三态：加载中/失败+重试/空态",
+      "expected": "①「兴趣圈子加载中…」后被数据替换；②「圈子列表加载失败，请稍后重试」+「重试加载」可点（失败≠空态误导）；③「尚未加入兴趣圈子…」空态无重试项",
+      "actual": "exec-results PUB26 FAILED：act-FAIL tap __CAND__(\"重试加载\") 未命中；三场景 staging（未加载即开/失败注入/无圈身份）均未实施。MP-R1-PUB-017 修复（watch targetOpen→ensureCirclesLoaded 懒加载，publish.vue:92-110）后，PUB23-after（同构建）显示分组有数据态正常，但加载中/失败重试/空态三分支当前构建零取证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB26",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB23-after.png（数据态旁证）",
+        "apps/client/src/subpackages/village/village/publish.vue:92-110（修复落地旁注）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB27",
+      "page": "subpackages/village/village/publish",
+      "operation": "添加图片：隐私授权链+mock chooseImage→九宫格出图+移除钮",
+      "expected": "tap .publish-image--add 后 500ms 内九宫格出现 1 缩略图+右上 × 移除钮，添加块仍在；console 无 TypeError；隐私拒绝分支 Toast 也算合规",
+      "actual": "exec-results PUB27：act:tap .publish-image--add 成功但无 mockWxMethod('chooseImage') staging 记录；after 截图（已读图）实为「选择发布到」弹层开启帧（上一用例 PUB26 失败残留状态），非九宫格出图态——出图结果未取证，且残留弹层说明前序用例状态清理缺失。旧构建 OP30/31/32 已证 mock 选图→九宫格+移除钮→删除→9 张上限全链（30/31/32-after）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB27",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png（弹层残态，非九宫格）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-30-after.png（旁证，旧构建出图）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB28",
+      "page": "subpackages/village/village/publish",
+      "operation": "移除图片：网格更新+添加块维持",
+      "expected": "tap 移除钮 500ms 内该图消失，网格回仅添加块；草稿 watch 触发；无崩溃",
+      "actual": "exec-results PUB28 FAILED：act-FAIL tap __CAND__(\"除\") 未命中（移除钮无文本，候选误切分）——且前置 PUB27 出图未成立，无图可移。旧构建 OP31 已证（img 已移除=true，31-after）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB28",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-31-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB29",
+      "page": "subpackages/village/village/publish",
+      "operation": "满 9 张：添加块自 DOM 隐藏（POST_MAX_IMAGES=9）",
+      "expected": "9 次选图后网格 9 张齐全，第 9 张后添加块消失，无法再触发选图，无第 10 张",
+      "actual": "exec-results PUB29 FAILED：act-FAIL tap __CAND__(\"网\") 未命中——9 连选协议未执行。旧构建 OP32 以 mock 一次选 9 张证得终态（3×3 九宫格+「＋」消失，imgs=9 addGone=true，32-after）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB29",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-32-after.png（旁证，旧构建终态）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB30",
+      "page": "subpackages/village/village/publish",
+      "operation": "发帖小贴士 ×：卡片即时消失",
+      "expected": "tap × 500ms 内小贴士卡自 DOM 消失；其余表单不受影响；无崩溃",
+      "actual": "exec-results PUB30 FAILED：act-FAIL tap __CAND__(\"士\") 未命中（「×」为图形符号无文本，候选从小贴士误切「士」）——当前构建未取证。旧构建 OP22 已证（tip 消失=true，22-after 无贴士区块）。当前构建各帧（PUB05-08/22/23/27-after）小贴士卡均正常显示，未见自消失异常",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB30",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-22-after.png（旁证，旧构建）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB31",
+      "page": "subpackages/village/village/publish",
+      "operation": "草稿自动保存：500ms 本地快照+2s 后端 /drafts 双写",
+      "expected": "本地快照 content 与输入一致，含 tags/visibility/targetType/updatedAt；快照 images 仅已上传 URL（wxfile://tmp 不入）；约 2s console 可见 saveDraft 请求；静默失败无错误 Toast",
+      "actual": "exec-results PUB31 FAILED：act-FAIL input(__CAND__) element not found——「草稿自动保存验收正文」未注入，仅 act:wait 2000ms 空转；本地快照与 /drafts 双写、临时路径过滤均未在当前构建取证。旧构建 OP07/OP14 已证本地防抖快照（draft.content 一致、tags 合并、INDEP-001 修复确认），后端双写当时亦未断言",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB31",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP07,OP14（旁证，旧构建本地半边）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB32",
+      "page": "subpackages/village/village/publish",
+      "operation": "草稿恢复：本地快照回显+临时路径图片过滤+可见性按目标重算",
+      "expected": "textarea 回显预置草稿；已选 1/5；images 空（wxfile://tmp 被过滤）九宫格无破图；目标卡/可见性按 legalVisibility 重算；无错误 Toast",
+      "actual": "exec-results PUB32：observe-only 且无 storageSet 预置记录（草稿未预置），DOM 采样 .general:absent 无效，after 截图 ERROR:timeout 未落盘——回显/过滤/重算三断言均无证据。旧构建 OP24/B1-04 已证回显基础（24-after：内容回显+计数恢复+按钮可用），临时路径过滤与可见性重算未取证（源码 publish.vue:420-433 已具该逻辑，仅旁注）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB32（截图 timeout）",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-24-after.png（旁证，旧构建回显）"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB33",
+      "page": "subpackages/village/village/publish",
+      "operation": "退出保留草稿：X→modal「保留」→同步 flush 落盘+返回来源页",
+      "expected": "modal「是否保留草稿？」（保留/放弃）；点保留→flushDraftSave 同步落盘→navigateBack 村口 index；storage 草稿 content=输入值；console 可见 saveDraft",
+      "actual": "exec-results PUB33 FAILED：pre-FAIL input el.input 失败→内容为空→dirty=false→本不应弹 modal，act-FAIL tap __CAND__(\"保留\") element not found 属必然（无 modal 可点）——保留分支交互链未执行。route 终态 [publish] 系执行器 reLaunch+navigateTo 双 publish 页栈残留所致（回退落在下层 publish 实例），非页面缺陷。旧构建：OP25 以 mockWxMethod(confirm=true) 证得保留分支（返回村口+draft.content 落盘），OP23 实录 DevTools 对原生 modal 自动确认、弹窗 UI 文案无法驻留截图（工具层限制）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB33",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP23,OP25（旁证，旧构建 mock 保留分支+modal UI 工具限制实录）",
+        "apps/client/src/subpackages/village/village/publish.vue:353,476（flushDraftSave 于 confirm 分支，旁注）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB34",
+      "page": "subpackages/village/village/publish",
+      "operation": "退出放弃草稿：X→modal「放弃」→本地+后端删除+返回",
+      "expected": "clearDraft（取消在途定时器+删本地+DELETE /drafts）→返回来源页；重进无草稿恢复；无崩溃",
+      "actual": "exec-results PUB34 FAILED：pre-FAIL input 失败→内容空→无 modal→act-FAIL tap __CAND__(\"放弃\") element not found 属必然——放弃分支未执行。route 终态 [village/index] 为空内容直接离开（等价 PUB02 路径），非放弃分支证据。旧构建 OP26（mockWxMethod confirm=false→clearDraft+返回+草稿已清）与 B1-04（游客身份 保留→恢复→放弃全环）已证分支逻辑；DELETE /drafts 请求断言两轮均未取得",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB34",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP26,B1-04（旁证，旧构建放弃分支）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB35",
+      "page": "subpackages/village/village/publish",
+      "operation": "发布成功后旧草稿不复活：预置草稿→发布成功→重进无恢复",
+      "expected": "发布成功执行 clearDraft+clientApi.deleteDraft()；重进 textarea 空、无旧草稿回显、storage 不存在；无重复发布窗口",
+      "actual": "exec-results PUB35：预置旧草稿 storageSet 未实施+input 失败，tap submit 走空态 Toast「请输入内容」——发布成功路径与重进校验均未发生；before 截图在、after 截图 ERROR:timeout。MP-R8-DRAFT-001 回归当前构建零取证（源码 publish.vue:558-561 逻辑在，仅旁注）；旧构建 OP15 证发布后草稿已清（半环）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB35",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB35-before.png"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "PUB36",
+      "page": "subpackages/village/village/publish",
+      "operation": "长内容滚动到底/顶：scroll-view 不白屏不卡死",
+      "expected": "500 字长文使内容超屏后滚动到底再回顶：底部小贴士/行项可达、header 固定、无白屏卡死、console 无滚动报错",
+      "actual": "exec-results PUB36：act:pageScrollTo bottom/top + scrollElement .publish-body bottom 成功，scrollPos=bottom 采样成功，DOM .publish-body/.publish-body__bottom-space present ✓，console 0 报错 ✓。但前置「textarea 注入 500 字长文」因 el.input 失败未成立——页面是否真实超屏未知，scrollPos=bottom 可能是无溢出下的空转；header 固定与不卡断无图像证据（截图未采）。前轮（09-20）同用例因 Element.touchstart unimplemented 亦无法验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB36（evidence=[scrollPos=bottom]）",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP34（前轮 touchstart unimplemented 实录）"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "PUB37",
+      "page": "subpackages/village/village/publish",
+      "operation": "打开即返回+重复进出×3：无状态残留、无草稿窗误弹",
+      "expected": "3 轮 navigateTo→<300ms tap X：每轮正常渲染、空内容直接返回、无残留、村口状态正常、console 无累积报错",
+      "actual": "exec-results PUB37：act:repeatNav navigateTo __CASE_PAGE__ x3 两批共 6 次导航全部 navErr:Uncaught [object Object]——导航目标占位符 __CASE_PAGE__ 未被替换为页面路径，循环实际未进入/退出发布页，用例未执行；无截图无 console 过滤证据。旧构建 OP28（打开 500ms 内 X 正常返回）+OP29（×3 循环 path 全对+console 0 错误）已证等价链路",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PUB37（navErr×6，__CASE_PAGE__ 未替换）",
+        "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json#OP28,OP29（旁证，旧构建）"
+      ],
+      "confidence": 0.25
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PUB-016",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-10-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "正文输入上限不一致（A1 执行轮发现，判定员复核确认）：旧构建 textarea maxlength=1000 允许输入 501-1000 字，store 校验 500，超 500 字点发布必然失败且仅提交时报「帖子内容不能超过500字」",
+      "evidence": "偏差实证（旧构建 OP10）：输入 600 字（截图 600/1000 回显）→点发布→hook toast「帖子内容不能超过500字」停留本页（10-after）。修复实证（当前构建/HEAD）：publish.vue:17-19 从 stores/village 导入 MAX_CONTENT_LENGTH=500 同源绑定（:673 :maxlength、:681 计数），PUB05/06/07-after 等当前构建截图均显示 x/500 计数制式",
+      "sources": [
+        "screenshot",
+        "interaction",
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "输入上限与可提交上限同源一致，接近上限有即时可视反馈",
+      "fix": "已按 A1 建议修复：POST_MAX_LENGTH(1000) 移除，统一导入 stores/village MAX_CONTENT_LENGTH=500（publish.vue:17-19）；接近阈值警示类 CONTENT_LENGTH_WARN_THRESHOLD 已在（publish.vue:76）",
+      "status": "已修复待终验"
+    },
+    {
+      "id": "MP-R1-PUB-017",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-B1-02-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "「发布到」弹层兴趣圈子分组依赖其他页面隐式预加载：直入发布页从不调 fetchCircles，joinedCircles 空 → 分组被 v-if 静默隐藏，无加载态/空态提示（A1 执行轮发现，判定员复核确认）",
+      "evidence": "偏差实证（旧构建 B1-02）：B 身份直入弹层 options 仅[个人动态,校园圈]，A 身份（会话预加载副作用）有音乐/美食（B1-02-after vs 02-after）。修复实证（当前构建/HEAD）：publish.vue:92-110 ensureCirclesLoaded + watch targetOpen 懒加载已落地；PUB23-after（当前构建直入会话）弹层显示完整三级分组含 音乐/美食 已加入。加载中/失败重试/空态三分支的终验仍缺（本轮 PUB26 未成立）",
+      "sources": [
+        "screenshot",
+        "interaction",
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "打开弹层保证已加入圈子数据可用：未加载则拉取、加载中有提示、为空有空态文案",
+      "fix": "已按 A1 建议修复：watch targetOpen→ensureCirclesLoaded（publish.vue:92-110）；三分支 UI 需按 PUB26 重验",
+      "status": "已修复待终验"
+    },
+    {
+      "id": "MP-R1-PUB-018",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB06-after.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "general 目标下「谁可以看」残留「学校圈」（目标卡与可见范围同屏矛盾）：?circleId=8（未加入圈）进入后 targetType 回退 general，但 visibility 未重算，残留 school。后端 CreatePostRequest 无 visibility 字段、可见范围由 targetType 推导（general→public_ 全平台公开），用户看到「学校圈」而服务端将静默全平台公开——受众口径 UI 与落库不一致，属可见性静默放大风险",
+      "evidence": "实机截图（当前构建 HEAD，2026-09-23）：PUB06-after 同帧显示目标卡「个人动态/默认公开 · 所有人可见」与「谁可以看=学校圈」。源码根因：publish.vue:433 先按 legalVisibility 重算 visibility，:442-445 entryCircleId 在重算之后回设 targetType='circle' 不重算 visibility；publish.vue:180-184 loadTarget 回退 general 分支（targetType/targetId/targetCircle 三清）唯独不重算 visibility。旁证（旧构建）：OP20 general 目标轮换出「学校圈」（MP-R1-PUBLISH-001 修复 cycleVisibility 池收敛 publish.vue:271-291 前）——同一可见性治理缺口的两条到达路径，入口/回退路径至今未闭合。触发前置：存在 campus 语义草稿/targetType（restoreDraft :411-412 置 campus → :433 重算 school）或同类中间态",
+      "sources": [
+        "screenshot",
+        "interaction",
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "任何入口/回退后，visibility 恒等于 legalVisibility[targetType]（general→public）：目标卡与「谁可以看」永不同屏矛盾，UI 所见=服务端落库口径",
+      "fix": "在 publish.vue:180-184 loadTarget 回退分支与 :442-445 entryCircleId 回设之后统一执行 visibility.value = legalVisibility[targetType.value] ?? 'public'（或抽 calcVisibilityByTarget() 于两处及 :433 共用）",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "PUB01|当前构建执行截图超时（ERROR:timeout waiting for automator response）+ 登录身份 userId=user-1001 与 Manifest 身份 A=100158 不符（执行器自标 MISMATCH）+ 计数文本未采样；路由/console/五节点 DOM 已证|1",
+    "PUB03|栈=1 点关闭后路由采样仍停留 publish（预期 reLaunch 兜底村口 index），tap 已执行但导航结果未捕获——采样时序或执行器双 publish 页栈干扰，无法裁定|1",
+    "PUB04|真实入口「添加故事」tap 未命中→兜底 reLaunch 丢失 ?target=friends→「谁可以看」候选亦未命中，锁定链路未取证（锁定 UI 态由 PUB07-after 旁证）|1",
+    "PUB07|预置旧草稿 storageSet 未实施，草稿回显+参数优先半边未执行；friends 锁定 UI 态已由 PUB07-after 证实|1",
+    "PUB09|el.input is not a function→2 字输入未注入，实际触发空态 Toast 而非最小长度 Toast（旧构建 OP13 已证）|1",
+    "PUB10|同上输入失败，合法发布 Loading→Toast→400ms 返回→草稿双清全链当前构建未执行（旧构建 OP15 已证）|1",
+    "PUB11|输入与「校园圈」选项 tap 双双失败，campus 发布请求体断言未取得|1",
+    "PUB12|输入失败，createTopic 请求体（无 tags）断言未取得|1",
+    "PUB13|输入失败且连击×5 协议未执行（act 仅单次 tap）；守卫仅旧构建 OP33（×2）佐证|1",
+    "PUB14|mockWxMethod 失败注入未实施，两次 tap 均空态路径（间隔 236ms）|1",
+    "PUB15|inputSeq op 不识别+input 元素未命中，警示色与 500 截断两子项未取证；0/500 计数制式已由当前构建多帧截图证实|1",
+    "PUB16|input 元素未命中，清空→归零→禁用当前构建未取证（旧构建 OP11 已证）|1",
+    "PUB17|input+tap 发布均未执行，注入串提交分支未取证|1",
+    "PUB18|「添加话题」候选未命中（#tag 选择器误用），toggle 与请求体 tags≤5 断言未取证（旧构建 OP16-18/OP14 旁证）|1",
+    "PUB19|「提及好友」行在 PUB05-after 截图可见存在，执行器文本候选解析失效致 Toast 未触发取证（旧构建 OP19 已证）|1",
+    "PUB20|两场景缓存 staging 未实施且 tap 候选未命中；场景①「选择位置」两轮均未取证|1",
+    "PUB21|「谁可以看」轮换协议四场景均未执行（候选未命中）；越权组合已转 Issue MP-R1-PUB-018|1",
+    "PUB22 子项|遮罩空白区 vs panel 区（@tap.stop）两关闭子路径因 automator 固定元素中心 tap 不可区分；当前目标 ✓ 勾选帧未取得（状态残留 friends）|1",
+    "PUB23|卡片 toggle 关闭方向未执行（act 仅打开一次）；关闭方向新旧两轮均未单独取证|1",
+    "PUB24|「校园圈」选项 tap 未命中，选择即关闭+联动+重开勾选当前构建未复核（旧构建 OP03/04 已证）|1",
+    "PUB25|已加入圈子行 tap 未命中，圈名/tag/成员数/话题行隐藏未取证（旧构建 OP05 旁证）|1",
+    "PUB26|加载中/失败重试/空态三场景 staging 未实施，「重试加载」tap 未命中（MP-R1-PUB-017 修复后需重验）|1",
+    "PUB27|chooseImage mock 未实施，after 帧为弹层残态非九宫格（旧构建 OP30-32 已证全链）|1",
+    "PUB28|移除钮 tap 未命中且前置出图未成立（旧构建 OP31 已证）|1",
+    "PUB29|9 连选协议未执行（旧构建 OP32 mock 一次 9 张已证终态）|1",
+    "PUB30|「×」图形符号无文本候选（执行器误切「士」）tap 未命中（旧构建 OP22 已证）|1",
+    "PUB31|input 未命中，本地快照+/drafts 双写+临时路径过滤当前构建未取证（旧构建 OP07/14 证本地半边）|1",
+    "PUB32|预置草稿 storageSet 未实施+截图超时（旧构建 OP24 证回显基础）|1",
+    "PUB33|输入失败→内容空→dirty=false 无 modal→「保留」tap 未命中属必然，保留分支未执行（旧构建 OP25 mock 已证；原生 modal UI 文案 DevTools 自动确认无法驻留，OP23 实录）|1",
+    "PUB34|同上「放弃」tap 未命中属必然，放弃分支未执行（旧构建 OP26/B1-04 已证；DELETE /drafts 请求断言两轮均未取得）|1",
+    "PUB35|预置草稿未实施+input 失败，发布成功→草稿不复活回归零取证|1",
+    "PUB36|长文前置未成立（input 失败），scrollPos=bottom 无超屏内容佐证；前轮 Element.touchstart unimplemented|2",
+    "PUB37|repeatNav 占位符 __CASE_PAGE__ 未替换→3×2 轮全部 navErr:Uncaught，打开即返回循环未真正执行（旧构建 OP28/29 旁证）|1",
+    "真实相册选图完整流程（原生 chooseImage UI+隐私授权弹窗+真实压缩）|仅 mockWxMethod 链路已证（旧构建 OP30-32）|0",
+    "真实后端（非 mock 构建）提交链路与 401/网络异常分支|两轮均基于 mp-weixin-mock 产物|0"
+  ],
+  "notes": "判定基线：Manifest（PUB01-37）vs exec-results.json（2026-09-23，gitSha aefd8a72 当前构建，37 条 PUB 记录）vs 截图（reports/screenshots/round-1-interact/，关键帧已逐张人工读图）；2026-09-20 旧构建 OP01-34+B1-01..04（SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json）作为旁证源，不单独支撑 VERIFIED。时间线：OP 详查（09-20，修复前构建）→ R1/R2 修复提交（5e2d050c/b3d31fcd/29a2b1df，09-21/22）→ PUB 编号执行（09-23，HEAD 构建）。\n\n核心结论：①MP-R1-PUB-016（500/1000 上限不一致）与 MP-R1-PUB-017（弹层圈子分组隐式预加载）已在源码修复且当前构建截图可见修复效果（0/500 计数制式、弹层三级分组含已加入圈子）→ 已修复待终验。②新发现 MP-R1-PUB-018（P1）：general+学校圈同屏矛盾在当前构建仍可经 ?circleId 回退路径触达（PUB06-after 实证），loadTarget 回退与 entryCircleId 回设两处不重算 visibility，待修复。③VERIFIED 4 项（PUB02/05/08/22）、FAILED 1 项（PUB06）、UNVERIFIED 32 项。\n\n执行器故障归因（非页面缺陷，建议重跑前修复）：本轮 31/37 用例 UNVERIFIED 的主因是执行器侧五类故障——(a) el.input is not a function：textarea 输入注入 API 在该 automator 会话不可用，致全部依赖输入的场景（PUB09/10/11/12/13/14/15/16/17/18/27/28/29/31/32/33/34/35/36）场景不成立；(b) __CAND__ 文本候选解析失效：候选串被误切分（「看/该/子/士/网/除」等单字碎片），而目标行项在截图清晰可见（如「提及好友」行见 PUB05-after），属选择器引擎故障非元素缺失；(c) __CASE_PAGE__ 导航占位符未替换（PUB37 navErr×6）；(d) screenshot 首调超时（PUB01/32/35-after，旧轮已知坑复发）；(e) 身份不匹配：mock 登录返回 userId=user-1001，与 Manifest 身份 A=100158 不符（执行器逐条自标 MISMATCH!），满配数据（已加入圈等）前提存疑。另有会话状态残留污染帧：friends 目标态延续至 PUB08/22/23/27 的 after 帧、弹层开启态残留至 PUB27，建议每用例前强制 reLaunch 清栈。\n\n重验建议：修复 (a)(b)(c) 后按本文件 unverifiable 清单重跑 32 项 UNVERIFIED（含 6 项 critical：PUB10/11/12/13/14/31/33/34/35 中的关键发布与草稿链路）；MP-R1-PUB-018 修复后补 ?circleId 回退路径终验。"
+}

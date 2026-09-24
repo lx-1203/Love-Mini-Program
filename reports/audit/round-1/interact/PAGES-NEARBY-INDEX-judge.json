@@ -1,0 +1,624 @@
+{
+  "round": "R1",
+  "page": "pages/nearby/index",
+  "manifest": "reports/audit/round-1/ops/PAGES-NEARBY-INDEX.json",
+  "execResults": "reports/audit/round-1/interact/exec-results.json",
+  "judgedAt": "2026-09-23",
+  "summary": {
+    "total": 43,
+    "verified": 1,
+    "failed": 1,
+    "unverified": 41,
+    "basis": "三方对照：Manifest.expected vs A1.observed（exec-results.json，route=用例末 getCurrentPages() 终态栈，dom: 探针=根节点 wxml 正则可穿透组件，top:=pre 阶段栈顶）vs 截图/WXML 转储/源码。本套件 43 例的 PNG 证据引用全部带 ERROR（automator timeout / saveFile 超限）且经 fs 核实不存在；仅 N23–N27 五份 WXML 转储真实在盘。执行通道系统性不稳（switchTab:fail timeout、navigateBack Uncaught、Vue Global Error），故大量 navigation/normal 用例虽 tap 已送达但终栈无目标页，无法正向或反向定谳，按规则判 UNVERIFIED 而非凭代码推测。"
+  },
+  "checks": [
+    {
+      "caseId": "N01",
+      "page": "pages/nearby/index",
+      "operation": "冷启动渲染探测（observe-only）",
+      "expected": "停留附近页 getCurrentPages=[pages/nearby/index]；标题「附近」+发动态胶囊+搜索框；五功能入口×5；分区①两入口卡；分区②≤8 圈卡；分区③4 校园条目；分区④≤3 活动；分区⑤≤3 PostCard；tabBar 选中态=索引1；console 无 NAV_FAIL/TypeError/is not defined",
+      "actual": "本跑批 route=[pages/nearby/index]、toast=[]、console 仅 preloadSubpackages 无错误；dom 探针 6/6 present（title/publish/search-input/nearby-entry/people-entry/circle-mini）；campus-entry/activity-entry/post-card 因探针上限 6 个未采。视觉佐证：reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-01-after.png（9-20 同 manifest 早批）完整呈现五区聚合+tabBar 选中态=附近+搜索框 placeholder「搜索附近内容」；N25 转储证实分区⑤渲染 3 张 PostCard。偏差：本跑批 after 截图丢失（timeout）；身份 A MISMATCH（实际 user-1001，mock 构建固定身份 stores/session.ts:40）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N01",
+        "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-01-after.png",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N25-after.wxml",
+        "apps/client/src/stores/session.ts:40"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "N02",
+      "page": "pages/nearby/index",
+      "operation": "未登录冷启动观察",
+      "expected": "不发受保护请求（无 401、无 redirectToLogin 强跳）；分区②④静态空态文案；分区⑤登录引导卡；无错误态",
+      "actual": "终栈=[pages/login/index]，toast「登录已过期，请重新登录」；dom 探测 .nearby-home__empty-text/.nearby-login-guide 均 absent（页面已被换成登录页）。与 expected 直接矛盾：发生了 401→强跳（apps/client/src/services/http.ts:468-485 redirectToLogin：toast apiErrors.unauthorized=zh-CN.ts:3882 + uni.reLaunch(ROUTES.LOGIN)，触发点 http.ts:521/695），静态空态+引导卡未出现",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N02（route/toast/console）",
+        "reports/audit/round-1/ops/PAGES-NEARBY-INDEX.json#N02",
+        "apps/client/src/services/http.ts:468-485",
+        "apps/client/src/services/http.ts:521",
+        "apps/client/src/services/http.ts:695",
+        "apps/client/src/i18n/locales/zh-CN.ts:3882"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N03",
+      "page": "pages/nearby/index",
+      "operation": "tap .nearby-home__publish",
+      "expected": "navigateTo /subpackages/village/village/post，终栈长度=2；返回落点=附近页",
+      "actual": "automator 报 tap 成功，但终栈=[pages/nearby/index]（长度1），village/post 未入栈；无 navError/console 错误记录。同族 N08 实证元素 tap 可正常导航（people?scope=nearby 正确入栈），且源码接线正确（index.vue:310-312,345 → navigation.ts openAppPath），故不能定 FAILED；通道/页面态不稳致路由证据缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N03", "apps/client/src/pages/nearby/index.vue:310"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "N04",
+      "page": "pages/nearby/index",
+      "operation": "500ms 内快击发动态×5",
+      "expected": "仅 push 1 个 village/post 实例（栈长=2），无路由竞争报错",
+      "actual": "act 记录仅 1 次 tap（rapidTap×5 未执行），终栈=[pages/nearby/index] 零入栈；防连点语义未获检验",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N04"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N05",
+      "page": "pages/nearby/index",
+      "operation": "input 搜索框=摄影 + confirm",
+      "expected": "输入过程无请求；confirm 后 navigateTo search?keyword=%E6%91%84%E5%BD%B1，搜索页自动搜索",
+      "actual": "input 已送达（act:input .nearby-home__search-input=\"摄影\"），但 confirm 触发未执行、终栈=[pages/nearby/index] 无搜索页入栈；after 截图丢失（saveFile 超限）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N05", "apps/client/src/pages/nearby/index.vue:233-236"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N06",
+      "page": "pages/nearby/index",
+      "operation": "空值触发搜索 confirm",
+      "expected": "仍进 /subpackages/tools/search/index（无 keyword 参数），正常渲染",
+      "actual": "act:trigger confirm {value:\"\"} 已发出，终栈=[pages/nearby/index] 无搜索页入栈；console 空。导航是否发生无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N06"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N07",
+      "page": "pages/nearby/index",
+      "operation": "超长/特殊字符/emoji 三组输入+confirm",
+      "expected": "三组均 encodeURIComponent 入参进搜索页不崩页；返回后 v-model 清空生效",
+      "actual": "执行器解析失败：act-FAIL input(__CAND__) element not found（候选占位未解析）+ inputSeq unknown op（r1-exec.cjs applyOp 无 inputSeq 分支，落入 default throw）。输入从未发生，编码正确性零证据；终栈混入 village/post（跨用例污染）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N07", "scripts/qa/r1-exec.cjs:1016-1051"],
+      "confidence": 0.95
+    },
+    {
+      "caseId": "N08",
+      "page": "pages/nearby/index",
+      "operation": "seqTap 五功能入口×3（无返回复位）",
+      "expected": "五入口落点逐一入栈（含「我的人脉」→村口列表复核），返回落点=附近页",
+      "actual": "tapped=[1,2,3]；终栈=[pages/nearby/index, subpackages/discover-extra/nearby/people?scope=nearby]——入口①「附近的人」落点与 scope 参数正确（正向证据）；但 seqTap 无逐次返回复位，②③tap 落在后台页未产生导航，④⑤（含我的人脉落点复核）未执行。expected 整体未达成且系执行方式缺陷",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N08", "scripts/qa/r1-exec.cjs:943-951"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N09",
+      "page": "pages/nearby/index",
+      "operation": "tapIndex .people-entry#1（附近的人）",
+      "expected": "navigateTo people?scope=nearby，列表页 scope=附近的人",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 people 页；无列表页渲染证据（同目标在 N08 中曾正确入栈，说明元素与 handler 正常，本次为通道/时序伪影）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N09", "reports/audit/round-1/interact/exec-results.json#N08"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N10",
+      "page": "pages/nearby/index",
+      "operation": "tapIndex .people-entry#2（同城的人）",
+      "expected": "navigateTo people?scope=city",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 people 页，scope=city 无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N10"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N11",
+      "page": "pages/nearby/index",
+      "operation": "tap 分区②「全部」(.nearby-section__more)",
+      "expected": "navigateTo /subpackages/circles/circles/index，「全部」文案渲染",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 circles/index 入栈；「全部」文案渲染无截图佐证",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N11"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N12",
+      "page": "pages/nearby/index",
+      "operation": "tapIndex .circle-mini#1（首张圈卡）",
+      "expected": "mock 身份 navigateTo circle-home?circleId=circle-photo，返回落点=附近页",
+      "actual": "证据自相矛盾：act 报 tapIndex .circle-mini#1 tapped，但同记录 dom 探针 .circle-mini:absent（探针时渲染树无圈卡）；终栈=[pages/nearby/index, subpackages/circles/circles/index]——入栈的是圈子列表页而非 circle-home，与本用例操作无法对应（跨用例状态污染嫌疑，N11-N14 窗口均有 circles/index 出没）。无法归因为应用行为",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N12", "reports/audit/round-1/interact/exec-results.json#N14"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N13",
+      "page": "pages/nearby/index",
+      "operation": "tap 分区③「全部」→ 校园圈 Hub",
+      "expected": "navigateTo /subpackages/campus/campus/hub（无参），Hub 渲染学校列表",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 campus/hub 入栈",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N13"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N14",
+      "page": "pages/nearby/index",
+      "operation": "tapIndex .campus-entry#1（校园条目）",
+      "expected": "navigateTo hub?school=<编码校名>（hub 不消费该参数，如实断言现状）",
+      "actual": "act 报 tapped，但 dom 探针 .campus-entry:absent .name:absent（探针时渲染树无校园条目）；终栈=[pages/nearby/index, subpackages/circles/circles/index]——入栈页面与 expected（campus/hub?school=）完全不符且无法由本用例操作解释。落点 URL 与「带参不生效」疑点均无从断言",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N14"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N15",
+      "page": "pages/nearby/index",
+      "operation": "tap 分区④「全部」→ 活动列表",
+      "expected": "navigateTo /subpackages/discover/activities/index",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 activities 页入栈",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N15"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N16",
+      "page": "pages/nearby/index",
+      "operation": "tapIndex .activity-entry#1（活动条目）",
+      "expected": "navigateTo activities/detail?id=<首条活动 id>",
+      "actual": "action-not-performed：.activity-entry element not found（page.$ 与组件子树均未命中）；同记录终栈混入 people?scope=nearby（跨用例污染），操作时栈顶页面存疑。分区④是否有活动条目渲染无独立证据（N01 探针未覆盖 activity-entry）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N16"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N17",
+      "page": "pages/nearby/index",
+      "operation": "tap 分区⑤「全部」→ 村口列表",
+      "expected": "navigateTo /subpackages/village/village/index；返回落点=附近页且数据/滚动位保持",
+      "actual": "act 报 tapped，终栈=[pages/nearby/index] 无 village/index 入栈；返回后状态保持无从谈起",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N17"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "N18",
+      "page": "pages/nearby/index",
+      "operation": "tap .post-card 卡体 → 帖子详情",
+      "expected": "navigateTo village/detail?id=<post.id>；返回落点=附近页",
+      "actual": "action-not-performed：dom 探针 .post-card:present（wxml 可见）但 tap 两次 element not found（automator SDK $ 不穿透自定义组件 shadow-root，deepResolve 组件子树回退亦失败）。点击未送达，详情跳转与返回落点无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N18", "scripts/qa/r1-exec.cjs:832-844", "scripts/qa/r1-exec.cjs:1228-1254"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N19",
+      "page": "pages/nearby/index",
+      "operation": "tap .post-card__user 作者行 + openUserProfile('undefined') 守卫复验",
+      "expected": "navigateTo profile/other?userId=<author.userId>；空 userId 守卫不跳转；返回落点=附近页",
+      "actual": "action-not-performed：tap element not found（组件穿透失败×4 次解析重试）；守卫复验（automation_evaluate 直调）未执行。两项断言零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N19"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N20",
+      "page": "pages/nearby/index",
+      "operation": "tap .post-card__tag → 标签列表",
+      "expected": "navigateTo village/tag-posts?tagName=<编码标签>；若 3 帖均无标签则如实 UNVERIFIED",
+      "actual": "action-not-performed：dom 探针 .post-card__tag:present 但 tapIndex element not found（组件穿透失败）。注：N25 转储显示帖子标签真实渲染（post-card__tag 多枚），数据依赖满足，纯属执行失败",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N20", "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N25-after.wxml"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N21",
+      "page": "pages/nearby/index",
+      "operation": "tap 卡内关联活动卡 → 活动详情",
+      "expected": "navigateTo activities/detail?id=<post.activity.id>；无关联活动则如实 UNVERIFIED（数据依赖）",
+      "actual": "action-not-performed：.post-card__activity element not found。当前 3 帖是否含关联活动未证实（探针 .activity:present 与目标选择器不匹配），数据依赖与执行失败叠加，无法裁决",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N21"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N22",
+      "page": "pages/nearby/index",
+      "operation": "tap 评论按钮 + 评论预览行（两处同落点）",
+      "expected": "两处均 navigateTo village/detail?id=<post.id>，@tap.stop 阻断冒泡；返回落点=附近页",
+      "actual": "action-not-performed：dom 探针 .post-card__actions/.action-btn present 但 tapIndex/tap 均 element not found（组件穿透失败）；.comment-preview:absent（当前数据无评论预览）。两处跳转零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N22"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N23",
+      "page": "pages/nearby/index",
+      "operation": "tap 点赞按钮（critical）",
+      "expected": "≤500ms 反馈：like-burst 动画+计数+1+变红，无 toast；再点回落",
+      "actual": "执行偏差：act 记录为 tapIndex .post-card__actions#2——点击的是操作行容器而非第 2 个 .action-btn（点赞）；N23 after WXML 转储为帖子详情页（detail-header/comments，like 计数 128），证明行容器点击触发卡体进详情。点赞动画/计数/样式变化未观测；toast=[]；before/after 截图均丢失（timeout）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N23",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N23-after.wxml",
+        "apps/client/src/components/village/PostCard.vue:266-273"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N24",
+      "page": "pages/nearby/index",
+      "operation": "tap 收藏按钮（critical）",
+      "expected": "≤500ms action-btn--collected 生效+计数 ±1（toggle）；失败才 toast",
+      "actual": "同 N23 执行偏差：点击降级为操作行容器→进详情页（after WXML 转储=detail 页）；收藏态样式与计数变化未观测；截图丢失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N24",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N24-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N25",
+      "page": "pages/nearby/index",
+      "operation": "tap .follow-chip 关注芯片（critical）",
+      "expected": "「+ 关注」→「已关注」+灰底样式；同作者多帖同步；再点回落",
+      "actual": "action-not-performed：tap .follow-chip element not found（组件穿透失败×4 重试）。after WXML 转储（附近页）中「已关注」芯片 x1 位于作者阿泽（第2卡）——与 mock 种子初态吻合（village/mock-data.ts:74 该帖 isFollowed:true），非本次点击所致；before 截图丢失无法对比初态。关注交互与多帖同步零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N25",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N25-after.wxml",
+        "apps/client/src/stores/village/mock-data.ts:74"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N26",
+      "page": "pages/nearby/index",
+      "operation": "点赞快击×5 幂等守卫（critical）",
+      "expected": "in-flight 守卫使 like 接口请求数=1，终态与单次点击一致",
+      "actual": "三重失格：①act 仅记录 1 次 tap（×5 连击未执行）；②点击目标 .action-btn 首个=评论按钮，after WXML 转储=详情页（mis-target 进详情）；③real 模式网络请求数无采集（manifest 要求 network 计数）。幂等守卫零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N26",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N26-after.wxml"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N27",
+      "page": "pages/nearby/index",
+      "operation": "点赞失败回滚（故障注入，critical）",
+      "expected": "乐观置红→回滚原状+toast「点赞失败，请重试」（2s 消失）",
+      "actual": "前置未建立：无停后端/强置 5xx 的注入记录（manifest 明示 mock 无失败路径须如实标注，实际也未按 real+故障注入执行）；act tap 同样 mis-target 进详情页（after WXML=detail）；toast=[]。失败路径零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N27",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N27-after.wxml"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N28",
+      "page": "pages/nearby/index",
+      "operation": "tap 分享按钮（noop 死按钮复核）",
+      "expected": "执行器如实记录四类反馈均无，交判定员按 R11 §5 铁律裁量死按钮缺陷",
+      "actual": "action-not-performed：tapIndex element not found（组件穿透失败），运行时「四反馈均无」的证据未取得，after 截图丢失。代码侧确证：PostCard.vue:274-276 分享按钮 @tap.stop=\"noop\"、noop 为空函数（:67），无 open-type=share——死按钮成立（代码级），运行时复核缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N28",
+        "apps/client/src/components/village/PostCard.vue:67",
+        "apps/client/src/components/village/PostCard.vue:274-276"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N29",
+      "page": "pages/nearby/index",
+      "operation": "uni.startPullDownRefresh 下拉刷新",
+      "expected": "并行重拉三数据源，stopPullDownRefresh 动画停止，数据完整",
+      "actual": "act:pullDown 返回 {\"__plain\":\"ERR uni is not defined\"}——automation_evaluate 环境无 uni 全局，刷新从未触发；.startPullDownRefresh 探针 absent；after 截图丢失（saveFile 超限）。刷新行为零证据（执行器缺陷：应使用 wx.startPullDownRefresh 或 page.callMethod('onPullDownRefresh')）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N29", "scripts/qa/r1-exec.cjs:1101-1106"],
+      "confidence": 0.95
+    },
+    {
+      "caseId": "N30",
+      "page": "pages/nearby/index",
+      "operation": "下拉刷新失败路径（故障注入）",
+      "expected": "store 错误→toast「附近的人加载失败」；动画不永驻",
+      "actual": "双重未达成：①pullDown 同 N29 失败（uni is not defined）刷新未触发；②real 模式故障注入前置未建立（无注入记录）。toast=[] 系无操作所致，非通过证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N30"],
+      "confidence": 0.95
+    },
+    {
+      "caseId": "N31",
+      "page": "pages/nearby/index",
+      "operation": "Loading 骨架中间帧探测",
+      "expected": "loading 且列表空时渲染 2 行骨架；数据到达后骨架消失不永驻",
+      "actual": "observe-only：探测时 .nearby-home__empty absent（数据已就绪，中间帧未捕获）；骨架帧+数据帧对比证据缺失；after 截图丢失（timeout）。mock 数据近乎即时加载，未能抓帧",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N31"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N32",
+      "page": "pages/nearby/index",
+      "operation": "Error 态优先于空态（故障注入）",
+      "expected": "有 errorMessage 且列表空→显示错误信息而非「暂无」文案",
+      "actual": "real 模式故障注入未建立（无注入记录）；探测 .nearby-home__empty-text:absent 表明页面处于数据渲染态、错误态根本未出现。MP-R2-PAGES-NEARBY-INDEX-003 回归项未获检验",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N32"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N33",
+      "page": "pages/nearby/index",
+      "operation": "Empty 态三处文案探测",
+      "expected": "②「暂无热门兴趣圈」④「附近暂无活动」⑤「附近暂时没有动态…」各归其位（mock 不可构造维度如实 UNVERIFIED）",
+      "actual": "mock 种子恒非空（manifest 预留 UNVERIFIED），探测 .nearby-home__empty-text:absent=空态未出现；after 截图丢失。空态文案零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N33", "reports/audit/round-1/ops/PAGES-NEARBY-INDEX.json#N33"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N34",
+      "page": "pages/nearby/index",
+      "operation": "头像兜底链探测",
+      "expected": "mock 帖作者 avatar 均空→显示姓名首字符徽标（user-avatar__char）",
+      "actual": "前提不成立：实际渲染的帖子作者带非空头像——N25 附近页转储显示作者「小鹿」user-avatar__img src=avatar-13.jpg（经媒体服务改写），headline 亦非 mock 帖表数据（village/mock-data.ts:54-95 的 avatar:\"\" 并非本次渲染数据集）；探针 .user-avatar:present .user-avatar__char:absent 与「图片分支渲染」一致，属正确行为。空 avatar/@error 回落分支未被触发；截图丢失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N34",
+        "reports/screenshots/round-1-interact/wxml/PAGES-NEARBY-INDEX-N25-after.wxml",
+        "apps/client/src/components/village/PostCard.vue:132-142",
+        "apps/client/src/stores/village/mock-data.ts:54"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N35",
+      "page": "pages/nearby/index",
+      "operation": "未登录 tap 引导卡「去登录」",
+      "expected": "navigateTo /pages/login/index，栈=[nearby, login]；返回落点=附近页",
+      "actual": "前置达成（pre:logout ok，.nearby-login-guide__btn:present 证明引导卡渲染）且 act 报 tapped（按钮在页面根，非组件内），但终栈=[pages/nearby/index] 无 login 入栈——与 N02 观察到的强跳 login 机制并存，使「导航未发生」更像通道伪影而非应用缺陷，但两种可能均无法排除",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N35", "apps/client/src/pages/nearby/index.vue:228-230"],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "N36",
+      "page": "pages/nearby/index",
+      "operation": "scroll-view 滚到底/回顶（noop）",
+      "expected": "无路由变化/无重拉/无报错；回顶 scrollTop=0",
+      "actual": "用例窗口内应用自行跳到登录页：top=pages/login/index、终栈=[pages/nearby/index, pages/login/index]、dom .nearby-home__scroll:absent——pageScrollTo bottom/top 作用于错误页面。附近页滚动行为零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N36"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N37",
+      "page": "pages/nearby/index",
+      "operation": "switchTab 首页↔附近 2 轮（TTL 内不重拉）",
+      "expected": "每轮选中态恢复、数据保持、请求增量=0、滚动位恢复",
+      "actual": "仅完成去程 act:switchTab /pages/home/index，未切回，终栈=[pages/home/index]——2 轮往返未执行；窗口内 console 捕获 [Global Error][Vue Error]（vuejs error-reference runtime-2，错误对象为空）+captureException。断言全部零证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N37"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N38",
+      "page": "pages/nearby/index",
+      "operation": "TTL(>30s) 过期后 switchTab 回附近重拉",
+      "expected": "onShow 真实重拉（请求计数增量=1），数据静默替换",
+      "actual": "pre:wait 30000ms 已执行（durationMs=53187），switchTab 回附近已执行；但网络请求计数未采集、console 仅 preload 行、截图丢失（timeout）——「实际重拉」无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N38"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N39",
+      "page": "pages/nearby/index",
+      "operation": "circle-home 进/返×3",
+      "expected": "3 次往返落点正确栈长=1，状态保持，无报错",
+      "actual": "执行异常：act:navigateBack 报 NAV_ERROR Uncaught [object Object]；repeatNav navigateTo __CASE_PAGE__×3 全部 navErr:Uncaught [object Object]；最后一次 act:tap .circle-mini 后无路由链证据。3 次往返零证据，Uncaught 归因（应用/通道）不明",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N39"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N40",
+      "page": "pages/nearby/index",
+      "operation": "进详情<1s 即 back×3",
+      "expected": "每次成功回附近页，无 routeDone 竞争报错，栈长恒=1",
+      "actual": "action-not-performed：act 解析出 __CAND__(\"卡体进\") 文本标签定位失败×2；窗口内 console 捕获 uni.onUnhandledRejection switchTab:fail timeout + 双份 preloadSubpackages 日志（通道异常）。交互未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N40"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N41",
+      "page": "pages/nearby/index",
+      "operation": "定位授权注入+副标题/storage/强制重拉",
+      "expected": "副标题「<城市> · <学校>」；nearby:city 持久化；城市变化 force 重拉",
+      "actual": "仅 act:reLaunch 进入页面；模拟器定位授权（scope.userLocation）与坐标注入未执行；副标题/storage/请求记录零证据；截图丢失（timeout）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N41"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "N42",
+      "page": "pages/nearby/index",
+      "operation": "登录态变化 watch 补拉",
+      "expected": "isLoggedIn 翻转→force 重拉三数据源；引导卡→数据渲染",
+      "actual": "act:login guest ok userId=user-1001 MISMATCH!（执行器自报身份不符）；before/after 状态翻转（引导卡消失、数据渲染）与请求记录零证据；截图丢失（saveFile 超限）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#N42"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "N43",
+      "page": "pages/nearby/index",
+      "operation": "热区测量（boundingClientRect）",
+      "expected": "实测 .action-btn 与 .nearby-entry 尺寸，记录数值裁量热区铁律",
+      "actual": "执行器未输出任何实测数值（无 measureTap/size 采集记录）；探针回退显示 '.post-card__actions .action-btn':absent、nearby-entry/nearby-entry__icon:present。代码侧几何：action-btn padding 4rpx+icon 36rpx≈44rpx 高（PostCard.vue:625-633）低于 88rpx 铁律；nearby-entry__icon 88rpx（index.vue:1080-1087）达标——热区不足为代码级缺陷候选，运行时实测缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#N43",
+        "apps/client/src/components/village/PostCard.vue:625-633",
+        "apps/client/src/pages/nearby/index.vue:1080-1087"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-N02-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "（本跑批截图丢失）reports/audit/round-1/interact/exec-results.json#N02 route=[pages/login/index] + toast 记录",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "未登录（token 移除）进入附近页时未按设计呈现「静态空态+分区⑤登录引导卡」，而是发生受保护请求 401→redirectToLogin 强跳：页面被 uni.reLaunch 换成登录页并 toast「登录已过期，请重新登录」。expected 明确要求无 401、无强跳。两种成因待查：(a) 未登录守卫 canFetchProtected 未覆盖某条请求路径，仍有受保护请求漏发；(b) 401 晚到回调把刚 reLaunch 的新页面强跳走（http.ts:365 注释自认的 3 秒窗口竞态）。两者均违背 N02 预期行为。",
+      "evidence": "exec-results.json#N02：终栈=[pages/login/index]、toast=[{title:\"登录已过期，请重新登录\"}]、dom .nearby-home__empty-text/.nearby-login-guide 均 absent；代码链 services/http.ts:468-485（redirectToLogin=toast+reLaunch）、:521/:695（401 触发点）、zh-CN.ts:3882（文案）；Manifest N02 expected 对照",
+      "sources": ["interaction", "log", "code"],
+      "confidence": 0.8,
+      "ideal": "canFetchProtected()=false 时附近页不发起任何受保护请求，保留分区②④静态空态文案与分区⑤登录引导卡；晚到 401 不得强跳当前页（应丢弃或静默）",
+      "fix": "排查未登录路径上仍会发出的受保护请求（circles/posts/activities 之外是否有遗漏调用点）；为 redirectToLogin 增加「当前页非发起页/已恢复会话」抑制（http.ts:170 已有类似防御，扩展至 401 晚到场景）；补 N02 回归自动化",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-N28-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-NEARBY-INDEX-28-after.png（9-20 早批，本跑批截图丢失）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "PostCard 互动栏「分享」按钮为死按钮：@tap.stop=\"noop\"（noop 为空函数，无 open-type=share、无 onShareAppMessage 触发、无 Toast/震动/路由变化），违反 R11 §5「点击后 500ms 内必须有可观测反馈」铁律。本跑批运行时 tap 未送达（组件穿透失败），死按钮结论基于代码确证，运行时复核待补。",
+      "evidence": "apps/client/src/components/village/PostCard.vue:67（function noop() {}）、:274-276（<!-- 分享 --> @tap.stop=\"noop\"）；Manifest N28 预期「四类反馈均无→死按钮缺陷候选」；exec-results.json#N28 act-FAIL",
+      "sources": ["code", "interaction"],
+      "confidence": 0.7,
+      "ideal": "分享按钮接 uni-app 分享能力（button open-type=share + onShareAppMessage）或至少给出可见反馈（Toast「已复制链接」等）；若产品决定不做分享则隐藏该按钮",
+      "fix": "将 .action-btn 分享位改为 <button open-type=\"share\"> 样式复用，或在页面补充 onShareAppMessage 并由按钮触发；补运行时 tap 复核",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-N43-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "（无实测截图）代码几何推算",
+      "category": "UX",
+      "severity": "P3",
+      "description": "PostCard 互动栏按钮可点热区不足：.action-btn padding:4rpx + icon 36rpx，几何高度约 44rpx，低于 R11 §5 热区≥88rpx 铁律（评论/点赞/分享/收藏四钮均受影响）。同页 .nearby-entry__icon 88rpx 达标，说明规范有据。运行时 boundingClientRect 实测未完成（执行器未输出数值），结论为代码几何推算。",
+      "evidence": "apps/client/src/components/village/PostCard.vue:625-633（.action-btn{padding:4rpx} .action-btn__icon{width/height:36rpx}）；apps/client/src/pages/nearby/index.vue:1080-1087（.nearby-entry__icon 88rpx 对照）；exec-results.json#N43 无实测值",
+      "sources": ["code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "互动栏可点热区≥88rpx（等价 44px@750 设计稿）",
+      "fix": "为 .action-btn 增加 padding 至 (88-36)/2=26rpx 或外扩透明命中区（::after 扩展热区），并补运行时实测回归",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-N37-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "（console 证据）exec-results.json#N37 console 字段",
+      "category": "Function",
+      "severity": "P3",
+      "description": "Tab 切换用例窗口内捕获未具名 Vue 运行时错误：[Global Error][Vue Error] https://vuejs.org/error-reference/#runtime-2，错误对象为空 {}，随后 captureException 上报同样为空。发生于 switchTab 前往首页期间（22:45:09）。N01 expected 明确要求核心页 console 无此类错误；错误对象为空导致无法定位组件，暴露全局错误上报缺上下文。",
+      "evidence": "exec-results.json#N37 console：[2026-09-22T22:45:09.595Z][error] \"[Global Error][Vue Error]\" {} …runtime-2；[captureException] {source:\"Vue Error\"}",
+      "sources": ["log"],
+      "confidence": 0.55,
+      "ideal": "核心 Tab 切换全程 console 无 Vue 运行时错误；全局错误上报携带组件栈/错误 message",
+      "fix": "global-error.ts 的 Vue errorHandler 补 err.message/componentInfo 序列化（当前对象为空）；按时间窗复现定位抛错组件",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-INFRA-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json（evidence 字段逐条 ERROR 标注）",
+      "category": "Architecture",
+      "severity": "P2",
+      "description": "本套件交互取证证据管线系统性失效：43 例全部 PNG 证据引用带 ERROR（「timeout waiting for automator response」或「saveFile:fail exceeded the maximum size of the file storage limit」），经 fs 核实 N 前缀截图文件 0 个存在于盘；仅 N23-N27 五份 WXML 转储真实落盘。截图/路由/console 三源中截图源整体缺失，直接导致 41/43 用例无法正向定谳。存储超限说明模拟器文件配额在跑批中途耗尽（其他套件如 LG01 仍有 154KB 正常落盘）。",
+      "evidence": "exec-results.json：PAGES-NEARBY-INDEX 全部 43 例 evidence 带 (ERROR:…)；find 核实 *INDEX-N[0-9]*.png 仅 wxml/ 下 5 个 .wxml；console 佐证通道不稳（N40 switchTab:fail timeout、N39 navigateBack Uncaught）",
+      "sources": ["screenshot", "log"],
+      "confidence": 1,
+      "ideal": "每用例三源证据（截图+路由链+console）完整落盘且文件存在",
+      "fix": "跑批前清理模拟器存储配额或分批落盘转储；截图失败时降级重试（base64 分块）并在 run 汇总中暴露 evidence 缺失率；对 43 例做证据补采重跑",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-IDENT-01",
+      "round": "R1",
+      "page": "pages/nearby/index",
+      "screenshot": "（执行器自报）exec-results.json#N01/#N42 observed 含 MISMATCH! 标记",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "Manifest 身份固定表（A=100158/B=100159）在 mock 构建下不可满足：mock 会话强制 mockUserSession.userId=\"user-1001\"（stores/session.ts:34-40，R4-00134 全家桶统一），执行器注入身份 A 后轮询得 user-1001 并自报 MISMATCH!。全部登录态用例实际以 user-1001 执行，Manifest 中「real 固化表 ?id=11/?userId=100152」等分支均未按身份表验证。",
+      "evidence": "exec-results.json#N01 observed \"pre:login A ok userId=user-1001 MISMATCH!\"；scripts/qa/r1-exec.cjs:175-179（IDENT_DEFS A=100158）；apps/client/src/stores/session.ts:34-40（mock 固定 user-1001）；buildMode=build:mp-weixin:mock（screenshot-manifest.json）",
+      "sources": ["log", "code"],
+      "confidence": 0.9,
+      "ideal": "Manifest 用例前置与执行环境身份一致：或以 user-1001 重写 mock 分支固化表，或提供 real 构建执行 100158/100159 身份分支",
+      "fix": "修订 Manifest 身份假设或在 r11-param-map.json 增加 mock 身份参数分支；执行器对 MISMATCH 显式降级用例为 UNVERIFIED 而非继续执行",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "N03|tap 已送达但终栈无 village/post 路由证据，通道/页面态不稳（N08 对照证明同族 tap 可导航）|1",
+    "N04|×5 快击未执行（act 仅 1 次 tap），防连点语义零证据|1",
+    "N05|input 已送达但 confirm 未触发、搜索页未入栈、截图丢失|1",
+    "N06|confirm 已触发但无导航/渲染证据，截图丢失|1",
+    "N07|执行器解析失败：__CAND__ 占位未解析+inputSeq 操作未实现，输入从未发生|2",
+    "N08|仅入口①落点正确入栈；②-⑤因 seqTap 无返回复位未获验证（含我的人脉落点复核）|3",
+    "N09|tap 报成功但终栈无 people 页，路由证据缺失|1",
+    "N10|tap 报成功但终栈无 people?scope=city|1",
+    "N11|tap 报成功但终栈无 circles/index|1",
+    "N12|证据自相矛盾：探针 .circle-mini:absent vs tap tapped；终栈多出 circles/index 非 circle-home，无法归因|1",
+    "N13|tap 报成功但终栈无 campus/hub|1",
+    "N14|探针 .campus-entry:absent vs tap tapped；终栈 circles/index 与 expected campus/hub?school= 不符|1",
+    "N15|tap 报成功但终栈无 activities/index|1",
+    "N16|.activity-entry element not found（且终栈混入 people 页，操作时栈顶存疑）|1",
+    "N17|tap 报成功但终栈无 village/index|1",
+    "N18|.post-card dom present 但 tap element not found×2（automator 不穿透组件 shadow-root）|2",
+    "N19|.post-card__user tap 未送达；openUserProfile('undefined') 守卫复验未执行|1",
+    "N20|.post-card__tag tap 未送达（转储证实标签数据存在，纯执行失败）|1",
+    "N21|.post-card__activity tap 未送达；关联活动数据存在与否未证实|1",
+    "N22|评论按钮与评论预览行两处 tap 均未送达|2",
+    "N23|执行偏差：tap 降级为操作行容器→卡体进详情（WXML 转储=detail 页），点赞反馈未观测|1",
+    "N24|同 N23 mis-target 进详情页，收藏态/计数未观测|1",
+    "N25|tap 未送达×4 重试；「已关注」系 mock 种子初态（mock-data.ts:74）非本次点击；before 图丢失|1",
+    "N26|×5 连击未执行+mis-target 进详情+网络请求数未采集，幂等守卫零证据|1",
+    "N27|故障注入未建立+mis-target，失败回滚/toast 零证据|1",
+    "N28|分享 tap 未送达，运行时四反馈均无的证据未取得（代码级 noop 已确证，见 Issue）|1",
+    "N29|pullDown 失败：evaluate 环境无 uni 全局（ERR uni is not defined），刷新未触发|1",
+    "N30|同 N29+故障注入未建立，失败路径零证据|1",
+    "N31|加载中间帧未捕获（探测时数据已就绪 .nearby-home__empty absent），截图丢失|1",
+    "N32|real 模式故障注入未建立，错误态未出现|1",
+    "N33|mock 种子恒非空，空态不可构造（manifest 预留 UNVERIFIED）|1",
+    "N34|前提不成立：实际渲染作者带非空头像（N25 转储 avatar-13），空 avatar/@error 分支未触发|1",
+    "N35|tap 已送达但终栈无 login 页，导航是否发生无法定谳|1",
+    "N36|用例窗口内应用自行跳登录页（top=login），滚动作用于错误页面|1",
+    "N37|仅完成去程 switchTab，2 轮往返未执行；窗口内 Vue Global Error|1",
+    "N38|30s 等待已执行但重拉请求计数/证据未采集，截图丢失|1",
+    "N39|navigateBack 报 Uncaught [object Object]，repeatNav×3 全部 navErr，往返零证据|3",
+    "N40|action 解析失败 __CAND__(\"卡体进\")×2；窗口内 switchTab:fail timeout|2",
+    "N41|定位授权/坐标注入未执行，副标题/storage/重拉零证据|1",
+    "N42|登录身份 MISMATCH（guest→user-1001），状态翻转与请求证据缺失，截图丢失|1",
+    "N43|执行器未输出任何 boundingClientRect 实测值（热区问题以代码级 Issue 另立）|1"
+  ],
+  "notes": "仲裁口径：①exec-results 的 route=用例结束时刻 getCurrentPages() 终态栈（r1-exec.cjs:296-309,1360-1366），非导航历史；dom: 探针=对根节点 wxml 字符串正则（:1228-1254，可穿透组件），而 tap 走 page.$/deepResolve（:832-884，SDK $ 不穿透组件，组件子树回退不稳定）——这解释了 N18-N25 大量「dom:present 但 tap element not found」的矛盾，属执行器能力边界而非应用缺陷。②本套件 PNG 证据 43/43 全部丢失（存储超限+automator 超时），仅 N23-N27 WXML 转储在盘；无 N 前缀的 PAGES-NEARBY-INDEX-01..39 PNG 为 9-20 更早跑批产物，仅作旁证（01-after 完整呈现五区聚合+tabBar 选中态）。③正向 incidental：N08 证明 people 入口导航与 scope 参数正确；N23/N24/N26/N27 转储证明卡体/操作行点击→帖子详情链路可用且详情页渲染完整；N25 转储证明附近页 3 张 PostCard、标签、关注芯片渲染正常。④唯一 FAILED=N02（未登录被 401 强跳登录页），建议优先修复。⑤环境积怨：saveFile 存储配额耗尽（Issue MP-R1-INFRA-01）与身份表不符（MP-R1-IDENT-01）需在补采重跑前解决。"
+}

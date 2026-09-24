@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "历史回归审查员-R1-次要21（A5，回归索引差分模式，只读）",
+    "date": "2026-09-24",
+    "scope": [
+      "subpackages/discover-extra/home/segment",
+      "subpackages/discover-extra/nearby/people",
+      "subpackages/discover-extra/discover/history",
+      "subpackages/discover-extra/likes/index",
+      "subpackages/discover-extra/likes-visitors/index",
+      "subpackages/tools/daily-question/index",
+      "subpackages/tools/love-center/index",
+      "subpackages/tools/help/index"
+    ],
+    "method": "先读 reports/audit/baseline/regression-index.json（4430 行全量 grep 定位本 8 页相关条目），仅核对指派的 2 条页面相关历史条目（MP-R1-HELP-101 / MP-R2-SEGMENT-001）的 riskFiles+verification 差分；源码本人直读，运行时证据取 reports/audit/round-1/interact/exec-results.json（manifest=次要21 的 S11-c21a/S12-c21b 套件）。未改任何代码，未运行开发者工具。",
+    "index_entries_consulted": [
+      "regression-index.json:3216 subpackages/tools/help（第四周期 R1 回归证实仍未修：复制到的是文案标签而非邮箱地址）→ 本轮 MP-R1-HELP-101",
+      "regression-index.json:3388 subpackages/discover-extra/home/segment（第四周期 R2：头像裸直连相对路径，verification=segment-avatar-via-media-resolver）→ 本轮 MP-R2-SEGMENT-001",
+      "关联上下文（未列入核对产出，属其他维度）：:1449 MP-R1-SEGMENT-001（i18n 裸 key）、:1475 MP-R1-HELP-001（原始缺陷）、:1024 MP-R8-LIKES-001、:748 MP-R3-DAILY-001-003、:3559 第五周期 vue-tsc 缺陷族（含 nearby/people.vue）"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-HELP-101",
+      "round": "R1",
+      "page": "subpackages/tools/help/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-HELP-INDEX-HP02-after.png（FAQ 项，非本条直接证据；HP06 证据截图未捕获）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【历史线索回归核对·未复发（代码级）】「客服邮箱-复制」复制文案标签而非邮箱地址——本轮源码直读证实已修复：copyEmail 复制 APP_CONFIG.SUPPORT_EMAIL 真实地址并留有修复注释。运行时终验未达成：本轮交互执行 HP06 虽标记 EXECUTED，但 observed 为 navError=timeout、全部 dom 选择器 :absent，无剪贴板内容回读，索引验证项 help-copy-email-clipboard-contains-address 仍缺有效运行时证据。",
+      "evidence": "help/index.vue:60-71 copyEmail → uni.setClipboardData({ data: APP_CONFIG.SUPPORT_EMAIL })，:62-64 留有「MP-R1-HELP-101：复制真实邮箱地址」修复注释并注明原实现复制 t(\"help.contactEmail\") 标签；config/app.ts:47 SUPPORT_EMAIL: 'support@campuslove.app'（grep 直证）；toast 键 zh-CN.ts:1748「邮箱已复制」/en-US.ts:1700「Email copied」均存在；运行时 exec-results.json S12-c21b/HP06（page=subpackages/tools/help/index）status=EXECUTED 但 observed=\"navError=timeout waiting for automator response | dom: .help-contact__item:absent .app:absent .emailCopied:absent | act:tap .help-contact__item\"，无剪贴板读回值。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "剪贴板产物为真实邮箱地址 support@campuslove.app，并有有效运行时取证（剪贴板读回 + 成功 toast）闭合索引验证项 help-copy-email-clipboard-contains-address。",
+      "fix": "原缺陷无需再改；补一轮有效终验：重跑 HP06 取剪贴板读回值（automator 超时为环境问题，可参考同页 HP04/HP05 的 tap 成功路径），或手工真机复制后回贴验证。",
+      "status": "已修复待终验"
+    },
+    {
+      "id": "MP-R2-SEGMENT-001",
+      "round": "R1",
+      "page": "subpackages/discover-extra/home/segment",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-HOME-SEGMENT-SG06-after.png（错误态触发用例，非本条直接证据）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【历史线索回归核对·未复发（代码级）】头像裸 image 直连相对路径（real 裂图）——本轮源码直读证实已修复：列表头像全量经 resolveMediaUrl() 统一出口解析并带 DEFAULT_AVATAR 兜底，不再裸连相对路径。且本轮 utils/media.ts 的未提交改动（git diff +18 行）为纯新增 R13 avatars/people 内容目录 app-assets 重写分支，对该修复是加固而非回退。运行时终验未达成：本轮 SG01/SG07 仅证明列表渲染（.segment-list/.segment-row present），observed 无 .segment-row__avatar src 或图像加载断言，且历史缺陷场景为 real 模式真机，本轮 interact 无该页 real 模式图像加载证据，索引验证项 segment-avatar-via-media-resolver 仍缺运行时闭合。",
+      "evidence": "segment.vue:149 `:src=\"resolveMediaUrl(item.avatar) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)\"`；segment.vue:15 import resolveMediaUrl；utils/media.ts:129-243 全分支直读：空值→\"\"（:131-140，使 segment.vue:149 的 || 兜底生效）、/uploads/→鉴权代理拼 token（:203-215）、/static/assets/images/avatars|people→app-assets 重写（:217-233）、http app-assets→/static/ 本地化（:169-175）；config/images.ts:41 DEFAULT_AVATAR 定义存在；git diff apps/client/src/utils/media.ts = +18 行纯新增（R13 分支，0 删除）；运行时 exec-results.json S11-c21a/SG01（.segment-list:present）、SG07（.segment-row:present）列表正常渲染，无头像 src 断言。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "segment 列表头像在 real 模式真机全部渲染（相对路径经 resolveMediaUrl 重写为可加载地址，失败回退默认头像），闭合索引验证项 segment-avatar-via-media-resolver。",
+      "fix": "原缺陷无需再改；补终验：real 构建下打开 /subpackages/discover-extra/home/segment 并断言 .segment-row__avatar 图像加载成功（可在 SG01 用例追加 avatar src 非 /uploads/ 相对路径且 image 加载无 error 事件）。",
+      "status": "已修复待终验"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-HELP-101",
+      "page": "subpackages/tools/help/index",
+      "status": "未复发",
+      "evidence": "代码级直证已修复：help/index.vue:60-71 copyEmail 复制 APP_CONFIG.SUPPORT_EMAIL（config/app.ts:47='support@campuslove.app'，grep 验证），带 MP-R1-HELP-101 修复注释；i18n toast 键 emailCopied（zh-CN.ts:1748/en-US.ts:1700）存在。运行时缺口已写明：exec-results.json HP06 标记 EXECUTED 但 observed 仅 navError=timeout + 全部 dom :absent，无剪贴板内容回读 → 索引验证项 help-copy-email-clipboard-contains-address 待终验，故 issues 中该条 status=已修复待终验。"
+    },
+    {
+      "id": "MP-R2-SEGMENT-001",
+      "page": "subpackages/discover-extra/home/segment",
+      "status": "未复发",
+      "evidence": "代码级直证已修复：segment.vue:149 头像 :src=resolveMediaUrl(item.avatar) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)（import 见 :15）；utils/media.ts:129-243 空值守卫（:131-140）+ /uploads/ 鉴权代理（:203-215）+ avatars/people app-assets 重写（:217-233）+ http app-assets 本地化（:169-175）全分支核实；config/images.ts:41 DEFAULT_AVATAR 存在。本轮改动差分：git diff media.ts 为 +18 行纯新增 R13 分支（0 删除），非回退。运行时缺口已写明：SG01/SG07 仅证列表渲染（.segment-list/.segment-row present），无头像 src/加载断言，real 模式图像证据缺失 → 索引验证项 segment-avatar-via-media-resolver 待终验，故 issues 中该条 status=已修复待终验。"
+    }
+  ],
+  "evidence_gaps": [
+    "MP-R1-HELP-101：HP06 的 automator navError 超时导致剪贴板读回缺失，无法在本轮闭合运行时验证（需要重跑或手工取证）。",
+    "MP-R2-SEGMENT-001：本轮 interact 全部为登录态 A（mock/user-1001），且 observed 无图像级断言；历史缺陷的 real 模式真机场景本轮无截图（静态截图 0 张），无法确认真机渲染。",
+    "本批 8 页中 daily-question/love-center/likes/history 等页的执行记录属其他审查维度（状态栏/i18n/交互接线），其历史条目（MP-R8-LIKES-001、MP-R3-DAILY-001-003、T15 等）不在本次指派的 2 条核对范围内，未产出 checked。"
+  ],
+  "coverage": [
+    "回归索引：4430 行 grep 全量定位本 8 页相关条目（segment×2、help×2、likes×4、daily-question×1、love-center×5、nearby/people×2 关联），确认指派 2 条的原始出处与 verification 项。",
+    "MP-R1-HELP-101：help/index.vue 全文 294 行直读 + config/app.ts、zh-CN.ts/en-US.ts、images.ts 关键值 grep 直证 + HP01-HP09 运行时记录逐条核对。",
+    "MP-R2-SEGMENT-001：segment.vue 全文 306 行直读 + utils/media.ts resolveMediaUrl 函数体（129-243）直读 + git diff 本轮未提交改动核对 + SG01-SG08 运行时记录逐条核对。",
+    "未运行任何写操作/开发者工具/构建（A5 只读回归核对）；两条均无复发，未新增 Regression 缺陷，仅保留 2 条「已修复待终验」跟踪项。"
+  ]
+}

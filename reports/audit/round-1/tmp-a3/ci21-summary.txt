@@ -1,0 +1,203 @@
+matched: 185
+== subpackages/discover-extra/discover/matching 24
+   MT01 | normal | EXECUTED | dev-preview 冷启动：QA 复验入口停在匹配中页，2.6s 动画兜底结束后不跳转不 Toast
+   MT02 | critical | FAILED | 寻觅页喜欢进入（store 上下文）单向喜欢成功：Toast『已喜欢』→400ms 后返回寻觅页且当前卡已消费切下一张
+   MT03 | critical | EXECUTED | 互相喜欢 status='matched'：动画结束后 redirectTo match-success?userId=，栈中本页被替换
+   MT04 | critical | EXECUTED | 匹配确认接口失败 status='failed'：Toast 错误文案→600ms 后返回，原卡不被消费
+   MT05 | critical | EXECUTED | 超级喜欢 superLike 路径：runMatchCheck 以 isSuperLike=true 提交，成功分支文案与消费同喜欢
+   MT06 | navigation | EXECUTED | 无上下文直达兜底：无 query 无 store pending 时 200ms 自动返回，不留死页
+   MT07 | navigation | EXECUTED | 顶部返回箭头（栈>1）：点击 500ms 内 navigateBack 回来源页
+   MT08 | navigation | EXECUTED | 顶部返回箭头（栈=1 冷启动深链）：switchTab 落寻觅 Tab
+   MT09 | normal | FAILED | 动画未播完点『跳过』= 快进动画：立即触发 finish，结果分支提前出现
+   MT10 | normal | FAILED | 动画已播完再点『跳过』= 返回上一页（保留原语义）
+   MT11 | normal | FAILED | 『跳过』快击×5 防连点：finished 单次守卫，仅离开页面一次
+   MT12 | normal | FAILED | 返回箭头快击×5：单次 navigateBack 生效无异常
+   MT13 | normal | EXECUTED | 热区规格核查（铁律≥88rpx）：返回按钮 72×72rpx、跳过按钮≈64rpx 高——预期不达标
+   MT14 | normal | EXECUTED | preview=1 分享/演示模式：不调匹配接口零副作用，动画结束停留本页
+   MT15 | critical | EXECUTED | URL 直达（分享恢复/自动化）三参齐全无 store 上下文：真实发起匹配提交
+   MT16 | normal | EXECUTED | 头像兜底链：双方头像源全空时落 DEFAULT_AVATAR，不渲染空白圆
+   MT17 | noop | EXECUTED | 滚动到底/顶：页面 overflow:hidden 不可滚动，内容无裁切
+   MT18 | noop | EXECUTED | 动画完备性与 Loading 不永驻：2.6s 兜底必触发 finished，进度条 1.2s 到位
+   MT19 | normal | EXECUTED | 重复进出状态机复位（MP-R2-MATCHING-007）：preview 退出后再走真实流程无残留
+   MT20 | navigation | FAILED | 检查完成前退出（打开即返回竞态）：卸载后 watch 不误触发，store 干净
+   MT21 | normal | FAILED | 500ms 反馈铁律全元素扫描：back/skip 两可点击元素均有即时视觉反馈
+   MT22 | navigation | EXECUTED | r11 固化参数表偏差核查：?target=10003 不被本页读取，落入 200ms 兜底返回（现状断言+修正建议）
+   MT23 | normal | EXECUTED | 深链参数不齐（?preview=1 缺三参 / 仅 cardId）：不闪错误空态，200ms 兜底返回
+   MT24 | normal | EXECUTED | 双身份一致性：A(100158)/B(100159) 各自进入，我的头像各归其位，结构一致
+== subpackages/discover-extra/discover/match-success 16
+   MS01 | normal | EXECUTED | dev-preview=1 冷启动深链整页渲染：标题/副标题/双头像/匹配度卡/三 CTA 齐全，不闪错误空态
+   MS02 | normal | EXECUTED | 无参无 store 冷启动兜底：partnerName=「TA」+ 双默认头像 + 4 行默认理由，不白屏不崩溃
+   MS03 | normal | EXECUTED | 直达带参 ?userId=10003（store 空）：getPersonProfile 兜底拉取，TA 占位更新为真实 mock 人
+   MS04 | normal | EXECUTED | query.userId 与 store 残留 matchedUser 不一致：reset 后以入口参数为准，不展示旧匹配对象
+   MS05 | navigation | EXECUTED | 返回按钮（栈>1）：navigateBack 回来源页发现 Tab，来源页状态保留
+   MS06 | navigation | EXECUTED | 返回按钮（栈=1 直进）：switchTab 兜底回发现 Tab，不静默失败
+   MS07 | normal | EXECUTED | 右上相机按钮：Toast「截图功能即将上线」icon=none，路由不变（占位功能如实提示）
+   MS08 | normal | EXECUTED | 右上「···」更多按钮：Toast「分享功能即将上线」，路由不变
+   MS09 | normal | EXECUTED | 底部「分享喜悦」文字链：与「···」同走 handleShare Toast，不弹分享面板
+   MS10 | critical | EXECUTED | 主 CTA「立即聊天」：navigateTo 会话页 ?userId=10003，兜底入口不误置 chat_ready 态
+   MS11 | critical | EXECUTED | 主 CTA 防连点：快击「立即聊天」×5 只进入 1 层会话页
+   MS12 | navigation | EXECUTED | 次 CTA「继续探索」：switchTab 回发现 Tab，页面栈收敛为 tab 栈
+   MS13 | navigation | EXECUTED | 会话页返回落点与重复进出：返回回 match-success，partner/CTA 状态完整可复用
+   MS14 | normal | EXECUTED | 头像兜底链：partner 头像加载失败落 DEFAULT_AVATAR，不渲染空白圆
+   MS15 | normal | EXECUTED | 匹配度卡恒 4 行固定分值：90/85/80/79 + 缺项兜底文案，进度条宽度与分值一致
+   MS16 | noop | EXECUTED | 滚动到底/回顶：CTA margin-top:auto 锚底不脱布局，纯滚动无状态变化
+== subpackages/discover-extra/home/segment 8
+   SG01 | navigation | EXECUTED | 首页分区页冷启动无参直开：默认 type=online，标题「细分发现 · 在线」，骨架→列表，不闪错误空态
+   SG02 | navigation | EXECUTED | 带参 ?type=sameSchool：标题「细分发现 · 同校」，列表按 isSameSchool 前端过滤且 ≤50 条
+   SG03 | navigation | EXECUTED | 非法参数 ?type=<乱值>：回退默认 online 渲染，不闪错误、无 JS 异常
+   SG04 | normal | EXECUTED | 点击列表行：跳转他人主页 profile/other?userId=<行用户id>
+   SG05 | navigation | EXECUTED | 返回键：栈≥2 回来源页；栈=1 直开时兜底 switchTab 首页
+   SG06 | normal | FAILED | 加载失败错误态：文案+重试按钮，点击重试恢复加载
+   SG07 | noop | EXECUTED | 滚动到底/顶：无分页设计，行数≤过滤上限，回顶数据不丢
+   SG08 | navigation | EXECUTED | 六种 type 枚举参数矩阵：标题逐一对应（在线/同校/同兴趣/附近/新加入/高匹配）
+== subpackages/discover-extra/nearby/people 10
+   NP01 | navigation | EXECUTED | 附近的人冷启动无参直开：默认 scope=nearby，标题「附近的人」，骨架→列表，不闪错误空态
+   NP02 | navigation | EXECUTED | 带参 ?scope=city：标题「同城的人」，同城 Tab 高亮，列表按活跃度→共同圈子排序
+   NP03 | normal | FAILED | Tab 切换 附近↔同城：高亮即时切换 + 重新加载，滚动位与数据符合铁律
+   NP04 | noop | EXECUTED | 同 Tab 重复点击：switchScope 直接 return，不重复发请求
+   NP05 | normal | EXECUTED | 滚动触底分页：首批 20 条，触底增量渲染下一批，无重复行
+   NP06 | navigation | EXECUTED | 返回键：栈>1 回来源页；栈=1 直开兜底 switchTab 发现页
+   NP07 | normal | EXECUTED | 下拉刷新真实重拉：刷新图标收起，列表重载
+   NP08 | normal | EXECUTED | 点击列表行：跳转他人主页 profile/other?userId=
+   NP09 | normal | FAILED | 加载失败错误态：文案+重试按钮，点击重试恢复
+   NP10 | normal | EXECUTED | 快速切换 scope ×5：竞态 token 防护，最终列表与最后 scope 一致
+== subpackages/discover-extra/discover/history 8
+   DH01 | navigation | EXECUTED | 寻觅历史冷启动直开：无记录时统计 0/0/0 + EmptyState「还没有浏览记录」，不白屏
+   DH02 | normal | EXECUTED | 有浏览记录：统计栏三数字与列表一致，徽章「已喜欢/已跳过」正确，快照渲染昵称头像
+   DH03 | critical | FAILED | 挽回最后一 rejection：Toast「挽回成功」+ 返回；成功后按钮变「今日挽回次数已用完」
+   DH04 | critical | FAILED | 挽回按钮防连点：快击 ×5 只触发 1 次 rewindCard 请求
+   DH05 | critical | FAILED | 挽回失败（断网/限流）：友好 Toast「挽回失败」，不跳转，按钮恢复可用
+   DH06 | normal | FAILED | 错误态重试：errorMessage + 重试按钮，点击重新拉取
+   DH07 | navigation | EXECUTED | 打开即返回（栈=1 直开 tap 返回键）：navigateBack 无 fail 兜底——死按钮观测点
+   DH08 | normal | EXECUTED | 重复进出 ×3：onUnload dispose 后重进，统计与列表不重复累计
+== subpackages/discover-extra/likes/index 17
+   LK01 | navigation | EXECUTED | 未登录直开：NotLoggedWaiting 引导页，「手机号登录」按钮跳登录页（不零响应）
+   LK02 | navigation | EXECUTED | 登录直开：标题「匹配列表」+ 三 Tab（喜欢我的/我发出的喜欢/访客）与徽章数渲染
+   LK03 | normal | EXECUTED | Tab 切到「访客」：懒加载 fetchVisitors，同时清空搜索词与批量态
+   LK04 | normal | EXECUTED | Tab 来回切换：数据与滚动位不丢，badge 不异常清零（铁律）
+   LK05 | normal | EXECUTED | 搜索：300ms 防抖过滤昵称/学校/城市；清空按钮立即恢复全量；无匹配显 searchEmpty
+   LK06 | normal | FAILED | 搜索特殊字符与超长输入：emoji/HTML 注入串/120 字符不崩溃、可清空
+   LK07 | normal | EXECUTED | 管理按钮进入/退出批量模式：checkbox 与底部操作栏出现，进入时清空已选
+   LK08 | critical | EXECUTED | 批量喜欢成功链路：选 2 项执行，Toast「批量操作成功」+ 退出批量模式
+   LK09 | critical | EXECUTED | 批量空提交：不选任何项直接点批量喜欢，Toast「请至少选择一个用户」且无请求
+   LK10 | critical | EXECUTED | 批量操作防连点：选中后快击「喜欢」×5 只提交 1 次
+   LK11 | normal | FAILED | 商业化封存默认态：底部「解锁全部」不渲染；点击打码项仅 toast「功能封存中，暂不可用」
+   LK12 | critical | SKIPPED | 已解锁项点击路由：互相喜欢→聊天会话，否则→他人主页
+   LK13 | normal | EXECUTED | 心动信号入口（有信号时渲染）：点击跳转心动信号页
+   LK14 | normal | EXECUTED | 下拉刷新：三源（喜欢/心动信号/访客）并发重拉后刷新动画收起
+   LK15 | normal | FAILED | 错误态与重试：ErrorState 渲染，点击重试三源全部重拉
+   LK16 | navigation | EXECUTED | 返回键：栈>1 回来源页；栈=1 直开兜底 switchTab 首页
+   LK17 | critical | FAILED | 批量按钮按 Tab 显隐：likedBy 显「喜欢/跳过」，myLikes 显「取消喜欢」；myLikes 批量取消成功链路
+== subpackages/discover-extra/likes-visitors/index 11
+   LV01 | navigation | EXECUTED | 未登录直开：LockScreen 引导，不发起鉴权请求（免踢登录）
+   LV02 | navigation | EXECUTED | 登录直开：标题「喜欢与访客」+ 概览三数字 + 默认「喜欢我的」Tab 列表渲染，不闪错误空态
+   LV03 | normal | FAILED | Tab 切换 喜欢我的↔我的访客：下划线高亮切换 + 列表切换 + 新访客 badge（99+ 封顶）
+   LV04 | normal | EXECUTED | 未解锁打码展示：头像模糊+锁标+「匿名用户」+基础标签；coin 封存下无金币解锁标签
+   LV05 | normal | EXECUTED | 点击打码项（coin 封存默认）：toast「功能封存中，暂不可用」，无扣费请求
+   LV06 | normal | EXECUTED | 商业化封存默认态入口断言：底部「解锁全部」与「提升曝光」条均不渲染
+   LV07 | critical | FAILED | 解锁全部确认弹窗链路（需 commerce.coin 开启环境）：确认→逐条解锁→「解锁成功」+打码解除；取消→无扣费；余额不足→引导去充值
+   LV08 | normal | SKIPPED | 已解锁项点击路由：互相喜欢→聊天会话，否则→他人主页
+   LV09 | navigation | EXECUTED | 返回键：栈>1 回来源页；栈=1 直开兜底 switchTab 首页
+   LV10 | normal | EXECUTED | 重复进出 ×3：onShow 补拉仅未加载中触发，无重复请求风暴与 unhandledRejection
+   LV11 | noop | EXECUTED | 已解锁项时间格式："yyyy-MM-dd HH:mm:ss" 正确显示 M/D，无 NaN（R4-00019）
+== subpackages/tools/daily-question/index 12
+   DQ01 | navigation | EXECUTED | 每日一问未签到直开：锁定卡「签到后解锁」+「去签到」CTA 渲染
+   DQ02 | critical | EXECUTED | 去签到解锁：toast「签到成功，每日一问已解锁」→ 锁定卡消失 → 问题卡/回答区渲染
+   DQ03 | critical | FAILED | 去签到防连点：快击 ×5 只发 1 次签到请求
+   DQ04 | normal | EXECUTED | 空提交拦截：回答为空时提交按钮禁用态，点击无 toast 无请求
+   DQ05 | critical | FAILED | 提交回答成功链路：输入+勾选匿名→提交→toast「回答成功」→输入清空→已回答提示+回答列表拉取
+   DQ06 | critical | FAILED | 提交回答防连点：快击提交 ×5 只提交 1 次
+   DQ07 | normal | FAILED | 回答输入边界：600 字截断为 500（maxlength），emoji/HTML 字符回显正常可提交
+   DQ08 | normal | FAILED | 匿名回答勾选切换：checkbox 选中态与勾图标随点击往返
+   DQ09 | normal | FAILED | 回答列表分页：有更多时点「加载更多」页码+1 追加；无更多显「没有更多回答了」
+   DQ10 | noop | EXECUTED | scroll-view 触底：onAnswersScrollLower 等价加载更多，无重复触发风暴
+   DQ11 | normal | FAILED | 拉题失败错误态：文案+重试按钮，点击重试恢复
+   DQ12 | navigation | EXECUTED | 打开即返回（栈=1 直开 tap 返回）：navigateBack 无 fail 兜底——死按钮观测点
+== subpackages/tools/love-center/index 6
+   LC01 | navigation | EXECUTED | 恋爱中心登录直开：快捷入口「附近的人」+「恋爱测试」区渲染；商业化封存默认下四板块区与 consulting 入口不渲染
+   LC02 | navigation | FAILED | 快捷入口「附近的人」：点击跳转 love-center/nearby 内容页
+   LC03 | navigation | EXECUTED | 恋爱测试入口 MBTI：点击跳转 love-center/mbti（web-view）
+   LC04 | normal | EXECUTED | 四板块点击路由（需 commerce course/consult 开启环境）：咨询类→帮助页，课程类→咨询课程页
+   LC05 | navigation | FAILED | AppShell 顶部返回：栈≥2 回来源页；栈=1 兜底 switchTab 首页（两级兜底）
+   LC06 | normal | EXECUTED | 快击 MBTI 入口 ×3：观测页面栈是否重复入栈（导航按钮防连点观测）
+== subpackages/tools/help/index 9
+   HP01 | navigation | EXECUTED | 帮助中心登录直开：FAQ 6 项全部收起 + 客服三入口 + 底部服务说明渲染
+   HP02 | normal | EXECUTED | FAQ 单项展开/收起：答案区出现 + 箭头旋转，再点收起
+   HP03 | normal | FAILED | FAQ 手风琴互斥：依次点击 6 项，任意时刻至多一项展开
+   HP04 | navigation | EXECUTED | 在线客服入口：跳转官方号会话 official-chat?accountId=official-assistant
+   HP05 | navigation | EXECUTED | 意见反馈入口：跳转反馈历史页 feedback/history
+   HP06 | normal | EXECUTED | 复制客服邮箱：剪贴板=support@campuslove.app + toast「已复制」（MP-R1-HELP-101）
+   HP07 | navigation | FAILED | AppShell 顶部返回：栈≥2 回来源页；栈=1 兜底 switchTab 首页
+   HP08 | normal | EXECUTED | FAQ 快击 ×5：expandedIndex 布尔翻转稳定，最终态与点击奇偶一致，无布局崩坏
+   HP09 | navigation | EXECUTED | 未登录直开：usePageAccess 无 token 一律放行，页面正常渲染不强制跳登录
+== subpackages/tools/security/index 13
+   SC01 | normal | EXECUTED | 身份B 冷启动直达安全中心：五组卡片完整渲染 + 手机号脱敏文案，不闪错误
+   SC02 | normal | EXECUTED | 点「手机号」行打开换绑弹层：空表单两输入框 + 取消/确认按钮
+   SC03 | normal | FAILED | 换绑手机号非法输入两段校验：非 1[3-9] 号段报格式错，合法号段空密码报密码必填
+   SC04 | critical | FAILED | 换绑手机号合法提交（mock 演示闭环）：弹层关闭 + 演示提示 Toast，不调真实接口
+   SC05 | normal | FAILED | 点「修改密码」行打开弹层 + 空表单提交 → 新密码长度错误文案（空提交分支）
+   SC06 | normal | FAILED | 修改密码非法序列：两次输入不一致 → mismatch；补旧密码前的各段校验逐条命中
+   SC07 | critical | FAILED | 修改密码合法提交（mock）：弹层关 + 成功 Toast + 不清 token 不跳登录（real 才吊销重登）
+   SC08 | normal | FAILED | 两个表单弹层三路关闭之遮罩/取消：点击均关弹层且路由不变
+   SC09 | normal | FAILED | 第三方微信绑定行按登录方式分支：wechat→二次确认 Modal，非 wechat→演示提示 Toast
+   SC10 | navigation | EXECUTED | 「隐私权限设置」跳转 profile/privacy 并返回落回安全中心
+   SC11 | navigation | EXECUTED | 「隐私政策」跳转 legal/privacy 并返回落回安全中心
+   SC12 | critical | EXECUTED | 注销账号两层弹层：错误确认文字报 mismatch，正确「注销」在 mock 下仅演示提示不真注销
+   SC13 | normal | EXECUTED | 登录设备组（mock）：仅当前设备一条且无「下线」按钮；real 分支 kick 流程为条件用例
+== subpackages/tools/search/index 11
+   SE01 | normal | EXECUTED | 身份B 冷启动直达搜索页：输入框自动聚焦 + mock 热搜/历史双空 → EmptyState 兜底，不闪错误
+   SE02 | navigation | FAILED | 返回键与「取消」双入口：栈=1 深链时兜底 switchTab 发现页
+   SE03 | normal | EXECUTED | 用户 Tab 输入防抖 300ms 自动搜索（mock searchUsers 按昵称/学校过滤）并渲染结果行
+   SE04 | navigation | FAILED | 用户结果行点击 → 跳他人主页携带 userId，返回落回搜索页且结果保留
+   SE05 | normal | FAILED | 三 Tab（用户/标签/学校）切换：高亮态迁移 + 关键字保留不丢
+   SE06 | normal | EXECUTED | 标签 Tab 搜索（mock 帖子恒空）→ noResult 空态，无结果计数尾巴与分页残留
+   SE07 | normal | FAILED | 学校 Tab：输入校名出学校行 → 点击展开校园主页内联预览 → 再点收起
+   SE08 | navigation | FAILED | 校园预览内用户头像点击 → 他人主页（有数据分支）
+   SE09 | normal | FAILED | 清空按钮：关键字清空回热搜/历史视图 + 100ms 后重新聚焦
+   SE10 | normal | EXECUTED | 特殊字符/超长/emoji 输入：不崩溃、正常回显与提交、无 XSS 渲染
+   SE11 | normal | EXECUTED | 空关键字回车/确认：onConfirm trim 守卫直接 return，不触发搜索不跳转
+== subpackages/tools/heart-signals/index 11
+   HS01 | normal | EXECUTED | 身份A（资料未完善）冷启动直达：LockScreen 锁定态 + 服务端权威完成度，不闪信号列表
+   HS02 | normal | EXECUTED | 身份B 冷启动直达：待处理 Tab 默认 + 徽标2 + 两张卡片 + 过期信号倒计时显示「已过期」
+   HS03 | navigation | EXECUTED | 返回键（栈>1）：navigateBack 回来源页且状态恢复
+   HS04 | navigation | EXECUTED | 深链栈=1 返回兜底：switchTab 落首页 Tab
+   HS05 | normal | EXECUTED | 三状态 Tab 切换：待处理/已接受/已拒绝各自空态文案与分组正确
+   HS06 | critical | FAILED | 接受心动信号（mock）：成功 Toast + 卡片移出待处理并入已接受 Tab
+   HS07 | critical | FAILED | 拒绝心动信号（mock）：Toast + 移出待处理，declined 口径归入「已拒绝」Tab
+   HS08 | critical | FAILED | 已接受信号「开聊」：mock 临时会话创建成功并跳聊天页携带 fromSignal=1&sessionId
+   HS09 | navigation | EXECUTED | 信号卡片头点击 → 跳对应用户主页（fromUserId 透传）
+   HS10 | critical | EXECUTED | 接受按钮快击×5：仅一次状态变更，不重复 Toast/不串卡
+   HS11 | noop | EXECUTED | 重复进出×3（onShow 重拉）+ 30s 倒计时刷新：mock 深拷贝复原数据，console 无错
+== subpackages/tools/activities/detail 8
+   AD01 | normal | EXECUTED | 冷启动深链 ?id=11：骨架 → store 未命中 → 示例活动兜底（新人礼遇+示例徽标）不闪错误空态
+   AD02 | navigation | EXECUTED | 返回键深链栈=1：openAppPath 兜底跳发现·活动列表页
+   AD03 | critical | FAILED | 报名示例活动（本地闭环）：按钮切「退出报名」+ 报名成功 Toast + 助手消息落 storage
+   AD04 | critical | FAILED | 退出报名：恢复「立即报名」按钮 + 退出成功 Toast
+   AD05 | normal | EXECUTED | 「分享」按钮复制小程序内链接：剪贴板内容含 ?id= 且 Toast 提示已复制
+   AD06 | critical | EXECUTED | 报名按钮快击×5（示例活动本地闭环）：仅一次报名语义，助手消息不重复堆积
+   AD07 | noop | EXECUTED | 详情 scroll-view 滚动到底/顶：介绍区完整可读无遮挡
+   AD08 | normal | EXECUTED | 打开即返回 + 重复进出×3：报名态与助手消息无重复残留
+== subpackages/tools/love-center/nearby 9
+   NB01 | normal | EXECUTED | 身份B 冷启动直达附近的人：loading → 蒙面卡片渲染（?化名字/模糊头像/解锁提示条）
+   NB02 | navigation | EXECUTED | 返回键深链栈=1：switchTab 落首页 Tab 兜底
+   NB03 | critical | EXECUTED | 点赞（like 按钮）：真实链路 swipeRight → 成功 Toast + 卡片推进下一张
+   NB04 | normal | EXECUTED | 跳过（skip 按钮/左滑）：本地移除卡片推进，无网络副作用 Toast
+   NB05 | critical | EXECUTED | 超级喜欢（star 按钮）：swipeRight(isSuper=true) 真实链路 → 匹配则跳聊天或推进
+   NB06 | critical | FAILED | 发消息（详情浮层）：进入 chat-session?userId= 且会话懒创建链路可达
+   NB07 | normal | EXECUTED | CardSwiper 方向语义：右滑=喜欢、左滑=跳过（手势与按钮同语义）
+   NB08 | normal | FAILED | 卡片点击详情浮层开合：信息展示与关闭路径可用
+   NB09 | normal | FAILED | 空态降级 CTA「看全部推荐」（条件用例）：卡片耗尽后重拉全量推荐
+== subpackages/tools/love-center/mbti 8
+   MB01 | normal | EXECUTED | 身份B 冷启动直达 MBTI：mbtiUrl 为空走本地模式 → 头部/16 型网格/4 题卷完整渲染
+   MB02 | normal | EXECUTED | 选项点选高亮：选中态样式与 aria-checked 同步，可改选
+   MB03 | normal | EXECUTED | 未答完提交：Toast「请先完成」拦截，不弹结果层（空提交三态之空）
+   MB04 | critical | EXECUTED | 全部作答提交（如全选 B=ISTJ 口径）：结果弹层类型码=所选字母组合+名称+4 条恋爱建议
+   MB05 | normal | FAILED | 结果弹层三路关闭：遮罩/「关闭」仅关弹层，「重新测试」关弹层并清空答案
+   MB06 | normal | EXECUTED | 改选重测：全选 A（ENFP 口径）→ 结果类型码随选择正确变化
+   MB07 | navigation | EXECUTED | 返回键深链栈=1：switchTab 落首页兜底
+   MB08 | noop | EXECUTED | content-scroll 滚动到底/顶：16 型网格与试卷完整可达无遮挡
+== subpackages/tools/love-center/consulting 4
+   CO01 | normal | EXECUTED | 身份B 冷启动直达情感咨询：commerce 总闸 DB seed 为 FALSE → 封存卡（锁+文案），无 ¥ 课程与报名按钮
+   CO02 | navigation | FAILED | 封存态 AppShell 返回键：深链栈=1 时回退可用
+   CO03 | normal | FAILED | （条件用例）commerce.consult 开启：3 门课程卡渲染 + 报名 Toast 演示闭环
+   CO04 | noop | EXECUTED | 封存卡滚动/无溢出检查：一屏内完整呈现，无横向溢出

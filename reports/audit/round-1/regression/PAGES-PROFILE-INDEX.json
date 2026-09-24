@@ -1,0 +1,210 @@
+{
+  "round": "R1",
+  "page": "pages/profile/index（我的，tabBar）",
+  "reviewer": "A5 历史回归员（索引差分模式：只核对回归索引中本页相关条目，逐条独立复核源码/执行结果/截图，不采信 A2 结论本身）",
+  "generatedAt": "2026-09-24",
+  "basis": {
+    "regressionIndex": "reports/audit/baseline/regression-index.json（本页相关条目：MP-R1-PROFILE-201、MP-R1-PROFILE-202、R12-IND-PROFILE-INDEX-001、MP-R1-PROFILE-203-207 及 ask 给出的 203..214 簇描述；本轮无定向改动清单）",
+    "codeFindings": "reports/audit/round-1/code-findings/PAGES-PROFILE-INDEX.json（A2 同轮代码发现，仅作线索，关键结论均经本轮独立重读源码复核）",
+    "execResults": "reports/audit/round-1/interact/exec-results.json（gitSha aefd8a72，PFI01-PFI71 共 71 条本页交互取证）",
+    "screenshots": [
+      "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png（静态 1 张，已目检）",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-*.png（多数保存失败：ERROR:saveFile:fail exceeded the maximum size of the file storage limit / timeout waiting for automator response；wxml dump 见 reports/screenshots/round-1-interact/wxml/）"
+    ]
+  },
+  "note": "核对结论：两条 P1 历史复发项（MP-R1-PROFILE-201/202）经源码逐链复核未复发且运行时可达（PFI34-44）；R12-IND-PROFILE-INDEX-001（未登录头部叠印）代码层确认问题仍在——NotLoggedProfile 无任何状态栏让位（对照 MyHeader 有），生成 Issue 原级 P2；203..214 簇五个主项（不可达模板/growth 接线/他人态动态 Tab/VIP 卡/targetUserId 复位）全部未复发（含 PFI64 运行时复位取证、PFI50 VIP 封存取证、TabBar backdrop-filter H5 条件编译合规），簇内残留 5 项（胶囊避让/分享假实现/空 catch/死 CSS/3 孤儿组件）+ 修复引入的深链误复位边界 1 项，逐项立 Issue。本页运行时缺口：PFI01（未登录首屏截图）与多数截图因 saveFile 超限/超时落盘失败，「未登录叠印」「我的帖子配图非白」两条终验仍需真机/重跑截图补证。",
+  "issues": [
+    {
+      "id": "R12-IND-PROFILE-INDEX-001",
+      "round": "R1",
+      "page": "pages/profile/index（未登录态）",
+      "screenshot": "（无有效截图——PFI01-after.png 落盘失败 ERROR:timeout waiting for automator response；本轮为代码层复核）",
+      "category": "Regression",
+      "severity": "P2",
+      "description": "回归核对（R12 提报待查、R13 因截图错位未验证 → 本轮代码确认问题仍在）：未登录态头部「返回 ‹ / 应用中心 / 设置」按钮行与状态栏叠印未修复。NotLoggedProfile 根节点 padding-top 固定 32rpx，未消费页面根已注入的 --statusbar（也未用 env(safe-area-inset-top)）；项目全局 navigationStyle:custom（pages.json:36），真机上 64rpx 圆钮直接落入状态栏/胶囊带。同页已登录态 MyHeader 已按同源变量让位（calc(var(--statusbar)+64rpx)），唯独未登录组件漏配。语义说明：该条为「历史待查项确认未修复」，非修复后回退；按 ask 规则归已复发口径、severity 维持原级 P2。",
+      "evidence": "本轮亲验：apps/client/src/components/profile/NotLoggedProfile.vue:153-157 `.not-logged-profile { min-height:100vh; padding: 32rpx 24rpx 140rpx; }`（固定 32rpx，无状态栏让位）；:159-165 `.nlp-topbar { padding: 16rpx 8rpx 24rpx; }` 为首元素；:172-182 `.nlp-topbar__btn { width:64rpx; height:64rpx; }`；组件内 grep statusbar/safe-area/capsule 仅 :442 bottom 方向一处（登录钮避 tabBar）。变量已注入但未消费：pages/profile/index.vue:1641 `:style=\"menuStyleVars\"` + composables/useMenuButtonRect.ts:51 `\"--statusbar\": statusBarHeight+'px'`。对照同页已修先例：components/profile/mine/MyHeader.vue:94-98 `padding: calc(var(--statusbar, env(safe-area-inset-top)) + 64rpx) 32rpx 56rpx`。pages.json:36 全局 navigationStyle:custom。运行时：exec-results.json PFI02/PFI07 确认 .nlp-topbar__btn 存在并可点（元素在真实渲染树中位于顶部），但无几何/截图证据。",
+      "sources": ["code", "interaction", "log"],
+      "confidence": 0.85,
+      "ideal": "未登录态 topbar 首行下移状态栏高度（--statusbar / env(safe-area-inset-top)），右侧按钮组横向避让胶囊，任何机型不与状态栏/胶囊叠印（与 MyHeader 同口径）。",
+      "fix": "NotLoggedProfile.vue 根节点 padding-top 与 .nlp-topbar 改 `calc(var(--statusbar, env(safe-area-inset-top)) + N rpx)`；右侧按钮组按 --capsule-right 模式横向避让。变量已由页面根注入，组件内直接消费。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-215",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "（无截图——代码复核；PFI10 交互取证因选择器 element not found 未取到该图标行为）",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "203..214 簇「分享假实现」子项残留（簇主体 P2 修复已落地，此子项历史上未随簇修掉，非修复后回退；A2 同轮同定级 P3，位于 ask 描述的 P2/P3 簇带内）：本人态 MyHeader 头部分享图标仍是假实现——点击仅 toast「分享功能即将上线」。页面级 onShareAppMessage（index.vue:1498-1507）已是真实现、他人态右上角 share 按钮走 open-type=share 原生分享，登录后本人主页首屏唯一分享入口却是欺骗性提示。",
+      "evidence": "本轮亲验：apps/client/src/components/profile/mine/MyHeader.vue:22-24 `function handleShare() { uni.showToast({ title: \"分享功能即将上线\", icon: \"none\" }); }`。对照真实现：pages/profile/index.vue:1498-1507 onShareAppMessage；他人态 index.vue:1844-1851 `<button open-type=\"share\">`。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "本人主页分享入口复用既有 onShareAppMessage（mp-weixin 用 open-type=share button），不再出现「即将上线」假提示。",
+      "fix": "MyHeader 分享图标改 `<button open-type=\"share\">`（样式重置参照 index.vue .profile-share），或移除该图标保留设置入口。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-216",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "（无截图——代码复核）",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "203..214 簇「850+ 行不可达模板」清理的残留（不可达模板本身已删、未复发）：style 块内约 90 个选择器族（约 600 行）成为死 CSS——对应模板节点均已不存在；另 .profile-top-bar 内连续两条相同的 top: 声明为复制粘贴残留（本轮亲验确认）。纯技术债，无行为影响。",
+      "evidence": "本轮亲验：pages/profile/index.vue 全文件 grep 无字面 v-if=\"false\"（仅 :60/:1673 两处注释提及死块已删），模板 1640-2153 干净；:2578-2579 `.profile-top-bar` 连续两条完全相同的 `top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-5));`（重复声明，sed 直读确认）。死选择器族清单及行号样例见 reports/audit/round-1/code-findings/PAGES-PROFILE-INDEX.json MP-R1-PROFILE-216（.edit-btn/.stats-bar/.achievement-card/.photo-grid*/.menu-group/.logout-btn/.dev-entry 等，本轮抽验 .profile-top-bar 重复 top 属实）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "style 块仅保留模板实际消费的选择器；重复 top: 声明删除。",
+      "fix": "按死选择器清单整段删除死 CSS 与重复 top 声明（纯删除，无行为影响）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-217",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "（无截图——代码复核）",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "203..214 簇「空 catch」子项残留（try/catch 字面空块已清零，Promise 版漏网；非修复后回退，A2 同轮同定级 P3）：onShow 内两处 `likesStore.fetchLikes().catch(() => {})` 为无注释的空 Promise 拒绝处理器——401/网络失败被完全吞掉，连 dev 诊断日志都没有，与同函数内 fetchProfile/fetchProgress 的 isDev console.warn 口径不一致。R11 附录 B「禁空 catch {}」按同语义覆盖 Promise 链。",
+      "evidence": "本轮亲验 grep：apps/client/src/pages/profile/index.vue:1571 `void likesStore.fetchLikes().catch(() => {});`（profileRequestedOnce 分支）；:1589 同句（首次拉取分支）。全文件 `catch(() => {})` 仅此两处。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "静默允许但附注释说明失败语义（列表页进入时会再拉取），并按项目口径补 isDev 诊断日志。",
+      "fix": "两处改 `.catch((error) => { if (isDev) console.warn(\"[ProfilePage] fetchLikes 失败:\", error); })` 并附一行静默理由注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-218",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "（无截图——代码推演；onTabItemTap 实机触发方向无法静态证实）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "MP-R1-PROFILE-207（targetUserId 无复位）主修复确认在位且运行时生效（PFI64），但修复实现引入一处边界回归风险：onTabItemTap 置位的一次性信号未按 tab index 过滤，且复位块在 loadPageUserIdParam 之后无条件执行——「在他人主页点其它 tab 离开（置位 tabReentered）→ 再从圈子帖子详情 openAppPath('/pages/profile/index?userId=B') 深链返回」序列中，onShow 先由桥接恢复他人态、随后复位块将其打回本人主页。依赖平台事件语义，代码层无法完全证实，中置信度列待修复（属修复实现的潜在回归面，非原问题复发）。",
+      "evidence": "本轮亲验：pages/profile/index.vue:216-220 `let tabReentered = false; onTabItemTap(() => { tabReentered = true; });`（未按 event.index 过滤）；:1546-1556 onShow 内 `loadPageUserIdParam(); if (tabReentered) { tabReentered=false; if (targetUserId.value) { targetUserId.value=\"\"; otherProfile.value=null; otherBgUrl.value=\"\"; } }` 无条件复位。深链入口：subpackages/circles/circles/topic-detail.vue:139 `openAppPath(\\`/pages/profile/index?userId=...\\`)`（utils/navigation.ts tab 路径带 query → storage 桥接 + switchTab）。运行时主修复有效：exec-results.json PFI64「他人态下 tabBar 主动切回我的→复位本人态（MP-R1-PROFILE-207）」EXECUTED。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.55,
+      "ideal": "复位只发生在用户点「我的」tab 项主动回归本人语境时；经深链进入他人主页的语义优先于复位。",
+      "fix": "onTabItemTap 回调改 `({ index }) => { if (index === 4) tabReentered = true; }`；复位前检查本次 onShow 是否实际解析到他人 userId（loadPageUserIdParam 返回解析结果，非空则跳过复位）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-219",
+      "round": "R1",
+      "page": "pages/profile/index（他人态）",
+      "screenshot": "（无截图——几何推算；PFI66-68 他人态顶栏元素取证因 pre 环境缺 reLaunch?userId 未取到）",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "203..214 簇「胶囊避让不足」子项残留（几何推算，非修复后回退；A2 同轮同定级 P3）：他人态右上角操作条（分享/设置/MatchCountChip）行顶 ≈ statusbar+20px+--sp-5(10px)=statusbar+30px，落入微信胶囊带（约 statusbar+6..+38px）底部 6~8px 纵向重叠；横向 .profile-top-actions 右侧内缩仅 capsule-right(≈7px)+8px+16px≈31px，远小于胶囊左缘距右缘约 94px，行内最右元素横向完全落在胶囊 x 区间内。原生胶囊永远压在页面元素之上。",
+      "evidence": "本轮亲验：pages/profile/index.vue:2577-2580 `.profile-top-bar { position:absolute; top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + var(--sp-5)); }`（theme/design-variables.scss --sp-5:20rpx=10px）；:2610-2617 `.profile-top-actions { padding-right: calc(var(--capsule-right, 96px) + 8px); }`（useMenuButtonRect 实测 --capsule-right≈7px 而非兜底 96px）。他人态操作条模板 index.vue:1841-1865。几何为推算值，需真机截图终验。",
+      "sources": ["code"],
+      "confidence": 0.5,
+      "ideal": "他人态右上角操作条整体位于胶囊带下方（top ≥ statusbar+44px）或右移出胶囊 x 区间，任何机型不与胶囊叠压。",
+      "fix": "top 调 `calc(var(--statusbar) + 48px)` 下移整行出胶囊带；或 padding-right 改 `calc(var(--capsule-right) + 96px)` 横向完整让出。终验需真机截图确认。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-222",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "（无截图——代码复核）",
+      "category": "Regression",
+      "severity": "P4",
+      "description": "203..214 簇「5 孤儿组件」清理残留（MyGrowth.vue 已删，其余 3 个仍在源码树；技术债收尾，A2 同轮同定级 P4）：ProfileTabs.vue（页面已卸载，仅自身测试引用）、ProfileEmptyState.vue（全仓 0 引用）、SocialProgressIndicator.vue（0 业务引用）。",
+      "evidence": "本轮亲验 ls：components/profile/ProfileTabs.vue、components/profile/ProfileEmptyState.vue、components/social/SocialProgressIndicator.vue 均存在；components/profile/mine/MyGrowth.vue 不存在（已删）。grep pages/+components/：ProfileTabs 仅 index.vue:59 注释与 :2027 注释提及（无 import）。index.vue:768-770 注释明示 MP-R1-PROFILE-204 growthItems/growthTap 已随 MyGrowth 一并移除。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "源码树无不可达组件；确认废弃的连测试一并删除。",
+      "fix": "删除 3 个孤儿组件文件及其专属 spec，或注明保留理由。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-PROFILE-201",
+      "page": "pages/profile/index",
+      "status": "未复发",
+      "evidence": "解析链逐环亲验：apps/client/src/pages/profile/index.vue:664-676 minePosts `images: resolveMediaUrls(post.images ?? [])`（:668 注释明示本条目号）；:700-710 我的故事封面 `resolveMediaUrl(d.images[0] / ownAvatar)`；:742 相册 `photos: resolveMediaUrls(photoGallery.value)`；渲染端 components/profile/mine/MyStory.vue:141-144 直接 `:src=\"img\"`（已解析 URL）；utils/media.ts:198-201 对 /api/v1/media/ 前缀拼 apiRoot+token（appendTokenIfMissing）。运行时间接佐证：静态截图 round-1-tour/A/pages_profile_index__默认.png 目检——页头头像与「我的相册」缩略图均为真实照片非白图（同管线）；exec-results.json PFI59-61 他人态执行成功。缺口：本条目主体「我的帖子配图」无直接运行时截图（PFI26 元素未找到、PFI27 截图 saveFile 超限落盘失败）→ 真机帖子配图终验仍欠。"
+    },
+    {
+      "id": "MP-R1-PROFILE-202",
+      "page": "pages/profile/index",
+      "status": "未复发",
+      "evidence": "代码：index.vue:1648 已登录 template v-else 内 :1677 `<template v-if=\"isOwnProfile\">` 含语音/背景/邀请/VIP 四块（与 :1650 ProfileShell 同态必渲染），全文件无字面 v-if=\"false\"（仅 :60/:1673 注释提及）；处理器 openInviteModal:1052 / handleVipClick:1147 / handleRecordVoice:1284 / handlePlayVoice:1344 / handleEditBackground:1437 全部在位。运行时（exec-results.json）：PFI34 语音初始态、PFI35 录音 act:tapIndex 成功、PFI37 播放/暂停 act:tap .voice-preview__play 成功、PFI38 重录、PFI39 删除确认、PFI42 编辑背景 act:tap 成功、PFI44 邀请弹窗 act:tap 成功——四块功能全部实际可达可点；PFI36 SKIPPED 属环境不可自动化（<1s 录音），非缺陷。PFI50 .vip-card:absent 符合 isCommerceOn('vip') 默认封存设计（index.vue:1807 门禁亲验）。"
+    },
+    {
+      "id": "R12-IND-PROFILE-INDEX-001",
+      "page": "pages/profile/index（未登录态）",
+      "status": "已复发（历史待查项，本轮代码确认问题仍在/未修复）",
+      "evidence": "见 Issue R12-IND-PROFILE-INDEX-001：NotLoggedProfile.vue:153-182 无状态栏让位（固定 32rpx 起排 + 64rpx 圆钮），对照 MyHeader.vue:94-98 同页已修先例；页面根已注入 --statusbar（index.vue:1641 + useMenuButtonRect.ts:51）但该组件不消费；pages.json:36 navigationStyle:custom。截图缺口：PFI01-after.png 落盘失败（timeout），叠印几何终验需重跑截图。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#850-行不可达模板",
+      "page": "pages/profile/index",
+      "status": "未复发（残留死 CSS 另立 MP-R1-PROFILE-216）",
+      "evidence": "index.vue 全文 3936 行，模板 1640-2153，grep v-if=\"false\" 零命中（仅注释）；文件内 :60/:768-770/:1671-1676/:1806/:2027 等多处注释明示死块/孤儿引用已删。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#5-孤儿组件",
+      "page": "pages/profile/index",
+      "status": "部分未复发（MyGrowth 已删；ProfileTabs/ProfileEmptyState/SocialProgressIndicator 3 个仍在 → MP-R1-PROFILE-222）",
+      "evidence": "ls 亲验：MyGrowth.vue 不存在；ProfileTabs.vue/ProfileEmptyState.vue/SocialProgressIndicator.vue 存在；ProfileTabs 在 pages/+components/ 无 import。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#growth-接线断裂",
+      "page": "pages/profile/index",
+      "status": "未复发",
+      "evidence": "MyGrowth.vue 已删（ls 亲验）；components/profile/mine/MyProfile.vue:34-35 注释明示 growthTap 死 emit 已删；index.vue:768-770 注释明示 growthItems/onProfileShellGrowthTap 已移除。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#他人态动态-Tab-空白",
+      "page": "pages/profile/index",
+      "status": "未复发",
+      "evidence": "ProfileTabs 已卸载（grep 零 import，index.vue:59 注释）；index.vue:2027 注释「资料内容常显——原 ProfileTabs 渲染动态 Tab 但内容块被 isOwnProfile 门禁」；运行时 PFI59-61 他人态深链（userId=4001/user-3001/10003）全部 EXECUTED 完整渲染无空白。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#VIP-卡颠倒",
+      "page": "pages/profile/index",
+      "status": "未复发",
+      "evidence": "index.vue:1806-1807 唯一 vip-card 位于 :1677 本人态 template 内，门禁 `appConfig.isCommerceOn('vip') && !isVip`（isVip=index.vue:646 取 profileView），:1806 注释明示原误置他人态分支已迁；运行时 PFI50 `.vip-card:absent`（默认封存）佐证。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#targetUserId-无复位",
+      "page": "pages/profile/index",
+      "status": "未复发（修复在位且运行时生效；修复实现边界风险另立 MP-R1-PROFILE-218）",
+      "evidence": "index.vue:214-220 onTabItemTap 置位 + :1546-1556 onShow 复位块（loadPageUserIdParam 之后执行，注释明示 MP-R1-PROFILE-207）；运行时 PFI64「他人态下 tabBar 主动切回我的→复位本人态」EXECUTED。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#胶囊避让不足",
+      "page": "pages/profile/index（他人态）",
+      "status": "已复发（簇内残留未修，几何推算 → MP-R1-PROFILE-219）",
+      "evidence": "index.vue:2577-2580 top≈statusbar+30px 落入胶囊带（+6..+38px）；:2610-2617 横向内缩仅 ≈31px vs 胶囊左缘距右 ≈94px。PFI66-68 他人态顶栏元素未取到（pre 环境缺他人态 reLaunch），无运行时反证；需真机截图终验。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#分享假实现",
+      "page": "pages/profile/index",
+      "status": "已复发（簇内残留未修 → MP-R1-PROFILE-215）",
+      "evidence": "MyHeader.vue:22-24 handleShare 仅 toast「分享功能即将上线」（亲验）；对照 index.vue:1498-1507 onShareAppMessage 真实现并存口径不一。PFI10 交互取证因 .my-header__icon 元素未找到未达成本条。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#空-catch",
+      "page": "pages/profile/index",
+      "status": "已复发（簇内残留未修 → MP-R1-PROFILE-217）",
+      "evidence": "grep 亲验 index.vue:1571/:1589 两处 `likesStore.fetchLikes().catch(() => {})`；try/catch 字面空块零命中（grep 零命中，Promise 版为残留形态）。"
+    },
+    {
+      "id": "R1-PROFILE-203..214#自定义-tabBar-backdrop-filter",
+      "page": "pages/profile/index（引用组件）",
+      "status": "未复发",
+      "evidence": "components/layout/TabBar.vue:166-170 backdrop-filter: blur(20px) 位于 `/* #ifdef H5 */ ... /* #endif */` 条件编译内（sed 亲验），mp-weixin 不编译该行；本页组件树无其它 backdrop-filter 使用。"
+    }
+  ],
+  "coverage": [
+    "核对范围 = ask 给出的本页 4 条历史条目（MP-R1-PROFILE-201 / MP-R1-PROFILE-202 / R12-IND-PROFILE-INDEX-001 / R1-PROFILE-203..214 簇），逐条独立复核，未做全量索引重读（差分模式）。",
+    "执行取证：exec-results.json 中 PAGES-PROFILE-INDEX 全部 71 条（PFI01-71）逐条过目——EXECUTED 33 / FAILED 37 / SKIPPED 1；FAILED 均为自动化选择器 element not found 或截图 saveFile 超限，其中与本回归直接相关者已在各 checked/issue 注明（PFI10 分享、PFI26/27 帖子配图、PFI01 未登录首屏、PFI66-68 他人态顶栏）。多数截图落盘失败（saveFile:fail exceeded maximum size / automator timeout）是本轮运行时证据的系统性缺口。",
+    "静态截图 1 张（round-1-tour/A/pages_profile_index__默认.png）已目检：本人态首屏头像/相册图非白图、顶栏避让正常、完成度 85% 口径与代码一致。",
+    "A2 同轮新发现（MP-R1-PROFILE-220/221/223/224/225/226：访客计数双源、字面色值、死状态/死 emit、i18n 硬编码、media.cover 未解析+85 魔数、PublicBio ❝）不属本回归 ask 条目范围，未重复立卷，见 reports/audit/round-1/code-findings/PAGES-PROFILE-INDEX.json。",
+    "未执行（回归员边界）：未改任何代码、未跑构建/单测、未启动模拟器补截图；MP-R1-PROFILE-218 的 onTabItemTap 实机触发方向与 MP-R1-PROFILE-219 胶囊几何实拍无法静态证实，均按标注置信度列待修复并建议终验覆盖。"
+  ]
+}

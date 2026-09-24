@@ -1,0 +1,26 @@
+{
+  "round": "R1",
+  "mode": "索引差分回归核对（A5 历史回归员：只核对 riskFiles 与本轮改动/证据相关的条目）",
+  "page": "subpackages/discover-extra/discover/matching",
+  "pageName": "匹配中",
+  "date": "2026-09-24",
+  "regressionIndex": "reports/audit/baseline/regression-index.json",
+  "entriesAssigned": ["MP-R3-MATCHING-001", "MP-R2-MATCHING-002"],
+  "diffSummary": "本轮工作区 matching.vue 唯一改动：git diff 仅 consumeCardFromDeck 内 `catch {` → `catch (_e)`（lint 改名）；200ms goBack 兜底（:143-147）、goBack 双分支（:54-61）、双头像 resolveMediaUrl 出口（:38-45）三处修复点零触碰。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R3-MATCHING-001",
+      "page": "subpackages/discover-extra/discover/matching",
+      "status": "未复发",
+      "evidence": "「匹配页打不开」证伪维持，200ms 无上下文 goBack 兜底未被修坏。① 代码在位：apps/client/src/subpackages/discover-extra/discover/matching.vue:143-147（无 pendingCardId/pendingAction 且 URL 无 cardId/action/userId 时 else 分支 setTimeout(() => goBack(), 200)，注释「页面刷新兜底：直接回退，避免死页」）；matching.vue:54-61（goBack 双分支：getCurrentPages().length>1 → uni.navigateBack({delta:1})，空栈 → uni.switchTab(ROUTES.TAB.DISCOVER)）；matching.vue:211-216（onUnload 无条件 matchStore.reset()，MP-R2-MATCHING-007 守卫仍防 pending 残留绕过兜底）。② 本轮差分：git diff -- apps/client/src/subpackages/discover-extra/discover/matching.vue 仅 consumeCardFromDeck 内 `catch {`→`catch (_e)`，兜底路径零改动。③ 运行时复验（本轮证据 reports/audit/round-1/interact/exec-results.json）：#MT06 EXECUTED——reLaunch 无参直达 matching 后终态 route=pages/discover/index、console 仅 preloadSubpackages info×4 无报错，200ms 兜底+switchTab 分支生效无死页；#MT08 EXECUTED——栈=1 点返回箭头终态 route=pages/discover/index；#MT22——?target=10003 参数偏差亦走兜底落寻觅 tab。交互取证 reports/audit/round-1/interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json OP05「无上下文直达——回归 MP-R3-MATCHING-001」verdict=符合，明确「设计内兜底行为保持完好」；A6 仲裁 SUBPACKAGES-...-MATCHING-judge.json MT06/MT08/MT22 三例 VERIFIED（FAILED 0）。结论：兜底维持三轮以来的「设计内防死页」核对结论，未复发。"
+    },
+    {
+      "id": "MP-R2-MATCHING-002",
+      "page": "subpackages/discover-extra/discover/matching",
+      "status": "未复发",
+      "evidence": "匹配动画双头像统一媒体出口修复未被改回。① 代码在位：matching.vue:14-15（import { resolveMediaUrl } from \"../../../utils/media\"，注释 MP-R2-MATCHING-002）；matching.vue:38-40（myAvatar = resolveMediaUrl(profileStore.avatarUrl) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)）；matching.vue:41-45（partnerAvatar = resolveMediaUrl(partner?.avatar || partner?.photo || \"\") || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)），:225-231 模板将两值传给 MatchLoading :my-avatar/:partner-avatar。本轮 git diff 未触及头像链。② 运行时渲染证据（本轮证据）：exec-results.json#MT01 EXECUTED——dev-preview 进入后 dom 断言 .match-loading__avatars present、console 空、18.9s 常驻；reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT01-after.png 本轮逐张目验：左侧我的头像为真实照片非空白圆/非灰色占位，右侧对方头像为模糊化图片+「匹配中」角标（匹配中阶段按设计虚化，非空圆），标题/四行进度 90·85·80·79%/缘分匹配中 89% 全部在位；A6 仲裁 MT01 与 MT24 均记「我的头像为真实图片非空白圆」。③ 如实记录边界：MT16（双方头像源全空→DEFAULT_AVATAR 兜底态）因执行编排 query 丢失（无参 reLaunch 触发兜底离页）UNVERIFIED，兜底渲染终态未获直接截图；但本条历史问题是「real 模式渲染空圆」，其修复点（resolveMediaUrl 统一出口）代码在位且 real 渲染截图证明头像非空圆，故判未复发；纯兜底态（双空源）留待后续补验。"
+    }
+  ],
+  "coverageNotes": "按索引差分仅核对指派的两条页面相关条目；回归索引中 riskFiles 含 matching.vue 的另一条目 MP-R1-PAGES-DISCOVER-INDEX-001-002（matching-back-no-card-consumed-error-banner）不在本轮指派清单，未做独立核对（其修复面 consumeCardFromDeck 守卫 matching.vue:171-181 在位仅作旁证记录）。静态截图 0 张（如预期）；运行时证据全部来自 reports/audit/round-1/interact/ 三源（exec-results.json 原始观测为权威，A1 交互 JSON 与 A6 仲裁 JSON 交叉核对，关键截图本轮逐张目验）。"
+}

@@ -1,0 +1,133 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/index",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "note": "R1 视觉审查：证据缓存校验通过（screenshot-manifest.json gitSha=aefd8a72；interact/exec-results.json gitSha=aefd8a72，round=R1，与本轮要求一致，全部证据按当前代码有效采信）。逐张审查本页 10 张巡检截图（A/B 双身份 × 默认/交互后/数据态/滚动-中部/滚动-底部）+ 交互截图 CI09/CI13/CI19，并用 PowerShell System.Drawing 对头部/chips/卡片/头像/底部做 2x-8x 放大裁片与 A/B 两两像素 diff（抽样步长2、阈值>30，各对 diff 均仅 24 个采样点=状态栏时钟级噪声，判定双身份渲染逐像素一致）。与代码层 findings（code-findings/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json，12 项）逐一比对，本文件不重复其条目；历史回归 MP-R1-CIRCLE-004 已实测复核（见 observations-01）。功能目标对照归需求对照员、交互判定归交互判定员，本文件对 CI09/CI13 仅呈证据不判性。放大裁片为临时取证（C:/tmp/review/，仓库外），evidence 一律以仓库内原始截图路径为准。",
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png（头部右上区域，(0,40)-(373,110) 放大 4x 复核）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "头部搜索圆钮被微信原生胶囊完全遮挡（R13 遗留待修项，本 sha 复核仍未修）：搜索钮（64rpx mint 圆底 + 36rpx 放大镜图标）经 AppShell header-right 插槽排在与原生胶囊（•••+◎）相同的首行右端，截图中按钮仅底部边缘露出一条圆弧，放大镜图标 100% 被胶囊覆盖。真机上胶囊是原生置顶控件：用户既看不见搜索钮、点击也会落在胶囊上，搜索入口在真实设备上不可达。交互取证 CI04 中自动化 tap 能弹「搜索功能即将上线」toast，恰证明按钮存在于 DOM 但被人眼不可见（自动化按元素寻址不受遮挡影响）。",
+      "evidence": "截图：A 默认头部放大 4x——胶囊下缘（y≈67px）之下仅露出搜索钮 mint 色圆弧，无放大镜可见。代码：index.vue:316-325（header-right 插槽搜索钮）、847-855（.circles-header__search 64rpx 圆钮）；AppShell.vue:220-221（shell__header-right 直接置于 header 行右端，无胶囊宽度预留）、293-309（.shell__header flex space-between，无胶囊避让 padding）。交互：exec-results.json .results[457] CI04 tap .circles-header__search → showToast「搜索功能即将上线」×2（按钮存在且可被元素寻址命中）。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.9,
+      "ideal": "小程序真实表现标准：自定义头部右侧必须预留胶囊安全区（uni.getMenuButtonBoundingClientRect 的 width+right 距屏右之和，约 96px 量级）；理想图中搜索放大镜完整可见于标题行右端。搜索钮应完整可见、热区不与胶囊重叠。",
+      "fix": "①AppShell header 行（或本页头部容器）按胶囊尺寸动态预留右侧宽度，header-right 内容左移出胶囊区；或②搜索钮下移与副标题/chips 行对齐（与理想图 chips 行末端控件并排的布局亦吻合）。修复后模拟器/真机复拍头部区域闭环 R13 该项。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-002",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png（chips 行，止于「美食」，无末端筛选钮）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "理想图 chips 行末端的「筛选圆钮」（圆形 ≡ 图标 + 右上绿点徽标）整页缺失（R13 遗留待修项，本 sha 复核仍未修）：当前页唯一筛选择偶是 7 个快捷分类 chip（按圈名关键字 includes 过滤），无排序/更多筛选入口；模板与脚本均无任何筛选控件或筛选面板。按功能缺失记 P2 Function，不作视觉降级。",
+      "evidence": "理想图：素材/理想效果图/兴趣圈列表.png chips 行右端圆钮（≡+绿点）。截图：A 默认 chips 行全宽可见 6 个文字 chip（全部/摄影/旅行/音乐/运动/美食），第 7 个「更多」chip（iconSrc=LIST 图标）需横滑、末端无筛选钮。代码：index.vue:334-354（tabs 模板仅 QUICK_TABS v-for，无 filter 节点）、211-227（QUICK_TABS 定义，无筛选动作）、229-240（tabFilteredCircles 仅 keyword includes）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "chips 行末端显示圆形筛选钮（≡ 图标 + 绿点徽标态），点击展开筛选面板，交互位置与理想图一致（L3 达标）。",
+      "fix": "若产品保留筛选：新增筛选圆钮（含绿点徽标态）+ 筛选面板并接线；若确认裁剪该控件：在设计契约/规格书中记录裁剪决定并关闭 R13 挂账项，避免长期悬置。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__滚动-中部.png 与 __滚动-底部.png（天文圈卡片封面区域）",
+      "category": "UI",
+      "severity": "P2",
+      "description": "天文圈封面素材本体是坏图：circle-sky.png（185×195，36383B）上部约 60% 为圆角星空照片，下部为白底并误嵌一个灰蓝色 home 线性图标——形似设计工具误导出的页面截块。列表中天文圈卡片封面渲染为「星空小图 + 白底房子图标」，观感等同图片加载失败；两张滚动截图中该图标均随卡片滚动（非悬浮控件），A/B 双身份一致。凡走 circleCoverFor → ASTRONOMY 规则的页面（本页列表 / 圈子主页 / 首页兴趣推荐共用单一真相源）都会露出该坏素材。",
+      "evidence": "截图：A 滚动-中部（天文圈卡封面下方 home 图标，(50,685)-(120,740) 放大 8x 取证）、A 滚动-底部（同卡同图标，y≈120-142）。素材本体：apps/client/src/static/assets/images/covers/circle-sky.png 直接检视（185×195，星空块+白底+home 图标烧在图内）。代码：config/images.ts:621（ASTRONOMY → /covers/circle-sky.png）、config/circle-covers.ts:27（[\"天文\",\"星空\"] → ASTRONOMY）、stores/circle/mock-data.ts:133-137（天文圈）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "天文圈封面为整幅星空场景图铺满封面框（与理想图卡片封面整图风格一致），无白边、无误入图标。",
+      "fix": "重新导出/生成纯星空方形封面替换 circle-sky.png（路径不变，静态资源直换）；替换后复拍本页列表与圈子主页。同批 5 张 PNG（GAME/READING/PET/STUDY/POSTGRAD）经滚动截图核对未见同类污染，建议替换时顺带全量复查一遍素材原图。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png 与 __滚动-底部.png（卡标题列）",
+      "category": "Data",
+      "severity": "P4",
+      "description": "同列表 14 个圈名命名风格自相矛盾：13 个无「圈」后缀（摄影/旅行/音乐/运动/美食/游戏/阅读/宠物/篮球/桌游/考研/学习搭子/萌宠），唯独「天文圈」带后缀；理想图所有圈名统一带「圈」（摄影圈/旅行圈/音乐圈/运动圈/美食圈/天文圈）。用户可见的内容不一致（mock 种子数据层问题）。",
+      "evidence": "stores/circle/mock-data.ts:59-178（name 字段：「摄影」…「天文圈」…）；A 默认/滚动截图卡标题实拍；理想图 素材/理想效果图/兴趣圈列表.png 卡名均带「圈」。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "圈名风格统一：建议全带「圈」后缀对齐理想图，或全不带，同一列表内不混用。",
+      "fix": "mock-data.ts 统一 14 个圈名（若真实模式以后端字段为准，需在对齐单中注明口径）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-005",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png（卡1「+ 加入」按钮，3x 放大实测）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "「+ 加入/已加入」按钮热区高度不足：代码高约 64rpx（上下 padding 12rpx×2 + 26rpx 文本行 + 2rpx 边框×2），截图实测总高约 35-39px（70-78rpx），两项口径均低于审查标准「热区 ≥88rpx（44px）」。这是每张卡的核心 CTA，高度偏小易漏触/误触（宽度约 66px 尚可）。",
+      "evidence": "代码：index.vue:759-772（.circle-card__action padding: var(--sp-3) var(--sp-4) + border 2rpx；design-variables.scss:496 --sp-3:12rpx）、783-788（__action-text font-size: var(--fs-md)=26rpx, nowrap）。截图：A 默认 chips.png 裁片 3x 实测按钮高 ≈39px。对照合规口径：AppShell.vue:316-322（.shell__back min-height:88rpx 并注释触摸目标标准）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.7,
+      "ideal": "核心 CTA 热区 ≥88rpx：可保持视觉尺寸不变，以 min-height 或扩大命中 padding 达标（与 AppShell 返回钮 88rpx 口径一致）。",
+      "fix": ".circle-card__action 增加 min-height: 88rpx（或项目统一 touch-target token），连带核对兄弟页同款按钮口径。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【历史回归 MP-R1-CIRCLE-004（P0 统计行半字硬裁）实测复核通过】巡检视口 373px 逻辑宽（373×820 物理，≈375 类机型，窄于 375 属更严场景）：A/B 双身份全部统计行完整单行无半字裁切——「1.2w 人 · 486 条动态」「8,932 人 · 352 条动态」「8,123 人 · 301 条动态」「6,532 人 · 244 条动态」「7,240 人 · 287 条动态」「4,860 人 · 132 条动态」「3,980 人 · 108 条动态」「3,120 人 · 96 条动态」「8,750 人 · 263 条动态」「5,230 人 · 145 条动态」「4,305 人 · 187 条动态」逐条放大核对；省略号未触发、无行中截断。A2 代码层修复（INDEX-001）与视觉表现互证；「375px 双身份复拍」闭环证据已齐，终验判定归闭环流程。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png + B 同名默认 + A/B __滚动-底部.png；A/B 五态两两像素 diff 均 24 采样点（噪声级）= 双身份渲染逐像素一致"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【热门徽标阈值渲染正确】≥8000 阈值有徽：摄影(12000→1.2w)/旅行(8,932)/音乐(8,123)/游戏(8,123)/考研(8,750)；<8000 无徽：运动(6,532)/美食(7,240)/阅读(6,532)/宠物(5,621)/天文圈(4,860)/篮球(3,980)/桌游(3,120)/学习搭子(5,230)/萌宠(4,305)。渲染与 mock 数据及 HOT_THRESHOLD=8000（index.vue:209）完全一致，无逻辑错位。万位 w 格式（1.2w）与千分位（8,932）符合 formatMemberCount 实现（index.vue:193-202）。",
+      "evidence": "A 默认（卡1-5）+ A 滚动-中部（游戏/阅读/宠物/天文圈）+ A 滚动-底部（篮球/桌游/考研/学习搭子/萌宠）逐卡核对"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【滚动与底部安全区正常】滚动-中部/滚动-底部内容与默认态首屏连续（14 卡全序：摄影→旅行→音乐→运动→美食→游戏→阅读→宠物→天文圈→篮球→桌游→考研→学习搭子→萌宠）；滚动-底部最后一张卡（萌宠）完整可见，其下为 list-bottom-spacer + 安全区留白，无内容被裁、无遮挡。长文核对：长描述（如「分享光影与构图，一起扫街、看展、记录生活」「自习打卡、组队学习，一起上岸」）两行换行完整、无尾部裁切。",
+      "evidence": "A/B __滚动-中部.png、__滚动-底部.png；学习搭子卡 4x 放大裁片确认「上岸」换行完整"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【理想图 L1-L10 对照记录（差异点如实记录，均不复立案）】L1-L3 结构/层级/交互位置总体对应：返回+标题（趣下划线品牌字形 ✓）+副标题+chips+圈卡列；卡片内封面/圈名/热门徽/描述/统计/头像堆/加入钮七要素齐备且顺序一致。记录在案的不复立案差异：①热门徽配色——理想图浅粉底粉字 vs 实做红底白字（R11 理想图对比已通过，A2 已立案无 token 色值问题，不重复）；②激活 chip——理想图实心绿底白字 vs 实做薄荷底绿字绿边（R13 chip 对比度修复后现状，激活态辨识清晰）；③卡片总高实测约 118px vs 理图约 90px（主因描述两行 vs 理图单行、封面更大；卡内结构与 L4 比例关系一致，属内容长度差异）；④理想图底部五 Tab 导航——本页为分包非 tab 页，平台原生不渲染 tabBar，全站分包页一致无底导航（平台事实，记录不立案）；⑤「等 N 位朋友加入」vs 理想图「等 N 位朋友已加入」缺「已」字（A2 INDEX-008 已立案 i18n 硬编码）。",
+      "evidence": "素材/理想效果图/兴趣圈列表.png（852×1846）与 A 默认逐区对照；激活 chip 像素取样 (60,150)=RGB(238,247,242) 薄荷底、非激活 chip (265,160)=纯白底"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【交互证据呈报（判定归交互判定员，不立案）】①CI13-after（?category=travel 深链）：过滤生效仅剩旅行卡 ✓，但 chips 高亮仍停在「全部」——列表内容与高亮态不一致（代码注释称 category query 与 quick tab『互不干扰』index.vue:228，属有意为之，是否合理请交互判定）；②CI09-after（加入旅行圈）：截图未见按钮翻转（仍「+ 加入」、人数仍 8,932），wxml 快照仅 345 字节只含头部、无法仲裁是否为截图时序问题；③本页交互 dom 探测全量失效（.circle-card/.circles-tab 等全部 :absent，与截图实际渲染矛盾），该页自动化探测方法不可信，CI 系列 EXECUTED 结论需以截图为准复核。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI13-after.png、CI09-after.png、wxml/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI09-after.wxml（345B 头部截断）、exec-results.json .results[454-472]"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "observation": "【加载态/错误态/空态视觉未取证（如实声明）】巡检未产出本页加载/错误/空态截图：页面 mock 恒非空故无空态（CI19 条件用例 dom .circlesEmpty:absent 与非空现状相符）；CI18（错误态重试）FAILED——无法注入错误态（element not found __CAND__），错误态 UI 视觉未验证；CI01（Loading→Success 时序）EXECUTED 但 dom 探测在该页失效，加载态视觉未取证。三项均标注为『未基于新代码做视觉验证』，不在本轮下结论。",
+      "evidence": "exec-results.json .results[471]（CI18 FAILED: action tap __CAND__ failed: element not found）、.results[454]（CI01 dom 全 absent）、.results[472]（CI19 circlesEmpty absent）"
+    }
+  ],
+  "coverage": [
+    "证据缓存校验：screenshot-manifest.json gitSha=aefd8a72 ✓、interact/exec-results.json gitSha=aefd8a72（round=R1, updatedAt=2026-09-23T12:00:00.115Z, 1283 条）✓，与要求的当前 sha 一致，全部证据按当前代码有效采信。",
+    "截图已看：本页 10/10 张巡检截图全部逐张查看（A/B 双身份 × 默认/交互后/数据态/滚动-中部/滚动-底部），另看交互截图 CI09-before/after、CI10-after、CI13-after、CI19-after（CI04/CI05/CI11/CI12/CI17 的 after 截图为 automation timeout 未产出，如实记录）。",
+    "理想图已对照：素材/理想效果图/兴趣圈列表.png 按 L1 结构→L2 层级→L3 交互位置→L4 卡片尺寸→L5 间距→L6 文案→L7 图标→L8 颜色→L9 阴影→L10 微细节逐层比对（差异记录见 observations-04，其中 L3 两处缺失立案 001/002）。",
+    "放大取证：PowerShell System.Drawing 对头部（4x）/chips（3-5x）/卡1（3x）/头像（8x）/美食卡（2x）/天文圈封面（4x/8x）/学习搭子（4x）做放大裁片核对；像素取样确认激活/非激活 chip 底色。",
+    "滚动已测：滚动-中部/滚动-底部两态实拍核对 14 卡全序与内容连续性（自动化 CI16 pageScrollTo bottom/top 亦执行）。",
+    "点击/返回已测：交互取证 CI01-CI19 共 16 条本页用例记录在案（返回 CI02/CI03、搜索 CI04、tab CI05、加退圈 CI09/CI10、快击 CI11、失败分支 CI12、深链 CI13、错误态 CI18 FAILED、空态 CI19）——判定归交互判定员，本审查仅消费其截图与 toast 记录。",
+    "safe-area 已查：滚动-底部最后一张卡完整可见 + 底部留白；分包非 tab 页无 TabBar（平台正确行为），AppShell :tab-bar-safe=false + list-bottom-spacer 60rpx + 全局 safe-area-inset-bottom 兜底，无遮挡。",
+    "TabBar 已查：本页为 subpackages 分包页不显示原生 tabBar，与全站分包页行为一致；理想图五 Tab 属 tab 页对照项，不适用本页（记录）。",
+    "空态/加载态/错误态已查：见 observations-06——空态因 mock 恒非空未取证、CI18 注入失败 FAILED、加载态 dom 探测失效，三项均如实标注『视觉未验证』。",
+    "长文已查：两行描述换行完整无裁切；统计行/好友行单行省略链在 373px 下未触发截断（observations-01）。",
+    "数据极值已查：万位(1.2w)/千分位(8,932)/无千位(740 以下)三种计数格式实渲染核对；热门徽阈值边界（8,123 有徽 vs 7,240 无徽）正确；头像堆三档（5/6/7/10/12 位）计数与头像组渲染正常。",
+    "组件一致性已查：封面映射走 config/circle-covers 单一真相源（与圈子主页/首页共用）；加入按钮描边胶囊样式与卡片体系自洽；A/B 双身份五态逐像素一致（每对 diff 仅 24 采样点噪声）。",
+    "历史 Bug 回归已查：MP-R1-CIRCLE-004（P0 统计行半字硬裁）按『375px 双身份复拍』口径实测通过（observations-01），与 A2 INDEX-001 代码层结论互证，闭环判定移交终验；未发现其他历史线索指向本页。",
+    "与代码层 findings 去重：A2 已立案 12 项（INDEX-001~012：统计行回归/深色模式/校园拦截死代码/朋友加入伪造数据/token 违规/死样式/i18n 硬编码/reLaunch 兜底/并发去重/命名遮蔽/scroll-view 高度链）全部不重复；本文件 5 项均为截图/素材/热区层新证据。",
+    "执行命令留痕：gitSha 校验（node 读 JSON 字段）、grep/sed 读 index.vue(288-421/185-232/640-790/805-870)/AppShell.vue(270-340)/circle-covers.ts/images.ts/mock-data.ts/zh-CN.ts、PNG 尺寸读取、System.Drawing 裁片与像素 diff（A/B 五态 + CI09 前后）、素材文件 circle-sky.png 直接检视。"
+  ]
+}

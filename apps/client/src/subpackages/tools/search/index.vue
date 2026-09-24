@@ -5,7 +5,7 @@
  * 顶部搜索框（自动聚焦）+ 热搜词/搜索历史（未输入时）+ 帖子搜索结果流
  * （复用 PostCard 卡片，含「标题命中」标识）。
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { onLoad, onReachBottom } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useSearchStore } from "../../../stores/search";
@@ -60,7 +60,26 @@ onMounted(() => {
 /** 输入回调（防抖搜索） */
 function onSearchInput() {
   searchStore.setKeyword(searchStore.keyword);
+  // MP-R1-SEARCH-01：用户 Tab 防抖自动搜索——store.setKeyword 的防抖到期只调
+  // /search/posts（搜帖子），用户 Tab 的 searchUsers 仅由回车/热搜词/切 Tab 触发，
+  // 输入过程中用户列表恒为空。按当前 Tab 分发：users 走本地 300ms 防抖 searchUsers；
+  // tags 维持 store 防抖搜帖子；schools 为 computed 即时过滤无需处理。
+  if (userSearchTimer) clearTimeout(userSearchTimer);
+  if (activeTab.value === "users" && searchStore.keyword.trim().length > 0) {
+    userSearchTimer = setTimeout(() => {
+      userSearchTimer = null;
+      void runTabSearch();
+    }, SEARCH_USERS_DEBOUNCE_MS);
+  }
 }
+const SEARCH_USERS_DEBOUNCE_MS = 300;
+let userSearchTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (userSearchTimer) {
+    clearTimeout(userSearchTimer);
+    userSearchTimer = null;
+  }
+});
 
 /** 回车立即搜索 */
 function onConfirm() {
@@ -491,6 +510,11 @@ function goToActivity(activityId: number) {
   font-size: 28rpx;
   color: var(--color-primary, #ff6b81);
   flex-shrink: 0;
+  /* MP-R1-SEARCH-301：常驻「取消」与微信胶囊矩形相交（胶囊距右缘 7~94px、
+     top≈statusbar+4 高 32px，头部行 padding-top 仅状态栏+16rpx 落在胶囊带内）。
+     右侧按 --capsule-right 配方避让（与 .search-box 的 R12-IND-SEARCH-001 口径对齐），
+     使取消完整落在胶囊左侧可点 */
+  margin-right: calc(var(--capsule-right, 7px) + 96px);
 }
 
 .suggest-wrap {

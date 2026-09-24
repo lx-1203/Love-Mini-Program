@@ -1,0 +1,88 @@
+{
+  "round": "R1",
+  "page": "subpackages/circles/circles/index",
+  "reviewer": "需求对照员-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX（A4，需求/功能目标对照）",
+  "date": "2026-09-24",
+  "note": "R1 需求对照：证据缓存校验通过（interact/exec-results.json round=R1 gitSha=aefd8a72，本页 CI01-CI21=results[454-474] 逐条读取）。锚定理想图 素材/理想效果图/兴趣圈列表.png 本轮亲自打开逐区查看。与视觉审查员（findings/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json 001-005）及代码层 A2（code-findings/...json 001-012）去重：筛选圆钮缺失引用视觉 INDEX-002 不重复立案；本文件新立 2 项（REQ1 搜索占位死胡同 Function P2、REQ2 加入 CTA 无防连点 Interaction P3）。封面四素材做了 MD5+PIL 尺寸+16x16 灰度 MSE 同源性核对；CI09 加入翻转用 before 截图（摄影圈种子外翻转）亲自仲裁。详见 page-compare/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.md。",
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-REQ1",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI04-after.png（CI04 执行后 toast 记录在 exec-results，after 截图为 automation timeout 未落盘；头部现状另见 reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "搜索功能目标未实现（占位死胡同）：理想图头部右端放大镜对应「搜索」能力，本页唯一实现是 goSearch() 弹 toast「搜索功能即将上线」——无搜索页跳转、无圈子域搜索。CI04 实证连击两次均只出 toast。仓内已有帖子搜索页 ROUTES.SEARCH=/subpackages/tools/search/index（nearby:235、village:600 均已接线），本页未接；该搜索页为帖子搜索流（无 circles 数据源），即使接线也不覆盖「搜圈子」。叠加视觉审查员 001（搜索钮被胶囊遮挡、真机不可见不可点），搜索目标双层未达成：真机上入口不可见，模拟器/自动化里入口是死胡同。代码自身注释（index.vue:263）锚定规格书 14.4 目标为「跳搜索页」，实现与自锚目标不符。",
+      "evidence": "代码：index.vue:263-266（goSearch 仅 showToast『搜索功能即将上线』）、312-323（header-right 搜索钮）；constants/routes.ts:57-58（SEARCH 路由已存在）；subpackages/tools/search/index.vue:5（帖子搜索结果流，无圈子域）；pages/nearby/index.vue:235 与 subpackages/village/village/index.vue:600（同类入口均接 ROUTES.SEARCH，本页例外）。交互：exec-results.json results[457] CI04 toast×2『搜索功能即将上线』。理想图：素材/理想效果图/兴趣圈列表.png 头部右端放大镜（本轮查看确认）。",
+      "sources": ["code", "interaction", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "点击头部搜索钮进入可用搜索（最低口径：接线既有 ROUTES.SEARCH 与 nearby/village 口径一致；完整口径：搜索页支持圈子域），搜索目标闭环且入口真机可见（联动视觉 001 胶囊避让）。",
+      "fix": "goSearch() 改为 openAppPath(ROUTES.SEARCH)（短期）；若产品要求圈子内搜索，在 tools/search 增加 circles 数据源或本页内联搜索面板。与视觉 INDEX-001（胶囊遮挡）同批修复后复测 CI04。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-REQ2",
+      "round": "R1",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI11-before.png（after 截图 ERROR:timeout 未落盘；wxml/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI11-after.wxml 在档）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "加入/退出 CTA 无防连点（在途锁）保护，快击验收条件未被证实也未证伪：toggleJoin（页面）与 joinCircle/leaveCircle（store）均无 in-flight 去重；mock 分支 circle.memberCount += 1 非幂等，重渲染前的 N 次快击均读到旧 isJoined → N 次入账（成员数异常累加），real 模式为 N 次重复 POST /circles/{id}/join。CI11 用例目标即「快击×5 不出现成员数异常累加」，虽记 EXECUTED，但本页 dom 探测全失效（.circle-card__action 等 :absent）+ after 截图 automation timeout，该验收条件实际未验证。与 A2 INDEX-010 不重复（那是 fetchCircles 三触发路径并发，非 toggleJoin）。",
+      "evidence": "代码：index.vue:173-188（toggleJoin 无锁，@tap.stop 直调 store）；stores/circle.ts:335-348（mock joinCircle: circle.isJoined=true; circle.memberCount+=1 非幂等）、384-391（leaveCircle 对称 -=1）。交互：exec-results.json results[464] CI11 rapidTap x5 done=5、dom 全 :absent、after 截图 ERROR:timeout——未取证。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.65,
+      "ideal": "点击「+ 加入/已加入」执行期间忽略重复触发：成员数与按钮态每次点击至多变化一次（mock 与 real 口径一致）。",
+      "fix": "toggleJoin 增加 in-flight ref（按 circleId 或全局）执行中直接 return；mock 分支改按终态赋值（isJoined 翻转、memberCount 由基础值±1 而非 +=）。修复后重跑 CI11 并落实 after 截图。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/circles/circles/index",
+      "baseline": "素材/理想效果图/兴趣圈列表.png",
+      "structureNotes": "L1 结构：返回+标题（趣下划线）+搜索 / 副标题 / chips 行 / 圈卡列表四大区与理想图一一对应；偏差①理想图 chips 末端筛选圆钮缺失（视觉 INDEX-002 已立案）、②ask 摘要所列「我的圈子/发现圈子Tab」在锚定理想图中不存在（全站亦无：zh-CN.ts:1509 仅 i18n key，settings/index.vue:332 产品 2026-09-06 裁剪隐藏，circle.ts:289-293 joinedCircles getter 无 UI 消费——不立案，建议更正锚定单摘要）、③底部五 Tab 平台不适用（分包页无原生 tabBar）。L2 层级：标题→副标题→chips→卡片层级及卡内「封面|信息|CTA」三栏一致。L3 交互位置：搜索钮与理想图同位但被胶囊遮挡真机不可达（视觉 INDEX-001）；chips 横滑可及；CTA 右侧同位。L4 比例：卡高 ≈118px vs 理想 ≈90px（描述两行+封面大），比例关系一致。L5 间距：373px 视口统计行/好友行完整（历史 P0 MP-R1-CIRCLE-004 回归通过）。L6 文案：副标题逐字一致（zh-CN.ts:3671）；「等 N 位朋友加入」缺「已」（A2 INDEX-008）；圈名后缀风格不一（视觉 004）。L7 图标：「更多」chip 用 LIST 图标顶替理想图筛选 ≡ 圆钮。L8 颜色：激活 chip 薄荷底绿字 vs 理想实心绿底白字（R13 修复后现状，不复立案）；热门徽红底白字（A2 已立案）；加入钮浅绿描边胶囊一致。L9 阴影：--s-card-soft 一致。L10 微细节：A/B 双身份五态逐像素一致；1.2w/8,932/740 三种计数格式正确。L1-L4 无未立案偏差。",
+      "usageNotes": "核心任务路径：浏览（三重兜底拉取，14 卡完整渲染）✓；分类过滤（chips CI05/06/07 + 深链 CI13 实证）✓，但深链 ?category 时 chips 高亮留「全部」为小迷路点（有意为之，判定归交互判定员）；加入/退出（@tap.stop + 失败 toast + mock/real 双模式；本轮以 CI09-before 摄影圈 mock 种子 isJoined:false 却渲染「已加入」仲裁出此前自动化点击真实完成过一次加入翻转并跨用例持久）✓；进圈子主页（CI08/CI21）✓；搜索＝死胡同（REQ1）；更多筛选＝无入口（视觉 002）。迷路风险低：返回钮 1 步回来源（CI02），栈底兜底 switchTab 首页不白屏（CI03）；2 步内回 tab ✓（本页 1 步）。入口：home:367、nearby:248、village:281(?category)。取证缺口：错误态（CI18 FAILED）与空态（CI19 mock 恒非空未触发）从未真实渲染验证。",
+      "functionGaps": [
+        {
+          "target": "搜索（理想图头部放大镜 / 代码自锚规格书 14.4）",
+          "current": "goSearch() 仅 toast『搜索功能即将上线』（index.vue:263-266；CI04 toast×2）；既有 ROUTES.SEARCH 帖子搜索页未接线且无圈子域",
+          "gap": "搜索能力缺失：入口真机被胶囊遮（视觉 001）+ 点击为占位死胡同（REQ1）",
+          "fix": "goSearch 接 openAppPath(ROUTES.SEARCH)；圈子域搜索按产品决策补数据源；与视觉 001 同批修复"
+        },
+        {
+          "target": "筛选圆钮 + 筛选面板（理想图 chips 末端 ≡+绿点）",
+          "current": "无任何筛选控件（模板仅 QUICK_TABS v-for，全文件无 filter 节点）",
+          "gap": "理想图控件整页缺失，无排序/更多筛选能力",
+          "fix": "已立案：视觉 INDEX-002（Function P2），本文件不重复；若裁剪需契约记录关闭 R13 挂账"
+        },
+        {
+          "target": "我的圈子/发现圈子 Tab（ask 页面摘要所列）",
+          "current": "无此结构；锚定理想图亦无；settings/index.vue:332 产品 2026-09-06 裁剪隐藏「我的圈子」；joinedCircles getter 无消费",
+          "gap": "ask 摘要与唯一页面级对照依据（理想图）不符，不构成页面级功能缺失；已加入圈聚合视图全站无入口属产品裁剪现状",
+          "fix": "更正锚定单摘要（删除或注明裁剪依据）；产品若恢复需求再立项"
+        },
+        {
+          "target": "加入 CTA 快击可靠性（CI11 验收条件）",
+          "current": "toggleJoin/store 无在途锁；mock memberCount += 1 非幂等",
+          "gap": "快击可重复入账；CI11 因 dom 探测失效+after 截图超时未证实未证伪",
+          "fix": "REQ2：in-flight 锁 + mock 按终态赋值；重跑 CI11"
+        },
+        {
+          "target": "错误态/空态验收",
+          "current": "PageStateContainer 四态代码完备（index.vue:123-133）；CI18 错误态注入 FAILED、CI19 空态 mock 恒非空未触发",
+          "gap": "两态从未真实渲染取证，重试链路未验证",
+          "fix": "真实模式（或拦截 request 注入失败）补错误态/空态取证，闭环 CI18"
+        },
+        {
+          "target": "深链 ?category 高亮同步",
+          "current": "过滤生效但 chips 高亮留「全部」（CI13 截图；index.vue:228 注释有意为之）",
+          "gap": "列表内容与高亮态不一致（村口分类入口所见非所选）",
+          "fix": "category 参数映射进 QUICK_TABS 激活态；是否立案归交互判定员（视觉 observation-05 已呈报）"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-req.json"
+}

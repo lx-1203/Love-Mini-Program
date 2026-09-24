@@ -9,8 +9,7 @@ import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
 // MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
-import { isUploadedMediaUrl } from "../../../utils/media";
-import SafeImage from "../../../components/common/SafeImage.vue";
+import { isUploadedMediaUrl, resolveMediaUrl } from "../../../utils/media";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { TOAST_DURATION } from "../../../constants/limits";
@@ -386,7 +385,9 @@ onUnmounted(() => {
  * 2026-08-10 B2：real 模式已接入 GET /verification 状态轮询（pending 态 30s 自动刷新），
  * 本函数保留仅用于 mock 演示。 */
 function simulateApprove() {
-  if (!isMockMode) {
+  // MP-R1-VERIFY-INDEX-004：补调用括号——原 `!isMockMode` 判的是函数引用（恒真值），
+  // 守卫永不触发，R4-00029 防伪造认证守卫失效，仅剩模板 v-if 单层防护
+  if (!isMockMode()) {
     console.warn("[Verification] simulateApprove 仅允许在 mock 模式调用");
     return;
   }
@@ -483,9 +484,11 @@ function onBlur() {
       <text class="status-card__desc">{{ statusInfo.desc }}</text>
     </view>
 
-    <!-- B4 认证门控横幅（2026-08-13）：未认证用户仅可浏览，引导完成认证解锁互动 -->
+    <!-- B4 认证门控横幅（2026-08-13）：未认证用户仅可浏览，引导完成认证解锁互动
+         MP-R1-VERIFY-INDEX-102/REQ23-006：照 R10-P4 模式改原生 image——SafeImage
+         custom-class 跨组件作用域不生效导致警示图标零尺寸不可见 -->
     <view v-if="status === 'unverified'" class="gate-banner">
-      <SafeImage :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" custom-class="gate-banner__icon" mode="aspectFit" />
+      <image class="gate-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
       <text class="gate-banner__text">{{ t('verification.gateBanner') }}</text>
     </view>
 
@@ -502,7 +505,8 @@ function onBlur() {
             class="benefit-item"
           >
             <view class="benefit-item__icon">
-              <SafeImage :src="item.icon" custom-class="benefit-item__icon-img" mode="aspectFit" />
+              <!-- MP-R1-VERIFY-INDEX-102：SafeImage 塌陷 0×0 改原生 image（R10-P4 同款） -->
+              <image class="benefit-item__icon-img" :src="item.icon" mode="aspectFit" alt="" />
             </view>
             <text class="benefit-item__title">{{ item.title }}</text>
             <text class="benefit-item__desc">{{ item.desc }}</text>
@@ -553,7 +557,8 @@ function onBlur() {
             class="benefit-item"
           >
             <view class="benefit-item__icon">
-              <SafeImage :src="item.icon" custom-class="benefit-item__icon-img" mode="aspectFit" />
+              <!-- MP-R1-VERIFY-INDEX-102：SafeImage 塌陷 0×0 改原生 image（R10-P4 同款） -->
+              <image class="benefit-item__icon-img" :src="item.icon" mode="aspectFit" alt="" />
             </view>
             <text class="benefit-item__title">{{ item.title }}</text>
             <text class="benefit-item__desc">{{ item.desc }}</text>
@@ -932,6 +937,12 @@ function onBlur() {
   align-items: center;
   justify-content: center;
   margin-bottom: 16rpx;
+}
+
+/* MP-R1-VERIFY-INDEX-102：图标随 64rpx 底座撑满（原生 image 直引，无跨组件作用域问题） */
+.benefit-item__icon-img {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .benefit-item__emoji {

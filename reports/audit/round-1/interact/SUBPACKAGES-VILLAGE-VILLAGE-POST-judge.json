@@ -1,0 +1,558 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/post（村口·发布动态表单页；Manifest.pageNotes 已裁定任务名「帖子详情」与源码不符，实为发布页）",
+  "manifest": "reports/audit/round-1/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
+  "observedSource": "reports/audit/round-1/interact/exec-results.json#suite=S05-village,VP01~VP34",
+  "screenshotDirs": [
+    "reports/screenshots/round-1-interact/",
+    "reports/screenshots/round-1-interact/wxml/"
+  ],
+  "judgedAt": "2026-09-23",
+  "summary": {
+    "total": 34,
+    "VERIFIED": 2,
+    "FAILED": 0,
+    "UNVERIFIED": 32,
+    "conclusion": "仅 VP01（首屏渲染，以同批次 VP02-after.png 同状态截图佐证）与 VP02（空表单拦截 Toast「请输入内容」）可判 VERIFIED。全部 critical 发布链路（VP03/04/05/06/27/28/29/33）与 30 个其余用例均因执行器取证工具链缺陷（input API 失败 el.input is not a function、__CAND__ 候选选择器未解析、深链 query 未携带、VP18 误用 .splice 方法名当选择器、大量截图 ERROR:timeout 未落盘）而不可判，UNVERIFIED≠应用健康。已执行动作的观测（空表单拦截 Toast ×7 例一致、空表单 X 关闭→reLaunch 村口/信息流页 ×2 例）与 Manifest 预期一致，无任何应用侧 FAILED 证据。"
+  },
+  "verdictRules": "三方对照：Manifest.expected（reports/audit/round-1/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json）vs A1.observed（exec-results.json 的 observed/route/toast/console/failureReason）vs 截图/wxml 实文件。一致→VERIFIED；预期未达成且归因应用→FAILED；执行失败/前置未建立/证据缺失或自相矛盾→UNVERIFIED。禁止凭代码推测判 VERIFIED（代码仅用于 Issue 的静态事实引用）。",
+  "checks": [
+    {
+      "caseId": "VP01",
+      "page": "subpackages/village/village/post",
+      "operation": "冷启动深链 reLaunch 进入，仅观察首屏（无交互）",
+      "expected": "post-header「发布动态」+X 钮+灰色发布胶囊（--disabled）、发布到卡片=个人动态/默认公开·所有人可见、标题/正文 placeholder、发帖小贴士可见；console 无 NAV_FAIL/TypeError",
+      "actual": "observed：route 栈顶=subpackages/village/village/post、dom 探针 .post-header__submit--disabled:present（灰胶囊已渲染）、console 空（无报错记录）；自身 after 截图采集超时（ERROR:timeout，盘上无此文件），但同批次紧随的 VP02-after.png（同一空表单首屏状态，执行器仅在 VP01 现场后追加 tap）完整呈现全部预期元素：标题「发布动态」、X 钮、灰「发布」胶囊、卡片「个人动态/默认公开·所有人可见」、placeholder「填写标题会有更多赞哦～」「分享你的故事、心情或寻找那个TA...」、发帖小贴士、底部工具栏。500ms 时限无法以自动化精确计量，以终态渲染取证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP01",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.png（同状态佐证）",
+        "reports/audit/round-1/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json#VP01"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "VP02",
+      "page": "subpackages/village/village/post",
+      "operation": "tap .post-header__submit（空表单）",
+      "expected": "Toast「请输入内容」；不发起发布请求；不路由；表单不清空；发布钮保持灰 disabled 样式但可点击命中拦截分支",
+      "actual": "toast=[showToast「请输入内容」]（exec-results toast 数组实录）；route 仍=[subpackages/village/village/post]（未路由）；dom .post-header__submit:present（钮在且可命中）；after 截图（70473B）与 wxml 快照均在盘，截图显示空表单原样、灰胶囊；console 无发布请求/报错。与 expected 完全一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP02",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "VP03",
+      "page": "subpackages/village/village/post",
+      "operation": "标题输入「自动化测试标题R1」→ tap 发布",
+      "expected": "Toast「已提交，审核通过后展示」+清表单+草稿删除+约800ms 后 reLaunch 村口，feed 顶部新帖",
+      "actual": "act-FAIL:input(__CAND__) el.input is not a function —— 标题未填入；tap 发布命中空内容拦截（toast=请输入内容）；before/after 截图（68133/68087B）与 wxml 在盘但均为未变的空表单；成功链路（Toast/清表单/草稿删除/返回/新帖）完全未执行。属执行器 input API 缺陷，非应用行为证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP03",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP03-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP03-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP04",
+      "page": "subpackages/village/village/post",
+      "operation": "正文输入两行 → tap 发布（标题回退首行截50字）",
+      "expected": "发布成功 Toast；payload title=首行；返回后新帖卡标题=首行",
+      "actual": "act-FAIL:input(__CAND__) el.input is not a function —— 正文未填入；tap 命中空内容拦截（toast=请输入内容）；标题回退逻辑未被行使；before/after 截图为未变空表单",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP04",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP04-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP04-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP05",
+      "page": "subpackages/village/village/post",
+      "operation": "填合法内容后 500ms 内 rapidTap .post-header__submit ×5",
+      "expected": "仅提交 1 次；无「请输入内容」误导 Toast；成功 Toast 一次；800ms 后返回",
+      "actual": "前置未建立：observed 无任何 input 步骤记录，表单为空；rapidTap×5 done=5 全部命中空内容拦截（toast=请输入内容 ×5，间隔 59~142ms）。空表单下每次点击都被内容校验拦截（守卫先于 submitting 置位）属 VP02 已验证的正确行为，不构成防连点证据，也不构成应用缺陷；「合法内容下仅 1 次提交」未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP05",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP05-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP05-after.wxml"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "VP06",
+      "page": "subpackages/village/village/post",
+      "operation": "输入标题/正文→静置≥600ms→reLaunch 重进验证草稿恢复",
+      "expected": "storage village:post-draft 含 title/content/targetType/visibility；重进自动恢复",
+      "actual": "act-FAIL:input(__CAND__) element not found: __CAND__ —— 内容未填入，草稿从未产生；重进后无从恢复；before/after 截图（68133/68147B）近同字节、均为空表单；storage 断言未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP06",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP06-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP06-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP07",
+      "page": "subpackages/village/village/post",
+      "operation": "输入标题后 tap .post-header__close → modal 点「保留」",
+      "expected": "弹出 modal「是否保留草稿？」（保留/放弃）；点保留同步落盘并返回；重进恢复",
+      "actual": "pre-FAIL:input el.input is not a function —— 表单实为空，dirty=false，tap X 走「无弹层直接返回」分支；route 终态=[subpackages/village/village/index]（返回动作本身成功，after 截图 194356B 为信息流页，状态栏时钟 19:03）；modal 未弹出故「保留」按钮 element not found。modal「保留」分支未被行使",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP07",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP07-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP07-after.wxml"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "VP08",
+      "page": "subpackages/village/village/post",
+      "operation": "输入正文后 tap .post-header__close → modal 点「放弃」",
+      "expected": "点「放弃」清除 village:post-draft 并返回；重进为全新空表单",
+      "actual": "同 VP07：pre-FAIL input 致表单为空，tap X 直接返回（route 终态=[village/index]，after 截图 194358B），modal 未弹出，「放弃」element not found。「放弃」分支未被行使",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP08",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP08-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP08-after.wxml"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "VP09",
+      "page": "subpackages/village/village/post",
+      "operation": "空表单 tap .post-header__close（打开即返回）",
+      "expected": "不弹 modal；reLaunch 回村口；终态栈顶 route=subpackages/village/village/index",
+      "actual": "记录自相矛盾：act:tap .post-header__close 已执行（无 act-FAIL），但 route 终态=[subpackages/village/village/post]（未离开），而 dom 探针又显示 .post-header__close:absent（与 tap 成功矛盾）；同批次的 VP07/VP08（同为空表单 X）route 终态均为 village/index，证明应用该行为存在。VP09 自身取证时序不可信，无法就本例证据下判",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP09",
+        "reports/audit/round-1/interact/exec-results.json#VP07（同前置对照）"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "VP10",
+      "page": "subpackages/village/village/post",
+      "operation": "重复进出×3（输入→X+保留→恢复→X+放弃→空表单→X）",
+      "expected": "三轮均成功路由、草稿链路自洽、无 console 报错",
+      "actual": "act:repeatNav reLaunch __CASE_PAGE__ ×3 全部 navErr:Uncaught [object Object]（三轮导航均抛错）；随后 input(__CAND__) element not found；仅 1 张 after 截图（68131B）。三轮进出未完成，草稿链路未验证；navErr 归因（应用 onLoad 异常 vs 执行器 repeatNav 实现）证据不足",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP10",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP10-after.png"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP11",
+      "page": "subpackages/village/village/post",
+      "operation": "tap .post-to__card 开启目标选择弹层",
+      "expected": "500ms 内弹出「选择发布到」三级分组弹层，当前项带 ✓",
+      "actual": "act:tap .post-to__card 已执行，但 after 截图采集超时（ERROR:timeout，盘上无 VP11-after.png）；dom 探针仅有 .post-to__card:present 与无关探针 .circles:absent，无弹层存在性断言。弹层是否开启无证据（旁证：VP19-after.png 显示同一 tap 后弹层可正常开启，但非本例证据）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP11",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP19-after.png（旁证，非本例）"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "VP12",
+      "page": "subpackages/village/village/post",
+      "operation": "目标弹层 tap「校园圈」（chooseCampus）",
+      "expected": "弹层关；卡片=校园圈；谁可以看=学校圈",
+      "actual": "status=SKIPPED，observed=action-not-automatable: tap 校园圈选项（chooseCampus post.vue:251-258），执行器未尝试（0 次动作），无截图无断言",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP12"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "VP13",
+      "page": "subpackages/village/village/post",
+      "operation": "目标弹层 tap「个人动态」（chooseGeneral）",
+      "expected": "弹层关；卡片回个人动态；谁可以看回所有人可见",
+      "actual": "前置 VP12（校园圈态）被 SKIPPED，实际仅重复 tap .post-to__card ×2（开→关切换）；after 截图 ERROR:timeout（盘上无文件）；联动断言缺失。「选回个人动态」未按用例语义行使",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP13"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP14",
+      "page": "subpackages/village/village/post",
+      "operation": "tap .post-target-sheet 遮罩关闭弹层",
+      "expected": "弹层关闭（targetOpen=false），目标不变，路由不变",
+      "actual": "act-FAIL:tap(.post-target-sheet) element not found —— 执行器未先 tap .post-to__card 打开弹层（observed 无开启步骤；该元素 v-if=targetOpen 仅在开启时存在，post.vue:644），遮罩关闭未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP14",
+        "apps/client/src/subpackages/village/village/post.vue:644"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP15",
+      "page": "subpackages/village/village/post",
+      "operation": "打开话题弹层 → 点选「校园日常」「晚自习」→ 再点取消",
+      "expected": "10 个热门 chip、点选实心绿 toggle、计数已选 1/5、正文区 #chip 同步",
+      "actual": "act-FAIL:tap(__CAND__(\"校园日常\")) element not found —— observed 无先开话题弹层步骤，chip 不存在；after 截图（67017B）为无弹层基础表单。点选/计数/正文 chip 全部未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP15",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP15-after.png"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP16",
+      "page": "subpackages/village/village/post",
+      "operation": "选满 5 话题后 tap 第 6 个 chip（超限行为）",
+      "expected": "如实记录超限点击有无反馈（源码 else-if 静默，疑似无反馈，待实测裁定）",
+      "actual": "status=SKIPPED，observed=action-not-automatable，0 次动作。静态事实：toggleTopic 超限分支为静默 else-if（post.vue:309-312，无 Toast），chip 带 press-feedback hover（post.vue:927 附近模板）；但「点击后 500ms 内可观测反馈与否」必须实测，不凭代码下判",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP16",
+        "apps/client/src/subpackages/village/village/post.vue:309-312"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "VP17",
+      "page": "subpackages/village/village/post",
+      "operation": "自定义话题「#摄影日常」添加/重复添加/超长截断",
+      "expected": "首次生成 chip 并关弹层；重复 Toast「该话题已添加」；输入 16 字截断",
+      "actual": "act-FAIL:input(__CAND__) element not found + act-FAIL:tap(__CAND__(\"添加\")) element not found；after 截图 ERROR:timeout（盘上无文件）。自定义话题链路全部未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP17"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP18",
+      "page": "subpackages/village/village/post",
+      "operation": "tap 已选话题 chip 的 × 移除",
+      "expected": "chip 立即消失、计数回 0/5、无 Toast、路由不变",
+      "actual": "act-FAIL:tap(.splice) element not found —— 执行器把 Manifest 行文中的 JS 方法名「.splice」（post.vue topics.splice）误作 CSS 选择器；且无任何预置已选话题步骤。用例未被执行；after 截图 ERROR:timeout（盘上无文件）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP18"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP19",
+      "page": "subpackages/village/village/post",
+      "operation": "?circleId=8 进入 → 观察圈子目标（话题入口隐藏）→ tap .post-to__card 核对",
+      "expected": "发布到卡片=圈名+「圈内成员可见」；「添加话题」行与底部「话题」钮不渲染；visibility=interest",
+      "actual": "前置未建立：observed 无 pre:reLaunch 记录、route options={}（?circleId=8 未传入）；VP19-after.png（56988B，状态栏 9:40）实证页面为 general 目标：卡片=「个人动态/默认公开·所有人可见」、「添加话题 已选0/5」行可见、tap 后弹层显示「公域/校园私域」分组。应用从未进入圈子目标态，无法验证（归因执行器未携带 query，route options 可证）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP19",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP19-after.png"
+      ],
+      "confidence": 0.45
+    },
+    {
+      "caseId": "VP20",
+      "page": "subpackages/village/village/post",
+      "operation": "位置弹层：chip 点选/自定义输入使用/清除当前位置",
+      "expected": "chip 点选生效、自定义生效、清除复位、空输入无变化",
+      "actual": "act-FAIL:input(__CAND__) + tap(__CAND__(\"置\")) ×2 + tap(__CAND__(\"使用\")) 全部 element not found；after 截图（67033B）为无弹层基础表单。三步均未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP20",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP20-after.png"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP21",
+      "page": "subpackages/village/village/post",
+      "operation": "正文输入后 tap 提及好友行/工具栏「提及」钮",
+      "expected": "正文末尾追加「 @」+Toast「已在正文末尾插入 @，请输入昵称」，两入口一致",
+      "actual": "pre-FAIL:input element not found: __CAND__ + act-FAIL:tap(__CAND__(\"提及\")) element not found —— 正文与两入口点击均未执行；after 截图（67033B）为基础表单",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP21",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP21-after.png"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP22",
+      "page": "subpackages/village/village/post",
+      "operation": "三种目标下分别 tap「谁可以看」并点选选项",
+      "expected": "general 2 项/campus 1 项/circle 1 项，✓ 勾选联动，meta 同步",
+      "actual": "act-FAIL:tap(__CAND__(\"谁可以看\")) + tap(__CAND__(\"学校圈可见\")) 均 element not found；仅 general 单场景且弹层未打开；盘上 VP22-after.png（70432B，状态栏 9:42，exec-results 标注 timeout 但文件存在）显示基础表单、无弹层；campus/circle 场景未进入",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP22",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP22-after.png"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP23",
+      "page": "subpackages/village/village/post",
+      "operation": "四弹层（目标/话题/位置/可见范围）遮罩关闭 + X 钮核查",
+      "expected": "遮罩均可关闭；核查四弹层无显式 X（两路关闭）记规格偏差候选",
+      "actual": "status=SKIPPED，observed=action-not-automatable，0 次交互。静态核查（代码可定）：四弹层均以遮罩 @tap 关闭且面板 head 无关闭钮（post.vue:644/915/960/1008），「无 X 关闭钮」这一静态事实成立，已记 Issue MP-R1-VPOST-103；但「遮罩点击实际可关闭」的交互行为无实测证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP23",
+        "apps/client/src/subpackages/village/village/post.vue:644",
+        "apps/client/src/subpackages/village/village/post.vue:915-921",
+        "apps/client/src/subpackages/village/village/post.vue:960-966",
+        "apps/client/src/subpackages/village/village/post.vue:1008-1012"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "VP24",
+      "page": "subpackages/village/village/post",
+      "operation": "九宫格选图至满 9 后再选 → 上限 Toast",
+      "expected": "选图后九宫格 +1；满 9 后「＋」消失、工具栏点图 Toast「最多上传9张图片」",
+      "actual": "act-FAIL:tap(__CAND__(\"＋\")) ×3 element not found；草稿预置 8 图步骤无执行记录；after 截图（66993B，状态栏 19:07）显示九宫格仅空「＋」格。选图链路（含 uni.chooseImage mock）未建立，未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP24",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP24-after.png"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP25",
+      "page": "subpackages/village/village/post",
+      "operation": "草稿预置 1 图后 tap 缩略图 × 移除",
+      "expected": "缩略图移除、「＋」复现、storage images 同步清空",
+      "actual": "status=SKIPPED，observed=action-not-automatable: tap 第一张缩略图右上角 ×，0 次动作，无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP25"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "VP26",
+      "page": "subpackages/village/village/post",
+      "operation": "标题粘贴 30 字/正文粘贴 600 字验证截断与计数",
+      "expected": "标题截 20 字（20/20）、正文截 500 字（500/500 不标红）",
+      "actual": "act-FAIL:input(__CAND__) element not found —— 粘贴未执行；after 截图（67059B）为基础空表单。边界截断未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP26",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP26-after.png"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP27",
+      "page": "subpackages/village/village/post",
+      "operation": "正文输入 <script>…</script>🎉 多行 → tap 发布",
+      "expected": "发布成功；title=首行纯文本；feed 渲染转义、无脚本执行",
+      "actual": "act-FAIL:input(__CAND__) el.input is not a function —— 内容未填入；tap 命中空内容拦截（toast=请输入内容）；XSS/emoji 发布与转义渲染未验证；before 截图 ERROR:timeout、after 截图（67020B）+wxml 为空表单",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP27",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP27-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP27-after.wxml"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "caseId": "VP28",
+      "page": "subpackages/village/village/post",
+      "operation": "输入「临时」后清空标题 → 发布钮回落 disabled",
+      "expected": "清空后即时回灰 disabled 态；再点 Toast「请输入内容」；placeholder 复现",
+      "actual": "pre-FAIL:input el.input is not a function + act-FAIL:input ×2（尝试 2 次）—— 输入与清空均无法执行；after 截图 ERROR:timeout（盘上无文件）；dom 探针 .post-header__submit--disabled:present 为空表单常态，与「输入后清空回落」不是同一命题",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP28"
+      ],
+      "confidence": 0.25
+    },
+    {
+      "caseId": "VP29",
+      "page": "subpackages/village/village/post",
+      "operation": "?circleId=8 进入 → 填标题「圈内发帖R1」→ tap 发布（createTopic 链路）",
+      "expected": "POST /api/circles/8/topics；成功 Toast；清表单+删草稿+800ms 返回",
+      "actual": "前置与输入均未建立：observed 无 pre:reLaunch 记录、route options={}（circleId 未传入）、标题未填入；tap 发布命中空内容拦截（toast=请输入内容）；before/after 截图均 ERROR:timeout（盘上无文件）、wxml 在盘。createTopic 链路未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP29",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP29-after.wxml"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "VP30",
+      "page": "subpackages/village/village/post",
+      "operation": "预置 circle 旧草稿 → ?target=campus 进入观察归位",
+      "expected": "标题/正文恢复但目标被覆盖为 campus：卡片=校园圈、visibility=school，无矛盾组合",
+      "actual": "前置未建立：observed 仅 observe-only，无 storageSet/reLaunch 记录、route options={}（?target=campus 未传入）；VP30-after.png（70414B，状态栏 9:44）实证为默认 general 空表单：卡片=「个人动态/默认公开·所有人可见」、标题空（无「旧草稿R1」恢复）、谁可以看=所有人可见。归位口径未被行使（归因执行器）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP30",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP30-after.png"
+      ],
+      "confidence": 0.45
+    },
+    {
+      "caseId": "VP31",
+      "page": "subpackages/village/village/post",
+      "operation": "?circleId=99999 进入观察卡片兜底「兴趣圈帖子」",
+      "expected": "卡片=「兴趣圈帖子」非「个人动态」，副标题=默认公开·所有人可见，console 无未捕获异常",
+      "actual": "零有效证据：after 截图 ERROR:timeout（盘上无 VP31-after.png）、route options={}（circleId=99999 未传入）、无 dom 探针记录（observed 仅 top+MISMATCH）、console 空。兜底渲染未取证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP31"
+      ],
+      "confidence": 0.2
+    },
+    {
+      "caseId": "VP32",
+      "page": "subpackages/village/village/post",
+      "operation": "scroll-view 滚到底再滚回顶",
+      "expected": "底部工具栏全程吸底；滚到底最后内容（贴士/附加行）不被遮挡；滚回顶部标题可见；无白屏/跳变",
+      "actual": "act:pageScrollTo bottom + top 已执行、终态 scrollPos=top、无路由/console 异常；但证据仅此「scrollPos=top」一项——无吸底/遮挡/白屏的视觉或 DOM 断言，expected 的核心视觉主张未取证（noop 层允许免截图，但至少需 scrollTop 起止值与内容可达断言）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP32"
+      ],
+      "confidence": 0.4
+    },
+    {
+      "caseId": "VP33",
+      "page": "subpackages/village/village/post",
+      "operation": "注入发布失败（断网/500/mock 抛错）后 tap 发布",
+      "expected": "Toast 取 store.errorMessage，空则兜底「发布失败」；不路由、表单不清空、submitting 复位",
+      "actual": "前置未建立：无失败注入记录（mock 拦截无日志）、表单为空，tap 命中空内容拦截（toast=请输入内容，即 VP02 分支）而非失败分支；before/after 截图均 70427B（同字节，画面无变化）+wxml 在盘。错误 Toast 文案分支未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP33",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-after.png",
+        "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-after.wxml"
+      ],
+      "confidence": 0.35
+    },
+    {
+      "caseId": "VP34",
+      "page": "subpackages/village/village/post",
+      "operation": "读取 .post-header__close / .post-header__submit 渲染尺寸",
+      "expected": "如实记录实测 boundingClientRect：X 钮 64rpx×64rpx（<88rpx 铁律），发布胶囊 ≥88rpx 高",
+      "actual": "observed 仅元素存在性探针（.post-header__close:present .post-header__submit:present），无任何尺寸数据；evidence 仅 scrollPos=top。expected 要求的实测值未采集。静态事实（可定）：post.vue:1062-1064 .post-header__close width/height:64rpx，低于 88rpx 热区铁律，已记 Issue MP-R1-VPOST-102；但本用例的「实测」未完成，不据此判 VERIFIED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#VP34",
+        "apps/client/src/subpackages/village/village/post.vue:1062-1064"
+      ],
+      "confidence": 0.3
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-VPOST-101",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#S05-village（failureReason 16 条）；VP01/11/13/17/18/22/27/28/29/31 截图标注 ERROR:timeout 且盘上无文件",
+      "category": "Architecture",
+      "severity": "P1",
+      "description": "R1 执行器取证工具链缺陷导致本页 34 用例中 32 个不可判（含全部 8 条 critical 发布链路）：(a) input 步骤报 el.input is not a function（VP03/04/07/08/21/27/28）；(b) __CAND__ 候选选择器未解析为真实元素（VP06/10/14/15/17/20/21/22/24/26）；(c) 深链 query 未携带——VP19/29/30 的 pre 要求 ?circleId=8 / ?circleId=99999 / ?target=campus，route 实录 options={}，应用从未进入目标态；(d) VP18 把 Manifest 行文方法名「.splice」误作 CSS 选择器；(e) 11 处截图 ERROR:timeout 未落盘；(f) 身份错配：全部 34 例 pre 实录 login userId=user-1001，与 Manifest 身份A=100158 不符（MISMATCH!）；(g) VP10 repeatNav reLaunch×3 全抛 navErr:Uncaught [object Object]。注意：UNVERIFIED≠应用无缺陷，round-2 必须修复执行器后重跑 S05",
+      "evidence": "exec-results.json S05-village VP03 failureReason=action input __CAND__ failed: el.input is not a function；VP19/VP29/VP30 route=[{route:'subpackages/village/village/post',options:{}}]（无 query）；VP18 failureReason=element not found: .splice；VP34 observed 无尺寸数据",
+      "sources": [
+        "log"
+      ],
+      "confidence": 1.0,
+      "ideal": "执行器能真实输入文本（element.input()/dispatch input 事件）、解析候选选择器、透传深链 query、按 Manifest 身份登录，并对本页 34 用例产出可三方对照的 observed+截图",
+      "fix": "修复 scripts/qa 下 r11 执行器：input 改用 automator element.input() 或 value 赋值+trigger('input')；实现 __CAND__ 候选解析回退（文本匹配→class 匹配）；deepLink 保留 URL query；登录身份对齐 tmp_r11_login.json；补 VP18 选择器为真实 × 钮 class；修复后整包重跑 S05-village",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VPOST-102",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.png（可见头部 X 钮实际命中区偏小）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "头部 X 关闭钮热区 64rpx×64rpx，低于交互铁律「热区≥88rpx」（R11 §5）。视觉 X 图标 36rpx 合理，但整个可点击容器仅 64rpx 见方，误触/难触风险高。VP34 实测未采集（执行器只记 presence），此为静态源码确定值；Manifest VP34 亦预标注该偏差候选",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:1062-1064（.post-header__close width:64rpx; height:64rpx）、post.vue:1066-1069（.post-header__x 36rpx 视觉图标）；exec-results.json#VP34 observed 无 boundingClientRect 数据",
+      "sources": [
+        "code",
+        "screenshot"
+      ],
+      "confidence": 0.85,
+      "ideal": "可点击命中区≥88rpx×88rpx（视觉 X 保持 36rpx），且保留 press-feedback 反馈（post.vue:584 已有）",
+      "fix": "将 .post-header__close 扩为 88rpx×88rpx 命中区（或加透明 padding/border 扩展），负 margin 补偿布局位移",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VPOST-103",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP19-after.png（目标弹层开启态，面板头部仅有标题、无关闭钮）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "四个底部弹层（选择发布到/添加话题/添加位置/谁可以看）均为两路关闭（遮罩点击+选择项自动关闭），面板头部无显式 X 关闭钮、无下滑手势，不符交互铁律「弹层三路关闭」。用户打开弹层后若不想选择只能精确点遮罩退出。VP23 交互实测被 SKIPPED，此为静态结构核查结论；Manifest VP23 亦预标注该规格偏差候选",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:644-651（target sheet：@tap 遮罩关闭，head 仅 title）、post.vue:915-921（话题 sheet head：title+计数，无关闭钮）、post.vue:960-966（位置 sheet head）、post.vue:1008-1012（可见范围 sheet head）；VP19-after.png 可视确认目标弹层头部无 X",
+      "sources": [
+        "code",
+        "screenshot"
+      ],
+      "confidence": 0.75,
+      "ideal": "每个弹层至少三路关闭：遮罩点击、选择后自动关闭、显式 X（或下滑手势）",
+      "fix": "四个 sheet 的 head 右侧补 X 关闭钮（复用 post-header__x 图标与 press-feedback），绑定制空 handler",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "VP03|执行器 input 失败（el.input is not a function）标题未填入，tap 命中空内容拦截，成功发布链路未执行|1",
+    "VP04|执行器 input 失败（el.input is not a function）正文未填入，标题回退逻辑未验证|1",
+    "VP05|前置未建立：无 input 步骤记录、表单为空，rapidTap×5 全部命中空内容拦截（5×请输入内容 Toast），防连点去重未验证|1",
+    "VP06|执行器 input 失败（element not found: __CAND__）草稿未写入，恢复链路未验证|1",
+    "VP07|pre input 失败致表单为空，X 走空表单直接返回分支（route 终态=village/index），modal 未弹出，「保留」分支未执行|1",
+    "VP08|同 VP07：表单为空未触发 modal，「放弃」分支未执行|1",
+    "VP09|记录自相矛盾：action 后 route 终态=post（预期 index）而 dom 探针 close:absent 与 tap 成功冲突；同前置的 VP07/08 终态均=index，本例取证时序不可信|1",
+    "VP10|input 失败 + repeatNav reLaunch×3 全抛 navErr:Uncaught [object Object]，三轮进出未完成|1",
+    "VP11|tap 已执行但 after 截图 ERROR:timeout（盘上无文件）且无弹层存在性断言，弹层开启未证实|1",
+    "VP12|执行器声明 action-not-automatable（SKIPPED），0 次尝试|0",
+    "VP13|前置（校园圈态）被跳过、仅重复 tap 卡片、截图 ERROR:timeout，联动未验证|1",
+    "VP14|执行器未先打开弹层即 tap 遮罩（v-if 未渲染，element not found），遮罩关闭未验证|1",
+    "VP15|话题弹层未打开，候选选择器 __CAND__(\"校园日常\") 未命中，chip 点选未执行|1",
+    "VP16|执行器声明 action-not-automatable（SKIPPED），0 次尝试；超限静默分支（post.vue:309-312）无实测不下判|0",
+    "VP17|input/tap __CAND__ 均未命中且截图 ERROR:timeout，自定义话题链路未执行|1",
+    "VP18|执行器将 Manifest 行文方法名「.splice」误作 CSS 选择器（element not found），且无预置已选话题步骤|1",
+    "VP19|前置未建立：无 pre:reLaunch 记录且 route options={}（?circleId=8 未传入），截图实证页面为 general 目标（个人动态卡片+话题行可见）|1",
+    "VP20|input/tap __CAND__（置/使用）全部未命中，位置弹层三步未执行|1",
+    "VP21|pre input 失败 + tap __CAND__(\"提及\") 未命中，@ 插入与 Toast 未验证|1",
+    "VP22|tap __CAND__(\"谁可以看\") 未命中，截图证实弹层未打开；campus/circle 场景未进入|1",
+    "VP23|执行器声明 action-not-automatable（SKIPPED），0 次尝试；遮罩关闭交互无实测（静态「无 X 钮」已记 Issue MP-R1-VPOST-103）|0",
+    "VP24|tap __CAND__(\"＋\") ×3 未命中且草稿预置 8 图无执行记录，九宫格与上限 Toast 未验证|1",
+    "VP25|执行器声明 action-not-automatable（SKIPPED），0 次尝试|0",
+    "VP26|input __CAND__ element not found，边界截断与计数未验证|1",
+    "VP27|执行器 input 失败（el.input is not a function），XSS/emoji 发布与转义渲染未验证|1",
+    "VP28|执行器 input 失败（el.input is not a function）×2 次，清空回落 disabled 态未验证|2",
+    "VP29|前置与输入均未建立：无 pre:reLaunch、route options={}（circleId 缺失）、标题未填入，tap 命中空内容拦截；前后截图均 ERROR:timeout|1",
+    "VP30|前置未建立：无 storageSet/reLaunch 记录、route options={}（?target=campus 缺失），截图实证为默认 general 空表单（无草稿恢复、无 campus 归位）|1",
+    "VP31|零有效证据：截图 ERROR:timeout（盘上无文件）、route options={}（circleId=99999 未传入）、无 dom 探针|1",
+    "VP32|证据仅 scrollPos=top：无吸底/遮挡/白屏断言，expected 视觉主张未取证|1",
+    "VP33|前置未建立：无失败注入记录、表单为空，tap 命中「请输入内容」而非失败分支 Toast；before/after 截图同字节|1",
+    "VP34|expected 要求 boundingClientRect 实测，observed 仅 presence 探针，尺寸数据未采集（静态 64rpx 已记 Issue MP-R1-VPOST-102）|1"
+  ],
+  "notes": "1) 页名仲裁：Manifest.pageNotes 成立——subpackages/village/village/post 实为发布动态表单页（截图头标题「发布动态」、zh-CN.ts headerTitle=发布动态），「帖子详情」是 village/detail；本判定按 Manifest 实际设计用例执行。2) 本页 0 个 FAILED：所有预期未达场均归因执行器（input API/候选选择器/query 透传/截图超时/身份错配 user-1001≠100158），无应用侧违约证据，但也因此整条 critical 发布链路（VP03/04/05/06/27/28/29/33）处于零覆盖状态，UNVERIFIED 不代表应用健康。3) 已执行动作的旁证与规格一致：空表单 tap 发布 7 例（VP02/03/04/05×5/27/29/33）全部 Toast「请输入内容」且不路由，与 post.vue:479-482 守卫一致；空表单 tap X 2 例（VP07/08）直接 reLaunch 信息流页（route 终态=village/index），与空表单免弹层分支一致。4) 执行分两批完成（截图状态栏时钟 9:33-9:44 与 19:03-19:08 两段，VP07/08/24/27 等属晚间批次），取证时序不一致（VP09 route 与 dom 矛盾）或与批次差异有关。5) VP16（话题超限静默无反馈）与 VP23（弹层两路关闭）为 Manifest 预埋的裁定候选：前者因 0 次实测不裁（保留 UNVERIFIED），后者的静态事实（无 X 钮）已按代码证据记 Issue MP-R1-VPOST-103。6) 修复执行器后 S05-village 需整包重跑，重跑前 Issue MP-R1-VPOST-101 必须先解。"
+}

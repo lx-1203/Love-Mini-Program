@@ -277,7 +277,8 @@ export const mockActivities: ActivitySummaryView[] = [
     activityDate: upcomingWeekdayDate(5),
     status: "upcoming",
     enrollmentCount: 23,
-    coverImage: resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg"))))),
+    // MP-R1-VILLAGE-INDEX-001：post-2 实读为水珠微距，与「电影社」无关；无影视素材置空（同 activity 202 口径）
+    coverImage: "",
   },
   {
     id: 202,
@@ -423,7 +424,7 @@ const mockPostsRaw: Array<
     categoryId: "cat-sincere",
     title: "",
     // MP-R1-VILLAGE-INDEX-103：图文语义一致化——post-7.jpg 实读核对为「热气球 + 金色晨昏原野」，
-    // 文案由「爬山日落」改为与画面一致的热气球清晨（原配 post-1.jpg 为城堡草坪，图文不符）
+    // 文案由「爬山日落」改为与画面一致的热气球清晨（原配 post-1.jpg 实读为暗色海岸礁石浪花，图文不符）
     content:
       "周末去坐了热气球，清晨的日光太治愈了，有一起的朋友吗？",
     images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-7.jpg"))))],
@@ -444,7 +445,7 @@ const mockPostsRaw: Array<
     categoryId: "cat-sincere",
     title: "",
     // MP-R1-VILLAGE-INDEX-103：post-8.jpg 实读核对为「雾中木栈桥」——文案由《长安三万里》
-    // 观后感改为取景地分享（原配 post-2.jpg 为礁石海景，图文不符）
+    // 观后感改为取景地分享（原配 post-2.jpg 实读为水珠微距，图文不符）
     content:
       "雾天的栈桥太出片了，恍惚走进了电影画面里，推荐这个取景地！",
     images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-8.jpg")))))],
@@ -466,8 +467,9 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "想找个人一起学做咖啡，拉花入门中，进度缓慢但快乐～",
-    // MP-R1-VILLAGE-INDEX-103：post-5.jpg 实读核对为「冒热气的咖啡杯特写」，与咖啡文案一致
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
+    // MP-R1-VILLAGE-INDEX-103/MP-R3-VILLAGE-INDEX-001：本轮实读定标——post-4.jpg=冒热气的杯子特写（与咖啡文案一致）；
+    // post-5.jpg 实读为白昼海岸悬崖海浪，不可配咖啡帖
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#咖啡', '#兴趣'],
     likes: 34,
     comments: 9,
@@ -486,7 +488,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "分享我的旅行清单：想去冰岛看极光，攒钱中！",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：极光清单无对应实图（post-4 实读为热饮杯），宁空图不配错图
+    images: [],
     tags: ['#校园日常', '#图书馆'],
     likes: 41,
     comments: 12,
@@ -503,11 +506,11 @@ const mockPostsRaw: Array<
     author: mockAuthors[4],
     categoryId: "cat-sincere",
     title: "",
-    // MP-R1-VILLAGE-INDEX-103：post-5.jpg 已归组给咖啡帖（post-9）；本帖与 post-10 同属
-    // 户外主题组复用 post-4.jpg（海岸悬崖），文案同步对齐画面
+    // MP-R1-VILLAGE-INDEX-103/MP-R3-VILLAGE-INDEX-001：本轮实读定标——post-5.jpg=白昼海岸悬崖海浪，
+    // 与「海边露营」语义一致（原配 post-4 实读为热饮杯，图文不符）
     content:
       "第一次一个人去海边露营，海风一吹烦恼清零。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
     tags: ['#露营', '#户外'],
     likes: 48,
     comments: 15,
@@ -585,7 +588,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "周末羽毛球局缺人，有没有组队的朋友？",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
+    // MP-R1-VILLAGE-INDEX-001：无羽毛球实图（post-1 实读为暗色海岸礁石），宁空图不配错图
+    images: [],
     tags: ['#运动', '#球局'],
     likes: 76,
     comments: 27,
@@ -622,7 +626,7 @@ const mockPostsRaw: Array<
     categoryId: "cat-sincere",
     title: "",
     content:
-      "辞职后gap三个月，计划走遍中国西部，有人同行吗？",
+      "辞职后gap三个月，先打卡了城郊的古堡庄园，草坪砾石路太出片了，接下来计划走遍中国，有人同行吗？",
     images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
     tags: ['#旅行', '#辞职gap'],
     likes: 90,
@@ -642,7 +646,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "有没有喜欢逛博物馆的朋友？周末组个局？",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：无博物馆实图（post-4 实读为热饮杯），宁空图不配错图
+    images: [],
     tags: ['#手作', '#陶艺'],
     likes: 97,
     comments: 6,
@@ -661,7 +666,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "深夜放毒：亲手做的红烧肉，肥而不腻，绝了！",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：无红烧肉实图（post-5 实读为海岸悬崖），改用美食圈封面 circle-food.png（语义=美食）
+    images: [resolveMediaUrl("/static/assets/images/covers/circle-food.png")],
     tags: ['#美食', '#深夜食堂'],
     likes: 104,
     comments: 9,
@@ -680,7 +686,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "想找语伴练英语口语，每周两次线上，有人吗？",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：线上语伴无需配图（post-6 实读为商业街人流，图文不符），宁空图不配错图
+    images: [],
     tags: ['#学习', '#英语'],
     likes: 111,
     comments: 12,
@@ -737,7 +744,9 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "加班到深夜，楼下便利店的热豆浆是唯一的慰藉。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
+    // MP-R1-VILLAGE-INDEX-001：post-4.jpg 实读为冒热气的杯子特写，与「热豆浆」语义一致
+    // （原配 post-1 实读为暗色海岸礁石，图文不符）
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#加班', '#打工日常'],
     likes: 132,
     comments: 21,
@@ -756,7 +765,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "春天来了，想找个人一起看樱花，武汉的樱花开好了。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
+    // MP-R1-VILLAGE-INDEX-001：无樱花实图（post-2 实读为水珠微距），宁空图不配错图
+    images: [],
     tags: ['#春天', '#樱花'],
     likes: 139,
     comments: 24,
@@ -775,7 +785,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "学了三个月吉他，终于能弹完整一首《晴天》了！",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-3.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：无吉他实图（post-3 实读为城堡草坪砾石路），宁空图不配错图
+    images: [],
     tags: ['#吉他', '#音乐'],
     likes: 146,
     comments: 27,
@@ -794,7 +805,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "MBTI测试分享：我是INFJ，有一样的吗？",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：无对应实图（post-4 实读为热饮杯），宁空图不配错图
+    images: [],
     tags: ['#童年', '#回忆'],
     likes: 153,
     comments: 30,
@@ -813,7 +825,8 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "跑步第100天打卡！从3公里到10公里，变化看得见。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-5.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：无跑步实图（post-5 实读为海岸悬崖），宁空图不配错图
+    images: [],
     tags: ['#跑步', '#坚持'],
     likes: 160,
     comments: 3,
@@ -832,7 +845,9 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "最近在研究咖啡手冲，喜欢的朋友可以交流下～",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-6.jpg")))],
+    // MP-R1-VILLAGE-INDEX-001：post-4.jpg 实读为冒热气的杯子特写，与「手冲咖啡」同属饮品语义组
+    // （原配 post-6 实读为商业街人流，图文不符）
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))],
     tags: ['#咖啡', '#手冲'],
     likes: 167,
     comments: 6,
@@ -909,7 +924,8 @@ const mockPostsRaw: Array<
     title: "今晚电影社放映《你的名字》，现场报名 ing！",
     content:
       "周五 19:00 影像楼 B 厅放映《你的名字》，映后自由讨论，免费入场！已报名 23 人，活动链接点卡片直达～",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
+    // MP-R1-VILLAGE-INDEX-001：无影视素材（post-2 实读为水珠微距，与电影放映无关），宁空图不配错图
+    images: [],
     tags: ["#电影", "#活动"],
     likes: 42,
     comments: 11,
@@ -940,7 +956,9 @@ const mockPostsRaw: Array<
     title: "图书馆四楼新增自习区，环境超棒！",
     content:
       "今天去图书馆发现四楼新开了自习区，每个座位都有插座和台灯，还有独立隔板，学习效率直接拉满，推荐给同校的同学们！",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-1.jpg"))))],
+    // MP-R1-VILLAGE-INDEX-001：post-1 实读为暗色海岸礁石、campus-library.jpg 实读为车内小憩，
+    // 均与「图书馆自习区」不符，宁空图不配错图
+    images: [],
     tags: ["#校园日常", "#图书馆"],
     likes: 35,
     comments: 9,
@@ -976,7 +994,7 @@ const mockPostTitles: Record<string, string> = {
   "post-14": "MBTI：INFJ 有没有同款？",
   "post-15": "周末羽毛球局，缺人组队！",
   "post-16": "雨天宅家泡茶读书，难得的清闲",
-  "post-17": "辞职 gap 三个月，计划走西部",
+  "post-17": "辞职 gap 打卡古堡庄园，下一站走遍中国",
   "post-18": "周末逛博物馆，有人一起吗？",
   "post-19": "深夜放毒：自制红烧肉，绝了！",
   "post-20": "求英语口语语伴，每周两次线上",

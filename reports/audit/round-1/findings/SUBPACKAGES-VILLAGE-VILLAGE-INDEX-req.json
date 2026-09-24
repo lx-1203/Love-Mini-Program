@@ -1,0 +1,192 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/index",
+  "auditor": "A4-需求对照",
+  "baseline": "素材/理想效果图/帖子.png（帖子卡结构）+ git show 29a2b1df:docs/design/v3.1-后台对齐与参考图生成.md §三 圈子/动态广场 + reports/audit/baseline/ideal-baseline.md:103",
+  "target": "顶部搜索+发帖；三入口（关注/同城/发现）；帖子Feed（头像+昵称+学校+相对时间+正文+九宫格图+点赞评论）；右下角绿色发布FAB",
+  "issues": [
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-001",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "需求三入口之「关注」流整体缺失：页面为频道化结构（今日广场/兴趣圈/学校圈/活动/热度榜五 Tab），无任何关注 Feed 入口；store 侧分类常量 FOLLOWING_CATEGORY_ID=\"cat-following\"（stores/village/constants.ts:48）自 Phase Feedback4 起保留但全应用无页面引用（grep *.vue/*.ts 仅命中定义处），关注的人的动态无任何查看面。",
+      "evidence": "config/channels.ts:39-82 五频道定义无 follow；constants.ts:48 定义无消费方；截图 VI30/VI26 频道栏仅五 Tab；需求原文 v3.1-后台对齐 §三「三入口（关注/同城/发现）」；ideal-baseline.md:103",
+      "sources": ["code", "screenshot", "log"],
+      "confidence": 0.9,
+      "ideal": "顶部三入口之一「关注」：展示已关注作者动态流（可走 fetchPosts({categoryId:\"cat-following\"})）",
+      "fix": "增设关注入口：a) 频道 Tab 增「关注」频道（postCategory=following）或 b) 今日广场顶部筛选 chips 增「关注」；数据走既有 cat-following 分类参数（stores/village/api.ts buildPostListParams 已透传 categoryId）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-002",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "需求三入口之「同城」在本页缺失：频道 Tab 无同城入口；store 支持完整在位（SAME_CITY_CATEGORY_ID=\"cat-samecity\" constants.ts:51 + fetchNearbyPosts(city) stores/village/index.ts:306-327 + api.ts:155-164 city 透传）但仅 pages/nearby/index.vue:221 调用，本页与同城动态无直达关系。",
+      "evidence": "grep cat-samecity 全仓仅 constants/types/index.ts:320 三处，无 .vue 消费；截图 VI30/VI26 频道栏无同城；需求原文 §三「三入口（关注/同城/发现）」",
+      "sources": ["code", "screenshot", "log"],
+      "confidence": 0.9,
+      "ideal": "顶部三入口之一「同城」：按城市/IP 过滤的动态入口",
+      "fix": "增设同城入口（频道或筛选 chip），复用 fetchNearbyPosts(city) 或 fetchPosts({categoryId:\"cat-samecity\"})；定位缺失时回退 cat-samecity 分类（与 nearby 页同口径）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-003",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI26-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "需求 CTA「右下角绿色发布 FAB」缺失：发布入口实际为底部固定输入条右端绿色「发帖」胶囊（ChannelComposerBar.vue:58，index.vue:847-853）+ 空态发帖按钮。发布功能在位（实名门控 ensureCertified → /subpackages/village/village/post，index.vue:385-390；自动化 VI42-44 点按失败经查为取证侧问题：dom 报 present 且类名实存），故定性为 CTA 形态/位置偏离需求而非功能缺失。右下角悬浮位当前被「回到顶部」钮占用（index.vue:855-866）。",
+      "evidence": "截图 VI26/VI30 底部输入条形态；index.vue:847-866；ChannelComposerBar.vue:39-58；需求原文 §三「右下角绿色发布 FAB」",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "右下角独立绿色圆形发布 FAB（悬浮于 Feed 之上、避让胶囊/安全区）",
+      "fix": "若产品裁决对齐理想稿：增右下 FAB（与回到顶部钮错位布局：FAB bottom=输入条上方，回顶钮上移）或 FAB+输入条双轨；若保留输入条形态需产品在 ideal-baseline 登记豁免",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-004",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "头部「标题+副标题+搜索」挤一行（R13 已判待修项之一）：「圈子」+「校园恋爱社区」+搜索框同排（index.vue:587-605），窄屏下副标题 20rpx 级小字与搜索框相互挤压（VI26/VI30 截图可见），需求为简洁「顶部搜索+发帖」头，无标题副标题同排范式；且 R21 后该行 padding-right=胶囊+112px，搜索框可用宽度进一步收窄（index.vue:897-905）。",
+      "evidence": "index.vue:588-605（village-header__top 三元素同排）+ :897-905（capsule-right+112px 避让）；截图 VI30/VI26；ideal-baseline.md:103 R13 判定",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "顶部独立搜索行（+发帖入口），标题区不与搜索同排挤压",
+      "fix": "头部重构为两行：第一行标题（可选），第二行通栏搜索框；或按需求稿去掉常驻标题副标题、仅留搜索+发帖",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-005",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "需求帖子 Feed 字段「学校」未展示：PostCard 作者行 meta=年龄·城市·学历+headline（PostCard.vue:91-106/153-156），数据字段 campusName 在位（stores/village/types.ts:27-37、:260-272 后端 PostAuthorView 映射）但卡片从不渲染校名；仅当作者与本人同校区时显示「校友」二字徽章（PostCard.vue:57-59/151）。对照锚点 帖子.png 作者行有「✓北京大学」校名徽章。即 A4 口径下 R13「帖子卡结构与规范相反」的具体缺失面之一。",
+      "evidence": "PostCard.vue 全文无 campusName 渲染（仅 isAlumni 判断 :57-59）；截图 VI30 卡片 meta「94年 北京 · 年薪30w+ · 985博士」无校名；帖子.png 作者行「✓北京大学」",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "帖子卡作者行展示学校徽章（校名+认证 ✓ 样式，对齐 帖子.png）",
+      "fix": "PostCard user-info 增加 campusName 徽章（有值即渲染名称；同校区叠校友标识），替代/并列现「校友」二字 badge",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-006",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "R13「绝对日期」项机制定位：formatRelativeTime 对 ≥7 天帖子回退绝对日期 YYYY-MM-DD（utils/time.ts:289-321，注释明示「≥7天：回退到绝对日期」）。当前 mock 帖龄最大 70h（stores/village/mock-data.ts 全量偏移核对），feed 实证全为相对时间（VI30「8分钟前」），故本项在 mock 态不可复现，仅 real 模式/陈旧帖子触发；需求措辞为「时间」且理想图示「30 分钟前」相对时间。",
+      "evidence": "utils/time.ts:303-304/:318-321 回退分支；mock-data.ts 偏移枚举 min..max=0..70h；VI30 截图「8分钟前」",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.75,
+      "ideal": "帖子卡时间恒为相对时间表述（N分钟/小时/天前，≥7d 可延展为 N周前）",
+      "fix": "formatRelativeTime 增 N周前/N个月前 分段替代绝对回退；或产品确认 ≥7d 绝对日期为可接受规范并登记",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-007",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "帖子卡「分享」为死控件：@tap.stop=\"noop\"（PostCard.vue:275-277），组件未定义 share 事件、页面未监听；VI35 按 500ms 死按钮铁律实测判定「源码为 noop 无反馈」。对照锚点 帖子.png 底栏「分享」为可用动作。与 A3 MP-R1-VILLAGE-INDEX-108 同源（此处按需求对照立档防遗漏）。",
+      "evidence": "PostCard.vue:275-277 noop；exec VI35 observed「源码为 noop 无反馈——按 500ms 死按钮铁律实测判定」；帖子.png 分享钮",
+      "sources": ["code", "screenshot", "log"],
+      "confidence": 0.95,
+      "ideal": "分享动作可用（至少触发系统分享/转发路径并给予反馈）",
+      "fix": "PostCard 补 emit share → 页面接 openSharing/onShareAppMessage；或移除该按钮（需产品裁决，禁止保留死控件）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-REQ-008",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI30-after.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "无图帖强制渲染 POST_PLACEHOLDER 占位图冒充内容图：PostCard.vue:203-212 v-else 分支在 post.images 为空时仍渲染 180rpx 高图片区（R3 注释自述「保证不破版」）。理想结构为有图才渲染九宫格图区；占位图与 A3 已档的 mock「图文不符 ≥15 帖」（MP-R3-VILLAGE-INDEX-001 P1 未修）叠加，加重图文不符观感。",
+      "evidence": "PostCard.vue:203-212 v-else 占位分支；:46 MAX_POST_IMAGES=9 九宫格仅在有图时成立；需求「九宫格图」语义以真实图片为前提",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "无图帖不渲染图片区（正文直抵标签/互动栏）",
+      "fix": "删除 v-else 占位分支（保留纯样式兜底背景即可），同步评估 mock 无图帖数据",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/village/village/index",
+      "baseline": "素材/理想效果图/帖子.png（帖子卡结构对齐）+ git show 29a2b1df:docs/design/v3.1-后台对齐与参考图生成.md §三〈圈子/动态广场〉（顶部搜索+发帖；三入口（关注/同城/发现）；帖子Feed（头像+昵称+学校+时间+正文+九宫格图+点赞评论）；右下角绿色发布FAB）+ reports/audit/baseline/ideal-baseline.md:103（R13 明显偏差待修）",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.md",
+      "functionGaps": [
+        {
+          "target": "三入口「关注」：已关注作者动态流",
+          "current": "五频道 Tab（今日广场/兴趣圈/学校圈/活动/热度榜，channels.ts:39-82）；FOLLOWING_CATEGORY_ID=\"cat-following\"（constants.ts:48）全应用无消费方",
+          "gap": "关注流功能整体缺失，无任何查看面",
+          "fix": "增「关注」频道或今日广场筛选 chip，走既有 cat-following 分类参数"
+        },
+        {
+          "target": "三入口「同城」：按城市过滤动态",
+          "current": "本页无同城入口；store 支持在位（cat-samecity constants.ts:51 + fetchNearbyPosts index.ts:306-327 + api.ts:155-164 city 透传），仅 nearby 页使用（pages/nearby/index.vue:221）",
+          "gap": "本页缺同城入口（内容存在于附近 Tab）",
+          "fix": "增同城入口/频道，复用 city 参数，定位缺失回退 cat-samecity"
+        },
+        {
+          "target": "右下角绿色发布 FAB",
+          "current": "底部固定输入条右端绿色「发帖」胶囊（ChannelComposerBar.vue:58）+ 空态发帖钮；发布功能在位（index.vue:385-390 实名门控→/village/post）",
+          "gap": "CTA 形态/位置偏离需求（功能未缺失）；右下悬浮位被回到顶部钮占用（index.vue:855-866）",
+          "fix": "改右下 FAB 或 FAB+输入条双轨，与回顶钮错位布局；或产品登记豁免"
+        },
+        {
+          "target": "顶部「发帖」入口（顶部搜索+发帖）",
+          "current": "顶部无发帖位，发布入口集中于底部输入条/空态",
+          "gap": "入口位置偏离（可达性 1 tap 无损）",
+          "fix": "随 FAB 决策一并处理头部发帖位"
+        },
+        {
+          "target": "帖子卡「学校」字段",
+          "current": "campusName 数据在位（types.ts:27-37/:260-272）但 PostCard 不渲染；仅同校区显「校友」二字徽章（PostCard.vue:57-59/151）；meta=年龄·城市·学历（:91-106）",
+          "gap": "需求字段缺失于信息展示层",
+          "fix": "作者行增校名徽章（对齐帖子.png ✓北京大学样式）"
+        },
+        {
+          "target": "相对时间",
+          "current": "<7d 相对时间 ✓（VI30「8分钟前」实证；mock 帖龄≤70h）；≥7d 回退绝对日期 YYYY-MM-DD（utils/time.ts:289-321）",
+          "gap": "real 模式陈旧帖现绝对日期（mock 态不可复现；R13 项机制定位）",
+          "fix": "增 N周前/N个月前分段替代绝对回退，或登记豁免"
+        },
+        {
+          "target": "分享动作（帖子.png 底栏）",
+          "current": "@tap.stop=\"noop\" 死控件（PostCard.vue:275-277）；VI35 实测无反馈",
+          "gap": "功能失效（A3 MP-R1-VILLAGE-INDEX-108 同源）",
+          "fix": "补 share 事件链或移除按钮，禁止死控件"
+        },
+        {
+          "target": "九宫格图仅在有图时渲染",
+          "current": "无图帖强制 POST_PLACEHOLDER 占位图（PostCard.vue:203-212）",
+          "gap": "占位图冒充内容图",
+          "fix": "删除 v-else 占位分支"
+        }
+      ],
+      "structureNotes": "L1 偏差：理想「顶部搜索+发帖→三入口（关注/同城/发现）→帖子Feed→右下FAB」四段式；实际「标题+副标题+搜索挤一行→五频道Tab→频道区块→帖子Feed(+置顶折叠条)→底部发帖输入条」；三入口全部不存在（发现仅可辩解为今日广场语义近似）。L2 部分偏差：搜索在顶部但与标题同排；发布 CTA 为底部输入条非右下 FAB。L3 偏差：帖子卡缺学校字段（campusName 有数据不渲染，仅同校区「校友」badge），时间在卡底左下而非作者行（对照 帖子.png）。L4 偏差：无图帖强制 POST_PLACEHOLDER 占位图；关注 chip 绿描边胶囊 ✓ 对齐理想。L5-L6：品牌绿/token 与 i18n 在位（A3 -107/-110 已档残留）。L7：频道切换/记忆/深链/分页/下拉/滚动位保持 EXECUTED（VI14/20/23/24/25/39/40/41）。L8：骨架/错误/空态+B6 发帖开关在位（index.vue:772-811）；VI08 navError 未取证。L9：mock 帖龄≤70h 全相对时间；A3 两条 P1 未修直接影响数据可信（图文不符≥15帖 -001、热度榜分页替换 -002）。L10：aria 全量在位；过时「Tab 索引2」注释残留（-115）。L1-L4 偏差→不达标。",
+      "usageNotes": "核心任务顺畅：浏览→详情（VI28 ✓）、搜索（VI09 ✓ 落地搜索页）、关注 toggle（VI32 ✓）、频道切换+记忆+深链（VI14/20/23/24/25 ✓）、分页/下拉穿透 TTL（VI39/40 ✓）；不易迷路。回 tab：本页非 Tab 页（pages.json tabBar=home/nearby/discover/messages/profile 五项），经首页/附近 navigateTo 进入，页面无内置返回钮（全局自定义导航），系统手势 1 步回来源 Tab——「任意页 2 步回 tab」满足。自动化未证实项均查实为取证侧问题而非页面缺陷：点赞/收藏（VI30/31 候选错位「提交/按」）、发帖条点击（VI42-44 dom present 但 tap not found，类名实存 ChannelComposerBar.vue:41/:58）、置顶条展开（VI36/37 类名实存 PinnedPostsBar.vue:40/:54 且 VI30 截图可见置顶条已渲染）；VI01 期望 LockScreen 实际全页渲染但 harness 标注 login A MISMATCH（身份注入不符），证据不足不立缺陷（未登录 LockScreen 正常 VI06）。发布链：底部输入条→实名门控→/village/post；刷新链 circles/post-topic.vue:366 emit「village:post-created」→index.vue:257-260 穿透 TTL ✓，经 post.vue 返回仅靠 onShow 非强制 loadChannelData（index.vue:522，30s TTL 内返回不刷新，A3 -104/-105 域）。",
+      "verdict": "不达标",
+      "route": "subpackages/village/village/index",
+      "baseline": "素材/理想效果图/帖子.png（帖子卡结构）+ 29a2b1df v3.1-后台对齐 §三 圈子/动态广场 + ideal-baseline.md:103"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-req.json"
+}

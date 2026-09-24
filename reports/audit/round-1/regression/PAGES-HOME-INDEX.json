@@ -1,0 +1,65 @@
+{
+  "round": "R1",
+  "page": "pages/home/index",
+  "reviewer": "历史回归员-R1-PAGES-HOME-INDEX（A5，回归索引差分模式，只读）",
+  "date": "2026-09-24",
+  "method": "按 regression-index.json 中 pages/home/index 相关条目（MP-R1-PAGES-HOME-INDEX-001 / MP-R1-HOME-REG-007..018 / MP-R3-PAGES-HOME-INDEX-001 / R12-IND-HOME-001 / R1-PAGES-HOME-INDEX-002..017）做机器差分：源码逐行核对历史修复路径是否仍在位 + 本轮交互执行结果（exec-results.json 59 例）与交互 judge 判定（PAGES-HOME-INDEX-judge.json）回代验证。未改任何代码、未驱动 DevTools。",
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-HOME-INDEX-027",
+      "round": "R1",
+      "page": "pages/home/index",
+      "screenshot": "无（console 证据案；交互轮运行时 console 见 reports/audit/round-1/interact/exec-results.json #H01/H02/H03/H04/H08/H11/H14/H18/H19/H21/H23/H25/H30/H32/H36/H37/H44/H46/H47/H54/H58/H59）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "MP-R3-PAGES-HOME-INDEX-001 复发（回归）：TodayRecommendationCard 的 photoFailed 重置 watch 写在 defineProps 之前，引用 props 的 watcher getter 在编译产物注册时立即求值，此时 props 尚在 TDZ——每挂载必抛 ReferenceError，watch 从未建立（主图加载失败后 photoFailed 永不复位，占位图无法回退真图）。缺陷由提交 29a2b1df（round-2 audit fixes）重新引入，本轮工作区仍未修复（工作区对该文件唯一 diff 是 :83 图标 key HEART_WHITE→MATCH_HEART，script 顺序未动）。运行时表现为装载期未处理 Vue 全局错误并被 captureException 上报：本轮交互轮 22 例首页 console 捕获同一签名，交互判定员已独立立案 MP-R1-HOME-108（16+ 例装载期未处理 Vue runtime 错误）。注：与索引原文「整卡挂载失败」相比，当前运行时（vue@3.4.21 + uni-app）卡片仍可渲染（交互轮 .today-card__body:present），错误以全局错误形式暴露而非卡消失——缺陷本体（watch 从未建立 + 每挂载必报）与本轮证据完全一致。",
+      "evidence": "① 源码顺序（本轮 Read）：apps/client/src/components/home/TodayRecommendationCard.vue:8-14 为 watch(() => props.item?.photoUrl, ...)，:16 才是 const props = defineProps<...>。② 编译实证（本轮实际运行）：node -e 调仓库实际锁定版本 @vue/compiler-sfc@3.4.21（apps/client 依赖 vue@3.4.21）compileScript 该 SFC，产物 'watch(' 位于 idx 719、'const props' 位于 idx 805——watch getter 先于 props 声明（与 code-findings 018 实证数字 719/805 一致）。③ 运行时实证（本轮读取 reports/audit/round-1/interact/exec-results.json）：22 个 PAGES-HOME-INDEX 用例的 console 在每次页面装载期记录 [error] \"[Global Error][Vue Error]\" \"https://vuejs.org/error-reference/#runtime-2\" + [error] \"[captureException]\"（如 H01 2026-09-22T22:23:46.584Z、H08 2026-09-23T07:21:49.115Z、H54 未登录态 2026-09-22T22:34:32.307Z——与登录态无关，每挂载必报）；交互判定员独立立案 MP-R1-HOME-108（P2，16+ 例装载期未处理全局错误）。④ 引入点（本轮 git log）：该文件最近两次提交为 29a2b1df（round-2 audit fixes）与 b3d31fcd；本轮 git diff 确认工作区唯一改动为 :83 图标 key，TDZ 顺序未被本轮修复批触碰。",
+      "sources": ["code", "log"],
+      "confidence": 0.97,
+      "ideal": "props 声明必须是 script setup 首语句；任何引用 props 的 watch/computed 副作用全部位于 defineProps 之后（Vue SFC 编译器不提升 defineProps，源码顺序即运行时顺序）；photoFailed 重置 watch 真正建立，主图失败占位后换人可回退真图。",
+      "fix": "把 const props = defineProps<...>() 与 defineEmits 移到 TodayRecommendationCard.vue script setup 顶部（:8 的 photoFailed/watch 之前），其余不变；修复后以本轮同款编译顺序断言回归：compileScript 产物中 'const props' 索引必须小于首个 'watch(' 索引（防第三度复发），并复跑任一首页交互用例确认 console 零 [Global Error][Vue Error] runtime-2。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-PAGES-HOME-INDEX-001",
+      "page": "pages/home/index",
+      "status": "未复发",
+      "evidence": "InviteBanner「去邀请」CTA 全链路在位：InviteBanner.vue:15 整卡 @tap emit invite → pages/home/index.vue:319-321 openInvite → switchTabWithQuery(ROUTES.PROFILE.INDEX, { invite: \"1\" }) → pages/profile/index.vue:226 consumePendingTabQuery(\"/pages/profile/index\") + :234-242 bridged.invite===\"1\" 按登录态分流（已登录 openInviteModal / 未登录 loginRequired toast，MP-R2-PROFILE-008 登录门注释在位）。运行时：交互轮 H43 EXECUTED、judge VERIFIED(0.6)——终栈 [pages/profile/index]（switchTab 特征）；storage 桥接写入/消费子断言未留证（judge 已注明），由上述代码链路补偿。"
+    },
+    {
+      "id": "MP-R1-HOME-REG-007..018",
+      "page": "pages/home/index",
+      "status": "未复发",
+      "evidence": "10 项历史修复（不含 018 白屏，另列）逐项源码+运行时差分，全部仍在位：①四色底 RelationActivity.vue:34-70 四 cell（MASCOT.HEART/SHY/WAVE/CHEER 吉祥物图）+ :144-150 粉/绿/紫/橙四色底；②第4卡 TodayLoveProgress.vue:82-87 序号圆语义图标（CHECK_WHITE_SVG/步骤图标）+ :95-97 desc 两行 clamp；③刷新语义 CommunityFeed「查看更多」→ index.vue:314-317 openCommunity 跳 /subpackages/village/village/index（H33 落点 village/index 佐证）；④同作者 fixtures.ts:1022/:1034 buildCommunityPostsFromVillage 按时间序 slice(0,4)；⑤年龄尾点 TodayRecommendationCard.vue:20-28 metaLine parts.filter 式过滤拼接（年龄缺失无「25岁 ·」残留）；⑥banner 下方空白 index.vue:528-538 .home-section-gap = var(--tab-bar-clear-zone, calc(300rpx+safe-area))，H51 滚到底 InviteBanner 完整露出 EXECUTED；⑦1卡 mock 必 4 帖（同④）；⑧铃铛 HomeHeader.vue:23-24/:70-71 真实 unreadNotificationCount（0 隐藏/99+ 截断）+ index.vue:101-104 onShow bootstrap，H04 .header-badge:present；⑨滚动遮罩 index.vue:54-65/:327/:517-526 top-scrim（阈值 10px、statusBar+28px），H51/H52 遮罩淡入淡出 EXECUTED；⑩关注三连 CommunityFeed.vue:66/:75（getMyFollowing 初始化）/ :101-106（followUser 真实 API+pending 守卫）+ index.vue:310-312 作者行 authorId 降级，H37（关注→已关注+服务端持久）/H38（取关回退）/H39（快击防重入）全 EXECUTED。"
+    },
+    {
+      "id": "MP-R1-HOME-REG-017",
+      "page": "pages/home/index",
+      "status": "保留",
+      "evidence": "白屏项（=R12-IND-HOME-001）：本轮 59 例首页交互无白屏记录（H11 冷启动末态 Success 无错误空态、H59 深链直达正常渲染）；代码层防御在位（index.vue:490-515 page height:auto + .home-page display:block/flex:none；四组件骨架/空态分支在位）；r20-reshoot-home.cjs 重拍脚本在位（reLaunch 首页 ×2 + 02-home-top.png）。如实记录：r20-capture.cjs 中未检索到 blank 自动 watch 逻辑（grep blank/重拍/reshoot 零命中），自动兜底巡检以脚本层为准，本轮未复现、维持监控。"
+    },
+    {
+      "id": "MP-R3-PAGES-HOME-INDEX-001",
+      "page": "pages/home/index",
+      "status": "已复发",
+      "evidence": "TDZ watch/defineProps 顺序缺陷在当前工作区与 HEAD 均存在：源码 TodayRecommendationCard.vue:8-14（watch 引用 props）先于 :16（defineProps）；本轮以仓库锁定版 @vue/compiler-sfc@3.4.21 compileScript 实证产物 watch(=719 < const props=805；交互轮 22 例装载期 console [Global Error][Vue Error] runtime-2 + captureException（exec-results.json），judge 独立立案 MP-R1-HOME-108 佐证；git log 定位重引入提交 29a2b1df。已立案 MP-R1-PAGES-HOME-INDEX-027（Regression P1）。"
+    },
+    {
+      "id": "R12-IND-HOME-001",
+      "page": "pages/home/index",
+      "status": "保留",
+      "evidence": "首页偶发白屏（判定 DevTools 渲染层偶发 2/144）：本轮交互轮 59 例无白屏复现（H11/H59 冷启动正常、H51 滚动内容完整）；代码层防御与重拍兜底脚本在位（index.vue:490-515 + scripts/r20-reshoot-home.cjs）；原判定「非本页代码缺陷，巡检监控」维持。r20-capture.cjs 中未见 blank 自动 watch（本轮 grep 零命中）已如实记录在 MP-R1-HOME-REG-017 条目。"
+    },
+    {
+      "id": "R1-PAGES-HOME-INDEX-002..017",
+      "page": "pages/home/index",
+      "status": "未复发",
+      "evidence": "P2 簇逐项差分：②换一位（原无错误处理/竞态）index.vue:162-186 rotateLoading 防重入+try/catch 失败 toast+likeSent 移入成功路径——H09（快击5次推荐人更换）/H10（池底 toast 暂无更多推荐）/H57（未登录请先登录 toast）运行时佐证；③加入态破口 index.vue:200-233 joinPendingIds 防重入+rec.joined 翻转+人数同步+成功/失败 toast——H25（已加入+操作成功）/H55（未登录门禁）佐证，失败路径 H26 判 UNVERIFIED（judge：失败注入未实施，未被测到；代码层 :226-227 catch toast 在位）；④逆地理编码 key=YOUR_KEY 恒失败 config/env.ts:154-160 占位符 /^your[_-]?key$/i 判空 + location.ts:97-102 key 空短路不发请求 + :44-51 回退后端 /location/ip-city；⑤距离行尾点——年龄尾点主案例 metaLine 过滤拼接在位（TodayRecommendationCard.vue:20-28），距离行边界残留（distanceText 空+未认证+constellation 非空头点「 · 星座」）仍见 :75-77，属已登记另案 code-findings MP-R1-PAGES-HOME-INDEX-011（P3 待修复），非历史主案例回退；⑫关注态本地 Set CommunityFeed.vue:66/:75/:101-106 服务端初始化+真实 API+pending——H37 关注服务端持久佐证；⑬附近人数造假 NearbyPeople.vue:73-75 真实 items.length 无 Math.max——H30 佐证；⑨/⑮死样式/死组件 components/home/ 磁盘仍存 HomeBanner/WelcomeBanner/PeopleScroll/ActivityScroll/ActivityCard/PersonCard.vue + InterestRecommendation.vue.bak、HomeHeader.vue:19 死兜底「北京大学 · 3km」仍在——均为上一周期即未收口的持续遗留，已被本周期 code-findings 019/024/016 接续立案跟踪（P2/P4），无「修复后被改回」情节；另 IA-CONSOLE-02（reportLocation ReferenceError）location.ts:152-153 登录门在位、index.vue:32 import 正常。"
+    }
+  ],
+  "coverage": [
+    "本轮实际执行：① 读 regression-index.json 全量并筛出 pages/home/index 相关条目 6 组（MP-R1-PAGES-HOME-INDEX-001 / MP-R1-HOME-REG-007..018 / MP-R3-PAGES-HOME-INDEX-001 / R12-IND-HOME-001 / R1-PAGES-HOME-INDEX-002..017，另关联确认 MP-R2-PAGES-HOME-INDEX-001 未登录 401 强踢——H54 未登录预览可加载+点喜欢仅 toast「请先登录」，index.vue:88 登录门在位，未复发）；② 源码逐行核对 11 个文件（pages/home/index.vue、components/home/{TodayRecommendationCard,InviteBanner,HomeHeader,RelationActivity,CommunityFeed,NearbyPeople,InterestRecommendation,TodayLoveProgress}.vue、utils/location.ts、config/env.ts、pages/profile/index.vue 消费段）；③ 运行编译实证 1 次（@vue/compiler-sfc@3.4.21 compileScript TodayRecommendationCard.vue → watch idx 719 < const props idx 805）；④ 解析 reports/audit/round-1/interact/exec-results.json 全部 59 条 PAGES-HOME-INDEX 记录（状态/toast/console 差分）+ PAGES-HOME-INDEX-judge.json 的 summary/verdicts/issues（59 checks/9 issues/32 unverifiable）；⑤ git diff + git log 核对 TodayRecommendationCard.vue 工作区改动范围与引入提交；⑥ ls 确认死组件 7 文件仍在磁盘。未做（如实声明）：未驱动 DevTools/真机（Layer B/C 职责）；未运行 vitest；MP-R3-PAGES-HOME-INDEX-002/003 与 T9/N1-N6 等非 ask 清单条目未展开（按索引差分模式只核对 ask 指定条目及其同源证据）；交互轮 32 例 UNVERIFIED 的终验欠账归交互层（其中 H50 下拉刷新 ERR uni is not defined 为工具限制）。"
+  ]
+}

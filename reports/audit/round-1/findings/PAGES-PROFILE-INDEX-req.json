@@ -1,0 +1,123 @@
+{
+  "round": "R1",
+  "page": "pages/profile/index",
+  "generatedAt": "2026-09-24",
+  "reviewer": "A4 需求对照员（R1-PAGES-PROFILE-INDEX）",
+  "evidence": {
+    "ideal": "素材/理想效果图/已经填完资料的个人主页.png（本人态唯一页面级对照）；素材/理想效果图/未登录个人主页.png（LockScreen 对照）",
+    "contract": "git show 29a2b1df:docs/design/v3.1-contract.md（Hero 红线「我的=极浅绿区」/§13 我的主页冻结/§19 page-05）；git show 29a2b1df:docs/profile-design-spec.md（375×812、卡 radius 20px）",
+    "exec": "reports/audit/round-1/interact/exec-results.json manifest=PAGES-PROFILE-INDEX：71 例 = 33 EXECUTED / 37 FAILED / 1 SKIPPED，45 例带 pre:login userId=user-1001 MISMATCH 标记（harness 身份错位→tap 未执行），失败不可独立定罪产品缺陷，功能以代码读证为准",
+    "screenshots": [
+      "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png",
+      "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-PFI51-after.png（本人态实值渲染 2/22/356/104）",
+      "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-PFI62-after.png（游客 LockScreen 实况）"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-101",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "本人态右上角「分享」入口为占位死端：点击仅 toast『分享功能即将上线』，无任何分享能力。理想图该位置为四宫格图标（分享/名片入口）；他人态同名位置已用 open-type=share 真链路，本人态却接了 toast 占位，与页面已实现的 onShareAppMessage 能力脱节。",
+      "evidence": "MyHeader.vue:22-24 handleShare(){ uni.showToast({title:'分享功能即将上线'}) }；MyHeader.vue:48-50 按钮渲染文本字形『▦』并 @tap=handleShare；对照 index.vue:1498-1507 onShareAppMessage 已实现（本人/他人双态分享载荷）；index.vue:1844-1851 他人态分享钮 open-type=share 真链路。执行取证 PFI10 FAILED（harness tap 未执行到，代码即证）。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/已经填完资料的个人主页.png：右上四宫格图标为可用分享/名片入口，点击可将自己主页分享给好友",
+      "fix": "将 MyHeader 分享钮改为 <button open-type=\"share\">（mp-weixin 原生转发，直接消费既有 onShareAppMessage），或在 real 模式改为打开既有邀请/名片弹层；同时把『▦』文本字形替换为 SVG 线性图标（素材/组件库/理想效果图-svg拆分/）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-102",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "本人态头部身份行信息缺失：年龄恒不显示（DTO 硬编码 age:null）、学校不渲染（视图模型已算出但 MyHeader 无学校文本节点）、性别图标恒不渲染（DTO 无 gender 字段）。理想图身份行为『21岁 · 北京大学 · 北京』+粉色♀，实况仅『北京』。",
+      "evidence": "index.vue:731 mineProfileDTO basic.age 硬编码 null；index.vue:718-751 DTO 未映射 gender；MyHeader.vue:38-42 genderIconSrc 依赖 basic.gender → 恒 \"\"；MyHeader.vue:26-31,76 metaLine 仅 age+location（age 恒 null → 只剩 location）；view-models/profile.ts:129-132 school 已计算（campusProfile.campusName 回退 session.campusName）但 MyHeader.vue 模板（45-91 行）无学校节点。本轮静态截图与 PFI51 截图一致证实头部仅『林晓/在线/北京/学生认证/签名』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.95,
+      "ideal": "素材/理想效果图/已经填完资料的个人主页.png：姓名下身份行完整展示 年龄·学校·城市（21岁 · 北京大学 · 北京）与性别图标",
+      "fix": "mineProfileDTO.basic 补 age（basicProfile/session 生日派生或 users.age）与 gender 映射；MyHeader metaLine 并入 school（优先 campusProfile.campusName）；性别图标随 gender 字段条件渲染",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-103",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "category": "Data",
+      "severity": "P3",
+      "description": "头部「在线」徽章为硬编码假状态：无条件恒渲染『在线』，不消费任何 presence/最后活跃字段——离线用户也被标为在线，与理想图徽章的真实在线语义不符（v3.1 状态 Token 定义 online=Primary/offline #C8CFCD，页面未接入）。",
+      "evidence": "MyHeader.vue:74 <view class=\"my-header__online\"><text class=\"my-header__online-text\">在线</text></view> 无任何 v-if/数据绑定；ProfileShell→MyHeader 链路（ProfileShell.vue:102-124）与 UserProfileDTO（types/profile）均无在线状态字段传递；v3.1 契约 §2 状态 Token 冻结含 online/offline。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "素材/理想效果图/已经填完资料的个人主页.png：姓名旁绿色『在线』徽章表达真实在线状态；离线时按契约应以 offline 灰态或隐藏",
+      "fix": "会话/用户公开视图透出 lastActiveAt 或 isOnline 字段（mock fixture 同步），MyHeader 按字段渲染 online/offline 双态；无数据时隐藏徽章而非恒显在线",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-PROFILE-INDEX-104",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「我的帖子」区缺冻结契约 §13 明文的『查看全部』入口：动态区只渲染最近 3 条，且从我的页不存在任何到达本人全部帖子列表的路径（village index/history 均无『我的帖子』列表入口）；moreTap 的 posts 分支只剩对已移除 ProfileTabs 的 activeTab 切换，为不可达死代码。",
+      "evidence": "v3.1 契约 §13『动态区只展示最近 2–3 条 +「查看全部」』（git show 29a2b1df:docs/design/v3.1-contract.md）；view-models/profile.ts:141-148 myPostsPreview slice(0,3)；MyStory.vue:122-165 posts 区头仅有计数无查看全部；index.vue:832-836 onProfileShellMoreTap posts 分支 → onTabChange(\"posts\") 仅改本地 activeTab，而 ProfileTabs 已随 MP-R1-PROFILE-203/205 移除、无任何 UI 发射该 key；grep subpackages/village/village/{index,history}.vue 无 myPosts/我的帖子 列表入口。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "v3.1 契约 §13（冻结）：我的主页动态区 = 最近 2–3 条 + 查看全部；用户可从我的页到达本人全部帖子列表",
+      "fix": "MyStory 我的帖子区头加『查看全部 ›』→ 跳本人帖子列表页（可复用 village/history 或新建 my-posts 列表，携带 userId=self）；同时删除 index.vue:832-836 的 posts 死分支或将其改指该列表页",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/profile/index",
+      "baseline": "素材/理想效果图/已经填完资料的个人主页.png（本人态唯一页面级对照）+ 素材/理想效果图/未登录个人主页.png（LockScreen）+ v3.1 契约（Hero 红线「我的=极浅绿区」/§13 冻结/§19 page-05：浅绿区 Hero→核心数据→菜单→动态 2-3 条→语音折叠，未登录=LockScreen）+ docs/profile-design-spec.md（375×812、卡 radius 20px）；报告/像素级对比还原报告.md:439 起为旧基线（其『签名/编辑胶囊/右上图标缺失』结论已被现行实现修复，本轮以现行代码+本轮截图为准）",
+      "structureNotes": "L1 达标：Hero→完整度→4格统计→我的故事(+相册+帖子)→我的互动→更多功能→五Tab 区块齐备、顺序与理想一致，未登录 LockScreen 独立成态（NotLoggedProfile 全元素→登录页）。L2 基本达标（3 处偏差）：①本人态头部身份行缺 年龄/学校/性别（理想『21岁·北京大学·北京』+♀，实况仅『北京』+在线徽章，性别图标因 DTO 无字段恒不渲染）→Issue-102；②理想图没有的 4 个加性区块（语音介绍/编辑背景图/推荐给好友/VIP 卡）自死分支迁入本人态主体尾部（MP-R1-PROFILE-202/206，功能有据但改变页面节奏，契约 §13『语音默认折叠』未实现）；③互动行缺头像预览堆与『人』后缀（视觉审查员-005 已立项）。R13 已知低优先维持：完整度卡 2 行拆 3 行、『添加日常』≠『添加故事』。L3：统计/互动/宫格图标为 emoji 系贴图 vs 理想线性彩色图标；分享图标用文本字形『▦』占位（Issue-101）；GlobalPublishFab 为理想没有的加性元素。L4：未登录四格标签『关注/粉丝/获赞/匹配』vs 理想『我喜欢/喜欢我的/我赞/访客』（视觉-003）；『我的匹配』0 值被 v-if 隐藏（视觉-004）；故事卡角标为日期/审核态而非『N 篇』、无播放钮 overlay；『在线』硬编码（Issue-103）。L5-L10：极浅绿 Hero 区（#E8F5E9→#F0FFF0 渐变、页底 #EEF7F2）符合 v3.1『我的=极浅绿区』红线；卡片白底大圆角 radius 32rpx≈契约 20px、Primary 绿 CTA、按压反馈/空态/骨架/错误重试（ProfileShell.vue:71-79）在位；五 Tab 自定义（首页/附近/寻觅/消息/我的，中央心形，本页高亮）——中Tab文案『寻觅』vs 理想『匹配』为既定品牌命名差异；像素级裁量归视觉审查员（其 001-006 已覆盖语音卡折行/未登录图标叠印/空带）。",
+      "usageNotes": "核心任务代码级全通：编辑资料/去完善同入口 entry=edit（index.vue:1110-1114，目标页 pages.json:255-259 已注册）；头像四项菜单（BottomSheet，MP-R1-PROFILE-002）；四格统计与互动四行分流喜欢/访客页（index.vue:808-831）；故事卡→日常详情、添加日常→publish?target=friends（publish.vue:155-159 消费）、相册→album（MP-R7-PROFILE-005 修正）；更多四格 favorites/visitors/album/settings 全部注册可达；语音 60s 录/放/重/删真实链路（index.vue:1152-1416）；背景上传（:1437-1492）；邀请 3-K real POST /invites+mock showShareMenu（:1014-1105，首页 invite=1 桥接已消费 :234-242）；他人态三源深链+游客门禁+tabBar 切回复位（:217-220,1548-1555）；未登录全元素→登录页且零受保护请求（PFI01-08 通过）；任意位置经恒在自定义 tabBar ≤2 步回 tab，无迷路点。重大执行保留：本页交互执行 71 例=33 EXECUTED/37 FAILED/1 SKIPPED，45 例带 pre:login userId=user-1001 MISMATCH（harness 身份错位→dom present 但 tap element not found，页面树失同步）；另有四组系统性误差：①他人态 5 例（PFI62/63/66-68）在游客态点选他人态元素被 LockScreen 正确门禁；②邀请弹窗 3 例（PFI45-47）因 PFI44 tap 首个 .video-cta 误中语音 CTA 弹窗未开；③cert-badge 4 例（PFI51-55）对应的认证名牌行仅渲染于他人态分支（index.vue:1965 在 v-else 内），本人态无该行恰与理想图一致（certBadges 本人态数据分支 ：477-501 不可达属死代码）；④PFI43 选择器 .profile-bg__edit 仅存在于他人态分支。以上 FAILED 均不能独立定罪产品功能缺失，建议 R2 修 harness（登录 fixture、tap 前重取页面树、按态分支选择器）后复验 37 例。",
+      "functionGaps": [
+        {
+          "target": "页内分享入口（理想图右上四宫格图标）可用，可将本人主页分享给好友",
+          "current": "MyHeader.vue:22-24 点击仅 toast『分享功能即将上线』；页面级 onShareAppMessage（index.vue:1498-1507）与他人态 open-type=share 真链路（index.vue:1844-1851）均已存在，本人态未接",
+          "gap": "功能未实现：占位死端，理想图入口点击后无任何分享能力",
+          "fix": "改 <button open-type=\"share\"> 消费既有 onShareAppMessage，或 real 模式打开邀请/名片弹层；『▦』字形换 SVG 线性图标"
+        },
+        {
+          "target": "我的帖子区『最近 2–3 条 + 查看全部』（v3.1 契约 §13 冻结）",
+          "current": "仅 slice(0,3) 三条（view-models/profile.ts:141-148），区头无查看全部；posts 死分支（index.vue:832-836）指向已移除的 ProfileTabs；全页无本人全部帖子列表路径",
+          "gap": "契约明文入口缺失，用户无法从我的页到达本人全部帖子",
+          "fix": "区头加『查看全部 ›』→本人帖子列表页（复用 village/history 或新建 my-posts）；清理 posts 死分支"
+        },
+        {
+          "target": "头部身份行完整展示 年龄·学校·城市+性别（理想图『21岁 · 北京大学 · 北京』+♀）",
+          "current": "仅城市；age 硬编码 null（index.vue:731）、DTO 无 gender（MyHeader.vue:38-42 恒空）、school 算出未渲染（view-models/profile.ts:129-132）",
+          "gap": "信息展示缺口（非交互缺失）：三项身份要素不可见",
+          "fix": "DTO 补 age/gender 映射，MyHeader metaLine 并入 school、性别图标条件渲染"
+        },
+        {
+          "target": "「在线」徽章表达真实在线状态（v3.1 状态 Token online/offline）",
+          "current": "MyHeader.vue:74 无条件恒渲染『在线』，无 presence 字段消费",
+          "gap": "假状态展示：离线用户亦被标在线，徽章语义失真",
+          "fix": "透出 isOnline/lastActiveAt（mock 同步），按字段渲染双态，无数据时隐藏"
+        },
+        {
+          "target": "本页 71 例交互用例的执行级验证（R1 交互取证覆盖目标）",
+          "current": "33 EXECUTED / 37 FAILED / 1 SKIPPED，45 例带登录身份 MISMATCH 标记，tap 多未实际执行；四组系统性 harness 误差（他人态游客误测、.video-cta 首匹配误中、cert-badge 他人态专属、.profile-bg__edit 他人态专属）",
+          "gap": "执行取证缺口（非产品缺陷）：多数交互仅有代码级证据，无执行级证据",
+          "fix": "R2 修复 harness：登录 fixture 身份对齐、tap 前重取页面树、选择器按登录态/他人态分支区分后全量复验"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/PAGES-PROFILE-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/PAGES-PROFILE-INDEX-req.json"
+}

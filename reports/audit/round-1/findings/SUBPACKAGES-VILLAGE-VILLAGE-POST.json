@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "round": "R1",
+    "auditor": "A3 视觉审查员（Layer A3，截图与证据的视觉/布局/状态审查）",
+    "date": "2026-09-23",
+    "page": "subpackages/village/village/post（任务名义「村口·帖子详情」，实测对象为「发布动态」表单页：截图导航标题「发布动态」、zh-CN headerTitle、post.vue:3 注释三证一致；帖子详情实际由同目录 detail.vue 承载）",
+    "evidenceManifest": {
+      "path": "reports/audit/round-1/screenshot-manifest.json",
+      "gitSha": "aefd8a72",
+      "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+      "match": true,
+      "buildMode": "build:mp-weixin:mock",
+      "verdict": "证据与当前代码一致，未过期"
+    },
+    "behaviorEvidence": {
+      "path": "reports/audit/round-1/interact/exec-results.json",
+      "gitSha": "aefd8a72",
+      "updatedAt": "2026-09-23T12:00:00.115Z",
+      "judge": "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-judge.json",
+      "verdict": "gitSha 一致有效；本页 34 用例 32 个 UNVERIFIED（执行器 input/选择器/query 缺陷，MP-R1-VPOST-101 已立），仅 VP01/VP02 VERIFIED"
+    },
+    "screenshotsReviewed": [
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（373×820，逐区像素测量：导航/工具栏/弹层底缘/颜色采样）",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_post__弹层态.png（MD5 67f76e2b…，经像素 diff 证实 ≡ 默认态，见 MP-R1-VPOST-104）",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png（实为弹层开启态，本次弹层审查的实际载体；MD5 02ad8e09…）",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png 与 交互后 的 2×/4× 局部放大裁剪件（reports/audit/round-1/findings/_tmp_crops/）"
+    ],
+    "idealReference": {
+      "image": "素材/理想效果图/发布帖子页面.png",
+      "arbitration": "锚定消歧：该理想图 placeholder「分享一点最近发生的事…」与 publish.vue:672 逐字一致、无标题输入行与 publish.vue:504「正文即标题」一致、目标卡=已加入圈子（摄影圈+成员数）与 publish.vue:81 joinedCircles-only 一致 → 理想图锚定 village/publish 而非本页。本页（village/post）为带标题行/0/500/文案不同的变体表单，与理想图的结构差异属两页分工，不按 L1 缺陷计；理想图仅作同族 L2/L3 模式参照（发布到卡/四行项/贴士/工具栏布局）。"
+    },
+    "noDuplicationNote": "不重复 A2 代码层 12 项（MP-R1-POST-201~207/105/108~111）与交互层 3 项（MP-R1-VPOST-101~103）；publish 页 A3 两项（MP-R1-SVVP-001/002）在同族控件上重现于本页的，按本页独立实例补立（VPOST-105/106）并注明出处。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-VPOST-104",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__弹层态.png（标注「弹层态」实为默认态）",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "证据缺陷（非应用缺陷）：manifest 标注为「弹层态」的巡检截图与「默认态」逐像素一致——ImageChops diff bbox 仅 (192,18,199,26)（状态栏时钟 1:12→1:13 的 7×8px 数字块），全图平均差 0.01/255，画面中无任何弹层/遮罩。即 tour 管线在本页未执行「打开弹层→截图」，却落盘为弹层态。危害：后续轮次若据该文件核对弹层视觉将得出错误结论。本页弹层开启态的真实记录是「交互后」截图（遮罩~50% 黑、白色面板自 y=282 起），本次弹层视觉审查已改以该文件完成，弹层本身未发现除已立项（VPOST-103 无 X 钮、POST-202 圈子分组无加载态）外的新缺陷。",
+      "evidence": "python ImageChops.difference(默认, 弹层态) → bbox=(192, 18, 199, 26)、mean=0.01、>30 差异像素 25 个（全部位于状态栏时钟）；弹层态逐带亮度 [242,245,239.6,240.6,244,244.9,247.1,247.2,248.8,239.8] 与默认态完全相同；交互后 逐带亮度 [131.8,123.4,120.7,193.3,250.9,…] 才是弹层开启态（上半 50% 遮罩暗化+下半白面板）。三文件 MD5：默认 674e33ad…/弹层态 67f76e2b…/交互后 02ad8e09…。",
+      "sources": ["screenshot", "log"],
+      "confidence": 1.0,
+      "ideal": "manifest 中 state=弹层态 的截图应真实呈现弹层开启画面（遮罩+面板可见），state 标注与画面内容一致。",
+      "fix": "tour 管线对本页补拍：tap .post-to__card 待弹层动画完成后截图替换 subpackages_village_village_post__弹层态.png，并更新 screenshot-manifest.json 的对应 sha/时间戳。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VPOST-105",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（发布到卡「个人动态」左侧显示带窗格校园建筑图标）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "「发布到」卡在非圈子目标下复用校园建筑图标，图文语义不符（publish 页同款缺陷 MP-R1-SVVP-001 在本页的独立实例）：post.vue:623 v-else 分支对一切非圈子目标——「个人动态」（general，默认公开·所有人可见）与「校园圈」（campus）——统一渲染 IMAGE_PATHS.ICONS_EMOJI.SCHOOL（校园建筑）。默认截图实测「个人动态」卡图标即该建筑图形，与「个人动态」语义无关。本页默认入口恰为 general，用户首屏即见错配。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:610-623（v-if 圈子封面 / v-else-if 相机 emoji / v-else SCHOOL）；默认态截图 (35,155) 附近图标为建筑轮廓；对照 MP-R1-SVVP-001（publish.vue 同缺陷已立，P4）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.85,
+      "ideal": "general 目标用个人语义图标（用户头像或「我的」线性图标），campus 目标保留 school 图标，circle 目标保持圈子封面/相机兜底。",
+      "fix": "post.vue:623 按 targetType 分支：`targetType==='campus' ? SCHOOL : 个人语义图标（ICON 系新增或复用 profile 族）`，与 publish.vue 的 SVVP-001 修复一并统一口径。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VPOST-106",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（发帖小贴士右侧 ✕ 与已选话题 chips × 可见）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "两处删除/关闭控件热区远低于 88rpx 铁律，且不在已立 VPOST-102（头部 X 64rpx）覆盖范围内：①「发帖小贴士」关闭 ✕——模板 post.vue:846 声明 class=\"post-tip__close\"，但 style 区（1407-1444）只有 .post-tip__close-icon（28rpx）规则，.post-tip__close 容器无任何尺寸定义，作为 .post-tip（align-items:flex-start）的 flex 子项塌缩为图标原始尺寸 28rpx≈14px 见方；②已选话题 chip 的 ×——post.vue:1399-1404 仅 font-size 24rpx + padding 0 2rpx，命中区≈14×12px。两控件均为误触率高/难命中的小目标，与 VPOST-102 同族同因。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:846-853（tip ✕ 模板）与 1407-1444（style 区无 .post-tip__close 规则，仅 1440-1444 __close-icon 28rpx）；post.vue:832（chip × @tap）与 1399-1404（24rpx+2rpx padding）；grep 全样式区确认无 .post-tip__close { 命中；对照 MP-R1-VPOST-102（仅覆盖 .post-header__close 64rpx）、MP-R1-SVVP-002-②（publish 页同款 tip ✕ 已立 P3）。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "tip ✕ 与 chip × 的可点击命中区均 ≥88rpx×88rpx（视觉图形可保持 28/24rpx），保留 press-feedback 反馈。",
+      "fix": "①补 `.post-tip__close { width/height:88rpx; display:flex; align-items:center; justify-content:center; margin:-24rpx -24rpx -24rpx 0; }` 负 margin 补偿布局；②`.post-topic-chip__remove` 加 padding:0 12rpx 并以负 margin 收边，或改为 88rpx 透明命中容器。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "默认态整页布局与 token 逐项核对通过：页面底色实测 RGB(238,247,242)=#EEF7F2，与 .post-page 的 var(--c-bg-page,#EEF7F2)（post.vue:1046）及 design-variables.scss:119 $bg-page 完全一致；导航区白底+底部 1rpx 分隔线、「发布」禁用态灰胶囊（禁用色 #9DA5A1 系、白字）、发布到白卡、四行项白卡、发帖小贴士浅绿卡（#EAF9F3 系）、底部白工具栏均按 token 渲染；标题/正文 placeholder、0/20 与 0/500 计数、+ 图块、已选 0/5 话题计数全部正常显示，无文字溢出/截断/叠印。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（像素采样 (5,300)/(187,155)/(187,770) 等）；apps/client/src/subpackages/village/village/post.vue:1046、theme/design-variables.scss:119"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "导航行胶囊避让实测（历史 P0 MP-R1-POST-001 的视觉回归确认）：y=57 行像素 run-length 分析——「发布」灰胶囊右缘 x≈259，微信胶囊容器左缘 x≈278，实測间隙 19px（数学预期 111px 预留-87px 胶囊-5px 误差相符）；胶囊「···|◎」右缘距屏 21px，布局对称。标准机型无碰撞；A2 指出的 --capsule-right 恒 7px 静态兜底（未接 useMenuButtonRect）残留风险属异形屏场景，本截图（373×820 标准比例）无法证伪，维持「已修复待终验」。",
+      "evidence": "默认态截图 y=57 行分类扫描（DARK/GRAY/MID 分段：pill 195-259、白隙 260-277、胶囊 278-365）；apps/client/src/subpackages/village/village/post.vue:1057"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "弹层开启态几何与状态核对（以「交互后」截图为载体，见 VPOST-104）：遮罩实测约 50% 黑（白 255→123-138），微信胶囊以原生层级浮于遮罩之上（(320,40)=(207,209,213) 未被暗化），层级正确；白色面板顶部 y=282（占屏 66%）、顶部圆角、底缘最后一条「宠物」行文字止于 y=791、其下 28px 纯白 padding 到屏底，无内容裁切；「个人动态」行右侧灰色 ✓ 选中态可见；三分组标题「公域 · 所有人可见／校园私域 · 同校可见／兴趣圈子 · 圈内成员可见」与 publish.vue:622/631/650 逐字一致（放大裁剪件 _tmp_crops/_tmp_post_sheet_top.png 目视复核，修正了低清预览误读）；列表 8 项为 circleStore.circles.slice(0,8)（post.vue:688-689），已加入者带灰色「已加入」后缀、未加入者无任何标识——该视觉面所属的行为缺陷已由 A2 以 MP-R1-POST-202/204 立项，不重复报。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png（逐点采样+底缘暗行扫描）；裁剪件 reports/audit/round-1/findings/_tmp_crops/_tmp_post_sheet_top.png、_tmp_post_sheet_bot.png；apps/client/src/subpackages/village/village/post.vue:644-711、publish.vue:622-689"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "跨页一致性对照（与同题「发布动态」的 village/publish 并排）：①目标弹层标题/三分组/「个人动态 默认公开，所有人可见」选项文案两页逐字一致；②底部工具栏本页保留（图片/话题/位置/提及/更多）、publish 已按需求移除（publish.vue:751-752 注释）——本页保留与理想图一致（发布帖子页面.png 底部即含五项工具栏），且「行项+工具栏」双入口在理想图中并存，属设计意图非冗余缺陷；③工具栏样式同源（publish.vue:856-859 与 post.vue:1453-1470 同参）；④两页 placeholder 文案/有无标题行不同属两表单分工（理想图锚定 publish，见 meta.arbitration），不按本页 L1 偏差计。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:616-689（弹层）、751-752（工具栏移除注释）、856-859（样式）；apps/client/src/subpackages/village/village/post.vue:644-711、860-930、1453-1470；素材/理想效果图/发布帖子页面.png"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "底部工具栏与滚动预留核对：默认态截图工具栏白底、五项等距、图标 40rpx+标签 20rpx；「图片」「更多」标签最底暗像素分别止于 y=813/811，距视口底 7-9px，即 12rpx 底 padding 如实渲染、无标签裁切；fixed 工具栏（post.vue:1453-1461，z-index 120）与滚动预留占位 .post-body__bottom-space calc(200rpx+env(safe-area-inset-bottom))（post.vue:1445-1448）配套在位——默认视位下贴士卡下部被工具栏部分遮挡属 scroll 未滚到底的正常表现，滚到底可完整露出（VP32 执行了 scroll 到底/回顶、终态 scrollPos=top、无异常，但无视觉断言，遮挡解除未见证）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（底缘暗像素测量：图片 y=813/x=43、更多 y=811/x=320）；apps/client/src/subpackages/village/village/post.vue:1445-1470；exec-results.json#VP32"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "observation": "证据链与回归线索核对：①manifest 与 exec-results 双 gitSha=aefd8a72 == HEAD，证据未过期；②本页 S05 console（console-S05-village.log）中 switchTab:fail timeout 未处理拒绝 3+ 次全部挂在 village/index 的 VI07 用例段落下，非本页用例，本页 VP01/VP02 console 为空；③历史回归三条：MP-R1-POST-001 视觉确认修复在位（见上）；MP-R1-POST-101（发圈成功草稿残留）A2 代码层六链闭合已验证、交互层 VP06 因执行器 input 缺陷零覆盖、本角色截图无反证，维持「已验证」；MP-R2-VILL-013（晚霞帖图文不符）病灶在 village 首页 feed 数据链，本页为表单页无 feed 渲染、无图文可核，页面级复核归 village/index 审查员（其 findings 已含 VILLAGE-INDEX-201~203）。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json（gitSha）；reports/audit/round-1/interact/exec-results.json（gitSha/updatedAt）；reports/audit/round-1/interact/console-S05-village.log:4-7/16-18（错误均在 == VI07 village/index == 段）；reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-judge.json（VP06 UNVERIFIED 归因）"
+    }
+  ],
+  "coverage": {
+    "subpackages/village/village/post": "13 项举证：【截图已看】✓ A 组 3 张全部逐张审查+局部 2×/4× 放大（默认/交互后/弹层态；弹层态经像素 diff 证实为默认态复制，见 VPOST-104）。【理想图已对照】✓ 发布帖子页面.png 已逐层对照并完成锚定消歧（锚定 publish.vue，本页仅作同族 L2/L3 参照；结构差异属两页分工非缺陷）。【滚动已测】△ VP32 执行 scroll 到底/回顶、终态 scrollPos=top、无 console 异常，但无吸底/遮挡视觉断言；本角色以默认态截图+bottom-space 占位代码（post.vue:1445-1448）静态核对，滚到底遮挡解除未见证。【点击已测】△ 仅空表单 tap 发布（7 例 Toast「请输入内容」一致）与 tap 发布到卡开弹层成功；其余 30 用例因执行器缺陷 UNVERIFIED（VPOST-101 已立），输入/选图/话题/位置链路零覆盖。【返回已测】△ VP07/08 空表单 X→reLaunch 村口 index（route 终态一致）；带草稿 modal「保留/放弃」分支未行使。【safe-area 已查】✓ 代码三处（工具栏 1459/弹层 1496/占位 1447）+截图底缘实测无裁切。【TabBar 已查】✓ 非 tab 分包页无 TabBar，截图确认。【空态已查】✓ 默认截图即空表单全要素（placeholder/计数/贴士）。【长文已查】✗ 未验证——VP26（30 字标题/600 字正文截断）执行器 input 失败，无任何长文视觉证据。【加载态已查】△ 本页仅弹层圈子分组存在加载场景，其加载中/失败/空态缺失已由 A2 立项（POST-202），无其他加载态。【错误态已查】✗ 未验证——VP33（发布失败 Toast）无失败注入、无截图，错误文案分支零覆盖。【组件一致性已查】✓ 与 publish.vue 并排对照（弹层文案逐字一致/工具栏同源/导航同构）；热区缺陷与 publish 页 SVVP-002 同族，本页独立实例已立 VPOST-106。【历史 Bug 回归已查】✓ 三线索全部核对（001 视觉确认/101 无反证维持已验证/013 本页不适用）。本角色未运行构建/单测/真机，未改动任何业务文件；审查载体为现有截图+像素测量脚本（PIL）+源码只读引用。"
+  }
+}

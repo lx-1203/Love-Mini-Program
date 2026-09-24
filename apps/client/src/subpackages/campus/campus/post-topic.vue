@@ -430,8 +430,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-CAMPUSPOST-101：必须定高（height:100% 而非 min-height:100%）——
+     原容器随内容增长，flex:1 的 .post-body scroll-view 失去高度约束 → 整页窗口滚动：
+     自定义 header（取消/发布）滚出视口、分类 chips 与 textarea 顶入状态栏文字区
+     （四帧像素扫描实证）。定高后恢复内滚、头部常驻（本页长表单是常态）。 */
+  height: 100%;
+  overflow: hidden;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 

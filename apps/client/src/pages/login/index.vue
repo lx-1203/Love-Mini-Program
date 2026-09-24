@@ -38,7 +38,7 @@ const loginIcons = {
 } as const;
 
 const sessionStore = useSessionStore();
-const { loginHero, loading } = storeToRefs(sessionStore);
+const { loginHero } = storeToRefs(sessionStore);
 // B6：登录/注册开关（store 未加载时默认开放，不影响正常登录）
 const appConfigStore = useAppConfigStore();
 const { isLoginOpen, isRegisterOpen } = storeToRefs(appConfigStore);
@@ -55,8 +55,10 @@ const smsCode = ref("");
 const smsCountdown = ref(0);
 let smsCountdownTimer: ReturnType<typeof setInterval> | null = null;
 const phoneRegisterMode = ref(false);
-/* 理想图《登录页面》协议行为绿色已勾选态：默认已同意（可点击取消） */
-const agreed = ref(true);
+/* MP-R1-PAGES-LOGIN-INDEX-102：微信审核口径要求用户主动勾选协议（默认勾选属
+   「默认同意」违规拒审项），冷启动默认未勾选；未勾选点任意登录入口被 agreeFirst
+   守卫拦截，用户主动勾选后方可登录。 */
+const agreed = ref(false);
 const showPhoneLogin = ref(false);
 
 /**
@@ -702,6 +704,19 @@ function openPrivacyPolicy() {
           >
             <text class="btn-phone-quick-text">{{ t('login.phoneQuickLogin') }}</text>
           </button>
+          <!-- MP-R1-PAGES-LOGIN-INDEX-201：微信端补低调「手机号登录」文字兜底入口——
+               DevTools/自动化下 open-type=getPhoneNumber 回调不触发（测试环境死点），
+               且快捷授权被拒/失败才自动展开表单；文字入口保证表单链路任何环境可达。 -->
+          <view
+            class="login-sms-fallback press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('login.phoneLogin')"
+            @tap="togglePhoneLogin"
+          >
+            <text class="login-sms-fallback-text">{{ t('login.phoneLogin') }}</text>
+          </view>
           <!-- #endif -->
 
           <!-- 2026-09-02 R11 用户要求：手机登录有两个入口，删除下方冗余的「手机号登录」按钮
@@ -1220,6 +1235,21 @@ function openPrivacyPolicy() {
   font-weight: 500;
   color: var(--c-text-primary);
   letter-spacing: 2rpx;
+}
+
+/* MP-R1-PAGES-LOGIN-INDEX-201：微信端「手机号登录」低调文字兜底入口 */
+.login-sms-fallback {
+  margin-top: var(--sp-3, 24rpx);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2, 16rpx) 0;
+  min-height: 64rpx;
+}
+
+.login-sms-fallback-text {
+  font-size: var(--fs-sm, 26rpx);
+  color: var(--c-text-tertiary, #9AA39F);
 }
 
 /* MP-R2-PAGES-LOGIN-INDEX-008：.btn-secondary* 死样式已删（模板零引用） */

@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "round": "R1",
+    "page": "subpackages/campus/campus/post-topic",
+    "reviewer": "视觉审查员-R1-SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC（A3，截图与证据的视觉/布局/状态审查）",
+    "date": "2026-09-23",
+    "evidenceBaseline": {
+      "manifest": "reports/audit/round-1/screenshot-manifest.json",
+      "gitSha": "aefd8a72",
+      "gitShaMatchesHead": true,
+      "buildMode": "build:mp-weixin:mock",
+      "shotsForThisPage": 13,
+      "shotsVerifiedOnDisk": 13,
+      "staticPassNote": "reports/screenshots/round-1/（静态 pass，generatedAt=2026-09-19T17:28:57Z，manifest 无 gitSha 字段）早于 b3d31fcd/29a2b1df/aefd8a72 三个 09-22 提交，按任务规则判过期；其中 A/B 默认帧目验发现 header「发布」钮被胶囊遮叠（残影可见），系 MP-R1-CAMPUSPOST-003 修复前旧构建表现，仅作过期留档、不据其下结论。当前构建（aefd8a72）以 round-1-tour 11 帧为准，003 修复已在帧内视觉证实（发布钮完整位于胶囊左侧有间隙）。"
+    },
+    "scopeNote": "本页本轮无新静态截图 pass，但 gitSha 校验通过的 tour 证据（A6+B5=11 帧）+ 静态 pass 2 帧实体齐全，tour manifest-detail.json 失败清单（21 条）不含本页，不构成「缺截图」，故不按任务模板记 P1 缺图问题；静态 pass 过期已在 evidenceBaseline 与 observations 如实标注。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-CAMPUSPOST-101",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-中部.png；__滚动-底部.png；B/同名两帧",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "scroll-view 内滚失效，页面以窗口级整体滚动：滚动后自定义 header（取消/发布话题/发布）整体滚出视口，且滚动中的内容直接顶入状态栏文字区（分类 chips、textarea 文本与「●●●●● WeChat 1:24」状态栏文字同带叠印）。长表单正是本页常态（6 分类+标题+500 字内容+图片墙+话题选择器+匿名开关），滚动填写时顶部唯一显式出口「取消」与主「发布」钮全部不可见（底部发布钮为设计预留兜底，:397 注释自证，故非 P1）；但内容渲染进状态栏区在真机为文字叠印，且 .post-body 注释自述意图是「flex:1 配合页面根铺满可视区域」的内滚方案，实际未生效。",
+      "evidence": "四帧像素扫描（373×820）：默认帧 x=30 列 y1-92 为 header 渐变绿(61,203,157)，滚动-中部/底部帧同列 y10 起即为页面底色(238,247,242)、无任何绿色 header 行，内容贴 y=0；interact exec-results PT15 observed『act:pageScrollTo bottom』生效（窗口可滚才有效果）；代码链 post-topic.vue:429-436（.post-page min-height:100% 允许内容撑高）、:509-512（.post-body flex:1 scroll-view 未被高度约束）、:433（注释自述内滚意图）、pages.json:126-128（本页无 disableScroll/无样式覆盖）、App.vue:334-337（page height:100%+双 padding 未阻止窗口滚）；circles/post-topic.vue:750/:824 同模式（跨页一致性旁证）。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.85,
+      "ideal": "表单页滚动时自定义 header 保持可见（scroll-view 真正内滚或 header sticky/fixed），任何滚动位置内容不得进入状态栏文字区。",
+      "fix": ".post-page 改 height:100%（min-height→height，锁内容盒使 flex:1 的 .post-body 获得确定高度真正内滚），或 .post-header 加 position:sticky/fixed+白底；修复后真机（iOS 刘海屏）复验滚动全程内容与状态栏无叠印。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOST-102",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "无实拍帧（图片墙带图状态本轮 0 帧证据，见 observations-7）；规格依据代码",
+      "category": "UX",
+      "severity": "P3",
+      "description": "删除已选图片的「×」热区仅 40rpx×40rpx（20px×20px），不足 88rpx 交互铁律的一半，且为缩略图上唯一可点元素（image 本体未绑预览/删除），真机单指误触率高。",
+      "evidence": "post-topic.vue:699-710（.image-item__remove width/height:40rpx，absolute 定位于缩略图右上角 8rpx）；对照审查标准「热区≥88rpx」；PT25（删除图片）交互 FAILED、PT24 前后帧 MD5 相同且 .image-item:absent——本轮无带图帧可作视觉旁证，纯代码规格认定。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "删除钮命中区≥88rpx（视觉圆点可保持 40rpx），或图片本体绑定点击放大预览并提供预览内删除。",
+      "fix": ".image-item__remove 用 padding 或透明伪元素/内层 view 将命中区扩至 88rpx×88rpx（视觉图标不变）；后续轮次补带图帧实拍。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOST-103",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__默认.png（chip 实测 40px 高）",
+      "category": "UX",
+      "severity": "P4",
+      "description": "分类 chip（6 选项）热区高度≈80rpx，低于 88rpx 铁律约 10%。像素实测（373×820 帧，≈1px=2rpx）未选中 chip 竖向边界 182-217px≈40px；与 CSS 算术吻合（上下 padding 20rpx+文本 26rpx 行高≈36rpx+边框 4rpx≈80.8rpx）。另发现 PT08（chip 热区量测≥88rpx，EXECUTED）observed 实为『observe-only | dom: .category-option:present』——仅存在性检测、未实测任何 rect，其「≥88rpx」结论无证据支撑，本条为该断言的首次实际测量。",
+      "evidence": "post-topic.vue:544-554（.category-option padding:20rpx 8rpx、border 2rpx、无 min-height）；默认帧 x=186 列逐行分类扫描（chipbg 边界 y182-217，白卡边界 y176-181/y218-231）；exec-results PT08 observed 字段全文。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.8,
+      "ideal": "分类 chip 命中高度≥88rpx（宽度 1/3 屏已达约 220rpx 无需处理）。",
+      "fix": ".category-option 加 min-height:88rpx（或 padding 上下调至 24rpx）；顺带修正 PT08 断言使其真实执行 rect 量测。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "证据基线核验：screenshot-manifest.json gitSha=aefd8a72 与当前 HEAD（aefd8a72f223…）一致、buildMode=build:mp-weixin:mock；本页 13 张截图（tour A6 帧：默认/交互后/校验错误/滚动-中部/滚动-底部/键盘弹起-输入后；B5 帧同名单校验错误；静态 pass A/B 默认）逐一验证实体存在。tour manifest-detail.json 失败清单 21 条不含本页——本页不适用「缺截图 P1」模板；静态 pass（09-19，无 gitSha）判过期：其帧内 header 发布钮被胶囊遮叠为 003 修复前表现，与当前构建帧矛盾，已按过期留档未采信。",
+      "evidence": "python 读 manifest 输出（gitSha/buildMode/shots=305/本页 21 条含 circles）；13 文件 stat 全部存在（68451/68324/61589/61437/72437/68982/61256/61483/72496/69085/61334 字节）；静态 manifest generatedAt=2026-09-19T17:28:57.090Z vs git log 三提交均 09-22。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "默认态整页布局与双身份一致性：6 分类 chip 两行三列（课程交流选中=品牌绿描边+浅绿渐变底+文字变绿加粗，其余灰绿底）、话题标题/话题内容白卡+浅色输入底、内容计数 0/500 右对齐、上传图片 0/6+虚线「+添加图片」格、选择话题区（已选话题 0/3、『暂未选择任何话题』空态行、搜索话题输入、热门话题 12 枚 chip 带热度数字 #话题日常1280…#美食探店234）、匿名发布开关行、底部发布话题置灰钮——A/B 双身份帧逐项一致，无缺失无错位。",
+      "evidence": "tour A/B 默认帧逐张目验；A 默认 x=30/186 双列像素扫描（header 绿带 y1-92、白卡、chipbg 分段）。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "MP-R1-CAMPUSPOST-003（header 发布钮避让胶囊）修复在当前构建视觉证实：3x 放大帧中白色「发布」钮完整位于胶囊左侧、右缘与胶囊左缘有明显间隙无遮叠；header 渐变绿→粉与白字标题、半透明白「取消」钮渲染正常。",
+      "evidence": "reports/audit/round-1/tmp-a3/header-zoom-tour.png（自 tour A 默认帧 0-115px 裁切 3x）；对照静态 pass 过期帧的同区域遮叠残影。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "A2 代查 MP-R1-CAMPUSPOST-014（状态栏双份叠加，代码链推证置信 0.6）的 DevTools 侧机制实测互证：默认帧 header 绿色背景自 y≈1 开始（App.vue page padding-top 的 var(--statusbar,env) 在 page 节点回退 env=0），而「取消」钮顶缘 y≈55（--statusbar≈44px 仅注入 .post-page 后作用于 .post-header padding calc(44+20rpx)）——与 014 描述的注入层级完全吻合；真机侧 env≠0 时 2×状态栏叠加风险维持 A2 判定，本岗不重复立 issue。",
+      "evidence": "默认帧 x=30 逐行色变扫描（y0 灰/y1 绿/取消钮白 y55-90）；useMenuButtonRect.ts:47-52（styleVars 注入 .post-page 节点）；App.vue page 规则 padding-top: var(--statusbar, env(safe-area-inset-top))。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "输入回显与提交态联动正确：键盘弹起-输入后帧标题框实显「巡检输入test123」、字数计数保持 0/500（内容未动）、顶部与底部发布钮均维持置灰（canSubmit 要求内容非空，:112-114）——视觉与逻辑一致。DevTools automator 不渲染软键盘，cursor-spacing=20（:325/:337）的键盘避让无法视觉验证，如实列为未验证项。",
+      "evidence": "tour A/B 键盘弹起-输入后帧目验（A 帧 1:25、B 帧 2:29，内容一致）。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "历史回归 MP-R1-CAMPUSPOST-002（real 配图 Idempotency-Key 恒定冲突，P1）本岗独立代码核验通过：①文件名 campus-topic-${Date.now()}-${uploaded.length}.jpg（post-topic.vue:213，循环内 uploaded.length 严格单调）②幂等键=hashString(endpoint|file.name)（services/api.ts:207）③FNV-1a 实现（services/http.ts:243-252）——逐图键唯一、跨帖不复用，与 A2『已修复待终验』结论一致；real 网络 409 路径仍需终验（本岗无 real 环境未测）。",
+      "evidence": "sed 读取 api.ts:200-210 与 http.ts:240-255 原文；post-topic.vue:203-217 循环体。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "交互证据质量缺口（如实记录，不作页面缺陷，判定归交互判定员）：①PT24「选图成功 1 张」EXECUTED 但 before/after 帧 MD5 相同（d492d9a8…）且 DOM 记录 .image-item:absent——DevTools 自动化无法完成系统选图，图片墙 3 列网格/缩略图/删除×/满图 6/6 加号格隐藏等状态本轮 0 帧实拍；②PT29 observed 含 pre-FAIL:input element not found: .PHOTO_GALLERY_MAX（脚本缺陷）；③PT26/PT27、PT32/PT33、PT34/PT35/PT36 两两/三三 MD5 相同（失败用例帧无区分度）；④PT37「匿名开关 checked+品牌色」EXECUTED 但帧截页顶、开关本体不在画面内；⑤tour「交互后」帧 A/B 均与「默认」逐字节相同；⑥校验错误帧与 PT16/PT17-after 均无可见 toast（uni.showToast 系原生层、automator 截图不捕获，配合 PT16/17 FAILED 状态由交互判定员裁定）。",
+      "evidence": "MD5 分组输出（SAME-GROUP 4 组）；exec-results.json PT24/PT29/PT37 observed 字段原文；PT37-after.png 目验。"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "observation": "理想图对照结论：素材/理想效果图/ 19 张整页稿中无本页（校园圈·发帖）锚定稿。目验最接近的「发布帖子页面.png」语义对应圈子发帖（发布到摄影圈/添加位置/谁可以看/发帖小贴士/底部工具栏，X 关闭钮）、「校园圈.png」对应圈层列表——结构（L1）即不同，不作本页 L1-L10 对照依据；本页视觉评价以现行 token 链与跨页一致性为准。",
+      "evidence": "素材/理想效果图/ 目录 19 文件清单；发布帖子页面.png 整图目验（标题『发布动态』、发布到摄影圈）。"
+    }
+  ],
+  "coverage": [
+    "subpackages/campus/campus/post-topic —— 核对清单（本页 3 项 Issue，观察证据 8 条）：①截图已看：13/13 帧实体全部目验（tour A6+B5、静态 A/B）+2 张 3x 裁切（header 区）+逐列像素扫描 3 组；②理想图已对照：19 张理想稿无本页锚定稿，最近似的发布帖子页面.png 经目验判定为圈子发帖语义（L1 即不同），如实记「无法对照」而非「已对照」（observations-8）；③滚动已测：滚动-中部/滚动-底部 A/B 4 帧目验+像素扫描证实 header 滚出与内容贴 y=0（→Issue 101），PT15 act:pageScrollTo bottom 生效为窗口级滚动佐证；④点击已测：38 条交互记录由交互判定员执行，本岗核对 PT07/PT08/PT13/PT24/PT29/PT37 observed 字段与对应帧；⑤返回已测：PT06 EXECUTED（返回落点正常）；goBack 栈守卫缺口已由 A2 009 覆盖不重复；⑥safe-area 已查：全局 page padding-bottom 承担底部避让（A2 010 结论未推翻），本岗实测 DevTools 侧 --statusbar 注入层级与 014 机制吻合（observations-4）；⑦TabBar 已查：本页为 subpackage 非 tabBar 页，全部帧无 TabBar、无遮挡问题；⑧空态已查：『暂未选择任何话题』空态行在滚动-中部/底部帧可见；表单空态校验提示归 PT16/17（交互判定员）；⑨长文已查：标题 maxlength=50（:329）、内容 :maxlength=500（:341）+0/500 计数帧内可见，超限红态因 maxlength 拦截实际不可达（PT13 .content-count--over:absent EXECUTED）；⑩加载态已查：本页纯表单无远程列表加载态；「发布中」文案变体（:289/:406）代码在位但本轮无实拍帧——未验证项如实声明；⑪错误态已查：发布失败 toast（PT20 FAILED）、选图失败 toast 均无实拍帧，toast 原生层截图不捕获为取证环境限制（observations-7）；⑫组件一致性已查：header 绿→粉渐变/半透明白钮/胶囊避让与 campus/hub 同口径（A2 003 引 hub.vue:383），circles/post-topic 同结构页滚动帧对照目验（同患窗口滚动模式，归该页审查员）；chip 选中态语言与列表页分类 chip 一致；⑬历史 Bug 回归已查：002 本岗独立代码核验通过（observations-6）；001/003/004/007/008 修复在当前代码+帧内可见（003 视觉证实，observations-3）；010 维持保留；005/006/009/011/012/013/014/015 维持 A2 判定不重复立 issue。",
+    "未执行/未验证项（如实声明）：本岗未驱动微信开发者工具（无自动化环境），所有点击/滚动结论基于巡检与交互岗已产出的帧与记录；real 模式上传与 409 幂等路径、软键盘弹起避让（cursor-spacing）、深色模式、带图状态（图片墙/删除×/满图 6/6）均无视觉证据；「校验错误」toast 可视性无法在本环境定论；静态 pass 已过期，其帧内胶囊遮叠等表现未采信。",
+    "与任务模板的偏差说明：任务称「本批页面本轮没有静态截图——把缺截图记 P1」，经核对本页不成立：tour manifest-detail.json 失败清单 21 条均不含本页，且 gitSha=aefd8a72 证据链下本页实有 11 帧当前构建截图+2 帧过期静态帧；据「证据优先/不得据过期证据下结论」规则，本岗未虚构缺图 P1，改为在 meta.evidenceBaseline 与 observations-1 如实标注静态 pass 过期事实。任务给定的失败原因清单（dev/register/campus index/matching/activities detail/showcase 等）均为同批其他页面，与本页无关。"
+  ]
+}

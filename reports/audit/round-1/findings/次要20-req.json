@@ -1,0 +1,269 @@
+{
+  "round": "R1",
+  "reviewer": "A4-需求对照员-次要20",
+  "gitSha": "aefd8a72",
+  "evidence": {
+    "execResults": "reports/audit/round-1/interact/exec-results.json",
+    "judge": "reports/audit/round-1/interact/次要20-judge.json",
+    "opsManifest": "reports/audit/round-1/ops/次要20.json",
+    "staticShots": "reports/screenshots/round-1-tour/A|B",
+    "interactShots": "reports/screenshots/round-1-interact/",
+    "ideals": ["素材/理想效果图/帖子.png", "素材/理想效果图/圈子详情，摄影圈参考.png"],
+    "sourceRoot": "apps/client/src"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-REQ20-001",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.png（同页族空态形态；VD02 为 navigation tier 无强制截图）",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "村口帖子详情 goBack 为裸 uni.navigateBack，无栈底兜底：分享卡/扫码/通知深链直开（栈=1）时点击顶部返回键无任何路由/DOM/Toast 反馈，构成导航无响应死路。同仓 tag-posts.vue:250-256 与 history.vue:41-48 均已实现 reLaunch 兜底，本页遗漏。",
+      "evidence": "①exec#VD02：.detail-header__back present、tap 已执行无 act-FAIL、稳定后 route 终态仍=detail(options={}) 即栈=1 无导航；②代码 apps/client/src/subpackages/village/village/detail.vue:275-277 goBack(){uni.navigateBack()} 无守卫（本席已读）；③对照 tag-posts.vue:250-256/history.vue:41-48 有守卫；④ops manifest VD02 预设该观察即记缺陷。与 judge MP-R1-J20-001 同源。",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.75,
+      "ideal": "栈=1 时 reLaunch 村口列表兜底，栈>1 navigateBack，与 tag-posts/history 口径一致",
+      "fix": "detail.vue goBack 增加 getCurrentPages().length>1 判断，栈=1 时 uni.reLaunch({url:'/subpackages/village/village/index'})",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/topic-detail",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT11-after.png（空态页含返回键；栈=1 点击无响应同根因）",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "校园圈话题详情 goBack=clearCurrentTopic+裸 uni.navigateBack，无栈底兜底（对比 circles 版 topic-detail.vue:145-152 有 MP-R2-NAV-001 守卫）：深链直开（栈=1）点击返回无任何反馈；空态页「返回」action 调用同一 goBack（XT11 观察到点击后路由不变），受同一缺陷影响。",
+      "evidence": "①exec#XT03：back 键 present、tap 执行、route 终态不变（栈=1）；exec#XT11：tap「返回」后路由不变；②代码 apps/client/src/subpackages/campus/campus/topic-detail.vue:71-74 裸 navigateBack（本席已读）；③ops manifest XT03 预设该观察即记缺陷。与 judge MP-R1-J20-002 同源。",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.7,
+      "ideal": "栈=1 时 reLaunch 校园圈列表兜底（对齐 circles 版实现）",
+      "fix": "goBack 增加 getCurrentPages().length>1 判断，栈=1 时 uni.reLaunch({url:'/subpackages/campus/campus/index'})",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-003",
+      "round": "R1",
+      "page": "subpackages/campus/campus/topic-detail",
+      "screenshot": "exec#XT02 Toast 记录（SUBPACKAGES-CAMPUS-CAMPUS-TOPIC-DETAIL-XT02-after.png 捕获超时无文件）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "校园圈话题详情 onLoad 仅读 query.topicId，不接受 ?id= 变体；而固化深链参数表（r11-param-map）以 ?id= 固化、兴趣圈姐妹页已双参兼容（circles/topic-detail.vue:217 topicId??id）。结果：按参数表生成的直链/分享卡打开即「话题 ID 无效」空态，深链功能对该参数形态失效。",
+      "evidence": "①exec#XT02：route options 保留 {id:153}、Toast「话题 ID 无效」捕获；②代码 campus/topic-detail.vue:92 topicId.value = query?.topicId ?? ''（本席已读）；③对照 circles/circles/topic-detail.vue:217 query?.topicId ?? query?.id；④judge MP-R1-J20-005 同事实定级 Consistency P3，本席按『固化参数直开功能失效』定性 Function P2，取严不取宽。",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.75,
+      "ideal": "topicId ?? id 双参数兼容，两姐妹页行为一致，外部直链稳定可达",
+      "fix": "onLoad 改为 topicId.value = query?.topicId || query?.id || ''",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-004",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH07-before.png（动态卡与操作行在页证据；CH08-after 截图超时无文件）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "动态卡「评论」action（.feed-action 第二枚）与卡片 more 图标（.feed-more）未绑定任何 @tap 处理器，点击无路由/DOM/Toast/震动反馈：用户对「评论」的可见 affordance 完全无响应，评论数也不可点入话题详情，属交互功能缺失。",
+      "evidence": "①exec#CH08（缺陷确认用例）：.feed-action/.feed-more present、tap 执行、route 终态不变、toast=[]、console=[]；②代码 circle-home.vue:560-563 评论 view 无 @tap、:530 more image 无 @tap（本席已读，对照 :550 点赞有 @tap=toggleLike）；③与 judge MP-R1-J20-004 同源（该席定 Interaction，本席按功能缺失定 Function，取严）。",
+      "sources": ["interaction", "code"],
+      "confidence": 0.7,
+      "ideal": "评论 action 点击跳话题详情或聚焦评论入口；more 图标点击弹操作菜单或移除该图标",
+      "fix": "评论 view 补 @tap=openFeedDetail(item)（或先跳详情再评论）；more 补 ActionSheet 或删除入口",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-005",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__数据态.png（真实数据态动态卡计数区）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "动态卡点赞不落库：real 模式话题映射时 likes 恒 0、liked 恒 false，toggleLike 仅本地翻转内存对象（代码自注 TODO(后端)）。点赞后刷新/重进即丢，真实话题的点赞计数永不展示，与理想图动态卡 256/128 真实计数形态不符，也使 REQ20-004 修好后点赞仍无业务意义。",
+      "evidence": "①代码 circle-home.vue:237-258 realFeed 映射 likes: 0, liked: false；:377-380 toggleLike 仅 item.liked/item.likes 本地自增（本席已读）；②stores/circle.ts 无话题点赞 action（本席 grep joinCircle/replyToTopic 等仅见回复/加入接口）；③judge CH07 UNVERIFIED（翻转断言未完成），但数据层缺失由代码直接坐实。",
+      "sources": ["code"],
+      "confidence": 0.7,
+      "ideal": "点赞走后端接口持久化并回显真实计数（对齐村口 likePost 模式）",
+      "fix": "circle store 增加话题点赞 action（POST /topics/{id}/like 或同族接口），realFeed 映射后端 likeCount/isLiked，失败 Toast 回滚",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-006",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-CH12-after.wxml（×5 快击终态落底）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "加入/退出圈子无防连点守卫：circle-home.vue toggleJoin 与 topics.vue toggleJoin 均无 isJoining in-flight 标记，提交类操作惯例（submitComment/submitReply 的 isSubmitting）未对齐。exec CH12 实证 .info-join rapidTap ×5 全部送达（done=5）：mock 下交替 join/leave 造成成员数与按钮态抖动，real 下对 POST/DELETE /circles/{id}/join 连发 5 次请求。topics 页 hero 与底部两入口同源受累。",
+      "evidence": "①exec#CH12：act:rapidTap .info-join x5 done=5，无守卫日志/禁用态；②代码 circle-home.vue:344-358、topics.vue:211-224 均无 in-flight 守卫（本席已读）；③stores/circle.ts:326-377 joinCircle/leaveCircle 亦无重入保护；④judge CH12 UNVERIFIED（终态不可判），守卫缺失由代码坐实。",
+      "sources": ["interaction", "code"],
+      "confidence": 0.7,
+      "ideal": "加入/退出请求在途时按钮禁用（防连点铁律，与全站 isSubmitting 惯例一致）",
+      "fix": "两页 toggleJoin 增加 isJoining ref：入口处 if(isJoining) return; finally 复位；按钮绑定禁用态样式",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-007",
+      "round": "R1",
+      "page": "subpackages/circles/circles/topics",
+      "screenshot": "exec#CT08 路由证据（CT08-after.png 捕获超时无文件）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "置顶圈规条 .topic-rule 点击绑定 goCircleDetail=uni.navigateBack，无栈底守卫：栈=1（深链直开）时点击无任何反馈构成死按钮；且产品语义存疑——圈规条被期望展示规约或跳圈主页，当前实现语义是「返回上一页」，落点亦错。",
+      "evidence": "①exec#CT08：.topic-rule present、tap 执行、route 终态=topics 不变（在案 Toast 为 onLoad 缺参守卫所发，非点击反馈）；②代码 topics.vue:295-297 goCircleDetail(_id){uni.navigateBack()}、:475 绑定（本席已读）；③与 judge MP-R1-J20-003 同源。",
+      "sources": ["interaction", "code", "log"],
+      "confidence": 0.65,
+      "ideal": "栈=1 reLaunch 兜底；落点与产品确认（圈规详情/展开全文/圈主页之一）",
+      "fix": "goCircleDetail 增加栈底守卫；产品确认落点后改接目标路由（如圈规弹层）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-008",
+      "round": "R1",
+      "page": "subpackages/circles/circles/circle-home",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__数据态.png（mock 态 chips/规约在位，real 态整块消失）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "圈子主页标签 chips 与置顶规约仅 mock 模式渲染（写死演示数据，代码自注 TODO(后端)：圈子标签字段/圈公告接口缺失），real 模式两块整块消失——理想图（圈子详情，摄影圈参考.png）的核心结构要素「标签 chips 行 + 置顶规约条」在真实数据下不可用。R13 视觉席记录的「标签chips消失」其根因即此数据层功能缺失。",
+      "evidence": "①代码 circle-home.vue:109-111 circleTags=useMock()?演示数组:[]；:115-117 pinnedNotice 同构；:484/:505-510 v-if 整块不渲染（本席已读）；②对照理想图 chips 行（摄影技巧/风景拍摄/人像写真/城市漫游）与置顶【圈规】条；③运行态截图（tour A，mock 包）两块均在位，real 包无渲染路径。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.65,
+      "ideal": "圈子标签与圈规约有后端字段/接口支撑，real 模式正常渲染；无数据时按现约定整块隐藏",
+      "fix": "后端补 Circle.tags/pinnedNotice 字段（或公告接口），前端 mapToCircleItem 透传并替换 mock 常量",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-009",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__数据态.png（互动行右侧「转发」可见）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "互动行第三钮文案为「转发」，弹窗标题「转发到我的动态」、成功 Toast「转发成功」（zh-CN.ts:1943/1946/1968），理想图（帖子.png）为「分享」；且页面同时存在右上角菜单原生微信分享（onShareAppMessage）与站内转发弹窗两条链路，「转发≠分享」语义并存易混淆（R13 偏差项仍在）。",
+      "evidence": "①i18n zh-CN.ts:1943 shareAction=转发、:1946 shareModalTitle=转发到我的动态、:1968 shareSuccess=转发成功（本席已读）；②detail.vue:913-923 绑定 openShareModal、:728-746 onShareAppMessage/Timeline；③理想图帖子.png 互动行为「❤256 | 💬32 | ↗分享」。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.8,
+      "ideal": "第三钮文案与理想一致用「分享」；站内转发弹窗保留但命名与原生分享区分",
+      "fix": "shareAction/shareModalTitle/shareSuccess 文案对齐或与产品确认双链路命名（转发到动态 vs 分享给朋友）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-REQ20-010",
+      "round": "R1",
+      "page": "subpackages/village/village/detail",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-VD04-after.png（空态 CTA「返回广场」可见）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "村口域用语混用：详情空态 CTA「返回广场」（zh-CN.ts:1941）、浏览历史空态 CTA「去广场逛逛」（zh-CN.ts:1826）与页面域「村口」并存（导航标题/列表页均为村口），同族姊妹页 ops 预期「返回村口」。功能上按钮存在且绑定正确跳转，无功能缺陷。与 judge MP-R1-J20-006 同源同判（保留，待产品定术语）。",
+      "evidence": "①i18n zh-CN.ts:1941 village.detail.backToVillage=返回广场、:1826 village.history.backToVillage=去广场逛逛（本席已读）；②VD27 执行器按预期文案「返回村口」定位失败反证实际文案；③VH09 同因定位失败（「回村口看看」vs 实际「去广场逛逛」）。",
+      "sources": ["code", "log"],
+      "confidence": 0.8,
+      "ideal": "村口域统一术语（村口），或产品明确「广场=村口旧称」的全局映射",
+      "fix": "统一改「返回村口/去村口逛逛」或产品确认保留「广场」并同步全部域文案与测试预期",
+      "status": "保留"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/village/village/detail",
+      "baseline": "素材/理想效果图/帖子.png + ops/次要20.json VD01-28",
+      "structureNotes": "L1 路由/深链 ✅（VD01 VERIFIED，?id=1 内容态、无闪错误态）；L2 信息架构与理想一致：作者行+关注钮→正文→图集→位置→互动行→全部评论+最热排序→评论卡/楼中楼→相似作者→底部输入条 ✅；L3 模块齐全：圈子归属标签机制（categoryLabel detail.vue:137-153，数据命中才渲染）、话题标签、活动卡、举报弹窗、转发弹窗、@/表情/图片输入增强均在 ✅；L4 闭环：看帖/点赞/评论/转发/关注闭环 ✅，栈=1 深链返回闭环 ✗（REQ20-001）；L5 乐观更新+失败 Toast ✅；L6 骨架/空态/错误 Toast ✅；L7 距离数据缺失（detail.vue:879 空元素，假距离已删）、分类标签数据依赖 ⚠️；L8 R13 视觉偏差余「话题标签位置/定位无胶囊/转发≠分享/多发送钮」（「发送」钮为 R16 有意新增，建议视觉豁免）；L9 转发/广场用语 ⚠️；L10 role/aria 覆盖良好 ✅。",
+      "usageNotes": "理想路径（列表→详情→赞/评/转发→返回）实测顺畅（VD05 评聚焦/VD12 排序/VD14 空提交拦截 EXECUTED）；实际路径差距：分享卡/扫码深链直开后返回键死路，只能靠右上胶囊退出——唯一迷路点；任意页 2 步回 tab：栈内 ✅、栈=1 深链 ✗。",
+      "functionGaps": [
+        {"target": "栈=1 深链直开可返回来源兜底", "current": "goBack 裸 navigateBack（detail.vue:275-277），VD02 tap 无反馈", "gap": "深链/分享卡直开返回死路（REQ20-001，P1）", "fix": "补 getCurrentPages().length>1 守卫，栈=1 reLaunch 村口列表"},
+        {"target": "位置胶囊含距离（理想：距你 1.2km）", "current": "距离空元素无数据绑定（detail.vue:879）", "gap": "距离数据链路未实现（假数据已被 MP-R2-DETAIL-001 删除）", "fix": "后端补距离字段或定位计算后回填，删除空元素"},
+        {"target": "互动行第三钮=分享", "current": "文案「转发」+「转发到我的动态」弹窗（zh-CN.ts:1943/1946）", "gap": "与理想语义错位、与原生分享双链路混淆（REQ20-009，P3）", "fix": "文案对齐「分享」并区分站内转发"},
+        {"target": "空态 CTA 用语统一", "current": "「返回广场」（zh-CN.ts:1941）", "gap": "村口域用语混用（REQ20-010，P4 保留）", "fix": "产品定术语后统一"}
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/village/village/tag-posts",
+      "baseline": "无专属理想稿；ops/次要20.json VT01-08 + 村口域口径",
+      "structureNotes": "L1 深链+缺参守卫 ✅（VT08 VERIFIED：Toast「缺少标签参数」+600ms goBack reLaunch 村口实证）；L2 导航+帖子流 ✅（缺参占位标题 R11-N4）；L3 卡片模块（作者行/正文/标签/评·赞·分享/相对时间）✅（tag-posts.vue:332-412）；L4 闭环：浏览→点赞（mock 本地/real store 双模式 :32-53）→进详情带 ?id=（:237-242）✅，VT03-07 未验系执行器丢参污染非产品；L5 分享 showShareMenu+Toast ✅；L6 加载/错误重试/空态/没有更多四态 ✅（:310-329, 414-421）；L7 mock 数据确有 #摄影 帖（stores/village/mock-data.ts:389），VT01 卡片 absent 属快照时机不可判 ⚠️留证；L9/L10 ✅。",
+      "usageNotes": "标签聚合→帖子→详情→返回主线顺畅；缺参深链 600ms 自动弹回村口不迷路（VT08 实证）；2 步内回 tab ✅。唯一不一致：卡片作者头像不可点进主页（history/detail 均可）。",
+      "functionGaps": [
+        {"target": "深链内容态可复核证据", "current": "VT01 仅标题 present，卡片渲染无 wxml 佐证", "gap": "留证缺口非产品缺陷", "fix": "补一例带参 reLaunch+落底 wxml 复验"},
+        {"target": "作者头像→主页", "current": "头像仅展示无 @tap（tag-posts.vue:338-357）", "gap": "与同族页面口径不一致（P3）", "fix": "头像补 @tap.stop openUserProfile"}
+      ],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/village/village/history",
+      "baseline": "无专属理想稿；ops/次要20.json VH01-09",
+      "structureNotes": "L1 直达 ✅（VH01 EXECUTED：列表/计数/工具栏渲染、双身份不闪错误态）；L2 返回键+工具栏（计数/清空）+列表 ✅；L3 卡片摘要（作者/相对时间/标题/摘要/赞·藏·看·评统计）✅（history.vue:185-222）；L4 闭环：清空（确认弹窗+clearing 防重入 :96-111/245-271）、进详情带 ?id=（:114-118，VH04）、头像冒泡阻断进主页（:193-205，VH05）✅，VH03 弹层交互未留证（judge UNVERIFIED，代码路径完整）；L5 ✅；L6 空态 EmptyState→回村口（:236-242）+加载态 ✅；L7 fetchPostHistory real GET /posts/history ✅；L9 空态 CTA「去广场逛逛」用语 ⚠️（并入 REQ20-010）；L10 ✅。",
+      "usageNotes": "浏览→历史→再进详情→返回 onShow 静默刷新（:130-133，VH08）动线顺；清空有确认防误触；2 步回 tab ✅（VH02 栈底守卫）。",
+      "functionGaps": [
+        {"target": "清空全流程交互留证", "current": "代码完整；VH03 弹层未在 wxml 落底", "gap": "留证缺口", "fix": "补一例清空确认→DELETE→空态复验"},
+        {"target": "空态 CTA 用语", "current": "「去广场逛逛」（zh-CN.ts:1826）", "gap": "村口域用语混用（并入 REQ20-010）", "fix": "统一术语"}
+      ],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/circles/circles/topics",
+      "baseline": "无专属理想稿（圈子详情参考图的 topics 链路）；ops/次要20.json CT01-16 + v3 Nearby 冻结五 Tab",
+      "structureNotes": "L1 深链 ✅（CT01 EXECUTED：?circleId=8 圈名回填+hero+话题列表；CT15 缺参 Toast+hero 不渲染）；L2 hero+五 Tab+置顶条+列表+底部栏 ✅（:374-613）；L3 五 Tab 数据面（动态/精华=回复数排序/活动=活动列表前5/作品墙=带图话题/成员=活跃作者聚合）✅（:119-127,195-208,550-574）；L4 闭环：话题卡→详情双参（:97-99，CT05）、头像/认识TA→主页（CT06/07）、写话题三入口（:350-359/:257-265/:603-612，CT09）✅；圈规条点击闭环 ✗（REQ20-007）；L5 加入失败 Toast（MP-R1-CIRCLES-001）✅；L6 下拉（CT12）/分页（CT13）/空态→写话题/错误重试 ✅；L7 朋友头像与「等 N 位已加入」为按 id 种子合成（规格书 15.7 演示语义）⚠️记录；L9/L10 ✅。",
+      "usageNotes": "兴趣圈→圈内话题→话题详情→返回主线顺；写话题三入口冗余但不迷路；加入/退出两入口联动但无防连点（REQ20-006）；缺参直开仅 Toast 不自动返回（与 tag-posts 口径不同，可接受）；2 步回 tab ✅（CT02 栈底守卫）。",
+      "functionGaps": [
+        {"target": "置顶圈规条可点且落点合理", "current": "裸 navigateBack（topics.vue:295-297），CT08 栈=1 无反馈", "gap": "死按钮+落点语义存疑（REQ20-007，P2）", "fix": "栈底守卫+产品确认落点"},
+        {"target": "加入/退出防连点", "current": "toggleJoin 无 in-flight 守卫（topics.vue:211-224）", "gap": "快击交替翻转/重复请求（REQ20-006，P2）", "fix": "isJoining 守卫+禁用态"}
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/circles/circles/topic-detail",
+      "baseline": "ops/次要20.json CD01-13 + circles 域口径",
+      "structureNotes": "L1 深链双参兼容 ✅（:217 topicId??id；CD01 内容态不可判系 mock id 域不匹配（37 为 real 域 id，mock 为 topic-N），守卫语义正常，留证建议见下）；L2 作者行→正文→回复区→底部回复栏 ✅（:271-431）；L3 模块齐全：长按举报三步（:170-210）、打招呼实名门控（:107-110 ensureCertified）、回复分页（:41-65）、network/notExist 双空态（:391-407）✅；L4 回复闭环（:85-101 isSubmitting+Toast+清空）与打招呼闭环代码完整，交互证据被执行侧丢参污染（CD03-11 UNVERIFIED）；CD12 EXECUTED（缺参 Toast+空态返回可用）；L5 禁用态 ✅；L6 ✅；L7 ✅；L10 ✅。",
+      "usageNotes": "话题列表→详情→回复→打招呼主线顺；头像点击经 openAppPath tab 桥接（utils/navigation.ts:53-99 + pages/profile/index.vue:226-227）可达他人主页——CD09 疑点实为可用，但 switchTab 清空非 tab 栈丢失阅读位置，与 village 详情 openUserProfile（push 语义）口径不一；2 步回 tab ✅。",
+      "functionGaps": [
+        {"target": "头像→作者主页不丢上下文", "current": "switchTab profile（:137-140）清空页面栈", "gap": "与同族详情页口径不一致（P3 一致性）", "fix": "统一 openUserProfile（profile/other push 语义）"},
+        {"target": "深链内容态留证", "current": "CD01 无 wxml 佐证不可判", "gap": "留证缺口", "fix": "补一例 mock 现存 id（topic-1）深链复验"}
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/circles/circles/circle-home",
+      "baseline": "素材/理想效果图/圈子详情，摄影圈参考.png + ops/次要20.json CH01-13",
+      "structureNotes": "L1 深链三态 ✅（CH01 EXECUTED：骨架→内容无闪「圈子不存在」；real 未知圈空态 :410-419；mock 兜底演示圈）；L2 顺序=hero→圈信息卡+加入钮→标签 chips→白色面板（5 Tab+置顶规约+动态卡）→底部加入大钮，与理想同构；偏差：圈信息为 hero 下方白卡而非 hero 上叠白字（R13 视觉余项，归视觉席）；L3 模块在位但 chips/置顶规约 real 模式无数据源整块消失（:109-117，REQ20-008）⚠️；L4 闭环：加入（CH04 EXECUTED 按钮态+底栏联动）、动态卡→话题详情（CH06 EXECUTED，MP-R1-CIRCLEHOME-002 去白名单）、查看全部话题→topics（CH09 EXECUTED）、分享原生卡（CH03 EXECUTED，open-type=share）✅；评论钮/more 死按钮 ✗（REQ20-004）；点赞不落库 ✗（REQ20-005）；L5 ✅；L6 三态 ✅（R10-P1-001 骨架防误判）；L7 real 点赞恒 0/计数失真 ⚠️；L8 白卡叠 hero 归视觉席。",
+      "usageNotes": "兴趣圈列表→圈主页→动态→话题详情→加入→圈内发帖主线顺（CH04/CH06/CH09 实证）；迷路点：点赞/评论点击无下文（死按钮+假计数）；加入快击状态抖动（REQ20-006）；2 步回 tab ✅（CH02 hero 返回栈底守卫）。",
+      "functionGaps": [
+        {"target": "动态卡评论可点", "current": "评论 action 与 more 图标无 @tap（circle-home.vue:530/560-563），CH08 无反馈", "gap": "affordance 死按钮（REQ20-004，P2）", "fix": "评论→openFeedDetail；more→ActionSheet 或移除"},
+        {"target": "点赞持久化+真实计数", "current": "本地翻转、real 恒 0（:237-258/:377-380）", "gap": "点赞不落库（REQ20-005，P2）", "fix": "store 增话题点赞 action 并映射 likeCount/isLiked"},
+        {"target": "加入/退出防连点", "current": "无守卫（:344-358），CH12 ×5 done=5", "gap": "状态抖动/重复请求（REQ20-006，P2）", "fix": "isJoining 守卫+禁用态"},
+        {"target": "标签 chips/置顶规约", "current": "mock-only（:109-117），real 整块消失", "gap": "理想结构要素真实模式缺失（REQ20-008，P2）", "fix": "后端补字段后透传渲染"},
+        {"target": "五 Tab 内容", "current": "非动态 Tab 仅空占位（:574-576），topics 页同 Tab 有实现", "gap": "本页未接各 Tab 数据源（P3）", "fix": "复用 topics 页数据源或隐藏未实现 Tab"}
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/campus/campus/topic-detail",
+      "baseline": "ops/次要20.json XT01-11 + circles 姐妹页口径",
+      "structureNotes": "L1 深链半通：?topicId= ✅（XT01 route 保留；内容态选择器全 absent 系 mock id 域不匹配不可判），?id= 变体 ✗（XT02 Toast「话题 ID 无效」实证，REQ20-003）；L2 分类标签→作者卡（匿名兜底）→正文/配图→回复→底部回复栏 ✅（:149-300）；L3 匿名开关+匿名回复（:41/:282-299）、回复 scrolltolower 分页（:104-115）、network/notExist 双空态（:252-268）✅；比 circles 版少长按举报与头像跳主页 ⚠️（P3 记录）；L4 回复闭环代码完整（isSubmitting+禁用态+Toast），交互证据被执行侧丢参污染（XT04-08 UNVERIFIED）；XT10/XT11 EXECUTED（空态返回可用——但返回本身受 REQ20-002 影响）；L5 ✅；L6 ✅；L9 ✅。",
+      "usageNotes": "校园圈 hub→话题→详情→匿名回复主线顺；返回键在深链直开（栈=1）死路（REQ20-002）；2 步回 tab：正常入口 ✅、深链 ✗。",
+      "functionGaps": [
+        {"target": "深链 ?id= 变体兼容", "current": "仅 query?.topicId（campus/topic-detail.vue:92），XT02 实证失败", "gap": "固化参数表直开即空态（REQ20-003，P2 Function）", "fix": "topicId ?? id 双参兼容"},
+        {"target": "栈=1 返回兜底", "current": "裸 navigateBack（:71-74），XT03/XT11 点击无反馈", "gap": "深链返回死路（REQ20-002，P1）", "fix": "对齐 circles 版 MP-R2-NAV-001"},
+        {"target": "头像→主页/长按举报", "current": "均无（:157-177/:215-226 无 @tap；无举报处理）", "gap": "与同族详情页能力不一致（P3）", "fix": "补 openUserProfile 与举报流（复用 circles 版）"}
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    },
+    {
+      "route": "subpackages/campus/campus/certification",
+      "baseline": "ops/次要20.json XC01-13 + B1-2/B1-3 需求",
+      "structureNotes": "L1 路由/返回守卫 ✅（XC02 EXECUTED；栈=1 switchTab home :205-212）；L2 状态卡→实名门槛横幅→说明卡→表单→提交→隐私提示 ✅（:279-455）；L3 全字段：学校/专业/学生证（隐私守卫 :113-136、预览/重传/移除 :359-373）、B1-3 学信网验证码+截图选填（:377-417）✅；L4 校验闭环 ✅（XC08/XC09 空提交逐项 Toast「请输入学校名称」实证=zh-CN.ts:3464）；合法提交→审核中状态迁移代码完整（:141-200 real 上传换 URL+状态刷新）但自动化未留证（前置表单无法填，judge UNVERIFIED）；L5 isSubmitting 防重入+禁用态 ✅（XC10 空表单 ×5 仅触发校验路径不走提交）；L6 四态状态卡（unverified/pending/verified/rejected+审核意见）✅（XC12 verified 态 EXECUTED）；L7 ✅；L9/L10 ✅。",
+      "usageNotes": "认证→填表→上传→提交→状态卡刷新动线顺；实名横幅引导闭环（跳实名页返回 onShow 重拉解禁 MP-R1-CERT-101）；XC13 重进状态保持 EXECUTED；2 步回 tab ✅。",
+      "functionGaps": [
+        {"target": "合法提交全流程留证", "current": "XC09 仅空表单拦截实证，提交→审核中无交互证据", "gap": "留证缺口非产品缺陷", "fix": "补 mock 直填表单后提交复验"}
+      ],
+      "verdict": "达标",
+      "file": "reports/audit/round-1/page-compare/次要20.md"
+    }
+  ]
+}

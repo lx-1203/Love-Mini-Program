@@ -1,0 +1,391 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "A4-需求对照员（次要21 批次）",
+    "scope": "8 页需求与功能目标对照：discover-extra/{home/segment, nearby/people, discover/history, likes/index, likes-visitors/index} + tools/{daily-question/index, love-center/index, help/index}（与视觉审查员分文件）",
+    "gitSha": "aefd8a72",
+    "generatedAt": "2026-09-24",
+    "evidence": {
+      "execResults": "reports/audit/round-1/interact/exec-results.json（本 8 页 81 例：EXECUTED 61 / FAILED 17 / SKIPPED 3）",
+      "screenshots": [
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-HOME-SEGMENT-SG06-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-NEARBY-PEOPLE-NP07-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-HISTORY-DH05-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-LIKES-INDEX-LK17-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-LIKES-VISITORS-INDEX-LV03-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ02-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ05-after.png",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-HELP-INDEX-HP03-after.png"
+      ],
+      "code": "apps/client/src/subpackages/discover-extra/**、apps/client/src/subpackages/tools/**、apps/client/src/constants/routes.ts、apps/client/src/pages.json、apps/client/src/pages/{home,discover,profile,messages,nearby}/index.vue、apps/client/src/subpackages/profile-extra/settings/index.vue、apps/client/src/components/layout/AppShell.vue、apps/client/src/stores/{likes.ts, discover/actions/rewind.ts}",
+      "idealArt": "8 页均无专属理想图（reports/audit/baseline/ideal-baseline.md:116 未登记清单、:97 likes 两页 P4 兜底行）；页面级对照降级基准=29a2b1df-only docs/design/v3.1-contract.md §19 逐页契约行 + 页面自身产品语义 + ideal-baseline 兜底行"
+    },
+    "note": "FAILED 用例逐例甄别：错误态类（SG06/NP09/DH06/LK15/DQ11）=mock 无法诱导网络错误的证据缺口；通道类（NP03/LV03 harness 误导航、HP03/LC05 选择器错配）=执行通道错误；封存类（LV07/LK11/LC01）=commerce seed=FALSE 的 ADR-2 合规表现；真实缺陷=DH07/DQ12 返回键栈=1 死点（执行实证）+ 4 页生产入口断链（全仓路由引用枚举证实）。孤儿页判定方法：grep 全仓（pages/components/stores/subpackages，含裸字符串与 ROUTES 常量两条途径）导航引用枚举，segment/history/love-center 仅 pages.json 注册 + DEV 专属 showcase/dev 页引用。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SEG-201",
+      "round": "R1",
+      "page": "subpackages/discover-extra/home/segment",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-HOME-SEGMENT-SG06-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "首页分区页为孤儿页：v3.1 契约 §19 页01「发现」定义的点击行为『快捷入口→segment?type=』（细分发现 6 类入口）未实现——发现页无 SegmentEntries 区块（components/discover、components/home 无此组件），pages/home/index.vue 全部导航枚举（:130-:320）无 segment；全仓 grep（ROUTES.TAB.HOME_SEGMENT 与裸串 home/segment 两条途径）仅 constants/routes.ts:38 定义 + pages.json:146 注册，无任何生产导航。页面本身六类枚举/标题联动/行点击/返回兜底均有执行实证（SG01-SG05/SG07/SG08），但真实用户触达=0，仅 DEV showcase/深链可达。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/home/segment.vue:3（头注释自述『v3.1 契约 01 发现 → 快捷入口』）；git show 29a2b1df:docs/design/v3.1-contract.md §19 行01『快捷入口→segment?type=』+ §20 新增路由 home/segment；grep 全仓 HOME_SEGMENT/home/segment → 仅 constants/routes.ts:38、pages.json:146（另 .mimosa 基线快照）；pages/home/index.vue:130-320 导航枚举无 segment；interaction: exec-results.json SG01-SG08 8 例（页面本体功能 EXECUTED 证明可达后功能完好，唯无生产入口）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "发现页提供 6 类细分快捷入口（在线/同校/同兴趣/附近/新加入/高匹配）→ navigateTo segment?type=xxx → 细分列表 → 点行进他人主页 → 返回回列表，形成契约定义的完整链路。",
+      "fix": "①发现页（pages/home/index）补 SegmentEntries 区块或在 QuickFilterSheet 接入 6 类入口，跳转 ROUTES.TAB.HOME_SEGMENT?type=…（openAppPath + fail toast，对齐 openNearbyList 写法）；②或产品明确弃用该页：下线 pages.json 注册与路由常量，避免死页。二选一需产品裁决。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCOVER-HISTORY-201",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/history",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-HISTORY-DH05-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "寻觅历史（今日已看）页为孤儿页：统计栏/快照列表/徽章/最后一 rejection 挽回（每日 1 次）功能代码齐备，但全仓无任何生产导航入口——ROUTES.DISCOVER.HISTORY 与裸串 discover/history 仅 pages.json:153 注册 + subpackages/setup/{dev,showcase}（DEV 专属）引用；寻觅 Tab（pages/discover/index.vue）grep history/历史/今日已看零命中。用户完整功能（含挽回）不可达；i18n 空态文案『快去寻觅页发现有趣的TA吧』（zh-CN:3625）暗示入口应在寻觅页。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/discover/history.vue:1-131（完整功能实现）；grep 全仓 discover/history/DISCOVER.HISTORY → constants/routes.ts:64、pages.json:153、setup/dev/index.vue:197、setup/showcase/index.vue:66、stores/discover/actions/storage.ts:130（注释）；pages/discover/index.vue grep -i 'history|历史|浏览记录|今日已看' 零命中；interaction: DH01 EXECUTED（空态渲染正常，深链可达但无入口）；ideal-baseline.md:116 将本页列为无专属理想图未登记路由",
+      "sources": ["code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "寻觅页提供『今日已看』入口（如头部/筛选区/配额行），用户可查看今日浏览统计并对最后一 rejection 行使每日 1 次挽回。",
+      "fix": "在寻觅页（pages/discover/index）补『今日已看』入口（openAppPath(ROUTES.DISCOVER.HISTORY)，配 fail toast）；挽回功能随入口恢复可达。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCOVER-HISTORY-202",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/history",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-HISTORY-DH08-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "寻觅历史页返回键在栈=1（深链/分享直开）时为死按钮：goBack 仅调 uni.navigateBack() 无栈判断、无 fail 兜底，导航静默失败后用户『进得去出不来』。本轮自动化执行实证：DH07 EXECUTED observed『pre:reLaunch → act:tap .back-btn → route 仍为本页、无 toast』。同批 4 个二级页（segment:51-59、people:142-149、likes:157-164、likes-visitors:253-260）均已实现栈判断或 fail 兜底，本页与 daily-question（MP-R1-DQ-202）为仅存的两处遗漏。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/discover/history.vue:115-117（goBack 无兜底）；对照 segment.vue:51-59/people.vue:142-149；interaction: exec-results.json DH07『top=subpackages/discover-extra/discover/history | dom: .back-btn:present | pre:reLaunch … | act:tap .back-btn | route=[{history}]』（执行实证 tap 后路由不变）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "任意进入方式下返回键均可退出：栈>1 navigateBack；栈=1 兜底 switchTab 回寻觅 Tab（/pages/discover/index，本页语义归属寻觅模块）。",
+      "fix": "history.vue goBack 改为 getCurrentPages().length > 1 ? uni.navigateBack() : uni.switchTab({ url: '/pages/discover/index' })（对齐 people.vue:142-149 写法）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCOVER-HISTORY-203",
+      "round": "R1",
+      "page": "subpackages/discover-extra/discover/history",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-HISTORY-DH03-before.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "核心差异化功能『挽回』整链零正向执行证据：DH03（挽回成功链）/DH04（防连点）/DH05（失败友好 Toast）全部 FAILED，根因是 automator 无法合成左右滑（『pre:swipe left unsupported(no element api)』）生成 rejection，.rewind-btn 永不渲染；DH02『有浏览记录』用例实测列表为空（DH05-after.wxml 实证页面=统计栏+EmptyState）。代码层挽回实现完备（rewinding 锁、成功 Toast+返回、失败分类文案、仅最后一张 rejected 且未用今日额度渲染按钮），但按钮渲染/点击/Toast/次数用尽切换四个状态均无任何实拍或执行证据，页面核心价值未验收。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/discover/history.vue:89-112（handleRewind：rewinding 锁/成功/失败分支）、:206-222（按钮渲染条件）、stores/discover/actions/rewind.ts:46-58（每日 1 次限制）；interaction: exec-results.json DH03/04/05 failureReason『element not found: .rewind-btn』+ observed『pre:swipe left unsupported(no element api)』；wxml: reports/screenshots/round-1-interact/wxml/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-HISTORY-DH05-after.wxml（stats-bar+empty，无 rewind 节点）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "挽回链路取得正向证据：有 rejected 记录时最后一张卡渲染『挽回（每日限1次）』按钮 → 点击 Toast『挽回成功』+返回 → 重进按钮变『今日挽回次数已用完』；防连点仅 1 次请求；失败仅友好 Toast 不跳转。",
+      "fix": "自动化用 mock storage 预置 discover store viewedCards/passedCards（含 rejection）+ hasRewoundToday=false 身份后重跑 DH02-05；或给 rewind 按钮渲染条件增加 dev 预置钩子。真机补拍四个状态帧。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LIKES-INDEX-201",
+      "round": "R1",
+      "page": "subpackages/discover-extra/likes/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-LIKES-INDEX-LK17-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "两条用户分支零正向执行证据：①myLikes Tab 批量取消喜欢——LK17 FAILED，after.wxml 实证批量模式未激活（无 likes-batch 节点），『取消喜欢』按钮从未渲染点击（likedBy 侧批量链路已由 LK08/09/10 实证，store batchActions('cancel') 代码在位 stores/likes.ts:1014-1023）；②已解锁项点击分流（互喜→聊天会话 / 普通→他人主页，likes/index.vue:459-474）——LK12 SKIPPED『action-not-automatable』。另：打码项点击封存提示（LK11）因 mock 数据全解锁无打码项而未取得证据（.likes-unlock-bar:absent 断言本身符合封存预期 ✓）。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/likes/index.vue:976-989（myLikes 批量按钮 v-if）、:459-474（handleItemClick 分流）、:481-483（handleLockedItemTap）；stores/likes.ts:193（BatchActionType 含 cancel）、:1014-1023（batchActions 防重复锁）；interaction: LK17 failureReason『element not found: __CAND__(\"取消喜欢\")』+ wxml LK17-after 无 likes-batch 节点；LK12 observed『action-not-automatable』；LK08/09/10 EXECUTED（likedBy 批量正向证据对照组）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "myLikes Tab 进入批量模式 → 勾选 → 『取消喜欢』成功 Toast 且记录移除；已解锁互喜项点击进 chat-session?userId=、普通项进 profile/other?userId=；封存态打码项点击 toast『功能封存中』。",
+      "fix": "①自动化预置 myLikes mock 数据并修正批量模式前置后复跑 LK17；②mock 预置 mutualLikes 一条+普通已解锁一条，分击两条复跑 LK12；③mock 预置 unlocked=false 记录复跑 LK11。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LIKES-VISITORS-201",
+      "round": "R1",
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-LIKES-VISITORS-INDEX-LV03-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "两条核心分支零正向执行证据：①双 Tab 切换（喜欢我的↔我的访客）——LV03 FAILED，harness 误经 switchTab /pages/profile/index 找『我的访客』（该文案在本页 zh-CN:2660，profile 页无此元素），Tab 切换（:135-137）无执行证据；②已解锁项点击分流（互喜→chat-session / 普通→profile-other，:239-247）——LV08 SKIPPED。另：未解锁打码态渲染（模糊+锁+匿名）因 mock 数据全 unlocked=true 无实拍（LV04 observed .list__avatar--blur:absent .list__lock:absent .list__name:present）；解锁全部弹窗链（LV07）在 commerce.coin DB seed=FALSE 封存下为条件不可达——封存本身是 ADR-2 合规正确行为（LV05/LV06 已证），非缺陷。",
+      "evidence": "code: apps/client/src/subpackages/discover-extra/likes-visitors/index.vue:135-137（switchTab）、:239-247（goToUserProfile 分流）、:384-419（打码渲染）、:152-226（handleUnlock 全链）；i18n zh-CN.ts:2660（tabVisitors=我的访客）；interaction: LV03 failureReason『element not found: __CAND__(\"我的访客\")』+ observed『act:switchTab /pages/profile/index』（通道错误实证）；LV04 dom（全解锁无模糊）；LV08 observed『action-not-automatable』；LV05/06 EXECUTED（封存合规对照组）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.6,
+      "ideal": "本页内 tap『我的访客』下划线高亮即时迁移+列表切换+新访客 badge（99+ 封顶）；已解锁互喜项点击进会话、普通项进主页；开启 commerce.coin 环境中解锁全部弹窗确认/取消/余额不足三路可达。",
+      "fix": "①修正 LV03 用例导航（reLaunch 直开本页后 tap tabs__item）复跑；②mock 预置互喜+普通已解锁项复跑 LV08；③预置 unlocked=false 记录补打码态实拍；④commerce.coin=ON 测试构建补跑 LV07。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DQ-201",
+      "round": "R1",
+      "page": "subpackages/tools/daily-question/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ05-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "页面核心功能『提交回答』整链零正向执行证据：DQ05（提交成功链）/DQ06（防连点）/DQ07（maxlength 500 截断+emoji/HTML 回显）/DQ08（匿名勾选往返）/DQ09（回答列表分页）全部 FAILED，根因是用例身份未签到——DQ05-after.wxml 实证当时页面停在签到锁定卡（回答区 v-else 未渲染，textarea/.submit-btn/.anonymous-toggle/.answers-load-more 全部不存在）。签到门禁本身是设计行为（DQ01/DQ02 已实证锁定卡→去签到→toast『签到成功，每日一问已解锁』→解锁），但门禁之后的全部回答交互（输入/匿名/提交/已回答提示/列表分页/空态）代码在位而无任何执行或实拍证据。",
+      "evidence": "code: apps/client/src/subpackages/tools/daily-question/index.vue:43-73（submitAnswer）、:112-120（分页+触底）、:176-278（问题卡/回答区/列表模板）；interaction: DQ05-09 failureReason 均为 element not found；DQ02 toast『签到成功，每日一问已解锁』（门禁正向证据对照组）；wxml: reports/screenshots/round-1-interact/wxml/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ05-after.wxml（仅 lock-card 节点）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.7,
+      "ideal": "已签到身份可完成：输入回答（500 截断、emoji/HTML 安全回显）→ 可选匿名 → 提交 → toast『回答成功』+输入清空+已回答提示 → 回答列表拉取/分页/无更多提示，全链正向证据。",
+      "fix": "自动化补『先签到』前置（或改用已签到身份/预置 checkIn storage）后重跑 DQ05-09；真机补提交成功与列表分页实拍。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DQ-202",
+      "round": "R1",
+      "page": "subpackages/tools/daily-question/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ06-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "每日一问返回键在栈=1（深链直开）时为死按钮：goBack 仅调 uni.navigateBack() 无栈判断无 fail 兜底。本轮执行实证：DQ12 EXECUTED observed『pre:reLaunch 栈=1 → act:tap .dq-header__back → route 仍为本页、无 toast』。与寻觅历史页（MP-R1-DISCOVER-HISTORY-202）为同批仅存的两处无兜底返回键。",
+      "evidence": "code: apps/client/src/subpackages/tools/daily-question/index.vue:78-80（goBack 无兜底）；interaction: exec-results.json DQ12『dom: .dq-header__back:present | pre:reLaunch … | act:tap .dq-header__back | route=[{daily-question/index}]』",
+      "sources": ["code", "interaction"],
+      "confidence": 0.9,
+      "ideal": "任意进入方式返回键均可退出：栈>1 navigateBack；栈=1 兜底 switchTab 回首页 Tab（对齐 likes/likes-visitors 页写法）。",
+      "fix": "index.vue goBack 改为 getCurrentPages().length > 1 ? uni.navigateBack() : uni.switchTab({ url: '/pages/home/index' })。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-LOVE-CENTER-201",
+      "round": "R1",
+      "page": "subpackages/tools/love-center/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-DAILY-QUESTION-INDEX-DQ02-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "恋爱中心为孤儿页：Phase Feedback2『首页精简后，恋爱咨询（四板块）与恋爱测试统一收敛到本页』（index.vue:5-6 头注释），但收敛时未落任何生产入口——ROUTES.LOVE_CENTER.INDEX 与裸串 love-center/index 全仓仅 subpackages/setup/showcase/index.vue:80（DEV 展示构建专属页）+ pages.json:171 引用；首页/我的页/设置页均无「恋爱中心」菜单或卡片。四板块（恋爱/社交咨询·课程）+MBTI 测试+附近的人快捷入口整组功能用户不可达（页内封存合规 LC01、MBTI/板块 tap 执行 LC03/04/06 均有证据，唯入口缺失）。",
+      "evidence": "code: apps/client/src/subpackages/tools/love-center/index.vue:5-9（收敛定位注释）、:40-49/:112-151（功能本体齐备）；grep 全仓 LOVE_CENTER.INDEX/love-center/index → constants/routes.ts:206、pages.json:171、setup/showcase/index.vue:80；pages/{home,profile}/index.vue 导航枚举无 love-center；interaction: LC01/03/04/06 EXECUTED（深链可达且功能执行正常）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.85,
+      "ideal": "生产用户可从我的页/首页等进入恋爱中心，使用四板块（咨询→帮助页、课程→咨询课程页）与 MBTI 测试；商业化开启时入口完整、封存时按 ADR-2 收缩。",
+      "fix": "①我的页菜单或首页工具区补「恋爱中心」入口（openAppPath(ROUTES.LOVE_CENTER.INDEX)+fail toast）；或②产品确认弃用本页：将 MBTI/板块入口直接挂到可达页（如我的-任务区），并下线本页路由。需产品裁决。另建议修正 LC02-04 用例的 route 采集时机以取得到达证据。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-HELP-201",
+      "round": "R1",
+      "page": "subpackages/tools/help/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-TOOLS-HELP-INDEX-HP03-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "帮助中心生产不可达（入口断链）：ROUTES.HELP 全仓唯一调用点是 love-center/index.vue:65（恋爱/社交咨询板块点击），而恋爱中心自身无生产入口（MP-R1-LOVE-CENTER-201）→ 唯一入口挂在不可达页面上。设置页（settings/index.vue aboutMenus :389-421 仅有协议/隐私/检查更新/关于+SECURITY :375）与我的页均无「帮助与客服」项——pages/profile/index.vue:37 注释『P2.6：帮助与客服 / 安全中心独立页路由』表明双页入口在 P2.6 规划内，实际只落了 SECURITY 一条。页面本体功能齐备（FAQ 互斥结构 HP01/02/08、未登录放行 HP09、客服/反馈/复制邮箱代码在位）。",
+      "evidence": "code: apps/client/src/subpackages/tools/help/index.vue（功能本体）；grep 全仓 ROUTES.HELP/tools/help → 仅 love-center/index.vue:65 + constants/routes.ts:179；subpackages/profile-extra/settings/index.vue:389-421（aboutMenus 无帮助项）、:375（SECURITY 有入口对照组）；pages/profile/index.vue:37（P2.6 规划注释）；interaction: HP01/02/04/05/08/09 EXECUTED（深链可达且功能正常）",
+      "sources": ["code", "interaction"],
+      "confidence": 0.8,
+      "ideal": "设置页/我的页提供「帮助与客服」独立入口（P2.6 规划），用户可完成 FAQ 自助、在线客服、意见反馈、复制客服邮箱四项任务。",
+      "fix": "①设置页「关于」分组或我的页菜单补「帮助与客服」项 → openAppPath(ROUTES.HELP)（与 SECURITY 入口并列）；②修复后帮助中心随恋爱中心入口恢复（MP-R1-LOVE-CENTER-201）双路可达；③补 HP06 复制邮箱 Toast/剪贴板断言（本轮 automator timeout 无实拍，代码 MP-R1-HELP-101 已复制真实地址 support@campuslove.app，config/app.ts:47）。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/discover-extra/home/segment",
+      "baseline": "无专属理想图（ideal-baseline.md:116 未登记清单）；降级基准=29a2b1df docs/design/v3.1-contract.md §19 行01『发现』（快捷入口→segment?type=）+ §20 新增路由 + 页面自身产品语义（TYPE_LABEL_KEY 六类）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：返回+标题+单列列表结构成立（SG01 dom .segment-header__title/.segment-list present），无底部导航，L1 无偏差。L2 区块级：header/状态区/列表齐备，但契约定义的上游『发现页快捷入口』区块整体缺失（页面本体无偏差、链路断裂，见 MP-R1-SEG-201）。L3 元素级：行=头像+昵称+在线标（emoji 点+文案）+学校·距离+箭头（segment.vue:138-161），与契约 PersonRow 语义相符。L4 布局关系：无偏差证据。L5-L9 无理想图基准不判（样式裸写 rpx 已由 MP-R1-SEG-103 立案）。L10 状态：加载/错误/空/列表四态代码齐备（:126-137），加载/空/列表有 SG01/SG04 实证；错误态 SG06 FAILED=无法诱导网络错误，证据缺口。",
+      "usageNotes": "理想路径『发现页→六类快捷入口→细分列表→点行→他人主页→返回』：第一步即断裂（无任何生产入口，用户触达=0），仅 DEV showcase/深链可达；深链进入后页内路径顺畅（SG04 行点击、SG05 返回兜底回首页 Tab 均 EXECUTED）。SG08 六类 type 枚举矩阵逐一断言通过。下拉刷新声明但永不触发（MP-R1-SEG-101），刷新只能退出重进。",
+      "functionGaps": [
+        {
+          "target": "发现页快捷入口可达本页（契约 §19 页01 点击行为）",
+          "current": "全仓无生产导航；SegmentEntries 组件不存在",
+          "gap": "契约核心链路整体缺失，页面孤儿化",
+          "fix": "发现页补 SegmentEntries/QuickFilterSheet 六类入口，或产品确认弃用并下线路由（MP-R1-SEG-201）"
+        },
+        {
+          "target": "下拉刷新",
+          "current": "onPullDownRefresh 已注册但 pages.json 未开 enablePullDownRefresh，回调永不触发",
+          "gap": "刷新死代码（=MP-R1-SEG-101，引用不重复）",
+          "fix": "pages.json home/segment 补 enablePullDownRefresh:true"
+        },
+        {
+          "target": "错误态+重试可走通",
+          "current": "代码在位（segment.vue:129-134）、无执行证据（SG06 诱导失败）",
+          "gap": "验收证据缺失",
+          "fix": "自动化补错误注入复跑 SG06"
+        }
+      ],
+      "verdict": "不达标"
+    },
+    {
+      "route": "subpackages/discover-extra/nearby/people",
+      "baseline": "无专属理想图（ideal-baseline.md:116）；降级基准=v3 Nearby 冻结语义（people.vue:1-8 头注释：单页双态/nearby 距离→活跃度、city 活跃度→共同圈子/整行点击进主页/无喜欢悄悄话滑动卡）+ 契约 §19 行02『附近：行→他人主页』",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：header+双 Tab+列表三段成立（NP01/NP02 dom .people-header__title/.people-tab--active/.people-list present），L1 无偏差。L2 区块级：状态区（骨架/错误/空）与列表互斥切换齐备（:192-207）；契约『四 Tab』由父级附近 Tab 页承担，本页双 Tab 职责切分合理。L3 元素级：行=SafeImage 头像（失败兜底）+昵称+年龄+在线标+学校·距离+标签≤3（tag-label 统一映射 R10-P3-016）+箭头（:207-235）齐备。L4 布局关系：MP-R2-PEOPLE-001 定高修复在位（:244-247 注释），scrolltolower 可触发。L5-L9 无基准不判。L10 状态：四态齐备；加载/空/列表有实证；错误态 NP09 证据缺口；Tab 切换 NP03 FAILED=harness 误切 pages/nearby/index（Tab 页）后找 .people-tab，执行通道错误，功能由 NP02/NP04/NP10 旁证。",
+      "usageNotes": "理想路径『首页/附近页→附近的人→附近↔同城→点行→他人主页』：双入口在位（pages/home/index.vue:275、pages/nearby/index.vue:240，均带 fail toast）；页内 NP05 分页（首批 20 触底增量）、NP07 下拉刷新（callMethod onPullDownRefresh ok）、NP10 快切×5 竞态 token 最终一致、NP06 返回兜底回发现 Tab 均 EXECUTED；任意位置 2 步内回 Tab（返回键兜底）。不会迷路：Tab aria-selected 高亮。跨页注：另有一套蒙面卡实现 love-center/nearby 与本页并存（代码线已立案，本页为契约列表版）。",
+      "functionGaps": [
+        {
+          "target": "错误态+重试可走通",
+          "current": "代码在位（people.vue:195-200）、无执行证据（NP09 诱导失败）",
+          "gap": "验收证据缺失",
+          "fix": "自动化补错误注入复跑 NP09"
+        },
+        {
+          "target": "Tab 切换高亮+重载正向证据",
+          "current": "NP03 因 harness 误导航未取得（功能旁证充分：NP02/NP04/NP10）",
+          "gap": "证据缺失",
+          "fix": "修正用例导航前置后复跑 NP03"
+        }
+      ],
+      "verdict": "达标"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/history",
+      "baseline": "无专属理想图（ideal-baseline.md:116）；契约 §19 无本页行；降级基准=页面自身产品语义（discoverHistory i18n zh-CN:3605-3625『今日已看/挽回（每日限1次）/今日挽回次数已用完』+ discover store rewind 每日 1 次）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：header+统计栏+列表/空态结构成立（DH01 dom .stats-bar/.stat-num present、.history-error absent），L1 无偏差。L2 区块级：统计/列表/挽回/空态/错误五段齐备（:136-235）。L3 元素级：卡片=头像（SafeImage 快照优先 R4-00012）+昵称+方向徽章（已喜欢粉/已跳过灰）+headline+bio（2 行截断）+挽回钮（:176-224）齐备。L4 布局关系：无偏差证据。L5-L9 无基准不判。L10 状态：空态/加载/错误/挽回四态（默认/进行中 loading 态/成功/用完）代码齐备；空态有 DH01 实证；有数据态（DH02 实测空，滑动不可合成）与挽回全态零实拍。",
+      "usageNotes": "理想路径『寻觅页滑卡→今日已看→统计/挽回最后一 rejection→返回寻觅』：入口缺失（寻觅页无任何入口，MP-R1-DISCOVER-HISTORY-201）致旅程不可开始；深链直开时返回键死点（DH07 执行实证 tap 后路由不变，MP-R1-DISCOVER-HISTORY-202）致『进得去出不来』；挽回成功后自动 navigateBack/switchTab 回寻觅（:99-105）设计顺畅但无证据。",
+      "functionGaps": [
+        {
+          "target": "寻觅页可达历史页",
+          "current": "全仓无生产入口（仅 DEV showcase/dev 引用）",
+          "gap": "入口缺失（MP-R1-DISCOVER-HISTORY-201）",
+          "fix": "寻觅页补『今日已看』入口"
+        },
+        {
+          "target": "栈=1 直开可退出",
+          "current": "返回键静默失败（DH07 执行实证）",
+          "gap": "导航死点（MP-R1-DISCOVER-HISTORY-202）",
+          "fix": "goBack 补栈判断+fail→switchTab 发现 Tab"
+        },
+        {
+          "target": "挽回功能可用且可验收",
+          "current": "代码完备、零正向证据（DH02-05 因滑动不可合成全未达）",
+          "gap": "核心价值未验收（MP-R1-DISCOVER-HISTORY-203）",
+          "fix": "mock 预置 passedCards 身份复跑 DH03-05+真机补拍"
+        }
+      ],
+      "verdict": "不达标"
+    },
+    {
+      "route": "subpackages/discover-extra/likes/index",
+      "baseline": "ideal-baseline.md:97：无专属理想图，P4 兜底=29a2b1df v3.1-后台对齐 §三 喜欢与访客；契约结构『顶部标题+Tab（喜欢我的/我喜欢的/互相喜欢/访客）→用户行列表（头像+昵称+学校+距离+在线+回赞/喜欢钮）→空态寻觅芽吉祥物』",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：渐变氛围+header+搜索+Tab 卡+列表结构成立（LK02/LK05 dom），无底部导航，L1 无偏差。L2 区块级：齐备，但 Tab 口径与 P4 兜底基准存在取舍——基准四 Tab（含『互相喜欢』独立页签），现行三 Tab（互喜以列表内 likes-card--mutual 高亮+点击进聊天表达，:722/:1228），P4 兜底参考下记录不立项。L3 元素级：卡片=头像（未解锁 blur(14rpx)+锁+匿名）+昵称+认证徽章+时间胶囊+headline+互喜描边+批量 checkbox（:716-778）齐备。L4 布局关系：批量底栏 fixed+安全区、解锁栏封存隐藏（:929-1013）、胶囊避让换行（:1052-1058 R10-P2-005）无偏差证据。L5-L9 无基准不判。L10 状态：未登录/加载/错误/空/搜索空/批量/打码/封存八态代码齐备；有实证：未登录 LK01、批量链 LK07-10、封存隐藏 LK11(.likes-unlock-bar:absent 为预期断言)、刷新 LK14、返回 LK16；无实证：错误态 LK15、打码态点击 LK11、互喜分流 LK12(SKIPPED)、myLikes 批量 LK17（wxml 实证批量态未激活）。",
+      "usageNotes": "理想路径『首页关系动态/我的页喜欢数字→匹配列表→切 Tab→搜索→管理批量喜欢→点互喜项进聊天』：入口在位（home:300、profile:810-826、messages 助手消息 actionUrl）；likedBy 批量链路顺畅（LK08 成功 Toast+退出批量、LK09 空提交拦截、LK10 快击×5 单次）；Tab 来回切换数据与滚动位不丢（LK04）；搜索 300ms 防抖+清空恢复（LK05）；访客 Tab 懒加载（LK03）；2 步回 Tab（返回兜底 switchTab 首页 LK16）。断点：myLikes 批量取消与互喜直达聊天两分支无实拍（MP-R1-LIKES-INDEX-201）。",
+      "functionGaps": [
+        {
+          "target": "myLikes 批量取消喜欢",
+          "current": "代码在位（:976-989+store cancel）、零正向证据（LK17 批量态未激活）",
+          "gap": "验收证据缺失",
+          "fix": "预置 myLikes mock+修正批量前置复跑 LK17"
+        },
+        {
+          "target": "已解锁项点击分流（互喜→聊天/普通→主页）",
+          "current": "代码在位（:459-474）、LK12 SKIPPED",
+          "gap": "分支无执行证据",
+          "fix": "mock 预置互喜+普通项各一点复跑 LK12"
+        },
+        {
+          "target": "错误态+重试",
+          "current": "代码在位（ErrorState@retry :702-704）、无执行证据",
+          "gap": "证据缺失",
+          "fix": "错误注入复跑 LK15"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/discover-extra/likes-visitors/index",
+      "baseline": "ideal-baseline.md:97：无专属理想图，P4 兜底=29a2b1df v3.1-后台对齐 §三 喜欢与访客（本页为消息页拆分出的独立二级页：双 Tab+概览+解锁）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：标题/副标题+概览+双 Tab+列表结构成立（LV04/LV06 登录态 dom .list__name present），无底部导航，L1 无偏差。L2 区块级：免踢登录 LockScreen/提升曝光条（membership 关闭整条隐藏 LV06）/概览三数字/Tab/列表/解锁栏齐备。L3 元素级：行=头像（未解锁 blur+白叠层锁+匿名『？』）+昵称+标签（age/同城，封存下无金币标签）+M/D 时间（:384-419）齐备；Tab badge 99+ 封顶（:364）。L4 布局关系：下划线高亮 ::after（:574-584）无偏差证据。L5-L9 无基准不判。L10 状态：未登录/加载/错误/空/列表/打码/封存七态代码齐备；有实证：未登录 LV01（免踢不发鉴权请求）、封存默认态 LV05/06、重复进出 LV10、时间格式 LV11、返回 LV09；无实证：Tab 切换 LV03（harness 误经 profile 页找文案）、打码态（mock 全解锁）、解锁全链 LV07（coin 封存条件不可达=ADR-2 合规）、错误态、点击分流 LV08(SKIPPED)。注意 LV02『登录直开』实际未带 pre:login，其 dom 全 absent 为未登录态，登录渲染由 LV04/06 补证。",
+      "usageNotes": "理想路径『消息页→喜欢与访客→概览→双 Tab→解锁→点已解锁项→主页/聊天』：入口在位（messages:197、home:285）；浏览与封存合规顺畅；2 步回 Tab（返回兜底 switchTab 首页 LV09）；onShow 仅未加载中补拉无请求风暴（LV10）。断点：Tab 切换与点击分流两核心分支无实拍（MP-R1-LIKES-VISITORS-201）。",
+      "functionGaps": [
+        {
+          "target": "双 Tab 切换高亮+列表切换+badge",
+          "current": "代码在位（:135-137）、零正向证据（LV03 通道错误）",
+          "gap": "证据缺失",
+          "fix": "直开本页后 tap tabs__item 复跑 LV03"
+        },
+        {
+          "target": "已解锁项点击分流",
+          "current": "代码在位（:239-247）、LV08 SKIPPED",
+          "gap": "证据缺失",
+          "fix": "mock 预置互喜/普通已解锁项复跑 LV08"
+        },
+        {
+          "target": "解锁全部弹窗三路链路",
+          "current": "代码完整（:152-226）、封存下条件不可达（合规）",
+          "gap": "开启环境无验收路径",
+          "fix": "commerce.coin=ON 测试构建补跑 LV07"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/tools/daily-question/index",
+      "baseline": "无专属理想图（ideal-baseline.md:116）；降级基准=页面自身产品语义（签到门禁解锁+今日话题+匿名回答+他人回答列表；入口在村口校园圈 village/index.vue:646 isSchoolChannel 限定）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：绿渐变 header+scroll 内容区结构成立（DQ01/DQ10 dom .lock-card/.dq-body present），L1 无偏差。L2 区块级：锁定卡/问题卡/回答区/已回答提示/回答列表/空态六段齐备（:136-282）。L3 元素级：锁定卡=图标+标题+描述+去签到 CTA（:136-150）；回答区=textarea maxlength500+匿名勾选（勾选态 CHECK_WHITE_SVG）+提交禁用态（:185-212）；列表=头像/匿名『？』+昵称+时间+内容+加载更多/没有更多（:221-268）齐备。L4 布局关系：锁定态垂直居中修复（min-height:70vh R4 注释 :388-391）无偏差证据。L5-L9 无基准不判。L10 状态：未签到/加载/错误/未回答/已回答/分页/空态七态代码齐备；有实证：未签到 DQ01、签到解锁 DQ02（toast 实拍）、空提交拦截 DQ04、触底 DQ10；无实证：提交成功链 DQ05-09（wxml 实证停在锁定卡）、错误态 DQ11、防连点 DQ03（身份已签到）。",
+      "usageNotes": "理想路径『村口校园圈→每日一问→去签到解锁→写回答（可匿名）→提交→看他人回答』：入口存在但限校园认证用户（产品口径记录）；签到解锁顺畅（DQ02 toast『签到成功，每日一问已解锁』+锁定卡消失）；门禁后回答交互全部无证据（MP-R1-DQ-201）；正常导航返回可用，栈=1 深链返回键死点（DQ12 执行实证，MP-R1-DQ-202）。",
+      "functionGaps": [
+        {
+          "target": "提交回答全链可用且可验收",
+          "current": "代码在位（:43-73/:112-120/:176-278）、零正向证据（DQ05-09 前置缺失停在锁定卡）",
+          "gap": "核心链路未验收（MP-R1-DQ-201）",
+          "fix": "自动化补先签到前置复跑 DQ05-09+真机补拍"
+        },
+        {
+          "target": "栈=1 直开可退出",
+          "current": "返回键静默失败（DQ12 执行实证）",
+          "gap": "导航死点（MP-R1-DQ-202）",
+          "fix": "goBack 补栈判断+fail→switchTab 首页"
+        },
+        {
+          "target": "拉题失败错误态+重试",
+          "current": "代码在位（:161-173）、无执行证据",
+          "gap": "证据缺失",
+          "fix": "错误注入复跑 DQ11"
+        }
+      ],
+      "verdict": "基本达标"
+    },
+    {
+      "route": "subpackages/tools/love-center/index",
+      "baseline": "无专属理想图（ideal-baseline.md:116；Phase Feedback2 首页精简收敛产物，契约 §19 无本页行）；降级基准=页面自身产品语义（快捷入口+四板块+恋爱测试，AppShell 统一壳，商业化封存 ADR-2）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：AppShell 标题栏（show-back）+快捷入口/四板块/恋爱测试区块结构成立（LC01 dom .love-center__quick/.love-center__test present），L1 无偏差。L2 区块级：封存默认态收缩为两区块（四板块区与 consulting 入口不渲染=LC01 断言 ✓，ADR-2 合规）。L3 元素级：入口行=彩底图标+标题+箭头、板块卡=2 列 flex-wrap 等宽网格（:114-129，mp-weixin 无 grid 的兼容写法）齐备。L4 布局关系：无偏差证据。L5-L9 无基准不判。L10 状态：封存/开启两态代码齐备；封存态有 LC01 实证；MBTI tap（LC03）与板块 tap（LC04）执行、快击×3 无重复栈（LC06）；但 tap 后异步导航未入 route 记录，到达目标页证据未取得（LC02 的 .url 探针系 harness 对 web-view 页误配，nearby 非 web-view）；开启态四板块链路为条件用例无实证。",
+      "usageNotes": "理想路径『我的页/首页→恋爱中心→四板块（咨询→帮助、课程→咨询课程）/MBTI/附近的人』：第一步断裂——全仓无生产入口（仅 DEV showcase），整组功能用户不可达（MP-R1-LOVE-CENTER-201）；深链进入后页内 tap 执行顺畅但到达证据缺口；2 步回 Tab：AppShell 两级兜底在位（navigateBack fail→switchTab 首页→reLaunch，AppShell.vue:119-141；组件级兜底已被 A3 线 FEEDBACK-11 实证 route=pages/home/index），LC05 FAILED 为 harness 选择器问题非本页缺陷。",
+      "functionGaps": [
+        {
+          "target": "生产可进入恋爱中心",
+          "current": "无任何生产入口（Phase Feedback2 收敛遗留）",
+          "gap": "入口缺失，功能目标对用户未实现（MP-R1-LOVE-CENTER-201）",
+          "fix": "我的页/首页补入口，或产品确认弃用并迁移 MBTI/板块入口"
+        },
+        {
+          "target": "附近的人/MBTI/板块跳转到达证据",
+          "current": "tap 执行、route 未捕获目标页（LC02-04）",
+          "gap": "证据缺失",
+          "fix": "修正 route 采集时机复跑"
+        }
+      ],
+      "verdict": "不达标"
+    },
+    {
+      "route": "subpackages/tools/help/index",
+      "baseline": "无专属理想图（ideal-baseline.md:116；Phase Feedback5 P2.6 产物，AppShell 壳）；降级基准=页面自身产品语义（FAQ 6 项手风琴+客服三入口+服务说明）",
+      "file": "reports/audit/round-1/page-compare/次要21.md",
+      "structureNotes": "L1 页面级：AppShell+FAQ 卡+联系客服卡+服务说明四段成立（HP01 dom .help-faq__item present；.help-contact__item absent 系 dom 采集早于 SectionCard 渲染，HP04-06 tap 命中反证其存在），L1 无偏差。L2 区块级：FAQ/联系客服/服务说明三段齐备。L3 元素级：FAQ 行=问题+chevron（rotate 90°↔270°）+答案分隔线（:78-98/:197-206）；客服行=彩底圆图标+标签+描述+箭头/复制胶囊（:101-158）齐备。L4 布局关系：无偏差证据。L5-L9 无基准不判。L10 状态：收起/展开/互斥/未登录态齐备；有实证：HP01（默认全收起）、HP02（单项展开/收起+箭头）、HP08（快击×5 布尔翻转稳定）、HP09（未登录放行）；HP03 FAILED=harness 误 tap .help-faq__answer（应 tap item），互斥由 expandedIndex 单值结构保证（:29/:42-45）非缺陷；复制邮箱 HP06 tap 执行但 automator timeout 无 Toast/剪贴板实拍（代码 MP-R1-HELP-101 已修：复制 APP_CONFIG.SUPPORT_EMAIL='support@campuslove.app'，config/app.ts:47）。",
+      "usageNotes": "理想路径『设置/我的→帮助中心→FAQ 自助→在线客服（official-chat?accountId=official-assistant）/意见反馈（feedback/history）/复制邮箱』：入口断裂——ROUTES.HELP 全仓唯一调用在 love-center/index.vue:65，而恋爱中心不可达；设置页 aboutMenus（settings:389-421）与我的页均无帮助项（P2.6 规划的双页入口只落了 SECURITY，settings:375）；页内（深链）FAQ 自助顺畅（HP02/08）；2 步回 Tab：AppShell 兜底在位（组件级 FEEDBACK-11 实证），HP07 FAILED 为选择器问题。",
+      "functionGaps": [
+        {
+          "target": "生产可进入帮助中心",
+          "current": "唯一入口挂在不可达的恋爱中心；设置/我的无独立入口",
+          "gap": "入口断链（MP-R1-HELP-201）",
+          "fix": "设置页/我的页补「帮助与客服」入口（与 SECURITY 并列）"
+        },
+        {
+          "target": "复制邮箱反馈可见",
+          "current": "代码正确（真实邮箱）、Toast 无实拍（automator timeout）",
+          "gap": "证据缺失",
+          "fix": "复跑 HP06 补剪贴板/Toast 断言"
+        },
+        {
+          "target": "客服/反馈跳转到达证据",
+          "current": "tap 执行、route 未记录目标页（HP04/05）",
+          "gap": "证据缺失",
+          "fix": "修正 route 采集复跑"
+        }
+      ],
+      "verdict": "基本达标"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/post",
+  "reviewer": "A5 历史回归员-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST",
+  "date": "2026-09-24",
+  "mode": "索引差分：只核对 riskFiles 与本轮改动/证据相关的 3 条页面相关历史条目（MP-R1-POST-001 / MP-R1-POST-101 / MP-R2-VILL-013），不全量重读",
+  "scope": {
+    "changeState": "post.vue 与 village 数据链本轮无未提交改动（git status --porcelain 为空；post.vue 末次落库 29a2b1df fix(miniprogram): round-2 audit fixes）",
+    "evidenceUsed": [
+      "apps/client/src/subpackages/village/village/post.vue（逐段核对 :39-41/:146-154/:186-188/:349/:373-379/:399-412/:416-426/:515-521/:544-553/:579-582/:1055-1057）",
+      "apps/client/src/stores/village/mock-data.ts（:462-514 逐行 + 全量 21 帖文案/配图对齐提取）",
+      "apps/client/src/services/mocks/fixtures.ts（:668-680）",
+      "apps/client/src/static/assets/images/posts/post-1..8.jpg 与 portraits/p6.jpg（8 张全部实读看图定标）",
+      "reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-judge.json（34 例判定）",
+      "reports/audit/round-1/interact/exec-results.json#VP01/VP02（原始 observed 抽取核对）",
+      "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.png（R1 2026-09-23 实拍）",
+      "reports/screenshots/r11-ideal/cur-village-post.png（静态截图）",
+      "reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-POST.json（A2 代码审查，其中 MP-R2-VILL-013 结论被本轮实读证伪，见 Issue MP-R1-POST-301）",
+      "reports/audit/round-1/regression/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json（村口首页审查员交叉对照）"
+    ],
+    "notRun": [
+      "索引 verification 项 post-publish-btn-vs-capsule-clearance / circle-publish-success-clears-draft-and-target-consistent / village-mock-feed-images-match-captions-disk-read 无任何执行证据文件（全仓检索仅命中 regression-index.json 本身），本轮以代码核对+实读图片+截图差分替代，未运行编译/单测/开发者工具"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-POST-301",
+      "round": "R1",
+      "page": "subpackages/village/village（feed 渲染页为 village/index；数据文件 stores/village/mock-data.ts 与 post 页共享，本页发帖成功后新帖进入同一 feed）",
+      "screenshot": "无运行时截图；证据为 8 张 repo 图片实读定标（apps/client/src/static/assets/images/posts/post-1..8.jpg、portraits/p6.jpg）+ 源码行号",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【已复发】R3 家族批量图文不符（MP-R3-VILLAGE-INDEX-001 族，R3 口径 ≥13 帖，「注释声称内容与静态资源实图相反；实读图片核对是唯一可靠验证法」）未见修复落地。本轮对 8 张 posts 图库逐一实读定标：post-1=阴天海岸礁石、post-2=欧式城堡、post-3=水珠微距、post-4=冒热气的咖啡杯特写、post-5=海岸悬崖海景、post-6=热气球峡谷、post-7=雾中木栈道、post-8=欧式老街。以此对照 mock-data.ts 全量 21 个带图 feed 帖：19 帖文案与配图语义不符。关键实锤：修复注释本身与实盘恰好相反——mock-data.ts:469 声称「post-5.jpg 实读核对为冒热气的咖啡杯特写，与咖啡文案一致」，实读 post-5.jpg 是海岸悬崖（咖啡杯实为 post-4.jpg），致 post-9（咖啡文案）配上海景图（:470）；:506-507 声称「post-4.jpg（海岸悬崖）」，实读是咖啡杯，致 post-10（冰岛极光清单，:489）与 post-11（海边露营，:510）配上咖啡杯特写。即 R3 记载的病灶模式（注释与实盘相反）在当前代码原样存在，且原 MP-R2-VILL-013 的「热饮图配错帖」语义仍以新形态延续（真实热饮图挂在极光/露营/博物馆/MBTI 四帖上，咖啡文案帖反而无热饮图）。注意：A2 代码审查（code-findings MP-R2-VILL-013 判「已验证/病灶已清除」）仅依据 grep 与注释、未实读图片，其结论被本轮实读证伪；村口首页审查员已以 MP-R1-VILLAGE-INDEX-001（P1 已复发）独立立案，两边取证互证。",
+      "evidence": "实读定标：post-4.jpg=咖啡杯特写、post-5.jpg=海岸悬崖（本轮 Read 工具直读两文件）；mock-data.ts:469-470（注释称 post-5=咖啡杯 + post-9 咖啡文案实配 post-5）、:489（post-10 极光清单配 post-4 咖啡杯）、:506-510（注释称 post-4=海岸悬崖 + post-11 海边露营配 post-4）；全量对齐脚本输出：21 帖带图中 19 帖不符（含 post-7 热气球文案配雾栈道图、post-12 扫街文案配热气球图、post-19 红烧肉配悬崖、post-23 热豆浆配礁石、post-28 咖啡手冲配热气球等）；fixtures.ts:674-676（晚霞→光线语义改写）与 portraits/p6.jpg 实读（人像街拍）一致，指名对本身未复发；交叉：reports/audit/round-1/regression/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json#MP-R1-VILLAGE-INDEX-001（P1 已复发）",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.95,
+      "ideal": "village mock 数据链每帖配图与文案语义一致；「实读核对」注释与图片实盘一致（注释宣称的内容可复核为真）。",
+      "fix": "按本轮 8 张实读定标重排 mock-data.ts 21 帖配图（最低限度：:470 post-9 改配 post-4.jpg 咖啡杯；:489/:510 post-10/post-11 改配 post-5.jpg 海景；post-7/8 互换或改文案）；同步改写 :469 与 :506-507 注释为与实盘一致；全量修复与终验归口村口首页审查员 MP-R1-VILLAGE-INDEX-001 一并执行（同一数据文件，避免双改冲突）。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-POST-001",
+      "page": "subpackages/village/village/post",
+      "status": "未复发",
+      "evidence": "原 P0「发布钮与微信胶囊碰撞」的 R21 calc 避让修复在位未被改回：post.vue:1057 padding-right: calc(var(--capsule-right, 7px) + 104px)，:1055-1056 注释言明历史碰撞。运行时佐证：R1 实拍 reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP02-after.png（2026-09-23，VP02-after.png 70473B 在盘，exec-results.json#VP02 记录核对一致）显示「发布」灰胶囊与微信胶囊（•••|◎）净空清晰无碰撞；静态截图 reports/screenshots/r11-ideal/cur-village-post.png 同样净空正常。数学：111px(7+104) > 94px(87 胶囊+7 间隙)，标准机型成立。既知残留（与索引/R3 记载一致、未恶化，不构成复发）：本页未接 useMenuButtonRect——import 区仅 useStatusBarHeight（post.vue:39），全文件 grep useMenuButtonRect 0 命中，根节点 .post-page（:580）无 styleVars 绑定，--capsule-right 恒 7px 静态兜底；全仓核实无全局注入点（--capsule-right 仅由 useMenuButtonRect.ts:47-52 styleVars 动态注入，post.vue 不在消费方名单），异形屏/分屏（胶囊右缘间隙>24px）场景未实测——A2 已按 P3 立案（code-findings#MP-R1-POST-001 已修复待终验）。缺口说明：索引 verification「post-publish-btn-vs-capsule-clearance」无执行证据文件，本结论基于代码核对+双截图，非该具名检查的执行结果。"
+    },
+    {
+      "id": "MP-R1-POST-101",
+      "page": "subpackages/village/village/post",
+      "status": "未复发",
+      "evidence": "「发圈成功后草稿残留→UI 显示个人动态但提交进圈」的六层修复链本轮逐条复核全部在位，未被改回：① suppressDraftSave（post.vue:349）在成功路径先置位（:546）→ clearDraft（:547，其内 :416-426 先取消在途定时器再删 storage）→ 再清表单（:549-553），清表单触发的 watch（:198 经 :332/:335 双重抑制）不再写草稿；② restoreDraft 空快照守卫 hasContent（:373-379）；③ 入口参数优先于旧草稿并按完整归位口径回设（:399-409，campus 清 targetId/targetCircle+visibility=school，circleId 置目标+visibility=interest）；④ 解析闸按目标不按图片（:410-412 targetType==='circle' && targetId!=null 即 loadTarget）；⑤ 解析失败兜底诚实显示「兴趣圈帖子」（:150-154）不再伪装「个人动态」；⑥ UI 展示（:146 isCircleTarget）与提交分支（:515-521 createTopic）同源。运行时缺口（不影响代码层回归结论）：R1 交互 34 例中 32 例 UNVERIFIED（执行器 el.input/深链 query 缺陷，judge#MP-R1-VPOST-101 P1 已立案），VP29（createTopic 链路）/VP30（circle 草稿被 campus 入参归位）/VP31（兜底显示）/VP06（草稿恢复）均零覆盖——「发圈成功→再进页」场景需终验补测；具名 verification「circle-publish-success-clears-draft-and-target-consistent」无执行证据文件。"
+    },
+    {
+      "id": "MP-R2-VILL-013",
+      "page": "subpackages/village/village（数据链 stores/village/mock-data.ts + fixtures.ts，与本页共享）",
+      "status": "未复发",
+      "evidence": "指名问题「晚霞帖配热饮图」未复发：① grep「晚霞」stores/village/mock-data.ts 0 命中（exit=1）、apps/api VillageController.java 0 命中；② services/mocks/fixtures.ts:674-675 注释记载改写（「p6.jpg 实读核对为人像街拍——文案由晚霞改为与画面一致的人像光线语义」），实读 portraits/p6.jpg 确为人像街拍，与改写后文案「傍晚的光线太适合拍照了。」（:676）语义一致；③ 热饮图（咖啡杯）文件在库（post-4.jpg 实读确认存在）。但该条目描述内附带的「R3 证实同族批量图文不符仍在」经本轮实读证实为真且仍未修复：mock-data.ts:469/:506-507「实读核对」注释与图片实盘恰好互换（post-4=咖啡杯、post-5=悬崖），21 个带图 feed 帖中 19 帖文案配图不符——此为 R3 家族历史问题（MP-R3-VILLAGE-INDEX-001 族 P1）的持续存在，已立 Regression Issue MP-R1-POST-301（P1 待修复），与村口首页审查员 MP-R1-VILLAGE-INDEX-001（已复发）互证；并据此证伪 A2 code-findings 对 MP-R2-VILL-013 的「已验证/病灶已清除」结论（其仅 grep+信注释、未实读图片）。本条 checked 状态就指名对判定；同族复发详见 MP-R1-POST-301。"
+    }
+  ],
+  "crossRefs": {
+    "villageIndexReviewer": "reports/audit/round-1/regression/SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json：MP-R1-VILLAGE-INDEX-001（P1 已复发，同族 feed 图文不符）与本文件 MP-R1-POST-301 同一数据文件、互证；其 MP-R2-VILL-013=未复发 与本文件一致（就指名对）。",
+    "codeFindingsCorrection": "reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-POST.json#MP-R2-VILL-013 的「已验证」结论依据 mock-data.ts 注释，被本轮实读证伪；该文件其余两项回归核对（MP-R1-POST-001 已修复待终验、MP-R1-POST-101 已验证）经本轮独立复核成立。"
+  }
+}

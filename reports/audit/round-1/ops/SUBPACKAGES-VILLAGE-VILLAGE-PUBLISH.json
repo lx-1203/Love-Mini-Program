@@ -1,0 +1,374 @@
+{
+  "cases": [
+    {
+      "id": "PUB01",
+      "page": "subpackages/village/village/publish",
+      "title": "深链直入（无参）首屏完整渲染：Success 态，无错误/空态闪现",
+      "tier": "normal",
+      "pre": "身份 A（100158 曦风）mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，isLoggedIn 校验通过；token 为 2h 时效，过期需重签）→ wx.reLaunch('/subpackages/village/village/publish') 冷启动深链（该页 navigationStyle: custom，pages.json:79-81；无参进入 targetType=general，publish.vue:153-169）",
+      "action": "进入后 0s/1s 两次 DOM 采样（evaluate 页面根 .publish-page、header .publish-header__title、发布到卡 .publish-to__card、textarea .publish-content__input、计数 .publish-content__count、添加图片块 .publish-image--add、行项 .publish-row×4、小贴士 .publish-tip），不点击",
+      "expected": "首屏即完整表单：标题「发布动态」（publish.vue:591）、发布按钮可用态但灰显（content 空 → canSubmit=false，publish.vue:78，禁用样式浅绿底深绿字 publish.vue:788-789）、发布到卡=「个人动态 / 默认公开 · 所有人可见」（publish.vue:121,131）、textarea placeholder「分享一点最近发生的事…」、计数 0/500、添加图片虚线块、4 行项（添加话题/添加位置/提及好友/谁可以看）、小贴士卡可见；全程不得闪现错误 Toast、错误空态或白屏（冷启动深链铁律）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "normal：after 截图（1s 稳定帧）+ getCurrentPages 路由断言（栈顶 route=subpackages/village/village/publish）+ console 全量过滤"
+    },
+    {
+      "id": "PUB02",
+      "page": "subpackages/village/village/publish",
+      "title": "空内容点 X 关闭 → 不弹草稿窗直接返回来源页",
+      "tier": "navigation",
+      "pre": "身份 A 已登录 → wx.reLaunch('/subpackages/village/village/index') → miniProgram.navigateTo('/subpackages/village/village/publish')（页面栈 ≥2；注意村口 index 底部发帖栏实际去旧 post 页 publish.vue 之外，index.vue:385-390，故 automation 用 navigateTo 直接进栈）；确保 content/图片/话题全空（dirty=false，publish.vue:466）",
+      "action": "tap .publish-header__close（publish.vue:588，role=button aria-label=关闭）",
+      "expected": "无「是否保留草稿？」modal（dirty=false 走 leave() 直返，publish.vue:466-467）；500ms 内 navigateBack → getCurrentPages 栈顶 route=subpackages/village/village/index（来源页落点铁律）；来源页频道/滚动位状态保留",
+      "evidence": "navigation：getCurrentPages 链断言（返回后栈顶=村口 index）；可不截图"
+    },
+    {
+      "id": "PUB03",
+      "page": "subpackages/village/village/publish",
+      "title": "冷启动深链（栈=1）点 X → 兜底 reLaunch 村口列表，不白屏",
+      "tier": "navigation",
+      "pre": "身份 A 已登录 → wx.reLaunch('/subpackages/village/village/publish') 直接进入（getCurrentPages().length===1，触发 navigateAway 兜底分支 publish.vue:483-490）",
+      "action": "tap .publish-header__close",
+      "expected": "无 modal → leave() → navigateAway：栈长=1 走 uni.reLaunch('/subpackages/village/village/index')（publish.vue:487-489）；500ms 内落在村口列表页，栈顶 route=subpackages/village/village/index；无白屏、无报错",
+      "evidence": "navigation：getCurrentPages 链断言；console 无 navigateBack fail 未处理拒绝"
+    },
+    {
+      "id": "PUB04",
+      "page": "subpackages/village/village/publish",
+      "title": "入口 ?target=friends（profile「添加日常」链路）：目标卡=个人日常 + 可见性锁定不可轮换",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 真实入口链路优先：wx.reLaunch('/pages/profile/index') 后 tap 我的故事卡「添加故事」（profile/index.vue:804-807 onProfileShellAddStory → openAppPath('/subpackages/village/village/publish?target=friends')）；automation 兜底可直接 navigateTo 同 URL",
+      "action": "进入后 DOM 采样：目标卡 .publish-to__name/.publish-to__subtitle、谁可以看行 .publish-row__meta 与箭头存在性；再 tap 谁可以看行",
+      "expected": "目标卡=「个人日常」+ 副标题「日常 · 仅互相喜欢或关注我的人可见」（publish.vue:119,130）；谁可以看=「仅喜欢/关注的人可见」（publish.vue:148）且行内无 › 箭头（publish.vue:731）；tap 该行无任何变化（friends 锁定，cycleVisibility 不执行，publish.vue:724-726）——本行锁定属源码有意设计，非死按钮；进入即触发一次草稿 watch 落盘不影响断言",
+      "evidence": "normal：after 截图 + 路由断言（栈顶 publish 且 onLoad query.target=friends）+ console"
+    },
+    {
+      "id": "PUB05",
+      "page": "subpackages/village/village/publish",
+      "title": "入口 ?target=campus：目标卡=校园圈 + 谁可以看=学校圈",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → wx.reLaunch 前置首页 → miniProgram.navigateTo('/subpackages/village/village/publish?target=campus')（publish.vue:156-157 解析 entryTarget）",
+      "action": "DOM 采样目标卡与谁可以看行文案",
+      "expected": "目标卡=「校园圈」+ 副标题「校园圈 · 所有校园成员可见」（publish.vue:117,128）；谁可以看=「学校圈」（publish.vue:145）；该行有 › 箭头可点（非 friends）但轮换池仅 ['school']（publish.vue:276-282）→ tap 后文案仍「学校圈」",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB06",
+      "page": "subpackages/village/village/publish",
+      "title": "入口 ?circleId=8：已加入则锁定圈子目标；未加入/不存在回退个人动态（绝不悬挂未加入圈）",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → miniProgram.navigateTo('/subpackages/village/village/publish?circleId=8')（圈 id=8 取自既有固化表 scripts/r11-param-map.json circle-home 条目的 DB 存活 id）；身份 A 对圈 8 的加入状态以实机为准（双分支皆合法）",
+      "action": "等待 loadTarget 完成（publish.vue:166,172-190，real 模式含 fetchCircles 请求）后 DOM 采样目标卡",
+      "expected": "分支①（已加入圈 8）：目标卡=圈名 + 绿色 tag「圈内成员可见」+ 副标题「{成员数短格式} 成员」+ 谁可以看=「兴趣圈」；分支②（未加入或圈不存在）：targetType 回退 general → 目标卡=「个人动态 / 默认公开 · 所有人可见」（publish.vue:180-184 回退防 400）；两分支共同不变量：绝不出现「目标卡=某圈子」但该圈未加入的中间态；无崩溃无错误 Toast",
+      "evidence": "normal：after 截图 + 路由断言 + console（含 fetchCircles 请求记录）；分支归属以实机 console 判定并如实记录"
+    },
+    {
+      "id": "PUB07",
+      "page": "subpackages/village/village/publish",
+      "title": "入口参数优先于旧草稿：general 草稿 + ?target=friends 进入 → 强制个人日常语义",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 先 evaluate 预置本地草稿：uni.setStorageSync('village:publish-draft', {targetType:'general', targetId:null, title:'', content:'预置旧草稿内容超过五个字', images:[], topics:[], location:'', visibility:'public', updatedAt: Date.now()})（键名 PUBLISH_DRAFT_STORAGE_KEY，constants/village.ts:49）→ miniProgram.navigateTo('/subpackages/village/village/publish?target=friends')",
+      "action": "等待 restoreDraft 完成（异步 getDraft 后回设，publish.vue:388-448）→ DOM 采样目标卡、谁可以看、textarea 内容",
+      "expected": "textarea 回显草稿正文「预置旧草稿内容超过五个字」；但目标卡=「个人日常」、谁可以看=「仅喜欢/关注的人可见」——入口 target=friends 在恢复草稿后强制回设（publish.vue:434-438），禁止「目标卡=个人动态/个人动态文案」与「谁可以看=所有人可见」同屏矛盾（MP-R1-PUBLISH-005）；谁可以看行无箭头（锁定）",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB08",
+      "page": "subpackages/village/village/publish",
+      "title": "表单空态：空内容点发布 → Toast「请输入内容」，无请求不路由",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → reLaunch 直入发布页（无参），content 保持为空",
+      "action": "tap .publish-header__submit（publish.vue:592）1 次",
+      "expected": "500ms 内 Toast「请输入内容」（icon none，t('village.contentRequired')，zh-CN.ts:1874；publish.vue:499-501）；页面停留本页（路由不变）；console 无 POST /api/posts 或 /circles/{id}/topics 请求（校验短路在 submitting 置位前）；按钮呈禁用样式（canSubmit=false）",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console（无创建请求）"
+    },
+    {
+      "id": "PUB09",
+      "page": "subpackages/village/village/publish",
+      "title": "表单非法态：正文 1-4 字点发布 → Toast「正文至少 5 个字再发布哦」",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页",
+      "action": "textarea 输入「好啊」（2 字，触发 canSubmit=true 按钮恢复高亮）→ tap .publish-header__submit",
+      "expected": "500ms 内 Toast「正文至少 5 个字再发布哦」（t('village.contentMinLength',{n:5})，zh-CN.ts:1873；publish.vue:505-507——与后端 CreatePostRequest title 5-30 字规则对齐，正文即标题形态）；停留本页；console 无创建请求；输入保留不清空",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console"
+    },
+    {
+      "id": "PUB10",
+      "page": "subpackages/village/village/publish",
+      "title": "表单合法态 general 发布成功：Loading→成功 Toast→400ms 返回来源页→草稿本地+后端双清",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → evaluate 确认 'village:publish-draft' 当前不存在或记录其 before 值 → reLaunch 直入发布页（发布前截图 before）",
+      "action": "textarea 输入「自动化验收测试帖子内容」→ tap .publish-header__submit 1 次",
+      "expected": "Loading「发布中...」mask:true（publish.vue:515）→ 成功 Toast「已提交，审核通过后展示」（icon success，t('village.postSuccess')，zh-CN.ts:1864；publish.vue:544-556）→ 400ms 后 navigateAway 返回来源页（栈>1 navigateBack / 栈=1 reLaunch 村口 index，publish.vue:562-565,483-490）；请求体断言（console）：POST /api/posts 携带 title=正文前 30 字、content 全文、categoryId=interest、targetType=general（real 模式 createPostApi，stores/village/index.ts:497-507）；草稿双清：'village:publish-draft' 不存在 + console 可见 DELETE /drafts（publish.vue:560-561）；Loading 不永驻（finally hideLoading，publish.vue:572-574）",
+      "evidence": "critical：before + after 截图 + 路由断言（返回后栈顶）+ Toast 文案 + console 全量（请求体与 /drafts 删除）+ evaluate uni.getStorageSync('village:publish-draft')===空串"
+    },
+    {
+      "id": "PUB11",
+      "page": "subpackages/village/village/publish",
+      "title": "校园圈目标发布：请求体 targetType=campus / visibility=school",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → 直入发布页 → 点发布到卡 → 弹层内点「校园圈」选项（chooseGeneral 同族 chooseCampus，publish.vue:210-217）→ 输入「校园圈发帖验收测试内容」（before 截图）",
+      "action": "tap .publish-header__submit 1 次",
+      "expected": "请求体断言（console）：targetType=campus、visibility=school（谁可以看=学校圈，publish.vue:214-215）；结果二分支按 console 如实判定：后端放行 → 成功 Toast「已提交，审核通过后展示」+ 400ms 返回；后端拒绝（如未认证身份）→ Toast 展示后端 message 且停留本页——UI 全程不崩溃、Loading 不永驻、按钮复位（submitting=false）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console 全量（含请求体）"
+    },
+    {
+      "id": "PUB12",
+      "page": "subpackages/village/village/publish",
+      "title": "圈子目标发布：createTopic 请求体仅 title/content/images（无 tags），话题行已隐藏",
+      "tier": "critical",
+      "pre": "身份 A 已登录且至少已加入 1 个圈子（mock 模式预置「音乐 circle-music」「美食 circle-food」已加入，stores/circle/mock-data.ts:76-101；real 模式若弹层空态则先经 circle-home?circleId=8 完成加入）→ 直入发布页 → 发布到卡 → 弹层点已加入圈子（selectTarget，publish.vue:192-199）→ 输入「圈内发帖验收测试内容」",
+      "action": "先断言「添加话题」行不存在（v-if=!isCircleTarget，publish.vue:702，MP-R2-PUB-104）→ tap .publish-header__submit",
+      "expected": "发布走 circleStore.createTopic（publish.vue:537-544）：console 断言 POST /circles/{id}/topics 请求体仅 {title, content, images}（stores/circle.ts:508-515，CreateTopicRequest 无 tags/authorId）→ 成功 Toast「已提交，审核通过后展示」→ 400ms 返回；「已选 n/5」话题行全程不渲染",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console 全量（请求体无 tags 字段为关键断言）"
+    },
+    {
+      "id": "PUB13",
+      "page": "subpackages/village/village/publish",
+      "title": "主按钮防连点：快击发布×5 仅提交 1 次",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → 直入发布页 → 输入「防连点验收测试正文内容」（合法 ≥5 字）；real 模式下网络在途窗口足够覆盖 5 连击",
+      "action": "500ms 内连续 tap .publish-header__submit ×5（间隔 <100ms）",
+      "expected": "仅第 1 次生效：submitting=true 后续 tap 被 publish.vue:510-511 短路；console 断言创建请求（POST /api/posts 或 /circles/{id}/topics）恰好 1 次；期间发布按钮呈禁用样式（canSubmit=false，publish-header__submit--disabled）；成功后仅 1 条新帖（无重复提交）；Loading 正常收起",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console（请求数=1 为关键断言）"
+    },
+    {
+      "id": "PUB14",
+      "page": "subpackages/village/village/publish",
+      "title": "发布失败：后端错误 Toast + 留在页 + submitting 复位可重试 + 草稿不清",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → 直入发布页 → 输入「失败注入验收测试正文」→ staging：miniProgram.mockWxMethod('request', {fail}) 或断开后端使创建请求必败（automation 无代理注入时以 mockWxMethod 为准）；before 截图",
+      "action": "tap .publish-header__submit 1 次 → 等失败 Toast → 再次 tap 1 次（重试前先恢复 mockWxMethod 还原或保持失败态二选一并记录）",
+      "expected": "失败路径：Toast 展示后端具体 message（e.message 优先，publish.vue:566-571）或回退「发布失败」（t('village.post.publishFailed')，zh-CN.ts:1985）；停留本页不路由；输入内容保留；草稿未被清（'village:publish-draft' 仍存在——与成功路径的关键差异）；submitting 复位（publish.vue:572-574 finally）→ 按钮可再次点击；Loading 不永驻",
+      "evidence": "critical：before + after 截图 + 路由断言（停留本页）+ Toast 文案 + console（失败请求与错误日志）+ evaluate storage 快照仍在"
+    },
+    {
+      "id": "PUB15",
+      "page": "subpackages/village/village/publish",
+      "title": "字数计数三段：常态色 → 剩 50 字内警示色 → 粘贴超长截断 500/500",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页",
+      "action": "分三步：① textarea 输入 100 字 → ② 追加至 460 字 → ③ evaluate/输入法注入 600 字长文尝试粘贴",
+      "expected": "① 计数「100/500」常态色（--c-text-tertiary）；② 计数「460/500」且节点含 publish-content__count--warning 类（剩 40 ≤ 阈值 50，publish.vue:42-43,75-77,678-681，警示色 --c-warning #FF9F43）；③ maxlength=500 截断（publish.vue:673，MAX_CONTENT_LENGTH 与 store 校验同源 500，stores/village/constants.ts:12）→ 计数恒「500/500」，无 501 出现",
+      "evidence": "normal：②③各一张 after 截图 + 路由断言 + console 无异常"
+    },
+    {
+      "id": "PUB16",
+      "page": "subpackages/village/village/publish",
+      "title": "清空输入：计数归 0/500 + 发布按钮回到禁用样式",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页 → textarea 先输入「将被清空的内容」",
+      "action": "全选删除 textarea 内容（ setInputValue('') 或键盘清空）",
+      "expected": "计数回到「0/500」常态色；canSubmit=false（publish.vue:78）→ 发布按钮禁用样式（浅绿底 #C7E9DC、深绿字 #2A7A5E，publish.vue:788-789）；此时点发布 → 走 PUB08 空态 Toast 路径；无崩溃",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB17",
+      "page": "subpackages/village/village/publish",
+      "title": "特殊字符/emoji/HTML 注入串：回显正确、计数正确、提交不炸",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页",
+      "action": "textarea 输入混合串「🎉🚀 <script>alert(1)</script> &amp; \"引号\" '单引' \\\\反斜杠 #标签测试完毕」→ tap 发布",
+      "expected": "textarea 原样回显（无 XSS 执行、无模板解析异常）；计数与字符数一致；tap 发布后按长度合法性出成功 Toast 或校验 Toast 之一，绝不白屏/卡死；console 无 TypeError（正文按纯文本提交，title 截断 30 字，publish.vue:509）；若成功发布，请求体为转义后纯文本",
+      "evidence": "normal：after 截图 + 路由断言 + console 全量"
+    },
+    {
+      "id": "PUB18",
+      "page": "subpackages/village/village/publish",
+      "title": "添加话题 toggle（1/5↔0/5）+ 正文 #tag 自动并入上限 5",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页（general 目标，话题行可见）",
+      "action": "① tap「添加话题」行 → ② 再 tap 一次 → ③ 重选话题后正文输入 6 个不同 #tag（如 #a #b #c #d #e #f 加一段 ≥5 字正文）→ tap 发布并抓请求体",
+      "expected": "① 行尾「已选 1/5」（toggleTopic('#校园日常') 入列，publish.vue:255-260,702-707）；② 「已选 0/5」（同 tag 再点移除——toggle 语义）；③ 正文 inline tag 经 buildMergedTopics 并入（publish.vue:299-305）：payload tags 最多 5 个（slice(0, 5-topics.length) 截断），「已选」计数只反映 topics 数组不含正文 tag；发布成功或校验 Toast 均可，console 请求体 tags.length ≤5 为关键断言",
+      "evidence": "normal：①③ after 截图 + 路由断言 + console（请求体 tags）"
+    },
+    {
+      "id": "PUB19",
+      "page": "subpackages/village/village/publish",
+      "title": "提及好友行 → Toast「提及好友即将开放」",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页",
+      "action": "tap「提及好友」行（publish.vue:716-720 openMentionPicker）",
+      "expected": "500ms 内 Toast「提及好友即将开放」（icon none，t('village.post.mentionHint')，zh-CN.ts:1991，publish.vue:262-264）；页面无路由变化、无其他状态变化；Toast 自动消退不永驻",
+      "evidence": "normal：after 截图（含 Toast）+ 路由断言 + console"
+    },
+    {
+      "id": "PUB20",
+      "page": "subpackages/village/village/publish",
+      "title": "位置行纯展示：无缓存=选择位置 / 有缓存=城市·自动定位（行不可点）",
+      "tier": "noop",
+      "pre": "身份 A 已登录；分两个场景：① 清缓存直入（evaluate uni.removeStorageSync('nearby:city') 后 reLaunch）；② evaluate uni.setStorageSync('nearby:city','北京市') 后 reLaunch（键 STORAGE_KEYS.NEARBY_CITY，storage-keys.ts:70）",
+      "action": "两个场景各做 DOM 采样「添加位置」行文案，并 tap 该行一次验证无可点语义",
+      "expected": "场景① 显示「选择位置」（无缓存不宣称「自动定位」，MP-R1-PUBLISH-006，publish.vue:53-61,709-715）；场景② 显示「北京市 · 自动定位」；该行无 @tap 处理器（纯展示，publish.vue:709 无绑定）→ tap 后无任何反馈属预期设计；无崩溃",
+      "evidence": "noop：执行日志（两场景 DOM 采样文本记录 + console）即可，可不截图"
+    },
+    {
+      "id": "PUB21",
+      "page": "subpackages/village/village/publish",
+      "title": "谁可以看轮换按目标约束：general/campus/circle 各单值不轮出；friends 锁定",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页；准备三个场景：general（默认）、campus（?target=campus）、circle（弹层选已加入圈）、friends（?target=friends）",
+      "action": "每场景各 tap「谁可以看」行 2 次（cycleVisibility，publish.vue:271-291）",
+      "expected": "general 场景：两次 tap 后仍「所有人可见」（轮换池仅 ['public']，MP-R1-PUBLISH-001——注意按交互铁律本行在 general 下无可见反馈，属潜在死按钮缺陷候选，判定员据 R11 §5 铁律裁定）；campus：两次 tap 后仍「学校圈」；circle：仍「兴趣圈」；friends：行无箭头 tap 完全无响应（锁定，publish.vue:724-731）；全程无越权轮换值（如 general 下出现「学校圈」即缺陷——服务端会静默公开）、无崩溃",
+      "evidence": "normal：general 场景 after 截图 + 各场景路由断言 + console"
+    },
+    {
+      "id": "PUB22",
+      "page": "subpackages/village/village/publish",
+      "title": "发布到弹层打开（三级分组）+ 遮罩点击关闭（弹层三路关闭·之一）",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页（弹层初始关闭 targetOpen=false）",
+      "action": "tap .publish-to__card（publish.vue:601）打开弹层 → 再 tap 遮罩区域 .publish-target-sheet（非 panel，publish.vue:617）",
+      "expected": "打开：底部弹层「选择发布到」+ 三级分组「公域 · 所有人可见 / 校园私域 · 同校可见 / 兴趣圈子 · 圈内成员可见」（publish.vue:620-661）+「个人动态」行有 ✓ 勾选（当前 general）；关闭：tap 遮罩 500ms 内弹层自 DOM 消失（v-if targetOpen=false）；遮罩期背景页面无滚动穿透异常",
+      "evidence": "normal：打开态 after 截图 + 关闭后路由断言（仍在发布页）+ console"
+    },
+    {
+      "id": "PUB23",
+      "page": "subpackages/village/village/publish",
+      "title": "发布到卡再点 toggle 关闭弹层（弹层三路关闭·之二）",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页 → 已 tap 发布到卡使弹层开启",
+      "action": "再次 tap .publish-to__card（targetOpen=!targetOpen 取反，publish.vue:601）",
+      "expected": "500ms 内弹层自 DOM 消失（toggle 关闭）；目标卡文案不变（未选择任何项）；再第三次 tap 可重新打开（toggle 双向）",
+      "evidence": "normal：after 截图（关闭态）+ 路由断言 + console"
+    },
+    {
+      "id": "PUB24",
+      "page": "subpackages/village/village/publish",
+      "title": "弹层选「校园圈」→ 选择即关闭 + 目标联动 + 重开见 ✓ 勾选（弹层三路关闭·之三）",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页 → tap 发布到卡开弹层",
+      "action": "tap 弹层「校园圈」选项（chooseCampus，publish.vue:210-217,629-633）→ 重新 tap 发布到卡开弹层核验勾选",
+      "expected": "点选项 500ms 内弹层关闭（三路之三）+ 目标卡即时变「校园圈 / 校园圈 · 所有校园成员可见」+ 谁可以看变「学校圈」（联动，publish.vue:214-215）；重开弹层「校园圈」行尾出现 ✓ 勾选图标、个人动态行勾选消失；无崩溃",
+      "evidence": "normal：选择后 + 重开后各一张 after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB25",
+      "page": "subpackages/village/village/publish",
+      "title": "弹层选已加入圈子 → 圈名/圈内成员可见 tag/成员数短格式/话题行隐藏",
+      "tier": "normal",
+      "pre": "身份 A 已登录且至少已加入 1 圈（mock：「音乐」8123 人、「美食」7240 人，mock-data.ts:76-101；real 以弹层「兴趣圈子」分组实机数据为准）→ 直入发布页 → 开弹层",
+      "action": "tap 弹层任一已加入圈子行（selectTarget，publish.vue:192-199,644-658）",
+      "expected": "500ms 内弹层关闭；目标卡=圈名 + 绿 tag「圈内成员可见」+ 副标题成员数短格式（8123 →「8,123 成员」，≥1w 显示 x.xw，publish.vue:135-139）+ 圈子封面图（publish.vue:603）；谁可以看变「兴趣圈」（publish.vue:196-197）；「添加话题」行自 DOM 消失（v-if=!isCircleTarget，MP-R2-PUB-104）；重开弹层该圈行有 ✓",
+      "evidence": "normal：after 截图（目标卡 + 行项区）+ 路由断言 + console"
+    },
+    {
+      "id": "PUB26",
+      "page": "subpackages/village/village/publish",
+      "title": "弹层兴趣圈子分组三态：加载中 / 失败+重试加载 / 空态（失败≠空态误导）",
+      "tier": "normal",
+      "pre": "身份 A 已登录；三场景：① 直入发布页（circleStore 未加载）立即开弹层（watch targetOpen 触发懒加载 ensureCirclesLoaded，publish.vue:84-112）；② 失败态需后端不可达 staging（断网或 mockWxMethod('request',{fail}) 后开弹层）；③ 空态需当前身份无任何已加入圈子（real 下未加入任何圈的身份 B 或清缓存身份）",
+      "action": "各场景开弹层采样分组区；场景② 出现失败提示后 tap「重试加载」（publish.vue:638-643）",
+      "expected": "① 「兴趣圈子加载中…」提示（publish.vue:634-636）后被数据分组替换（加载不永驻）；② 「圈子列表加载失败，请稍后重试」+「重试加载」可点选项（MP-R2-PUB-103：失败态不得渲染成「尚未加入兴趣圈子」空态——该句出现即缺陷）；tap 重试后重新发起加载；③ 「尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入」提示（publish.vue:659-661），无重试项；全程无崩溃",
+      "evidence": "normal：①③各一张 after 截图 + 路由断言 + console；场景②如环境无法注入失败则如实标 UNVERIFIED 不得臆断"
+    },
+    {
+      "id": "PUB27",
+      "page": "subpackages/village/village/publish",
+      "title": "添加图片：隐私授权链 + mock chooseImage → 九宫格出图 + 移除钮",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页；staging：miniProgram.mockWxMethod('chooseImage', {tempFilePaths:['wxfile://tmp/automation-test.jpg']}) 固化原生选图（真实链路为 ensurePrivacyAuthorized → uni.chooseImage → compressImages，publish.vue:220-248；首次真机触发隐私弹窗需人工确认，automation 下以 mock 固化）",
+      "action": "tap .publish-image--add 添加块（publish.vue:692-694）",
+      "expected": "500ms 内九宫格出现 1 张缩略图 + 缩略图右上角半透明 × 移除钮（publish.vue:686-691）；添加块仍在（1<9）；console 无 TypeError；若走真实隐私链被拒则 Toast「需同意隐私协议后才能选择图片」（zh-CN.ts:1984，publish.vue:227-229）也算合规分支，据实记录",
+      "evidence": "normal：after 截图（网格出图）+ 路由断言 + console（mock 生效记录）"
+    },
+    {
+      "id": "PUB28",
+      "page": "subpackages/village/village/publish",
+      "title": "移除图片：网格更新 + 添加块维持",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页 → 按 PUB27 staging 先添加 1 张图",
+      "action": "tap 该图右上角移除钮（removeImage(idx)，publish.vue:250-252,688-690）",
+      "expected": "500ms 内该图自网格消失（splice 原地变异，watch 以 getter 摊平感知——MP-R1-PUBLISH-002）；网格回到仅添加块；草稿 watch 被触发（快照 images 为空——临时路径本就不入快照）；无崩溃",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB29",
+      "page": "subpackages/village/village/publish",
+      "title": "满 9 张：添加块自 DOM 隐藏（POST_MAX_IMAGES=9）",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页 → staging mockWxMethod('chooseImage') 循环 9 次每次 1 张（chooseImages count=9-images.length 递减，publish.vue:232）",
+      "action": "连续 9 次 tap 添加块 → 采样网格",
+      "expected": "网格 9 张图齐全；第 9 张后添加块消失（v-if=\"images.length < POST_MAX_IMAGES\"，constants/village.ts:27，publish.vue:692）；添加块不存在后无法再触发选图；无第 10 张、无崩溃（chooseImage 内 ≥9 Toast 分支为防御性，此路径经 UI 不可达）",
+      "evidence": "normal：满 9 张后 after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB30",
+      "page": "subpackages/village/village/publish",
+      "title": "发帖小贴士 ×：卡片即时消失",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → 直入发布页（tipVisible 初始 true，publish.vue:64）",
+      "action": "tap 小贴士卡右上 ×（publish.vue:744-746）",
+      "expected": "500ms 内小贴士卡（「发帖小贴士」+文案+×）自 DOM 消失（v-if tipVisible）；其余表单区不受影响；无崩溃",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB31",
+      "page": "subpackages/village/village/publish",
+      "title": "草稿自动保存：500ms 本地快照落盘 + 2s 后端 /drafts 双写",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → evaluate 清掉旧草稿 uni.removeStorageSync('village:publish-draft') → 直入发布页；real 模式下后端 /drafts 可达",
+      "action": "输入「草稿自动保存验收正文」（≥5 字）→ 静置 700ms → evaluate 读 uni.getStorageSync('village:publish-draft') → 再静置 2s 抓 console 网络记录",
+      "expected": "本地快照存在且 content 与输入一致，含 tags/visibility/targetType/updatedAt 字段（snapshotDraft 结构，publish.vue:307-324；防抖 500ms=POST_DRAFT_SAVE_DEBOUNCE_MS，constants/chat.ts:51）；快照 images 仅含已上传 URL——wxfile://tmp 临时路径不入快照（MP-R2-PUB-106，publish.vue:308-310）；约 2s 后 console 可见 saveDraft 请求（publish.vue:370-377 双写）；静默失败不弹错误 Toast",
+      "evidence": "critical：before + after 截图 + 路由断言 + console（/drafts 请求）+ evaluate storage 快照全文"
+    },
+    {
+      "id": "PUB32",
+      "page": "subpackages/village/village/publish",
+      "title": "草稿恢复：本地快照回显 + 临时路径图片过滤 + 可见性按目标重算",
+      "tier": "normal",
+      "pre": "身份 A 已登录 → evaluate 预置：uni.setStorageSync('village:publish-draft', {targetType:'general', targetId:null, title:'', content:'草稿恢复验收测试内容', images:['wxfile://tmp/expired.jpg'], topics:['#校园日常'], location:'', visibility:'public', updatedAt: Date.now()})（updatedAt 取新压过后端草稿，publish.vue:402-406）→ reLaunch 直入发布页",
+      "action": "等待 restoreDraft 完成后 DOM 采样 + evaluate 读取页面状态",
+      "expected": "textarea 回显「草稿恢复验收测试内容」；话题行「已选 1/5」；images 为空数组（wxfile://tmp 被恢复时过滤，publish.vue:421 + isUploadedMediaUrl utils/media.ts:88-103）——九宫格无破图；目标卡=个人动态且谁可以看=「所有人可见」（legalVisibility.general 重算，publish.vue:427-433，不无条件沿用草稿 visibility）；无错误 Toast",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "PUB33",
+      "page": "subpackages/village/village/publish",
+      "title": "退出保留草稿：X → modal「保留」→ 同步 flush 落盘 + 返回来源页",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → reLaunch 村口 index → navigateTo 进入发布页 → evaluate 清旧草稿 → 输入「保留草稿验收正文」（≤500ms 内完成退出以防 debounce 已落盘干扰，先 clear 再输入）；before 截图",
+      "action": "立即 tap .publish-header__close → modal 出现后 tap「保留」（confirm，publish.vue:468-479）",
+      "expected": "modal 文案：标题「是否保留草稿？」内容「你还有未发布的内容，是否保留以便下次继续编辑？」按钮 保留/放弃（zh-CN.ts:1992-1995）；点保留 → flushDraftSave 同步落盘（不等 debounce——MP-R1-PUBLISH-003，publish.vue:353-360,474-476）→ navigateBack 返回村口 index；evaluate 'village:publish-draft' 存在且 content=输入值；console 可见 saveDraft 请求",
+      "evidence": "critical：before + after 截图 + 路由断言（栈顶=村口 index）+ modal 文案 + console + evaluate storage 快照"
+    },
+    {
+      "id": "PUB34",
+      "page": "subpackages/village/village/publish",
+      "title": "退出放弃草稿：X → modal「放弃」→ 本地+后端草稿删除 + 返回来源页",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → 按 PUB33 前置进入并输入「放弃草稿验收正文」→（先经一次「保留」退出使其有草稿亦可，或输入后直接退）",
+      "action": "tap .publish-header__close → modal 出现后 tap「放弃」（cancel → clearDraft，publish.vue:477）",
+      "expected": "clearDraft 先取消在途定时器再删（publish.vue:450-455）→ 'village:publish-draft' 被删除（evaluate 返回空串）+ console 可见 DELETE /drafts；navigateBack 返回来源页；重新进入发布页无草稿恢复（textarea 空、已选 0/5）；无崩溃",
+      "evidence": "critical：before + after 截图 + 路由断言 + modal 交互记录 + console（DELETE /drafts）+ evaluate storage 已清"
+    },
+    {
+      "id": "PUB35",
+      "page": "subpackages/village/village/publish",
+      "title": "发布成功后旧草稿不复活：预置草稿 → 发布成功 → 重进无恢复",
+      "tier": "critical",
+      "pre": "身份 A 已登录 → evaluate 预置旧草稿（同 PUB32 快照结构，content='将随发布一起清除的旧草稿'）→ 直入发布页（草稿回显）",
+      "action": "tap .publish-header__submit 发布成功 → 等待返回后再次 navigateTo 进入发布页 → evaluate 读 storage",
+      "expected": "发布成功路径执行 clearDraft + clientApi.deleteDraft()（MP-R8-DRAFT-001：只清本地会导致后端草稿复活已发布内容——publish.vue:558-561）；重进后 textarea 为空、无任何旧草稿回显、'village:publish-draft' 不存在；无重复发布风险窗口",
+      "evidence": "critical：发布前后 + 重进后共 3 帧截图 + 路由断言 + Toast 文案 + console（含 DELETE /drafts）+ evaluate storage 为空"
+    },
+    {
+      "id": "PUB36",
+      "page": "subpackages/village/village/publish",
+      "title": "长内容滚动到底/顶：scroll-view 不白屏不卡死",
+      "tier": "noop",
+      "pre": "身份 A 已登录 → 直入发布页 → textarea 注入多行长文（如 500 字含换行）使页面内容超屏",
+      "action": "scroll-view .publish-body 滚动到底 → 停 500ms → 滚回顶部（automation scrollTop 驱动或 swipe）",
+      "expected": "滚动全程页面渲染完整：底部小贴士/行项区可达（底部留白 .publish-body__bottom-space，publish.vue:749）、顶部 header 固定不被滚走（header 在 scroll-view 外，publish.vue:587）；无白屏、无卡死（双拍 .png/.b.png 间隔 2s 图像熵一致判定卡死时需结合 DOM 采样复核）；console 无滚动相关报错",
+      "evidence": "noop：执行日志（滚动前后 scrollTop 采样 + console）即可；可附底部帧截图"
+    },
+    {
+      "id": "PUB37",
+      "page": "subpackages/village/village/publish",
+      "title": "打开即返回 + 重复进出：无状态残留、无草稿窗误弹",
+      "tier": "navigation",
+      "pre": "身份 A 已登录 → evaluate 清 'village:publish-draft' → reLaunch 村口 index",
+      "action": "循环 3 次：navigateTo 进发布页 → 立即（<300ms）tap X 返回",
+      "expected": "每次进入页面正常渲染（无 Loading 卡驻、无错误空态）；空内容下 X 均直接返回（dirty=false 不弹 modal）；3 次循环后无状态残留（textarea 空、无幽灵草稿窗）、村口 index 状态正常；console 无累积报错/泄漏型 TypeError",
+      "evidence": "navigation：每轮返回后 getCurrentPages 链断言（栈顶=村口 index）；console 全量过滤"
+    }
+    ]
+}

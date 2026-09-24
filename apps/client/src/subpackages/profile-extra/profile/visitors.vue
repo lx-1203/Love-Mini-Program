@@ -30,7 +30,6 @@ import { ROUTES } from "../../../constants/routes";
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { IMAGE_PATHS } from "../../../config/images";
-import SafeImage from "../../../components/common/SafeImage.vue";
 import { errorHaptic, lightHaptic } from "../../../utils/haptic";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
@@ -272,12 +271,14 @@ onPullDownRefresh(async () => {
       </view>
     </view>
 
-    <!-- 空状态 -->
+    <!-- 空状态
+         MP-R1-PROFILE-EXTRA-001：custom-class 跨组件作用域不生效导致图标零尺寸，改原生 image -->
     <view v-else-if="visitors.length === 0" class="visitors-empty card-base">
-      <SafeImage
+      <image
+        class="visitors-empty__icon"
         :src="IMAGE_PATHS.ICONS_SOCIAL.VISITOR"
-        custom-class="visitors-empty__icon"
         mode="aspectFit"
+        alt=""
       />
       <text class="visitors-empty__title">{{ t("profile.visitorsEmpty") }}</text>
       <text class="visitors-empty__subtitle">{{ t("profile.visitorsEmptyDesc") }}</text>
@@ -345,6 +346,15 @@ onPullDownRefresh(async () => {
   margin-bottom: var(--section-gap);
   /* MP-R1-VISITORS-002：右侧计数被微信胶囊遮挡，预留胶囊宽度（约 96px） */
   padding-right: 96px;
+  /* MP-R1-VISITORS-101：吸顶——原头部随窗口滚动移出视野，卡片与状态栏系统
+     文字叠印（滚动-中部/底部双身份截图实证）。sticky 保留布局位无需补偿，
+     top 取状态栏高度使头部停在状态栏正下方，不透明背景承接滚动内容 */
+  position: sticky;
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
+  z-index: 10;
+  padding-top: var(--sp-2);
+  padding-bottom: var(--sp-2);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 /* 2026-08-09：返回键（圆角图标按钮） */

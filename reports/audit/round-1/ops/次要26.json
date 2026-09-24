@@ -1,0 +1,494 @@
+{
+  "cases": [
+    {
+      "id": "SH01",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 冷启动直达（封存态）：封存卡完整渲染，积分条/分类/商品网格不渲染，不闪错误空态",
+      "tier": "normal",
+      "pre": "身份A（100158 曦风，tmp_r11_login.json）mock 登录（automation_evaluate 注入 wx.setStorageSync('token') 后调 session.bootstrap()，evaluate 校验 isLoggedIn=true；tmp_r11_*.json 内 token 为 2 小时时效 HS512，执行前须重签当日 token）→ wx.reLaunch('/subpackages/market/shop/index') 冷启动直达分包页",
+      "action": "进入后 1s DOM 采样：.shop-sealed/.shop-sealed__title/.shop-sealed__desc 可见性与文案；.shop-points-bar/.category-bar/.shop-grid 是否存在；页面标题文本；再核对 console 是否出现「该分类下暂无商品」类空态闪现痕迹",
+      "expected": "mock 模式 getAppConfig 返回的 switches 不含 commerce.enabled（services/api.ts:271-280）→ isCommerceOn()=false（stores/app-config.ts isCommerceOn getter）→ commerceSealed=true（shop/index.vue:32）：页面仅渲染自定义导航（标题=逛逛，shop.pageTitle zh-CN.ts:3289）+ 封存卡「功能封存中 / 该功能暂未开放，开放时间将另行通知」（commerce.sealed* zh-CN.ts:788-792，模板 shop/index.vue:377-381）；积分条/分类条/商品网格不渲染（v-if=\"!commerceSealed\" shop/index.vue:285）；冷启动深链严禁闪现「暂无商品」错误空态（铁律）；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "normal：after 截图（全页）+ 路由（getCurrentPages 栈顶=subpackages/market/shop/index）+ console 全量过滤（NAV_FAIL/TypeError/is not defined）"
+    },
+    {
+      "id": "SH02",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 封存态零请求：onShow 早退不拉签到状态与商品列表",
+      "tier": "noop",
+      "pre": "同 SH01，身份A 已冷启动进入商城（封存态）",
+      "action": "页面停留 3s，收集 console/network 记录清单，检索 /checkin、/products 相关请求",
+      "expected": "封存态 onShow 早退不发任何请求（shop/index.vue:42-47 注释「封存态不发任何请求」）：无 GET /products、无签到状态请求；watch 解封补偿不触发（commerceSealed 恒 true，shop/index.vue:36-40）；network 面板对本页无新增业务请求",
+      "evidence": "noop：执行日志（console/网络请求清单）即可，可不截图"
+    },
+    {
+      "id": "SH03",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 返回键（栈>1）：500ms 内 navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "同 SH01 登录态；先进入 pages/discover/index，再 uni.navigateTo('/subpackages/market/shop/index') 制造 2 层页面栈",
+      "action": "tap .shop-header__back（自定义导航返回键，shop/index.vue:270-279）",
+      "expected": "goBack（shop/index.vue:63-70）因 getCurrentPages().length>1 走 uni.navigateBack({delta:1}) → 500ms 内 getCurrentPages 栈顶回到 pages/discover/index（铁律：任何可点击元素 500ms 内有可观测反馈；返回落点=来源页）",
+      "evidence": "navigation：路由断言（getCurrentPages 链 before/after），可无截图"
+    },
+    {
+      "id": "SH04",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 返回键（栈=1 直达）：兜底 switchTab 回首页 tab",
+      "tier": "navigation",
+      "pre": "同 SH01（wx.reLaunch 直达，页面栈仅 1 层）",
+      "action": "tap .shop-header__back",
+      "expected": "栈长=1 → 走 uni.switchTab({url:'/pages/home/index'})（shop/index.vue:67-69）→ 落首页 tab；无报错、无白屏",
+      "evidence": "navigation：路由断言（getCurrentPages 栈顶=pages/home/index）"
+    },
+    {
+      "id": "SH05",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 返回键热区测量：64rpx 实测复核 vs 铁律 88rpx",
+      "tier": "normal",
+      "pre": "同 SH01，身份A 停留在商城页",
+      "action": "对 .shop-header__back 执行 element.boundingClientRect 采样 width/height（px），按 rpx=px*750/屏幕宽 换算",
+      "expected": "R11 §5 铁律热区≥88rpx；源码 .shop-header__back 为 64×64rpx（shop/index.vue:423-433）——若实测确认 <88rpx，按铁律如实记「热区不达标」缺陷候选，不得因元素可见即豁免",
+      "evidence": "normal：after 截图（含元素高亮/测量值）+ 路由不变断言 + console"
+    },
+    {
+      "id": "SH06",
+      "page": "subpackages/market/shop/index",
+      "title": "商城 重复进出×3（身份B）：封存卡稳定，无 loading 残留无空态闪现",
+      "tier": "normal",
+      "pre": "身份B（100159 小新生，tmp_r11_guest.json）mock 登录（同 SH01 注入流程，token 须当日重签）→ 位于 pages/discover/index",
+      "action": "循环 3 次：uni.navigateTo('/subpackages/market/shop/index') → 停留 800ms 采样封存卡与 spinner → navigateBack",
+      "expected": "每次进入均直接渲染封存卡；无 .shop-state__spinner 残留、无「该分类下暂无商品」闪现（封存分支不含商品区）；3 次进出无卡死、无 console 异常累积；来源页 discover 状态保留",
+      "evidence": "normal：第 3 次进入 after 截图 + 路由断言 + console 全量过滤"
+    },
+    {
+      "id": "SH07",
+      "page": "subpackages/market/shop/index",
+      "title": "商城（解封预案）commerce.enabled=true：积分条+5 分类+6 商品全量渲染",
+      "tier": "normal",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 app-config switches commerce.enabled=true；mock getAppConfig 恒不含该键（services/api.ts:271-280）且 dev-tools 无开关注入面，当前环境无法解封。仅当执行环境具备配置注入手段时执行，否则标记 UNVERIFIED，不得伪造通过",
+      "action": "解封后 reLaunch 进入本页，1s 后采样 .shop-points-bar 数值、.category-item 数量与文案、.shop-card 数量与首卡字段",
+      "expected": "onShow 拉取签到状态+商品（shop/index.vue:42-47；watch 补偿 36-40 不再需要）；「加载中...」spinner（320-323）约 300ms mock 延迟后出现 6 项商品网格（mock 源 shop/index.vue:141-204/216-218）：标题/¥价格/划线原价/已售 {n}/角标（热销/新品/限时/推荐）；积分条显示「我的积分」+ checkInStore.pointsBalance（zh-CN.ts:3291）",
+      "evidence": "normal：after 截图（全页）+ 路由 + console（含 /products 请求记录）"
+    },
+    {
+      "id": "SH08",
+      "page": "subpackages/market/shop/index",
+      "title": "商城（解封预案）分类 chip 切换：active 样式迁移+本地过滤，切回全部数据不丢",
+      "tier": "normal",
+      "pre": "同 SH07 解封预案环境（不可达则 UNVERIFIED），身份A 已进入解封态商城",
+      "action": "依次 tap 全部/活动票务/餐饮美食/校园周边/文创周边 五个 .category-item（shop/index.vue:299-315），每次采样 active 类与 .shop-card 数量",
+      "expected": "selectCategory（shop/index.vue:247-252）：active chip 渐变底+反色文字（category-item--active）；mock 本地过滤——「活动票务」仅剩校园音乐节早鸟票+篮球赛门票 2 项（filteredItems 238-241）；切回「全部」恢复 6 项（Tab/筛选切换数据不丢铁律）",
+      "evidence": "normal：每分类 after 截图（至少首末两次）+ 路由不变断言 + console"
+    },
+    {
+      "id": "SH09",
+      "page": "subpackages/market/shop/index",
+      "title": "商城（解封预案）商品卡点击进详情：路由带 id，快击×5 仅入栈一页",
+      "tier": "navigation",
+      "pre": "同 SH07 解封预案环境（不可达则 UNVERIFIED），商品网格已渲染",
+      "action": "对第一张 .shop-card 快速连点 5 次（goToDetail，shop/index.vue:346-353/258-262），随后读 getCurrentPages",
+      "expected": "navigateTo '/subpackages/market/detail/index?id=1'（encodeURIComponent）；铁律主按钮防连点：页面栈仅 +1 层（若连点压入多个详情页，记 goToDetail 无锁防连点缺陷——源码 258-262 无任何守卫）；每击 500ms 内有 hover/路由反馈",
+      "evidence": "navigation：路由断言（栈长+栈顶 route+options.id=1）+ console"
+    },
+    {
+      "id": "SH10",
+      "page": "subpackages/market/shop/index",
+      "title": "商城（解封预案）错误态重试与空态文案",
+      "tier": "normal",
+      "pre": "同 SH07 解封预案环境（不可达则 UNVERIFIED）；错误态需使 GET /products 失败（开发者工具 Network 断网/404 注入）",
+      "action": "① 断网触发 fetchShopItems 失败 → 采样错误态；② tap「重试」按钮；③ 恢复后切到某空分类采样空态",
+      "expected": "① shopError=true：「商品加载失败，请重试」+「重试」按钮（shop/index.vue:326-338，zh-CN.ts:3300/zh-CN.ts:20）；② 点重试重新拉取回到网格（fetchShopItems 可重入，211-236）；③ 空分类显示「该分类下暂无商品」（341-343）；三态均有 role 语义（status/alert）",
+      "evidence": "normal：每态 after 截图 + console"
+    },
+    {
+      "id": "WA01",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 冷启动直达（封存态）：封存卡渲染，余额卡/充值/明细不渲染，不闪错误空态",
+      "tier": "normal",
+      "pre": "身份A mock 登录（同 SH01 注入流程，token 须当日重签）→ wx.reLaunch('/subpackages/market/wallet/index') 冷启动直达",
+      "action": "进入后 1s DOM 采样：.wallet__sealed/.wallet__sealed-title/.wallet__sealed-desc 可见性与文案；.wallet__balance-card/.wallet__recharge/.wallet__tx-list 是否存在；标题文本",
+      "expected": "isCommerceOn('coin')=false（mock switches 无 commerce.enabled/coin 键，services/api.ts:271-280 + app-config.ts isCommerceOn 子闸）→ commerceSealed=true（wallet/index.vue:34）：仅渲染顶栏（标题=我的钱包，wallet.title zh-CN.ts:794）+ 封存卡「功能封存中/该功能暂未开放，开放时间将另行通知」（wallet/index.vue:201-205）；余额卡/演示充值按钮/收支明细全部不渲染（v-if=\"!commerceSealed\" 151）；冷启动深链不闪「暂无流水记录」空态；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（全页）+ 路由（栈顶=subpackages/market/wallet/index）+ console 全量过滤"
+    },
+    {
+      "id": "WA02",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 封存态零请求：onShow 早退不拉余额与流水",
+      "tier": "noop",
+      "pre": "同 WA01，身份A 已进入钱包（封存态）",
+      "action": "停留 3s 收集 console/network 请求清单，检索 /wallet/balance、/wallet/transactions",
+      "expected": "封存态 onShow 早退不发钱包请求（wallet/index.vue:72-76「封存态不发任何钱包请求」）；watch 解封补偿不触发（47-51）；network 对本页无新增业务请求",
+      "evidence": "noop：执行日志（console/网络请求清单）即可"
+    },
+    {
+      "id": "WA03",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 返回键（栈>1）：navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "同 WA01 登录态；先进入 pages/discover/index 再 uni.navigateTo('/subpackages/market/wallet/index')",
+      "action": "tap .wallet__back（wallet/index.vue:143）",
+      "expected": "goBack（wallet/index.vue:109-116）navigateBack → 500ms 内栈顶回 pages/discover/index，来源页状态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链 before/after）"
+    },
+    {
+      "id": "WA04",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 返回键（栈=1 直达）：兜底 switchTab 回「我的」tab（非首页）",
+      "tier": "navigation",
+      "pre": "同 WA01（wx.reLaunch 直达，栈=1）",
+      "action": "tap .wallet__back",
+      "expected": "栈长=1 → uni.switchTab({url:'/pages/profile/index'})（wallet/index.vue:113-115）→ 落「我的」tab；注意与商城兜底落点（home）不同，本页兜底为 profile，路由断言以此为准",
+      "evidence": "navigation：路由断言（栈顶=pages/profile/index）"
+    },
+    {
+      "id": "WA05",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 返回键热区测量：64rpx 实测复核 vs 铁律 88rpx",
+      "tier": "normal",
+      "pre": "同 WA01，身份A 停留在钱包页",
+      "action": "对 .wallet__back 执行 boundingClientRect 采样，换算 rpx",
+      "expected": "铁律热区≥88rpx；源码 .wallet__back 为 64×64rpx（wallet/index.vue:253-261）——实测 <88rpx 按铁律如实记热区不达标缺陷候选",
+      "evidence": "normal：after 截图（含测量值）+ 路由不变 + console"
+    },
+    {
+      "id": "WA06",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包 重复进出×3（身份B）：封存卡稳定无残留",
+      "tier": "normal",
+      "pre": "身份B mock 登录（同前注入流程）→ 位于 pages/profile/index",
+      "action": "循环 3 次：uni.navigateTo('/subpackages/market/wallet/index') → 800ms 采样 → navigateBack",
+      "expected": "每次进入均直接封存卡；无 SkeletonBlock 残留、无「暂无流水记录」闪现、无余额卡渲染；3 次进出无卡死；profile tab 状态保留",
+      "evidence": "normal：第 3 次 after 截图 + 路由 + console 全量过滤"
+    },
+    {
+      "id": "WA07",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包（解封预案）commerce.coin=true：余额 ¥800.00 与 2 条流水正负号/颜色断言",
+      "tier": "critical",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 switches commerce.coin（或 coin）=true 且总闸开；mock getAppConfig 恒不含（services/api.ts:271-280）。仅当执行环境可注入配置时执行",
+      "action": "解封后进入钱包，等待刷新完成（refreshWallet wallet/index.vue:57-70），采样余额文本、.wallet__tx-item 条数与每条类型/金额文本",
+      "expected": "余额卡「交友币余额 ¥800.00」（mock fetchBalance 初始 80000 分 coins.ts:117-123；balanceYuan=分/100 coins.ts:103；加载中显示 -- wallet/index.vue:158）；流水 2 条：「解锁私信 支出 -¥5.00」（DEBIT 500 分）/「签到奖励 收入 +¥800.00」（CREDIT 80000 分；isIncome 归类 wallet/index.vue:123-125，amountText 133-136）；收入金额绿色（wallet__tx-amount--income 426-428）；首拉中骨架 SkeletonBlock rows=3（193-195）",
+      "evidence": "critical：before（骨架/loading）+ after 截图 + 路由 + 余额/流水文案 + console（含 /wallet/balance、/wallet/transactions 请求）"
+    },
+    {
+      "id": "WA08",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包（解封预案）演示充值 ¥100：POST 入账→余额/流水联动→成功 Toast",
+      "tier": "critical",
+      "pre": "同 WA07 解封预案环境（不可达则 UNVERIFIED）；mock 模式（useMock()=true 充值按钮才可见 wallet/index.vue:163-168）",
+      "action": "before 截图+记余额 → tap .wallet__recharge → 等待 Toast → after 截图+再记余额与流水首条",
+      "expected": "handleRecharge（79-106）：POST /wallet/recharge body={amountCents:10000} 且请求头 Idempotency-Key=RECHARGE-DEMO-<Date.now()>（87-95）→ 成功后重拉余额+流水（96-99）→ successHaptic + Toast「充值成功 +¥100」（wallet.rechargeSuccess，101；zh-CN.ts:798）→ 余额 ¥800.00→¥900.00、流水首条新增 +¥100.00 收入；请求失败时 toast 显示错误消息（102-105）不静默",
+      "evidence": "critical：before+after 截图（全页）+ 路由 + Toast 文案逐字 + console（含 POST /wallet/recharge 载荷与 Idempotency-Key 头）"
+    },
+    {
+      "id": "WA09",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包（解封预案）充值按钮防连点：快击×5 应仅 1 次提交（源码无锁，缺陷候选）",
+      "tier": "critical",
+      "pre": "同 WA08 解封预案环境（不可达则 UNVERIFIED），充值按钮可见",
+      "action": "对 .wallet__recharge 快速连点 5 次（间隔 <200ms），统计 POST /wallet/recharge 次数、Toast 出现次数与余额增量",
+      "expected": "铁律主按钮防连点（快击 5 次只提交 1 次）：仅 1 次 POST、1 个成功 Toast、余额 +100 一次。⚠ 源码缺陷嫌疑：handleRecharge（wallet/index.vue:79-106）仅封存守卫、无 processing 标志/buttonGuard，且 Idempotency-Key 含 Date.now()（87）每次点击不同、后端幂等不拦——实测若出现多次提交，按铁律如实记防连点缺陷并附请求次数证据",
+      "evidence": "critical：before+after 截图 + 路由 + 全部 Toast 文案 + console（POST 次数统计为核心证据）"
+    },
+    {
+      "id": "WA10",
+      "page": "subpackages/market/wallet/index",
+      "title": "钱包（解封预案）加载失败：余额 -- 不误显 0 元 + 网络错误重试条恢复",
+      "tier": "normal",
+      "pre": "同 WA07 解封预案环境（不可达则 UNVERIFIED）；需使 /wallet/balance 或 /wallet/transactions 失败（开发者工具断网注入）",
+      "action": "断网进入/刷新钱包 → 采样余额文本与重试条 → tap .wallet__load-error-retry → 恢复网络再采样",
+      "expected": "loadFailed=true：余额显示 --（wallet/index.vue:158，MP-R2-次要22-011：不得显示兜底 0 元与真实空账混淆）+「网络错误/重试」红条（174-179，zh-CN.ts:26/20）；点重试走 refreshWallet（57-70）恢复余额与流水；Loading 不永驻",
+      "evidence": "normal：失败态+恢复态各一张 after 截图 + 路由 + console"
+    },
+    {
+      "id": "VP01",
+      "page": "subpackages/vip/index",
+      "title": "VIP 开通页 冷启动直达（membershipEnabled=false）：Toast 会员功能暂未开放+自动弹回「我的」tab",
+      "tier": "normal",
+      "pre": "身份A mock 登录（同前注入流程，token 须当日重签）→ wx.reLaunch('/subpackages/vip/index')（featureFlags.membershipEnabled=false，feature-flags.ts:29，为出厂态）",
+      "action": "reLaunch 后 800ms 内采样：Toast 文案、getCurrentPages 链、页面残留内容；1.5s 后再采样一次确认落点稳定",
+      "expected": "onLoad 守卫（vip/index.vue:57-66）：uni.showToast「会员功能暂未开放」（vip.membershipDisabled，zh-CN.ts:2501）；栈长=1 → uni.switchTab(ROUTES.TAB.PROFILE=pages/profile/index) → 落「我的」tab；VIP 头部/权益/套餐/底栏任何内容不闪现（冷启动深链严禁闪错误空态铁律）；无 /vip/auto-renew/status 请求（onMounted flag 早退 vip/index.vue:395-396）；console 无 TypeError",
+      "evidence": "normal：after 截图（含 Toast 与落点我的页）+ 路由（栈顶=pages/profile/index）+ Toast 文案逐字 + console 全量过滤"
+    },
+    {
+      "id": "VP02",
+      "page": "subpackages/vip/index",
+      "title": "VIP 开通页 有栈进入（flag=false）：Toast+navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → 进入 pages/discover/index → uni.navigateTo('/subpackages/vip/index')（栈>1）",
+      "action": "navigateTo 后采样 Toast 与路由变化",
+      "expected": "同一 onLoad 守卫（vip/index.vue:57-66）：Toast「会员功能暂未开放」+ uni.navigateBack() → 500ms 内栈顶回 pages/discover/index，来源页滚动位/状态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链 before/after）+ Toast 文案随 console 记录"
+    },
+    {
+      "id": "VP03",
+      "page": "subpackages/vip/index",
+      "title": "VIP 开通页 重复进出×3（身份B）：每次均拦截弹回，无卡死无 Loading 永驻",
+      "tier": "normal",
+      "pre": "身份B mock 登录（同前注入流程）→ 位于 pages/profile/index",
+      "action": "循环 3 次：uni.navigateTo('/subpackages/vip/index') → 600ms 采样 Toast/路由 → 等自动弹回",
+      "expected": "每次进入均 Toast+弹回 profile（onLoad 拦截为页面级，非一次性）；3 次进出无卡死、无 uni.showLoading 残留（此时未进入支付流程）、无 console 异常累积",
+      "evidence": "normal：第 3 次 after 截图 + 路由断言 + console 全量过滤"
+    },
+    {
+      "id": "VP04",
+      "page": "subpackages/vip/index",
+      "title": "VIP 开通页（flag=true 预案）页面全量：6 权益+3 套餐+协议+自动续费+2 入口+底栏",
+      "tier": "normal",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 featureFlags.membershipEnabled=true；源码常量硬编码 false（feature-flags.ts:29），执行环境不得改码，仅当具备安全注入手段时执行",
+      "action": "解 flag 后 navigateTo 进入，1s 采样 .benefit-item/.plan-card/.plan-card--selected/switch/.entry-item/.footer__btn 各数量与文案",
+      "expected": "6 权益卡：看过的喜欢你/无限喜欢/专属标识/匹配加权/专属主题/超级喜欢（vip/index.vue:110-117）；3 套餐卡：月卡 ¥18（原价¥28）/季卡 ¥48（原价¥84，徽标「超值」popular）/年卡 ¥158（原价¥336，徽标「最划算」）（config/vip-plans.ts:54-93）；默认选中月卡（DEFAULT_PLAN_ID=VIP_PLANS[0]，126-129）带对勾标记；协议行《VIP 服务协议》·《自动续费协议》；自动续费开关（默认关）；优惠码/账单记录两入口；底栏「应付：¥18」+「立即开通」（560-576）；onMounted 发起 /vip/auto-renew/status 查询（391-402）",
+      "evidence": "normal：after 截图（全页滚动拼接）+ 路由 + console（含 status 请求）"
+    },
+    {
+      "id": "VP05",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）权益卡点击：Modal 权益名+描述，「知道了」关闭",
+      "tier": "normal",
+      "pre": "同 VP04 预案环境（不可达则 UNVERIFIED）",
+      "action": "tap 第一张 .benefit-item（viewBenefitDetail，vip/index.vue:248-256）→ 采样 Modal 标题/内容/按钮 → tap「知道了」",
+      "expected": "500ms 内 uni.showModal 弹出：标题=权益名（如「看过的喜欢你」）、内容=权益描述、showCancel=false、确认「知道了」（profile.gotIt）；点确认关闭；每张权益卡均可弹出对应内容（至少抽查 2 张）",
+      "evidence": "normal：Modal 展开态 after 截图 + 路由不变 + Modal 文案 + console"
+    },
+    {
+      "id": "VP06",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）套餐切换：选中金边+对勾迁移，底栏应付价联动 ¥18→¥48→¥158",
+      "tier": "normal",
+      "pre": "同 VP04 预案环境（不可达则 UNVERIFIED）",
+      "action": "依次 tap 季卡、年卡、再回月卡 .plan-card（selectPlan，148-151），每次采样选中卡类名与 .footer__price 文本",
+      "expected": "plan-card--selected 金边渐变+右上对勾标记随点击迁移（462-500）；底栏「应付：」价格随选中套餐联动 ¥18→¥48→¥158→¥18（561-565）；每次点击 lightHaptic；切回月卡后状态与首次一致（状态不丢）",
+      "evidence": "normal：每次切换 after 截图（至少季卡/年卡两张）+ 路由不变 + 价格文案 + console"
+    },
+    {
+      "id": "VP07",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）mock 立即开通闭环：处理中 Loading 1.2s→开通成功 Modal→确认返回",
+      "tier": "critical",
+      "pre": "同 VP04 预案环境（不可达则 UNVERIFIED）；mock 模式（isMockMode()=true，real 模式见 VP10）",
+      "action": "before 截图 → tap「立即开通」→ 立即采样 loading → 等待 1.5s 采样 Modal → 记录文案 → tap「知道了」→ after 截图与路由",
+      "expected": "subscribeGuarded → subscribe（159-237）：processing+uni.showLoading「处理中...」（183）→ mock 定时器 1200ms（MOCK_PAYMENT_DELAY_MS，80/189-194）→ hideLoading+showModal「开通成功」，内容含套餐名/有效期/（mock 模式演示，未实际支付）（zh-CN.ts:2482-2483）→ tap「知道了」后 uni.navigateBack 落回来源页（222-225）；点击时面包屑 ui.button_click 记录（167-170）；全程 Loading 不永驻",
+      "evidence": "critical：before+after 截图（全页）+ 路由（开通前/返回后栈链）+ Loading 与 Modal 文案逐字 + console（面包屑/无 TypeError）"
+    },
+    {
+      "id": "VP08",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）立即开通防连点：processing+buttonGuard(1500ms) 快击×5 仅 1 次流程；开通中返回不遗留遮罩",
+      "tier": "critical",
+      "pre": "同 VP07 预案环境（不可达则 UNVERIFIED）",
+      "action": "① 对「立即开通」快速连点 5 次，统计 showLoading/Modal 出现次数；② 开通 Loading 进行中（1.2s 窗口内）立即 navigateBack，等待 2s 后进入任意页采样是否有全局遮罩",
+      "expected": "① processing 锁（163）+ createButtonGuard 1500ms（245；utils/debounce.ts:145-170 锁定窗口内重复点击直接忽略）→ 仅 1 次 Loading/1 个 Modal（铁律防连点）；② 页面卸载 onUnmounted 清理 mockPaymentTimer 并 uni.hideLoading（94-102，MP-R2-次要22-007：返回后不得被全局遮罩永久覆盖）",
+      "evidence": "critical：before+after 截图（含返回后页面）+ 路由 + Toast/Modal 文案 + console"
+    },
+    {
+      "id": "VP09",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）自动续费开启：确认弹层→成功 Toast；取消则开关回弹受控回显",
+      "tier": "critical",
+      "pre": "同 VP04 预案环境（不可达则 UNVERIFIED），自动续费开关初始为关",
+      "action": "① 拨开 switch（toggleAutoRenew，302-374）→ 弹层点「取消」→ 采样开关视觉与 store 状态；② 再次拨开 → 点「确认开启」→ 采样 Toast 与开关描述文案",
+      "expected": "① 取消 → revertAutoRenewSwitch 递增 key 强制重建 switch，视觉回弹为关且 store 仍关（MP-R1-VIP-001 受控回显，296-299/336-339）——不允许出现「视觉开、store 关」漂移；② 确认 → Modal「开启自动续费」内容含所选套餐名+下次扣费日期（322-335）→ store.setEnabled → Toast「已开启自动续费」（autoRenewOnSuccess，363-368；zh-CN.ts:2515）+ 描述变「下次扣费日期：YYYY-MM-DD」（518-520）；开关处理中 disabled（autoRenewStore.updating，527）",
+      "evidence": "critical：每步 before+after 截图（开关区域）+ 路由不变 + Modal/Toast 文案逐字 + console（POST /vip/auto-renew）"
+    },
+    {
+      "id": "VP10",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）自动续费关闭：关闭确认弹层→Toast 已关闭，日期描述消失",
+      "tier": "critical",
+      "pre": "同 VP09 预案环境（不可达则 UNVERIFIED），且自动续费已处于开启态（先经 VP09 步骤②）",
+      "action": "拨关 switch → 弹层采样 → 点「确认关闭」→ 采样 Toast 与描述",
+      "expected": "关闭前确认 Modal「关闭自动续费」（autoRenewOffTitle/Content，341-351）→ 确认 → Toast「已关闭自动续费」（365-368；zh-CN.ts:2516）+ 描述回「关闭后，到期将不再自动扣费」（autoRenewDesc，518-521）；mock disableAutoRenew 置 enabled=false/nextBillingAt=null（vip-auto-renew.ts:150-162）；取消路径同 VP09 回弹",
+      "evidence": "critical：before+after 截图 + 路由不变 + Modal/Toast 文案 + console（DELETE /vip/auto-renew）"
+    },
+    {
+      "id": "VP11",
+      "page": "subpackages/vip/index",
+      "title": "VIP（flag=true 预案）优惠码/账单两入口跳转正确；返回栈底兜底 profile",
+      "tier": "navigation",
+      "pre": "同 VP04 预案环境（不可达则 UNVERIFIED）",
+      "action": "① tap「优惠码」入口 → 断言路由后返回；② tap「账单记录」入口 → 断言路由后返回；③ reLaunch 直达本页后 tap 返回键（goBack，259-267）",
+      "expected": "① uni.navigateTo '/subpackages/vip/promo-code'（goPromoCode 379-382；ROUTES.VIP.PROMO_CODE constants/routes.ts:191）；② '/subpackages/vip/bills'（385-388；routes.ts:193）；③ 栈=1 时兜底 uni.switchTab('/pages/profile/index')；均 500ms 内路由反馈",
+      "evidence": "navigation：路由断言（getCurrentPages 链）即可"
+    },
+    {
+      "id": "VP12",
+      "page": "subpackages/vip/index",
+      "title": "VIP（real 模式预案）非 mock 环境开通短路：Toast 支付功能建设中，不假成功",
+      "tier": "critical",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 isMockMode()=false 的 real 后端环境；当前执行环境为 mock（stores/helpers/use-mock.ts:23），仅当具备 real 联调环境时执行",
+      "action": "real 环境进入 VIP 页 tap「立即开通」，采样 Toast 与网络请求",
+      "expected": "infra R2-00021：real 模式禁止假支付成功（vip/index.vue:172-180）→ 仅 Toast「支付功能建设中，敬请期待」（paymentNotReady，zh-CN.ts:2481）；不发起支付请求、不出现「开通成功」Modal、processing 复位",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案逐字 + console（无支付类请求发出为核心证据）"
+    },
+    {
+      "id": "PC01",
+      "page": "subpackages/vip/promo-code",
+      "title": "VIP 优惠码 冷启动直达（flag=false）：Toast 会员功能暂未开放+弹回「我的」tab",
+      "tier": "normal",
+      "pre": "身份A mock 登录（同前注入流程，token 须当日重签）→ wx.reLaunch('/subpackages/vip/promo-code')（membershipEnabled=false，feature-flags.ts:29）",
+      "action": "reLaunch 后 800ms 内采样 Toast 文案、getCurrentPages；1.5s 后确认落点",
+      "expected": "onLoad 拦截（promo-code.vue:33-42）：Toast「会员功能暂未开放」+ 栈=1 → uni.switchTab('/pages/profile/index') → 落「我的」tab；优惠码输入区/校验按钮不闪现；console 无 TypeError",
+      "evidence": "normal：after 截图（落点我的页）+ 路由 + Toast 文案逐字 + console 全量过滤"
+    },
+    {
+      "id": "PC02",
+      "page": "subpackages/vip/promo-code",
+      "title": "VIP 优惠码 有栈进入（flag=false）：Toast+navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → pages/discover/index → uni.navigateTo('/subpackages/vip/promo-code')",
+      "action": "navigateTo 后采样 Toast 与路由",
+      "expected": "拦截（promo-code.vue:33-42）→ navigateBack → 500ms 内回 discover，来源页状态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链 before/after）"
+    },
+    {
+      "id": "PC03",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）空码校验：Toast 请输入优惠码，按钮禁用态",
+      "tier": "normal",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 membershipEnabled=true（feature-flags.ts:29 为 false）；具备注入手段才执行",
+      "action": "优惠码输入留空直接 tap「校验」（handleValidate，promo-code.vue:99-135）",
+      "expected": "codeInput.trim() 为空 → Toast「请输入优惠码」（promoCodeEmpty，100-103；zh-CN.ts:2537）；不发校验请求；「校验」按钮呈禁用态 action-btn--disabled 半透明（251，样式 519-521）",
+      "evidence": "normal：after 截图（含 Toast）+ 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "PC04",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）输入三态：格式非法 Toast、超长 32 截断、特殊字符拦截不执行",
+      "tier": "normal",
+      "pre": "同 PC03 预案环境（不可达则 UNVERIFIED）",
+      "action": "① 输入 'ab' tap 校验；② 粘贴 40 字符长串读输入框值；③ 输入 'CODE<>\"onload' tap 校验",
+      "expected": "① 不匹配 /^[A-Za-z0-9-]{4,24}$/ → Toast「优惠码格式不正确（4-24 位字母/数字/-）」（105-108；zh-CN.ts:2538）；② maxlength=32 截断（promo-code.vue:224）；③ 特殊字符被同一正则拦截同样 Toast；输入框纯文本渲染无脚本执行；均不发校验请求",
+      "evidence": "normal：每段 after 截图 + 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "PC05",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）订单金额非法：清空/0/负数 → Toast 订单金额无效；默认 48",
+      "tier": "normal",
+      "pre": "同 PC03 预案环境（不可达则 UNVERIFIED），输入合法码 'VIP2026'",
+      "action": "① 清空金额输入 tap 校验；② 输入 '0' tap 校验；③ 输入 '-5' tap 校验；④ 恢复默认值读初始文本",
+      "expected": "orderAmountCents<=0（parseFloat 失败/≤0，promo-code.vue:72-76/109-112）→ Toast「订单金额无效」（promoCodeAmountInvalid；zh-CN.ts:2539）；默认金额 48（VIP_PLANS 季卡价，promo-code.vue:69）；不发校验请求",
+      "evidence": "normal：每段 after 截图（至少①③）+ 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "PC06",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）合法码校验成功：结果卡五行走电+Toast 可用，优惠 ¥10.00",
+      "tier": "normal",
+      "pre": "同 PC03 预案环境（不可达则 UNVERIFIED），金额保持默认 48",
+      "action": "输入 'VIP2026' → tap「校验」→ 等待结果 → 采样 Toast 与 .result-card 各行文本",
+      "expected": "mock 校验（stores/promo-code.ts:101-128）：AMOUNT 1000 分 → 结果卡：优惠码 VIP2026/类型 满减/描述 立减 10 元/优惠金额 ¥10.00/应付金额 ¥38.00（promo-code.vue:271-305）+ Toast「可用，优惠 ¥10.00」（promoCodeValid，120-124；zh-CN.ts:2540）；底栏「兑换」按钮出现（v-if validationResult?.available，308-320）；校验中按钮文案「校验中...」（257）且 validating 期不可重入（113）",
+      "evidence": "normal：before+after 截图（结果卡展开）+ 路由不变 + Toast 文案逐字 + console"
+    },
+    {
+      "id": "PC07",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）无效码红色结果卡：原因=优惠码已过期或不可用，无兑换按钮",
+      "tier": "normal",
+      "pre": "同 PC03 预案环境（不可达则 UNVERIFIED）",
+      "action": "输入 'INVALID' → tap「校验」→ 采样结果卡样式与文案、兑换按钮存在性",
+      "expected": "mock 命中 INVALID/EXPIRED 分支（promo-code.ts:104-115）：available=false → result-card--invalid 红底红边（promo-code.vue:275/542-545），原因行=「优惠码已过期或不可用」（mock reason）+ Toast「优惠码不可用」（126-130）；无优惠/应付行、无「兑换」按钮（v-if available）",
+      "evidence": "normal：after 截图（红卡）+ 路由不变 + Toast 文案 + console"
+    },
+    {
+      "id": "PC08",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）兑换闭环+防连点：成功 Modal 金额逐字，快击×5 仅 1 次提交",
+      "tier": "critical",
+      "pre": "同 PC06 预案环境（不可达则 UNVERIFIED），'VIP2026' 已校验通过（兑换按钮可见）",
+      "action": "before 截图 → 对「兑换」快速连点 5 次 → 等待采样 Modal 与兑换结果卡 → after 截图",
+      "expected": "handleRedeem（promo-code.vue:138-170）→ mock redeem（promo-code.ts:175-186）→ showModal「兑换成功」内容「优惠金额：¥10.00 应付金额：¥38.00」（151-159；zh-CN.ts:2548-2549）+ 兑换结果卡（状态=兑换成功，323-343）；防重复：store.redeeming 锁——兑换中重复点击直接返回上次结果不重复提交（promo-code.ts:159-167）→ 仅 1 次提交（real 模式下 1 次 POST /vip/promo-codes/redeem）；未校验时无兑换入口可点（按钮 v-if 消失态验证 PC07）",
+      "evidence": "critical：before+after 截图（全页）+ 路由不变 + Modal/Toast 文案逐字 + console（提交次数为核心证据）"
+    },
+    {
+      "id": "PC09",
+      "page": "subpackages/vip/promo-code",
+      "title": "优惠码（flag=true 预案）重置：输入清空+结果卡/兑换结果/兑换按钮全部消失",
+      "tier": "normal",
+      "pre": "同 PC08 预案环境（不可达则 UNVERIFIED），页面留有校验结果与兑换结果",
+      "action": "tap「重置」（handleReset，promo-code.vue:173-177）→ 采样输入框值、.result-section 数量、兑换按钮存在性",
+      "expected": "codeInput 清空 + store.reset()（promo-code.ts:207-212）清 lastValidation/lastRedeemResult → 校验结果卡与兑换结果卡均消失、底栏兑换按钮隐藏；lightHaptic 反馈",
+      "evidence": "normal：before+after 截图 + 路由不变 + console"
+    },
+    {
+      "id": "BI01",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单 冷启动直达（flag=false）：Toast 会员功能暂未开放+弹回「我的」tab",
+      "tier": "normal",
+      "pre": "身份A mock 登录（同前注入流程，token 须当日重签）→ wx.reLaunch('/subpackages/vip/bills')（membershipEnabled=false，feature-flags.ts:29；pages.json:340-344 本页 enablePullDownRefresh=true）",
+      "action": "reLaunch 后 800ms 内采样 Toast 文案、getCurrentPages；1.5s 后确认落点稳定",
+      "expected": "onLoad 拦截（bills.vue:36-45）：Toast「会员功能暂未开放」+ 栈=1 → uni.switchTab('/pages/profile/index') → 落「我的」tab；账单 hero/筛选/列表不闪现（不借下拉刷新残影）；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图（落点我的页）+ 路由 + Toast 文案逐字 + console 全量过滤"
+    },
+    {
+      "id": "BI02",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单 有栈进入（flag=false）：Toast+navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → pages/profile/index → uni.navigateTo('/subpackages/vip/bills')",
+      "action": "navigateTo 后采样 Toast 与路由",
+      "expected": "拦截（bills.vue:36-45）→ navigateBack → 500ms 内回 profile，来源页状态保留",
+      "evidence": "navigation：路由断言（getCurrentPages 链 before/after）"
+    },
+    {
+      "id": "BI03",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）进入即加载：应显示 3 条 mock 账单（onShow 误嵌缺陷嫌疑，如实记录实际表现）",
+      "tier": "normal",
+      "pre": "【当前不可达→如实 UNVERIFIED】需 membershipEnabled=true（feature-flags.ts:29 为 false）；具备注入手段才执行",
+      "action": "解 flag 后 navigateTo 进入，1.5s 采样：列表卡数、空态文案、网络请求清单（GET /vip/bills）",
+      "expected": "按源码意图（MP-R2-次要22-010 注释「onShow 刷新账单」）进入应拉取并显示 3 条 mock 账单：订阅 季度会员 ¥48.00 成功 / 续费 月度会员 ¥18.00 成功 / 退款 月度会员 ¥18.00 已退款（stores/vip-billing.ts:77-125）。⚠ 源码缺陷嫌疑：onShow 被误嵌套在 goBack 函数体内（bills.vue:149-162，运行时非 setup 上下文注册无效）且「初始化加载」处为空注释无调用（164-165）——实测若出现「暂无账单记录」空态且无 /vip/bills 请求，按「进入即假空态」如实记缺陷并附请求清单；不得因显示空态而伪造通过",
+      "evidence": "normal：after 截图（全页）+ 路由 + 列表/空态文案 + console（有无 GET /vip/bills 为核心证据）"
+    },
+    {
+      "id": "BI04",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）下拉刷新真实重拉：绕过 store 缓存，stopPullDownRefresh 不永驻",
+      "tier": "normal",
+      "pre": "同 BI03 预案环境（不可达则 UNVERIFIED），账单列表已渲染",
+      "action": "在列表顶部执行下拉刷新（automator 模拟 pullDownRefresh 或 miniReportPageScroll 路径），观察 loading 与请求",
+      "expected": "onPullDownRefresh → loadBills(true)（bills.vue:89-92）→ store.listBills forceRefresh=true 绕过 loaded 缓存重拉（vip-billing.ts:170）→ 完成后 uni.stopPullDownRefresh（91）动画收回不永驻；刷新期间筛选态保留",
+      "evidence": "normal：刷新中+刷新后各一张 after 截图 + 路由不变 + console（重复 GET /vip/bills 记录）"
+    },
+    {
+      "id": "BI05",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）筛选 4 chips：active 金边迁移+列表过滤，切回全部数据不丢",
+      "tier": "normal",
+      "pre": "同 BI03 预案环境（不可达则 UNVERIFIED），3 条账单已渲染",
+      "action": "依次 tap 全部/订阅/续费/退款 .filter-chip（bills.vue:191-204），每次采样 active 类与 .bill-card 数量",
+      "expected": "selectFilter（73-76）filterType 切换 + filter-chip--active 金边样式迁移（392-396）；列表过滤（59-64）：订阅仅 SUBSCRIBE 1001、续费仅 RENEW 1002、退款仅 REFUND 1003；切回「全部」恢复 3 条（Tab 切换数据不丢铁律）；lightHaptic",
+      "evidence": "normal：每筛选 after 截图（至少订阅/退款两张）+ 路由不变 + console"
+    },
+    {
+      "id": "BI06",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）账单卡字段与徽标：类型/状态配色、金额加粗、原价划线、交易号 monospace",
+      "tier": "normal",
+      "pre": "同 BI03 预案环境（不可达则 UNVERIFIED），「全部」筛选下 3 条账单可见",
+      "action": "逐卡采样 .bill-card__type/__status 文本与 class、金额/原价/有效期/支付方式/交易号/备注/创建时间各行文本",
+      "expected": "类型徽标：订阅（成功绿 tint）/续费（蓝 tint）/退款（红 tint）配色区分（typeColor/statusColor bills.vue:117-130，样式 447-499）；状态：成功/已退款；金额 ¥48.00/¥18.00 加粗粉色（--amount），原价划线（--strike），有效期 YYYY-MM-DD HH:mm 区间（formatDate 100-114），支付方式=微信支付（254），交易号 monospace（--mono），创建时间齐备（225-267）",
+      "evidence": "normal：after 截图（全列表）+ 路由不变 + 关键字段文案 + console"
+    },
+    {
+      "id": "BI07",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）列表滚动到底/顶：位置稳定无报错",
+      "tier": "noop",
+      "pre": "同 BI03 预案环境（不可达则 UNVERIFIED），账单列表已渲染",
+      "action": "页面滚动到底再回顶，记录 scroll 位置与 console",
+      "expected": "3 条账单内容较短：滚动无异常、无滚动相关报错、回顶后首卡可见（页面级滚动无分页逻辑，store size=20 一页取全 vip-billing.ts:166）",
+      "evidence": "noop：执行日志（scroll 位置/console）即可"
+    },
+    {
+      "id": "BI08",
+      "page": "subpackages/vip/bills",
+      "title": "VIP 账单（flag=true 预案）返回键：栈>1 回来源；栈=1 兜底 profile tab",
+      "tier": "navigation",
+      "pre": "同 BI03 预案环境（不可达则 UNVERIFIED）",
+      "action": "① 有栈进入后 tap .nav-bar__back（bills.vue:174-179）；② reLaunch 直达后 tap 返回键",
+      "expected": "① goBack（149-161）navigateBack 落回来源页；② 栈=1 → uni.switchTab('/pages/profile/index')；均 500ms 内路由反馈；注意源码 goBack 体内误嵌 onShow（149-162）不应引发点击报错——如出现 console 异常如实记录",
+      "evidence": "navigation：路由断言（getCurrentPages 链）+ console"
+    }
+  ]
+}

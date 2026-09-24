@@ -1,0 +1,209 @@
+{
+  "round": "R1",
+  "reviewer": "需求对照员（A4）",
+  "page": "subpackages/chat/chat-session/index",
+  "generatedAt": "2026-09-24T00:00:00.000Z",
+  "evidenceBasis": {
+    "spec": "git show 29a2b1df:docs/design/message-v3-spec.md §2.2/§2.3/§8/§9 + git show 29a2b1df:docs/design/v3.1-后台对齐与参考图生成.md §三 聊天（本页无理想图，R13 判定）",
+    "staticShots": [
+      "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "reports/screenshots/round-1/B/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png"
+    ],
+    "interactExec": "reports/audit/round-1/interact/exec-results.json（manifest=SUBPACKAGES-CHAT-CHAT-SESSION-INDEX 45 例：12 EXECUTED / 33 FAILED）",
+    "interactJudge": "reports/audit/round-1/interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-judge.json（2 VERIFIED / 3 FAILED / 40 UNVERIFIED）",
+    "interactShots": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-*.png + wxml/*.wxml",
+    "r13Regression": "reports/audit/2026-09-22-r13-goal/shots-r13e/51-chat-entry2.png",
+    "code": "apps/client/src/subpackages/chat/chat-session/{index.vue,types.ts,dto.ts,view-models.ts,api.ts} + components/chat/* + components/relationship/* + stores/messages.ts + stores/chat/actions/messaging.ts + services/api-error.ts"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "spec §2.2 普通聊天页四段结构中的「关系状态区（RelationshipTag + SuggestedAction）」整段缺失：页面从 ChatHeader 直接进入消息流，普通会话无任何关系标签（刚认识/聊天中/暧昧中/互相关注）与建议动作（回复/邀请/看主页）展示。message-v3-spec §1 的「恋爱关系推进中心——用户知道今天该推进谁、用什么动作推进」在会话页落空；唯一近似的 signal-banner（渐进解锁）仅在 fromSignal=1 缘分速配会话渲染。RelationshipTag.vue 与 SuggestedAction.vue 组件文件已存在但全仓零 import（死代码），后端契约 SuggestedActionView 已在生成类型中，属「库已备、页未接」。",
+      "evidence": "模板 apps/client/src/subpackages/chat/chat-session/index.vue:1798-2078 无关系状态区（仅 1828-1864 fromSignal 条件横幅）；本轮 grep RelationshipTag/SuggestedAction 于 apps/client/src 全部 .vue/.ts：除组件文件自身与 services/generated/api-types-supplement.ts:657（类型定义）外零命中；ChatHeader.vue:56-73 仅头像+姓名+在线+认识X天，无关系标签位。spec 依据：git show 29a2b1df:docs/design/message-v3-spec.md §2.2『顶部导航 → 关系状态区 → 消息流 → 恋爱输入区』及任务书给定『关系状态区（RelationshipTag+SuggestedAction）』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "ChatHeader 下方为普通会话渲染关系状态区：RelationshipTag（按 relationship.status 映射四色标签）+ SuggestedAction（type/text/targetUrl，点击直达建议动作）；无关系数据时整区降级隐藏",
+      "fix": "在 index.vue ChatHeader 与消息流之间插入关系状态区：数据源取 session.relationship / messagesStore relationship-dashboard；复用现成 components/relationship/RelationshipTag.vue 与 SuggestedAction.vue（补 @tap 跳转 targetUrl）；fromSignal 会话保持现有 signal-banner 不受影响",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-102",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/audit/2026-09-22-r13-goal/shots-r13e/51-chat-entry2.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "R13 曾判本页最严重偏差的 P0 幂等键问题（同文案重发/同对方二次进会话被后端幂等去重拦截，整页报错且无消息）：本轮回归复核通过。会话 get-or-create 改为按调用唯一键、消息发送改为每次随机键且请求头字段名已修正，深链 ?userId=10003 整页正常渲染（judge VERIFIED），修复在 aefd8a72 工作区保持有效。",
+      "evidence": "stores/messages.ts:885-896（POST /messages/conversations 每次生成 idem-conv-{userBId}-{ts}-{rand} 唯一键并注释 409 IDEMPOTENT_CONFLICT 根因）、961-971（发送每次 msg-{ts}-{rand} 随机键，注释『header→headers 字段名修正，此前随机幂等键未随请求发出』）；执行证据 exec-results.json CS05 status=EXECUTED + judge CS05=VERIFIED（.chat-header__title/.chat-header__status/.chat-header__days/.chat-scroll/.wechat-input-bar__input/.wechat-input-bar__send 全 present，route ?userId=10003，console 空）；影像证据 shots-r13e/51-chat-entry2.png 显示匹配对象会话页（林晚/认识3天/破冰按钮/输入栏）无整页错误。",
+      "sources": ["code", "log", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "同一对方重复进入会话复用既有会话；同一文案多次发送各为独立意图不被幂等去重拦截",
+      "fix": "无需修复；保持回归观察项（后端幂等键 TTL 变更时需复测）",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-103",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "后台对齐 §三 聊天规定输入栏五要素「语音+输入框+表情+加号」，当前语音入口不存在：输入栏仅表情/加号/输入框/发送四件。代码注释记录这是有记录的产品决定（微信隐私保护指引未声明麦克风导致录音不可用，按产品要求下线），但 message-v3-spec 与后台对齐契约均未同步修订，需求侧按「规范与实现不一致」保留登记。历史 voice 消息由 ChatBubble 兜底展示，store 语音发送链路（sendVoiceMessage/uploadVoiceFile）仍在但无入口。",
+      "evidence": "index.vue:1220-1224（『语音功能已移除…按产品要求下线语音录制/发送，输入栏仅保留文字输入』逐项列出已删函数）；模板 2000-2051 wechat-input-bar 仅含表情/+/input/发送四元素；103 行注释『语音麦克风已随对应功能移除』；对照 git show 29a2b1df:docs/design/v3.1-后台对齐与参考图生成.md §三 聊天『底部输入栏（语音+输入框+表情+加号）』。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "输入栏含语音入口（按住说话），或 spec 明文修订为四要素并记录下线理由",
+      "fix": "二选一：①维持下线——修订 message-v3-spec §2.2 与后台对齐 §三 聊天的输入栏描述并归档产品决定；②恢复——先在小程序隐私声明补齐麦克风用途，再接回 stores/chat 既有 sendVoiceMessage 链路与 VoiceRecorder 组件",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-104",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "失效数字 sessionId 深链（?sessionId=99999999）不渲染错误态，而是渲染「假空会话」：破冰提示卡 + 快捷开场白 + 推荐开场 + 可用输入栏俱全，用户会对着不存在的会话打字。judge 判 FAILED 且标注『与 expected 直接相悖，回归复现』。根因：fetchSessionMessages 对不存在的会话 ID 静默返回空列表不置错误（mock 桶未命中即空数组），页面空态引导条件（showMatchGreeting）不含「会话不存在」判定。",
+      "evidence": "judge JSON CS08 actual：『DOM .meta-copy--padded absent、.match-greeting present；截图证实渲染了破冰提示卡+两枚快捷按钮+「会话刚建立，还没有消息。」+底部 BreakQuestion+可用输入栏——即假空会话，错误态未到达』；代码 stores/messages.ts:709-748（718 行 mock 空桶静默返回空列表、errorMessage 保持 null）；index.vue:198-200 showMatchGreeting 仅判 userMessageCount/loading/pageErrorMessage，无会话存在性判定。",
+      "sources": ["screenshot", "log", "code"],
+      "confidence": 0.85,
+      "ideal": "加载完成后会话不存在（无会话对象 + 无消息 + 无错误）时渲染「会话不存在或已失效」错误态，不出现任何可输入的假空会话（spec §9 错误态契约）",
+      "fix": "loadSessionData 完成后增加会话存在性守卫：currentSession 为空且 currentMessages 为空且无 errorMessage 时置 pageErrorMessage=会话不存在（复用 CS09 文案键），隐藏 MatchGreetingTip/BreakQuestion/输入栏",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS09-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "失效 temp 会话深链：错误文案「会话不存在或已失效」双区渲染达成，但「同意交换/结束会话」禁用态按钮整组不渲染、点击无反馈——2026-09-20 的 MP-R1-CHAT-CHAT-SESSION-INDEX-002 修复（tempSessionUnavailable 禁用+提示）在它唯一针对的深链失效场景中失效：loadSession 失败 → chatStore.activeSession=null → currentSession=null → isTempSession=false → temp-banner 与 temp-action-row 的 v-if 均为 false，tempSessionUnavailable 恒不可能为 true，成为死分支。",
+      "evidence": "judge JSON CS09 actual：『temp-banner 与 .temp-action-btn 均未渲染，tap「同意交换」元素不存在无 toast。代码链：loadSession 失败→activeSession=null→currentSession=null（index.vue:802-812）→isTempSession=false（822-828）→temp-banner（1815）/temp-action-row（2057）v-if 不渲染』；index.vue:862-864 tempSessionUnavailable = isTempSession && !chatStore.activeSession，前件恒 false。",
+      "sources": ["screenshot", "log", "code"],
+      "confidence": 0.85,
+      "ideal": "temp 会话加载失败时仍展示会话横幅与两枚禁用按钮，点击给出「会话不存在或已失效」toast（禁用态有反馈）",
+      "fix": "为失效 temp 深链保留降级 UI：loadSession 失败时记 tempLoadFailed=true，temp-banner/temp-action-row 的 v-if 改为 (isTempSession || tempLoadFailed)，按钮走 tempSessionUnavailable 禁用分支（其判定改为 !chatStore.activeSession 即可，不再依赖 isTempSession 前件）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-106",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/audit/round-1/interact/exec-results.json#CS42（after 截图超时无影像）",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "栈深 1（分享卡/推送深链直开）时点击顶部返回键静默无反应：goBack 的 navigateBack fail 回调静默吞错，无 switchTab 兜底亦无 toast，用户被困在会话页。judge 判 FAILED：『「无崩溃」达成，「路由正确回退」未达成且栈深1下反馈缺失违反 500ms 反馈铁律』。同项目 LockScreen.vue 已有栈深 1 switchTab 兜底的正确示范，本页未复用。",
+      "evidence": "index.vue:498-513 goBack（#ifdef MP-WEIXIN navigateBack fail 静默；#ifndef 分支 .catch 静默）；judge JSON CS42 actual：『harness navigateBack 两次报 NAV_ERROR，tap .chat-header__back 执行后路由无任何变化』；对照 components/common/LockScreen.vue:94-98（返回失败 switchTab 公开 Tab 兜底）。",
+      "sources": ["log", "code"],
+      "confidence": 0.85,
+      "ideal": "任意入口（含栈深 1 深链）点返回 500ms 内有确定去向：栈深>1 navigateBack；栈深 1 switchTab 消息/发现等公开 Tab",
+      "fix": "goBack 的 fail/catch 分支加 switchTab 兜底（openAppPath(ROUTES.MESSAGES 或公开 Tab)），与 LockScreen.vue:94-98 同口径；补吃掉 NAV_ERROR 的静默处理",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-107",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「错误净化不外露技术串」仅覆盖一半路径：消息区错误与建会话失败已净化（friendlyPageError 同口径），但发送失败的 toast 直接上抛原始 error.message / chatStore.errorMessage——后端响应体 message 字段经 api-error.ts 原样透传，HTTP 码/幂等冲突等技术串可直达用户 toast。页面自己的 friendlyPageError 正则（承认 status/HTTP/Idempotency/数字码/幂等等技术串形态存在）恰好证明这类串真实出现，却在发送路径未过滤。",
+      "evidence": "index.vue:1163-1164（catch 内 const message = error instanceof Error ? error.message : t(chat.sendFailed); uni.showToast({ title: message })）、1131-1138（temp 失败 toast 直用 chatStore.errorMessage）；stores/chat/actions/messaging.ts:121-122（errorMessage = error.message 原样）；stores/messages.ts:983（errorMessage = error.message 后 rethrow）；services/api-error.ts:144-160（后端 message 字符串原样透传）；对照 index.vue:94-101 friendlyPageError 净化正则与 723-730 建会话净化。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "任务书给定状态『错误净化不外露技术串』：所有用户可见错误（含发送失败 toast）经统一净化，技术性/HTTP 类串映射为通用失败文案",
+      "fix": "把 friendlyPageError 的净化正则抽为 utils 纯函数（如 sanitizeChatError(raw, fallbackKey)），发送 toast 两处（1131-1138、1157-1165）改为 sanitize 后展示；chatStore/chat errorMessage 置位处同步收敛",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-108",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「发送失败保留重试」仅达成草稿保留一半：失败时草稿不清、toast 提示（重试=重新点发送），但消息流中无失败态气泡（红色感叹号/点击重发），失败消息不落流——失败发生后用户无法分辨哪条没发出去。类型层 sending/failed 状态齐备，视图层被有意窄化丢弃（ChatBubble 不渲染），temp 链路维护的 failed 状态持久化完全无处展示。",
+      "evidence": "view-models.ts:22-46（ChatBubbleDeliveryStatus 窄类型不含 sending/failed，『统一回退为 undefined（ChatBubble 不渲染这两种状态的图标）』，toChatBubbleDeliveryStatus 把 failed 映射为 undefined）；ChatBubble.vue:28（deliveryStatus 仅 sent/delivered/read，无 failed 图标/重试事件）；stores/chat/actions/messaging.ts:69,120（sending/failed 状态已维护并持久化 messageDeliveryStatus）；index.vue:1131-1151（失败保留草稿）。对照任务书『发送失败保留重试』与代码内『微信 1:1 重构』目标。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.7,
+      "ideal": "发送失败的消息以失败态气泡留在流中（灰色感叹号角标），点击气泡重发；草稿保留为辅",
+      "fix": "扩展 ChatBubble deliveryStatus 渲染 failed 分支（感叹号图标 + tap-resend 事件）；私信链路 sendMessage 失败时将 content 以本地 failed 消息写入 currentMessages，重发成功后按 id 替换；temp 链路复用既有 messageDeliveryStatus 映射",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-109",
+      "round": "R1",
+      "page": "subpackages/chat/chat-session/index",
+      "screenshot": "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS16-after.wxml",
+      "category": "Function",
+      "severity": "P2",
+      "description": "本页 45 项交互用例 judge 复核仅 2 VERIFIED / 3 FAILED / 40 UNVERIFIED：发送文本/防连点/超长输入/表情面板/长按复制-转发-删除-引用-撤回/···菜单跳主页/免打扰/拉黑/举报/更多菜单发图片等核心与安全链路全部无执行级证据（当前仅有代码级在证）。主因是取证清单缺陷而非产品缺陷：①CS15/16/18-29 等 route options 为空 {} → 页面按「缺参」正确渲染错误态（wxml dump 证实渲染『缺少会话标识…』且无输入栏），用例却在找输入栏元素；②CS44 的 {id} 占位符未解析即拼入 URL；③logout 仅清 storage 不重置内存 sessionStore，CS01-04 的 LockScreen 场景前置未建立；④大量 after 截图 timeout 无影像。",
+      "evidence": "judge JSON summary {total:45, verified:2, failed:3, unverified:40}；exec-results.json CS16 route=[{options:{}}] + observed『pre-FAIL:input element not found』+ wxml dump 渲染『缺少会话标识，请从聊天列表或匹配结果进入。』（页面缺参守卫 index.vue:734 正确触发）；CS44 route options sessionId={id} 未解析；CS01-04 pre logout+storageRemove 后 .lock-screen 全 absent（isUnlocked=sessionStore.isLoggedIn||useMock，index.vue:520，reLaunch 不重置内存 Pinia）；CS01/05/11/16-18/23/30/33/38/42/43 after 截图标 ERROR:timeout waiting for automator response。",
+      "sources": ["log", "code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "S08 清单 45 例全部在有效前置下执行：带参用例携带可用 sessionId/userId，未登录用例冷启动实例，关键断言附影像",
+      "fix": "修复 reports/audit/round-1/ops/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json：为 CS13-31/33-40 等补 route options（先建会话取真实 sessionId 或用 seed 会话 ID），解析 {id} 占位符，logout 类用例改冷启动或重启实例后重跑 S08 并回填 exec-results/judge",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/chat/chat-session/index",
+      "baseline": "git show 29a2b1df:docs/design/message-v3-spec.md §2.2（普通聊天页四段结构）+ §8 组件清单 + §9 状态；git show 29a2b1df:docs/design/v3.1-后台对齐与参考图生成.md §三 聊天（本页无理想图，R13 判定维持）",
+      "structureNotes": "L1 布局：顶部导航→消息流→恋爱输入区三段成立（index.vue:1803-2078）；spec §2.2 四段中的「关系状态区」整段缺失（L2 级），仅 fromSignal=1 有 signal-banner，普通会话 ChatHeader 直跳消息流。L3 组件：ChatHeader（头像+在线角标+姓名+认识X天+···，ChatHeader.vue:56-73）、ChatBubble（self 薄荷绿右 var(--c-brand)#36C99A / peer 白左 #FFFFFF / system 居中，ChatBubble.vue:247-329 + design-variables.scss:15,141）、ActivityCard 内嵌（index.vue:1894-1899）、EmojiPanel、BreakQuestion、MatchGreetingTip、SkeletonBlock、LockScreen 均在场；RelationshipTag.vue/SuggestedAction.vue 存在但全仓零引用（死代码）。L4 内容：文案全 i18n、时间条微信 5 分钟规则（view-models.ts:267-342）、空会话/破冰文案齐备；微偏：系统气泡透明底灰字非灰底（ChatBubble.vue:323-324，视觉级）。L5-L10：发送置灰/空提交拦截/超长拦截/表情键盘互斥/temp 倒计时/幂等键策略（messages.ts:894,970）在位；异常路径三处缺陷（假空会话 CS08、temp 按钮不渲染 CS09、栈深1返回静默 CS42）。判定：L2 关系状态区整段缺失 → L1-L4 存在偏差，结构维度不达标（页面主体结构仍高度贴合 §2.2）。§2.3 寻觅助手会话由独立路由 official-chat/index（pages.json:250）承载，不属本页。",
+      "usageNotes": "核心任务顺畅：消息 Tab 点会话即达；深链 ?userId=10003 冷启动自动建会话+破冰引导（CS05 VERIFIED，R13e 51-chat-entry2.png 无整页报错）；返回 CS41 EXECUTED 落回来源页且未读恢复，1 步回 tab 达标。迷路点：①栈深 1 深链（分享/推送）点返回静默无兜底（CS42 FAILED），存在被困风险；②失效深链呈现假空会话（CS08）诱导对空会话打字；③40/45 交互用例 UNVERIFIED（清单参数缺失/logout 不重置内存态/截图超时），发送、表情、长按四件套、转发、拉黑、举报仅代码级证据，实际操作路径未获执行级确认。冷启动破冰三件套（MatchGreetingTip 直发+BreakQuestion 推荐开场+草稿持久化 index.vue:128-160）显著降低「不知说什么」流失，符合 §1 推进中心意图的一半，另一半（SuggestedAction）未落地。",
+      "functionGaps": [
+        {
+          "target": "关系状态区（RelationshipTag+SuggestedAction，spec §2.2 第二段）",
+          "current": "整段缺失；组件文件存在但全仓零 import；后端 SuggestedActionView 类型已在 api-types-supplement.ts:657",
+          "gap": "四段结构缺一段；「推进中心」建议动作在会话页无承载",
+          "fix": "ChatHeader 下接入现成两组件，数据源 session.relationship/relationship-dashboard，无数据降级隐藏"
+        },
+        {
+          "target": "恋爱输入区语音入口（后台对齐 §三 聊天五要素）",
+          "current": "语音按钮不存在；index.vue:1220-1224 记录按产品要求下线（微信隐私指引未声明麦克风）",
+          "gap": "五要素缺一；spec 未同步修订，规范与实现不一致",
+          "fix": "维持下线则反向修订 spec；恢复则先补麦克风隐私声明再接回 sendVoiceMessage 链路"
+        },
+        {
+          "target": "发送失败保留重试（任务书给定状态）",
+          "current": "草稿保留+toast 达成；气泡级失败态/一键重试缺失（failed 状态被 toChatBubbleDeliveryStatus 有意映射为 undefined）",
+          "gap": "失败消息不落流，用户无法分辨哪条未发出；temp 链路已维护的 failed 状态无处展示",
+          "fix": "ChatBubble 补 failed 分支+tap-resend；私信失败消息以本地 failed 态入流，重发成功按 id 替换"
+        },
+        {
+          "target": "错误净化不外露技术串（任务书给定状态）",
+          "current": "消息区与建会话路径已净化；发送失败 toast 直抛原始 error.message/chatStore.errorMessage（后端 message 原样透传）",
+          "gap": "同一页面两套口径，发送路径可外露 HTTP 码/幂等冲突等技术串",
+          "fix": "抽 sanitizeChatError 纯函数，发送 toast 两处统一净化"
+        },
+        {
+          "target": "失效深链健壮性（spec §9 错误态）",
+          "current": "缺参 ✔（CS07 VERIFIED）；失效数字 sessionId 渲染假空会话（CS08 FAILED）；失效 temp 会话禁用按钮整组不渲染（CS09 FAILED）",
+          "gap": "两类失效深链场景错误态不完整，假空会话误导用户输入",
+          "fix": "加载后无会话无消息无错误 → 渲染会话不存在错误态；temp 加载失败保留 banner+禁用按钮（tempSessionUnavailable 去掉 isTempSession 前件依赖）"
+        },
+        {
+          "target": "任意入口返回有确定去向（500ms 反馈铁律）",
+          "current": "栈深>1 正常；栈深 1 navigateBack fail 静默吞掉，无 switchTab 兜底（LockScreen.vue:94-98 有正确示范未复用）",
+          "gap": "分享/推送深链用户点返回无反应",
+          "fix": "goBack fail/catch 加 switchTab 公开 Tab 兜底"
+        },
+        {
+          "target": "核心交互链路执行级证据（发送/表情/长按四件套/转发/拉黑/举报等）",
+          "current": "45 例 judge 判定 40 UNVERIFIED（清单 options:{}/{id} 未解析/logout 不重置内存 sessionStore/截图超时）",
+          "gap": "功能在代码层在证但无执行级确认，本轮无法判定其真伪",
+          "fix": "修复 ops 清单参数与前置后重跑 S08，回填 exec-results/judge"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.md"
+    }
+  ]
+}

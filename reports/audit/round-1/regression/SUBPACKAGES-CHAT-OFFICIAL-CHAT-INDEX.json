@@ -1,0 +1,24 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/official-chat/index",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX（A5 索引差分模式：只核对历史条目是否复发，只读清单/代码/证据，不改代码、不碰开发者工具）",
+  "date": "2026-09-24",
+  "method": "回归索引 reports/audit/baseline/regression-index.json 共 288 条，其中 riskFiles 含 apps/client/src/subpackages/chat/official-chat/index.vue 的 11 条；ask 指定本轮核对条目 MP-R1-OFFICIAL-003（P0）。差分基线：当前工作树源码逐行重读 + git 提交差分（该文件本轮两笔提交 5e2d050c / b3d31fcd、工作树 diff 为空）+ 本轮交互执行结果 reports/audit/round-1/interact/exec-results.json（gitSha aefd8a72，OC01-OC26 共 26 条）+ 截图目检 reports/screenshots/round-1-interact/（OC12 before/after + wxml 落盘）+ 本轮代码发现 reports/audit/round-1/code-findings/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX.json（A2 产物，仅作交叉参照）。",
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-OFFICIAL-003",
+      "page": "subpackages/chat/official-chat/index",
+      "status": "未复发",
+      "evidence": "历史问题「最后一条消息被输入栏截断（P0）；R21 同病复发再修（scroll-into-view 底部锚）」的修复路径在当前工作树完整存在且本轮未被触碰。①代码：apps/client/src/subpackages/chat/official-chat/index.vue:176 BOTTOM_ANCHOR_ID、:191-199 scrollToBottom()（先清 scroll-top 与旧锚、下一帧 scroll-into-view=底部锚，注释原文点名修复「最后一条消息被输入栏截断甚至视窗完全不动」）、:417-418 scroll-view 同时绑定 :scroll-top 与 :scroll-into-view、:502-503 模板内锚点元素（注释「2026-09-20 滚底修复」）、:276-279 R21 加载历史后滚底（verification 项 officialchat-scroll-bottom-on-load 的代码路径，注释「消息多于视口时最后一条永远被输入栏遮挡」）；触发点 :111 发送、:125 mock 回复、:145 real 发送成功、:169 稍后再说、:258 报名通知追加。②布局结构性排除：:554-555 页面 100vh 弹性列布局（导航/消息区/输入栏，消息区内部滚动）、:731-734 .chat-scroll{flex:1;overflow:hidden}、:908-918 .input-bar{flex-shrink:0}，grep 全文件输入栏无 position:fixed/absolute —— 输入栏是文档流内滚动区的 flex 兄弟节点，消息内容被其遮挡在结构上不可能。③差分：git diff --stat HEAD 对该文件为空（无未提交改动）；本轮触及该文件的两笔提交 5e2d050c（+34/-3）与 b3d31fcd 仅改 EmojiPanel 接线/···与+死按钮 toast/活动卡封面回退/头像数据源，未触及滚底锚与布局代码。④本轮运行时：exec-results.json OC12（critical，EXECUTED）dom 断言 .bubble--user:present .read-receipt:present .bubble--assistant:present；截图 SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.png（152475B，2026-09-23 实拍）目检：用户最后一条气泡「你好呀，帮我推荐个活动」+「已读」完整可见于输入栏上方，输入栏未覆盖任何消息；同帧 wxml 落盘（reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.wxml）含 official-chat-bottom-anchor 锚点节点。残留缺口（如实记录，不构成复发证据）：a) OC15（300 字长消息滚底后最后一条完整可见，MP-R1-OFFICIALCHAT-001 专项）FAILED——failureReason=『action input __CAND__ failed: el.input is not a function』，为取证脚本缺陷而非产品行为，长消息场景本轮无运行时证据；b) OC01 冷启动截图 ERROR:timeout 未捕获，on-load 滚底仅有 dom（.msg-row:present）+代码路径佐证、无静态画面；c) OC12-after 截图瞬间助手回复气泡仅露出顶边（scroll-with-animation 进行中或截图先于滚底稳定），「最后一条助手消息静止态完全入视窗」未被单帧直接证明——该窄主张属同索引条目 MP-R1-OFFICIALCHAT-001（P1）范围，建议复验轮对 OC15 换取数通道（input 失败）后补拍。"
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "notRecurring": 1,
+    "recurring": 0,
+    "insufficientEvidence": 0,
+    "issuesGenerated": 0,
+    "note": "ask 指定条目 MP-R1-OFFICIAL-003 判定未复发（代码路径完整 + 本轮提交未触及 + 布局结构性排除遮挡 + OC12 实拍佐证），不生成 Regression Issue；OC15 取证脚本失败与 OC01 截图超时两处运行时缺口已在 evidence 中如实列明，属 MP-R1-OFFICIALCHAT-001（P1）复验范围。"
+  }
+}

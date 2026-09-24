@@ -1,0 +1,444 @@
+{
+  "cases": [
+    {
+      "id": "DC01",
+      "page": "pages/discover/index",
+      "title": "游客冷启动首帧：骨架 Loading→卡片 Success，不闪错误空态，登录胶囊避让 tabBar 浮岛",
+      "tier": "normal",
+      "pre": "automation_evaluate 执行 wx.removeStorageSync('token') 清登录态（游客），miniProgram.reLaunch('/pages/discover/index')（tabBar 页不可 navigateTo 直进，r11-tour.ps1:93 同款 reLaunch 冷启动）；本页 pages.json 无 enablePullDownRefresh（pages.json:52），确认 mock 构建或后端有存活推荐数据",
+      "action": "无输入，等待渲染：探测 .skeleton（Skeleton variant=card，index.vue:299-301）→ 消失后探测 .match-card（index.vue:313-321）与 .match-actions__item ×3（MatchActions.vue:30-70）、.discover-login-hint（index.vue:334-336）",
+      "expected": "getCurrentPages=[pages/discover/index]；首帧无卡时先显示 .skeleton 骨架，fetchCards 返回后替换为 1 张 MatchCard + 三个操作按钮（跳过/打个招呼/喜欢）；全程不闪现「推荐加载失败」「暂无推荐」等错误/空态（铁律：冷启动严禁闪现错误空态）；游客登录胶囊 .discover-login-hint 显示且完整位于 tabBar 与中央「寻觅」浮岛上方（bottom:calc(160rpx+128rpx+safe)，index.vue:493）；无推荐卡时兜底展示空态而非白屏；console 无 NAV_FAIL/TypeError/is not defined",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链）+ console（r11 通道：simulator_screenshot + automation_evaluate + get_simulator_console）"
+    },
+    {
+      "id": "DC02",
+      "page": "pages/discover/index",
+      "title": "已登录（身份A 100158）冷启动：卡片+三操作按钮齐全，tabBar selected=2，无登录胶囊",
+      "tier": "normal",
+      "pre": "automation_evaluate 注入 tmp_r11_login.json 的 token（HS512 JWT，2h 时效，过期需当日重签）后调 session.bootstrap()，evaluate 校验 isLoggedIn=true（失败重试 1 次，r11-tour.ps1:19-36），再 reLaunch('/pages/discover/index')",
+      "action": "无输入，等待渲染：探测 .match-card、.match-actions__item（3 个）、自定义 tabBar（useTabBar(2) 同步 selected=2，index.vue:43 + useTabBar.ts:28-37）",
+      "expected": "停留寻觅页；MatchCard + 三操作按钮渲染完整；.discover-login-hint 不存在（v-if=\"!sessionStore.isLoggedIn\"，index.vue:334）；自定义 tabBar「寻觅」项高亮 selected=2；登录态下拉真实数据（带 token），console 无 401/NAV_FAIL/TypeError",
+      "evidence": "normal：after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "DC03",
+      "page": "pages/discover/index",
+      "title": "推荐卡片信息完整性与头像兜底链：距离胶囊/在线徽章/匹配度徽章/无照片回退 hero 主视觉",
+      "tier": "normal",
+      "pre": "同 DC02 登录态（或游客 mock 预览数据），reLaunch 后确认 .match-card 可见；若后端含无照片账号，定位到该卡（否则本条仅验有照片分支，无照片分支如实标注 UNVERIFIED）",
+      "action": "无输入，读取卡片结构：.match-card__distance（左上，MatchCard.vue:79-81）、.match-card__online（右上，MatchCard.vue:85-89）、.match-card__score-value（右下 x%，MatchCard.vue:94-102）、.match-info（底部信息区）、SafeImage（photo||avatar||MATCH_CARD.HERO 兜底链，MatchCard.vue:30,64-73）",
+      "expected": "距离文案为数值自动补 km（如 1.2→1.2km）或「同校」或空（MatchCard.vue:37-48）；在线用户右上显示「在线」绿字胶囊；匹配度徽章显示 N%+「匹配」；无照片用户主图回退 match-card-hero 而非破图（SafeImage fallback）；无 undefined/null 字面量渲染",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC04",
+      "page": "pages/discover/index",
+      "title": "静置 Idle：无操作 30s 无循环请求、无报错（七态之 Idle）",
+      "tier": "noop",
+      "pre": "登录态（身份A）reLaunch 进入寻觅页，等待卡片渲染完成",
+      "action": "无操作静置 30s，仅采集 console 与网络日志（get_simulator_console 全量落盘）",
+      "expected": "console 无重复 recommendations 请求（30s TTL 内 onShow 不重拉，index.vue:187,220）、无 TypeError/is not defined/未处理 promise；页面停留寻觅页无自动跳转",
+      "evidence": "noop：执行日志（console 落盘）即可，不截图"
+    },
+    {
+      "id": "DC05",
+      "page": "pages/discover/index",
+      "title": "推荐空态：筛选无结果时文案「推荐暂时没有新的人，去「附近」看看吧」",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页且卡片可见；打开筛选抽屉（tap .discover-header__filter），在关键词输入框输入必然无匹配的字符串（如 'zzzzqqqq0000'），tap .filter-drawer__btn--confirm（FilterDrawer.vue:841-850）",
+      "action": "确认后观察卡片区域（index.vue:303-310 v-else-if=\"visibleCards.length===0\" 分支）",
+      "expected": "出现 EmptyState（.empty，mascot=sad）文案为「推荐暂时没有新的人，去「附近」看看吧」（discover.card.emptyTitle，index.vue:77 + zh-CN.ts:1019）；非「今日推荐次数已用完」（quotaExhausted=false，游客不查配额、登录用户配额>0 时）；无 JS 报错",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC06",
+      "page": "pages/discover/index",
+      "title": "附近空态独立文案：「附近暂时没有可匹配的人，去看看推荐吧」",
+      "tier": "normal",
+      "pre": "接 DC05 空态结果页（或先把推荐刷出结果、确认附近 20km 内无可匹配卡），当前分段=推荐",
+      "action": "tap 顶部分段「附近」（.discover-header__tab 第 2 个，index.vue:271-283），观察空态文案",
+      "expected": "切到附近分段后空态文案变为「附近暂时没有可匹配的人，去看看推荐吧」（discover.card.nearbyEmptyTitle，index.vue:75-76 + zh-CN.ts:1020）；文案随 activeMode 正确切换不串用",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC07",
+      "page": "pages/discover/index",
+      "title": "错误横幅+重试：重试必须清 30s 缓存强制重拉（MP-R2-PAGES-DISCOVER-INDEX-003/002 回归）",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页；通过开发者工具断网（或代理置 5xx）制造 fetchCards 失败后 reLaunch 进入本页，出现错误横幅（.match-error，index.vue:288-293）；随后恢复网络",
+      "action": "tap 横幅右侧「重试」（.match-error__retry，index.vue:290-292，绑定 retryDiscover：removeCache('discover:data') + fetchCards，index.vue:207-210）",
+      "expected": "点击后 500ms 内横幅区域发生变化（进入 loading 或横幅消失）；卡片重新拉取成功后横幅消失、MatchCard 显示；不允许出现「30s 缓存窗口内点了没反应」（重试不读缓存）；恢复失败则横幅保留且文案为具体错误信息，不静默降级为空态",
+      "evidence": "normal：after 截图 + console（含重试触发的新 recommendations 请求记录）"
+    },
+    {
+      "id": "DC08",
+      "page": "pages/discover/index",
+      "title": "关闭态（match_open=false）：全页 EmptyState「匹配功能暂未开放，敬请期待」，无卡片无操作按钮",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页卡片可见；automation_evaluate 修改 app-config store：switches['match_open']=false（或后台配置下发；若 evaluate 无法触达 Pinia 实例则改由后台开关，两条路径都不可行时如实标 UNVERIFIED，不降低判定）",
+      "action": "触发本页重新求值 isMatchOpen（切走再切回或 reLaunch，app-config.ts:41 getter switches['match_open'] !== false）",
+      "expected": "v-if=\"!isMatchOpen\" 分支生效（index.vue:295-297）：显示 EmptyState「匹配功能暂未开放，敬请期待」（discover.matchClosed，zh-CN.ts:989）；MatchCard 与 MatchActions 三键均不渲染；恢复 match_open 后卡片恢复",
+      "evidence": "normal：before + after 截图 + console；制造失败则记 UNVERIFIED 并注明原因"
+    },
+    {
+      "id": "DC09",
+      "page": "pages/discover/index",
+      "title": "onShow 缓存窗口语义：30s 内切回不重拉不丢数据，30s 后切回真实重拉",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页卡片可见，记录当前栈顶卡昵称与滚动位",
+      "action": "① switchTab 到首页再切回寻觅（30s 内）；② 等待 >30s 后再次切走切回；分别采集 console 网络请求",
+      "expected": "① 切回时缓存新鲜（isCacheFresh('discover:data',30000)，index.vue:220）不发起 recommendations 请求，卡片与分段状态保持、错误横幅不被误清；② 缓存过期后切回触发重拉（console 见新请求），且仅在即将重拉时才清 errorMessage（index.vue:216-225）；两次均无白屏/闪空态",
+      "evidence": "normal：②的 after 截图 + 两步 console（请求有无的判定）+ 路由断言"
+    },
+    {
+      "id": "DC10",
+      "page": "pages/discover/index",
+      "title": "切「附近」分段：本地过滤 ≤20km、同校优先近→远排序、单一入口单次拉取",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页，推荐分段卡片可见且至少 2 张（评估阶段可用 evaluate 读 discover store.cards 数量确认）",
+      "action": "tap 顶部分段「附近」（.discover-header__tab 第 2 个，@tap=switchDiscoverMode('nearby')，index.vue:271-283 → store.setDiscoverMode，filter.ts:64-72）",
+      "expected": "500ms 内：附近 tab 文字加粗+粉色下划线（--active 类，index.vue:273-282），推荐 tab 高亮移除；visibleCards 重算为 filterNearby（≤20km，同校恒保留，utils.ts:105-116）+ sortNearbyFirst（同校→距离升序，utils.ts:139-152）；console 仅 1 次 recommendations 请求（setDiscoverMode 单入口收敛，不得双请求）；无报错",
+      "evidence": "normal：after 截图 + console（请求次数判定）"
+    },
+    {
+      "id": "DC11",
+      "page": "pages/discover/index",
+      "title": "附近↔推荐快速互切 5 次：数据不丢、状态不乱、滚动位与请求收敛",
+      "tier": "normal",
+      "pre": "同 DC10 前置，记录切换前栈顶卡",
+      "action": "连续快速点击两个分段 tab 互切 5 次（每次间隔 <300ms），最终停在「推荐」",
+      "expected": "最终高亮=推荐；每次切换 activeMode 即时生效（本地过滤零延迟）；fetchCards 因 AbortController 取消旧请求不产生脏数据（fetch.ts:87-96）；卡片队列不丢、无空白卡、无重复同人相邻观感；无报错",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC12",
+      "page": "pages/discover/index",
+      "title": "左滑卡片=跳过（登录态副作用）：飞出动画+队列推进+pass 记录",
+      "tier": "critical",
+      "pre": "登录态（身份A）进入寻觅页，卡片可见；evaluate 记录 before：栈顶卡昵称/cardId、discover store.viewedCards.length、cards.length",
+      "action": "在 .match-card 区域手势左滑：touchstart→touchmove 位移 >120px（SWIPE_THRESHOLD，constants/match.ts:14）→松手；SwipeContainer 触发 fly-out 400ms 后 emit swipe-left（SwipeGesture.ts:116-142）→ handleSwipeLeft → discoverStore.swipeLeft（index.vue:108-117）",
+      "expected": "卡片沿左方向飞出（translateX+rotate 动画）后从队列移除；下一张卡显示（与 before 栈顶不同的新卡）；viewedCards.length+1 且 direction='left'、passedCards 同步（swipe.ts:110-134）；队列 <2 张时自动补卡（swipe.ts:132-134）；若接口失败则 Toast 具体错误且卡片保留可重试（index.vue:112-116）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console（含 pass 请求或 mock 记录）"
+    },
+    {
+      "id": "DC13",
+      "page": "pages/discover/index",
+      "title": "游客左滑本地放行：不调 pass 接口、无 401、不强拉登录页",
+      "tier": "critical",
+      "pre": "清 token（游客）进入寻觅页，卡片可见（mock 预览数据），记录 before 栈顶卡",
+      "action": "同 DC12 左滑手势（swipe.ts:80-108 游客分支 isGuest=true 本地放行）",
+      "expected": "卡片飞出、下一张显示（本地推进）；console 无 pass 网络请求、无 401、无自动 navigateTo 登录页（游客自动补卡被跳过，swipe.ts:103-107）；viewedCards 本地+1；停留寻觅页",
+      "evidence": "critical：before + after 截图 + 路由断言（应仍为 discover）+ console（无 pass/401 的判定）"
+    },
+    {
+      "id": "DC14",
+      "page": "pages/discover/index",
+      "title": "右滑卡片=喜欢（登录+实名）：路由进 matching?action=like 并携带 userId/cardId",
+      "tier": "critical",
+      "pre": "登录态（身份A，已实名或 mock 构建恒过）进入寻觅页，卡片可见，记录 before：栈顶卡 userId/cardId；额度未用尽（viewedCards<10）",
+      "action": "在 .match-card 区域手势右滑位移 >120px 松手（SwipeContainer swipe-right → handleLike，index.vue:319 + 142-146）→ requireLogin + ensureCertified('realname')（campus-gate.ts:72-97）→ enterMatching('like')（index.vue:119-134）",
+      "expected": "卡片右向飞出后 500ms 内路由到 /subpackages/discover-extra/discover/matching?userId=<卡userId>&cardId=<卡id>&action=like（ROUTES.DISCOVER.MATCHING，routes.ts:62-66；与 r11-param-map.json 固化参数口径一致）；getCurrentPages=[discover,matching]；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言（含 query 参数）+ Toast 文案 + console"
+    },
+    {
+      "id": "DC15",
+      "page": "pages/discover/index",
+      "title": "手势阈值语义：位移 8~120px 松手=cancel 回弹无副作用；<8px=tap 语义",
+      "tier": "noop",
+      "pre": "登录态（身份A）进入寻觅页卡片可见，记录 before 栈顶卡与 viewedCards.length",
+      "action": "① 手势左移约 60px（介于 TAP_MOVE_THRESHOLD=8 与 SWIPE_THRESHOLD=120 之间，SwipeGesture.ts:33-42 + constants/match.ts:14,26）后松手；② 手势位移 <8px 松手（tap 语义，会触发 DC16 的卡片点击路由）",
+      "expected": "① 卡片回弹原位（resetPosition），无飞出、无队列推进、viewedCards 不变、无路由变化；② 按 tap 处理（跳转他人主页，见 DC16）而非滑动；两步均无报错",
+      "evidence": "noop：执行日志（before/after 栈顶卡一致性与 console）即可；①不截图"
+    },
+    {
+      "id": "DC16",
+      "page": "pages/discover/index",
+      "title": "点击卡片→他人主页 other?userId=<userId>；userId 缺失时守卫不跳转",
+      "tier": "navigation",
+      "pre": "登录态（身份A）进入寻觅页卡片可见，evaluate 记录栈顶卡 userId",
+      "action": "tap .match-card 中心（SwipeContainer tap 语义 → card-tap → openUserProfile，index.vue:103-106 + navigation.ts:303-308）",
+      "expected": "500ms 内路由到 /subpackages/profile-extra/profile/other?userId=<栈顶卡userId>（与 r11-param-map.json 固化表 profile/other?userId=100152 同页）；getCurrentPages=[discover,other]；返回本页落点=寻觅页（见 DC41）；userId 为空/null/'undefined' 时 openUserProfile 直接 return 不跳转（navigation.ts:305-307）",
+      "evidence": "navigation：路由断言（getCurrentPages 链 + query）即可，可不截图"
+    },
+    {
+      "id": "DC17",
+      "page": "pages/discover/index",
+      "title": "跳过按钮（登录态）：与左滑同语义，500ms 内可观测反馈",
+      "tier": "critical",
+      "pre": "登录态（身份A）进入寻觅页卡片可见，记录 before 栈顶卡与 viewedCards.length",
+      "action": "tap 第 1 个操作按钮「跳过」（.match-actions__btn--pass，MatchActions.vue:30-42 → emit pass → handleSwipeLeft，index.vue:323-328）",
+      "expected": "500ms 内卡片飞出/队列推进（新栈顶卡与 before 不同）；viewedCards+1（direction='left'）；busy/loading 期间按钮 emit 被门控（MatchActions.vue:36 @tap=\"!disabled && !busy && emit('pass')\"）；接口失败时 Toast 具体错误、卡片保留（index.vue:112-116）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "DC18",
+      "page": "pages/discover/index",
+      "title": "喜欢主 CTA（登录+实名+额度内）：500ms 内进 matching?action=like",
+      "tier": "critical",
+      "pre": "登录态（身份A）进入寻觅页卡片可见、额度未用尽、已实名（或 mock 恒过），记录 before 栈顶卡 userId/cardId",
+      "action": "tap 第 3 个操作按钮「喜欢」（.match-actions__btn--like 粉色主键，MatchActions.vue:58-70 → handleLike，index.vue:142-146）",
+      "expected": "500ms 内路由 /subpackages/discover-extra/discover/matching?userId=…&cardId=…&action=like；getCurrentPages=[discover,matching]；无重复入栈；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言（含 query）+ Toast 文案 + console"
+    },
+    {
+      "id": "DC19",
+      "page": "pages/discover/index",
+      "title": "喜欢按钮防连点×5：300ms 内快击 5 次只进 1 次 matching（铁律：主按钮防连点）",
+      "tier": "critical",
+      "pre": "同 DC18 前置；注意源码事实：enterMatching 无锁（index.vue:119-134），MatchActions busy 仅绑定页面 loading（index.vue:324，loading 仅无卡首载时为 true，fetch.ts:98-104）——本条为防连点铁律验证，实测若多入栈按缺陷记录",
+      "action": "对「喜欢」按钮连续快速点击 5 次（间隔 <100ms），静止后断言路由栈",
+      "expected": "getCurrentPages=[discover,matching]（matching 仅 1 层）；不出现 matching 自叠 2~5 层（连点期间 navigateTo 多次触发即缺陷）；返回后卡片队列状态一致、无重复 like 提交",
+      "evidence": "critical：before + after 截图 + 路由断言（栈深）+ console（navigateTo 次数）"
+    },
+    {
+      "id": "DC20",
+      "page": "pages/discover/index",
+      "title": "未登录点喜欢/打招呼：Toast「请先登录后再使用该功能」，无路由变化（权限门）",
+      "tier": "critical",
+      "pre": "清 token（游客）进入寻觅页卡片可见",
+      "action": "① tap「喜欢」（.match-actions__btn--like）；② 返回后 tap「打个招呼」（.match-actions__btn--super）——两键均先过 requireLogin（index.vue:80-84,142-144,148-150）",
+      "expected": "两步均 Toast「请先登录后再使用该功能」（apiErrors.loginRequired，zh-CN.ts:3883）；getCurrentPages 仍=[discover] 无路由变化；不弹认证门控弹窗（requireLogin 先短路）；卡片保留",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "DC21",
+      "page": "pages/discover/index",
+      "title": "实名认证门控：未实名点喜欢弹「完成实名认证后开启」，确认去认证/取消留页",
+      "tier": "critical",
+      "pre": "真实模式（非 mock）+ 已登录且未实名的身份（campus-gate.ts:33-40：mock 恒过；campusVerified!==true 且 basicProfile.idCardVerified!==true）。身份 B=100159 小新生若已实名则本条无法在既有人设下制造——如实标 UNVERIFIED 并注明，不降低判定；额度未用尽",
+      "action": "tap「喜欢」→ ensureCertified('realname') 失败分支弹 uni.showModal（campus-gate.ts:85-95）；① tap 弹窗确认「去认证」；② 重建前置后 tap 取消「取消」",
+      "expected": "弹窗标题「完成实名认证后开启」、内容为实名引导文案（campus.gateTitle/gateHint，zh-CN.ts:3502-3503）；① 路由到 /subpackages/profile-extra/verification/real-name（ROUTES.REAL_NAME_CERTIFICATION）；② 留在寻觅页、无路由变化；两条路径均无报错",
+      "evidence": "critical：before + after 截图（含弹窗）+ 路由断言 + Toast/弹窗文案 + console；前置不可满足时整条记 UNVERIFIED"
+    },
+    {
+      "id": "DC22",
+      "page": "pages/discover/index",
+      "title": "打招呼（super-like）正常路径：进 matching?action=superLike 且 greet 计数+1",
+      "tier": "critical",
+      "pre": "登录态（身份A）+已实名（或 mock 恒过）+额度内；evaluate 清理 wx.removeStorageSync('greet:count:<栈顶卡cardId>')（index.vue:160-176 计数键），记录 before 栈顶卡 id",
+      "action": "tap「打个招呼」（.match-actions__btn--super，MatchActions.vue:44-56 → handleSuperLike，index.vue:148-179）",
+      "expected": "500ms 内路由 matching?userId=…&cardId=…&action=superLike；storage 写入 greet:count:<cardId>={date:<今日YYYY-MM-DD>,count:1}（index.vue:176）；同卡重复 2 次（返回后栈顶未推进时）count 递增；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言（含 action=superLike）+ storage 断言（evaluate 读键）+ console"
+    },
+    {
+      "id": "DC23",
+      "page": "pages/discover/index",
+      "title": "打招呼频控：同卡当日第 4 次 Toast「已向TA打过3次招呼…」且不路由",
+      "tier": "critical",
+      "pre": "登录态（身份A）+已实名+额度内；evaluate 预置 wx.setStorageSync('greet:count:<栈顶卡cardId>', {date:'<今日YYYY-MM-DD>',count:3})（index.vue:160-176，键随卡 id 动态拼接）",
+      "action": "tap「打个招呼」",
+      "expected": "Toast「已向TA打过3次招呼，等待对方回应后再试」（discover.greetLimitReached，zh-CN.ts:919）；无路由变化（不进 matching）；storage 计数不再递增（短路 return，index.vue:172-175）；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "DC24",
+      "page": "pages/discover/index",
+      "title": "今日额度用尽门控：点喜欢/打招呼 Toast「今日推荐次数已用完」，空列表空态同源文案",
+      "tier": "critical",
+      "pre": "登录态（身份A）；evaluate 预置 wx.setStorageSync('discover_daily_record', JSON.stringify({date:'<今日YYYY-MM-DD>', viewedCards:[10 条 {cardId,userId,direction,viewedAt} 记录], hasRewoundToday:false, lastRefreshTime:null}))（STORAGE_KEY='discover_daily_record'，constants.ts:48；日期格式 YYYY-MM-DD，utils.ts:275-278）后 reLaunch（store 初始化读入 + onShow resetDailyLimit 同日不清，storage.ts:30-53；DAILY_LIMIT_TOTAL=10，constants.ts:45）",
+      "action": "① tap「喜欢」；② tap「打个招呼」——两键均先过 isLimitReached 门（enterMatching index.vue:124-127；handleSuperLike index.vue:154-157）",
+      "expected": "两步均 Toast「今日推荐次数已用完，明天再来吧」（discover.card.quotaExhaustedTitle，zh-CN.ts:1022）；无路由变化；若卡片列表同时为空则空态文案同为此句（emptyMessage 计算链，index.vue:70-78）；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console"
+    },
+    {
+      "id": "DC25",
+      "page": "pages/discover/index",
+      "title": "游客登录胶囊→登录页；返回落点=寻觅页且状态保持",
+      "tier": "navigation",
+      "pre": "清 token（游客）进入寻觅页，登录胶囊 .discover-login-hint 可见，记录 before 栈顶卡",
+      "action": "tap .discover-login-hint（@tap=goLogin → openAppPath('/pages/login/index')，index.vue:86-88,334-336）→ 在登录页 navigateBack",
+      "expected": "500ms 内路由 /pages/login/index（login 非 tabBar 页，navigateTo 入栈）；返回后 getCurrentPages=[discover]，卡片队列不重置（栈顶卡与 before 一致）、分段保持；console 无报错",
+      "evidence": "navigation：路由断言（进出两向 getCurrentPages 链）即可；返回后可补 1 张 after 截图"
+    },
+    {
+      "id": "DC26",
+      "page": "pages/discover/index",
+      "title": "登录态变化联动：注入 token 后 watch isLoggedIn 触发重拉，登录胶囊消失",
+      "tier": "normal",
+      "pre": "清 token（游客）进入寻觅页，卡片（mock 预览）与登录胶囊可见",
+      "action": "automation_evaluate 注入身份A token + session.bootstrap()（r11-tour.ps1:19-36 同款），不切页观察本页响应（watch sessionStore.isLoggedIn，index.vue:227-230）",
+      "expected": "isLoggedIn 变 true 后自动 loadDiscoverData 重拉（console 出现带 token 的新 recommendations 请求）；.discover-login-hint 消失；卡片区域无闪空态/白屏；无报错",
+      "evidence": "normal：after 截图 + console（重拉请求判定）"
+    },
+    {
+      "id": "DC27",
+      "page": "pages/discover/index",
+      "title": "打开筛选抽屉：全屏弹层+自定义 tabBar 隐藏，默认基础 Tab，draft 与已应用筛选同步",
+      "tier": "normal",
+      "pre": "登录态（身份A）进入寻觅页卡片可见",
+      "action": "tap 右上筛选按钮（.discover-header__filter，@tap=openFilterDrawer，index.vue:246-255 → filter.ts:262-264；watch isFilterDrawerOpen → setTabBarHidden(true)，index.vue:137-140 + navigation.ts:291-301）",
+      "expected": "500ms 内全屏抽屉 .filter-drawer 弹出（底部滑入动画，FilterDrawer.vue:596-608,875-896）；自定义 tabBar 隐藏（弹层不遮挡底部，2026-08-31 录屏实证注释）；默认显示基础筛选 Tab（身高 120-250 双滑块/学历 4 chips/感情状态 4 chips/籍贯 picker/未来城市 picker/关键词输入框）；draft 反映当前 recommendationFilter；无报错",
+      "evidence": "normal：after 截图（抽屉态，tabBar 应不可见）+ console"
+    },
+    {
+      "id": "DC28",
+      "page": "pages/discover/index",
+      "title": "抽屉三路关闭：遮罩点击/右上关闭/确认后自动关，未确认修改不生效，tabBar 恢复",
+      "tier": "normal",
+      "pre": "接 DC27 抽屉打开态；先改动一项 draft（如点一枚学历 chip）但不点确认",
+      "action": "① tap 抽屉内容区外遮罩（.filter-drawer 根 @tap=handleClose，FilterDrawer.vue:596-603）；② 重开抽屉后 tap 右上关闭按钮（.filter-drawer__close，FilterDrawer.vue:612-621）；③ 重开并改动 draft 后 tap「确认」（DC38 路径）",
+      "expected": "三路均关闭抽屉（update:visible=false）且自定义 tabBar 恢复显示（watch setTabBarHidden(false)）；①② 关闭后 discoverStore.recommendationFilter 保持不变（关闭不应用，filter.ts:273-275 注释语义），重开抽屉时 draft 从 props.filter 重新同步（FilterDrawer.vue:210-217,257-284）；无报错",
+      "evidence": "normal：①② 各 1 张 after 截图 + console"
+    },
+    {
+      "id": "DC29",
+      "page": "pages/discover/index",
+      "title": "抽屉基础/高级 Tab 切换：内容切换、draft 互不干扰、来回 5 次不丢失",
+      "tier": "normal",
+      "pre": "接 DC27 抽屉打开态",
+      "action": "tap「高级筛选」tab（.filter-drawer__tab 第 2 个，switchTab('advanced')，FilterDrawer.vue:625-644,556-560）→ 记录 AdvancedFilter 内容（性别/年龄/学校/距离/兴趣/仅看在线，AdvancedFilter.vue:407,463,506,525）→ 在高级侧改一项 → 切回「基础筛选」→ 再来回互切 5 次",
+      "expected": "内容区 v-show 切换即时生效（FilterDrawer.vue:649,817）；基础侧 draft（身高/学历等）与高级侧 advancedFilterDraft 互不覆盖（FilterDrawer.vue:112,120）；来回切换后两侧已改值均保留；无报错",
+      "evidence": "normal：after 截图（高级 Tab 态）+ console"
+    },
+    {
+      "id": "DC30",
+      "page": "pages/discover/index",
+      "title": "身高双滑块互斥钳制：下限不得≥上限、上限不得≤下限，显示文案同步",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），定位两个 .height-slider（下限 120 起/上限 250 起，FilterDrawer.vue:657-682）",
+      "action": "① 将下限 slider change 到 ≥ 当前上限值（如 250）；② 将上限 slider change 到 ≤ 当前下限值（如 120）；读取 .filter-section__value 显示文案",
+      "expected": "① 下限被钳制为上限-1（249，onHeightMinChange，FilterDrawer.vue:291-302）；② 上限被钳制为下限+1（121，onHeightMinChange 对称逻辑 307-318）；头部文案显示「249-250cm」「120-121cm」格式（heightDisplayText，FilterDrawer.vue:321-323）；两次 change 均触发 lightHaptic；未点确认前不触发卡片重拉",
+      "evidence": "normal：after 截图（含钳制后文案）+ console"
+    },
+    {
+      "id": "DC31",
+      "page": "pages/discover/index",
+      "title": "学历多选 chips：选 2 枚高亮+「已选 2」，再点取消",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），学历 chip 组（高中/本科/硕士/博士，FilterDrawer.vue:695-709）",
+      "action": "① tap「本科」chip；② tap「硕士」chip；③ 再 tap「本科」chip；读取该组头部 .filter-section__value",
+      "expected": "①② 两枚 chip 依次高亮（--active 渐变底，FilterDrawer.vue:697-708,1007-1011），头部计数显示「已选 2」（educationValueText，FilterDrawer.vue:330-335）；③ 本科取消高亮、计数变「已选 1」；每次点击 lightHaptic；未确认不生效到 store",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC32",
+      "page": "pages/discover/index",
+      "title": "感情状态单选：点选高亮、再点同项取消、点他项互斥切换",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），感情状态 chip 组（未婚/曾婚/离异/丧偶，FilterDrawer.vue:718-732）",
+      "action": "① tap「未婚」；② 再 tap「未婚」；③ tap「离异」；读取头部 .filter-section__value",
+      "expected": "① 未婚高亮、头部显示「未婚」；② 取消恢复「不限」（toggleRelationship 再点清空，FilterDrawer.vue:365-376,337-342）；③ 仅离异高亮（单选互斥，relationshipDraft 恒 ≤1 项）；未确认不生效到 store",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC33",
+      "page": "pages/discover/index",
+      "title": "籍贯省/市联动 multiSelector picker：确认回填「省 市」、切省重置市列、取消不改",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），定位籍贯 .picker-trigger（FilterDrawer.vue:740-760）",
+      "action": "tap 触发器唤起 multiSelector picker；① 滚动第一列换省（columnchange 第二列重置为该省第 1 城，FilterDrawer.vue:383-391）后点确定；② 重开后点取消（onHometownPickerCancel，FilterDrawer.vue:412-414）",
+      "expected": "① 确认后触发器文案变为「<省> <市>」（同省市只显省名，hometownDisplayText，FilterDrawer.vue:191-197），hometownProvinceDraft/CityDraft 回填；② 取消后 draft 与显示均不变；确定时 lightHaptic；未确认不生效到 store",
+      "evidence": "normal：after 截图（picker 确认后触发器文案）+ console；开发者工具 picker 原生弹层截图无法取得时以 evaluate 读 draft 状态佐证并如实注明"
+    },
+    {
+      "id": "DC34",
+      "page": "pages/discover/index",
+      "title": "未来城市单列 selector picker：选择回填城市名",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），定位未来城市 .picker-trigger（FilterDrawer.vue:768-786）",
+      "action": "tap 触发器唤起单列 picker，选择一个城市后确定（onFutureCityPickerChange，FilterDrawer.vue:419-427）",
+      "expected": "触发器文案变为所选城市名（futureCityDisplayText，FilterDrawer.vue:200-202），futureCityDraft 回填；lightHaptic；未点「确认」前不影响推荐列表",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC35",
+      "page": "pages/discover/index",
+      "title": "关键词输入三态：placeholder/正常输入出清空钮/超长+特殊字符不崩溃",
+      "tier": "normal",
+      "pre": "抽屉打开态（基础 Tab），定位关键词输入框 .keyword-input__field（FilterDrawer.vue:794-812）",
+      "action": "① 空态观察 placeholder；② 输入正常词「摄影」；③ 清空后输入 200 字符超长串与特殊字符 <>&'\"\\\\ 及 emoji；每次读取 input value 与 .keyword-input__clear 显隐",
+      "expected": "① 显示占位文案（filterDrawer.keywordPlaceholder）；② value 正确回显、清空按钮出现（v-if=\"keywordDraft\"，FilterDrawer.vue:804-811）；③ 超长/特殊字符均正确回显、无崩溃无报错（onKeywordInput 安全取 detail.value，FilterDrawer.vue:439-443）；输入经 300ms 防抖（KEYWORD_DEBOUNCE_MS，FilterDrawer.vue:66,133-144），本页 immediateApply=false 故输入本身不触发请求、仅点确认才应用；卸载时防抖定时器被清理（FilterDrawer.vue:151-156）",
+      "evidence": "normal：②③ 各 1 张 after 截图 + console"
+    },
+    {
+      "id": "DC36",
+      "page": "pages/discover/index",
+      "title": "关键词清空按钮：一键清空输入、清空钮消失、placeholder 恢复",
+      "tier": "normal",
+      "pre": "接 DC35 ②：输入框已有「摄影」且清空钮可见",
+      "action": "tap .keyword-input__clear（@tap=clearKeyword，FilterDrawer.vue:448-452,804-811）",
+      "expected": "输入框立即清空、清空按钮消失、placeholder 恢复；lightHaptic；未确认不生效到 store",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "DC37",
+      "page": "pages/discover/index",
+      "title": "筛选重置：清空基础+高级全部 draft，emit reset → store.resetFilter → 重拉",
+      "tier": "normal",
+      "pre": "抽屉打开态；先在基础侧设身高/学历/关键词、高级侧设性别/仅看在线（制造非空 draft），并确认 store.recommendationFilter 已含旧值（evaluate 读）",
+      "action": "tap「重置」（.filter-drawer__btn--reset → handleReset，FilterDrawer.vue:517-533,830-840 → @reset=discoverStore.resetFilter，index.vue:342 + filter.ts:162-167）",
+      "expected": "draft 全部回到默认（身高 120-250/chips 全空/picker 索引归零/关键词空，基础+高级两侧，FilterDrawer.vue:519-531）；store.recommendationFilter 与 advancedFilter 清空并立即 fetchCards（console 见新请求，参数不含残留筛选字段）；抽屉保持打开（reset 不关抽屉，语义为清空非关闭）；无报错",
+      "evidence": "normal：after 截图 + console（请求参数判定）"
+    },
+    {
+      "id": "DC38",
+      "page": "pages/discover/index",
+      "title": "筛选确认：draft→store 应用+关抽屉+按条件重拉；空筛选确认等价重置不报错",
+      "tier": "normal",
+      "pre": "抽屉打开态；① 设身高 160-175 + 学历「本科」+ 关键词「摄影」；② 清空后不设任何条件",
+      "action": "① tap「确认」（.filter-drawer__btn--confirm → handleConfirm → buildFilterFromDraft → emit apply + update:visible=false，FilterDrawer.vue:538-543,462-512,841-850 → @apply=setRecommendationFilter，index.vue:341 + filter.ts:133-150）；② 空条件重复 tap 确认",
+      "expected": "① 抽屉关闭、tabBar 恢复；store.recommendationFilter={heightMin:160,heightMax:175,educationLevel:['bachelor'],keyword:'摄影'}（trim 后透传，FilterDrawer.vue:495-497）；console 见 recommendations 请求携带对应参数；卡片按条件刷新（有无结果分别对应 Success/Empty 态）；② 空确认生成空 filter 等价「不限」，正常重拉不报错（表单空提交三态覆盖）",
+      "evidence": "normal：① after 截图 + console（请求参数判定）；② console"
+    },
+    {
+      "id": "DC39",
+      "page": "pages/discover/index",
+      "title": "高级筛选控件组：性别单选/学校多选/兴趣多选/仅看在线开关 v-model 同步",
+      "tier": "normal",
+      "pre": "抽屉打开态切到「高级筛选」Tab（接 DC29），AdvancedFilter 可见（AdvancedFilter.vue:407,463,506,525 四组控件）",
+      "action": "① tap 一枚性别 chip；② tap 两枚学校 chip；③ tap 两枚兴趣 chip；④ tap「仅看在线」开关；随后 tap「确认」",
+      "expected": "各控件点击即高亮/切换并经 emitChange 同步 advancedFilterDraft（AdvancedFilter.vue:363-368）；确认后 store.recommendationFilter 含 gender/schools/interests/onlineOnly 合并字段（buildFilterFromDraft 合并链，FilterDrawer.vue:499-509 + filter.ts:133-150），抽屉关闭并重拉（console 请求带参）；无报错",
+      "evidence": "normal：after 截图（高级 Tab 已选态）+ console（请求参数判定）"
+    },
+    {
+      "id": "DC40",
+      "page": "pages/discover/index",
+      "title": "TabBar 互切：home↔寻觅 switchTab，selected 同步、数据不丢、落点正确",
+      "tier": "navigation",
+      "pre": "登录态（身份A）寻觅页卡片可见（tabBar 顺序：首页/附近/寻觅/消息/我的，寻觅=index 2，pages.json tabBar.list + useTabBar(2)，index.vue:43）",
+      "action": "① tap tabBar「首页」；② tap tabBar「寻觅」返回；③ 快速互切 3 次",
+      "expected": "每次切换 getCurrentPages 栈顶=目标 tab 页；寻觅页图标选中态 selected=2 恢复；寻觅页卡片队列/分段状态在切回后保持（30s TTL 内不重拉，见 DC09）；无白屏无报错",
+      "evidence": "navigation：路由断言（getCurrentPages 链）即可；可补 1 张返回后截图"
+    },
+    {
+      "id": "DC41",
+      "page": "pages/discover/index",
+      "title": "打开即返回+重复进出：卡片→他人主页往返 3 次，寻觅页状态恢复",
+      "tier": "normal",
+      "pre": "登录态（身份A）寻觅页卡片可见，记录 before：栈顶卡、activeMode、滚动位",
+      "action": "循环 3 次：tap .match-card 进 other?userId=… → 立即 navigateBack",
+      "expected": "每次返回落点=寻觅页且状态恢复：栈顶卡与 before 一致（卡片队列未被浏览行为推进）、分段保持、无重复入栈/栈错乱（页面栈≤10 层兜底逻辑不被触发，navigation.ts:100-104）；返回后无闪骨架（cache 或已有卡不置 loading，fetch.ts:98-104）；无报错",
+      "evidence": "normal：最后一次返回后 after 截图 + 路由断言 + console"
+    },
+    {
+      "id": "DC42",
+      "page": "pages/discover/index",
+      "title": "滚动到底/顶：内容避让 tabBar 浮岛，操作按钮不被遮挡",
+      "tier": "noop",
+      "pre": "登录态（身份A）寻觅页卡片可见；本页 scroll-view 无 refresher（index.vue:287），页面无下拉刷新（pages.json:52 无 enablePullDownRefresh）——下拉刷新用例不存在，如执行器强制下拉应无任何刷新反馈且页面不破",
+      "action": "在 .match-scroll（scroll-view scroll-y）滚动到底再回顶；读取 scroll 位置与底部操作按钮可见性（页面 padding-bottom:calc(232rpx+48rpx+safe)，index.vue:358）",
+      "expected": "滚动过程无白屏/卡死/报错；滚到底时「喜欢」圆钮与三键标签下缘不被 tabBar 半透明白层遮挡（MP-R2-PAGES-DISCOVER-INDEX-002 修复回归点，index.vue:355-358 注释）；回顶无残留位移",
+      "evidence": "noop：执行日志（scroll 位置/console）即可；遮挡判定可补 1 张滚底截图"
+    },
+    {
+      "id": "DC43",
+      "page": "pages/discover/index",
+      "title": "热区与 500ms 反馈扫描：全部可点元素无死按钮；筛选按钮 72rpx 热区不足按缺陷记录",
+      "tier": "normal",
+      "pre": "登录态（身份A）寻觅页卡片可见 + 游客态各验一次登录胶囊；清单=筛选按钮/两个分段 tab/重试（需错误态）/卡片/三操作键/登录胶囊",
+      "action": "逐元素 tap 并在 500ms 内断言反馈（DOM 变化/路由/Toast/hover-class 任一）；同时 evaluate 读取各元素实际布局尺寸（getBoundingClientRect）",
+      "expected": "全部元素点击后 500ms 内有可观测反馈（铁律：否则死按钮）；三操作按钮 128rpx≥88rpx 达标（MatchActions.vue:100-108）；已知偏差如实记录：筛选按钮 72rpx<88rpx（index.vue:427-436）、分段 tab 文本热区偏小（36rpx 字号+4rpx padding，index.vue:453-465）、抽屉关闭钮 56rpx（FilterDrawer.vue:913-921）——按热区铁律记缺陷，不得因「能点中」放行",
+      "evidence": "normal：扫描清单逐项 console 判定 + 至少 1 张全页 after 截图；尺寸数据以 evaluate 输出为准"
+    },
+    {
+      "id": "DC44",
+      "page": "pages/discover/index",
+      "title": "跳过按钮连点×5：副作用与展示一致，无卡死无重复推进同一张",
+      "tier": "critical",
+      "pre": "登录态（身份A）寻觅页可见卡片≥2 张（evaluate 读 cards.length），记录 before：cards 队列、viewedCards.length",
+      "action": "对「跳过」按钮连续快速点击 5 次（间隔 <100ms），静止后 evaluate 读 discover store 状态",
+      "expected": "viewedCards 新增条数 ≤5 且与卡片实际推进数一致（每张卡至多记 1 条 left 记录，不得同卡重复 push）；界面无卡死/空白卡/骨架长驻（Loading 不永驻）；剩余卡 <2 张时自动补卡链路触发（swipe.ts:132-134）；无报错",
+      "evidence": "critical：before + after 截图 + 路由断言 + console（含 store 状态 dump）"
+    }
+  ]
+}

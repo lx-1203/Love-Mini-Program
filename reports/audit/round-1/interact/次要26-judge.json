@@ -1,0 +1,557 @@
+{
+  "round": "R1",
+  "judge": "A6-交互判定员-次要26",
+  "arbitratedAt": "2026-09-23",
+  "manifest": "reports/audit/round-1/ops/次要26.json",
+  "execResults": "reports/audit/round-1/interact/exec-results.json",
+  "summary": { "total": 49, "VERIFIED": 6, "FAILED": 0, "UNVERIFIED": 43 },
+  "checks": [
+    {
+      "caseId": "SH01", "page": "subpackages/market/shop/index", "operation": "冷启动直达封存态 DOM 采样",
+      "expected": "封存卡「功能封存中/该功能暂未开放，开放时间将另行通知」渲染，标题=逛逛；.shop-points-bar/.category-bar/.shop-grid 不渲染；无空态闪现、无 console 异常",
+      "actual": "A1 dom: .shop-sealed/.shop-sealed__title/.shop-sealed__desc:present，.shop-points-bar/.category-bar/.shop-grid:absent；route 栈顶=subpackages/market/shop/index；巡检截图（双身份）显示标题「逛逛」+封存卡+无商品区+无空态，与源码 shop/index.vue:285/377-381 一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "exec-results.json#SH01(dom+route)",
+        "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_market_shop_index__默认.png",
+        "apps/client/src/subpackages/market/shop/index.vue:285"
+      ],
+      "confidence": 0.8,
+      "note": "A1-after 截图 timeout 缺失，以巡检截图补位视觉证据；身份注入 user-1001 MISMATCH（封存态为全局配置驱动，不影响判定）"
+    },
+    {
+      "caseId": "SH02", "page": "subpackages/market/shop/index", "operation": "封存态零请求（noop 3s）",
+      "expected": "封存态 onShow 早退不发 /products、签到状态请求；network 面板无新增业务请求",
+      "actual": "A1 observed 仅 pre 序列+act:wait 3000ms，CONSOLE=[]（0 条），未提供 network 请求清单——无法区分「零请求」与「未采集」",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#SH02(observed 无请求清单)"],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "SH03", "page": "subpackages/market/shop/index", "operation": "返回键（栈>1）navigateBack 回来源页",
+      "expected": "tap .shop-header__back → 500ms 内栈顶回 pages/discover/index",
+      "actual": "A1 dom 采样 .shop-header__back:absent 却记录 act:tap 无报错（自相矛盾）；ROUTE 全程仅 [shop/index] 单条栈顶，未见回 discover；巡检截图与源码 shop/index.vue:268-282（返回键位于封存 v-if 之外）证明该键封存态必然渲染——A1 采样器故障，tap 是否真实生效不可证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#SH03(dom absent vs act:tap 矛盾; route 无 before 链)",
+        "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png(返回键可见)",
+        "apps/client/src/subpackages/market/shop/index.vue:270-279"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "SH04", "page": "subpackages/market/shop/index", "operation": "返回键（栈=1 直达）兜底 switchTab 回首页",
+      "expected": "tap .shop-header__back → uni.switchTab('/pages/home/index') 落首页 tab",
+      "actual": "A1 dom .shop-header__back:absent（与巡检截图/SH05 present 矛盾）；act:tap 后 ROUTE 栈顶仍=shop/index，未见 home；路由证据不足以证实 goBack 兜底生效，亦无法区分 A1 tap 未生效与页面缺陷",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#SH04(back absent+route 未变)",
+        "apps/client/src/subpackages/market/shop/index.vue:63-70"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "SH05", "page": "subpackages/market/shop/index", "operation": "返回键热区 boundingClientRect 实测",
+      "expected": "实测 .shop-header__back 宽高换算 rpx，与铁律 88rpx 对照（源码 64×64rpx，低于铁律则记缺陷候选）",
+      "actual": "A1 dom: .shop-header__back:present 但 .boundingClientRect:absent——测量未取得；after 截图 timeout 缺失。实测无法完成；源码 shop/index.vue:423-426 确定值 64×64rpx<88rpx，立缺陷候选 MP-R1-C26-001",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#SH05(boundingClientRect:absent)",
+        "apps/client/src/subpackages/market/shop/index.vue:423-433"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "SH06", "page": "subpackages/market/shop/index", "operation": "重复进出×3（身份B）封存卡稳定",
+      "expected": "循环 3 次 navigateTo→采样→navigateBack：每次封存卡直现、无 spinner/空态闪现、无卡死，来源页 discover 状态保留",
+      "actual": "A1 仅记录 1 对 act:navigateTo/navigateBack（3 次循环未完整执行）；身份B 登录 userId=user-1001 MISMATCH；ROUTE=[shop]；第 3 次截图 24463B 存在但轮次证据不足",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#SH06(仅 1/3 轮 act; MISMATCH)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-SHOP-INDEX-SH06-after.png"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "SH07", "page": "subpackages/market/shop/index", "operation": "（解封预案）commerce.enabled=true 全量渲染",
+      "expected": "积分条+5 分类+6 商品渲染（Manifest 前置声明：当前不可达→如实 UNVERIFIED，不得伪造通过）",
+      "actual": "A1 pre-FAIL:input element not found: .enabled（解封注入失败）；reLaunch 后 dom .shop-points-bar/.category-item/.shop-card 全 absent（仍封存态）；A1 误标 EXECUTED——解封预案环境未建立，预期无法验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#SH07(pre-FAIL 注入失败; dom 全 absent)",
+        "apps/client/src/services/api.ts:271-280(mock getAppConfig 无 commerce.enabled)"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "SH08", "page": "subpackages/market/shop/index", "operation": "（解封预案）分类 chip 切换",
+      "expected": "5 个 .category-item 依次 tap：active 迁移+本地过滤+切回全部数据不丢",
+      "actual": "act-FAIL: tap(.category-item) element not found——解封预案前置不可达（封存态无分类条），动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#SH08(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "SH09", "page": "subpackages/market/shop/index", "operation": "（解封预案）商品卡点击详情+防连点",
+      "expected": "快击 5 次仅入栈 1 页详情（id=1）",
+      "actual": "act-FAIL: rapidTap element not found: .shop-card——解封预案前置不可达（封存态无商品网格），动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#SH09(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "SH10", "page": "subpackages/market/shop/index", "operation": "（解封预案）错误态重试与空态",
+      "expected": "断网错误态+重试恢复+空分类空态三态",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"重试\")——解封预案前置不可达且需断网注入手段，均不具备，动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#SH10(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "WA01", "page": "subpackages/market/wallet/index", "operation": "冷启动直达封存态 DOM 采样",
+      "expected": "封存卡渲染（功能封存中/该功能暂未开放…），标题=我的钱包；余额卡/充值/明细不渲染；无「暂无流水记录」闪现",
+      "actual": "A1 dom: .wallet__sealed/.wallet__sealed-title/.wallet__sealed-desc:present，.wallet__balance-card/.wallet__recharge/.wallet__tx-list:absent；route 栈顶=wallet/index；巡检截图（双身份）显示标题「我的钱包」+封存卡+无余额区，与源码 wallet/index.vue:151/201-205 一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "exec-results.json#WA01(dom+route)",
+        "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png",
+        "reports/screenshots/round-1-tour/B/subpackages_market_wallet_index__默认.png",
+        "apps/client/src/subpackages/market/wallet/index.vue:151"
+      ],
+      "confidence": 0.8,
+      "note": "A1-after 截图 timeout 缺失，以巡检截图补位；身份 MISMATCH 同 SH01"
+    },
+    {
+      "caseId": "WA02", "page": "subpackages/market/wallet/index", "operation": "封存态零请求（noop）",
+      "expected": "无 /wallet/balance、/wallet/transactions 请求；watch 补偿不触发",
+      "actual": "A1 observed 仅 pre 序列（无 wait/检索动作），CONSOLE=[]，未提供 network 请求清单——零请求断言无直接证据",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#WA02(observed 无请求清单)"],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "WA03", "page": "subpackages/market/wallet/index", "operation": "返回键（栈>1）navigateBack 回来源页",
+      "expected": "tap .wallet__back → 500ms 内栈顶回 pages/discover/index",
+      "actual": "A1 dom .wallet__back:present 但 observed 无 act:tap 动作记录，ROUTE 栈顶仍=wallet/index——返回动作未执行/未生效，来源页落点无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#WA03(无 act:tap; route 未变)",
+        "apps/client/src/subpackages/market/wallet/index.vue:143"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "WA04", "page": "subpackages/market/wallet/index", "operation": "返回键（栈=1）兜底 switchTab 回「我的」tab",
+      "expected": "栈长=1 → uni.switchTab('/pages/profile/index') 落「我的」tab",
+      "actual": "A1 dom .wallet__back:absent（与巡检截图/WA03/WA05 present 矛盾）；act 无 tap 记录，ROUTE 栈顶仍=wallet/index 未见 profile——采样器故障+动作未生效，证据不足",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#WA04(back absent+route 未变)",
+        "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png(返回键可见)"
+      ],
+      "confidence": 0.55
+    },
+    {
+      "caseId": "WA05", "page": "subpackages/market/wallet/index", "operation": "返回键热区实测",
+      "expected": "实测 .wallet__back 换算 rpx vs 铁律 88rpx（源码 64×64rpx，不达标则记缺陷候选）",
+      "actual": "A1 dom .wallet__back:present 但无 boundingClientRect 数据（测量未完成）；after 截图 25512B 存在仅证键渲染；源码 wallet/index.vue:253-255 确定值 64×64rpx<88rpx，立缺陷候选 MP-R1-C26-002",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#WA05(无 rect 数据)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-WALLET-INDEX-WA05-after.png",
+        "apps/client/src/subpackages/market/wallet/index.vue:253-261"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "WA06", "page": "subpackages/market/wallet/index", "operation": "重复进出×3（身份B）封存卡稳定",
+      "expected": "循环 3 次进入均封存卡直现、无 SkeletonBlock/空态/余额卡，profile tab 状态保留",
+      "actual": "A1 act-FAIL:repeatNav watchdog-timeout 25000ms（仅 1 对 navigateTo/navigateBack 完成）；来源页为 discover（Manifest 前置要求 profile）；截图 timeout 缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#WA06(watchdog-timeout; 来源页错位)"],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "WA07", "page": "subpackages/market/wallet/index", "operation": "（解封预案 critical）余额 ¥800.00 与 2 条流水",
+      "expected": "余额 ¥800.00、流水 2 条正负号/颜色断言（Manifest：当前不可达→如实 UNVERIFIED）",
+      "actual": "A1 dom .wallet__tx-item:absent（仍封存态，解封环境未建立）；A1 误标 EXECUTED；before 截图 25247B 与 wxml dump 存在，after 截图 timeout",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#WA07(tx-item absent; 误标 EXECUTED)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-WALLET-INDEX-WA07-before.png"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "WA08", "page": "subpackages/market/wallet/index", "operation": "（解封预案 critical）演示充值 ¥100 闭环",
+      "expected": "POST 入账→余额/流水联动→Toast「充值成功 +¥100」",
+      "actual": "act-FAIL: tap(.wallet__recharge) element not found——解封预案前置不可达（封存态充值按钮不渲染），动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#WA08(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "WA09", "page": "subpackages/market/wallet/index", "operation": "（解封预案 critical）充值按钮防连点×5",
+      "expected": "快击 5 次仅 1 次 POST/1 个 Toast/余额+100（源码无锁为缺陷候选）",
+      "actual": "act-FAIL: rapidTap(.wallet__recharge) element not found——前置不可达，防连点行为无法实测",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#WA09(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "WA10", "page": "subpackages/market/wallet/index", "operation": "（解封预案）加载失败余额 -- 与重试恢复",
+      "expected": "失败态余额显示「--」不显 0 元+红条重试恢复",
+      "actual": "act-FAIL: tap(.wallet__load-error-retry) element not found——前置不可达且需断网注入，动作未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#WA10(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP01", "page": "subpackages/vip/index", "operation": "冷启动直达（flag=false）拦截弹回",
+      "expected": "Toast「会员功能暂未开放」+ 栈=1 → switchTab 落「我的」tab；VIP 内容不闪现；无 /vip/auto-renew/status 请求",
+      "actual": "A1 toast 记录逐字「会员功能暂未开放」（showToast）；ROUTE 栈顶=pages/profile/index；after 截图 146330B 为「我的」tab 页（林晓 profile），无 VIP 头部/套餐闪现；与源码 vip/index.vue:57-63 onLoad 守卫一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "exec-results.json#VP01(toast 逐字+route)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VIP-INDEX-VP01-after.png",
+        "apps/client/src/subpackages/vip/index.vue:57-63"
+      ],
+      "confidence": 0.85,
+      "note": "A1 pre 出现双次 reLaunch 致 2 条 Toast（均为拦截产生，行为一致）；pre-FAIL input element not found: .membershipEnabled 为 A1 注入探测动作，flag 出厂即 false，无影响"
+    },
+    {
+      "caseId": "VP02", "page": "subpackages/vip/index", "operation": "有栈进入（flag=false）navigateBack 回来源页",
+      "expected": "navigateTo 后 Toast+navigateBack 500ms 内回 pages/discover/index",
+      "actual": "A1 前置破坏：observed 无「先入 discover」步骤，反而执行 pre:auto-reLaunch subpackages/vip/index 清栈直达（栈=1），拦截逻辑必然走 switchTab(profile) 而非 navigateBack——ROUTE 落 profile 系 A1 清栈所致，来源页落点无法核验（有 Toast 记录）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP02(auto-reLaunch 清栈; route=profile)"],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "VP03", "page": "subpackages/vip/index", "operation": "重复进出×3（身份B）拦截弹回稳定性",
+      "expected": "每次进入均 Toast+弹回 profile；无卡死、无 showLoading 残留、无异常累积",
+      "actual": "A1 toast 记录 5 条逐字「会员功能暂未开放」（间隔约 8-9s，每次进入均被拦截）；ROUTE 栈顶恒=pages/profile/index；dom .showLoading:absent；repeatNav watchdog-timeout 25000ms 系 A1 等待「栈顶=vip」条件因页面立即弹回而永不满足（恰为拦截生效的旁证），非页面卡死；第 3 次 after 截图 timeout 缺失",
+      "verdict": "VERIFIED",
+      "evidence": ["exec-results.json#VP03(5×toast 逐字+route+showLoading absent)"],
+      "confidence": 0.65,
+      "note": "循环证据由 5 条拦截 Toast 间接支持；截图缺失、watchdog 异常已在证据中注明，置信度相应下调"
+    },
+    {
+      "caseId": "VP04", "page": "subpackages/vip/index", "operation": "（flag=true 预案）页面全量渲染",
+      "expected": "6 权益+3 套餐+协议+自动续费+2 入口+底栏（Manifest：当前不可达→如实 UNVERIFIED）",
+      "actual": "A1 pre-FAIL:input element not found: .membershipEnabled（解 flag 注入失败）；dom .benefit-item/.plan-card/.entry-item/.footer__btn 全 absent；ROUTE 落 profile（onLoad 拦截弹回）+Toast「会员功能暂未开放」；A1 误标 EXECUTED——预案环境未建立",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#VP04(注入失败; dom 全 absent)",
+        "apps/client/src/config/feature-flags.ts:29(membershipEnabled: false 硬编码)"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP05", "page": "subpackages/vip/index", "operation": "（预案）权益卡点击 Modal",
+      "expected": "tap .benefit-item → Modal 权益名+描述，「知道了」关闭",
+      "actual": "act-FAIL: tap(.benefit-item) element not found——flag=true 预案不可达（页面被 onLoad 拦截，权益区不渲染）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP05(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP06", "page": "subpackages/vip/index", "operation": "（预案）套餐切换价格联动",
+      "expected": "季/年/月卡切换：金边对勾迁移+底栏应付 ¥18→¥48→¥158→¥18",
+      "actual": "act-FAIL: tap(.plan-card) element not found——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP06(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP07", "page": "subpackages/vip/index", "operation": "（预案 critical）mock 立即开通闭环",
+      "expected": "Loading「处理中...」1.2s→开通成功 Modal→确认返回（Manifest：不可达则 UNVERIFIED）",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"立即开通\")——预案不可达，支付闭环无法实测；A1 另有 act:wait 1500ms 空转",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP07(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP08", "page": "subpackages/vip/index", "operation": "（预案 critical）开通防连点+开通中返回",
+      "expected": "快击×5 仅 1 次流程；Loading 中返回无全局遮罩残留",
+      "actual": "act-FAIL: rapidTap element not found: __CAND__(\"立即开通\")；另 A1 navigateBack 报 navError=Uncaught [object Object]（执行器栈错误）——预案不可达+执行器故障",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP08(element not found; navError)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP09", "page": "subpackages/vip/index", "operation": "（预案 critical）自动续费开启/取消回弹",
+      "expected": "拨开→取消→开关回弹为关且 store 关；确认开启→Modal+Toast「已开启自动续费」",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"取消\")/「确认开启」——预案不可达；before/after 截图均 timeout 缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP09(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP10", "page": "subpackages/vip/index", "operation": "（预案 critical）自动续费关闭",
+      "expected": "关闭确认弹层→Toast「已关闭自动续费」+日期描述消失",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"确认关闭\")——预案不可达（且前置依赖 VP09 开启态亦不可达）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP10(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP11", "page": "subpackages/vip/index", "operation": "（预案）优惠码/账单两入口跳转+返回兜底",
+      "expected": "tap 优惠码→/subpackages/vip/promo-code；账单记录→/subpackages/vip/bills；栈=1 返回兜底 profile",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"优惠码\")/「账单记录」；A1 navigateBack 另报 navError——预案不可达（拦截态页面无入口可点）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP11(element not found; navError)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "VP12", "page": "subpackages/vip/index", "operation": "（real 模式预案）非 mock 开通短路",
+      "expected": "real 环境 tap 立即开通→仅 Toast「支付功能建设中，敬请期待」，不假成功",
+      "actual": "act-FAIL: tap element not found: __CAND__(\"立即开通\")——需 real 后端环境，当前为 mock（stores/helpers/use-mock.ts），预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#VP12(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC01", "page": "subpackages/vip/promo-code", "operation": "冷启动直达（flag=false）拦截弹回",
+      "expected": "Toast「会员功能暂未开放」+ 栈=1 → switchTab 落「我的」tab；输入区/校验按钮不闪现",
+      "actual": "A1 toast 记录逐字「会员功能暂未开放」×2（双次 reLaunch 各触发一次拦截）；ROUTE 栈顶=pages/profile/index；与源码 promo-code.vue:33-42 onLoad 拦截一致；after 截图 timeout 缺失",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "exec-results.json#PC01(toast 逐字+route)",
+        "apps/client/src/subpackages/vip/promo-code.vue:33-42"
+      ],
+      "confidence": 0.7,
+      "note": "核心断言（Toast 文案+落点）由 route/toast 记录覆盖；截图缺失+身份 MISMATCH 下调置信度"
+    },
+    {
+      "caseId": "PC02", "page": "subpackages/vip/promo-code", "operation": "有栈进入（flag=false）navigateBack 回来源页",
+      "expected": "拦截 Toast+navigateBack 500ms 内回 discover",
+      "actual": "A1 前置破坏同 VP02：无「先入 discover」步骤且 auto-reLaunch 清栈，ROUTE 落 profile（switchTab 兜底路径），navigateBack 回 discover 无法核验（有 Toast 记录）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC02(auto-reLaunch 清栈; route=profile)"],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "PC03", "page": "subpackages/vip/promo-code", "operation": "（预案）空码校验禁用态",
+      "expected": "留空 tap 校验→Toast「请输入优惠码」+按钮禁用态",
+      "actual": "act-FAIL: input element not found: __CAND__；tap element not found: __CAND__(\"校验\")——flag=true 预案不可达（页面被拦截，输入区不渲染）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC03(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC04", "page": "subpackages/vip/promo-code", "operation": "（预案）输入三态（非法/超长/特殊字符）",
+      "expected": "非法格式 Toast；maxlength=32 截断；特殊字符拦截",
+      "actual": "act-FAIL: input element not found: __CAND__——预案不可达，输入框不存在",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC04(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC05", "page": "subpackages/vip/promo-code", "operation": "（预案）订单金额非法分支",
+      "expected": "清空/0/负数→Toast「订单金额无效」；默认金额 48",
+      "actual": "act-FAIL: input element not found: __CAND__（含 pre-FAIL）——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC05(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC06", "page": "subpackages/vip/promo-code", "operation": "（预案）合法码校验成功结果卡",
+      "expected": "VIP2026→结果卡五行+Toast「可用，优惠 ¥10.00」+兑换按钮出现",
+      "actual": "act-FAIL: input element not found: __CAND__；tap .result-card element not found——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC06(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC07", "page": "subpackages/vip/promo-code", "operation": "（预案）无效码红色结果卡",
+      "expected": "INVALID→红底结果卡「优惠码已过期或不可用」+Toast，无兑换按钮",
+      "actual": "act-FAIL: input/tap element not found——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC07(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC08", "page": "subpackages/vip/promo-code", "operation": "（预案 critical）兑换闭环+防连点",
+      "expected": "快击×5 仅 1 次提交；Modal「兑换成功」金额逐字",
+      "actual": "act-FAIL: rapidTap element not found: __CAND__(\"兑换\")——预案不可达，兑换防连点无法实测",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC08(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PC09", "page": "subpackages/vip/promo-code", "operation": "（预案）重置清空",
+      "expected": "tap 重置→输入清空+结果卡/兑换结果/按钮全消失",
+      "actual": "act-FAIL: input element not found: __CAND__；tap .result-section element not found——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#PC09(element not found)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "BI01", "page": "subpackages/vip/bills", "operation": "冷启动直达（flag=false）拦截弹回",
+      "expected": "Toast「会员功能暂未开放」+ 栈=1 → switchTab 落「我的」tab；账单 hero/筛选/列表不闪现",
+      "actual": "A1 toast 记录逐字「会员功能暂未开放」×2（双次 reLaunch 各触发拦截）；ROUTE 栈顶=pages/profile/index；after 截图 146278B 存在；与源码 bills.vue:36-45 一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "exec-results.json#BI01(toast 逐字+route)",
+        "reports/screenshots/round-1-interact/SUBPACKAGES-VIP-BILLS-BI01-after.png",
+        "apps/client/src/subpackages/vip/bills.vue:36-45"
+      ],
+      "confidence": 0.85,
+      "note": "身份 MISMATCH 不影响 flag 拦截判定"
+    },
+    {
+      "caseId": "BI02", "page": "subpackages/vip/bills", "operation": "有栈进入（flag=false）navigateBack 回来源页",
+      "expected": "拦截 Toast+navigateBack 500ms 内回 profile 来源页",
+      "actual": "A1 前置破坏同 VP02/PC02：auto-reLaunch 清栈后 ROUTE 落 profile（兜底路径），navigateBack 分支无法核验（有 Toast 记录）",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI02(auto-reLaunch 清栈; route=profile)"],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "BI03", "page": "subpackages/vip/bills", "operation": "（预案）进入即加载 3 条 mock 账单",
+      "expected": "解 flag 后应显示 3 条账单+GET /vip/bills；若假空态按缺陷记（Manifest：当前不可达→如实 UNVERIFIED）",
+      "actual": "A1 act:navigateTo 后仍被 onLoad 拦截：Toast「会员功能暂未开放」+ROUTE 落 profile——flag 注入未执行（pre-FAIL 模式同 VP04），onShow 误嵌缺陷嫌疑无法实测；A1 误标 EXECUTED",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "exec-results.json#BI03(拦截弹回; 误标 EXECUTED)",
+        "apps/client/src/subpackages/vip/bills.vue:36-45(onLoad 拦截)"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "BI04", "page": "subpackages/vip/bills", "operation": "（预案）下拉刷新真实重拉",
+      "expected": "pullDownRefresh→loadBills(true) 绕过缓存+stopPullDownRefresh 不永驻",
+      "actual": "A1 act:pullDown 返回 ERR uni is not defined（执行器 evaluate 环境无 uni）——刷新动作未执行；且页面处拦截态（Toast+落 profile），预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI04(pullDown ERR uni is not defined)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "BI05", "page": "subpackages/vip/bills", "operation": "（预案）筛选 4 chips 过滤",
+      "expected": "全部/订阅/续费/退款切换：金边迁移+过滤+切回不丢",
+      "actual": "act-FAIL: tap(.filter-chip) element not found——预案不可达（拦截态列表不渲染）；A1 ROUTE 落 discover 页（前置漂移），截图 217194B 为 discover 非账单页",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI05(element not found; route=discover)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "BI06", "page": "subpackages/vip/bills", "operation": "（预案）账单卡字段与徽标",
+      "expected": "类型/状态配色、金额加粗、原价划线、交易号 monospace 等字段断言",
+      "actual": "A1 dom .bill-card__type:absent（拦截态无账单卡）；截图 timeout 缺失——预案不可达",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI06(bill-card absent)"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "BI07", "page": "subpackages/vip/bills", "operation": "（预案 noop）列表滚动到底/顶",
+      "expected": "滚动无异常、回顶首卡可见",
+      "actual": "A1 act:pageScrollTo bottom/top 在 pages/profile/index 上执行（ROUTE=profile，账单页未进入）——滚动对象为错误页面，账单列表滚动行为未测",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI07(route=profile; pageScrollTo 作用于错误页)"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "BI08", "page": "subpackages/vip/bills", "operation": "（预案）返回键栈>1/栈=1 双分支",
+      "expected": "tap .nav-bar__back：栈>1 回来源；栈=1 兜底 profile",
+      "actual": "act-FAIL: tap(.nav-bar__back) element not found ×2；A1 reLaunch 后 navigateBack 报 navError=Uncaught [object Object]（栈=1 时 navigateBack 必然失败，执行器动作错误）——预案不可达+执行器故障",
+      "verdict": "UNVERIFIED",
+      "evidence": ["exec-results.json#BI08(element not found ×2; navError)"],
+      "confidence": 0.9
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-C26-001",
+      "round": "R1",
+      "page": "subpackages/market/shop/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "商城自定义导航返回键热区 64×64rpx，低于 R11 §5 铁律 88rpx 下限（SH05 用例预期指向的缺陷候选）",
+      "evidence": "源码 apps/client/src/subpackages/market/shop/index.vue:425-426（width:64rpx; height:64rpx）；巡检截图返回键可见但明显小于铁律热区；A1 SH05 boundingClientRect 采样未取得（.boundingClientRect:absent），实测未完成，判定基于源码确定性 rpx 值（渲染尺寸恒等于 64rpx<88rpx）",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "可点击热区≥88rpx（或元素视觉 64rpx 外扩热区至 88rpx）",
+      "fix": ".shop-header__back 视觉保持 64rpx，用 padding 外扩或 88rpx 透明热区层扩大命中区",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C26-002",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "钱包返回键热区 64×64rpx，低于铁律 88rpx（WA05 缺陷候选，与 MP-R1-C26-001 同源）",
+      "evidence": "源码 apps/client/src/subpackages/market/wallet/index.vue:254-255（width:64rpx; height:64rpx）；巡检截图返回键可见；A1 WA05 实测数据未取得，判定基于源码确定性 rpx 值",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "热区≥88rpx",
+      "fix": ".wallet__back 外扩热区至 88rpx（padding 或伪元素扩大命中区），视觉保持 64rpx",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-C26-003",
+      "round": "R1",
+      "page": "multiple（本批 5 页共用执行器）",
+      "screenshot": "reports/screenshots/round-1-interact/（23 张 ERROR:timeout 缺失）",
+      "category": "Architecture",
+      "severity": "P2",
+      "description": "A1 交互执行器基建缺陷导致本批 49 条用例中 43 条不可仲裁（UNVERIFIED）：①身份注入恒为 user-1001（MISMATCH!，非 Manifest 指定的 100158/100159）；②解封预案无配置注入面（pre-FAIL input element not found: .enabled/.membershipEnabled，30 条预案用例全部落空且 SH07/WA07/VP04/BI03 被误标 EXECUTED）；③DOM 采样自相矛盾（.shop-header__back/.wallet__back 在 SH03/SH04/WA04 判 absent，SH05/WA03/WA05 判 present，巡检截图与源码证明封存态下必渲染）；④23 张截图 timeout 未落盘；⑤repeatNav watchdog 25000ms 超时（WA06）与来源页前置漂移（WA06 discover≠profile、BI05 落 discover、BI07 滚动作用于 profile）；⑥BI04 pullDown 报 ERR uni is not defined；⑦VP08/VP11/BI08 navigateBack 报 Uncaught [object Object]；⑧VP02/PC02/BI02 用 auto-reLaunch 清栈破坏「有栈进入」前置",
+      "evidence": "reports/audit/round-1/interact/exec-results.json#S21-c26（observed/failureReason 全量）；巡检截图 reports/screenshots/round-1-tour/A|B/subpackages_market_{shop,wallet}_index__默认.png（返回键渲染反证）；源码 shop/index.vue:268-285、wallet/index.vue:142-151（返回键位于封存 v-if 之外）",
+      "sources": ["log", "screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "执行器修复前，上述 43 条用例的页面侧行为既不能判 VERIFIED 也不能判 FAILED——需 R2 轮修复执行器后补验，不得据此轮结果给页面定性",
+      "fix": "①身份注入改走 tmp_r11_*.json 当日重签 token；②为解封预案提供 switches/featureFlags 注入面（或编译期变体）；③修复 element 查询器对 subpackage 封存页的采样一致性；④截图 timeout 重试与落盘校验；⑤navigation 用例记录 getCurrentPages before/after 全链",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "SH02|A1 未采集 network/console 请求清单，零请求断言无直接证据（CONSOLE 空=未采集与零请求不可分）|1",
+    "SH03|A1 采样器故障：.shop-header__back 判 absent 与巡检截图/源码矛盾，tap 生效性与落点均无证据|1",
+    "SH04|同 SH03：back absent 采样矛盾，route 未见兜底 home|1",
+    "SH05|boundingClientRect 未取得（实测未完成），测量证据缺失|1",
+    "SH06|3 次循环仅完成 1 对进出，身份B 注入 MISMATCH|1",
+    "SH07|解封预案前置不可达：pre-FAIL 注入失败，页面仍封存态（Manifest 明示不可达则 UNVERIFIED）|1",
+    "SH08|解封预案前置不可达：.category-item not found|1",
+    "SH09|解封预案前置不可达：.shop-card not found|1",
+    "SH10|解封预案前置不可达且需断网注入，均不具备|1",
+    "WA02|同 SH02：无 network 请求清单证据|1",
+    "WA03|A1 未记录 tap 动作（observed 无 act），route 未变化|1",
+    "WA04|back absent 采样矛盾+无 tap 记录，route 未见 profile 兜底|1",
+    "WA05|实测测量未完成（无 rect 数据），仅源码侧证据|1",
+    "WA06|repeatNav watchdog-timeout 25000ms，仅 1/3 轮；来源页 discover≠前置要求的 profile|1",
+    "WA07|解封预案前置不可达：tx-item absent 封存态，A1 误标 EXECUTED|1",
+    "WA08|解封预案前置不可达：.wallet__recharge not found|1",
+    "WA09|解封预案前置不可达：充值按钮不存在，防连点无法实测|1",
+    "WA10|解封预案前置不可达且需断网注入|1",
+    "VP02|A1 auto-reLaunch 清栈破坏「有栈进入」前置，navigateBack 回 discover 无法核验|1",
+    "VP04|解封预案前置不可达：membershipEnabled 注入失败，dom 全 absent，A1 误标 EXECUTED|1",
+    "VP05|预案不可达：.benefit-item not found|1",
+    "VP06|预案不可达：.plan-card not found|1",
+    "VP07|预案不可达：立即开通按钮 not found|1",
+    "VP08|预案不可达：按钮 not found+A1 navigateBack navError|1",
+    "VP09|预案不可达：取消/确认开启按钮 not found，截图缺失|1",
+    "VP10|预案不可达：确认关闭按钮 not found|1",
+    "VP11|预案不可达：两入口 not found+A1 navError|1",
+    "VP12|需 real 后端环境，当前 mock，预案不可达|1",
+    "PC02|A1 auto-reLaunch 清栈破坏前置，回 discover 无法核验|1",
+    "PC03|预案不可达：输入框/校验按钮 not found|1",
+    "PC04|预案不可达：输入框 not found|1",
+    "PC05|预案不可达：输入框 not found（含 pre-FAIL）|1",
+    "PC06|预案不可达：输入框/结果卡 not found|1",
+    "PC07|预案不可达：输入框 not found|1",
+    "PC08|预案不可达：兑换按钮 not found，防连点无法实测|1",
+    "PC09|预案不可达：输入框/重置 not found|1",
+    "BI02|A1 auto-reLaunch 清栈破坏前置，navigateBack 分支无法核验|1",
+    "BI03|解封预案前置不可达：navigateTo 后仍被拦截弹回，A1 误标 EXECUTED|1",
+    "BI04|pullDown 报 ERR uni is not defined（执行器故障）+预案不可达|1",
+    "BI05|预案不可达：.filter-chip not found，route 漂移至 discover|1",
+    "BI06|预案不可达：bill-card absent，截图缺失|1",
+    "BI07|pageScrollTo 作用于 profile 页（账单页未进入），滚动对象错误|1",
+    "BI08|预案不可达：.nav-bar__back not found ×2+A1 navError|1"
+  ],
+  "notes": "仲裁方法：逐用例三方对照（Manifest.expected vs A1.observed vs 截图/巡检截图/源码）。VERIFIED 判定要求 observed 行为与 expected 核心断言一致且至少两个独立证据源支撑；本批 6 条 VERIFIED 均为封存/拦截态渲染与弹回行为（SH01/WA01 封存卡 dom+巡检截图+源码；VP01/PC01/BI01 拦截 Toast 逐字+落点 profile+截图；VP03 5×拦截 Toast+无 Loading 残留）。FAILED=0：所有预期未达成场景均可归因 A1 执行器/前置故障（身份注入恒 user-1001 MISMATCH、解封预案无注入面、DOM 采样自相矛盾、23 张截图 timeout、auto-reLaunch 清栈），按规则归 UNVERIFIED 并立执行器 Issue MP-R1-C26-003，不据此给页面定性。热区 64rpx 缺陷候选（MP-R1-C26-001/002）基于源码确定性 rpx 值+巡检截图，A1 实测未完成已如实标注。noop 零请求用例（SH02/WA02）因无 network 清单证据判 UNVERIFIED。exec-results 中 SH07/WA07/VP04/BI03 等预案用例被 A1 误标 EXECUTED，本判定已纠正为 UNVERIFIED。"
+}

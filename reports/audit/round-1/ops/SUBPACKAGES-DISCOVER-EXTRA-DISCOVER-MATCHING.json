@@ -1,0 +1,244 @@
+{
+ "cases": [
+  {
+   "id": "MT01",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "dev-preview 冷启动：QA 复验入口停在匹配中页，2.6s 动画兜底结束后不跳转不 Toast",
+   "pre": "r11 通道：'D:\\微信开发者\\微信web开发者工具\\wechatide.cmd' --project D:\\6\\恋爱小程序，子命令 simulator_refresh/automation_evaluate/simulator_screenshot/get_simulator_console（r11-tour.ps1:3-4）；登录态=automation_evaluate 注入 wx.setStorageSync('token', tmp_r11_login.json 的 JWT) 后调 session.bootstrap()，evaluate 校验 isLoggedIn=true（失败重试 1 次，r11-tour.ps1:19-36），token 为 2h 时效 HS512（iat 2026-09-22T12:42Z/exp 14:42Z），过期当日重签，身份 B 用 tmp_r11_guest.json(100159)；本页非 tabBar 分包页，冷启动用 miniProgram.reLaunch('/subpackages/discover-extra/discover/matching?dev-preview=1')（onLoad 读 q['dev-preview']==='1' 进 previewMode，matching.vue:92-105）",
+   "action": "无输入，等待渲染：探测 .match-loading__skip、.match-loading__avatars 双头像、.match-loading__progress 4 行进度（旅行/音乐/电影/生活方式）、.match-loading__total；等 2.6s 观察是否跳转（MatchLoading onMounted 兜底 setTimeout(finish,2600)，MatchLoading.vue:39-41）",
+   "expected": "停留本页：标题『正在寻找有缘的Ta...』（MatchLoading.vue:109 硬编码）、副标题、匹配度 4 行 90/85/80/79%、总进度『缘分匹配中... 89%』（Math.round(83.5)+5=89，MatchLoading.vue:58）、右侧对方头像模糊+『匹配中』角标；animationDone 置真后因 previewMode=true watch 直接 return（matching.vue:66）→ 不 redirectTo、不出 Toast、不返回，页面常驻；我的头像为空时落 DEFAULT_AVATAR 非空白圆（matching.vue:38-45）；console 无 NAV_FAIL/TypeError/is not defined",
+   "evidence": "normal：after 截图（动画结束态）+ 路由断言（getCurrentPages=[subpackages/discover-extra/discover/matching]）+ console"
+  },
+  {
+   "id": "MT02",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "critical",
+   "title": "寻觅页喜欢进入（store 上下文）单向喜欢成功：Toast『已喜欢』→400ms 后返回寻觅页且当前卡已消费切下一张",
+   "pre": "同 MT01 的 r11 通道与身份 A 登录注入；身份 A 已实名（handleLike 有 requireLogin+ensureCertified('realname') 门控，pages/discover/index.vue:142-146）且寻觅有存活推荐卡（今日额度未用尽 isLimitReached=false，index.vue:124-127）；before 截图先拍寻觅页当前卡；navigateTo 进入：enterMatching('like') 组 query userId/cardId/action 并 openAppPath(ROUTES.DISCOVER.MATCHING)（index.vue:128-133），matchStore.beginCheck 先行置 pendingCardId/pendingAction",
+   "action": "在寻觅页 tap 第三个操作按钮『喜欢』→ 自动跳转本页；等待动画完成（finished/2.6s 兜底）+ runMatchCheck resolve（matching.vue:157-159 置 checked=true）",
+   "expected": "接口返回未互相喜欢→status='idle'（stores/match.ts:59）：Toast 文案精确为『已喜欢』icon success（t('discover.likeSent')，zh-CN.ts:923），400ms 后 goBack navigateBack 回寻觅页（matching.vue:70-74）；consumeCardFromDeck 已把该卡 swipeRight 消费（matching.vue:171-181）→ 返回后寻觅页当前卡为下一张，原卡不再出现；无『卡片不存在或已被处理』误报横幅；console 无异常",
+   "evidence": "critical：before（寻觅页原卡）+ after（返回后寻觅页下一张或 Toast 瞬间）截图 + 路由断言（返回后 getCurrentPages 末位=pages/discover/index）+ Toast 文案『已喜欢』+ console（含 like 接口请求记录）"
+  },
+  {
+   "id": "MT03",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "critical",
+   "title": "互相喜欢 status='matched'：动画结束后 redirectTo match-success?userId=，栈中本页被替换",
+   "pre": "同 MT02 前置，另需预置可控互喜欢数据使 swipeRight 返回 lastSwipeResult.matched=true（status 置 'matched'，stores/match.ts:57-59）；若环境无法造互相关系数据，本用例如实标 UNVERIFIED 不得降级判定；入口同 MT02（store 上下文 navigateTo 进入）",
+   "action": "寻觅页『喜欢』进入本页，等待动画 finished（或 tap 跳过快进）且 checked=true",
+   "expected": "watch 命中 matched 分支（matching.vue:67-69）：先 consumeCardFromDeck 再 uni.redirectTo(ROUTES.DISCOVER.MATCH_SUCCESS?userId=<encodeURIComponent(partner.userId)>，matching.vue:47-52)；getCurrentPages 末位=subpackages/discover-extra/discover/match-success 且栈长不变（replace 语义，本页不在栈中）；match-success 正常渲染双方头像+成功文案，userId query 与被喜欢者一致；返回键从 match-success 直回寻觅页（跳过本页）；console 无异常",
+   "evidence": "critical：before（匹配中页动画中）+ after（match-success 渲染态）截图 + 路由断言（栈末位 match-success、栈内无 matching）+ Toast 文案（如有）+ console"
+  },
+  {
+   "id": "MT04",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "critical",
+   "title": "匹配确认接口失败 status='failed'：Toast 错误文案→600ms 后返回，原卡不被消费",
+   "pre": "同 MT02 前置，但注入失败态：automation_evaluate 断网/mock 使 like/superLike 接口 reject（runMatchCheck catch 置 lastError+status='failed'，stores/match.ts:60-64）；before 截图寻觅页原卡",
+   "action": "寻觅页『喜欢』进入本页，等待接口失败+动画结束",
+   "expected": "Toast icon none，文案=matchStore.lastError 或兜底『操作失败，请重试』（t('matching.likeFailed')，zh-CN.ts:448），600ms 后 goBack 回寻觅页（matching.vue:75-81）；failed 分支不调 consumeCardFromDeck → 返回后原卡仍在寻觅页首位（与 MT02 相异点）；无未处理 Promise 拒绝、无白屏死页；console 可见失败请求但不含 TypeError",
+   "evidence": "critical：before（原卡）+ after（返回后原卡仍在）截图 + 路由断言（回到 pages/discover/index）+ Toast 文案 + console（失败请求与 lastError）"
+  },
+  {
+   "id": "MT05",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "critical",
+   "title": "超级喜欢 superLike 路径：runMatchCheck 以 isSuperLike=true 提交，成功分支文案与消费同喜欢",
+   "pre": "同 MT02 前置（实名+额度），另需 greet 频控计数 greet:count:<cardId> 当日<3（pages/discover/index.vue:154-169）；before 截图",
+   "action": "寻觅页『打招呼/超赞』按钮进入（handleSuperLike→enterMatching('superLike')），query action=superLike；等待结果",
+   "expected": "runMatchCheck 调 discoverStore.swipeRight(pendingCardId, true)（stores/match.ts:53-56）；未互相喜欢→同 MT02：Toast『已喜欢』+400ms 返回+卡片消费；互相喜欢→同 MT03 redirectTo match-success；请求体 action 为 superLike（console network 核实）；console 无异常",
+   "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案 + console（network 中 superLike 请求参数）"
+  },
+  {
+   "id": "MT06",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "navigation",
+   "title": "无上下文直达兜底：无 query 无 store pending 时 200ms 自动返回，不留死页",
+   "pre": "无需登录；miniProgram.reLaunch('/subpackages/discover-extra/discover/matching')（无任何 query，matchStore 刚 reset，pendingCardId/pendingAction 均空，matching.vue:128）",
+   "action": "无输入，仅等待约 200-800ms 观察",
+   "expected": "命中页面刷新兜底：setTimeout(goBack,200)（matching.vue:143-147）；reLaunch 后栈长=1 → goBack 走 else 分支 switchTab('/pages/discover/index')（matching.vue:54-61）；最终 getCurrentPages=[pages/discover/index]，不留白屏死页、不闪错误空态；console 无 NAV_FAIL/TypeError",
+   "evidence": "navigation：路由断言（getCurrentPages 链：matching→pages/discover/index）即可，可不截图"
+  },
+  {
+   "id": "MT07",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "navigation",
+   "title": "顶部返回箭头（栈>1）：点击 500ms 内 navigateBack 回来源页",
+   "pre": "身份 A 登录（同 MT01 注入流程）；先 reLaunch 寻觅页再 navigateTo('/subpackages/discover-extra/discover/matching?dev-preview=1')，栈长≥2",
+   "action": "tap 左上返回按钮 .matching-page__back（fixed top=calc(--statusbar+24rpx) left=24rpx，matching.vue:222,242-247）",
+   "expected": "500ms 内路由变化（铁律：可点击元素必须有可观测反馈）：pages.length>1 → uni.navigateBack({delta:1})（matching.vue:54-60）回寻觅页；来源页滚动位与卡组状态保留；onUnload 已触发 matchStore.reset()（matching.vue:214-216）",
+   "evidence": "navigation：路由断言（getCurrentPages 末位=pages/discover/index）即可；如需留档可补 after 截图"
+  },
+  {
+   "id": "MT08",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "navigation",
+   "title": "顶部返回箭头（栈=1 冷启动深链）：switchTab 落寻觅 Tab",
+   "pre": "无需登录；reLaunch('/subpackages/discover-extra/discover/matching?dev-preview=1')，栈长=1",
+   "action": "tap .matching-page__back",
+   "expected": "走 goBack else 分支 uni.switchTab({url:ROUTES.TAB.DISCOVER})（matching.vue:58-60，constants/routes.ts:30）；getCurrentPages=[pages/discover/index]，寻觅 tab 高亮；无报错",
+   "evidence": "navigation：路由断言即可"
+  },
+  {
+   "id": "MT09",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "动画未播完点『跳过』= 快进动画：立即触发 finish，结果分支提前出现",
+   "pre": "身份 A 登录；场景 b 用真实喜欢流程进入（同 MT02 pre）；场景 a 用 reLaunch('...matching?dev-preview=1')",
+   "action": "进入后立即（<2.6s，动画未 finished）tap 跳过按钮 .match-loading__skip（胶囊下方 right=140rpx top=calc(--statusbar+20px+240rpx)，MatchLoading.vue:180-190）",
+   "expected": "handleSkip 首分支：animationDone=false → markAnimationDone 快进（matching.vue:203-209）；场景 a（previewMode）：停留本页不跳转不 Toast；场景 b：因 checked 已在接口返回后置真，快进立即触发 watch → 按 status 呈现『已喜欢』Toast+返回（或 matched 跳转），时间点显著早于 2.6s 兜底；点击 500ms 内有可观测反馈",
+   "evidence": "normal：after 截图（快进后落点）+ 路由断言 + console"
+  },
+  {
+   "id": "MT10",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "动画已播完再点『跳过』= 返回上一页（保留原语义）",
+   "pre": "身份 A 登录；reLaunch('...matching?dev-preview=1') 后等待 ≥2.6s（finished 已由 animationend 或兜底 timer 触发，MatchLoading.vue:28-41）",
+   "action": "等 2.6s 后 tap .match-loading__skip",
+   "expected": "handleSkip 次分支：animationDone=true → goBack()（matching.vue:203-209）；栈=1 时 switchTab 回寻觅 tab；页面卸载触发 matchStore.reset；无异常",
+   "evidence": "normal：after 截图 + 路由断言 + console"
+  },
+  {
+   "id": "MT11",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "『跳过』快击×5 防连点：finished 单次守卫，仅离开页面一次",
+   "pre": "身份 A 登录；navigateTo 进入（栈≥2，dev-preview=1）",
+   "action": "对 .match-loading__skip 快速连点 5 次（间隔<200ms）",
+   "expected": "MatchLoading 内 finished 标志保证 emit('finished') 仅一次（MatchLoading.vue:28-33）；handleSkip 首次 markAnimationDone、其余命中 goBack——navigateBack 幂等只生效一次（首次离开后后续 tap 落在已卸载页面不产生二次出栈）；最终栈恰减 1，无 JS 异常、无双重路由；console 无报错",
+   "evidence": "normal：after 截图（最终落点）+ 路由断言（栈长=进入前-1）+ console"
+  },
+  {
+   "id": "MT12",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "返回箭头快击×5：单次 navigateBack 生效无异常",
+   "pre": "身份 A 登录；navigateTo 进入（栈≥2，dev-preview=1）",
+   "action": "对 .matching-page__back 快速连点 5 次",
+   "expected": "首次点击即 navigateBack 离开；后续点击落在已卸载页/上一页不误触（返回后落点是寻觅页，寻觅页无同坐标致命元素被误点）；栈长恰减 1；press-feedback hover 态正常（matching.vue:222）；console 无异常",
+   "evidence": "normal：after 截图 + 路由断言 + console"
+  },
+  {
+   "id": "MT13",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "热区规格核查（铁律≥88rpx）：返回按钮 72×72rpx、跳过按钮≈64rpx 高——预期不达标",
+   "pre": "身份 A 登录；reLaunch('...matching?dev-preview=1')；读取元素布局用 automation_evaluate 取 boundingClientRect",
+   "action": "测量 .matching-page__back 与 .match-loading__skip 的 width/height",
+   "expected": "铁律要求可点击热区≥88rpx；源码实测返回按钮 width/height=72rpx（matching.vue:243-244），跳过按钮 padding 14rpx 30rpx+字号 26rpx 高约 64rpx（MatchLoading.vue:180-196）——两者均<88rpx，按铁律预期记 FAIL（判定员如实标注，不得因证据少降级）",
+   "evidence": "normal：after 截图（标注热区框）+ 路由断言 + console（含 boundingClientRect 数值日志）"
+  },
+  {
+   "id": "MT14",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "preview=1 分享/演示模式：不调匹配接口零副作用，动画结束停留本页",
+   "pre": "身份 A 登录；cardId 取寻觅接口存活卡 id（automation_evaluate 读 discoverStore.cards[0].id，勿写死）；reLaunch('/subpackages/discover-extra/discover/matching?preview=1&cardId=<id>&action=like&userId=10003')（三参齐全才进 preview 分支，matching.vue:108-126；userId=10003 取自 r11-param-map.json 存活 id）",
+   "action": "无输入，等 2.6s+ 观察是否跳转；检查 network",
+   "expected": "previewMode=true：不调 like/superLike 接口（network 无匹配提交请求，零副作用）；loadPartnerProfile(userId) 拉对方资料→setMatchedUser 填充对方姓名与头像（matching.vue:115-119,184-192）；动画结束后 watch 被 previewMode 拦截 → 停留本页不跳转不 Toast；接口失败时头像落 DEFAULT_AVATAR 不空白圆；console 无 TypeError",
+   "evidence": "normal：after 截图（停留态，对方头像已填充或兜底）+ 路由断言（仍在本页）+ console（network 无匹配提交）"
+  },
+  {
+   "id": "MT15",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "critical",
+   "title": "URL 直达（分享恢复/自动化）三参齐全无 store 上下文：真实发起匹配提交",
+   "pre": "身份 A 登录且已实名；先清 matchStore（可先进入任意页再 reLaunch 使 store 重置）；navigateTo('/subpackages/discover-extra/discover/matching?cardId=<存活卡id>&action=like&userId=10003')（pendingCardId 为空但三参齐全→URL 直达分支，matching.vue:128-142）；before 截图",
+   "action": "无输入，等待 runMatchCheck 完成+动画结束",
+   "expected": "consumedCardId=URL cardId；beginCheck+runMatchCheck 真实提交（与 MT02 同一套结果分支：idle→『已喜欢』Toast+400ms 返回并消费卡组；matched→redirectTo match-success；failed→错误 Toast+600ms 返回）；URL 直达时 consumeCardFromDeck 幂等查 discoverStore.cards（matching.vue:171-181），该卡不在当前卡组则静默跳过不误报；console 无未处理拒绝",
+   "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案 + console（提交请求与结果）"
+  },
+  {
+   "id": "MT16",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "头像兜底链：双方头像源全空时落 DEFAULT_AVATAR，不渲染空白圆",
+   "pre": "身份 A 登录；automation_evaluate 置 profileStore.avatarUrl=''（或未登录态冷启动）；reLaunch('...matching?preview=1&cardId=x&action=like&userId=999999999')（userId 无效使 getPersonProfile 走 catch 返回 null，matching.vue:189-191）",
+   "action": "无输入，等待渲染完成",
+   "expected": "myAvatar=resolveMediaUrl('')||resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)（matching.vue:38-40）→ 双头像均渲染本地默认头像（左清晰/右模糊+『匹配中』角标，MatchLoading.vue:96-106）；无空白圆、无裂图；console 仅允许 [matching] profile.load 失败 warn（matching.vue:121-123）",
+   "evidence": "normal：after 截图（双头像兜底态）+ 路由断言 + console"
+  },
+  {
+   "id": "MT17",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "noop",
+   "title": "滚动到底/顶：页面 overflow:hidden 不可滚动，内容无裁切",
+   "pre": "身份 A 登录；reLaunch('...matching?dev-preview=1')",
+   "action": "pageScrollTo 底部/顶部 + swipe 上下滑动各一次",
+   "expected": ".match-loading overflow:hidden（MatchLoading.vue:152）且宿主 min-height:100%（virtualHost，MatchLoading.vue:4,139-142）→ 页面不产生滚动（scrollTop 恒 0），装饰爱心/进度卡/总进度全部可见无底部色差带（MP-R2-MATCHING-011）；无报错",
+   "evidence": "noop：执行日志（scrollTop 数值/console）即可"
+  },
+  {
+   "id": "MT18",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "noop",
+   "title": "动画完备性与 Loading 不永驻：2.6s 兜底必触发 finished，进度条 1.2s 到位",
+   "pre": "身份 A 登录；reLaunch('...matching?dev-preview=1')",
+   "action": "无输入，等 3s：双拍 t≈0.5s 与 t≈3s 各一张对比",
+   "expected": "涟漪×5、轨道双环+3 节点、装饰爱心×8 浮动动画在运行（deco-float/ripple-expand/orbit-rotate，MatchLoading.vue:157-252,439-497）；进度条宽度 1.2s transition 后达 90/85/80/79%、总进度 89%（MatchLoading.vue:121,131,58）；heart animationend 或 2600ms 兜底 timer 必触发 finished（MatchLoading.vue:35-41）——Loading 不永驻；两拍差异证明动画非静止帧",
+   "evidence": "noop：执行日志（双拍文件对+console）即可；如判定需可视化可附双拍截图"
+  },
+  {
+   "id": "MT19",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "重复进出状态机复位（MP-R2-MATCHING-007）：preview 退出后再走真实流程无残留",
+   "pre": "身份 A 登录+实名+额度未用尽；步骤① navigateTo('...matching?dev-preview=1') 后返回；步骤② 寻觅页对存活卡『喜欢』进入",
+   "action": "连续两次进出本页（先 preview 后真实 like）",
+   "expected": "onUnload 无条件 matchStore.reset()（matching.vue:214-216）→ previewMode 属组件内 ref 随实例销毁、pendingCardId/pendingAction 清空；步骤② runMatchCheck 正常发起，不绕过 200ms 兜底逻辑、不对已消费卡二次 swipeRight、无『卡片不存在或已被处理』误报；Toast/路由行为同 MT02",
+   "evidence": "normal：after 截图（第二次进入的结果态）+ 路由断言 + console"
+  },
+  {
+   "id": "MT20",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "navigation",
+   "title": "检查完成前退出（打开即返回竞态）：卸载后 watch 不误触发，store 干净",
+   "pre": "身份 A 登录；寻觅页『喜欢』进入本页后，在 runMatchCheck 未 resolve（防抖窗口 SWIPE_RIGHT_DEBOUNCE 内，stores/discover/actions/swipe.ts:197）立即 tap 返回箭头",
+   "action": "进入本页后 <400ms 内立即 tap .matching-page__back（抢在 runMatchCheck resolve 与动画 finished 之前），记录点击时刻",
+   "expected": "页面卸载时 checked 仍 false → watch 不触发跳转/Toast（matching.vue:63-66）；onUnload reset 清 pendingCardId/pendingAction（matching.vue:214-216）；返回寻觅页正常、无未处理 Promise 拒绝冒泡为错误 Toast；随后再次进入（同 MT19 路径）流程正常；console 无异常",
+   "evidence": "navigation：路由断言（回到 pages/discover/index）+ console（确认无 rejection）；可不截图"
+  },
+  {
+   "id": "MT21",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "500ms 反馈铁律全元素扫描：back/skip 两可点击元素均有即时视觉反馈",
+   "pre": "身份 A 登录；reLaunch('...matching?dev-preview=1')",
+   "action": "依次 tap .matching-page__back（hover-class press-feedback--active+hover-stay-time 120，matching.vue:222）与 .match-loading__skip（hover-class skip--pressed opacity .8，MatchLoading.vue:74,192-194），各记录点击时刻与首个可观测反馈时刻",
+   "expected": "两元素点击后 500ms 内均出现：hover 视觉态变化（DOM/class 变化）且随后路由变化（back→navigateBack/switchTab；skip→animationDone 或 goBack）；无任何『死按钮』；无报错",
+   "evidence": "normal：after 截图（各反馈瞬间）+ 路由断言 + console（时间戳日志）"
+  },
+  {
+   "id": "MT22",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "navigation",
+   "title": "r11 固化参数表偏差核查：?target=10003 不被本页读取，落入 200ms 兜底返回（现状断言+修正建议）",
+   "pre": "无需登录；r11-param-map.json params 与 r11-tour.ps1:45 固化本页参数为 ?target=10003，但页面 onLoad 仅读 cardId/action/userId/dev-preview/preview（matching.vue:85-105），target 不在任何分支——用 miniProgram.reLaunch('/subpackages/discover-extra/discover/matching?target=10003') 复现既有固化巡检场景",
+   "action": "无输入，等待 200-800ms",
+   "expected": "三参与 pending 均空 → 走兜底 setTimeout(goBack,200)（matching.vue:143-147）：栈=1 时 switchTab 回寻觅 tab；无报错无死页——即既有 R11 巡检（r11-tour.ps1:45）实际验证的是兜底分支而非匹配流程。修正建议：r11-param-map.json 本页应改固化 ?dev-preview=1（无副作用常驻，适合双拍空白判定）或 ?userId=10003&cardId=<存活卡id>&action=like（真实流程）；本用例固化现状以防回归",
+   "evidence": "navigation：路由断言（matching→pages/discover/index）即可；建议附 console 佐证无 NAV_FAIL"
+  },
+  {
+   "id": "MT23",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "深链参数不齐（?preview=1 缺三参 / 仅 cardId）：不闪错误空态，200ms 兜底返回",
+   "pre": "身份 A 登录；分别 reLaunch 两个 URL：a) '...matching?preview=1'；b) '...matching?cardId=abc'",
+   "action": "无输入，各等 800ms",
+   "expected": "preview 分支要求 preview=1 且 cardId+action+userId 三参齐全（matching.vue:108），URL 直达分支同（matching.vue:131）——两 URL 均不满足→兜底返回（matching.vue:143-147）；期间渲染完整匹配中 UI（不闪错误空态/白屏，铁律：冷启动深链严禁闪现错误空态）；栈=1 时 switchTab 回寻觅 tab",
+   "evidence": "normal：after 截图（兜底前 UI 或落点）+ 路由断言 + console"
+  },
+  {
+   "id": "MT24",
+   "page": "subpackages/discover-extra/discover/matching",
+   "tier": "normal",
+   "title": "双身份一致性：A(100158)/B(100159) 各自进入，我的头像各归其位，结构一致",
+   "pre": "身份 A 用 tmp_r11_login.json、身份 B 用 tmp_r11_guest.json 分别注入登录（r11-tour.ps1:19-36 同款流程）；各自 reLaunch('/subpackages/discover-extra/discover/matching?dev-preview=1')",
+   "action": "无输入，等 2.6s 后各截一张",
+   "expected": "两身份页面结构一致（标题/4 行进度/总进度/跳过按钮/双头像）；我的头像=各自 profileStore.avatarUrl 经 resolveMediaUrl（boot 后已加载；为空落 DEFAULT_AVATAR），不得出现 A 看到 B 的头像或空白圆；对方侧恒为 AVATAR_1『星野』模糊头像（matching.vue:94-95）；console 无错误",
+   "evidence": "normal：身份 A、B 各一张 after 截图 + 路由断言 + 双身份 console"
+  }
+ ]
+}

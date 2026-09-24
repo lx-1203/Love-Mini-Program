@@ -4,6 +4,13 @@ import type { TodayRecommendationViewModel } from "../../view-models/home-dashbo
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 
+// MP-R1-PAGES-HOME-INDEX-018/027：defineProps 必须是 script setup 首语句——
+// Vue SFC 编译器不提升 defineProps，引用 props 的 watch 若写在声明之前，
+// 编译产物 watcher getter 注册时立即求值，props 尚在 TDZ，组件每次挂载必抛
+// ReferenceError: Cannot access 'props' before initialization（29a2b1df 回归）。
+const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
+defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
+
 // MP-R2-PAGES-HOME-INDEX-012：主图加载失败终态——切占位图，不留永久灰底
 const photoFailed = ref(false);
 watch(
@@ -12,9 +19,6 @@ watch(
     photoFailed.value = false;
   }
 );
-
-const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
-defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
 
 /** R21：meta 行用数组拼接——此前模板插值在 gradeLabel/campusName 缺失时会残留「25岁 ·」尾点 */
 const metaLine = computed(() => {
@@ -80,7 +84,7 @@ const metaLine = computed(() => {
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
             <!-- MP-R1-PAGES-HOME-INDEX-005：♥ 字符在部分字体栈渲染为彩色 emoji 且违反
                  R11 附录 B「业务组件禁 emoji」硬约束，改用既有白色心形图片资源 -->
-            <image class="today-card__btn-heart-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.HEART_WHITE)" mode="aspectFit" alt="" />
+            <image class="today-card__btn-heart-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.MATCH_HEART)" mode="aspectFit" alt="" />
             <text>喜欢</text>
           </view>
         </view>

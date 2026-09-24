@@ -925,6 +925,44 @@ defineExpose({ onContentTap });
   height: 32rpx; /* 固定布局尺寸，无对应 token */
 }
 
+/* ========== 基础/高级筛选 Tab 切换器 ==========
+   MP-R1-PAGES-DISCOVER-INDEX-026：模板引用的 filter-drawer__tabs/__tab/__tab--active/
+   __tab-text 样式此前在 <style> 中完全缺失 → 两 Tab 裸文本纵向堆叠、贴屏、无激活态。
+   补水平分段控件样式（与全 App 分段控件形态一致）。 */
+.filter-drawer__tabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx var(--sp-7) 8rpx;
+}
+
+.filter-drawer__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx; /* 热区 ≥88rpx（44px @2x） */
+  padding: 0 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-hover, #EEF7F2);
+}
+
+.filter-drawer__tab--active {
+  background: var(--c-brand-50, #E8FAF3);
+  border-bottom: 4rpx solid var(--c-brand-600, #2AAE83);
+}
+
+.filter-drawer__tab-text {
+  font-size: var(--fs-base, 26rpx);
+  color: var(--c-text-secondary, #6B7571);
+}
+
+.filter-drawer__tab-text--active,
+.filter-drawer__tab--active .filter-drawer__tab-text {
+  font-weight: 700;
+  color: var(--c-brand-600, #2AAE83);
+}
+
 /* ========== 滚动内容区 ========== */
 .filter-drawer__body {
   flex: 1;

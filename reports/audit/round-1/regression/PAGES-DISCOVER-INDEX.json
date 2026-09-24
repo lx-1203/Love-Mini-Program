@@ -1,0 +1,119 @@
+{
+  "round": "R1",
+  "page": "pages/discover/index",
+  "reviewer": "历史回归员-R1-PAGES-DISCOVER-INDEX（A5 索引差分模式：只核对历史条目是否复发，只读清单/代码/证据，不改代码、不碰开发者工具）",
+  "date": "2026-09-24",
+  "method": "回归索引 reports/audit/baseline/regression-index.json 中 riskFiles 含 apps/client/src/pages/discover/index.vue 的条目做差分：R1-DISCOVER-INDEX-005..013 簇（ask 指定）+ T2 游客胶囊 + MP-R1-PAGES-DISCOVER-INDEX-001..004 + MP-R3-DISCOVER-002。因 git status 显示 index.vue/SwipeContainer.vue/MatchCard.vue/matching.vue/i18n locales 本轮仍有未提交改动，全部结论以当前工作树源码重读为准（不沿用 code-findings 稿结论），交互层以 reports/audit/round-1/interact/exec-results.json（gitSha aefd8a72，44 条 DC 用例）为佐证。",
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-026",
+      "round": "R1",
+      "page": "pages/discover/index",
+      "screenshot": "无（console 运行时证据；关联交互截图 reports/screenshots/round-1-interact/PAGES-DISCOVER-INDEX-17-card-tap-profile-before/after.png）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "本轮回归核对 005（MatchCard tap 双通道）时由执行证据新发现：SwipeContainer 根节点 catchtap=\"onCatchTap\" 在 mp-weixin 运行时找不到处理方法——DC16（点击卡片×3）console 每次点击输出 warn \"Component \\\"components/common/swipe/SwipeContainer\\\" does not have a method \\\"onCatchTap\\\" to handle event \\\"tap\\\".\"（exec-results.json DC16 console 3 条，2026-09-22T22:53:38）。根因：SwipeContainer.vue:46-48 定义的 onCatchTap 未在 <template> 中以 Vue 绑定语法引用（catchtap 为字符串绑定，:78），:65-67 仅靠 defineExpose({..., onCatchTap}) 规避 TS6133——defineExpose 暴露的是实例属性链，不注册为 wxml 事件 handler，编译产物中方法缺失。后果：①005 的纵深防御层（阻断原生 tap 冒泡穿越组件边界）在真机/模拟器上无效，当前仅因主修复（事件名 tap→card-tap 与原生 tap 脱钩 + 页面无 @tap 监听）而未复发——见 checked 005；②每次点击卡片 console 刷 1 条 warn，与「console 干净」验收口径相悖；③若未来任何上层宿主补 @tap 监听（如卡片区域统计埋点），双通道重复触发立即复活。005 主通道判定不受影响，本条为修复方案的纵深层实现缺陷另案。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json id=DC16（status EXECUTED，console 3 条 does not have a method \"onCatchTap\" warn，时间戳 2026-09-22T22:53:38.025/.258/.526Z）；apps/client/src/components/common/swipe/SwipeContainer.vue:78（catchtap=\"onCatchTap\" 字符串绑定）、:44-48（onCatchTap 空函数+注释声称纵深防御）、:65-67（defineExpose 规避 noUnusedLocals，注释自认 vue-tsc 无法识别 catchtap 语法）；apps/client/src/pages/discover/index.vue:317（页面仅 @card-tap，无 @tap 监听——主通道闭合的现状依据）",
+      "sources": ["log", "code"],
+      "confidence": 0.85,
+      "ideal": "catchtap 纵深防御真实生效且 console 无 warn：onCatchTap 以 Vue 可编译方式注册进运行时（如模板内 @tap.stop 等价物或经编译器识别的绑定），或删除该层并在 005 注释中如实说明防御仅由事件改名承担。",
+      "fix": "二选一：①SwipeContainer.vue 模板改用 @tap.stop=\"onCatchTap\"（Vue3 编译器可识别并生成 catchtap 产物，方法同时被模板引用不再需要 defineExpose 规避）；②删除 catchtap=\"onCatchTap\" 与 onCatchTap、defineExpose 中的引用，并在 :44 注释改注「原生通道由 card-tap 事件名脱钩关闭，无 catchtap 层」。修后终验：点击卡片 console 0 warn。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "R1-DISCOVER-INDEX-005",
+      "page": "pages/discover/index",
+      "status": "未复发",
+      "evidence": "MatchCard tap 双通道重复触发的修复在当前工作树完整在位：SwipeContainer.vue:13-21（card-tap emit 声明+MP-R1-005 注释）、:39-41（手势层 onTap→emit('card-tap')）、:78（catchtap=\"onCatchTap\"，注：该层运行时失效另立案 MP-R1-PAGES-DISCOVER-INDEX-026）；MatchCard.vue emits 声明 card-tap+注释、模板 @card-tap=\"emit('card-tap')\" 转发；pages/discover/index.vue:317 @card-tap=\"handleCardTap\"（页面无 @tap 原生监听）。交互佐证：exec-results.json DC16 EXECUTED——tap .match-card×3，route 仅 pages/discover/index 无异常重复导航。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-006",
+      "page": "pages/discover/index",
+      "status": "未复发",
+      "evidence": "padding-bottom 未回退到旧 112rpx 口径：index.vue:355-358 padding-bottom:calc(232rpx + 48rpx + env(safe-area-inset-bottom))，MP-R2-PAGES-DISCOVER-INDEX-002 注释（tabBar 实高 184rpx+浮岛越出 48rpx 推导）在位；编译产物独立核对：grep apps/client/dist/build/mp-weixin/pages/discover/index.wxss 命中 padding-bottom:calc(280rpx + env(safe-area-inset-bottom))（232+48 折叠）。交互佐证：DC42 EXECUTED（pageScrollTo bottom/top 可执行，观察性；截图保存失败故像素级核对留待 Layer B）。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-007",
+      "page": "pages/discover/index",
+      "status": "未复发（已验证）",
+      "evidence": "本轮重读 index.vue 全文（512 行）独立重做样式↔模板全量比对：:347-512 全部 scoped 选择器均有 :238-344 模板引用——.match-page:238、.match-scroll:287、.match-error:288/__text:289/__retry:290、.match-state:295/299/303、.discover-header__*:240-284（含 hover-class 引用的 --pressed:248、--active:261/274 变体）、.match-card-area:313、.discover-login-hint:334/__text:335。无新增死样式，历史清理成果未丢。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-008",
+      "page": "pages/discover/index",
+      "status": "仍开放（历史即待修复态，非复发；范围缩小）",
+      "evidence": "该条历史上从未被修复，无「复发」语义；本轮差分发现现状较历史稿变化：grep -rn CheckinPopup apps/client/src --include=*.vue --include=*.ts 仍仅命中 components/discover/CheckinPopup.vue 自身（0 消费，待删除部分不变）；但 CardSwiper 已被 subpackages/tools/love-center/nearby.vue:15 真实 import 并于 :207 使用（历史「无页面 import」表述不再成立），其余命中为注释/类型引用（SwipeGesture.ts、CardDetailOverlay.vue、PostCard.vue:70 注释、stories、tests 等）。结论：CheckinPopup 死组件问题仍开放，CardSwiper 部分已不成立。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-009",
+      "page": "pages/discover/index",
+      "status": "未复发",
+      "evidence": "分段双源初始矛盾修复在位：stores/discover/index.ts:122（activeFilter:\"all\"）+ :121-125 MP-R2-PAGES-DISCOVER-INDEX-004 三处对齐注释、:129 matchScope:\"all\"；index.vue:51 activeMode 默认 \"recommend\"；切换收敛单一 action：index.vue:96-101 switchDiscoverMode 仅调 discoverStore.setDiscoverMode，stores/discover/actions/filter.ts:64-72 同步 activeFilter/matchScope/recommendationFilter.distanceMax。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-010",
+      "page": "pages/discover/index",
+      "status": "未复发",
+      "evidence": "打招呼计数顺序修复在位（本轮重读 index.vue:148-179 确认执行顺序）：:154-157 isLimitReached 配额门控 → :165-175 try/catch 读 greet:count:* 判 3 次上限 → :176 setStorageSync 自增 → :178 enterMatching；配额用尽期点击不触达计数。交互佐证：DC22 EXECUTED（正常路径进 matching 且 greet 计数+1，pre:storageRemove greet:count）、DC23 EXECUTED（同卡当日第 4 次 toast「已向TA打过3次招呼」且 route 无变化不路由）。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-011",
+      "page": "pages/discover/index",
+      "status": "仍开放（历史即待修复态，非复发）",
+      "evidence": "裸色 token 残留与历史稿一致、未被修复亦未被改回 token：index.vue:374 #fff0f0、:380 #c34a5f、:385 #e94d87、:424 #FF6B81（image 元素 color 死属性）、:471 #FF6B81 分段指示条、:500 #4DD0A8 渐变第二色、:502 rgba(54,201,154,.35)；组件族抽查 MatchCard.vue：.match-card__distance-text color:#FF6B81、卡底 #eef3f1、在线徽章渐变 #FF6B81→#FF8DA1 均在位。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-012",
+      "page": "pages/discover/index",
+      "status": "仍开放（历史即待修复态，非复发）",
+      "evidence": "i18n 硬编码残留与历史稿一致：index.vue:268/281 分段可见文案硬编码「推荐」「附近」（同元素 aria-label :265/:278 走 t()）；MatchCard.vue onlineText 返回硬编码「在线」、distanceText 硬编码「同校」（本轮重读确认）；MatchInfo.vue activeLabel 函数（:25-31 附近）硬编码「在线/今天活跃/N小时前活跃/N天前活跃」并经 distanceLine 渲染进卡片。i18n locale 文件本轮虽有改动，但上述点均未 t() 化。"
+    },
+    {
+      "id": "R1-DISCOVER-INDEX-013",
+      "page": "pages/discover/index",
+      "status": "仍开放（历史即待修复态，非复发）",
+      "evidence": "MatchInfo.vue 模板可见文本 ❝（U+275D）仍在位：本轮 sed :78-90 区间确认 <text class=\"match-info__intro-quote\">❝</text> 原样存在，未替换为 IMAGE_PATHS 图标或 CSS 绘制。"
+    },
+    {
+      "id": "T2",
+      "page": "pages/discover/index（verification: discover-guest-pill-vs-tabbar-native-layer）",
+      "status": "未复发",
+      "evidence": "游客登录胶囊避让修复在位：index.vue:487-493 bottom:calc(var(--tab-bar-h, 160rpx) + 128rpx + env(safe-area-inset-bottom))，MP-R1-PAGES-DISCOVER-INDEX-003 与 MP-R2-PAGES-DISCOVER-INDEX-001 两代修复注释在位；编译产物独立核对：grep dist/build/mp-weixin/pages/discover/index.wxss 命中 bottom:calc(var(--tab-bar-h, 160rpx) + 128rpx + env(safe-area-inset-bottom))。交互佐证：DC01 EXECUTED（游客冷启动 .discover-login-hint:present 且骨架→卡片正常）、DC25 EXECUTED（胶囊 tap→登录页跳转动作执行）。"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-001-002",
+      "page": "pages/discover/index + discover/matching（返回后错误横幅/重复消费）",
+      "status": "未复发（代码层）；交互层证据不足",
+      "evidence": "代码层：retryDiscover 强制刷新在位（index.vue:207-210 removeCache(\"discover:data\") 后直调 fetchCards，MP-R1-002 注释）；onShow 仅缓存不新鲜时清横幅（index.vue:220-224）；matching.vue:145 页面刷新兜底 setTimeout(()=>goBack(),200)、:208-215 onUnload 无条件 matchStore.reset()（MP-R2-MATCHING-007 注释：残留 pendingCardId 会绕过 200ms 兜底→对已消费卡误报错误——该防线在位）。交互层：DC07 FAILED——自动化未能制造错误横幅场景（.match-error__retry:absent，正常数据下无横幅本是正确表现），无法证明 retry 行为，缺网络故障注入手段；标注证据不足而非复发。"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-003",
+      "page": "pages/discover/index（游客胶囊 vs tabBar）",
+      "status": "未复发",
+      "evidence": "与 T2 同源证据：index.vue:487-493 修复值+两代注释在位，dist 编译产物同值命中；DC01/DC25 EXECUTED。custom-tab-bar/index.wxss 本轮无未提交改动（git status 不含该文件），遮挡几何前提未变。"
+    },
+    {
+      "id": "MP-R1-PAGES-DISCOVER-INDEX-004",
+      "page": "pages/discover/index（整页 probe 套件回归）",
+      "status": "未复发（套件已执行）",
+      "evidence": "本轮 exec-results.json 含 PAGES-DISCOVER-INDEX manifest 共 44 条（DC01-DC44）：28 EXECUTED / 15 FAILED / 1 SKIPPED。FAILED 逐条核对均为自动化环境问题而非页面回归：DC05 navError 为 automator 内部错误（getPageMetaByWebviewId null）、DC06/DC10 元素选择器 .discover-header__tab(\"附近\") not found、DC21 showModal 原生弹窗不可达、DC28-DC39 抽屉选择器失效、多例 pre:login A ok userId=user-1001 MISMATCH!（登录身份与预期 100158 不符）。无一条 FAILED 的 failureReason 指向历史修复点回退。"
+    },
+    {
+      "id": "MP-R3-DISCOVER-002",
+      "page": "pages/discover/index（匹配度粉圆糊化）",
+      "status": "未复发",
+      "evidence": "匹配环放大修复在位：MatchCard.vue .match-card__score-ring-inner width/height:132rpx，注释「R3：内圈 104→132rpx（文字实际容器），value/label 同步放大后『匹配度』不再糊化」在位（本轮 sed :225-245 区间确认）。交互佐证：DC03 EXECUTED（.match-card__distance:present .match-card__online:present .match-card__score-value:present .match-info:present）。"
+    }
+  ],
+  "coverage": [
+    "差分范围：回归索引全量 4430 行中筛出 riskFiles 含 apps/client/src/pages/discover/index.vue 的条目（T2、MP-R1-PAGES-DISCOVER-INDEX-001..004、MP-R3-DISCOVER-002）+ ask 指定簇 R1-DISCOVER-INDEX-005..013，共 14 条 checked，无遗漏。",
+    "取证手段：①当前工作树源码重读（index.vue 512 行全量 + SwipeContainer.vue/MatchCard.vue/MatchInfo.vue 关键区 + stores/discover/index.ts/filter.ts/matching.vue 关键区）——因 git status 显示相关文件均有未提交改动，未沿用 code-findings 稿结论；②grep/git 证据（CheckinPopup/CardSwiper 消费面、NEARBY_MAX_DISTANCE_KM、greet:count、dist 编译产物 padding-bottom 与 bottom 两表达式）；③reports/audit/round-1/interact/exec-results.json 44 条 DC 用例（gitSha aefd8a72）提取与 5 条重点用例（DC07/DC16/DC19/DC24/DC42）全 JSON 核对。",
+    "结论分布：未复发 10（005/006/007/009/010/T2/001-002 代码层/003/004/MP-R3-DISCOVER-002）；仍开放非复发 4（008 范围缩小、011、012、013——历史即待修复态，现状与历史一致，无修好又被改回的迹象）；已复发 0。",
+    "本轮新立案 1 条：MP-R1-PAGES-DISCOVER-INDEX-026（SwipeContainer catchtap 运行时方法缺失，console warn ×3，005 纵深防御层失效但主通道闭合，P3）。",
+    "证据不足项：001-002 的 retry 强制刷新行为（缺网络故障注入，DC07 无法制造横幅场景）；006/003 的像素级避让（DC01/DC42 截图保存失败 saveFile:fail exceeded maximum size / timeout，仅 dom/路由级佐证，精确像素留待 Layer B 真机）。",
+    "本轮未做（职责边界）：未运行真机/模拟器、未截图、未运行单测与 vue-tsc、未修改任何业务源码；交互执行结果为既有留档（exec-results.json），本任务仅做差分核对与提证。",
+    "产出文件：reports/audit/round-1/regression/PAGES-DISCOVER-INDEX.json（本文件，唯一产出）。"
+  ]
+}

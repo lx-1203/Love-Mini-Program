@@ -1,0 +1,1106 @@
+{
+ "round": "R1",
+ "judge": "A6-交互判定员-证据仲裁（次要24）",
+ "pages": [
+  "subpackages/profile-extra/profile/tasks",
+  "subpackages/profile-extra/settings/dnd",
+  "subpackages/profile-extra/feedback/history",
+  "subpackages/setup/profile/index",
+  "subpackages/setup/campus/index",
+  "subpackages/setup/schedule/index",
+  "subpackages/setup/recommend-pref/index",
+  "subpackages/setup/interest/index"
+ ],
+ "gitSha": "aefd8a72",
+ "generatedAt": "2026-09-23T14:34:29.000Z",
+ "summary": {
+  "total": 75,
+  "VERIFIED": 14,
+  "FAILED": 1,
+  "UNVERIFIED": 60
+ },
+ "checks": [
+  {
+   "caseId": "TK01",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "reLaunch 无参冷启动直开，采样标题/积分卡/任务项/路由链",
+   "expected": "标题「任务中心」+积分卡+4 任务项+完成数文案；骨架过渡不闪错误空态；console 无异常",
+   "actual": "top=tasks；dom .tasks-header__title/.tasks-summary/.task-item 均 present；route=[tasks]；console 空；巡检截图(A/B)标题「任务中心」+「0/4 已完成」+积分卡 0 积分 0%+4 任务项(完善个人资料/每日签到/发布首条动态/完成校园认证)均「去完成」，无错误空态",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK01",
+    "reports/audit/round-1/ops/次要24.json#TK01",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_tasks__默认.png",
+    "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_tasks__默认.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "TK02",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "点击每日签到未完成任务，采样 Toast/勾选态/积分卡",
+   "expected": "500ms 内 Toast「签到成功！+5 积分」+勾选态+积分卡/进度条即时更新",
+   "actual": "act:tapIndex .task-item#2 已执行但 toast:[]、.task-item__check:absent；before/after 截图双 ERROR:timeout；after wxml 快照抓到的是 setup/profile 页 DOM（错页）；同页 TK04-06 四次 .task-item 点击均零反馈，无法区分「automator 事件未派发」与「产品无反馈」，证据不足",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK02",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.wxml"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "TK03",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "签到快击×5+完成后重复点击",
+   "expected": "仅 1 次签到提交，后续点击 Toast「已完成」",
+   "actual": "rapidTap __CAND__ x5 done=5 但目标元素未确证（候选解析不透明），toast:[] 无「已完成」反馈、无网络记录；同 TK02 证据窗口不可靠",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK03"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "TK04",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "点击完善资料任务跳 ?entry=edit",
+   "expected": "500ms 内路由至 /subpackages/setup/profile/index?entry=edit",
+   "actual": "tapIndex .task-item#1 后 route 停留 tasks，未跳转；产品代码(mock 分支 path 存在必跳 tasks.vue:286-288)与零反馈矛盾，automator 派发失败无法排除",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK04",
+    "apps/client/src/subpackages/profile-extra/profile/tasks.vue:260-304"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "TK05",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "点击发布首条动态任务跳 village",
+   "expected": "500ms 内栈顶=subpackages/village/village/index",
+   "actual": "tap .task-item 后 route 停留 tasks；pre 阶段已有 navError=timeout，套件窗口已降级，无法归因",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK05"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "TK06",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "点击完成校园认证任务跳认证页",
+   "expected": "500ms 内栈顶=subpackages/campus/campus/certification",
+   "actual": "tap .task-item 后 route 停留 tasks；同 TK04 无法归因",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK06"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "TK07",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "返回键：栈=1 switchTab 首页/栈>1 落来源页",
+   "expected": "场景1 switchTab pages/home/index；场景2 navigateBack 落来源页；64rpx 热区记录",
+   "actual": ".tasks-header__back 源码存在(tasks.vue:372)且巡检截图可见返回键，但 automator 采样 absent、tap 未生效；末态 route=pages/profile/index 异常；两场景均未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK07",
+    "apps/client/src/subpackages/profile-extra/profile/tasks.vue:372",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_tasks__默认.png"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "TK08",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "签到后重进，onShow 状态同步不重置",
+   "expected": "重进后签到任务保持已完成，积分卡含签到 5 分",
+   "actual": "observe-only：未执行「签到→离开→重进」链路（TK02 签到未成功）；.checkedInToday 非 DOM 类名（采样无效）；onShow 同步未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK08"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "TK09",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "operation": "整页滚动到底再回顶",
+   "expected": "滚动平滑无报错；渲染正常无重叠；console 无异常",
+   "actual": "act:pageScrollTo bottom→top 完成，EV scrollPos=top；route 停留 tasks；console 空；渲染正常由巡检截图佐证",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/TK09",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_tasks__默认.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "DND01",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "reLaunch 直开采样 loading→content 与回显",
+   "expected": "先 spinner 后内容态；回显 22:00/08:00/每天/紧急通知开；不闪错误空态；console 无异常",
+   "actual": "top=dnd；dom .switch/.time-row__value/.radio-row__indicator--active present（spinner 已过加载期未采到属预期）；route=[dnd]；console 空；巡检截图(A/B 默认+数据态)回显 22:00/08:00/每天选中/已关闭/紧急通知开，无错误空态；loading→content 过渡瞬间未采样（单次采样），内容态与回显确证",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND01",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__默认.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__数据态.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "DND02",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "总开关切换两次采样状态行",
+   "expected": ".status-row__value 在已开启/已关闭间即时切换+--on 类迁移",
+   "actual": "act:tap .switch-row 已执行，但 .status-row__value 仅 presence 采样，文本与 --on 类变化未采样，after 截图 ERROR:timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND02"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "DND03",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "重复方式切自定义/切回每天",
+   "expected": "自定义→weekday-grid 七 chip 出现；切回→网格消失且清空",
+   "actual": "act:tap .radio-row 落在第 1 项「每天」（已选中项，点击无变化属合法），自定义场景未构造；after 截图仍为每天选中（与代码一致），自定义分支未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND03-after.png"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "DND04",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "自定义星期多选/去选/保存回显",
+   "expected": "chip 高亮、排序写入、回显",
+   "actual": "observe-only：点周三/周一 chip、去选、保存回显全未执行；.weekday-item--active:absent 仅证明未选",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "DND05",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "时间选择器改 23:30/07:30",
+   "expected": ".time-row__value 即时更新",
+   "actual": "observe-only：picker change 未触发，文本变化未采样",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND05"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "DND06",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "自定义未选星期点保存",
+   "expected": "Toast「请至少选择一个星期」且无 PUT",
+   "actual": "前置「切自定义且不选星期」未构造即 tap .save-btn：实际 Toast「设置已保存」（表单默认每天=合法，保存链路正常），校验分支未触达；PUT 未发起与否无网络记录",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND06-after.png"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "DND07",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "开始=结束时间点保存",
+   "expected": "Toast「结束时间必须大于开始时间」且无 PUT",
+   "actual": "observe-only：22:00/22:00 未设置、保存未点击，校验 Toast 未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND07"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "DND08",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "合法表单快击保存×5",
+   "expected": "isSaving 防重入仅 1 次 PUT；Toast「设置已保存」+响应回写；请求期「处理中...」禁用态；console 无异常",
+   "actual": "rapidTap .save-btn x5 done=5 → toast 捕获到 5 条「设置已保存」（ts 1790141243632/700/779/860/943，311ms 内）；Toast 文案本身符合预期，但 5 次成功 Toast=handleSave 完整走完 5 轮（成功 Toast 位于 await updateDndSetting 之后 dnd.vue:265-267，isSaving 于 finally 复位 273-275），与「快击×5 仅 1 次 PUT」预期冲突：本地后端 ~70-80ms 完成一轮时锁窗口即穿透；无网络请求计数佐证（console 空）；after wxml 无 save-btn--disabled 残留（无永驻 Loading）；before 截图 61KB 正常",
+   "verdict": "FAILED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND08",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-before.png",
+    "apps/client/src/subpackages/profile-extra/settings/dnd.vue:238-275",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-after.wxml"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "DND09",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "注入保存失败验证错误 Toast/按钮恢复",
+   "expected": "catch Toast 错误信息；finally 恢复可点",
+   "actual": "网络故障未注入（保存实际成功 Toast「设置已保存」），catch 分支未触达；「Loading 不永驻」由 DND08 五连击后按钮仍可用旁证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND09"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "DND10",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "注入 GET 失败验证错误态+重试",
+   "expected": "error 态 errorMessage+重试按钮，点击重拉恢复",
+   "actual": "GET 失败未注入 → pageState 恒 content → .retry-btn 不存在属正常态非缺陷；错误态与重试未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND10"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "DND11",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "operation": "深链栈=1 点返回键 switchTab 我的",
+   "expected": "switchTab /pages/profile/index 兜底",
+   "actual": "act 仅 reLaunch，未点击 .nav-bar__back（采样 absent 为 stale context，类名存在 dnd.vue:319）；switchTab 兜底未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/DND11",
+    "apps/client/src/subpackages/profile-extra/settings/dnd.vue:319"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "FH01",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "reLaunch 直开采样筛选条/列表/错误卡",
+   "expected": "筛选条 4 chip；有数据显示列表/无数据空态；错误不得伪装空态；console 无异常",
+   "actual": "top=history；dom .filter-chip:present、.record:absent、.error-card:absent（错误未伪装空态✓）；console 空；FH03-after 操作截图（同套同页）证实 4 chip 渲染（全部高亮）+2 条记录列表（标题+处理中/已查看徽标+时间+查看详情），巡检 A/B 同",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH03-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_profile-extra_feedback_history__默认.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "FH02",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "筛选 chip 切换反馈/建议/重复点击",
+   "expected": "chip 高亮迁移+过滤重拉+同值短路+滚动位保持",
+   "actual": "act:tap 反馈/建议 已执行但激活态迁移/过滤重拉/同值短路均无后置采样（fh02-after 截图 ERROR:timeout、无网络计数）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH02"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "FH03",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "点第 1 条记录展开详情再点收起",
+   "expected": "懒加载详情+hint「查看详情→收起」；再点收起；500ms 内有反馈",
+   "actual": "act:tap .record__header 已执行；FH03-after.png 实证第 1 条已展开：反馈内容+最新回复详情区渲染、hint=「收起」、第 2 条保持收起（互斥基线）；dom 采样 .record__header:absent 与截图矛盾（stale context 伪象）；「再点收起」半段无证据",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH03-after.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "FH04",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "展开互斥与详情缓存",
+   "expected": "展开 B 时 A 收起；二次展开命中缓存不再请求",
+   "actual": "observe-only：互斥与缓存链路全未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "FH05",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "深链 ?id=N 300ms 自动展开",
+   "expected": "onLoad 读 id→300ms 后自动展开该记录；无效 id 不展开不报错",
+   "actual": "深链参数模板未替换：实际以 ?id={id} 打开（route options id 为字面量）→ parseInt=NaN 命中防御分支（不展开不报错，console 空，与 history.vue:216-218 一致）；合法 id 自动展开未测",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH05",
+    "apps/client/src/subpackages/profile-extra/feedback/history.vue:216-224"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "FH06",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "点击附件图片全屏预览",
+   "expected": "uni.previewImage 预览且可关闭",
+   "actual": "带附件记录不存在：FH03-after 展开的详情仅有文本无附件宫格，.attachment-img 元素缺失属实（前置不满足），previewImage 未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH03-after.png"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "FH07",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "注入列表失败验证错误卡+重试",
+   "expected": "错误卡显示+点重试重拉恢复",
+   "actual": "列表请求失败未注入 → .error-card 不出现属正常态；错误卡+重试恢复未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH07"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "FH08",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "AppShell 返回：navigateBack/兜底 switchTab",
+   "expected": "栈>1 回来源页；栈=1 switchTab 首页",
+   "actual": "act 仅 reLaunch，AppShell 返回键未点击；两场景均未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH08"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "FH09",
+   "page": "subpackages/profile-extra/feedback/history",
+   "operation": "列表滚动到底再回顶",
+   "expected": "滚动无卡死报错；展开态滚动后保持；console 无异常",
+   "actual": "act:pageScrollTo bottom→top 完成，EV scrollPos=top；console 空；列表渲染由 FH03-after 截图佐证（记录数≤屏高，断言按整页滚动可用放宽）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/FH09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-FEEDBACK-HISTORY-FH03-after.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "EP01",
+   "page": "subpackages/setup/profile/index",
+   "operation": "带 ?entry=edit 直开采样进度条/回显/按钮",
+   "expected": "edit 模式隐藏 .card__progress；表单回显；按钮「保 存」；console 无异常",
+   "actual": "route options entry=edit ✓；dom .card__progress:absent（编辑模式隐藏进度条✓）；pre-FAIL input .entry 为执行器模板伪选择器（页面无该类，非产品）；回显与按钮文案由同套同页同参 EP03-after.png/wxml 旁证：无进度条、昵称=林晓/简介/年级=大三/称呼=TA 已回显、submit-btn 文案「保 存」；console 空",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP01",
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.wxml"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "EP02",
+   "page": "subpackages/setup/profile/index",
+   "operation": "无参直开（wizard）采样进度条与按钮",
+   "expected": "wizard 模式 SetupProgress 步骤 1；按钮「保存并继续」；console 无异常",
+   "actual": "route 无参 ✓；dom .card__progress:present（wizard 显示进度条✓）；巡检截图(A/B 校验错误态)实证 wizard 第 1/4 步进度条渲染；按钮文案「保存并继续」未经文本采样",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP02",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__校验错误.png"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "EP03",
+   "page": "subpackages/setup/profile/index",
+   "operation": "改昵称保存快击×5",
+   "expected": "仅 1 次 PUT 全量契约+Toast「保存成功」+600ms 返回",
+   "actual": "前置「昵称追加测字」失败（执行器输入定位 pre-FAIL），表单保持必填缺失（身高空）：快击×5 得 6 条「请选择身高」校验 Toast（校验拦截链路正常、每击均有反馈），保存成功路径/PUT 契约/600ms 返回未验证；Toast 计数 6>5 已记录",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.png"
+   ],
+   "confidence": 0.45
+  },
+  {
+   "caseId": "EP04",
+   "page": "subpackages/setup/profile/index",
+   "operation": "空表单保存逐字段拦截",
+   "expected": "Toast「请输入昵称」+field--error 红框抖动+无 PUT",
+   "actual": "watchdog-timeout act-tap 25000ms（automator 停止响应），pre 三次 reLaunch 均 NAV_ERROR，dom 全 absent（stale），after 截图仅 8.7KB 空图；拦截未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP05",
+   "page": "subpackages/setup/profile/index",
+   "operation": "昵称/简介输入边界",
+   "expected": "maxlength 截断/特殊字符 emoji 存活/清空三态",
+   "actual": "input __CAND__ element not found + navError 级联；边界未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP05"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP06",
+   "page": "subpackages/setup/profile/index",
+   "operation": "年级/身高 picker 选择回显",
+   "expected": "gradeLabel/heightLabel 更新+行内错误清除",
+   "actual": "pre watchdog 超时 + observe-only，picker change 未触发，.field__pick-text 采样 absent（stale，类名存在见 EP03 wxml）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP06"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP07",
+   "page": "subpackages/setup/profile/index",
+   "operation": "扩展字段填写边界",
+   "expected": "picker 中文回显+maxlength 截断+focus 光环",
+   "actual": "input __CAND__ element not found + navError 级联；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP07"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP08",
+   "page": "subpackages/setup/profile/index",
+   "operation": "身份 radio 切换+持久化",
+   "expected": "选中态迁移+campus-love:user-identity 即时持久化",
+   "actual": "watchdog-timeout act-tap（automator 无响应）；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP08"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP09",
+   "page": "subpackages/setup/profile/index",
+   "operation": "照片墙删除：弹窗确认+DELETE+Toast",
+   "expected": "弹窗文案+确认色+「已删除」+槽位变空",
+   "actual": "tapIndex .photo-grid__slot watchdog-timeout；dom 采样 absent 为 stale（EP03-after.png 实证照片墙 4 占+2 空存在）；弹窗/DELETE/Toast 未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP09",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-PROFILE-INDEX-EP03-after.png"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP10",
+   "page": "subpackages/setup/profile/index",
+   "operation": "照片墙空槽/头像 actionSheet 链路",
+   "expected": "actionSheet 两项+取消无副作用+顺序归一化",
+   "actual": "element not found + 上下文漂移（末 route=pages/discover/index）；链路未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP10"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP11",
+   "page": "subpackages/setup/profile/index",
+   "operation": "无变更保存",
+   "expected": "Toast「资料无变更」无 PUT，600ms 后按模式返回",
+   "actual": "无 act:tap 记录（仅 pre + pre-FAIL input .entry），Toast 与导航未验证；EP11/EP12 after 截图字节数相同(183686B)疑同帧",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP11"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP12",
+   "page": "subpackages/setup/profile/index",
+   "operation": "注入 PUT 失败验证错误态",
+   "expected": "Toast 错误信息+按钮恢复+表单值不丢",
+   "actual": "故障注入未执行；act:tap .submit-btn 后 toast:[] 且无校验 Toast（连合法拦截反馈都未捕获，采样窗口不可信）；未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP12"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP13",
+   "page": "subpackages/setup/profile/index",
+   "operation": "必填齐备按钮高亮联动",
+   "expected": "formComplete 联动 submit-btn--disabled 视觉态",
+   "actual": "observe-only：逐项补齐联动未执行（输入不可自动化）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP13"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "EP14",
+   "page": "subpackages/setup/profile/index",
+   "operation": "hero 返回键 navigateBack/兜底",
+   "expected": "栈>1 回来源页；栈=1 switchTab 首页",
+   "actual": ".hero__back 源码与 TK02-after.wxml/EP03-after.png 均证实存在（hero 返回键），automator 采样 absent、tap 未生效；末 route=pages/profile/index 异常；两场景未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP14",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.wxml"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "EP15",
+   "page": "subpackages/setup/profile/index",
+   "operation": "长表单滚动到底回顶",
+   "expected": "滚动平滑；渲染无重叠错位；console 无异常",
+   "actual": "EV scrollPos=top（滚动执行并回顶）；console 空；渲染无错位由巡检滚动-中部/滚动-底部截图佐证；pre-FAIL input .entry 为执行器模板伪选择器（非产品）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S17-c24a/EP15",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__滚动-中部.png",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__滚动-底部.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "CA01",
+   "page": "subpackages/setup/campus/index",
+   "operation": "reLaunch 直开采样三级选择器/按钮态/进度条",
+   "expected": "占位文案；未选完按钮置灰；SetupProgress 步骤 2；既有资料回显；console 无异常",
+   "actual": "top=campus、route ✓、console 空；本用例 dom 采样全 absent 为 stale context（.field__text 等类名存在 campus/index.vue:225）；同套同页操作截图实证渲染：CA07-after/CA03-after（校园认证标题+第 2/4 步进度条+三字段回显北京/北京大学/工业设计+保存并继续随完备度高亮+skip-bar+返回键），巡检 A/B 同；全新未选态占位文案未单独取证",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-CAMPUS-INDEX-CA03-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-CAMPUS-INDEX-CA07-after.png",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_campus_index__默认.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "CA02",
+   "page": "subpackages/setup/campus/index",
+   "operation": "城市→学校→专业三级联动清空",
+   "expected": "换城市清空学校专业；换学校清空专业",
+   "actual": "observe-only：picker change 联动全未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA02"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "CA03",
+   "page": "subpackages/setup/campus/index",
+   "operation": "三项选完保存快击×5→新用户路由时间安排",
+   "expected": "按钮高亮+仅 1 次提交+Toast「保存成功」+replace 时间安排页",
+   "actual": "observe-only：选完三项+快击保存未执行；且前置不成立——CA03-after 实证账号已有 campusProfile（三字段回显），命中 isReauthScenario 而非新用户分支",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-CAMPUS-INDEX-CA03-after.png"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "CA04",
+   "page": "subpackages/setup/campus/index",
+   "operation": "未选完点保存：disabled 拦截+兜底 Toast",
+   "expected": "disabled 无 Toast 无请求；绕过时兜底 Toast",
+   "actual": "observe-only：点击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "CA05",
+   "page": "subpackages/setup/campus/index",
+   "operation": "补认证场景保存→replace 回我的页",
+   "expected": "isReauthScenario→Toast 成功后 replaceAppPath pages/profile/index",
+   "actual": "observe-only + pre navError：保存动作未执行（回显数据在）；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA05"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "CA06",
+   "page": "subpackages/setup/campus/index",
+   "operation": "跳过入口路由分派",
+   "expected": "无 campusProfile→replace 时间安排；有→replace 我的页",
+   "actual": "act:tap .skip-bar 已执行但 dom 前采样 .skip-bar:absent 与之自相矛盾（stale），route 未变化：skip() 无条件 replaceAppPath（campus/index.vue:184-192），产品路径应跳转——点击未派发与产品静默失败无法区分",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA06",
+    "apps/client/src/subpackages/setup/campus/index.vue:184-192"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "CA07",
+   "page": "subpackages/setup/campus/index",
+   "operation": "隐私说明「?」弹窗展示与确认关闭",
+   "expected": "标题「认证信息说明」+隐私内容+单确认「我知道了」；关闭后状态不变",
+   "actual": "act:tap .card-header__help → CA07-after.png 实证原生 showModal：标题「认证信息说明」+内容「你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。」+唯一按钮「我知道了」，与 showPrivacyInfo(campus/index.vue:106-113) 一致；「我知道了」点击受原生弹层自动化限制未执行（非产品缺陷），弹窗背后页面渲染正常",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA07",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-CAMPUS-INDEX-CA07-after.png",
+    "apps/client/src/subpackages/setup/campus/index.vue:106-113"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "CA08",
+   "page": "subpackages/setup/campus/index",
+   "operation": "AppShell 返回落点",
+   "expected": "栈>1 回来源页；栈=1 兜底首页；未保存值丢弃如实记录",
+   "actual": "pre navigateTo NAV_ERROR Uncaught + pre:switchTab 后无 act:tap 返回键；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA08"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "CA09",
+   "page": "subpackages/setup/campus/index",
+   "operation": "注入保存失败验证错误态",
+   "expected": "Toast 错误信息+按钮恢复+重试成功",
+   "actual": "observe-only + 故障注入未执行；未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/CA09"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC01",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "reLaunch 直开采样地点/时段列表/添加按钮",
+   "expected": "onMounted 回显；无历史时段为空且不预填；「＋添加时段」常显；console 无异常",
+   "actual": "top=schedule、route ✓、console 空；dom .field:present（地点输入）+.time-window-field:absent（时段列表空且未预填示例值✓ 对应 R4-00045/46）；回显文本与添加按钮由巡检截图(A/B)实证：偏好=图书馆和北草坪+时段行删除按钮+「＋添加时段」+保存并进入应用",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC01",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_schedule_index__默认.png"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "SC02",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "空表单保存拦截",
+   "expected": "Toast「请输入偏好地点」无 PUT",
+   "actual": "observe-only：保存点击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC02"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC03",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "只填地点无时段保存拦截",
+   "expected": "Toast「请至少添加一个时间窗口」无 PUT",
+   "actual": "observe-only：保存点击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC03"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC04",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "添加/删除时段动态增减",
+   "expected": "每次点击新增一行；删至 1 条删除按钮消失",
+   "actual": "act-FAIL:input(__CAND__) element not found：添加×3/填值/删除全链路未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC05",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "合法保存快击×5→redirect 推荐偏好",
+   "expected": "仅 1 次 PUT+replace 推荐偏好页",
+   "actual": "地点输入定位失败（__CAND__「东门图书馆」not found）→ 合法表单未成立、保存快击未执行；after wxml 残片 value=今晚 无法佐证保存成功；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC05",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-SETUP-SCHEDULE-INDEX-SC05-after.wxml"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC06",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "时段输入边界",
+   "expected": "maxlength=60 截断+特殊字符存活+清空校验",
+   "actual": "input __CAND__ ×2 element not found：未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC06"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC07",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "AppShell 返回落点",
+   "expected": "栈>1 navigateBack；栈=1 兜底首页",
+   "actual": "执行器以 navigateBack API 代替点击页内返回键且栈=1 抛 Uncaught [object Object]；AppShell 返回键兜底未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC07"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "SC08",
+   "page": "subpackages/setup/schedule/index",
+   "operation": "注入保存失败验证错误态",
+   "expected": "Toast 错误信息+saving 复位可重试",
+   "actual": "observe-only + 故障注入未执行；未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/SC08"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RP01",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "reLaunch 直开采样 loading→回显→表单三区",
+   "expected": "loading 卡→GET /me 回显；默认 12:00/campus_first/开；进度条按身份；console 无异常",
+   "actual": "top=recommend-pref、route ✓、console 空；dom .option-item--active:present（默认项激活✓）；巡检截图(A/B)实证表单三区：推荐时间 12:00 高亮+范围同校优先高亮+校园优先开关 ON+学生进度第 3/4 步；loading 瞬间未采样",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP01",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_recommend-pref_index__默认.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP05-after.wxml"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "RP02",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "推荐时间四选一高亮迁移",
+   "expected": "点击 500ms 内单选高亮迁移",
+   "actual": "observe-only：10:00/18:00 点击未执行（after 截图为默认 12:00 态）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP02"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RP03",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "推荐范围三选一互斥",
+   "expected": "点同城/不限高亮迁移，值存 city/unlimited",
+   "actual": "act:tap 同城/不限 已执行但 after 截图仍为「同校优先」高亮（无迁移）：点击未派发与产品失效无法区分（文字点选在同套 CA07 可用、但本页 after 截图时序亦不可靠），证据冲突",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP03",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-SETUP-RECOMMEND-PREF-INDEX-RP03-after.png"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "RP04",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "校园优先整行点击取反",
+   "expected": "整行取反+开关滑块位移动画",
+   "actual": "act:tap .toggle-row 已执行但开关态未采样（采样 absent 为 stale，类名存在 recommend-pref/index.vue:215-217），after 截图 ERROR:timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP04"
+   ],
+   "confidence": 0.35
+  },
+  {
+   "caseId": "RP05",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "保存快击×5→PUT+Toast+replace 寻觅页",
+   "expected": "仅 1 次 PUT+Toast「保存成功」+栈顶 pages/discover/index",
+   "actual": "observe-only：改时间/范围+快击保存未执行；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP05"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RP06",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "注入 GET 失败验证错误卡+重拉",
+   "expected": "错误卡+重新加载按钮点击恢复",
+   "actual": "GET 失败未注入 → 错误卡未出现属正常态；未验证；manifest 预授权无法注入标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP06"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "RP07",
+   "page": "subpackages/setup/recommend-pref/index",
+   "operation": "AppShell 返回落点",
+   "expected": "栈>1 回来源页；栈=1 兜底首页",
+   "actual": "执行器以 navigateBack API 代替点击页内返回键且栈=1 抛 Uncaught；兜底未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/RP07"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "IN01",
+   "page": "subpackages/setup/interest/index",
+   "operation": "reLaunch 直开采样标签组数/回显/计数",
+   "expected": "仅「兴趣」1 组；interestTags 回显；标题+副题「至少 3 个」；组 max=5；console 无异常",
+   "actual": "top=interest、route ✓、console 空；dom .tag-selector__group:present + .title:present；巡检截图(A/B)实证：标题「选择兴趣」+副题「…至少 3 个」、仅「兴趣」1 组、组计数 0/5（max=5）、已选区空态「暂未选择任何标签」（账号无既有标签→0 选中一致）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN01",
+    "reports/screenshots/round-1-tour/A/subpackages_setup_interest_index__默认.png",
+    "reports/screenshots/round-1-tour/B/subpackages_setup_interest_index__默认.png"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "IN02",
+   "page": "subpackages/setup/interest/index",
+   "operation": "点 2 个未选 chip 联动",
+   "expected": "chip 高亮+顶部已选区+计数 n/5 同步",
+   "actual": "observe-only：点击未执行（dom 仅 presence 采样）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN02"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "IN03",
+   "page": "subpackages/setup/interest/index",
+   "operation": "已选 chip 移除与清空",
+   "expected": "removeTag 精确移除；clearAll 全清显空态",
+   "actual": "前置「已选≥1 标签」未构造即找「清空」：totalCount=0 时清空按钮按设计隐藏（TagSelector.vue:185 v-if），element not found 属前置缺失非产品缺陷；移除/清空交互未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN03",
+    "apps/client/src/components/profile/TagSelector.vue:185-191"
+   ],
+   "confidence": 0.4
+  },
+  {
+   "caseId": "IN04",
+   "page": "subpackages/setup/interest/index",
+   "operation": "选满 5 再点第 6 个",
+   "expected": "Toast「已达最大选择数」计数不变",
+   "actual": "observe-only：选满+第 6 次点击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN04"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "IN05",
+   "page": "subpackages/setup/interest/index",
+   "operation": "选 3 个保存快击×5",
+   "expected": "GET 合并→PUT 仅改 interestTags+Toast「已保存」+600ms 返回",
+   "actual": "observe-only：保存快击未执行（.interest-save:present 仅证按钮存在；before/after 截图字节数相同 43812B 疑同帧）；未验证",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN05"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "IN06",
+   "page": "subpackages/setup/interest/index",
+   "operation": "少于 3 个点保存",
+   "expected": "Toast「至少选择 3 个兴趣」无保存请求",
+   "actual": "observe-only：保存点击未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN06"
+   ],
+   "confidence": 0.3
+  },
+  {
+   "caseId": "IN07",
+   "page": "subpackages/setup/interest/index",
+   "operation": "打开即返回（无页内返回键）",
+   "expected": "navigateBack 落来源页；深链直开无返回键记录可用性缺陷候选",
+   "actual": "pre navigateTo/switchTab NAV_ERROR Uncaught、无 act：navigateBack 模拟返回未生效；缺陷候选仅记录未复现",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#S18-c24b/IN07"
+   ],
+   "confidence": 0.3
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-C24-001",
+   "round": "R1",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-PROFILE-EXTRA-SETTINGS-DND-DND08-before.png（after 截图 ERROR:timeout；主证=exec-results DND08 toast 数组）",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "免打扰保存按钮防连点在「快速完成」场景被穿透：快击×5（间隔<200ms）产生 5 条「设置已保存」Toast（311ms 内，ts 1790141243632→943）。handleSave 的 isSaving 锁仅在请求 in-flight 期间生效（dnd.vue:239 置位、273-275 finally 复位），成功 Toast 位于 await updateDndSetting 之后（dnd.vue:265-267），本地后端 ~70-80ms 完成一轮保存后锁即释放，5 连点=5 次完整保存周期。违背 R11§5「主按钮防连点（快击 5 次只提交 1 次）」的严格口径（Manifest DND08 expected=仅 1 次 PUT）。toast 捕获器在同套 DND06/09、EP03 均正常记录，观测可信；但无网络请求计数直接佐证 PUT=5，判 FAILED 置信 0.65。",
+   "evidence": [
+    "A1 observed：exec-results.json#S17-c24a/DND08 toast=[设置已保存×5]（rapidTap x5 done=5）",
+    "源码：apps/client/src/subpackages/profile-extra/settings/dnd.vue:238-275（isSaving 锁窗口=请求时长；成功 Toast 在 await 之后）",
+    "Manifest expected：次要24.json#DND08「isSaving 防重入仅 1 次 PUT…成功后 Toast 设置已保存」",
+    "旁证：DND06/DND09 同套 Toast 捕获正常（单条记录），排除捕获器重复计数"
+   ],
+   "sources": [
+    "interaction",
+    "code",
+    "log"
+   ],
+   "confidence": 0.65,
+   "ideal": "快击 5 次仅 1 次提交：保存提交后设置冷却期（如 800ms 内忽略再次 tap）或成功 Toast 展示期间按钮保持禁用，冷却结束后恢复。",
+   "fix": "在 handleSave 成功/失败分支后追加提交冷却（isSaving 复位延后至 Toast 消失或固定 800ms），并在请求层为 PUT /api/dnd 增加幂等键；R2 用网络计数复核 PUT=1。",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-C24-002",
+   "round": "R1",
+   "page": "全部 8 页（S17-c24a/S18-c24b 两套）",
+   "screenshot": "（执行环境问题，无单页截图；证据=exec-results 全部 75 条 pre:login MISMATCH 标注）",
+   "category": "Data",
+   "severity": "P2",
+   "description": "双身份前置全面失真：Manifest 要求 A=100158(曦风)/B=100159(小新生) 双身份各跑一次，但 tmp_r11_login.json/tmp_r11_guest.json 的 JWT exp=1790088124 早于套件执行时刻（toast 首条 ts=1790141167s ≈ 2026-09-23T05:19Z）约 14.7 小时，token 已过期；A1 两套均回退登录为 userId=user-1001（执行器自标 MISMATCH!），且 S18-c24b（B 套）同样只执行 login A。75 条用例的身份前置全部未满足：数据态相关断言（TK08 签到态重进回显、CA05 补认证场景路由、FH04/05/06 多记录/指定 id/附件、EP 回显数据）落在 user-1001 的数据上，双身份互斥/差异化断言不可考。",
+   "evidence": [
+    "A1 observed：exec-results.json 次要24 全部 75 条含 pre:login A ok userId=user-1001 MISMATCH!（S18 亦为 login A）",
+    "根因：tmp_r11_login.json JWT payload exp=1790088124 < 执行时刻 1790141167（过期约 14.7h）；tmp_r11_guest.json 同批签发（iat 相同）",
+    "Manifest pre：次要24.json 各用例「身份A（100158 曦风 ← tmp_r11_login.json）与身份B（100159 小新生 ← tmp_r11_guest.json）双身份各跑一次」"
+   ],
+   "sources": [
+    "log",
+    "interaction"
+   ],
+   "confidence": 0.9,
+   "ideal": "双身份各按 100158/100159 登录执行，token 执行前校验有效期并即时续签。",
+   "fix": "R2 执行器启动时校验 tmp_r11_*.json 的 exp，过期即重新签发（或由后端提供长期测试签发接口）；S18 套改用 guest 身份登录；身份断言写入 pre 硬校验（不匹配即中止该套）。",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-C24-003",
+   "round": "R1",
+   "page": "全部 8 页（S17/S18 执行器基建）",
+   "screenshot": "（基建问题；典型错证=TK02-after.wxml 内容为 setup/profile 页 DOM）",
+   "category": "Architecture",
+   "severity": "P2",
+   "description": "交互取证执行器证据链缺陷导致 60/75 判 UNVERIFIED（证据不足而非产品失败）：(a) DOM 采样大量命中 stale page context——真实存在且巡检截图可见的元素被采成 absent（.tasks-header__back/.hero__back/.field__text/.skip-bar，与 tasks.vue:372、TK02-after.wxml、campus/index.vue:225/277 矛盾）；(b) 混入幻觉选择器——把 i18n key/变量名当类名采样（.entry/.campus/.saveSuccess/.checkedInToday/.maxReached/.customWeekdaysRequired 等恒 absent，采样无意义）；(c) TK02-after.wxml 快照抓到错误页面（setup/profile 而非 tasks）；(d) 截图大量 ERROR:timeout（automator 不稳定，且 S17 中段出现 watchdog 级联：EP04-EP10）；(e) FH05 深链参数模板 ?id={id} 未替换实值（NaN 防御分支被动通过，目标分支未测）；(f) observe-only 无动作却标 EXECUTED（CA03/CA05/RP05/IN05 等 critical 用例未执行任何交互）。FH03 证明截图通道可信而 DOM 通道失真（FH03-after.png 实证展开态，同刻 dom 采样 absent）。",
+   "evidence": [
+    "源码对照：tasks.vue:372 .tasks-header__back、dnd.vue:319 .nav-bar__back、campus/index.vue:225/277 .field__text/.skip-bar 均存在，A1 dom 采样 absent",
+    "错页快照：reports/screenshots/round-1-interact/wxml/SUBPACKAGES-PROFILE-EXTRA-PROFILE-TASKS-TK02-after.wxml 内容为 setup/profile 页（hero/photo-grid/submit-btn）",
+    "通道背离：exec-results FH03 dom .record__header:absent vs FH03-after.png 展开态（反馈内容+最新回复+收起）",
+    "参数未替换：exec-results FH05 route options id 为字面量 {id}",
+    "observe-only 的 critical：CA03/CA05/RP05/IN05/EP09(observed 无 act) 均无交互动作记录"
+   ],
+   "sources": [
+    "code",
+    "screenshot",
+    "log"
+   ],
+   "confidence": 0.85,
+   "ideal": "每次动作后重取 page 句柄再采样（动作前后双采样）；选择器白名单校验（不存在于页面源码的选择器拒绝采样）；wxml 快照校验当前栈顶路由；截图失败重试≥2；深链参数用实测存活实值；EXECUTED 判定绑定 act 成功。",
+   "fix": "R2 执行器：动作后 await 页面稳定+重新 getCurrentPages；建立「页面路由↔快照」一致性断言；参数表注入实值；observe-only 用例不得标 EXECUTED；对 critical 用例失败自动重试一次。",
+   "status": "待修复"
+  }
+ ],
+ "unverifiable": [
+  "TK02|tapIndex .task-item#2 已执行但 toast:[]/勾选态 absent，前后截图双 ERROR、after wxml 为错页快照，TK02-06 同页四连零反馈无法归因产品或自动化|1",
+  "TK03|rapidTap 目标元素未确证（__CAND__），toast:[]、无网络记录|1",
+  "TK04|tap 后 route 停留 tasks 未跳转，产品代码与零反馈矛盾，automator 派发失败无法排除|1",
+  "TK05|tap 后 route 停留 tasks；pre 阶段 navError=timeout 套件窗口降级|1",
+  "TK06|tap 后 route 停留 tasks；同 TK04 无法归因|1",
+  "TK07|.tasks-header__back 源码存在且巡检截图可见，automator 采样 absent、tap 未生效，两场景均未验证|1",
+  "TK08|observe-only：签到→重进链路未执行，.checkedInToday 非 DOM 类名|1",
+  "DND02|tap .switch-row 已执行但状态行文本/--on 类变化未采样，after 截图 ERROR|1",
+  "DND03|tap 落在已选中项「每天」（合法无变化），自定义网格场景未构造|1",
+  "DND04|observe-only：星期多选/去选/保存回显全未执行|1",
+  "DND05|observe-only：picker change 未触发|1",
+  "DND06|前置自定义+不选星期未构造，实际保存成功（Toast 设置已保存），校验分支未触达|1",
+  "DND07|observe-only：相等时间未设置、保存未点击|1",
+  "DND09|故障注入未执行（保存实际成功），catch 分支未触达；manifest 预授权 UNVERIFIED|1",
+  "DND10|GET 失败未注入，错误态未出现属正常态；manifest 预授权 UNVERIFIED|1",
+  "DND11|act 仅 reLaunch 未点返回键（类名存在 dnd.vue:319），switchTab 兜底未验证|1",
+  "FH02|tap 反馈/建议 已执行但迁移/重拉/短路无后置采样，after 截图 ERROR|1",
+  "FH04|observe-only：互斥与缓存链路未执行|1",
+  "FH05|深链参数模板未替换（?id={id} 字面量），NaN 防御分支被动通过，合法 id 自动展开未测|1",
+  "FH06|带附件记录不存在（展开详情无附件宫格），前置不满足|1",
+  "FH07|列表失败未注入，错误卡未出现属正常态；manifest 预授权 UNVERIFIED|1",
+  "FH08|act 仅 reLaunch，返回键未点击，两场景未验证|1",
+  "EP03|前置改昵称失败（输入定位 pre-FAIL），快击得 6 条「请选择身高」校验 Toast（拦截正常），保存成功路径未验证|1",
+  "EP04|watchdog-timeout（automator 停止响应）+三次 reLaunch NAV_ERROR+空图截图|1",
+  "EP05|input __CAND__ not found + navError 级联|1",
+  "EP06|pre watchdog 超时+observe-only，picker 未触发|1",
+  "EP07|input __CAND__ not found + navError 级联|1",
+  "EP08|watchdog-timeout act-tap，radio 迁移与持久化未验证|1",
+  "EP09|tapIndex watchdog-timeout；dom absent 为 stale（照片墙存在有实证），弹窗/DELETE/Toast 未验证|1",
+  "EP10|element not found+上下文漂移（末 route=pages/discover）|1",
+  "EP11|无 act:tap 记录，Toast 与导航未验证；EP11/EP12 截图同字节数疑同帧|1",
+  "EP12|故障注入未执行+点击后零反馈记录（采样窗口不可信）；manifest 预授权 UNVERIFIED|1",
+  "EP13|observe-only：必填补齐联动未执行|1",
+  "EP14|.hero__back 源码/截图证实存在，automator absent、tap 未生效，末 route 异常|1",
+  "CA02|observe-only：三级联动未执行|1",
+  "CA03|observe-only：保存快击未执行；前置不成立（账号已有 campusProfile 回显）|1",
+  "CA04|observe-only：disabled 拦截与兜底 Toast 未执行|1",
+  "CA05|observe-only+pre navError：保存→replace 我的页未执行|1",
+  "CA06|tap .skip-bar 与 dom 采样自相矛盾（stale），route 未变化，产品路径应跳转，归因无法确定|1",
+  "CA08|pre navigateTo Uncaught+switchTab 后无 act:tap|1",
+  "CA09|observe-only+故障注入未执行；manifest 预授权 UNVERIFIED|1",
+  "SC02|observe-only：空表单保存未执行|1",
+  "SC03|observe-only：无时段保存未执行|1",
+  "SC04|input __CAND__ not found：添加/删除链路未执行|1",
+  "SC05|地点输入定位失败，合法保存未执行|1",
+  "SC06|input __CAND__ ×2 not found：边界未执行|1",
+  "SC07|执行器误用 navigateBack API（栈=1 抛 Uncaught），页内返回键未点击|1",
+  "SC08|observe-only+故障注入未执行；manifest 预授权 UNVERIFIED|1",
+  "RP02|observe-only：时间四选一点击未执行|1",
+  "RP03|tap 同城/不限 已执行但 after 截图仍同校优先（无迁移），证据冲突无法归因|1",
+  "RP04|tap .toggle-row 已执行但开关态未采样（stale），after 截图 ERROR|1",
+  "RP05|observe-only：保存快击未执行|1",
+  "RP06|GET 失败未注入，错误卡未出现属正常态；manifest 预授权 UNVERIFIED|1",
+  "RP07|执行器误用 navigateBack API（栈=1 抛 Uncaught），页内返回键未点击|1",
+  "IN02|observe-only：chip 选中联动未执行|1",
+  "IN03|前置未选标签，清空按钮按设计隐藏（TagSelector v-if），element not found 属前置缺失|1",
+  "IN04|observe-only：选满 5+第 6 次点击未执行|1",
+  "IN05|observe-only：保存快击未执行；前后截图同字节数疑同帧|1",
+  "IN06|observe-only：少于 3 个保存未执行|1",
+  "IN07|pre navigateTo/switchTab Uncaught、无 act：返回未生效|1"
+ ],
+ "notes": "1) 判定基线：Manifest=reports/audit/round-1/ops/次要24.json（expected 权威）、A1=reports/audit/round-1/interact/exec-results.json（observed 权威，suite=S17-c24a[44 条]+S18-c24b[31 条]，gitSha aefd8a72）、截图=round-1-interact/ 操作截图与 wxml 快照+round-1-tour/A|B 巡检截图（同 gitSha）。2) 判定口径：动作未执行/执行失败/证据缺失/故障无法注入→UNVERIFIED（60 条，尝试次数均=1，A1 无重试记录）；动作已执行且可信仪器（同套内工作正常的 toast 捕获、route 链、同套操作截图、巡检截图）证实预期→VERIFIED（14 条）；动作已执行且可信仪器证实预期未达成→FAILED（1 条=DND08 防连点穿透）。3) 本批无「产品缺元素」型缺陷：A1 全部 17 条 element-not-found 经源码核对元素均存在（tasks.vue:372、dnd.vue:319/340、campus/index.vue:206/277、setup/profile hero__back 见 TK02-after.wxml、TagSelector.vue:186），归因为执行器 stale context/幻觉选择器/原生弹层限制（Issue MP-R1-C24-003）。4) 身份偏差：两套均以 user-1001 登录（tmp_r11 token 过期 14.7h 所致，Issue MP-R1-C24-002），数据态相关结论已相应降级 UNVERIFIED；渲染/路由/校验类结论不受身份影响。5) 运行模式：巡检 buildMode=build:mp-weixin:mock；交互套 build 未记录，TK02-06 任务点击零反馈的产品/自动化归因因此存疑——mock 分支代码保证任一 tap 必有 Toast 或跳转（tasks.vue:260-304），故未据零反馈直接判产品 FAILED。6) 可复核工件：reports/audit/round-1/interact/_c24_judge_mine.json（本批 75 条 observed 提取）、_c24_judge_dump.txt（全字段明细）。"
+}

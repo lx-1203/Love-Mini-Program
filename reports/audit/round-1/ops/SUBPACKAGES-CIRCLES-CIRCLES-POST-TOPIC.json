@@ -1,0 +1,344 @@
+{
+  "cases": [
+    {
+      "id": "PT01",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "冷启动深链 ?circleId=8（r11 固化参数）：表单即时渲染、目标只读展示、mock 区块可见性",
+      "tier": "noop",
+      "pre": "身份A（100158 曦风）mock 登录（r11 标准注入流程）→ wx.reLaunch('/subpackages/circles/circles/post-topic?circleId=8') 冷启动深链（scripts/r11-param-map.json:85 固化参数；onLoad(query) 读参 post-topic.vue:449-452）",
+      "action": "启动后 0s/0.5s/1s 三次 DOM 采样（evaluate 取 .title-input placeholder、.target-section 文本行数、.tags-section/.favorite-section 存在性、.activity-picker 存在性），不打点",
+      "expected": "表单即时可交互、无错误/空态闪现（本页无 loading/error 态分支）；circleId 模式走只读分支（:516-519）：两行 section-label「发布到」+「兴趣圈」——mock 圈库 14 圈 id 均为 circle-* 无数字 id 8（circle/mock-data.ts:54-185），resolvedCircleName='' 走 postTopicTargetInterest 兜底（zh-CN:3709；real 模式下则显示 id=8 圈名）；.target-chip 选择器不渲染（v-if/v-else :520）；dev 默认 mock（config/env.ts:205-211）→ 标签区（v-if useMock() :576）与喜爱区（:637）渲染，real 模式两者隐藏（MP-R1-POSTTOPIC-003）；活动弹层不可见；console 无 TypeError/NAV_FAIL/is not defined",
+      "evidence": "noop：执行日志（三时刻 DOM 采样记录 + console 全量过滤）"
+    },
+    {
+      "id": "PT02",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "无参进入：目标选择器默认「校园圈」高亮、分类宫格隐藏、目标名展示",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/post-topic')（无参；circleId=''，publishTarget 默认 'campus' :62）",
+      "action": "观察 .target-section 渲染（不打点）",
+      "expected": "走 v-else 分支（:520-570）：两枚 .target-chip「校园圈」「兴趣圈」，默认「校园圈」加 .target-chip--active 高亮且 aria-checked=true（:523-534）；.category-options 宫格不渲染（v-if publishTarget==='interest' :550）；.target-name__text=「发布到：校园圈」（:567-569，postTopicSelectedTarget zh-CN:3712）；mock 下 7 枚 .tag-chip（脱单/学习/组队/树洞/分享/求助/吐槽 zh-CN:3721-3727）与喜爱 switch 渲染",
+      "evidence": "normal：after 截图 + 路由断言（停留本页）+ console 过滤"
+    },
+    {
+      "id": "PT03",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "切换发布目标 校园圈↔兴趣圈：高亮迁移 + 切回校园圈清空已选分类",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入本页",
+      "action": "tap 第 2 枚 .target-chip「兴趣圈」→ tap 宫格「音乐」→ tap 第 1 枚「校园圈」→ 再 tap「兴趣圈」",
+      "expected": "每次 tap 500ms 内高亮与 aria-checked 迁移；切「兴趣圈」后 .category-options 渲染 8 分类（学习/运动/音乐/电影/旅行/游戏/美食/阅读，INTEREST_CATEGORY_KEY_MAP :84-93）；选「音乐」→ .category-chip--active 且 target-name=「发布到：音乐」；切回「校园圈」→ 宫格收起（v-if :550）且 interestCategory 清空（selectPublishTarget :117-122）→ 再切回「兴趣圈」无残留选中分类、target-name=「发布到：选择兴趣分类」兜底（:110-114）；无路由变化",
+      "evidence": "normal：after 截图（末次切回兴趣圈的终态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT04",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "兴趣分类单选迁移：高亮互斥 + 目标名联动（再点已选项不取消）",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入 → 切「兴趣圈」",
+      "action": "tap .category-chip「旅行」→ 再 tap「阅读」→ 再 tap 已选中的「阅读」",
+      "expected": "「旅行」高亮 + target-name=「发布到：旅行」；点「阅读」→ 高亮单选迁移（aria-pressed 互斥 :554-560）、target-name=「发布到：阅读」；再点已选项保持选中不取消（selectInterestCategory 直接赋值 :125-127，无 toggle 语义——现状如实记录）；无路由变化、无网络请求",
+      "evidence": "normal：after 截图 + 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT05",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "空提交：双发布钮 disabled 灰态 + 点击兜底 toast「请输入标题」",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → 无参进入；记录 before 截图（头部/底部发布钮 disabled 灰态）",
+      "action": "不输入任何内容，tap .post-header__submit「发布」（:474-482）",
+      "expected": "钮呈 disabled 样式（post-header__submit--disabled 灰底 :808-811，条件 !title||!content||isOverLimit :476）但 @tap 仍触发校验兜底：500ms 内 toast「请输入标题」（postTopicErrTitle zh-CN:3689，icon none :287-290）；无网络请求、无路由变化；toast 自动消失不永驻",
+      "evidence": "critical：before+after 截图（toast 可见态）+ 路由断言 + Toast 文案捕获 + console（无 POST 请求）"
+    },
+    {
+      "id": "PT06",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "仅标题无内容提交：toast「请输入内容」",
+      "tier": "critical",
+      "pre": "承接 PT05 页面态；.title-input 填「周末徒步招募同伴」（8 字，满足帖子模式 ≥5 以隔离后置校验）；记录 before 截图",
+      "action": "tap .post-header__submit",
+      "expected": "500ms 内 toast「请输入内容」（postTopicErrContent zh-CN:3691，:292-295）；无请求无跳转；标题保留不丢失",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案捕获 + console（无请求）"
+    },
+    {
+      "id": "PT07",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "标题超长：maxlength=30 钳制 + 清空后发布钮回 disabled 联动",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入",
+      "action": ".title-input 输入 35 字长串 → 记录实际长度 → 逐字清空",
+      "expected": "maxlength 钳制：最多 30 字（POST_TITLE_MAX_LENGTH=30 constants/village.ts:24，:maxlength :493，R4-00105 对齐后端校验），第 31 字起不进入；发布钮联动：仅标题无内容时仍 disabled（:476/:683）；清空后钮保持 disabled、placeholder「话题标题」（zh-CN:3682）复现；无报错",
+      "evidence": "normal：after 截图（30 字满格态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT08",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "内容 500 字边界：计数「500/500」正常色 + maxlength 钳制（over-limit 分支 UI 不可达如实标注）",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入；.title-input 已填任意标题",
+      "action": ".content-input 粘贴 500 字内容 → 记录计数 → 尝试追加 1 字",
+      "expected": "计数 .content-count 显示「500/500」正常灰（:507-509）；maxlength=500 钳制追加字不进入（:504），isOverLimit=false 计数不变红（content-count--over :901-903）；title+content 均非空 → 头部/底部发布钮亮起（:476/:683）；注：>500 超限分支（计数红 + toast「内容不能超过500字」zh-CN:3692 :297-300）经 UI 不可达（textarea maxlength 硬钳制），执行器如可 evaluate 直改 content 验证则附测，否则该分支如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（500/500 + 亮钮）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT09",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "特殊字符输入：emoji/HTML/引号/换行回显正常无崩溃",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入",
+      "action": ".title-input 填「🌸<img src=x onerror=alert(1)>\\\"引号\\\"&amp;」；.content-input 填含换行/emoji/反斜杠/四字节 emoji（👨‍👩‍👧）混合串",
+      "expected": "输入回显与 v-model 一致、无丢失无崩溃；计数按 JS string length 码元统计（与 500 上限同口径）；本页仅输入回显无脚本执行面；发布钮随非空亮起；console 无报错",
+      "evidence": "normal：after 截图 + 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT10",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "带参发布成功主路径（?circleId=8）：toast「发布成功」+ 800ms 后 navigateBack + currentTopics 首位新增",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → wx.reLaunch('?circleId=8')；记录 before 截图与 circleStore.currentTopics 基线长度（evaluate）",
+      "action": ".title-input 填「周末徒步招募同伴」；.content-input 填「周六早八点校门口集合，带上水就行。」；tap .bottom-submit__btn 底部大按钮「发布话题」（:680-690）",
+      "expected": "500ms 内 toast「发布成功」icon success（:406，postTopicPublishSuccess zh-CN:3693）；circleStore.currentTopics 首位新增 1 条（title/content 匹配、circleId=\"8\"，createTopic mock 分支 circle.ts:491-511）；~800ms（POST_TOPIC_NAV_DELAY_MS :153）后 uni.navigateBack 返回来源页（:409-412）；提交期间重复点击被 isSubmitting 守卫吞掉（:286）",
+      "evidence": "critical：before+after 截图（toast 态）+ 路由断言（返回后栈顶=来源页）+ Toast 文案捕获 + console（mock 无 POST、无 TypeError）。注：resolveMockCircleId(\"8\")→null（circle/mock-data.ts:46-50），circle-home 话题列表按圈过滤不展示该条（circle.ts:430-431），mock 下 circleId=8 的圈内可见性受此限制——store 级断言为准，UI 可见性验证可改用 ?circleId=circle-photo"
+    },
+    {
+      "id": "PT11",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "发布按钮快击×5 防连点：仅提交 1 次",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → '?circleId=8' 进入；表单已填合法标题（≥5 字）+内容；记录 currentTopics 基线",
+      "action": "快击 .bottom-submit__btn 5 次（间隔<100ms）",
+      "expected": "仅提交 1 次：currentTopics 恰 +1、「发布成功」toast 恰 1 次、~800ms 后仅一次 navigateBack（isSubmitting 于 :320 同步置位先于任何 await，:286-287 吞掉后续点击；成功路径不复位 :423-425 注释）；不得出现多条新话题、多次 toast、或返回后二次跳转",
+      "evidence": "critical：before+after 截图（返回后来源页终态）+ 路由断言 + Toast 计数捕获 + console（提交计数=1）"
+    },
+    {
+      "id": "PT12",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "成功 toast 与 800ms 返回窗口内重复提交：不产生第 2 条（MP-R2-POSTTOPIC-004）",
+      "tier": "critical",
+      "pre": "同 PT11 pre（表单合法）；记录 currentTopics 基线",
+      "action": "tap 发布 → 见「发布成功」toast 后 800ms 窗口内立即再 tap 发布 1 次",
+      "expected": "第二次点击被吞：isSubmitting 成功后不复位（仅失败分支复位 :423-425，成功路径 :351-373 无复位）→ currentTopics 仅 +1、toast 仅 1 次、仅一次 navigateBack；页面卸载时 postSuccessNavTimer 被 onUnmounted 清理（:175-180）无幽灵跳转",
+      "evidence": "critical：before+after 截图 + 路由断言（单次返回落点）+ Toast 计数 + console"
+    },
+    {
+      "id": "PT13",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "校园圈兜底发布成功（无参默认目标）：createPost cat-campus + village:post-created 事件",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → 无参进入（campusPostFallback = !isPostMode && campus && !circleId :346-347）；记录 villageStore.posts 基线长度",
+      "action": ".title-input 填「篮球场夜间局缺人」（8 字≥5）；.content-input 填内容；保持默认目标「校园圈」→ tap .bottom-submit__btn",
+      "expected": "toast「发布成功」+ ~800ms 返回；走 createPost：categoryId=cat-campus（:357）、villageStore.posts 首位新增（village/index.ts:457-493 mock 分支）；uni.$emit('village:post-created')（:366）——village 页若在栈中会强制穿透刷新频道（village/index.vue:521，MP-R1-VILLAGE-INDEX-104）；无报错",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案捕获 + console"
+    },
+    {
+      "id": "PT14",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "帖子/校园兜底标题 <5 字拦截：toast「帖子标题至少 5 个字」且 isSubmitting 复位可重试",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → 无参进入，默认「校园圈」目标（该校验在 API 调用前、mock/real 均生效 :351-355）；记录 before 截图",
+      "action": ".title-input 填 4 字「篮球局」；.content-input 填内容 → tap 发布",
+      "expected": "500ms 内 toast「帖子标题至少 5 个字」（postTopicErrTitleTooShort zh-CN:3690）；isSubmitting 复位（:353）→ 立即再点可重试；未发起 createPost 请求（console 无 POST /posts）、无跳转；表单内容保留",
+      "evidence": "critical：before+after 截图（toast）+ 路由断言 + Toast 文案捕获 + console（无请求）"
+    },
+    {
+      "id": "PT15",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "兴趣圈模式未选分类提交：toast「选择兴趣分类」",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → 无参进入 → tap「兴趣圈」chip（不选任何分类；circleId=''）",
+      "action": ".title-input+.content-input 填合法内容 → tap 发布",
+      "expected": "500ms 内 toast「选择兴趣分类」（postTopicCategoryHint zh-CN:3710，:303-311）；无请求无跳转；注：mock 模式下若先选分类再发布，目标是分类 slug（如 'music'）且 mock createTopic 直接「成功」；real 模式同参数走 PT17 拦截——两态行为差异如实记录",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案捕获 + console（无请求）"
+    },
+    {
+      "id": "PT16",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "（条件）发布失败反馈：toast=store errorMessage 或「发布失败」+ isSubmitting 复位可重试",
+      "tier": "critical",
+      "pre": "条件用例：需 real 模式（VITE_API_MODE=real）且使 createTopic/createPost 失败（断网/无效 token/后端 5xx）；mock 恒成功不可构造。带参 '?circleId=8' 进入填合法表单",
+      "action": "tap 发布 → 观察失败 toast → 再次 tap 发布验证可重试",
+      "expected": "500ms 内 toast=来源 store errorMessage 或兜底「发布失败」（postTopicPublishFailed zh-CN:3694；MP-R2-POSTTOPIC-006 按分支取 circleStore/villageStore 文案 :413-422）；isSubmitting 仅失败复位（:423-425）→ 重试再次发起请求；表单不丢、不跳转、Loading 不永驻、无未处理 Promise 拒绝。mock 环境无法构造时如实标 UNVERIFIED",
+      "evidence": "critical：before+after 截图（失败 toast + 重试态）+ 路由断言 + Toast 文案捕获 + console（失败请求与 catch 日志）"
+    },
+    {
+      "id": "PT17",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "（条件）real 模式 slug circleId 拦截：toast「请从具体兴趣圈进入发布」，不发必败请求",
+      "tier": "critical",
+      "pre": "条件用例：需 real 模式；无参进入 → 切「兴趣圈」→ 选「音乐」（resolvedCircleId='music' 非数字）；mock 模式此路直接成功不可构造（useMock() 门 :387）",
+      "action": "填合法表单 → tap 发布",
+      "expected": "500ms 内 toast「请从具体兴趣圈进入发布」（postTopicEnterFromCircle zh-CN:3711，MP-R1-POSTTOPIC-004 :387-391）；不发起请求（console 无 POST /circles/music/topics、无 500）；isSubmitting 复位可重试。mock 环境如实标 UNVERIFIED",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案捕获 + console（无请求发出）"
+    },
+    {
+      "id": "PT18",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "话题标签多选（mock 区块）：3 个上限 toast + 选中/取消高亮与 aria-pressed",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入（标签区 v-if useMock() :576；real 模式本区块整体隐藏，若执行环境为 real 本条如实标 UNVERIFIED）",
+      "action": "依次 tap「脱单」「学习」「组队」→ 再 tap「树洞」→ tap「学习」取消 → 再 tap「树洞」",
+      "expected": "前 3 次 tap 各 500ms 内 chip 高亮（品牌绿实底白字 :1032-1047）且 aria-pressed=true；第 4 次不选中并 toast「最多选择 3 个标签」（postTopicMaxTags zh-CN:3717，:136-139）；取消「学习」→ 高亮移除、aria-pressed=false；再选「树洞」成功（上限内）；无路由变化",
+      "evidence": "normal：after 截图（终态 3 标签选中）+ 路由断言 + Toast 文案捕获 + console 过滤"
+    },
+    {
+      "id": "PT19",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "喜爱开关（mock 区块）：switch 翻转 + mock 返回体携带 favorite",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入（喜爱区 v-if useMock() :637；real 模式隐藏同 PT18）",
+      "action": "tap 喜爱区 switch → 记录 checked → （可选承接 PT10 发布）观察 createTopic 返回",
+      "expected": "500ms 内 switch checked 翻转（:checked 绑定 favoriteEnabled :643，color=brandColor=designTokens.color.brand[500] :160）；toggleFavorite 翻转状态（:144-146）；mock createTopic 返回体携带 favorite=true 与 tags 翻译文案（circle.ts:509-511；real 模式请求体不带 tags/favorite，MP-R1-POSTTOPIC-003 :572-575）；无报错",
+      "evidence": "normal：after 截图（switch 开态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT20",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "帖子模式活动选择弹层打开（channel=today）：loading→列表 ≤10 条 + 懒加载仅首开请求",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/post-topic?channel=today')（channel 参数契约取自源码 onLoad :453 与 isPostMode :238-240；本页不在 r11-param-map 固化表）→ isPostMode=true 活动区渲染",
+      "action": "tap .activity-add「选择要推荐的活动」（:602-612，zh-CN:3696）→ 关闭弹层 → 再次 tap 打开",
+      "expected": "首开 500ms 内弹层出现（.activity-picker fixed 遮罩 :694,1274-1282）；加载中显示「加载中...」（common.loading zh-CN:15）；fetchActivities 后列表 ≤10 条（slice(0,10) :263，mock 活动 id a-1… activity.ts:59-103），每项含标题+「时间 · 地点」；二次打开复用缓存直接出列表（activityOptions 非空跳过 fetch :259-269）；console 中 fetchActivities 恰 1 次",
+      "evidence": "normal：after 截图（弹层列表）+ 路由断言 + console（活动请求计数=1）"
+    },
+    {
+      "id": "PT21",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "选中活动：弹层自动关闭 + 已选 compact ActivityCard 渲染",
+      "tier": "normal",
+      "pre": "承接 PT20 弹层开启态",
+      "action": "tap 列表第 1 项（a-1 图书馆南门咖啡散步）",
+      "expected": "500ms 内弹层自动关闭（selectActivity :273-276）；.activity-selected 渲染 compact ActivityCard（标题/时间/地点/报名数 12 人，ActivityCard.vue:91-113）；「移除关联」按钮出现（:623-631）；+ 添加态消失（v-if !selectedActivity :601）；无路由变化",
+      "evidence": "normal：after 截图 + 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT22",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "弹层三路关闭：遮罩 tap / 右上 × 关闭，内容区 tap.stop 不关闭",
+      "tier": "normal",
+      "pre": "承接 PT20（重开弹层）",
+      "action": "①tap .activity-picker 遮罩空白区 → 重开 → ②tap 右上 × → 重开 → ③tap .activity-picker__content 内容区中部（避开列表项与 ×）",
+      "expected": "①遮罩 tap 关闭（:694 @tap）②× tap 关闭（:698，aria-label=关闭 common.closeAria zh-CN:42）③内容区 tap 被 @tap.stop noop 拦截不关闭（:695，noop :47-49）；各操作 500ms 内有明确开/关变化；无报错",
+      "evidence": "normal：after 截图（③终态：弹层仍开）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT23",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "移除关联回 + 添加态；重开弹层列表缓存不重复请求",
+      "tier": "normal",
+      "pre": "承接 PT21 已选活动态",
+      "action": "tap .activity-remove「移除关联」→ tap .activity-add 重新打开弹层",
+      "expected": "500ms 内回 + 添加态（removeActivity :278-280）；重开弹层直接渲染列表、无 loading 态、无重复 fetchActivities 请求（:259 条件 activityOptions.length===0 不成立）；无报错",
+      "evidence": "normal：after 截图 + 路由断言 + console（无新增活动请求）"
+    },
+    {
+      "id": "PT24",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "已选活动卡点卡身：跳活动详情 ?id=（MP-R2-POSTTOPIC-002 接线验证）",
+      "tier": "navigation",
+      "pre": "承接 PT21 已选活动态；记录当前栈深",
+      "action": "tap ActivityCard 卡身（ActivityCard.vue:73-79 @tap=open-detail）",
+      "expected": "500ms 内 openAppPath('/subpackages/tools/activities/detail?id=a-1')（ROUTES.ACTIVITY_DETAIL routes.ts:201；onSelectedActivityOpen :430-433 encodeURIComponent）；getCurrentPages 栈深 +1 且栈顶 route=subpackages/tools/activities/detail；返回落回本页且已选卡与表单内容保留（页面未销毁）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶 route+query.id）+ 返回落点断言；可免截图"
+    },
+    {
+      "id": "PT25",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "已选活动卡「报名」钮：toast「移除关联」（发帖场景父级处理器现状）",
+      "tier": "normal",
+      "pre": "承接 PT21 已选活动态",
+      "action": "tap 卡片右侧「报名」钮（@tap.stop ActivityCard.vue:122-130）",
+      "expected": "500ms 内 toast「移除关联」（发帖场景 enroll emit 由 onSelectedActivityEnroll 处理 :434-436，postTopicActivityRemove zh-CN:3697）；不跳转、不发生真实报名、已选卡不消失（现状如实记录：报名钮在发帖场景复用移除提示文案，判定员评估语义一致性）；无路由变化",
+      "evidence": "normal：after 截图（toast 可见）+ 路由断言（停留本页）+ Toast 文案捕获 + console 过滤"
+    },
+    {
+      "id": "PT26",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "帖子模式发布成功全链（channel=today + 关联活动）：createPost cat-all + activityId 透传",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → '?channel=today' 进入；承接 PT21 选定活动 a-1；记录 villageStore.posts 基线长度",
+      "action": ".title-input 填「本周活动安利帖」（6 字≥5）；.content-input 填内容 → tap .bottom-submit__btn",
+      "expected": "toast「发布成功」+ ~800ms 返回；createPost categoryId=cat-all（today 频道 postCategory=all，config/channels.ts:42-45）、activityId='a-1'（:356-363）；posts 首位新增；注：village mock 活动摘要表 id 为 201/202（village/mock-data.ts:271-292），与选择器来源 activityStore 的 a-* id 不同空间 → 新帖 activity 摘要回填 null（village/index.ts:486-489 find 无命中，现状如实记录）；uni.$emit('village:post-created') 触发；channel=school 对照 → cat-campus、channel=activity → cat-activity（getChannelConfig :243-246）",
+      "evidence": "critical：before+after 截图 + 路由断言 + Toast 文案捕获 + console"
+    },
+    {
+      "id": "PT27",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "（条件）活动列表空态：弹层「暂无可用活动」不崩溃",
+      "tier": "normal",
+      "pre": "条件用例：需 real 模式 fetchActivities 失败（断网）→ activityOptions=[]（catch :264-265）；mock 恒有数据不可构造",
+      "action": "帖子模式（?channel=today）tap .activity-add 打开弹层",
+      "expected": "弹层渲染空态「暂无可用活动」（postTopicActivityEmpty zh-CN:3698，:720-722）；不崩溃不白屏；loadingActivities finally 复位 Loading 不永驻（:266-268）；关闭后可重开重试。无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（空态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT28",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "（条件）深链预选活动 ?channel=today&activityId=a-1：自动回填已选卡",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/post-topic?channel=today&activityId=a-1')（onLoad 预选逻辑 :454-461；mock 活动 id a-1 activity.ts:63）",
+      "action": "onLoad 后观察活动区（不打点；可再以 activityId=a-999 重复进入对照）",
+      "expected": "fetchActivities 完成后已选卡自动回填 a-1（find 命中 :458-460）——出现 ActivityCard 与「移除关联」而非 + 添加态；活动区与标签/喜爱区（mock）共存渲染；activityId 不存在（a-999）时静默不回填、停留 + 添加态（find 无结果不 toast，现状如实记录）；无报错",
+      "evidence": "normal：after 截图（回填态）+ 路由断言 + console 过滤"
+    },
+    {
+      "id": "PT29",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "头部返回钮：navigateBack 落回来源页 circle-home",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/circle-home?circleId=8')（r11 固化参数）→ 经页内入口 openAppPath 进入本页（circle-home.vue:370-372 goToPostTopic；栈深 ≥2）",
+      "action": "tap .post-header__back「返回」（:470，aria-label=返回上一页 common.backAria zh-CN:44）",
+      "expected": "500ms 内 uni.navigateBack（goBack :441-443）落回 circle-home；getCurrentPages 栈顶 route=subpackages/circles/circles/circle-home；本页出栈销毁、postSuccessNavTimer 随卸载清理（:175-180）",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶=来源页）；可免截图"
+    },
+    {
+      "id": "PT30",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "栈底直达点返回（无 switchTab 兜底现状）+ 打开即返回",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch 直达本页（R11 巡检标准进入方式，页面栈 1 层）",
+      "action": "tap .post-header__back → 记录；重新进入本页后立即 tap 返回（打开即返回）",
+      "expected": "栈底 navigateBack 无上层可退且 goBack 无 catch/兜底（:441-443，与 circles/index 的 switchTab 兜底不同源码）→ 停留本页、不崩溃不白屏（uni fail 静默——现状如实记录，判定员评估是否需兜底）；打开即返回同样正常出栈/停留、无定时器残留触发、console 无未处理异常",
+      "evidence": "navigation：getCurrentPages 路由链断言（栈顶不变=本页）+ console 过滤；可免截图"
+    },
+    {
+      "id": "PT31",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "重复进出×3：每次进入空白表单（组件重挂载重置）、栈深稳定",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 先在本页填入标题/内容/选标签（mock）记录 before → 返回 circle-home",
+      "action": "重复「circle-home → 写话题进入 → 返回」3 次；每次进入采样 .title-input/.content-input 值与标签选中态",
+      "expected": "每次进入均为空白表单（title/content/selectedTags 等 ref 随组件重挂载重置 :52-70）——无草稿保留（现状如实记录）；返回落点均正确、栈深稳定无泄漏；3 次往返无报错无卡顿累积",
+      "evidence": "normal：after 截图（末次进入空白态）+ 路由断言（栈深）+ console 过滤"
+    },
+    {
+      "id": "PT32",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "滚动到底/顶：底部发布按钮完整可见、无分页请求、表单态不丢",
+      "tier": "noop",
+      "pre": "身份A mock 登录 → 无参进入（标签+喜爱+图片+底部提交区块全渲染）；本页 scroll-view .post-body 无 scrolltolower 处理器、无 onReachBottom、无下拉刷新（pages.json:108-110 无 enablePullDownRefresh 配置）",
+      "action": ".post-body 滚到底（底部 .bottom-submit__btn 完整可见）→ 记录 scrollTop → 滚回顶",
+      "expected": "到底时底部大按钮完整渲染无截断（padding 20rpx/40rpx :1188-1190）；不触发任何分页/补拉请求（console 无新增请求）；回顶后标题/内容/标签选中态不丢；滚动全程无白屏/跳动",
+      "evidence": "noop：执行日志（scrollTop 采样 + console 请求计数）"
+    },
+    {
+      "id": "PT33",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "（条件）隐私授权拒绝：添加图片被拦截 toast「需同意隐私协议后才能选择图片」",
+      "tier": "normal",
+      "pre": "条件用例：需构造 ensurePrivacyAuthorized reject（未授权隐私协议且拒绝弹窗，utils/privacy.ts:344-359；已授权/不支持环境直接放行不可构造）",
+      "action": "tap .image-upload「+」添加图片钮（:664-675）",
+      "expected": "500ms 内 toast「需同意隐私协议后才能选择图片」（postTopicPrivacyRequired zh-CN:3688，:198-204）；不调起 uni.chooseImage 系统相册；无路由变化。DevTools 已默认授权等无法构造时如实标 UNVERIFIED",
+      "evidence": "normal：after 截图（toast 可见）+ 路由断言 + Toast 文案捕获 + console 过滤"
+    },
+    {
+      "id": "PT34",
+      "page": "subpackages/circles/circles/post-topic",
+      "title": "图片添加/删除：缩略图渲染 + 计数联动 + 9 张上限添加钮隐藏",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → 无参进入；automator 侧 mock uni.chooseImage 返回临时路径（若无法 mock 则人工执行/如实标注）；记录 before 截图",
+      "action": "tap .image-upload → 选 1 图 → tap 该图 .image-item__remove × → 重复添加至 9 张观察添加钮 → 删除 1 张",
+      "expected": "添加后 500ms 内缩略图渲染（aspectFill）+ 计数「1/9」（:673）；chooseImage count=剩余额度（MAX_IMAGES-images.length :207，sizeType compressed）；× 删除仅移除目标图（splice index :223-225）计数回退、其余图保留；加至 9 张后 .image-upload 钮隐藏（v-if images.length<9 :665），删除 1 张复现「8/9」；≥9 守卫 toast「最多上传9张图片」（:191-193，zh-CN:3687）经 UI 不可达（钮已隐藏）——防御分支如实标注",
+      "evidence": "normal：after 截图（添加态与删除后态各 1 张）+ 路由断言 + console 过滤"
+    }
+  ]
+}

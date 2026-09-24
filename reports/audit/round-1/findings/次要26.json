@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-次要26（A3 截图与证据的视觉/布局/状态审查）",
+    "scope": [
+      "subpackages/market/shop/index（商城/逛逛）",
+      "subpackages/market/wallet/index（钱包）",
+      "subpackages/vip/index（VIP 会员）",
+      "subpackages/vip/promo-code（VIP 优惠码）",
+      "subpackages/vip/bills（VIP 账单）"
+    ],
+    "evidenceValidation": {
+      "manifestGitSha": "aefd8a72",
+      "headGitSha": "aefd8a72",
+      "match": true,
+      "note": "git rev-parse --short HEAD = aefd8a72，与 screenshot-manifest.json.gitSha 一致，本轮全部证据未过期。"
+    },
+    "method": "逐张审查静态截图（A/B 双身份 shop/wallet 默认图 + interact 目录 VP01-after/PC06-after/WA05-after/WA07-before/SH06-after）+ exec-results.json 1283 条中过滤本 5 页 61 条行为记录逐条阅读 + 对截图可见控件回读源码声明（返回键尺寸/导航样式/封存卡/状态栏配置）+ PowerShell System.Drawing 4x 放大裁切导航区对比 + 理想效果图 19 张清单核对（无本 5 页对应稿）。未自行驱动开发者工具、未构建、未截图——行为证据全部来自巡检产出（gitSha 一致）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-MARKET-020",
+      "round": "R1",
+      "page": "subpackages/market/shop/index + subpackages/market/wallet/index + subpackages/vip/index + subpackages/vip/promo-code + subpackages/vip/bills",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png; reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png",
+      "category": "UX",
+      "severity": "P3",
+      "description": "五个页面唯一的返回控件热区声明均为 64rpx×64rpx（=32px），低于本轮审查铁律「热区≥88rpx」(=44px)。返回是这 5 个非 tab 二级页的必用主路径控件（栈=1 时还承担兜底回 tab 职责），热区不足 88rpx 对拇指操作偏小。代码审查员 11 项发现未覆盖此项；巡检交互用例 SH05/WA05 标题本身即「64rpx 实测复核 vs 铁律 88rpx」，但两用例均 observe-only 且 .boundingClientRect:absent——运行时实测未取得，本条按源码声明+截图目视认定。",
+      "evidence": "shop/index.vue:425-426 .shop-header__back{width:64rpx;height:64rpx}；wallet/index.vue:254-255 .wallet__back{width:64rpx;height:64rpx}；vip/index.vue:608-609、promo-code.vue:372-373、bills.vue:300-301 .nav-bar__back{width:64rpx;height:64rpx}（vip:601/promo:367/bills:294 导航行高 88rpx，但可点圆仅 64rpx，无 padding 扩展热区）；interact/exec-results.json SH05/WA05 status=EXECUTED observe-only 且 dom 含 .boundingClientRect:absent；截图 A 组 shop/wallet 默认图中返回圆直径目视约为胶囊按钮高度的 2/3。",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.85,
+      "ideal": "返回键可点热区≥88rpx×88rpx（可将视觉圆保持 64rpx、用 padding 或透明扩层补足热区）。",
+      "fix": "五页返回键统一增加热区：视觉尺寸 64rpx 不变，外扩 padding 至 88rpx 命中区（如 .shop-header__back::after 扩展命中层或直接 width/height 88rpx + 内部 icon 居中）；修改后须在真机复核（DevTools 无法暴露热区）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-WALLET-021",
+      "round": "R1",
+      "page": "subpackages/market/wallet/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png（4x 放大裁切对比见审查留档 .zcode/tmp/wallet_nav.png / shop_nav.png）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "钱包页返回键视觉指示强度显著弱于同购买链路的商城页：圆形底仅 rgba(255,255,255,0.2) 白色 20% 叠在 #36C99A→#6fe0b0 渐变绿上，截图中几乎不可辨；返回图形是文本字符「‹」（40rpx）而非图标，字符墨迹面积极小，4x 放大后呈近似 c 形弱曲线，与 shop 页白底圆 + 40rpx SVG chevron 图标的清晰箭头形成强烈反差。同为 market 分包购买 funnel（逛逛→详情→钱包），相邻页面的同一控件观感/可视性不一致，钱包返回键存在被忽略的可视性风险。",
+      "evidence": "wallet/index.vue:260 background: var(--c-overlay-white-bg-tint, rgba(255,255,255,0.2))；:263-266 .wallet__back-text{font-size:var(--fs-3xl,40rpx); color:#fff} 模板 :144 为文本字符 ‹；对照 shop/index.vue:278 使用 <image> 40rpx SVG 图标 + :428 白底 var(--c-bg-container)；A 组 wallet 默认图左上角返回区 4x 放大（.zcode/tmp/wallet_nav.png）可见圆底对比微弱、字符墨迹约为 shop 图标墨迹的 1/3；功能本身正常（WA03/WA04 返回导航 EXECUTED），故为视觉问题非功能缺陷。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.75,
+      "ideal": "返回键与 shop/detail 统一为白底圆 + SVG chevron 图标（或至少提高圆底不透明度至可辨识、字符换成图标），保证购买链路内返回控件可视性一致。",
+      "fix": "wallet/index.vue:143-144 将文本 ‹ 替换为 IMAGE_PATHS.ICONS_COMMON.BACK 的 <image>（40rpx，同 shop:278），圆底改 var(--c-bg-container) 或 rgba(255,255,255,0.9)；与 MP-R1-MARKET-020 的热区外扩一并处理。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-MARKET-022",
+      "round": "R1",
+      "page": "subpackages/market/shop/index + subpackages/market/wallet/index + subpackages/vip/index + subpackages/vip/promo-code + subpackages/vip/bills",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png; reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "返回箭头在 app 内并存两种渲染制式，且本 5 页内部互不一致：(A) SVG image 图标（40rpx）：shop、market/detail、discover-extra/likes、village/history；(B) 文本字符 ‹：wallet（40rpx/fs-3xl）、vip、promo-code、bills（56rpx/fs-7xl）。同一「返回」控件跨页字形、字号（40 vs 56rpx）、墨迹重量均不同；字符方案还受平台字体渲染差异影响（mp-weixin 各端 ‹ 字形不一致）。代码审查员只报了路由字符串双轨（MP-R1-VIP-007），未报控件渲染制式双轨。",
+      "evidence": "image 族：shop/index.vue:278、market/detail/index.vue（nav-bar__back-icon width/height:40rpx）、likes（likes-header__back-icon 40rpx）、village/history（history-back__icon 40rpx）；字符族：wallet/index.vue:144（fs-3xl 40rpx）、vip/index.vue:412（fs-7xl 56rpx）、promo-code.vue:198、bills.vue:175（均 fs-7xl 56rpx）；截图对照：A 组 shop 默认图为几何 chevron 图标、wallet 默认图为细小 ‹ 字符，同屏肉眼可辨差异。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.8,
+      "ideal": "返回控件单一实现（共用组件或统一 SVG 图标 + 统一字号），全 app 一种字形一种尺寸。",
+      "fix": "抽公共 BackHeader/BackButton 组件（SVG chevron + 88rpx 热区），5 页与其余字符族页面分批替换；短期可先将 wallet/vip/promo/bills 的 ‹ 文本统一换 IMAGE_PATHS.ICONS_COMMON.BACK。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/market/shop/index",
+      "observation": "封存态渲染正确且双身份一致：A/B 两组默认截图均为浅绿渐变底 + 白圆 SVG chevron 返回键 + 44rpx 绿色左对齐标题「逛逛」，封存卡（锁形 SVG 图标 + 「功能封存中」+ 「该功能暂未开放，开放时间将另行通知」）位于顶部白卡，卡下方留白干净，无错误空态闪现、无 loading 残留、无状态栏叠印；非 tab 页无 TabBar 属正确表现；SH01 dom 断言 .shop-sealed:present 且积分条/分类/商品网格均 absent、SH06 重复进出×3 稳定，与截图互证。内容单屏以内无滚动需求。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png; reports/screenshots/round-1-tour/B/subpackages_market_shop_index__默认.png; reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-SHOP-INDEX-SH06-after.png; exec-results.json SH01/SH06 status=EXECUTED"
+    },
+    {
+      "page": "subpackages/market/wallet/index",
+      "observation": "封存态渲染正确且双身份一致：绿色渐变沉浸式导航（状态栏区域同为绿底，状态栏黑字无叠印、可读）+ 居中反白 34rpx 标题「我的钱包」，封存卡内容与 shop 完全同构（同锁图标同文案），无空态/错误闪现；WA01 dom 断言封存卡 present 且余额卡/充值/流水 absent，WA02 确认封存态零请求，与截图互证。缺陷侧：返回键可视性弱（MP-R1-WALLET-021）、热区 64rpx（MP-R1-MARKET-020）。内容单屏以内无滚动需求。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png; reports/screenshots/round-1-tour/B/subpackages_market_wallet_index__默认.png; reports/screenshots/round-1-interact/SUBPACKAGES-MARKET-WALLET-INDEX-WA05-after.png; exec-results.json WA01/WA02 status=EXECUTED"
+    },
+    {
+      "page": "subpackages/vip/index",
+      "observation": "当前构建下页面本体不可达、零视觉证据：membershipEnabled=false 时进入即 Toast「会员功能暂未开放」并自动弹回「我的」tab（exec-results.json VP01/VP02/VP03 三次拦截均有 showToast 记录；VP01-after 截图实际内容为 pages/profile/index，不是 vip 页）；任务清单所列静态截图 reports/screenshots/round-1-tour/A/subpackages_vip_index__默认.png 在磁盘与 manifest 中均不存在（manifest 无任何 vip 条目，与拦截行为互证）；VP04-VP12 全部解封预案因 pre-FAIL「input element not found: .membershipEnabled」未能注入 flag，解封态无任何截图。因此本页 UI/UX/数据/一致性四维无法审查——这不是「无问题」判定，而是无证据。另 VP08/VP11 记录 navError=Uncaught [object Object]（栈底 navigateBack 场景），归属交互判定员，本席不动。",
+      "evidence": "exec-results.json VP01-VP12（toast 数组均含「会员功能暂未开放」）；reports/screenshots/round-1-interact/SUBPACKAGES-VIP-INDEX-VP01-after.png（内容为 profile 页）；manifest 无 vip 条目"
+    },
+    {
+      "page": "subpackages/vip/promo-code",
+      "observation": "与 vip/index 同因不可达、零视觉证据：PC01/PC02 冷启动与有栈进入均被 Toast「会员功能暂未开放」+ 弹回拦截；PC03-PC09 全部预案 FAILED（pre-FAIL input element not found / 元素 absent）；PC06-after 截图实际内容为 pages/profile/index。表单、结果卡、兑换按钮等全部 UI 无截图可审，四维无法审查（非「无问题」）。代码层已有 MP-R1-PROMO-003/011，本席不重复。",
+      "evidence": "exec-results.json PC01-PC09；reports/screenshots/round-1-interact/SUBPACKAGES-VIP-PROMO-CODE-PC06-after.png（内容为 profile 页）；manifest 无 promo-code 条目"
+    },
+    {
+      "page": "subpackages/vip/bills",
+      "observation": "与 vip/index 同因不可达、零视觉证据：BI01/BI02 均拦截弹回；BI03-08 预案失败（BI04 的 pullDown snippet 报 ERR uni is not defined，未执行到页面）；BI03-after/BI04-after/BI05-after 截图内容均非账单页。账单列表、筛选 chips、账单卡样式无截图可审，四维无法审查（非「无问题」）。行为侧 BI03 用例标题已自记「onShow 误嵌缺陷嫌疑」，与代码层 MP-R1-BILLS-001 相符，但解封态无可视截图，本席不重复报、仅记录行为证据与代码结论互证。",
+      "evidence": "exec-results.json BI01-BI08；reports/screenshots/round-1-interact/SUBPACKAGES-VIP-BILLS-BI03-after.png；manifest 无 bills 条目"
+    }
+  ],
+  "coverage": {
+    "subpackages_market_shop_index": "截图已看（A/B 默认 + SH06-after 共 3 张）；理想图已对照——19 张理想稿中无商城/逛逛对应页面（已列目录核实），L1-L10 逐层对照无参照系，如实标注缺参照而非硬比；滚动——封存态内容单屏以内无滚动需求（未单测滚动，如实记录）；点击/返回已测（SH03 栈>1、SH04 栈=1 兜底均 EXECUTED，本席未复跑）；safe-area 已查（截图无状态栏叠印）；TabBar 已查（非 tab 页无 TabBar 正确）；空态已查（SH01 断言封存态无空态闪现）；长文/加载态/错误态——封存态替代业务态，SH06 无 loading 残留；组件一致性已查（封存卡与 wallet 同构、返回键与 wallet 异构已报 MP-R1-MARKET-022）；历史 Bug 回归归历史回归员，未越界。",
+    "subpackages_market_wallet_index": "截图已看（A/B 默认 + WA05-after + WA07-before 共 4 张）；理想图无对应稿（同上如实标注）；滚动——封存态单屏内；点击/返回已测（WA03/WA04 EXECUTED）；safe-area 已查（绿底延伸至状态栏、黑字无叠印，pages.json:39 全局 black 与截图一致）；TabBar 已查（无，正确）；空态已查（WA01）；加载/错误态——封存态替代；组件一致性已查（封存卡同构、返回键弱可视已报 MP-R1-WALLET-021）；历史回归不越界。",
+    "subpackages_vip_index": "13 项举证无法完成：页面本体在当前构建不可达（flag=false 拦截），无静态截图（任务清单所列路径不存在）、无解封态截图（预案注入失败）、无滚动/点击/空态/加载/错误态任何可视化证据——本页不作「无问题」判定，如实记为零证据待补取证。已完成的核对：拦截行为与 i18n 文案一致（exec toast 记录）、弹回落点为 profile tab（VP01-after 截图内容证实）。",
+    "subpackages_vip_promo-code": "同 vip/index：零视觉证据，13 项举证无法完成，不作「无问题」判定；已核对拦截 Toast 文案与弹回落点（PC01/PC02 + PC06-after 内容为 profile 页）。",
+    "subpackages_vip_bills": "同 vip/index：零视觉证据，13 项举证无法完成，不作「无问题」判定；已核对拦截 Toast 文案与弹回落点（BI01/BI02），并确认 BI04 下拉刷新预案因 snippet 报错未触达页面（ERR uni is not defined）。",
+    "limitations": "本席为只读视觉审查：未自行构建、未驱动微信开发者工具复拍截图、未复跑交互用例；全部行为证据取自巡检产出 exec-results.json 与 screenshots 目录（gitSha=aefd8a72 与 HEAD 一致，未过期）。解封态（commerce.enabled=true / membershipEnabled=true）在本轮巡检中注入失败（input element not found: .enabled / .membershipEnabled），五页的业务态 UI（商品网格/余额流水/VIP 权益套餐/优惠码表单/账单列表）全无截图，属本轮取证缺口，建议下轮先修复 flag 注入通道再补拍。"
+  }
+}

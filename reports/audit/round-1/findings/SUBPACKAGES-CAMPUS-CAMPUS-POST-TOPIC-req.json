@@ -1,0 +1,185 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/post-topic",
+  "generatedAt": "2026-09-24",
+  "reviewer": "A4 需求对照员（需求对照 R1-SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC）",
+  "evidence": {
+    "exec": "reports/audit/round-1/interact/exec-results.json（manifest=SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC，suite S07-campus-matching，PT01-PT38：2 VERIFIED / 0 FAILED / 36 UNVERIFIED，gitSha=aefd8a72）",
+    "judge": "reports/audit/round-1/interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-judge.json（含交互侧 Issue MP-R1-CAMPUSPOSTTOPIC-101，本轮不重复立案）",
+    "screenshots": [
+      "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT*.png",
+      "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT18-after.wxml",
+      "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__*.png",
+      "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__*.png"
+    ],
+    "ideal": "素材/理想效果图/发布帖子页面.png（ideal-baseline.md:101 发布功能族语义锚定，像素锚定权归 village/publish）；素材/理想效果图/校园圈.png 实读为 campus/hub 稿，排除本页锚定",
+    "code": [
+      "apps/client/src/subpackages/campus/campus/post-topic.vue（839 行逐行通读）",
+      "apps/client/src/stores/campus.ts",
+      "apps/client/src/components/village/TopicSelector.vue",
+      "apps/api/src/main/java/com/campuslove/api/campus/CampusController.java",
+      "apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java",
+      "apps/api/src/main/java/com/campuslove/api/entity/CampusTopic.java",
+      "apps/api/src/main/java/com/campuslove/api/campus/CampusTopicView.java"
+    ]
+  },
+  "issues": [
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-201",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png（「上传图片 0/6 + 添加图片」格实拍渲染，页面明示承诺配图能力）",
+      "category": "Function",
+      "severity": "P1",
+      "description": "校园圈发帖配图链路 real 模式端到端断裂，图片被创建接口静默丢弃：客户端侧承诺并实现完整（「上传图片 0/6」UI、隐私授权前置、chooseImage 选图、× 删除、提交前逐张 uploadPostImage 上传换 URL——post-topic.vue:134-167/:200-219，且请求体携带 images，campus.ts:677）；但后端 CreateCampusTopicRequest 无 images 字段（CampusController.java:452-457），RealCampusService.createCampusTopic 全程无任何 setImages 调用（RealCampusService.java:130-165）——用户等待 6 张图上传完成后帖子照常「发布成功」，图片 URL 在 DTO 边界被静默丢弃，落库 images 恒空，生产环境所有校园帖均无图。读侧管线齐全（实体 images JSON 列 CampusTopic.java:62-63、视图返回 RealCampusService.java:405、客户端解析 campus.ts:102），系「建了读侧未接写侧」的半成品接线。mock 模式图片正常（campus.ts:646）恰在开发态掩盖缺陷。执行级 PT24-PT29 因 chooseImage 原生面板不可自动化全数 UNVERIFIED，本判定为客户端+后端双侧代码实读证据。",
+      "evidence": "post-topic.vue:200-219（上传后 images 放入提交数据）、campus.ts:672-678（real 请求体含 ...(data.images...)）；CampusController.java:452-457（record CreateCampusTopicRequest 仅 category/title/content/tags，无 images）；RealCampusService.java:130-165（createCampusTopic 设置 schoolId/category/title/content/authorId/replyCount/viewCount/isAnonymous/tags/时间戳，无 setImages）；CampusTopic.java:62-63（images JSON 列存在）、RealCampusService.java:405（toCampusTopicView 读 topic.getImages()）、campus.ts:102（mapToCampusTopicItem 解析 raw.images）——读侧在位证明系接线遗漏而非设计裁剪；tour A/B 实拍「上传图片 0/6」UI 承诺",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.9,
+      "ideal": "带图发布后配图随帖可见：客户端上传换得的 URL 经创建接口落库（images JSON 列已存在）并在话题列表/详情回显。",
+      "fix": "后端 CreateCampusTopicRequest 增 `@Size(max = 6) List<String> images` 字段；RealCampusService.createCampusTopic 仿 tags 同款 `topic.setImages(serializeImages(images))`（复用 JSON 序列化助手）落库；客户端无需改动。修复后补一条 real 模式带图发布→回显的集成测试（现有 PT24-PT29 无法自动化覆盖）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-202",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png（「匿名发布/开启后，你的信息将显示为\"匿名校友\"」开关实拍渲染）",
+      "category": "Function",
+      "severity": "P1",
+      "description": "匿名发布开关在 real 模式为安慰剂，实名信息照常暴露：页面恒显示「匿名发布」开关并承诺「开启后，你的信息将显示为『匿名校友』」（post-topic.vue:383-395 + zh-CN.ts:3544，未像 circles 同族页那样以 useMock() 门隐藏）；mock 模式承诺成立（campus.ts:654 按 isAnonymous 渲染匿名校友），但 real 模式三重断裂：①store real 分支请求体不含 isAnonymous（campus.ts:672-678 仅 category/title/content/tags/images）；②后端 CreateCampusTopicRequest 无该字段（CampusController.java:452-457）；③服务端硬编码 topic.setIsAnonymous(false)（RealCampusService.java:159）——用户开启匿名后发布的帖子以真实昵称展示，隐私承诺失效。校园恋爱社交语境下匿名承诺失效即信任/隐私失效，且同文件回复链路存在同根因硬编码（RealCampusService.java:196，属 topic-detail 页范围，建议一并修复）。执行级 PT37 UNVERIFIED（observe-only 未执行切换），本判定为双侧代码实读证据。",
+      "evidence": "post-topic.vue:383-395（switch 恒渲染 + anonymousDesc 承诺文案）、zh-CN.ts:3544（「开启后，你的信息将显示为『匿名校友』」）；campus.ts:654（mock 生效）vs campus.ts:672-678（real payload 无 isAnonymous）；CampusController.java:452-457（DTO 无字段）；RealCampusService.java:159（setIsAnonymous(false) 硬编码）；旁证：circles/post-topic.vue:576 对无后端支撑能力采用 useMock() 隐藏口径（姊妹页 Issue 301 之「隐藏不承诺」原则），本页未采用",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.92,
+      "ideal": "开启匿名后 real 模式发布的帖子作者显示「匿名校友」且不暴露 userId 昵称/头像（后端落库 isAnonymous=true 并在视图层脱敏）；或产品裁决砍掉该能力时 real 模式隐藏开关并撤回文案承诺——两者取一，禁保持「可开但不生效」现状。",
+      "fix": "方案A（兑现承诺）：DTO 增 `Boolean isAnonymous`，RealCampusService 落库 `topic.setIsAnonymous(Boolean.TRUE.equals(req.isAnonymous()))`，store real payload 透传 data.isAnonymous，并核查视图层匿名脱敏（作者名/头像）与回复链路同根因（RealCampusService.java:196）。方案B（短期止血）：real 模式隐藏开关区块（v-if=\"useMock()\"，对齐 circles 页口径）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-203",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__默认.png（页面实拍：分类/标题/正文/图片/话题/匿名区齐备，无位置/提及/可见范围行）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "理想稿发布能力位「添加位置 / 提及好友 / 谁可以看」在本页零实现：无任何 UI、无状态、请求体无字段（后端 CreateCampusTopicRequest 亦无）。其中「谁可以看」的语义本体由校园域隐式成立——话题挂 schoolId 且服务端 requireVerifiedSameSchool 门禁（CampusController.java:177）保证同校可见，但理想稿要求的 pill 级显式展示缺失。「添加位置/提及好友」为净能力缺失。同族同根因先例：circles 页 Issue MP-R1-POSTTOPIC-302（保留）、village/publish Issue 102/103/104。属发布功能族范围裁剪的页内形态，登记待族级产品裁决，故 status=保留。",
+      "evidence": "post-topic.vue 全文无位置/提及/可见范围 UI 与字段（:274-411 template 实读）；campus.ts:672-678 请求体无 location/mention；CampusController.java:452-457 DTO 无对应字段；理想稿能力位：素材/理想效果图/发布帖子页面.png（添加位置「北京大学·未名湖校区」/「@ 提及好友」/「谁可以看 圈内成员可见」三行）；隐式可见范围：CampusController.java:177",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "发帖表单提供位置（POI 级）、@ 好友、可见范围展示/选择（理想稿三行能力位）；最低成本满足「谁可以看」：表单或目标区「同校可见」只读 badge。",
+      "fix": "族级产品裁决（与 village/publish、circles/post-topic 三页统一）：维持裁剪则在理想稿标注裁剪并关闭同族 Issue；恢复则 chooseLocation + 关注列表选择器 + DTO 字段三端同步。最低成本项：先补「同校可见」只读 badge。",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-204",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png（上传图片区仅静态图片格，无视频入口）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "媒体上传仅支持图片不支持视频：页面 uni.chooseImage（post-topic.vue:146-161，sizeType compressed、sourceType album/camera），无视频选择/上传链路；理想稿发布工具条首项为「图片/视频」。同族先例：circles 页 Issue MP-R1-POSTTOPIC-303、village/publish 同构（家族均仅图片）。在 Issue 201（images 字段断裂）修复前，本项优先级自然靠后。",
+      "evidence": "post-topic.vue:146-161（uni.chooseImage 无 mediaType 视频）；理想稿：素材/理想效果图/发布帖子页面.png 底部工具条「图片/视频」；家族先例 findings/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-req.json Issue 303",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "发布支持图片+视频混合选择（uni.chooseMedia 链路）。",
+      "fix": "家族级裁决：三页统一迁移 uni.chooseMedia 视频链路（后端媒体端点需同步支持视频类型），或理想稿「图片/视频」标注裁剪。",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-205",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png（实拍计数 0/500 与「已选话题 0/3」）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "容量/数量口径与理想稿不符但客户端三方自洽：正文 0/500（MAX_LENGTH=500，post-topic.vue:105/:341）vs 理想稿 0/1000 vs 后端 @Size(max=5000)（CampusController.java:455）——放宽空间客观存在；话题选择上限 3（MAX_TOPIC_SELECTION=3，popular-topics.ts:91）vs 理想稿「已选 0/5」vs 后端 @Size(max=5)（CampusController.java:456，且客户端 real 提交侧本就按 5 截断 post-topic.vue:234-237）。同族先例：circles 页 Issue MP-R1-POSTTOPIC-304（正文 500 vs 1000，保留）。非功能缺失，登记口径差异待产品裁决。",
+      "evidence": "post-topic.vue:105/:341（500）、:234-237（real 提交按 5 截断）；popular-topics.ts:91（MAX_TOPIC_SELECTION=3）；CampusController.java:455-456（content 5000/tags 5）；zh-CN.ts:3539-3543；理想稿：素材/理想效果图/发布帖子页面.png（0/1000、已选 0/5）",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.85,
+      "ideal": "正文 0/1000、话题 0/5（理想稿口径）；或理想稿标注项目口径。",
+      "fix": "产品二选一：①理想稿改 0/500、0/3 标注项目口径；②正文/话题上限三方放宽（后端 5000/5 已可承接，客户端改 MAX_LENGTH 与 MAX_TOPIC_SELECTION 即可）。",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-CAMPUSPOSTTOPIC-206",
+      "round": "R1",
+      "page": "subpackages/campus/campus/post-topic",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT04-after.png（默认态渲染正常；PT04 探针 ?category=__proto__ 未执行，无非法值实拍）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "深链 category 参数无白名单校验，可产生全 Tab 不可见的孤儿帖：onLoad 将 query.category 直接 `cat as CampusTopicCategory` 赋值（post-topic.vue:61-66），未校验是否属于 CAMPUS_CATEGORY_MAP 六值；生产入口虽恒传合法值（campus/index.vue:121），但深链/转发场景可携带任意值——落页后六 chip 均无高亮，用户照常填写发布，非法 category 直达后端（服务端仅 @NotBlank + isBlank 校验，RealCampusService.java:138-140；实体 category 列 length=50 无枚举约束 CampusTopic.java:50-51），帖子落库后因列表按 category 精确过滤（campus/index.vue:91 仅六合法 Tab 值、RealCampusService.java:108-109）而在任何 Tab 永久不可见。执行级：PT04 的 ?category=__proto__ 探针未被执行器实施（judge UNVERIFIED），本判定为代码链证据。",
+      "evidence": "post-topic.vue:61-66（无白名单直接 cast）；campus/index.vue:91/:121（按 activeCategory 过滤/透传合法值）；RealCampusService.java:108-109（列表按 category 精确匹配）、:138-140（创建仅校验非空）；CampusTopic.java:50-51（category varchar(50) 无枚举校验）；exec PT04 UNVERIFIED（探针未执行，judge 判定）",
+      "sources": ["code"],
+      "confidence": 0.75,
+      "ideal": "非法/未知 category 深链进入时回落默认分类（课程交流）高亮，发布永远携带合法分类。",
+      "fix": "onLoad 内 `if (typeof cat === \"string\" && cat in CAMPUS_CATEGORY_MAP) selectedCategory.value = cat`，否则保持默认；一行白名单判断即可，服务端可另加枚举白名单校验作纵深。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/campus/campus/post-topic",
+      "baseline": "素材/理想效果图/发布帖子页面.png（ideal-baseline.md:101 发布功能族语义锚定；像素级 L1-L4 锚定权归 village/publish，本页行使功能需求参照权。素材/理想效果图/校园圈.png 实读为 campus/hub 稿已排除）",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.md",
+      "structureNotes": "L1 存在可达：通过（pages.json:126；深链渲染完整 PT01 EXECUTED + tour A/B 11 帧无错误空态）。L2 骨架：头（取消/发布话题/发布）→分类 6 选 1→标题→正文 0/500→图片 0/6→话题选择器→匿名开关→底部发布大钮；与理想稿非同构——分类/标题/匿名为校园域适配件（理想稿所无，非缺失），位置/提及/谁可以看/贴士/工具条为真实能力位缺失（Issue 203/204/205 登记）。L3 组件：6 张 section 卡与发布族同族、chip 选中品牌绿、TopicSelector 复用 village 组件、switch color=brand500 #36C99A（全仓一致）；绿渐变 header 为表单页品牌元素，Hero 节奏红线（tab 级条款）不适用。L4 文案：zh-CN.ts:3527-3548/en-US.ts:3448-3471 全 24 键双语在位，tour 实拍逐字一致；唯一文案-行为矛盾＝「匿名校友」承诺 real 模式不成立（Issue 202）。L5 状态：双发布钮 disabled 态 PT09 VERIFIED；超限红态分支因 maxlength 钳制不可达（防御性死分支）；成功/失败 toast 分支在位执行级未覆盖。L6 交互链：空表单校验正向实证（PT21 toast「请输入标题」）；38 例中 36 UNVERIFIED 经 judge notes 定性为执行器文本候选定位不穿透子组件/子节点+表单前置未执行+mock 注入缺失，目标元素均经 wxml/截图证实真实渲染——属验证债非页面行为反证，但按「未运行即未验证」如实计入。L7 入口 wiring：唯一生产入口 campus/index FAB（isOwnCertifiedView 认证门禁）透传当前 Tab 分类（index.vue:118-122/:356），hub 无入口，深链可达且服务端 requireVerifiedSameSchool 兜底（CampusController.java:177）。L8 数据链：mock 全链在位；real：tags 唯一真实闭环（客户端截断→DTO @Size(5)/@Size(20)→实体 JSON 列→视图），images/anonymous 双断裂（Issue 201/202），上传先于提交且文件名唯一量防幂等键碰撞（MP-R1-CAMPUSPOST-002）。L9 一致性：正文 500 客户端自洽 vs 后端 5000 vs 理想 1000；话题 3 vs 后端 5 vs 理想 5（Issue 205）；图片上限 6=UI_LIMITS 但后端无对应校验字段（随 Issue 201 修复补 @Size(max=6)）。L10 回归：MP-R1/R2-CAMPUSPOST 系列+MP-R2-CAMPUSINDEX-002(a) 历史修复逐条在位无反证；MP-R1-CAMPUSPOSTTOPIC-101（goBack 裸 navigateBack 栈底失效）待修复中。",
+      "usageNotes": "实际路径：campus/index（认证视角 FAB）→ 分类已按当前 Tab 预选 → 填标题/正文 →（选图 0/6、选话题 0/3、开匿名）→ 发布 → toast「发布成功」→ 800ms 自动返回 → 新帖 store.unshift 回流当前 Tab 顶部（campus.ts:657）。mock 模式核心任务可顺畅完成（校验反馈执行级实证 PT21）；real 模式文字+话题帖可发布，但带图帖图片静默丢失、匿名帖实名暴露（Issue 201/202）——页面自我承诺的「带图/匿名分享」在生产模式不可完成。迷路风险低：单层表单+双发布钮+header 取消；栈底深链返回失效由交互侧 101 立案。2 步回 tab：返回→campus/index（1 步）→底部 tab。卡点：real 双能力断裂（201/202）+执行级验证债 36/38 UNVERIFIED。",
+      "functionGaps": [
+        {
+          "target": "配图随帖发布并可见（页面「上传图片 0/6」承诺 + 理想图格）",
+          "current": "客户端全链在位且先上传换 URL（post-topic.vue:200-219）；请求体带 images（campus.ts:677）但后端 DTO 无 images（CampusController.java:452-457）、service 不落库（RealCampusService.java:130-165）；读侧管线齐全（CampusTopic.java:62-63、:405、campus.ts:102）",
+          "gap": "real 模式图片静默丢失，生产帖恒无图（P1，MP-R1-CAMPUSPOSTTOPIC-201）",
+          "fix": "DTO 增 @Size(max=6) images + service serialize 落库；补 real 带图发布集成测试"
+        },
+        {
+          "target": "匿名发布（承诺「显示为匿名校友」）",
+          "current": "mock 成立（campus.ts:654）；real：payload 不带（campus.ts:672-678）+ DTO 无字段 + setIsAnonymous(false) 硬编码（RealCampusService.java:159）；开关未按 circles 口径隐藏（post-topic.vue:383-395）",
+          "gap": "real 模式匿名无效、实名暴露（P1，MP-R1-CAMPUSPOSTTOPIC-202）",
+          "fix": "DTO+service+store 透传落库并视图脱敏；或短期 real 隐藏开关撤承诺（回复链路同根因 :196 建议一并）"
+        },
+        {
+          "target": "添加位置（理想 POI 级）",
+          "current": "零 UI 零字段（前端/DTO 均无）",
+          "gap": "能力位缺失（家族同 MP-R1-POSTTOPIC-302）",
+          "fix": "族级产品裁决（MP-R1-CAMPUSPOSTTOPIC-203，保留）"
+        },
+        {
+          "target": "提及好友",
+          "current": "零 UI 零字段",
+          "gap": "能力位缺失",
+          "fix": "族级裁决（并入 203，保留）"
+        },
+        {
+          "target": "谁可以看（显式展示）",
+          "current": "无显式 UI；同校可见由 schoolId+requireVerifiedSameSchool 隐式成立（CampusController.java:177）",
+          "gap": "理想 pill 级展示缺失",
+          "fix": "最低成本「同校可见」只读 badge（并入 203）"
+        },
+        {
+          "target": "图片/视频",
+          "current": "仅 uni.chooseImage（post-topic.vue:146-161）",
+          "gap": "无视频（家族同 MP-R1-POSTTOPIC-303）",
+          "fix": "族级 uni.chooseMedia 裁决（MP-R1-CAMPUSPOSTTOPIC-204，保留）"
+        },
+        {
+          "target": "正文 0/1000、话题 0/5（理想稿口径）",
+          "current": "0/500 与 0/3 客户端自洽（post-topic.vue:105、popular-topics.ts:91）；后端实为 5000/5（CampusController.java:455-456）",
+          "gap": "与理想数值不符，放宽空间存在",
+          "fix": "理想稿标注项目口径或三方放宽（MP-R1-CAMPUSPOSTTOPIC-205，保留）"
+        },
+        {
+          "target": "分类深链参数健壮性",
+          "current": "onLoad 直接 cast 无白名单（post-topic.vue:61-66）；后端仅 @NotBlank（RealCampusService.java:138-140）；列表按 category 精确过滤（campus/index.vue:91）",
+          "gap": "非法深链值产生全 Tab 不可见孤儿帖（P3）",
+          "fix": "onLoad 白名单校验回落默认（MP-R1-CAMPUSPOSTTOPIC-206，待修复）"
+        },
+        {
+          "target": "发帖小贴士卡 + 底部五项工具条（理想稿结构元素）",
+          "current": "无（底部以自建发布大钮替代，工具条功能均经主体区可达）",
+          "gap": "帮助性内容与快捷入口缺省，无净能力损失",
+          "fix": "不立案；建议理想稿标注结构裁剪"
+        }
+      ],
+      "verdict": "不达标"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-req.json"
+}

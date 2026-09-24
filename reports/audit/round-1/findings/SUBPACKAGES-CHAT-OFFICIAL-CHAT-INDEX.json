@@ -1,0 +1,131 @@
+{
+  "round": "R1",
+  "page": "subpackages/chat/official-chat/index",
+  "pageName": "官方/AI 聊天",
+  "reviewer": "视觉审查员-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX（A3，截图与证据的视觉/布局/状态审查）",
+  "date": "2026-09-23",
+  "evidenceBaseline": {
+    "manifestGitSha": "aefd8a72",
+    "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+    "manifestFile": "reports/audit/round-1/screenshot-manifest.json",
+    "interactExec": "reports/audit/round-1/interact/exec-results.json（gitSha=aefd8a72，updatedAt=2026-09-23T12:00:00.115Z，official 相关 26 条 OC01-OC26）",
+    "verdict": "证据 gitSha 与当前 HEAD 一致，全部证据按未过期采用"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-010",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png（另 B 默认同病：reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__默认.png；放大证据：reports/audit/round-1/findings/_tmp_A_default_junction.png；滚动后全文对照：reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.png）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "历史 P0 线索 MP-R1-OFFICIAL-003（最后一条消息被输入栏截断）在当前 HEAD 默认态仍复现：mock 冷启动进入本页滚动位置停在顶部（时间条「9月21日 03:14」与首条消息完整可见即证 scrollTop=0），末条助手消息只显示到第二行「✅ 活动开始前一天我会提醒」——第二行文字底缘与输入栏上缘零间隙、气泡底部 padding 完全被遮（4x 放大图 _tmp_A_default_junction.png），消息 103 全文的后半段「你~ 另外有3位兴趣相近的人也参加🌹 要提前认识一下吗？」（约两行）默认完全不可见，用户无任何「还有下文」提示，仅在手动滚动后（OC12-after 证实共 4 行）才能看到。根因明确：loadOfficialChat 的 mock 分支（index.vue:221-261）对常规加载路径没有任何 scrollToBottom 调用——只有存在 pendingNotifies 时才滚底（:256-258）；而 real 分支有「await nextTick(); setTimeout(() => scrollToBottom(), 120)」（:278-279，R21 注释自述修的就是『消息多于视口时最后一条永远被输入栏遮挡』）。代码审查 issue 007 声称「五条消息变更路径全部经 scrollToBottom」存在漏项：mock 冷启动赋值路径（:222-253）不在其列。发送后滚底正常（OC12）证明 scrollToBottom 函数本身工作，缺的只是 mock 分支的调用点。",
+      "evidence": "截图三重一致：A 默认、B 默认、OC11-after 底部均止于「✅ 活动开始前一天我会提醒」且第二行文字紧贴输入栏上缘；OC12-after 同一消息滚动后完整 4 行可见，坐实默认态隐藏后半段。代码：apps/client/src/subpackages/chat/official-chat/index.vue:221-261（mock 分支无滚底调用）、:254-258（仅 pendingNotifies 非空才 void scrollToBottom()）、:276-279（real 分支滚底+R21 注释）、:249（消息 103 全文含「你~ 另外有3位兴趣相近的人也参加🌹 要提前认识一下吗？」）、:502-503（底部锚点存在但默认态未被触发）、:731-734+:908-918（布局 flex 列正常，非覆盖型遮挡——是滚动位置停顶所致）。历史线索 MP-R1-OFFICIAL-003（P0）。代码审查 issue 007 结论「五条滚底路径全覆盖」漏掉 mock 冷启动路径，运行时终验结论据此修正。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.9,
+      "ideal": "进入会话页即滚到底部：最后一条消息（含气泡 padding）完整可见于输入栏上方，与微信进入会话行为一致；A/B 双身份与 OC 交互截图均应呈现同一终态。",
+      "fix": "index.vue mock 分支赋值 messages 后（:253 之后、:260 return 之前）补与 real 分支相同的 await nextTick(); setTimeout(() => scrollToBottom(), 120);（或抽共用滚底函数两分支同调），确保卡片图片异步加载撑高内容后仍能二次校正；修复后按 300 字长消息/连续发送/键盘弹起/历史多屏四场景回归截图。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-011",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png（B 同：reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__交互后.png；卡片原文对照：reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png）",
+      "category": "Data",
+      "severity": "P2",
+      "description": "助手活动卡片宣称「城市露营计划（周六 14:00-18:00 · 中央公园 2.3km，12人已报名）」，但点击卡片/「查看详情」实际落到「新人礼遇（每日 18:00-20:00 · 校园咖啡角）」详情页——卡片标题、时间、地点与目标页内容完全不符。双身份巡检交互后截图均实拍为「新人礼遇」。链路：mock 卡片 cardTargetUrl 固化 /subpackages/tools/activities/detail?id=2001（index.vue:235），而活动数据源（activity store 与内置示例）中不存在 id=2001，详情页 resolveActivity 对未知 id 回退展示第一个示例活动「新人礼遇」（detail.vue:110-112 注释自证『任意未知 id 展示第一个示例』）。用户被助手以「这个活动和你的兴趣很匹配哦~」引导后到达一个完全不同的活动，属于 mock 数据自洽性断裂（real 模式后端 id 自洽时不存在，但巡检/验收以 mock 包为基准且双身份复现）。",
+      "evidence": "截图：A/B 默认态卡片实拍「城市露营计划 周六 14:00-18:00 中央公园 2.3km」；A/B 交互后实拍详情页「新人礼遇 每日 18:00-20:00 校园咖啡角」。代码：apps/client/src/subpackages/chat/official-chat/index.vue:232-245（cardTitle/cardActivity 均为城市露营计划）、:235（cardTargetUrl id=2001）；apps/client/src/subpackages/tools/activities/detail.vue:110-112（未知 id 回退 samples[0]=新人礼遇）；grep 全仓「2001」在活动数据源 0 命中（仅 index.vue 卡片与 OC 交互记录引用）。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.85,
+      "ideal": "卡片展示内容与点击到达的活动详情为同一活动：id=2001 在数据源中存在且标题/时间/地点与卡片一致；或 cardTargetUrl 指向数据源中真实存在的活动 id。",
+      "fix": "二选一：① 在 activity mock 数据源补充 id=2001「城市露营计划」条目（含封面/时间/地点，与卡片字段一致）；② 将 index.vue:235/:238 的 activityId 与 cardTargetUrl 改为 mock 数据源中真实存在的活动 id。修复后回归验证：点击卡片→详情页标题与卡片逐字一致。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-012",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+      "category": "UI",
+      "severity": "P3",
+      "description": "时间条逻辑与注释语义矛盾，跨天消息被归入同一时间组造成时间误导：mock 三条消息发布时间分别为 2 天前/1 天前/0.5 天前（index.vue:227/:236/:251），但默认态仅顶部显示一条「9月21日 03:14」时间条，消息 102（1 天前）与 103（0.5 天前，实际约为巡检前一日 23 时）在视觉上全部归属「9月21日 03:14」时间组——微信行为中跨天消息必有日期分隔条。根因 shouldShowTime 实现（index.vue:320-327）：return formatTime(prev)!==formatTime(cur) && idx % 3 === 0——即便相邻消息时间不同，也必须 idx 是 3 的倍数才显示，与 :322 注释宣称的「时间条去重——与上一条同一分钟（HH:mm 相同）不再重复展示」不符（注释语义应为『不同则显示』，实现是『不同且 idx%3==0 才显示』）。",
+      "evidence": "截图：A 默认（及 B 默认、OC11-after）全页仅一条时间条位于消息 101 上方，消息 102/103 无时间条。代码：apps/client/src/subpackages/chat/official-chat/index.vue:320-327（shouldShowTime 的 idx % 3 === 0 条件）、:322（注释语义与实现矛盾）、:227/:236/:251（三条消息相差 2 天/1 天/0.5 天）、:424（v-if=\"idx === 0 || shouldShowTime(idx)\"）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "时间条按时间间隔显示：与上一条消息跨天（或超过阈值间隔）即显示新时间条，三条 mock 消息应呈现 9月21日 / 9月22日 两个日期组；注释与实现语义一致。",
+      "fix": "shouldShowTime 去掉 idx % 3 === 0 短路，改为纯时间阈值判断（如跨天或间隔>5 分钟显示）：return formatTime(prev.publishedAt) !== formatTime(cur.publishedAt)；若产品确需『每 3 条最多一条时间条』则修正注释并确认产品语义。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-013",
+      "round": "R1",
+      "page": "subpackages/chat/official-chat/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "三处可点元素热区低于 88rpx（44px）基准：①「查看详情」链接 .activity-detail-link 仅 padding 8rpx 0 4rpx + 字号 26rpx，总高约 43~48rpx（≈22~24px），是本页核心转化入口（进入活动详情的唯一文字入口）且紧邻卡片整卡点击区，误触/漏触风险最高；② 表情键与「+」键 .input-bar__icon 为 64rpx×64rpx（≈32px）；③ 发送键 .input-bar__send 高 72rpx（≈36px）。审查框架五维 UX 维要求热区≥88rpx，三处均不达标；其中「查看详情」不足基准一半。",
+      "evidence": "代码：apps/client/src/subpackages/chat/official-chat/index.vue:864-866（.activity-detail-link padding: 8rpx 0 4rpx）、:867-871（字号 26rpx）；:919-926（.input-bar__icon 64rpx）；:981-990（.input-bar__send height 72rpx）。截图：A 默认图中「查看详情」行高目测约与正文一行等高，热区明显偏小。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.75,
+      "ideal": "核心可点元素热区≥88rpx：表情/加号/发送键补足点击热区（可视觉不变、扩大命中区），「查看详情」上下 padding 提升至合计≥44rpx 使整行热区≥88rpx。",
+      "fix": ".activity-detail-link 改 padding: 20rpx 0 并加负 margin 抵消视觉间距（或 min-height: 88rpx + flex 居中）；.input-bar__icon 改 88rpx（内部图标 40rpx 不变）；.input-bar__send 高度 88rpx 或外套 8rpx 透明 hit 扩展。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "A 身份默认态：自定义导航「寻觅助手」+绿描边「官方」徽章+副标题「你的恋爱小管家」渲染正确，与右上胶囊按钮无重叠、与模拟状态栏无叠印；英雄区吉祥物（绿色芽苗娃娃，IMAGE_PATHS.MASCOT.SMILE）+问候文案完整；三条 mock 助手消息全左对齐带头像，首条时间条「9月21日 03:14」；首条气泡内 🌱/✨ 经 EmojiText 渲染为品牌 SVG（放大图 _tmp_A_bubble1.png 可见芽苗 SVG 与 hero 区图标同源）；活动卡片封面/标题/时间/地点/4 颗参与点/「查看详情」/附言结构完整；发送键浅绿禁用态（空输入）正确。缺陷：末条消息截断（见 010）。该截图同时是巡检默认态与 OC01 内容一致性的旁证（judge OC01 VERIFIED 引用同一张）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png；放大件 reports/audit/round-1/findings/_tmp_A_default_bottom.png、_tmp_A_default_junction.png、_tmp_A_bubble1.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "B 身份默认态：与 A 身份逐元素一致（双身份无差异，符合 mock 消息与身份解耦的预期）；时间条「9月21日 03:23」随进入时刻生成（mock publishedAt=Date.now()-2d，预期行为）；末条消息同样截断于「✅ 活动开始前一天我会提醒」（010 在 B 身份稳定复现）。",
+      "evidence": "reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__默认.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "A/B 交互后截图均为点击活动卡片/「查看详情」后的活动详情页实拍：证明本页卡片→详情跳转链路在巡检会话中真实可达（与 A1 run 中 OC19/OC20 路由不变的坏探针记录形成对照，judge 已仲裁巡检为准）；到达页为「新人礼遇」构成本轮 011 号发现（卡片内容与目标不符）的直接证据。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png；reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__交互后.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "OC12-after（critical 发送链路）：用户消息右侧品牌绿气泡+白字+「已读」回执渲染正常；用户头像为深色纹理圆（judge 已比对为 avatar 资产本体，非裂图）；发送后滚底生效（用户消息与已读完整可见于输入栏上方），同一屏内消息 103 全文 4 行完整可见——与默认态截图对照坐实 010「默认态未滚底」；消息 103 上方出现「11:08」时间条（idx=3 恰命中 idx%3==0，行为偶合正常）；助手消息文案与 SVG emoji 渲染无异常。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC12-after.png；放大件 reports/audit/round-1/findings/_tmp_OC12_avatar.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "OC11-after（空输入快击发送×5+单击）：零新增气泡、输入框空、发送键保持浅绿禁用态（#C7E9DC 与样式一致），无 Toast 无路由变化——空输入防误触的视觉终态正确；该截图同时第三次复现默认态末条截断（010）。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC11-after.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "OC25-after（未登录+token 移除冷启动，mock 包）：聊天主体照常渲染无 LockScreen——为 mock 包 isUnlocked=isLoggedIn||useMock() 的预期旁路（judge 判 UNVERIFIED/mock 正确表现），非缺陷；页面视觉与登录态无差异，无闪烁/错误态。",
+      "evidence": "reports/screenshots/round-1-interact/SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-OC25-after.png"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "observation": "理想图对照：素材/理想效果图/ 19 张整页稿中无本页锚定稿；唯一疑似「ChatGPT Image 2026年8月20日 11_37_17.png」实为吉祥物立绘（与素材/吉祥物体系同源），与本页 hero 吉祥物形象一致（绿色芽苗娃娃），可证品牌形象一致，但页面级 L1-L10 对照无法进行——本页以代码内注释声明「理想图还原版」+品牌视觉总谱为间接依据，L1-L4 页面级达标性留待理想稿锚定后补审。",
+      "evidence": "素材/理想效果图/ 目录清单（19 张无 official/助手/聊天整页稿）；素材/理想效果图/ChatGPT Image 2026年8月20日 11_37_17.png（已实读，吉祥物立绘非整页稿）"
+    }
+  ],
+  "coverage": [
+    "证据校验：reports/audit/round-1/screenshot-manifest.json gitSha=aefd8a72 与当前 HEAD（git rev-parse HEAD → aefd8a72f2231e8df7affd09004c14c3e4e73745）一致；exec-results.json gitSha=aefd8a72 同步一致——全部证据按未过期采用，未基于过期证据下结论。",
+    "截图已看：A/B 双身份 默认+交互后 4 张全部逐张实读；round-1-interact 落盘件 OC11/OC12/OC25 实读，OC15/OC16/OC17/OC22/OC24 经 judge md5 仲裁为失败用例同帧空基础态（未重复实读）；7 张 ERROR:timeout 截图磁盘不存在（judge 清点）如实标注。",
+    "理想图已对照：素材/理想效果图/ 19 张清单核对，无本页锚定稿；ChatGPT Image 11_37_17.png 实读为吉祥物立绘——页面级 L1-L10 对照不可执行，如实标注而非虚构达标。",
+    "滚动已测（部分）：默认态滚动位置=顶部（时间条+首条完整可见）由 A/B 默认截图证实；发送路径滚底由 OC12-after 证实；OC18 的 pageScrollTo 对内部 scroll-view 无效（judge 仲裁 UNVERIFIED），滚动后末条完整可见性以 OC12 截图间接证实（发送态）、默认态证实为不滚底（010）。",
+    "点击已测：OC07（···→Toast 会话设置敬请期待）、OC08（+→Toast 更多功能敬请期待）、OC11（空发送×5 零副作用）、OC12（正常发送全链路）EXECUTED；OC09/OC10/OC13-OC17/OC21-OC24 因 harness el.input 错误或 mock 环境无承载元素而 FAILED/UNVERIFIED（judge 已逐条仲裁），本审查不对这些用例的目标行为下结论。",
+    "返回已测：OC05 栈深 1 时返回键兜底 switchTab 回消息 tab 终态 route=pages/messages/index VERIFIED（视觉层无落点异常截图问题）。",
+    "safe-area 已查：输入栏 padding-bottom: calc(16rpx + env(safe-area-inset-bottom))（index.vue:913）+导航 statusBarHeight JS 注入（:364 附近，代码核对）；模拟器截图无法验证真机安全区，如实标注为代码层核对。",
+    "TabBar 已查：本页为 subpackages 非 tab 页无 TabBar 遮挡问题；自定义导航与胶囊按钮、状态栏在 A/B 截图均无叠印。",
+    "空态已查：mock 恒 3 条消息空态不可达；real 模式错误态（errorMessage+重试）在 mock 包不可呈现（OC23 UNVERIFIED）——空态/错误态视觉本轮无运行证据，不判达标也不判缺陷。",
+    "长文已测：OC15（300 字发送折行+末条完整可见回归）因 harness el.input is not a function 未执行——长文本场景本轮未验证，010 的修复验证建议中已包含该场景。",
+    "加载态已查：OC01 骨架「后隐」终态有单次采样、「先现」无直接证据（judge 已注记）；骨架占位视觉本身在落盘截图中无异常帧。",
+    "组件一致性已查：输入栏[表情][+][输入框][发送]结构与私聊页 R20 统一口径一致（代码+截图）；助手/用户气泡、SVG emoji（🌱✨😊）同源渲染正常；时间条 #bbb 裸色属代码审查 005 已报的裸 hex 同类，不重复报。",
+    "历史 Bug 回归已查：MP-R1-OFFICIAL-003（P0 末条截断）→ 已验证为默认态仍复现（010，P1 Regression，mock 分支缺滚底调用）；代码审查 007「已修复待终验」结论被运行时证据部分推翻——real 分支修复未测（无 real 环境），mock 分支确认未接线。",
+    "职责边界：功能目标对照（报名成功消息链路语义）、历史回归全量复核、交互行为仲裁归需求对照员/历史回归员/交互判定员；本审查仅补视觉/布局/状态/数据极值呈现层缺陷（010-013），不重复代码审查 001-009 已报项（键盘互斥、emoji 口径、token、onShow 消费、死代码等）。",
+    "未运行/未覆盖项：未启动微信开发者工具自行取证（以巡检+交互轮既有截图为证据源）；未验证 real 模式（mock 包无 real 环境）；真机 safe-area/键盘弹起/300 字长文/表情面板开合的视觉终态无有效落盘证据，均如实标注未验证。",
+    "工作产物：放大证据件留存于 reports/audit/round-1/findings/_tmp_A_default_bottom.png、_tmp_A_default_junction.png、_tmp_A_bubble1.png、_tmp_OC12_avatar.png。"
+  ]
+}

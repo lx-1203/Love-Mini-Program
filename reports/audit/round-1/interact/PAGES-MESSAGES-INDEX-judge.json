@@ -1,0 +1,767 @@
+{
+ "round": "R1",
+ "page": "pages/messages/index",
+ "generatedAt": "2026-09-23T21:30:00+08:00",
+ "judge": "交互判定员-R1-PAGES-MESSAGES-INDEX（A6 证据仲裁）",
+ "sources": [
+  "expected 权威：reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json（MSG01-MSG40）",
+  "observed 权威：reports/audit/round-1/interact/exec-results.json#MSG01-40（R1 复跑批，git=aefd8a72，2026-09-23，真实构建）",
+  "截图/wxml：reports/screenshots/round-1-interact/（A1 批 MSGxx 共 14 张成功落盘 + 9 份 wxml 全页快照）",
+  "补充观测源：reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json（同轮 op 批，09-20 mock 构建 dev-user=1，OP01-OP29，编号截图同目录）",
+  "console：reports/audit/round-1/interact/console-S03-discover-messages.log（仅 MSG36 有窗口内记录；其余用例 console 数组为空）"
+ ],
+ "method": "逐用例三方对照（Manifest.expected vs exec-results.observed vs 截图/wxml 目检）。判定基准：核心预期获 observed+落盘证据支持判 VERIFIED（证据缺口以 confidence 体现）；observed 与预期矛盾且归因产品判 FAILED；action 未执行、前置未建立、证据通道缺失、原生层不可驱动判 UNVERIFIED。A1 复跑批系统性干扰（登录前置失效、截图 saveFile 超限与 timeout、原生 ActionSheet 与 custom-tab-bar 不入元素树、console 仅 MSG36 采集成功）均按通道问题归档，未据此判产品缺陷；op 批仅作同轮补充观测源并在 evidence 中显式标注批次与构建差异，未以代码推测替代执行证据。",
+ "summary": {
+  "total": 40,
+  "verified": 17,
+  "failed": 0,
+  "unverified": 23,
+  "issuesNew": 4,
+  "issuesHistoricalRecheck": 4,
+  "channelNotes": [
+   "截图通道：saveFile 超限（DevTools 文件存储满）与 timeout waiting for automator response（往返 1-10s，见 op 批 OP29 记录）共 21 张失败——不影响 DOM/wxml/路由证据的用例仍可判 VERIFIED",
+   "登录前置：storageRemove 后 reLaunch 不清 in-memory 会话，MSG01-04 未登录分支全部不可达（与 PAGES-LOGIN-INDEX-judge 记录的系统性干扰同因）",
+   "原生层：uni.showActionSheet 面板与 custom-tab-bar 均不参与 automator 元素树，MSG28-31/36 动作链在此中断"
+  ]
+ },
+ "checks": [
+  {
+   "caseId": "MSG01",
+   "page": "pages/messages/index",
+   "operation": "未登录冷启动直开：NotLoggedWaiting 等待态完整渲染，不闪现错误空态",
+   "expected": "停留消息页（tabBar 页不跳登录）；NotLoggedWaiting 全要素（bg/title/subtitle/4 icon 行/3 按钮）可见；无空白/骨架/错误空态；console 无 NAV_FAIL/TypeError",
+   "actual": "exec：storageRemove token/refresh_token + reLaunch 留痕，top=pages/messages/index 路由正确；但 DOM 探测 .not-logged__bg/__title/__subtitle/__features/__btn--primary/__btn--secondary 全部 absent——存活进程内 in-memory 会话未因 storage 清除翻转，页面未进入未登录分支（与登录页判定员记录的系统性前置失效同因）；after 截图 ERROR:timeout waiting for automator response，无视觉证据；console 空。预期未获证据支持，且无法区分产品缺陷与通道前置失效",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG01",
+    "reports/audit/round-1/interact/exec-results.json#MSG01",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG01-after.png（ERROR:timeout waiting for automator response）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG02",
+   "page": "pages/messages/index",
+   "operation": "未登录态「微信一键登录」→ 跳登录页",
+   "expected": "500ms 内 navigateTo('/pages/login/index')，无死按钮",
+   "actual": "action-not-performed：.not-logged__btn--primary 不存在（同 MSG01 未登录前置未建立），tap 未执行，路由无变化；无任何一条证据能验证跳转",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG02",
+    "reports/audit/round-1/interact/exec-results.json#MSG02"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG03",
+   "page": "pages/messages/index",
+   "operation": "未登录态「手机号登录」→ 跳登录页（死按钮修复回归 MP-R1-PAGES-MESSAGES-INDEX-005）",
+   "expected": "500ms 内 navigateTo('/pages/login/index') 且可观测反馈（不得复现零响应死按钮）",
+   "actual": "action-not-performed：.not-logged__btn--secondary 不存在（前置未建立），tap 未执行；修复的 @go-phone-login 监听在本轮未获运行时复验（当前模板 index.vue:341 已见绑定，仅代码层旁证）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG03",
+    "reports/audit/round-1/interact/exec-results.json#MSG03"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG04",
+   "page": "pages/messages/index",
+   "operation": "未登录态「稍后再看」→ switchTab 回首页",
+   "expected": "500ms 内 switchTab 成功 getCurrentPages=[pages/home/index]，不得报 can not navigateTo a tabbar page",
+   "actual": "action-not-performed：.not-logged__btn--ghost 不存在（前置未建立），tap 未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG04",
+    "reports/audit/round-1/interact/exec-results.json#MSG04"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG05",
+   "page": "pages/messages/index",
+   "operation": "身份 A 登录态冷启动直开：content 全模块完整渲染",
+   "expected": "Header/QuickActionCards（有人喜欢你必现）/寻觅助手卡/最近聊天依次渲染；数据驱动区块按后端数据显隐不编造；无白屏/骨架残留；console 无异常",
+   "actual": "exec：登录注入成功 userId=user-1001，top=messages；DOM 探测 .header__title/.header__icon-btn/.quick-cards/.assistant-card/.section/.chat-item 全 present；同批 wxml 落盘（MSG28-after.wxml）完整呈现 Header（消息+苗+副标+搜索钮）/双快捷卡（有人喜欢你 22 人、正在等待回复 2 个）/助手卡（官方标+6+ 角标）/最近聊天 5 条；数据驱动区块按数据显隐（warm/活动区空数据即隐藏，无编造）；MSG12-after.png 目检同布局无白屏。after 截图因 saveFile 存储上限失败（通道），console 空",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG05",
+    "reports/audit/round-1/interact/exec-results.json#MSG05",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG05-after.png（ERROR:saveFile 超限）",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（同批全页快照，目检）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG12-after.png（目检）"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "MSG06",
+   "page": "pages/messages/index",
+   "operation": "七态之 Loading：无数据首载显示 Skeleton list×5",
+   "expected": "加载期整块 5 行骨架，不显示旧内容/错误态；数据到达后切 content；若在途窗口未捕获则如实记 UNVERIFIED",
+   "actual": "observe-only：.uni-skeleton 探测 absent，但无 store 清空/removeCache 注入留痕（observed 无 pre 行），无法区分「响应过快窗口未命中」与「未渲染」；截图 saveFile 失败。Manifest 预授权此情形记 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG06",
+    "reports/audit/round-1/interact/exec-results.json#MSG06",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG06-after.png（ERROR:saveFile 超限）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "MSG07",
+   "page": "pages/messages/index",
+   "operation": "七态之 Empty：无会话与升温数据时显示「还没有新的缘分」空态",
+   "expected": "吉祥物图+「还没有新的缘分」+「去附近看看吧」；不渲染默认插槽内容；不误入 error",
+   "actual": "pre-FAIL：数据注入失败（element not found: .dashboard），空数据态未建立；.empty-chat 三要素探测 absent 系前置未建立所致而非产品证据；截图 saveFile 失败",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG07",
+    "reports/audit/round-1/interact/exec-results.json#MSG07",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG07-after.png（ERROR:saveFile 超限）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG08",
+   "page": "pages/messages/index",
+   "operation": "七态之 Error：首屏加载失败显示 ErrorState，重试穿透缓存重载",
+   "expected": "失败时整页网络错误态+重试入口；点重试 500ms 内 removeCache+bootstrap(true) 强制重拉；恢复后切回 content",
+   "actual": "前置（离线/停后端）未建立：页面停留 content 态（MSG08-after.png 目检为正常列表页，非 ErrorState），.errorMessage absent；tap __CAND__(\"按\") 未命中（无重试钮实例可点）。错误态分支本轮未被真实触发",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG08",
+    "reports/audit/round-1/interact/exec-results.json#MSG08",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG08-after.png（目检：content 态）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG09",
+   "page": "pages/messages/index",
+   "operation": "滚动到底再回顶：状态栏遮罩显隐 + 末条会话不被 tabBar 遮挡",
+   "expected": "滚动后遮罩 opacity 0→1，回顶 160ms 过渡回 0；底部 padding 不被 tabBar 遮挡；无数据变化",
+   "actual": "exec：act:pageScrollTo bottom/top 均执行，末态 scrollPos=top，.messages-page__top-scrim present、.chat-item present；但 scrollTop 数值前后对比与 opacity 读数未落盘、console 空（noop 证据要求未完全满足）；补充 op 批 OP25 同场景截图目检（25-scrolled：Header 滚出视口、状态栏后渐变遮罩出现；25-after 回顶恢复）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG09",
+    "reports/audit/round-1/interact/exec-results.json#MSG09（evidence 仅 scrollPos=top）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[24]（=OP25）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-25-scrolled.png（目检）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG10",
+   "page": "pages/messages/index",
+   "operation": "下拉刷新：force 穿透 TTL 真实重拉，动画不永驻且不整页闪骨架",
+   "expected": "下拉动画出现且数据链路完成后收起；刷新期间保留内容不闪骨架；刷新后服务端最新数据；pinned/muted 运行期态保留",
+   "actual": "exec：act:pullDown 与 pre:stopPullDownRefresh 在 evaluate 上下文均报 ERR uni is not defined——刷新未证实触发；截图 timeout。op 批 OP24（09-20 mock 构建）状态级补证：刷新后 pinned 保留/已删会话不复活；OP29 记录 automator 截图往返 1-10s 大于动画窗口的通道限制",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG10",
+    "reports/audit/round-1/interact/exec-results.json#MSG10",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG10-after.png（ERROR:timeout）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[23]（=OP24）、#checks[28]（=OP29）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG11",
+   "page": "pages/messages/index",
+   "operation": "搜索开关：点 Header 搜索钮展开搜索栏（热区≥88rpx 铁律核查）",
+   "expected": "500ms 内 .search-bar 展开（placeholder「搜索聊天记录...」）；72rpx 热区如实记缺陷候选；hover 态生效",
+   "actual": "exec：tap .header__icon-btn 执行（同批 MSG16 tap 后 .search-bar:present 反证当前构建点击可展开）；op 批 OP03 03-after 目检：搜索栏于 Header 下展开、placeholder 与 × 清除钮可见。热区核查：当前代码 .header__icon-btn 72rpx×72rpx（index.vue:636-638）<88rpx 铁律下限，立缺陷 MP-R1-MSG-001。after 截图 saveFile 失败（通道）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG11",
+    "reports/audit/round-1/interact/exec-results.json#MSG11、#MSG16（.search-bar:present）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[2]（=OP03）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-03-after.png（目检）",
+    "代码 apps/client/src/pages/messages/index.vue:636-638（热区 72rpx）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG12",
+   "page": "pages/messages/index",
+   "operation": "搜索输入正常关键字：列表即时过滤",
+   "expected": "列表切换为 filteredSessions：仅剩命中会话，结果数≤全量；即时生效无整页刷新",
+   "actual": "A1 rerun：.search-bar__input 不存在（前置 MSG11 双 tap 后处于收起态，前置断裂），input 未执行；op 批 OP04 同操作证据：输入「夏」→ DOM chat-item 仅剩夏言、其余 4 条隐藏（04-after 目检）；过滤实现为纯子串 includes（当前代码 index.vue:143-151 与 op 批一致）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG12",
+    "reports/audit/round-1/interact/exec-results.json#MSG12",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[3]（=OP04）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-04-after.png（目检）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG13",
+   "page": "pages/messages/index",
+   "operation": "搜索无结果：显示「未找到匹配的聊天」",
+   "expected": "显示 section__empty「未找到匹配的聊天」；不显示「暂无聊天记录」；其余区块不崩溃",
+   "actual": "A1 rerun：input 未执行（前置断裂）；op 批 OP05 证据：输入「不存在xyz」→ emptyText=「未找到匹配的聊天」、列表 0 行（05-after 目检确认空态文案，且未出现「暂无聊天记录」）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG13",
+    "reports/audit/round-1/interact/exec-results.json#MSG13",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[4]（=OP05）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-05-after.png（目检）"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "MSG14",
+   "page": "pages/messages/index",
+   "operation": "搜索清空（× 按钮）：恢复全量列表",
+   "expected": "输入框清空且 500ms 内列表恢复 orderedSessions 全量；搜索栏本身不收起",
+   "actual": "A1 rerun：.search-bar__clear 不存在，tap 未执行；op 批 OP08 证据：点 × 后 DOM chat-item 恢复全量 5 条[夏言,叶知秋,陈默,匿名匹配·星河,顾言]（08-after 目检），搜索栏保持展开",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG14",
+    "reports/audit/round-1/interact/exec-results.json#MSG14",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[7]（=OP08）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-08-after.png（目检）"
+   ],
+   "confidence": 0.65
+  },
+  {
+   "caseId": "MSG15",
+   "page": "pages/messages/index",
+   "operation": "搜索输入超长串与特殊字符：不崩溃不过滤错乱",
+   "expected": "三段输入均不抛 TypeError/不白屏；纯子串 includes 处理；超长串不撑破布局",
+   "actual": "A1 rerun：input 未执行（前置断裂）；op 批 OP06/OP07 补证（09-20 mock 构建）：特殊字符 <>&\"'%$# → 空态无 TypeError（console 全量 190 行 0 条 TypeError/is not defined/NAV_FAIL），200 字超长串 → 正常空态不撑破布局。emoji 串（❤️🌿💬）子段两批均未覆盖——据实降置信",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG15",
+    "reports/audit/round-1/interact/exec-results.json#MSG15",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[5]（=OP06）、#checks[6]（=OP07）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-06-after.png（目检）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG16",
+   "page": "pages/messages/index",
+   "operation": "收起搜索栏：关键字自动复位，列表恢复全量",
+   "expected": ".search-bar 500ms 内收起消失；关键字清空；再打开时输入框为空",
+   "actual": "A1 rerun：tap 执行后 .search-bar:present——系前置（MSG12 过滤态）断裂，该 tap 实为「打开」而非「关闭」，不构成对收起逻辑的证伪；op 批 OP09 证据：过滤态下再点搜索钮 → page.$('.search-bar')=null（v-if 移除，09-after 目检无搜索栏）且关键词复位列表完整；当前代码关闭分支复位关键词（index.vue:166-169）与该行为一致",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG16",
+    "reports/audit/round-1/interact/exec-results.json#MSG16",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[8]（=OP09）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-09-after.png（目检）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG17",
+   "page": "pages/messages/index",
+   "operation": "「有人喜欢你」快捷卡 → 批量已读 + 跳喜欢与访客页",
+   "expected": "500ms 内 navigateTo likes-visitors；markTypeRead 将三类未读置已读；返回后角标减少；文案计数一致不编造",
+   "actual": "exec：tap .quick-card ×2 执行；MSG17-after.wxml 目检=喜欢与访客页（总浏览量 104/今日访客 5/今日浏览量 22，tabs 喜欢我的 22/我的访客 5，列表苏晴…）→ 跳转达成且「22 人喜欢了你」与目标页「喜欢我的 22」计数一致；exec route 字段停留 messages 系子包首编期 currentPage 读旧页（op 批 OP10 同现象，后续帧确认落地）；markTypeRead 返回后角标段当批无读数（before/after 截图双 timeout），op 批 OP10 mock 侧证未读通知 6→4",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG17",
+    "reports/audit/round-1/interact/exec-results.json#MSG17",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG17-after.wxml（目检：喜欢与访客页）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[9]（=OP10）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG17-before.png、-after.png（双 ERROR:timeout）"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "MSG18",
+   "page": "pages/messages/index",
+   "operation": "「正在等待回复」卡（waitingReplyCount>0）→ 去回复打开最近会话",
+   "expected": "500ms 内 getCurrentPages 末位=chat-session 且 query.sessionId=列表第一条私聊会话 id；不得误跳喜欢页；文案计数一致",
+   "actual": "exec：tap 第二张 .quick-card ×2 执行（route 字段陈旧读数）；op 批 OP28 同操作 redo 证据：28-after 目检=夏言会话页落地（goReply→privateSessions[0]→sessionId=session-private-1）；A1 同批 MSG27 route+wxml 证实 session-private-1 即列表首条私聊（夏言）；卡片文案「2 个聊天正在继续」与 wxml 一致（MSG28-after.wxml）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG18",
+    "reports/audit/round-1/interact/exec-results.json#MSG18",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG27-after.wxml（同批 sessionId 佐证）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[27]（=OP28）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-28-after.png（目检）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG19",
+   "page": "pages/messages/index",
+   "operation": "waitingReplyCount=0：第二张卡隐藏且首卡通栏不铺满",
+   "expected": "「正在等待回复」卡不渲染；仅存「有人喜欢你」卡限宽半屏不通栏；无布局抖动",
+   "actual": "pre-FAIL：waitingReplyCount=0 注入失败（element not found: .waitingReplyCount），当批实际双卡在显（数据 waitingReply=2）；隐藏/半宽断言未测；截图 timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG19",
+    "reports/audit/round-1/interact/exec-results.json#MSG19",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG19-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG20",
+   "page": "pages/messages/index",
+   "operation": "寻觅助手卡 → 官方号会话页（accountId=official-assistant）",
+   "expected": "500ms 内 navigateTo official-chat?accountId=official-assistant 非 404；返回落点=本页",
+   "actual": "exec：tap .assistant-card ×2 执行（route 字段陈旧读数）；op 批 OP12/OP13 补证：12-after 目检=官方号会话页「寻觅助手」（query accountId=official-assistant），13-after 返回落点消息页",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG20",
+    "reports/audit/round-1/interact/exec-results.json#MSG20",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[11]（=OP12）、#checks[12]（=OP13）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-12-after.png（目检）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG21",
+   "page": "pages/messages/index",
+   "operation": "未读角标闭环：助手卡角标显示，进入本页 onShow 后会话未读清零",
+   "expected": "进入前角标显示合计未读（>99 封顶）；返回后 500ms 内红点闭环：行内 badge 消失；免打扰不计入；角标随数据消失",
+   "actual": "exec 终态证据：.assistant-card__badge:present（wxml 6+）+ 全列表 .chat-item__unread-badge:absent + act:switchTab 返回——onShow markAllSessionsRead 清零后的终态成立；「进入前合计/99+ 封顶」段缺前后对照（截图 timeout、无 before 读数）；op 批 OP02 补证双通道闭环（chatBadge=0/storageBadge=0/助手角标 6+↔notifUnread=6）+OP17 动态方向（0→1 三处角标联动，17-after 目检）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG21",
+    "reports/audit/round-1/interact/exec-results.json#MSG21",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（badge 6+、无行内红点）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[1]（=OP02）、#checks[16]（=OP17）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-17-after.png（目检）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG22",
+   "page": "pages/messages/index",
+   "operation": "助手卡活动区数据驱动：有数据显示 N 场活动，无数据整块隐藏",
+   "expected": "态① assistant 非空显示计数行+首条标题（N=实际长度）；态② 空数据整块 v-if 隐藏，不得出现编造「2 场活动」/露营文案",
+   "actual": "态②已证：exec observe .assistant-card__activity:absent 且 MSG28-after.wxml 全页无活动区块、无编造文案（011 回归成立，真实数据 assistant=[]）；态①未测：当前真实构建无 assistant 数据且注入未执行——两态覆盖不齐，整例记 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG22",
+    "reports/audit/round-1/interact/exec-results.json#MSG22",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（目检：无活动区块）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG22-after.png（ERROR:saveFile 超限）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG23",
+   "page": "pages/messages/index",
+   "operation": "「正在升温 · 更多 ›」→ 跳喜欢与访客页",
+   "expected": "500ms 内 navigateTo likes-visitors；返回落点=本页",
+   "actual": "action-not-performed：.section__more 不存在——当批 warmPeople 为空（区块 v-if 隐藏连带「更多›」），前置（warmPeople 非空）两批（A1 真实构建/op 批 mock 构建）均无法建立",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG23",
+    "reports/audit/round-1/interact/exec-results.json#MSG23"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG24",
+   "page": "pages/messages/index",
+   "operation": "升温头像点击 → chat-session?userId=<person.userId>",
+   "expected": "500ms 内 navigateTo chat-session?userId=对应 userId；返回落点=本页",
+   "actual": "action-not-performed：.warm-item 不存在（同 MSG23，warmPeople 为空前置未建立），tap 未执行",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG24",
+    "reports/audit/round-1/interact/exec-results.json#MSG24"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG25",
+   "page": "pages/messages/index",
+   "operation": "warmPeople 为空：「正在升温」区块整体隐藏",
+   "expected": "区块 v-if 整体隐藏，不显示任何捏造用户；后续区块位置正常无空洞",
+   "actual": "exec observe：.warm-list:absent；MSG28-after.wxml 全页证实：助手卡后直接「最近聊天」section，无正在升温区块、无捏造用户、无布局空洞——真实数据口径回归成立；after 截图 saveFile 失败（通道）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG25",
+    "reports/audit/round-1/interact/exec-results.json#MSG25",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（目检）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG25-after.png（ERROR:saveFile 超限）"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "MSG26",
+   "page": "pages/messages/index",
+   "operation": "最近聊天排序与标识：置顶全局最前 + pin 图标 + 关系状态标签映射",
+   "expected": "排序=置顶组→highIntent→普通（组内时间降序）；pin 图标可见；状态文案按映射表；官方号不混入",
+   "actual": "exec observe：.chat-item/.chat-item__pin-icon/.chat-item__status 全 present；MSG28-after.wxml 顺序=[夏言(pin-icon+暧昧中), 叶知秋(互相关注), 陈默(聊天中+免打扰图标), 匿名匹配·星河, 顾言(刚认识)]：置顶全局最前+pin 图标（002 修复渲染侧成立）；互相关注组先于普通组、普通组内时间降序（18:12→昨天→周日）；状态映射（暧昧中/互相关注/聊天中/刚认识）正确；官方号寻觅助手不入列表。fullPage 截图 timeout（通道）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG26",
+    "reports/audit/round-1/interact/exec-results.json#MSG26",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（目检：全序列）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG26-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "MSG27",
+   "page": "pages/messages/index",
+   "operation": "点击会话 → chat-session?sessionId=<id>；返回落点本页且红点清零",
+   "expected": "500ms 内 navigateTo chat-session?sessionId 一致（不跳错人）；返回落点=本页且 onShow 清零、滚动位恢复",
+   "actual": "入段已证：exec route=[messages, chat-session(sessionId=session-private-1)] 且 MSG27-after.wxml=夏言会话页（与所点首条一致，未跳错人）；返回段缺失：A1 navigateBack 记 NAV_ERROR Uncaught [object Object]（归因不明，立 Issue MP-R1-MSG-004），红点清零/滚动位恢复当批无读数、截图双 timeout；op 批 OP14/OP15 补证同链路（落地+返回 unread=0 无反弹）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG27",
+    "reports/audit/round-1/interact/exec-results.json#MSG27",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG27-after.wxml（目检：夏言会话页）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[13]（=OP14）、#checks[14]（=OP15）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG27-before.png、-after.png（双 ERROR:timeout）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG28",
+   "page": "pages/messages/index",
+   "operation": "长按会话 → ActionSheet 选「置顶/取消置顶」：列表重排 + pin 图标；失败仅 toast",
+   "expected": "长按 500ms 内 ActionSheet 弹出恰 4 项；选置顶后列表移至第一位+pin 图标；取消路径无副作用；失败仅 toast",
+   "actual": "exec：act:longpress .chat-item 执行，遮罩已入帧（MSG28-after.png 目检全屏半透明遮罩=ActionSheet 伴随遮罩），但原生 showActionSheet 面板不参与 automator 元素树（wxml 无面板节点），菜单项 tap（含「取消」）未命中，4 项目录/置顶重排/取消路径均无法执行取证；op 批 OP16 同限制留档（面板从未入帧）。渲染侧（置顶最前+pin 图标）已由 MSG26 wxml 证实，操作侧待终验",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG28",
+    "reports/audit/round-1/interact/exec-results.json#MSG28",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG28-after.png（目检：遮罩入帧无面板）",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（无面板节点）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[15]（=OP16）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG29",
+   "page": "pages/messages/index",
+   "operation": "长按选「标为未读」：红点恢复显示",
+   "expected": "500ms 内该行出现 unread-badge「1」；助手卡总角标同步 +1；仅本地态无 pin/mute 类请求",
+   "actual": "exec：longpress 候选解析失败（element not found），动作未执行——当前构建操作侧无证据；op 批 OP17（09-20 mock 构建 tapIndex 注入）证 unread=1、行内红点+tab 角标+助手角标三处联动（17-after 目检），但属旧构建证据、当轮未复跑，据实记 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG29",
+    "reports/audit/round-1/interact/exec-results.json#MSG29",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[16]（=OP17，旧构建）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-17-after.png（目检，旧构建）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG29-before.png、-after.png"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG30",
+   "page": "pages/messages/index",
+   "operation": "长按选「免打扰/恢复提醒」：muted 图标切换且菜单文案随态",
+   "expected": "免打扰后行时间区出现 muted-icon；总角标不计入；二次长按文案=「恢复提醒」；恢复后图标消失；失败仅 toast 不整页 error",
+   "actual": "exec：longpress 触发后 tap 候选「提交」与实际菜单文案不符（itemList=置顶/取消置顶、标为未读、免打扰/恢复提醒、删除会话），动作链中断；免打扰图标渲染侧已由 MSG26/MSG28-after.wxml 证实（陈默行 muted-icon，003 修复）；菜单文案翻转/恢复操作侧当前构建未复跑",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG30",
+    "reports/audit/round-1/interact/exec-results.json#MSG30",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（muted-icon 渲染侧）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[18]（=OP19）、#checks[19]（=OP20）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG30-before.png、-after.png"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG31",
+   "page": "pages/messages/index",
+   "operation": "长按选「删除会话」：确认弹窗后列表移除；取消保留",
+   "expected": "取消路径弹窗关闭会话保留；确认后 500ms 内行消失总数减一；失败仅 toast；刷新后不再出现",
+   "actual": "exec：longpress 候选未找到，删除链路未执行；op 批 OP21（09-20 mock 构建 tapIndex=3+showModal 确认注入）证删除生效行消失（21-after 目检），当前构建未复跑，据实记 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG31",
+    "reports/audit/round-1/interact/exec-results.json#MSG31",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[20]（=OP21，旧构建）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG31-before.png、-after.png"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG32",
+   "page": "pages/messages/index",
+   "operation": "头像/昵称/预览兜底链：空与加载失败回退默认，不出现破图",
+   "expected": "头像回退 DEFAULT_AVATAR（不重复请求 404）；昵称「未知用户」；预览「暂无消息」；布局不塌陷",
+   "actual": "exec observe：.chat-item__avatar:present，但空头像/404/空昵称注入未留痕，@error 回退链未触发；旁证：MSG28-after.wxml 第 4 行（匿名匹配·星河）头像 src=/static/assets/default-avatar.jpg 兜底显示、昵称预览正常、无破图——常态兜底可见，注入态兜底未测；截图 timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG32",
+    "reports/audit/round-1/interact/exec-results.json#MSG32",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（default-avatar 行）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG32-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "MSG33",
+   "page": "pages/messages/index",
+   "operation": "会话行未读角标上限：unreadCount>99 显示 99+",
+   "expected": "角标显示「99+」而非 150，不溢出行；随 onShow 清零后消失",
+   "actual": "exec observe：.chat-item__unread-badge:absent，unreadCount=150 注入未留痕（无 pre 行），无法区分未注入与未渲染；截图 saveFile 失败",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG33",
+    "reports/audit/round-1/interact/exec-results.json#MSG33",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG33-after.png（ERROR:saveFile 超限）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "MSG34",
+   "page": "pages/messages/index",
+   "operation": "快速连点×5 会话行：仅一次导航，页面栈不重复压入",
+   "expected": "chat-session 至多入栈 1 层（栈深≤记录值+1）；无栈溢出/重复渲染；无路由错误刷屏",
+   "actual": "exec：act:rapidTap ×5 done=5 执行，after wxml=会话页快照（与 MSG27 同页），但 getCurrentPages 栈深未读取，「至多入栈 1 层」断言未测；截图双 timeout、console 空；op 批 OP22 同层导航（助手卡）5 连点栈深=2（仅 1 层压入）补证同类场景（旧构建）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG34",
+    "reports/audit/round-1/interact/exec-results.json#MSG34",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG34-after.wxml（终态会话页）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[21]（=OP22）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG35",
+   "page": "pages/messages/index",
+   "operation": "重复进出+打开即返回：状态恢复不丢、数据不重复",
+   "expected": "每次返回落点=本页；数据不重复；置顶/免打扰/搜索关闭态/滚动位保持；onShow 无骨架闪烁",
+   "actual": "exec：navigateBack 记 NAV_ERROR Uncaught [object Object]，循环中断，末帧 wxml 停在会话页（预期应落回消息页）——状态恢复断言未测；归因不明（通道或 onShow 链路抛非 Error 对象），立 Issue MP-R1-MSG-004；截图双 timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG35",
+    "reports/audit/round-1/interact/exec-results.json#MSG35",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG35-after.wxml（末帧会话页）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG36",
+   "page": "pages/messages/index",
+   "operation": "tabBar 切换往返：选中态 index=3，切走再切回状态与数据不丢",
+   "expected": "每次 500ms 内切换成功；回消息页选中高亮=消息(selected=3)；onShow 重载但滚动位/内容保留；TTL 内秒开无骨架闪烁",
+   "actual": "exec：act:switchTab home→messages→nearby→discover 均执行，但 custom-tab-bar 不在页面元素树、tap「首页」候选未命中，序列未完成，末态 route=pages/profile/index（非消息页）——「回消息 selected=3」断言未达（通道限制+流程中断）；另 MSG36 窗口内两日两次捕获 [Global Error][Vue Error] runtime-2 + captureException（console-S03，立 Issue MP-R1-MSG-002）；op 批 OP26 补证 profile↔messages 往返 selected=4/3 与数据保持（旧构建）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG36",
+    "reports/audit/round-1/interact/exec-results.json#MSG36",
+    "reports/audit/round-1/interact/console-S03-discover-messages.log L140-152（09-23 批 MSG36 窗口）、L74-84（09-22 批 MSG36 窗口）",
+    "reports/audit/round-1/interact/PAGES-MESSAGES-INDEX.json#checks[25]（=OP26，旧构建）"
+   ],
+   "confidence": 0.55
+  },
+  {
+   "caseId": "MSG37",
+   "page": "pages/messages/index",
+   "operation": "冷启动深链 reLaunch 直开 + dev-user=1：不闪现错误空态",
+   "expected": "isLoggedIn 变 true 直进 content 布局而非 NotLoggedWaiting；首帧不得闪现 ErrorState/空态；不携带 dev-user 行为不变",
+   "actual": "exec：logout+reLaunch?dev-user=1 后 MSG37-after.wxml 目检=登录态 content 布局（快捷卡/会话列表 5 条/角标 4+），未渲染 NotLoggedWaiting、无错误空态（稳定帧）；route 正确；console 空。首帧截图 timeout（通道系统性限制），「闪现」断言以稳定帧+路由+console 代证，据实降置信",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG37",
+    "reports/audit/round-1/interact/exec-results.json#MSG37",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG37-after.wxml（目检：content 布局）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG37-before.png、-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG38",
+   "page": "pages/messages/index",
+   "operation": "会话时间显示：当天/昨天/本周/更早分段与非法串 NaN 防护",
+   "expected": "按 formatChatListTime 分段渲染（当天/昨天/本周/更早），无 NaN/NaN；非法串防护返回空串；排序不破坏",
+   "actual": "exec observe：.chat-item__time:present、NaN 文本 absent；wxml 时间序列（18:39/14:47/18:12/昨天/周日 与 03:40/昨天/03:13/昨天/周日）呈当天 HH:mm/昨天/周几分段、无 NaN——真实数据口径成立（004 回归渲染侧）；非法串 'not-a-date' 注入未留痕（防护分支未直接触发，代码 Number.isNaN 防护仅旁证）；截图 timeout",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG38",
+    "reports/audit/round-1/interact/exec-results.json#MSG38",
+    "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml（时间序列目检）",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG38-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG39",
+   "page": "pages/messages/index",
+   "operation": "活动推荐卡点击：有 targetUrl 跳转；空 targetUrl 死按钮风险核查",
+   "expected": "targetUrl 非空 500ms 内跳转；空 targetUrl 按铁律如实记死按钮缺陷候选",
+   "actual": "action-not-performed：.activity-rec-card 不存在——当前真实数据 dashboard.assistant=[] 区块隐藏（v-if），前置无法建立；「有 targetUrl 跳转」与「空 targetUrl 死按钮」两分支当前数据态下均不可达；空 targetUrl 分支已按铁律立缺陷候选 MP-R1-MSG-003（代码层 openActivity 仅非空才跳转，index.vue:219-221）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG39",
+    "reports/audit/round-1/interact/exec-results.json#MSG39",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG39-after.png（目检：无活动卡区块）"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "caseId": "MSG40",
+   "page": "pages/messages/index",
+   "operation": "活动卡图标分支：emoji 文本走 text 渲染、URL 走 image，页面域不 404",
+   "expected": "emoji 卡走 --emoji 文本节点不以页面域相对路径发请求（无 pages/messages/❤️ 404）；URL 卡正常加载；空 icon 显示 placeholder；三卡不塌陷",
+   "actual": "exec observe：.activity-rec-card__icon--emoji:absent——三 icon fixture（emoji/URL/空）未注入（无 pre 留痕），区块整体隐藏，三分支渲染均未测；截图 timeout",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/ops/PAGES-MESSAGES-INDEX.json#MSG40",
+    "reports/audit/round-1/interact/exec-results.json#MSG40",
+    "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-MSG40-after.png（ERROR:timeout）"
+   ],
+   "confidence": 0.5
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-MSG-001",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-03-after.png",
+   "category": "UI",
+   "severity": "P3",
+   "description": "Header 搜索钮热区 72rpx×72rpx，低于交互铁律热区下限 88rpx（Manifest MSG11 指定核查项）",
+   "evidence": "代码 apps/client/src/pages/messages/index.vue:636-638（width/height 72rpx）；ops Manifest MSG11；op 批 03-after 截图可见按钮实际尺寸",
+   "sources": ["code", "screenshot"],
+   "confidence": 0.9,
+   "ideal": "可点击元素热区≥88rpx（视觉可保持 72rpx，以透明命中层/padding 扩区）",
+   "fix": ".header__icon-btn 外层包 88rpx 命中区或以伪元素扩展热区",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-MSG-002",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "MSG36（tabBar 切换）执行窗口内捕获 [Global Error][Vue Error]（vue runtime-2）+ captureException，两日两批复跑均复现（09-22T23:12:09Z、09-23T10:49:54Z）；错误对象序列化为空 {} 无法直接定位组件；同错误亦出现于 discover 页用例窗口（DC08/DC40），疑跨页共用组件渲染异常",
+   "evidence": "reports/audit/round-1/interact/console-S03-discover-messages.log L75-76、L143-144；exec-results#MSG36.console",
+   "sources": ["log", "interaction"],
+   "confidence": 0.55,
+   "ideal": "tab 切换全程 console 无未捕获 Vue 运行时错误",
+   "fix": "接入 Vue errorHandler 打印错误堆栈/开启 sourcemap 定位 runtime-2 抛出组件后修复，并复跑 MSG36",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-MSG-003",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "活动推荐卡空 targetUrl 分支点击无路由反馈（仅 hover opacity 0.85）——按「任何可点击元素必须有可观测反馈」铁律记死按钮缺陷候选；当前真实数据 assistant=[] 区块整体隐藏，属潜在分支（Manifest MSG39 指定不得豁免）",
+   "evidence": "代码 apps/client/src/pages/messages/index.vue:219-221（openActivity 仅 targetUrl 非空才 openAppPath）、:540-546（hover-class 仍保留可点击外观）；ops Manifest MSG39",
+   "sources": ["code", "interaction"],
+   "confidence": 0.6,
+   "ideal": "空 targetUrl 的卡不可点（移除 hover-class/指针）或点击给出引导反馈",
+   "fix": "模板按 targetUrl 是否存在条件绑定 @tap 与 hover-class，或补 toast 引导",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-MSG-004",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "",
+   "category": "Function",
+   "severity": "P2",
+   "description": "A1 批次两处 navigateBack 记录 NAV_ERROR: Uncaught [object Object]（MSG27/MSG35），返回链路存在未捕获异常疑点；可能为 automator 通道问题，亦可能为返回后 onShow/bootstrap 链路抛出非 Error 对象；当批 console 采集为空无法定位",
+   "evidence": "exec-results#MSG27/#MSG35 observed（navError 字段原文）；两用例 console 均为空数组",
+   "sources": ["interaction", "log"],
+   "confidence": 0.5,
+   "ideal": "会话页返回动作全程无未捕获异常，返回落点=消息页",
+   "fix": "对返回链路（chat-session onUnload → messages onShow → loadPage/markAllSessionsRead）补 reject 序列化日志后人工复现定位，再复跑 MSG27/MSG35",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-PAGES-MESSAGES-INDEX-001",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "reports/screenshots/round-1-interact/PAGES-MESSAGES-INDEX-12-after.png",
+   "category": "Interaction",
+   "severity": "P3",
+   "description": "历史问题复验：Header「+」死交互元素。当前构建该元素已整体移除：A1 批次截图头部仅剩搜索钮，当前模板 header__right 仅 1 个带 @tap 的搜索钮",
+   "evidence": "A1 批 MSG12-after.png（09-23 目检：仅搜索钮无「+」）；当前模板 index.vue:341-346（header__right 仅搜索钮）；对照 op 批 03-after（09-20 旧构建尚有「+」）",
+   "sources": ["screenshot", "code"],
+   "confidence": 0.85,
+   "ideal": "无可点击外观的死元素不渲染",
+   "fix": "已移除（修复方式为删元素）",
+   "status": "已验证"
+  },
+  {
+   "id": "MP-R1-PAGES-MESSAGES-INDEX-002",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml",
+   "category": "Regression",
+   "severity": "P2",
+   "description": "历史问题复验（置顶后列表不重排、无 pin 图标）：渲染侧已修复——当前构建 wxml 首位夏言带 chat-item__pin-icon 且置顶全局最前，排序含置顶组；操作侧（长按→选置顶→重排）因原生 ActionSheet 通道限制本轮未复跑",
+   "evidence": "MSG26/MSG28-after.wxml（pin-icon+置顶首位）；代码 index.vue pinnedTopSessions（置顶全局最前）；op 批 OP18 为旧构建偏差记录",
+   "sources": ["code", "interaction"],
+   "confidence": 0.75,
+   "ideal": "置顶后列表重排至首位并显示 pin 图标",
+   "fix": "渲染侧已落地；操作侧待 ActionSheet 可驱动后终验（MSG28 UNVERIFIED）",
+   "status": "已修复待终验"
+  },
+  {
+   "id": "MP-R1-PAGES-MESSAGES-INDEX-003",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml",
+   "category": "Regression",
+   "severity": "P3",
+   "description": "历史问题复验（免打扰无任何标识）：渲染侧已修复——当前构建 wxml 陈默行时间区渲染 chat-item__muted-icon（volume-x.svg）；菜单文案翻转/恢复操作侧因 ActionSheet 通道限制未复跑",
+   "evidence": "MSG26/MSG28-after.wxml（muted-icon 节点）；代码 index.vue:512-517（muted-icon 渲染分支）；op 批 OP19 为旧构建偏差记录",
+   "sources": ["code", "interaction"],
+   "confidence": 0.75,
+   "ideal": "免打扰会话行有可见标识，菜单文案随态翻转",
+   "fix": "渲染侧已落地；操作侧待 ActionSheet 可驱动后终验（MSG30 UNVERIFIED）",
+   "status": "已修复待终验"
+  },
+  {
+   "id": "MP-R1-PAGES-MESSAGES-INDEX-011",
+   "round": "R1",
+   "page": "pages/messages/index",
+   "screenshot": "reports/screenshots/round-1-interact/wxml/PAGES-MESSAGES-INDEX-MSG28-after.wxml",
+   "category": "Data",
+   "severity": "P2",
+   "description": "历史问题复验（编造「2 场活动」/硬编码露营文案）：已修复——当前构建真实数据 assistant=[] 时活动区整块隐藏，全页 wxml 无编造文案；有数据态（态①）的 N 计数展示路径本轮无数据未测",
+   "evidence": "MSG22/MSG28-after.wxml（无 assistant-card__activity 区块）；代码 index.vue:83-85（assistantActivityCount ?? 0，无编造兜底）；对照 op 批 03-after（09-20 旧构建尚显示编造活动行）",
+   "sources": ["interaction", "code"],
+   "confidence": 0.8,
+   "ideal": "活动区完全数据驱动：无数据整块隐藏，有数据 N=实际长度",
+   "fix": "已删除编造兜底（?? 2 与硬编码文案）；态①待有数据环境补测",
+   "status": "已验证"
+  }
+ ],
+ "unverifiable": [
+  "MSG01|未登录前置在存活进程未生效（storageRemove 后 in-memory 会话仍在，NotLoggedWaiting 未渲染），截图通道超时无视觉证据，产品/通道归因不明|1",
+  "MSG02|同 MSG01 前置未建立，.not-logged__btn--primary 不存在，tap 未执行|1",
+  "MSG03|同 MSG01 前置未建立，.not-logged__btn--secondary 不存在，死按钮修复回归未能复跑（模板绑定仅代码层旁证）|1",
+  "MSG04|同 MSG01 前置未建立，.not-logged__btn--ghost 不存在，tap 未执行|1",
+  "MSG06|在途加载窗口未证实捕获（无注入留痕，.uni-skeleton absent 无法区分窗口未命中与未渲染），截图 saveFile 失败；Manifest 预授权记 UNVERIFIED|1",
+  "MSG07|空态数据注入失败（pre-FAIL .dashboard not found），空数据态未建立|1",
+  "MSG08|离线/停后端前置未建立，页面停留 content 态，重试钮无实例可点|1",
+  "MSG10|pullDown 在 evaluate 上下文报 ERR uni is not defined，刷新未证实触发；截图超时（op 批 OP24/OP29 为旧构建状态级补证与通道限制记录）|1",
+  "MSG19|waitingReplyCount=0 注入失败（pre-FAIL），当批双卡在显，半宽/隐藏断言未测|1",
+  "MSG22|态②（空数据隐藏+无编造）已由 wxml 证实，态①（有数据显示 N+首条标题）当前构建无数据且注入未执行，两态覆盖不齐|1",
+  "MSG23|warmPeople 为空致「更多›」不渲染，前置（warmPeople 非空）两批均无法建立|1",
+  "MSG24|同 MSG23，.warm-item 不存在，tap 未执行|1",
+  "MSG28|原生 ActionSheet 面板不参与 automator 元素树（仅遮罩入帧），4 项目录/置顶重排/取消路径无法执行取证（op 批 OP16 同限制）|1",
+  "MSG29|候选会话行解析失败致 longpress 未执行；op 批 OP17 为旧构建证据，当前构建未复跑|1",
+  "MSG30|执行器候选文案「提交」与实际菜单项不符，tap 未命中动作链中断；免打扰渲染侧已证、操作侧未复跑|1",
+  "MSG31|longpress 候选未找到，删除链路未执行；op 批 OP21 为旧构建证据，当前构建未复跑|1",
+  "MSG32|空头像/404/空昵称注入未留痕，@error 回退链未测（仅常态 default-avatar 行旁证）|1",
+  "MSG33|unreadCount=150 注入未留痕，badge absent 无法区分未注入与未渲染，截图失败|1",
+  "MSG34|5 连点执行但 getCurrentPages 栈深未读取，「至多入栈 1 层」断言未测|1",
+  "MSG35|navigateBack 报 NAV_ERROR Uncaught [object Object]，循环中断，末帧停在会话页，状态恢复断言未测（见 MP-R1-MSG-004）|1",
+  "MSG36|custom-tab-bar 不在页面元素树，tap「首页」未命中，序列未完成（末态 profile 页），回消息选中态断言未达；窗口内另有 Vue Error（见 MP-R1-MSG-002）|1",
+  "MSG39|dashboard.assistant 为空致活动卡区块隐藏，前置未建立；空 targetUrl 死按钮分支已按铁律立缺陷候选（见 MP-R1-MSG-003）|1",
+  "MSG40|三 icon fixture（emoji/URL/空）未注入，区块隐藏，三分支渲染未测|1"
+ ],
+ "notes": "1) 判定分布：40 例=VERIFIED 17 / FAILED 0 / UNVERIFIED 23。零 FAILED 的原因：A1 复跑批 16 例 action-not-performed 全部源于可归因的通道/前置问题（未登录前置失效、真实构建无 warmPeople/assistant 数据、原生 ActionSheet 与 custom-tab-bar 不可驱动、执行器候选文案错误），非 observed 与预期的产品级矛盾；唯一的产品侧异常信号（MSG36/MSG27/MSG35 窗口内 Vue Error 与 navigateBack NAV_ERROR）证据不足以定向，已立 MP-R1-MSG-002/004 待查，不作 FAILED 结论。2) VERIFIED 的证据边界：MSG12-16 核心动作证据来自同轮 op 批（09-20 mock 构建）并经本人目检编号截图，当前构建仅 MSG11/16 反向佐证搜索栏可开合——置信已下调至 0.55-0.65；MSG29-31 拒绝以旧构建证据升级为 VERIFIED。3) 修复方优先级：MP-R1-MSG-002（Vue Error）与 MP-R1-MSG-004（navigateBack NAV_ERROR）需定位；MSG28-31 操作侧建议改用坐标点按/云真机等可驱动原生 ActionSheet 的手段终验。4) 本判定未运行任何新的自动化操作，仅仲裁既有证据；所有引用截图/wxml/日志均经本人逐份读取目检。"
+}

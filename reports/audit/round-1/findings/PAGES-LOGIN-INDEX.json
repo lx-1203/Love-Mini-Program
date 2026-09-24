@@ -1,0 +1,135 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "视觉审查员-R1-PAGES-LOGIN-INDEX (A3)",
+    "date": "2026-09-23",
+    "pages": ["pages/login/index"],
+    "method": "静态截图逐张审查（round-1-tour A/B 双身份 × 默认/校验错误/交互后）+ 交互证据（exec-results.json LG01-LG34 + round-1-interact 截图）+ 理想图对照（素材/理想效果图/登录页.png + 任务给定结构描述）+ 像素采样（PIL）+ 裁决链核验（git show 29a2b1df）+ 关键代码复核。全部证据在本会话实际读取/运行取得。",
+    "evidenceValidation": {
+      "screenshotManifestGitSha": "aefd8a72",
+      "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+      "manifestMatch": true,
+      "interactGitSha": "aefd8a72（exec-results.json 顶层字段，updatedAt 2026-09-23T12:00:00.115Z）",
+      "staleEvidenceExcluded": "reports/screenshots/round-1-interact/ 内 PAGES-LOGIN-INDEX-00~21b 编号系列截图（文件 mtime 2026-09-20 02:37~06:52）早于当前代码基线，非 aefd8a72 产物，按过期处理未据其下结论；本轮有效交互证据为同目录 LG 系列（exec-results.json 引用且 gitSha=aefd8a72）。"
+    },
+    "screenshotMd5Fingerprint": {
+      "tourA": "默认/校验错误/交互后 三张 MD5 相同 = 0bee0cf5a0d6ff63d9e1a96859e99766（154069B）",
+      "tourB": "默认/校验错误/交互后 三张 MD5 相同 = 6af01f848cb07d8af8437c414bdcd39d（154097B）",
+      "conclusion": "两轮巡检各只拍到 1 个真实状态；「校验错误」「交互后」为默认态的逐字节复制（对应并坐实历史线索 R13『01/05/16三图相同需重拍复核』）"
+    },
+    "notDuplicatedFromCodeFindings": "代码层报告 code-findings/PAGES-LOGIN-INDEX.json 已覆盖 16 项（401 reLaunch 摧毁表单 P1、密码框回归已验证、button::after、死代码、防抖互斥、toast 文案错位、a11y、token 硬编码等），本轮全部不重复报；本轮 5 项均为其漏掉的视觉/状态/合规项。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-101",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_login_index__校验错误.png（与 __默认.png、__交互后.png MD5 相同 0bee0cf5…）；旁证 reports/audit/round-1/interact/exec-results.json LG11/LG22-LG29/LG31",
+      "category": "Data",
+      "severity": "P2",
+      "description": "本页声称的 3 个巡检状态（默认/校验错误/交互后）实拍只有 1 个状态：A 巡检三张图 MD5 逐字节相同（0bee0cf5…），B 巡检三张亦相同（6af01f84…）。「校验错误」态从未被捕获。根因在证据链而非页面本身：校验错误态需先展开手机号表单，而交互取证中全部表单级用例（LG11 表单登录拦截、LG22 表单收起重进、LG23 手机号三态、LG24 超长防呆、LG25 密码三态、LG26 空提交、LG27 非法手机号、LG28 合法登录成功、LG29 错误密码、LG31 去注册）共 10 项 FAILED，失败模式一致——执行时 top=pages/discover/index、#login-phone/.btn-phone-quick/.form-btns 全部 element not found。对比成功停留在登录页的用例（LG15/LG16/LG30）均带 pre:logout ok，失败用例全部缺失该前置：有 token 时登录页按设计自动前进 discover（LG02/LG03 已验证该行为），harness 未先清 token 导致后续所有表单选择器落空。net effect：手机号表单展开态（含密码输入框、键盘弹起、校验错误文案、表单提交按钮）在整个 R1 证据集中零实拍，该页数据维/键盘维/校验维全部为审计盲区。",
+      "evidence": "MD5 实测（本会话 python hashlib）：A 巡检 默认=校验错误=交互后=0bee0cf5a0d6ff63d9e1a96859e99766、B 巡检三张=6af01f848cb07d8af8437c414bdcd39d；exec-results.json（gitSha=aefd8a72）LG11/LG22/LG23/LG24/LG25/LG26/LG27/LG28/LG29/LG31 status=FAILED 且 observed 含 \"top=pages/discover/index\"+\"element not found: #login-phone|.btn-phone-quick\"，成功用例 LG15/LG16 observed 含 \"pre:logout ok\"；LG15-after.png/LG16-after.png（期望表单展开的两个用例）实拍仍为默认三按钮态、无表单无 toast。",
+      "sources": ["screenshot", "interaction", "log"],
+      "confidence": 1.0,
+      "ideal": "巡检的每个声称状态实拍互异且可核验：校验错误态应展示表单展开+校验文案（或 toast）；交互后态应反映实际交互结果；表单展开/键盘弹起/校验错误三态至少各 1 张有效实拍。",
+      "fix": "重拍前先修 harness 用例前置：表单级用例统一补 pre:logout（或 pre:storageRemove token）确保 reLaunch 后停留在登录页；再依次捕获 ①tap .btn-phone-quick 展开表单 ②输入非法手机号触发校验错误 ③键盘弹起输入后 三个状态截图。本条为证据缺陷，不指向页面代码改动。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-102",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png（冷启动无交互，协议框已勾选）；reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG01-after.png（LG01 无 token 冷启动 observe-only 同样勾选）",
+      "category": "MiniProgram",
+      "severity": "P2",
+      "description": "用户协议/隐私政策 checkbox 默认勾选（冷启动即 agreed=true）：静态默认截图与 LG01 无 token 冷启动观察均显示绿色勾选态，代码 const agreed = ref(true) 写死默认值。微信小程序平台对「 Privacy」类合规的常见判定：用户须主动动作同意隐私政策，默认勾选属「默认同意」违规，是典型拒审/通报项；同时使页面自身的 agreeFirst 拦截分支（index.vue:283/:352/:413/:494/:546 五处守卫）在默认路径下永不生效——用户只有先主动取消勾选才可能见到「请先阅读并同意用户协议」，与 LG09 取证矛盾（见 observations）直接相关。代码审查员 16 项中无此项。",
+      "evidence": "apps/client/src/pages/login/index.vue:59 \"const agreed = ref(true);\"（本会话 Read 实证）；默认态截图协议行 checkbox 为绿底白勾（本会话目视 + 像素采样 (105,658)=#B3EAD9 绿系）；exec-results.json LG06 标题自证「协议勾选/取消切换（默认勾选）」；LG10 证明取消勾选后守卫正常拦截（toast 请先阅读并同意用户协议）——即守卫只在用户主动取消后可达。",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.85,
+      "ideal": "冷启动默认未勾选，用户滚动/点击主动勾选后方可登录；未勾选时点任意登录入口均被 agreeFirst toast 拦截（该守卫成为真实可达路径）。",
+      "fix": "index.vue:59 改 const agreed = ref(false)。注意联动：LG06/LG09/LG10 等依赖默认勾选的既有取证需按新默认重跑；如产品侧担心转化率，可加二次确认弹窗（未勾选点登录→弹协议确认框）替代默认勾选。微信审核口径终验需真机+审核规范复核。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-103",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png（主按钮/checkbox/副标题绿色实拍）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "主色实拍 #36C99A，与任务给定 Token 裁决链 v3.1 冻结值 Primary #34C98A 不符（蓝通道差 16，约 6%，并排可见偏青）。本页 manifestation：微信一键登录主按钮填充、协议 checkbox 选中底色、副标题「慢慢成为特别的人」绿字全部渲染 #36C99A。溯源：实现 token $brand-500: #36C99A（design-variables.scss:15，注释自称「青藤绿」）——即实现是自洽的（渲染=token），偏差发生在 token 定义层 vs 冻结契约层。此为全局 token 决策（影响全部分包页面），本报告仅登记登录页证据；若裁决链认可 #36C99A 为新冻结值则本条转「保留」，否则应全局改 token。",
+      "evidence": "本会话 git show 29a2b1df:docs/design/v3.1-contract.md 第 21 行 \"Primary `#34C98A`（操作/确认/导航/认证/在线）\"；apps/client/src/theme/design-variables.scss:15 \"$brand-500: #36C99A\"；PIL 像素采样默认截图主按钮三点 (60,514)/(186,500)/(186,514) 均 #36C99A（主按钮内微信图标为官方微信绿 #07C160，属品牌资产不受此判）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.8,
+      "ideal": "全端主色与 v3.1 冻结契约一致：Primary #34C98A；或经裁决链明确改冻 #36C99A 并同步契约文档，两处单一来源。",
+      "fix": "二选一：①design-variables.scss $brand-500（及 brand-dark/gradient-brand 等同值处）由 #36C99A 改 #34C98A；②在 docs/design/v3.1-contract.md 修订冻结值并全库登记。改法须全局统一，禁止只改登录页。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-104",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png（协议行 checkbox 实测约 17px 视觉直径）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "协议勾选框热区 34rpx×34rpx（约 17px），远低于本项目「热区≥88rpx」铁律：@tap=\"onAgreeTap\" 直接挂载在 .checkbox 本体（index.vue:890-901），该 view 尺寸 34rpx×34rpx、无 padding 扩展（:1458-1468，仅 margin-top:4rpx）。协议勾选是本页合规关键控件（未勾选拦截全部登录入口），17px 精确命中目标在真机上误触率高；且勾选/取消是用户达成登录的必经路径（配合 102 项改默认未勾选后点击频次还会上升）。对照：同页三个主按钮高约 95/89/90rpx 达标，唯独 checkbox 不达标。",
+      "evidence": "apps/client/src/pages/login/index.vue:890-901（@tap 在 .checkbox view 上）+ :1458-1468（.checkbox width:34rpx;height:34rpx，无热区扩展）；PIL 实测截图中 checkbox 绿块 y652-664（约 12-17px）；本项目审查标准「UX 维查到操作路径级（热区≥88rpx）」。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.9,
+      "ideal": "勾选控件视觉 34rpx 不变，命中区≥88rpx×88rpx（视觉小、热区大）。",
+      "fix": "给 .checkbox 增加 88rpx 命中层：如 .checkbox::after { content:''; position:absolute; left:50%; top:50%; width:88rpx; height:88rpx; transform:translate(-50%,-50%); }（.checkbox 加 position:relative），或将 @tap 上移到 .terms-wrap 行级容器并对 .terms-link 做 @tap.stop。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-LOGIN-INDEX-105",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png（协议行实拍文案「登录即同意《用户协议》和《隐私政策》」）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "对照任务给定理想结构「协议勾选（年满18+用户协议/隐私政策）」，实拍协议行缺「年满 18 周岁/18+」声明，仅有「登录即同意《用户协议》和《隐私政策》」三段文案。18+ 表述目前只存在于：①《用户协议》正文第 2 条（zh-CN.ts:4637「须年满 18 周岁」）——需用户主动点进链接才能见到；②注册页资料完善文案 certSheetAgeDesc（zh-CN.ts:1551）。登录首屏（本页）无任何 18+ 提示，信息层级 L2 内容缺失；恋爱交友类目下年龄声明前置是常见审核关注点。",
+      "evidence": "截图协议行目视：仅「登录即同意」+两链接+「和」；apps/client/src/i18n/locales/zh-CN.ts:2177 \"agreedPrefix\": \"登录即同意\"（无年龄字样，本会话 grep 年满/18 岁在 login 块零命中）；对照 zh-CN.ts:4637（协议正文 §2）与 :1551（certSheetAgeDesc）；任务给定理想图描述「协议勾选（年满18+用户协议/隐私政策）」。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.7,
+      "ideal": "协议行包含 18+ 年龄确认语义（如「我已年满 18 周岁，并同意《用户协议》和《隐私政策》」），zh/en 双语同步。",
+      "fix": "zh-CN.ts/en-US.ts login.agreedPrefix 改为含「我已年满 18 周岁，」前缀（en: \"I am 18+ and agree to\"），checkbox 的 aria-label 同步更新；与 MP-R1-PAGES-LOGIN-INDEX-102 改默认未勾选联动验收。",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "pages/login/index",
+      "observation": "默认态结构与理想一致：Logo寻觅+芽苗图标+slogan「遇见同频的人」→ hero 校园情侣插画（与素材/理想效果图/登录页.png 同一画稿：绿衣男+白衣女背坐草地远眺校园，飘浮元素为叶非心，两图一致无偏差）→ 三行价值主张（大标题/绿副标题/灰注释）→ CTA 三钮（微信一键登录绿主钮→手机号登录白次钮→稍后再看）→ 协议行 → DEV 演示入口；无底部导航（符合理想「无底部导航」）；胶囊按钮独立于 Logo 行右上，无叠印；页面单屏放完（内容止于约 y700/820），无滚动需求，底部无 safe-area 遮挡。像素实测：主按钮高≈47px(≈95rpx≥88rpx 达标)、次钮≈44px、三钮≈45px、钮间距≈8-10px(16-20rpx)；页面底色实拍 #EEF7F2 与 --c-bg-page 定义一致；主按钮内微信图标为官方微信绿 #07C160。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png + 素材/理想效果图/登录页.png 对照；PIL 竖直色带扫描 y380-700 与水平扫描 y=514（本会话运行，输出在案）"
+    },
+    {
+      "page": "pages/login/index",
+      "observation": "LG09 取证内部矛盾（移交交互判定员，未立 Issue）：该用例声称「未勾选协议点微信一键登录应 toast 拦截」，但实拍 after 图协议框为未勾选（灰空心圆）而 console 显示微信登录请求已发出（[SessionStore] 微信登录失败）、toast 为「微信服务暂时不可用」而非 agreeFirst。代码层守卫存在且为函数首行（index.vue:282-285 onWechatLogin），LG10 证明同款守卫在 guest 按钮上实测正常拦截。最合理解释为 harness 步骤时序抖动（取消勾选的 retry 与 act 顺序错位），非页面缺陷；配合 102 项（默认勾选）修复后建议该用例重跑。",
+      "evidence": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG09-after.png（未勾选）对照 LG12-after.png（勾选）；exec-results.json LG09 observed/console 字段；apps/client/src/pages/login/index.vue:282-285"
+    },
+    {
+      "page": "pages/login/index",
+      "observation": "历史回归 MP-R2-PAGES-LOGIN-INDEX-001（密码明文）：代码层已验证修复无回归——index.vue:769-780 为 type=\"text\" + :password=\"true\"（uni-app mp 规范密文写法），全文件无 type=\"password\" 字面量（本会话 Read+grep 实证）。视觉层无法复验：密码输入框位于手机号表单内，而表单展开态在整个 R1 证据集中零实拍（见 101 项），不据此改判；建议重拍时一并捕获密文显示状态。",
+      "evidence": "apps/client/src/pages/login/index.vue:769-780（本会话 Read）；MD5 三图相同（101 项证据）；exec-results.json LG25 FAILED（密码三态用例未执行成功）"
+    },
+    {
+      "page": "pages/login/index",
+      "observation": "B 身份巡检登录页与 A 身份同病：三状态 MD5 相同（6af01f84…），仅与 A 巡检字节级不同（154097B vs 154069B，双身份渲染差异），状态覆盖缺陷与 A 身份一致；双身份在本页未产生任何差异化信息。",
+      "evidence": "本会话 python hashlib 对 reports/screenshots/round-1-tour/B/pages_login_index__*.png 三张实测"
+    },
+    {
+      "page": "pages/login/index",
+      "observation": "CTA 文案「稍后再看」对照理想描述「临时看看/先逛逛」：语义同类（跳过登录先浏览）且理想描述自身给出两种措辞变体，实拍为第三种等义措辞；LG04/17 实测该按钮 toast「已进入体验模式，先逛逛吧」沿用理想语汇。判定为措辞变体非偏差，不立 Issue；如需逐字对齐由需求对照员裁决。",
+      "evidence": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png；exec-results.json LG04 toast 字段；apps/client/src/i18n/locales/zh-CN.ts:2162 \"guestLogin\": \"稍后再看\""
+    },
+    {
+      "page": "pages/login/index",
+      "observation": "错误态 toast 可达性已由交互证据证实（视觉截图未含 toast 瞬时帧）：微信登录失败「微信服务暂时不可用，请稍后重试」（LG09/12/13/14）、协议拦截「请先阅读并同意用户协议」（LG10）、体验模式「已进入体验模式，先逛逛吧」（LG04/17/18/19）均有 exec-results toast 记录；防连点（LG14/LG18 ×5 仅 1 次提交）通过。toast 文案与表单能力错位（验证码 vs 密码口径）已由代码审查员 MP-R1-PAGES-LOGIN-INDEX-006 覆盖，不重复报。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json LG09/LG10/LG12-LG14/LG17-LG19 的 toast/console 字段（gitSha=aefd8a72）"
+    }
+  ],
+  "coverage": [
+    "pages/login/index —— 13 项举证（本页有 5 项 Issue，以下为已执行核对清单）：①截图已看：A/B 巡检 6 张 + LG 系列 8 张（LG01/04/06/09/12/15/16/17）逐张目视+MD5+像素采样；②理想图已对照：素材/理想效果图/登录页.png（画稿级一致）+ 任务给定结构描述 L1-L8 逐层（L1 结构/L2 层级/L3 交互位置/L4 尺寸/L5 间距/L8 颜色有实测，L6/L7/L9/L10 目视级）；③滚动已测：LG05 EXECUTED（scrollPos=top 无卡死）+ 单屏内容无滚动需求；④点击已测：LG04/06/07/08/09/10/12-20/30/32/33/34 EXECUTED；⑤返回已测：LG32 EXECUTED（注册页返回落登录页）；⑥safe-area 已查：内容单屏止于约 y700/820，代码 env(safe-area-inset-bottom) 兜底（index.vue:1088，A2 已核）；⑦TabBar 已查：本页无 TabBar（符合理想）；⑧空态已查：N/A（登录页无列表数据态）；⑨长文已查：N/A 默认态（表单长输入因 101 项证据缺失未验证，已如实标注）；⑩加载态已查：btn--loading 样式在位（index.vue:1167），mock 快速失败未捕获 loading 帧，如实标注；⑪错误态已查：见 observations 第 6 条（4 类 toast 全有记录）；⑫组件一致性已查：主/次/三钮圆角与全屏宽度风格与 discover 页 guest-hint 并读（PAGES-DISCOVER-INDEX-34 截图），无风格冲突；主色全局偏差单列 103 项；⑬历史 Bug 回归已查：MP-R2-PAGES-LOGIN-INDEX-001 代码层已验证（observations 第 3 条）；R13『三图相同』线索经 MD5 坐实为 101 项。边界声明：交互失败用例的根因判定与 LG09 时序矛盾归交互判定员复审；需求/理想语义冲突（稍后再看措辞、年满18+ 是否硬性）归需求对照员；本报告未读取 reports/audit 下其他轮次结论文作为依据（历史线索仅用了任务给定的两条）。",
+    "证据时效声明：screenshot-manifest.json gitSha=aefd8a72=当前 HEAD ✅；exec-results.json gitSha=aefd8a72 ✅；round-1-interact 内 09-20 编号系列（00~21b）为过期证据已排除，未据其下任何结论。"
+  ]
+}

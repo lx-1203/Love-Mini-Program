@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "历史回归员-R1-PAGES-NEARBY-INDEX (A5)",
+    "date": "2026-09-24",
+    "pages": ["pages/nearby/index"],
+    "method": "回归索引差分模式：以 ask 指定的两条历史条目（MP-R1-PAGES-NEARBY-INDEX-001 / MP-R2-PAGES-NEARBY-INDEX-001）为核对集，并以 regression-index.json 中 riskFiles 含 pages/nearby/index.vue 或 utils/location.ts 的条目（IA-CONSOLE-02 / MP-R1-NEARBY-001/002/005 / MP-R2-NEAR-011 / P3-NEARBY-IA-FREEZE）做 riskFiles 差分。逐条以本会话实际执行的 Read/grep/git diff/node 解析/截图目检取证。只读核对，未改代码、未驱动开发者工具。",
+    "commandsRun": [
+      "grep -in 'nearby' reports/audit/baseline/regression-index.json → 定位 11 条 nearby 相关条目行号，sed 3079-3140 / 3307-3365 读两条原始条目全文（riskFiles/verification/severity）",
+      "git status --porcelain → 本轮改动清单：pages/nearby/index.vue、utils/location.ts、services/http.ts、SecurityConfig.java 均不在其中；本页相关被改文件仅 tests/pages/nearby-page.spec.ts 与 stores/circle.ts",
+      "git diff --stat apps/client/src/services/http.ts apps/client/src/utils/location.ts apps/client/src/pages/nearby/index.vue apps/api/src/main/java/com/campuslove/api/config/SecurityConfig.java → 空输出（四个修复路径文件本轮零改动）",
+      "git diff apps/client/src/tests/pages/nearby-page.spec.ts → 守卫断言由 `if (getToken())` 字面量同步为 canFetchProtected() 定义+调用点断言（R13 注释），新增仍含 nearby-login-guide 与 watch 断言",
+      "git diff apps/client/src/stores/circle.ts | head -40 → 仅 R13 相对时间格式化收敛到 utils/time，不触及 fetchCircles 错误处理/门控",
+      "Read apps/client/src/pages/nearby/index.vue:40-199（canFetchProtected 定义与 onLoad/onShow/onPullDownRefresh/initLocation/watch 五处门控）及 :515-570（分区⑤ v-if 链与未登录引导卡）",
+      "Read apps/client/src/utils/location.ts:40-166（fetchCityFromBackend 走 /location/ip-city；reportLocation 登录门与修复注释）",
+      "grep -n 'permitAll|authenticated' SecurityConfig.java + sed 175-195 → /api/v1/location/ip-city permitAll(:137)、/api/v1/** authenticated(:184)、anyRequest().authenticated() 兜底；permitAll 白名单无 /location/report",
+      "node 解析 reports/audit/round-1/interact/exec-results.json → pages/nearby/index 共 43 例：N02（未登录冷启动）status=EXECUTED 但终栈=[login]+toast『登录已过期』；N35（未登录引导卡）observed top=pages/nearby/index + .nearby-login-guide__btn:present；N41（登录态定位）EXECUTED",
+      "node 解析 reports/audit/round-1/interact/PAGES-NEARBY-INDEX-judge.json → N02 verdict=FAILED(confidence 0.8) 立案 MP-R1-N02-01(Interaction P1 待修复，成因二元未定谳：守卫漏发 vs http.ts 晚到 401 竞态)；N35 verdict=UNVERIFIED；summary 自认本套件 43 例 PNG 证据全部带 ERROR 且 fs 核实不存在、执行通道系统性不稳",
+      "Read（目检）reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png → 登录态页面五区版式渲染完整正常",
+      "grep -n 'redirectToLogin|unauthorized' apps/client/src/services/http.ts → :468/:475/:521/:695 401→toast+reLaunch(LOGIN) 机制在位"
+    ],
+    "historicalEntries": [
+      "MP-R1-PAGES-NEARBY-INDEX-001（P1）：未登录用户（real）进入附近页 onLoad 无条件打受保护接口 → 401 强踢登录页",
+      "MP-R2-PAGES-NEARBY-INDEX-001（P1）：reportLocation 在登录门外无条件执行 → 未登录授权定位后仍 401 强踢（上条残留口子）"
+    ],
+    "verdictSummary": "两条 P1 回归线索均未复发：修复代码在位且本轮零改动，后端鉴权口径未变，守卫存在性断言经本轮 spec 同步更新后仍锚定守卫+引导卡。运行时存在一条未定谳疑点（N02 疑似 401 强踢单例），judge 已另立 MP-R1-N02-01（Interaction P1）跟踪；同套件 N35（同为未登录态停在本页+引导卡渲染）反证『守卫失效』解释，故不判回归复发、不重复立案。"
+  },
+  "issues": [],
+  "checked": [
+    {
+      "id": "MP-R1-PAGES-NEARBY-INDEX-001",
+      "page": "pages/nearby/index",
+      "status": "未复发",
+      "evidence": "【代码层·修复在位】apps/client/src/pages/nearby/index.vue:66-68（canFetchProtected = useMock() || getToken().length>0）、:170（loadNearbyData 首行门控，onLoad:124 唯一调用方）、:117（initLocation 城市变化补拉门控）、:133（onShow 门控）、:145（onPullDownRefresh 门控）、:527-539（分区⑤ v-if=!sessionStore.isLoggedIn 未登录引导卡 nearby-login-guide）、:180-189（watch(isLoggedIn) 登录后 force 补拉）；apps/client/src/utils/location.ts:44-51（未登录城市解析走 /location/ip-city）；apps/api/.../SecurityConfig.java:137（ip-city permitAll）、:184（/api/v1/** authenticated）、:186（anyRequest().authenticated 兜底）。【git 差分·本轮未触及】git diff --stat 对 index.vue/location.ts/http.ts/SecurityConfig.java 四文件空输出；本页 spec 本轮改动为断言同步（tests/pages/nearby-page.spec.ts:94-104 现断言 'function canFetchProtected()'、'getToken()'、/if \\(canFetchProtected\\(\\)\\) \\{/、'nearby-login-guide'、'watch('，与当前源码逐一匹配，语义未弱化）；stores/circle.ts 本轮改动仅 R13 时间格式化收敛，不触及 fetch 门控。【操作层】exec-results.json#N35：pre:logout ok（未登录）后 top=pages/nearby/index 且 dom .nearby-login-guide__btn:present——未登录停留本页且引导卡渲染，未被强踢；exec-results.json#N41：登录态定位链路（副标题/NEARBY_CITY 持久化/城市变化重拉）EXECUTED；静态截图 pages_nearby_index__默认.png 目检页面渲染完整。【未定谳疑点（非本回归判定依据）】exec-results.json#N02 标题『无 401 雪崩』但 observed 终栈=[pages/login/index]+toast『登录已过期，请重新登录』，judge 判 FAILED 并另立 MP-R1-N02-01（Interaction P1 待修复），成因二元未定谳：(a) 守卫漏发某条受保护请求 vs (b) http.ts 晚到 401 竞态强跳（judge 引 http.ts:365 自认 3 秒窗口）；N02 同跑存在执行器 pre-FAIL（input element not found: .loggedIn）、截图保存失败（saveFile 超限），judge summary 自认执行通道系统性不稳；同套件 N35 同为未登录态却停在本页，与『守卫失效』解释直接矛盾。结论：修复未被改回，代码证据充分；N02 疑点归属运行时竞态/通道问题，由已立案的 MP-R1-N02-01 跟踪，不重复计为回归复发。",
+      "sources": ["code", "log", "screenshot"],
+      "confidence": 0.85
+    },
+    {
+      "id": "MP-R2-PAGES-NEARBY-INDEX-001",
+      "page": "pages/nearby/index",
+      "status": "未复发",
+      "evidence": "【代码层·修复在位】apps/client/src/utils/location.ts:152-153（reportLocation 首行 `if (!useMock() && getToken().length === 0) return;` real 无 token 短路）、:142-146（修复注释 MP-R2-PAGES-HOME-INDEX-001 / MP-R2-PAGES-NEARBY-INDEX-001 在位）、:157-165（请求包 try/catch 恒不 reject）；调用点 apps/client/src/pages/nearby/index.vue:107（页面级无门，依赖工具内部门，门生效）；后端 SecurityConfig.java:119-149 permitAll 白名单逐一核对无 /location/report（落入 :184 /api/v1/** authenticated 兜底）→ 未登录上报坐标必被客户端门短路，不发请求。【git 差分·本轮未触及】utils/location.ts 与 pages/nearby/index.vue 均不在 git status 改动清单，git diff --stat 空输出。【操作层缺口（如实注明）】本轮 43 例交互取证中无『未登录授权定位』专项用例（原生授权弹窗无法程序化授权，属回归索引 R21-UNVERIFIABLE-LIST 工具限制范畴；N41 为登录态定位链路 EXECUTED，证明定位→上报主链本身存活）；N02 console 采样仅 2 条 preload 日志，既无 401 也无 location/report 请求记录，双向均无证明力。判定依据为代码层：门代码在位、文件本轮零改动、后端口径未变，修复未被改回；运行时未登录授权定位专项复核留作终验缺口。",
+      "sources": ["code", "log"],
+      "confidence": 0.9
+    }
+  ]
+}

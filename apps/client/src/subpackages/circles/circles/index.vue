@@ -260,9 +260,11 @@ function goBack() {
   });
 }
 
-/** 2026-08-25 P0：点击搜索 → 跳搜索页（占位，规格书 14.4） */
+/** 点击搜索 → 跳搜索页（规格书 14.4 目标）。
+ * MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-REQ1：原实现是 toast 占位死胡同——
+ * 与 nearby/village 入口的 ROUTES.SEARCH 接线口径对齐，搜索目标闭环 */
 function goSearch() {
-  uni.showToast({ title: "搜索功能即将上线", icon: "none" });
+  openAppPath(ROUTES.SEARCH);
 }
 
 const circleCover = circleCoverFor;
@@ -335,7 +337,7 @@ defineExpose({ toggleJoin });
 
           <!-- 推荐提示（对齐理想图：标题下灰字副标题，无卡片/emoji 装饰） -->
           <view class="circles-banner">
-            <text class="circles-banner__title">{{ t("circle.bannerTitle") }}</text>
+            <text class="circles-banner__title">{{ t("circle.circlesSubtitle") }}</text>
           </view>
 
           <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
@@ -609,7 +611,10 @@ defineExpose({ toggleJoin });
      内边距（sp-7→sp-5）与列间距（sp-5→sp-4），让出统计行宽度 */
   gap: var(--sp-4);
   padding: var(--sp-6) var(--sp-5);
-  background: var(--c-neutral-0);
+  /* MP-R1-CIRCLES-INDEX-002：--c-neutral-0 仅浅色主题定义（dark mixin 未覆盖），
+     深色下卡底仍纯白而卡内文字 token 翻转为浅色 → 白底白字（对比度≈1.1:1）；
+     改主题感知 token */
+  background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-lg);
   box-shadow: var(--s-card-soft);
   animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -761,8 +766,9 @@ defineExpose({ toggleJoin });
   /* MP-R1-CIRCLE-005：水平内边距 sp-5→sp-4，再让出统计行宽度 */
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-full);
-  /* 理想图：浅绿描边胶囊按钮（背景透明、绿字），简洁清爽 */
-  background: var(--c-neutral-0, #FFFFFF);
+  /* 理想图：浅绿描边胶囊按钮（背景透明、绿字），简洁清爽
+     MP-R1-CIRCLES-INDEX-002：底色随主题翻转 */
+  background: var(--c-bg-container, #FFFFFF);
   border: 2rpx solid var(--c-brand-500, #2DB98A);
   color: var(--c-brand-500, #2DB98A);
   flex-shrink: 0;
@@ -820,7 +826,9 @@ defineExpose({ toggleJoin });
 
 .circles-header__back-icon {
   font-size: 44rpx;
-  color: #333A37;
+  /* MP-R1-CIRCLES-INDEX-002：硬编码 #333A37 在深色（--c-bg-container→#1A1F26）上
+     对比度≈1.6:1 视觉消失，随主题 token 翻转 */
+  color: var(--c-text-primary, #333A37);
   line-height: 1;
   font-weight: 500;
 }
@@ -879,8 +887,9 @@ defineExpose({ toggleJoin });
   flex-shrink: 0;
   padding: 12rpx 28rpx;
   border-radius: 999rpx;
-  /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面） */
-  background: var(--c-bg-page, #EEF7F2);
+  /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面）
+     R13：原取 --c-bg-page 与页面同色，胶囊完全不可见——改用卡片面底色 */
+  background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-line, #EEF2F0);
   display: flex;
   align-items: center;
@@ -931,8 +940,9 @@ defineExpose({ toggleJoin });
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  border: 2rpx solid #FFFFFF;
-  background: #EEF2F0;
+  /* MP-R1-CIRCLES-INDEX-002：头像描边/占位底随主题翻转（原纯白描边+浅灰底深色下突兀） */
+  border: 2rpx solid var(--c-bg-container, #FFFFFF);
+  background: var(--c-neutral-100, #EEF2F0);
   margin-left: -10rpx;
   flex-shrink: 0;
 }

@@ -340,8 +340,14 @@ function goBack(): void {
 
 /**
  * 加入 / 退出圈子（复用 store 真实接口）
+ * MP-R1-REQ20-006：补 isJoining 防连点守卫——mock 毫秒级返回下快击×5 会交替
+ * join/leave 造成成员数与按钮态抖动，real 下对 POST/DELETE 连发 5 次请求
+ * （对齐全站 isSubmitting 惯例）
  */
+const isJoining = ref(false);
 async function toggleJoin(): Promise<void> {
+  if (isJoining.value) return;
+  isJoining.value = true;
   try {
     if (joined.value) {
       await circleStore.leaveCircle(circle.value.id);
@@ -354,6 +360,8 @@ async function toggleJoin(): Promise<void> {
       title: e instanceof Error && e.message ? e.message : t("apiErrors.operationFailed"),
       icon: "none",
     });
+  } finally {
+    isJoining.value = false;
   }
 }
 
@@ -377,6 +385,24 @@ function goToPostTopic(): void {
 function toggleLike(item: FeedItem): void {
   item.liked = !item.liked;
   item.likes += item.liked ? 1 : -1;
+}
+
+/**
+ * 动态卡 more 图标操作菜单。
+ * MP-R1-J20-004/MP-R1-REQ20-004：该图标此前无任何 @tap 处理器，点击零反馈（死按钮）；
+ * 补 ActionSheet（复用页内既有链路：查看全部话题 / 去圈内发帖）。
+ */
+function onFeedMore(): void {
+  uni.showActionSheet({
+    itemList: [t("circle.home.viewAllTopics"), t("circle.home.postInCircle")],
+    success: (res) => {
+      if (res.tapIndex === 0) goToTopics();
+      else if (res.tapIndex === 1) goToPostTopic();
+    },
+    fail: () => {
+      // 用户取消：无需处理
+    },
+  });
 }
 
 /**
@@ -480,8 +506,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         </view>
       </view>
 
-      <!-- 3. 标签 chips -->
-      <view class="tag-row">
+      <!-- 3. 标签 chips（real 模式无圈标签数据时不渲染空容器，避免 hero 下方留白块） -->
+      <view v-if="circleTags.length" class="tag-row">
         <view v-for="tag in circleTags" :key="tag" class="tag-chip">
           <text class="tag-chip-text">{{ tag }}</text>
         </view>
@@ -502,8 +528,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       </view>
     </view>
 
-    <!-- 5. 置顶公告 -->
-    <view class="pinned-card">
+    <!-- 5. 置顶公告（real 模式无公告数据时整条不渲染，避免只剩空绿带） -->
+    <view v-if="pinnedNotice" class="pinned-card">
       <text class="pinned-badge">{{ t("circle.home.pinnedBadge") }}</text>
       <text class="pinned-text">{{ pinnedNotice }}</text>
       <image class="pinned-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
@@ -527,7 +553,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             </view>
             <text class="feed-time">{{ item.timeText }}</text>
           </view>
-          <image class="feed-more" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" />
+          <!-- MP-R1-J20-004/REQ20-004：补 @tap（原死按钮零反馈），.stop 防止冒泡到卡片 openFeedDetail 双触发 -->
+          <image class="feed-more" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" @tap.stop="onFeedMore" />
         </view>
 
         <view class="feed-content">
@@ -557,7 +584,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
               {{ item.likes }}
             </text>
           </view>
-          <view class="feed-action">
+          <!-- MP-R1-J20-004/REQ20-004：评论 action 补 @tap（原死按钮零反馈）——跳话题详情互动 -->
+          <view class="feed-action" @tap.stop="openFeedDetail(item)">
             <image class="feed-action-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" mode="aspectFit" />
             <text class="feed-action-text">{{ item.comments }}</text>
           </view>

@@ -1,0 +1,1109 @@
+[
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS01",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "未登录冷启动直开：LockScreen 引导完整渲染，不发鉴权请求、不闪错误空态",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .lock-screen:absent .lock-screen__btn:absent .lock-screen__btn-link:absent .lock-screen__close:absent .chat-header:present .chat-scroll:present | pre:logout ok | pre:storageRemove token | pre:storageRemove refresh_token | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "userId": "10003"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS01-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 18348
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS02",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "未登录「立即登录并完善」→ 跳登录页并挂起回跳",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .lock-screen__btn:absent | pre:logout ok | pre:storageRemove token | pre:storageRemove refresh_token | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003 | pre:logout ok | act-FAIL:tap(.lock-screen__btn) element not found: .lock-screen__btn",
+  "failureReason": "action tap .lock-screen__btn failed: element not found: .lock-screen__btn",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "userId": "10003"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 11801
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS03",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "未登录「先逛逛公开内容」→ switchTab 匹配推荐页",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .lock-screen__btn-link:absent | pre:logout ok | pre:storageRemove token | pre:storageRemove refresh_token | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003 | pre:logout ok | pre:auto-reLaunch subpackages/chat/chat-session/index",
+  "failureReason": "action tap .lock-screen__btn-link failed: element not found: .lock-screen__btn-link",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "登录已过期，请重新登录",
+    "ts": 1790162963685
+   }
+  ],
+  "console": [
+   "[2026-09-23T11:29:40.279Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T11:29:40.280Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 24510
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS04",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "未登录「×」关闭：栈深 1 时 switchTab 公开 Tab，栈深>1 时返回来源页",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | navError=Uncaught [object Object] | dom: .lock-screen__close:absent .length:absent | pre:logout ok | pre:storageRemove token | pre:storageRemove refresh_token | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003 | pre:logout ok | act:navigateBack undefined NAV_ERROR: Uncaught [object Object]",
+  "failureReason": "action tap .lock-screen__close failed: element not found: .lock-screen__close",
+  "route": [
+   {
+    "route": "pages/discover/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T11:29:58.346Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T11:29:58.348Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [],
+  "durationMs": 18059
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS05",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "身份 A 登录态冷启动深链 ?userId=10003：会话页完整渲染（固化参数）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .chat-header__title:present .chat-header__status:present .chat-header__days:present .chat-scroll:present .wechat-input-bar__input:present .wechat-input-bar__send:present | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "userId": "10003"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS05-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 18480
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS06",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "七态之 Loading：消息拉取在途显示聊天气泡骨架，不永驻",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .uni-skeleton:absent .loadingSessionDetail:absent | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003 | pre-FAIL:input element not found: .loading",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "userId": "10003"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS06-after.png(52026B)"
+  ],
+  "durationMs": 20825
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS07",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "缺参直开：错误文案「缺少会话标识…」双区展示，输入栏不渲染",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .meta-copy--padded:present .chat-input-area:present .chat-header__title:present | pre:storageSet token + bootstrap ok userId=user-1001 | pre:reLaunch /subpackages/chat/chat-session/index?userId=10003 | pre:reLaunch /subpackages/chat/chat-session/index",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS07-after.png(25773B)"
+  ],
+  "durationMs": 24609
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS08",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "失效数字 sessionId 深链：错误态真实到达，不渲染假空会话",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .meta-copy--padded:absent .match-greeting:present | pre:reLaunch /subpackages/chat/chat-session/index?sessionId=99999999",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "sessionId": "99999999"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS08-after.png(51970B)"
+  ],
+  "durationMs": 17469
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS09",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "失效 temp 会话深链：「会话不存在或已失效」+ 同意交换/结束会话禁用态有反馈",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .meta-copy--padded:present .temp-action-btn--disabled:absent .sessionNotExist:absent | pre:login A ok userId=user-1001 MISMATCH! | pre:reLaunch /subpackages/chat/chat-session/index?sessionId=session-100158-100159-deadbeef | act-FAIL:tap(__CAND__) element not found: __CAND__(\"同意交换\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"同意交换\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "sessionId": "session-100158-100159-deadbeef"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS09-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 21674
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS10",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "noop",
+  "title": "进入自动滚底 + 微信 5 分钟规则时间分隔条",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .chat-scroll:present .chat-time-bar:absent",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "sessionId": "session-100158-100159-deadbeef"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "scrollPos=top"
+  ],
+  "durationMs": 1511
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS11",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "上拉加载更早历史消息：视口不跳、防重入、耗尽不再请求",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | observe-only | dom: .chat-scroll:present",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "sessionId": "session-100158-100159-deadbeef"
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS11-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 11521
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS12",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "气泡内对方头像点击 → navigateTo 对方主页（携带 userId）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .bubble-avatar--peer:absent | act:navigateTo /subpackages/profile-extra/profile/other?userId= | act-FAIL:tap(.bubble-avatar--peer) element not found: .bubble-avatar--peer | act-FAIL:tap(.bubble-avatar--peer) element not found: .bubble-avatar--peer",
+  "failureReason": "action tap .bubble-avatar--peer failed: element not found: .bubble-avatar--peer",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "sessionId": "session-100158-100159-deadbeef"
+    }
+   },
+   {
+    "route": "subpackages/profile-extra/profile/other",
+    "options": {
+     "userId": ""
+    }
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 15884
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS13",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "图片消息点击 → 全屏预览，关闭后状态不丢",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .bubble__image:absent .previewImage:absent | pre:auto-reLaunch subpackages/chat/chat-session/index | act-FAIL:tap(.bubble__image) element not found: .bubble__image",
+  "failureReason": "action tap .bubble__image failed: element not found: .bubble__image",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS13-after.png(31242B)"
+  ],
+  "durationMs": 20150
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS14",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "活动卡片消息点击 → 跳转 targetUrl 活动详情",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | act-FAIL:tap(__CAND__) element not found: __CAND__(\"卡\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"卡\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"卡\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 6021
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS15",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "空提交：草稿为空点发送，不产生消息不报错（核心页空提交）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__send:absent | pre-FAIL:input element not found: __CAND__ | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action tap .wechat-input-bar__send failed: element not found: .wechat-input-bar__send",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS15-before.png(31140B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS15-after.png(31140B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS15-after.wxml"
+  ],
+  "durationMs": 25897
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS16",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "正常发送文本消息：气泡上屏、草稿清空、列表预览同步",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__input:absent .wechat-input-bar__send:absent .sendMessage:absent | act-FAIL:input(.wechat-input-bar__input) element not found: .wechat-input-bar__input | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action input .wechat-input-bar__input failed: element not found: .wechat-input-bar__input",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS16-before.png(31140B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS16-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS16-after.wxml"
+  ],
+  "durationMs": 26385
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS17",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "快速连点发送×5 只提交 1 次（主按钮防连点铁律）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__send:absent | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS17-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS17-after.png(31254B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS17-after.wxml"
+  ],
+  "durationMs": 26337
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS18",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "超长输入（>5000 字）发送拦截，既有消息记录不得丢失",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__send:absent .length:absent .messages:absent .contentTooLong:absent | pre-FAIL:input element not found: __CAND__ | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action tap .wechat-input-bar__send failed: element not found: .wechat-input-bar__send",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS18-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 16280
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS19",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "特殊字符/emoji/多字节输入原样发送",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__send:absent | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS19-after.png(31254B)"
+  ],
+  "durationMs": 15587
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS20",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "输入后逐字清空：发送按钮回退置灰，持久化草稿同步清空",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | pre-FAIL:input element not found: __CAND__ | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS20-after.png(31254B)"
+  ],
+  "durationMs": 17457
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS21",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "草稿持久化：退出重进恢复，发送成功后清除不串会话",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS21-after.png(31264B)"
+  ],
+  "durationMs": 13410
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS22",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "表情面板开合 + 点选表情追加草稿 + 键盘互斥（三路关闭）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__icon-btn--emoji:absent .emoji-panel:absent .emoji-panel__item:absent | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.wechat-input-bar__icon-btn--emoji) element not found: .wechat-input-bar__icon-btn--emoji | act-FAIL:tap(.emoji-panel__item) element not found: .emoji-panel__item | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"按\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS22-after.png(31264B)"
+  ],
+  "durationMs": 22554
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS23",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "空会话破冰首条提示：快捷按钮点击直发（MatchGreetingTip）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .match-greeting:absent .match-greeting__btn:absent | pre:auto-reLaunch subpackages/chat/chat-session/index | act-FAIL:tap(.match-greeting__btn) element not found: .match-greeting__btn",
+  "failureReason": "action tap .match-greeting__btn failed: element not found: .match-greeting__btn",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T11:34:02.732Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T11:34:02.733Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS23-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS23-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS23-after.wxml"
+  ],
+  "durationMs": 31368
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS24",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "输入栏上方推荐开场（BreakQuestion）点击直发",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .break-question:absent .break-question__opener:absent | act-FAIL:tap(.break-question__opener) element not found: .break-question__opener",
+  "failureReason": "action tap .break-question__opener failed: element not found: .break-question__opener",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS24-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS24-after.png(31215B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS24-after.wxml"
+  ],
+  "durationMs": 24023
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS25",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "长按消息弹出操作菜单；遮罩关闭、内容区不误关",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .bubble-wrap:absent .longpress-overlay:absent | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"白\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"容\")",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS25-after.png(31215B)"
+  ],
+  "durationMs": 18450
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS26",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "长按「复制」：正文写入剪贴板，非文本类型提示不支持",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .getClipboardData:absent | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(.getClipboardData) element not found: .getClipboardData(\"复制\")",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26-before.png(31234B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26-after.png(31234B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26-after.wxml"
+  ],
+  "durationMs": 25894
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS27",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "长按「转发」→ 目标会话弹层选择转发，当前会话流不重复上屏",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .more-menu-sheet:absent .forward-item:absent | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(.more-menu-sheet) element not found: .more-menu-sheet(\"转发\") | act-FAIL:tap(.more-menu-sheet) element not found: .more-menu-sheet(\"转发\")",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS27-before.png(31234B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS27-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS27-after.wxml"
+  ],
+  "durationMs": 28479
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS28",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "长按「删除」：本地持久隐藏，重进不恢复",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(__CAND__) element not found: __CAND__(\"删除\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"删除\")",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS28-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS28-after.png(31265B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS28-after.wxml"
+  ],
+  "durationMs": 28179
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS29",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "长按「引用」→ 预览条出现 → 带引用发送成功后状态清除",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .quote-reply-bar:absent .wechat-input-bar__send:absent | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.quote-reply-bar) element not found: .quote-reply-bar(\"引用\") | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send | act-FAIL:tap(.wechat-input-bar__send) element not found: .wechat-input-bar__send",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-before.png(31265B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.png(31265B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.wxml"
+  ],
+  "durationMs": 32948
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS30",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "点击气泡内引用块 → 滚动定位被引用消息；引用缺失时优雅降级",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .chat-scroll:present | pre:auto-reLaunch subpackages/chat/chat-session/index | act:tap .chat-scroll | act:tap .chat-scroll",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T02:58:14.650Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T02:58:14.650Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS30-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 18391
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS31",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "长按「撤回」（temp 会话本人消息）：toast + 撤回态渲染",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .loadSession:absent | act-FAIL:longpress(__CAND__) element not found: __CAND__ | act-FAIL:tap(.loadSession) element not found: .loadSession(\"撤回\")",
+  "failureReason": "action longpress __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS31-before.png(31225B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS31-after.png(31225B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS31-after.wxml"
+  ],
+  "durationMs": 25837
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS32",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "顶部「···」菜单开关 + 「查看对方主页」switchTab 桥接",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .chat-header__more:present | act:tap .chat-header__more | act-FAIL:tap(__CAND__) element not found: __CAND__(\"查看对方主页\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"查看对方主页\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 4318
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS33",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "消息免打扰切换：后端成功才生效，失败提示且状态不变",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | act:switchTab /pages/messages/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"消息免打扰\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"消息免打扰\")",
+  "route": [
+   {
+    "route": "pages/messages/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS33-before.png(34664B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS33-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS33-after.wxml"
+  ],
+  "durationMs": 31633
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS34",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "拉黑：确认弹窗取消/确认两路 + 后端生效退回列表",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | pre:auto-reLaunch subpackages/chat/chat-session/index | act-FAIL:tap(__CAND__) element not found: __CAND__(\"拉黑\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"取消\")",
+  "failureReason": "action tap __CAND__ failed: element not found: __CAND__(\"拉黑\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS34-before.png(31289B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS34-after.png(31289B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS34-after.wxml"
+  ],
+  "durationMs": 31887
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS35",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "举报：ActionSheet 四原因提交 → toast 举报已提交",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .reportTarget:absent | act-FAIL:tap(.reportTarget) element not found: .reportTarget(\"举报\")",
+  "failureReason": "action tap .reportTarget failed: element not found: .reportTarget(\"举报\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS35-before.png(31289B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS35-after.png(31289B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS35-after.wxml"
+  ],
+  "durationMs": 23837
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS36",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "头部头像单击弹「看主页/拍一拍」菜单；快速双击直接拍一拍",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .chat-header__avatar-wrap:present .avatar-menu-sheet:absent | act:tap .chat-header__avatar-wrap | act:tap .chat-header__avatar-wrap | act:wait 300ms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 2490
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS37",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "拍一拍：发送「你拍了拍{昵称}」消息",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .sendText:absent .sendMessage:absent .patMessage:absent | pre-FAIL:tap element not found: __CAND__(\"拍一拍\") | act-FAIL:tap(.sendText) element not found: .sendText(\"拍一拍\")",
+  "failureReason": "action tap .sendText failed: element not found: .sendText(\"拍一拍\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS37-before.png(31268B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS37-after.png(31268B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS37-after.wxml"
+  ],
+  "durationMs": 25803
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS38",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "「+」更多菜单 → 发送图片：上传 Loading 不永驻 + 成功/部分失败 toast",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .wechat-input-bar__icon-btn--more:absent .more-menu-sheet:absent | act-FAIL:tap(.wechat-input-bar__icon-btn--more) element not found: .wechat-input-bar__icon-btn--more(\"更多功能\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发送图片\") | act-FAIL:tap(__CAND__) element not found: __CAND__(\"发送图片\")",
+  "failureReason": "action tap .wechat-input-bar__icon-btn--more failed: element not found: .wechat-input-bar__icon-btn--more(\"更多功能\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS38-before.png(31268B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS38-after.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS38-after.wxml"
+  ],
+  "durationMs": 28650
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS39",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "temp 会话：倒计时横幅按秒刷新 + 「同意交换」toast 反馈",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .temp-banner:absent .temp-action-btn--secondary:absent | act-FAIL:tap(.temp-action-btn--secondary) element not found: .temp-action-btn--secondary(\"同意交换\")",
+  "failureReason": "action tap .temp-action-btn--secondary failed: element not found: .temp-action-btn--secondary(\"同意交换\")",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS39-before.png(ERROR:timeout waiting for automator response)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS39-after.png(31228B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS39-after.wxml"
+  ],
+  "durationMs": 24035
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS40",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "critical",
+  "title": "temp 会话「结束会话」：确认弹窗两路 + 结束后全链路禁写",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .temp-action-btn--danger:absent | pre:auto-reLaunch subpackages/chat/chat-session/index | act-FAIL:input(__CAND__) element not found: __CAND__ | act-FAIL:tap(.temp-action-btn--danger) element not found: .temp-action-btn--danger(\"结束会话\")",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [
+   "[2026-09-23T11:40:42.929Z][info] \"preloadSubpackages: subpackages/discover\"",
+   "[2026-09-23T11:40:42.929Z][info] \"preloadSubpackages: success\""
+  ],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS40-before.png(31228B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS40-after.png(31228B)",
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\wxml\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS40-after.wxml"
+  ],
+  "durationMs": 32390
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS41",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "navigation",
+  "title": "返回按钮：落点=来源页且未读红点状态恢复（铁律）",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | navError=Uncaught [object Object] | dom: .chat-header__back:present | pre:reLaunch /subpackages/chat/chat-session/index | pre-FAIL:tap element not found: .chat-item | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .chat-header__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [],
+  "durationMs": 10714
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS42",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "打开即返回（压栈即弹）：无崩溃无卡死",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | navError=Uncaught [object Object] | dom: .chat-header__back:present | pre:reLaunch /subpackages/chat/chat-session/index | pre:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:navigateBack undefined NAV_ERROR: Uncaught [object Object] | act:tap .chat-header__back",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS42-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 18485
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS43",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "重复进出×3：消息不重复不丢失、草稿/删除态一致（核心页重复进出）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | act:reLaunch /subpackages/chat/chat-session/index | act-FAIL:input(__CAND__) element not found: __CAND__",
+  "failureReason": "action input __CAND__ failed: element not found: __CAND__",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS43-after.png(ERROR:timeout waiting for automator response)"
+  ],
+  "durationMs": 20374
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS44",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "fromSignal=1 缘分速配渐进解锁横幅：档位/进度/查看主页入口",
+  "status": "EXECUTED",
+  "observed": "top=subpackages/chat/chat-session/index | dom: .signal-banner:present | pre:reLaunch /subpackages/chat/chat-session/index?fromSignal=1&sessionId={id} | act:wait NaNms",
+  "failureReason": null,
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {
+     "fromSignal": "1",
+     "sessionId": "{id}"
+    }
+   }
+  ],
+  "toast": [
+   {
+    "api": "showToast",
+    "title": "暂无法获取对方信息",
+    "ts": 1790132587417
+   }
+  ],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS44-after.png(32774B)"
+  ],
+  "durationMs": 17623
+ },
+ {
+  "suite": "S08-match-chat",
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "id": "CS45",
+  "page": "subpackages/chat/chat-session/index",
+  "tier": "normal",
+  "title": "浏览历史时新消息 → 「有新消息」提示条，点击跳底（不打断阅读）",
+  "status": "FAILED",
+  "observed": "top=subpackages/chat/chat-session/index | action-not-performed(see act-FAIL) | dom: .unread-hint:absent | pre:pageScrollTo bottom | act-FAIL:tap(.unread-hint) element not found: .unread-hint",
+  "failureReason": "action tap .unread-hint failed: element not found: .unread-hint",
+  "route": [
+   {
+    "route": "subpackages/chat/chat-session/index",
+    "options": {}
+   }
+  ],
+  "toast": [],
+  "console": [],
+  "evidence": [
+   "D:\\6\\恋爱小程序\\reports\\screenshots\\round-1-interact\\SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS45-after.png(28761B)"
+  ],
+  "durationMs": 14521
+ }
+]

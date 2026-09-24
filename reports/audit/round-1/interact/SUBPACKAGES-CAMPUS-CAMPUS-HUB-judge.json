@@ -1,0 +1,421 @@
+{
+ "round": "R1",
+ "page": "subpackages/campus/campus/hub",
+ "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+ "execResults": "reports/audit/round-1/interact/exec-results.json",
+ "judgedAt": "2026-09-23",
+ "summary": {
+  "total": 25,
+  "VERIFIED": 7,
+  "FAILED": 1,
+  "UNVERIFIED": 17,
+  "verdicts": "VERIFIED: CH01/CH04/CH18/CH19/CH21/CH22/CH23; FAILED: CH06; UNVERIFIED: CH02/03/05/07/08/09/10/11/12/13/14/15/16/17/20/24/25",
+  "keyFinding": "CH06（P2）：recommendedSchools 对 ownSchool 的排除不限定认证态（hub.vue:110-113）+ mock 身份 campusName=北京大学（session.ts:48）→ 未认证绑定用户在推荐与搜索中永远找不到本校（「北京」→「暂无推荐圈子」，列表 10/11、首卡清华）"
+ },
+ "checks": [
+  {
+   "caseId": "CH01",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "冷启动深链首屏渲染（observe-only，首拍+2s复拍）",
+   "expected": "500ms 内渲染：header「校园圈」+副标题、右上「去认证」胶囊、引导卡+去认证、搜索框 placeholder、默认「推荐圈子」Tab 带绿指示条、校卡全量（封面+校名+未认证 badge+约X统计+头像stack+申请加入 CTA）、不闪现空态、console 无 NAV_FAIL/TypeError",
+   "actual": "route=[hub]（栈=1）✓；console=[]（过滤后无错误）✓。视觉：CH01-after.png 通道超时未落盘，after2（+2s）完整呈现 header/引导卡/搜索框/推荐 Tab 指示条/5 张卡（封面实景图+未认证灰 badge+约X同学+头像stack+申请加入 CTA），无错误空态；同构建巡检全页图（tour 默认/滚动-中部/滚动-底部）覆盖其余卡并证明无回落占位。偏差1：after 首拍丢失，「≤500ms 首拍」与卡死检测降级为 after2 单点；偏差2：实测卡列表=10 张（缺北京大学），根因见 CH06 issue（ownSchool 未认证排除）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH01",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH01-after2.png",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png",
+    "apps/client/src/subpackages/campus/campus/hub.vue:54-57,118,190-200,207-229"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "CH02",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap .campus-hub__back（冷启动栈=1 → switchTab 兜底回附近）",
+   "expected": "500ms 内路由离开：终栈顶=pages/nearby/index（switchTab 分支）；附近页正常渲染；console 无报错",
+   "actual": "tap 上报成功（act:tap .campus-hub__back，无 act-FAIL）但终栈仍=[subpackages/campus/campus/hub]，无 switchTab 到 nearby 的路由证据；dom 探针 .campus-hub__back:absent 与终栈=hub 互斥（若仍在 hub back 应 present，CH24 同页探针 back:present 可对照），证据自相矛盾；navigation tier 无截图；console 清白。同套件 CH19 对同一元素 rapidTap 成功落 nearby，证明按钮与兜底分支可用 → 本跑批单次 tap 观测不可采信（执行竞态：pre 两次 reLaunch 后 ~550ms 即 tap）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH02",
+    "scripts/qa/r1-exec.cjs:296-309,1360-1366（route=结束时刻终态栈）",
+    "reports/audit/round-1/interact/exec-results.json#CH19（同元素可导航对照）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH03",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "栈中返回（nearby→校园圈入口 navigateTo 栈=2 → tap back）",
+   "expected": "500ms 内 navigateBack 落回 nearby（栈-1、栈顶=nearby）；附近页 Tab 选中态与滚动位恢复；console 无报错",
+   "actual": "前置未达成：pre-FAIL:tap element not found: __CAND__(\"校园圈\")——nearby 页入口元素未被自动化的 deepResolve 定位（SDK $ 不穿透组件，r1-exec.cjs:832-884），执行器 fallback auto-reLaunch 直进 hub（栈=1，非设计的栈=2）；tap 后终栈仍=[hub]。navigateBack 分支与「状态恢复」断言零证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH03",
+    "scripts/qa/r1-exec.cjs:804-884（组件穿透限制）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH04",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "Tab 切换 推荐→我加入的（tapIndex .campus-hub__tab#1）",
+   "expected": "500ms 内指示条移至「我加入的」、文字加粗变主色；列表=空态「暂未加入任何校园圈」；无卡片；console 无报错",
+   "actual": "截图证实全部达成：指示条绿线移至「我加入的」且文字加粗深色、居中空态文案「暂未加入任何校园圈」、无卡片渲染、底部静态提示可见；route=[hub]；console=[]。Tab 点击→状态切换→重渲染链路在本跑批可视觉复核（页面内状态类 tap 不受导航竞态影响）",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH04",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH04-after.png",
+    "apps/client/src/subpackages/campus/campus/hub.vue:89-91,118,250-258,272"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "CH05",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "Tab 切换 我加入的→推荐圈子（tapIndex .campus-hub__tab#2，列表恢复断言）",
+   "expected": "500ms 内指示条回到推荐 Tab；11 张校卡全部恢复渲染；badge/CTA 恢复；console 无报错",
+   "actual": "tapIndex 上报成功（act:tapIndex .campus-hub__tab#2(\"推荐圈子\") tapped）但唯一视觉证据 CH05-after.png 与 CH04-after.png 逐字节相同（md5 2e230f36d6d48a2707ef00d3554d74ee，47601B=「我加入的」空态帧）——未能证明列表恢复；同套件截图通道 10+ 次超时（CH01/07/09/10/11/14/15/18/19/20/23）已证不可靠，无法排除陈旧帧；console=[]、route=[hub]（同页无法区分 Tab 态）。恢复渲染断言证据缺失",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH05",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH05-after.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH04-after.png",
+    "md5 对比：两文件同哈希 2e230f36d6d48a2707ef00d3554d74ee"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH06",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "搜索过滤：input .campus-search__input=\"北京\"（第二段 pku 未执行）",
+   "expected": "输入即过滤：「北京」→ 仅剩北京大学卡；「pku」→ 同样命中；clear × 随输入出现；无崩溃",
+   "actual": "FAILED：截图证实 input「北京」已送达（输入框显示「北京」、× 清除钮出现 ✓、无崩溃 ✓、console 清白 ✓），但列表=空态「暂无推荐圈子」而非「仅剩北京大学」。根因（代码+运行时双证）：recommendedSchools = schools.filter(name!==ownSchool)（hub.vue:110-113）不限定认证态，ownSchool 回退 session.campusName=「北京大学」（mock 固定身份，stores/session.ts:48；登录注入 MISMATCH user-1001 即该身份），北京大学（config/schools.ts:33，SCHOOLS 首项）被从过滤基集中剔除，而 joinedSchools 又被 isVerified 门禁（hub.vue:89-91）挡住 → 该校在两 Tab 均不可见、搜索不可达。同根因连带：首屏 10 卡非 11（CH01）、首卡=清华大学（CH18 落点 school=清华大学）。执行器仅执行了「北京」一段，pku 段未执行（observed 仅一条 input）",
+   "verdict": "FAILED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH06",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH06-after.png",
+    "apps/client/src/subpackages/campus/campus/hub.vue:89-96,110-113,127-132",
+    "apps/client/src/stores/session.ts:41-52",
+    "apps/client/src/config/schools.ts:32-44"
+   ],
+   "confidence": 0.9
+  },
+  {
+   "caseId": "CH07",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap .campus-search__clear（× 一键清空恢复全量）",
+   "expected": "500ms 内输入框清空、× 消失、列表恢复全量卡；console 无报错",
+   "actual": "执行链断裂：pre input 失败（pre-FAIL:input el.input is not a function）→ searchKeyword 未置值 → × 未渲染（dom .campus-search__clear:absent 与 v-if 一致）→ act tap 落空；after 截图通道超时未落盘。清空恢复断言零证据；console=[]",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH07"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH08",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "搜索无命中 xyz123 + 特殊字符（两段 input）",
+   "expected": "xyz123 → 空态「暂无推荐圈子」；特殊字符 → 纯 includes 匹配，无脚本错误、无布局破坏",
+   "actual": "动作未执行：act-FAIL×2 input(__CAND__) element not found（action 文本不含可解析选择器，解析器落入 __CAND__ 占位且无 label 可深定位）；xyz123/特殊字符两态均未发生；after 截图=未过滤首屏（与 CH16-before 同 md5 04720fc6）。执行器标记 FAILED 属执行失败而非预期行为被证伪",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH08",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH08-after.png"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH09",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "搜索超长输入（要求 60 字符）",
+   "expected": "搜索框定高 76rpx 不撑破；列表转空态；× 可见可点；无横向溢出/崩溃",
+   "actual": "前置偏差+证据缺失：实际仅输入 6 字符样例「超长输入测试」（act:input），未按 60 字符长串执行；after 截图通道超时未落盘 → 定高不破/× 可点/空态断言无视觉证据；console=[]（无崩溃）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH09"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH10",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap 第一张 .campus-school-card → campus/index?school=",
+   "expected": "500ms 内路由到 campus/index?school=<URL编码>；校名栏显示；公开浏览视角；返回后状态保持",
+   "actual": "tap 上报成功（act:tap .campus-school-card，dom 卡片 present）但终栈=[hub]，无 campus/index 入栈路由证据；after 截图通道超时；console=[]。同套件 CH18 对同一选择器 rapidTap 成功导航（终栈=[hub, campus/index?school=清华大学]），证明卡片与 goSchool 链路非死按钮 → 本跑批单次 tap 观测不可采信。另：实际首卡=清华大学（非 manifest 假设的北京大学，见 CH06 根因）",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH10",
+    "reports/audit/round-1/interact/exec-results.json#CH18（同选择器可导航对照）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH11",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap 卡内 CTA .campus-school-card__cta（冒泡至卡片 goSchool，无死区）",
+   "expected": "500ms 内与整卡同路由 campus/index?school=…；CTA 无独立 handler 依赖冒泡",
+   "actual": "tap 上报成功（dom .campus-school-card__cta:present）但终栈=[hub]，无路由证据；after 截图超时；console=[]。同 CH10 竞态归因，冒泡链路运行时证据缺失",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH11",
+    "reports/audit/round-1/interact/exec-results.json#CH18"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH12",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap header .campus-hub__cert-btn → certification",
+   "expected": "500ms 内 navigateTo /subpackages/campus/campus/certification；栈长度 +1；console 无报错",
+   "actual": "tap 上报成功（dom .campus-hub__cert-btn:present）但终栈=[hub]（栈长 1，未 +1），无 certification 入栈证据；navigation tier 无截图；console=[]。同套件 rapidTap 组（CH18/19）均成功导航，单次 tap 观测按竞态不采信",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH12"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH13",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "tap 引导卡 .campus-guide__btn → certification",
+   "expected": "500ms 内 navigateTo certification，与 CH12 同路由；console 无报错",
+   "actual": "tap 上报成功（dom .campus-guide__btn:present）但终栈=[hub]，无路由证据；console=[]。同 CH12",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH13"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH14",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "认证中 pending 态（前置：认证页完整提交一次 mock 认证）",
+   "expected": "引导卡按钮=「查看进度」；header 仍「去认证」；我加入的仍空态且 badge=「认证中」黄底；推荐 badge 恒「未认证」",
+   "actual": "前置未自动化：observed 仅 pre:reLaunch certification + pre:auto-reLaunch hub，无表单填写/提交操作（mock submitCertification 从未触发）→ pending 态未达成；observe-only 无 dom/状态断言采集；after 截图通道超时。四态断言零证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH14"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH15",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "已认证 verified 态（real 模式 APPROVED 条件用例）",
+   "expected": "header/引导卡变「已认证」徽章；我加入的出现本校卡（badge 绿底+进入 CTA）；推荐排除本校",
+   "actual": "前置不可达（manifest 明示此时如实标 UNVERIFIED、不得换身份）：执行环境为 mock 构建（登录注入返回固定 mock 身份 userId=user-1001≠100158，MISMATCH，stores/session.ts:41-52），campus store mock fetchCertificationStatus 直接 return 保持 unverified；observe-only 无有效采集；after 截图超时。verified 渲染零证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH15",
+    "apps/client/src/stores/session.ts:41-52",
+    "scripts/qa/r1-exec.cjs:890（MISMATCH 注记）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH16",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "已认证本校卡「进入」→ 私域视角（critical）",
+   "expected": "路由 campus/index?school=<本校>；私域视角（分类 Tab+发布 FAB，无公开浏览 banner）",
+   "actual": "前置同 CH15 不可达（verified 不可达 → joined Tab 无本校卡）→ act-FAIL:tap(__CAND__(\"校\")) element not found，动作未执行；before/after 截图均 hub 静态首屏（before 与 CH08-after 同 md5 04720fc6，after 与 CH17 同 md5 f81c8039），佐证当时无本校卡可点；wxml 转储在盘但对应同页静态态。critical 断言零证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH16",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH16-before.png",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH16-after.png",
+    "reports/screenshots/round-1-interact/wxml/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH16-after.wxml"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH17",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "认证拉取失败错误条+重试恢复（critical，需网络故障注入）",
+   "expected": "失败时红色错误条+「重试」钮；断网点重试错误条保持；恢复后点重试错误条消失",
+   "actual": "故障注入未实施：执行器无 offline/停服步骤，且 mock 模式 fetchCertificationStatus 直接 return 不发请求（campus.ts:845-848）→ 错误条与重试钮无从出现（dom 探针 .campus-hub__cert-error-retry:absent/.retry:absent/.networkError:absent 与该前提一致，非缺陷证据）；before/after 截图同 md5（f81c8039）= 静态 hub；manifest 明示无法注入故障时标 UNVERIFIED",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH17",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH17-after.png",
+    "apps/client/src/stores/campus.ts:845-848"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH18",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "rapidTap 第一张 .campus-school-card ×5（防连点/重复压栈）",
+   "expected": "getCurrentPages 长度=2（仅压入 1 层 campus/index）；目标页只出现一次；无 webview limit 报错",
+   "actual": "达成：act:rapidTap ×5 done=5，终栈=[hub, campus/index?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6] 长度恰=2，目标页仅出现一次；console=[]（无 webview limit/报错）。落点为清华大学（实际首卡），与 action「第一张」一致；manifest 假设首卡=北京大学系数据前提错误（见 CH06 根因）。after 截图超时，但路由链为本用例主断言且已充分",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH18"
+   ],
+   "confidence": 0.8
+  },
+  {
+   "caseId": "CH19",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "rapidTap .campus-hub__back ×5（防连续弹栈）",
+   "expected": "仅第 1 次生效落回 nearby；其余 tap 落空无报错；最终栈=1 栈顶 pages/nearby/index；console 无报错",
+   "actual": "达成：rapidTap done=1（仅 1 次生效；其余 4 次 SDK 报 page is not on top of page stack，与「落在已切换页无该元素」同义）；终栈=[pages/nearby/index] 长度=1；console 仅 preload info 无错误。前置偏差：pre 为 auto-reLaunch（栈=1）而非设计的 nearby 入口 navigateTo（栈=2，入口元素未定位成功），故实际走 switchTab 兜底分支而非 navigateBack（hub.vue:164-170）——落点/防连点/无报错等可观测结果全部符合",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH19",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log（CH19 段，无错误）",
+    "apps/client/src/subpackages/campus/campus/hub.vue:164-170"
+   ],
+   "confidence": 0.75
+  },
+  {
+   "caseId": "CH20",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "重复进出 ×3（nearby 入口→hub→返回循环）",
+   "expected": "每轮首屏完整（默认推荐 Tab、全量卡）；onShow 重拉无报错；每轮返回落 nearby；无累积错误",
+   "actual": "循环未完成：act:repeatNav navErr:Uncaught [object Object] ×3，且 act-FAIL:tap(__CAND__(\"校园圈\")) element not found（入口元素与 CH03 同因未定位）→ 3 轮进出未按设计执行；仅终栈=[hub]；每轮截图超时。onShow 重拉/Tab 重置断言零证据",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH20",
+    "reports/audit/round-1/interact/exec-results.json#CH03（同入口定位失败）"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH21",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "深链 ?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6 回归守卫",
+   "expected": "渲染与无参一致：默认推荐 Tab、全量列表不按参数过滤；console 无报错",
+   "actual": "act:reLaunch hub?school=… 成功，终栈=[hub（options 含 school 参数）] 栈顶正确；console=[]（无报错）；manifest 规定本用例以路由+console 为必要证据（截图可选），已满足。「未按参数过滤」由 CH06-after 旁证（过滤仅由关键词驱动）+ 源码死参数已删（hub.vue:134-135 注释）。列表张数 10 非 11 的偏差同 CH06 根因，不属参数回归",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH21",
+    "reports/audit/round-1/interact/console-S06-circles-campus.log（CH21 段，无错误）",
+    "apps/client/src/subpackages/campus/campus/hub.vue:134-135"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "CH22",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "滚动到底/顶（noop：底部静态提示可见性）",
+   "expected": "底部「更多校园圈持续接入中」完整可见（非按钮无箭头）+ footer；回顶后 header/搜索/Tab 完整；无白屏报错",
+   "actual": "act:pageScrollTo bottom + top 均成功（无 ERR），console=[]（无报错）；manifest 允许 noop 免截图，以执行日志为证；同构建巡检「滚动-底部」截图直观证实：列表末卡（深圳大学）之下居中静态文案「更多校园圈持续接入中」完整可见、无展开箭头、footer 正常",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH22",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "CH23",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "封面图与头像渲染检视（observe-only fullPage）",
+   "expected": "每卡封面为对应校园实景（CAMPUS_COVER 全命中）；不出现浅绿背景+校名回落分支；头像 stack 正常；console 无图片 404",
+   "actual": "本用例自身 after 截图通道超时；以同构建（dist campus 产物 Sep22 22:45，巡检 Sep23 01:23、执行 Sep23 09:46-10:12 均在其后无重建，git=aefd8a72）巡检三段截图+CH01-after2 合并检视：可见的 10/10 张卡封面全部为实景图（清华/人大/复旦/上交/同济/浙大/南大/武大/中山/深大），无「浅绿背景+校名」回落分支；头像 stack 3 张正常；console 无图片错误。第 11 张（北京大学）因 CH06 根因被排除未渲染，不在可检视范围",
+   "verdict": "VERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH23",
+    "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH01-after2.png",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-中部.png",
+    "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png"
+   ],
+   "confidence": 0.7
+  },
+  {
+   "caseId": "CH24",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "热区量测（boundingClientRect 回填：back/clear ×/retry）",
+   "expected": "如实回填实测 rpx：back 64×64、clear ×40×40、retry padding 8×24+24 字号（均<88rpx 铁律，交判定员裁量）",
+   "actual": "量测未回填：observed observe-only，无任何 rect 数值落盘；.campus-search__clear:absent（pre input 失败 el.input is not a function，× 未触发显示）、.campus-hub__cert-error-retry:absent（无故障前置）、仅 .campus-hub__back:present 未量测。热区铁律裁量改以源码逐行核实数值入 Issue（MP-R1-CH24-01），运行时复核缺位如实记录",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH24",
+    "apps/client/src/subpackages/campus/campus/hub.vue:354-361,386-395,841-852"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "caseId": "CH25",
+   "page": "subpackages/campus/campus/hub",
+   "operation": "键盘确认键 confirm-type=search（noop：无 bindconfirm 不崩溃）",
+   "expected": "无 bindconfirm → 不路由、不弹层、列表维持实时过滤结果；无 console 报错",
+   "actual": "确认键未触发：observed 仅 act:input=\"北京\"，无 trigger/confirm 操作（执行器未生成确认键动作）→ 「确认键 no-op」主体断言未执行；路由未变（终栈=[hub]）+console=[] 仅证明输入本身无害；noop 证据仅 scrollPos=top",
+   "verdict": "UNVERIFIED",
+   "evidence": [
+    "reports/audit/round-1/interact/exec-results.json#CH25"
+   ],
+   "confidence": 0.5
+  }
+ ],
+ "issues": [
+  {
+   "id": "MP-R1-CH06-01",
+   "round": "R1",
+   "page": "subpackages/campus/campus/hub",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH06-after.png（输入「北京」后列表=「暂无推荐圈子」空态，× 清除钮在位）",
+   "category": "Interaction",
+   "severity": "P2",
+   "description": "搜索/推荐对「本校」的排除不限定认证态，形成未认证绑定用户的本校死区：recommendedSchools = schools.filter(sc => sc.name !== ownSchool.value)（hub.vue:110-113）在未认证时同样剔除 ownSchool，而 ownSchool 回退链 certificationInfo?.schoolName || session.campusName（hub.vue:111）使 mock 主身份（林晓，campusName=「北京大学」，session.ts:48）的北京大学（config/schools.ts:33，SCHOOLS 首项）从推荐列表消失（运行时 10 卡、首卡=清华大学）；同一过滤基集使搜索「北京」返回「暂无推荐圈子」空态（CH06 截图），而 joinedSchools 又被 isVerified 门禁（hub.vue:89-91）挡住 → 该用户在 hub 内既看不到也无法搜到、更无法进入本校，除认证引导外的转化路径断裂。连带使 CH01「11 卡」、CH06「北京/pku 命中北大」、CH10「首卡=北大」三项 manifest 前提在运行时落空。若「排除本校」语义仅面向已认证用户（推荐其他学校），应以 isVerified 为前提",
+   "evidence": "exec-results.json#CH06 observed+route+console；CH06-after.png；hub.vue:89-96（joinedSchools isVerified 门禁）、:110-113（recommendedSchools 无条件排除 ownSchool）、:111（ownSchool 回退 session.campusName）；session.ts:41-52（mock 身份 campusName=北京大学/schoolId=pku）；config/schools.ts:32-44；巡检全页图（10 卡无北京大学，round-1-tour/A/subpackages_campus_campus_hub__默认.png）",
+   "sources": ["screenshot", "interaction", "code"],
+   "confidence": 0.85,
+   "ideal": "未认证（含仅绑定 campusName）用户：推荐列表与搜索均基于全量 SCHOOLS（本校卡显示「未认证」badge+「申请加入」，与其余卡一致）；仅 isVerified 用户才从推荐中排除本校（此时本校已在「我加入的」）；搜索任何存在于 SCHOOLS 的校名/ID 不因本校排除而空态",
+   "fix": "将 hub.vue:110-113 的排除改为 isVerified.value ? schools.filter(sc => sc.name !== ownSchool.value) : schools；或为搜索提供独立全量基集（有关键词时 filteredSchools 的 base 取全量 schools）；补 CH06/CH01/CH10 断言回归",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CH24-01",
+   "round": "R1",
+   "page": "subpackages/campus/campus/hub",
+   "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH06-after.png（× 清除钮与 header 返回钮实际观感）；CH24 运行时 rect 未采信（量测未回填，用例 UNVERIFIED）",
+   "category": "UI",
+   "severity": "P3",
+   "description": "三处可点元素热区低于 R11 §5 铁律 88rpx：返回钮 .campus-hub__back 64×64rpx（hub.vue:386-395）；搜索清除 × .campus-search__clear 40×40rpx（hub.vue:841-852）；认证错误重试钮 padding 8rpx 24rpx+24rpx 字号（hub.vue:354-361，触区高度约 40rpx）。源码数值经本轮逐行核实；CH24 运行时 boundingClientRect 量测因执行器输入失败未回填（UNVERIFIED），按源码事实记录、不降低判定标准",
+   "evidence": "hub.vue:386-395（64×64）、:841-852（40×40）、:354-361（padding 8/24+字号 24）；manifest pageNotes.hotZone 同数值；exec-results.json#CH24（量测缺失）",
+   "sources": ["code", "interaction"],
+   "confidence": 0.7,
+   "ideal": "全部可点元素触区 ≥88×88rpx（可用透明 padding/hit-area 扩展而不改视觉尺寸）",
+   "fix": "为 back/clear/retry 增加负 margin+等量 padding 或透明热区层使触区≥88rpx；补 CH24 量测回归",
+   "status": "待修复"
+  },
+  {
+   "id": "MP-R1-CH06-02",
+   "round": "R1",
+   "page": "subpackages/campus/campus/hub",
+   "screenshot": "（不适用——行为无用户可感知差异）",
+   "category": "Performance",
+   "severity": "P4",
+   "description": "搜索输入无 300ms 防抖：v-model 直连 computed 同步过滤（hub.vue:127-132，无 debounce 实现）。铁律要求搜索 300ms 防抖；但本页数据源为静态 SCHOOLS 数组（≤11 条，hub.vue:54），同步过滤无性能风险，CH06 实测输入即过滤、无卡顿无崩溃。按 manifest pageNotes.searchDebounce 要求如实记录，裁量保留",
+   "evidence": "hub.vue:127-132（filteredSchools computed 直连 searchKeyword，无定时器/防抖包装）；exec-results.json#CH06（输入即过滤，无错误）",
+   "sources": ["code", "interaction"],
+   "confidence": 0.8,
+   "ideal": "铁律口径：输入→过滤间 300ms 防抖；或在未来接入后端 campuses 异步数据源时补防抖",
+   "fix": "当前静态数据可保留现状（无可感知影响）；一旦 loadSchools 切换为后端异步源（schools.ts:28-30 注释规划），须补 300ms 防抖",
+   "status": "保留"
+  }
+ ],
+ "unverifiable": [
+  "CH02|tap 上报成功但终栈仍=[hub] 无 switchTab 路由证据；dom 探针 back:absent 与终栈=hub 互斥、证据自相矛盾；CH19 同元素可导航对照成立，判执行竞态不可采信|1",
+  "CH03|前置未达成：nearby「校园圈」入口 element not found（SDK $ 不穿透组件），fallback reLaunch 栈=1 非设计的 navigateTo 栈=2；navigateBack 落点与状态恢复零证据|1",
+  "CH05|tapIndex 成功但 CH05-after 与 CH04-after 逐字节同（同 md5），列表恢复无可信视觉证据；同套件截图通道多次超时不可靠|1",
+  "CH07|pre input 失败（el.input is not a function）致 × 未渲染、tap 落空；after 截图超时|1",
+  "CH08|act-FAIL×2 input(__CAND__) element not found，xyz123/特殊字符两态均未发生|1",
+  "CH09|仅输入 6 字样例非 60 字符长串 + after 截图超时，定高不破断言无证据|1",
+  "CH10|tap 成功但终栈=[hub] 无 campus/index 入栈证据；CH18 同选择器可导航对照；after 截图超时|1",
+  "CH11|tap 成功（CTA present）但终栈=[hub]，冒泡链路零运行时证据|1",
+  "CH12|tap 成功但终栈=[hub] 栈未 +1，certification 入栈零证据（navigation tier 无截图）|1",
+  "CH13|tap 成功但终栈=[hub]，与 CH12 同路由断言零证据|1",
+  "CH14|前置「完整提交 mock 认证」未自动化（observed 仅两次 reLaunch 无表单提交），pending 态未达成；截图超时|1",
+  "CH15|real APPROVED 前置不可达：mock 构建固定身份 user-1001（MISMATCH≠100158，session.ts:41-52）+ mock fetch 恒 unverified；manifest 明示标 UNVERIFIED|1",
+  "CH16|前置同 CH15 → joined 无本校卡，tap(__CAND__(\"校\")) element not found 动作未执行|1",
+  "CH17|网络故障注入未实施且 mock fetchCertificationStatus 不发请求，错误条/重试无从出现（探针 absent 与前提一致）；manifest 明示标 UNVERIFIED|1",
+  "CH20|repeatNav navErr×3 + 入口 element not found，3 轮进出循环未完成，onShow/Tab 重置断言零证据|1",
+  "CH24|量测未回填：无任何 rect 数值；clear × 因输入失败未显示、retry 因无故障前置不存在|1",
+  "CH25|键盘确认键未触发（仅完成 input），confirm no-op 主体断言未执行|1"
+ ],
+ "notes": "仲裁口径：①route=用例结束时刻 getCurrentPages() 终态栈（r1-exec.cjs:296-309,1360-1366），dom 探针=根 wxml 正则（:1228-1254，可穿透组件），tap=page.$/deepResolve（:832-884，SDK $ 不穿透组件）——「探针 absent 但 tap 成功/元素应 present」类矛盾属执行器能力边界而非应用缺陷；②单次 tap 上报成功但终栈无路由变化 ×6（CH02/03/10/11/12/13），而同套件同元素 rapidTap（CH18/CH19）均成功导航、页面内状态类 tap（CH04 tapIndex）正常——按本轮近邻页判定先例（PAGES-NEARBY-INDEX-judge N09-N17 同形态判 UNVERIFIED）归因执行竞态（pre reLaunch 后 ~550ms 即 tap，自动 reLaunch 分支有 1500ms 静置而显式 pre nav 仅 150+400ms），不判产品死按钮，如实 UNVERIFIED；③登录 MISMATCH 为 mock 构建固定身份（session.ts:40-52：user-1001/林晓/campusName=北京大学/schoolId=pku），非执行器故障；该身份恰为 CH06 缺陷（本校排除）的触发者；④截图通道：本套件 11 个 after 截图超时未落盘（CH01 首拍/07/09/10/11/14/15/18/19/20/23），CH05-after 与 CH04-after 同 md5、CH16/CH17 三图同 md5，证据通道不可靠已作为相应 UNVERIFIED 依据；巡检截图（round-1-tour/A/hub__*.png，Sep23 01:23）与执行跑批（console 时间戳 Sep23 01:46-02:12 UTC）基于同一 dist 构建（campus 产物 Sep22 22:45，两处均 git=aefd8a72，无中间重建），按任务书授权作为旁证用于 CH01/CH22/CH23；⑤S06 console 落盘中 hub 用例零错误（log 内错误行均属 circles/post-topic 页，不在本页范围）；⑥CH19 前置为栈=1（switchTab 兜底）而非设计的栈=2（navigateBack），落点/防连点/无报错等可观测断言全部达成故判 VERIFIED，分支差异已记录；⑦manifest「首卡=北京大学」「11 卡」为静态数据前提，运行时因 MP-R1-CH06-01 根因变为 10 卡/首卡清华，已并入该 Issue 连带影响，不重复立案；⑧S06 套件中另有 13 条 CH01-CH13 记录属 subpackages/circles/circles/circle-home（S10-c20b），与本页无关，未纳入判定。"
+}

@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "round": "R1",
+    "role": "A4 需求对照员（与视觉审查员分文件）",
+    "page": "pages/register/index",
+    "generatedAt": "2026-09-24",
+    "gitSha": "aefd8a72（工作区含未提交改动）",
+    "sources": [
+      "apps/client/src/pages/register/index.vue",
+      "apps/client/src/pages/register/success.vue",
+      "apps/client/src/guards/campus-gate.ts",
+      "apps/client/src/constants/routes.ts",
+      "apps/client/src/components/setup/SetupProgress.vue",
+      "apps/client/src/subpackages/setup/interest/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "reports/audit/round-1/interact/exec-results.json（PAGES-REGISTER-INDEX REG01-32）",
+      "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-*（98 文件）",
+      "素材/寻觅注册页-素材_assets/（4 图逐一实看）",
+      "素材/注册/个人资料填写/流程/DEV_PAGE_MAP.md",
+      "素材/注册/个人资料填写/01-注册登录/DEV_PAGE_MAP-流程基准.md + 参考-注册页面.png",
+      "git show 29a2b1df:docs/design/v3.1-contract.md §14/§19"
+    ],
+    "detailFile": "reports/audit/round-1/page-compare/PAGES-REGISTER-INDEX.md"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-201",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-INDEX-REG25-after.png",
+      "category": "Function",
+      "severity": "P1",
+      "description": "注册页 R1 交互取证大面积失真：32 条用例中约 20 条的 observed 与其标题场景不符却标 EXECUTED。根因是 automator 文本输入驱动全程失效（REG24/REG26 pre-FAIL『input el.input is not a function』、REG08/REG11/REG32『__CAND__』占位未替换、选择器首匹配错配——.field__input 恒为手机号框致 REG12/13/14 输错目标、.agree__link 恒为用户协议致 REG07 点错链接），且 REG25/26 的 after 截图 automator 超时。后果：核心成功链路『合法全表单→签发 JWT→redirectTo 注册成功页』（REG25）实际被『手机号格式不正确』toast 拦截、route 停留本页，零正向证据；验证码发送成功+60s 倒计时（REG17/18）、18 岁预检（REG21）、协议抖动拦截（REG22）、已注册出口（REG26/27）、B6 关闭兜底（REG28 observe-only 无 toast 无导航）、返回按钮落点（REG04/30 route 未变）均未证实。服务层亦无单测兜底（tests/services/auth.spec.ts grep register 0 命中）。EXECUTED 假阳性比 FAILED 更危险——本轮交互报告据此虚高注册页通过率。",
+      "evidence": "code: apps/client/src/pages/register/index.vue:348-360（成功链路实现存在）、:255-288（倒计时）、:103-109+221-222（18 岁预检）、:303-312（B6）、:727-729（已注册出口）、:434-441（返回双落点）；services/auth.spec.ts 无 register 用例。interaction: exec-results.json REG25 observed『toast:手机号格式不正确，请输入 11 位手机号』+route=[pages/register/index]；REG12『.strength:absent』；REG26『pre-FAIL:input el.input is not a function』；REG08『act-FAIL:inputSeq(__CAND__) element not found』；REG28 无 toast 且 route 未变。screenshot: PAGES-REGISTER-INDEX-REG25-after.png（ERROR:timeout waiting for automator response）；PAGES-REGISTER-INDEX-REG01-after.png 正常（取证环境前段可用）",
+      "sources": ["code", "interaction", "screenshot", "log"],
+      "confidence": 0.9,
+      "ideal": "32 条用例逐条与标题自洽：合法表单注册成功取得『redirectTo 注册成功页』的正向截图+route+wxml 三源证据；倒计时/预检/协议抖动/B6/已注册出口/返回按钮各有各的场景证据；EXECUTED 仅授予观测成立的用例。",
+      "fix": "① 修驱动：mini-program automator 对 input 改用 trigger('input',{value}) （picker 的 trigger('change') 在 REG15/21 已证明可用）或修 el.input 句柄获取；② 修选择器：确认密码用 .field__input--confirm、昵称/验证码字段加独立 class 或 :nth 限定、隐私链接 .agree__link 限定第二个；③ REG28 前置注入 switches.register_open=false 再断言 toast+800ms 落登录；④ 全量重跑 REG04/07-22/24-28 并逐条对齐标题断言后更新 exec-results.json。建议同步在 tests/services 增 registerUser 校验/错误映射单测兜底。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-202",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "素材/注册/个人资料填写/06-人脸认证（理想稿：06 真人认证(可选) 6/8、06-1 拍摄指引、06-2 认证成功；实现侧无截图可对应）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "人脸认证（可选，不阻塞）全链路缺失。流程基准 DEV_PAGE_MAP 页面全集 #6『人脸认证（可选）』与参考-注册页面.png 第 6/8 步（真人认证：验证是真人是提高真实性、活体检测、以后再说）在实现中无任何承载：apps/client/src 与 apps/api/src grep『人脸/faceVerify/face-verify/FACE』均 0 命中；认证中心（subpackages/profile-extra/verification/index.vue）仅学生证认证；我的/设置无人脸入口。注册流程要求『学生/人脸可跳过』——学生侧成立（校园认证可选+向导非学生分支跳过），人脸侧因功能不存在而无处谈跳过。属功能缺失（可选增强，不阻塞核心入口，故 P2 非 P1）。",
+      "evidence": "code: grep -rn '人脸|faceVerify|face-verify|FACE' apps/client/src --include=*.vue,*.ts → 0 文件；apps/api/src 同 0 命中；subpackages/profile-extra/verification/index.vue:4『校园身份认证流程：上传学生证』仅此一类。material: 素材/注册/个人资料填写/06-人脸认证/ 三张理想稿 + 流程/DEV_PAGE_MAP.md:9『6. 人脸认证（可选）』+ 参考-注册页面.png 面板 06/06-1/06-2",
+      "sources": ["code", "material"],
+      "confidence": 0.95,
+      "ideal": "人脸认证作为可选步骤存在：入口（认证中心/资料向导可选步），未认证不阻塞；用户可跳过并可后补；公开侧仅展示『真人认证』徽章不暴露生物数据（DEV_PAGE_MAP 敏感信息原则）。",
+      "fix": "产品二选一：A) 按素材 06 稿增补可选人脸认证页（微信端真实活体需 wx.startFacialRecognitionVerify 及主体资质，可先落『上传手持证件照+人工审核』降级链路，复用 real-name.vue 的上传/审核状态机），入口挂认证中心；B) 拍板砍掉人脸认证，同步修订 DEV_PAGE_MAP/流程图/素材索引，避免后续轮次再按基准误报。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-203",
+      "round": "R1",
+      "page": "pages/register/success",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-REGISTER-SUCCESS-RS02-after.png（成功页实拍，若缺失则以代码行号为准）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "注册链路承接页承诺与实名门控行为矛盾：pages/register/success.vue:35 渲染『可开始匹配、加兴趣圈、发消息｜已解锁』，但真实模式下 campus-gate 会在用户首次互动时拦截——ensureCertified('realname') 挂在发现页喜欢/超喜欢（pages/discover/index.vue:144,150，进入匹配的唯一入口）、他人主页 CTA（other.vue:236,247）等，未实名用户点喜欢即弹『实名认证』引导。注册流程本身不含实名步骤（register→success→setup 向导/逛首页），参考流程基准将『实名认证(必选)』置于资料填写 2/8、认证成功后才继续。即：新用户按成功页文案行动，第一步就会被弹窗纠正，形成『刚承诺已解锁、转身就被拦』的体验断裂。mock 模式因 campus-gate.ts:34 恒通过而不可见此矛盾，自动化全部放行掩盖了该问题。",
+      "evidence": "code: apps/client/src/pages/register/success.vue:33-37（rows 静态文案『可开始匹配、加兴趣圈、发消息|已解锁』）；guards/campus-gate.ts:33-40（isRealNameVerified：mock 恒 true、真实模式查 idCardVerified/campusVerified）+ :72-97（未过→showModal 引导跳 real-name）；pages/discover/index.vue:144-151（handleLike/handleSuperLike 先 ensureCertified 再 enterMatching）",
+      "sources": ["code", "material"],
+      "confidence": 0.9,
+      "ideal": "成功页承诺与门控语义一致：要么文案改为『完善资料并通过实名认证后解锁匹配/发消息』并附实名直达入口；要么维持『浏览自由』产品语义但把清单措辞降为『可先浏览，互动前完成实名即可』。任何一侧都不应让用户刚注册就被弹窗打脸。",
+      "fix": "改 success.vue:33-37 文案并将第三行『下一步』指向实名认证（或 setup 向导首步）；同时核对该页在 register/index redirectTo 后的可回退语义（RS11 已证返回落登录页）。若产品确认保持现状，请在此行补充『互动时需完成实名认证』小字说明。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PAGES-REGISTER-INDEX-204",
+      "round": "R1",
+      "page": "pages/register/index",
+      "screenshot": "素材/寻觅注册页-素材_assets/b5163cb0-miora_text_to_image-1789186272177-0-dd3e85895457.jpg",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "理想素材的内容顺序为『步骤式资料填写 + CTA：下一步』（b5163cb0 与参考-注册页面.png 的 1/8→8/8 分步卡），实现为单表单一次性注册（六字段同屏，CTA『注 册』index.vue:723），步骤式填写移至注册后向导（SetupProgress 全量 5 步/学生 4 步/非学生 3 步）。该偏差有书面拍板：index.vue:2-19 头注记载 2026-09-12 注册页设计包契约决策『方案 B（契约对齐变体）——后端 POST /v1/auth/register 要求 nickname/birthDate 必填（3-N 未成年人保护），故注册页在四要素基础上补昵称+出生日期』。功能无缺失：注册与完善资料两条任务均可达，向导承接基础资料/校园/推荐偏好。按需求对照口径留档为「保留」偏差，供后续整页理想稿（R13 候补）定稿时复核。",
+      "evidence": "code: apps/client/src/pages/register/index.vue:2-19（拍板记录头注）、:723（CTA『注 册』）、:649-712（基础身份分组内联）；components/setup/SetupProgress.vue:41-81（向导步数分支）。material: 素材/注册/个人资料填写/01-注册登录/参考-注册页面.png（8 步分步+每步『下一步』CTA）；b5163cb0 主视觉构成",
+      "sources": ["code", "material"],
+      "confidence": 0.85,
+      "ideal": "注册页按理想稿分步呈现资料填写并以『下一步』推进；或维持现单表单形态但由整页理想稿（待产品确认的候补锚点）正式追认。",
+      "fix": "无需立即改码。建议：① 将该拍板从代码头注提升到 docs/design 契约文档（与 v3.1-contract 同级），注明放弃 b5163cb0 分步形态的理由；② R13 候补整页理想稿定稿时，若确认分步形态再排期重构。",
+      "status": "保留"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "pages/register/index",
+      "baseline": "素材/寻觅注册页-素材_assets/b5163cb0-*.jpg（主视觉构成，R13 判定无整页理想稿）+ 素材/注册/个人资料填写/流程/DEV_PAGE_MAP.md + 01-注册登录/DEV_PAGE_MAP-流程基准.md + 01-注册登录/参考-注册页面.png（8 步流程基准）+ git show 29a2b1df:docs/design/v3.1-contract.md §14",
+      "file": "reports/audit/round-1/page-compare/PAGES-REGISTER-INDEX.md",
+      "structureNotes": "L1 页面级：插画 Hero→表单卡骑压→协议行→安全说明→去登录，与 b5163cb0 构成同构；与参考流程『引导页+分步卡』形态不同（→Issue 204 拍板保留）。L2 区块级：账号信息（手机号/验证码/密码/确认）+基础身份（昵称/生日）双分组（index.vue:476-712）；参考流程『基础资料 1/8』（头像/性别/学校等）由注册成功页→setup 向导承接（success.vue:39-42）。L3 元素级：reg-hero=b5163cb0 同图落地（static/assets/images/register/reg-hero-illustration.jpg 实看比对一致）；reg-bg（fa78925c 氛围长图）与 reg-decor（700fa92a 爱心装饰组）未落地、页面为平铺 #eef7f2 底色——视觉线本页档案（013/014）未覆盖，特此留痕；表单图标 14 枚本地 SVG（config/images.ts:636-661）。L4 布局：卡片骑压 64rpx、字段 96rpx/24rpx 圆角、--statusbar 动态补偿（:803,:827，修复号 MP-R2-…-002）。L5 字型：52/24/30/24/21 rpx 五级层级完整。L6 色彩：全 CSS 变量（MP-R2-…-005），与 v3.1 冻结 #34C98A 的 token 偏差归视觉线不重复。L7 组件：验证码胶囊三态、勾选框 32rpx、强度条 3 格。L8 栅格：40/40/24rpx。L9 动效：press-feedback/shake-x×2/spin，协议抖动强制重启动画技巧（:227-248）。L10 状态：聚焦/错误/抖动/加载/禁用/已注册出口/B6 关闭态代码齐备，但错误态/倒计时态/成功跳转/已注册出口/B6 态均无有效执行证据（→Issue 201）。",
+      "usageNotes": "核心任务『创建账号并进入产品』按代码路径完整可达：注册→redirectTo 成功页→『完善我的资料』1 步进向导或『随便逛逛』1 步进首页，任意页 2 步内回 tab 体系，单页表单无迷路结构；返回双出口（返回按钮+底部去登录），REG05 证『去登录』落登录页。挫点：① 核心『注册成功』一步在 R1 自动化中从未真正走通（REG25 被手机号校验拦截，输入驱动全程失效，20/32 用例伪 EXECUTED，→Issue 201 P1）；② 承接页宣称『可开始匹配…已解锁』与真实模式实名懒门控相悖，新用户首互动即被弹窗纠正（→Issue 203）；③ 人脸认证无承载页（→Issue 202）；④ 取证环境噪音：编号截图 01-after 出现『获取手机号失败』系统弹窗，本页代码无 getPhoneNumber（grep 0 命中），为 DevTools 账号态所致非页面缺陷。规范侧亮点：协议默认不勾选且点链接不改勾选（REG01/06 真实通过）、B6 开关兜底、错误文案行内+Toast 双通道、手机号已注册不清空已填内容。",
+      "functionGaps": [
+        {
+          "target": "核心成功链路可验证：合法全表单→签发 JWT→redirectTo 注册成功页（DEV_PAGE_MAP 流程第 1 步的完成判定）",
+          "current": "代码链路完整（index.vue:348-360 + services/auth.ts:337 + success.vue 承接），但 R1 交互 32 例中约 20 条观测与标题不符（automator 输入驱动失效：el.input is not a function / __CAND__ / 选择器首匹配错配），REG25 实际被『手机号格式不正确』拦截，成功链路零正向证据；服务层无 register 单测（auth.spec.ts 0 命中）",
+          "gap": "功能已实现但验收证据缺失且 EXECUTED 状态失真（假阳性 20 例）——核心转化漏斗处于『不可证明可用』状态",
+          "fix": "按 Issue 201 修 automator 驱动（trigger('input',{value})，picker trigger('change') 已验证可行）与字段级选择器后全量重跑 REG04/07-22/24-28，逐条对齐标题断言并补服务层单测"
+        },
+        {
+          "target": "人脸认证可选步骤存在且可跳过（DEV_PAGE_MAP 页面全集 #6、流程基准 06/06-1/06-2）",
+          "current": "全链路缺失：apps/client/src 与 apps/api/src grep『人脸/faceVerify/face-verify/FACE』0 命中；认证中心仅学生证认证；『学生/人脸可跳过』中学生侧成立、人脸侧无承载",
+          "gap": "可选功能整体缺失（不阻塞核心入口）",
+          "fix": "按 Issue 202 二选一：增补可选人脸认证（真实活体需资质，可先落手持证件照+人工审核降级链路）或拍板移除并同步修订 DEV_PAGE_MAP/流程图"
+        },
+        {
+          "target": "实名必须（阻塞核心产品入口），实名成功后立即允许进入首页/附近/匹配/消息（DEV_PAGE_MAP 认证规则）",
+          "current": "以懒门控实现：campus-gate.ensureCertified('realname') 挂发现页喜欢/超喜欢、他人主页 CTA、圈子、村庄入口，未实名首次互动弹引导跳 real-name 页；实名认证页功能完整（姓名/身份证/正反面→审核→idCardVerified）；mock 模式恒通过（演示约定）；但承接页成功文案宣称『已解锁』与拦截行为矛盾",
+          "gap": "阻塞语义已达成（架构拍板：浏览自由、互动门槛），缺口在承诺一致性：新用户按成功页文案操作即被弹窗拦截（→Issue 203）",
+          "fix": "改 success.vue:33-37 清单文案为『互动前完成实名认证』语义或增实名直达入口；产品如维持现状则补小字说明"
+        },
+        {
+          "target": "步骤式资料填写 + CTA『下一步』（b5163cb0 与参考-注册页面.png 的内容顺序）",
+          "current": "单表单一次性注册（六字段同屏，CTA『注 册』），步骤式移至注册后向导（SetupProgress 3-5 步分支）；有 2026-09-12 设计包拍板记录（index.vue:2-19 方案 B：后端注册契约要求 nickname/birthDate 必填）",
+          "gap": "信息架构形态偏差，功能无缺失（注册与完善资料两任务均可达）",
+          "fix": "→Issue 204 保留：拍板提升到 docs/design 契约文档留痕；待 R13 候补整页理想稿定稿时复核是否重构分步形态"
+        }
+      ],
+      "verdict": "基本达标"
+    }
+  ]
+}

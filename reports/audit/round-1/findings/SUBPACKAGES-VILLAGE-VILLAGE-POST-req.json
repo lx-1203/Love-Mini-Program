@@ -1,0 +1,122 @@
+{
+  "issues": [
+    {
+      "id": "MP-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST-REQ-01",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「添加位置」输入全链路静默丢失：页面完整收集位置（快捷 chips + 自定义输入 + 草稿持久化），但提交 payload 不含 location——圈子路径 createTopic 仅 title/content/images/tags，general 路径 createPost 仅 categoryId/title/content/images/tags/visibility/targetType/targetId；store 签名（village/index.ts createPost）与 API 请求体（village/api.ts createPostApi → POST /posts）均无 location 字段，PostItem 亦无帖子位置属性。用户选择「北京大学·未名湖校区」等位置后发布，位置被静默丢弃、帖子无位置展示且无任何提示。",
+      "evidence": "post.vue:57(location ref)、:82-83(COMMON_LOCATIONS)、:116-127(pickLocation/addCustomLocation)、:326/:392(草稿保存/恢复 location) —— 但提交侧 post.vue:516-521(createTopic payload) 与 :523-538(createPost payload) 均无 location；stores/village/index.ts:416-430(createPost 签名无 location)；stores/village/api.ts:203-247(createPostApi 请求体无 location)。VP20 位置弹层交互因自动化器限制未验证，不影响本条代码链路定性。",
+      "sources": ["code", "interaction"],
+      "confidence": 0.95,
+      "ideal": "理想图「发布帖子页面.png」附加行「添加位置：北京大学·未名湖校区」表示位置随帖保存并展示；用户选择的位置应出现在发布后的帖子卡/详情中。",
+      "fix": "createPost 全链路（post.vue payload → village/index.ts createPost → village/api.ts createPostApi → 后端 POST /posts）增补 location 字段并在帖子卡/详情展示；若后端短期不支持，则在发布时 Toast 明示「位置暂不随帖保存」或隐藏该入口，消除静默丢弃。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST-REQ-02",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「提及好友」为纯文本装饰：点击后仅在正文末尾追加「@」字符并 toast「请输入昵称」，无好友选择器、无 @ 目标解析、无被提及人通知链路（全端无 mention 解析实现；帖子详情评论区 detail.vue:492 同款轻量实现）。用户无法选择要提及的好友，被提及者不会收到任何通知，「提及好友」功能目标未实现。",
+      "evidence": "post.vue:129-133(insertMention 仅 content += ' @')、:802-813(附加行入口)、:892-901(底栏入口)；grep 全仓 subpackages/village 无好友选择/mention 解析代码；理想图「发布帖子页面.png」附加行「@ 提及好友」。VP21 因自动化器文本查找失败未验证交互本身。",
+      "sources": ["code", "screenshot"],
+      "confidence": 0.6,
+      "ideal": "理想图存在「提及好友」入口，语义为选择好友并使被提及者被通知/可跳转，而非手工续打昵称的纯文本。",
+      "fix": "接入好友选择弹层（会话/互关好友列表），发布时将 @昵称 解析为 userId 列表随 payload 提交并触发通知；短期至少将入口文案改为「插入 @ 符号」，避免功能误导。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST-REQ-03",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "视频发布缺失：理想图底部工具栏首项为「图片 / 视频」，实现仅 uni.chooseImage（sourceType album/camera，仅图片），全页无 chooseMedia/chooseVideo 调用，用户无法发布视频动态。",
+      "evidence": "理想图「发布帖子页面.png」底栏首项文案「图片 / 视频」；post.vue:272-287(uni.chooseImage，无视频)、:860-912(底栏「图片」项)；grep subpackages/village 无 chooseMedia/chooseVideo。VP24 图片链路因相册授权不可自动化未验证。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.65,
+      "ideal": "理想图工具栏「图片 / 视频」：发帖支持选取图片或视频作为动态附件。",
+      "fix": "改用 uni.chooseMedia 支持 video 类型并打通上传/展示链路（uploadPostImage 需配套视频上传端点）；或产品侧明确裁剪视频能力并同步修订理想图口径。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST-REQ-04",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP19-after.png",
+      "category": "Function",
+      "severity": "P2",
+      "description": "圈子目标发帖无话题能力：理想图目标卡为「摄影圈（圈内成员可见）」且「添加话题（已选 0/5）」行并存；实现为规避后端 CreateTopicRequest 不含 tags 而在圈子目标下同时隐藏附加行与底栏的话题入口（VP19 证实隐藏生效）。理想功能目标「圈内发帖可带话题」未实现，属后端能力缺位导致的功能裁剪（此前话题在圈子路径会被静默丢弃，隐藏入口是止损而非补齐）。",
+      "evidence": "理想图「发布帖子页面.png」：目标卡「摄影圈 / 圈内成员可见 / 1.2w 成员」与「# 添加话题 已选 0/5」同屏并存；post.vue:774-789(附加行 v-if=!isCircleTarget)、:871-881(底栏话题项同条件)；stores/circle.ts:531-541(real createTopic 请求体仅 title/content/images，P0-12 注释确认后端 CreateTopicRequest 无 tags)；exec-results.json VP19 EXECUTED（入口隐藏证实）。",
+      "sources": ["screenshot", "code", "interaction"],
+      "confidence": 0.7,
+      "ideal": "选择兴趣圈作为发布目标时仍可添加话题，话题随帖子保存并在圈内展示（理想图口径）。",
+      "fix": "后端 CreateTopicRequest 扩展 tags 字段并落库，前端放开 v-if 入口将 topics 透传 createTopic；维持现状则需在设计契约中书面确认该裁剪，防止后续误判为回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SUBPACKAGES-VILLAGE-VILLAGE-POST-REQ-05",
+      "round": "R1",
+      "page": "subpackages/village/village/post",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP11-after.png",
+      "category": "Function",
+      "severity": "P3",
+      "description": "目标选择弹层圈子列表静默截断：仅渲染 circleStore.circles.slice(0, 8)，无「查看全部」入口、无截断提示；用户加入兴趣圈超过 8 个时，第 9 个起无法被选为发布目标，且用户无从感知存在未展示圈子。",
+      "evidence": "post.vue:688-709（template v-if=\"circleStore.circles.length > 0\" … v-for=\"circle in circleStore.circles.slice(0, 8)\"，其后无任何加载更多/提示节点）。",
+      "sources": ["code"],
+      "confidence": 0.55,
+      "ideal": "发布目标应覆盖用户已加入的全部兴趣圈；列表过长时提供滚动或「查看全部圈子」路径，并以可见方式提示截断。",
+      "fix": "弹层面板已设 max-height:78vh 可滚动（post.vue:1189-1198），直接移除 slice(0,8) 全量渲染，或追加「查看全部圈子」跳转圈列表页的兜底入口。",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/village/village/post",
+      "baseline": "素材/理想效果图/发布帖子页面.png（唯一页面级对照依据）+ 静态截图 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png + 交互执行 reports/audit/round-1/interact/exec-results.json（S05-village VP01–VP34）",
+      "structureNotes": "【勘误】任务页名「村口·帖子详情」与路由不符：post 实为发布动态/发帖页（pages.json:83、routes.ts:81-82「发帖页（旧，保留兼容）」、post.vue:2 自述），详情页为 village/detail；本对照以路由为准锚定「发布帖子页面.png」。L1 布局：理想图七段式（导航/发布到/输入/图片/附加行/贴士/吸底工具栏）与实际截图及 VP29-after.wxml DOM 逐段对齐。L2 模块：目标卡、4 附加行、5 工具项、贴士齐全；实际多出独立标题输入（0/20，post.vue:714-728，R17 小红书化增强，超集不作缺陷）。L3 组件：目标卡头像+名称+圈内可见 tag+成员数+箭头与理想图一致；差异为正文计数 0/500 vs 理想图 0/1000（constants/village.ts:18）、底栏「图片」vs「图片 / 视频」、placeholder 文案不同（VP29 wxml 证实实际文案「分享你的故事、心情或寻找那个TA...」）——文案/规格级，归视觉侧。L4 行为：空表单 disabled（VP01）、拦截 toast「请输入内容」（VP02）、连点×5 无重复提交（VP05）、空表单 X 直返（VP09）、目标弹层开关联动（VP11/13）、圈子目标隐藏话题入口（VP19）、吸底工具栏不遮挡（VP32）均有交互证据；深链 ?circleId/?target=campus 解析代码在（post.vue:178-189）但 VP29/30/31 route options 均为 {}（未带参导航），深链带参行为未证实。L5 层级：弹层 z=1100>工具栏 z=120，遮罩关闭+面板 @tap.stop，四弹层均无 X 钮（VP23 未验证）。L7：R20 状态栏注入（post.vue:582）与 R21 胶囊避让（:1055-1057）落实，静态截图无叠印。L8 token：全页 --c-brand 绿系，冻结值符合性归 token 裁决链。L9 热区：X 钮 64rpx<88rpx 铁律（:1062-1064，VP34 observe-only 未裁决，留交互侧）。L10：关键控件均有 role/aria-label。L1–L4 无不达标级偏差。",
+      "usageNotes": "核心任务「写内容→发布」：输入与发布钮同屏，2 步内完成，成功后 800ms 自动返回并清表单/清草稿（post.vue:541-561）。返回链路：X→脏表单「保留/放弃」modal（:430-462），空表单直返（VP09 证实）；leave() 栈>1 navigateBack、否则 reLaunch 村口 index（:464-472），深链直进不困死；村口为社区二级页，任意页 2 步内回 tab 成立。风险：①「发布成功」端到端本轮未证实——VP03/04/27 因自动化器 el.input is not a function 无法写输入框而 FAILED（工具限制，页面 maxlength/标题回退首行截 50 字逻辑在 :510-514）；②草稿（VP06-08/10）、话题/位置/可见范围弹层（VP15-18/20-22）、图片（VP24）、输入边界（VP26）共 17 项 FAILED+4 项 SKIPPED 均为工具限制未验证，如实标注未运行、不记为通过；③位置/提及两项用户输入后会被静默丢弃（REQ-01/02），存在「看起来填了其实没用」的迷惑成本。",
+      "functionGaps": [
+        {
+          "target": "位置随帖保存并在帖子中展示（理想图「添加位置：北京大学·未名湖校区」）",
+          "current": "UI 完整收集+草稿持久化 location，但 createTopic/createPost payload、store 签名、API 请求体均无 location 字段，提交即丢弃",
+          "gap": "位置功能端到端失效且无提示",
+          "fix": "全链路增补 location 并展示；后端短期不支持则发布时明示或隐藏入口"
+        },
+        {
+          "target": "提及好友：选择好友、解析目标并通知",
+          "current": "insertMention 仅在正文末尾插入「@」文本，无选择器/解析/通知（post.vue:129-133，全端无 mention 解析）",
+          "gap": "提及好友功能目标未实现，为纯文本装饰",
+          "fix": "好友选择弹层+发布时解析 userId 触发通知；短期降级文案「插入 @ 符号」"
+        },
+        {
+          "target": "发布图片/视频附件（理想图底栏「图片 / 视频」）",
+          "current": "仅 uni.chooseImage 图片上传，无 chooseMedia/chooseVideo",
+          "gap": "视频发布能力缺失",
+          "fix": "改 chooseMedia 支持 video 并打通上传展示链路，或书面裁剪并修订理想图口径"
+        },
+        {
+          "target": "圈子目标发帖可带话题（理想图摄影圈目标+话题行并存）",
+          "current": "后端 CreateTopicRequest 无 tags，前端以 v-if=!isCircleTarget 隐藏话题入口（VP19 证实）",
+          "gap": "圈内发帖话题能力缺失（后端制约的功能裁剪）",
+          "fix": "后端扩展 tags 后放开入口；或在契约中确认裁剪"
+        },
+        {
+          "target": "发布目标覆盖全部已加入兴趣圈",
+          "current": "目标弹层 circles.slice(0,8) 静默截断，无更多入口/提示",
+          "gap": "第 9 个及以后圈子无法被选为发布目标",
+          "fix": "移除 slice 全量渲染（面板已可滚动）或加「查看全部圈子」入口"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-VILLAGE-VILLAGE-POST.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-VILLAGE-VILLAGE-POST-req.json"
+}

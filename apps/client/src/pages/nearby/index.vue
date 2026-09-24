@@ -316,6 +316,23 @@ function goAllPosts() {
   openAppPath("/subpackages/village/village/index");
 }
 
+/** MP-R1-PAGES-NEARBY-INDEX-901：「我的人脉」接既有关系页（喜欢我的人/我的访客）——
+ *  原落点为村口帖子列表，标签承诺的关系功能缺失并误导导航 */
+function goConnections() {
+  openAppPath(ROUTES.LIKES.VISITORS_LIKES);
+}
+
+/** MP-R1-PAGES-NEARBY-INDEX-902：校园圈入口 chip 双态——本校已认证「已加入」、
+ *  本校未认证「去认证」、其他学校保持「公开浏览」（原恒为「公开浏览」，
+ *  campus store 的认证四态在本页零消费） */
+function campusChipKey(schoolName: string): string {
+  const session = sessionStore.userSession;
+  if (!sessionStore.isLoggedIn || !session) return "nearby.campusBrowse";
+  const own = session.campusName || "";
+  if (schoolName !== own) return "nearby.campusBrowse";
+  return session.campusVerified ? "nearby.campusJoined" : "nearby.campusVerify";
+}
+
 /** 2026-09-12 全站验收 Round-1（MP-R1-NEARBY-001）：本页曾保留一份本地
  * 「圈名 → 封面」副本（旧插画 circle-photo.png 等），导致同一圈子在附近页与
  * 圈子列表页/圈子主页显示不同封面（上轮 single-source 收编的漏网页面）。
@@ -388,9 +405,11 @@ function formatMemberCount(count: number): string {
           </view>
           <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
         </view>
-        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.myConnections')" @tap="goAllPosts">
+        <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.myConnections')" @tap="goConnections">
           <!-- 2026-08-25 P0：第 5 项改为"我的人脉"。
-               R3 修正：原 LOGIN_SPLIT['r10_c02'] 素材实为 WiFi 图标（切图错位），改用 social/follow（人物+加号） -->
+               R3 修正：原 LOGIN_SPLIT['r10_c02'] 素材实为 WiFi 图标（切图错位），改用 social/follow（人物+加号）
+               MP-R1-PAGES-NEARBY-INDEX-901：原 @tap=goAllPosts 使「我的人脉」与分区⑤「全部」
+               同落村口帖子列表（语义欺骗）；全库无人脉页，改接既有关系页（喜欢我的人/我的访客） -->
           <view class="nearby-entry__icon nearby-entry__icon--dynamic">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.ICONS_PROFILE.NETWORK" mode="aspectFit" alt="" />
           </view>
@@ -482,7 +501,9 @@ function formatMemberCount(count: number): string {
             <text class="campus-entry__desc">{{ t('nearby.campusPublicHint') }}</text>
           </view>
           <view class="campus-entry__status">
-            <text class="campus-entry__status-text">{{ t('nearby.campusBrowse') }}</text>
+            <!-- MP-R1-PAGES-NEARBY-INDEX-902：接入认证状态双态——本校已认证「已加入」、
+                 本校未认证「去认证」、其余「公开浏览」（原恒为「公开浏览」） -->
+            <text class="campus-entry__status-text">{{ t(campusChipKey(school.name)) }}</text>
           </view>
           <text class="campus-entry__arrow">›</text>
         </view>
@@ -547,21 +568,27 @@ function formatMemberCount(count: number): string {
         <view v-else-if="circlePosts.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.postsEmpty') }}</text>
         </view>
-        <view v-for="post in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
-          <PostCard
-            :post="post"
-            @like="onPostLike"
-            @favorite="onPostFavorite"
-            @follow="onPostFollow"
-            @open-detail="onPostDetail"
-            @open-author="onPostAuthor"
-            @open-tag="onPostTag"
-            @open-activity="onPostActivity"
-          />
-          <!-- R20（2026-09-08）：移除仅首帖出现的粉色「认识 TA」按钮——
-               规则不可感知（为何只有第一条？）导致功能感知混乱；
-               作者互动统一由 PostCard 作者行的「关注」芯片承接（与理想图一致） -->
-        </view>
+        <!-- MP-R1-PAGES-NEARBY-INDEX-013：帖子列表收进已登录分支（v-else-if 链末尾）——
+             登出/换号后 villageStore.nearbyPosts 不清理，未登录态原会在引导卡下方
+             渲染上一账号的旧帖（跨账号数据残留） -->
+        <template v-else>
+          <view v-for="post in circlePosts.slice(0, 3)" :key="post.id" class="nearby-post-item">
+            <PostCard
+              :post="post"
+              @like="onPostLike"
+              @favorite="onPostFavorite"
+              @follow="onPostFollow"
+              @open-detail="onPostDetail"
+              @open-author="onPostAuthor"
+              @open-tag="onPostTag"
+              @open-activity="onPostActivity"
+              @enroll="onPostActivity"
+            />
+            <!-- R20（2026-09-08）：移除仅首帖出现的粉色「认识 TA」按钮——
+                 规则不可感知（为何只有第一条？）导致功能感知混乱；
+                 作者互动统一由 PostCard 作者行的「关注」芯片承接（与理想图一致） -->
+          </view>
+        </template>
       </NearbySection>
 
       <view class="nearby-home__footer-space" />
@@ -735,17 +762,20 @@ function formatMemberCount(count: number): string {
 
 .circle-scroll__list {
   display: flex;
-  gap: 10rpx;
-  /* R21：卡片收窄后右内边距同步收敛，避免末卡之后留白突兀 */
-  padding: 0 20rpx 8rpx 8rpx;
+  gap: 12rpx;
+  /* R21：卡片收窄后右内边距同步收敛，避免末卡之后留白突兀
+     MP-R1-PAGES-NEARBY-INDEX-905：按 750rpx-页边距-3×gap 计算联排，4 卡恰好满宽 */
+  padding: 0 16rpx 8rpx 16rpx;
 }
 
 .circle-mini {
   /* 第五轮 R5：对齐理想图《附近的首页》——竖版 3:4 小海报卡
-   * R21：166→150rpx 收窄，保证 4 张卡完整落在视口内（此前第 4 张被右缘裁切约 1/3） */
+   * R21：166→150rpx 收窄，保证 4 张卡完整落在视口内（此前第 4 张被右缘裁切约 1/3）
+   * MP-R1-PAGES-NEARBY-INDEX-905：恢复理想图竖版海报比例（约 170×290rpx），
+   * 收敛 gap/padding 使 4 卡完整落视口、无第 5 卡残影 */
   position: relative;
-  width: 150rpx;
-  height: 200rpx;
+  width: 170rpx;
+  height: 290rpx;
   flex-shrink: 0;
   border-radius: 28rpx;
   overflow: hidden;
@@ -783,8 +813,11 @@ function formatMemberCount(count: number): string {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
+  /* MP-R1VIS-PAGES-NEARBY-INDEX-002：加强压暗 scrim——浅色插画封面上白字对比度
+     实测仅 2.22~2.67:1（WCAG 大字 3:1 / 正文 4.5:1 均不达标）；渐变提高至 60% 高、
+     末端 alpha 0.72，目标文字带实测 ≥4.5:1（理想图实测 10.44:1） */
+  height: 60%;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.72) 100%);
 }
 
 .circle-mini__info {

@@ -70,7 +70,13 @@ async function submitReply() {
  */
 function goBack() {
   campusStore.clearCurrentTopic();
-  uni.navigateBack();
+  // MP-R1-J20-002/MP-R1-REQ20-002：栈=1（分享卡/深链直开）时裸 navigateBack 必 fail
+  // → unhandledRejection 上报且点击无反馈；对齐 circles/topic-detail MP-R2-NAV-001 守卫
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.reLaunch({ url: "/subpackages/campus/campus/index" });
+  }
 }
 
 /**
@@ -89,7 +95,10 @@ const repliesHasMore = ref(true);
 
 onLoad((query) => {
   // 修复（review #17）：改用 onLoad(query) 取参，替代 getCurrentPages().options
-  topicId.value = query?.topicId ?? "";
+  // MP-R1-REQ20-003：?id= 变体兼容——固化深链参数表以 ?id= 直链，姐妹页
+  // circles/topic-detail 已双参兼容（query?.topicId ?? query?.id），本页缺参
+  // 会报「话题 ID 无效」并困死在空态
+  topicId.value = query?.topicId ?? query?.id ?? "";
 
   if (topicId.value) {
     void campusStore.fetchCampusTopicDetail(topicId.value);
@@ -106,6 +115,13 @@ function onLoadMoreReplies() {
   const nextPage = replyPage.value + 1;
   const prevCount = campusStore.replies.length;
   void campusStore.fetchCampusReplies(topicId.value, nextPage).then(() => {
+    // MP-R1-CAMPUSTOPIC-101：store 吞错不 rethrow（仅写 errorMessage）——
+    // 此前一次瞬时失败也会走到「回复数未增长」分支把 repliesHasMore 置 false，
+    // 永久停用分页且无提示。现以 errorMessage 判定：失败不推进页码、不死 hasMore。
+    if (campusStore.errorMessage) {
+      uni.showToast({ title: campusStore.errorMessage, icon: "none" });
+      return;
+    }
     replyPage.value = nextPage;
     // 下一页未返回新数据 → 没有更多
     if (campusStore.replies.length <= prevCount) {
@@ -318,8 +334,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域。
+     MP-R1-CAMPUSTOPIC-101：必须定高（height:100% 而非 min-height:100%）——容器随
+     内容增长时 flex:1 的 scroll-view 失去高度约束 → 整页滚动，@scrolltolower
+     回复翻页永不触发（对齐 campus/campus/index.vue 定高修复模式）。 */
+  height: 100%;
+  overflow: hidden;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 

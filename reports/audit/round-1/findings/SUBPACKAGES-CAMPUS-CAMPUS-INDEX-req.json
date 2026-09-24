@@ -1,0 +1,82 @@
+{
+  "round": "R1",
+  "page": "subpackages/campus/campus/index",
+  "auditor": "A4-需求对照（需求对照员-R1-SUBPACKAGES-CAMPUS-CAMPUS-INDEX）",
+  "baseline": "无页面级理想稿：素材/理想效果图/校园圈.png 经读图核对为 hub 学校圈列表页（对应 hub.vue）；本页基准降级为页面 docblock 设计意图（index.vue:2-10）+ 规格书 16 结构注释（index.vue:58/180）+ hub→index ?school= 传参契约（hub.vue:154-156 / constants/routes.ts:146）+ v3 Nearby 冻结公开浏览语义（campus.ts:434-439）",
+  "target": "路由契约（无参→hub、?school= 解码渲染与全链路透传）；头部返回键（栈底 switchTab home 兜底）+校名+认证徽章四态；未认证视角认证引导卡（→certification，返回 onShow 重取）+推荐兴趣圈 8 格（→circles）；六分类 Tab（单行横滚、高亮迁移、清空重载、viewSchool 透传、竞态 token）；话题卡（标题/相对时间/预览/头像匿名兜底/回复数）→topic-detail；触底翻页+防抖+no-more；loading/错误重试/空态三态；视角分支（公开浏览 banner、FAB 仅本校已认证→post-topic?category=）；入口链 nearby→hub→本页 ≤2 步回 tab",
+  "issues": [
+    {
+      "id": "MP-R1-CAMPUSINDEX-REQ-001",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX04-after.png（亲读：空态文案在场、右下角无 FAB）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "空态 CTA 与发布能力错位：空态文案「该分类下还没有话题，快来发布第一个吧」（index.vue:306-309 消费 campus.index.emptyTopics，zh-CN.ts:3525）在两个无发布能力的视角照常出现——① 未认证视角：FAB 为 v-if=\"isOwnCertifiedView\"（index.vue:356，=isVerified 且本校，index.vue:61-63），未认证时无任何发布入口；② 公开浏览视角（已认证看非本校）：mock 下非北京大学恒返回空列表（campus.ts:434-439），即该视角空态是常态呈现，且跨校本就不可发布。文案诱导用户寻找不存在的发布入口。视觉审查员观察 4 移交交互口径，本文件按需求/功能目标口径立案。发布功能本身在位（FAB→post-topic?category=，OP08/fix2 E 符合），缺的是文案按视角分支，故 P2 而非 P1。",
+      "evidence": "apps/client/src/subpackages/campus/campus/index.vue:306-309（空态分支无视角区分）、:356（FAB v-if=isOwnCertifiedView）、:61-63；stores/campus.ts:434-439（mock 非北京大学恒空）；i18n/locales/zh-CN.ts:3525；reports/audit/round-1/interact/exec-results.json#CX04（status=EXECUTED，空态场景）；CX04-after.png 亲读确认（空态文案+无 FAB）",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.9,
+      "ideal": "空态文案按视角三分支：未认证→引导完成校园认证后发布（可与引导卡 CTA 呼应）；公开浏览→「该校暂无公开话题」类中性文案；仅本校已认证保留「快来发布第一个吧」并可附发布引导",
+      "fix": "index.vue 空态分支改按 isOwnCertifiedView / viewSchool 三分支取文案（新增 i18n key 放入 campus.index 块内——注意 MP-R1-CAMPUSINDEX-001 的命名空间错置教训）；公开浏览分支可复用 publicBrowseTitle 语义",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-CAMPUSINDEX-REQ-002",
+      "round": "R1",
+      "page": "subpackages/campus/campus/index",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX04-after.png（亲读：标题区渲染字面量 campus.index.hotCirclesTitle / campus.index.viewMore ›）",
+      "category": "Consistency",
+      "severity": "P1",
+      "description": "未认证视角「推荐兴趣圈」功能区块的标题与「查看更多」入口文案整体缺失：页面消费 t('campus.index.hotCirclesTitle')/t('campus.index.viewMore')（index.vue:259-260），但两个 key 被错置进 campus.postTopic 块（zh-CN.ts:3549-3550、en-US.ts:3470-3471），campus.index 块（zh-CN.ts:3508-3526）无此二 key，vue-i18n 回退渲染 key 路径字面量——中文环境用户在区块标题位看到的是「campus.index.hotCirclesTitle」。交互判定员定界为 29a2b1df（round-2 audit fixes）把硬编码文案改 t() 时放错命名空间的回归，R1 全部 4 张独立帧复现。与代码审查员 MP-R1-CAMPUSINDEX-001（P1 Regression）、交互判定员 MP-R1-CAMPUSINDEX-002（UI P2）同源，本条为需求口径复认（功能区块文案缺失），矩阵合并时三者归一。",
+      "evidence": "apps/client/src/subpackages/campus/campus/index.vue:259-260（消费 campus.index.*）；i18n/locales/zh-CN.ts:3549-3550（key 实际位于 postTopic 块，grep hotCirclesTitle 全文件唯一命中）、:3508-3526（index 块无此 key）；en-US.ts:3470-3471 同构；CX03/CX04/CX10/CX12 四帧复现（CX04 亲读）；交互判定文件 SUBPACKAGES-CAMPUS-CAMPUS-INDEX-judge.json issues[0] 定界引入点",
+      "sources": ["code", "screenshot", "interaction"],
+      "confidence": 0.95,
+      "ideal": "推荐兴趣圈区块显示「热门兴趣圈」标题与「查看更多 ›」链接文案（中英环境均解析为真实文案），tap 链接→兴趣圈列表（该交互本身平行线 OP06 已证符合）",
+      "fix": "将 hotCirclesTitle/viewMore 两 key 从 campus.postTopic 块迁回 campus.index 块（zh-CN.ts 与 en-US.ts 同步），或页面改消费 t('campus.postTopic.*')；修复后补一帧未认证视角截图确认文案渲染（en 环境同步核验）",
+      "status": "待修复"
+    }
+  ],
+  "pageCompares": [
+    {
+      "route": "subpackages/campus/campus/index",
+      "baseline": "无页面级理想稿（素材/理想效果图/校园圈.png=hub 页，A3 读图同判定）；基准=页面 docblock（index.vue:2-10）+规格书 16 结构注释（index.vue:58/180）+hub→index ?school= 契约（hub.vue:154-156）+v3 Nearby 冻结公开浏览语义（campus.ts:434-439）",
+      "structureNotes": "L1 达标：hub（门页）→本页（话题列表）→topic-detail/post-topic/certification 与规格书 16 结构一致（pages.json:117-133）。L2 骨架达标（降级基准）：渐变头部+引导卡+推荐圈+Tab+列表+FAB 与 docblock 一致。L3 偏差：分类 Tab 设计意图 scroll-x 单行（index.vue:279/530-532），mp-weixin 实渲染纵向堆叠 6 全宽行（亲验 CX04 帧，占首屏约 45%，A3 -011 P1 在案）；推荐圈 8 封面窄竖条（A3 -012 P3）。L4 组件达标：话题卡七要素齐备、SafeImage 鉴权链在位（index.vue:313-343/328-336）。L5-L6 偏差：整页 token 化，唯推荐圈区块 2 key 错置命名空间渲染裸 key（REQ-002）；Tab 标签静态中文 map（campus.ts:171-178）en 环境显示中文（代码层 -006 P3）。L7-L8：loading/错误+重试/空态/no-more 四态模板齐备，空态文案无视角分支（REQ-001）；公开浏览 banner 分支代码在位（index.vue:270-274）但零运行时证据。L9：mock 双模式+real GET /campus/topics?category&page&school（campus.ts:452），401 不静默（campus.ts:542）。L10：role/aria-live/aria-label 在位（index.vue:228-229/291-309）。L3/L5 实锤偏差均为在案 P1，无新增未立案结构缺陷。",
+      "usageNotes": "核心任务健康会话全部走通（平行线次要14.json CAMPUSINDEX OP01-OP10+fix2 E，9-21 早于 HEAD 仅旁证）：浏览（OP03 ✓ 未认证+本校参数可浏览）、看详情（OP05 ✓ 1 步带 topicId）、去认证（OP07 ✓）、发布（OP08/fix2E ✓ FAB 仅本校已认证、post-topic 消费 category post-topic.vue:61-68、回流列表经 store 更新 fix2 G）、切 Tab（OP04 ✓ 清空重载）、连点竞态（OP10 ✓ token 保护）、无参守卫（OP01 ✓）。迷路风险中低：非 Tab 页唯一出口头部返回键，navigateBack/栈底 switchTab home 双路径（index.vue:98-105），入口链 nearby:253→hub→本页 2 步、回 tab ≤2 步（代码层）；兜底路径运行时 UNVERIFIED（CX06，同会话 tap 系统性失效，平行线 OP09 符合）。风险点：REQ-001 空态诱导发布无入口。实证缺口：R1 主跑 20/23 用例 UNVERIFIED（执行侧双根因：兜底 auto-reLaunch 无 query 触发设计内重定向 r1-exec.cjs:1311-1319；S06-S08 tap 派发失效）+静态截图 0 张（A3 -010 P1），HEAD 版本运行时证据待健康会话重跑闭合。",
+      "functionGaps": [
+        {
+          "target": "空态引导发布：文案与发布入口一致",
+          "current": "空态文案「快来发布第一个吧」对所有视角一致（index.vue:306-309）；FAB 仅 isOwnCertifiedView（index.vue:356）；未认证/公开浏览视角无发布入口，公开浏览空态为常态（campus.ts:434-439 恒空）",
+          "gap": "文案-能力错位（发布功能本身在位，缺视角分支文案）→ Issue MP-R1-CAMPUSINDEX-REQ-001（Function P2）",
+          "fix": "空态文案按 isOwnCertifiedView/viewSchool 三分支；新增 key 放 campus.index 块"
+        },
+        {
+          "target": "推荐兴趣圈区块：标题与查看更多文案",
+          "current": "消费 t('campus.index.hotCirclesTitle')/viewMore（index.vue:259-260）但 key 错置 postTopic 块（zh-CN.ts:3549-3550），渲染裸 key 字面量（4 帧复现，CX04 亲读）",
+          "gap": "区块标题与更多入口文案整体缺失（交互本身符合）→ Issue MP-R1-CAMPUSINDEX-REQ-002（P1，与代码 001/交互判定 002 同源归一）",
+          "fix": "key 迁回 campus.index 块（zh/en 同步）或页面改消费 postTopic 命名空间"
+        },
+        {
+          "target": "六分类 Tab：单行横向滚动导航形态",
+          "current": "设计意图 scroll-x 单行；mp-weixin 实渲染纵向 6 全宽行、横滚失效（A3 -011 P1 亲验同帧）；六 Tab 功能（高亮迁移/清空重载/竞态）健康会话符合（OP04/OP10）",
+          "gap": "形态破坏但功能可达（纵排后 6 Tab 全可见可点），归 A3 MP-R1-CAMPUSINDEX-011，本文件不重复立案",
+          "fix": "scroll-view 内包 inner flex 层（A3 -011 fix）；随修回填 -005 scrollLeft 滚入视野"
+        },
+        {
+          "target": "触底翻页（TOPIC_PAGE_SIZE=10）",
+          "current": "代码链在位（index.vue:167-177 防抖+campus.ts:444-465 分页+-009 有界高度已验证）；no-more 态运行时证实（CX14）；翻页 append 运行时不可达——mock 每分类仅 2-3 条<10（CX13 UNVERIFIED）",
+          "gap": "证据环境缺口而非应用缺陷：mock 数据量不足使翻页分支在本轮永不可实证",
+          "fix": "mock 种子补 ≥10 条/分类，健康会话重跑 CX13 取 append+防抖证据"
+        },
+        {
+          "target": "公开浏览 banner（已认证+非本校）与认证徽章四态、错误重试、返回兜底的运行时实证",
+          "current": "代码全部在位（index.vue:270-274/134-161/90-92/98-105）；运行时零证据（CX15/16/17 落 hub 或身份 MISMATCH，CX05/06 tap 失效）——判定文件仲裁均非应用缺陷",
+          "gap": "验证缺口：real 已认证身份未建立（login A userId=user-1001 MISMATCH）+兜底无参入口落 hub，两大视角（已认证本校/公开浏览）从未上屏取证",
+          "fix": "带 ?school= 参数+real 认证数据预置重跑 CX05/06/15/16/17，并按 A3 -010 fix 回填静态五态截图"
+        }
+      ],
+      "verdict": "基本达标",
+      "file": "reports/audit/round-1/page-compare/SUBPACKAGES-CAMPUS-CAMPUS-INDEX.md"
+    }
+  ],
+  "findingsFile": "reports/audit/round-1/findings/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-req.json"
+}

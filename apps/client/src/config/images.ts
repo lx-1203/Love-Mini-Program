@@ -518,6 +518,9 @@ export const IMAGE_PATHS = {
     LAB:         ICONS_BASE + '/common/robot.svg',          // 🔬 实验室
     SETTINGS:    ICONS_BASE + '/common/settings-gear.svg',   // ⚙️ 设置
     HEART_FILLED:ICONS_BASE + '/common/heart-filled.svg',  // 💝/💕 爱心填色
+    // MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-101：白色填充变体——
+    // mp <image> 不响应 CSS color 染色，粉圆底上直引粉色 SVG 渲染为同色系不可辨
+    HEART_FILLED_WHITE: ICONS_BASE + '/common/heart-filled-white.svg',
     MOBILE:      ICONS_BASE + '/common/mobile.svg',         // 📱 手机
     KEY:         ICONS_BASE + '/common/key.svg',            // 🔑 钥匙
     CLOCK:       ICONS_BASE + '/common/clock.svg',          // 🕐 时钟

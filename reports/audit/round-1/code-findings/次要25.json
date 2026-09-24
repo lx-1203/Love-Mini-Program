@@ -1,0 +1,241 @@
+{
+  "meta": {
+    "round": "R1",
+    "reviewer": "代码审查员-R1-次要25（Layer A 只读代码审查）",
+    "scope": [
+      "subpackages/setup/dev/index（开发调试页，#ifdef DEV）",
+      "subpackages/setup/showcase/index（全功能展示页）",
+      "subpackages/support/feedback/index（意见反馈）",
+      "subpackages/discover/discussions/index（讨论圈）",
+      "subpackages/discover/activities/index（活动列表）",
+      "subpackages/legal/privacy/index（隐私政策）",
+      "subpackages/legal/agreement/index（用户协议）",
+      "subpackages/market/detail/index（商品详情）"
+    ],
+    "method": "8 个页面 .vue 全文逐行阅读（共 3867 行）+ 直接引用的 store（activity.ts 全文/feedback.ts 全文）、utils（navigation/debounce/haptic/time/media）、services（http.ts 错误形状）、config（images/env/showcase/legal-texts/navigation/pages.json）、组件（AppShell/SkeletonBlock/BottomActionBar/EmptyState/LegalTextPage props）交叉核对；i18n key 抽样双语核对（非全量比对）；硬约束逐条 grep（:hover/grid/空catch/import.meta.env.DEV/emoji/backdrop-filter/color-mix）；#ifdef DEV 注册机制经 package.json uni-app 自定义平台定义验证。未运行构建、未截图（A2 只读角色）。"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SHOWCASE-001",
+      "round": "R1",
+      "page": "subpackages/setup/showcase/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Function",
+      "severity": "P1",
+      "description": "展示页「村口」条目标记 isTab:true，点击走 uni.switchTab，但村口不是 tabBar 页：pages.json tabBar.list 仅 5 个 tab（home/nearby/discover/messages/profile，pages.json:396-422），单一真相源 config/navigation.ts appTabs 亦无 village（navigation.ts:34-72）。switchTab 对非 tabBar 页必失败（fail 无处理）→ 演示者在展示版主入口点击「村口」无任何响应。dev 页 198-199 行注释记录过 likes 的完全相同缺陷（「switchTab 仅接受 tabBar 页」）并已修 likes，但 showcase 的村口条目漏修。",
+      "evidence": "showcase/index.vue:103 { path: \"/subpackages/village/village/index\", ..., isTab: true }；:165-171 navigate() isTab 分支调 uni.switchTab 无 fail；pages.json:396-422 tabBar.list 五项无 village；config/navigation.ts:34-72；佐证：pages/home/index.vue:316 对同一目标走 openAppPath（isTabPath 判定非 tab → navigateTo）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "isTab 标记与 pages.json tabBar.list/appTabs 单一真相源一致；村口应为 isTab:false（navigateTo）。更优：navigate() 直接复用 openAppPath，由 isTabPath 统一判定，杜绝再次漂移。",
+      "fix": "showcase/index.vue:103 删除 isTab: true；或将 :165-171 navigate() 改为 openAppPath(item.path)。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DEV-001",
+      "round": "R1",
+      "page": "subpackages/setup/dev/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "dev 导航页「村口」条目同样 isTab:true → uni.switchTab 失败且无 fail 回调，DEV 构建中点击「村口」无响应（与 MP-R1-SHOWCASE-001 同根因，仅因页面仅 DEV 构建注册而降级 P2）。本页 198-199 注释自证该缺陷类别已出现过一次（likes），村口为漏网条目。",
+      "evidence": "dev/index.vue:201 { path: \"/subpackages/village/village/index\", title: \"村口\", group: \"主包\", isTab: true }；:229-235 navigateTo() switchTab 分支无 fail；pages.json:396-422 tabBar.list 无 village。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "dev 页所有 isTab 标记与 tabBar.list 一致（仅 discover/messages/profile/home 为 tab；本页列表未含 home 无妨）。",
+      "fix": "dev/index.vue:201 删除 isTab: true，或 navigateTo() 改用 openAppPath(item.path)。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DEV-002",
+      "round": "R1",
+      "page": "subpackages/setup/dev/index + subpackages/setup/showcase/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Architecture",
+      "severity": "P3",
+      "description": "两页各自手写「isTab 分支 + 裸 uni.switchTab/uni.navigateTo」，与 utils/navigation.ts 的 openAppPath 完全重复且劣化：openAppPath 已实现 isTabPath 权威判定（对齐 appTabs）、页面栈满(>=10层) redirectTo 兜底、fail 回调（navigation.ts:25-33,89-112）；两页手写版三者皆无 → 既是 MP-R1-DEV-001/SHOWCASE-001 功能缺陷的根因，也是 checklist「未处理 Promise 拒绝/静默失败」的来源（switchTab 失败在 H5 端产生未处理 Promise 拒绝）。discussions 页同场景已正确复用 openAppPath（discussions/index.vue:13,45-47），两页为存量例外。",
+      "evidence": "dev/index.vue:229-235；showcase/index.vue:164-171；对照 utils/navigation.ts:25-33（isTabPath）、:97-111（栈满 redirectTo + fail 兜底）；discussions/index.vue:45-47 正确用法。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "页面不做 tab/非 tab 判定，统一经 openAppPath 跳转；仅展示「Tab」角标时可保留 isTab 字段但只用于 UI，不用于路由分支。",
+      "fix": "两页 navigate()/navigateTo() 函数体替换为 openAppPath(item.path)（从 ../../../utils/navigation 导入）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-FEEDBACK-001",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "H5 端反馈图片上传必败：isValidImageExt 要求 tempPath 以 .jpg/.jpeg/.png/.webp 结尾（:128-131），而 uni.chooseImage 在 H5 返回 blob: URL（无扩展名）。同文件 :117 注释自证「H5 端 filePath 是 blob: URL」，utils/media.ts:157-162 亦将 blob: 作为一等 scheme 处理；对照 pages/profile/index.vue:928-942 完全同流程（chooseImage → buildFileLike → upload）未做扩展名校验、可正常上传。故 H5 选图后必然命中 :204-211 的「上传失败」toast，功能9 在 H5 全灭；mp-weixin（wxfile://tmp_x.jpg 带 .jpg 后缀——.jpg 在 ALLOWED_EXTS 中）不受影响。",
+      "evidence": "feedback/index.vue:114-131（buildFileLike 注释明言 blob: URL + isValidImageExt 实现）、:204-211（校验失败 toast）；utils/media.ts:157-162；pages/profile/index.vue:928-942（无扩展名校验的对照实现）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "扩展名/类型校验的数据源应为 res.tempFiles[0] 的 name/type（H5 File 对象具备），而非 blob: 路径后缀；或 H5 端（#ifdef H5）跳过路径后缀校验，仅保留 5MB 大小校验。",
+      "fix": "chooseImageInternal success 回调中：const raw = tempFilesRaw[0] as { name?: string; type?: string }; 用 raw?.name ?? tempPath 参与校验，type 以 image/ 前缀兜底判断。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-ACTIVITIES-001",
+      "round": "R1",
+      "page": "subpackages/discover/activities/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "快捷筛选（今天/周末）以中文关键词子串匹配「展示文案」scheduleText 实现：filteredActivities 内 text.includes(\"今天\")||includes(\"今晚\")||includes(\"今日\")、includes(\"周末\")||includes(\"周六\")||includes(\"周日\")（:51-52）。scheduleText 在 mock 模式为硬编码中文（stores/activity.ts:66-108「周四 19:00-20:00」等），real 模式为后端返回展示文案（activity.ts:190 mapToActivityItem）。业务筛选耦合展示文案：en-US 下若后端/mock 文案本地化则筛选恒空（仅剩 quickEmpty 空态）；后端改文案格式同样碎裂。当前靠「后端恒中文」这一未成文约定侥幸工作。",
+      "evidence": "activities/index.vue:46-54；stores/activity.ts:66-108（mock 中文 scheduleText）、:190、:357/:395（real 模式直传后端 scheduleText）。",
+      "sources": ["code"],
+      "confidence": 0.65,
+      "ideal": "筛选基于结构化日期字段（如后端 ActivityView 增加 startTime/date 或客户端视图模型解析出 dayOfWeek），展示文案仅用于渲染。",
+      "fix": "短期： ActivityItem 增加可选结构化字段并优先使用；长期推动契约增加活动开始时间字段。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-ACTIVITIES-002",
+      "round": "R1",
+      "page": "subpackages/discover/activities/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "活动分类标签底色使用 color-mix()（:784 background: color-mix(in srgb, var(--c-primary, #36C99A) 12%, transparent)），mp-weixin WebView 内核不支持该函数，声明被丢弃 → 分类标签在小程序端无底色（仅剩文字）。项目自身已在 components/common/Toast.vue:271 注明「使用 rgba 替代 color-mix」的兼容约定，本页违反。同时引用的 --c-primary 全仓未定义（styles/tokens.scss 与 theme/design-variables.scss 均无 --c-primary: 定义），颜色实际恒走 fallback 硬编码 #36C99A，违反设计 token 强制。tools/activities/detail.vue:535 存在相同代码（非本批次页面，顺带提示）。",
+      "evidence": "activities/index.vue:783-784；components/common/Toast.vue:271（项目兼容约定自证）；grep 全仓 --c-primary: 定义 0 命中（styles/tokens.scss、theme/design-variables.scss）。",
+      "sources": ["code"],
+      "confidence": 0.85,
+      "ideal": "使用已定义 token（如 --c-brand-500/--c-bg-brand）或按 Toast.vue 约定改用 rgba() 硬值注释说明；删除未定义 token 引用。",
+      "fix": "background 改为 var(--c-bg-brand, rgba(54, 201, 154, 0.12)) 或 rgba(54,201,154,0.12)；color 改 var(--c-brand-600, #36C99A)。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SHOWCASE-002",
+      "round": "R1",
+      "page": "subpackages/setup/showcase/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "6 个分组的强调色条 accent 全部为硬编码 hex 渐变（\"linear-gradient(135deg, #3B9DE5, #5BC0DE)\" 等），经 :style 内联生效（:223），完全绕过设计 token 体系；深色模式下这些亮色条不随主题适配。文件 :282 注释「R4 审计：品牌蓝渐变 #3B9DE5/#5BC0DE/#7C6CF0 无对应 design token，保留原值」——已有文档化豁免，故本条登记为「保留」，建议后续落 token（accent 渐变本质可由两个 token 色组合）。",
+      "evidence": "showcase/index.vue:48,63,76,91,101,121,135（accent 硬编码）、:223（:style=\"{ background: group.accent }\"）、:282-284（豁免注释与另一处同值硬编码）。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "accent 改引用 token 渐变（新增 --g-accent-blue 等）或在 tokens.scss 落定义后引用；内联 style 仅承载 token 变量。",
+      "fix": "若维持豁免：保持现状并保留注释；否则新增渐变 token 后替换 7 处 hex。",
+      "status": "保留"
+    },
+    {
+      "id": "MP-R1-FEEDBACK-002",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "goHistory/goDetail 共 4 处跳转 fail 静默吞错（fail: () => { /* 跳转失败时静默处理 */ } 与 .catch(() => {})），页面栈满（小程序 10 层上限）或目标页异常时点击「查看历史」/列表项无任何反馈；注释自称「页面栈已满」场景即静默。utils/navigation openAppPath 已实现栈满 redirectTo 兜底 + fail 回调（navigation.ts:97-111），本页手写 navigateTo 未复用。命中 checklist「空 catch/静默失败」。",
+      "evidence": "feedback/index.vue:368-381（goHistory MP 分支 fail 空体 + 非 MP 分支 .catch 空体）、:389-404（goDetail 同）；对照 utils/navigation.ts:97-111。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "跳转失败给出轻提示（toast「页面打开失败」）或复用 openAppPath 的兜底；至少 console.warn 留痕。",
+      "fix": "goHistory/goDetail 改为 openAppPath(HISTORY_PAGE_URL 或 url)，删除 #ifdef 分支；或 fail 回调内 uni.showToast。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DISCUSSIONS-001",
+      "round": "R1",
+      "page": "subpackages/discover/discussions/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "AppShell 无 currentTab prop（Props 接口仅 variant/title/subtitle/showBack/bgVariant/bgImage/fixed/safeArea/tabBarSafe/showTabBar），discussions 传入的 current-tab=\"likes\" 为无效透传属性（落到根节点 DOM attr，死代码且误导维护者）。同时本页经 navigateTo 打开（非 tab 页）却未像 activities/feedback 那样传 :show-tab-bar=\"false\"，tabBarSafe 默认 true 生效 → 页面底部多出一段为不存在的 tabBar 预留的安全留白。",
+      "evidence": "discussions/index.vue:71-76（current-tab=\"likes\"，无 show-tab-bar）；components/layout/AppShell.vue:22-45（Props 接口无 currentTab）、:42-43/:109-110（showTabBar→tabBarSafe 映射逻辑）。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "删除无效 current-tab；非 tab 页统一 :show-tab-bar=\"false\"（与 feedback/index.vue:420、activities/index.vue:339 一致）。",
+      "fix": "discussions/index.vue:74 删除 current-tab=\"likes\"，AppShell 增加 :show-tab-bar=\"false\"。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-DEV-003",
+      "round": "R1",
+      "page": "subpackages/setup/dev/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Data",
+      "severity": "P4",
+      "description": "dev 导航页分组数据失真：今日已看/喜欢/村口/发布帖子/帖子详情/兴趣圈×4/每日一问/会话共 10 个子包页面（/subpackages/discover-extra|village|circles|tools|chat/...）group 均标为「主包」，与 :212 起正确的「子包页面」注释及 pages.json 分包结构矛盾，误导测试导航（该页定位即「测试和研究所有页面」）。",
+      "evidence": "dev/index.vue:197,200-211（group: \"主包\" 但 path 均为 /subpackages/*）；pages.json:70-347（对应 subPackages root 定义）。",
+      "sources": ["code"],
+      "confidence": 0.95,
+      "ideal": "group 按实际分包标注（发现子包/村口子包/圈子子包/工具子包/会话子包），或直接由 pages.json 生成不再手维护。",
+      "fix": "修正 :197-211 各条目 group 字段。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-ACTIVITIES-003",
+      "round": "R1",
+      "page": "subpackages/discover/activities/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "i18n 双轨：本页用全局 import { t } from \"@/i18n\"（:10，注释自认「同 session.ts 模式」），同批其余页面均用 useI18n()；且 WEEK_DAY_LABELS 在 setup 同步一次性求值（:152-160），运行中切换语言后星期标题不刷新，需重进页面（monthTitle 为 computed 不受影响，行为不一致）。全局 t 亦绕过 vue-i18n 组件作用域，一致性与可测试性劣化。",
+      "evidence": "activities/index.vue:9-10、:152-160；对照 feedback/index.vue:23、discussions/index.vue:16-18（useI18n 用法）。",
+      "sources": ["code"],
+      "confidence": 0.8,
+      "ideal": "统一 useI18n()；WEEK_DAY_LABELS 改 computed(() => [t(...), ...]) 随语言响应。",
+      "fix": "const { t } = useI18n()；const WEEK_DAY_LABELS = computed(() => [...七日 t key...])，模板 v-for 改用 WEEK_DAY_LABELS.value（模板内自动解包）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-FEEDBACK-003",
+      "round": "R1",
+      "page": "subpackages/support/feedback/index",
+      "screenshot": "无（代码层审查，证据为源码行号）",
+      "category": "UX",
+      "severity": "P4",
+      "description": "两处文案缺陷：① 删除图片确认框 title 与 content 传同一 key t(\"feedback.imageRemove\")（:275-277），弹窗标题与正文逐字重复，且该 key 语义为「删除图片」动作词而非确认问句；② 标题/内容为空时提交校验 toast 用通用 t(\"feedback.submitFailed\")（:313-318），用户无法得知是「必填未填」而非系统失败。",
+      "evidence": "feedback/index.vue:275-277（uni.showModal title===content）；:311-320（空值分支 toast submitFailed）。",
+      "sources": ["code"],
+      "confidence": 0.9,
+      "ideal": "① content 用确认问句文案（如「确定删除这张图片吗？」）；② 空值分支用「请填写标题和内容」类专属文案。",
+      "fix": "新增 i18n key（feedback.imageRemoveConfirm / feedback.requiredFields）并分别替换。",
+      "status": "待修复"
+    }
+  ],
+  "coverage": [
+    {
+      "page": "subpackages/setup/dev/index",
+      "filesRead": ["subpackages/setup/dev/index.vue（全文 521 行）", "config/env.ts（isDev 导出 :139）", "package.json:53-63（uni-app 自定义平台 dev-debug，define.DEV=true → #ifdef DEV 注册机制合规）", "pages.json:272-277（dev/index #ifdef DEV 注册）", "constants/storage-keys.ts:108（VIP_SIM_ENABLED）", "config/images.ts:477-532（ICONS_EMOJI.LOCATION/WARNING/CALENDAR 存在）"],
+      "checks": "架构/命名：分组数据失真 → MP-R1-DEV-003。状态管理：devVipSim 读写均有 isDev 守卫（R4-00173）✓；superLoginNavTimer onUnmounted 清理 ✓。API 错误处理：loginSuperAccount try/catch+toast ✓；catch(_e){//ignore} 均为环境变量读取降级，非用户可见静默失败。异步流程：一键登录 busy 锁 + 跳转定时器清理 ✓。样式：全 token/var + fallback，无 :hover（:active 包 #ifdef H5 ✓）、backdrop-filter 包 #ifdef H5（:390-395 ✓）、无 grid、无 emoji。小程序专项：onShow 刷新登录态 ✓；min-height:100% 替代 100vh（mp 适配 ✓）；--statusbar JS 注入（R11-G2）✓。导航：MP-R1-DEV-001/002。"
+    },
+    {
+      "page": "subpackages/setup/showcase/index",
+      "filesRead": ["subpackages/setup/showcase/index.vue（全文 513 行）", "config/showcase.ts（全文 77 行，isShowcaseMode 构建期常量）", "pages.json 全量（40 条目标路径逐一对照，全部已注册 ✓；isTab 对照 tabBar.list:396-422）", "config/navigation.ts（appTabs 单一真相源 :34-72）", "i18n zh-CN.ts:2217-2402 / en-US.ts:2167-2178（showcase.groupCount/tabTag/campusCert/bills/feedbackHistory/promoCode 双语抽样 ✓）"],
+      "checks": "架构：分组配置数据驱动 ✓。i18n：R4-00039 全收敛，双语 key 抽样无缺失。状态管理：onShow 非 showcase 构建回落 discover（防正式包泄露）✓；goBack fail 兜底 ✓。导航：MP-R1-SHOWCASE-001（village isTab）+ MP-R1-DEV-002（裸跳转无 fail）。样式：MP-R1-SHOWCASE-002（accent 硬编码，已豁免→保留）；chipBg 均为 var(token, fallback) 合规模式 ✓；无 :hover/grid/emoji，无 backdrop-filter。"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "filesRead": ["subpackages/support/feedback/index.vue（全文 819 行）", "stores/feedback.ts（全文 103 行：submit* 内部 await this.load() → 提交后列表刷新闭环，页面无需自行刷新 ✓；onMounted-only 加载可接受——history 页 grep 无 delete/withdraw 变更操作）", "services/api.ts（UniUploadFileLike 契约 :77-180）", "view-models/feedback.ts:7-26、utils/time.ts:188,358、utils/haptic.ts:36-72（全部导出存在 ✓）", "utils/privacy.ts 引用（ensurePrivacyAuthorized）", "config/images.ts:140,184,265（CAMERA/BACK/CLOSE_WHITE_SVG 存在 ✓）"],
+      "checks": "API 错误处理：uploadImage/submit 全 try-catch + toast + errorMessage ✓；store 层已吞错返回 bool，页面 catch 为兜底（注释自知）✓。异步流程：isUploading/isSubmitting 防重锁 ✓；隐私授权前置（Task 0.2.4）✓；用户取消 chooseImage 静默（合理）✓。样式：无 :hover（hover-class ✓）、无 grid（image-grid 用 flex-wrap ✓）、无 emoji、token 合规。事件接线：BottomActionBar @primary ✓、图片删除 @tap.stop 防冒泡 ✓、defineExpose(EmptyState) 为 noUnusedLocals 变通（有注释）✓。功能：MP-R1-FEEDBACK-001（H5 blob 扩展名校验矛盾）、FEEDBACK-002（4 处静默 fail）、FEEDBACK-003（文案）。FEEDBACK_CONTENT_MAX=5000 对齐契约（R4-00118）✓。"
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "filesRead": ["subpackages/discover/discussions/index.vue（全文 157 行）", "components/layout/AppShell.vue（Props :22-45、shell__body :353-359）", "components/common/SkeletonBlock.vue（variant/rows/label props ✓）、BottomActionBar.vue（primary/secondary emits ✓）、EmptyState.vue（type='no-data' ✓）、StatusState.vue 引用", "utils/navigation.ts（openAppPath/isTabPath :25-112）", "i18n zh-CN.ts:773-787 / en-US.ts:683-692（discussions.* 全 key 双语 ✓）"],
+      "checks": "异步流程：onShow 加载 + loading/error/empty 三态 + 重试入口 ✓；错误 toast+内联双通道（轻微重复，可接受）。API 错误处理：catch 设置 error 并 toast ✓ 无静默。组件事件接线：BottomActionBar @primary/@secondary ✓。样式：token 合规，无违例。AppShell 接线：MP-R1-DISCUSSIONS-001（无效 current-tab + 缺 show-tab-bar=false）。页面栈：openPath 复用 openAppPath ✓（本批最佳实践）。"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "filesRead": ["subpackages/discover/activities/index.vue（全文 1156 行）", "stores/activity.ts（:160-243 fetchActivities/fetchMoreActivities 吞错不 reject → onRefresherRefresh try/finally 与 :353 retry 按钮直接调用 store action 均安全 ✓；:252-279 enrollActivity 并发守卫+返回 bool+errorMessage ✓）", "utils/debounce.ts:34-63（cancel 存在，onUnload 调用 ✓）", "config/images.ts（ICONS_EMOJI.LOCATION/CALENDAR、ICONS_COMMON.SCHEDULE_SVG ✓）", "styles/tokens.scss + theme/design-variables.scss（token 定义核对）", "i18n zh:695-719 / en:600-625（activities.* 抽样双语 ✓）"],
+      "checks": "状态管理：refresherTriggered 响应式 ref + finally 复位 ✓；submittingId+store.enrolling 双层防重 ✓；enrollCount/enrollmentCount 别名同步（R4-00182）✓。样式：日历 7 列用 flex+calc(100%/7) 无 grid ✓；H5 宽屏双列包 #ifdef H5 ✓；无 :hover/emoji；MP-R1-ACTIVITIES-002（color-mix + 未定义 --c-primary）。scroll-view：flex:1+height:0+min-height:50vh 兜底（MP-R1-DISCOVERACTIVITIES-001 已修）✓。事件：@tap.stop 报名按钮防冒泡（编译为 catchtap）✓。onShow 刷新 ✓、onUnload 取消防抖 ✓。遗留：MP-R1-ACTIVITIES-001（中文关键词筛选）、ACTIVITIES-003（i18n 双轨/标签不响应语言切换）。"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "filesRead": ["subpackages/legal/privacy/index.vue（全文 20 行，薄壳）", "components/common/LegalTextPage.vue（props legalType/i18nPrefix :33-37 匹配 ✓）", "config/legal-texts.ts:33-37（LegalTextType.PRIVACY_POLICY 枚举 ✓）"],
+      "checks": "架构重复：R4-00050 已收敛到 LegalTextPage，本页 0 逻辑 ✓；i18n-prefix=legal.privacyPolicy 与组件 `${i18nPrefix}.title` 用法一致 ✓；无新问题。"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "filesRead": ["subpackages/legal/agreement/index.vue（全文 20 行，薄壳）", "components/common/LegalTextPage.vue（同上）", "config/legal-texts.ts:33-37（LegalTextType.USER_AGREEMENT 枚举 ✓）"],
+      "checks": "同 privacy：去重完成、props/枚举匹配、无新问题 ✓。"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "filesRead": ["subpackages/market/detail/index.vue（全文 662 行）", "services/http.ts:85-99,594-623（EnhancedApiError 携带 status → :223-235 404 判定链有效 ✓）", "stores/app-config.ts（isCommerceOn；:275-282 watch 封存竞态补偿 = MP-R1-次要24-1 已修复，本轮验证通过 ✓；:263-265 productId 先记录再判封存 = MP-R2-次要22-002 已修复 ✓）", "config/images.ts:106-111,182,217（PRODUCTS.TICKET_1/2、MERCH_1/2、FOOD_1/2、BACK、LOCK_SVG ✓）", "composables/useMenuButtonRect（--statusbar 注入 ✓）"],
+      "checks": "API 错误处理：loading/error/notFound/sealed 四态 + 重试/返回按钮完备，v-if 链无空白页（含封存竞态补偿 watch）✓。异步流程：loadProduct 状态复位 ✓；goBack 页面栈判断+switchTab 兜底（/pages/home/index 为合法 tab ✓）。样式：safe-top 用 --statusbar var+env 双写 ✓；底部购买栏 position:fixed + env(safe-area-inset-bottom) + 160rpx 内容留白防遮挡 ✓；无 :hover（hover-class ✓）/grid/emoji。scroll-view：product-scroll flex:1 于 min-height:100% flex 列容器，短内容铺满、长内容内部滚动，无阻塞问题（观察项）。未发现新问题。"
+    }
+  ]
+}

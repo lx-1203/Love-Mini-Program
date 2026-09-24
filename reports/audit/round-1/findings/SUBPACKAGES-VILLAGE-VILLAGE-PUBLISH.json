@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "round": "R1",
+    "auditor": "A3 视觉审查员（Layer A3，截图与证据的视觉/布局/状态审查）",
+    "date": "2026-09-23",
+    "page": "subpackages/village/village/publish（村口·发布帖子）",
+    "evidenceManifest": {
+      "path": "reports/audit/round-1/screenshot-manifest.json",
+      "gitSha": "aefd8a72",
+      "currentHead": "aefd8a72f2231e8df7affd09004c14c3e4e73745",
+      "match": true,
+      "buildMode": "build:mp-weixin:mock",
+      "verdict": "证据与当前代码一致，未过期"
+    },
+    "screenshotsReviewed": [
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__交互后.png",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__弹层态.png",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__校验错误.png",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__键盘弹起-输入后.png",
+      "reports/screenshots/round-1-tour/B/subpackages_village_village_publish__默认.png（跨身份一致性抽查）",
+      "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（同构页并排一致性对照）",
+      "reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png（含 3x 局部放大取证，临时裁剪件已清理）"
+    ],
+    "idealReference": "素材/理想效果图/发布帖子页面.png（L1-L10 对照）",
+    "codeFindingsNotDuplicated": "reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json（MP-R1-PUBLISH-101..116 全读，本报告不重复立项）"
+  },
+  "issues": [
+    {
+      "id": "MP-R1-SVVP-001",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png（目标卡图标）；reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png（friends 目标同图标，3x 放大核验）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "「发布到」目标卡在非圈子目标下复用校园建筑图标，图文语义不符：「个人动态」（general，默认公开·所有人可见）与「个人日常」（friends，仅互相喜欢或关注我的人可见）两种目标卡均显示 school.svg（带窗格竖条的教学楼图形），暗示『校园/机构』范畴而非个人内容，friends 语义下尤为矛盾。代码层 MP-R1-PUBLISH-111 仅立项 circle 分支（恒用 CIRCLE_COVERS.DEFAULT），v-else 分支的校园图标未覆盖；属 MP-R2-VILL-013 图文不符族在本页的另一存活实例。",
+      "evidence": "publish.vue:605 `<image v-else class=\"publish-to__avatar-emoji\" :src=\"IMAGE_PATHS.ICONS_EMOJI.SCHOOL\"`（general 与 friends 共用该分支）；config/images.ts:563 `SCHOOL: ICONS_BASE + '/common/school.svg'`（已读文件内容：rect 4,3-20,21 + 三组窗格竖线 = 教学楼图形）；A/默认 截图目标卡与 PUB27-after 放大特写均可见该图标；理想图「发布帖子页面.png」仅提供圈场景卡（摄影圈照片头像），无个人目标卡对照基准，故降为 P4 而非 P3。",
+      "sources": ["screenshot:reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png", "screenshot:reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png", "code:apps/client/src/subpackages/village/village/publish.vue:605", "code:apps/client/src/config/images.ts:563"],
+      "confidence": 0.6,
+      "ideal": "个人动态/个人日常目标卡使用与语义一致的图形（个人/主页/心形系或品牌吉祥物小件），与圈场景卡（圈 icon/照片）、校园场景（校徽）形成可区分的三态",
+      "fix": "publish.vue:605 的 v-else 分支改用语义匹配图标；若暂无合适素材，至少 friends 入口（个人日常）不应使用校园建筑图形",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-SVVP-002",
+      "round": "R1",
+      "page": "subpackages/village/village/publish",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png（贴士 ✕ 与头部 X 热区）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "三个交互目标热区低于 88rpx（44px）标准：①顶部关闭 X 容器 64rpx（32px）；②「发帖小贴士」关闭 ✕ 无任何容器尺寸样式——.publish-tip__close 类在样式区无规则，热区收缩为 28rpx（14px）图标本体，为全页最小热区；③九宫格图片移除钮 40rpx（20px）。「发布」主按钮高约 58rpx（29px）同样未达 88rpx（头部胶囊 CTA 属常见范式，列出备查不单独立项）。",
+      "evidence": "publish.vue:776 `.publish-header__close { width: 64rpx; height: 64rpx; }`；publish.vue:744 贴士关闭 view 仅 `class=\"publish-tip__close press-feedback\"`，样式区 852 行仅有 `.publish-tip__close-icon { width: 28rpx; height: 28rpx; }`、无容器尺寸/padding 规则；publish.vue:834 `.publish-image__remove { width: 40rpx; height: 40rpx; }`；publish.vue:786 submit 为 `padding: 12rpx 36rpx` + 28rpx 文字 ≈58rpx 高。press-feedback 为按压缩放动画（styles/_mixins.scss:86，scale 0.96），不贡献热区。A/默认 截图中贴士 ✕ 明显小于行项其他可点元素。",
+      "sources": ["screenshot:reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png", "code:apps/client/src/subpackages/village/village/publish.vue:776", "code:apps/client/src/subpackages/village/village/publish.vue:744", "code:apps/client/src/subpackages/village/village/publish.vue:852", "code:apps/client/src/subpackages/village/village/publish.vue:834"],
+      "confidence": 0.8,
+      "ideal": "全部可点元素热区 ≥88rpx（44px）：头部 X 扩至 88rpx；贴士 ✕ 用 88rpx 透明热区容器包裹（视觉图标可保持 28rpx）；图片移除钮视觉 40rpx 但命中区外扩至 ≥88rpx",
+      "fix": ".publish-tip__close 补 width/height:88rpx + 居中；.publish-header__close 扩至 88rpx；.publish-image__remove 外扩命中区（padding 或透明 ::after），注意顶格图片时热区不越出卡片边界",
+      "status": "待修复"
+    }
+  ],
+  "observations": [
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "五态静态截图（默认/交互后/弹层态/校验错误/键盘弹起-输入后）逐张已审 + B 身份默认态抽查：L1 结构顺序与理想图一致（发布到→正文→图格→话题→位置→提及→谁可以看→小贴士），L2-L3 行项图标/右侧 meta/箭头位置一致。两处与理想图的结构差异均为有据可查的刻意决策，不立项：①正文计数 0/500（理想 0/1000）——constants/village.ts:15 注明与 stores/village MAX_CONTENT_LENGTH(500)/后端约束对齐是既定修复（MP-R1-PUBLISH-012），显示 0/1000 反而诱导超限必败；②底部工具条缺失——publish.vue:752 注明「2026-09-06：底部工具栏已按需求移除（与上方行项重复，且无实际作用）」，其功能由行项+图格覆盖；理想图含工具条，此差异已按需求注释处理，仅提示产品确认移除为终态。附带：被移除工具条的 .publish-toolbar/.publish-tool 死样式残留于 856-859 行（无视觉表现，随代码清理）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png；素材/理想效果图/发布帖子页面.png；apps/client/src/constants/village.ts:15；apps/client/src/subpackages/village/village/publish.vue:752"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "「校验错误」静态截图与默认态无差异、无可见 toast，但交互证据 PUB08（status EXECUTED）toast 数组记录 showToast「请输入内容」成功触发——系截图未抓到 1.5s toast 时窗，非缺陷。「键盘弹起-输入后」截图输入成功（巡检输入test123，计数 11/500 逐字核对正确，发布钮由禁用薄荷态翻为实心品牌绿，canSubmit 状态机目验通过）但软键盘未在模拟器截图中呈现；长文输入/500 截断/剩 50 字警示色（PUB09/10/15/16/17）均因工具 el.input is not a function 全部 FAILED 未跑通——键盘行为、长文极值、警示色（代码已实现 --c-warning #FF9F43，publish.vue:829）如实标注为未验证。",
+      "evidence": "reports/audit/round-1/interact/exec-results.json（PUB08 toast 请输入内容；PUB09/10/15/16/17 failureReason el.input is not a function）；reports/screenshots/round-1-tour/A/subpackages_village_village_publish__校验错误.png；reports/screenshots/round-1-tour/A/subpackages_village_village_publish__键盘弹起-输入后.png"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "弹层态截图证实渠道弹层三级分组完整（公域·所有人可见 / 校园私域·同校可见 / 兴趣圈子·圈内成员可见）+「已加入」标签+成员数短格式（音乐 8,123 / 美食 7,240）+ 当前选项绿色 ✓ → MP-R2-PUB-002 无回归。PUB22/23（弹层开/遮罩关/卡再点关）EXECUTED。PUB27-after 经 3x 放大核验：friends 草稿恢复后目标卡「个人日常 / 日常·仅互相喜欢或关注我的人可见」目标与可见性文案自洽 → MP-R2-PUB-101 修复无回归；记录一处待产品确认：friends 目标下弹层内无「个人日常」选项行、也无 ✓ 高亮当前态（friends 为入口专用模式而非渠道项，属设计口径问题非缺陷）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__弹层态.png；reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png；reports/audit/round-1/interact/exec-results.json（PUB22/23 EXECUTED）"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "CTA 禁用态（#C7E9DC 底/#2A7A5E 字，publish.vue:788-789）与理想图「恒实心绿白字」的有意偏差系 R3 记录在案的对比度修复（禁用白字对浅绿底 1.36:1），不立项。与同构发布页 post.vue 并排对照发现双页视觉分叉：post.vue 禁用=中性灰底灰字+启用=品牌渐变+投影（post.vue:1086-1096），本页=薄荷禁用+平涂启用；post.vue 页底浅绿 vs 本页纯白；post.vue 保留底部工具条 vs 本页按需求移除——均为 MP-R1-PUBLISH-103（双页重复，Architecture P2）的视觉切面，归 103 收敛，不另立项。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png 与 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png 并排；apps/client/src/subpackages/village/village/post.vue:1086-1096；apps/client/src/subpackages/village/village/publish.vue:786-790"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "设备行为项：状态栏高度 JS 注入生效——「发布动态」标题与模拟状态栏时间无叠印（R20 修复目验，五态截图一致）；头部右 padding 210rpx 胶囊避让，「发布」钮与 •••|◎ 胶囊无遮挡（默认/弹层态截图）；弹层面板含 env(safe-area-inset-bottom)（publish.vue:811）；scroll-view 走 flex:1+min-height:0（792 行），PUB36 滚动到底/顶 EXECUTED 且 .publish-body__bottom-space 在场。深链直入渲染 PUB01 EXECUTED（标题/目标卡/输入/计数/图格均 present）；空内容点 X 直接返回 PUB02、栈=1 兜底 reLaunch PUB03、重复进出 PUB37 均 EXECUTED。本页非 tabBar 页无 TabBar（符合预期）。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png；reports/audit/round-1/interact/exec-results.json（PUB01/02/03/36/37 EXECUTED）；apps/client/src/subpackages/village/village/publish.vue:587/771/792/811"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "observation": "历史线索回归核对：MP-R2-PUB-002 兴趣圈子分组=无回归（弹层态三级分组目验）；MP-R2-PUB-101 friends 分支=无回归（PUB27-after 目标卡自洽）；MP-R1-PUBLISH-001 visibility=general 下「谁可以看=所有人可见 ›」与后端 deriveVisibility(general→public_) 口径一致（目验）；MP-R2-VILL-013 图文不符族=晚霞帖对属 village/index 页范围外，本页同族新实例已立 MP-R1-SVVP-001；R1-PUBLISH-002..014 簇的运行态复核中「loading 断档（hideLoading 后于 toast）」「30 处裸 hex」「双页重复」三项属代码层已立项（109/102/103），本轮静态/交互证据未产生推翻或新增，发布成功全链路（PUB10）因输入工具失败未跑通，如实标注未基于运行态验证。",
+      "evidence": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__弹层态.png；reports/screenshots/round-1-interact/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB27-after.png；reports/audit/round-1/code-findings/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json（102/103/109）"
+    }
+  ],
+  "coverage": [
+    "证据校验：screenshot-manifest.json gitSha=aefd8a72 == git rev-parse HEAD (aefd8a72f2231e8df7affd09004c14c3e4e73745)，buildMode=build:mp-weixin:mock，证据未过期；interact/exec-results.json 同 gitSha。",
+    "截图已看：本页 A 身份 5 态（默认/交互后/弹层态/校验错误/键盘弹起-输入后）逐张 + B 身份默认态 + post.vue 默认态（对照）+ PUB27-after（3x 局部放大取证，临时裁剪件已清理）。",
+    "理想图已对照：素材/理想效果图/发布帖子页面.png，L1 结构（模块顺序/缺底部工具条=有需求注释）/L2 层级/L3 交互位置/L4 卡片尺寸逐层比对；L5 间距（textarea 实测略高于理想稿，量级不大且利输入，不作缺陷）/L6 字号/L7 图标/L8 颜色（CTA 禁用态=有意偏差已溯源）/L9 阴影/L10 细节。",
+    "滚动已测：PUB36 EXECUTED（pageScrollTo bottom/top + scrollElement，scrollPos=bottom，无白屏卡死）。",
+    "点击已测：PUB08（发布校验 toast）、PUB22/23（弹层开/双路关）、PUB27（图格添加入口）EXECUTED；PUB09/10/15-21/24-31/33/34 因输入/选择器工具失败（el.input is not a function、__CAND__ element not found）未完成，如实标注。",
+    "返回已测：PUB02 空内容 X 直接返回村口、PUB03 栈=1 兜底 reLaunch、PUB37 重复进出无残留，均 EXECUTED。",
+    "safe-area 已查：弹层面板 env(safe-area-inset-bottom)（publish.vue:811）+ 弹层态截图底部无裁切；头部状态栏 JS 注入（587 行）五态截图无叠印。",
+    "TabBar 已查：本页为 subpackages 非 tabBar 页，五态截图均无 TabBar，符合预期。",
+    "空态已查：表单空态=默认态截图（placeholder/0/500/禁用 CTA 正确）；列表空态不适用于表单页。",
+    "长文已查：未跑通——输入工具失败（PUB09/10/15/16/17 FAILED），500 上限截断与剩 50 字警示色未能运行验证（代码层已实现：maxlength=MAX_CONTENT_LENGTH、--c-warning #FF9F43）。",
+    "加载态已查：提交 showLoading(mask:true) 代码路径在（publish.vue:515），发布成功全链路未跑通（PUB10 工具失败），运行态未验证。",
+    "错误态已查：PUB08 空内容 toast「请输入内容」运行证据；发布失败 toast+留页路径为代码层 109 号已立项（hideLoading/toast 顺序），本轮无运行态反证。",
+    "组件一致性已查：与同构页 post.vue 并排（CTA 禁用/启用样式、页底色、底部工具条三处分叉→归 MP-R1-PUBLISH-103）；弹层选项行结构与 post 版统一（R21 注释+截图印证）。",
+    "历史 Bug 回归已查：MP-R2-PUB-002 无回归；MP-R2-PUB-101 无回归；MP-R1-PUBLISH-001 目验一致；MP-R2-VILL-013 本页同族新实例已立 MP-R1-SVVP-001；R1-PUBLISH-002..014 簇以代码层复核结论为准，本轮未产生运行态反证。",
+    "未运行项汇总：软键盘弹起表现（模拟器截图无键盘）；长文 500 截断/警示色；发布成功 loading→toast→400ms 返回全链路；深色模式下白底页面表现（代码层 102 号已立项）。以上均为工具或轮次能力限制，非本页通过项。"
+  ]
+}

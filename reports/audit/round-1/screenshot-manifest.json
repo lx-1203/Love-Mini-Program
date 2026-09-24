@@ -1,0 +1,1532 @@
+{
+  "gitSha": "aefd8a72",
+  "workflowVersion": "3.1",
+  "buildMode": "build:mp-weixin:mock",
+  "shots": [
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_discover_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_discover_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_discover_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_home_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_home_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_home_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_home_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_home_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_login_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_login_index__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_login_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_messages_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_messages_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_nearby_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_nearby_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_nearby_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_nearby_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_profile_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_certification__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_certification__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_certification__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_post-topic__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/topic-detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_topic-detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_chat-session_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_chat_official-chat_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_post-topic__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/topic-detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_topic-detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/topics",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_topics__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/history",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_discover_match-success__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/discover-extra/home/segment",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_home_segment__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes-visitors_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_likes_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/nearby/people",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover-extra_nearby_people__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover_activities_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover_activities_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover_activities_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_discover_discussions_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_legal_agreement_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_legal_agreement_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_legal_privacy_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_legal_privacy_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_legal_privacy_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_market_detail_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/shop/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_market_shop_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/wallet/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_market_wallet_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/feedback/history",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_feedback_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_album__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_album__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/favorites",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_favorites__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/location",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_location__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/privacy",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_privacy__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/tasks",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_tasks__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_visitors__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_visitors__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_visitors__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/dnd",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/dnd",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_dnd__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_settings_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_real-name__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_real-name__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_verification_real-name__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/campus/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_campus_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/interest/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_interest_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_profile_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/recommend-pref/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_recommend-pref_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/schedule/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_schedule_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/setup/schedule/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_setup_schedule_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_support_feedback_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/daily-question/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_daily-question_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_heart-signals_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/help/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_help_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_consulting__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_mbti__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_love-center_nearby__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/search/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_search_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_security_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_security_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_tools_security_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_tag-posts__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "path": "reports/screenshots/round-1-tour/A/subpackages_village_village_tag-posts__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_discover_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_discover_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "pages/discover/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_discover_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_home_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_home_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_home_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_home_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/home/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_home_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_login_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_login_index__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "pages/login/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_login_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_messages_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_messages_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "pages/messages/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_messages_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_nearby_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_nearby_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_nearby_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_nearby_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_profile_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_profile_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_profile_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "pages/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/pages_profile_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_certification__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_certification__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/certification",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_certification__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_hub__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/campus/campus/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_post-topic__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/campus/campus/topic-detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_campus_campus_topic-detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_chat-session_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_chat-session_index__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_chat-session_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_chat-session_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/chat/official-chat/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_chat_official-chat_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_circle-home__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_circle-home__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_circle-home__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/circle-home",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_circle-home__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_index__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_index__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_post-topic__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_post-topic__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_post-topic__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_post-topic__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/circles/circles/post-topic",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_post-topic__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/topic-detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_topic-detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/circles/circles/topics",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_circles_circles_topics__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/history",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/discover-extra/discover/match-success",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_discover_match-success__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/home/segment",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_home_segment__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes-visitors_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes-visitors_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes-visitors/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes-visitors_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover-extra/likes/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_likes_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover-extra/nearby/people",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover-extra_nearby_people__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover_activities_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover_activities_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/discover/activities/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover_activities_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/discover/discussions/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_discover_discussions_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_agreement_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_agreement_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/legal/agreement/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_agreement_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_privacy_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_privacy_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/legal/privacy/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_legal_privacy_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/detail/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_market_detail_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/shop/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_market_shop_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/market/wallet/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_market_wallet_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/feedback/history",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_feedback_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_album__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/album",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_album__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/favorites",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_favorites__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/location",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_location__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/other",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_other__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/privacy",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_privacy__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/tasks",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_tasks__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_visitors__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_visitors__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/profile/visitors",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_profile_visitors__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/dnd",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_settings_dnd__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/dnd",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_settings_dnd__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_settings_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_settings_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/settings/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_settings_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_real-name__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_real-name__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/profile-extra/verification/real-name",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_profile-extra_verification_real-name__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/campus/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_campus_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/interest/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_interest_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/setup/profile/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_profile_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/recommend-pref/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_recommend-pref_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/setup/schedule/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_schedule_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/setup/schedule/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_setup_schedule_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_support_feedback_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_support_feedback_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_support_feedback_index__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后"
+    },
+    {
+      "page": "subpackages/support/feedback/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_support_feedback_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/activities/detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_activities_detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/daily-question/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_daily-question_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/heart-signals/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_heart-signals_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/help/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_help_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/consulting",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_consulting__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/tools/love-center/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/mbti",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_mbti__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/love-center/nearby",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_love-center_nearby__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/search/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_search_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_security_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_security_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/tools/security/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_tools_security_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_detail__数据态.png",
+      "state": "数据态"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_detail__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_detail__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/village/village/detail",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_detail__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/history",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_history__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_index__滚动-中部.png",
+      "state": "滚动-中部"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_index__滚动-底部.png",
+      "state": "滚动-底部"
+    },
+    {
+      "page": "subpackages/village/village/index",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_index__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_post__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_post__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_post__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_publish__交互后.png",
+      "state": "交互后"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_publish__弹层态.png",
+      "state": "弹层态"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_publish__校验错误.png",
+      "state": "校验错误"
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_publish__默认.png",
+      "state": "默认"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_tag-posts__空态.png",
+      "state": "空态"
+    },
+    {
+      "page": "subpackages/village/village/tag-posts",
+      "path": "reports/screenshots/round-1-tour/B/subpackages_village_village_tag-posts__默认.png",
+      "state": "默认"
+    }
+  ]
+}

@@ -1,0 +1,884 @@
+{
+  "cases": [
+    {
+      "id": "VI01",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "登录态进入恋爱认证页：状态卡首拉渲染（骨架防状态跳变）",
+      "tier": "normal",
+      "pre": "身份A 登录态（r11 做法 automation_evaluate 注 token + session.bootstrap()，token 2h 时效过期需重签）→ 从设置页「恋爱认证」入口进入（subpackages/profile-extra/settings/index.vue:326）或 wx.reLaunch('subpackages/profile-extra/verification/index')。real 模式 onLoad 拉 GET /verification（verification/index.vue:331-333），首拉中 statusLoading 骨架占位（:57,474-476）",
+      "action": "进入后断言首屏，无点击",
+      "expected": "导航栏标题「恋爱认证」+ 左返回键（index.vue:466-470）；状态卡渲染（未认证态：icon +「未认证」+ desc，:477-484）；未认证态出现门控横幅「未认证用户仅可浏览，完成认证后可喜欢 / 发消息 / 发帖」（:487-490）；无「未认证→审核中」状态跳变（骨架先占位）；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图 + 路由链（getCurrentPages）+ console 全量"
+    },
+    {
+      "id": "VI02",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "栈内返回：navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "已登录，从设置页 navigateTo 进入本页（页面栈≥2）",
+      "action": "tap .nav-bar__back 返回键（verification/index.vue:466）",
+      "expected": "getCurrentPages().length>1 走 uni.navigateBack({delta:1})（:443-444）→ 500ms 内路由变化，落回设置页，页面栈减 1",
+      "evidence": "navigation：路由断言（进入/返回两次 getCurrentPages 链对比）即可，可免截图"
+    },
+    {
+      "id": "VI03",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "深链直达栈=1 返回兜底：switchTab 回「我的」Tab",
+      "tier": "navigation",
+      "pre": "已登录，wx.reLaunch 直达本页（栈=1）。MP-R1-VERIFY-INDEX-001 场景（verification/index.vue:441-448）",
+      "action": "tap .nav-bar__back 返回键（:466）",
+      "expected": "栈=1 兜底 uni.switchTab('/pages/profile/index')（:445-447）→ 落「我的」Tab，无点击无反应死点",
+      "evidence": "navigation：路由断言（getCurrentPages 链，目标=pages/profile/index）"
+    },
+    {
+      "id": "VI04",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "表单空提交：第一步校验 toast「请输入学生姓名」",
+      "tier": "normal",
+      "pre": "登录态进入，处于未认证/被驳回表单态（无已提交申请）；四项全空",
+      "action": "tap 提交按钮 .action-btn（verification/index.vue:670-678）",
+      "expected": "toast「请输入学生姓名」（errStudentName，:188-191）；500ms 内反馈；不发起图片上传与 POST /verification；状态仍 unverified",
+      "evidence": "normal：after 截图（含 Toast）+ 路由 + console（确认无网络请求）"
+    },
+    {
+      "id": "VI05",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "渐进填写校验链：学号→学校→学生证 逐项补齐",
+      "tier": "normal",
+      "pre": "同 VI04 表单态",
+      "action": "① input#verification-student-name 填姓名后提交 → ② 再填 input#verification-student-id 后提交 → ③ 再填 input#verification-school-name 后提交（:591-634）",
+      "expected": "依次 toast「请输入学号」（:192-195）→「请输入学校名称」（:196-199）→「请上传学生证照片」（:200-203）；每次点击 500ms 内 Toast 反馈；均无提交请求",
+      "evidence": "normal：第三次 after 截图 + 三次 Toast 文案记录 + console（无请求）"
+    },
+    {
+      "id": "VI06",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "完整提交认证成功：选图 + 三项合法 → 状态变「审核中」",
+      "tier": "critical",
+      "pre": "表单态。automator 会话若为 mock 分支走本地 1s 演示（useMock()，:210-224）；real token 会话走上传+POST /verification（:226-264）",
+      "action": "三输入框填合法值（姓名≤20/学号≤20/学校≤30）→ tap 上传卡 .upload-card（:644-651）经隐私授权后 chooseImage 选图 → tap 提交",
+      "expected": "选图成功 toast「学生证已上传」+ 卡片变预览图含「点击更换」（:155-164,656-665）；提交后 showLoading「提交中...」mask:true（:207）；mock：1s 后状态卡变「审核中」+ toast「提交成功，等待审核」（:210-224）；real：上传换 URL + POST /verification 成功 → 重拉状态置 pending + 同 toast（:237-264）",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案「提交成功，等待审核」+ console（上传与 POST /verification 请求记录）"
+    },
+    {
+      "id": "VI07",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "提交防连点：快击×5 仅 1 次提交流程",
+      "tier": "critical",
+      "pre": "同 VI06，表单已填完整且已选图",
+      "action": "500ms 内快击提交按钮 ×5",
+      "expected": "submitting 防重入守卫直接 return（:184-186）+ showLoading mask:true 双保险（:207）→ 仅 1 次提交流程（real 仅 1 次 POST）；期间按钮置灰 opacity 0.6 + 文案「提交中...」（:672,1106-1108）；无并发重复请求",
+      "evidence": "critical：console 网络请求计数=1 + before/after 截图 + Toast 文案"
+    },
+    {
+      "id": "VI08",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "real 重复提交 409：toast「已有申请审核中」",
+      "tier": "critical",
+      "pre": "real 会话且账号已有 pending/approved 申请（无此账号则如实标 UNVERIFIED）；表单态可编辑",
+      "action": "完整填写并 tap 提交",
+      "expected": "后端 409 进入 catch → toast「已有申请审核中，请耐心等待」（alreadyPending，:265-279）；finally 复位 submitting + hideLoading（:280-283）无 Loading 永驻；状态卡保持原状态",
+      "evidence": "critical：Toast 文案 + console（409 响应记录）+ after 截图"
+    },
+    {
+      "id": "VI09",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "选图取消/隐私拒绝：两类 toast 反馈且状态不变",
+      "tier": "normal",
+      "pre": "表单态，uploadedImagePath 为空",
+      "action": "① tap 上传卡后在原生图片选择器取消；②（隐私未授权前置）tap 上传卡",
+      "expected": "① fail 分支 toast「已取消选择」（imageChooseCancelled，:165-171）；② ensurePrivacyAuthorized 拒绝 → toast「需同意隐私协议后才能选择图片」（:139-150）；uploadedImagePath 保持空、不崩溃",
+      "evidence": "normal：after 截图 ×1 + 两条 Toast 文案记录 + console"
+    },
+    {
+      "id": "VI10",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "输入边界：maxlength 截断与特殊字符不崩",
+      "tier": "normal",
+      "pre": "表单态",
+      "action": "① 姓名/学号输入 25 字、学校输入 35 字；② 姓名输入含 emoji 与 <script> 的特殊字符后提交",
+      "expected": "maxlength 截断为 20/20/30（:592-634）；特殊字符原样保留不崩、无脚本执行（text 插值渲染）；提交仍被图片缺失校验拦截 toast「请上传学生证照片」",
+      "evidence": "normal：after 截图（输入框内容）+ console（无 TypeError）"
+    },
+    {
+      "id": "VI11",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "verified 态按钮可见性：重新认证/删除认证仅 mock 可见",
+      "tier": "normal",
+      "pre": "mock 会话：提交后 tap「模拟审核通过（演示）」（仅 isMockMode() 可见，:538-540）置 verified；或 real approved 账号直达",
+      "action": "断言权益网格与按钮区元素存在性",
+      "expected": "权益 5 项网格（benefits，:120-126,495-511）；「重新认证」「删除认证」仅 mock 渲染（v-if useMock()，:517-524，MP-R1-VERIFY-INDEX-003：real 隐藏防「已删除但服务端仍 approved」前后矛盾）；real approved 态两按钮不存在；pending 态「模拟审核通过」按钮 real 不可见",
+      "evidence": "normal：after 截图 + DOM 元素存在性断言 + console"
+    },
+    {
+      "id": "VI12",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "重新认证/删除认证确认弹窗（仅 mock）：确认重置/取消不动",
+      "tier": "critical",
+      "pre": "mock 会话 verified 态（VI11 前置达成）",
+      "action": "① tap「重新认证」→ modal 点确认；② tap「删除认证」（红字确认 confirmColor #E5454D）→ modal 点取消再点确认",
+      "expected": "① showModal「确定要重新提交认证申请吗？」确认 → 状态回 unverified + 表单四项清空（:403-418）；② 取消无变化，确认 → toast「已删除认证」+ 重置（:421-438）",
+      "evidence": "critical：before+after 截图 + modal 与 Toast 文案 + console"
+    },
+    {
+      "id": "VI13",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "pending 态展示与轮询/onShow 重拉、卸载清定时器",
+      "tier": "normal",
+      "pre": "提交后处于 pending（VI06 达成）；real 模式 30s 轮询（:336-357）",
+      "action": "① 断言 pending UI；② 切后台再返回（触发 onShow）；③ mock 点「模拟审核通过」",
+      "expected": "pending-card「审核中」+ desc（:528-534）；real onShow 且 pending 时重拉 GET /verification（:360-365）；mock 模拟按钮 → toast「认证已通过」+ 状态卡变「已认证」（:388-400）；返回退出页面后定时器被清理（onUnmounted，:372-381）无残留回调",
+      "evidence": "normal：after 截图 ×2 + console（请求不堆积、退出后无 hideLoading 残留日志）"
+    },
+    {
+      "id": "VI14",
+      "page": "subpackages/profile-extra/verification/index",
+      "title": "滚动到底/顶：长表单内容完整可达",
+      "tier": "noop",
+      "pre": "表单态（权益+流程+表单+上传+提交，内容最长）",
+      "action": "页面滚动到底再回顶",
+      "expected": "五个分区全部可达无遮挡；回顶后输入内容与状态保持不丢",
+      "evidence": "noop：执行日志（scroll 位置/console）即可"
+    },
+    {
+      "id": "RN01",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "登录态进入实名认证页：状态首拉 + 成年门禁预检",
+      "tier": "normal",
+      "pre": "身份A 登录态。入口：互动实名门控弹窗确认跳转（guards/campus-gate.ts:85-96 → openAppPath ROUTES.REAL_NAME_CERTIFICATION，routes.ts:176）或 wx.reLaunch 直达。onLoad 并行拉 GET /real-name-certification 与 getBasicProfile 出生日期（real-name.vue:342-345,329-339）",
+      "action": "进入后断言首屏，无点击",
+      "expected": "标题「实名认证」+ 返回键（:415-419）；状态卡（未实名：icon+「未实名认证」desc，:426-433）；首拉骨架防状态跳变（:57,423-425）；成年人表单态：姓名/身份证输入 + 正反面上传卡 + 隐私说明 + 提交按钮（:468-584）",
+      "evidence": "normal：after 截图 + 路由链 + console 全量"
+    },
+    {
+      "id": "RN02",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "深链直达栈=1 返回兜底：navigateTo 回恋爱认证页",
+      "tier": "navigation",
+      "pre": "已登录，wx.reLaunch 直达本页（栈=1）。MP-R1-REAL-NAME-001 场景（real-name.vue:394-401）",
+      "action": "tap .nav-bar__back 返回键（:415）",
+      "expected": "栈=1 兜底 uni.navigateTo('/subpackages/profile-extra/verification/index')（:399）→ 落恋爱认证页，认证流程闭环不断头",
+      "evidence": "navigation：路由断言（getCurrentPages 链，目标=verification/index）"
+    },
+    {
+      "id": "RN03",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "栈内返回：navigateBack 落回来源页",
+      "tier": "navigation",
+      "pre": "已登录，从来源页（门控弹窗/安全中心）navigateTo 进入（栈≥2）",
+      "action": "tap .nav-bar__back 返回键",
+      "expected": "getCurrentPages().length>1 走 uni.navigateBack({delta:1})（:396-397）→ 落回来源页",
+      "evidence": "navigation：路由断言（进出对比）"
+    },
+    {
+      "id": "RN04",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "空提交：toast「请输入真实姓名」",
+      "tier": "normal",
+      "pre": "登录态表单态（未认证），两项全空",
+      "action": "tap 提交按钮 .action-btn（real-name.vue:576-584）",
+      "expected": "toast「请输入真实姓名」（errUserName，:184-187）；不发起上传与 POST；状态不变",
+      "evidence": "normal：after 截图（含 Toast）+ 路由 + console（无网络请求）"
+    },
+    {
+      "id": "RN05",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "身份证号格式校验：短号拒绝、合法号放行到下一步",
+      "tier": "normal",
+      "pre": "姓名已填",
+      "action": "① input#real-name-id-card-no 输入「12345」提交；② 换 18 位合法号提交",
+      "expected": "① toast「请输入正确的身份证号」（ID_CARD_PATTERN ^\\d{15}$|^\\d{17}[\\dXx]$，:172,188-191）；② 通过格式校验进入下一步 → toast「请上传身份证正面照片」（:192-195）",
+      "evidence": "normal：after 截图 + 两次 Toast 文案记录 + console"
+    },
+    {
+      "id": "RN06",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "正反面缺失链：先拦正面、传正面后拦背面",
+      "tier": "normal",
+      "pre": "姓名 + 合法身份证号已填",
+      "action": "① 直接提交；② tap 正面卡（:518-540）经 chooseImages 选图后提交",
+      "expected": "① toast「请上传身份证正面照片」；② 正面选中 toast「图片已上传」+ 卡片变预览（:157-161,530-539），再提交 → toast「请上传身份证背面照片」（:196-199）",
+      "evidence": "normal：after 截图 + 三条 Toast 文案记录 + console"
+    },
+    {
+      "id": "RN07",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "完整提交实名认证成功：状态变「审核中」",
+      "tier": "critical",
+      "pre": "姓名+合法 18 位号+正反两图齐备；mock 会话走本地 1s 演示（:205-219），real 会话走双图上传+POST /real-name-certification（:230-260）",
+      "action": "tap 提交按钮",
+      "expected": "showLoading「提交中...」mask:true（:202）；成功后状态卡变「审核中」+ toast「提交成功，等待审核」（mock :207-218 / real :255-260）；表单区隐藏换 pending-card（:458-465）；finally 复位 submitting + hideLoading（:276-279）",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案 + console（上传×2 与 POST 请求记录）"
+    },
+    {
+      "id": "RN08",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "提交防连点：快击×5 仅 1 次提交流程",
+      "tier": "critical",
+      "pre": "同 RN07 表单齐备",
+      "action": "500ms 内快击提交按钮 ×5",
+      "expected": "submitting 守卫直接 return（:176-177）+ mask（:202）→ 仅 1 次提交流程，real 仅 1 次 POST；按钮置灰 + 文案「提交中...」（:578,583）",
+      "evidence": "critical：console 请求计数=1 + before/after 截图 + Toast 文案"
+    },
+    {
+      "id": "RN09",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "real 重复提交 409：toast「已有申请审核中」",
+      "tier": "critical",
+      "pre": "real 会话且已有 pending/approved 申请（无此账号则如实标 UNVERIFIED）",
+      "action": "完整填写并提交",
+      "expected": "409 → toast「已有申请审核中，请耐心等待」（alreadyPending，:261-275）；无 Loading 永驻（:276-279）",
+      "evidence": "critical：Toast 文案 + console（409 记录）+ after 截图"
+    },
+    {
+      "id": "RN10",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "身份证输入边界：maxlength=18 截断、末位 X 合法、特殊字符不崩",
+      "tier": "normal",
+      "pre": "表单态",
+      "action": "① 输入 19 位数字；② 输入 17 位数字+X 提交；③ 姓名输入 emoji/特殊字符",
+      "expected": "① maxlength=18 截断（:502）；② 末位 X 通过格式校验（pattern 允许 [\\dXx]）；③ 姓名 maxlength=20 截断（:485）、特殊字符不崩；② 提交后进入图片校验 toast「请上传身份证正面照片」",
+      "evidence": "normal：after 截图（输入框）+ console（无 TypeError）"
+    },
+    {
+      "id": "RN11",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "未成年人门禁（real 条件）：banner + 表单禁用 + 提交拦截",
+      "tier": "normal",
+      "pre": "real 会话且 BasicProfile.birthDate 缺失或年龄<18（loadAdultGate 从严：缺失视为未成年，real-name.vue:329-339；无此类账号则如实标 UNVERIFIED）",
+      "action": "① 断言表单可点性；② 绕过 disabled 直接 tap 提交",
+      "expected": "minor-banner「未满 18 周岁暂不支持实名认证（未成年人保护）」（:436-438）；姓名/身份证输入 disabled（:486,503）+ 表单卡 opacity 0.6（:474,749-751）；tap 提交 → toast「未满 18 周岁暂不支持实名认证」（:180-183）",
+      "evidence": "normal：after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "RN12",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "title": "verified 态脱敏回显：姓名 + 掩码身份证号",
+      "tier": "normal",
+      "pre": "real approved 账号直达（无则如实标 UNVERIFIED）；applyRealNameView 回显（real-name.vue:286-303）",
+      "action": "进入断言",
+      "expected": "状态卡「已实名认证」（:441-455 外层 statusInfo 84-92）；verified-card 两行：真实姓名 + 脱敏身份证号（前 6 后 4 掩码，maskedIdCardNo :290,449-452）；无表单与上传区",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "VS01",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "进入访客页：骨架→分组列表 + 头部计数与头像兜底",
+      "tier": "normal",
+      "pre": "身份A 登录态且有访客数据。入口：首页顶部访客入口 openAppPath(ROUTES.PROFILE.VISITORS)（pages/home/index.vue:295）或 wx.reLaunch 直达。onMounted → likesStore.fetchVisitors（visitors.vue:225-227,189-199，GET /matches/visitors）",
+      "action": "进入后断言首屏",
+      "expected": "首拉骨架 SkeletonBlock 4 行（:263-265）；列表按今日→昨日→更早分组（:130-147）；头部「谁看过我」+「访客 · N」计数（:256-259）；无头像访客显示昵称首字占位（:311-315）；时间文案：今日 HH:mm / 昨日 HH:mm / 更早 MM-DD HH:mm（:159-168）；console 无 TypeError",
+      "evidence": "normal：after 截图 + 路由链 + console 全量"
+    },
+    {
+      "id": "VS02",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+      "tier": "navigation",
+      "pre": "① 从来源页 navigateTo 进入（栈≥2）；② wx.reLaunch 直达（栈=1）",
+      "action": "分别 tap 左上返回键（visitors.vue:246-253）",
+      "expected": "① uni.navigateBack 落回来源页（:72-74）；② 兜底 uni.switchTab('/pages/home/index') 落首页（:74-76）",
+      "evidence": "navigation：路由断言 ×2（getCurrentPages 链）"
+    },
+    {
+      "id": "VS03",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "点击访客卡跳他人主页：id 兜底拼参不静默失效",
+      "tier": "normal",
+      "pre": "访客列表非空",
+      "action": "tap 第一张访客卡（visitors.vue:295-302）",
+      "expected": "500ms 内 openAppPath 跳 subpackages/profile-extra/profile/other?userId=<访客id>（:207-215）；mock user-200x 等非数字 id 经 Number()=NaN 后兜底回 rawUserId 拼参（MP-R1-VISITORS-001，:81-84,208-211），卡片点击不再无反应；落他人主页并开始加载对方资料",
+      "evidence": "normal：after 截图 + 路由链（目标页+query）+ console"
+    },
+    {
+      "id": "VS04",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "下拉刷新：真实重拉 fetchVisitors 并收起动画",
+      "tier": "normal",
+      "pre": "列表态；本页 enablePullDownRefresh（pages.json profile/visitors 注册处）",
+      "action": "页面顶部下拉触发 onPullDownRefresh（visitors.vue:232-238）",
+      "expected": "loading 置位真实重拉 fetchVisitors（:189-199）；完成后 finally uni.stopPullDownRefresh() 收起（:236）；列表数据刷新且 console 有 /matches/visitors 请求记录",
+      "evidence": "normal：after 截图 + console（请求记录）+ 路由"
+    },
+    {
+      "id": "VS05",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "错误态与重试：错误卡展示 → 点重试恢复",
+      "tier": "normal",
+      "pre": "断网/后端不可达前置（DevTools offline 或无效 token）",
+      "action": "① 进入断言错误卡；② tap「重试」（:270-272）；③ 恢复网络后再重试",
+      "expected": "① errorMessage 卡展示（:268-273）；② 点击 errorHaptic + 重新 loadVisitors（:220-223）；③ 恢复后错误卡消失、列表渲染",
+      "evidence": "normal：after 截图 ×2 + console（错误与恢复请求）+ 路由"
+    },
+    {
+      "id": "VS06",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "空态：暂无访客记录卡且无计数文本",
+      "tier": "normal",
+      "pre": "清空 likes store visitors（store 无数据回退）前置",
+      "action": "进入断言",
+      "expected": "空态卡「暂无访客记录」+「完善资料，让更多人发现你」+ 图标（:276-284）；头部计数文本不渲染（v-if length>0，:257-259）；无骨架残留",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "VS07",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "滚动到底/顶：分组列表完整可达",
+      "tier": "noop",
+      "pre": "访客较多（跨三个时间分组）",
+      "action": "滚动到底再回顶",
+      "expected": "三组卡片完整可达无白屏；回顶状态保持",
+      "evidence": "noop：执行日志（scroll 位置/console）"
+    },
+    {
+      "id": "VS08",
+      "page": "subpackages/profile-extra/profile/visitors",
+      "title": "打开即返回 + 重复进出×2：无残留 loading、状态恢复",
+      "tier": "normal",
+      "pre": "登录态；从设置页进入链路可达",
+      "action": "进入后立即返回；重复进出 ×2",
+      "expected": "每次进入重新 fetchVisitors（onMounted）；无崩溃、无骨架永驻；返回落点=来源页且来源状态恢复",
+      "evidence": "normal：最后一次 after 截图 + 路由链 + console（无 TypeError/NAV_FAIL）"
+    },
+    {
+      "id": "PO01",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "固化参数深链进入他人主页：资料渲染 + 访客记录上报",
+      "tier": "normal",
+      "pre": "身份A 登录态（token 有效）→ wx.reLaunch('subpackages/profile-extra/profile/other?userId=100152')（固化表 scripts/r11-param-map.json params.other=?userId=100152）",
+      "action": "进入后断言首屏",
+      "expected": "ProfileShell public 模式渲染：Hero 头像/背景、Identity 昵称/性别徽章/在线标签/匹配度、Bio/兴趣/生活瞬间/最近动态分区（components/profile/public/PublicProfile.vue:65-97）；loading 期 LoadingSpinner（ProfileShell.vue:71-73）；real 模式触发 POST /matches/visit 访客上报（other.vue:150-160，需 token+非 mock，失败不影响浏览）；console 无 401/TypeError",
+      "evidence": "normal：after 截图 + 路由链（含 userId=100152）+ console 全量"
+    },
+    {
+      "id": "PO02",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "深链缺 userId：明确错误指引、无重试按钮、无 ··· 菜单",
+      "tier": "normal",
+      "pre": "登录态 → wx.reLaunch('subpackages/profile-extra/profile/other')（不带参数）",
+      "action": "进入断言",
+      "expected": "errorMessage「链接缺少用户参数，请从列表页重新进入」（other.vue:359-370 + i18n profile.missingUserParam）；retryable=!missingParam=false → 不渲染重试按钮（:405 + ProfileShell.vue:74-79）；头部 ··· 菜单不渲染（v-if targetUserId，other.vue:386-397）；不发起 loadProfile/recordVisit 请求",
+      "evidence": "normal：after 截图 + 路由 + console"
+    },
+    {
+      "id": "PO03",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+      "tier": "navigation",
+      "pre": "① 从访客页点入（栈≥2）；② wx.reLaunch 直达带参（栈=1）",
+      "action": "分别 tap 左上返回键（other.vue:376-385）",
+      "expected": "① uni.navigateBack 落回来源（:114-121）；② 兜底 uni.switchTab(ROUTES.TAB.HOME) 落首页（:118-120）",
+      "evidence": "navigation：路由断言 ×2"
+    },
+    {
+      "id": "PO04",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "头部 ··· 治理 ActionSheet：举报/拉黑/关注 三项渲染与取消",
+      "tier": "navigation",
+      "pre": "带参正常进入资料态",
+      "action": "tap 右上 ···（other.vue:386-396）→ 查看 ActionSheet → 点取消",
+      "expected": "showActionSheet 三项：举报/拉黑/「关注」（已关注时变「取消关注」，:294-308）；取消关闭无任何副作用、无请求",
+      "evidence": "navigation：路由断言 + 执行日志（ActionSheet 出现/关闭）；可补 after 截图"
+    },
+    {
+      "id": "PO05",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "喜欢（未喜欢态）+ 快击×5：单次请求、状态与文案翻转",
+      "tier": "critical",
+      "pre": "身份A 与 userId=100152 无互相喜欢（未 liked 未 matched）",
+      "action": "① tap 底部 CTA「喜欢」（RelationshipCTA.vue:38-46）或 Identity 行内粉圆心（PublicIdentity.vue:55-57）；② 复位后 500ms 内快击 ×5",
+      "expected": "单点：POST /matches/like（other.vue:201-205）→ 无 mutual → toast「已喜欢，等待回应」（:222）+ relation.liked 翻转（profileForRender :101-112）+ CTA 文案变「已喜欢」（RelationshipCTA.vue:26-30）；快击：liking 防重入（:163）+ 已喜欢去重（:164-171）→ 仅 1 次请求；失败 errorHaptic + 错误 toast（:223-228）",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案 + console（请求计数=1）"
+    },
+    {
+      "id": "PO06",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "重复点喜欢去重：已喜欢不发请求、matched 不再弹匹配框",
+      "tier": "critical",
+      "pre": "已对 100152 点过喜欢（PO05 后状态）",
+      "action": "再点喜欢 ×3",
+      "expected": "已喜欢未匹配：无请求无 toast 静默去重（other.vue:164-171，MP-R1-OTHER-001）；已 matched：toast「已喜欢，等待回应」（:166-169）但不再弹「匹配成功」modal 不报错（MP-R2-OTHER-002）",
+      "evidence": "critical：console（无重复请求）+ Toast 文案 + after 截图"
+    },
+    {
+      "id": "PO07",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "匹配成功弹窗：确认去聊天 / 取消留在本页",
+      "tier": "critical",
+      "pre": "precondition：身份A 与目标互为喜欢的人（用 DB 中既有 mutual 对象，userId 换为对应存活 id；无则如实标 UNVERIFIED）",
+      "action": "tap 喜欢 → 返回 signal → modal 点「去聊天」；重走一遍点「再看看」",
+      "expected": "successHaptic + modal「匹配成功 / 你们互相喜欢了，快去打个招呼吧」（:207-219）；确认 → openAppPath chat-session?userId=<目标>（:215-217）；取消留在他人主页且状态不变",
+      "evidence": "critical：before+after 截图 + 路由链 + modal 文案 + console"
+    },
+    {
+      "id": "PO08",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "打招呼：实名门控通过与拦截两分支",
+      "tier": "navigation",
+      "pre": "① 已实名会话（身份A）；②（对照）未实名账号前置",
+      "action": "tap Identity 白圆气泡或 CTA「打招呼」（PublicIdentity.vue:58-59 / RelationshipCTA.vue:48-51）",
+      "expected": "已实名（或 mock 恒通过）：openAppPath chat-session?userId=100152（other.vue:234-239）→ 落聊天会话页；未实名：ensureCertified('realname') 拦截 → showModal 引导，确认跳实名认证页（campus-gate.ts:72-97），不进会话",
+      "evidence": "navigation：路由断言（会话页 query）；拦截分支补 modal 截图"
+    },
+    {
+      "id": "PO09",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "心动卡弹层：开启/空提交拦截/遮罩与×三路关闭/未登录拦截",
+      "tier": "normal",
+      "pre": "登录态资料态（①-④）；⑤ 用未登录前置对照",
+      "action": "① tap CTA「心动卡」（RelationshipCTA.vue:54-57）→ 断言弹层；② 直接 tap「发送悄悄话」；③ tap 遮罩关闭；④ 重开后 tap ×（WhisperComposeSheet.vue:74-76）；⑤ 未登录 tap 心动卡",
+      "expected": "① 弹层开：标题「悄悄话」+「写给 {昵称}」+ textarea + 价格 200 交友币 + 余额行（WhisperComposeSheet.vue:79-95），打开时输入框清空并拉余额（:29-38）；② 空内容 toast「写点内容再发送吧」（:42-44）且弹层不关；③ 遮罩点击关闭（:70）；④ × 关闭；⑤ toast「请先登录」类 loginRequired（other.vue:243-246）且弹层不开；另实名未通过时 ensureCertified 拦截（:247）",
+      "evidence": "normal：after 截图 ×2 + Toast 文案记录 + console"
+    },
+    {
+      "id": "PO10",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "心动卡发送：合法内容成功送达 + 快击×5 防重 + 超长截断",
+      "tier": "critical",
+      "pre": "登录态 + 实名通过 + 交友币余额充足（不足则断言失败 toast 也算通过路径）",
+      "action": "① 输入 60 字内内容 tap「发送悄悄话」；② 重开后 500ms 内快击发送 ×5；③ 输入尝试超 60 字",
+      "expected": "① sendWhisper（幂等 clientRequestId，WhisperComposeSheet.vue:52-57）→ toast「已送达，优先展示给 TA」+ 弹层关闭（:58-60）；③ maxlength=60 截断（:87）或 toast「悄悄话最多 60 字」（:46-48）；② 防连点铁律：仅 1 次扣费提交——注：handleSend 无 sending 防重入首行守卫（仅置位不判断，WhisperComposeSheet.vue:40-50），若实测出现并发重复提交，按死按钮/防连点铁律缺陷如实记录交判定员",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console（sendWhisper 请求计数）"
+    },
+    {
+      "id": "PO11",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "关注/取关切换 + 快击×5：toast 与按钮态、busy 防重",
+      "tier": "critical",
+      "pre": "登录态资料态，初始未关注",
+      "action": "① tap CTA「关注」（RelationshipCTA.vue:59-67）；② 再 tap（「已关注」态）取关；③ 快击 ×5",
+      "expected": "① followUser 成功 → toast「已关注」+ successHaptic + 按钮变「已关注」灰绿底（other.vue:252-272 + RelationshipCTA.vue:32,139-142）；② unfollowUser → toast「已取消关注」；③ followBusy 守卫（other.vue:253）→ 并发只 1 次；失败 toast otherFollowFailed（:267-269）且状态不翻转",
+      "evidence": "critical：before+after 截图 + Toast 文案 ×2 + console（follow/unfollow 请求）"
+    },
+    {
+      "id": "PO12",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "拉黑二次确认：确认生效 toast / 取消无请求",
+      "tier": "critical",
+      "pre": "登录态资料态（拉黑有副作用，建议对可弃测试号执行或执行后解除）",
+      "action": "① 更多操作弹层 →「拉黑用户」（other.vue:456-458 → handleMoreBlock :56-60）→ modal 点确认；② 重走点取消",
+      "expected": "① showModal 拉黑确认（:333-340）→ real POST /users/100152/block → toast「已拉黑」（:345-351）；mock 直接 toast（:341-344）；② 取消无请求无变化；失败 toast 错误信息（:352-354）",
+      "evidence": "critical：before+after 截图 + modal/Toast 文案 + console（请求有无）"
+    },
+    {
+      "id": "PO13",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "举报：理由 ActionSheet → 提交成功 toast",
+      "tier": "critical",
+      "pre": "登录态资料态",
+      "action": "① 头部 ··· 或 更多操作 →「举报用户」（:452-455 → handleReportUser :310-331）→ 选一个理由",
+      "expected": "ActionSheet 四项理由（骚扰/辱骂/垃圾/其他，:313-318）；选中 → reportStore.reportTarget('USER', uid, reason) → toast「举报成功」类 reportDone（:322-326）；失败 toast reportFailed（:327-330）",
+      "evidence": "critical：after 截图 + Toast 文案 + console（举报请求）"
+    },
+    {
+      "id": "PO14",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "更多操作 BottomSheet：分享占位 toast + 遮罩/× 关闭",
+      "tier": "normal",
+      "pre": "登录态资料态（errorMessage 与 loading 均无，FAB 才渲染 other.vue:429）",
+      "action": "① tap 右下 FAB ⋯；② tap「分享给好友」；③ 重开 tap 遮罩；④ 重开 tap ×（BottomSheet.vue:91）",
+      "expected": "① 弹层「更多操作」三项（:444-460）；② toast「分享入口待接入」+ 弹层先关闭（:47-50）；③ 遮罩可关（BottomSheet maskClosable 默认 true，BottomSheet.vue:43,66-68）；④ × 关闭；打开时 tabBar 自动隐藏、关闭恢复（BottomSheet.vue:50-55）",
+      "evidence": "normal：after 截图 ×2 + Toast 文案 + console"
+    },
+    {
+      "id": "PO15",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "生活瞬间照片全屏查看：打开与点遮罩关闭",
+      "tier": "normal",
+      "pre": "目标资料含 photos（PublicGallery 渲染前 4 张，PublicGallery.vue:20-29）",
+      "action": "① tap 第 1 张照片（other.vue:417 @tap-photo → previewPhoto :87-93）；② 查看层 tap 任意处",
+      "expected": "① 全屏查看层（黑底 z-index 2000，:433-442,568-581）展示 resolveMediaUrl 解析后大图；② 点击关闭且 photoViewerSrc 清空（:95-98）",
+      "evidence": "normal：before+after 截图 + console"
+    },
+    {
+      "id": "PO16",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "最近动态帖子卡 → 村口帖子详情",
+      "tier": "navigation",
+      "pre": "目标有 posts（PublicMoment 渲染）",
+      "action": "tap 最近动态帖子卡（PublicMoment.vue:54 → other.vue:75-79）",
+      "expected": "openAppPath subpackages/village/village/detail?id=<postId> → 落帖子详情页；postId 为空不跳转（:76-77）",
+      "evidence": "navigation：路由断言（详情页 + query id）"
+    },
+    {
+      "id": "PO17",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "Hero 头像点击：tapAvatar 全链路 emit 但页面未绑定（死按钮取证）",
+      "tier": "normal",
+      "pre": "带参正常进入资料态",
+      "action": "tap Hero 头像（PublicHero.vue:27）",
+      "expected": "按 500ms 反馈铁律应有可观测反馈；代码事实：tapAvatar 经 PublicHero→PublicProfile→ProfileShell 逐层 emit（PublicHero.vue:27 → PublicProfile.vue:66 → ProfileShell.vue:97）但 other.vue 事件绑定清单（:400-418）无 @tap-avatar → 预期无路由/DOM/Toast/震动任何反应，构成死按钮候选；执行器如实记录实际表现与 500ms 内有无反馈，交判定员定级",
+      "evidence": "normal：after 截图 + 路由断言（无变化）+ console"
+    },
+    {
+      "id": "PO18",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "取消匹配入口可达性：GovernanceMenu visible 恒 false（死功能取证）",
+      "tier": "normal",
+      "pre": "身份A 与 100152 已 matched（或选既有 matched 对象）",
+      "action": "遍历页面寻找取消匹配入口并尝试触发（tap ··· ActionSheet、更多操作弹层、底部 CTA）",
+      "expected": "代码事实：handleUnmatch 链路完整（other.vue:274-292，modal 确认 → unlikeUser → toast「已取消匹配」+ 重载）但其唯一发射点 GovernanceMenu 的 visible 恒为 false（PublicProfile.vue:45 governanceVisible=ref(false)，无置 true 调用）→ 预期 UI 上无任何入口可达；如实记录实际可达性，交判定员按死按钮/死功能定级",
+      "evidence": "normal：after 截图（遍历过程）+ 路由断言 + console"
+    },
+    {
+      "id": "PO19",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "滚动到底/顶：底部固定 CTA 不遮挡内容",
+      "tier": "noop",
+      "pre": "资料完整渲染态",
+      "action": "滚动到底再回顶",
+      "expected": "底部 RelationshipCTA 固定栏 + spacer 220rpx + 底部留白（PublicProfile.vue:105-107,135-137）→ 全部内容可完整滚动查看，CTA 不遮挡最后分区；回顶状态保持",
+      "evidence": "noop：执行日志（scroll 位置/console）"
+    },
+    {
+      "id": "PO20",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "打开即返回 + 重复进出×2：无残留弹层、状态恢复",
+      "tier": "normal",
+      "pre": "登录态；从访客页/搜索页进入链路可达",
+      "action": "进入后立即返回；重复进出 ×2",
+      "expected": "无崩溃；每次 onLoad 重新取参加载（:359-370）；无残留 BottomSheet/photo-viewer/whisper 弹层；返回落点=来源页且来源状态恢复",
+      "evidence": "normal：最后一次 after 截图 + 路由链 + console（无 TypeError）"
+    },
+    {
+      "id": "PO21",
+      "page": "subpackages/profile-extra/profile/other",
+      "title": "鉴权失败深链 401：loginRequired 文案 + 重试按钮可用",
+      "tier": "normal",
+      "pre": "注入过期/无效 token 后 wx.reLaunch 带参进入（token 2h 时效过期场景顺带覆盖）",
+      "action": "断言错误态 → tap「重试」（ProfileShell.vue:76-79 → loadProfile）",
+      "expected": "errorMessage 展示「请先登录」类 loginRequired（区分鉴权失败，other.vue:132-148 R12-IND-PROFILE-OTHER-001）；retryable=true 渲染重试按钮；点击重试重新请求并再次落到错误态（或换有效 token 后恢复资料态）",
+      "evidence": "normal：after 截图 + console（401 记录）+ 路由"
+    },
+    {
+      "id": "LC01",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "进入位置设置：定位首拉 + 定位卡 + 地图 marker",
+      "tier": "normal",
+      "pre": "身份A 登录态。入口：首页顶部定位按钮 openAppPath(ROUTES.PROFILE.LOCATION)（pages/home/index.vue:268）或 wx.reLaunch 直达。onLoad → loadLocation（location.vue:118-120）",
+      "action": "进入后断言首屏",
+      "expected": "标题「我的位置」+ 返回键（:126-131）；定位卡：当前位置文本（buildLocationText 城市+校区）+ 有 coords 时经纬度行 + 所属校区行（session campusName 有值时，:134-151）；mp 原生 map 渲染 + marker + callout「当前位置」（:42-58,158-167）；console 无 TypeError",
+      "evidence": "normal：after 截图 + 路由链 + console 全量"
+    },
+    {
+      "id": "LC02",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "重新定位（定位权限）：按钮态切换 + 坐标刷新 + 上报",
+      "tier": "critical",
+      "pre": "页面就绪态",
+      "action": "tap「重新定位」（location.vue:183-185）；（对照）拒绝定位权限路径",
+      "expected": "点击即按钮文案变「定位中...」（locating，:184）；fetchCurrentLocation 成功 → coords/city 更新、经纬度行刷新 + void reportLocation 上报（:60-72）；拒绝/失败 → locating 复位按钮恢复文案，无 Loading 永驻",
+      "evidence": "critical：before+after 截图 + 按钮文案变化记录 + console（定位与上报请求）"
+    },
+    {
+      "id": "LC03",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "地图选点：原生选点器回填坐标地址 / 失败 toast",
+      "tier": "critical",
+      "pre": "页面就绪态；mp-weixin 端（DevTools 模拟器）",
+      "action": "① tap「地图选点」（location.vue:176-178）→ uni.chooseLocation 选一点返回；② 重走后取消返回",
+      "expected": "① 选点成功：coords 更新 + 物理地址行展示（:148-151）+ marker 移动 + reportLocation(true)（:87-94）；② 取消/失败 → toast「未获取到选点结果，请检查定位权限后重试」（:95-97）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "LC04",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "「返回首页」按钮：openAppPath 落首页 Tab",
+      "tier": "navigation",
+      "pre": "页面就绪态",
+      "action": "tap「返回首页」（location.vue:186-188）",
+      "expected": "openAppPath(ROUTES.TAB.HOME)（:114-116）→ 落 pages/home/index 首页 Tab",
+      "evidence": "navigation：路由断言（getCurrentPages 链）"
+    },
+    {
+      "id": "LC05",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "返回键：栈内 navigateBack / 深链栈=1 reLaunch 首页",
+      "tier": "navigation",
+      "pre": "① 从首页进入（栈≥2）；② wx.reLaunch 直达（栈=1）",
+      "action": "分别 tap 左上返回键（location.vue:126）",
+      "expected": "① uni.navigateBack 落回来源（:106-108）；② 兜底 uni.reLaunch(ROUTES.TAB.HOME)（:109-111）",
+      "evidence": "navigation：路由断言 ×2"
+    },
+    {
+      "id": "LC06",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "地图拖动/缩放：纯视图操作无状态变化",
+      "tier": "noop",
+      "pre": "地图渲染完成",
+      "action": "地图上单指拖动、双指缩放（enable-scroll/zoom=true，:164-165）",
+      "expected": "底图跟随移动缩放；marker 与定位卡数据不变（无状态写入）",
+      "evidence": "noop：执行日志（console）"
+    },
+    {
+      "id": "LC07",
+      "page": "subpackages/profile-extra/profile/location",
+      "title": "打开即返回 + 重复进出×2：无定位 loading 永驻",
+      "tier": "normal",
+      "pre": "登录态；从首页入口进入链路可达",
+      "action": "进入后立即返回；重复进出 ×2",
+      "expected": "每次 onLoad 重新 loadLocation；无崩溃、无「定位中...」永驻；返回落点=来源页",
+      "evidence": "normal：最后一次 after 截图 + 路由链 + console"
+    },
+    {
+      "id": "PV01",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "进入隐私设置：两开关默认态（推荐关/接收开）",
+      "tier": "normal",
+      "pre": "登录态；清空 PRIVACY_SETTINGS storage（或首次进入）。入口：设置页「隐私权限」（subpackages/profile-extra/settings/index.vue:369）、安全中心（tools/security/index.vue:428）或 wx.reLaunch 直达",
+      "action": "进入后断言首屏",
+      "expected": "标题「隐私权限」+ 返回键（privacy.vue:71-77）；两开关渲染：允许推荐给本校学生=关、接收同校信息=开（store 默认 stores/profile.ts:169-172 loadPersistedPrivacy）；每项含标题+desc 文案",
+      "evidence": "normal：after 截图 + 路由链 + console"
+    },
+    {
+      "id": "PV02",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "开关1 切换：状态翻转 + toast「已在本机保存」",
+      "tier": "normal",
+      "pre": "页面就绪态",
+      "action": "tap 开关1（允许推荐给本校学生，privacy.vue:86-90）开→关→开",
+      "expected": "每次 change：switch 翻转 + toast「已在本机保存」（:25-33,46-49，MP-R1-PRIVACY-001 如实文案，不谎称已同步后端）；setAllowSameSchoolRecommend 写入（stores/profile.ts:783-795）",
+      "evidence": "normal：after 截图（含 Toast）+ console"
+    },
+    {
+      "id": "PV03",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "开关2 切换：同反馈链路",
+      "tier": "normal",
+      "pre": "页面就绪态",
+      "action": "tap 开关2（接收同校信息，privacy.vue:97-101）",
+      "expected": "switch 翻转 + toast「已在本机保存」（:36-43）；setReceiveSameSchoolInfo 持久化写入",
+      "evidence": "normal：after 截图（含 Toast）+ console"
+    },
+    {
+      "id": "PV04",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "本机持久化：返回重进状态保持且与 storage 一致",
+      "tier": "normal",
+      "pre": "PV02/PV03 已切换过",
+      "action": "返回上一页 → 重进本页断言；并 automation_evaluate 读 wx.getStorageSync(PRIVACY_SETTINGS)",
+      "expected": "重进后两开关与退出前一致（uni.setStorageSync 持久化，stores/profile.ts:786-793）；storage 值与 UI 一致",
+      "evidence": "normal：after 截图 + console（storage 断言日志）+ 路由链"
+    },
+    {
+      "id": "PV05",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "快击开关×5：最终态一致、无卡死",
+      "tier": "normal",
+      "pre": "页面就绪态",
+      "action": "500ms 内连点开关1 ×5",
+      "expected": "最终态 = 初始态取反奇数次（点击 5 次 → 翻转）；toast 连续出现但状态一致；无崩溃无卡死",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "PV06",
+      "page": "subpackages/profile-extra/profile/privacy",
+      "title": "返回：栈内 navigateBack / 深链栈=1 switchTab 我的",
+      "tier": "navigation",
+      "pre": "① 从设置页进入（栈≥2）；② wx.reLaunch 直达（栈=1）",
+      "action": "分别 tap 返回键（privacy.vue:72-74）",
+      "expected": "① uni.navigateBack 落回来源（:60-62）；② 兜底 uni.switchTab(ROUTES.TAB.PROFILE) 落「我的」Tab（:63-64）",
+      "evidence": "navigation：路由断言 ×2"
+    },
+    {
+      "id": "AL01",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "进入恋爱相册：有照片网格态 / 无照片空态",
+      "tier": "normal",
+      "pre": "身份A 登录态。入口：我的页相册缩略图 openAppPath(ROUTES.PROFILE.ALBUM)（pages/profile/index.vue:799）、设置页（settings/index.vue:357）或 wx.reLaunch 直达。onMounted → profileStore.fetchProfile（album.vue:392-394）",
+      "action": "① 有照片账号进入断言；②（对照）清空 photoGallery 前置后进入",
+      "expected": "① 6 格网格（已上传在前空位在后，:74-81）+ 头部计数「n / 6」（:416-419）+ 底部「添加照片」按钮（有照片且未满，:486-494）+ 长按提示文案（:497-499）；② 空态卡 +「添加照片」按钮（:431-447）；console 无 TypeError",
+      "evidence": "normal：after 截图 ×2 + 路由链 + console"
+    },
+    {
+      "id": "AL02",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "上传照片到空位：隐私授权 → 上传蒙层 → 成功 toast 计数+1",
+      "tier": "critical",
+      "pre": "photoGallery 未满（有空位）",
+      "action": "tap 空位格（:462 → handleAddPhoto(index)）→ 隐私授权 → chooseImage 选 ≤10MB 图 → 等待上传完成",
+      "expected": "上传中该格精确蒙层 + spinner +「上传中」（:474-477,uploadingIndex :51）；成功 successHaptic + toast「照片上传成功」+ 格子填充 + 计数+1（:201-218）；失败 toast 错误信息且 errorMessage 可重试（:209-214,423-428）",
+      "evidence": "critical：before+after 截图 + 路由 + Toast 文案 + console（上传请求）"
+    },
+    {
+      "id": "AL03",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "相册已满：点击 filled 格走预览、添加按钮隐藏、守卫 toast",
+      "tier": "critical",
+      "pre": "photoGallery 已满 6 张",
+      "action": "① tap 任一 filled 格；② 断言底部添加按钮；③（防御路径）触发表满守卫",
+      "expected": "① filled 格 tap → 全屏预览而非上传（:462 三元分支）；② hasEmptySlot=false → 底部添加按钮隐藏（:487）；③ 守卫 toast「相册已满（最多 6 张）」（albumFull，:143-146）；无上传请求",
+      "evidence": "critical：after 截图 + Toast 文案 + console（无上传请求）"
+    },
+    {
+      "id": "AL04",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "上传中防连点：isUploading 守卫快击×5 不再触发选图",
+      "tier": "normal",
+      "pre": "已选图上传进行中（蒙层显示）",
+      "action": "上传过程中快击其它空位 ×5",
+      "expected": "isUploading 守卫直接 return（:141-142）→ 不再触发 chooseImage、无并发上传；蒙层仅当前上传格显示（uploadingIndex 单值，:51）",
+      "evidence": "normal：after 截图 + console（无重复上传请求）"
+    },
+    {
+      "id": "AL05",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "长按设为头像：ActionSheet → 本地重排或真实上传回显",
+      "tier": "critical",
+      "pre": "至少 1 张照片",
+      "action": "长按 filled 格（:463 → handleLongPress :227-243）→ ActionSheet 点「设为头像」",
+      "expected": "ActionSheet 两项「设为头像 / 删除」（:230-232）；设为头像：mock://或/static/ 路径本地重排置顶（:258-261,305-310）；真实 URL 下载→uploadAvatar→toast「头像已更新」（:264-268）；失败回退本地重排 + 错误 toast 保证闭环（:269-274）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "AL06",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "删除照片二次确认：确认删除 toast / 取消不动",
+      "tier": "critical",
+      "pre": "至少 1 张照片",
+      "action": "长按 → 「删除」→ modal 点取消；重走点确认",
+      "expected": "showModal 删除确认（确认/取消按钮，:317-330）；取消无变化；确认 → removePhotoAtIndex → toast「已删除」+ 格子清空 + 计数-1（:337-347）；删空后回落空态卡",
+      "evidence": "critical：before+after 截图 + modal/Toast 文案 + console"
+    },
+    {
+      "id": "AL07",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "照片预览双路：/static/ 自建查看层（圆点分页）/ 网络 URL 原生 previewImage",
+      "tier": "normal",
+      "pre": "相册含 /static/ 包内装饰图（真实账号）",
+      "action": "① tap /static/ 路径照片；② 查看层 tap 圆点切换；③ tap 遮罩关闭；（对照）有真实 URL 照片时 tap 走 uni.previewImage",
+      "expected": "① 自建全屏查看层（黑底大图 + 底部圆点，:502-513，不走 uni.previewImage——包内路径微信预览器永久转圈的 MP-R1-ALBUM-001 修复）；② 圆点 @tap.stop 切换 viewerCurrent（:510）；③ 遮罩点击 closeViewer（:502,380-382）；对照：非 static 走 uni.previewImage 且 URL 经 resolveMediaUrl（:370-373）",
+      "evidence": "normal：after 截图 ×2 + console"
+    },
+    {
+      "id": "AL08",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "超 10MB 大图拒绝：toast 提示且不上传",
+      "tier": "normal",
+      "pre": "有空位；DevTools 中可选 >10MB 文件",
+      "action": "chooseImage 选超大图",
+      "expected": "size 校验拦截（PHOTO_SIZE_LIMIT 10MB，:38,178-181）→ toast photoSizeLimit 文案；不发起上传、格子不填充",
+      "evidence": "normal：after 截图 + Toast 文案 + console（无上传请求）"
+    },
+    {
+      "id": "AL09",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "取消选图静默：无错误 toast 不崩溃",
+      "tier": "normal",
+      "pre": "有空位",
+      "action": "chooseImage 弹出后点取消",
+      "expected": "errMsg 含 cancel → 静默 return（:186-189），无 toast、无崩溃、状态不变",
+      "evidence": "normal：after 截图 + console"
+    },
+    {
+      "id": "AL10",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "返回：栈内 navigateBack / 深链栈=1 兜底回首页",
+      "tier": "navigation",
+      "pre": "① 从我的页进入（栈≥2）；② wx.reLaunch 直达（栈=1）",
+      "action": "分别 tap 返回键（album.vue:406-414）",
+      "expected": "① uni.navigateBack 落回来源（:61-63）；② 兜底 uni.switchTab('/pages/home/index')（:64-65）",
+      "evidence": "navigation：路由断言 ×2"
+    },
+    {
+      "id": "AL11",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "滚动到底/顶：网格与按钮完整可达",
+      "tier": "noop",
+      "pre": "6 格 + 底部按钮 + 提示文案布局",
+      "action": "滚动到底再回顶",
+      "expected": "网格/添加按钮/长按提示全部可达；回顶状态保持",
+      "evidence": "noop：执行日志（scroll 位置/console）"
+    },
+    {
+      "id": "AL12",
+      "page": "subpackages/profile-extra/profile/album",
+      "title": "onShow 重拉 + 打开即返回 + 重复进出×2",
+      "tier": "normal",
+      "pre": "登录态；从我的页进入链路可达",
+      "action": "他页改动照片后返回本页（触发 onShow）；进入立即返回；重复进出 ×2",
+      "expected": "每次 onShow 重拉 fetchProfile 状态最新（:396-399）；无崩溃、无上传蒙层残留；返回落点=来源页",
+      "evidence": "normal：最后一次 after 截图 + 路由链 + console"
+    },
+    {
+      "id": "FA01",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "进入收藏页：骨架→列表/空态 与 标题计数",
+      "tier": "normal",
+      "pre": "身份A 登录态。入口：我的页「更多功能 → 我的收藏」（pages/profile/index.vue:843）或 wx.reLaunch 直达。onShow → villageStore.fetchPosts({}, true)（favorites.vue:101-106）",
+      "action": "① 有收藏账号进入断言；②（对照）无收藏前置进入",
+      "expected": "① 骨架 SkeletonBlock 3 行（:17-19）→ 收藏列表（posts.filter(isFavorite)，:77）：卡片含封面/作者行/标题/内容/收藏数（:27-53）+ 头部「我的收藏（N）」（:14）；② 空态卡 + 图标（:21-25）；console 无 TypeError",
+      "evidence": "normal：after 截图 ×2 + 路由链 + console"
+    },
+    {
+      "id": "FA02",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "卡片点击 → 村口帖子详情（带 id）",
+      "tier": "navigation",
+      "pre": "列表非空",
+      "action": "tap 收藏卡片主体（favorites.vue:31）",
+      "expected": "setCurrentPost + uni.navigateTo('/subpackages/village/village/detail?id=<id>')（:83-86）→ 落帖子详情页且加载对应帖子",
+      "evidence": "navigation：路由断言（详情页 + query id）"
+    },
+    {
+      "id": "FA03",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "取消收藏：toast + 卡片移除计数-1，@tap.stop 不触发跳转",
+      "tier": "critical",
+      "pre": "列表非空",
+      "action": "tap 卡片右下「取消收藏」胶囊（:47-49）",
+      "expected": "villageStore.toggleFavorite → toast「已取消收藏」（:88-98）；卡片从列表移除 + 标题计数-1；@tap.stop 阻断冒泡 → 不跳详情页；清空最后一张后回落空态卡",
+      "evidence": "critical：before+after 截图 + 路由断言（未跳转）+ Toast 文案 + console"
+    },
+    {
+      "id": "FA04",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "取消收藏失败：错误 toast + UI 不静默还原",
+      "tier": "critical",
+      "pre": "断网/后端 500 前置",
+      "action": "tap「取消收藏」",
+      "expected": "catch 分支 toast error.message 或「操作失败」（:93-98，MP-R2-FAVORITES-001：原裸 await 未处理 rejection + UI 静默还原已修复）；卡片保留在列表",
+      "evidence": "critical：after 截图 + Toast 文案 + console（失败请求）"
+    },
+    {
+      "id": "FA05",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "返回：navigateBack 失败兜底 reLaunch 我的",
+      "tier": "navigation",
+      "pre": "① 从我的页进入（栈≥2）；② wx.reLaunch 直达（栈=1）",
+      "action": "分别 tap 返回键（favorites.vue:3-13）",
+      "expected": "① uni.navigateBack 落回来源（:79-81）；② navigateBack fail 回调 → uni.reLaunch('/pages/profile/index') 落「我的」Tab（:80）",
+      "evidence": "navigation：路由断言 ×2"
+    },
+    {
+      "id": "FA06",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "scroll-view 滚动到底/顶：列表完整可达",
+      "tier": "noop",
+      "pre": "收藏较多",
+      "action": "scroll-view 滚动到底再回顶（:27,53 底部 spacer）",
+      "expected": "全部卡片完整可达；本页无上拉分页（onShow 全量拉取）不出现意外加载；回顶状态保持",
+      "evidence": "noop：执行日志（scroll 位置/console）"
+    },
+    {
+      "id": "FA07",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "onShow 真实重拉：新收藏同步显示",
+      "tier": "normal",
+      "pre": "列表态；可从详情页收藏另一帖",
+      "action": "去详情页收藏新帖 → 返回本页；重复进出 ×2",
+      "expected": "每次 onShow 真实重拉 fetchPosts({}, true)（:101-106）→ 新收藏出现、计数同步；登录态带 token，未登录由 mock/回退兜底（:102-105）",
+      "evidence": "normal：after 截图 + console（fetchPosts 请求）+ 路由链"
+    },
+    {
+      "id": "FA08",
+      "page": "subpackages/profile-extra/profile/favorites",
+      "title": "打开即返回：无残留骨架、落点正确",
+      "tier": "normal",
+      "pre": "登录态；从我的页进入链路可达",
+      "action": "进入后立即返回",
+      "expected": "无崩溃、无骨架永驻；返回落点=来源页（我的 Tab）",
+      "evidence": "normal：after 截图 + 路由链 + console"
+    }
+  ]
+}

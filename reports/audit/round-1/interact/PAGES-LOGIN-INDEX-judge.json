@@ -1,0 +1,522 @@
+{
+  "round": "R1",
+  "page": { "route": "pages/login/index", "name": "登录页" },
+  "generatedAt": "2026-09-23",
+  "judge": "交互判定员 A6（证据仲裁）",
+  "sources": {
+    "expected": "reports/audit/round-1/ops/PAGES-LOGIN-INDEX.json（34 用例 LG01-LG34）",
+    "observed": "reports/audit/round-1/interact/exec-results.json（S01-auth，LG01-LG34 各 1 条，25 EXECUTED / 9 FAILED）",
+    "observedSupplement": "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json（同页同构建 op00-op21 批次，2026-09-19~20 执行，22 项 check）",
+    "screenshots": "reports/screenshots/round-1-interact/（LG* 与 op 批 PAGES-LOGIN-INDEX-* 两批）+ wxml/ 快照 18 份",
+    "console": [
+      "reports/screenshots/round-1-interact/console-evidence-PAGES-LOGIN-INDEX.log（op 批，289 行；错误模式匹配 126 行全部为设计内 Sentry captureException：/v1/auth/wechat 502 与 source=login.wechat，无 TypeError/is not defined/ReferenceError/routeDone/NAV_FAIL）",
+      "reports/audit/round-1/interact/console-PAGES-LOGIN-INDEX.log（2026-09-19 17:59 初测批，22 op 全部 timeout/null 失败，非有效证据批，仅作过程记录）"
+    ],
+    "code": "apps/client/src/pages/login/index.vue（仅用于核对 manifest 指认的客观量，如 checkbox 热区 34rpx）"
+  },
+  "method": "逐用例三方对照：Manifest.expected vs exec-results.observed（权威）vs 截图/wxml。两批同构建产物（dist 2026-09-20 01:50:05，verify-build-features 4/4 PASS）：LG 复跑批（09-22 夜~09-23 晨，通道不稳、部分用例因 mock 已登录自动前进 discover 而表单不可达）+ op 成功批（09-19~20）。复跑批证据缺失/前置未成立时，若 op 批对同一 expected 有直接观测（截图/wxml/DOM 断言），据实采用并在 actual 中注明批次来源；两批均无观测则 UNVERIFIED；无任何凭代码推测判 VERIFIED 的情形。",
+  "summary": { "total": 34, "verified": 19, "failed": 0, "unverified": 15, "issues": 2, "newIssues": 1 },
+  "checks": [
+    {
+      "caseId": "LG01",
+      "page": "pages/login/index",
+      "operation": "无 token 冷启动默认态渲染",
+      "expected": "停留登录页；品牌区/插画(.hero-image)/slogan/三按钮/协议行(默认勾选 agreed=true)/DEV 演示入口全部可见；无白屏、无错误空态、console 无 NAV_FAIL/TypeError/is not defined",
+      "actual": "exec：logout+storageRemove token 后 reLaunch，top=pages/login/index，dom 断言 .btn-primary(微信一键登录)/.btn-phone-quick(手机号登录)/.btn-guest/.checkbox/.dev-user-entry/.hero-image 全 present，console 净；目检 LG01-after.png：品牌「寻觅+苗」、插画、slogan、三按钮、协议行绿勾已选、DEV 入口齐全无白屏；op00 交叉：agreed=true(aria-checked=true)、hasShowcase=false、closedBanner=false",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG01",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG01-after.png（目检）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-00-base.png",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[0]"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "LG02",
+      "page": "pages/login/index",
+      "operation": "已登录冷启动自动前进 discover（单跳）",
+      "expected": "注入有效 token 后 reLaunch 登录页，≤3s 自动 switchTab 落 discover；仅跳一次，console 无「Page route 错误」/「routeDone with a webviewId」双跳报错",
+      "actual": "exec：storageSet token + bootstrap ok userId=user-1001 → reLaunch 登录页 → top=pages/discover/index；console 仅 preloadSubpackages 两条 info，无 routeDone/Page route 错误；op 批 console-evidence 289 行错误模式扫描 0 条双跳报错",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG02",
+        "reports/screenshots/round-1-interact/console-evidence-PAGES-LOGIN-INDEX.log（grep routeDone|Page route|NAV_FAIL = 0 命中）"
+      ],
+      "confidence": 0.88
+    },
+    {
+      "caseId": "LG03",
+      "page": "pages/login/index",
+      "operation": "已登录重复进出登录页均自动前进",
+      "expected": "每次 reLaunch 进登录页后均再次自动落 discover（页面实例级标记重置）；两次均单跳、无 routeDone 竞争错误",
+      "actual": "exec：pre:reLaunch + act:reLaunch 共两次进入，均落 pages/discover/index；console 两个 preloadSubpackages 对（21:10:30 / 21:10:40，对应两次前进）且零错误，无内存泄漏类报错",
+      "verdict": "VERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#LG03"],
+      "confidence": 0.82
+    },
+    {
+      "caseId": "LG04",
+      "page": "pages/login/index",
+      "operation": "体验登录消费 pendingLoginRedirect 落资料完善页",
+      "expected": "写 pending=/subpackages/setup/profile/index 后 tap .btn-guest → toast「已进入体验模式，先逛逛吧」→ 1500ms 后落 /subpackages/setup/profile/index（非 discover）",
+      "actual": "exec：tap .btn-guest 后捕获 toast「已进入体验模式，先逛逛吧」；LG04-after.wxml 快照内容为「基础资料/完善你的资料，让更多人了解你/第 1/4 步/保存并继续」——即资料完善页，证明 pending 被消费且未落默认 discover。exec 记录的 route 字段=[login] 为导航完成前过早采样（after 截图因 automator 通道超时未成），以 wxml 快照为准",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG04（toast 捕获）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG04-after.wxml（基础资料页 DOM）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG04-before.png"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "LG05",
+      "page": "pages/login/index",
+      "operation": "滚动到底/回顶无卡死",
+      "expected": "滚动顺滑、无橡皮筋异常，回顶后 scrollTop=0；console 无滚动报错",
+      "actual": "exec：pageScrollTo 后 scrollPos=top，console 净；op 批 op21 实测 pageScrollTo(99999)→scrollTop=34.4（scrollHeight 846 vs 视口 812，溢出恰为底部 safe-area+padding 留白）→回顶复原，21-after-bottom.png/21-after-top.png 成对",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG05",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-21-after-bottom.png",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-21-after-top.png",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[21]"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "LG06",
+      "page": "pages/login/index",
+      "operation": "协议勾选/取消切换（默认勾选）",
+      "expected": "每次点击 500ms 内 DOM 变化：checkbox--checked 类切换、白勾显隐、aria-checked 同步；默认 agreed=true。热区铁律核验见 Issue MP-R1-LOGIN-002（34rpx<88rpx 判缺陷）",
+      "actual": "exec：act:tap .checkbox ×2（取消→恢复）均成功、停留登录页；op 批 op02/op04：aria-checked true→false→true，02-before(绿勾)/02-after(空心)/04-after(恢复绿勾) 截图目检一致；勾选行为三源一致 VERIFIED。热区铁律违例（.checkbox 34rpx×34rpx，index.vue:1458-1460 实测确认）按 manifest 指令另立 Issue MP-R1-LOGIN-002，不影响本条交互行为判定",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG06",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-02-after.png（目检：空心未勾选）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-04-after.png",
+        "apps/client/src/pages/login/index.vue:1458-1460"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG07",
+      "page": "pages/login/index",
+      "operation": "《用户协议》链接跳转 legal 分包",
+      "expected": "≤500ms navigateTo 打开 /subpackages/legal/agreement/index，栈=[login, agreement]，伴随轻触震动",
+      "actual": "exec：act:tapIndex .terms-link#1 tapped，无报错无失败原因；其 route 字段仅记 [login]，为分包首编译期间过早采样（该字段在本批 LG04/LG17/LG19/LG20 亦同样滞后，均与 wxml 实况不符）。op 批 op18 直接观测：跳转后=subpackages/legal/agreement/index，返回后=login，01-back1.png 目检协议页完整渲染（标题+更新日期 2026-07-26~2026-09-20+条款正文）。产品行为成立",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG07",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-01-back1.png（目检）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[18]"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "LG08",
+      "page": "pages/login/index",
+      "operation": "《隐私政策》链接跳转 legal 分包",
+      "expected": "≤500ms navigateTo 打开 /subpackages/legal/privacy/index，栈=[login, privacy]，伴随轻触震动",
+      "actual": "证据冲突仲裁：exec 批 LG08 route 记录=[login, agreement]（tapIndex#2 落 agreement，与 expected 不符），但该记录无 wxml/console/截图可佐证，且 tapIndex 定位存在批内噪声（LG07 的 route 采样同样失真）；op 批 op19b 直接观测 tap 第 2 个链接→跳转后=subpackages/legal/privacy/index，19b-after.png 目检「隐私政策」页完整渲染（标题+更新日期+条款正文+HTTPS/TLS 条款），返回后=login。两批同构建，截图源支持 expected 成立，exec 批记录判为采样/定位噪声而非产品缺陷",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG08（冲突记录）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-19b-after.png（目检：隐私政策页）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[19]"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG09",
+      "page": "pages/login/index",
+      "operation": "未勾选协议点「微信一键登录」：toast 拦截不发请求",
+      "expected": "toast「请先阅读并同意用户协议」；无路由变化、不触发 wx.login、无 POST /v1/auth/wechat",
+      "actual": "exec 批 pre-FAIL：tap .checkbox 未命中致取消勾选未成立，tap .btn-primary 走真实登录（toast=502 文案+console 一组 WechatLoginError）——该反向结果恰证守卫仅在 agreed=true 时放行；op 批 op03 对同一场景直接观测：未勾选态 tap .btn-primary → 03-after.png 目检 toast「请先阅读并同意用户协议」可见、03-after2(1.8s 后) toast 消失、全程停留 login 无请求。expected 三要素（toast 文案/停留/无跳转）有直接截图证据",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG09（pre-FAIL 反向佐证）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-03-after.png（目检：agreeFirst toast+空心勾选框）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-03-after2.png",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[3]"
+      ],
+      "confidence": 0.78
+    },
+    {
+      "caseId": "LG10",
+      "page": "pages/login/index",
+      "operation": "未勾选协议点「稍后再看」：toast 拦截不发请求",
+      "expected": "toast「请先阅读并同意用户协议」；无路由变化、无 POST /v1/auth/guest-login",
+      "actual": "exec：pre:tap .checkbox（取消成功）→ tap .btn-guest → 捕获 toast「请先阅读并同意用户协议」；LG10-after.wxml 快照=登录页快捷视图（微信一键登录/手机号登录/稍后再看在位），未发生路由变化；console 净（无请求/错误）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG10",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG10-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG11",
+      "page": "pages/login/index",
+      "operation": "未勾选协议时表单「登 录」拦截",
+      "expected": "toast「请先阅读并同意用户协议」；无路由变化、无 POST /v1/auth/phone-login",
+      "actual": "复跑批 FAILED：top=pages/discover/index（mock 已登录态自动前进），ensureSel via-missing .btn-phone-quick，#login-phone/#login-password/.checkbox 均未找到，表单未能展开、动作未执行；op 批亦未覆盖「未勾选+表单提交」组合（op08 为勾选态空提交）。两批均无该场景观测",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#LG11"],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "LG12",
+      "page": "pages/login/index",
+      "operation": "微信一键登录成功路径落 discover",
+      "expected": "tap .btn-primary → wx.login + POST /v1/auth/wechat 成功 → 落 /pages/discover/index，仅一次导航",
+      "actual": "exec：tap 执行、停留 login，toast「微信服务暂时不可用，请稍后重试」+console WechatLoginError 502——后端对本测试号微信 code 恒返 502（op 批 curl 实测同响应体），成功路径前置（有效 code+后端接受）在本环境无法构造；实际观测到的是失败分支（其行为由 LG13 单独判定）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG12",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#environment.backend（curl：POST /api/v1/auth/wechat(假code)→502）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG13",
+      "page": "pages/login/index",
+      "operation": "微信一键登录失败：错误 toast+停留+loading 解除",
+      "expected": "toast 显示 WechatLoginError 用户文案；停留登录页；finally 解除加载态不永驻；Sentry 上报 source=login.wechat，无未捕获异常",
+      "actual": "exec：tap 后捕获 toast「微信服务暂时不可用，请稍后重试」（=后端 502 响应 message，与 op 批 curl 实测一致）；LG13-after.wxml 快照=登录页快捷视图三按钮在位（按钮可再点、加载态未永驻，LG14 紧接着再次 tap 成功触发新一轮 502 亦为旁证）；console 恰一组 [warn] 微信登录失败 + [error] captureException source=login.wechat（设计内上报），无未捕获异常",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG13",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG13-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG14",
+      "page": "pages/login/index",
+      "operation": "微信一键登录防连点×5",
+      "expected": "1500ms 防抖窗口内 5 连点仅首次生效：仅 1 次提交、单 toast、单次结果",
+      "actual": "exec：act:rapidTap .btn-primary x5 done=5 → toast 数组恰 1 条（502 文案）；console 恰 1 组失败日志（21:13:32.896 同毫秒 warn+captureException，每次失败提交各记一组，单组=单次提交）；停留 login 无重复导航。op 批 op05 同款 5 连点亦单 toast+无重复跳转",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG14（console 单组失败日志=提交计数 1）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[5]"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG15",
+      "page": "pages/login/index",
+      "operation": "手机号快捷登录授权拒绝→表单自动展开（死路回归）",
+      "expected": "授权失败/取消不静默：showPhoneLogin=true，≤500ms 切到 login-form（手机号/密码/登 录出现）",
+      "actual": "exec：act:tap .btn-phone-quick ×2 执行、停留 login，无报错（复跑批 after 截图通道超时未成）；op 批 op07 直接观测：tap 后 hasForm=true hasQuick=false，07-after.png 目检登录表单（请输入手机号/请输入密码 6-64 位/登 录/去注册/返回微信登录）在平台弹窗下方清晰可见；MP-R1-LOGIN-001 死路修复路径真实执行",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG15",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-after.png（目检：表单展开）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[7]与#issues[MP-R1-LOGIN-001]"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "LG16",
+      "page": "pages/login/index",
+      "operation": "授权成功但未登录：401 兜底 toast+展开表单",
+      "expected": "bindPhoneViaWechat 无 token 得 401 → toast「当前未登录，请使用验证码或密码登录」+表单展开",
+      "actual": "exec：tap .btn-phone-quick 执行、停留 login、无 toast 捕获——本仓库为个人测试号（wxc67cd233d72388d0），DevTools 平台对 getPhoneNumber 仅返回失败回调（平台弹窗「获取手机号失败」），授权成功（errMsg=getPhoneNumber:ok）链路无法自动化触发；op 批同类声明 unverifiable。前置不可达，两批均无观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG16",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-after.png（平台弹窗「获取手机号失败」=测试号平台限制实证）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#unverifiable[0]"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "LG17",
+      "page": "pages/login/index",
+      "operation": "稍后再看（体验账号）成功落 discover",
+      "expected": "POST /v1/auth/guest-login 成功 → toast「已进入体验模式，先逛逛吧」（非「登录成功」）→ 1500ms 后落 /pages/discover/index，仅一次导航",
+      "actual": "exec：捕获 toast「已进入体验模式，先逛逛吧」（文案正确，非「登录成功」）；LG17-before.png=登录页(154KB)、LG17-after.png=discover 页(223KB)、LG17-after.wxml 快照=discover（寻觅/推荐/附近/林晓 登录态渲染）；op 批 op06 同流程 toast+落点截图一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG17",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG17-after.wxml",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG17-after.png",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-06-after.png（op 批 toast 目检）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG18",
+      "page": "pages/login/index",
+      "operation": "稍后再看防连点×5",
+      "expected": "2000ms 防抖窗口内仅首次生效：guest-login 仅 1 请求、1 toast、1 次导航",
+      "actual": "exec：act:rapidTap .btn-guest x5 done=5 → toast 数组恰 1 条「已进入体验模式，先逛逛吧」；LG18-after.wxml=discover（单次落点）；无重复导航。请求计数未直接采集（成功请求无错误日志可数），以单 toast+单落点+无重复导航为观测依据；op 批 op06 单击流程正常为旁证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG18",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG18-after.wxml"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "LG19",
+      "page": "pages/login/index",
+      "operation": "体验登录失败/入口关闭：后端文案 toast 停留",
+      "expected": "制造失败（后端不可达或 403 入口关闭）→ toast 后端 message 或「体验登录失败，请稍后重试」；停留登录页",
+      "actual": "失败前置未能构造：exec 实测 tap .btn-guest 返回的是成功 toast「已进入体验模式，先逛逛吧」，且 LG19-after.wxml 快照=discover 页（已登录跳转）——后端 guest-login 在本环境恒 200（op 批 curl 实测 200 token），入口关闭 403 无法注入。expected 的失败分支两批均无观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG19",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG19-after.wxml（=discover，证成功路径而非失败路径）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG20",
+      "page": "pages/login/index",
+      "operation": "DEV 演示模式进入（mock 会话注入）",
+      "expected": "tap .dev-user-entry → 注入 mock 会话 user-1001 → reLaunch /pages/discover/index，仅一次导航，无真实登录请求",
+      "actual": "exec：tap .dev-user-entry 执行；LG20-after.wxml 快照=discover 登录态（寻觅/推荐/附近/林晓）、LG20-after.png=discover(217KB)、before=login(154KB)；op 批 op20 直接读取 session={loggedIn:true,userId:user-1001,name:林晓} 并有 20-after discover 渲染截图",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG20",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG20-after.wxml",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-LG20-after.png",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[20]"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG21",
+      "page": "pages/login/index",
+      "operation": "展示模式入口（条件用例）",
+      "expected": "manifest 条件分支：本构建为 dev/mock（非 VITE_SHOWCASE_MODE），改为断言 .showcase-entry 不存在后结束",
+      "actual": "构建模式实测为 build:mp-weixin:mock（screenshot-manifest.json buildMode 字段）→ 适用不存在断言分支：exec 记录 dom: .showcase-entry:absent；op00 在登录页直接断言 hasShowcase=false 且 00-base.png 目检无 showcase 入口。条件分支满足",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG21（.showcase-entry:absent）",
+        "reports/audit/round-1/screenshot-manifest.json（buildMode=build:mp-weixin:mock）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-00-base.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG22",
+      "page": "pages/login/index",
+      "operation": "「返回微信登录」切回快捷视图且输入不丢",
+      "expected": "≤500ms 切回 login-quick（三按钮回归）；重新展开表单后 #login-phone/#login-password 值保留",
+      "actual": "复跑批 FAILED：top=discover（mock 自动前进），.btn-phone-quick/#login-phone/.btn-text 均未找到，切回动作未执行；op 批 op17 已直接观测「返回微信登录」→ 快捷视图三按钮+协议行+DEV 入口恢复（17-after，hasQuick=true hasForm=false），但「重新展开后输入保留」两批均无观测。部分覆盖，核心断言（输入不丢）缺失",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG22",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-17-after.png（op 批：切回快捷视图已证）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG23",
+      "page": "pages/login/index",
+      "operation": "手机号输入三态（空/非法/合法）",
+      "expected": "数字键盘、maxlength=11 截断；「123」时 isPhoneValid=false、11 位后=true；无卡顿无 console 错误",
+      "actual": "复跑批 act-FAIL：#login-phone 未找到（top=discover），动作未执行；op 批覆盖空态（op10 input('')→占位符恢复）与合法态（op09 value=13800138000），但「123」非法中间态两批均无直接观测（isPhoneValid=false 未被单独触发验证）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG23",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-09-after.png",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-10-after.png"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG24",
+      "page": "pages/login/index",
+      "operation": "手机号超长/特殊字符输入防呆",
+      "expected": "数字串被 maxlength=11 截断为 11 位；字母/符号被键盘层拦截；页面不崩溃无 console 报错",
+      "actual": "复跑批 act-FAIL（#login-phone 未找到，无反证）；op 批直接观测：op11 输入 13800138000123456789 → value=\"13800138000\" 长度=11（11-after 截图+attribute 断言）；op12 input('abc!@#123') 程序化赋值 value 原样保留、提交被 isPhoneValid 拦截不可提交（真实数字键盘无法产生该值）、页面无崩溃 console 净",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG24（复跑批未执行、无反证）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-11-after.png（op 批：11 位截断）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-12-after.png（op 批：特殊字符值保留）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[11][12]"
+      ],
+      "confidence": 0.72
+    },
+    {
+      "caseId": "LG25",
+      "page": "pages/login/index",
+      "operation": "密码输入三态+超长（6-64 位校验窗口）",
+      "expected": "密文圆点显示；无 maxlength 可录超长；5 位与 100 位时提交被拦截；无 console 错误",
+      "actual": "复跑批 act-FAIL：#login-password 未找到，动作未执行；op 批仅覆盖合法态（op13 abc123 → 圆点掩码+value 断言，13-after）；5 位/100 位超长输入及对应拦截行为两批均无观测",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG25",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-13-after.png（op 批：合法态掩码已证）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG26",
+      "page": "pages/login/index",
+      "operation": "表单空提交拦截",
+      "expected": "toast「请输入正确的手机号和验证码」；无 POST /v1/auth/phone-login、无路由变化",
+      "actual": "复跑批 FAILED：.form-btns .btn-primary 未找到（表单不可达）；op 批 op08 执行空提交：两轮（rerun4+sup-step4）均停留 pages/login/index、无跳转无异常（停留+无路由已证），但 toast 文案被 DevTools 平台弹窗（测试号 getPhoneNumber 限制，驻留遮挡 app 层 toast）遮挡无法视觉判读——核心可观测（toast 文案）两批均无直接证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG26",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-08b-after.png（op 批：停留已证、toast 被遮挡）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[8]与#unverifiable[2]"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG27",
+      "page": "pages/login/index",
+      "operation": "非法组合提交（非法手机号）拦截",
+      "expected": "「123」+「abc123」提交 → toast「请输入正确的手机号和验证码」；无 phone-login 请求、无路由变化",
+      "actual": "复跑批 FAILED（表单不可达，.form-btns .btn-primary 未找到）；op 批无「123+密码」组合提交的直接操作（op12 为特殊字符程序化值、op15 连点时输入已被 op14b 置为合法格式）。该场景两批均未执行到",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#LG27"],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG28",
+      "page": "pages/login/index",
+      "operation": "合法凭据登录成功落 discover",
+      "expected": "POST /v1/auth/phone-login 成功 → toast「登录成功」→ 1500ms 后落 discover + 会话同步",
+      "actual": "成功路径前置无法构造：后端无可用测试账号——op 批 curl 实测 POST /api/v1/auth/phone-login(13800138000/abc123)→401 {\"message\":\"手机号或密码错误\"}（op14b 同证：合法格式提交实际得 401）；复跑批表单亦不可达。manifest 预设备注「后端存在可用测试账号」在本环境不成立",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG28",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#environment.backend（curl 401 实测）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[14b]"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG29",
+      "page": "pages/login/index",
+      "operation": "错误密码登录失败：后端文案 toast 不报 Sentry",
+      "expected": "400/401 → toast 后端 message；停留登录页、加载态解除、可再提交",
+      "actual": "复跑批 FAILED（表单不可达）；op 批 op14b 同场景执行：提交后与 2.2s 后均停留 pages/login/index 无跳转（停留+无路由已证），后端 401 响应体 curl 实测在案，但 toast 文案被平台弹窗遮挡无法视觉判读——「toast 显示后端文案」这一核心可观测两批均无直接视觉证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG29",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-14b-after.png（op 批：停留已证、toast 被遮挡）"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "LG30",
+      "page": "pages/login/index",
+      "operation": "表单登录按钮防连点×5",
+      "expected": "2000ms 防抖窗口内 phone-login 仅 1 次提交、1 toast、1 次导航",
+      "actual": "复跑批 status=EXECUTED 但语义未执行：表单未展开（pre-FAIL input __CAND__ 未找到），act:tap .form-btns .btn-primary 实际命中快捷视图主按钮——toast「微信服务暂时不可用」+console WechatLoginError 502 均为微信登录路径证据，phone-login 防连点未发生；且仅记录单次 tap 而非 rapidTap×5",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG30（toast/console 均为 wechat 502 路径）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG30-after.wxml"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG31",
+      "page": "pages/login/index",
+      "operation": "「没有账号？去注册」跳独立注册页",
+      "expected": "≤500ms navigateTo /pages/register/index，栈=[login, register]",
+      "actual": "复跑批 FAILED：.btn-text 未找到（表单视图未建立，入口在表单内）；op 批 op16 直接观测：raw 跳转后=pages/register/index、返回后=pages/login/index，16b-after.png 目检注册页完整渲染（创建账号/手机号/昵称/出生日期/注册按钮/协议行）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG31（复跑批未执行、无反证）",
+        "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-16b-after.png（目检：注册页渲染）",
+        "reports/audit/round-1/interact/PAGES-LOGIN-INDEX.json#checks[16]"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "LG32",
+      "page": "pages/login/index",
+      "operation": "注册页返回落点=登录页且表单状态恢复",
+      "expected": "落回 /pages/login/index；表单展开态、已输入手机号/密码、协议勾选态全部恢复",
+      "actual": "复跑批 EXECUTED 但前置未成立：未先进入注册页（pre-FAIL input 未找到），在栈底直接 navigateBack → navError=Uncaught [object Object]（单层栈返回的框架层报错，非产品路由缺陷）；route=[login] 不能证明「自注册页返回」；「表单状态恢复」因复跑批无输入、op 批 op16 返回后未做输入态断言，两批均无观测",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#LG32"],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "LG33",
+      "page": "pages/login/index",
+      "operation": "login_open=false 关闭态：横幅+禁用+兜底 toast",
+      "expected": "黄色关闭横幅+登录卡片置灰(.login-blocked, pointer-events:none)+兜底 toast「登录功能暂未开放」；无登录请求",
+      "actual": "switches.login_open=false 无法注入（manifest 预设「无法注入时如实标 UNVERIFIED」）：exec 实测 dom .login-blocked:absent、无关闭横幅文案，tap .btn-primary 走正常微信登录路径（502 toast+captureException），LG33-after.wxml=正常登录页快捷视图。关闭态 UI 两批均未出现，前置未成立",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#LG33",
+        "reports/screenshots/round-1-interact/wxml/PAGES-LOGIN-INDEX-LG33-after.wxml（无横幅、三按钮正常）"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "LG34",
+      "page": "pages/login/index",
+      "operation": "register_open=false：注册入口隐藏",
+      "expected": "onShow 强制 phoneRegisterMode=false；表单内「去注册」入口不渲染；「返回微信登录」仍可用",
+      "actual": "未能注入 switches.register_open=false：exec 仅 observe-only（无 DOM 断言记录），after 截图通道超时；环境默认 isRegisterOpen=true（op16 注册入口实际可点）。注入类前置未成立，隐藏行为未验证",
+      "verdict": "UNVERIFIED",
+      "evidence": ["reports/audit/round-1/interact/exec-results.json#LG34"],
+      "confidence": 0.8
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-LOGIN-001",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-07-after.png",
+      "category": "Interaction",
+      "severity": "P2",
+      "description": "历史问题回归核对：手机号授权被拒后静默死路。本轮两批真实执行复验修复效果：授权失败回调后表单自动展开（hasForm=true，07-after.png 表单在平台弹窗下方清晰可见）",
+      "evidence": "exec#LG15 tap .btn-phone-quick ×2 停留 login 无静默；op07 hasForm=true hasQuick=false + 07-after.png；代码 src/pages/login/index.vue cancelled 判定 + showPhoneLogin=true",
+      "sources": ["screenshot", "interaction", "code"],
+      "confidence": 0.85,
+      "ideal": "拒绝/失败回调也展开手机号登录表单，不出现静默死路",
+      "fix": "已于 2026-09-12 修复；本轮 R1 复跑批（LG15）与 op 批（op07）双批复验通过",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R1-LOGIN-002",
+      "round": "R1",
+      "page": "pages/login/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-LOGIN-INDEX-02-after.png",
+      "category": "Interaction",
+      "severity": "P3",
+      "description": "协议勾选框点击热区 34rpx×34rpx，低于交互铁律「热区≥88rpx」约 61%（manifest LG06 明确要求按铁律判缺陷）。视觉尺寸可保持 34rpx，但可点击热区未做扩展，真机上命中困难、易误触协议链接",
+      "evidence": "apps/client/src/pages/login/index.vue:1458-1460 .checkbox { width: 34rpx; height: 34rpx; }（本轮实读确认，无 padding/热区扩展层）；manifest LG06 expected 热区条款；exec#LG06 automation 直呼 tap 可命中但真机手指命中率低；LG01-after.png 目检勾选框视觉尺寸",
+      "sources": ["code", "screenshot", "manifest"],
+      "confidence": 0.95,
+      "ideal": "checkbox 可点击热区≥88rpx（88rpx×88rpx），视觉圆圈可维持 34rpx",
+      "fix": "为 .checkbox 增加 padding 或伪元素扩大命中区至≥88rpx（如 ::after 扩展负 margin 热区），或将 tap 处理器上移至整行协议行并保留 .checkbox 为视觉态",
+      "status": "待修复"
+    }
+  ],
+  "unverifiable": [
+    "LG11|复跑批表单不可达（mock 已登录自动前进 discover，.btn-phone-quick/#login-phone/.checkbox 均未找到）致动作未执行；op 批亦未覆盖「未勾选协议+表单提交」组合|2",
+    "LG12|后端对测试号微信 code 恒返 502（curl+console 双证），成功路径前置无法构造；失败分支行为已由 LG13 单独验证|1",
+    "LG16|个人测试号 getPhoneNumber 仅返回失败回调（DevTools 平台限制），授权成功→401 兜底链路无法自动化触发|2",
+    "LG19|失败前置无法构造：后端 guest-login 恒 200，实测为成功 toast「已进入体验模式」且 wxml 快照=discover，失败分支两批均无观测|1",
+    "LG22|复跑批表单不可达动作未执行；op 批 op17 已证「切回快捷视图」，但「重新展开后输入保留」核心断言两批均无观测|2",
+    "LG23|三态中「123」非法态两批均无直接观测（op09/op10 已证合法态/空态）；复跑批 act-FAIL 元素未找到|2",
+    "LG25|密码 5 位/100 位超长态两批均无观测，仅合法态掩码显示由 op13 佐证；复跑批 #login-password 未找到|2",
+    "LG26|复跑批表单不可达；op 批 op08 空提交已观测停留+无路由变化，但 toast 文案被 DevTools 平台弹窗（测试号限制）驻留遮挡，无法视觉判读|2",
+    "LG27|「123+abc123」非法组合提交两批均未执行到（复跑批表单不可达，op 批无对应操作）|2",
+    "LG28|后端无可用测试账号（curl 实测 13800138000/abc123→401 手机号或密码错误），登录成功路径无法构造；复跑批表单亦不可达|2",
+    "LG29|错误密码失败路径：op14b 已证停留+无路由+curl 401 响应体，但 toast 文案被平台弹窗遮挡无视觉证据；复跑批表单不可达|2",
+    "LG30|复跑批表单未展开，tap 实际命中快捷视图微信一键登录（toast/console 均为 502 微信路径），phone-login 防连点未按用例语义执行|1",
+    "LG32|复跑批未先进注册页即在栈底 navigateBack（Uncaught [object Object]），「自注册页返回落点」与「表单状态恢复」均无有效观测|2",
+    "LG33|无法注入 switches.login_open=false：实测无 .login-blocked、无关闭横幅、走正常 502 路径，关闭态前置未成立（manifest 预设如实标 UNVERIFIED）|1",
+    "LG34|未能注入 switches.register_open=false：仅 observe-only 无断言记录、after 截图超时，入口隐藏行为未验证|1"
+  ],
+  "notes": "1) 仲裁基准：expected=ops manifest；observed=exec-results.json（LG01-LG34，09-22 夜~09-23 晨复跑批，25 EXECUTED/9 FAILED）；截图/wxml=round-1-interact 两批共用目录；同页同构建另有 op00-op21 成功批（interact/PAGES-LOGIN-INDEX.json，09-19~20）作为补充观测源，凡复跑批证据缺失处均注明「op 批」字样，未采纳任何纯代码推测。2) 复跑批系统性干扰：mock 构建 bootstrap 恒注入已登录会话，复跑批部分用例（LG11/21/22/23/24/26/27/28/29/30/31）丢失 logout 前置致登录页自动前进 discover、表单类元素不可达——此为测试通道/前置问题，非产品缺陷（同构建 op 批同场景可正常展开表单）。3) exec 记录的 route 字段存在过早采样（LG04 记 login 实为资料完善页、LG07 记 login 实有跳转、LG17/19/20 同理），一律以操作后 wxml 快照与截图为准仲裁。4) LG08 冲突说明：复跑批 route 记录 tapIndex#2 落 agreement 与 expected 不符，但无任何佐证且 op 批 19b-after.png 目检 privacy 页渲染正确，判复跑批采样/定位噪声；建议后续轮次对 legal 双链接各留 wxml+截图证据。5) 平台弹窗「获取手机号失败」为 DevTools 测试号平台层产物（全仓无该文案与 showModal 调用），致 08/14b/15 的 app 层 toast 无法入镜，相应用例（LG26/LG29）按证据缺失判 UNVERIFIED 而非 FAILED。6) console 证据：op 批 289 行中错误模式 126 行命中全部为设计内 Sentry captureException（/v1/auth/wechat 502、source=login.wechat），无 TypeError/is not defined/ReferenceError/routeDone 双跳/NAV_FAIL/未捕获异常；audit/interact 下的 console-PAGES-LOGIN-INDEX.log 为 09-19 初测批全失败过程日志，未作为判定证据。7) 本页无下拉刷新能力（pages.json 未启用 enablePullDownRefresh），manifest 亦未设该用例，非缺陷。8) 判定分布：VERIFIED 19 / FAILED 0 / UNVERIFIED 15；FAILED 为零系「失败分支前置不可构造」类情形按规则归 UNVERIFIED，产品行为无一条与 expected 直接相悖。"
+}

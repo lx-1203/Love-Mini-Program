@@ -1,0 +1,1073 @@
+{
+  "round": "R1",
+  "page": "pages/profile/index",
+  "pageName": "我的（tabBar）",
+  "generatedAt": "2026-09-23T12:57:05.131Z",
+  "role": "A6 交互判定员（证据仲裁）：Manifest.expected vs A1.exec-results.observed vs 截图/wxml/console 三方对照",
+  "sources": {
+    "manifest": "reports/audit/round-1/ops/PAGES-PROFILE-INDEX.json",
+    "observed": "reports/audit/round-1/interact/exec-results.json",
+    "companionRun": "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json（同目录 2026-09-20 构建 OP00-OP25 运行，作为辅助 observed 源用于仲裁，相应 checks 均注记）",
+    "screenshots": "reports/screenshots/round-1-interact/",
+    "tourScreenshots": "reports/screenshots/round-1-tour/",
+    "consoleLog": "reports/audit/round-1/interact/console-S04-profile.log"
+  },
+  "environment": {
+    "gitSha": "aefd8a72",
+    "buildMode": "build:mp-weixin:mock",
+    "identity": "实际登录身份为 mock user-1001 林晓（manifest 预设身份A=100158 曦风 / 身份B=100159 小新生；exec-results observed 自标 MISMATCH!）",
+    "evidenceDegradation": "截图通道大面积失败（automator 等待超时 / saveFile:fail exceeded the maximum size of the file storage limit）；已落盘 PFI 截图存在 MD5 级陈旧帧复用（PFI40-after=PFI41=PFI43前后=PFI45=PFI47=PFI50=PFI51；PFI15=PFI18；PFI63=PFI68），故 wxml 快照与 console 为第一序证据"
+  },
+  "summary": {
+    "total": 71,
+    "VERIFIED": 24,
+    "FAILED": 1,
+    "UNVERIFIED": 46
+  },
+  "checks": [
+    {
+      "caseId": "PFI01",
+      "page": "pages/profile/index",
+      "operation": "未登录冷启动断言（observe-only）",
+      "expected": "渲染 NotLoggedProfile 锁定页（点击登录/0%完整度/0统计/骨架），console 无 401/登录已过期/强踢，无错误空态闪现",
+      "actual": "游客态载入成功（reLaunch pages/profile/index），PFI02-07 同态 dom 探测 .nlp-topbar__btn/.nlp-header/.nlp-completion__btn/.nlp-story/.nlp-interaction 全部 present（锁定页完整渲染）；S04 console 无 401/登录已过期/NAV_FAIL/TypeError；配套运行 OP23/OP25 游客截图一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI01",
+        "reports/audit/round-1/interact/exec-results.json#PFI02..PFI07 dom 探测",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-23-after.png",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png",
+        "reports/audit/round-1/interact/console-S04-profile.log"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI02",
+      "page": "pages/profile/index",
+      "operation": "tap 未登录顶栏「‹ 返回」",
+      "expected": "navigateBack 兜底 switchTab 落 pages/home/index，500ms 内路由反馈",
+      "actual": "tapIndex .nlp-topbar__btn#1 已执行（tapped），但 exec-results 的 route/observed 均为动作前快照，无 post-action 落点证据；无截图",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI02"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI03",
+      "page": "pages/profile/index",
+      "operation": "tap 未登录「点击登录」头部",
+      "expected": "goLogin → navigateTo /pages/login/index，栈顶 login",
+      "actual": "tap .nlp-header 已执行；无 post-action 落点证据；窗口内 console 出现 [Vue Error] runtime-2（23:14:45），归因不明；companion OP23 仅证底部「登录」按钮非本头部元素",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI03",
+        "reports/audit/round-1/interact/console-S04-profile.log 行13-14"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI04",
+      "page": "pages/profile/index",
+      "operation": "tap 未登录「去完善」",
+      "expected": "同 goLogin → /pages/login/index，500ms 路由反馈",
+      "actual": "tap .nlp-completion__btn 已执行；无 post-action 落点证据；S04 console 23:15:02（本例窗口）出现 navigateTo:fail timeout，通道拥塞与产品缺陷不可区分",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI04",
+        "reports/audit/round-1/interact/console-S04-profile.log 行21-23"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI05",
+      "page": "pages/profile/index",
+      "operation": "依次 tap 未登录故事卡×3+添加故事",
+      "expected": "每张卡均 goLogin → /pages/login/index，无死按钮",
+      "actual": "仅执行 1 次 tap .nlp-story（manifest 要求 4 次逐卡）；无落点证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI05"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI06",
+      "page": "pages/profile/index",
+      "operation": "依次 tap 未登录互动 4 行",
+      "expected": "4 行均 goLogin → /pages/login/index",
+      "actual": "仅执行 1 次 tap .nlp-interaction；窗口内 console uni.onUnhandledRejection navigateTo:fail timeout（goLogin 已触发但导航超时；已知自动化通道假死坑与产品缺陷不可区分）；无落点证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI06",
+        "reports/audit/round-1/interact/console-S04-profile.log 行32-34"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI07",
+      "page": "pages/profile/index",
+      "operation": "tap 未登录应用中心/设置图标",
+      "expected": "两图标均 goLogin → /pages/login/index",
+      "actual": "tap 落在 .nlp-topbar__right 容器（非两个 .nlp-topbar__btn 逐个测）；窗口内 navigateTo:fail timeout；无落点证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI07",
+        "reports/audit/round-1/interact/console-S04-profile.log 行39-41"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI08",
+      "page": "pages/profile/index",
+      "operation": "游客深链 ?userId=4001（observe-only）",
+      "expected": "停留 LockScreen 不渲染他人态、零受保护请求、无 401/reLaunch 强踢",
+      "actual": "route options.userId=4001 且 PFI08-after.wxml 为完整 NotLoggedProfile（顶栏返回/应用中心/设置+点击登录+0%+占位），无他人态主体；console 仅 preloadSubpackages 2 行，零 401；companion OP25 截图一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI08-after.wxml",
+        "reports/audit/round-1/interact/exec-results.json#PFI08",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-25-guest-other.png"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "caseId": "PFI09",
+      "page": "pages/profile/index",
+      "operation": "本人态首屏渲染与首拉断言",
+      "expected": "ProfileShell mine 模式：MyHeader/完整度卡/四格非0/故事区/相册/帖子/互动4行/更多4格/语音/背景/推荐/FAB，console 无 TypeError",
+      "actual": "巡检 tour A「默认/滚动-底部」截图全部模块在渲染，四格=2/22/356/104 非0，头像为真实照片，语音预览卡0:42+重录/删除、编辑背景图、推荐给好友齐备；companion OP00 模块计数 interactionRows=4/moreCells=4/albumThumbs=3/postCards=3/fab=true；S04 console 无 TypeError。注：实际身份为 user-1001 林晓（manifest 预设 100158 曦风，observed 自标 MISMATCH!），渲染断言不受影响",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+        "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP00",
+        "reports/audit/round-1/interact/exec-results.json#PFI09",
+        "reports/audit/round-1/interact/console-S04-profile.log"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI10",
+      "page": "pages/profile/index",
+      "operation": "tap MyHeader 分享图标",
+      "expected": "500ms 内 toast「分享功能即将上线」，无路由变化",
+      "actual": "本构建 tap 被 automator 组件边界选择器阻断（.my-header__icon 在 wxml 存在、page.$ 不可达）；companion OP01-after 截图直采到黑色 toast「分享功能即将上线」且路由未变——与本构建代码（MyHeader handleShare→toast）一致",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-01-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP01",
+        "reports/audit/round-1/interact/exec-results.json#PFI10",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml（.my-header__icon 存在）"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI11",
+      "page": "pages/profile/index",
+      "operation": "tap MyHeader 设置图标",
+      "expected": "navigateTo /subpackages/profile-extra/settings/index，返回落本页",
+      "actual": "本构建 tap 同被组件边界阻断；companion OP02：path=settings/index + OP02-dest 设置页完整渲染截图 + navigateBack 回本页",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-02-dest.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP02",
+        "reports/audit/round-1/interact/exec-results.json#PFI11"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI12",
+      "page": "pages/profile/index",
+      "operation": "点头像 → BottomSheet 头像菜单",
+      "expected": "500ms 内 BottomSheet 滑入 4 项（查看大图/相册/拍照/取消），tabBar 自动隐藏",
+      "actual": "本构建 .my-header__avatar 在 wxml 存在但 automator 不可达（tap element not found），菜单未开（PFI16 wxml .avatar-menu__item absent）；当前源码已将原生 showActionSheet 重写为 BottomSheet（index.vue:50-52,855-899,2071-2093，修 MP-R1-PROFILE-002），无运行时证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI12",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI16-after.wxml",
+        "apps/client/src/pages/profile/index.vue:50-52"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI13",
+      "page": "pages/profile/index",
+      "operation": "头像菜单「查看大图」",
+      "expected": "弹层关闭+previewImage 拉起",
+      "actual": "菜单未开（wxml .avatar-menu__item absent），tapIndex 落空，无 previewImage 证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI13",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI16-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI14",
+      "page": "pages/profile/index",
+      "operation": "头像菜单「取消」",
+      "expected": "弹层关闭无副作用",
+      "actual": "菜单未开，tapIndex 落空；after 截图落盘失败（saveFile 超限）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI14"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI15",
+      "page": "pages/profile/index",
+      "operation": "头像菜单遮罩点击关闭",
+      "expected": "弹层关闭、tabBar 恢复",
+      "actual": ".bottom-sheet-mask absent（弹层未开），tap 失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI15"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI16",
+      "page": "pages/profile/index",
+      "operation": "头像菜单「从相册选择」",
+      "expected": "弹层先关+隐私门 toast 或 chooseImage 唤起",
+      "actual": "菜单未开（tapIndex 落空于 absent 元素）；无隐私 toast、无 chooseImage 证据；before/after 截图落盘失败（saveFile 超限），仅 wxml 快照",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI16",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI16-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI17",
+      "page": "pages/profile/index",
+      "operation": "头像菜单「拍照」",
+      "expected": "chooseImage(camera) 唤起；上传成功路径 toast「头像已更新」",
+      "actual": "菜单未开，tapIndex 落空；无 chooseImage/Toast 证据；截图落盘失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI17",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI17-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI18",
+      "page": "pages/profile/index",
+      "operation": "头像快击×5 防重复弹层",
+      "expected": "仅一个菜单实例，无叠层卡死",
+      "actual": "rapidTap 目标 .my-header__avatar 不可达（组件边界选择器），未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI18"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI19",
+      "page": "pages/profile/index",
+      "operation": "tap「编辑资料」",
+      "expected": "openAppPath setup/profile?entry=edit，500ms 路由反馈",
+      "actual": "本构建 tap 不可达；companion OP03：跳转 subpackages/setup/profile/index，返回 pages/profile/index（03-back 截图）；entry=edit 参数未断言",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-03-back.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP03",
+        "reports/audit/round-1/interact/exec-results.json#PFI19"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "PFI20",
+      "page": "pages/profile/index",
+      "operation": "tap 资料完整度卡",
+      "expected": "同编辑入口 setup/profile?entry=edit",
+      "actual": "本构建 tap 不可达；companion OP05：completion=85% 渲染，跳转 setup/profile 后返回本页（05-after 截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-05-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP05",
+        "reports/audit/round-1/interact/exec-results.json#PFI20"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "PFI21",
+      "page": "pages/profile/index",
+      "operation": "tap 统计格「访客」",
+      "expected": "statTap visitor → PROFILE.VISITORS（MP-R2-PROFILE-007：不落 likes 页）",
+      "actual": "本构建 tap 不可达；companion OP08 观测为旧口径落 likes/index（修复前行为），当前代码已映射 VISITORS（index.vue:815 注释）但无现行运行证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI21",
+        "apps/client/src/pages/profile/index.vue:808-821",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP08"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI22",
+      "page": "pages/profile/index",
+      "operation": "依次 tap 统计格 1/2/3",
+      "expected": "三格均落 LIKES.INDEX",
+      "actual": "本构建 tap 不可达；companion 仅测列4（OP08），列1/2/3 无任何构建的证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI22"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI23",
+      "page": "pages/profile/index",
+      "operation": "tap「添加日常」虚线卡",
+      "expected": "openAppPath village/publish?target=friends",
+      "actual": "本构建 tap 不可达；companion OP15：跳转 subpackages/village/village/publish 后返回本页（15-after 截图）；target=friends 参数未断言",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-15-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP15",
+        "reports/audit/round-1/interact/exec-results.json#PFI23"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "PFI24",
+      "page": "pages/profile/index",
+      "operation": "tap 我的故事卡",
+      "expected": "有数据跳 detail?id=；无数据按 manifest 预案改验空态",
+      "actual": "mock myDailies 为空：story-card=0、「添加日常」常驻（companion OP16 16-empty 截图），与预案空态口径一致；detail 跳转分支无数据可测",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-16-empty.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP16",
+        "reports/audit/round-1/interact/exec-results.json#PFI24"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "PFI25",
+      "page": "pages/profile/index",
+      "operation": "tap 相册缩略图",
+      "expected": "tapAlbum → PROFILE.ALBUM（MP-R7-005 回归）",
+      "actual": "本构建 tap 不可达；companion OP13：缩略图3张有图，跳转 subpackages/profile-extra/profile/album，相册页 4 张真实照片渲染",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-11-dest.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP13",
+        "reports/audit/round-1/interact/exec-results.json#PFI25"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI26",
+      "page": "pages/profile/index",
+      "operation": "tap 我的帖子卡",
+      "expected": "openPost → village/detail?id=",
+      "actual": "本构建 tap 不可达；companion OP14：帖子卡3张，跳转 subpackages/village/village/detail 后返回本页；id 参数一致性未断言",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-14-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP14",
+        "reports/audit/round-1/interact/exec-results.json#PFI26"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI27",
+      "page": "pages/profile/index",
+      "operation": "故事/相册/帖子三区空态文案",
+      "expected": "相册空态+帖子空态文案渲染，添加日常常驻，无白屏",
+      "actual": "前置不满足：本身份有相册4张（tour A 默认截图缩略图行）与帖子3篇（companion OP14），空态未出现无法断言；「添加日常」常驻已证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP14",
+        "reports/audit/round-1/interact/exec-results.json#PFI27"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI28",
+      "page": "pages/profile/index",
+      "operation": "tap 互动行「最近访客」",
+      "expected": "interactionTap visitors → PROFILE.VISITORS",
+      "actual": "本构建 tap 不可达；companion OP07：跳转 subpackages/profile-extra/profile/visitors 后返回本页（07-after 截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-07-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP07",
+        "reports/audit/round-1/interact/exec-results.json#PFI28"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI29",
+      "page": "pages/profile/index",
+      "operation": "依次 tap 互动行 1/2/3",
+      "expected": "三行均落 LIKES.INDEX，行值与 likesStore 一致",
+      "actual": "本构建 tap 不可达；仅行1有 companion OP06 证据（likes 页渲染+返回）；行2/3 无任何构建证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI29",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-06-dest.png"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI30",
+      "page": "pages/profile/index",
+      "operation": "tap 更多功能「我的收藏」",
+      "expected": "moreTap favorites → profile/favorites",
+      "actual": "本构建 tap 不可达；companion OP09：跳转 favorites，收藏页 2 条收藏帖渲染，返回本页（09-dest 截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-09-dest.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP09",
+        "reports/audit/round-1/interact/exec-results.json#PFI30"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI31",
+      "page": "pages/profile/index",
+      "operation": "tap 更多功能「谁看过我」",
+      "expected": "moreTap visitors → profile/visitors",
+      "actual": "本构建 tap 不可达；companion OP10：跳转 visitors 后返回本页（10-after 截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-10-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP10",
+        "reports/audit/round-1/interact/exec-results.json#PFI31"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI32",
+      "page": "pages/profile/index",
+      "operation": "tap 更多功能「恋爱相册」",
+      "expected": "moreTap album → PROFILE.ALBUM（MP-R7-005）",
+      "actual": "本构建 tap 不可达；companion OP11：跳转 album（相册页4张照片），返回本页；主跑 albumRouteOk=false 系脚本断言误带 /index 后缀，非产品缺陷（11-dest 截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-11-dest.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP11",
+        "reports/audit/round-1/interact/exec-results.json#PFI32"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI33",
+      "page": "pages/profile/index",
+      "operation": "tap 更多功能「隐私设置」",
+      "expected": "moreTap privacy → settings/index",
+      "actual": "本构建 tap 不可达；companion OP12：跳转 settings/index（与 OP02 设置页同）；返回链路由 OP02 补充复跑证实",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-02-dest.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP12",
+        "reports/audit/round-1/interact/exec-results.json#PFI33"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI34",
+      "page": "pages/profile/index",
+      "operation": "语音介绍区初始 CTA 断言",
+      "expected": "无语音时显示「录制语音状态」CTA，无预览卡",
+      "actual": "前置不满足：本身份已有语音——tour A 滚动-底部截图与 PFI44 wxml 均为语音预览卡（波形+0:42+重录/删除），「录制语音状态」CTA 未渲染；预期两分支中未录分支无法验证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml",
+        "reports/audit/round-1/interact/exec-results.json#PFI34"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI35",
+      "page": "pages/profile/index",
+      "operation": "tap 录制语音 CTA",
+      "expected": "振动+500ms 录音态（toast 录音中+计时）或降级 toast 不支持",
+      "actual": "前置不满足（已有语音→预览卡态）；tapIndex .video-cta#1 实为「编辑背景图」CTA（wxml 证实语音区无 .video-cta，首个 .video-cta 属背景区），无任何 toast/状态变化",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI35",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI35-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI36",
+      "page": "pages/profile/index",
+      "operation": "过短录音丢弃",
+      "expected": "duration<1s → toast 录音时间过短，不上传",
+      "actual": "SKIPPED action-not-automatable：1秒内精准停止无法自动化；尝试1",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI36"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI37",
+      "page": "pages/profile/index",
+      "operation": "tap 语音播放/暂停",
+      "expected": "mock:// → 播放态（图标暂停+波形高亮3s自动复位），无错误",
+      "actual": "FAILED：tap .voice-preview__play 后 toast「录音失败，请重试」+ console readFile:fail no such file or directory /static/assets/mock/voice-status.mp3。代码根因：stores/profile.ts:162 mock 语音占位 URL 为 /static/assets/mock/voice-status.mp3（非 mock:// 协议）→ index.vue:1353 演示分支永不命中 → 走 index.vue:1365 真实播放 → 资产不存在 InnerAudioContext onError → index.vue:1381 误用 messages.voiceRecordFailed（zh-CN.ts:1251「录音失败，请重试」）——播放动作弹录音错误文案，演示播放分支死路",
+      "verdict": "FAILED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI37（toast+console）",
+        "reports/audit/round-1/interact/console-S04-profile.log 行58",
+        "apps/client/src/stores/profile.ts:157-163",
+        "apps/client/src/pages/profile/index.vue:1352-1389",
+        "apps/client/src/i18n/locales/zh-CN.ts:1251"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "caseId": "PFI38",
+      "page": "pages/profile/index",
+      "operation": "tap「重录」",
+      "expected": "停止播放→录音态：toast「录音中，点击停止」+计时归零递增",
+      "actual": "tapIndex .voice-preview__delete#1（重录）执行后 toast「录音中，点击停止」——与 expected 文案一致（本轮 exec 直采）；计时递增未逐帧采证",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI38（toast=录音中，点击停止）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml（重录按钮存在）"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI39",
+      "page": "pages/profile/index",
+      "operation": "tap「删除」→ 确认弹窗",
+      "expected": "uni.showModal：确定删除当前语音状态吗？确认红/取消",
+      "actual": "tapIndex .voice-preview__delete#2（删除）已执行；uni.showModal 为原生层，页面 wxml/automator 均不可采，after 截图落盘失败（saveFile 超限）——弹窗出现无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI39"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI40",
+      "page": "pages/profile/index",
+      "operation": "弹窗「删除」确认",
+      "expected": "clearVoiceStatus→语音卡消失+toast「语音状态已删除」",
+      "actual": "无法触达原生 modal 按钮（tap __CAND__(\"删除\") element not found）；before/after 截图均为无弹窗的本页顶帧（且 after 与 PFI41/43/45/47/50/51 截图 MD5 相同，系陈旧帧复用）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI40",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-PFI40-before.png",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-PFI40-after.png"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI41",
+      "page": "pages/profile/index",
+      "operation": "弹窗「取消」",
+      "expected": "弹窗关，语音卡保留无变化",
+      "actual": "同 PFI40：原生 modal 按钮不可达，截图陈旧帧",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI41",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-PFI41-after.png"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI42",
+      "page": "pages/profile/index",
+      "operation": "tap「编辑背景图」CTA（防重入）",
+      "expected": "隐私门 toast 或 chooseImage 唤起；isUploading 期间重复点击 return",
+      "actual": "tap .video-cta ×2 已执行；无 toast 记录；chooseImage 原生选择面板自动化不可见；before/after 截图落盘失败",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI42",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI42-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI43",
+      "page": "pages/profile/index",
+      "operation": "背景图上传成功",
+      "expected": "上传中 spinner+「上传中...」；成功 toast「背景已更新」+300ms 淡入；Loading 不永驻",
+      "actual": "按 manifest 预案劫持 chooseImage（act:mockWxMethod ok）；触发 tap 所用选择器 .profile-bg__edit 在本构建 DOM 不存在（wxml 无该类）致本例窗口无 toast；随后 PFI44 对首个 .video-cta（=背景编辑 CTA，wxml 证实）的 tap 触发被劫持链路，成功 toast「背景已更新」（zh-CN.ts:1578 bgUpdated）被采到——成功路径达成但 spinner/淡入细节无截图，证据跨用例窗口",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI43",
+        "reports/audit/round-1/interact/exec-results.json#PFI44（toast=背景已更新）",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI43-after.wxml",
+        "apps/client/src/i18n/locales/zh-CN.ts:1578"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "PFI44",
+      "page": "pages/profile/index",
+      "operation": "tap「推荐给好友」CTA",
+      "expected": "real：邀请弹窗三态；mock：showShareMenu，无弹窗",
+      "actual": "tap .video-cta 误落首个实例=「编辑背景图」CTA（wxml 证实语音区无 CTA、背景区 CTA 为首个 .video-cta），叠加 PFI43 残留 chooseImage 劫持→观测到串扰 toast「背景已更新」；invite-mask/invite-modal 全 absent、.showShareMenu absent——预期反馈未在正确元素上行使",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI44",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI45",
+      "page": "pages/profile/index",
+      "operation": "tap「复制邀请码」",
+      "expected": "剪贴板+toast「邀请码已复制」",
+      "actual": ".invite-modal__copy absent（邀请弹窗未开），tap 失败；截图陈旧帧",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI45"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI46",
+      "page": "pages/profile/index",
+      "operation": "邀请弹窗两路关闭",
+      "expected": "遮罩/关闭按钮均关闭弹窗",
+      "actual": ".invite-mask/.invite-modal__btn--cancel 全 absent（弹窗未开）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI46"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI47",
+      "page": "pages/profile/index",
+      "operation": "错误态「重试」",
+      "expected": "重新 openInviteModal 落成功或错误文案",
+      "actual": ".invite-modal__retry absent（弹窗未开，断网注入亦未执行）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI47"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI48",
+      "page": "pages/profile/index",
+      "operation": "tap FAB「发动态」",
+      "expected": "按压缩放→拉长动画→跳 village/post，返回 FAB 复原",
+      "actual": "本构建 tap 执行但 post-action 落点无采证（after wxml 仍本页+global-fab，截图落盘失败）；companion OP17：touchstart+touchend 后跳转 village/post（首次即成功无重复压栈）、17-back 返回本页 FAB 复位（截图）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-17-back.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP17",
+        "reports/audit/round-1/interact/exec-results.json#PFI48",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI49-after.wxml"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "caseId": "PFI49",
+      "page": "pages/profile/index",
+      "operation": "FAB 快击×5 防连点",
+      "expected": "isExpanded 期间直接 return，village/post 仅入栈1次",
+      "actual": "rapidTap×5 done=5 已执行，但栈长/落点无采证（after wxml 仍本页、截图落盘失败、无 getCurrentPages 断言）——防连点语义未证",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI49",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI49-after.wxml"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI50",
+      "page": "pages/profile/index",
+      "operation": "VIP 卡封存/开启",
+      "expected": "①默认 VIP 卡与徽章不渲染（必做）②开启后点击进 vip 页（可选）",
+      "actual": "①段达成：exec dom .vip-card absent + tour A 默认/companion 00-base 截图均无 VIP 卡与昵称 VIP 徽章；②段 manifest 标注可选，switches 注入失败（pre-FAIL:input .enabled not found）未执行",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI50（dom .vip-card:absent）",
+        "reports/screenshots/round-1-tour/A/pages_profile_index__默认.png",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-00-base.png"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "caseId": "PFI51",
+      "page": "pages/profile/index",
+      "operation": "tap 认证名牌 → 半屏面板",
+      "expected": "CertDetailSheet 滑入：三卡+核验微标+隐私承诺",
+      "actual": ".cert-badge 全页 wxml absent（本身份未渲染名牌行，仅「学生认证」胶囊），元素不存在无法操作",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI51",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml（cert-badge absent）"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI52",
+      "page": "pages/profile/index",
+      "operation": "认证面板两路关闭+防抖",
+      "expected": "遮罩/×均 200ms 出场关闭，closing 期点击拦截",
+      "actual": "面板未开（PFI51 未达成），.cert-sheet-mask/.cert-sheet__close absent",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI52"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI53",
+      "page": "pages/profile/index",
+      "operation": "面板内实名「去认证」",
+      "expected": "goCertify(realname) → verification/real-name",
+      "actual": "面板未开，.cert-item__go absent",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI53"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI54",
+      "page": "pages/profile/index",
+      "operation": "面板内学历「去认证」拦截",
+      "expected": "toast「请先完成实名认证」，不跳转",
+      "actual": "面板未开，.cert-item__go absent；截图陈旧帧",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI54"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI55",
+      "page": "pages/profile/index",
+      "operation": "未认证「去认证」CTA",
+      "expected": "振动 → openAppPath campus/certification",
+      "actual": "前置不满足：本身份 campusVerified（环境注记）→「去认证」CTA 不渲染（expected 已认证分支即无 CTA），CTA 分支无法行使；tap __CAND__ not found",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI55"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI56",
+      "page": "pages/profile/index",
+      "operation": "无头像引导气泡 3s 消失",
+      "expected": "气泡「上传真实头像，匹配率提升80%」3s 自动消失，一次性",
+      "actual": "前置不满足：本身份已有头像（avatar-1.jpg，wxml/截图证实）→按 expected「已有头像则永不弹」应不出现气泡，但 0s/3.5s 双拍截图均落盘失败，无证据判定",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI56",
+        "reports/screenshots/round-1-interact/wxml/PAGES-PROFILE-INDEX-PFI44-after.wxml（avatar img 存在）"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI57",
+      "page": "pages/profile/index",
+      "operation": "纵向滚动到底/顶+横向故事卡",
+      "expected": "内容完整无截断，FAB 固定不随滚动，无请求风暴",
+      "actual": "act:pageScrollTo bottom→top 执行（evidence scrollPos=top）；巡检 滚动-中部/滚动-底部 截图内容完整、FAB 位置固定；companion OP19 scrollTop=859.2/scrollHeight=1671 回顶复原。注：myDailies 为空，横向故事卡滑动无可滑卡，该子项未真测",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-中部.png",
+        "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP19",
+        "reports/audit/round-1/interact/exec-results.json#PFI57"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI58",
+      "page": "pages/profile/index",
+      "operation": "Tab 切走再切回",
+      "expected": "滚动位与数据保留，选中态恢复「我的」，轻量刷新不重置全量首拉",
+      "actual": "act:switchTab messages→profile 执行成功（本轮）；companion OP20：切回后渲染 statCols=4/interactionRows=4/moreCells=4/hasFab=true，选中态恢复（20-back 截图）；滚动位保留与请求计数细节未采",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-20-back.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP20",
+        "reports/audit/round-1/interact/exec-results.json#PFI58"
+      ],
+      "confidence": 0.6
+    },
+    {
+      "caseId": "PFI59",
+      "page": "pages/profile/index",
+      "operation": "他人态深链 userId=4001",
+      "expected": "对方视图完整渲染（头像/昵称/标签/照片墙≤6/打个招呼/匹配chip），不渲染本人态专属模块",
+      "actual": "本轮 reLaunch options.userId=4001 载入成功、console 净（仅 preload）；渲染证据取自 companion OP22-after 截图：对方竹林背景/林晓/21岁/已认证/访客10次角标/「打个招呼」/资料·动态 tab/匹配标签，且无编辑资料/语音区/FAB（对方态）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-22-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP22",
+        "reports/audit/round-1/interact/exec-results.json#PFI59"
+      ],
+      "confidence": 0.75
+    },
+    {
+      "caseId": "PFI60",
+      "page": "pages/profile/index",
+      "operation": "他人态深链 user-3001（mockAuthors 回退）",
+      "expected": "渲染作者「小鹿」+空字段占位兜底，不白屏",
+      "actual": "reLaunch options.userId=user-3001 载入成功、console 净，但截图落盘失败且无 wxml——渲染结果无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI60"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI61",
+      "page": "pages/profile/index",
+      "operation": "他人态深链 10003（real id）",
+      "expected": "成功视图或占位兜底，不白屏不闪本人数据",
+      "actual": "reLaunch options.userId=10003 载入成功、console 净，但截图落盘失败且无 wxml——渲染结果无证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI61"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI62",
+      "page": "pages/profile/index",
+      "operation": "他人态「打个招呼」",
+      "expected": "successHaptic → chat-session?userId=4001，500ms 路由",
+      "actual": "本轮 exec 前置误用 logout（harness 偏离 manifest pre，.greet-btn 不可达）；companion OP22：他人态 4001 点「打个招呼」后 currentPage=subpackages/chat/chat-session/index（会话页到达）",
+      "verdict": "VERIFIED",
+      "evidence": [
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-22-after.png",
+        "reports/audit/round-1/interact/PAGES-PROFILE-INDEX.json#OP22",
+        "reports/audit/round-1/interact/exec-results.json#PFI62"
+      ],
+      "confidence": 0.65
+    },
+    {
+      "caseId": "PFI63",
+      "page": "pages/profile/index",
+      "operation": "他人态点头像大图预览",
+      "expected": "previewImage 单图，不弹 BottomSheet",
+      "actual": "本轮前置误用 logout（pre:logout ok），.avatar-wrap absent；无任何构建对该动作的证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI63"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI64",
+      "page": "pages/profile/index",
+      "operation": "他人态 tabBar 切回「我的」复位本人态",
+      "expected": "tabReentered→清 targetUserId/otherProfile，渲染本人态",
+      "actual": "act:switchTab×2+tap 我的 已执行，但复位后状态无采证（无截图/wxml；route options userId=10003 为页面实例创建时快照，不能证明复位失败）",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI64"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI65",
+      "page": "pages/profile/index",
+      "operation": "他人态→聊天→back 保持他人态",
+      "expected": "返回落本页仍他人态，onShow 重新拉取",
+      "actual": "navigateBack 动作报 NAV_ERROR: Uncaught [object Object]（automator 通道侧错误），无后续路由/渲染证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI65"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI66",
+      "page": "pages/profile/index",
+      "operation": "他人态右上设置图标",
+      "expected": "openSettings → settings/index",
+      "actual": "前置未建立：执行于本人态上下文（route options 无 userId），.profile-settings absent",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI66"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI67",
+      "page": "pages/profile/index",
+      "operation": "他人态 MatchCountChip → 寻觅",
+      "expected": "switchTab discover，chip 数字与 remainingCount 一致",
+      "actual": "前置未建立（本人态上下文），.match-count-chip absent",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI67"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI68",
+      "page": "pages/profile/index",
+      "operation": "他人态右上分享载荷",
+      "expected": "onShareAppMessage 返回带 userId=4001 的 path",
+      "actual": "前置未建立（本人态上下文），.profile-share absent；转发面板本需真机，evaluate 断言亦未执行",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI68"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI69",
+      "page": "pages/profile/index",
+      "operation": "编辑资料进→立即 back",
+      "expected": "返回落本页、tabBar 选中保持、无重复全量首拉",
+      "actual": "exec navigateBack 报 NAV_ERROR + tap .my-header__edit 不可达；companion OP21 iter1 仅证收藏页 700ms 快进快出返回正确（目标页不同），OP03 为正常速度进出",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI69",
+        "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-21-back2.png"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI70",
+      "page": "pages/profile/index",
+      "operation": "发帖返回轻量刷新新帖即时出现",
+      "expected": "onShow→refreshMyPosts，计数 N+1 新帖置顶",
+      "actual": "observe-only（发布动作属 village 发布页用例域，未在本页用例内发帖），无 N→N+1 前后对比证据",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI70"
+      ],
+      "confidence": 0
+    },
+    {
+      "caseId": "PFI71",
+      "page": "pages/profile/index",
+      "operation": "身份B 登录数据隔离",
+      "expected": "昵称/统计/帖子均为身份B（100159 小新生）视图，无 A 残留",
+      "actual": "前置不满足：pre:login B 实得 userId=user-1001（observed 自标 MISMATCH!），巡检 tour B 默认截图同为「林晓」——两个身份实为同一 mock 用户，隔离无从评判",
+      "verdict": "UNVERIFIED",
+      "evidence": [
+        "reports/audit/round-1/interact/exec-results.json#PFI71",
+        "reports/screenshots/round-1-tour/B/pages_profile_index__默认.png"
+      ],
+      "confidence": 0
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R1-PROFILE-003",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_profile_index__滚动-底部.png（语音预览卡所在区；PFI37 专属截图落盘失败）",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "点击语音状态「播放」无播放动效，反而弹出「录音失败，请重试」（播放动作误用录音失败文案），console 出现 readFile:fail no such file or directory /static/assets/mock/voice-status.mp3",
+      "evidence": "exec-results PFI37：toast=[录音失败，请重试]，console readFile:fail（console-S04-profile.log 行58）；代码链：stores/profile.ts:157-163 mock 占位 URL=/static/assets/mock/voice-status.mp3 非 mock:// 协议且该资产不存在 → index.vue:1353 演示分支（mock:// 前缀判断）永不命中 → index.vue:1365-1386 走 InnerAudioContext 真实播放失败 → index.vue:1381 onError toast 误用 messages.voiceRecordFailed（zh-CN.ts:1251）。三方证据（observed toast+console、代码、i18n 文案）互证",
+      "sources": [
+        "log",
+        "code",
+        "toast"
+      ],
+      "confidence": 0.9,
+      "ideal": "mock 演示态播放应展示 3s 波形动效（或提供真实音频正常播放）；播放失败文案不得使用「录音失败」误导用户",
+      "fix": "① stores/profile.ts:162 占位 URL 改为 mock://demo（命中 index.vue:1353 演示分支）或补充真实音频静态资产；② index.vue:1381 onError 文案改用播放专用 i18n key（如 profile.voicePlayFailed），不复用 messages.voiceRecordFailed；修复后补跑 PFI37/PFI36 交互复验",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-001",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-00-base.png",
+      "category": "UI",
+      "severity": "P2",
+      "description": "「发动态」FAB（GlobalPublishFab）在 375×812 视口被自定义 tabBar 白面板遮挡约 80%，仅露顶部弧线，真人可点区域极小（automation tap 仍可触发，OP17 通过）",
+      "evidence": "本轮复核截图持续可见：00-base/PFI10-after/tour A 滚动-底部 中 FAB 下缘均被 tabBar 白面板截断；companion 运行 4 倍放大 ISSUE-FAB-zoom 取证；GlobalPublishFab.vue bottom=calc(env(safe-area-inset-bottom)+170rpx)≈119px < 自定义 tabBar 原生层总高≈124px",
+      "sources": [
+        "screenshot",
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "FAB 完整悬浮于 tabBar 之上可整圆点击",
+      "fix": "bottom 提高至 tabBar 总高之上（≥200rpx+安全区）或将发布入口并入 tabBar 层承载；全站 tab 页一并核查",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-PROFILE-002",
+      "round": "R1",
+      "page": "pages/profile/index",
+      "screenshot": "reports/screenshots/round-1-interact/PAGES-PROFILE-INDEX-04-cli-capture.png",
+      "category": "Interaction",
+      "severity": "P1",
+      "description": "本人态点头像弹层：旧构建 uni.showActionSheet 仅渲染遮罩、菜单面板不可见（三路取证）；当前源码已重写为项目统一 BottomSheet（四项：查看大图/从相册选择/拍照/取消）",
+      "evidence": "历史缺陷取证见 companion 运行 OP04 三路截图（04-after/04-after2/04-cli-capture）；修复落点：apps/client/src/pages/profile/index.vue:50-52（注释 MP-R1-PROFILE-002）、855-899（handleAvatarTap/avatarMenu handlers）、2071-2093（BottomSheet 模板 .avatar-menu__item×4）；本轮 automator 因自定义组件边界选择器限制无法 tap .my-header__avatar，运行时复验未完成",
+      "sources": [
+        "screenshot",
+        "code"
+      ],
+      "confidence": 0.6,
+      "ideal": "点头像弹出四项半屏菜单，遮罩与面板同显，三路关闭",
+      "fix": "以组件穿越选择器（>>>）或坐标点击补跑 PFI12-PFI18 运行时复验；必要时真机验证 BottomSheet 渲染",
+      "status": "已修复待终验"
+    }
+  ],
+  "unverifiable": [
+    "PFI02|导航落点无采证（exec route/observed 均为动作前快照，post-action 无证据）|1",
+    "PFI03|落点无采证+窗口内 Vue Error runtime-2 归因不明|1",
+    "PFI04|落点无采证+窗口内 navigateTo:fail timeout（通道拥塞与产品缺陷不可区分）|1",
+    "PFI05|仅执行 1/4 元素且落点无采证|1",
+    "PFI06|goLogin 已触发但 navigateTo:fail timeout，落点无采证|1",
+    "PFI07|tap 落容器非单按钮+navigateTo:fail timeout|1",
+    "PFI12|.my-header__avatar 存在于 wxml 但 automator 组件边界选择器不可达（element not found）|1",
+    "PFI13|头像菜单未开启（wxml .avatar-menu__item absent），tapIndex 落空|1",
+    "PFI14|头像菜单未开启，tapIndex 落空，截图落盘失败|1",
+    "PFI15|弹层未开（.bottom-sheet-mask absent）|1",
+    "PFI16|菜单未开+chooseImage 原生面板不可采+截图落盘失败|1",
+    "PFI17|菜单未开+原生拍照面板不可采|1",
+    "PFI18|rapidTap 目标元素组件边界不可达|1",
+    "PFI21|本构建 tap 不可达；旧构建证据（落 likes 页）与现行 MP-R2-PROFILE-007 口径相反，无现行证据|1",
+    "PFI22|本构建 tap 不可达；companion 未覆盖列1/2/3|1",
+    "PFI27|前置不满足：本身份有相册4张/帖子3篇，空态未出现|1",
+    "PFI29|仅行1有旧构建证据，行2/3 无证据|1",
+    "PFI34|前置不满足：本身份已有语音（预览卡态），「录制语音状态」CTA 未渲染|1",
+    "PFI35|前置不满足+tap 实落背景编辑 CTA（首个 .video-cta），无观测反馈|1",
+    "PFI36|SKIPPED action-not-automatable（1秒内停止无法自动化）|1",
+    "PFI39|uni.showModal 原生层 wxml/截图均不可采，after 截图落盘失败|1",
+    "PFI40|原生 modal 按钮自动化不可达；before/after 截图为陈旧顶帧|1",
+    "PFI41|同 PFI40（截图 MD5 与 PFI40-after 相同，陈旧帧）|1",
+    "PFI42|chooseImage 原生面板不可见+无 toast+截图落盘失败|1",
+    "PFI44|tap 误落背景编辑 CTA 且被 PFI43 残留 chooseImage 劫持污染，invite 弹窗/showShareMenu 证据缺失|1",
+    "PFI45|邀请弹窗未开（.invite-modal__copy absent）|1",
+    "PFI46|邀请弹窗未开|1",
+    "PFI47|邀请弹窗未开且断网注入未执行|1",
+    "PFI49|rapidTap×5 执行但栈长/落点无采证，防连点语义未证|1",
+    "PFI51|名牌行未渲染（.cert-badge 全页 wxml absent，身份相关）|1",
+    "PFI52|认证面板未开|1",
+    "PFI53|认证面板未开|1",
+    "PFI54|认证面板未开|1",
+    "PFI55|前置不满足：campusVerified →「去认证」CTA 不渲染|1",
+    "PFI56|前置不满足（已有头像）+0s/3.5s 双拍截图落盘失败|1",
+    "PFI60|reLaunch 载入成功但渲染证据缺失（截图落盘失败、无 wxml）|1",
+    "PFI61|同 PFI60|1",
+    "PFI63|前置误用 logout（harness 偏离 manifest pre）+.avatar-wrap absent|1",
+    "PFI64|动作执行但复位后状态无采证（route 为实例创建快照）|1",
+    "PFI65|navigateBack NAV_ERROR Uncaught [object Object]（通道侧错误），无后续证据|1",
+    "PFI66|前置未建立：运行于本人态上下文，.profile-settings absent|1",
+    "PFI67|前置未建立：.match-count-chip absent|1",
+    "PFI68|前置未建立：.profile-share absent；转发面板需真机|1",
+    "PFI69|navigateBack NAV_ERROR+tap edit 不可达；无等效目标页证据|1",
+    "PFI70|发布动作不在本页用例域执行，无 N→N+1 前后对比|1",
+    "PFI71|前置不满足：login B 实得 user-1001（observed 自标 MISMATCH!），tour B 截图同为林晓|1"
+  ],
+  "notes": "判定口径：(1) FAILED 仅 1 例（PFI37 语音播放），有 observed toast+console+代码链三方互证，未凭代码推测。(2) 37 例 exec act-FAIL（element not found）经 wxml 快照核对，多数选择器实际存在于页面（嵌套 ProfileShell→MyProfile→MyHeader 等自定义组件内），属 miniprogram-automator 组件边界选择器限制而非产品死按钮，按「执行失败→UNVERIFIED」处理；同时禁止凭代码推断将其升级为 VERIFIED。(3) 导航类用例的 exec-results route/observed 字段经比对确认为动作前快照（PFI29 的 auto-reLaunch 发生在 top 采集之后），导航落点普遍缺 post-action 证据；凡 companion 运行（同截图目录 OP00-OP25，2026-09-20 构建）有直接截图+路由证据且与本构建代码一致的，按三方对照判 VERIFIED 并注记旧构建佐证与置信度折减；口径相反的（PFI21）不采信。(4) PFI43 判 VERIFIED(0.6)：manifest 预案本身即劫持 chooseImage，成功 toast「背景已更新」真实采到但落在 PFI44 窗口（残留劫持链），已在 actual 注明证据跨窗口。(5) console-S04-profile.log 全 110 行无 401/登录已过期/TypeError/NAV_FAIL；错误仅 navigateTo:fail timeout（已知通道假死坑）×4、Vue Error runtime-2×1、readFile:fail（PFI37 缺陷）×1。(6) 未验证交互（头像 BottomSheet 全链、认证面板、邀请弹窗、他人态 user-3001/10003 渲染、tabReentered 复位、原生 modal 三例等）需修复自动化组件穿越选择器或真机后复验。"
+}

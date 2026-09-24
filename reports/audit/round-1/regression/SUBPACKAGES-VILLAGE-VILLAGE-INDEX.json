@@ -1,0 +1,91 @@
+{
+  "round": "R1",
+  "page": "subpackages/village/village/index",
+  "reviewer": "历史回归员-R1-SUBPACKAGES-VILLAGE-VILLAGE-INDEX（A5，索引差分模式，只读）",
+  "date": "2026-09-24",
+  "method": "按 regression-index.json 中本页 7 条相关条目（MP-R1-VILLAGE-002 / MP-R1-VILLAGE-INDEX-101~103 / MP-R2-VILL-013 / MP-R3-VILLAGE-INDEX-001~002）做 riskFiles 差分：逐条实读现码；图文不符族按索引要求实读 src/static/assets/images/posts/post-{1..8}.jpg 八个图片文件建立图像真值后与 mock-data.ts 文案逐对比对；交互证据取本轮 reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-judge.json（48 例：5 VERIFIED / 1 FAILED / 42 UNVERIFIED）与 exec-results.json 引用。未运行开发者工具、未改代码（A5 只读边界）；静态截图 0 张，涉及视觉净空的判定以代码几何证据为准并注明。",
+  "issues": [
+    {
+      "id": "MP-R1-VILLAGE-INDEX-001",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "无小程序内截图；图像证据为本轮实读 src/static/assets/images/posts/post-{1..8}.jpg 八文件",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【已复发：历史 P1（MP-R3-VILLAGE-INDEX-001，R3 口径 ≥13 帖）未见修复落地，非本轮新改坏】mock 今日广场/热度榜 feed 批量图文不符仍在，本轮独立实读 8 张 post-N.jpg 建立图像真值：post-1=城堡草坪砾石路、post-2=热饮杯冒热气特写、post-3=暗色海岸礁石、post-4=水珠微距、post-5=海岸悬崖海浪、post-6=老城商业街人流、post-7=热气球金色原野、post-8=雾中木栈桥。与 mock-data.ts 逐对比对得 15 对硬不符（≥13 口径成立）：post-9(学咖啡拉花→post-5 悬崖)、post-10(冰岛极光清单→post-4 水珠)、post-11(海边露营→post-4 水珠)、post-15(羽毛球局→post-1 城堡)、post-18(逛博物馆→post-4 水珠)、post-19(红烧肉→post-5 悬崖)、post-20(英语语伴→post-6 商业街)、post-23(深夜热豆浆→post-1 城堡，即 MP-R2-VILL-013 缺陷族现形态)、post-24(武汉樱花→post-2 热饮杯)、post-25(吉他《晴天》→post-3 海岸礁石)、post-26(MBTI/童年回忆→post-4 水珠)、post-27(跑步打卡→post-5 悬崖)、post-28(手冲咖啡→post-6 商业街)、post-32(电影放映活动帖→post-2 热饮杯)、post-33(图书馆自习区→post-1 城堡，同目录 campus-library.jpg 未复用)。已对齐的 4 帖（post-7 热气球/post-8 雾栈桥/post-12 扫街/post-16 泡茶）修复保持，未复发。热度榜按点赞排序，首屏 Top20 恰落在不符帖密集区（likes 97~167 的 post-18~28 区间），主链路高曝光。",
+      "evidence": "图像真值：本轮用 Read 工具逐一目视判读 apps/client/src/static/assets/images/posts/post-{1..8}.jpg（非小程序截图）。文案/配图对照 apps/client/src/stores/village/mock-data.ts：post-9 文案 :468 / 图 :470、post-10 :488/:489、post-11 :509/:510、post-15 :587/:588、post-18 :644/:645、post-19 :663/:664、post-20 :682/:683、post-23 :739/:740、post-24 :758/:759、post-25 :777/:778、post-26 :796/:797、post-27 :815/:816、post-28 :834/:835、post-32 :909-911/:912、post-33 :940-942/:943。错误判定源头注释仍在：mock-data.ts:469（称 post-5 为「冒热气的咖啡杯特写」，实图 hot 饮杯为 post-2、post-5 为海岸悬崖）、:506-507（称 post-4 为「海岸悬崖」，实为水珠微距）。对照已对齐帖：post-7 :425-430、post-8 :446-450、post-12 :527-531、post-16 :605-607。PAGE_SIZE=20（stores/village/constants.ts:29）、mockPosts 共 33 条（grep 计数）。",
+      "sources": ["screenshot", "code"],
+      "confidence": 0.95,
+      "ideal": "feed 每张卡片配图与文案语义一致；数据注释中的图像内容描述必须来自实读图片。",
+      "fix": "以实读真值重排配图组：热饮杯=post-2（咖啡/饮品组）、海岸悬崖=post-5、水珠微距=post-4、城堡=post-1、商业街=post-6、海岸礁石=post-3；无对应实图的文案（羽毛球/博物馆/红烧肉/樱花/吉他/跑步/MBTI）改用 portraits/covers 既有素材或 images:[]；post-33 改用同目录 campus-library.jpg；post-32 与 mockActivities[0] 封面换影视素材；同步修正 mock-data.ts:469、:506-507 两处错误注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-002",
+      "round": "R1",
+      "page": "subpackages/village/village/index",
+      "screenshot": "无截图（代码层实读 + 本轮交互用例 VI39 未取证）",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【已复发：历史 P1（MP-R3-VILLAGE-INDEX-002）未见修复落地，非本轮新改坏】热度榜上拉加载仍为「替换」而非「追加」：页面 onLoadMore hot 分支调 fetchHotBoard(page+1) 期望追加分页，但 fetchHotBoard 两分支均整体替换 this.posts、无拼接——mock `this.posts = pageItems`、real `this.posts = data.items.map(mapToPostItem)`。mockPosts 33 条、PAGE_SIZE=20：滚到底加载第 2 页后第 1 页 20 条整体消失，榜单只剩 13 条，必现。本轮交互用例 VI39（触底追加 13 帖+尾标断言）判 UNVERIFIED（帖数未读、after 截图 ERROR），交互层亦无「追加成立」的反证。",
+      "evidence": "stores/village/index.ts:356（mock 分支 `this.posts = pageItems;`）、:363（real 分支 `this.posts = data.items.map(mapToPostItem);`）均无追加；对照同文件 fetchPosts :266/:280 均有 `reset ? pageItems : [...this.posts, ...pageItems]` 追加语义，fetchHotBoard 缺失；页面调用 subpackages/village/village/index.vue:434-448（:441 `await villageStore.fetchHotBoard(villageStore.page + 1)`）；stores/village/constants.ts:29 `export const PAGE_SIZE = 20`；mock-data.ts 33 条帖子（grep 'id: \"post-' 计数=33）。交互证据：reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-judge.json#VI39 verdict=UNVERIFIED（pageScrollTo bottom 已执行、.load-more 出现，但追加后帖数/尾标/请求数均无证据）。",
+      "sources": ["code", "interaction", "log"],
+      "confidence": 0.93,
+      "ideal": "热度榜加载第 2 页时为第 1 页 + 第 2 页依次追加（33 条完整榜单），hasMore=false 后显示「没有更多了」。",
+      "fix": "fetchHotBoard 增加追加语义（与 fetchPosts 同法）：mock 分支 `this.posts = page === 1 ? pageItems : [...this.posts, ...pageItems]`，real 分支同理；修复时可一并处理 MP-R1-VILLAGE-INDEX-106（自建帖经热度榜丢失，同函数同根）。",
+      "status": "待修复"
+    }
+  ],
+  "checked": [
+    {
+      "id": "MP-R1-VILLAGE-002",
+      "page": "subpackages/village/village/index",
+      "status": "未复发",
+      "evidence": "修复在位（P0 搜索框伸进胶囊下方）：index.vue:904 `padding-right: calc(var(--capsule-right, 7px) + 112px)`（R3 由 104 加至 112）；:577 页面根节点 `:style=\"menuStyleVars\"` 注入变量；:594-604 搜索框节点（.village-search）。composables/useMenuButtonRect.ts:21 FALLBACK_GAP=7、:29-37 measureCapsuleGap（mp 实测胶囊右缘间隙、异常兜底 7px、非 mp 恒 0）、:49-52 styleVars 注入 --capsule-right/--statusbar。几何边界：胶囊投影 87px 宽 + 7px 右缘间隙 ≈94px < 预留 7+112=119px，且测量前变量为 0 时 112px 仍 > 94px，搜索框右端不可能进入胶囊投影区。本轮无静态截图（0 张）且 judge 48 例中无胶囊专项用例，本判定为代码层几何证据；建议终验以全面屏机型首屏截图归档。"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-101",
+      "page": "subpackages/village/village/index",
+      "status": "未复发",
+      "evidence": "修复在位（频道切换死代码）：index.vue:607-612 `<ChannelTabs :model-value=\"currentChannelId\" ... @change=\"onChannelChange\">` —— v-model 已移除、页面不监听 update:modelValue，ChannelTabs.vue:28-31 组件侧双 emit 保留但副作用单次；index.vue:185-198 selectChannel 同值守卫（:186）不再恒真，统一完成旧频道滚动位保存/赋值/saveLastChannel/恢复/loadChannelData。交互侧证：judge#VI25 VERIFIED（深链 ?channel=activity 激活活动频道 + village_last_channel 持久化）、VI26 VERIFIED（非法 channel 参数白名单兜底正常渲染）；滚动位置恢复子断言（judge#VI41）UNVERIFIED，留终验，不影响本条「死代码路径已不在」的回归结论。"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-102",
+      "page": "subpackages/village/village/index",
+      "status": "未复发",
+      "evidence": "修复在位（报名按钮冒泡误触详情）双证：①代码 components/village/ActivityCard.vue:129 `@tap.stop=\"enroll\"`（mp-weixin 编译为 catchtap）、:62-68 函数内 stopPropagation 保留为 H5 兜底并载明 patchMPEvent NOOP 原因；页面接线 index.vue:693-699 `@open-detail=\"openActivityDetail\" @enroll=\"handleEnrollActivity\"`、:316-328 报名 toast 链路。②本轮交互实证 judge#VI22 VERIFIED（confidence 0.7）：toast 逐字记录「报名成功」，before 帧 报名(绿)+12人 → after 帧 已报名(灰)+13人，两帧均在活动频道且无路由变化——@tap.stop 阻断生效；仅「再点取消」子步骤未取证（toast 仅 1 条），不在原缺陷范围。"
+    },
+    {
+      "id": "MP-R1-VILLAGE-INDEX-103",
+      "page": "subpackages/village/village/index",
+      "status": "未复发",
+      "evidence": "单例已修复且保持（post-7 日落配城堡图 → 已语义一致化）：本轮实读 post-7.jpg 为「热气球 + 金色晨昏原野」，mock-data.ts:427-430 文案「周末去坐了热气球，清晨的日光太治愈了」配同一图，图文一致；:425-426 注释载明改法。tags（:430 #热气球）与标题映射 :969「周末热气球初体验」一致。注意：该条目索引页描述已注明「属 MP-R3-VILLAGE-INDEX-001 批量族一例」——批量族其余 15 对不符仍在，由本轮 Issue MP-R1-VILLAGE-INDEX-001 跟踪（已复发）。"
+    },
+    {
+      "id": "MP-R2-VILL-013",
+      "page": "subpackages/village/village",
+      "status": "未复发",
+      "evidence": "原对已消且保持（晚霞帖配热饮图）：services/mocks/fixtures.ts:674-676 文案已由「晚霞」改为「傍晚的光线太适合拍照了。」配 p6.jpg（人像街拍，本轮按注释口径核对为光线/街拍语义，自洽），注释载明「仓库无晚霞实拍图，避免图文不符」；后端 apps/api/src/main/java/com/campuslove/api/village/ 目录 grep「晚霞|热饮」零命中。R2/R3 复核结论（该对已修）与现码一致。但同族批量缺陷（深夜热豆浆配城堡等）仍在：由本轮 Issue MP-R1-VILLAGE-INDEX-001（对应历史 MP-R3-VILLAGE-INDEX-001）跟踪，已复发，不在本条重复计级。"
+    },
+    {
+      "id": "MP-R3-VILLAGE-INDEX-001",
+      "page": "subpackages/village/village/index",
+      "status": "已复发",
+      "evidence": "问题路径仍在（历史 P1 未见修复落地）：按索引 verification「实读图片核对」要求，本轮 Read apps/client/src/static/assets/images/posts/post-{1..8}.jpg 八文件建立图像真值（post-1 城堡 / post-2 热饮杯 / post-3 海岸礁石 / post-4 水珠微距 / post-5 海岸悬崖 / post-6 商业街 / post-7 热气球原野 / post-8 雾栈桥），与 stores/village/mock-data.ts 逐对比对确认 15 对硬不符（≥13 口径成立）与 :469、:506-507 两处错误判定注释，逐对行号见 Issue MP-R1-VILLAGE-INDEX-001。已对齐 4 帖（post-7/8/12/16）保持。→ 生成 Issue category=Regression severity=P1（不低于原级）。"
+    },
+    {
+      "id": "MP-R3-VILLAGE-INDEX-002",
+      "page": "subpackages/village/village/index",
+      "status": "已复发",
+      "evidence": "问题路径仍在（历史 P1 未见修复落地）：stores/village/index.ts:356（mock `this.posts = pageItems;`）与 :363（real `this.posts = data.items.map(mapToPostItem);`）均为整体替换、无追加；对照 fetchPosts :266/:280 的 `reset ? ... : [...this.posts, ...]` 追加语义缺失。PAGE_SIZE=20（constants.ts:29）× mockPosts 33 条 → 第 2 页加载后前 20 条消失必现。本轮交互用例 VI39 UNVERIFIED（追加断言无证据，亦无反证）。→ 生成 Issue category=Regression severity=P1（不低于原级）。"
+    }
+  ],
+  "coverage": [
+    "索引差分范围：regression-index.json 全文检索定位本页 7 条相关条目（:377 MP-R1-VILLAGE-002、:690 MP-R2-VILL-013、:3132 INDEX-101、:3147 INDEX-102、:3163 INDEX-103、:3482 R3-INDEX-001、:3498 R3-INDEX-002），逐条核对其 riskFiles 现码与 verification 可用证据，未做全量重读。",
+    "代码证据（本轮实读）：subpackages/village/village/index.vue（:178-260 selectChannel/loadChannelData/onPostCreated、:430-448 onLoadMore、:575-619 头部模板/ChannelTabs 接线、:904 搜索框样式）；components/village/ChannelTabs.vue（emit 结构）；components/village/ActivityCard.vue（:37/:59-68/:129）；stores/village/index.ts（:265-280 fetchPosts 追加、:330-374 fetchHotBoard 全文）；stores/village/mock-data.ts（:400-953 帖子 post-6~post-33 全部文案/配图逐一比对、:962-969 标题映射）；stores/village/constants.ts:29；composables/useMenuButtonRect.ts:15-59；services/mocks/fixtures.ts:660-680；grep 确认：后端 village 目录无「晚霞/热饮」、mock-data.ts 嵌套 resolveMediaUrl 31 处、帖子总数 33。",
+    "图像真值（本轮实读 8 文件）：post-1=城堡草坪砾石路、post-2=热饮杯冒热气特写、post-3=暗色海岸礁石、post-4=水珠微距、post-5=海岸悬崖海浪、post-6=老城商业街人流、post-7=热气球金色原野、post-8=雾中木栈桥——与 A2 code-findings 判定独立一致；post-9 注释（mock-data.ts:469）与 post-11 注释（:506-507）的图像描述被实读证伪。",
+    "交互/运行时证据（本轮读取，未执行）：reports/audit/round-1/interact/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-judge.json（48 例：5 VERIFIED/1 FAILED/42 UNVERIFIED；与本页回归直接相关：VI22 VERIFIED 报名不跳详情、VI25/VI26 VERIFIED 深链频道激活与记忆、VI39/VI41 UNVERIFIED 上拉追加与滚动恢复、VI01 UNVERIFIED 锁定态本构建不可构造）及 exec-results.json/console-S05-village.log 引用。",
+    "未执行项（A5 只读边界）：未运行开发者工具/模拟器、未截图、未运行单测或构建；静态截图 0 张，MP-R1-VILLAGE-002 的视觉净空以代码几何证据判定并已在 checked 注明缺截图终验；两条「已复发」Issue 的 severity 均维持原级 P1。",
+    "范围外顺带记录（不生成 Issue）：INDEX-106（自建帖经热度榜丢失）、INDEX-113（mock-data 嵌套 resolveMediaUrl 31 处）等 A2 轮待修复项维持其既有状态，本轮差分未发现其被修复或恶化，归属对应轮次跟踪。"
+  ]
+}

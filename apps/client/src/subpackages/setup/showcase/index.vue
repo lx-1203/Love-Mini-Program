@@ -100,7 +100,7 @@ const groups: ShowcaseGroup[] = [
     subtitleKey: "showcase.groups.community.subtitle",
     accent: "linear-gradient(135deg, #10B981, #34D399)",
     items: [
-      { path: "/subpackages/village/village/index", titleKey: "showcase.groups.community.items.village.title", descKey: "showcase.groups.community.items.village.desc", chipBg: "var(--c-bg-brand, #E8FAF3)", isTab: true },
+      { path: "/subpackages/village/village/index", titleKey: "showcase.groups.community.items.village.title", descKey: "showcase.groups.community.items.village.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
       { path: "/subpackages/village/village/post", titleKey: "showcase.groups.community.items.post.title", descKey: "showcase.groups.community.items.post.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
       { path: "/subpackages/village/village/detail", titleKey: "showcase.groups.community.items.detail.title", descKey: "showcase.groups.community.items.detail.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },
       { path: "/subpackages/village/village/tag-posts", titleKey: "showcase.groups.community.items.tagPosts.title", descKey: "showcase.groups.community.items.tagPosts.desc", chipBg: "var(--c-bg-brand, #E8FAF3)" },

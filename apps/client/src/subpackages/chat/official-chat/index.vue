@@ -255,8 +255,13 @@ async function loadOfficialChat(): Promise<void> {
       const pendingNotifies = consumeAssistantActivityNotifies();
       if (pendingNotifies.length > 0) {
         messages.value = messages.value.concat(pendingNotifies);
-        void scrollToBottom();
       }
+      // MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-010：mock 冷启动也必须滚到底——
+      // 原仅 pendingNotifies 非空才滚，常规加载路径无 scrollToBottom，滚动位停在顶部，
+      // 末条消息后半段被输入栏遮挡（历史 P0 线索 MP-R1-OFFICIAL-003 运行时复现）。
+      // 与 real 分支同口径：nextTick + 120ms 滚底。
+      await nextTick();
+      setTimeout(() => scrollToBottom(), 120);
       return;
     }
 
@@ -269,10 +274,22 @@ async function loadOfficialChat(): Promise<void> {
       accountName.value = meta.name;
       accountDesc.value = meta.description;
     }
-    messages.value = await request<OfficialMessageView[]>({
+    const fetched = await request<OfficialMessageView[]>({
       url: `/official-accounts/${encodeURIComponent(accountId.value)}/messages`,
       method: "GET",
     });
+    // MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001/102：报名成功→寻觅助手消息
+    // 链路 real 模式断链修复——生产者（activities/detail notifyEnrollSuccess）双模式
+    // 都写本地通知，消费者此前仅存在于 mock 分支，real 模式「写了永远没人读」且
+    // storage 无限累积。real 拉取后按 publishedAt 归并消费，消费即清语义两模式一致。
+    const pendingReal = consumeAssistantActivityNotifies();
+    if (pendingReal.length > 0) {
+      messages.value = [...fetched, ...pendingReal].sort(
+        (a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt)
+      );
+    } else {
+      messages.value = fetched;
+    }
     // R21（2026-09-09）：加载历史后滚到底部——此前仅发送时滚底，
     // 消息多于视口时最后一条永远被输入栏遮挡
     await nextTick();
