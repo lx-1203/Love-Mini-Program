@@ -393,6 +393,7 @@ export default {
     "myConnections": "我的人脉",
     "postsEmpty": "附近暂时没有动态，去兴趣圈看看吧",
     "hotCirclesEmpty": "暂无热门兴趣圈",
+    "loginToView": "登录后可查看更多内容",
     "peopleEmpty": "附近暂时没有新的人",
     "peopleEmptyHint": "换个范围或稍后再来看看",
     "viewAll": "全部",
@@ -1199,6 +1200,8 @@ export default {
     "muteLocalOnly": "已为本机开启免打扰（当前会话不支持同步）",
     "imageTempUnsupported": "临时会话暂不支持发送图片",
     "imagePartialFailed": "已发送 {ok} 张，{fail} 张失败",
+    "relationshipScore": "亲密度 {score}",
+    "relationshipCommonInterests": "共同兴趣：{interests}",
     "sessionSubtitle": "与匹配对象的消息",
     "emptyTitle": "暂无聊天消息",
     "emptyDesc": "去寻觅页面匹配新朋友，开始聊天吧",
@@ -2121,6 +2124,7 @@ export default {
     "postItemAria": "帖子：{title}",
     "followSimilarAria": "关注相似作者",
     "sendMessageSimilarAria": "给相似作者发消息",
+    "channelFollow": "关注",
     "channelToday": "今日广场",
     "channelInterest": "兴趣圈",
     "channelSchool": "学校圈",
@@ -3568,7 +3572,12 @@ export default {
       "imagePickLabel": "上传图片",
       "imagePickHint": "添加图片",
       "maxImages": "最多上传{n}张图片",
-      "privacyRequired": "需同意隐私协议后才能选择图片"
+      "privacyRequired": "需同意隐私协议后才能选择图片",
+      "certRequired": "校园话题仅限本校已认证同学发布，请先完成校园认证",
+      "goCertification": "去认证",
+      "imagesUnsupported": "校园话题暂未开放配图，图片不会随话题保存",
+      "anonymousUnsupported": "校园话题暂未开放匿名发布，内容将以你的昵称公开",
+      "contentMasked": "内容含敏感词，部分文字已被自动屏蔽"
     },
     "topicDetail": {
       "replySuccess": "回复成功",
@@ -3587,7 +3596,10 @@ export default {
       "anonymousToggleOn": "匿名",
       "anonymousToggleOff": "实名",
       "sendSending": "发送中",
-      "sendSend": "发送"
+      "sendSend": "发送",
+      "replyAtLimit": "已达 {n} 字上限，无法继续输入",
+      "replyMasked": "回复含敏感词，部分文字已被自动屏蔽",
+      "anonymousToggleOnReal": "匿名·暂不生效"
     }
   },
   "heartSignals": {
@@ -3917,6 +3929,7 @@ export default {
       "topicTitleEmpty": "话题标题不能为空",
       "topicContentEmpty": "话题内容不能为空",
       "replyContentEmpty": "回复内容不能为空",
+      "replyContentTooLong": "回复内容不能超过{n}字",
       "schoolNameEmpty": "学校名称不能为空",
       "majorEmpty": "专业不能为空",
       "studentCardRequired": "请上传学生证照片",
@@ -3927,7 +3940,10 @@ export default {
       "publishTopicFailed": "发布话题失败",
       "replyFailed": "回复失败",
       "submitCertificationFailed": "提交认证失败",
-      "loadCertificationStatusFailed": "获取认证状态失败"
+      "loadCertificationStatusFailed": "获取认证状态失败",
+      "campusWriteForbidden": "仅本校已认证同学可在校园圈发布或回复，请先完成校园认证并绑定学校",
+      "duplicateTopicSubmit": "这条话题刚才已发布成功，请勿重复提交",
+      "duplicateReplySubmit": "这条回复刚才已发送成功，请勿重复提交"
     },
     "checkin": {
       "timeout": "签到请求超时，请稍后重试",
@@ -4733,5 +4749,6 @@ export default {
     "online": "在线",
     "away": "离开",
     "matchScore": "匹配度",
+    "sameSchool": "同校",
   }
 } as const;

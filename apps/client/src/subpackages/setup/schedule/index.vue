@@ -6,7 +6,7 @@
  * 推荐偏好；非学生：基本资料→日程→推荐偏好）。完成度链路：
  * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
-import { onMounted, reactive } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";

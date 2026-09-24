@@ -175,7 +175,7 @@ async function consumeCardFromDeck() {
   if (!discoverStore.cards.some((c) => c.id === id)) return;
   try {
     await discoverStore.swipeRight(id);
-  } catch {
+  } catch (_e) {
     // 卡已被消费/移除（「卡片不存在」）→ 幂等成功：不 set errorMessage、不上报
   }
 }

@@ -214,6 +214,24 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     return appendTokenIfMissing(proxyUrl);
   }
 
+  // R13（2026-09-22）：库内存的是小程序包内路径 `/static/assets/images/{avatars,people}/*`
+  // （users.avatar_url 265 条 + media_asset 2 条）。real 构建为守 2MB 主包门禁会把这些
+  // 「非源码字面量引用」的内容图剪出包外（avatars+people 约 4MB），本地路径随即失效，
+  // 头像在真机上全部渲染为空白。二者均已注册在后端公开 app-assets 端点，
+  // 故仅对这两个内容目录改走后端，其余 /static/ 仍按下方走本地包内资源。
+  if (
+    path.startsWith("/static/assets/images/avatars/") ||
+    path.startsWith("/static/assets/images/people/")
+  ) {
+    // clientEnv 惰性读取：部分单测 mock 了 config/env 且不提供该导出，
+    // 而 mock-data.ts 在模块作用域就调用 resolveMediaUrl —— 取不到基址时退回本地路径。
+    const apiBaseUrl = clientEnv?.apiBaseUrl || "";
+    if (apiBaseUrl) {
+      const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");
+      return `${apiRoot}${APP_ASSET_PREFIX}${path.substring("/static/".length)}`;
+    }
+  }
+
   // 2026-08-10 包体积优化：/static/ 装饰资产（banner/poster/campus/avatars 等）
   // 2026-09-02 R5：mp base lib 3.16.2 强制 https，无论 mock/real 模式，/static/ 全部走本地（不走 8080）
   if (path.startsWith("/static/")) {

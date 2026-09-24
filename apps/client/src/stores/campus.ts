@@ -293,6 +293,45 @@ export interface CampusState {
 const TOPIC_PAGE_SIZE = 10;
 
 /**
+ * 回复内容最大长度（A3 口径复核结论：保持 500，不放宽到后端上限）。
+ *
+ * 后端真实契约是 `@NotBlank @Size(max = 2000)`（CampusController.java:462-464），
+ * 取 500 属「客户端严于后端」，先例是同项目发帖页
+ * `subpackages/campus/campus/post-topic.vue:105`（MAX_LENGTH = 500）与
+ * `subpackages/circles/circles/post-topic.vue:149`（同为 500，并在 :297-300 给可读 toast）。
+ * 不放宽的理由：本页回复框是单行 `<input>`（topic-detail.vue:289-297），承载 2000 字无
+ * 可读性；放宽会让「回复 2000 / 发帖 500」两个上限自相矛盾。
+ * 代价与补偿：严于后端会让用户「打不进字却不知为何」，故配套触顶计数提示
+ * （topic-detail.vue 的 reply-counter / replyAtLimit 文案），另留 store 侧超长兜底文案。
+ */
+export const MAX_REPLY_LENGTH = 500;
+
+/**
+ * 校园圈写操作失败文案归一化（A3 专项：幂等冲突必须与「客户端没防住」可区分，不得静默）。
+ *
+ * 后端真实行为（本轮只读核对，apps/api 未改动）：
+ * - 409 `IDEMPOTENT_CONFLICT`：`Idempotency-Key` 命中 Redis SETNX 判重
+ *   （IdempotentInterceptor.java:149-159 + IdempotencyException.java:22-31）。
+ *   幂等键 = `idem-{METHOD}-{hash(url|body)}`（http.ts:262-274），同内容二次提交必被判重
+ *   —— 这是**服务端去重兜住**（首条已成功），不是网络失败，文案必须说明「刚才已提交成功」，
+ *   否则 QA 与用户都会把它读成「发帖失败」。
+ * - 400：私域互动门禁 `requireVerifiedSameSchool` 抛 IllegalArgumentException
+ *   （CampusPermissionService.java:72-76），real profile 下消息被脱敏成「请求参数错误」
+ *   （GlobalExceptionHandler.java:118-126）且响应无 `code` 字段（同文件 :784-791）
+ *   → 客户端只能按 HTTP status 判定，再自行给出「本校已认证」这一可读原因。
+ *   残余同码原因（schoolId 未绑定 / 缺 Idempotency-Key）用户动作一致，故合并文案。
+ * - 429：`@RateLimit` 令牌桶（CampusController.java:167、:230），后端文案已友好，原样透传。
+ */
+function describeCampusWriteFailure(error: unknown, conflictKey: string, fallbackKey: string): string {
+  const status = (error as { status?: unknown } | null)?.status;
+  if (status === 409) return t(conflictKey);
+  if (status === 400) return t("storeErrors.campus.campusWriteForbidden");
+  return error instanceof Error && error.message
+    ? error.message
+    : t(fallbackKey);
+}
+
+/**
  * 校园话题列表请求竞态 token。
  * 递增计数：快速切换分类/翻页时，仅最新 token 的请求允许更新状态，
  * 旧请求的响应被静默丢弃，避免覆盖新请求结果。
@@ -615,10 +654,18 @@ export const useCampusStore = defineStore("campus", {
       category: CampusTopicCategory;
       title: string;
       content: string;
+      /**
+       * MP-R1-CAMPUSPOSTTOPIC-202：仅 mock 分支生效。real 契约无 isAnonymous
+       * （CampusController.java:452-457），后端硬编码 false（RealCampusService.java:159），
+       * 故 real 下必然以昵称展示 —— 调用方需在提交前把这一点告知用户，不得静默。
+       */
       isAnonymous: boolean;
       /** 2026-08-10 B5：话题标签（后端 ≤5 个、每个 ≤20 字符；mock 分支由调用方拼入内容） */
       tags?: string[];
-      /** 2026-08-26 P7：话题配图（上传图片发帖） */
+      /**
+       * MP-R1-CAMPUSPOSTTOPIC-201：仅 mock 分支生效。real 契约无 images 字段
+       * （CampusController.java:452-457），下方 real 分支已停止发送该字段。
+       */
       images?: string[];
     }) {
       this.errorMessage = null;
@@ -661,12 +708,21 @@ export const useCampusStore = defineStore("campus", {
 
         // 调用后端 API: POST /api/campus/topics
         // 2026-08-10 B5：real 分支携带 tags 字段（后端实体已有 tags JSON 列，≤5 个、每个 ≤20 字符）
+        //
+        // MP-R1-CAMPUSPOSTTOPIC-201/-202（只读核对，未改后端）：真实请求体契约是
+        // record CreateCampusTopicRequest(category, title, content, tags)
+        // —— apps/api/.../campus/CampusController.java:452-457，**没有 images、没有 isAnonymous**。
+        // Jackson 未开 FAIL_ON_UNKNOWN_PROPERTIES（WebConfig.java:180-187 仅注册 Long 反序列化器），
+        // 故原样多传 images 不会报错，只会被**静默丢弃**（RealCampusService.java:151-165 亦无 setImages，
+        // :159 硬编码 setIsAnonymous(false)）。既已确认服务端不落库，这里就不再发这个字段：
+        // 幂等键 = hash(url|body)（http.ts:273），把「服务端根本不看的图片临时路径」塞进 body
+        // 会让同一段文字带不同配图时算出不同 key，绕过本该生效的判重。
+        // 调用方（post-topic.vue）负责在 real 模式下就「配图/匿名不会生效」给用户可见提示。
         const result = await request<BackendCampusTopicView, {
           category: string;
           title: string;
           content: string;
           tags?: string[];
-          images?: string[];
         }>({
           url: "/campus/topics",
           method: "POST",
@@ -675,7 +731,6 @@ export const useCampusStore = defineStore("campus", {
             title: data.title.trim(),
             content: data.content.trim(),
             ...(data.tags && data.tags.length > 0 ? { tags: data.tags } : {}),
-            ...(data.images && data.images.length > 0 ? { images: data.images } : {}),
           },
         });
 
@@ -683,7 +738,11 @@ export const useCampusStore = defineStore("campus", {
         this.topics.unshift(mapped);
         return mapped;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.publishTopicFailed");
+        this.errorMessage = describeCampusWriteFailure(
+          error,
+          "storeErrors.campus.duplicateTopicSubmit",
+          "storeErrors.campus.publishTopicFailed",
+        );
         throw error;
       }
     },
@@ -692,7 +751,10 @@ export const useCampusStore = defineStore("campus", {
      * 回复话题
      * @param topicId - 话题 ID
      * @param content - 回复内容
-     * @param isAnonymous - 是否匿名回复
+     * @param isAnonymous - MP-R1-CAMPUSPOSTTOPIC-202：仅 mock 分支生效。
+     *        real 契约只有 `CreateCampusReplyRequest(@NotBlank @Size(max=2000) content)`
+     *        （CampusController.java:462-464），后端硬编码 setIsAnonymous(false)
+     *        （RealCampusService.java:196），real 下匿名开关不可能生效。
      */
     async replyToCampusTopic(topicId: string, content: string, isAnonymous = false) {
       this.errorMessage = null;
@@ -705,6 +767,13 @@ export const useCampusStore = defineStore("campus", {
         if (!content || content.trim().length === 0) {
           this.errorMessage = t("storeErrors.campus.replyContentEmpty");
           throw new Error(t("storeErrors.campus.replyContentEmpty"));
+        }
+        // 客户端口径 500（MAX_REPLY_LENGTH），后端硬上限 2000
+        // （CampusController.java:462-464 @Size(max = 2000)）：严于后端，故 real 下
+        // 不会因长度被服务端拒；此校验是页面 maxlength 之外的兜底（其它调用方/粘贴路径）。
+        if (content.trim().length > MAX_REPLY_LENGTH) {
+          this.errorMessage = t("storeErrors.campus.replyContentTooLong", { n: MAX_REPLY_LENGTH });
+          throw new Error(t("storeErrors.campus.replyContentTooLong", { n: MAX_REPLY_LENGTH }));
         }
 
         if (useMock()) {
@@ -759,7 +828,11 @@ export const useCampusStore = defineStore("campus", {
 
         return mapped;
       } catch (error) {
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.replyFailed");
+        this.errorMessage = describeCampusWriteFailure(
+          error,
+          "storeErrors.campus.duplicateReplySubmit",
+          "storeErrors.campus.replyFailed",
+        );
         throw error;
       }
     },

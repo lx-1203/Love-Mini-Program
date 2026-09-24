@@ -92,12 +92,13 @@ describe("Nearby v3 页面 smoke", () => {
   });
 
   it("未登录时不发受保护请求（getToken 守卫 + 登录引导卡片）", () => {
-    // 2026-08-26 R2：附近页改为「未登录可逛」，受保护数据源在 loadNearbyData 内
-    // 以 if (getToken()) 门控（不再使用 early-return 写法）；
-    // LockScreen 整页锁替换为页内 nearby-login-guide 登录引导卡片。
+    // 2026-08-26 R2：附近页改为「未登录可逛」，受保护数据源需门控。
+    // 2026-09-22 R13：门控由内联 `if (getToken())` 收敛为 canFetchProtected()
+    // （mock 模式需放行，故不能只匹配 getToken 字面量）；改为断言守卫定义 + 调用点。
     // 语义不变：未登录不发受保护请求 + 提供登录引导。
-    expect(nearbySource).toContain("getToken");
-    expect(nearbySource).toContain("if (getToken()) {");
+    expect(nearbySource).toContain("function canFetchProtected()");
+    expect(nearbySource).toContain("getToken()");
+    expect(nearbySource).toMatch(/if \(canFetchProtected\(\)\) \{/);
     expect(nearbySource).toContain("nearby-login-guide");
     expect(nearbySource).toContain("watch(");
   });

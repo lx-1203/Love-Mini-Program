@@ -21,6 +21,12 @@ import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import BreakQuestion from "../../../components/chat/BreakQuestion.vue";
 import { toBreakQuestionItems } from "../../../view-models/chat";
 import EmojiPanel from "../../../components/chat/EmojiPanel.vue";
+// MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：关系状态区两组件。
+// spec §2.2 普通聊天页四段结构「顶部导航 → 关系状态区 → 消息流 → 恋爱输入区」的第二段，
+// 组件文件自落地起全仓零 import（死代码），现接入本页（SuggestedAction 宿主 @tap 必监听，
+// 否则子组件 emit 无人消费 = 本项目高频缺陷）。
+import RelationshipTag from "../../../components/relationship/RelationshipTag.vue";
+import SuggestedAction from "../../../components/relationship/SuggestedAction.vue";
 import { useMessagesStore, type MessageItem } from "../../../stores/messages";
 import { useChatStore } from "../../../stores/chat";
 // 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
@@ -176,6 +182,12 @@ const quoteReply = ref<QuoteReply | null>(null);
 const longPressMenu = ref<LongPressMenuState>(buildInitialLongPressMenu());
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：本页实例是否已按需拉取过关系看板
+ * （看板只服务于顶部关系状态区，无数据时不重复请求）。
+ */
+let relationshipDashboardRequested = false;
 
 /* ========== 输入栏状态（2026-08-09 微信化重构） ========== */
 /** 输入框是否聚焦 */
@@ -618,8 +630,17 @@ async function loadSessionData(): Promise<void> {
   // R5(INDEP-002)：conv- 业务键深链 → 解析为数字会话 id（后端消息接口只认数字主键）
   if (looksConversationUid && !looksPrivateNumeric) {
     const byUid = messagesStore.sessions.find((s) => s.conversationUid === sessionId.value);
-    if (byUid && byUid.id !== sessionId.value) {
-      sessionId.value = byUid.id;
+    if (byUid) {
+      if (byUid.id !== sessionId.value) {
+        sessionId.value = byUid.id;
+      }
+    } else {
+      // MP-R2-CHAT-CHAT-SESSION-INDEX-004（残余分支）：上方已允许 conv- 走 bootstrap 救援，
+      // 但救援后仍解析不到（会话已删/非本人/列表未含该 uid）时，未解析的 conv- 会原样进
+      // fetchSessionMessages → 后端 @PathVariable @Positive Long 转换 400，页面只剩裸技术错误。
+      // 现按既有失败门口径直接落「会话不存在或已失效」，不发必然失败的请求。
+      pageErrorMessage.value = t("chat.sessionNotExist");
+      return;
     }
   }
 
@@ -660,6 +681,15 @@ async function loadSessionData(): Promise<void> {
   if (messagesStore.errorMessage) {
     pageErrorMessage.value = messagesStore.errorMessage;
     return;
+  }
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：私信会话冷启动深链（数字 id 直开、
+  // 未经消息 tab）时 sessions 为空 → 无关系快照 → 关系状态区整区隐藏，功能在 real 模式
+  // 不可达。此处按需补一次关系看板（fetchRelationshipDashboard 内部已 try/catch 且不
+  // 在 mock 模式发请求，不会 reject），每页实例最多一次，不阻塞消息流渲染。
+  if (!relationshipDashboardRequested &&
+      !messagesStore.sessions.find((s) => s.id === sessionId.value)?.relationship) {
+    relationshipDashboardRequested = true;
+    void messagesStore.fetchRelationshipDashboard();
   }
 }
 
@@ -940,6 +970,83 @@ const relationDays = computed(() => {
   const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
   return session?.relationship?.relationDays ?? 1;
 });
+
+/* ========== MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：关系状态区 ==========
+ *
+ * spec §2.2 普通聊天页四段结构「顶部导航 → 关系状态区 → 消息流 → 恋爱输入区」的
+ * 第二段。原实现整段缺失：页面从 ChatHeader 直接进入消息流，RelationshipTag.vue /
+ * SuggestedAction.vue 两组件自落地起全仓零 import（死代码）。
+ *
+ * 数据源：`messagesStore.sessions[].relationship`（后端 RelationshipInfoView，
+ * 由 GET /messages/relationship-dashboard 的 recentChats 下发）。
+ * 降级规则（宁缺毋造）：
+ * - 临时匿名会话（无 partnerId / 无关系快照）→ 整区隐藏
+ * - 会话未加载、dashboard 未下发或 status 缺失 → 整区隐藏（不留空占位、不显占位文案）
+ * - 页面已落错误态 → 整区隐藏（避免与错误文案并置）
+ */
+const relationshipInfo = computed(() => {
+  if (!isPrivateSession.value || pageErrorMessage.value) return null;
+  const info = messagesStore.sessions.find((s) => s.id === sessionId.value)?.relationship;
+  if (!info || !info.status) return null;
+  return info;
+});
+
+/** 关系补充说明（共同兴趣；后端未下发 commonInterests 时为空串，模板据此隐藏） */
+const relationshipMetaLine = computed(() => {
+  const info = relationshipInfo.value;
+  if (!info) return "";
+  const interests = Array.isArray(info.commonInterests)
+    ? info.commonInterests.filter((i) => typeof i === "string" && i.length > 0)
+    : [];
+  return interests.length > 0
+    ? t("chat.relationshipCommonInterests", { interests: interests.join("、") })
+    : "";
+});
+
+/**
+ * 「回复」类建议动作无跳转地址时用 :focus 唤起键盘。
+ * 失焦即复位，否则标志位恒 true 会导致键盘收起后又被重新拉起（mp-weixin focus 是 prop 监听）。
+ */
+const inputFocusRequested = ref(false);
+
+/**
+ * SuggestedAction 的 @tap 去重时间戳。
+ * 原因（mp-weixin 原生事件与自定义事件同名）：该组件宿主上 `bindtap` 会同时收到
+ * ① 组件内部 triggerEvent("tap") 抛出的自定义事件 ② 内层 view 原生 tap 的冒泡
+ * （小程序文档明确告警：自定义事件名与原生事件同名会使父级同名处理函数被触发两次），
+ * 不去重则一次点击 = 两次 openAppPath，第二次在页面转场中被拒 → 误弹「操作失败」。
+ */
+let suggestedActionLastAt = 0;
+
+/**
+ * 建议动作点击：有 targetUrl 直达（openAppPath 统一处理 tabBar / 普通页，
+ * 失败给 toast 不静默）；无 targetUrl 时按 type 兜底——view_profile 跳对方主页，
+ * reply/invite 聚焦输入框，保证「点击必有可观察反馈」（本项目高频缺陷：按钮点击零反馈）。
+ */
+function handleSuggestedActionTap() {
+  const info = relationshipInfo.value;
+  if (!info) return;
+  const now = Date.now();
+  if (now - suggestedActionLastAt < 400) return;
+  suggestedActionLastAt = now;
+  if (isSessionClosed.value) {
+    uni.showToast({ title: t("chat.sessionClosedCannotSend"), icon: "none" });
+    return;
+  }
+  lightHaptic();
+  const action = info.suggestedAction;
+  if (action?.targetUrl) {
+    openAppPath(action.targetUrl, {
+      fail: () => uni.showToast({ title: t("chat.operationFailed"), icon: "none" }),
+    });
+    return;
+  }
+  if (action?.type === "view_profile") {
+    goSignalProfile();
+    return;
+  }
+  inputFocusRequested.value = true;
+}
 
 /** 顶部「···」菜单是否展开 */
 const navMenuVisible = ref(false);
@@ -1260,6 +1367,9 @@ function onInputFocus() {
 /** 输入框失焦（表情面板展开时 input 为 blur 态，面板由 toggleEmojiPanel 控制） */
 function onInputBlur() {
   inputFocused.value = false;
+  // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：建议动作触发的聚焦标志复位，
+  // 否则用户主动收起键盘后标志位仍为 true，无法再次由该标志拉起
+  inputFocusRequested.value = false;
 }
 
 /** 微信风格输入栏：发送按钮点击（委托给 sendText） */
@@ -1846,6 +1956,29 @@ defineExpose({ noop });
       @avatar-pat="handleAvatarPat"
     />
 
+    <!-- MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：关系状态区
+         （spec §2.2 四段结构第二段，位于顶部导航与消息流之间）。
+         仅普通私信会话且有后端关系快照时渲染；temp 会话 / 无快照 / 错误态整区隐藏。
+         fromSignal 的 signal-banner 在其后独立渲染，互不影响。 -->
+    <view v-if="relationshipInfo" class="relationship-status">
+      <view class="relationship-status__row">
+        <RelationshipTag class="relationship-status__tag" :status="relationshipInfo.status" size="md" />
+        <text class="relationship-status__score">
+          {{ t('chat.relationshipScore', { score: relationshipInfo.score }) }}
+        </text>
+      </view>
+      <text v-if="relationshipMetaLine" class="relationship-status__meta">
+        {{ relationshipMetaLine }}
+      </text>
+      <SuggestedAction
+        v-if="relationshipInfo.suggestedAction"
+        class="relationship-status__action"
+        :action="relationshipInfo.suggestedAction"
+        :disabled="isSessionClosed"
+        @tap="handleSuggestedActionTap"
+      />
+    </view>
+
     <!-- 临时匿名会话顶部提示（含倒计时，原副标题信息移入此处）
          MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-105：失效 temp 深链（tempLoadFailed）
          也渲染降级横幅，不再整块消失 -->
@@ -2067,6 +2200,7 @@ defineExpose({ noop });
             v-model="draft"
             class="wechat-input-bar__input"
             :disabled="isSessionClosed"
+            :focus="inputFocusRequested"
             :placeholder="isSessionClosed ? t('chat.inputPlaceholderClosed') : (quoteReply ? t('chat.inputPlaceholderReply') : t('chat.inputPlaceholderMessage'))"
             :adjust-position="true"
             @focus="onInputFocus"
@@ -2450,7 +2584,11 @@ defineExpose({ noop });
   height: 1rpx;
 }
 
-/* 输入区：flex-shrink:0 + 底部安全区 */
+/* 输入区：flex-shrink:0 + 底部安全区。
+   本页底部 env(safe-area-inset-bottom) 的【唯一】承担层：.chat-input-area 之下
+   还有 EmojiPanel / temp-action-row 等兄弟节点，安全区必须落在整块输入区之下，
+   内层 .wechat-input-bar 不得再加 env()（Wave-2 修复：双重避让产生约 60px 纯白死带）。
+   键盘弹起时由 .chat-input-area--keyboard-up 去掉 env()，输入区贴键盘。 */
 .chat-input-area {
   flex-shrink: 0;
   padding: var(--sp-2) var(--sp-4) calc(env(safe-area-inset-bottom) + var(--sp-2));
@@ -2467,6 +2605,55 @@ defineExpose({ noop });
 
 .meta-copy--padded {
   padding: var(--sp-4);
+}
+
+/* MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：关系状态区（顶部导航与消息流之间）。
+   flex 列中的固定高度段：flex-shrink:0，不得挤压 .chat-scroll（消息流才是 flex:1 区）。
+   子组件（RelationshipTag / SuggestedAction）的宿主节点在 mp-weixin 无默认 display，
+   必须显式声明宽高行为，否则胶囊背景与点击区不一致。 */
+.relationship-status {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: var(--sp-2) var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-border-light);
+  box-sizing: border-box;
+}
+
+.relationship-status__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* 标签宿主节点按内容宽度，不参与拉伸
+   （mp-weixin 自定义组件宿主节点无默认 display，必须显式声明，否则 flex 布局下宽度不可控） */
+.relationship-status__tag {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.relationship-status__score {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-secondary);
+}
+
+.relationship-status__meta {
+  font-size: var(--fs-xs);
+  color: var(--c-text-tertiary, #9AA5A0);
+}
+
+/* 建议动作宿主节点：显式声明宿主 display + 左对齐收缩至胶囊内容宽度（点击区与视觉一致） */
+.relationship-status__action {
+  display: flex;
+  align-self: flex-start;
 }
 
 .temp-banner {
@@ -2666,19 +2853,26 @@ defineExpose({ noop });
 }
 
 /* ========== 微信风格输入栏 ========== */
+/* 底部安全区由唯一一层 .chat-input-area 预留（见其 padding-bottom），
+   本栏是其子节点（模板 L2171 嵌在 L2140 内），此处再加 env() 即双重避让：
+   输入栏下方会出现约 2×safe-area + sp-2 + sp-3 的纯白死带（Wave-2 修复）。
+   单层写法与同目录聊天页 subpackages/chat/official-chat/index.vue:930、
+   components/village/ChannelComposerBar.vue:85 一致——env() 只出现在输入区
+   最外层容器；本栏底部仅保留下方 shorthand 里的固定 var(--sp-3)，不含安全区。 */
 .wechat-input-bar {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   min-height: 88rpx;
   padding: var(--sp-3) var(--sp-4);
-  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
   background: var(--c-bg-container);
   border-top: 1rpx solid var(--c-border-light);
   border-radius: var(--r-lg);
   box-sizing: border-box;
 }
 
+/* 本栏不再承担安全区，键盘弹起态与常态底部间距同为 var(--sp-3)（与基线一致，
+   保留此类仅作语义占位；键盘贴边由外层 .chat-input-area--keyboard-up 负责）。 */
 .wechat-input-bar--keyboard-up {
   padding-bottom: var(--sp-3);
 }

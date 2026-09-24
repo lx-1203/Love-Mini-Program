@@ -29,6 +29,7 @@ import { useDiscoverStore } from "../../stores/discover";
 // review #62：动态预览点击跳转帖子详情前校验存在性
 import { useVillageStore } from "../../stores/village";
 import { isDev } from "../../services/env";
+import { captureException } from "../../services/sentry";
 // Showcase 展示版入口
 
 // R4-00113：版本号展示用统一版本源
@@ -1569,7 +1570,9 @@ onShow(() => {
     // 我的帖子同理：发帖返回后需看到新帖，每次 onShow 轻量刷新
     refreshMyPostsWithRetry(1);
     // MP-R3-PROFILE-001：顶栏四格同节奏轻量刷新（取消喜欢/新增互赞后回页即时反映）
-    void likesStore.fetchLikes().catch(() => {});
+    void likesStore.fetchLikes().catch((error) => {
+      captureException(error, { source: "profile.fetchLikes" });
+    });
     return;
   }
   // 修复（2026-08-09）：未登录时不发起受保护请求（本页免登录可进，
@@ -1585,9 +1588,11 @@ onShow(() => {
   refreshMyPostsWithRetry(3);
   // MP-R3-PROFILE-001（2026-09-13）：顶栏四格（我喜欢/喜欢我的/访客）消费
   // likesStore 实时列表，但本页此前从不触发 fetchLikes（只有消息页/喜欢页触发），
-  // 冷启动直达「我的」时四格恒显假 0。与下方拉取同节奏补齐；失败静默（列表页
+  // 冷启动直达「我的」时四格恒显假 0。与下方拉取同节奏补齐；失败仅上报（列表页
   // 进入时会再次拉取），并在后续每次 onShow 轻量刷新保证互赞/取消喜欢即时反映。
-  void likesStore.fetchLikes().catch(() => {});
+  void likesStore.fetchLikes().catch((error) => {
+    captureException(error, { source: "profile.fetchLikes" });
+  });
   profileStore.fetchProfile().then(() => {
     // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
     maybeShowAvatarHint();
@@ -2585,6 +2590,12 @@ onUnload(() => {
   justify-content: flex-end;
   gap: var(--sp-4);
   padding: 0 var(--sp-7);
+  /* MP-R1-PROFILE-219：胶囊避让量必须落在本（整条）容器上——工作树原把它加在
+     .profile-top-actions 上，而本行是 justify-content:flex-end、最右元素为 MatchCountChip，
+     给内层 actions 加 padding-right 只会把分享/齿轮继续左推、chip 右缘仍停在 16rpx 内缩处，
+     原生胶囊永远压在 chip 之上。此处整条右移 = 间隙(≈7px)+胶囊本体(87px)+缓冲，
+     使 chip 右缘落到胶囊左缘之外（理想口径「右移出胶囊 x 区间」，无需再动 top）。 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   width: 100%;
   box-sizing: border-box;
 }
@@ -2614,8 +2625,9 @@ onUnload(() => {
   align-items: center;
   gap: var(--sp-3);
   flex-shrink: 0;
-  /* 右侧避让微信胶囊（完善资料/齿轮不再被胶囊叠压） */
-  padding-right: calc(var(--capsule-right, 96px) + 8px);
+  /* MP-R1-PROFILE-219：原「右侧避让微信胶囊」的 padding-right 已上移到 .profile-top-bar
+     （避让量落在本组上不会让同组右侧的 MatchCountChip 位移，且会在齿轮与 chip 之间留下
+     104px+ 空洞）。此处只保留组内间距，避让由父容器单层承担，避免双源。 */
 }
 
 /* 空间分享按钮（2026-08-08 QQ 主页重构：mp-weixin button 原生分享，重置默认样式） */

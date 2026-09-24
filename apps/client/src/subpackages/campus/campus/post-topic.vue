@@ -18,12 +18,19 @@
 import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
-import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory } from "../../../stores/campus";
+import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory, type CampusTopicItem } from "../../../stores/campus";
 import { useMock } from "../../../stores/helpers/use-mock";
 // 2026-08-26 P7：校园圈发帖支持上传图片（chooseImage + 预览 + 上传）
 import { clientApi } from "../../../services/api";
+// 未登录不发受保护请求（认证状态预取的门卫），与 pages/nearby/index.vue 同一取法
+import { getToken } from "../../../services/http";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// MP-R1-CAMPUSPOSTTOPIC-202：未认证/未绑定学校的发布请求必然被服务端门禁拒，
+// 页面需按认证状态给差异化引导（跳转目标见 ROUTES.CAMPUS.CERTIFICATION）
+import { ROUTES } from "../../../constants/routes";
+// 认证引导跳转统一走 openAppPath（含 tab 页/栈底兜底），与 campus/campus/index.vue 同源
+import { openAppPath } from "../../../utils/navigation";
 // MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
 import { isUploadedMediaUrl } from "../../../utils/media";
 import { UI_LIMITS } from "../../../constants/limits";
@@ -37,6 +44,30 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const campusStore = useCampusStore();
 const { t } = useI18n();
+
+/**
+ * MP-R1-CAMPUSPOSTTOPIC-201 能力开关（客户端唯一改点，后端补字段后改成 true 即恢复）。
+ *
+ * 只读核对结论：后端真实请求契约
+ * `record CreateCampusTopicRequest(@NotBlank String category, @NotBlank @Size(max=200) String title,
+ *  @NotBlank @Size(max=5000) String content, @Size(max=5) List<@Size(max=20) String> tags)`
+ * —— apps/api/src/main/java/com/campuslove/api/campus/CampusController.java:452-457，
+ * **没有 images**；读侧 CampusTopicView.java:14 与实体列 CampusTopic.java:61-63（JSON 列）都在，
+ * 写侧 RealCampusService.java:151-165 建话题时也没有 setImages。
+ * Jackson 未开 FAIL_ON_UNKNOWN_PROPERTIES（config/WebConfig.java:180-187 仅注册 Long 反序列化器），
+ * 所以多传 images 不报错、只被**静默丢弃**——这正是本条被判「发帖带图、发布后无图」的机理。
+ *
+ * 既知服务端不落库，客户端就不该再演一遍成功：real 模式下不再选图/不再上传/不再提交该字段，
+ * 并把原因写在图片区，而不是发完 6 个请求、在服务端留孤儿文件、再给用户一个假的「发布成功」。
+ * （幂等键 = hash(url|body)，http.ts:262-274：把临时路径塞进 body 还会绕开本该生效的判重。）
+ */
+const CAMPUS_TOPIC_IMAGES_SUPPORTED = false;
+
+/** mock 判定（useMock 是静态 env 检查，setup 期取一次即可） */
+const isMockMode = useMock();
+
+/** 本模式是否真正接受配图：mock 本地闭环恒真，real 取决于上面的后端能力 */
+const imagesAccepted = computed(() => isMockMode || CAMPUS_TOPIC_IMAGES_SUPPORTED);
 
 /**
  * SubTask 1.5.2：发布成功跳转定时器引用，便于卸载清理。
@@ -58,10 +89,59 @@ const selectedCategory = ref<CampusTopicCategory>("course_exchange");
 // MP-R2-CAMPUSINDEX-002(a)：消费 campus/index 透传的当前分类（原恒默认 course_exchange，
 // 发布回流后新帖出现在错误 Tab 顶部）
 import { onLoad } from "@dcloudio/uni-app";
+
+/**
+ * 校园发布资格三态（未认证视角差异化，MP-R1-CAMPUSPOSTTOPIC-202 同族的 real 可达性前置）：
+ * `allowed` 可发 / `denied` 明确不可发（未认证、审核中、被驳回）/ `unknown` 状态未取到（不拦）。
+ */
+const certGate = ref<"allowed" | "denied" | "unknown">("unknown");
+
+/**
+ * 依据 store 的认证状态判定发布资格。
+ *
+ * 依据（后端只读核对，apps/api 未改动）：POST /campus/topics 除
+ * `@PreAuthorize("hasRole('USER')")`（CampusController.java:169）外还有私域门禁
+ * `campusPermissionService.requireVerifiedSameSchool(userId, campusName)`（同文件 :175-177），
+ * 不通过即抛 IllegalArgumentException（CampusPermissionService.java:72-76）；
+ * real profile 下该消息被脱敏为「请求参数错误」且响应无 code 字段
+ * （GlobalExceptionHandler.java:118-126 与 :784-791）→ 客户端拿不到任何可行动的原因。
+ * 故本页在本地前置判定并给「去认证」入口，不再发起这条必败请求
+ * （口径同 subpackages/circles/circles/post-topic.vue 的 MP-R1-POSTTOPIC-004）。
+ * 注：本判定只能覆盖「未认证/审核中/被驳回」；「已认证但非本校」在校内发帖路径上不存在
+ * （schoolId 由当前用户自己的校区名解析，CampusController.java:173、:370-376）。
+ */
+function resolveCertGate(): "allowed" | "denied" | "unknown" {
+  // mock 无校园认证语义（本地闭环），一律放行，保证 QA 在 mock 下仍能走完发布链路
+  if (isMockMode) return "allowed";
+  // 取状态本身就失败（网络/后端异常）：不拦，避免把可用功能判死
+  if (campusStore.errorMessage) return "unknown";
+  if (campusStore.certificationStatus === "verified") return "allowed";
+  return "denied";
+}
+
+/** 跳转校园认证页（未认证引导的唯一出口） */
+function goCertification() {
+  openAppPath(ROUTES.CAMPUS.CERTIFICATION);
+}
+
 onLoad((query) => {
   const cat = query?.category;
   if (typeof cat === "string" && cat.trim().length > 0) {
     selectedCategory.value = cat as CampusTopicCategory;
+  }
+  // 正常路径由 campus/campus/index.vue onShow 取过认证状态；但本页可被深链直达，
+  // 彼时 store 仍是默认值 "unverified" —— 直接据此判 denied 会把已认证用户挡在门外，
+  // 所以先置 unknown（不拦），补一次 GET 后再判（与 index.vue onShow 同一端点，幂等读）。
+  certGate.value = isMockMode ? "allowed" : "unknown";
+  // 未登录不发受保护请求（同 pages/nearby/index.vue canFetchProtected 口径）：
+  // GET /campus/certification 在 real 下要求鉴权，未登录发出会被 http 层的 401 处理
+  // 强制跳登录页 —— 那等于把「只是打开发布页」劫持成一次登录流程。
+  // 未登录时保持 unknown（不显示横幅），登录态问题交给写操作路径的集中 401 处理呈现。
+  if (!isMockMode && getToken().length > 0) {
+    // fetchCertificationStatus 自身会在入口清空 errorMessage，无需页面预清
+    void campusStore.fetchCertificationStatus().then(() => {
+      certGate.value = resolveCertGate();
+    });
   }
 });
 /** 话题标题 */
@@ -76,6 +156,16 @@ const isSubmitting = ref(false);
 const images = ref<string[]>([]);
 /** 配图上限（复用抬分约定：照片墙 6 张内） */
 const MAX_IMAGES = UI_LIMITS.PHOTO_GALLERY_MAX;
+
+/**
+ * MP-R1-CAMPUSPOSTTOPIC-202（real 视角）：后端发帖/回复契约都没有 isAnonymous
+ * （CampusController.java:452-457、:462-464），建记录时更是硬编码
+ * `setIsAnonymous(false)`（RealCampusService.java:159、:196）→ real 下开了匿名
+ * 也会以本人昵称公开。原 `campus.postTopic.anonymousDesc` 承诺「将显示为"匿名校友"」
+ * 是一句服务端会当场打破的承诺，故 real + 开启匿名时原地替换为「暂不会生效」的说明
+ * （复用同一行文案位，不增行、不改卡片高度）。mock 分支本地真实生效，保留原文案。
+ */
+const anonymousBlocked = computed(() => !isMockMode && isAnonymous.value);
 
 /**
  * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
@@ -101,7 +191,14 @@ const categoryOptions: { key: CampusTopicCategory; label: string }[] = [
   { key: "alumni_news", label: CAMPUS_CATEGORY_MAP.alumni_news },
 ];
 
-/** 最大字数 */
+/**
+ * 内容最大字数（客户端口径，严于后端）。
+ * 后端真实上限为 `@NotBlank @Size(max = 5000)`（CampusController.java:452-455），
+ * 标题为 `@Size(max = 200)`（同文件 :454，本页 input maxlength=50）。
+ * 取 500 与 subpackages/circles/circles/post-topic.vue:149 同构，好处是不会因长度被服务端拒；
+ * 代价是长文用户被本地截断 —— 是否放宽属产品决策（取舍见本轮报告的「500 vs 后端上限」一节），
+ * 本次不动数值，仅把两侧口径写清，并保证超长态可观测（内容计数器 + isOverLimit 变红）。
+ */
 const MAX_LENGTH = 500;
 
 /** 当前字数 */
@@ -132,6 +229,13 @@ function toggleAnonymous() {
  * 2026-08-26 P7：选择配图上传（Task 0.2.4 隐私授权检查；上限 MAX_IMAGES 张）
  */
 async function chooseImage() {
+  // MP-R1-CAMPUSPOSTTOPIC-201：real 契约不收 images（依据见上方 CAMPUS_TOPIC_IMAGES_SUPPORTED
+  // 注释），选图即注定丢失 → 在选择环节就把原因讲出来，而不是让用户选完 6 张图后
+  // 收到一个「发布成功」但配图全没了的结果（那才是本条 issue 的原始表现）。
+  if (!imagesAccepted.value) {
+    uni.showToast({ title: t("campus.postTopic.imagesUnsupported"), icon: "none" });
+    return;
+  }
   if (images.value.length >= MAX_IMAGES) {
     uni.showToast({ title: // MP-R2-CAMPUSPOST-002：插值变量与文案占位符对齐（zh/en 均为 {n}，{max} 渲染空串）
         t("campus.postTopic.maxImages", { n: MAX_IMAGES }), icon: "none" });
@@ -192,13 +296,27 @@ async function submitTopic() {
     return;
   }
 
+  // 未认证/审核中/被驳回视角：服务端私域门禁必拒（CampusController.java:175-177），
+  // 且 400 消息在 real profile 被脱敏成「请求参数错误」（GlobalExceptionHandler.java:118-126）
+  // → 与其发一条用户读不懂的必败请求，就地给可读原因 + 「去认证」出口（页顶横幅已常驻）。
+  if (certGate.value === "denied") {
+    uni.showToast({ title: t("campus.postTopic.certRequired"), icon: "none" });
+    return;
+  }
+
   isSubmitting.value = true;
   try {
     const trimmedContent = content.value.trim();
     // 2026-08-26 P7：配图本地临时路径（tempFilePath）在 real 模式先经
     // clientApi.uploadPostImage 逐张上传换取可访问 URL，mock 模式保留原始路径。
+    // MP-R1-CAMPUSPOSTTOPIC-201：real 后端契约无 images（CampusController.java:452-457），
+    // 上传结果注定被丢弃 → 由 CAMPUS_TOPIC_IMAGES_SUPPORTED 单点关掉整条上传链路。
     let submitImages = images.value;
-    if (images.value.some((img) => !isUploadedMediaUrl(img)) && !useMock()) {
+    if (
+      imagesAccepted.value &&
+      !isMockMode &&
+      images.value.some((img) => !isUploadedMediaUrl(img))
+    ) {
       const uploaded: string[] = [];
       for (const img of images.value) {
         if (isUploadedMediaUrl(img)) {
@@ -218,11 +336,18 @@ async function submitTopic() {
       submitImages = uploaded;
     }
 
-    if (useMock()) {
+    // 实际提交给服务端的正文（mock 走「内容末尾拼 #话题」，real 走 tags 字段），
+    // 用于发布后比对回传文本，判断敏感词过滤是否动过内容。
+    let submittedContent = trimmedContent;
+    // store action 的返回值（real 为后端回包映射，mock 为本地构造）
+    let created: CampusTopicItem | null = null;
+
+    if (isMockMode) {
       // mock：拼接最终内容（如有话题标签则追加到末尾）
       const topics = selectedTopics.value.map((name) => `#${name}`).join(" ");
       const finalContent = topics ? `${trimmedContent}\n\n${topics}` : trimmedContent;
-      await campusStore.createCampusTopic({
+      submittedContent = finalContent;
+      created = await campusStore.createCampusTopic({
         category: selectedCategory.value,
         title: title.value.trim(),
         content: finalContent,
@@ -235,7 +360,7 @@ async function submitTopic() {
         .slice(0, 5)
         .map((name) => name.slice(0, 20))
         .filter((name) => name.trim().length > 0);
-      await campusStore.createCampusTopic({
+      created = await campusStore.createCampusTopic({
         category: selectedCategory.value,
         title: title.value.trim(),
         content: trimmedContent,
@@ -245,16 +370,41 @@ async function submitTopic() {
       });
     }
 
-    uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "success" });
+    // 特殊字符三态：后端敏感词是**静默替换**（RealCampusService.java:146-148
+    // filterWithLog，落库文本只体现在响应体里），不比对就永远只报「发布成功」，
+    // 用户会以为是自己打错了字。回包文本 ≠ 提交文本时如实告知。
+    const maskedBySensitiveFilter =
+      !isMockMode && created != null && created.contentPreview !== submittedContent;
+
+    if (maskedBySensitiveFilter) {
+      uni.showToast({ title: t("campus.postTopic.contentMasked"), icon: "none" });
+    } else {
+      uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "success" });
+    }
     // MP-R1-CAMPUSPOST-004：成功路径不复位 isSubmitting——原 finally 立即复位，
     // 成功 toast 与 800ms navigateBack 之间的窗口内唯一重入守卫失效，
     // 再点一次即完整重跑创建产生重复帖子。保持提交态由页面销毁自然终结，仅失败复位。
     if (postSuccessNavTimer) clearTimeout(postSuccessNavTimer);
     postSuccessNavTimer = setTimeout(() => {
       postSuccessNavTimer = null;
-      uni.navigateBack();
+      // A3「Loading 不永驻」/ MP-R2-CAMPUSPOST-008（轮 2 已登记 P4，本条只闭合其中的
+      // 发布成功跳转半边；goBack() 的裸 navigateBack 半边仍开放，留给该 ID 的 owning 泳道）：
+      // 栈底直达本页（分享卡/深链 reLaunch）时裸 navigateBack 必 fail，
+      // 而成功路径按 MP-R1-CAMPUSPOST-004 刻意不复位提交态 → 发布钮对该页面实例永久吞点击
+      // 且无任何提示。补 fail 分支复位（同 subpackages/circles/circles/post-topic.vue
+      // MP-R1-POSTTOPIC-102 已修口径；此时帖子**已发布成功**，故文案仍是「发布成功」）。
+      uni.navigateBack({
+        fail: () => {
+          isSubmitting.value = false;
+          uni.showToast({ title: t("campus.postTopic.publishSuccess"), icon: "none" });
+        },
+      });
     }, 800);
   } catch (_e) {
+    // 失败回滚不留幽灵内容：store 的 createCampusTopic 只在请求成功后 topics.unshift
+    // （mock 分支同理），此分支不改列表；输入框文本与已选配图全部保留，可直接重试。
+    // errorMessage 已由 store 按 status 归一：409=「刚才已发布成功，请勿重复提交」
+    //（服务端幂等判重兜住，非失败），400=「仅本校已认证同学…」。
     uni.showToast({
       title: campusStore.errorMessage || t("campus.postTopic.publishFailed"),
       icon: "none",
@@ -291,6 +441,15 @@ function goBack() {
     </view>
 
     <scroll-view class="post-body" scroll-y>
+      <!-- 未认证/审核中/被驳回视角（real）：服务端私域门禁必拒且 400 消息被脱敏，
+           页顶常驻可读原因 + 唯一出口「去认证」，避免用户填完整个表单才被拒 -->
+      <view v-if="certGate === 'denied'" class="cert-banner">
+        <text class="cert-banner__text">{{ t('campus.postTopic.certRequired') }}</text>
+        <view class="cert-banner__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('campus.postTopic.goCertification')" @tap="goCertification">
+          <text class="cert-banner__btn-text">{{ t('campus.postTopic.goCertification') }}</text>
+        </view>
+      </view>
+
       <!-- 选择分类 -->
       <view class="category-section">
         <text class="section-label">{{ t('campus.postTopic.labelCategory') }}</text>
@@ -352,6 +511,9 @@ function goBack() {
           <text class="section-label">{{ t('campus.postTopic.imagePickLabel') }}</text>
           <text class="images-section__hint">{{ images.length }}/{{ MAX_IMAGES }}</text>
         </view>
+        <!-- MP-R1-CAMPUSPOSTTOPIC-201：real 后端契约不收 images（见 script 内能力开关注释）
+             → 常驻说明写在这里，而不是只在点「+」时闪一个 toast -->
+        <text v-if="!imagesAccepted" class="images-section__warn">{{ t('campus.postTopic.imagesUnsupported') }}</text>
         <view class="images-list">
           <view v-for="(img, idx) in images" :key="idx" class="image-item">
             <image class="image-item__img" :src="img" mode="aspectFill" lazy-load alt="" />
@@ -384,7 +546,9 @@ function goBack() {
         <view class="option-row">
           <view class="option-info">
             <text class="option-label">{{ t('campus.postTopic.labelAnonymous') }}</text>
-            <text class="option-desc">{{ t('campus.postTopic.anonymousDesc') }}</text>
+            <!-- MP-R1-CAMPUSPOSTTOPIC-202：real 下匿名不落库（后端硬编码 false），
+                 开启后原地把承诺文案替换为不可生效说明（同一文案位，不改卡片结构） -->
+            <text class="option-desc" :class="{ 'option-desc--warn': anonymousBlocked }">{{ anonymousBlocked ? t('campus.postTopic.anonymousUnsupported') : t('campus.postTopic.anonymousDesc') }}</text>
           </view>
           <switch
             :checked="isAnonymous"
@@ -514,6 +678,51 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .post-body {
   flex: 1;
   padding: 24rpx;
+}
+
+/* ========== 未认证引导横幅（real 视角，MP-R1-CAMPUSTOPIC 未认证差异化） ========== */
+.cert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 22rpx 28rpx;
+  margin-bottom: 20rpx;
+  border-radius: var(--r-xl, 24rpx);
+  border: 2rpx solid var(--c-warning-border-tint);
+  background: var(--c-warning-bg-tint);
+}
+
+.cert-banner__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-base, 24rpx);
+  line-height: 1.5;
+  color: var(--c-warning);
+}
+
+.cert-banner__btn {
+  flex-shrink: 0;
+  padding: 12rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-warning);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+/* #ifdef H5 */
+.cert-banner__btn:active {
+  transform: scale(0.96);
+}
+/* #endif */
+
+.cert-banner__btn-text {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+  white-space: nowrap;
 }
 
 /* ========== 公共标签 ========== */
@@ -677,6 +886,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: $text-tertiary;
 }
 
+/* MP-R1-CAMPUSPOSTTOPIC-201：real 契约不收 images 时的常驻说明（不靠 toast 一闪而过） */
+.images-section__warn {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--fs-sm, 22rpx);
+  line-height: 1.5;
+  color: var(--c-warning);
+}
+
 .images-list {
   display: flex;
   flex-wrap: wrap;
@@ -800,6 +1018,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .option-desc {
   font-size: var(--fs-sm, 22rpx);
   color: $text-tertiary;
+}
+
+/* MP-R1-CAMPUSPOSTTOPIC-202：real 下匿名开关不会生效时的替换文案态 */
+.option-desc--warn {
+  color: var(--c-warning);
 }
 
 /* ========== 底部提交 ========== */

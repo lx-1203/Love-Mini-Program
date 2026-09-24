@@ -608,7 +608,9 @@ const mockPostsRaw: Array<
     title: "",
     content:
       "雨天宅家，泡杯茶看看书，难得的悠闲时光。",
-    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-2.jpg")))))],
+    // 本轮实读定标：post-2.jpg 为风暴海岸礁石（图文不符）；post-4.jpg 为冒热气的杯子特写，
+    // 与「泡茶」语义一致（同 MP-R1-VILLAGE-INDEX-001 饮品语义组口径）
+    images: [resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl(resolveMediaUrl("/static/assets/images/posts/post-4.jpg")))))],
     tags: ['#雨天', '#阅读'],
     likes: 83,
     comments: 30,

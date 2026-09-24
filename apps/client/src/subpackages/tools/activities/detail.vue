@@ -505,14 +505,14 @@ onShareTimeline(() => ({
   position: absolute;
   top: var(--sp-4);
   left: var(--sp-4);
-  background: var(--c-overlay-bg-pure, rgba(15, 23, 42, 0.55));
+  background: var(--c-badge-on-image-bg, rgba(15, 23, 42, 0.7));
   padding: 6rpx var(--sp-3);
   border-radius: var(--r-full);
 }
 
 .detail-cover__badge-text {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-badge-on-image-text, rgba(255, 255, 255, 0.95));
   font-weight: 500;
 }
 

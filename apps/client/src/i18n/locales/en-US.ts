@@ -277,6 +277,7 @@ export default {
     myConnections: "My connections",
     postsEmpty: "No posts nearby yet — explore a circle",
     hotCirclesEmpty: "No hot circles yet",
+    loginToView: "Sign in to see more",
     peopleEmpty: "No new people nearby",
     peopleEmptyHint: "Try a wider range or come back later",
     viewAll: "All",
@@ -1103,6 +1104,8 @@ export default {
     muteLocalOnly: "Muted on this device (session sync unsupported)",
     imageTempUnsupported: "Temp sessions don't support images yet",
     imagePartialFailed: "Sent {ok}, {fail} failed",
+    relationshipScore: "Intimacy {score}",
+    relationshipCommonInterests: "Shared interests: {interests}",
     breakQuestion: {
       commonInterests: "You both like",
       recommendedOpener: "Suggested opener",
@@ -2059,6 +2062,7 @@ export default {
     followSimilarAria: "Follow similar author",
     sendMessageSimilarAria: "Send message to similar author",
     /* 2026-08-08 Channel refactor: QQ Channel style tabs */
+    channelFollow: "Following",
     channelToday: "Today",
     channelInterest: "Interests",
     channelSchool: "Campus",
@@ -3490,7 +3494,12 @@ export default {
       imagePickLabel: "Upload Images",
       imagePickHint: "Add Image",
       maxImages: "Up to {n} images",
-      privacyRequired: "Please agree to the privacy policy before picking images"
+      privacyRequired: "Please agree to the privacy policy before picking images",
+      certRequired: "Campus topics can only be published by verified students of your school. Please complete campus verification first.",
+      goCertification: "Verify",
+      imagesUnsupported: "Campus topics don't support images yet, so photos won't be saved with the topic.",
+      anonymousUnsupported: "Anonymous publishing isn't available for campus topics yet; your post will show your nickname.",
+      contentMasked: "Your content contains restricted words; part of it was automatically masked."
     },
     /* topic-detail.vue */
     topicDetail: {
@@ -3511,6 +3520,9 @@ export default {
       anonymousToggleOff: "Real Name",
       sendSending: "Sending",
       sendSend: "Send",
+      replyAtLimit: "Reached the {n}-character limit; you can't type more.",
+      replyMasked: "Your reply contains restricted words; part of it was automatically masked.",
+      anonymousToggleOnReal: "Anon · not live",
     },
   },
 
@@ -3898,6 +3910,7 @@ export default {
       topicTitleEmpty: "Topic title cannot be empty",
       topicContentEmpty: "Topic content cannot be empty",
       replyContentEmpty: "Reply content cannot be empty",
+      replyContentTooLong: "Reply content cannot exceed {n} characters",
       schoolNameEmpty: "School name cannot be empty",
       majorEmpty: "Major cannot be empty",
       studentCardRequired: "Please upload your student ID photo",
@@ -3909,6 +3922,9 @@ export default {
       replyFailed: "Failed to reply",
       submitCertificationFailed: "Failed to submit certification",
       loadCertificationStatusFailed: "Failed to load certification status",
+      campusWriteForbidden: "Only verified students of this school can post or reply in Campus. Please complete campus verification first.",
+      duplicateTopicSubmit: "This topic was already published just now. Please don't submit it again.",
+      duplicateReplySubmit: "This reply was already sent just now. Please don't submit it again.",
     },
     /* Check-in store */
     checkin: {
@@ -4809,5 +4825,6 @@ export default {
     online: "Online",
     away: "Away",
     matchScore: "Match",
+    sameSchool: "Same School",
   },
 } as const;

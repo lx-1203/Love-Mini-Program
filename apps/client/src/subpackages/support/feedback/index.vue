@@ -201,7 +201,13 @@ function chooseImageInternal(): void {
         return;
       }
       // 校验扩展名
-      if (!isValidImageExt(tempPath)) {
+      // MP-R1-FEEDBACK-001：H5 端 filePath 是 blob: URL（无扩展名），恒命中校验失败
+      // → H5 上传必败（功能9在 H5 全灭）。改为数据源用 res.tempFiles[0] 的 name/type
+      //（H5 File 对象具备）；无 name 时 type 以 image/ 前缀兜底，blob: 路径不再被误杀
+      const rawFile = tempFile as { name?: string; type?: string } | undefined;
+      const hasImageType = typeof rawFile?.type === "string" && rawFile.type.startsWith("image/");
+      const nameCandidate = rawFile?.name ?? tempPath;
+      if (!hasImageType && !isValidImageExt(nameCandidate)) {
         errorHaptic();
         uni.showToast({
           title: t("feedback.imageUploadFailed"),
@@ -417,7 +423,8 @@ function formatSubmissionTime(iso: string): string {
 </script>
 
 <template>
-  <AppShell :title="t('feedback.pageTitle')" :subtitle="t('feedback.pageSubtitle')" :show-tab-bar="false" show-back>
+  <!-- MP-R1-APPSHELL-101：传 fixed 吸顶（滚动时头部常驻、正文不入状态栏区） -->
+  <AppShell :title="t('feedback.pageTitle')" :subtitle="t('feedback.pageSubtitle')" :show-tab-bar="false" show-back fixed>
     <SectionCard :title="t('feedback.newSubmission')" compact>
       <view class="chips" role="tablist" :aria-label="t('feedback.categoryAria')">
         <view

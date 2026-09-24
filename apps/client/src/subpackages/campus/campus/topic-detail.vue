@@ -9,11 +9,13 @@
  * - 回复列表
  * - 底部回复输入框
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime } from "../../../stores/campus";
+import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime, MAX_REPLY_LENGTH } from "../../../stores/campus";
+// MP-R1-CAMPUSPOSTTOPIC-202：real 契约无 isAnonymous 落点，页面需按模式差异化文案
+import { useMock } from "../../../stores/helpers/use-mock";
 import { ROUTES } from "../../../constants/routes";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
@@ -41,26 +43,68 @@ const topicId = ref("");
 const isAnonymousReply = ref(false);
 
 /**
+ * MP-R1-CAMPUSPOSTTOPIC-202：real 契约不承载 isAnonymous
+ * （CampusController.java:462-464 回复体只有 content；RealCampusService.java:196 硬编码 false），
+ * 故 real 下「匿名」按钮不得承诺匿名 —— 文案就地改为「匿名·暂不生效」，
+ * 而不是等用户发出去才发现以昵称展示。mock 分支仍真实生效，保留原文案。
+ */
+const isMockMode = useMock();
+
+/**
+ * A3 超长态可观测性：回复输入框带 :maxlength 硬截断（模板 .reply-input），
+ * 用户「继续打字却没反应」原本零反馈；触顶时显式给出上限提示
+ * （上限口径与取舍见 stores/campus.ts MAX_REPLY_LENGTH 注释：客户端 500 / 后端 2000）。
+ */
+const isReplyAtLimit = computed(() => replyContent.value.length >= MAX_REPLY_LENGTH);
+
+/**
  * 提交回复
  */
 async function submitReply() {
-  if (!topicId.value || !replyContent.value.trim()) return;
+  // MP-R1-CAMPUSTOPIC-REG-002（A3 新发现，尚未入 issue-matrix，需书记员 admit）：提交中守卫。
+  // 原实现只靠 .reply-btn--disabled 的 CSS pointer-events 拦二次点击，
+  // 微信内置 WebView 对 pointer-events 支持不一致 → 连点会真的发出第二次请求。
+  // 守卫缺失属「客户端没防住」；补守卫后若仍出现 409，才是服务端幂等键判重在兜底，
+  // 两种情形由此可区分（409 文案见 stores/campus.ts describeCampusWriteFailure）。
+  if (isSubmitting.value) return;
+  if (!topicId.value) return;
+  // 空内容三态不得静默：键盘 confirm-type="send" 走 @confirm 时原实现直接 return，
+  // 用户以为「发送失败」，实则什么都没发。给可读提示。
+  const sent = replyContent.value.trim();
+  if (!sent) {
+    uni.showToast({ title: t("storeErrors.campus.replyContentEmpty"), icon: "none" });
+    return;
+  }
 
   isSubmitting.value = true;
   try {
-    await campusStore.replyToCampusTopic(
+    const created = await campusStore.replyToCampusTopic(
       topicId.value,
-      replyContent.value.trim(),
+      sent,
       isAnonymousReply.value,
     );
     replyContent.value = "";
-    uni.showToast({ title: t("campus.topicDetail.replySuccess"), icon: "success" });
+    // 特殊字符三态：后端敏感词是**静默替换**（RealCampusService.java:187 filterWithLog），
+    // 落库文本只体现在响应 content 里 —— 与提交文本比对，才能把「你的字被屏蔽了」
+    // 如实告知，而不是让用户以为回复莫名其妙变了。
+    if (created && created.content !== sent) {
+      uni.showToast({ title: t("campus.topicDetail.replyMasked"), icon: "none" });
+    } else {
+      uni.showToast({ title: t("campus.topicDetail.replySuccess"), icon: "success" });
+    }
   } catch (_e) {
+    // 失败不留幽灵内容：store 的 replyToCampusTopic 只在请求成功后才 push 回复并自增
+    // replyCount（见 stores/campus.ts 该 action 成功分支），此分支不改本地列表、
+    // 也不清空输入框（文本保留，可直接重试）。
+    // errorMessage 已由 store 按 status 归一：409=「刚才已发送成功，请勿重复提交」，
+    // 400=「仅本校已认证同学…」（后端 real profile 把 400 消息脱敏成「请求参数错误」，
+    // GlobalExceptionHandler.java:118-126，客户端只能自行给出可读原因）。
     uni.showToast({
       title: campusStore.errorMessage || t("campus.topicDetail.replyFailed"),
       icon: "none",
     });
   } finally {
+    // Loading 不永驻：成功/失败均复位
     isSubmitting.value = false;
   }
 }
@@ -290,10 +334,14 @@ onShareAppMessage(() => {
   cursor-spacing="20"
           v-model="replyContent"
           class="reply-input"
+          :maxlength="MAX_REPLY_LENGTH"
           :placeholder="t('campus.topicDetail.replyPlaceholder')"
           confirm-type="send"
           @confirm="submitReply" :aria-label="t('campus.topicDetail.replyPlaceholder')"
         />
+        <!-- A3 超长态可观测：input 触顶被 maxlength 硬截断时原本零反馈（静默打不进字），
+             仅在此刻浮出上限提示，避免常驻占位改变底栏高度 -->
+        <text v-if="isReplyAtLimit" class="reply-counter">{{ t('campus.topicDetail.replyAtLimit', { n: MAX_REPLY_LENGTH }) }}</text>
       </view>
       <view
         class="anonymous-toggle press-feedback"
@@ -302,7 +350,7 @@ onShareAppMessage(() => {
         hover-stay-time="120"
         @tap="isAnonymousReply = !isAnonymousReply"
       >
-        <text class="anonymous-toggle__text">{{ isAnonymousReply ? t('campus.topicDetail.anonymousToggleOn') : t('campus.topicDetail.anonymousToggleOff') }}</text>
+        <text class="anonymous-toggle__text">{{ isAnonymousReply ? (isMockMode ? t('campus.topicDetail.anonymousToggleOn') : t('campus.topicDetail.anonymousToggleOnReal')) : t('campus.topicDetail.anonymousToggleOff') }}</text>
       </view>
       <view
         class="reply-btn press-feedback"
@@ -712,6 +760,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .reply-input-wrap {
   flex: 1;
+}
+
+/* A3 超长态提示：仅输入触顶时浮出。字号/颜色沿用既有 token，不引入新数值 */
+.reply-counter {
+  display: block;
+  padding-left: 28rpx;
+  margin-top: 4rpx;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-error);
 }
 
 .reply-input {

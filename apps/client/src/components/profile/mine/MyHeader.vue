@@ -19,10 +19,6 @@ function handleSettings() {
   uni.navigateTo({ url: "/subpackages/profile-extra/settings/index" });
 }
 
-function handleShare() {
-  uni.showToast({ title: "分享功能即将上线", icon: "none" });
-}
-
 const metaLine = computed(() => {
   const parts: string[] = [];
   if (props.profile.basic.age) parts.push(`${props.profile.basic.age}岁`);
@@ -45,9 +41,10 @@ const genderIconSrc = computed(() => {
 <template>
   <view class="my-header">
     <view class="my-header__icons">
-      <view class="my-header__icon" hover-class="my-header__icon--pressed" role="button" aria-label="分享" @tap="handleShare">
+      <!-- MP-R1-PROFILE-215：原生分享按钮，触发所在页 pages/profile/index.vue 的 onShareAppMessage -->
+      <button class="my-header__icon my-header__icon--share" open-type="share" hover-class="my-header__icon--pressed" aria-label="分享">
         <text class="my-header__icon-text">▦</text>
-      </view>
+      </button>
       <view class="my-header__icon" hover-class="my-header__icon--pressed" role="button" aria-label="设置" @tap="handleSettings">
         <image class="my-header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
       </view>
@@ -122,6 +119,18 @@ const genderIconSrc = computed(() => {
 
 .my-header__icon--pressed {
   opacity: 0.75;
+}
+
+/* 分享为原生 button（open-type="share"），复位默认样式以对齐 my-header__icon */
+.my-header__icon--share {
+  margin: 0;
+  padding: 0;
+  border: none;
+  line-height: 1;
+}
+
+.my-header__icon--share::after {
+  border: none;
 }
 
 .my-header__icon-text {

@@ -70,6 +70,8 @@ export interface VillagePostSummary {
   authorNickname: string | null;
   /** 作者头像 URL（作者不存在时为 null） */
   authorAvatar: string | null;
+  /** 帖子标题（客户端发帖必填 5–30 字；2026-09-24 起后台列表/检索补齐该字段） */
+  title: string | null;
   /** 内容预览（前 80 字符） */
   contentPreview: string;
   /** 分类：interest/sincere/hometown/anonymous/latest/campus/all */
@@ -114,6 +116,8 @@ export interface VillagePostDetail {
   authorNickname: string | null;
   /** 作者头像 URL */
   authorAvatar: string | null;
+  /** 帖子标题（客户端发帖必填 5–30 字） */
+  title: string | null;
   /** 帖子完整内容 */
   content: string;
   /** 图片 URL 数组（JSON 字符串） */

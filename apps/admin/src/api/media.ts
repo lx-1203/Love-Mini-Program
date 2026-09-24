@@ -98,6 +98,10 @@ export interface AuditResponse {
  */
 export function withMediaToken(url: string | null | undefined): string {
   if (!url) return "";
+  // R13（2026-09-22）：种子数据里的装饰资产是小程序包内路径 `/static/{rel}`。
+  // 管理端没有包内 static，且 Vite 只代理 `/api`，故改写到后端公开 app-assets 端点；
+  // 小程序端仍走本地化路径，不受影响（见 apps/client/src/utils/media.ts 的同名映射）。
+  if (url.startsWith("/static/")) return `/api/v1/media/app-assets/${url.slice("/static/".length)}`;
   // 应用资产为公开端点，无需 token；已带 token 的不重复拼
   if (url.includes("app-assets/") || url.includes("token=")) return url;
   const token = getToken();

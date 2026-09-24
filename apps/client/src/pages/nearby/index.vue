@@ -90,8 +90,18 @@ const circlePosts = computed<PostItem[]>(() => villageStore.nearbyPosts.slice(0,
 /** 当前城市（fetchNearbyPosts 城市过滤用；来自定位，定位失败则空） */
 const currentCity = ref("");
 
-/** R16（2026-09-07）：附近页搜索关键词——此前未声明导致输入无法绑定（搜索失效根因） */
-const searchKeyword = ref("");
+// MP-R1-PAGES-NEARBY-INDEX-904（2026-09-24）：头部回归理想图《附近的首页》——
+// 右上角仅放大镜图标（关键词输入由搜索页承接），原整行输入框与其绑定的
+// searchKeyword 一并移除（R16 的「输入无法绑定」根因随输入框退场一并消解）。
+
+/**
+ * MP-R1-PAGES-NEARBY-INDEX-903：未登录（real）且受保护数据源被 66 行守卫拦下时，
+ * 分区②/④ 拿到的永远是「空列表」——原样渲染 hotCirclesEmpty / activitiesEmpty
+ * 会把「未拉取」伪装成「无内容」（同 MP-R1-PAGES-NEARBY-INDEX-006「失败/未取态被伪装成空态」家族）。
+ * 此处显式区分两态：受保护源被门挡住 → 登录引导文案；真实拉取后为空 → 空态文案。
+ * 依赖 sessionStore.isLoggedIn（响应式）保证登录/登出后即时翻转。
+ */
+const protectedBlocked = computed(() => !sessionStore.isLoggedIn && !canFetchProtected());
 
 /** 首页子标题：北京大学 · 3km */
 
@@ -229,10 +239,10 @@ function goLogin() {
   openAppPath(ROUTES.LOGIN);
 }
 
-/** 搜索（附近内容）：R16 带关键词跳搜索页（搜索页 onLoad 支持 keyword 自动搜索） */
+/** 搜索（附近内容）：MP-R1-PAGES-NEARBY-INDEX-904 头部为放大镜图标，直接进搜索页
+ *  （搜索页 onLoad 自持关键词输入，本页不再代持关键词） */
 function goSearch() {
-  const kw = searchKeyword.value.trim();
-  openAppPath(kw ? `${ROUTES.SEARCH}?keyword=${encodeURIComponent(kw)}` : ROUTES.SEARCH);
+  openAppPath(ROUTES.SEARCH);
 }
 
 /** 附近的人 / 同城的人 */
@@ -355,28 +365,28 @@ function formatMemberCount(count: number): string {
     :style="[{ paddingTop: statusBarHeightPx + 12 + 'px' }, menuStyleVars]"
   >
     <scroll-view scroll-y class="nearby-home__scroll" :show-scrollbar="false">
-      <!-- 顶部：附近 + 子标题 + 发帖 -->
+      <!-- 顶部：绿定位针 + 附近 + 放大镜 + 发帖
+           MP-R1-PAGES-NEARBY-INDEX-904：回归理想图形态（右上仅放大镜图标，
+           标题与定位小字各带一枚绿色定位针），移除 2026-09-06 的整行搜索框 -->
       <view class="nearby-home__header">
         <view class="nearby-home__title-row">
-          <text class="nearby-home__title">{{ t('nearby.title') }}</text>
-          <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
-            <text class="nearby-home__publish-text">{{ t('nearby.publishToday') }}</text>
+          <view class="nearby-home__title-group">
+            <image class="nearby-home__pin" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+            <text class="nearby-home__title">{{ t('nearby.title') }}</text>
+          </view>
+          <view class="nearby-home__actions">
+            <view class="nearby-home__search-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.searchPlaceholder')" @tap="goSearch">
+              <image class="nearby-home__search" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+            </view>
+            <view class="nearby-home__publish press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.publishToday')" @tap="goToPublishPost">
+              <text class="nearby-home__publish-text">{{ t('nearby.publishToday') }}</text>
+            </view>
           </view>
         </view>
-        <!-- 2026-09-06：搜索由图标改为真实输入框（确认后带关键词进搜索页） -->
-        <view class="nearby-home__search-box">
-          <image class="nearby-home__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
-          <input
-            v-model="searchKeyword"
-            class="nearby-home__search-input"
-            :placeholder="t('nearby.searchPlaceholder')"
-            placeholder-class="nearby-home__search-placeholder"
-            confirm-type="search"
-            :aria-label="t('nearby.searchPlaceholder')"
-            @confirm="goSearch"
-          />
+        <view class="nearby-home__subtitle-row">
+          <image class="nearby-home__pin nearby-home__pin--sm" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+          <text class="nearby-home__subtitle">{{ homeSubtitle }}</text>
         </view>
-        <text class="nearby-home__subtitle">{{ homeSubtitle }}</text>
       </view>
 
       <!-- 功能入口：5 圆形图标（参考图对齐） -->
@@ -449,6 +459,21 @@ function formatMemberCount(count: number): string {
         <view v-if="circleStore.loading && hotCircles.length === 0" class="nearby-home__empty">
           <SkeletonBlock variant="list" :rows="2" :label="t('common.loading')" />
         </view>
+        <view v-else-if="hotCircles.length === 0 && protectedBlocked" class="nearby-home__empty nearby-home__empty--guide">
+          <!-- MP-R1-PAGES-NEARBY-INDEX-903：受保护源被 66 行登录门拦下 → 明示「登录后看」，
+               不再用「暂无热门兴趣圈」把「未拉取」伪装成「无内容」 -->
+          <text class="nearby-home__empty-text">{{ t('nearby.loginToView') }}</text>
+          <view
+            class="nearby-home__empty-action press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('discover.card.goLogin')"
+            @tap="goLogin"
+          >
+            <text class="nearby-home__empty-action-text">{{ t('discover.card.goLogin') }}</text>
+          </view>
+        </view>
         <view v-else-if="hotCircles.length === 0" class="nearby-home__empty">
           <text v-if="circleStore.errorMessage" class="nearby-home__empty-text">{{ circleStore.errorMessage }}</text>
           <text v-else class="nearby-home__empty-text">{{ t('nearby.hotCirclesEmpty') }}</text>
@@ -478,34 +503,40 @@ function formatMemberCount(count: number): string {
         </scroll-view>
       </NearbySection>
 
-      <!-- ③ 校园圈（公开可看、认证进私域） -->
+      <!-- ③ 校园圈（公开可看、认证进私域）
+           MP-R1-PAGES-NEARBY-INDEX-906：由整宽横排行改为理想图的 4 联竖版卡
+           （封面 + 校名 + 次行 + 状态 chip，flex 行排布，小程序端不用 grid）。
+           次行原为 campusPublicHint 长文案（理想图此处是「N 位同学」）——全站无该
+           数据源：config/schools.ts 的 School 接口无成员数字段，
+           subpackages/campus/campus/hub.vue:62-73 schoolStats 是带「约」标注的硬编码
+           演示表（其注释 MP-R2-CAMPUS-HUB-007 自述「后端 campuses 接口就绪后替换」），
+           复制到本页即成第二真相源 → 暂展示真实的 school.city，同学数待后端补字段。 -->
       <NearbySection :title="t('nearby.campusCircles')" :more-text="t('nearby.viewAll')" @more="goCampusHub()">
-        <view
-          v-for="school in schoolEntries"
-          :key="school.id"
-          class="campus-entry press-feedback"
-          :class="{ 'campus-entry--img': school.coverUrl }"
-          hover-class="press-feedback--active"
-          hover-stay-time="40"
-          role="button"
-          :aria-label="school.name"
-          @tap="goCampusHub(school.name)"
-        >
-          <!-- 第五轮 QA（补做）：统一浅绿背景 + 名字；coverUrl 上传后显示图片（保留上传能力） -->
-          <image v-if="school.coverUrl" class="campus-entry__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
-          <view v-else class="campus-entry__badge">
-            <text class="campus-entry__badge-text">{{ school.name }}</text>
-          </view>
-          <view class="campus-entry__body">
+        <view class="campus-cards">
+          <view
+            v-for="school in schoolEntries"
+            :key="school.id"
+            class="campus-entry press-feedback"
+            :class="{ 'campus-entry--img': school.coverUrl }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="school.name"
+            @tap="goCampusHub(school.name)"
+          >
+            <!-- 封面：coverUrl 已上传则出图，否则浅绿底 + 校名（不引入 hub 的硬编码封面表） -->
+            <image v-if="school.coverUrl" class="campus-entry__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
+            <view v-else class="campus-entry__badge">
+              <text class="campus-entry__badge-text">{{ school.name }}</text>
+            </view>
             <text class="campus-entry__name">{{ school.name }}</text>
-            <text class="campus-entry__desc">{{ t('nearby.campusPublicHint') }}</text>
+            <text class="campus-entry__desc">{{ school.city }}</text>
+            <view class="campus-entry__status">
+              <!-- MP-R1-PAGES-NEARBY-INDEX-902：认证状态双态——本校已认证「已加入」、
+                   本校未认证「去认证」、其余「公开浏览」 -->
+              <text class="campus-entry__status-text">{{ t(campusChipKey(school.name)) }}</text>
+            </view>
           </view>
-          <view class="campus-entry__status">
-            <!-- MP-R1-PAGES-NEARBY-INDEX-902：接入认证状态双态——本校已认证「已加入」、
-                 本校未认证「去认证」、其余「公开浏览」（原恒为「公开浏览」） -->
-            <text class="campus-entry__status-text">{{ t(campusChipKey(school.name)) }}</text>
-          </view>
-          <text class="campus-entry__arrow">›</text>
         </view>
       </NearbySection>
 
@@ -536,6 +567,21 @@ function formatMemberCount(count: number): string {
         <!-- MP-R2-PAGES-NEARBY-INDEX-003：失败优先于空态（原失败伪装「暂无活动」） -->
         <view v-else-if="activityStore.errorMessage && activityStore.activities.length === 0" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ activityStore.errorMessage }}</text>
+        </view>
+        <!-- MP-R1-PAGES-NEARBY-INDEX-903：同分区②——未登录（real）时活动源未拉取，
+             不得伪装成「附近暂无活动」 -->
+        <view v-else-if="activityStore.activities.length === 0 && protectedBlocked" class="nearby-home__empty nearby-home__empty--guide">
+          <text class="nearby-home__empty-text">{{ t('nearby.loginToView') }}</text>
+          <view
+            class="nearby-home__empty-action press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('discover.card.goLogin')"
+            @tap="goLogin"
+          >
+            <text class="nearby-home__empty-action-text">{{ t('discover.card.goLogin') }}</text>
+          </view>
         </view>
         <view v-else-if="activityStore.activities.length === 0 && !activityStore.loading" class="nearby-home__empty">
           <text class="nearby-home__empty-text">{{ t('nearby.activitiesEmpty') }}</text>
@@ -638,11 +684,48 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-primary, #222222);
 }
 
-.nearby-home__search {
+/* MP-R1-PAGES-NEARBY-INDEX-904：标题组（绿针 + 「附近」）与右侧操作组（放大镜 + 发动态） */
+.nearby-home__title-group {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.nearby-home__actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+/* 定位针（标题 40rpx / 副标题 24rpx），品牌绿 SVG 素材，非 emoji */
+.nearby-home__pin {
   width: 40rpx;
   height: 40rpx;
-  margin-right: 12rpx;
-  color: var(--c-text-tertiary, #999999);
+  flex-shrink: 0;
+}
+
+.nearby-home__pin--sm {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+/* 放大镜按钮：mp 端点击热区 ≥ 80rpx（图标本身 44rpx） */
+.nearby-home__search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+}
+
+/* MP-R1-PAGES-NEARBY-INDEX-904：原为整行搜索框遗留的死样式（MP-R2-PAGES-NEARBY-INDEX-005
+   挂账项），现由放大镜图标复用；删除对 <image> 无效的 color 声明（同 MP-R1-PAGES-DISCOVER-INDEX-011 口径） */
+.nearby-home__search {
+  width: 44rpx;
+  height: 44rpx;
   flex-shrink: 0;
 }
 
@@ -658,37 +741,14 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-inverse, #FFFFFF);
 }
 
-.nearby-home__search-box {
+.nearby-home__subtitle-row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-top: 16rpx;
-  padding: 16rpx 24rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid var(--c-line, #E3EDE8);
-}
-
-.nearby-home__search-icon {
-  width: 36rpx;
-  height: 36rpx;
-  flex-shrink: 0;
-}
-
-.nearby-home__search-input {
-  flex: 1;
-  height: 40rpx;
-  font-size: 26rpx;
-  color: var(--c-text-primary, #222222);
-}
-
-.nearby-home__search-placeholder {
-  color: var(--c-text-tertiary, #999999);
+  gap: 8rpx;
+  margin-top: 8rpx;
 }
 
 .nearby-home__subtitle {
-  display: block;
-  margin-top: 8rpx;
   font-size: 24rpx;
   color: var(--c-text-secondary, #666666);
 }
@@ -763,19 +823,24 @@ function formatMemberCount(count: number): string {
 .circle-scroll__list {
   display: flex;
   gap: 12rpx;
-  /* R21：卡片收窄后右内边距同步收敛，避免末卡之后留白突兀
-     MP-R1-PAGES-NEARBY-INDEX-905：按 750rpx-页边距-3×gap 计算联排，4 卡恰好满宽 */
-  padding: 0 16rpx 8rpx 16rpx;
+  /* MP-R2-PAGES-NEARBY-INDEX-003（P1，回归 MP-R1-NEARBY-005 / 基线验证点
+     nearby-interest-circle-4th-card-fully-visible）：横向 padding 归零。
+     原 16rpx×2 内缩 + 170rpx 卡在 750rpx 视口下需 748rpx，而可用宽只有
+     750 − 2×32（.nearby-home 横向 padding）= 686rpx → 第 4 卡右裁 46rpx。
+     现 4×160 + 3×12 = 676 ≤ 686（余 10rpx 抗 rpx 取整），
+     第 5 卡左缘落在 688rpx > 686 → 静止视口无残影（理想图亦为整 4 卡）。 */
+  padding: 0 0 8rpx;
 }
 
 .circle-mini {
   /* 第五轮 R5：对齐理想图《附近的首页》——竖版 3:4 小海报卡
-   * R21：166→150rpx 收窄，保证 4 张卡完整落在视口内（此前第 4 张被右缘裁切约 1/3）
-   * MP-R1-PAGES-NEARBY-INDEX-905：恢复理想图竖版海报比例（约 170×290rpx），
-   * 收敛 gap/padding 使 4 卡完整落视口、无第 5 卡残影 */
+   * MP-R1-PAGES-NEARBY-INDEX-905 / MP-R2-PAGES-NEARBY-INDEX-003：尺寸按理想图实测
+   * （素材/理想效果图/附近的首页.png 宽 852px，750rpx/852px=0.88rpx/px，
+   *  首行 4 卡实测 185×295px ≈ 163×260rpx）取 160×256rpx，
+   *  宽度让 4 卡完整落视口（见 .circle-scroll__list 算术），高度保竖版海报比例。 */
   position: relative;
-  width: 170rpx;
-  height: 290rpx;
+  width: 160rpx;
+  height: 256rpx;
   flex-shrink: 0;
   border-radius: 28rpx;
   overflow: hidden;
@@ -845,18 +910,26 @@ function formatMemberCount(count: number): string {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* 校园圈（第五轮 QA 补做：统一浅绿背景 + 学校名字；coverUrl 上传后显示图片） */
+/* 校园圈（MP-R1-PAGES-NEARBY-INDEX-906：理想图的 4 联竖版封面卡，flex 行排布，小程序端不用 grid） */
+.campus-cards {
+  display: flex;
+  align-items: stretch;
+  gap: 16rpx;
+}
+
 .campus-entry {
   position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8rpx;
+  padding: 12rpx 12rpx 16rpx;
   border-radius: 20rpx;
   /* 统一浅绿背景（不再每校一色渐变） */
   background: var(--c-brand-50, #E6F6EF);
   border: 1rpx solid var(--c-brand-100, #D3EDE0);
-  margin-bottom: 16rpx;
   overflow: hidden;
 }
 
@@ -865,54 +938,50 @@ function formatMemberCount(count: number): string {
 }
 
 .campus-entry__cover-img {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
+  width: 100%;
+  height: 132rpx;
+  border-radius: 16rpx;
   flex-shrink: 0;
 }
 
-/* 浅绿底圆角方块展示学校名字（替代原首字徽标）
-   R21：4 字校名一行完整显示（此前硬换行成「北京大/学」半裁切观感） */
+/* 浅绿底卡上的白底封面位展示学校名字（coverUrl 未上传时的诚实兜底，
+   不复用 hub.vue 的硬编码封面表，避免第二真相源） */
 .campus-entry__badge {
-  width: 84rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
+  height: 132rpx;
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #FFFFFF;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 0 6rpx;
+  box-sizing: border-box;
 }
 
 .campus-entry__badge-text {
-  font-size: 16rpx;
+  font-size: 20rpx;
   font-weight: 700;
   color: var(--c-brand-600, #1F9A75);
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
-  letter-spacing: -0.5rpx;
 }
 
-.campus-entry__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-/* 第五轮 QA（补做）：浅绿底上文字用深绿系，保证可读性 */
+/* 校名 / 次行（同学数无全站数据源，暂由真实 city 字段占位，见模板注释） */
 .campus-entry__name {
-  font-size: 28rpx;
+  font-size: 22rpx;
   font-weight: 700;
   color: var(--c-brand-600, #1F9A75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .campus-entry__desc {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: var(--c-brand-700, #2E8B6A);
+  min-height: 26rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -920,25 +989,17 @@ function formatMemberCount(count: number): string {
 
 .campus-entry__status {
   flex-shrink: 0;
-  padding: 8rpx 20rpx;
+  align-self: flex-start;
+  padding: 6rpx 16rpx;
   border-radius: 999rpx;
-  /* 第五轮 QA（补做）：浅绿底上状态胶囊用白底 + 深绿字 */
+  /* 浅绿底上状态胶囊用白底 + 深绿字 */
   background: #FFFFFF;
-  align-self: center;
 }
 
 .campus-entry__status-text {
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 600;
   color: var(--c-brand-600, #1F9A75);
-}
-
-.campus-entry__arrow {
-  font-size: 30rpx;
-  color: var(--c-brand-600, #1F9A75);
-  opacity: 0.85;
-  font-weight: 600;
-  align-self: center;
 }
 
 .activity-entry {
@@ -1010,6 +1071,25 @@ function formatMemberCount(count: number): string {
 .nearby-home__empty-text {
   font-size: 24rpx;
   color: var(--c-text-tertiary, #666666);
+}
+
+/* MP-R1-PAGES-NEARBY-INDEX-903：受保护源被登录门拦下 → 「登录后看 + 登录入口」空态行
+   （与分区⑤的 nearby-login-guide 卡片同口径，横滑/列表区用轻量行态避免三张引导卡堆叠） */
+.nearby-home__empty--guide {
+  gap: 20rpx;
+}
+
+.nearby-home__empty-action {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-brand, #36C99A);
+}
+
+.nearby-home__empty-action-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-inverse, #FFFFFF);
 }
 
 /* 2026-08-26 R2：未登录「附近动态」登录引导卡片 */

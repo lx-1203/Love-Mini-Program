@@ -17,6 +17,9 @@ import { createPinia, setActivePinia } from "pinia";
 // 不是 services/env.ts——mock 错模块会导致 useMock() 仍返回 true（apiMode: mock）
 vi.mock("../../config/env", () => ({
   isMockMode: () => false,
+  // stores/messages/mock-data.ts 在模块作用域调用 resolveMediaUrl()，
+  // 后者解析内容头像时需读取 apiBaseUrl
+  clientEnv: { apiBaseUrl: "http://127.0.0.1:8080/api", apiMode: "real" },
 }));
 
 const requestMock = vi.fn();

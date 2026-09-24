@@ -18,6 +18,9 @@ import { IMAGE_PATHS } from "../../../config/images";
 import { circleCoverFor } from "../../../config/circle-covers";
 import AppShell from "../../../components/layout/AppShell.vue";
 import PageStateContainer from "../../../components/common/PageStateContainer.vue";
+// MP-R2-CIRCLES-INDEX-001（跨轮别名 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001）：
+// 全局 navigationStyle=custom（pages.json:36），右上角搜索钮必须实测微信原生胶囊间隙才不再靠猜值
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 2026-08-15：未登录时不发受保护请求，避免冷启动 401 雪崩
 import { getToken } from "../../../services/http";
 // 修复#3（第五轮 QA）：mock 模式无网络请求，直接加载本地 8 圈（dev-user 登录态可渲染）
@@ -27,6 +30,11 @@ const { t } = useI18n();
 const circleStore = useCircleStore();
 const sessionStore = useSessionStore();
 const { circles, loading, errorMessage } = storeToRefs(circleStore);
+
+/** MP-R2-CIRCLES-INDEX-001：--capsule-right（胶囊右缘间隙实测值）注入头部右槽节点，
+ *  供 .circles-header__search 做胶囊避让；AppShell 的 .shell__header-right 是子组件私有
+ *  节点、页面 scoped 样式命中不了，故注入点放在本页插槽自身的按钮节点上（同 circle-home.vue:46 口径） */
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /**
  * Task B2：从圈子 Tab 兴趣分类宫格带入的 category 参数（study/sports/music/movie/travel/game/food/reading）。
@@ -148,15 +156,17 @@ function handleRetry() {
  * 主页内保留「查看全部话题」链接跳转原话题列表页，旧链路不断）
  * @param circle - 兴趣圈对象
  */
-function goToCircleHome(circle: { id: string; campusVerified?: boolean }) {
-  // 校园认证圈：未完成校园认证时拦截并引导认证（收尾轮）
-  if (circle.campusVerified) {
-    const sessionStore = useSessionStore();
-    if (!sessionStore.userSession?.campusName) {
-      uni.showToast({ title: t("circle.campusVerifyRequired"), icon: "none" });
-      return;
-    }
-  }
+function goToCircleHome(circle: { id: string }) {
+  // MP-R2-CIRCLES-INDEX-003：原「校园认证圈未认证拦截」分支为恒假死代码，已删除——
+  //  1) 判据无数据源：后端 CircleView 无认证圈字段
+  //     （apps/api/src/main/java/com/campuslove/api/discover/CircleController.java:182-196 全字段清单），
+  //     interest_circles 表亦无对应列（database/flyway/sql/V2026.05.23.0005__create_interest_circles.sql:1-11，
+  //     后续迁移仅补 category：V2026.08.10.0032），CircleItem.campusVerified 全仓零写入点
+  //     → mock / real 模式恒 undefined，未认证用户点认证圈照样进入，属「假防护」；
+  //  2) 即便有字段，原判据 `!userSession?.campusName`（有校园名）也不是认证口径，
+  //     正口径是 guards/campus-gate.ts:51-55 isEducationVerified()。
+  // 后端补字段后的接法：`if (circle.requireCampusVerification && !ensureCertified("education")) return;`
+  // （浏览类操作本按 campus-gate.ts:60-61「浏览不受门控」的策略，需产品确认是否例外。）
   openAppPath(`${ROUTES.CIRCLES.HOME}?circleId=${circle.id}`); // infra R2-00102
 }
 
@@ -232,23 +242,45 @@ const tabFilteredCircles = computed(() => {
 });
 
 /**
- * 2026-08-25 P0：等 N 位朋友已加入的头像（基于 circle.id 哈希，规格书 14.6）
+ * 2026-08-25 P0：等 N 位朋友已加入的头像与计数（规格书 14.6）
+ *
+ * MP-R2-CIRCLES-INDEX-002（矩阵另以 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-002 记同病灶）：
+ * 原实现无条件按 circleId 字符哈希推导 5~12，real 模式同样伪造，且与圈子主页不同源
+ * → 同一圈子在列表页与主页数字不一致。现统一为「后端字段优先」口径（同 circle-home.vue:207-215，
+ * 该口径由 MP-R1-CIRCLEHOME-003 定案）：
+ *  1) 后端字段有值即用：CircleView.friendJoinedCount（CircleController.java:182-196 下发，
+ *     RealCircleService.estimateFriendJoinedCount 按 memberCount/1000 限定 [3,99]，
+ *     经 stores/circle.ts:90 mapToCircleItem 映射进 CircleItem.friendJoinedCount）；
+ *  2) real 模式缺字段 → 0 → 整行不渲染：宁缺这行也不展示伪造的社交证明；
+ *  3) mock 模式演示集 stores/circle/mock-data.ts 未定义该字段（该文件不在本泳道写集，
+ *     已登记「建议为 14 个 mock 圈补 friendJoinedCount」以便 mock 也走字段驱动），
+ *     过渡期按圈 id 稳定种子推导 5~12，与主页同式，保证两页 mock 数字始终一致。
+ * 头像池与主页同源（IMAGE_PATHS.PEOPLE.AVATAR_1~3 + 同种子规则）：原 AVATARS.AVATAR_1~4
+ * 取模与主页是两组不同图，是「两页不同源」的另一半。好友头像本体后端无字段（需契约变更，
+ * 见 QA 报告），此处仅作规格书 14.6 的装饰性头像组，不指向任何真实用户。
  */
 const FRIEND_AVATAR_POOL = [
-  IMAGE_PATHS.AVATARS.AVATAR_1,
-  IMAGE_PATHS.AVATARS.AVATAR_2,
-  IMAGE_PATHS.AVATARS.AVATAR_3,
-  IMAGE_PATHS.AVATARS.AVATAR_4,
+  IMAGE_PATHS.PEOPLE.AVATAR_1,
+  IMAGE_PATHS.PEOPLE.AVATAR_2,
+  IMAGE_PATHS.PEOPLE.AVATAR_3,
 ];
-function friendAvatars(circleId: string): string[] {
-  // 用 circleId 长度做简单取模，让同一圈子头像稳定
-  const seed = circleId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return [FRIEND_AVATAR_POOL[seed % 4]!, FRIEND_AVATAR_POOL[(seed + 1) % 4]!, FRIEND_AVATAR_POOL[(seed + 2) % 4]!];
+/** 圈 id → 稳定种子（与 circle-home.vue:199/213 同式，保证两页 mock 取到同头像同数字） */
+function circleIdSeed(circleId: string): number {
+  return (circleId || "").split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
 }
-function friendJoinCount(circleId: string, _memberCount: number): number {
-  // 基于 circleId 推导一个 5~12 之间的数字（_memberCount 保留以便后续接真实数据）
-  const seed = circleId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return 5 + (seed % 8);
+function friendAvatars(circleId: string): string[] {
+  const seed = circleIdSeed(circleId);
+  return [
+    FRIEND_AVATAR_POOL[seed % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+    FRIEND_AVATAR_POOL[(seed + 1) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+    FRIEND_AVATAR_POOL[(seed + 2) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
+  ];
+}
+function friendJoinedCount(circle: { id: string; friendJoinedCount?: number }): number {
+  const raw = circle.friendJoinedCount;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  if (!useMock()) return 0;
+  return 5 + (circleIdSeed(circle.id) % 8);
 }
 
 /** 2026-08-25 P0：返回上一页（自定义 header slot 使用） */
@@ -314,6 +346,7 @@ defineExpose({ toggleJoin });
     <template #header-right>
       <view
         class="circles-header__search press-feedback"
+        :style="menuStyleVars"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
@@ -383,8 +416,10 @@ defineExpose({ toggleJoin });
                   <!-- R3：文案精简（人加入→人），避免被「加入」按钮列省略号吃掉动态数（judged：统计行不可读） -->
                   <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 人 · {{ circle.topicCount }} 条动态</text>
                 </view>
-                <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6） -->
-                <view class="circle-card__friends">
+                <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6）
+                     MP-R2-CIRCLES-INDEX-002：数字改由后端 friendJoinedCount 驱动；
+                     real 模式取不到值时整行不渲染（原无条件展示哈希伪造数） -->
+                <view v-if="friendJoinedCount(circle) > 0" class="circle-card__friends">
                   <view class="circle-card__friends-avatars">
                     <image
                       v-for="(av, i) in friendAvatars(circle.id)"
@@ -395,7 +430,7 @@ defineExpose({ toggleJoin });
                       alt=""
                     />
                   </view>
-                  <text class="circle-card__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友加入</text>
+                  <text class="circle-card__friends-text">{{ t("circle.friendsJoined", { count: friendJoinedCount(circle) }) }}</text>
                 </view>
               </view>
 
@@ -862,6 +897,16 @@ defineExpose({ toggleJoin });
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* MP-R2-CIRCLES-INDEX-001（跨轮别名 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001）：
+     全局 navigationStyle=custom，原生胶囊常驻右上（右缘间隙 --capsule-right≈7px + 本体 87px，
+     纵向 statusBar+4 ~ +36px）。本按钮此前无任何避让：右缘落在屏右 28rpx(≈14px) 处、
+     顶部落在 statusBar+8px（AppShell.vue:99-105 inline padding-top + :306-314 吸顶头），
+     与胶囊投影带横纵双向重叠 → 真机放大镜被胶囊整体压住不可点（同病灶已两次实证：
+     campus/hub.vue:383-389「认证按钮被胶囊压住 85%」、pages/nearby/index.vue:624-626）。
+     避让口径对齐 hub/topics：预留 = 胶囊间隙 + 胶囊本体 87px + 呼吸（合计 +104px）。
+     落实后按钮右缘距屏右 14 + 7 + 104 = 125px，胶囊左缘 94px → 净空 31px（≥10px）。
+     --capsule-right 由 useMenuButtonRect 在本节点 :style 实测注入，测量前/非小程序端回退 7px。 */
+  margin-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .circles-header__search-icon {

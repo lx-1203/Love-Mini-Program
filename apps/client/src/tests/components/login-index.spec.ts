@@ -121,16 +121,18 @@ describe("登录页协议可见性（2026-08-14）", () => {
     expect(wrapper.find(".terms-link").exists()).toBe(true);
   });
 
-  it("协议 checkbox 默认勾选且点击可切换选中态", async () => {
-    // 2026-08-30 登录页改版（commit 3157b7c）：协议默认勾选（agreed=ref(true)），
-    // 原断言「默认未选中」已过时；保留原语义「点击 checkbox 可切换选中态」。
+  it("协议 checkbox 默认未勾选（合规）且点击可切换选中态", async () => {
+    // 2026-08-30（commit 3157b7c）曾改默认勾选（agreed=ref(true)）；
+    // 2026-09-24 R1 审计修复（commit 18c91ccf）改回默认不勾选——
+    // 个人信息保护要求协议须用户主动勾选，不得默认同意（代码内各登录动作均有未勾选守卫）。
     const wrapper = mountLogin();
     const checkbox = wrapper.find(".checkbox");
-    expect(checkbox.classes()).toContain("checkbox--checked");
-    await checkbox.trigger("tap");
-    expect(wrapper.find(".checkbox").classes()).not.toContain("checkbox--checked");
+    expect(checkbox.classes()).not.toContain("checkbox--checked");
+    expect(checkbox.attributes("aria-checked")).toBe("false");
     await checkbox.trigger("tap");
     expect(wrapper.find(".checkbox").classes()).toContain("checkbox--checked");
+    await checkbox.trigger("tap");
+    expect(wrapper.find(".checkbox").classes()).not.toContain("checkbox--checked");
   });
 
   it("切换到手机号登录后协议区仍然可见", async () => {

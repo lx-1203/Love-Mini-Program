@@ -7,8 +7,8 @@
  *  发布到选择器（圈子/校园/通用）→ 内容输入 → 图片九宫格
  *  添加话题/位置/提及/谁可以看 → 发帖小贴士 → 底部工具栏
  *
- * 草稿：本地 storage(village:post-draft) + 后端 /drafts 双写；
- *      退出未发布提示"是否保留草稿"；进入自动恢复；发布成功后清除。
+ * 草稿：本地 storage(village:publish-draft，MP-R1-PUBLISH-004 起独立键) + 后端
+ *      /drafts/current 双写；退出未发布提示"是否保留草稿"；进入自动恢复；发布成功后清除。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
@@ -21,7 +21,14 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 // MP-R1-PUBLISH-004：publish 独立草稿存储键（原与 post.vue 共用 village:post-draft，
 // 两页快照结构不同互写污染：post 的 title 被静默丢弃、publish 的空 title 反向覆盖）
-import { PUBLISH_DRAFT_STORAGE_KEY, POST_MAX_IMAGES } from "../../../constants/village";
+// 标题长度闸与 post.vue 同源（后端 CreatePostRequest.title @Size(min=5,max=30)）
+import {
+  PUBLISH_DRAFT_STORAGE_KEY,
+  POST_MAX_IMAGES,
+  POST_MAX_CUSTOM_TAGS,
+  POST_TITLE_MIN_LENGTH,
+  POST_TITLE_MAX_LENGTH,
+} from "../../../constants/village";
 // MP-R1-PUBLISH-006：缓存城市键统一入 constants/storage-keys.ts
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
@@ -32,8 +39,12 @@ import { compressImages } from "../../../utils/compress-image";
 // R20（2026-09-08）：publish-header 原用 var(--statusbar, env(safe-area-inset-top))（模拟器/无刘海机型=0），
 // 系统时间与「发布动态」标题叠印 → 改 JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// MP-R2-VILLAGE-POST-R01（两页一致）：与 post.vue/index.vue 同口径动态注入 --capsule-right，
+// 头部「发布」按钮的胶囊避让不再恒为静态值（H5 端归零回退设计原值）
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 
 const statusBarHeightPx = useStatusBarHeight();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -79,7 +90,7 @@ const canSubmit = computed(() => content.value.trim().length > 0 && !submitting.
 const isCircleTarget = computed(() => targetType.value === "circle");
 
 /** 可发布的目标圈子（仅当前用户已加入的兴趣圈），保持上限 8 个展示 */
-const joinedCircles = computed(() => circleStore.circles.filter((c) => c.isJoined).slice(0, 8));
+const joinedCircles = computed(() => circleStore.joinedCircles.slice(0, 8));
 
 /** MP-R1-PUB-017：圈子列表加载中（弹层「兴趣圈子」分组提示用） */
 const circlesLoading = ref(false);
@@ -196,12 +207,22 @@ async function loadTarget() {
 }
 
 function selectTarget(circle: CircleItem) {
+  // MP-R2-POST-009（两页一致）：成员守卫——未加入的圈不可选为发布目标
+  // （real 模式后端 RealCircleService.createTopic 成员校验必 403 CIRCLE_JOIN_REQUIRED）。
+  // 弹层列表已按 isJoined 过滤，此处为深链/列表脏数据兜底，与 post.vue selectTarget 同款
+  if (!circle.isJoined) return;
   targetType.value = "circle";
   targetId.value = Number(circle.id);
   targetCircle.value = circle;
   // 圈子目标 → 仅圈内成员可见（批次 B4：对齐后端 visibility interest）
   visibility.value = "interest";
   targetOpen.value = false;
+  // W2-PUBLISH-TOPIC：话题行在圈子目标下隐藏（createTopic 请求体无 tags，见模板注释），
+  // 切过去时必须关弹层并显式告知——否则用户已选的话题会在提交时被静默丢弃
+  topicSheetOpen.value = false;
+  if (topics.value.length > 0) {
+    uni.showToast({ title: "兴趣圈子发帖暂不支持话题，所选话题不会随本条发布", icon: "none" });
+  }
 }
 
 function chooseGeneral() {
@@ -258,11 +279,63 @@ function removeImage(index: number) {
 }
 
 /* ---------- 话题 ---------- */
+/**
+ * W2-PUBLISH-TOPIC（2026-09-24）：「添加话题」行原为
+ * `@tap="toggleTopic('#校园日常')"`——无弹层、把写死的单个话题反复开关，
+ * 行内 meta 却承诺「已选 N/5」多选上限，属假 affordance（看着能点开弹层，
+ * 点了只切一个常量）。现按本项目既有先例 post.vue 话题弹层（post.vue:1067）
+ * 同构做真：热门点选 + 自定义输入 + 再点取消，上限 POST_MAX_CUSTOM_TAGS(=5)。
+ * 状态全部在本页内联（无新组件/store/service 依赖，故不触发「本轮不宜引入弹层」条件）。
+ * HOT_TOPICS 与 post.vue:116 同表——两页本轮已决定不合并，提取到 constants/ 需改
+ * 本泳道禁改文件，故按「两页一致」口径各自内联一份（后续合并泳道单一来源化）。
+ */
+const topicSheetOpen = ref(false);
+/** 自定义话题输入 */
+const customTopic = ref("");
+/** 自定义话题长度上限（与 post.vue 弹层输入 maxlength 同值） */
+const CUSTOM_TOPIC_MAX_LENGTH = 16;
+/** 热门话题（小红书式：点选 + 自定义输入） */
+const HOT_TOPICS = ["校园日常", "晚自习", "食堂美食", "社团活动", "运动打卡", "考研上岸", "宿舍日常", "恋爱心事", "周末去哪", "校园美景"];
+
 function toggleTopic(topic: string) {
   const tag = topic.startsWith("#") ? topic : "#" + topic;
   const idx = topics.value.indexOf(tag);
-  if (idx >= 0) topics.value.splice(idx, 1);
-  else if (topics.value.length < 5) topics.value.push(tag);
+  if (idx >= 0) {
+    topics.value.splice(idx, 1);
+    return;
+  }
+  // 上限拦截必须有可观测反馈：否则满 5 个后点未选中 chip「没反应」即死按钮
+  if (topics.value.length >= POST_MAX_CUSTOM_TAGS) {
+    uni.showToast({ title: t("village.post.maxTagsError", { n: POST_MAX_CUSTOM_TAGS }), icon: "none" });
+    return;
+  }
+  topics.value.push(tag);
+}
+
+/** 自定义话题入列（弹层「添加」按钮 / 键盘完成） */
+function addCustomTopic() {
+  const raw = customTopic.value.trim().replace(/^#/, "");
+  if (!raw) {
+    uni.showToast({ title: t("formValidator.required"), icon: "none" });
+    return;
+  }
+  const tag = "#" + raw;
+  if (topics.value.includes(tag)) {
+    uni.showToast({ title: t("village.post.tagExists"), icon: "none" });
+    return;
+  }
+  if (topics.value.length >= POST_MAX_CUSTOM_TAGS) {
+    uni.showToast({ title: t("village.post.maxTagsError", { n: POST_MAX_CUSTOM_TAGS }), icon: "none" });
+    return;
+  }
+  topics.value.push(tag);
+  customTopic.value = "";
+  topicSheetOpen.value = false;
+}
+
+/** 移除单个已选话题（正文下方 chips 的 × 入口，与弹层内 chip 再点取消同源） */
+function removeTopic(index: number) {
+  topics.value.splice(index, 1);
 }
 
 function openMentionPicker() {
@@ -282,10 +355,12 @@ let draftSyncTimer: ReturnType<typeof setTimeout> | null = null;
 /** R5(INDEP-001)：正文 #话题 与已选话题合并——原逻辑只在 submit 作用域内，
  *  snapshotDraft 越界引用导致每次编辑草稿都抛 ReferenceError，草稿保存完全不生效 */
 function buildMergedTopics(): string[] {
+  // W2-PUBLISH-TOPIC：上限改引用 POST_MAX_CUSTOM_TAGS（原裸 5 与弹层/行内 meta 双源，
+  // 常量若变会静默出现「行内显示 5、正文并入 3」的错位）
   const inlineTopics = Array.from(content.value.matchAll(/#([^\s#··]+)/g))
     .map((m) => `#${m[1]}`)
     .filter((tag) => !topics.value.includes(tag))
-    .slice(0, 5 - topics.value.length);
+    .slice(0, POST_MAX_CUSTOM_TAGS - topics.value.length);
   return [...topics.value, ...inlineTopics];
 }
 
@@ -331,6 +406,30 @@ function cancelDraftTimers() {
 }
 
 /**
+ * 草稿是否有实质内容（正文/标题/图/话题任一非空）。
+ * MP-R2-PUB-113（与 post.vue hasDraftContent 同口径）：onLoad 的入口参数回设
+ * （friends/campus/circleId 改 targetType/visibility）必触发一次草稿 watch，
+ * 500ms 后写出的就是「全空但带目标」的幽灵快照——它会按 updatedAt「取新」规则
+ * 压过本地/后端的真实草稿，并在下次进入时恢复出旧目标与矛盾的「谁可以看」。
+ * 现空快照一律不落盘（双端），restoreDraft 侧再补同款恢复闸。
+ */
+function hasDraftContent(snap: {
+  title?: string;
+  content?: string;
+  images?: string[];
+  topics?: string[];
+  tags?: string[];
+}): boolean {
+  return Boolean(
+    (typeof snap.title === "string" && snap.title.trim().length > 0) ||
+      (typeof snap.content === "string" && snap.content.trim().length > 0) ||
+      (Array.isArray(snap.images) && snap.images.length > 0) ||
+      (Array.isArray(snap.topics) && snap.topics.length > 0) ||
+      (Array.isArray(snap.tags) && snap.tags.length > 0)
+  );
+}
+
+/**
  * MP-R1-PUBLISH-003：同步落盘当前快照（本地 + 后端双写，不等防抖）。
  * 「保留草稿」退出路径直接 flush——原 scheduleDraftSave() 挂上 500ms 定时器后立即
  * leave()→onUnmounted clearTimeout，最终快照永不落盘（最后 ≤500ms 编辑必丢）。
@@ -338,6 +437,9 @@ function cancelDraftTimers() {
 function flushDraftSave() {
   cancelDraftTimers();
   const snap = snapshotDraft();
+  // MP-R2-PUB-113：空快照不落盘（requestLeave 的 dirty 判定已挡掉大部分场景，
+  // 此处与 scheduleDraftSave 同闸，杜绝「只选了目标没打字」这类空写入）
+  if (!hasDraftContent(snap)) return;
   try {
     uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
   } catch (_e) { /* storage 失败不阻塞 */ }
@@ -348,6 +450,8 @@ function scheduleDraftSave() {
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(async () => {
     const snap = snapshotDraft();
+    // MP-R2-PUB-113：空快照不落盘（详见 hasDraftContent）
+    if (!hasDraftContent(snap)) return;
     try {
       uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
     } catch (_e) { /* storage 失败不阻塞 */ }
@@ -390,6 +494,10 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
     draft = remoteDraft ?? localDraft;
   }
   if (!draft) return;
+  // MP-R2-PUB-113（两页一致）：空快照恢复闸——post.vue:400-406（MP-R1-POST-101）已有同款，
+  // 本页缺失。历史遗留的空草稿（全字段空、仅 targetType/visibility 有值）若被恢复，
+  // 会凭空恢复出旧 friends/circle 目标与「谁可以看」文案，与空表单同屏矛盾
+  if (!hasDraftContent(draft)) return;
   if (draft.targetType === "circle" && draft.targetId) {
     targetType.value = "circle";
     targetId.value = Number(draft.targetId);
@@ -439,7 +547,12 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
 function clearDraft() {
   cancelDraftTimers();
   try { uni.removeStorageSync(PUBLISH_DRAFT_STORAGE_KEY); } catch (_e) { /* ignore */ }
-  void clientApi.deleteDraft().catch(() => {});
+  // MP-R1-PUBLISH-108 / R11 附录 B「禁空 catch」：本端点是后端草稿单例（全用户一条，
+  // 无来源维度），删除失败只意味着下次进入会恢复出已发布内容——本地键此刻已清，
+  // 故留痕不阻塞；本页 restoreDraft 按 updatedAt 取新，本地空/后端旧不会覆盖新编辑
+  void clientApi.deleteDraft().catch((e: unknown) => {
+    console.warn("后端草稿清理失败（本地键已清，下次进入按 updatedAt 取新）", e);
+  });
 }
 
 // MP-R1-PUBLISH-002：images/topics 为 ref 数组且 chooseImage/removeImage/toggleTopic 全部
@@ -449,8 +562,20 @@ watch([content, () => [...images.value], () => [...topics.value], location, visi
 
 /* ---------- 退出：未发布提示保留草稿 ---------- */
 const allowLeave = ref(false);
+/**
+ * MP-R2-POST-010（两页一致）：页面是否已卸载。提交在途时用户点 X 离页，
+ * 异步成功回调若继续跑 navigateAway()，会把「返回后的无关栈顶页」再弹一次
+ * （栈=1 时更会 reLaunch 硬拉用户回村口）。
+ */
+let pageDestroyed = false;
 function requestLeave() {
   if (allowLeave.value) return;
+  // MP-R2-POST-010（与 post.vue 同口径）：提交在途不放行离页——请求不会因离页中止，
+  // 此时弹窗「保留草稿/丢弃」会让用户在写操作结果未知的情况下清掉自己的内容
+  if (submitting.value) {
+    uni.showToast({ title: t("village.post.publishing"), icon: "none" });
+    return;
+  }
   const dirty = content.value.trim() || images.value.length || topics.value.length;
   if (!dirty) { leave(); return; }
   uni.showModal({
@@ -484,23 +609,27 @@ function leave() {
 
 /* ---------- 提交 ---------- */
 async function submitPublish() {
+  // MP-R2-POST-004（与 post.vue 同口径）：防重守卫置于函数首行，
+  // 提交在途的二次点按静默返回，不再先跑一遍内容校验
+  if (submitting.value) return;
   if (!content.value.trim()) {
     uni.showToast({ title: t("village.contentRequired"), icon: "none" });
     return;
   }
-  // 后端 CreatePostRequest 校验 title 长度必须 5–30 字（400 否决）；
-  // 正文即标题的发布形态下：正文至少 5 字 + 标题截断到 30 字，保证与后端规则一致
-  if (content.value.trim().length < 5) {
-    uni.showToast({ title: t("village.contentMinLength", { n: 5 }), icon: "none" });
+  // 后端 CreatePostRequest 的 title 闸 @Size(min = 5, max = 30)（400 否决）：
+  // 正文即标题的发布形态下 = 正文至少 5 字 + 标题截断 30 字。
+  // 长度改为引用 constants/village 的 POST_TITLE_*（与 post.vue 同源，不再各写魔数）
+  if (content.value.trim().length < POST_TITLE_MIN_LENGTH) {
+    uni.showToast({ title: t("village.contentMinLength", { n: POST_TITLE_MIN_LENGTH }), icon: "none" });
     return;
   }
-  const titleFromContent = content.value.trim().slice(0, 30);
-  if (submitting.value) return;
+  const titleFromContent = content.value.trim().slice(0, POST_TITLE_MAX_LENGTH);
   submitting.value = true;
   // 2026-09-06：正文中直接输入的 #话题 自动并入话题列表（与行入口等效）
   // R5(INDEP-001)：合并逻辑提取为 buildMergedTopics()（草稿快照共用），消除越界引用
   const mergedTopics = buildMergedTopics();
   uni.showLoading({ title: t("village.post.publishing"), mask: true });
+  let failureMsg = "";
   try {
     // real 模式上传本地图片
     let finalImages = images.value;
@@ -508,7 +637,7 @@ async function submitPublish() {
     // DevTools/iOS 的 http://tmp/*、http://usr/* 临时路径误判为已上传，后端落库死链
     const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
     if (localImages.length > 0 && !useMock()) {
-      uni.showLoading({ title: t("village.post.uploadingImages") });
+      uni.showLoading({ title: t("village.post.uploadingImages"), mask: true });
       try {
         const urls: string[] = [];
         for (const img of localImages) {
@@ -517,60 +646,85 @@ async function submitPublish() {
         }
         finalImages = [...images.value.filter((img) => isUploadedMediaUrl(img)), ...urls];
       } catch (_e) {
-        uni.hideLoading();
-        uni.showToast({ title: t("village.post.imageUploadFailed"), icon: "none" });
-        return;
-      } finally { uni.hideLoading(); }
+        // 图片上传失败：不进提交链路，表单内容与草稿原样保留（失败不留幽灵草稿）
+        failureMsg = t("village.post.imageUploadFailed");
+      }
     }
-    if (isCircleTarget.value && targetId.value != null) {
-      await circleStore.createTopic(String(targetId.value), {
-        title: titleFromContent,
-        content: content.value.trim(),
-        images: finalImages,
-        tags: mergedTopics,
-      });
-      uni.showToast({ title: t("village.postSuccess"), icon: "success" });
-    } else {
-      await villageStore.createPost({
-        categoryId: "interest",
-        title: titleFromContent,
-        content: content.value.trim(),
-        images: finalImages,
-        tags: mergedTopics,
-        visibility: visibility.value,
-        targetType: targetType.value,
-        targetId: targetId.value,
-      });
-      uni.showToast({ title: t("village.postSuccess"), icon: "success" });
+    if (!failureMsg) {
+      if (isCircleTarget.value && targetId.value != null) {
+        await circleStore.createTopic(String(targetId.value), {
+          title: titleFromContent,
+          content: content.value.trim(),
+          images: finalImages,
+          tags: mergedTopics,
+        });
+      } else {
+        await villageStore.createPost({
+          categoryId: "interest",
+          title: titleFromContent,
+          content: content.value.trim(),
+          images: finalImages,
+          tags: mergedTopics,
+          visibility: visibility.value,
+          targetType: targetType.value,
+          targetId: targetId.value,
+        });
+      }
     }
-    // MP-R8-DRAFT-001（2026-09-16）：后端 /drafts 草稿也要删除——restoreDraft 优先后端草稿，
-    // 只清本地会导致下次进入恢复已发布内容（重复发布风险）
-    void clientApi.deleteDraft().catch(() => {});
-    clearDraft();
-    allowLeave.value = true;
-    // MP-R2-PUB-108：复用 navigateAway()（原与 leave() 逐行重复）。
-    // 400ms 与 post.vue 的 POST_SUBMIT_NAVIGATE_BACK_MS(800) 口径差异留待产品统一
-    setTimeout(navigateAway, 400);
   } catch (e) {
     // 2026-08-31：优先展示后端具体原因（如「请先加入该圈子，再在圈内发帖」）
-    const msg = e instanceof Error && e.message
+    failureMsg = e instanceof Error && e.message
       ? e.message
       : circleStore.errorMessage || villageStore.errorMessage || t("village.post.publishFailed");
-    uni.showToast({ title: msg, icon: "none" });
-  } finally {
-    uni.hideLoading();
-    submitting.value = false;
   }
+  // MP-R1-PUBLISH-109（两页一致）：出口唯一且「先 hideLoading 再 toast」——
+  // 原结构 showToast 在 try 内、finally 再 hideLoading，小程序端 hideLoading 会把刚弹出
+  // 的 toast 一并关掉（成功/失败提示闪失）；loading 也只在这一处关闭，不会永驻
+  uni.hideLoading();
+  submitting.value = false;
+  if (failureMsg) {
+    uni.showToast({ title: failureMsg, icon: "none" });
+    return;
+  }
+  // MP-R8-DRAFT-001（2026-09-16）：清草稿。clearDraft() 已内置「取消在途定时器 + 删本地键 +
+  // deleteDraft 删后端 /drafts/current」——MP-R1-PUBLISH-108：原此处另有一次直调
+  // deleteDraft，同一次发布发两条重复 DELETE（/drafts 端点无 @Idempotent，是真重复请求），已删
+  clearDraft();
+  allowLeave.value = true;
+  // MP-R2-POST-010：页面已离页时到此为止（清理必须完成，否则已发内容会作为草稿复活）
+  if (pageDestroyed) return;
+  // 两页一致（MP-R2-PUB-112 能力分叉的一项）：成功后清空表单——post.vue 成功即清、
+  // 本页不清，于是「submitting 已复位 + 400ms 导航窗口内按钮仍可点 + 表单仍是已发内容」
+  // 在本页成为重复提交通道。注意 services/http.ts 对写请求注入的是
+  // 「method+URL+body 哈希」的稳定 Idempotency-Key，而 POST /posts 带 @Idempotent：
+  // 同 payload 的二次提交被后端以 409 Conflict 拦下（键成功后保留 4h）——
+  // 于是「只发出一帖」的运行时取证可能只是服务端兜底，客户端防连点是否生效被掩盖，
+  // 用户还会在发布成功后额外看到一条失败 toast。清空后 canSubmit 恒 false，
+  // 二次点按不可能再产出同一 payload；空快照又被 hasDraftContent 闸挡住，草稿不会复活
+  content.value = "";
+  images.value = [];
+  topics.value = [];
+  location.value = "";
+  uni.showToast({ title: t("village.postSuccess"), icon: "success" });
+  // MP-R2-PUB-108：复用 navigateAway()（原与 leave() 逐行重复）。
+  // 400ms 与 post.vue 的 POST_SUBMIT_NAVIGATE_BACK_MS(800) 口径差异留待产品统一
+  setTimeout(() => {
+    // MP-R2-POST-010：延时窗口内用户可能已自行离页——此时 navigateBack 会弹掉无关栈顶页
+    if (pageDestroyed) return;
+    navigateAway();
+  }, 400);
 }
 
 onUnmounted(() => {
+  // MP-R2-POST-010（两页一致）：置卸载标志，拦断在途提交回调的导航副作用
+  pageDestroyed = true;
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   if (draftSyncTimer) clearTimeout(draftSyncTimer);
 });
 </script>
 
 <template>
-  <view class="publish-page">
+  <view class="publish-page" :style="menuStyleVars">
     <!-- 顶部导航（R20：padding-top 注入状态栏高度，标题不再与系统时间叠印） -->
     <view class="publish-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
@@ -687,10 +841,19 @@ onUnmounted(() => {
         <!-- MP-R2-PUB-104：圈子目标下隐藏话题行——createTopic real 请求体仅 title/content/images，
              后端 CreateTopicRequest 无 tags 字段，所选话题在圈子路径全部静默丢弃（UI 承诺即丢数据）。
              general/campus/friends 路径的 createPost 正常携带 tags，入口保留 -->
-        <view v-if="!isCircleTarget" class="publish-row press-feedback" role="button" @tap="toggleTopic('#校园日常')">
+        <!-- W2-PUBLISH-TOPIC：原 @tap="toggleTopic('#校园日常')"（写死单话题反复开关、无弹层）
+             改为打开与 post.vue 同构的话题弹层，行内 meta 的「已选 N/5」自此名副其实 -->
+        <view
+          v-if="!isCircleTarget"
+          class="publish-row press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          @tap="topicSheetOpen = true"
+        >
           <text class="publish-row__icon">#</text>
           <text class="publish-row__label">添加话题</text>
-          <text class="publish-row__meta">已选 {{ topics.length }}/5</text>
+          <text class="publish-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
           <text class="publish-row__arrow">›</text>
         </view>
         <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
@@ -717,6 +880,18 @@ onUnmounted(() => {
         </view>
       </view>
 
+      <!-- W2-PUBLISH-TOPIC：已选话题 chips（与 post.vue:981 同构）——关弹层后仍可见
+           所选内容并可单个取消，弹层的选择结果不再只留一个计数 -->
+      <view v-if="topics.length > 0" class="publish-topics">
+        <!-- 圈子目标下话题行隐藏（后端 CreateTopicRequest 无 tags），但已选话题仍会随草稿恢复
+             出现——不藏起来，改为当场明示「不会随本条发布」，否则又是「UI 承诺即丢数据」 -->
+        <text v-if="isCircleTarget" class="publish-topics__hint">兴趣圈子发帖暂不支持话题，所选话题不会随本条发布</text>
+        <view v-for="(tag, idx) in topics" :key="`${tag}-${idx}`" class="publish-topic-chip">
+          <text class="publish-topic-chip__text">{{ tag }}</text>
+          <text class="publish-topic-chip__remove" role="button" :aria-label="'移除话题 ' + tag" @tap="removeTopic(idx)">×</text>
+        </view>
+      </view>
+
       <!-- 发帖小贴士 -->
       <view v-if="tipVisible" class="publish-tip">
         <view class="publish-tip__text-wrap">
@@ -733,6 +908,56 @@ onUnmounted(() => {
 
       <view class="publish-body__bottom-space" />
     </scroll-view>
+
+    <!-- ===== W2-PUBLISH-TOPIC：话题选择弹层（与 post.vue:1067 同构：热门点选 + 自定义输入）
+           放在 scroll-view 之外、页面根层级——position:fixed 面板嵌在 scroll-view 内会随内容
+           滚动/被裁切（本页「发布到」弹层的历史槽位问题，新弹层不再复制） ===== -->
+    <view v-if="topicSheetOpen" class="publish-sheet" @tap="topicSheetOpen = false">
+      <view class="publish-sheet__panel" @tap.stop>
+        <view class="publish-sheet__head">
+          <text class="publish-sheet__title">添加话题</text>
+          <text class="publish-sheet__sub">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
+        </view>
+        <view class="publish-sheet__chips">
+          <view
+            v-for="topic in HOT_TOPICS"
+            :key="topic"
+            class="publish-sheet__chip press-feedback"
+            :class="{ 'publish-sheet__chip--on': topics.includes('#' + topic) }"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="'选择话题 ' + topic"
+            @tap="toggleTopic(topic)"
+          >
+            <text class="publish-sheet__chip-text"># {{ topic }}</text>
+          </view>
+        </view>
+        <view class="publish-sheet__input-row">
+          <input
+            v-model="customTopic"
+            class="publish-sheet__input"
+            cursor-spacing="20"
+            :maxlength="CUSTOM_TOPIC_MAX_LENGTH"
+            :placeholder="'输入自定义话题（' + CUSTOM_TOPIC_MAX_LENGTH + ' 字内）'"
+            placeholder-class="publish-sheet__placeholder"
+            confirm-type="done"
+            :aria-label="'自定义话题'"
+            @confirm="addCustomTopic"
+          />
+          <view
+            class="publish-sheet__confirm press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('village.post.addTag')"
+            @tap="addCustomTopic"
+          >
+            <text class="publish-sheet__confirm-text">{{ t("village.post.addTag") }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
 
     <!-- 2026-09-06：底部工具栏已按需求移除（与上方行项重复，且无实际作用） -->
   </view>
@@ -752,8 +977,12 @@ onUnmounted(() => {
   justify-content: space-between;
   position: relative;
   /* R20：状态栏高度改由 JS 注入（:style paddingTop），env() 在模拟器为 0 会与系统时间叠印；
-     右侧仍预留微信胶囊宽度，避免「发布」被胶囊遮挡。R4：200→210rpx，与胶囊保持 ≥10px 间距 */
-  padding: 16rpx 210rpx 16rpx 32rpx;
+     右侧仍预留微信胶囊宽度，避免「发布」被胶囊遮挡。
+     MP-R2-VILLAGE-POST-R01（两页一致）：原静态 210rpx 不参与胶囊实测——改为与 post.vue:1101、
+     index.vue:909 同款 calc(var(--capsule-right) + 104px)：MP 端随实测间隙、H5 端归零回退。
+     （R4 记录的 200→210rpx 静态值仅适配标准 7px 间隙机型） */
+  padding: 16rpx 32rpx;
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: #fff;
   border-bottom: 1rpx solid #EEF2F0;
   flex-shrink: 0;
@@ -828,6 +1057,30 @@ onUnmounted(() => {
 .publish-row__label { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
 .publish-row__arrow { font-size: 32rpx; color: var(--c-text-quaternary, #C2CAC6); }
+
+/* W2-PUBLISH-TOPIC：已选话题 chips（与 post.vue .post-topics 同口径，token 强制） */
+.publish-topics { display: flex; flex-wrap: wrap; gap: 12rpx; padding: 0 32rpx; }
+.publish-topics__hint { width: 100%; font-size: var(--fs-xs, 22rpx); color: var(--c-text-tertiary, #9AA39F); }
+.publish-topic-chip { display: flex; align-items: center; gap: 8rpx; padding: 10rpx 20rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand-50, #E8FAF3); }
+.publish-topic-chip__text { font-size: var(--fs-base, 24rpx); color: var(--c-brand, #36C99A); font-weight: 500; }
+.publish-topic-chip__remove { font-size: var(--fs-base, 24rpx); color: var(--c-romance-500, #FF6B81); padding: 0 8rpx; font-weight: 600; }
+
+/* W2-PUBLISH-TOPIC：话题选择弹层（结构/间距/配色与 post.vue .post-sheet 一致，禁 grid、颜色全 token） */
+.publish-sheet { position: fixed; inset: 0; z-index: 1100; background: var(--c-overlay-mid, rgba(0, 0, 0, 0.45)); display: flex; align-items: flex-end; }
+.publish-sheet__panel { width: 100%; box-sizing: border-box; background: var(--c-bg-container, #FFFFFF); border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0; padding: 24rpx 32rpx calc(env(safe-area-inset-bottom) + 48rpx); max-height: 70vh; overflow-y: auto; }
+.publish-sheet__head { display: flex; align-items: baseline; justify-content: space-between; padding: 8rpx 0 20rpx; }
+.publish-sheet__title { font-size: var(--fs-xl, 30rpx); font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
+.publish-sheet__sub { font-size: var(--fs-xs, 22rpx); color: var(--c-text-tertiary, #9AA39F); }
+.publish-sheet__chips { display: flex; flex-wrap: wrap; gap: 16rpx; padding-bottom: 20rpx; }
+.publish-sheet__chip { padding: 12rpx 26rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand-50, #E8FAF3); border: 1rpx solid transparent; }
+.publish-sheet__chip--on { background: var(--c-brand, #36C99A); border-color: var(--c-brand, #36C99A); }
+.publish-sheet__chip--on .publish-sheet__chip-text { color: var(--c-neutral-0, #FFFFFF); }
+.publish-sheet__chip-text { font-size: var(--fs-base, 24rpx); color: var(--c-brand, #36C99A); font-weight: 500; }
+.publish-sheet__input-row { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0 4rpx; }
+.publish-sheet__input { flex: 1; height: 72rpx; padding: 0 24rpx; border-radius: var(--r-lg, 16rpx); background: var(--c-neutral-50, #F2F5F3); font-size: var(--fs-base, 24rpx); color: var(--c-text-primary, #1A1E1C); }
+.publish-sheet__placeholder { color: var(--c-text-quaternary, #C2CAC6); }
+.publish-sheet__confirm { padding: 16rpx 36rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand, #36C99A); flex-shrink: 0; }
+.publish-sheet__confirm-text { font-size: var(--fs-base, 24rpx); font-weight: 700; color: var(--c-neutral-0, #FFFFFF); }
 
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: 20rpx; display: flex; align-items: flex-start; gap: 16rpx; }
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }

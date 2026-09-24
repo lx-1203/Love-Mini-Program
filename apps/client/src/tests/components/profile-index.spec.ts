@@ -14,6 +14,9 @@ vi.mock("@dcloudio/uni-app", () => ({
   onShow: vi.fn(),
   onUnload: vi.fn(),
   onShareAppMessage: vi.fn(() => ({})),
+  // pages/profile/index.vue 还引入了 onTabItemTap（tab 重复点击回顶），
+  // mock 缺该具名导出会在 import 阶段直接抛错，导致整份 spec 无法收集
+  onTabItemTap: vi.fn(),
 }));
 
 vi.mock("../../services/api", () => ({

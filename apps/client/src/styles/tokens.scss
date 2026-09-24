@@ -47,7 +47,7 @@ page {
   --color-warning: var(--c-warning);
   --color-error: var(--c-error);
   --color-info: var(--c-secondary-blue-400);
-  --color-blue: var(--c-blue, #4D8DFF);
+  --color-blue: var(--c-blue, #4D8DFF); // --c-blue 已由 theme/design-variables.scss 正式定义（同值 #4D8DFF），fallback 仅作保险
 
   // ---------- 文本色语义别名 ----------
   --color-text-primary: var(--c-text-primary);
@@ -136,7 +136,10 @@ page {
   --duration-slowest: 600ms;
   // Phase P2.3 · duration 短别名（与 design-variables.scss --d-* 对齐）
   --d-base: 300ms; // 标准过渡（与 --d-fade 一致，常用于 transition 默认时长）
-  --d-press: 200ms; // 按钮按压时长（与 --btn-press-duration 一致）
+  // Wave-2 令牌收敛（2026-09-24）：--d-press 曾在 design-variables.scss 另有 100ms 定义，
+  // 因 App.vue 后引入本文件而恒被此处覆盖（生效值 200ms），已删除那处影子定义 → 此处为单一来源。
+  // 注意：按钮按压时长实际由 --btn-press-duration(100ms) 驱动，本令牌当前零引用。
+  --d-press: 200ms;
   --d-spinner: 800ms; // 旋转加载动画时长（spinner 旋转一圈）
   --d-loop: 1000ms; // 标准循环动画时长（pulse/blink 1s 循环）
   --d-loop-slow: 2000ms; // 慢速循环动画时长（pulse-dot/heartbeat 2s 循环）

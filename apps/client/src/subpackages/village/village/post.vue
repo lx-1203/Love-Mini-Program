@@ -22,14 +22,18 @@ import { clientApi } from "../../../services/api";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { IMAGE_PATHS } from "../../../config/images";
 // MP-R2-POST-006：本地/已上传路径判定
-import { isUploadedMediaUrl } from "../../../utils/media";
+// MP-R2-POST-012（两页一致）：选图改走 utils/media 统一封装——隐私授权 + 取消静默 +
+// 单张 ≤10MB 大小校验；原裸 uni.chooseImage 缺大小校验且把用户主动取消误报为失败
+import { isUploadedMediaUrl, chooseImages } from "../../../utils/media";
+import { compressImages } from "../../../utils/compress-image";
 import {
   POST_MAX_LENGTH,
   POST_MAX_IMAGES,
   POST_MAX_CUSTOM_TAGS,
   POST_DRAFT_STORAGE_KEY,
   POST_SUBMIT_NAVIGATE_BACK_MS,
-  IMAGE_COMPRESS_QUALITY,
+  POST_TITLE_MIN_LENGTH,
+  POST_TITLE_MAX_LENGTH,
 } from "../../../constants/village";
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
 // 调用 chooseImage 前需检查隐私授权
@@ -37,8 +41,12 @@ import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // R20（2026-09-08）：post-header 此前无状态栏留白（padding: 24rpx 32rpx 起步），
 // 全局自定义导航下系统时间与「发布动态」标题叠印（P0 显示 Bug）→ JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// MP-R2-VILLAGE-POST-R01：--capsule-right 此前恒走 CSS 静态兜底 7px（H5 端无胶囊也恒预留
+// 111px 死白、胶囊间隙非 7px 的机型不随实测）→ 与同目录村口页 index.vue:63 同口径动态注入
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 
 const statusBarHeightPx = useStatusBarHeight();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const villageStore = useVillageStore();
 const circleStore = useCircleStore();
@@ -163,6 +171,14 @@ function insertMention() {
 let postSubmitNavTimer: ReturnType<typeof setTimeout> | null = null;
 /** 草稿保存防抖定时器 */
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * MP-R2-POST-010：页面是否已卸载。提交是有副作用的写操作，网络往返窗口内用户点 X
+ * 离页（requestLeave → leave → navigateBack）后，仍在途的 createPost/createTopic
+ * resolve 时会继续跑「清表单 → toast → 800ms 后 leave()」，第二次 navigateBack 会把
+ * 用户返回后所在的无关栈顶页（通常是村口 index）弹掉，栈=1 时更会 reLaunch 硬拉。
+ * 现以本标志拦断导航/提示副作用（草稿清理仍照常执行，避免已发布内容下次进入复活成草稿）。
+ */
+let pageDestroyed = false;
 
 const currentLength = computed(() => content.value.length);
 const isOverLimit = computed(() => currentLength.value > POST_MAX_LENGTH);
@@ -171,6 +187,23 @@ const canSubmit = computed(
   () => (title.value.trim().length > 0 || content.value.trim().length > 0) && !submitting.value
 );
 const isCircleTarget = computed(() => targetType.value === "circle");
+
+/**
+ * MP-R2-POST-009：可发布的目标圈子 = 当前用户「已加入」的圈子（上限 8 个）。
+ * 原实现直接铺 circleStore.circles.slice(0, 8)——fetchCircles 拉的是 GET /circles
+ * 全量列表（非「我的圈子」），未加入的圈照样列在弹层里且可点，real 模式提交被
+ * RealCircleService.createTopic 的成员校验拒为 403 CIRCLE_JOIN_REQUIRED，
+ * 已填的标题/正文/图片整组报废；同时前 8 截断会把排在第 9 位的已加入圈挤掉选不到。
+ * 口径与 publish.vue joinedCircles 完全一致（同一 store getter，先过滤再截断）。
+ */
+const joinedCircles = computed(() => circleStore.joinedCircles.slice(0, 8));
+
+/** R21 同 publish.vue formatMemberShort：成员数短格式（1.2w / 8,932） */
+function formatMemberShort(count: number): string {
+  const n = count ?? 0;
+  if (n >= 10000) return `${(n / 10000).toFixed(1)}w`;
+  return n.toLocaleString("en-US");
+}
 
 /** 发布到展示标题 */
 const targetTitle = computed(() => {
@@ -186,8 +219,8 @@ const targetTitle = computed(() => {
 /** 发布到展示副标题 */
 const targetSubtitle = computed(() => {
   if (isCircleTarget.value && targetCircle.value) {
-    const n = targetCircle.value.memberCount ?? 0;
-    return `${n >= 10000 ? (n / 10000).toFixed(1) + "w" : n} 成员`;
+    // 两页一致：成员数短格式与 publish.vue:126 同款（1.2w / 8,932）
+    return `${formatMemberShort(targetCircle.value.memberCount ?? 0)} 成员`;
   }
   if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
   return "默认公开 · 所有人可见";
@@ -229,6 +262,8 @@ onMounted(() => {
 
 // 卸载时清理定时器，避免内存泄漏
 onUnmounted(() => {
+  // MP-R2-POST-010：置卸载标志——提交在途时离页，异步成功回调不得再做 UI 副作用
+  pageDestroyed = true;
   if (draftSaveTimer) {
     clearTimeout(draftSaveTimer);
     draftSaveTimer = null;
@@ -252,12 +287,30 @@ async function loadTarget() {
   try {
     if (circleStore.circles.length === 0) await circleStore.fetchCircles();
     targetCircle.value = circleStore.circles.find((c) => c.id === String(targetId.value)) ?? null;
+    // MP-R2-POST-009（与 publish.vue:177-188 同口径）：入口 circleId / 草稿恢复出的
+    // 圈子目标可能「不存在」或「未加入」（例：深链分享、退圈后的旧草稿）——
+    // 这种目标提交必被后端成员校验拒为 403，故在此当场回退「个人动态」并复位可见范围，
+    // 不再把不可用的目标留给提交链路
+    const selected = targetCircle.value;
+    if (!selected || !selected.isJoined) {
+      targetType.value = "general";
+      targetId.value = null;
+      targetCircle.value = null;
+      visibility.value = "public";
+    }
   } catch (_e) {
+    targetType.value = "general";
+    targetId.value = null;
     targetCircle.value = null;
+    visibility.value = "public";
   }
 }
 
 function selectTarget(circle: CircleItem) {
+  // MP-R2-POST-009：成员守卫——未加入的圈不可选为发布目标（real 模式后端 403
+  // CIRCLE_JOIN_REQUIRED）。弹层列表已按 isJoined 过滤，此处为深链/列表脏数据兜底，
+  // 与 publish.vue selectTarget 同款
+  if (!circle.isJoined) return;
   targetType.value = "circle";
   targetId.value = Number(circle.id);
   targetCircle.value = circle;
@@ -296,33 +349,29 @@ async function chooseImage() {
     uni.showToast({ title: t("village.post.privacyRequiredImage"), icon: "none" });
     return;
   }
-  uni.chooseImage({
-    count: POST_MAX_IMAGES - images.value.length,
-    sizeType: ["compressed"],
-    sourceType: ["album", "camera"],
-    success: async (res) => {
-      const tempPaths = res.tempFilePaths as string[];
-      // 批量压缩（质量 80）；单张失败回退原图，不阻塞后续
-      const compressedPaths = await Promise.all(tempPaths.map((p) => compressSingleImage(p)));
-      images.value.push(...compressedPaths);
-    },
-    fail: (err) => {
-      console.error("选择图片失败:", err);
+  try {
+    // MP-R2-POST-012（与 publish.vue:238 同口径）：chooseImages 内部把
+    // errMsg 含 cancel 的 fail 视为「空选择」而非错误 → 用户放弃选图不再被弹一次
+    // 「选择图片失败」；并对每张图做单张 ≤10MB 大小校验（超限自动剔除，
+    // 见 constants/village.ts 头注的 10MB 项目硬约束）——原裸 uni.chooseImage 零校验
+    const picked = await chooseImages({ count: POST_MAX_IMAGES - images.value.length });
+    const tempPaths = (picked as string[]) || [];
+    // 批量压缩（质量 80）；单张失败回退原图，不阻塞后续
+    const compressed = await compressImages(tempPaths);
+    images.value.push(...compressed);
+  } catch (e: unknown) {
+    // errno 112: api scope 未在隐私指引声明 → 给用户明确提示
+    const errMsg = typeof e === "object" && e !== null && "errMsg" in e
+      ? String((e as { errMsg?: unknown }).errMsg)
+      : String(e ?? "");
+    if (errMsg.includes("112") || errMsg.includes("privacy agreement")) {
+      console.error("选择图片失败: 隐私协议未声明相册/相机 scope", e);
+      uni.showToast({ title: "请在微信后台隐私指引声明相册/相机权限", icon: "none" });
+    } else {
+      console.error("选择图片失败:", e);
       uni.showToast({ title: t("village.post.selectImageFailed"), icon: "none" });
-    },
-  });
-}
-
-/** 压缩单张图片（质量 80）；失败回退原图路径 */
-function compressSingleImage(path: string): Promise<string> {
-  return new Promise((resolve) => {
-    uni.compressImage({
-      src: path,
-      quality: IMAGE_COMPRESS_QUALITY,
-      success: (compressRes) => resolve(compressRes.tempFilePath || path),
-      fail: () => resolve(path),
-    });
-  });
+    }
+  }
 }
 
 /** 删除已选图片 */
@@ -360,12 +409,35 @@ function scheduleDraftSave() {
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => {
     if (suppressDraftSave.value) return;
+    const snap = snapshotDraft();
+    // MP-R2-POST-011 / MP-R2-PUB-113（两页一致）：空快照不落盘。
+    // onLoad 的入口参数回设（targetType/visibility）必触发一次 watch，
+    // 500ms 后写出的就是「全空但带目标」的幽灵草稿——现直接跳过写入，
+    // restoreDraft 侧的 hasContent 守卫继续兜住历史遗留快照
+    if (!hasDraftContent(snap)) return;
     try {
-      uni.setStorageSync(POST_DRAFT_STORAGE_KEY, snapshotDraft());
+      uni.setStorageSync(POST_DRAFT_STORAGE_KEY, snap);
     } catch (_e) {
       // storage 写入失败不阻塞主流程
     }
   }, POST_DRAFT_SAVE_DEBOUNCE_MS);
+}
+
+/** 草稿是否有实质内容（正文/标题/图/话题任一非空）——空表单不落草稿 */
+function hasDraftContent(snap: {
+  title?: string;
+  content?: string;
+  images?: string[];
+  topics?: string[];
+  tags?: string[];
+}): boolean {
+  return Boolean(
+    (typeof snap.title === "string" && snap.title.trim().length > 0) ||
+      (typeof snap.content === "string" && snap.content.trim().length > 0) ||
+      (Array.isArray(snap.images) && snap.images.length > 0) ||
+      (Array.isArray(snap.topics) && snap.topics.length > 0) ||
+      (Array.isArray(snap.tags) && snap.tags.length > 0)
+  );
 }
 
 /**
@@ -397,13 +469,8 @@ async function restoreDraft(entryTarget?: string, entryCircleId?: number | null)
   // MP-R1-POST-101：空草稿守卫——发布成功清表单时误写的空快照（全字段为空但
   // targetType/visibility 有值）不得恢复，否则「发布到」卡片解析不出圈名显示成
   // 「个人动态」而提交却走 createTopic 进圈
-  const hasContent =
-    (typeof draft.title === "string" && draft.title.trim().length > 0) ||
-    (typeof draft.content === "string" && draft.content.trim().length > 0) ||
-    (Array.isArray(draft.images) && draft.images.length > 0) ||
-    (Array.isArray(draft.topics) && draft.topics.length > 0) ||
-    (Array.isArray(draft.tags) && draft.tags.length > 0);
-  if (!hasContent) return;
+  // MP-R2-PUB-113（两页一致）：publish.vue restoreDraft 已补同款守卫
+  if (!hasDraftContent(draft)) return;
   if (draft.targetType === "circle" && draft.targetId) {
     targetType.value = "circle";
     targetId.value = Number(draft.targetId);
@@ -456,6 +523,12 @@ function clearDraft() {
 const allowLeave = ref(false);
 function requestLeave() {
   if (allowLeave.value) return;
+  // MP-R2-POST-010（与 publish.vue 同口径）：提交在途不放行离页——请求不会因离页
+  // 中止，此时弹窗「保留草稿/丢弃」会让用户在写操作结果未知的情况下清掉自己的内容
+  if (submitting.value) {
+    uni.showToast({ title: t("village.post.publishing"), icon: "none" });
+    return;
+  }
   const dirty = title.value.trim() || content.value.trim() || images.value.length || topics.value.length;
   if (!dirty) {
     leave();
@@ -511,17 +584,35 @@ async function submitPublish() {
     uni.showToast({ title: t("village.post.contentTooLong", { n: POST_MAX_LENGTH }), icon: "none" });
     return;
   }
+  // 与后端 CreatePostRequest 的 title 契约（@Size(min = 5, max = 30)）对齐：
+  // 2026-09-05 R17 小红书化——独立标题优先、未填标题时回退正文首行。
+  // 原回退值截到 50 字，超后端 30 字上限必吃 400；且无最短 5 字闸（短标题必 400）。
+  // publish.vue 同口径（那里正文即标题，故闸在正文上）。
+  // 注意：本闸必须在 submitting 置位之前——置位后 return 会把按钮永久锁在提交中态
+  const firstLine = content.value.trim().split("\n")[0] ?? "";
+  const titleText = (title.value.trim() || firstLine).slice(0, POST_TITLE_MAX_LENGTH);
+  const contentText = content.value.trim();
+  if (titleText.length < POST_TITLE_MIN_LENGTH) {
+    uni.showToast({ title: t("village.contentMinLength", { n: POST_TITLE_MIN_LENGTH }), icon: "none" });
+    return;
+  }
   submitting.value = true;
+  // MP-R2-POST-010 / 两页一致：整程 loading + mask（提交在途点 X、二次点按都拿不到入口）。
+  // 出口统一「先 hideLoading 再 toast」——小程序端 hideLoading 会把刚弹出的 toast 一并
+  // 关掉（toast 闪失），原结构 showToast 在 try 内、finally 又 hideLoading 即此病灶
+  // （publish.vue 侧同一病灶记为 MP-R1-PUBLISH-109）
+  uni.showLoading({ title: t("village.post.publishing"), mask: true });
+  let failureMsg = "";
   try {
     // real 模式先上传本地图片换取远端 URL；mock 沿用本地路径
     // MP-R1-POST-201：本地/已上传判定统一走 isUploadedMediaUrl（同文件草稿链路
-    // :318/:389 已用）——裸 /^https?:\/\// 会把 DevTools/iOS 模拟器临时路径
+    // 已用）——裸 /^https?:\/\// 会把 DevTools/iOS 模拟器临时路径
     // （http://tmp/xxx、http://usr/xxx）误判为「已上传」而跳过 /media/upload，
     // 导致后端落库 http://tmp/* 死链（同 publish.vue MP-R2-PUB-102 修复口径）
     let finalImages = images.value;
     const localImages = images.value.filter((img) => !isUploadedMediaUrl(img));
     if (localImages.length > 0 && !useMock()) {
-      uni.showLoading({ title: t("village.post.uploadingImages") });
+      uni.showLoading({ title: t("village.post.uploadingImages"), mask: true });
       try {
         const urls: string[] = [];
         for (const img of localImages) {
@@ -530,85 +621,98 @@ async function submitPublish() {
         }
         finalImages = [...images.value.filter((img) => isUploadedMediaUrl(img)), ...urls];
       } catch (_e) {
-        uni.hideLoading();
-        uni.showToast({ title: t("village.post.imageUploadFailed"), icon: "none" });
-        return;
-      } finally {
-        uni.hideLoading();
+        // 图片上传失败：不进提交链路，表单内容与草稿原样保留（失败不留幽灵草稿）
+        failureMsg = t("village.post.imageUploadFailed");
       }
     }
 
-    // 2026-09-05 R17 小红书化：独立标题优先；未填标题时回退正文首行（截 50 字），
-    // 正文与标题分离提交（原实现 title=content=全文，列表卡只能渲染大段文字）
-    const firstLine = content.value.trim().split("\n")[0] ?? "";
-    const titleText = title.value.trim() || firstLine.slice(0, 50);
-    const contentText = content.value.trim();
-    if (isCircleTarget.value && targetId.value != null) {
-      await circleStore.createTopic(String(targetId.value), {
-        title: titleText,
-        content: contentText || titleText,
-        images: finalImages,
-        tags: topics.value,
-      });
-    } else {
-      await villageStore.createPost({
-        // 第五轮 P0 修复：原值 "life" 不在后端支持列表
-        // （all/interest/sincere/hometown/anonymous/latest/campus/activity），
-        // 导致统一发帖页通用发布恒 400「请求参数错误」。
-        // 与 publish.vue 对齐，通用动态默认归类 interest（DB 帖子主流分类）。
-        categoryId: "interest",
-        title: titleText,
-        content: contentText || titleText,
-        images: finalImages,
-        tags: topics.value,
-        // 2026-09-03：目标/可见范围透传后端——原实现 campus 目标也落到
-        // 公开广场（targetType/visibility 丢失），学校圈语义失效
-        visibility: visibility.value,
-        targetType: targetType.value,
-        targetId: targetId.value,
-      });
+    if (!failureMsg) {
+      if (isCircleTarget.value && targetId.value != null) {
+        await circleStore.createTopic(String(targetId.value), {
+          title: titleText,
+          content: contentText || titleText,
+          images: finalImages,
+          tags: topics.value,
+        });
+      } else {
+        await villageStore.createPost({
+          // 第五轮 P0 修复：原值 "life" 不在后端支持列表
+          // （all/interest/sincere/hometown/anonymous/latest/campus/activity），
+          // 导致统一发帖页通用发布恒 400「请求参数错误」。
+          // 与 publish.vue 对齐，通用动态默认归类 interest（DB 帖子主流分类）。
+          categoryId: "interest",
+          title: titleText,
+          content: contentText || titleText,
+          images: finalImages,
+          tags: topics.value,
+          // 2026-09-03：目标/可见范围透传后端——原实现 campus 目标也落到
+          // 公开广场（targetType/visibility 丢失），学校圈语义失效
+          visibility: visibility.value,
+          targetType: targetType.value,
+          targetId: targetId.value,
+        });
+      }
     }
-
-    // 发布成功后清除草稿，避免下次进入恢复已发布内容
-    // MP-R8-DRAFT-001（2026-09-16）：后端 /drafts 草稿同步删除（restoreDraft 优先后端草稿）
-    void clientApi.deleteDraft().catch(() => {});
-    // MP-R1-POST-101：先置抑制标志 → clearDraft（已内置取消在途定时器）→ 再清表单，
-    // 保证清表单触发的 watch 不再把空表单快照写回 storage（旧草稿复活链路的根因）
-    suppressDraftSave.value = true;
-    clearDraft();
-    // 2026-09-05 R17：清空本地表单（返回 feed 后重新进入应为全新表单）
-    title.value = "";
-    content.value = "";
-    images.value = [];
-    topics.value = [];
-    location.value = "";
-    uni.showToast({ title: t("village.postSuccess"), icon: "success" });
-    if (postSubmitNavTimer) clearTimeout(postSubmitNavTimer);
-    postSubmitNavTimer = setTimeout(() => {
-      // 2026-09-05 R17：navigateBack 仅在页面栈>1 时可用（深链/reLaunch 直进时栈=1 会静默失败），
-      // 统一走 leave() 兜底（栈>1 back，否则 reLaunch 回村口）
-      leave();
-      postSubmitNavTimer = null;
-    }, POST_SUBMIT_NAVIGATE_BACK_MS);
   } catch (_e) {
     // MP-R1-POST-102：按失败分支取对应 store 的 errorMessage——circle 分支真实原因写入
     // circleStore.errorMessage（createTopic rethrow），villageStore 是跨页长驻状态，
     // 原实现要么展示无关陈旧文案、要么退化为泛化「发布失败」
-    uni.showToast({
-      title:
-        (isCircleTarget.value
-          ? circleStore.errorMessage
-          : villageStore.errorMessage) || t("village.post.publishFailed"),
-      icon: "none",
-    });
-  } finally {
-    submitting.value = false;
+    failureMsg =
+      (isCircleTarget.value ? circleStore.errorMessage : villageStore.errorMessage) ||
+      t("village.post.publishFailed");
   }
+  uni.hideLoading();
+  submitting.value = false;
+  if (failureMsg) {
+    uni.showToast({ title: failureMsg, icon: "none" });
+    return;
+  }
+
+  // 发布成功后清除草稿，避免下次进入恢复已发布内容
+  // MP-R2-POST-011：本页草稿只有本地键 POST_DRAFT_STORAGE_KEY——原此处还越权
+  // void clientApi.deleteDraft() 删后端 /drafts/current，而该端点是「全用户单例、无来源
+  // 维度」且只由 publish.vue 的双写管线写入：在本页发帖成功会静默销毁 publish 页尚未
+  // 发布的后端草稿（同注释亦失实——本页 restoreDraft 从不读后端草稿）。现已移除，
+  // 本页草稿统一由 clearDraft() 清本地键；双页草稿语义见 MP-R2-PUB-112（需后端按来源拆分）
+  // MP-R1-POST-101：先置抑制标志 → clearDraft（已内置取消在途定时器）→ 再清表单，
+  // 保证清表单触发的 watch 不再把空表单快照写回 storage（旧草稿复活链路的根因）
+  suppressDraftSave.value = true;
+  clearDraft();
+  // MP-R2-POST-010：页面已卸载时到此为止——存储清理已完成（不留已发布内容的幽灵草稿），
+  // 但绝不再执行清表单/toast/navigateBack（否则弹掉返回后的无关栈顶页）
+  if (pageDestroyed) return;
+  // 2026-09-05 R17：清空本地表单（返回 feed 后重新进入应为全新表单）。
+  // 兼作重复提交闸：出口处 submitting 已复位、导航还有 800ms 延迟，若不清表单，
+  // 窗口内的二次点按会重发同一 payload，而 services/http.ts 注入的稳定
+  // Idempotency-Key + POST /posts 的 @Idempotent 会把它拦成 409——
+  // 运行态看似「只发出一帖」，实为服务端兜底，且成功 toast 后还会跟一条失败 toast。
+  // 清空后 canSubmit 恒 false，两页同口径（见 publish.vue 成功路径）
+  title.value = "";
+  content.value = "";
+  images.value = [];
+  topics.value = [];
+  location.value = "";
+  uni.showToast({ title: t("village.postSuccess"), icon: "success" });
+  if (postSubmitNavTimer) clearTimeout(postSubmitNavTimer);
+  postSubmitNavTimer = setTimeout(() => {
+    // 2026-09-05 R17：navigateBack 仅在页面栈>1 时可用（深链/reLaunch 直进时栈=1 会静默失败），
+    // 统一走 leave() 兜底（栈>1 back，否则 reLaunch 回村口）
+    // MP-R2-POST-010：延时窗口内用户可能已自行离页——此时 leave() 的 navigateBack
+    // 会弹掉无关栈顶页，故二次校验卸载标志
+    if (pageDestroyed) {
+      postSubmitNavTimer = null;
+      return;
+    }
+    leave();
+    postSubmitNavTimer = null;
+  }, POST_SUBMIT_NAVIGATE_BACK_MS);
 }
 </script>
 
 <template>
-  <view class="post-page">
+  <!-- MP-R2-VILLAGE-POST-R01：根节点注入 --capsule-right/--statusbar（与 index.vue:577 同口径），
+       .post-header 的 padding-right 由此随实测胶囊间隙变化，H5 端归零回退设计原值 -->
+  <view class="post-page" :style="menuStyleVars">
     <!-- 顶部导航（R20：padding-top 动态注入状态栏高度，标题不再与系统时间叠印） -->
     <view class="post-header" :style="{ paddingTop: statusBarHeightPx + 'px' }">
       <view
@@ -726,13 +830,14 @@ async function submitPublish() {
                 <text class="post-target-sheet__name">重试加载</text>
               </view>
             </template>
-            <template v-else-if="circleStore.circles.length === 0">
-              <text class="post-target-sheet__desc post-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
-            </template>
-            <template v-else>
+            <template v-else-if="joinedCircles.length > 0">
               <text class="post-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+              <!-- MP-R2-POST-009：列表源由 circleStore.circles.slice(0,8)（全量圈，含未加入）
+                   改为 joinedCircles（先按 isJoined 过滤再截 8）——与 publish.vue:632-645 同口径。
+                   未加入的圈不可选为发布目标（real 模式后端成员校验必 403 CIRCLE_JOIN_REQUIRED，
+                   且已填写内容整组报废）；先过滤再截断亦消除「已加入圈排在 8 位之后选不到」。 -->
               <view
-                v-for="circle in circleStore.circles.slice(0, 8)"
+                v-for="circle in joinedCircles"
                 :key="circle.id"
                 class="post-target-sheet__option press-feedback"
                 hover-class="press-feedback--active"
@@ -741,7 +846,7 @@ async function submitPublish() {
                 @tap="selectTarget(circle)"
               >
                 <text class="post-target-sheet__name">{{ circle.name }}</text>
-                <text class="post-target-sheet__desc">{{ circle.isJoined ? '已加入' : '' }}</text>
+                <text class="post-target-sheet__desc">已加入 · {{ formatMemberShort(circle.memberCount) }} 成员</text>
                 <image
                   v-if="isCircleTarget && targetId === Number(circle.id)"
                   class="post-target-sheet__check"
@@ -750,6 +855,9 @@ async function submitPublish() {
                   alt=""
                 />
               </view>
+            </template>
+            <template v-else>
+              <text class="post-target-sheet__desc post-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
             </template>
           </view>
         </view>

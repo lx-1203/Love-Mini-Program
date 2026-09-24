@@ -27,7 +27,7 @@ import Skeleton from "../../components/common/Skeleton.vue";
 import EmptyState from "../../components/common/EmptyState.vue";
 import FilterDrawer from "../../components/discover/FilterDrawer.vue";
 // 2026-08-26：寻觅「附近」卡片化——本地距离筛选 + 近→远排序，复用推荐卡片视图
-import { filterNearby, sortNearbyFirst, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
+import { filterNearby, sortNearbyFirst } from "../../stores/discover/utils";
 import type { DiscoverCard } from "../../stores/discover/types";
 
 const DISCOVER_TTL_MS = 30_000;
@@ -43,7 +43,9 @@ const scrollTop = ref(0);
 useTabBar(2);
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
-const { cards, loading, errorMessage } = storeToRefs(discoverStore);
+// MP-R1-PAGES-DISCOVER-INDEX-REQ-03：remainingCount 供本页「今日剩余 N 次」前置告知使用
+// （store getter 单一数据源：dailyLimit + extraQuota - viewedCards.length，签到加量自动跟随）
+const { cards, loading, errorMessage, remainingCount } = storeToRefs(discoverStore);
 const { isMatchOpen } = storeToRefs(appConfigStore);
 
 /** 寻觅页分段：recommend-推荐 / nearby-附近（卡片视图） */
@@ -265,7 +267,7 @@ onUnload(() => {
           :aria-label="t('discover.recommend')"
           @tap="switchDiscoverMode('recommend')"
         >
-          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'recommend' }">推荐</text>
+          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'recommend' }">{{ t('discover.recommend') }}</text>
           <view v-if="activeMode === 'recommend'" class="discover-header__tab-line" />
         </view>
         <view
@@ -278,7 +280,7 @@ onUnload(() => {
           :aria-label="t('discover.nearby')"
           @tap="switchDiscoverMode('nearby')"
         >
-          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">附近</text>
+          <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">{{ t('discover.nearby') }}</text>
           <view v-if="activeMode === 'nearby'" class="discover-header__tab-line" />
         </view>
       </view>
@@ -310,6 +312,19 @@ onUnload(() => {
       </view>
 
       <template v-else>
+        <!-- MP-R1-PAGES-DISCOVER-INDEX-REQ-03：前置配额告知——原实现本页任何位置不渲染
+             discoverStore.remainingCount，用户只在点「喜欢/打招呼」被 Toast 拒绝后才得知
+             次数用尽（exec-results DC24）。文案复用既有 i18n key discover.remainingToday
+             （zh-CN.ts:947「今日剩余 {n} 次」/ en-US.ts:829），未新增键。
+             超级测试账号旁路（SUPER_TEST_UNLIMITED_REMAINING=999，constants.ts:97）按实值渲染。
+             游客不渲染：未登录点喜欢会被 requireLogin 拦下、viewedCards 永不增长，
+             常驻数字会变成静态假配额。 -->
+        <view v-if="sessionStore.isLoggedIn" class="discover-quota">
+          <view class="discover-quota__pill">
+            <text class="discover-quota__text">{{ t('discover.remainingToday', { n: remainingCount }) }}</text>
+          </view>
+        </view>
+
         <view class="match-card-area">
           <MatchCard
             v-if="currentUser"
@@ -371,18 +386,21 @@ onUnload(() => {
   justify-content: space-between;
   padding: 16rpx 20rpx;
   border-radius: 16rpx;
-  background: #fff0f0;
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：错误横幅底色走既有粉底 token（原裸写 #fff0f0） */
+  background: var(--c-tag-pink-bg, #FFF0F6);
 }
 
 .match-error__text {
   flex: 1;
   font-size: 24rpx;
-  color: #c34a5f;
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：正文取最接近的既有深粉 token --c-romance-700（原裸写 #c34a5f，
+     与 token 值 #CC4A5F 仅 R 通道相差 9，观感一致）；同块 .match-error__retry 已走 --c-status-error */
+  color: var(--c-romance-700, #CC4A5F);
 }
 
 .match-error__retry {
   font-size: 24rpx;
-  color: #e94d87;
+  color: var(--c-status-error);
   font-weight: 700;
 }
 
@@ -421,7 +439,9 @@ onUnload(() => {
   width: 34rpx;
   height: 34rpx;
   margin-left: 4rpx;
-  color: #FF6B81;
+  /* R1-DISCOVER-INDEX-011：此规则作用于 discover-header__heart（<image> 元素），
+     爱心填色已烘焙在 heart-filled.svg 的 fill 属性中，CSS color 对图片资源不生效，
+     属无效声明，故删除而非令牌化 */
 }
 
 .discover-header__filter {
@@ -468,7 +488,7 @@ onUnload(() => {
   width: 48rpx;
   height: 6rpx;
   border-radius: 999rpx;
-  background: #FF6B81;
+  background: var(--c-romance-500);
   margin-top: 8rpx;
 }
 
@@ -479,7 +499,38 @@ onUnload(() => {
 
 .match-card-area {
   margin: 0 40rpx;
-  height: 880rpx;
+  /* MP-R1-PAGES-DISCOVER-INDEX-REQ-04：卡高原为固定 880rpx —— 375×820 实拍上仅占视口 53.9%，
+     低于理想基线「沉浸式大图卡 ≥70% 视口」。改为视口比例 + 双兜底：
+     70vh 让卡高随屏放大；min-height 860rpx 兜住矮屏（与 CardSwiper .card-area 同策略，
+     宿主节点被 MatchCard 以 height:100% 消费，不可用 flex:1 —— 本节点位于 scroll-view 内，
+     flex 上下文不成立会塌陷为 0）；max-height 取 1400rpx（≈700px，仅防超宽/桌面 H5 端把
+     卡拉成条，手机段 70vh 恒不触顶，≥70% 视口不被反向掐掉）。卡内 info/徽章均绝对定位贴底，
+     增高只多露照片，不破构图。 */
+  height: 70vh;
+  min-height: 860rpx;
+  max-height: 1400rpx;
+}
+
+/* MP-R1-PAGES-DISCOVER-INDEX-REQ-03：配额提示行（居中轻量胶囊，色板对齐 MatchCountChip） */
+.discover-quota {
+  display: flex;
+  justify-content: center;
+  margin: 0 40rpx var(--sp-3, 12rpx);
+}
+
+.discover-quota__pill {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-xxl);
+  background: var(--c-brand-50, #E8FAF3);
+  border: 1rpx solid var(--c-brand-200, #A3EBCF);
+}
+
+.discover-quota__text {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-brand-500, #36C99A);
 }
 
 .discover-login-hint {
@@ -497,9 +548,12 @@ onUnload(() => {
   align-items: center;
   gap: 16rpx;
   padding: 16rpx 40rpx;
-  background: linear-gradient(135deg, var(--c-brand, #36C99A), #4DD0A8);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：渐变第二色与阴影改走品牌绿系 token
+     （原裸写 #4DD0A8 / rgba(54,201,154,.35)；--c-brand-400=#55D5A7 与 --s-float-btn
+     的几何/色值与原写法同档，登录提示本就是悬浮胶囊 CTA） */
+  background: linear-gradient(135deg, var(--c-brand, #36C99A), var(--c-brand-400, #55D5A7));
   border-radius: 999rpx;
-  box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.35);
+  box-shadow: var(--s-float-btn, 0 8rpx 32rpx rgba(54, 201, 154, 0.32));
   z-index: 100;
 }
 

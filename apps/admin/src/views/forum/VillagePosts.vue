@@ -448,6 +448,7 @@ onMounted(() => {
           <tr v-for="post in posts" :key="post.id">
             <td>{{ post.id }}</td>
             <td class="content-cell">
+              <text v-if="post.title" class="post-title">{{ post.title }}</text>
               <text>{{ post.contentPreview }}</text>
               <text v-if="post.isPinned" class="pin-tag">{{ t("villagePosts.pinnedTag") }}</text>
             </td>
@@ -517,6 +518,7 @@ onMounted(() => {
     >
       <view class="modal">
         <text class="modal-title">{{ t("villagePosts.auditTitle", { id: auditingPost.id }) }}</text>
+        <view v-if="auditingPost.title" class="post-title-box">{{ auditingPost.title }}</view>
         <view class="post-content-box">{{ auditingPost.contentPreview }}</view>
         <view class="form-row">
           <text class="form-label">{{ t("villagePosts.auditDecisionLabel") }}</text>
@@ -661,6 +663,15 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
+/* 帖子标题：客户端必填 5–30 字，后台列表原不展示，2026-09-24 补 */
+.post-title {
+  display: block;
+  font-weight: 600;
+  color: var(--admin-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .pin-tag {
   margin-left: var(--admin-space-sm);
   padding: 1px var(--admin-space-sm);
@@ -731,6 +742,13 @@ onMounted(() => {
 .action-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.post-title-box {
+  font-weight: 600;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .post-content-box {

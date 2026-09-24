@@ -715,7 +715,7 @@ function toggleBio() {
  * （onLoad 只认 query.channel、onShow 只认 bridged.tab），参数被静默丢弃，
  * 用户仅落回上次频道。改跳 circles 列表页（与村口「兴趣宫格」同口径，
  * 列表页可按名称直接看到目标圈子）。 */
-function onCircleTap(circleName: string): void {
+function onCircleTap(_circleName: string): void {
   safeAction(() => {
     lightHaptic();
     openAppPath("/subpackages/circles/circles/index");

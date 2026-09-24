@@ -115,7 +115,7 @@ public class AdminVillagePostController {
      *
      * @param auditStatus 审核状态：pending / approved / rejected，可选
      * @param status      帖子状态：active / deleted / hidden，可选
-     * @param keyword     内容模糊关键字（村落动态帖子无标题字段，仅匹配内容），可选
+     * @param keyword     标题/内容模糊关键字，可选（原仅匹配内容，2026-09-24 补 title）
      * @param campusName  校区筛选（按作者所属校区过滤），可选；
      *                    校区管理员强制按其管辖校区过滤，忽略本参数
      * @param page        页码，1-based，默认 1
@@ -654,6 +654,7 @@ public class AdminVillagePostController {
                 post.getAuthorId(),
                 author != null ? author.getNickname() : null,
                 author != null ? author.getAvatarUrl() : null,
+                post.getTitle(),
                 AdminVillagePostSummaryView.previewOf(post.getContent()),
                 post.getCategory() != null ? post.getCategory().name() : null,
                 post.getStatus() != null ? post.getStatus().name() : null,
@@ -683,6 +684,7 @@ public class AdminVillagePostController {
                 post.getAuthorId(),
                 author != null ? author.getNickname() : null,
                 author != null ? author.getAvatarUrl() : null,
+                post.getTitle(),
                 post.getContent(),
                 post.getImages(),
                 post.getTags(),
@@ -762,6 +764,8 @@ public class AdminVillagePostController {
  * @param authorId       作者用户 ID
  * @param authorNickname 作者昵称（批量预加载填充，无作者时为 null）
  * @param authorAvatar   作者头像 URL（批量预加载填充）
+ * @param title          帖子标题（客户端发帖必填 5–30 字；后台原视图缺该字段，
+ *                       审核员既看不到也搜不到，2026-09-24 端到端核验发现后补上）
  * @param contentPreview 帖子内容预览（前 80 字符）
  * @param category       分类：all/interest/sincere/hometown/anonymous/latest/campus
  * @param status         帖子状态：active/deleted/hidden
@@ -785,6 +789,7 @@ record AdminVillagePostSummaryView(
         Long authorId,
         String authorNickname,
         String authorAvatar,
+        String title,
         String contentPreview,
         String category,
         String status,
@@ -824,6 +829,8 @@ record AdminVillagePostSummaryView(
  * @param authorId       作者用户 ID
  * @param authorNickname 作者昵称
  * @param authorAvatar   作者头像 URL
+ * @param title          帖子标题（客户端必填 5–30 字；后台原视图缺该字段，
+ *                       2026-09-24 端到端核验发现后补上）
  * @param content        帖子完整内容
  * @param images         图片 URL 数组（JSON 字符串）
  * @param tags           话题标签数组（JSON 字符串）
@@ -852,6 +859,7 @@ record AdminVillagePostDetailView(
         Long authorId,
         String authorNickname,
         String authorAvatar,
+        String title,
         String content,
         String images,
         String tags,

@@ -202,7 +202,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      *
      * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
      * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
-     * @param keyword     内容模糊关键字（村落动态帖子无标题字段，仅匹配内容），可空
+     * @param keyword     标题/内容模糊关键字，可空。
+     *                    <p>原实现只 LIKE {@code p.content}，注释据此写「村落动态帖子无标题字段」——
+     *                    但 posts.title 列真实存在（{@code Post.java}）且客户端发帖必填 5–30 字
+     *                    （{@code CreatePostRequest} + {@code VillagePostService}），
+     *                    导致审核员既看不到也搜不到标题，故一并匹配 title。</p>
      * @param campusName  校区筛选（按作者所属校区过滤），可空
      * @param pageable    分页参数
      * @return 分页帖子列表（置顶优先，按创建时间倒序）
@@ -211,7 +215,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             SELECT p FROM Post p
             WHERE (:auditStatus IS NULL OR p.auditStatus = :auditStatus)
               AND (:status IS NULL OR p.status = :status)
-              AND (:keyword IS NULL OR :keyword = '' OR p.content LIKE CONCAT('%', :keyword, '%'))
+              AND (:keyword IS NULL OR :keyword = ''
+                   OR p.content LIKE CONCAT('%', :keyword, '%')
+                   OR p.title LIKE CONCAT('%', :keyword, '%'))
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile ucp
                     WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { designTokens } from '../../theme/tokens';
 import { IMAGE_PATHS } from '../../config/images';
+import { resolveMediaUrl } from '../../utils/media';
 import SafeImage from './SafeImage.vue';
 
 const props = withDefaults(defineProps<{
@@ -82,7 +83,10 @@ const dotBorderSize = computed(() => {
   return 5;
 });
 
-const showFallback = computed(() => !props.src);
+// 库内头像是 /static/... 或 /api/v1/media/... 相对路径，须经 resolveMediaUrl
+// 改写为可在 mp 端加载的地址；此前模板直绑 props.src，real 构建下头像全部落空。
+const resolvedSrc = computed(() => resolveMediaUrl(props.src));
+const showFallback = computed(() => !resolvedSrc.value);
 const initial = computed(() => props.name?.charAt(0) || '?');
 
 const showOnlineDot = computed(() => props.online || props.liveDot === true || props.liveDot === 'green');
@@ -122,7 +126,7 @@ function handleTap() {
   >
     <SafeImage
       v-if="!showFallback"
-      :src="src"
+      :src="resolvedSrc"
       :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
       mode="aspectFill"
       :lazy-load="true"

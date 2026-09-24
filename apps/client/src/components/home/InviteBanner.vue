@@ -61,6 +61,8 @@ defineEmits<{ (e: "invite"): void }>();
   width: 34rpx;
   height: 34rpx;
   color: #ffffff;
+  /* 使用说明 §1.6 第 6 条：装饰 image 不吃 tap（mp-weixin iOS WebView 原生 <image> 会吞所在容器 hit-area） */
+  pointer-events: none;
 }
 
 .invite-banner__body {
@@ -81,7 +83,10 @@ defineEmits<{ (e: "invite"): void }>();
   color: #A98F94;
 }
 
+/* CTA 压在装饰层之上：装饰 wing 定位 right/bottom -16rpx，此前 DOM 序在按钮之后 → 后绘覆盖「去邀请」右缘 */
 .invite-banner__btn {
+  position: relative;
+  z-index: 1;
   padding: 14rpx 28rpx;
   border-radius: 999rpx;
   background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
@@ -102,5 +107,11 @@ defineEmits<{ (e: "invite"): void }>();
   height: 80rpx;
   color: #FFC9D2;
   opacity: 0.6;
+  /* MP-R2VIS-PAGES-HOME-INDEX-002（使用说明 §1.6 第 6 条）：纯装饰 image 不得参与 hit-test，
+     否则 mp-weixin iOS WebView 原生 <image> 吞掉「去邀请」CTA 右缘热区。
+     注：必须写在 WXSS 里——同页 RelationActivity 用的 pointer-events="none" 属性形式在 WXML
+     中只是未知 attribute，不改变渲染层 hit-test（CSS 形式才是生效的那一条）。 */
+  pointer-events: none;
+  z-index: 0;
 }
 </style>

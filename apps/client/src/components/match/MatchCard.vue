@@ -30,7 +30,7 @@ const { t } = useI18n();
 const photo = computed(() => props.user.photo || props.user.avatar || IMAGE_PATHS.MATCH_CARD.HERO);
 
 const onlineText = computed(() => {
-  if (props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now") return "在线";
+  if (props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now") return t("matchV1.online");
   return "";
 });
 
@@ -43,7 +43,7 @@ const distanceText = computed(() => {
     // 已带单位（"km" / "米"）或 "同校" 等非数值文案：原样保留
     return value;
   }
-  if (props.user.isSameSchool) return "同校";
+  if (props.user.isSameSchool) return t("matchV1.sameSchool");
   return "";
 });
 
@@ -124,7 +124,9 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   height: 100%;
   border-radius: 48rpx;
   overflow: hidden;
-  background: #eef3f1;
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：图未就位时的卡底占位色，取最接近的页面底 token
+     --c-bg-page=#EEF7F2（原裸写 #eef3f1，G 通道相差 4） */
+  background: var(--c-bg-page, #EEF7F2);
   box-shadow: 0 16rpx 40rpx rgba(26, 55, 48, 0.16);
 }
 
@@ -162,8 +164,11 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   left: 28rpx;
   padding: 10rpx 24rpx;
   border-radius: 999rpx;
-  background: rgba(255, 107, 129, 0.9);
-  box-shadow: 0 6rpx 16rpx rgba(255, 107, 129, 0.35);
+  /* 对齐理想图《寻觅匹配卡片页面》：距离胶囊为浅白底 + 粉字（原为粉底白字，配色反转）
+     MP-R1-PAGES-DISCOVER-INDEX-011：白底/阴影走等值 token（--c-overlay-bg-solid=rgba(255,255,255,.9)
+     与原 .92 同档，--c-black-shadow-lg=rgba(0,0,0,.12) 等值） */
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 6rpx 16rpx var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
   /* 距离文字不换行、不截断，保证胶囊完整展示 */
   white-space: nowrap;
 }
@@ -171,7 +176,9 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__distance-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-neutral-0, #ffffff);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：喜欢=粉底色统一走 --c-love（等值 #FF6B81），
+     原工作树把 var(--c-neutral-0) 改成裸 #FF6B81 属新增裸写，此处收口 */
+  color: var(--c-love, #FF6B81);
 }
 
 .match-card__online {
@@ -183,27 +190,29 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   gap: 8rpx;
   padding: 10rpx 22rpx;
   border-radius: 999rpx;
-  background: var(--c-brand, #36C99A);
-  box-shadow: 0 6rpx 16rpx rgba(61, 201, 148, 0.35);
+  /* 对齐理想图：在线胶囊为白底 + 绿点 + 绿字（原为绿底白字，配色反转）
+     MP-R1-PAGES-DISCOVER-INDEX-011：与距离胶囊同源走等值 token */
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 6rpx 16rpx var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
 }
 
 .match-card__online-dot {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: var(--c-neutral-0, #ffffff);
+  background: var(--c-brand, #36C99A);
 }
 
 .match-card__online-dot--away {
-  background: var(--c-neutral-0, #ffffff);
-  background: rgba(54, 201, 154, 0.9);
-  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.35);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：离开态淡绿点原为 rgba(54,201,154,.55)（落在白胶囊上合成
+     ≈#90E1C8），等档 token 为 --c-brand-200=#A3EBCF */
+  background: var(--c-brand-200, #A3EBCF);
 }
 
 .match-card__online-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-neutral-0, #ffffff);
+  color: var(--c-brand, #36C99A);
 }
 
 /* 匹配度徽章：右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用） */
@@ -226,7 +235,12 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值渐变 token --c-gradient-romance
+     （design-variables.scss:167 即 #FF6B81→#FF8DA1，与 Common Button.vue:244 同写法） */
+  background: var(--c-gradient-romance, linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%));
+  /* 豁免（011 口径「确无对应 token 者以注释声明」）：rgba(255,90,145,.3) 与 --s-romance/-md
+     （rgba(255,107,129,.25/.30)、模糊 32rpx）几何与色相均不等值，换用会改变徽章投影；
+     新增等值 token 需改 theme/design-variables.scss（非本泳道写集）→ 需他人配合 */
   box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.3);
 }
 
@@ -236,7 +250,8 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   width: 132rpx;
   height: 132rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.12);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值 scrim token --c-black-shadow-lg=rgba(0,0,0,.12) */
+  background: var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
   display: flex;
   flex-direction: column;
   align-items: center;

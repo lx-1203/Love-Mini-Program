@@ -469,10 +469,18 @@ function redirectToLogin(): void {
   // 已在跳转中，直接返回避免重复
   if (isRedirecting) return;
   isRedirecting = true;
+  // 文案区分必须在 clearTokens() 之前判定：手里从来没有过 token 的是游客，
+  // 提示「请先登录」；曾登录但刷新失败才是「登录已过期」。
+  // 原实现无条件用 apiErrors.unauthorized，游客被打到登录页时读到的却是过期文案。
+  const hadSession = Boolean(getToken());
   // 清除失效的本地 token，避免后续请求继续携带
   clearTokens();
   // 友好提示
-  uni.showToast({ title: t("apiErrors.unauthorized"), icon: "none", duration: LOGIN_TOAST_DURATION_MS });
+  uni.showToast({
+    title: t(hadSession ? "apiErrors.unauthorized" : "apiErrors.loginRequired"),
+    icon: "none",
+    duration: LOGIN_TOAST_DURATION_MS,
+  });
   // 修复（Task 18.1）：保存 timer 引用到模块级变量，
   // 在 setToken（用户重新登录）或 cancelLoginRedirect（页面 onUnload）时清理，
   // 避免离开页面或恢复会话后仍触发跳转

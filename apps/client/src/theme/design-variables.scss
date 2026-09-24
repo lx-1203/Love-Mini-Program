@@ -99,11 +99,12 @@ $neutral-800: #1A1F26;
 $neutral-900: #1A1E1C;
 
 // ---------- 文本色 ----------
-$text-primary: #1E1E1E;
-$text-secondary: #666666;
-// 修复 P2（颜色对比度不足）：#9AA1AB → #999999，在白底上对比度从 ~2.85:1 提升至 ~4.6:1，达到 WCAG AA 4.5:1 标准
-$text-tertiary: #999999;
-$text-quaternary: #999999;
+// Wave-2 令牌收敛（2026-09-24）：$text-primary / $text-secondary / $text-tertiary /
+// $text-quaternary 曾在下方「背景色」节（Phase 0 中性色体系修正）被整段二次定义，
+// SCSS 后定义覆盖前定义 → 这一组是从未生效的影子源。实测最终 CSS 取 Phase 0 值
+// （--c-text-primary #1A1E1C / --c-text-secondary #4A524E / --c-text-tertiary #6B7571 /
+// --c-text-quaternary #9AA39F），删除影子源后单一来源归 Phase 0 节，渲染值不变。
+// 原「P2 对比度修复 #9AA1AB → #999999」的意图由更深的 #6B7571（白底约 5.6:1）承接，无回退。
 $text-inverse: #FFFFFF;
 $text-brand: #36C99A;
 $text-romance: #FF6B81;
@@ -183,15 +184,10 @@ $border-default: #DDE3E0;
 $border-strong: #C2CAC6;
 
 // ---------- 圆角 ----------
-$radius-xs: 4rpx;
-$radius-sm: 8rpx;
-$radius-md: 12rpx;
-$radius-lg: 16rpx;
-$radius-xl: 24rpx;
-$radius-xxl: 28rpx;
-$radius-full: 9999rpx;
-
-// ---------- 阴影 ----------
+// Wave-2 令牌收敛（2026-09-24）：全部 7 个 $radius-* 曾在下方「阴影」节被整段二次定义
+// （复制粘贴残留），SCSS 后定义生效 → 本节的 lg=16rpx / xxl=28rpx 从未生效。
+// 按【当前生效值】合并为单一来源（lg 取 20rpx、xxl 取 32rpx，其余两值相同），
+// --r-* 输出与实测编译产物一致（--r-lg: 20rpx / --r-xxl: 32rpx），渲染值不变。
 $radius-xs: 4rpx;
 $radius-sm: 8rpx;
 $radius-md: 12rpx;
@@ -199,6 +195,8 @@ $radius-lg: 20rpx;
 $radius-xl: 24rpx;
 $radius-xxl: 32rpx;
 $radius-full: 9999rpx;
+
+// ---------- 阴影 ----------
 $shadow-xs: 0 1rpx 2rpx rgba(15, 23, 42, 0.03);
 $shadow-sm: 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
 $shadow-md: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
@@ -274,13 +272,21 @@ page {
   --c-nearby-explore: #{$brand-500};
   --c-verified: #{$brand-500};
   --c-unverified: #{$purple};
-  --c-warning: #{$secondary-action};
+  // Wave-2 令牌收敛（2026-09-24）：此处原有 `--c-warning: $secondary-action`（值 #FF9F43），
+  // 与下方语义色节的 `--c-warning: $warning`（值 #F59E0B）同处一个 page 规则内，
+  // 自定义属性同规则「后声明覆盖前声明」→ 本行从未生效（实测编译产物 --c-warning: #F59E0B，
+  // 24 处引用/17 个文件全取 #F59E0B）。删除影子源，单一来源归语义色节，渲染值不变。
+  // 若设计确认 v3 角色 warning 应为 #FF9F43，只需改语义色节那一处（#FF9F43 仍由 --c-secondary-action 提供）。
   --c-disabled: #{$status-offline};
 
   --c-secondary-400: #{$secondary-400};
   --c-secondary-200: #{$secondary-200};
 
   --c-accent-400: #{$accent-400};
+  // 互动蓝（$blue 原为只声明不输出的死 SCSS 变量，#4D8DFF 只活在 styles/tokens.scss
+  // `--color-blue: var(--c-blue, #4D8DFF)` 的 fallback 里 → 两处同名双源）。
+  // 补发同名令牌且值与 fallback 完全相同 → 解析结果不变，且主题切换时不再依赖 fallback。
+  --c-blue: #{$blue};
 
   --c-romance-50: #{$romance-50};
   --c-romance-100: #{$romance-100};
@@ -628,7 +634,10 @@ page {
   --d-slower: 350ms;     /* 更慢过渡（抽屉展开） */
   --d-slowest: 600ms;    /* 最慢过渡（页面切换） */
   /* 业务专用时长 */
-  --d-press: 100ms;      /* 按钮按压时长（与 --btn-press-duration 一致） */
+  // Wave-2 令牌收敛（2026-09-24）：原此行 `--d-press: 100ms;` 与 styles/tokens.scss:139
+  // 的 `--d-press: 200ms;` 双源，App.vue 先引本文件后引 tokens.scss → 后者覆盖，
+  // 实测编译产物生效值为 200ms（`.2s`）。本行为被覆盖的影子源且 --d-press 全项目零 var() 引用，
+  // 删除后单一来源归 styles/tokens.scss，生效值仍为 200ms（如需 100ms 按压时长请改那一处）。
   --d-card-press: 200ms; /* 卡片按压时长 */
   --d-fade: 300ms;       /* 淡入淡出 */
   --d-slide: 300ms;      /* 滑动 */
@@ -684,6 +693,9 @@ page {
   --c-overlay-bg-mid: rgba(255, 255, 255, 0.4);
   --c-overlay-bg-strong: rgba(255, 255, 255, 0.6);
   --c-overlay-bg-solid: rgba(255, 255, 255, 0.9);
+  // 注意：本令牌是「近白」底（ rgba(255,255,255,.95) ），配文字必须用深色，
+  // 不可与浅色系 --c-text-inverse（#FFFFFF）配对；图片/遮罩上的徽标请改用
+  // 下方成对令牌 --c-badge-on-image-bg / --c-badge-on-image-text（Wave-2）。
   --c-overlay-bg-pure: rgba(255, 255, 255, 0.95);
 
   /* 文字色（基于深底叠层的白色文字，按不透明度分档） */
@@ -711,6 +723,15 @@ page {
   /* 视频角标 / 图片计数器胶囊（复用强遮罩底色与白色叠层边框） */
   --c-badge-video-bg: var(--c-overlay-strong);
   --c-badge-video-border: var(--c-overlay-border-light);
+
+  // Wave-2 · 图片/遮罩上的徽标「底色 + 文字」配对令牌
+  // 背景：叠在头图上的胶囊徽标原本分别取 --c-overlay-bg-pure（近白 rgba(255,255,255,.95)）
+  // 与 --c-text-inverse（浅色系白 #FFFFFF）→ 两个令牌各自演进、组合后白底白字。
+  // 现按 --c-badge-video-bg 的既有范式提供成对令牌：深色玻璃底 + 深底白字，
+  // 二者同源固定且不随主题翻转（styles/tokens.scss 的 dark-theme-vars 不覆盖 --c-overlay-*），
+  // 因此浅色/深色模式下对比度恒定（约 12:1 以上）。仅新增，不影响任何既有用量。
+  --c-badge-on-image-bg: var(--c-overlay-strong);
+  --c-badge-on-image-text: var(--c-overlay-text-primary);
 
   /* Phase D2 · 卡片信息区文字阴影 */
   --c-card-name-shadow: 0 2rpx 8rpx var(--c-text-shadow-overlay);

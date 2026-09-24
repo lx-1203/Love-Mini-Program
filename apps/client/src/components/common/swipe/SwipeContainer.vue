@@ -62,7 +62,9 @@ const rootClass = computed(() => ({
   "swipe-container--flying": isFlyingOut.value,
 }));
 
-defineExpose({ reset, flyDirection, onTouchMove });
+// 修复（严格模式 noUnusedLocals）：onCatchTap 通过 catchtap 绑定到模板，
+// vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
+defineExpose({ reset, flyDirection, onTouchMove, onCatchTap });
 </script>
 
 <template>

@@ -81,7 +81,8 @@ const verified = computed(
 
     <slot name="intro">
       <view v-if="intro" class="match-info__intro">
-        <text class="match-info__intro-quote">❝</text>
+        <!-- R1-DISCOVER-INDEX-013：CSS 引号条（对齐 ChatBubble .bubble__quote-bar），不再用 ❝ 字形 -->
+        <view class="match-info__intro-quote" />
         <text class="match-info__intro-text">{{ intro }}</text>
       </view>
     </slot>
@@ -220,9 +221,11 @@ const verified = computed(
 }
 
 .match-info__intro-quote {
-  font-size: 32rpx;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1;
+  width: var(--sp-1);
+  height: 42rpx; /* 对齐 intro-text 单行高度（28rpx × 1.5） */
+  border-radius: var(--r-xs);
+  background: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
 }
 
 .match-info__intro-text {

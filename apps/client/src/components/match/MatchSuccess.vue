@@ -98,9 +98,12 @@ function getScoreIcon(index: number): string {
         </view>
         <view class="match-success__heart">
           <view class="match-success__heart-circle">
-            <!-- MP-R1-SUBPACKAGES-...-MATCH-SUCCESS-101：白色心形变体——原粉色 SVG
-                 在粉渐变圆底上通道差≤15（对比度≈1:1），理想图主视觉为白心 -->
-            <image class="match-success__heart-circle-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED_WHITE" mode="aspectFit" alt="" />
+            <!-- MP-R1-SUBPACKAGES-...-MATCH-SUCCESS-101：粉渐变圆底上粉色 SVG 通道差≤15
+                 （对比度≈1:1），理想图主视觉为白心。原引白色填充变体
+                 heart-filled-white.svg，但该文件从未迁移到后端 app-assets
+                 （media_asset 0 行）→ real 模式 404 空白，故改回 heart-filled.svg
+                 + 下方 __heart-circle-icon 的 brightness/invert 反色。 -->
+            <image class="match-success__heart-circle-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
           </view>
         </view>
         <view class="match-success__avatar-wrap">
@@ -300,7 +303,10 @@ function getScoreIcon(index: number): string {
 .match-success__heart-circle-icon {
   width: 44rpx;
   height: 44rpx;
-  color: #ffffff;
+  // mp <image> 不响应 CSS `color` 染色（原 `color:#fff` 是死属性），
+  // 但 filter 作用于已渲染位图：brightness(0) 压黑 → invert(1) 洗白，
+  // 与源 SVG 的 fill/stroke 配色无关，恒得纯白心。
+  filter: brightness(0) invert(1);
 }
 
 .match-success__score-card {

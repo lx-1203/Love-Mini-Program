@@ -39,7 +39,7 @@ defineEmits<{
         <text class="relation-cell__value">{{ data.likesReceived }}</text>
         <text class="relation-cell__label">人喜欢了你</text>
         <view v-if="(data.likesAvatars ?? []).length" class="relation-cell__avatars">
-          <image v-for="(av, i) in (data.likesAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="av" mode="aspectFill" pointer-events="none" />
+          <image v-for="(av, i) in (data.likesAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="resolveMediaUrl(av)" mode="aspectFill" pointer-events="none" />
         </view>
       </view>
       <view class="relation-cell" hover-class="relation-cell--active" @tap="$emit('whispers')" role="button" :aria-label="`查看 ${data.whispers} 条悄悄话`">
@@ -50,7 +50,7 @@ defineEmits<{
         <text class="relation-cell__value">{{ data.whispers }}</text>
         <text class="relation-cell__label">条悄悄话</text>
         <view v-if="(data.whisperAvatars ?? []).length" class="relation-cell__avatars">
-          <image v-for="(av, i) in (data.whisperAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="av" mode="aspectFill" pointer-events="none" />
+          <image v-for="(av, i) in (data.whisperAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="resolveMediaUrl(av)" mode="aspectFill" pointer-events="none" />
         </view>
       </view>
       <view class="relation-cell" hover-class="relation-cell--active" @tap="$emit('visitors')" role="button" :aria-label="`查看 ${data.visitors} 个访客`">
@@ -61,7 +61,7 @@ defineEmits<{
         <text class="relation-cell__value">{{ data.visitors }}</text>
         <text class="relation-cell__label">人看过你</text>
         <view v-if="(data.visitorAvatars ?? []).length" class="relation-cell__avatars">
-          <image v-for="(av, i) in (data.visitorAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="av" mode="aspectFill" pointer-events="none" />
+          <image v-for="(av, i) in (data.visitorAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="resolveMediaUrl(av)" mode="aspectFill" pointer-events="none" />
         </view>
       </view>
       <view class="relation-cell" hover-class="relation-cell--active" @tap="$emit('matches')" role="button" :aria-label="`查看 ${data.newMatches} 个新匹配`">
@@ -72,7 +72,7 @@ defineEmits<{
         <text class="relation-cell__value">{{ data.newMatches }}</text>
         <text class="relation-cell__label">个新匹配</text>
         <view v-if="(data.matchAvatars ?? []).length" class="relation-cell__avatars">
-          <image v-for="(av, i) in (data.matchAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="av" mode="aspectFill" pointer-events="none" />
+          <image v-for="(av, i) in (data.matchAvatars ?? []).slice(0, 3)" :key="i" class="relation-cell__avatar" :src="resolveMediaUrl(av)" mode="aspectFill" pointer-events="none" />
         </view>
       </view>
     </view>
@@ -118,13 +118,18 @@ defineEmits<{
   gap: 8rpx;
   padding: 16rpx 6rpx;
   border-radius: 24rpx;
-  background: #EEF7F2;
+  /* MP-R2VIS-PAGES-HOME-INDEX-001 / V1-25(a)：原 `background: #EEF7F2` 与页面底色
+     --c-bg-page(#EEF7F2) 同值 → 四格与页面零视觉分隔（理想图 首页.png 为 4 张独立白底小卡）。
+     改容器令牌 + 卡片阴影，一并消除裸色值（使用说明 §1.2/§1.4）。 */
+  background: var(--c-bg-container);
+  box-shadow: var(--card-shadow);
 }
 
 /* 2026-09-04 问题6修复：cell 按下态（hover-class 目标样式）——背景加深 + 轻微缩小，
    让"4 格仅第一个可点"的感知问题先从可感知反馈上消除（mp 端 hover-class 独立属性生效） */
 .relation-cell--active {
-  background: #DFF3EA;
+  /* 原裸值 #DFF3EA → 交互按下态令牌（theme/design-variables.scss:395） */
+  background: var(--c-interaction-pressed);
   transform: scale(0.97);
 }
 
@@ -169,6 +174,9 @@ defineEmits<{
   display: block;
   width: 100rpx;
   height: 100rpx;
+  /* 使用说明 §1.6 第 6 条：模板上的 pointer-events="none" 属性形式在 WXML 里只是未知
+     attribute、不改变渲染层 hit-test；真正生效的是这条 WXSS。补齐后 cell 的 tap 必落 cell view。 */
+  pointer-events: none;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
 }
@@ -192,6 +200,8 @@ defineEmits<{
   border: 2rpx solid #ffffff;
   background: #EEF2F0;
   flex-shrink: 0;
+  /* §1.6 第 6 条：装饰头像不吃 cell 的 tap */
+  pointer-events: none;
 }
 
 .relation-cell__value {

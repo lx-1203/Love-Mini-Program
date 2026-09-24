@@ -111,7 +111,7 @@ async function onFollow(post: CommunityPostViewModel) {
       next.delete(authorId);
       followedIds.value = next;
     }
-  } catch {
+  } catch (_e) {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
   } finally {
     const nextPending = new Set(followPendingIds.value);

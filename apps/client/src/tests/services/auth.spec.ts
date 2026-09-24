@@ -125,7 +125,7 @@ describe("services/auth - loginWithWechat (Task 0.1.5)", () => {
     // Assert：返回的会话信息与 mock 一致
     expect(result).toEqual(mockSession);
 
-    // Assert：request 被以正确的参数调用（POST + skipAuth + noRetry）
+    // Assert：request 被以正确的参数调用（POST + skipAuth + noRetry + 自持错误提示）
     expect(mockRequest).toHaveBeenCalledTimes(1);
     expect(mockRequest).toHaveBeenCalledWith({
       url: "/v1/auth/wechat",
@@ -133,6 +133,7 @@ describe("services/auth - loginWithWechat (Task 0.1.5)", () => {
       data: { code: "valid-wx-code" },
       skipAuth: true,
       noRetry: true,
+      reportError: false,
     });
 
     // Assert：token 与 refreshToken 被持久化到本地存储

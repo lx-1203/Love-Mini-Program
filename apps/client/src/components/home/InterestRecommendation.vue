@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { InterestCircleViewModel } from "../../view-models/home-dashboard";
 import { circleCoverFor } from "../../config/circle-covers";
-import { resolveMediaUrl } from "../../utils/media";
+import { resolveMediaUrl, isUploadedMediaUrl } from "../../utils/media";
 import SkeletonBlock from "../common/SkeletonBlock.vue";
 
 /** 圈名 → 封面统一走 config/circle-covers 单一映射（2026-09-12 收编本页副本，
@@ -17,14 +17,45 @@ function formatMemberCount(count: number): string {
 }
 
 /**
+ * 字形/图标资源命名空间——一律不得当封面用。
+ *
+ * 判定不能只看「是否以 / 开头」：`/static/...` 里既混着字形小图标
+ * （`/static/assets/icons/common/camera.svg`、`/static/assets/profile/svg/v2/interest/sport.svg`），
+ * 也混着真封面（`/static/assets/images/covers/circle-cover-*.jpg`），两者都以 `/` 开头。
+ * 因此以「图标命名空间 + .svg 字形」为否定条件，其余包内路径放行。
+ */
+const GLYPH_ASSET_RE = /^\/static\/assets\/(icons|svg-spec)\//i;
+const SVG_GLYPH_RE = /\.svg([?#]|$)/i;
+
+/** 该 icon 值是否是一张可直用的封面图（而非字形/emoji/空值） */
+function isUsableCover(p: string): boolean {
+  if (!p) return false;
+  // 后端上传图 / 媒体鉴权代理：真图，优先级高于任何按名称的映射兜底
+  if (p.startsWith("/uploads/") || p.indexOf("/api/v1/media/") >= 0) return true;
+  // 包内资源：字形图标命名空间与 .svg 一律排除，其余（images/covers/*.jpg|png）放行
+  if (p.startsWith("/static/")) return !GLYPH_ASSET_RE.test(p) && !SVG_GLYPH_RE.test(p);
+  // 服务器绝对 URL；复用 media.ts 单一判定，排除 http://tmp/ · http://usr/ · wxfile:// 本地临时路径
+  if (isUploadedMediaUrl(p) || p.startsWith("data:image/")) return true;
+  // real 后端 icon 常为 emoji（📷）→ 交给圈名映射，避免直传 <image> 破图
+  return false;
+}
+
+/**
  * R20（2026-09-08）：封面单一来源收敛。
  * real 后端 icon 字段是 emoji（如 📷），此前被当图片 URL 直传 <image> 导致破图空缺；
- * mock fixtures 的 icon 是 svg 路径。这里只接受「以 / 或 http 开头」的真路径，
- * 其余（emoji/空）一律回退按名称关键词映射的本地封面，保证卡片恒有图。
+ * mock fixtures 的 icon 是 svg 路径。
+ *
+ * MP-R2VIS-PAGES-HOME-INDEX-002 / V1-22（2026-09-24 Wave-2 修复）：
+ * 原实现 `raw.startsWith("/") || raw.startsWith("http")` 无条件短路，而 mock 首页圈子的
+ * icon 恰好就是 `/static/assets/icons/common/{camera,travel,music,food}.svg`
+ * （services/mocks/fixtures.ts:1149-1152）→ **circleCover(name) 永不执行**，
+ * 已落盘的 static/assets/images/covers/circle-cover-*.jpg 在首页零命中，
+ * 渲染成灰描边相机 / 实心黑音符 / 空白三套互斥图标。
+ * 现改为「只有真封面资源才直用，字形一律回退圈名映射」，短路维度从路径前缀换成资源类型。
  */
 function coverSrc(icon: string | null | undefined, name: string): string {
   const raw = (icon || "").trim();
-  if (raw.startsWith("/") || raw.startsWith("http")) return raw;
+  if (isUsableCover(raw)) return raw;
   return circleCover(name);
 }
 

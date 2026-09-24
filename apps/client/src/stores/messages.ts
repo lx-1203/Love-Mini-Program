@@ -688,7 +688,22 @@ export const useMessagesStore = defineStore("messages", {
               officialAccountId: acc.code,
             };
           });
-          this.sessions = [...data.map(mapToMessageSession), ...officialSessions].sort((a, b) => {
+          // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：/messages/conversations 不下发
+          // relationship（该字段仅由 GET /messages/relationship-dashboard 的 recentChats 携带），
+          // 而 bootstrap 里 fetchSessions 与 fetchRelationshipDashboard 并发、整表赋值无合并，
+          // 故 sessions 的关系快照会按两个响应的到达顺序竞态被清空（双数据源不同步）——
+          // 下游会话页「关系状态区」在 real 模式随机不渲染。现按 id 保留既有快照。
+          const priorRelationshipById = new Map<string, MessageSession["relationship"]>(
+            this.sessions.map((s): [string, MessageSession["relationship"]] => [s.id, s.relationship])
+          );
+          const privateSessions = data.map((raw) => {
+            const session = mapToMessageSession(raw);
+            if (!session.relationship) {
+              session.relationship = priorRelationshipById.get(session.id) ?? null;
+            }
+            return session;
+          });
+          this.sessions = [...privateSessions, ...officialSessions].sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
             return (b.lastMessageSentAt ? Date.parse(b.lastMessageSentAt) : 0) - (a.lastMessageSentAt ? Date.parse(a.lastMessageSentAt) : 0);
           });
@@ -933,6 +948,20 @@ export const useMessagesStore = defineStore("messages", {
 
     // 修复（严格模式 noUnusedLocals）：原 quoteRef 参数未在函数体内使用，
     // 加 _ 前缀标识为有意未使用（保留签名以维持调用方兼容性）。
+    //
+    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002 复核结论（本轮实读后端，未改后端）：
+    // 该参数**当前无法接入私信请求契约**，非前端漏配 ——
+    //   apps/api PrivateMessageController.java:209-215 record SendMessageRequest(
+    //     content, kind, durationSeconds) 无引用字段，且 kind 白名单
+    //     "(?i)TEXT|IMAGE|VOICE|VIDEO|EMOJI|ACTIVITY" 明确不含 QUOTE；
+    //   RealPrivateMessageService.java:239-246 建消息实体时从不调
+    //     setQuoteContext(...)，故 entity PrivateMessage.quoteContext（DB 列 quote_context）
+    //     在私信发送链路恒为 null，MessageView.quoteContext 回包亦为空。
+    // 前端若把 quoteRef 塞进 content 或改发 kind=quote，前者污染正文、后者被 @Pattern 直接
+    // 400 —— 属"半截逻辑"，故按契约缺口保持参数未用。结案需后端先加引用字段/放开 QUOTE 白名单。
+    // （对照组：临时匿名会话链路 TempChatController.java:150-158 ChatMessageRequest 已有
+    //   quoteRef 且 TempChatMessageService 已实现快照构造，但接线点在 stores/chat/**，
+    //   不在本泳道独占写集内。）
     async sendMessage(sessionId: string, content: string, _quoteRef?: string, kind: MessageItem["kind"] = "text") {
       this.errorMessage = null;
       try {

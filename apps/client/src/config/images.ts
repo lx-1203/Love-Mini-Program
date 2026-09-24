@@ -518,9 +518,9 @@ export const IMAGE_PATHS = {
     LAB:         ICONS_BASE + '/common/robot.svg',          // 🔬 实验室
     SETTINGS:    ICONS_BASE + '/common/settings-gear.svg',   // ⚙️ 设置
     HEART_FILLED:ICONS_BASE + '/common/heart-filled.svg',  // 💝/💕 爱心填色
-    // MP-R1-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-101：白色填充变体——
-    // mp <image> 不响应 CSS color 染色，粉圆底上直引粉色 SVG 渲染为同色系不可辨
-    HEART_FILLED_WHITE: ICONS_BASE + '/common/heart-filled-white.svg',
+    // 曾另有 HEART_FILLED_WHITE → common/heart-filled-white.svg（仅 fill 色不同）。
+    // 该文件只存在于本地 static，未迁移进后端 app-assets（media_asset 0 行），
+    // real 模式必然 404；改色需求已由 MatchSuccess 的 filter 反色承担，故删除常量。
     MOBILE:      ICONS_BASE + '/common/mobile.svg',         // 📱 手机
     KEY:         ICONS_BASE + '/common/key.svg',            // 🔑 钥匙
     CLOCK:       ICONS_BASE + '/common/clock.svg',          // 🕐 时钟
