@@ -1,0 +1,2501 @@
+openapi: 3.0.3
+info:
+  title: Campus Love - Auth / Profile / Home / Chat / Feedback API
+  version: 1.0.0
+  description: |
+    Core authentication, profile editing, home dashboard, temporary chat
+    sessions, feedback submissions, and admin feedback endpoints. Exposed by
+    `AuthController`, `ProfileController`, `HomeController`, `ChatController`,
+    `TempChatController`, `RecommendationController` (discussion/activity),
+    `FeedbackController`, and admin feedback controllers. All endpoints
+    require a valid JWT bearer token unless explicitly marked anonymous.
+servers:
+  - url: /api/v1
+    description: Versioned API gateway prefix
+tags:
+  - name: auth
+    description: Authentication endpoints (WeChat login, refresh, logout, admin login)
+  - name: profile
+    description: User profile editing (basic, campus, schedule, photos, video, etc.)
+  - name: home
+    description: Home dashboard payload
+  - name: chat
+    description: Chat overview and temporary chat sessions
+  - name: recommendations
+    description: Discussion and activity recommendations
+  - name: feedback
+    description: User feedback submissions and admin feedback operations
+  - name: admin
+    description: Admin-only feedback and proposal conversion operations
+  - name: debug
+    description: Local QA debug endpoints (mock match status and error simulation)
+paths:
+  /app-config/login-hero:
+    get:
+      tags: [home]
+      summary: Get login hero configuration
+      description: Returns the login page hero block configuration (animation or video mode, poster, theme, copy).
+      operationId: getLoginHeroConfig
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Login hero config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginHeroConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Get current session
+      description: Validates the Bearer token and returns the current user session view.
+      operationId: getCurrentSession
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/wechat-login:
+    post:
+      tags: [auth]
+      summary: Exchange a WeChat login code for a session
+      description: |
+        Receives the WeChat mini-program login code, calls `code2session` to
+        resolve the openId, and issues a JWT. Rate-limited to 10 bucket
+        capacity / 1 token every 10 seconds per IP.
+      operationId: loginWithWechat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+            example:
+              code: '0a1b2c3d4e5f'
+      responses:
+        '200':
+          description: Logged-in session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh JWT token
+      description: |
+        Validates the existing Bearer token and returns a fresh JWT. Rate-limited
+        to 20 bucket capacity / 1 token every 2 seconds per IP. Idempotent.
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Refreshed session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSessionApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Logout
+      description: Adds the current Bearer token to a Redis blacklist so subsequent requests with the same token return 401.
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/admin/login:
+    post:
+      tags: [auth]
+      summary: Admin username/password login
+      description: Authenticates an admin account and returns a JWT with the ADMIN role. Idempotent.
+      operationId: loginAsAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+            example:
+              username: 'admin'
+              password: '********'
+      responses:
+        '200':
+          description: Admin session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSessionApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/admin/logout:
+    post:
+      tags: [auth]
+      summary: Admin logout
+      description: Same semantics as `/auth/logout`, with additional audit logging for admin sessions.
+      operationId: logoutAsAdmin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/stats:
+    get:
+      tags: [profile]
+      summary: Get profile statistics
+      description: Returns profile completion, photo count, video count, etc., for the profile page header.
+      operationId: getProfileStats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileStatsView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/basic:
+    get:
+      tags: [profile]
+      summary: Get the basic profile
+      description: Returns the current user's basic profile (nickname, bio, photos, background, etc.).
+      operationId: getBasicProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Basic profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [profile]
+      summary: Save the basic profile
+      description: |
+        Updates nickname, gender, birthday, bio, and Phase B extended fields.
+        Recomputes `profileCompletion` as a weighted average
+        (displayName 10% + campus 10% + schedule 10% + profileCompleted 70%).
+      operationId: saveBasicProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasicProfileRequest'
+            example:
+              nickname: '小明'
+              bio: '热爱生活的本科生'
+              grade: 'sophomore'
+              pronouns: 'he/him'
+              height: 178
+              educationLevel: 'bachelor'
+              relationshipStatus: 'never'
+              hometownProvince: 'Beijing'
+              hometownCity: 'Beijing'
+              futureCity: 'Shanghai'
+              futurePlanTags: ['tech', 'travel']
+      responses:
+        '200':
+          description: Saved basic profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/background:
+    post:
+      tags: [profile]
+      summary: Upload profile background image
+      description: Multipart upload of the profile page background image. Validates MIME and magic bytes.
+      operationId: uploadProfileBackground
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Updated basic profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/photos:
+    post:
+      tags: [profile]
+      summary: Upload a photo wall image
+      description: |
+        Multipart upload of a photo wall image at the specified `index`
+        (0-5). Index out of range returns 400.
+      operationId: uploadProfilePhoto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: index
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 5
+          description: Photo wall slot index (0-5).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/photos/{index}:
+    delete:
+      tags: [profile]
+      summary: Delete a photo wall image
+      description: Deletes the photo wall image at the specified index (0-5).
+      operationId: deleteProfilePhoto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: index
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 5
+          description: Photo wall slot index (0-5).
+      responses:
+        '200':
+          description: Deletion successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/video:
+    post:
+      tags: [profile]
+      summary: Upload personal video
+      description: Multipart upload of a personal introduction video.
+      operationId: uploadProfileVideo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/half-body:
+    post:
+      tags: [profile]
+      summary: Upload half-body photo
+      description: Multipart upload of a half-body photo used for verification.
+      operationId: uploadProfileHalfBody
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/campus:
+    get:
+      tags: [profile]
+      summary: Get campus profile
+      description: Returns the campus profile (city, campus name, department, verification status).
+      operationId: getCampusProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Campus profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampusProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [profile]
+      summary: Save campus profile
+      description: Updates city, campus name, and department.
+      operationId: saveCampusProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampusProfileRequest'
+            example:
+              city: 'Beijing'
+              campusName: 'Tsinghua University'
+              department: 'Computer Science'
+      responses:
+        '200':
+          description: Saved campus profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampusProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/schedule:
+    get:
+      tags: [profile]
+      summary: Get schedule preferences
+      description: Returns schedule preferences (preferred campus area, time windows, course blocks).
+      operationId: getScheduleProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Schedule settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [profile]
+      summary: Save schedule preferences
+      description: Updates preferred campus area, time windows, and course blocks.
+      operationId: saveScheduleProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleProfileRequest'
+      responses:
+        '200':
+          description: Saved schedule settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /profile/dto:
+    get:
+      tags: [profile]
+      summary: Get current user DTO
+      description: Returns the desensitized `UserDto` for the current user (no openid, phone, or password fields).
+      operationId: getCurrentUserDto
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User DTO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /home/dashboard:
+    get:
+      tags: [home]
+      summary: Get the home dashboard payload
+      description: Returns schedule summary, AI plan fallback, recommended people, and activity preview entries.
+      operationId: getHomeDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Home dashboard payload (launch-scope aiPlan included)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeDashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /home/today-recommendation/rotate:
+    post:
+      tags: [home]
+      summary: Rotate home today recommendation
+      description: 更换首页今日推荐，不记录跳过、不消耗寻觅推荐额度。
+      operationId: rotateHomeTodayRecommendation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 下一位今日推荐；无候选时返回 null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayRecommendation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /chat/overview:
+    get:
+      tags: [chat]
+      summary: Get the chat landing payload
+      description: Returns the chat session list and empty-state recommendations.
+      operationId: getChatOverview
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Chat overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatOverview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions:
+    post:
+      tags: [chat]
+      summary: Create or reuse a temporary chat session
+      description: |
+        Creates or reuses a temporary chat session from a recommendation or a
+        compatibility match. At least one of `recommendedPersonId` or
+        `matchId` must be provided.
+      operationId: createTempChatSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTempChatSessionRequest'
+            example:
+              recommendedPersonId: 'rec-123'
+      responses:
+        '200':
+          description: Temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}:
+    get:
+      tags: [chat]
+      summary: Get a temporary chat session
+      description: Returns the full temporary chat session view including messages and contact-exchange state.
+      operationId: getTempChatSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      responses:
+        '200':
+          description: Temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/messages:
+    post:
+      tags: [chat]
+      summary: Send a message to a temporary chat session
+      description: Appends a new message (text/voice/emoji) to the session and returns the updated session view.
+      operationId: sendTempChatMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+            example:
+              sender: 'self'
+              kind: 'text'
+              body: '你好呀'
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/contact-exchange/respond:
+    post:
+      tags: [chat]
+      summary: Respond to a contact exchange prompt
+      description: Submits an `accept`/`reject`/`revoke` decision for an in-flight contact exchange.
+      operationId: respondToContactExchange
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactExchangeDecisionRequest'
+            example:
+              actor: 'self'
+              decision: 'accept'
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/end:
+    post:
+      tags: [chat]
+      summary: End a temporary chat session
+      description: Marks the session as closed with reason `ended`.
+      operationId: endTempChatSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/pin:
+    post:
+      tags: [chat]
+      summary: Pin a temporary chat session
+      description: Pins the session in the overview list.
+      operationId: pinTempChatSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/unpin:
+    post:
+      tags: [chat]
+      summary: Unpin a temporary chat session
+      description: Removes the pin flag from the session in the overview list.
+      operationId: unpinTempChatSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/read:
+    post:
+      tags: [chat]
+      summary: Mark a temporary chat session as read
+      description: Resets the unread count of the session to zero.
+      operationId: markTempChatSessionRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+      responses:
+        '200':
+          description: Updated chat session summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /temp-chat/sessions/{id}/messages/{messageId}/recall:
+    post:
+      tags: [chat]
+      summary: Recall a message in a temporary chat session
+      description: Marks the specified message as recalled.
+      operationId: recallTempChatMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Session ID.
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+          description: Message ID to recall.
+      responses:
+        '200':
+          description: Updated temporary chat session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempChatSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/discussions:
+    get:
+      tags: [recommendations]
+      summary: Get discussion recommendations
+      description: Returns the list of discussion recommendations for the discover tab.
+      operationId: getDiscussionRecommendations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Discussion recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscussionRecommendation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /recommendations/activities:
+    get:
+      tags: [recommendations]
+      summary: Get activity recommendations
+      description: Returns the list of activity recommendations for the discover tab.
+      operationId: getActivityRecommendations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Activity recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityRecommendation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/issues:
+    post:
+      tags: [feedback]
+      summary: Submit a feedback ticket
+      description: Submits a problem report. Returns 202 Accepted. Rate-limited and idempotent.
+      operationId: createFeedbackIssue
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+            example:
+              title: '登录失败'
+              content: '使用微信登录时返回 502'
+              contactWechat: 'wxid_abc'
+              attachments: []
+              expectedCity: 'Beijing'
+              expectedCampus: 'Tsinghua'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecordApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/suggestions:
+    post:
+      tags: [feedback]
+      summary: Submit a product suggestion
+      description: Submits a product improvement suggestion. Returns 202 Accepted. Rate-limited and idempotent.
+      operationId: createSuggestion
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecordApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/activity-proposals:
+    post:
+      tags: [feedback]
+      summary: Submit an activity proposal
+      description: Submits a user-proposed activity. Returns 202 Accepted. Rate-limited and idempotent.
+      operationId: createActivityProposal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecordApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/my-submissions:
+    get:
+      tags: [feedback]
+      summary: List current user submissions
+      description: Returns the current user's feedback submissions, optionally filtered by type.
+      operationId: listMySubmissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubmissionType'
+          description: Optional filter by submission type.
+      responses:
+        '200':
+          description: Submission list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubmissionRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/my-submissions/{id}:
+    get:
+      tags: [feedback]
+      summary: Get submission detail
+      description: Returns the full detail of a submission owned by the current user.
+      operationId: getMySubmissionDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Submission ID.
+      responses:
+        '200':
+          description: Submission detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /feedback/images:
+    post:
+      tags: [feedback]
+      summary: Upload a feedback image attachment
+      description: |
+        Multipart upload of an image attachment for a feedback ticket.
+        Supported formats: jpg/png/webp. Max size: 5 MB.
+      operationId: uploadFeedbackImage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadedImageResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/feedback:
+    get:
+      tags: [admin]
+      summary: List feedback submissions for operations
+      description: Returns all feedback and suggestion submissions for admin review.
+      operationId: listAdminFeedback
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admin-facing submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubmissionRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/activity-proposals/{id}/convert:
+    post:
+      tags: [admin]
+      summary: Convert a proposal into an activity draft
+      description: Converts an accepted activity proposal into an activity draft. Requires ADMIN role. Idempotent.
+      operationId: convertActivityProposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: Proposal submission ID.
+      responses:
+        '200':
+          description: Converted proposal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /_debug/matches/next-status/{queueStatus}:
+    post:
+      tags: [debug]
+      summary: Stage the next mock match result status for local QA
+      description: Stages the next match queue status returned by the mock match service. Intended for local QA only.
+      operationId: setNextMatchQueueStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: queueStatus
+          required: true
+          schema:
+            type: string
+            enum: [queued, connected, expired]
+          description: The queue status to stage.
+      responses:
+        '200':
+          description: Debug match status staged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugNextMatchStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /_debug/errors/{status}:
+    post:
+      tags: [debug]
+      summary: Simulate a mock API error response for local QA
+      description: Returns an error response with the specified HTTP status. Intended for local QA only.
+      operationId: simulateDebugError
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: status
+          required: true
+          schema:
+            type: integer
+            enum: [400, 404, 500]
+          description: HTTP status code to simulate.
+      responses:
+        '400':
+          description: Bad request error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+        '404':
+          description: Not found error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+        '500':
+          description: Server error shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token issued by `/auth/wechat-login` or `/auth/refresh`.
+  schemas:
+    LoginHeroConfig:
+      type: object
+      properties:
+        heroMode:
+          type: string
+          enum: [animation, video]
+        heroVideoUrl:
+          type: string
+          nullable: true
+        heroPosterUrl:
+          type: string
+          nullable: true
+        heroAnimationTheme:
+          type: string
+        heroTitle:
+          type: string
+        heroSubtitle:
+          type: string
+        videoFallbackToAnimation:
+          type: boolean
+      required:
+        - heroMode
+        - heroAnimationTheme
+        - heroTitle
+        - heroSubtitle
+        - videoFallbackToAnimation
+    UserSession:
+      type: object
+      properties:
+        userId:
+          type: string
+        loggedIn:
+          type: boolean
+        loginMethod:
+          type: string
+          enum: [wechat, phone, admin]
+        displayName:
+          type: string
+        phoneBound:
+          type: boolean
+        profileCompleted:
+          type: boolean
+        campusVerified:
+          type: boolean
+        scheduleCompleted:
+          type: boolean
+        campusName:
+          type: string
+          nullable: true
+        schoolBound:
+          type: boolean
+          description: 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定；前端 home 选择器消费）
+        schoolId:
+          type: string
+          nullable: true
+          description: 绑定学校 ID（= campusName，供首页选择器回显）
+        featureFlags:
+          type: object
+          additionalProperties:
+            type: boolean
+      required:
+        - userId
+        - loggedIn
+        - loginMethod
+        - displayName
+        - phoneBound
+        - profileCompleted
+        - campusVerified
+        - scheduleCompleted
+        - featureFlags
+    UserSessionApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/UserSession'
+      required:
+        - success
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+    WechatLoginRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: WeChat mini-program login code returned by `wx.login()`.
+      required:
+        - code
+    AdminLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - username
+        - password
+    BasicProfile:
+      type: object
+      properties:
+        nickname:
+          type: string
+        bio:
+          type: string
+        grade:
+          type: string
+        pronouns:
+          type: string
+        height:
+          type: integer
+          minimum: 120
+          maximum: 250
+          nullable: true
+        educationLevel:
+          type: string
+          enum: [high_school, bachelor, master, phd]
+          nullable: true
+        relationshipStatus:
+          type: string
+          enum: [never, married_before, divorced, widowed]
+          nullable: true
+        hometownProvince:
+          type: string
+          nullable: true
+        hometownCity:
+          type: string
+          nullable: true
+        futureCity:
+          type: string
+          nullable: true
+        futurePlanTags:
+          type: array
+          items:
+            type: string
+        photoGallery:
+          type: array
+          items:
+            type: string
+        halfBodyPhotoUrl:
+          type: string
+          nullable: true
+        profileBackgroundUrl:
+          type: string
+          nullable: true
+        profileCompletion:
+          type: integer
+          minimum: 0
+          maximum: 100
+        verificationBadgeLevel:
+          type: string
+          enum: [none, school, email, idcard]
+        expectedPartner:
+          type: string
+          nullable: true
+          description: 理想型画像描述（2026-08-11 匹配精细化）
+        birthDate:
+          type: string
+          nullable: true
+          description: 出生日期 yyyy-MM-dd（3-N 未成年人保护，2026-08-10 后端已返回）
+        idCardVerified:
+          type: boolean
+          nullable: true
+          description: 实名认证标志（B1-2，2026-08-13：true 表示已通过实名认证，校园认证前置门槛）
+      required:
+        - nickname
+        - bio
+        - grade
+        - pronouns
+    BasicProfileRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 64
+        bio:
+          type: string
+          minLength: 1
+          maxLength: 500
+        grade:
+          type: string
+          minLength: 1
+          maxLength: 32
+        pronouns:
+          type: string
+          minLength: 1
+          maxLength: 32
+        height:
+          type: integer
+          minimum: 120
+          maximum: 250
+          nullable: true
+        educationLevel:
+          type: string
+          enum: [high_school, bachelor, master, phd]
+          nullable: true
+        relationshipStatus:
+          type: string
+          enum: [never, married_before, divorced, widowed]
+          nullable: true
+        hometownProvince:
+          type: string
+          maxLength: 32
+          nullable: true
+        hometownCity:
+          type: string
+          maxLength: 32
+          nullable: true
+        futureCity:
+          type: string
+          maxLength: 32
+          nullable: true
+        futurePlanTags:
+          type: array
+          items:
+            type: string
+        expectedPartner:
+          type: string
+          nullable: true
+          description: 理想型画像描述（2026-08-11 匹配精细化）
+      required:
+        - nickname
+        - bio
+        - grade
+        - pronouns
+    CampusProfile:
+      type: object
+      properties:
+        city:
+          type: string
+        campusName:
+          type: string
+        department:
+          type: string
+        verificationStatus:
+          type: string
+          enum: [draft, pending, verified]
+      required:
+        - city
+        - campusName
+        - department
+        - verificationStatus
+    CampusProfileRequest:
+      type: object
+      properties:
+        city:
+          type: string
+          minLength: 1
+          maxLength: 32
+        campusName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - city
+        - campusName
+        - department
+    ScheduleBlock:
+      type: object
+      properties:
+        id:
+          type: string
+        weekday:
+          type: string
+        start:
+          type: string
+        end:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - weekday
+        - start
+        - end
+        - label
+    ScheduleProfile:
+      type: object
+      properties:
+        preferredCampusArea:
+          type: string
+        preferredTimeWindows:
+          type: array
+          items:
+            type: string
+        courseBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleBlock'
+      required:
+        - preferredCampusArea
+        - preferredTimeWindows
+        - courseBlocks
+    ScheduleProfileRequest:
+      type: object
+      properties:
+        preferredCampusArea:
+          type: string
+          minLength: 1
+          maxLength: 64
+        preferredTimeWindows:
+          type: array
+          items:
+            type: string
+        courseBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleBlock'
+      required:
+        - preferredCampusArea
+    ProfileStatsView:
+      type: object
+      properties:
+        followingCount:
+          type: integer
+          minimum: 0
+        followersCount:
+          type: integer
+          minimum: 0
+        likesCount:
+          type: integer
+          minimum: 0
+      required:
+        - followingCount
+        - followersCount
+        - likesCount
+    UserDto:
+      type: object
+      description: Desensitized user DTO (no openid/phone/password fields).
+      properties:
+        id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [USER, ADMIN]
+      required:
+        - id
+        - nickname
+        - role
+    HomeCard:
+      type: object
+      description: Generic homepage card model for schedule, free-slot, and aiPlan modules.
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        meta:
+          type: string
+        actionLabel:
+          type: string
+          nullable: true
+      required:
+        - id
+        - title
+        - subtitle
+        - meta
+    RecommendedPersonSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        initials:
+          type: string
+        headline:
+          type: string
+        commonGround:
+          type: string
+        availability:
+          type: string
+      required:
+        - id
+        - name
+        - initials
+        - headline
+        - commonGround
+        - availability
+    ActivityPreviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        meta:
+          type: string
+      required:
+        - id
+        - title
+        - subtitle
+        - meta
+    ActivityPreview:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+        actionLabel:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityPreviewItem'
+        pulseTitle:
+          type: string
+          nullable: true
+        pulseMeta:
+          type: string
+          nullable: true
+      required:
+        - title
+        - subtitle
+        - actionLabel
+        - items
+    MatchCenter:
+      type: object
+      description: 匹配中心聚合视图（寻觅 v3：首页 = 匹配中心）。
+      properties:
+        quota:
+          $ref: '#/components/schemas/RecommendQuota'
+        onlineCount:
+          type: integer
+          description: 当前在线速配人数（MVP：推荐池中 just_now 活跃人数）
+        relation:
+          $ref: '#/components/schemas/RelationProgress'
+      required:
+        - quota
+        - onlineCount
+        - relation
+    RecommendQuota:
+      type: object
+      properties:
+        dailyLimit:
+          type: integer
+          description: 今日推荐总配额；-1 表示无限制（mock/服务未注入）
+        used:
+          type: integer
+        remaining:
+          type: integer
+      required:
+        - dailyLimit
+        - used
+        - remaining
+    RelationProgress:
+      type: object
+      description: 关系进度（crushing = myLikes - likedMe；matched = myLikes ∩ likedMe）。
+      properties:
+        crushing:
+          type: integer
+        matched:
+          type: integer
+        whispers:
+          type: integer
+      required:
+        - crushing
+        - matched
+        - whispers
+    HomeFeed:
+      type: object
+      description: 首页 Feed 契约（首页 = 今日恋爱首页）。
+      properties:
+        todayRecommendation:
+          $ref: '#/components/schemas/TodayRecommendation'
+        loveProgress:
+          $ref: '#/components/schemas/LoveProgress'
+        relationActivity:
+          $ref: '#/components/schemas/RelationActivity'
+        interestRecommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterestCircleSummary'
+        nearbyPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/NearbyPersonSummary'
+        communityPosts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityPostSummary'
+      required:
+        - todayRecommendation
+        - loveProgress
+        - relationActivity
+        - interestRecommendations
+        - nearbyPeople
+        - communityPosts
+    TodayRecommendation:
+      type: object
+      properties:
+        userId:
+          type: integer
+        name:
+          type: string
+        age:
+          type: integer
+        campusName:
+          type: string
+        gradeLabel:
+          type: string
+        tags:
+          type: array
+          items: { type: string }
+        bio:
+          type: string
+        expectation:
+          type: string
+        distanceText:
+          type: string
+        certified:
+          type: boolean
+        online:
+          type: boolean
+        matchScore:
+          type: integer
+        photoUrl:
+          type: string
+        constellation:
+          type: string
+          nullable: true
+          description: 星座（由出生日期推导，可空）
+      required: [userId, name, age, campusName, tags, bio, certified, online, matchScore, photoUrl]
+    LoveProgress:
+      type: object
+      properties:
+        completed: { type: integer }
+        total: { type: integer }
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoveProgressStep'
+      required: [completed, total, steps]
+    LoveProgressStep:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        completed: { type: boolean }
+        action: { type: string }
+      required: [id, title, description, completed, action]
+    RelationActivity:
+      type: object
+      properties:
+        likesReceived: { type: integer }
+        whispers: { type: integer }
+        visitors: { type: integer }
+        newMatches: { type: integer }
+        totalUnread: { type: integer }
+      required: [likesReceived, whispers, visitors, newMatches, totalUnread]
+    InterestCircleSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        icon: { type: string }
+        memberCount: { type: integer }
+        joined: { type: boolean }
+      required: [id, name, icon, memberCount, joined]
+    NearbyPersonSummary:
+      type: object
+      properties:
+        userId: { type: integer }
+        name: { type: string }
+        distanceText: { type: string }
+        avatarUrl: { type: string }
+        online: { type: boolean }
+        commonInterests:
+          type: array
+          items: { type: string }
+      required: [userId, name, distanceText, avatarUrl, online, commonInterests]
+    CommunityPostSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        authorName: { type: string }
+        authorAvatar: { type: string }
+        circleName: { type: string }
+        timeText: { type: string }
+        content: { type: string }
+        images:
+          type: array
+          items: { type: string }
+        likeCount: { type: integer }
+        commentCount: { type: integer }
+      required: [id, authorName, authorAvatar, circleName, timeText, content, images, likeCount, commentCount]
+    HomeDashboard:
+      type: object
+      description: Homepage dashboard payload. AI planning stays inside this payload as `aiPlan`.
+      properties:
+        scheduleSummary:
+          $ref: '#/components/schemas/HomeCard'
+        freeSlots:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeCard'
+        aiPlan:
+          description: Launch-scope AI planning module. Returns stable fallback copy when `chat_ai_enabled` is false.
+          allOf:
+            - $ref: '#/components/schemas/HomeCard'
+        recommendedPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedPersonSummary'
+        peopleLead:
+          type: string
+        activityPreview:
+          $ref: '#/components/schemas/ActivityPreview'
+        matchCenter:
+          $ref: '#/components/schemas/MatchCenter'
+        homeFeed:
+          $ref: '#/components/schemas/HomeFeed'
+      required:
+        - scheduleSummary
+        - freeSlots
+        - aiPlan
+        - recommendedPeople
+        - peopleLead
+        - activityPreview
+        - matchCenter
+        - homeFeed
+    ChatOverview:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatSessionSummary'
+        emptyStateLead:
+          type: string
+        recommendedPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedPersonSummary'
+      required:
+        - sessions
+        - emptyStateLead
+        - recommendedPeople
+    ChatSessionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        recommendedPersonId:
+          type: string
+        partnerName:
+          type: string
+        partnerHeadline:
+          type: string
+        availabilityHint:
+          type: string
+        phase:
+          type: string
+          enum: [matching, active, closing, closed]
+        closesAt:
+          type: string
+        closedReason:
+          type: string
+          enum: [expired, ended]
+          nullable: true
+        lastMessagePreview:
+          type: string
+        lastMessageSentAt:
+          type: string
+          nullable: true
+        contactExchangeStatus:
+          type: string
+          enum: [idle, pending, accepted-by-self, accepted-by-peer, completed, rejected]
+        pinned:
+          type: boolean
+        unreadCount:
+          type: integer
+          minimum: 0
+      required:
+        - id
+        - recommendedPersonId
+        - partnerName
+        - partnerHeadline
+        - availabilityHint
+        - phase
+        - closesAt
+        - lastMessagePreview
+        - contactExchangeStatus
+        - pinned
+        - unreadCount
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        sender:
+          type: string
+          enum: [self, peer, system]
+        kind:
+          type: string
+          enum: [text, voice, emoji, system]
+        body:
+          type: string
+        sentAt:
+          type: string
+        durationSeconds:
+          type: integer
+          nullable: true
+        recalled:
+          type: boolean
+          default: false
+        deliveryStatus:
+          type: string
+          enum: [sent, delivered, read]
+          default: sent
+        quoteRef:
+          type: string
+          nullable: true
+          description: Quoted message ID.
+        quoteBody:
+          type: string
+          nullable: true
+          description: Quoted message body snapshot.
+        quoteSender:
+          type: string
+          nullable: true
+          description: Sender of the quoted message.
+      required:
+        - id
+        - sender
+        - kind
+        - body
+        - sentAt
+    ChatMessageRequest:
+      type: object
+      properties:
+        sender:
+          type: string
+          enum: [self, peer]
+        kind:
+          type: string
+          enum: [text, voice, emoji, system]
+        body:
+          type: string
+          maxLength: 5000
+        durationSeconds:
+          type: integer
+          minimum: 0
+          maximum: 3600
+          nullable: true
+        quoteRef:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Optional quoted message ID.
+      required:
+        - sender
+        - kind
+        - body
+    CreateTempChatSessionRequest:
+      type: object
+      properties:
+        recommendedPersonId:
+          type: string
+          maxLength: 64
+          nullable: true
+        matchId:
+          type: string
+          maxLength: 64
+          nullable: true
+        signalId:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: 心动信号 ID（2026-08-08 走查 P0-3：已接受信号开聊入口，服务端校验归属与状态）
+      description: At least one of `recommendedPersonId`, `matchId` or `signalId` must be non-empty.
+    ContactExchangeState:
+      type: object
+      properties:
+        proposer:
+          type: string
+          enum: [self, peer]
+          nullable: true
+        status:
+          type: string
+          enum: [idle, pending, accepted-by-self, accepted-by-peer, completed, rejected]
+      required:
+        - status
+    ContactExchangeDecisionRequest:
+      type: object
+      properties:
+        actor:
+          type: string
+          enum: [self, peer]
+        decision:
+          type: string
+          enum: [accept, reject, revoke]
+      required:
+        - actor
+        - decision
+    TempChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+        recommendedPersonId:
+          type: string
+        partnerName:
+          type: string
+        partnerHeadline:
+          type: string
+        availabilityHint:
+          type: string
+        phase:
+          type: string
+          enum: [matching, active, closing, closed]
+        closesAt:
+          type: string
+        closedReason:
+          type: string
+          enum: [expired, ended]
+          nullable: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        contactExchange:
+          $ref: '#/components/schemas/ContactExchangeState'
+      required:
+        - id
+        - recommendedPersonId
+        - partnerName
+        - partnerHeadline
+        - availabilityHint
+        - phase
+        - closesAt
+        - messages
+        - contactExchange
+    DiscussionRecommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        heatLabel:
+          type: string
+      required:
+        - id
+        - title
+        - summary
+        - heatLabel
+    ActivityRecommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        scheduleText:
+          type: string
+      required:
+        - id
+        - title
+        - location
+        - scheduleText
+    SubmissionType:
+      type: string
+      enum: [FEEDBACK, SUGGESTION, ACTIVITY_PROPOSAL]
+    SubmissionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        contactWechat:
+          type: string
+          nullable: true
+          maxLength: 64
+        attachments:
+          type: array
+          items:
+            type: string
+        expectedCity:
+          type: string
+          nullable: true
+        expectedCampus:
+          type: string
+          nullable: true
+      required:
+        - title
+        - content
+    SubmissionRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: '#/components/schemas/SubmissionType'
+        title:
+          type: string
+        status:
+          type: string
+          enum: [submitted, processing, reviewed, planned, converted]
+        latestReplySummary:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        convertedActivityId:
+          type: integer
+          format: int64
+          nullable: true
+      required:
+        - id
+        - type
+        - title
+        - status
+        - latestReplySummary
+        - submittedAt
+    SubmissionRecordApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/SubmissionRecord'
+      required:
+        - success
+    SubmissionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: '#/components/schemas/SubmissionType'
+        title:
+          type: string
+        content:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        latestReplyContent:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - title
+        - content
+        - submittedAt
+    UploadedImageResult:
+      type: object
+      properties:
+        url:
+          type: string
+        size:
+          type: integer
+          format: int64
+        contentType:
+          type: string
+      required:
+        - url
+        - size
+        - contentType
+    DebugNextMatchStatusResponse:
+      type: object
+      properties:
+        nextQueueStatus:
+          type: string
+          enum: [queued, connected, expired]
+      required:
+        - nextQueueStatus
+    DebugErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code.
+        message:
+          type: string
+          description: Human-readable error message.
+      required:
+        - error
+        - message
+    # ===== Match Schemas =====
+    # 注意：以下 Match 相关 Schema 同样在 docs/openapi/likes.yaml 中以 *View 后缀定义。
+    # 此处重复声明是为了让 apps/client 的 generate:openapi 脚本（仅处理本文件）
+    # 能生成客户端代码引用的 Schemas["MatchFormConfig"] / Schemas["MatchResult"] /
+    # Schemas["MatchRequest"] / Schemas["QuickMatchRequest"] 类型。
+    # 字段定义与 likes.yaml 保持一致，避免契约漂移。
+    MatchFormConfig:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFormSection'
+      required:
+        - sections
+    MatchFormSection:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFormField'
+      required:
+        - id
+        - title
+        - fields
+    MatchFormField:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [single-select, multi-select, stepper]
+        label:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchOption'
+        min:
+          type: integer
+          nullable: true
+        max:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - kind
+        - label
+        - options
+    MatchOption:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - id
+        - label
+    MatchRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Ignored — authenticated user ID from JWT is always used.
+        matchIntent:
+          type: string
+          maxLength: 64
+        topicIds:
+          type: array
+          items:
+            type: string
+        timeWindow:
+          type: string
+          maxLength: 32
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+      required:
+        - userId
+        - matchIntent
+        - timeWindow
+        - durationMinutes
+    QuickMatchRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Ignored — authenticated user ID from JWT is always used.
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+      required:
+        - userId
+        - durationMinutes
+    MatchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        queueStatus:
+          type: string
+          enum: [queued, connected, expired]
+        topicLabel:
+          type: string
+        partnerHeadline:
+          type: string
+        countdownMinutes:
+          type: integer
+        recommendedPrompt:
+          type: string
+        tempChatSessionId:
+          type: string
+          nullable: true
+      required:
+        - id
+        - queueStatus
+        - topicLabel
+        - partnerHeadline
+        - countdownMinutes
+        - recommendedPrompt
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: BAD_REQUEST
+            message: 'Invalid request body.'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: 'Missing or invalid bearer token.'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: FORBIDDEN
+            message: 'User disabled or insufficient role.'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: NOT_FOUND
+            message: 'Resource not found.'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: CONFLICT
+            message: 'Resource already exists or optimistic lock conflict.'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: RATE_LIMITED
+            message: 'Rate limit exceeded.'
+    PayloadTooLarge:
+      description: Payload too large
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: PAYLOAD_TOO_LARGE
+            message: 'File exceeds 5 MB limit.'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: INTERNAL_ERROR
+            message: 'Unexpected server error.'
